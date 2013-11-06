@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -57,10 +57,12 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_acct_gather.h"
 #include "src/common/stepd_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/checkpoint.h"
+#include "src/common/timers.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -72,25 +74,24 @@
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
 static void *_handle_accept(void *arg);
-static int _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid);
-static int _handle_state(int fd, slurmd_job_t *job);
-static int _handle_info(int fd, slurmd_job_t *job);
-static int _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_attach(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_pid_in_container(int fd, slurmd_job_t *job);
-static int _handle_daemon_pid(int fd, slurmd_job_t *job);
-static int _handle_notify_job(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_suspend(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_resume(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_terminate(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_completion(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_task_info(int fd, slurmd_job_t *job);
-static int _handle_list_pids(int fd, slurmd_job_t *job);
-static int _handle_reconfig(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid);
+static int _handle_state(int fd, stepd_step_rec_t *job);
+static int _handle_info(int fd, stepd_step_rec_t *job);
+static int _handle_signal_task_local(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_pid_in_container(int fd, stepd_step_rec_t *job);
+static int _handle_daemon_pid(int fd, stepd_step_rec_t *job);
+static int _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_stat_jobacct(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_task_info(int fd, stepd_step_rec_t *job);
+static int _handle_list_pids(int fd, stepd_step_rec_t *job);
+static int _handle_reconfig(int fd, stepd_step_rec_t *job, uid_t uid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -105,7 +106,7 @@ static bool suspended = false;
 
 struct request_params {
 	int fd;
-	slurmd_job_t *job;
+	stepd_step_rec_t *job;
 };
 
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -216,7 +217,7 @@ _domain_socket_destroy(int fd)
 static void *
 _msg_thr_internal(void *job_arg)
 {
-	slurmd_job_t *job = (slurmd_job_t *) job_arg;
+	stepd_step_rec_t *job = (stepd_step_rec_t *) job_arg;
 
 	debug("Message thread started pid = %lu", (unsigned long) getpid());
 	eio_handle_mainloop(job->msg_handle);
@@ -226,7 +227,7 @@ _msg_thr_internal(void *job_arg)
 }
 
 int
-msg_thr_create(slurmd_job_t *job)
+msg_thr_create(stepd_step_rec_t *job)
 {
 	int fd;
 	eio_obj_t *eio_obj;
@@ -304,7 +305,7 @@ _msg_socket_readable(eio_obj_t *obj)
 static int
 _msg_socket_accept(eio_obj_t *obj, List objs)
 {
-	slurmd_job_t *job = (slurmd_job_t *)obj->arg;
+	stepd_step_rec_t *job = (stepd_step_rec_t *)obj->arg;
 	int fd;
 	struct sockaddr_un addr;
 	int len = sizeof(addr);
@@ -372,7 +373,7 @@ _handle_accept(void *arg)
 {
 	/*struct request_params *param = (struct request_params *)arg;*/
 	int fd = ((struct request_params *)arg)->fd;
-	slurmd_job_t *job = ((struct request_params *)arg)->job;
+	stepd_step_rec_t *job = ((struct request_params *)arg)->job;
 	int req;
 	int len;
 	Buf buffer;
@@ -450,7 +451,7 @@ rwfail:
 
 
 int
-_handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
+_handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 {
 	int rc = 0;
 	int req;
@@ -467,10 +468,6 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 	debug3("Got request %d", req);
 	rc = SLURM_SUCCESS;
 	switch (req) {
-	case REQUEST_SIGNAL_PROCESS_GROUP:
-		debug("Handling REQUEST_SIGNAL_PROCESS_GROUP");
-		rc = _handle_signal_process_group(fd, job, uid);
-		break;
 	case REQUEST_SIGNAL_TASK_LOCAL:
 		debug("Handling REQUEST_SIGNAL_TASK_LOCAL");
 		rc = _handle_signal_task_local(fd, job, uid);
@@ -478,6 +475,7 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 	case REQUEST_SIGNAL_TASK_GLOBAL:
 		debug("Handling REQUEST_SIGNAL_TASK_GLOBAL (not implemented)");
 		break;
+	case REQUEST_SIGNAL_PROCESS_GROUP:	/* Defunct */
 	case REQUEST_SIGNAL_CONTAINER:
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
 		rc = _handle_signal_container(fd, job, uid);
@@ -554,7 +552,7 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 }
 
 static int
-_handle_state(int fd, slurmd_job_t *job)
+_handle_state(int fd, stepd_step_rec_t *job)
 {
 	safe_write(fd, &job->state, sizeof(slurmstepd_state_t));
 
@@ -564,7 +562,7 @@ rwfail:
 }
 
 static int
-_handle_info(int fd, slurmd_job_t *job)
+_handle_info(int fd, stepd_step_rec_t *job)
 {
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
@@ -588,99 +586,17 @@ rwfail:
 }
 
 static int
-_handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
-{
-	int rc = SLURM_SUCCESS;
-	int signal;
-	char *ptr = NULL;
-
-	debug3("_handle_signal_process_group for job %u.%u",
-	      job->jobid, job->stepid);
-
-	safe_read(fd, &signal, sizeof(int));
-
-	debug3("  uid = %d", uid);
-	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
-		rc = EPERM;
-		goto done;
-	}
-
-	/*
-	 * Sanity checks
-	 */
-	if (job->pgid <= (pid_t)1) {
-		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]",
-		       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
-		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done;
-	}
-
-	/*
-	 * Signal the process group
-	 */
-	pthread_mutex_lock(&suspend_mutex);
-	if (suspended && (signal != SIGKILL)) {
-		rc = ESLURMD_STEP_SUSPENDED;
-		pthread_mutex_unlock(&suspend_mutex);
-		goto done;
-	}
-
-	/*
-	 * Print a message in the step output before killing when
-	 * SIGTERM or SIGKILL are sent
-	 * hjcao: print JOB/STEP KILLED msg on specific node id only
-	 */
-	ptr = getenvp(job->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
-	if ((!ptr || atoi(ptr) == job->nodeid) &&
-	    ((signal == SIGTERM) || (signal == SIGKILL))) {
-		time_t now = time(NULL);
-		char entity[24], time_str[24];
-		if (job->stepid == SLURM_BATCH_SCRIPT) {
-			snprintf(entity, sizeof(entity), "JOB %u", job->jobid);
-		} else {
-			snprintf(entity, sizeof(entity), "STEP %u.%u",
-				 job->jobid, job->stepid);
-		}
-		slurm_make_time_str(&now, time_str, sizeof(time_str));
-
-		error("*** %s KILLED AT %s WITH SIGNAL %u ***",
-		      entity, time_str, signal);
-	}
-
-	if (killpg(job->pgid, signal) == -1) {
-		rc = -1;
-		verbose("Error sending signal %d to %u.%u, pgid %d: %m",
-			signal, job->jobid, job->stepid, job->pgid);
-	} else {
-		verbose("Sent signal %d to %u.%u, pgid %d",
-			signal, job->jobid, job->stepid, job->pgid);
-	}
-	pthread_mutex_unlock(&suspend_mutex);
-
-done:
-	/* Send the return code */
-	safe_write(fd, &rc, sizeof(int));
-	return SLURM_SUCCESS;
-rwfail:
-	return SLURM_FAILURE;
-}
-
-static int
-_handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
+_handle_signal_task_local(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int signal;
 	int ltaskid; /* local task index */
 
-	debug("_handle_signal_task_local for job %u.%u",
-	      job->jobid, job->stepid);
-
 	safe_read(fd, &signal, sizeof(int));
 	safe_read(fd, &ltaskid, sizeof(int));
+	debug("_handle_signal_task_local for step=%u.%u uid=%d signal=%d",
+	      job->jobid, job->stepid, (int) uid, signal);
 
-	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
@@ -743,21 +659,22 @@ rwfail:
 }
 
 static int
-_handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
+_handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	int sig;
 	static int msg_sent = 0;
-
-	debug("_handle_signal_container for job %u.%u",
-	      job->jobid, job->stepid);
+	char *ptr = NULL;
+	int target_node_id = 0;
+	stepd_step_task_info_t *task;
+	uint32_t i;
 
 	safe_read(fd, &sig, sizeof(int));
-
-	debug3("  uid = %d", uid);
-	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("kill container req from uid %ld for job %u.%u "
+	debug("_handle_signal_container for step=%u.%u uid=%d signal=%d",
+	      job->jobid, job->stepid, (int) uid, sig);
+	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
+		error("signal container req from uid %ld for step=%u.%u "
 		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = -1;
@@ -776,7 +693,30 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if ((job->nodeid == 0) && (msg_sent == 0) &&
+	if ((sig == SIGTERM) || (sig == SIGKILL)) {
+		/* cycle thru the tasks and mark those that have not
+		 * called abort and/or terminated as killed_by_cmd
+		 */
+		for (i = 0; i < job->node_tasks; i++) {
+			if (NULL == (task = job->task[i])) {
+				continue;
+			}
+			if (task->aborted || task->exited) {
+				continue;
+			}
+			/* mark that this task is going to be killed by
+			 * cmd so we ignore its exit status - otherwise,
+			 * we will probably report the final exit status
+			 * as SIGKILL
+			 */
+			task->killed_by_cmd = true;
+		}
+	}
+
+	ptr = getenvp(job->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
+	if (ptr)
+		target_node_id = atoi(ptr);
+	if ((job->nodeid == target_node_id) && (msg_sent == 0) &&
 	    (job->state < SLURMSTEPD_STEP_ENDING)) {
 		time_t now = time(NULL);
 		char entity[24], time_str[24];
@@ -814,12 +754,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	if ((sig == SIG_TIME_LIMIT) || (sig == SIG_NODE_FAIL) ||
 	    (sig == SIG_PREEMPTED)  || (sig == SIG_FAILURE))
 		goto done;
-	if (sig == SIG_DEBUG_WAKE) {
-		int i;
-		for (i = 0; i < job->node_tasks; i++)
-			pdebug_wake_process(job, job->task[i]->pid);
-		goto done;
-	}
+
 	if (sig == SIG_ABORT) {
 		sig = SIGKILL;
 		job->aborted = true;
@@ -833,10 +768,18 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
+	if (sig == SIG_DEBUG_WAKE) {
+		int i;
+		for (i = 0; i < job->node_tasks; i++)
+			pdebug_wake_process(job, job->task[i]->pid);
+		pthread_mutex_unlock(&suspend_mutex);
+		goto done;
+	}
+
 	/*
 	 * Signal the container
 	 */
-	if (slurm_container_signal(job->cont_id, sig) < 0) {
+	if (proctrack_g_signal(job->cont_id, sig) < 0) {
 		rc = -1;
 		errnum = errno;
 		verbose("Error sending signal %d to %u.%u: %m",
@@ -857,7 +800,7 @@ rwfail:
 }
 
 static int
-_handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
+_handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	time_t timestamp;
@@ -902,9 +845,6 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	/*
-	 * Signal the process group
-	 */
 	pthread_mutex_lock(&suspend_mutex);
 	if (suspended) {
 		rc = ESLURMD_STEP_SUSPENDED;
@@ -943,7 +883,7 @@ rwfail:
 }
 
 static int
-_handle_notify_job(int fd, slurmd_job_t *job, uid_t uid)
+_handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int len;
@@ -979,16 +919,17 @@ rwfail:
 }
 
 static int
-_handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
+_handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
+	stepd_step_task_info_t *task;
+	uint32_t i;
 
-	debug("_handle_terminate for job %u.%u",
-	      job->jobid, job->stepid);
+	debug("_handle_terminate for step=%u.%u uid=%d",
+	      job->jobid, job->stepid, uid);
 	step_terminate_monitor_start(job->jobid, job->stepid);
 
-	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("terminate req from uid %ld for job %u.%u "
 		      "owned by uid %ld",
@@ -1009,6 +950,24 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
+	/* cycle thru the tasks and mark those that have not
+	 * called abort and/or terminated as killed_by_cmd
+	 */
+	for (i = 0; i < job->node_tasks; i++) {
+		if (NULL == (task = job->task[i])) {
+			continue;
+		}
+		if (task->aborted || task->exited) {
+			continue;
+		}
+		/* mark that this task is going to be killed by
+		 * cmd so we ignore its exit status - otherwise,
+		 * we will probably report the final exit status
+		 * as SIGKILL
+		 */
+		task->killed_by_cmd = true;
+	}
+
 	/*
 	 * Signal the container with SIGKILL
 	 */
@@ -1018,7 +977,7 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 		      job->jobid, job->stepid);
 	}
 
-	if (slurm_container_signal(job->cont_id, SIGKILL) < 0) {
+	if (proctrack_g_signal(job->cont_id, SIGKILL) < 0) {
 		rc = -1;
 		errnum = errno;
 		verbose("Error sending SIGKILL signal to %u.%u: %m",
@@ -1039,7 +998,7 @@ rwfail:
 }
 
 static int
-_handle_attach(int fd, slurmd_job_t *job, uid_t uid)
+_handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	srun_info_t *srun;
 	int rc = SLURM_SUCCESS;
@@ -1108,9 +1067,14 @@ done:
 		xfree(gtids);
 
 		for (i = 0; i < job->node_tasks; i++) {
-			len = strlen(job->task[i]->argv[0]) + 1;
-			safe_write(fd, &len, sizeof(int));
-			safe_write(fd, job->task[i]->argv[0], len);
+			if (job->task[i] && job->task[i]->argv) {
+				len = strlen(job->task[i]->argv[0]) + 1;
+				safe_write(fd, &len, sizeof(int));
+				safe_write(fd, job->task[i]->argv[0], len);
+			} else {
+				len = 0;
+				safe_write(fd, &len, sizeof(int));
+			}
 		}
 	}
 
@@ -1120,7 +1084,7 @@ rwfail:
 }
 
 static int
-_handle_pid_in_container(int fd, slurmd_job_t *job)
+_handle_pid_in_container(int fd, stepd_step_rec_t *job)
 {
 	bool rc = false;
 	pid_t pid;
@@ -1130,7 +1094,7 @@ _handle_pid_in_container(int fd, slurmd_job_t *job)
 
 	safe_read(fd, &pid, sizeof(pid_t));
 
-	rc = slurm_container_has_pid(job->cont_id, pid);
+	rc = proctrack_g_has_pid(job->cont_id, pid);
 
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(bool));
@@ -1142,7 +1106,7 @@ rwfail:
 }
 
 static int
-_handle_daemon_pid(int fd, slurmd_job_t *job)
+_handle_daemon_pid(int fd, stepd_step_rec_t *job)
 {
 	safe_write(fd, &job->jmgr_pid, sizeof(pid_t));
 
@@ -1152,14 +1116,14 @@ rwfail:
 }
 
 static int
-_handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
+_handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	static int launch_poe = -1;
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 
-	debug("_handle_suspend for job %u.%u", job->jobid, job->stepid);
-	debug3("  uid = %d", uid);
+	debug("_handle_suspend for step=%u.%u uid=%d",
+	      job->jobid, job->stepid, (int) uid);
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step suspend request from uid %ld for job %u.%u ",
 		      (long)uid, job->jobid, job->stepid);
@@ -1176,7 +1140,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_gather_suspend_poll();
+	acct_gather_suspend_poll();
 	if (launch_poe == -1) {
 		char *launch_type = slurm_get_launch_type();
 		if (!strcmp(launch_type, "launch/poe"))
@@ -1208,14 +1172,14 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		if (launch_poe == 0) {
 			/* IBM MPI seens to periodically hang upon receipt
 			 * of SIGTSTP. */
-			if (slurm_container_signal(job->cont_id, SIGTSTP) < 0) {
+			if (proctrack_g_signal(job->cont_id, SIGTSTP) < 0) {
 				verbose("Error suspending %u.%u (SIGTSTP): %m",
 					job->jobid, job->stepid);
 			} else
 				sleep(2);
 		}
 
-		if (slurm_container_signal(job->cont_id, SIGSTOP) < 0) {
+		if (proctrack_g_signal(job->cont_id, SIGSTOP) < 0) {
 			verbose("Error suspending %u.%u (SIGSTOP): %m",
 				job->jobid, job->stepid);
 		} else {
@@ -1239,7 +1203,7 @@ rwfail:
 }
 
 static int
-_handle_resume(int fd, slurmd_job_t *job, uid_t uid)
+_handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
@@ -1264,7 +1228,7 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_gather_resume_poll();
+	acct_gather_resume_poll();
 	/*
 	 * Signal the container
 	 */
@@ -1275,7 +1239,7 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
-		if (slurm_container_signal(job->cont_id, SIGCONT) < 0) {
+		if (proctrack_g_signal(job->cont_id, SIGCONT) < 0) {
 			verbose("Error resuming %u.%u: %m",
 				job->jobid, job->stepid);
 		} else {
@@ -1299,7 +1263,7 @@ rwfail:
 }
 
 static int
-_handle_completion(int fd, slurmd_job_t *job, uid_t uid)
+_handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
@@ -1347,7 +1311,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	safe_read(fd, buf, len);
 	buffer = create_buf(buf, len);
 	jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
-			   PROTOCOL_TYPE_SLURM, buffer);
+			   PROTOCOL_TYPE_SLURM, buffer, 1);
 	free_buf(buffer);
 
 	/*
@@ -1408,7 +1372,7 @@ rwfail:	if (lock_set) {
 }
 
 static int
-_handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
+_handle_stat_jobacct(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	jobacctinfo_t *jobacct = NULL;
 	jobacctinfo_t *temp_jobacct = NULL;
@@ -1423,7 +1387,8 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		/* Send NULL */
-		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
+				    SLURM_PROTOCOL_VERSION);
 		return SLURM_ERROR;
 	}
 
@@ -1438,9 +1403,13 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 			num_tasks++;
 		}
 	}
-	jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+
+	jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
+			    SLURM_PROTOCOL_VERSION);
 	safe_write(fd, &num_tasks, sizeof(int));
+
 	jobacctinfo_destroy(jobacct);
+
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_ERROR;
@@ -1448,10 +1417,10 @@ rwfail:
 
 /* We don't check the uid in this function, anyone may list the task info. */
 static int
-_handle_task_info(int fd, slurmd_job_t *job)
+_handle_task_info(int fd, stepd_step_rec_t *job)
 {
 	int i;
-	slurmd_task_info_t *task;
+	stepd_step_task_info_t *task;
 
 	debug("_handle_task_info for job %u.%u", job->jobid, job->stepid);
 
@@ -1472,7 +1441,7 @@ rwfail:
 
 /* We don't check the uid in this function, anyone may list the task info. */
 static int
-_handle_list_pids(int fd, slurmd_job_t *job)
+_handle_list_pids(int fd, stepd_step_rec_t *job)
 {
 	int i;
 	pid_t *pids = NULL;
@@ -1480,7 +1449,7 @@ _handle_list_pids(int fd, slurmd_job_t *job)
 	uint32_t pid;
 
 	debug("_handle_list_pids for job %u.%u", job->jobid, job->stepid);
-	slurm_container_get_pids(job->cont_id, &pids, &npids);
+	proctrack_g_get_pids(job->cont_id, &pids, &npids);
 	safe_write(fd, &npids, sizeof(uint32_t));
 	for (i = 0; i < npids; i++) {
 		pid = (uint32_t)pids[i];
@@ -1497,7 +1466,7 @@ rwfail:
 }
 
 static int
-_handle_reconfig(int fd, slurmd_job_t *job, uid_t uid)
+_handle_reconfig(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;

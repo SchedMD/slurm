@@ -25,7 +25,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -89,6 +89,7 @@ cset sbcast      "${slurm_dir}/bin/sbcast"
 cset scancel     "${slurm_dir}/bin/scancel"
 cset scontrol    "${slurm_dir}/bin/scontrol"
 cset sdiag       "${slurm_dir}/bin/sdiag"
+cset sh5util     "${slurm_dir}/bin/sh5util"
 cset sinfo       "${slurm_dir}/bin/sinfo"
 cset smap        "${slurm_dir}/bin/smap"
 cset sprio       "${slurm_dir}/bin/sprio"
@@ -103,6 +104,8 @@ cset pbsnodes    "${slurm_dir}/bin/pbsnodes"
 cset qdel        "${slurm_dir}/bin/qdel"
 cset qstat       "${slurm_dir}/bin/qstat"
 cset qsub        "${slurm_dir}/bin/qsub"
+cset qalter      "${slurm_dir}/bin/qalter"
+cset qrerun      "${slurm_dir}/bin/qrerun"
 
 # If length of string partition is zero, use output of function
 #	default_partition, otherwise use the partition explicitly
@@ -152,6 +155,7 @@ cset bin_file	"file"
 cset bin_id	"id"
 cset bin_grep   "grep"
 cset bin_head   "head"
+cset bin_ln     "ln"
 
 # Don't user $bin_hostname unless on a front-end system that
 # doesn't fully use the slurmd, use $bin_printenv SLURMD_NODENAME
@@ -159,6 +163,7 @@ cset bin_hostname "hostname"
 
 cset bin_kill	"kill"
 cset bin_make	"make"
+cset bin_mv     "mv"
 cset bin_od     "od"
 cset bin_pkill	"pkill"
 cset bin_ps	"ps"
@@ -185,7 +190,7 @@ cset max_job_delay 120
 # Files must be propogated between nodes within this number of seconds.
 # The delay may be due to NFS.
 #
-cset max_file_delay 60
+cset max_file_delay 90
 
 #
 # Desired job state must be reached within this number of seconds.
@@ -1009,6 +1014,43 @@ proc test_account_storage { } {
 
 ################################################################
 #
+# Proc: test_enforce_limits
+#
+# Purpose: Determine resouce limits are enforced
+# This is based upon
+# the value of AccountingStorageEnforce in the slurm.conf.
+#
+# Returns 1 if the system is enforcing limits, 0 otherwise
+#
+################################################################
+
+proc test_enforce_limits { } {
+	global alpha_numeric_comma scontrol
+
+	log_user 0
+	set enforce_limits 0
+	spawn $scontrol show config
+	expect {
+		-re "AccountingStorageEnforce *= ($alpha_numeric_comma)" {
+			if {[string first "safe" $expect_out(1,string)] != -1 } {
+				set enforce_limits 1
+			}
+			if {[string first "limits" $expect_out(1,string)] != -1 } {
+				set enforce_limits 1
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $enforce_limits
+}
+
+################################################################
+#
 # Proc: test_using_slurmdbd
 #
 # Purpose: Since there is a lag at which the slurmdbd processes a job start
@@ -1271,9 +1313,39 @@ proc test_bluegene { } {
 
 ################################################################
 #
+# Proc: test_alps
+#
+# Purpose: Determine if the system is a alps cray system
+#
+# Returns 1 if the system is a cray, 0 otherwise
+#
+################################################################
+
+proc test_alps { } {
+	global scontrol bin_bash bin_grep
+
+	log_user 0
+	set cray 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
+	expect {
+		"select/alps" {
+			set cray 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $cray
+}
+
+################################################################
+#
 # Proc: test_cray
 #
-# Purpose: Determine if the system is a cray system
+# Purpose: Determine if the system is a native cray system
 #
 # Returns 1 if the system is a cray, 0 otherwise
 #
@@ -1382,7 +1454,7 @@ proc test_launch_poe { } {
 #
 # Purpose: Determine launch type plugin.
 #
-# Returns 1 if the system is running launch/poe, 0 otherwise
+# Returns the launch plugin type
 #
 ################################################################
 
@@ -1596,7 +1668,7 @@ proc test_super_user { } {
 	spawn $scontrol show config
 	set slurm_user ""
 	expect {
-		-re "SlurmUser *= ($alpha_numeric_under)" {
+		-re "SlurmUser *= ($alpha_numeric_under).($number)" {
 			set slurm_user $expect_out(1,string)
 			exp_continue
 		}
@@ -1745,7 +1817,7 @@ proc default_partition {} {
 	set name ""
 	set fd [open "|$scontrol --all --oneliner show partition"]
 	while {[gets $fd line] != -1} {
-		if {[regexp {^PartitionName=(\w+).*Default=YES} $line frag name]
+		if {[regexp {^PartitionName=([^ ]*).*Default=YES} $line frag name]
 				== 1} {
 			break
 		}
@@ -1976,6 +2048,46 @@ proc check_acct_associations { } {
 	}
 	log_user 1
 	return $rc
+}
+
+################################################################
+#
+# Proc: get_job_acct_freq
+#
+# Purpose: gets the value of the job account gather frequency
+#
+# Returns: job account gather frequency
+#
+################################################################
+proc get_job_acct_freq { } {
+	global scontrol number
+
+	log_user 0
+	set freq_val 0
+
+	spawn $scontrol show config
+	expect {
+		-re "JobAcctGatherFrequency *= ($number)" {
+			set freq_val $expect_out(1,string)
+			if {$freq_val == 0} {
+				set freq_val 0
+			}
+		}
+		-re "JobAcctGatherFrequency *= task=($number)" {
+			set freq_val $expect_out(1,string)
+			if {$freq_val == 0} {
+				set freq_val 0
+			}
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $freq_val
+
+
 }
 
 ################################################################
@@ -2454,20 +2566,169 @@ proc change_subbp_state { node ionodes state } {
 ################################################################
 
 proc get_array_config { } {
-     global scontrol number
+	global scontrol number
 
-     	  log_user 0
-     	  set array_size 1
-	  spawn $scontrol show config
-	  expect {
-		  -re "MaxArraySize *= ($number)" {
-		    	   set array_size $expect_out(1,string)
-			   exp_continue
-		  }
-		  eof {
-		  	   wait
-		  }
-	   }
-	   log_user 1
-	   return $array_size
+	log_user 0
+	set array_size 1
+	spawn $scontrol show config
+	expect {
+		-re "MaxArraySize *= ($number)" {
+			set array_size $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $array_size
+}
+
+################################################################
+#
+# Proc: get_max_tasks
+#
+# Purpose: Use scontrol to determine the MaxTasksPerNode
+#
+# Returns: MaxTasksPerNode value
+#
+################################################################
+
+proc get_max_tasks { } {
+	global scontrol number
+
+	log_user 0
+	set max_tasks 1
+	spawn $scontrol show config
+	expect {
+		-re "MaxTasksPerNode *= ($number)" {
+			set max_tasks $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $max_tasks
+}
+
+#################################################
+#
+# Proc: scale_to_megs
+#
+# Purpose: scale the value by the factor T|G|M
+#          to megabytes
+# Returns: the scaled variable
+#
+#################################################
+
+proc scale_to_megs { value factor } {
+
+	if {[string compare $factor "T"] == 0} {
+		set value [expr $value * 1024 * 1024]
+	} elseif {[string compare $factor "G"] == 0} {
+		set value [expr $value * 1024]
+	} elseif {[string compare $factor "M"] == 0} {
+		set value [expr $value * 1]
+	} else {
+		set value [expr $value / (1024 * 1024)]
+	}
+
+	return $value
+}
+
+#################################################
+#
+# Proc: scale_to_ks
+#
+# Purpose: scale the value by the factor G|M|K
+#          to kilobytes
+# Returns: the scaled variable
+#
+#################################################
+
+proc scale_to_ks { value factor } {
+
+	if {[string compare $factor "G"] == 0} {
+		set value [expr $value * 1024 * 1024]
+	} elseif {[string compare $factor "M"] == 0} {
+		set value [expr $value * 1024]
+	} elseif {[string compare $factor "K"] == 0} {
+		set value [expr $value * 1]
+	} else {
+		set value [expr $value / 1024]
+	}
+
+	return $value
+}
+
+############################################################
+#
+# Proc: check_node_mem
+#
+# Purpose: check that the nodes have memory configured
+#
+# Returns: 1 if the nodes have memory, 0 otherwise
+#
+############################################################
+
+proc check_node_mem { } {
+	global scontrol number
+
+	log_user 0
+	set mem_size 0
+
+	spawn $scontrol show node
+	expect {
+		-re "RealMemory=($number)" {
+			set mem_size $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$mem_size == 1} {
+		return 0
+	} else {
+		return 1
+	}
+	log_user 1
+
+}
+
+################################################################
+#
+# Proc: get_fs_damping_factor
+#
+# Purpose: get FairShareDampeningFactor configuration parameter
+#
+# Returns FairShareDampeningFactor
+#
+################################################################
+proc get_fs_damping_factor { } {
+	global scontrol number
+
+	log_user 0
+	set damp 1
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "FairShareDampeningFactor *= ($number)" {
+			set damp $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $damp
 }

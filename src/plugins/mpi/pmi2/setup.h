@@ -6,7 +6,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -107,7 +107,7 @@ extern int *task_socks;
 #define TASK_PMI_SOCK(lrank) task_socks[lrank * 2 + 1]
 
 extern bool in_stepd(void);
-extern int  pmi2_setup_stepd(const slurmd_job_t *job, char ***env);
+extern int  pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env);
 extern int  pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env);
 
 #endif	/* _SETUP_H */

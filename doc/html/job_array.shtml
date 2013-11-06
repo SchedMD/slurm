@@ -98,6 +98,13 @@ $ scancel 20_4 20_5
 
 # Cancel all elements from job array 20
 $ scancel 20
+
+# Cancel the current job or job array element (if job array)
+if [[-z $SLURM_ARRAY_JOB_ID]]; then
+  scancel $SLURM_JOB_ID
+else
+  scancel ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
+fi
 </pre>
 
 <h2>Squeue Command Use</h2>
@@ -195,6 +202,22 @@ $ scontrol release 13_2
 
 <h2>Other Command Use</h2>
 
+<p>Job dependencies for individual job array elements are supported in Slurm
+version 2.6.4 and later.
+A job which is to be dependent upon an entire job array, should specify
+itself dependent upon the ArrayJobID. Since each array element can have a
+different exit code, the interpretation of the afterok and afternotok clauses
+will be based upon the last element of the job array to exit.
+Examples of use follow:</p>
+<pre>
+# Wait for specific job array elements
+sbatch --depend=after:123_4 my.job
+sbatch --depend=afterok:123_4:123_8 my.job2
+
+# Wait for entire job array to complette
+sbatch --depend=after:123 my.job
+</pre>
+
 <p>The following Slurm commands do not currently recognize job arrays and their
 use requires the use of Slurm job IDs, which are unique for each array element:
 sacct, sbcast, smap, sreport, sshare, sstat, strigger, and sview.
@@ -231,6 +254,13 @@ Support for Slurm job arrays can be expected to improve in later releases.
 The second new field is called "array_task_id" which is the job array index
 value of the job array element.</p>
 
-<p style="text-align:center;">Last modified 30 January 2013</p>
+<h2>Future Work</h2>
+
+<p>There are scalability and performance improvements possible if a job
+array data structure is added rather than the current logic that only
+adds a new field to the existing job data structure.
+It is not certain when that work will occur.</p>
+
+<p style="text-align:center;">Last modified 28 October 2013</p>
 
 <!--#include virtual="footer.txt"-->

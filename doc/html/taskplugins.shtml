@@ -47,7 +47,7 @@ SLURM_ERROR.</p>
 <p>The following functions must appear. Functions which are not implemented should
 be stubbed.</p>
 
-<p class="commandline">int task_slurmd_batch_request (uint32_t job_id,
+<p class="commandline">int task_p_slurmd_batch_request (uint32_t job_id,
 batch_job_launch_msg_t *req);</p>
 <p style="margin-left:.2in"><b>Description</b>: Prepare to launch a batch job.
 Establish node, socket, and core resource availability for it.
@@ -63,7 +63,7 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_slurmd_launch_request (uint32_t job_id,
+<p class="commandline">int task_p_slurmd_launch_request (uint32_t job_id,
 launch_tasks_request_msg_t *req, uint32_t node_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Prepare to launch a job.
 Establish node, socket, and core resource availability for it.
@@ -82,7 +82,7 @@ ID of the node on which resources are being acquired (zero origin).</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_slurmd_reserve_resources (uint32_t job_id,
+<p class="commandline">int task_p_slurmd_reserve_resources (uint32_t job_id,
 launch_tasks_request_msg_t *req, uint32_t node_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Reserve resources for
 the initiation of a job. Executed by the <b>slurmd</b> daemon as user root.</p>
@@ -101,7 +101,7 @@ ID of the node on which the resources are being acquired
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_slurmd_suspend_job (uint32_t job_id);</p>
+<p class="commandline">int task_p_slurmd_suspend_job (uint32_t job_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Temporarily release resources
 previously reserved for a job.
 Executed by the <b>slurmd</b> daemon as user root.</p>
@@ -112,9 +112,9 @@ ID of the job which is being suspended.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_slurmd_resume_job (uint32_t job_id);</p>
+<p class="commandline">int task_p_slurmd_resume_job (uint32_t job_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Reclaim resources which
-were previously released using the task_slurmd_suspend_job function.
+were previously released using the task_p_slurmd_suspend_job function.
 Executed by the <b>slurmd</b> daemon as user root.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
@@ -123,7 +123,7 @@ ID of the job which is being resumed.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_slurmd_release_resources (uint32_t job_id);</p>
+<p class="commandline">int task_p_slurmd_release_resources (uint32_t job_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Release resources previously
 reserved for a job. Executed by the <b>slurmd</b> daemon as user root.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -133,8 +133,8 @@ ID of the job which has completed.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_pre_setuid (slurmd_job_t *job);</p>
-<p style="margin-left:.2in"><b>Description</b>: task_pre_setuid() is called
+<p class="commandline">int task_p_pre_setuid (stepd_step_rec_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: task_p_pre_setuid() is called
 before setting the UID for the user to launch his jobs.
 Executed by the <b>slurmstepd</b> program as user root.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -146,8 +146,8 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_pre_launch_priv (slurmd_job_t *job);</p>
-<p style="margin-left:.2in"><b>Description</b>: task_pre_launch_priv() is called
+<p class="commandline">int task_p_pre_launch_priv (stepd_step_rec_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: task_p_pre_launch_priv() is called
 by each forked task just after the fork. Note that no particular task related
 information is available in the job structure at that time.
 Executed by the <b>slurmstepd</b> program as user root.</p>
@@ -160,8 +160,8 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_pre_launch (slurmd_job_t *job);</p>
-<p style="margin-left:.2in"><b>Description</b>: task_pre_launch() is called
+<p class="commandline">int task_p_pre_launch (stepd_step_rec_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: task_p_pre_launch() is called
 prior to exec of application task.
 Executed by the <b>slurmstepd</b> program as the job's owner.
 It is followed by <b>TaskProlog</b> program (as configured in <b>slurm.conf</b>)
@@ -175,23 +175,28 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<a name="get_errno"><p class="commandline">int task_post_term (slurmd_job_t *job);</p></a>
-<p style="margin-left:.2in"><b>Description</b>: task_term() is called
+<a name="get_errno"><p class="commandline">int task_p_post_term
+(stepd_step_rec_t *job, slurmd_task_p_info_t *task);</p></a>
+<p style="margin-left:.2in"><b>Description</b>: task_p_term() is called
 after termination of job step.
 Executed by the <b>slurmstepd</b> program as the job's owner.
 It is preceded by <b>--task-epilog</b> (from <b>srun</b> command line)
 followed by <b>TaskEpilog</b> program (as configured in <b>slurm.conf</b>).</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)
 pointer to the job which has terminated.
-See <b>src/slurmd/slurmstepd/slurmstepd_job.h</b> for the
+See src/slurmd/slurmstepd/slurmstepd_job.h for the
+data structure definition.<br>
+<span class="commandline">task</span>&nbsp;&nbsp;&nbsp;(input)
+pointer to the task which has terminated.
+See src/slurmd/slurmstepd/slurmstepd_job.h for the
 data structure definition.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_post_step (slurmd_job_t *job);</p>
-<p style="margin-left:.2in"><b>Description</b>: task_post_step() is called
+<p class="commandline">int task_p_post_step (stepd_step_rec_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: task_p_post_step() is called
 after termination of all the tasks of the job step.
 Executed by the <b>slurmstepd</b> program as user root.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -208,6 +213,6 @@ appropriate value to indicate the reason for failure.</p>
 Future releases of SLURM may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 April 2011</p>
+<p style="text-align:center;">Last modified 2 July 2013</p>
 
 <!--#include virtual="footer.txt"-->

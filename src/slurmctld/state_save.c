@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -51,7 +51,10 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#define SAVE_MAX_WAIT	2	/* Maximum time in seconds to wait for save */
+/* Maximum delay for pending state save to be processed, in seconds */
+#ifndef SAVE_MAX_WAIT
+#define SAVE_MAX_WAIT	5
+#endif
 
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;

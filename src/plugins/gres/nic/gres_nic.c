@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -103,7 +103,7 @@
  */
 const char	plugin_name[]		= "Gres NIC plugin";
 const char	plugin_type[]		= "gres/nic";
-const uint32_t	plugin_version		= 110;
+const uint32_t	plugin_version		= 120;
 
 static char	gres_name[]		= "nic";
 
@@ -160,4 +160,16 @@ extern void send_stepd(int fd)
 extern void recv_stepd(int fd)
 {
 	/* EMPTY */
+}
+
+extern int job_info(gres_job_state_t *job_gres_data, uint32_t node_inx,
+		     enum gres_job_data_type data_type, void *data)
+{
+	return EINVAL;
+}
+
+extern int step_info(gres_step_state_t *step_gres_data, uint32_t node_inx,
+		     enum gres_step_data_type data_type, void *data)
+{
+	return EINVAL;
 }

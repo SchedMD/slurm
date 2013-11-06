@@ -8,7 +8,7 @@
  *  Written by Dan Phung <phung4@llnl.gov> and Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -70,7 +70,8 @@
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
 extern bool block_mp_passthrough(bg_record_t *bg_record, int mp_bit);
 extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
-			   bool slurmctld_locked);
+			   bool slurmctld_locked, uint16_t job_state,
+			   bool preempted);
 
 /* sort a list of bg_records by size (node count) */
 extern void sort_bg_record_inc_size(List records);

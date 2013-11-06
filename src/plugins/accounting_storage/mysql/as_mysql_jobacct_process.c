@@ -10,7 +10,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -71,6 +71,7 @@ char *job_req_inx[] = {
 	"t1.job_db_inx",
 	"t1.job_name",
 	"t1.kill_requid",
+	"t1.mem_req",
 	"t1.node_inx",
 	"t1.nodelist",
 	"t1.nodes_alloc",
@@ -108,6 +109,7 @@ enum {
 	JOB_REQ_ID,
 	JOB_REQ_NAME,
 	JOB_REQ_KILL_REQUID,
+	JOB_REQ_REQ_MEM,
 	JOB_REQ_NODE_INX,
 	JOB_REQ_NODELIST,
 	JOB_REQ_ALLOC_NODES,
@@ -149,6 +151,14 @@ char *step_req_inx[] = {
 	"t1.user_usec",
 	"t1.sys_sec",
 	"t1.sys_usec",
+	"t1.max_disk_read",
+	"t1.max_disk_read_task",
+	"t1.max_disk_read_node",
+	"t1.ave_disk_read",
+	"t1.max_disk_write",
+	"t1.max_disk_write_task",
+	"t1.max_disk_write_node",
+	"t1.ave_disk_write",
 	"t1.max_vsize",
 	"t1.max_vsize_task",
 	"t1.max_vsize_node",
@@ -166,7 +176,8 @@ char *step_req_inx[] = {
 	"t1.min_cpu_node",
 	"t1.ave_cpu",
 	"t1.act_cpufreq",
-	"t1.consumed_energy"
+	"t1.consumed_energy",
+	"t1.req_cpufreq"
 };
 
 enum {
@@ -188,6 +199,14 @@ enum {
 	STEP_REQ_USER_USEC,
 	STEP_REQ_SYS_SEC,
 	STEP_REQ_SYS_USEC,
+	STEP_REQ_MAX_DISK_READ,
+	STEP_REQ_MAX_DISK_READ_TASK,
+	STEP_REQ_MAX_DISK_READ_NODE,
+	STEP_REQ_AVE_DISK_READ,
+	STEP_REQ_MAX_DISK_WRITE,
+	STEP_REQ_MAX_DISK_WRITE_TASK,
+	STEP_REQ_MAX_DISK_WRITE_NODE,
+	STEP_REQ_AVE_DISK_WRITE,
 	STEP_REQ_MAX_VSIZE,
 	STEP_REQ_MAX_VSIZE_TASK,
 	STEP_REQ_MAX_VSIZE_NODE,
@@ -206,6 +225,7 @@ enum {
 	STEP_REQ_AVE_CPU,
 	STEP_REQ_ACT_CPUFREQ,
 	STEP_REQ_CONSUMED_ENERGY,
+	STEP_REQ_REQ_CPUFREQ,
 	STEP_REQ_COUNT
 };
 
@@ -383,9 +403,19 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 						   prefix);
 			}
 		}
-		if (set)
-			xstrcat(extra,")");
+
 		mysql_free_result(result);
+
+		if (set)
+			xstrcat(extra, ")");
+		else {
+			xfree(extra);
+			debug("User %s has no assocations, and is not admin, "
+			      "so not returning any jobs.", user->name);
+			/* This user has no valid associations, so
+			 * they will not have any jobs. */
+			goto end_it;
+		}
 	}
 
 	setup_job_cluster_cond_limits(mysql_conn, job_cond,
@@ -611,6 +641,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->track_steps = slurm_atoul(row[JOB_REQ_TRACKSTEPS]);
 		job->priority = slurm_atoul(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = slurm_atoul(row[JOB_REQ_REQ_CPUS]);
+		job->req_mem = slurm_atoul(row[JOB_REQ_REQ_MEM]);
 		job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
 		job->show_full = 1;
@@ -752,6 +783,20 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				step->user_cpu_sec + step->sys_cpu_sec;
 			step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
+			step->stats.disk_read_max =
+				atof(step_row[STEP_REQ_MAX_DISK_READ]);
+			step->stats.disk_read_max_taskid =
+				slurm_atoul(step_row[
+					STEP_REQ_MAX_DISK_READ_TASK]);
+			step->stats.disk_read_ave =
+				atof(step_row[STEP_REQ_AVE_DISK_READ]);
+			step->stats.disk_write_max =
+				atof(step_row[STEP_REQ_MAX_DISK_WRITE]);
+			step->stats.disk_write_max_taskid =
+				slurm_atoul(step_row[
+					STEP_REQ_MAX_DISK_WRITE_TASK]);
+			step->stats.disk_write_ave =
+				atof(step_row[STEP_REQ_AVE_DISK_WRITE]);
 			step->stats.vsize_max =
 				slurm_atoul(step_row[STEP_REQ_MAX_VSIZE]);
 			step->stats.vsize_max_taskid =
@@ -776,9 +821,11 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				slurm_atoul(step_row[STEP_REQ_MIN_CPU_TASK]);
 			step->stats.cpu_ave = atof(step_row[STEP_REQ_AVE_CPU]);
 			step->stats.act_cpufreq =
-					atof(step_row[STEP_REQ_ACT_CPUFREQ]);
+				atof(step_row[STEP_REQ_ACT_CPUFREQ]);
 			step->stats.consumed_energy =
-					atof(step_row[STEP_REQ_CONSUMED_ENERGY]);
+				atof(step_row[STEP_REQ_CONSUMED_ENERGY]);
+			step->req_cpufreq =
+				slurm_atoul(step_row[STEP_REQ_REQ_CPUFREQ]);
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
 			step->stats.vsize_max_nodeid =
@@ -875,7 +922,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	/* On a Cray System when dealing with hostlists as we are here
 	   this always needs to be 1.
 	*/
-	if (slurm_atoul(row[1]) & CLUSTER_FLAG_CRAYXT)
+	if (slurm_atoul(row[1]) & CLUSTER_FLAG_CRAY_A)
 		dims = 1;
 	else
 		dims = atoi(row[0]);
@@ -1439,6 +1486,11 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 			   try to get the jobs.
 			*/
 			is_user_any_coord(mysql_conn, &user);
+		}
+		if (!is_admin && !user.name) {
+			debug("User %u has no assocations, and is not admin, "
+			      "so not returning any jobs.", user.uid);
+			return NULL;
 		}
 	}
 

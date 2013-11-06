@@ -11,7 +11,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -57,6 +57,7 @@ typedef struct {
 	int color_inx;
 	GtkTreeIter iter_ptr;
 	bool iter_set;
+	char *part_name;
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share, groups */
 	partition_info_t* part_ptr;
@@ -74,16 +75,21 @@ enum {
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_ALLOW_ACCOUNTS,
+	SORTID_ALLOW_GROUPS,
+	SORTID_ALLOW_QOS,
 	SORTID_ALTERNATE,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_CPUS,
 	SORTID_DEFAULT,
+	SORTID_DENY_ACCOUNTS,
+	SORTID_DENY_QOS,
 	SORTID_FEATURES,
 	SORTID_GRACE_TIME,
-	SORTID_GROUPS,
 	SORTID_HIDDEN,
 	SORTID_JOB_SIZE,
+	SORTID_MAX_CPUS_PER_NODE,
 	SORTID_MEM,
 #ifdef HAVE_BG
 	SORTID_NODELIST,
@@ -153,11 +159,21 @@ static display_data_t display_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GROUPS, "Groups Allowed", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Allowed Accounts", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Allowed Groups", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ALLOW_QOS, "Allowed Qos", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_ACCOUNTS, "Denied Accounts", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_QOS, "Denied Qos", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
@@ -213,11 +229,21 @@ static display_data_t create_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GROUPS, "Groups Allowed", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Accounts Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Groups Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ALLOW_QOS, "Qos Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_ACCOUNTS, "Accounts Denied", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_QOS, "Qos Denied", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
@@ -526,6 +552,14 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "name";
 		part_msg->name = xstrdup(new_text);
 		break;
+	case SORTID_MAX_CPUS_PER_NODE:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+		type = "max_cpus_per_node";
+
+		if (temp_int <= 0)
+			goto return_error;
+		part_msg->max_cpus_per_node = temp_int;
+		break;
 	case SORTID_NODES_MIN:
 		temp_int = strtol(new_text, (char **)NULL, 10);
 		type = "min_nodes";
@@ -575,9 +609,25 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			goto return_error;
 		type = "share";
 		break;
-	case SORTID_GROUPS:
+	case SORTID_ALLOW_ACCOUNTS:
+		type = "accounts";
+		part_msg->allow_accounts = xstrdup(new_text);
+		break;
+	case SORTID_ALLOW_GROUPS:
 		type = "groups";
 		part_msg->allow_groups = xstrdup(new_text);
+		break;
+	case SORTID_ALLOW_QOS:
+		type = "qos";
+		part_msg->allow_qos = xstrdup(new_text);
+		break;
+	case SORTID_DENY_ACCOUNTS:
+		type = "deny account";
+		part_msg->deny_accounts = xstrdup(new_text);
+		break;
+	case SORTID_DENY_QOS:
+		type = "deny qos";
+		part_msg->deny_qos = xstrdup(new_text);
 		break;
 	case SORTID_NODES_ALLOWED:
 		type = "allowed alloc nodes";
@@ -909,11 +959,35 @@ static void _layout_part_record(GtkTreeView *treeview,
 		case SORTID_GRACE_TIME:
 			limit_set = part_ptr->grace_time;
 			break;
-		case SORTID_GROUPS:
+		case SORTID_ALLOW_ACCOUNTS:
+			if (part_ptr->allow_accounts)
+				temp_char = part_ptr->allow_accounts;
+			else
+				temp_char = "all";
+			break;
+		case SORTID_ALLOW_GROUPS:
 			if (part_ptr->allow_groups)
 				temp_char = part_ptr->allow_groups;
 			else
 				temp_char = "all";
+			break;
+		case SORTID_ALLOW_QOS:
+			if (part_ptr->allow_qos)
+				temp_char = part_ptr->allow_qos;
+			else
+				temp_char = "all";
+			break;
+		case SORTID_DENY_ACCOUNTS:
+			if (part_ptr->deny_accounts)
+				temp_char = part_ptr->deny_accounts;
+			else
+				temp_char = "none";
+			break;
+		case SORTID_DENY_QOS:
+			if (part_ptr->deny_qos)
+				temp_char = part_ptr->deny_qos;
+			else
+				temp_char = "none";
 			break;
 		case SORTID_HIDDEN:
 			if (part_ptr->flags & PART_FLAG_HIDDEN)
@@ -954,6 +1028,9 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_NODES_MIN:
 			limit_set = part_ptr->min_nodes;
+			break;
+		case SORTID_MAX_CPUS_PER_NODE:
+			limit_set = part_ptr->max_cpus_per_node;
 			break;
 		case SORTID_NODE_INX:
 			break;
@@ -1018,7 +1095,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			else
 				temp_char = "down";
 			up_down = -1;
-		} if (yes_no != -1) {
+		} else if (yes_no != -1) {
 			if (yes_no)
 				temp_char = "yes";
 			else
@@ -1058,8 +1135,10 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 {
 	char tmp_prio[40], tmp_size[40], tmp_share_buf[40], tmp_time[40];
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
-	char tmp_cpu_cnt[40], tmp_node_cnt[40];
-	char *tmp_alt, *tmp_default, *tmp_groups, *tmp_hidden;
+	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
+	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
+	char *tmp_deny_accounts;
+	char *tmp_qos, *tmp_deny_qos;
 	char *tmp_root, *tmp_share, *tmp_state;
 	uint16_t tmp_preempt;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
@@ -1081,10 +1160,30 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else
 		tmp_default = "no";
 
+	if (part_ptr->allow_accounts)
+		tmp_accounts = part_ptr->allow_accounts;
+	else
+		tmp_accounts = "all";
+
 	if (part_ptr->allow_groups)
 		tmp_groups = part_ptr->allow_groups;
 	else
 		tmp_groups = "all";
+
+	if (part_ptr->allow_qos)
+		tmp_qos = part_ptr->allow_qos;
+	else
+		tmp_qos = "all";
+
+	if (part_ptr->deny_accounts)
+		tmp_deny_accounts = part_ptr->deny_accounts;
+	else
+		tmp_deny_accounts = "none";
+
+	if (part_ptr->deny_qos)
+		tmp_deny_qos = part_ptr->deny_qos;
+	else
+		tmp_deny_qos = "none";
 
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		tmp_hidden = "yes";
@@ -1111,6 +1210,13 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else {
 		convert_num_unit((float)part_ptr->min_nodes,
 				 tmp_min_nodes, sizeof(tmp_min_nodes), UNIT_NONE);
+	}
+
+	if (part_ptr->max_cpus_per_node == INFINITE) {
+		sprintf(tmp_max_cpus_per_node, "UNLIMITED");
+	} else {
+		sprintf(tmp_max_cpus_per_node, "%u",
+			part_ptr->max_cpus_per_node);
 	}
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
@@ -1178,9 +1284,14 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_DEFAULT,    tmp_default,
 			   SORTID_FEATURES,   "",
 			   SORTID_GRACE_TIME, tmp_grace,
-			   SORTID_GROUPS,     tmp_groups,
+			   SORTID_ALLOW_ACCOUNTS, tmp_accounts,
+			   SORTID_ALLOW_GROUPS, tmp_groups,
+			   SORTID_ALLOW_QOS,  tmp_qos,
+			   SORTID_DENY_ACCOUNTS, tmp_deny_accounts,
+			   SORTID_DENY_QOS,   tmp_deny_qos,
 			   SORTID_HIDDEN,     tmp_hidden,
 			   SORTID_JOB_SIZE,   tmp_size,
+			   SORTID_MAX_CPUS_PER_NODE, tmp_max_cpus_per_node,
 			   SORTID_MEM,        "",
 			   SORTID_NAME,       part_ptr->name,
 			   SORTID_NODE_INX,   part_ptr->node_inx,
@@ -1347,7 +1458,6 @@ static void _update_info_part(List info_list,
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	static GtkTreeModel *last_model = NULL;
-	partition_info_t *part_ptr = NULL;
 	char *name = NULL;
 	ListIterator itr = NULL;
 	sview_part_info_t *sview_part_info = NULL;
@@ -1356,7 +1466,6 @@ static void _update_info_part(List info_list,
 
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
-		part_ptr = sview_part_info->part_ptr;
 		/* This means the tree_store changed (added new column
 		   or something). */
 		if (last_model != model)
@@ -1365,7 +1474,8 @@ static void _update_info_part(List info_list,
 		if (sview_part_info->iter_set) {
 			gtk_tree_model_get(model, &sview_part_info->iter_ptr,
 					   SORTID_NAME, &name, -1);
-			if (strcmp(name, part_ptr->name)) /* Bad pointer */
+			if (strcmp(name, sview_part_info->part_name))
+				/* Bad pointer */
 				sview_part_info->iter_set = false;
 			g_free(name);
 		}
@@ -1373,42 +1483,9 @@ static void _update_info_part(List info_list,
 			_update_part_record(sview_part_info,
 					    GTK_TREE_STORE(model));
 		else {
-			GtkTreePath *path = gtk_tree_path_new_first();
-
-			/* get the iter, or find out the list is empty
-			 * goto add */
-			if (gtk_tree_model_get_iter(
-				    model, &sview_part_info->iter_ptr, path)) {
-				do {
-					/* search for the jobid and
-					   check to see if it is in
-					   the list */
-					gtk_tree_model_get(
-						model,
-						&sview_part_info->iter_ptr,
-						SORTID_NAME,
-						&name, -1);
-					if (!strcmp(name, part_ptr->name)) {
-						/* update with new info */
-						g_free(name);
-						_update_part_record(
-							sview_part_info,
-							GTK_TREE_STORE(model));
-						sview_part_info->iter_set = 1;
-						break;
-					}
-					g_free(name);
-				} while (gtk_tree_model_iter_next(
-						 model,
-						 &sview_part_info->iter_ptr));
-			}
-
-			if (!sview_part_info->iter_set) {
-				_append_part_record(sview_part_info,
-						    GTK_TREE_STORE(model));
-				sview_part_info->iter_set = true;
-			}
-			gtk_tree_path_free(path);
+			_append_part_record(sview_part_info,
+					    GTK_TREE_STORE(model));
+			sview_part_info->iter_set = true;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -1418,13 +1495,21 @@ static void _update_info_part(List info_list,
 	return;
 }
 
+static void _part_info_free(sview_part_info_t *sview_part_info)
+{
+	if (sview_part_info) {
+		xfree(sview_part_info->part_name);
+		if (sview_part_info->sub_list)
+			list_destroy(sview_part_info->sub_list);
+	}
+}
+
 static void _part_info_list_del(void *object)
 {
 	sview_part_info_t *sview_part_info = (sview_part_info_t *)object;
 
 	if (sview_part_info) {
-		if (sview_part_info->sub_list)
-			list_destroy(sview_part_info->sub_list);
+		_part_info_free(sview_part_info);
 		xfree(sview_part_info);
 	}
 }
@@ -1571,28 +1656,15 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 	return SLURM_SUCCESS;
 }
 
-/*
- * _create_sview_part_info - create an sview_part_info record for
- *                           the given partition
- * part_ptr IN             - pointer to partition record to add
- * sview_part_info OUT     - ptr to an inited sview_part_info_t
- */
-static sview_part_info_t *_create_sview_part_info(partition_info_t* part_ptr)
+static int _sview_part_sort_aval_dec(void *a, void *b)
 {
-	sview_part_info_t *sview_part_info =
-		xmalloc(sizeof(sview_part_info_t));
+	sview_part_info_t *rec_a = *(sview_part_info_t **)a;
+	sview_part_info_t *rec_b = *(sview_part_info_t **)b;
+	int size_a;
+	int size_b;
 
-
-	sview_part_info->part_ptr = part_ptr;
-	sview_part_info->sub_list = list_create(_destroy_part_sub);
-	return sview_part_info;
-}
-
-static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
-				     sview_part_info_t* rec_b)
-{
-	int size_a = rec_a->part_ptr->total_nodes;
-	int size_b = rec_b->part_ptr->total_nodes;
+	size_a = rec_a->part_ptr->total_nodes;
+	size_b = rec_b->part_ptr->total_nodes;
 
 	if (size_a < size_b)
 		return -1;
@@ -1609,11 +1681,15 @@ static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
 	return 0;
 }
 
-static int _sview_sub_part_sort(sview_part_sub_t* rec_a,
-				sview_part_sub_t* rec_b)
+static int _sview_sub_part_sort(void *a, void *b)
 {
-	int size_a = rec_a->node_state & NODE_STATE_BASE;
-	int size_b = rec_b->node_state & NODE_STATE_BASE;
+	sview_part_sub_t *rec_a = *(sview_part_sub_t **)a;
+	sview_part_sub_t *rec_b = *(sview_part_sub_t **)b;
+	int size_a;
+	int size_b;
+
+	size_a = rec_a->node_state & NODE_STATE_BASE;
+	size_b = rec_b->node_state & NODE_STATE_BASE;
 
 	if (size_a < size_b)
 		return -1;
@@ -1629,6 +1705,8 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	partition_info_t *part_ptr = NULL;
 	static node_info_msg_t *last_node_info_ptr = NULL;
 	static partition_info_msg_t *last_part_info_ptr = NULL;
+	List last_list = NULL;
+	ListIterator last_list_itr = NULL;
 	node_info_t *node_ptr = NULL;
 	static List info_list = NULL;
 	int i, j2;
@@ -1643,14 +1721,16 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	last_part_info_ptr = part_info_ptr;
 
 	if (info_list)
-		list_flush(info_list);
-	else
-		info_list = list_create(_part_info_list_del);
+		last_list = info_list;
+
+	info_list = list_create(_part_info_list_del);
 	if (!info_list) {
 		g_print("malloc error\n");
 		return NULL;
 	}
 
+	if (last_list)
+		last_list_itr = list_iterator_create(last_list);
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
 
@@ -1658,7 +1738,27 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		if (!working_sview_config.show_hidden &&
 		    part_ptr->flags & PART_FLAG_HIDDEN)
 			continue;
-		sview_part_info = _create_sview_part_info(part_ptr);
+
+		sview_part_info = NULL;
+
+		if (last_list_itr) {
+			while ((sview_part_info =
+				list_next(last_list_itr))) {
+				if (!strcmp(sview_part_info->part_name,
+					    part_ptr->name)) {
+					list_remove(last_list_itr);
+					_part_info_free(sview_part_info);
+					break;
+				}
+			}
+			list_iterator_reset(last_list_itr);
+		}
+
+		if (!sview_part_info)
+			sview_part_info = xmalloc(sizeof(sview_part_info_t));
+		sview_part_info->part_name = xstrdup(part_ptr->name);
+		sview_part_info->part_ptr = part_ptr;
+		sview_part_info->sub_list = list_create(_destroy_part_sub);
 		sview_part_info->pos = i;
 		list_append(info_list, sview_part_info);
 		sview_part_info->color_inx = i % sview_colors_cnt;
@@ -1711,6 +1811,11 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		list_iterator_destroy(itr);
 	}
 	list_sort(info_list, (ListCmpF)_sview_part_sort_aval_dec);
+
+	if (last_list) {
+		list_iterator_destroy(last_list_itr);
+		list_destroy(last_list);
+	}
 
 	return info_list;
 }
@@ -2112,6 +2217,7 @@ extern GtkListStore *create_model_part(int type)
 	case SORTID_TIMELIMIT:
 	case SORTID_NODES_MIN:
 	case SORTID_NODES_MAX:
+	case SORTID_MAX_CPUS_PER_NODE:
 		break;
 	case SORTID_SHARE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
@@ -2128,7 +2234,15 @@ extern GtkListStore *create_model_part(int type)
 		gtk_list_store_set(model, &iter,
 				   0, "exclusive", 1, SORTID_SHARE, -1);
 		break;
-	case SORTID_GROUPS:
+	case SORTID_ALLOW_ACCOUNTS:
+		break;
+	case SORTID_ALLOW_GROUPS:
+		break;
+	case SORTID_ALLOW_QOS:
+		break;
+	case SORTID_DENY_ACCOUNTS:
+		break;
+	case SORTID_DENY_QOS:
 		break;
 	case SORTID_NODELIST:
 		break;

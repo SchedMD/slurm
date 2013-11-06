@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -165,6 +165,7 @@ typedef struct slurm_select_ops {
 	bitstr_t *      (*step_pick_nodes)      (struct job_record *job_ptr,
 						 select_jobinfo_t *step_jobinfo,
 						 uint32_t node_count);
+	int             (*step_start)           (struct step_record *step_ptr);
 	int             (*step_finish)          (struct step_record *step_ptr);
 	int		(*pack_select_info)	(time_t last_query_time,
 						 uint16_t show_flags,
@@ -234,8 +235,8 @@ typedef struct slurm_select_ops {
 
 /*
  * Defined in node_select.c Must be synchronized with slurm_select_ops_t above.
- * Also must be synchronized with the other_plugin.c in
- * the select/cray plugin.
+ * Also must be synchronized with the other_select.c in
+ * the select/other lib.
  */
 extern const char *node_select_syms[];
 
@@ -654,8 +655,14 @@ extern bitstr_t * select_g_step_pick_nodes(struct job_record *job_ptr,
 					   dynamic_plugin_data_t *step_jobinfo,
 					   uint32_t node_count);
 /*
- * clear what happened in select_g_step_pick_nodes
- * IN/OUT step_ptr - Flush the resources from the job and step.
+ * Post pick_nodes operations for the step.
+ * IN/OUT step_ptr - step pointer to operate on.
+ */
+extern int select_g_step_start(struct step_record *step_ptr);
+
+/*
+ * clear what happened in select_g_step_pick_nodes and/or select_g_step_start
+ * IN/OUT step_ptr - step pointer to operate on.
  */
 extern int select_g_step_finish(struct step_record *step_ptr);
 

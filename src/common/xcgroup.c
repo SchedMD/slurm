@@ -5,7 +5,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -404,6 +404,9 @@ int xcgroup_destroy(xcgroup_t* cg)
 int xcgroup_lock(xcgroup_t* cg)
 {
 	int fstatus = XCGROUP_ERROR;
+
+	if (cg->path == NULL)
+		return fstatus;
 
 	if ((cg->fd = open(cg->path, O_RDONLY)) < 0) {
 		debug2("xcgroup_lock: error from open of cgroup '%s' : %m",

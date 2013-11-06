@@ -17,7 +17,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -46,7 +46,7 @@ proc inc22_1_4 {} {
 	#Test for job 1
 	send_user "\nSearch for job1 on cluster $cluster\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --fields=node,jobname,jobid
+	spawn $sacct -p -C $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=node,jobname,jobid
 	expect {
 		-re "$job1_acct" {
 			incr usermatch
@@ -68,7 +68,7 @@ proc inc22_1_4 {} {
 	# Test for job2
 	send_user "\nSearch for job2 on cluster $cluster\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --fields=node,jobname,jobid
+	spawn $sacct -p -C $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=node,jobname,jobid
 	expect {
 		-re "$job2_acct" {
 			incr usermatch
@@ -90,7 +90,7 @@ proc inc22_1_4 {} {
 	# Test for job3
 	send_user "\nSearch for job3 on cluster $cluster\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --fields=node,jobname,jobid
+	spawn $sacct -p -C $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=node,jobname,jobid
 	expect {
 		-re "$job3_acct" {
 			incr usermatch

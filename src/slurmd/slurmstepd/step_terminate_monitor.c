@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *  
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -33,6 +33,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
+#include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
 #if defined(__NetBSD__)
@@ -58,8 +59,8 @@ static char *program_name;
 static uint32_t recorded_jobid = NO_VAL;
 static uint32_t recorded_stepid = NO_VAL;
 
-static void *monitor(void *);
-static int call_external_program(void);
+static void *_monitor(void *);
+static int _call_external_program(void);
 
 void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid)
 {
@@ -85,7 +86,7 @@ void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid)
 	slurm_conf_unlock();
 
 	slurm_attr_init(&attr);
-	pthread_create(&tid, &attr, monitor, NULL);
+	pthread_create(&tid, &attr, _monitor, NULL);
 	slurm_attr_destroy(&attr);
 	running_flag = 1;
 	recorded_jobid = jobid;
@@ -124,12 +125,12 @@ void step_terminate_monitor_stop(void)
 }
 
 
-static void *monitor(void *notused)
+static void *_monitor(void *notused)
 {
 	struct timespec ts = {0, 0};
 	int rc;
 
-	info("monitor is running");
+	info("_monitor is running");
 
 	ts.tv_sec = time(NULL) + 1 + timeout;
 
@@ -139,19 +140,19 @@ static void *monitor(void *notused)
 
 	rc = pthread_cond_timedwait(&cond, &lock, &ts);
 	if (rc == ETIMEDOUT) {
-		call_external_program();
+		_call_external_program();
 	} else if (rc != 0) {
-		error("Error waiting on condition in monitor: %m");
+		error("Error waiting on condition in _monitor: %m");
 	}
 done:
 	pthread_mutex_unlock(&lock);
 
-	info("monitor is stopping");
+	info("_monitor is stopping");
 	return NULL;
 }
 
 
-static int call_external_program(void)
+static int _call_external_program(void)
 {
 	int status, rc, opt;
 	pid_t cpid;
@@ -179,6 +180,16 @@ static int call_external_program(void)
 		/* child */
 		char *argv[2];
 		char buf[16];
+
+		/* container_g_add_pid needs to be called in the
+		   forked process part of the fork to avoid a race
+		   condition where if this process makes a file or
+		   detacts itself from a child before we add the pid
+		   to the container in the parent of the fork.
+		*/
+		if (container_g_add_pid(recorded_jobid, getpid(), getuid())
+		    != SLURM_SUCCESS)
+			error("container_g_add_pid(%u): %m", recorded_jobid);
 
 		snprintf(buf, 16, "%u", recorded_jobid);
 		setenv("SLURM_JOBID", buf, 1);

@@ -1,0 +1,346 @@
+<!--#include virtual="header.txt"-->
+<!--  Copyright (C) 2013 Bull S. A. S.
+      Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois. -->
+
+<h1>Profiling Using HDF5 User Guide</h1>
+
+<h2>Contents</h2>
+<a href="#Overview">Overview</a><br>
+<a href="#Administration">Administration</a><br>
+<a href="#Profiling">Profiling Jobs</a><br>
+<a href="#HDF5">HDF5</a><br>
+<a href="#DataSeries">Data Structure</a><br>
+
+
+
+<a id="Overview"></a>
+<h2>Overview</h2>
+<p>The AcctGatherProfileType/hdf5 plugin allows SLURM to coordinate collecting
+data on jobs it runs on a cluster that is more detailed than is practical to
+include in its database. The data comes from periodically sampling various
+performance data either collected by SLURM, the operating system, or
+component software. The plugin will record the data from each source
+as a <b>Time Series</b> and also accumulate totals for each statistic for
+the job.</p>
+
+<p>Time Series are energy data collected by an acct_gather_energy plugin,
+I/O data from a network interface collected by an acct_gather_infiniband plugin,
+I/O data from parallel file systems such as Lustre collected by an
+acct_gather_filesystem plugin, and task performance data such as local disk I/O,
+cpu consumption, and memory use from a jobacct_gather plugin.
+Data from other sources may be added in the future.</p>
+
+<p>The data is collected into a file on a shared file system for each step on
+each allocated node of a job and then merged into a HDF5 file.
+Individual files on a shared file system was chosen because it is possible
+that the data is voluminous so solutions that pass data to the SLURM control
+daemon via RPC may not scale to very large clusters or jobs with
+many allocated nodes.</p>
+
+<p>A separate <a href="acct_gather_profile_plugins.html">
+SLURM Profile Accounting Plugin API (AcctGatherProfileType)</a> documents how
+write other Profile Accounting plugins.</P>
+
+<a id="Administration"></a>
+<h2>Administration</h2>
+
+<h3>Shared File System</h3>
+<div style="margin-left: 20px;">
+<p>The HDF5 Profile Plugin requires a common shared file system on all
+the compute nodes. While a job is running, the plugin writes a
+file into this file system for each step of the job on each node. When
+the job ends, the merge process is launched and the node-step files
+are combined into one HDF5 file for the job.</p>
+
+<p>The root of the directory structure is declared in the <b>ProfileHDF5Dir</b>
+option in the acct_gather.conf file. The directory will be created by SLURM
+if it doesn't exist.</p>
+
+<p>Each user that creates a profile will have a subdirector to the profile
+directory that has read/write permission only for the user.</p>
+</span>
+</div>
+<h3>Configuration parameters</h3>
+
+<p><div style="margin-left: 20px;">
+<p>The profile plugin is enabled in the
+<a href="slurm.conf.html">slurm.conf</a> file and it is internally
+configured in the
+<a href="acct_gather.conf.html">acct_gather.conf</a> file.</p>
+</div>
+<div style="margin-left: 20px;">
+<h4>slurm.conf parameters</h4>
+<div style="margin-left: 20px;">
+This enables the HDF5 plugin:
+<p><b>AcctGatherProfileType</b> = acct_gather_profile/hdf5</p>
+This sets the sampling frequency for data types:
+<p><b>JobAcctGatherFrequency</b> = &lt;seconds&gt;</p>
+</div>
+</div>
+<div style="margin-left: 20px;">
+<h4>act_gather.conf parameters</h4>
+<div style="margin-left: 20px;">
+<p>These parameters are directly used by the HDF5 Profile Plugin.</p>
+<dl>
+<dt><b>ProfileHDF5Dir</b> = &lt;path&gt;</dt>
+<p>
+This parameter is the path to the shared folder into which the
+acct_gather_profile plugin will write detailed data as a HDF5 file.
+The directory is assumed to be on a file system shared by the controller and
+all compute nodes. This is a required parameter.<p>
+
+<dt><b>ProfileHDF5CollectDefault</b> = [options]</dt>
+<p>
+A  comma  delimited list of data types to be collected for each job submission.
+Use this option with caution. A node-step file will be created on every
+node for every step of every job. They will not automatically be merged
+into job files. (Even job files for large numbers of small jobs would fill the
+file system.) This option is intended for test environments where you
+might want to profile a series of jobs but do not want to have to
+add the --profile option to the launch scripts.
+The options are described below and in the man pages for acct_gather.conf,
+srun, salloc and sbatch commands.
+</dd>
+</dl>
+</div>
+</div>
+
+
+<div style="margin-left: 20px;">
+<h4>Time Series Control Parameters</h4>
+<div style="margin-left: 20px;">
+<p>Other plugins add time series data to the HDF5 collection. They typically
+have a default polling frequency specified in slurm.conf in the
+JobAcctGatherFrequency parameter. The polling frequency can be overridden
+using the --acctg-freq
+<a href="srun.html">srun</a> parameter.
+They are both of the form task=sec,energy=sec,luster=sec,network=sec.<p>
+
+<p>The IPMI energy plugin also needs the EnergyIPMIFrequency value set
+in the acct_gather.conf file. This sets the rate at which the plugin samples
+the external sensors. This value should be the same as the energy=sec in
+either JobAcctGatherFrequency or --acctg-freq.</p>
+
+<p>Note that the IPMI and profile sampling are not synchronous.
+The profile sample simply takes the last available IPMI sample value.
+If the profile energy sample is more frequent than the IPMI sample rate,
+the IPMI value will be repeated. If the profile energy sample is greater
+than the IPMI rate, IPMI values will be lost.</p>
+
+<p>Also note that smallest effective IPMI (EnergyIPMIFrequency) sample rate
+for 2013 era Intel processors is 3 seconds.</p>
+
+</div>
+</div>
+<a id="Profiling"></a>
+<h2>Profiling Jobs</h2>
+<h3>Data Collection</h3>
+<p>The --profile option on salloc|sbatch|srun  controls whether data is
+collected and what type of data is collected. If --profile is not specified
+no data collected unless the <B>ProfileHDF5CollectDefault</B>
+option is used in acct_gather.conf. --profile on the command line overrides
+any value specified in the configuration file.</p>
+
+<DT><b>--profile</b>=&lt;all|none|[energy[,|task[,|lustre[,|network]]]]&gt;
+<DD>
+<p>enables detailed data collection by the acct_gather_profile plugin.
+Detailed data are typically time-series that are stored in a HDF5 file for
+the job.</p></DD>
+</DT>
+<div style="margin-left: 20px;">
+<DL>
+<DT><B>All</B>
+<DD>All data types are collected. (Cannot be combined with other values.)
+</DD></DT>
+<DT><B>None</B>
+<DD>No data types are collected. This is the default. (Cannot be
+combined with other values.)
+</DD></DT>
+
+<DT><B>Energy</B>
+<DD>Energy data is collected.</DD></DT>
+
+<DT><B>Lustre</B>
+<DD>Lustre data is collected.</DD></DT>
+
+<DT><B>Network</B>
+<DD>Network (InfiniBand) data is collected.</DD></DT>
+
+<DT><B>Task</B>
+<DD>Task (I/O, Memory, ...) data is collected.</DD></DT>
+
+</DL>
+</div>
+
+<h3>Data Consolidation</h3>
+<p>The node-step files are merged into one HDF5 file for the job using the
+<a href="sh5util.html">sh5util</a>.</p>
+
+<p>If the job is started with sbatch, the command line may added to the normal
+launch script,  For example:</p>
+<pre>
+sbatch -n1 -d$SLURM_JOB_ID --wrap="sh5util -j $SLURM_JOB_ID"
+</pre>
+
+<h3>Data Extraction</h3>
+<p>The <a href="sh5util.html">sh5util</a> program can also be used to extract
+specific data from the HDF5 file and write it in <i>comma separated value (csv)</i>
+form for importation into other analysis tools such as spreadsheets.</p>
+
+<a id="HDF5"></a>
+<h2>HDF5</h2>
+<p>HDF5 is a well known structured data set that allows heterogeneous but
+related data to be stored in one file.
+(.i.e. sections for energy statistics, network I/O, Task data, etc.)
+Its internal structure resembles a
+file system with <b>groups</b> being similar to <i>directories</i> and
+<b>data sets</b> being similar to <i>files</i>. It also allows <b>attributes</b>
+to be attached to groups to store application defined properties.</p>
+
+<p>There are commodity programs, notably
+<a href="http://www.hdfgroup.org/hdf-java-html/hdfview/index.html">
+HDFView</a> for viewing and manipulating these files.
+
+<p>Below is a screen shot from HDFView expanding the job tree and showing the
+attributes for a specific task.</p>
+<br>
+<img src="hdf5_task_attr.png" width="275" height="275" >
+
+
+<a id="DataSeries"></a>
+<h2>Data Structure</h2>
+
+<table>
+<tr>
+<td><img src="hdf5_job_outline.png" width="205" height="570"></td>
+<td style="vertical-align: top;">
+<div style="margin-left: 5px;">
+<p>In the job file, there will be a group for each <b>step</b> of the job.
+Within each step, there will be a group for nodes, and a group for tasks.</p>
+</div>
+<ul>
+<li>
+The <b>nodes</b> group will have a group for each node in the step allocation.
+For each node group, there is a sub-group for Time Series and another
+for Totals.
+<ul>
+<li>
+The <b>Time Series</b> group
+contains a group/dataset containing the time series for each collector.
+</li>
+<li>
+The <b>Totals</b> group contains a group/dataset that has corresponding
+Minimum, Average, Maximum, and Sum Total for each item in the time series.
+</li>
+</ul>
+<li>
+The <b>Tasks</b> group will only contain a subgroup for each task.
+It primarily contains an attribute stating the node on which the task was
+executed. This set of groups is essentially a cross reference table.
+</li>
+</ul>
+</td></tr>
+</table>
+
+<h3>Energy Data</h3>
+<p><b>AcctGatherEnergyType</b>=acct_gather_energy/ipmi<p>
+is required in slurm.conf to collect energy data.
+Appropriately set energy=freq in either JobAcctGatherFrequency in slurm.conf
+or in --acctg-freq on the command line.
+Also appropriately set EnergyIPMIFrequency in acct_gather.conf.</p>
+<p>Each data sample in the Energe Time Series contains the following data items.
+</p><DL>
+<DT><B>Date Time</B>
+<DD>Time of day at which the data sample was taken. This can be used to
+correlate activity with other sources such as logs.</DD></DT>
+<DT><B>Time</B>
+<DD>Elapsed time since the begining of the step.</DD></DT>
+<DT><B>Power</B>
+<DD>Power consumption during the interval.</DD></DT>
+<DT><B>CPU Frequency</B>
+<DD>CPU Frequency at time of sample in kilohertz.</DD></DT>
+</DL>
+
+<h3>Luster Data</h3>
+<p><b>AcctGatherFilesystemType</b>=acct_gather_filesystem/lustre<p>
+is required in slurm.conf to collect task data.
+Appropriately set luster=freq in either JobAcctGatherFrequency in slurm.conf
+or in --acctg-freq on the command line.</p>
+
+<p>Each data sample in the Lustre Time Series contains the following data items.
+</p><DL>
+<DT><B>Date Time</B>
+<DD>Time of day at which the data sample was taken. This can be used to
+correlate activity with other sources such as logs.</DD></DT>
+<DT><B>Time</B>
+<DD>Elapsed time since the begining of the step.</DD></DT>
+<DT><B>Reads</B>
+<DD>Number of read operations.</DD></DT>
+<DT><B>Megabytes Read</B>
+<DD>Number of megabytes read.</DD></DT>
+<DT><B>Writes</B>
+<DD>Number of write operations.</DD></DT>
+<DT><B>Megabytes Write</B>
+<DD>Number of megabytes written.</DD></DT>
+</DL>
+
+<h3>Network (Infiniband Data)</h3>
+<p><b>JobAcctInfinibandType</b>=acct_gather_infiniband/ofed<p>
+is required in slurm.conf to collect task data.
+Appropriately set network=freq in either JobAcctGatherFrequency in slurm.conf
+or in --acctg-freq on the command line.</p>
+<p>Each data sample in the Network Time Series contains the following
+data items.</p>
+<DL>
+<DT><B>Date Time</B>
+<DD>Time of day at which the data sample was taken. This can be used to
+correlate activity with other sources such as logs.</DD></DT>
+<DT><B>Time</B>
+<DD>Elapsed time since the begining of the step.</DD></DT>
+<DT><B>Packets In</B>
+<DD>Number of packets coming in.</DD></DT>
+<DT><B>Megabytes Read</B>
+<DD>Number of megabytes coming in through the interface.</DD></DT>
+<DT><B>Packets Out</B>
+<DD>Number of packets going out.</DD></DT>
+<DT><B>Megabytes Write</B>
+<DD>Number of megabytes going out through the interface.</DD></DT>
+</DL>
+
+<h3>Task Data</h3>
+<p><b>JobAcctGatherType</b>=jobacct_gather/linux<p>
+is required in slurm.conf to collect task data.
+Appropriately set task=freq in either JobAcctGatherFrequency in slurm.conf
+or in --acctg-freq on the command line.</p>
+<p>Each data sample in the Task Time Series contains the following data
+items.</p>
+<DL>
+<DT><B>Date Time</B>
+<DD>Time of day at which the data sample was taken. This can be used to
+correlate activity with other sources such as logs.</DD></DT>
+<DT><B>Time</B>
+<DD>Elapsed time since the begining of the step.</DD></DT>
+<DT><B>CPU Frequency</B>
+<DD>CPU Frequency at time of sample.</DD></DT>
+<DT><B>CPU Time</B>
+<DD>Seconds of CPU time used during the sample.</DD></DT>
+<DT><B>CPU Utilization</B>
+<DD>CPU Utilization during the interval.</DD></DT>
+<DT><B>RSS</B>
+<DD>Value of RSS at time of sample.</DD></DT>
+<DT><B>VM Size</B>
+<DD>Value of VM Size at time of sample.</DD></DT>
+<DT><B>Pages</B>
+<DD>Pages used in sample.</DD></DT>
+<DT><B>Read Megabytes</B>
+<DD>Number of megabytes read from local disk.</DD></DT>
+<DT><B>Write Megabytes</B>
+<DD>Number of megabytes written to local disk.</DD></DT>
+</DL>
+
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 1 July 2013</p>
+
+<!--#include virtual="footer.txt"-->

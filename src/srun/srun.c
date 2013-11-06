@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -174,6 +174,7 @@ int srun(int ac, char **av)
 	env->env = NULL;
 	env->ckpt_dir = NULL;
 
+	slurm_conf_init(NULL);
 	debug_level = _slurm_debug_env_val();
 	logopt.stderr_level += debug_level;
 	log_init(xbasename(av[0]), logopt, 0, NULL);

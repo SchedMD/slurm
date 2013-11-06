@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "28" "Feb 2013" "slurmdbd.conf 2.6" "Slurm configuration file"
+.TH "slurmdbd.conf" "5" "September 2013" "slurmdbd.conf 13.12" "Slurm configuration file"
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
 
@@ -36,18 +36,18 @@ $ArchiveDir/$ClusterName_$ArchiveObject_archive_$BeginTimeStamp_$endTimeStamp
 
 .TP
 \fBArchiveEvents\fR
-When purging events also achive them.  Boolean, yes to archive event data,
-no other wise.  Default is no.
+When purging events also archive them.  Boolean, yes to archive event data,
+no otherwise.  Default is no.
 
 .TP
 \fBArchiveJobs\fR
-When purging jobs also achive them.  Boolean, yes to archive job data,
-no other wise.  Default is no.
+When purging jobs also archive them.  Boolean, yes to archive job data,
+no otherwise.  Default is no.
 
 .TP
 \fBArchiveResvs\fR
-When purging reservations also achive them.  Boolean, yes to archive
-reservation data, no other wise.  Default is no.
+When purging reservations also archive them.  Boolean, yes to archive
+reservation data, no otherwise.  Default is no.
 
 .TP
 \fBArchiveScript\fR
@@ -66,7 +66,7 @@ variables are set.
 Time of last event start to archive.
 .TP
 \fBSLURM_ARCHIVE_JOBS\fR
-1 for achive jobs 0 otherwise.
+1 for archive jobs 0 otherwise.
 .TP
 \fBSLURM_ARCHIVE_LAST_JOB\fR
 Time of last job submit to archive.
@@ -87,13 +87,13 @@ Time of last suspend start to archive.
 
 .TP
 \fBArchiveSteps\fR
-When purging steps also achive them.  Boolean, yes to archive step data,
-no other wise.  Default is no.
+When purging steps also archive them.  Boolean, yes to archive step data,
+no otherwise.  Default is no.
 
 .TP
 \fBArchiveSuspend\fR
-When purging suspend data also achive it.  Boolean, yes to archive
-suspend data, no other wise.  Default is no.
+When purging suspend data also archive it.  Boolean, yes to archive
+suspend data, no otherwise.  Default is no.
 
 .TP
 \fBAuthInfo\fR
@@ -199,6 +199,20 @@ The default value is none (performs logging via syslog).
 .br
 See the section \fBLOGGING\fR in the slurm.conf man page
 if a pathname is specified.
+
+.TP
+\fBLogTimeFormat\fR
+Format of the timestamp in slurmdbd log files. Accepted values are
+"iso8601", "iso8601_ms", "rfc5424", "rfc5424_ms", "clock", and
+"short". The values ending in "_ms" differ from the ones without in
+that fractional seconds with millisecond precision are printed. The
+default value is "iso8601_ms". The "rfc5424" formats are the same as
+the "iso8601" formats except that the timezone value is also
+shown. The "clock" format shows a timestamp in microseconds retrieved
+with the C standard clock() function. The "short" format is a short
+date and time format. The "thread_id" format shows the timestamp
+in the C standard ctime() function form without the year but
+including the microseconds, the daemon's process ID and the current thread ID.
 
 .TP
 \fBMessageTimeout\fR
@@ -346,23 +360,11 @@ with the database.
 \fBStorageType\fR
 Define the accounting storage mechanism type.
 Acceptable values at present include
-"accounting_storage/gold", "accounting_storage/mysql", and
+"accounting_storage/mysql", and
 "accounting_storage/pgsql".
-The value "accounting_storage/gold" indicates that account records
-will be written to Gold
-.na
-(http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
-.ad
-which maintains its own database.
 The value "accounting_storage/mysql" indicates that accounting records
-should be written to a MySQL database specified by the
+should be written to a MySQL or MariaDB database specified by the
 \fBStorageLoc\fR parameter.
-The value "accounting_storage/pgsql" indicates that accounting records
-should be written to a PostgreSQL database specified by the
-\fBStorageLoc\fR parameter.  This plugin is not complete and
-should not be used if wanting to use associations.  It will however work with
-basic accounting of jobs and job steps.  If interested in
-completing please email slurm-dev@lists.llnl.gov.
 This value must be specified.
 
 .TP
@@ -434,7 +436,8 @@ StorageUser=database_mgr
 .SH "COPYING"
 Copyright (C) 2008-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

@@ -10,7 +10,7 @@
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -81,10 +81,18 @@
 
 #define PROTOCOL_TYPE_SLURM 0
 #define PROTOCOL_TYPE_DBD 1
+
+struct lustre_data {
+	uint64_t	reads;
+	double		read_size;      // currently in megabytes
+	uint64_t	writes;
+	double		write_size;     // currently in megabytes
+};
+
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */
-	slurmd_job_t *job; /* contains slurmd job pointer */
+	stepd_step_rec_t *job; /* contains stepd job pointer */
 } jobacct_id_t;
 
 struct jobacctinfo {
@@ -114,6 +122,12 @@ struct jobacctinfo {
 	uint32_t this_sampled_cputime;
 	uint32_t current_weighted_freq;
 	uint32_t current_weighted_power;
+	double max_disk_read; /* max disk read data */
+	jobacct_id_t max_disk_read_id; /* max disk read data task id */
+	double tot_disk_read; /* total local disk read in megabytes */
+	double max_disk_write; /* max disk write data */
+	jobacct_id_t max_disk_write_id; /* max disk write data task id */
+	double tot_disk_write; /* total local disk writes in megabytes */
 };
 
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
@@ -127,7 +141,6 @@ extern int jobacct_gather_fini(void); /* unload the plugin */
 
 extern int  jobacct_gather_startpoll(uint16_t frequency);
 extern int  jobacct_gather_endpoll(void);
-extern void jobacct_gather_change_poll(uint16_t frequency);
 extern void jobacct_gather_suspend_poll(void);
 extern void jobacct_gather_resume_poll(void);
 
@@ -147,15 +160,17 @@ extern void jobacct_gather_handle_mem_limit(
 extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id);
 extern void jobacctinfo_destroy(void *object);
 extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
-			       enum jobacct_data_type type, void *data);
+			       enum jobacct_data_type type, void *data,
+			       uint16_t protocol_version);
 extern int jobacctinfo_getinfo(jobacctinfo_t *jobacct,
-			       enum jobacct_data_type type, void *data);
+			       enum jobacct_data_type type, void *data,
+			       uint16_t protocol_version);
 extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			     uint16_t rpc_version,
 			     uint16_t protocol_type, Buf buffer);
 extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			      uint16_t rpc_version,
-			      uint16_t protocol_type, Buf buffer);
+			      uint16_t protocol_type, Buf buffer, bool alloc);
 
 extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
 

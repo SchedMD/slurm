@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
 	int script_size = 0;
 	int retries = 0;
 
+	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	_set_exit_code();
@@ -201,6 +202,52 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+static char *_find_quote_token(char *tmp, char *sep, char **last)
+{
+	char *start, *quote_single = 0, *quote_double = 0;
+	int i;
+
+	xassert(last);
+	if (*last)
+		start = *last;
+	else
+		start = tmp;
+	if (start[0] == '\0')
+		return NULL;
+	for (i = 0; ; i++) {
+		if (start[i] == '\'') {
+			if (quote_single)
+				quote_single--;
+			else
+				quote_single++;
+		} else if (start[i] == '\"') {
+			if (quote_double)
+				quote_double--;
+			else
+				quote_double++;
+		} else if (((start[i] == sep[0]) || (start[i] == '\0')) &&
+			   (quote_single == 0) && (quote_double == 0)) {
+			if (((start[0] == '\'') && (start[i-1] == '\'')) ||
+			    ((start[0] == '\"') && (start[i-1] == '\"'))) {
+				start++;
+				i -= 2;
+			}
+			if (start[i] == '\0')
+				*last = &start[i];
+			else
+				*last = &start[i] + 1;
+			start[i] = '\0';
+			return start;
+		} else if (start[i] == '\0') {
+			error("Improperly formed environment variable (%s)",
+			      start);
+			*last = &start[i];
+			return start;
+		}
+		
+	}
+}
+
 /* Propagate select user environment variables to the job */
 static void _env_merge_filter(job_desc_msg_t *desc)
 {
@@ -209,7 +256,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 	char *save_env[2] = { NULL, NULL }, *tmp, *tok, *last = NULL;
 
 	tmp = xstrdup(opt.export_env);
-	tok = strtok_r(tmp, ",", &last);
+	tok = _find_quote_token(tmp, ",", &last);
 	while (tok) {
 		if (strchr(tok, '=')) {
 			save_env[0] = tok;
@@ -227,7 +274,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 				break;
 			}
 		}
-		tok = strtok_r(NULL, ",", &last);
+		tok = _find_quote_token(NULL, ",", &last);
 	}
 	xfree(tmp);
 
@@ -245,7 +292,7 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (is_cray_system()) {
+	if (is_alps_cray_system()) {
 		/*
 		 * Fix options and inform user, but do not abort submission.
 		 */
@@ -274,6 +321,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.jobid_set)
 		desc->job_id = opt.jobid;
 	desc->contiguous = opt.contiguous ? 1 : 0;
+	if (opt.core_spec)
+		desc->core_spec = opt.core_spec;
 	desc->features = opt.constraints;
 	desc->immediate = opt.immediate;
 	desc->gres = opt.gres;
@@ -287,6 +336,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->req_nodes = opt.nodelist;
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
+	desc->profile = opt.profile;
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
 	if (opt.nodes_set) {
@@ -401,6 +451,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->shared = opt.shared;
 
 	desc->wait_all_nodes = opt.wait_all_nodes;
+	if (opt.warn_flags)
+		desc->warn_flags = opt.warn_flags;
 	if (opt.warn_signal)
 		desc->warn_signal = opt.warn_signal;
 	if (opt.warn_time)
@@ -445,8 +497,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->requeue = opt.requeue;
 	if (opt.open_mode)
 		desc->open_mode = opt.open_mode;
-	if (opt.acctg_freq >= 0)
-		desc->acctg_freq = opt.acctg_freq;
+	if (opt.acctg_freq)
+		desc->acctg_freq = xstrdup(opt.acctg_freq);
 
 	desc->ckpt_dir = opt.ckpt_dir;
 	desc->ckpt_interval = (uint16_t)opt.ckpt_interval;
@@ -517,8 +569,12 @@ static int _set_umask_env(void)
 	if (getenv("SLURM_UMASK"))	/* use this value */
 		return SLURM_SUCCESS;
 
-	mask = (int)umask(0);
-	umask(mask);
+	if (opt.umask >= 0) {
+		mask = opt.umask;
+	} else {
+		mask = (int)umask(0);
+		umask(mask);
+	}
 
 	sprintf(mask_char, "0%d%d%d",
 		((mask>>6)&07), ((mask>>3)&07), mask&07);

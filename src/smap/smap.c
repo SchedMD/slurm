@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
 	int i;
 	int rc;
 
+	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 	if (params.verbose) {

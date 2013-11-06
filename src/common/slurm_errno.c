@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -82,7 +82,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ SLURM_COMMUNICATIONS_SHUTDOWN_ERROR,
 	  "Communication shutdown failure"			},
 	{ SLURM_PROTOCOL_VERSION_ERROR,
-	  "Protocol version has changed, re-link your code"	},
+	  "Incompatible versions of client and server code"	},
         { SLURM_PROTOCOL_IO_STREAM_VERSION_ERROR,
           "I/O stream version number error"                     },
         { SLURM_PROTOCOL_AUTHENTICATION_ERROR,
@@ -231,7 +231,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job violates accounting/QOS policy (job submit limit, user's "
 	  "size and/or time limits)"},
 	{ ESLURM_INVALID_TIME_LIMIT,
-	  "Requested time limit is invalid (exceeds some limit)"},
+	  "Requested time limit is invalid (missing or exceeds some limit)"},
 	{ ESLURM_RESERVATION_ACCESS,
 	  "Access denied to requested reservation"		},
 	{ ESLURM_RESERVATION_INVALID,
@@ -288,6 +288,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Reservation request lacks users or accounts"		},
 	{ ESLURM_INVALID_ARRAY,
 	  "Invalid job array specification"			},
+	{ ESLURM_RESERVATION_NAME_DUP,
+	  "Duplicate reservation name"			},
 
 	/* slurmd error codes */
 
@@ -393,7 +395,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_ONE_CHANGE,
 	  "Can only change one at a time"                       },
 	{ ESLURM_BAD_NAME,
-	  "Unacceptable name given. (No '.' in name allowed)"   }
+	  "Unacceptable name given. (No '.' in name allowed)"   },
+
+	/* plugin and custom errors */
+	{ ESLURM_MISSING_TIME_LIMIT,
+	  "Time limit specification required, but not provided"  }
 };
 
 /*
@@ -428,7 +434,7 @@ static char *_lookup_slurm_api_errtab(int errnum)
 	if ((res == NULL) &&
 	    (errnum >= ESLURM_SWITCH_MIN) &&
 	    (errnum <= ESLURM_SWITCH_MAX))
-		res = switch_strerror(errnum);
+		res = switch_g_strerror(errnum);
 
 	return res;
 }

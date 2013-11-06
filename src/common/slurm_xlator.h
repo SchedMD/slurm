@@ -34,7 +34,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -300,6 +300,7 @@
 
 /* xstring.[ch] functions */
 #define	_xstrcat		slurm_xstrcat
+#define	_xstrncat		slurm_xstrncat
 #define	_xstrcatchar		slurm_xstrcatchar
 #define	_xslurm_strerrorcat	slurm_xslurm_strerrorcat
 #define	_xstrftimecat		slurm_xstrftimecat
@@ -307,6 +308,7 @@
 #define	_xrfc5424timecat	slurm_xrfc5424timecat
 #define	_xstrfmtcat		slurm_xstrfmtcat
 #define	_xmemcat		slurm_xmemcat
+#define	_xstrsubstitute		slurm_xstrsubstitute
 #define	xstrdup			slurm_xstrdup
 #define	xstrdup_printf		slurm_xstrdup_printf
 #define	xbasename		slurm_xbasename
@@ -375,6 +377,7 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
+#include "src/common/read_config.h"
 #include "src/common/env.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/strlcpy.h"

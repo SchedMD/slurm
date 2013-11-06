@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -103,9 +103,7 @@ extern void launch_p_fwd_signal(int signal);
 static char *_get_nids(char *nodelist)
 {
 	hostlist_t hl;
-	char *nids = NULL, *node_name, *sep = "";
-	int i, nid;
-	int nid_begin = -1, nid_end = -1;
+	char *nids = NULL;
 	int node_cnt;
 
 	if (!nodelist)
@@ -130,38 +128,8 @@ static char *_get_nids(char *nodelist)
 	opt.min_nodes = node_cnt;
 	opt.nodes_set = 1;
 
-	while ((node_name = hostlist_shift(hl))) {
-		for (i = 0; node_name[i]; i++) {
-			if (!isdigit(node_name[i]))
-				continue;
-			nid = atoi(&node_name[i]);
-			if (nid_begin == -1) {
-				nid_begin = nid;
-				nid_end   = nid;
-			} else if (nid == (nid_end + 1)) {
-				nid_end   = nid;
-			} else {
-				if (nid_begin == nid_end) {
-					xstrfmtcat(nids, "%s%d", sep,
-						   nid_begin);
-				} else {
-					xstrfmtcat(nids, "%s%d-%d", sep,
-						   nid_begin, nid_end);
-				}
-				nid_begin = nid;
-				nid_end   = nid;
-				sep = ",";
-			}
-			break;
-		}
-		free(node_name);
-	}
-	if (nid_begin == -1)
-		;	/* No data to record */
-	else if (nid_begin == nid_end)
-		xstrfmtcat(nids, "%s%d", sep, nid_begin);
-	else
-		xstrfmtcat(nids, "%s%d-%d", sep, nid_begin, nid_end);
+	nids = cray_nodelist2nids(hl, NULL);
+
 	hostlist_destroy(hl);
 	//info("output node IDs: %s", nids);
 
@@ -582,7 +550,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 			"%u", opt.sockets_per_node);
 	}
 
-	if (opt.mem_bind && strstr(opt.mem_bind, "local")) {
+	if (opt.mem_bind_type & MEM_BIND_LOCAL) {
 		opt.argc += 1;
 		xrealloc(opt.argv, opt.argc * sizeof(char *));
 		opt.argv[command_pos++] = xstrdup("-ss");

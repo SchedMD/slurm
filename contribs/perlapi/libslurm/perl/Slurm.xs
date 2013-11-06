@@ -75,6 +75,12 @@ slurm_DESTROY(slurm_t self)
 int
 slurm_get_errno(slurm_t self)
 	C_ARGS:
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 
 char *
 slurm_strerror(slurm_t self, int errnum=0)
@@ -82,6 +88,11 @@ slurm_strerror(slurm_t self, int errnum=0)
 		char *tmp_str;
 		int n;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (errnum == 0)
 			errnum = slurm_get_errno();
 		tmp_str = slurm_strerror(errnum);
@@ -104,6 +115,11 @@ slurm_preempt_mode_string(slurm_t self, uint16_t preempt_mode);
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_preempt_mode_string(preempt_mode);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -116,6 +132,12 @@ uint16_t
 slurm_preempt_mode_num(slurm_t self, char *preempt_mode)
 	C_ARGS:
 		preempt_mode
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 
 char *
 slurm_job_reason_string(slurm_t self, uint32_t inx)
@@ -123,6 +145,11 @@ slurm_job_reason_string(slurm_t self, uint32_t inx)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_job_reason_string(inx);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -137,6 +164,11 @@ slurm_job_state_string(slurm_t self, uint16_t inx)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_job_state_string(inx);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -151,6 +183,11 @@ slurm_job_state_string_compact(slurm_t self, uint16_t inx)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_job_state_string_compact(inx);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -163,6 +200,12 @@ int
 slurm_job_state_num(slurm_t self, char *state_name)
 	C_ARGS:
 		state_name
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 
 char *
 slurm_reservation_flags_string(slurm_t self, uint16_t flags)
@@ -170,6 +213,11 @@ slurm_reservation_flags_string(slurm_t self, uint16_t flags)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_reservation_flags_string(flags);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -184,6 +232,11 @@ slurm_node_state_string(slurm_t self, uint16_t inx)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_node_state_string(inx);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -198,6 +251,11 @@ slurm_node_state_string_compact(slurm_t self, uint16_t inx)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_node_state_string_compact(inx);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -209,6 +267,11 @@ slurm_node_state_string_compact(slurm_t self, uint16_t inx)
 char *
 slurm_private_data_string(slurm_t self, uint16_t private_data)
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		New(0, RETVAL, 64, char);
 		slurm_private_data_string(private_data, RETVAL, 64);
 	OUTPUT:
@@ -217,6 +280,11 @@ slurm_private_data_string(slurm_t self, uint16_t private_data)
 char *
 slurm_accounting_enforce_string(slurm_t self, uint16_t enforce)
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		New(0, RETVAL, 32, char);
 		slurm_accounting_enforce_string(enforce, RETVAL, 32);
 	OUTPUT:
@@ -228,6 +296,11 @@ slurm_conn_type_string(slurm_t self, uint16_t conn_type)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_conn_type_string((enum connection_type)conn_type);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -242,6 +315,11 @@ slurm_node_use_string(slurm_t self, uint16_t node_use)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_node_use_string((enum node_use_type)node_use);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -256,6 +334,11 @@ slurm_bg_block_state_string(slurm_t self, uint16_t state)
 		char *tmp_str;
 		int len;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		tmp_str = slurm_bg_block_state_string(state);
 		len = strlen(tmp_str) + 1;
 		New(0, RETVAL, len, char);
@@ -280,6 +363,11 @@ slurm_print_block_info_msg(slurm_t self, FILE *out, HV *block_info_msg, int one_
 		if(hv_to_block_info_msg(block_info_msg, &bi_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		out, &bi_msg, one_liner
 	CLEANUP:
@@ -296,6 +384,11 @@ slurm_print_block_info(slurm_t self, FILE *out, HV *block_info, int one_liner=0)
 		if(hv_to_block_info(block_info, &bi) < 0) {
 			XSRETURN_UNDEF;
 		}
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		out, &bi, one_liner
 
@@ -305,6 +398,11 @@ slurm_sprint_block_info(slurm_t self, HV *block_info, int one_liner=0)
 		block_info_t bi;
 		char *tmp_str = NULL;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_block_info(block_info, &bi) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -321,6 +419,11 @@ slurm_load_block_info(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 		block_info_msg_t *bi_msg = NULL;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_block_info(update_time, &bi_msg, show_flags);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -342,6 +445,11 @@ slurm_update_block(slurm_t self, HV *update_req)
 	PREINIT:
 		update_block_msg_t block_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_update_block_msg(update_req, &block_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -362,6 +470,11 @@ slurm_allocate_resources(slurm_t self, HV *job_desc)
 		resource_allocation_response_msg_t* resp_msg = NULL;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (hv_to_job_desc_msg(job_desc, &jd_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -390,6 +503,11 @@ slurm_allocate_resources_blocking(slurm_t self, HV *user_req, time_t timeout=0, 
 		job_desc_msg_t jd_msg;
 		resource_allocation_response_msg_t *resp_msg = NULL;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (hv_to_job_desc_msg(user_req, &jd_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -416,6 +534,11 @@ slurm_allocation_lookup(slurm_t self, uint32_t job_id)
 		job_alloc_info_response_msg_t *resp_msg = NULL;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_allocation_lookup(job_id, &resp_msg);
 		if(rc != SLURM_SUCCESS) {
 			slurm_free_job_alloc_info_response_msg(resp_msg);
@@ -437,6 +560,11 @@ slurm_allocation_lookup_lite(slurm_t self, uint32_t job_id)
 		resource_allocation_response_msg_t *resp_msg = NULL;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_allocation_lookup_lite(job_id, &resp_msg);
 		if(rc != SLURM_SUCCESS) {
 			slurm_free_resource_allocation_response_msg(resp_msg);
@@ -457,6 +585,11 @@ slurm_read_hostfile(slurm_t self, char *filename, int n)
 	PREINIT:
 		char *hostlist;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		hostlist = slurm_read_hostfile(filename, n);
 		if(hostlist == NULL) {
 			XSRETURN_UNDEF;
@@ -471,12 +604,24 @@ slurm_read_hostfile(slurm_t self, char *filename, int n)
 allocation_msg_thread_t *
 slurm_allocation_msg_thr_create(slurm_t self, OUT uint16_t port, HV *callbacks)
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		set_sacb(callbacks);
 	C_ARGS:
 		&port, &sacb
 
 void
 slurm_allocation_msg_thr_destroy(slurm_t self, allocation_msg_thread_t * msg_thr)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
+
 	C_ARGS:
 		msg_thr
 
@@ -487,6 +632,11 @@ slurm_submit_batch_job(slurm_t self, HV *job_desc)
 		submit_response_msg_t *resp_msg = NULL;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_job_desc_msg(job_desc, &jd_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -511,6 +661,11 @@ slurm_job_will_run(slurm_t self, HV *job_desc)
 	PREINIT:
 		job_desc_msg_t jd_msg;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (hv_to_job_desc_msg(job_desc, &jd_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -525,6 +680,11 @@ slurm_sbcast_lookup(slurm_t self, uint32_t job_id)
 		job_sbcast_cred_msg_t *info;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_sbcast_lookup(job_id, &info);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -546,21 +706,45 @@ slurm_sbcast_lookup(slurm_t self, uint32_t job_id)
 ######################################################################
 int
 slurm_kill_job(slurm_t self, uint32_t job_id, uint16_t signal, uint16_t batch_flag=0)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, signal, batch_flag
 
 int
 slurm_kill_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t signal)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id, signal
 
 int
 slurm_signal_job(slurm_t self, uint32_t job_id, uint16_t signal)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, signal
 
 int
 slurm_signal_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t signal)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id, signal
 
@@ -570,16 +754,34 @@ slurm_signal_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t 
 ######################################################################
 int
 slurm_complete_job(slurm_t self, uint32_t job_id, uint32_t job_rc=0)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, job_rc
 
 int
 slurm_terminate_job(slurm_t self, uint32_t job_id)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id
 
 int
 slurm_terminate_job_step(slurm_t self, uint32_t job_id, uint32_t step_id)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id
 
@@ -595,6 +797,11 @@ slurm_step_ctx_create(slurm_t self, HV *step_params)
 	PREINIT:
 		slurm_step_ctx_params_t sp;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (hv_to_slurm_step_ctx_params(step_params, &sp) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -613,6 +820,11 @@ slurm_step_ctx_create_no_alloc(slurm_t self, HV *step_params, uint32_t step_id)
 		if (hv_to_slurm_step_ctx_params(step_params, &sp) < 0) {
 			XSRETURN_UNDEF;
 		}
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		&sp, step_id
 	POSTCALL:
@@ -843,6 +1055,11 @@ slurm_api_version(slurm_t self, OUTLIST int major, OUTLIST int minor, OUTLIST in
 	PREINIT:
 		long version;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		version = slurm_api_version();
 		major = SLURM_VERSION_MAJOR(version);
 		minor = SLURM_VERSION_MINOR(version);
@@ -854,6 +1071,11 @@ slurm_load_ctl_conf(slurm_t self, time_t update_time=0)
 		slurm_ctl_conf_t *ctl_conf;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_ctl_conf(update_time, &ctl_conf);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -880,6 +1102,11 @@ slurm_print_ctl_conf(slurm_t self, FILE *out, HV *conf)
 		if (hv_to_slurm_ctl_conf(conf, &cc) < 0) {
 			XSRETURN_UNDEF;
 		}
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		out, &cc
 
@@ -892,6 +1119,11 @@ slurm_ctl_conf_2_key_pairs(slurm_t self, HV *conf)
 	PREINIT:
 		slurm_ctl_conf_t cc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (hv_to_slurm_ctl_conf(conf, &cc) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -912,6 +1144,11 @@ slurm_load_slurmd_status(slurm_t self)
 		slurmd_status_t *status;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_slurmd_status(&status);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -938,6 +1175,11 @@ slurm_print_slurmd_status(slurm_t self, FILE *out, HV *slurmd_status)
 		if (hv_to_slurmd_status(slurmd_status, &st) < 0) {
 			XSRETURN_UNDEF;
 		}
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		out, &st
 
@@ -947,6 +1189,11 @@ slurm_print_key_pairs(slurm_t self, FILE *out, List key_pairs, char *title)
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		out, key_pairs, title
 
@@ -955,6 +1202,11 @@ slurm_update_step(slurm_t self, HV *step_msg)
 	PREINIT:
 		step_update_request_msg_t su_msg;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (hv_to_step_update_request_msg(step_msg, &su_msg) < 0) {
 			RETVAL = SLURM_ERROR;
 		} else {
@@ -970,6 +1222,11 @@ slurm_update_step(slurm_t self, HV *step_msg)
 int
 slurm_job_cpus_allocated_on_node_id(slurm_t self, SV *job_res, int node_id)
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(job_res) {
 			RETVAL = slurm_job_cpus_allocated_on_node_id(
 				(job_resources_t *)SV2ptr(job_res), node_id);
@@ -982,6 +1239,11 @@ slurm_job_cpus_allocated_on_node_id(slurm_t self, SV *job_res, int node_id)
 int
 slurm_job_cpus_allocated_on_node(slurm_t self, SV *job_res, char *node_name)
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(job_res) {
 			RETVAL = slurm_job_cpus_allocated_on_node(
 				(job_resources_t *)SV2ptr(job_res), node_name);
@@ -1013,6 +1275,11 @@ slurm_get_end_time(slurm_t self, uint32_t job_id)
 		time_t tmp_time;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_get_end_time(job_id, &tmp_time);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = tmp_time;
@@ -1024,11 +1291,23 @@ slurm_get_end_time(slurm_t self, uint32_t job_id)
 
 long
 slurm_get_rem_time(slurm_t self, uint32_t job_id)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id
 
 int
 slurm_job_node_ready(slurm_t self, uint32_t job_id)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id
 
@@ -1041,6 +1320,11 @@ slurm_load_job(slurm_t self, uint32_t job_id, uint16_t show_flags=0)
 		job_info_msg_t *ji_msg;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_job(&ji_msg, job_id, show_flags);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1068,6 +1352,11 @@ slurm_load_jobs(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 		job_info_msg_t *ji_msg;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_jobs(update_time, &ji_msg, show_flags);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1088,6 +1377,12 @@ slurm_load_jobs(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 
 int
 slurm_notify_job(slurm_t self, uint32_t job_id, char *message)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, message
 
@@ -1100,6 +1395,11 @@ slurm_pid2jobid(slurm_t self, pid_t job_pid)
 		uint32_t tmp_pid;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_pid2jobid(job_pid, &tmp_pid);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = tmp_pid;
@@ -1114,6 +1414,11 @@ slurm_print_job_info(slurm_t self, FILE* out, HV *job_info, int one_liner=0)
 	PREINIT:
 		job_info_t ji;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1132,6 +1437,11 @@ slurm_print_job_info_msg(slurm_t self, FILE *out, HV *job_info_msg, int one_line
 	PREINIT:
 		job_info_msg_t ji_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1149,6 +1459,11 @@ slurm_sprint_job_info(slurm_t self, HV *job_info, int one_liner=0)
 		job_info_t ji;
 		char *tmp_str = NULL;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_job_info(job_info, &ji) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1167,6 +1482,11 @@ slurm_update_job(slurm_t self, HV *job_info)
 	PREINIT:
 		job_desc_msg_t update_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_job_desc_msg(job_info, &update_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1187,6 +1507,11 @@ slurm_get_job_steps(slurm_t self, time_t update_time=0, uint32_t job_id=NO_VAL, 
 		int rc;
 		job_step_info_response_msg_t *resp_msg;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_get_job_steps(update_time, job_id, step_id, &resp_msg, show_flags);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1207,6 +1532,11 @@ slurm_print_job_step_info_msg(slurm_t self, FILE *out, HV *step_info_msg, int on
 	PREINIT:
 		job_step_info_response_msg_t si_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1223,6 +1553,11 @@ slurm_print_job_step_info(slurm_t self, FILE *out, HV *step_info, int one_liner=
 	PREINIT:
 		job_step_info_t si;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1240,6 +1575,11 @@ slurm_sprint_job_step_info(slurm_t self, HV *step_info, int one_liner=0)
 		job_step_info_t si;
 		char *tmp_str = NULL;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_job_step_info(step_info, &si) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1257,6 +1597,11 @@ slurm_job_step_layout_get(slurm_t self, uint32_t job_id, uint32_t step_id)
 		int rc;
 		slurm_step_layout_t *layout;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		layout = slurm_job_step_layout_get(job_id, step_id);
 		if(layout == NULL) {
 			XSRETURN_UNDEF;
@@ -1278,6 +1623,11 @@ slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id, char *nodel
 		int rc;
 		job_step_stat_response_msg_t *resp_msg;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_job_step_stat(job_id, step_id, nodelist, &resp_msg);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1299,6 +1649,11 @@ slurm_job_step_get_pids(slurm_t self, uint32_t job_id, uint32_t step_id, char *n
 		int rc;
 		job_step_pids_response_msg_t *resp_msg;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_job_step_get_pids(job_id, step_id, nodelist, &resp_msg);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1334,6 +1689,11 @@ slurm_load_node(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 		node_info_msg_t *ni_msg = NULL;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_node(update_time, &ni_msg, show_flags);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1357,6 +1717,11 @@ slurm_print_node_info_msg(slurm_t self, FILE *out, HV *node_info_msg, int one_li
 	PREINIT:
 		node_info_msg_t ni_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1373,6 +1738,11 @@ slurm_print_node_table(slurm_t self, FILE *out, HV *node_info, int node_scaling=
 	PREINIT:
 		node_info_t ni;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1388,6 +1758,11 @@ slurm_sprint_node_table(slurm_t self, HV *node_info, int node_scaling=1, int one
 		node_info_t ni;
 		char *tmp_str = NULL;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_node_info(node_info, &ni) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1403,6 +1778,11 @@ slurm_update_node(slurm_t self, HV *update_req)
 	PREINIT:
 		update_node_msg_t node_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_update_node_msg(update_req, &node_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1420,6 +1800,11 @@ slurm_load_topo(slurm_t self)
 		topo_info_response_msg_t *topo_info_msg = NULL;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_topo( &topo_info_msg);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1440,6 +1825,11 @@ slurm_print_topo_info_msg(slurm_t self, FILE *out, HV *topo_info_msg, int one_li
 	PREINIT:
 		topo_info_response_msg_t ti_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1456,6 +1846,11 @@ slurm_print_topo_record(slurm_t self, FILE *out, HV *topo_info, int one_liner=0)
 	PREINIT:
 		topo_info_t ti;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1478,6 +1873,11 @@ slurm_get_select_jobinfo(slurm_t self, dynamic_plugin_data_t *jobinfo, uint32_t 
 		select_jobinfo_t *tmp_ptr;
 		int i;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		switch(data_type) {
 		case SELECT_JOBDATA_GEOMETRY: /* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
 			RETVAL = slurm_get_select_jobinfo(jobinfo, data_type, tmp_array);
@@ -1545,6 +1945,11 @@ slurm_get_select_nodeinfo(slurm_t self, dynamic_plugin_data_t *nodeinfo, uint32_
 		bitstr_t *tmp_bitmap;
 		select_nodeinfo_t *tmp_ptr;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		switch(data_type) {
 		case SELECT_NODEDATA_BITMAP_SIZE: /* data-> uint16_t */
 		case SELECT_NODEDATA_SUBGRP_SIZE: /* data-> uint16_t */
@@ -1594,6 +1999,11 @@ slurm_load_partitions(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 		partition_info_msg_t *part_info_msg;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_partitions(update_time, &part_info_msg, show_flags);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1614,6 +2024,11 @@ slurm_print_partition_info_msg(slurm_t self, FILE *out, HV *part_info_msg, int o
 	PREINIT:
 		partition_info_msg_t pi_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1630,6 +2045,11 @@ slurm_print_partition_info(slurm_t self, FILE *out, HV *part_info, int one_liner
 	PREINIT:
 		partition_info_t pi;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1647,6 +2067,11 @@ slurm_sprint_partition_info(slurm_t self, HV *part_info, int one_liner=0)
 		partition_info_t pi;
 		char *tmp_str = NULL;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_partition_info(part_info, &pi) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1663,6 +2088,11 @@ slurm_create_partition(slurm_t self, HV *part_info)
 	PREINIT:
 		update_part_msg_t update_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_update_part_msg(part_info, &update_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1674,6 +2104,11 @@ slurm_update_partition(slurm_t self, HV *part_info)
 	PREINIT:
 		update_part_msg_t update_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_update_part_msg(part_info, &update_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1685,6 +2120,11 @@ slurm_delete_partition(slurm_t self, HV *delete_part_msg)
 	PREINIT:
 		delete_part_msg_t dp_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_delete_part_msg(delete_part_msg, &dp_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1702,6 +2142,11 @@ slurm_load_reservations(slurm_t self, time_t update_time=0)
 		reserve_info_msg_t *resv_info_msg = NULL;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_load_reservations(update_time, &resv_info_msg);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1722,6 +2167,11 @@ slurm_create_reservation(slurm_t self, HV *res_info)
 	PREINIT:
 		resv_desc_msg_t resv_msg;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_update_reservation_msg(res_info, &resv_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1737,6 +2187,11 @@ slurm_update_reservation(slurm_t self, HV *res_info)
 	PREINIT:
 		resv_desc_msg_t resv_msg;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_update_reservation_msg(res_info, &resv_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1748,6 +2203,11 @@ slurm_delete_reservation(slurm_t self, HV *res_info)
 	PREINIT:
 		reservation_name_msg_t resv_name;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_delete_reservation_msg(res_info, &resv_name) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1760,6 +2220,11 @@ slurm_print_reservation_info_msg(slurm_t self, FILE *out, HV *resv_info_msg, int
 		reserve_info_msg_t ri_msg;
 		int i;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1778,6 +2243,11 @@ slurm_print_reservation_info(slurm_t self, FILE *out, HV *resv_info, int one_lin
 	PREINIT:
 		reserve_info_t ri;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if (out == NULL) {
 			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
 		}
@@ -1795,6 +2265,11 @@ slurm_sprint_reservation_info(slurm_t self, HV *resv_info, int one_liner=0)
 		reserve_info_t ri;
 		char *tmp_str = NULL;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_reserve_info(resv_info, &ri) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1813,29 +2288,65 @@ slurm_sprint_reservation_info(slurm_t self, HV *resv_info, int one_liner=0)
 
 int
 slurm_ping(slurm_t self, uint16_t primary=1)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		primary
 
 int
 slurm_reconfigure(slurm_t self)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 
 int
 slurm_shutdown(slurm_t self, uint16_t options=0)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		options
 
 int
 slurm_takeover(slurm_t self)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 
 int
 slurm_set_debug_level(slurm_t self, uint32_t debug_level)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		debug_level
 
 int
 slurm_set_schedlog_level(slurm_t self, uint32_t schedlog_level)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		schedlog_level
 
@@ -1846,18 +2357,36 @@ slurm_set_schedlog_level(slurm_t self, uint32_t schedlog_level)
 
 int
 slurm_suspend(slurm_t self, uint32_t job_id)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id
 
 int
 slurm_resume(slurm_t self, uint32_t job_id)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id
 
 int
-slurm_requeue(slurm_t self, uint32_t job_id)
+slurm_requeue(slurm_t self, uint32_t job_id, uint32_t state)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
-		job_id
+		job_id, state
 
 
 ######################################################################
@@ -1866,41 +2395,89 @@ slurm_requeue(slurm_t self, uint32_t job_id)
 
 int
 slurm_checkpoint_able(slurm_t self, uint32_t job_id, uint32_t step_id, OUT time_t start_time)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id, &start_time
 
 int
 slurm_checkpoint_disable(slurm_t self, uint32_t job_id, uint32_t step_id)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id
 
 int
 slurm_checkpoint_enable(slurm_t self, uint32_t job_id, uint32_t step_id)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id
 
 int
 slurm_checkpoint_create(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t max_wait, char *image_dir)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id, max_wait, image_dir
 
 int
 slurm_checkpoint_requeue(slurm_t self, uint32_t job_id, uint16_t max_wait, char *image_dir)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, max_wait, image_dir
 
 int
 slurm_checkpoint_vacate(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t max_wait, char *image_dir)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id, max_wait, image_dir
 
 int
 slurm_checkpoint_restart(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t stick, char *image_dir)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id, stick, image_dir
 
 int
 slurm_checkpoint_complete(slurm_t self, uint32_t job_id, uint32_t step_id, time_t begin_time, uint32_t error_code, char *error_msg)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id, begin_time, error_code, error_msg
 
@@ -1909,6 +2486,11 @@ slurm_checkpoint_error(slurm_t self, uint32_t job_id, uint32_t step_id, OUT uint
 	PREINIT:
 		char* err_msg = NULL;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		error_code = SLURM_SUCCESS;
 		RETVAL = slurm_checkpoint_error(job_id, step_id, (uint32_t *)&error_code, &err_msg);
 		Newz(0, error_msg, strlen(err_msg), char);
@@ -1919,6 +2501,12 @@ slurm_checkpoint_error(slurm_t self, uint32_t job_id, uint32_t step_id, OUT uint
 
 int
 slurm_checkpoint_tasks(slurm_t self, uint32_t job_id, uint16_t step_id, time_t begin_time, char *image_dir, uint16_t max_wait, char *nodelist)
+	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	C_ARGS:
 		job_id, step_id, begin_time, image_dir, max_wait, nodelist
 
@@ -1931,6 +2519,11 @@ int slurm_set_trigger(slurm_t self, HV *trigger_info)
 	PREINIT:
 		trigger_info_t ti;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 	       if(hv_to_trigger_info(trigger_info, &ti) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1941,6 +2534,11 @@ int slurm_clear_trigger(slurm_t self, HV *trigger_info)
 	PREINIT:
 		trigger_info_t ti;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_trigger_info(trigger_info, &ti) < 0) {
 			XSRETURN_UNDEF;
 		}
@@ -1953,6 +2551,11 @@ slurm_get_triggers(slurm_t self)
 		trigger_info_msg_t *ti_msg;
 		int rc;
 	CODE:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		rc = slurm_get_triggers(&ti_msg);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1973,6 +2576,11 @@ slurm_pull_trigger(slurm_t self, HV *trigger_info)
 	PREINIT:
 		trigger_info_t ti;
 	INIT:
+		if (self); /* this is needed to avoid a warning about
+			      unused variables.  But if we take slurm_t self
+			      out of the mix Slurm-> doesn't work,
+			      only Slurm::
+			    */
 		if(hv_to_trigger_info(trigger_info, &ti) < 0) {
 			XSRETURN_UNDEF;
 		}

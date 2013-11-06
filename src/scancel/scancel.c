@@ -3,12 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2013 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -59,12 +60,13 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/hostlist.h"
 #include "src/scancel/scancel.h"
 
 #define MAX_CANCEL_RETRY 10
@@ -87,7 +89,7 @@ static job_info_msg_t * job_buffer_ptr = NULL;
 typedef struct job_cancel_info {
 	uint32_t job_id;
 	uint32_t array_job_id;
-	uint16_t array_task_id;
+	uint32_t array_task_id;
 	bool     array_flag;
 	uint32_t step_id;
 	uint16_t sig;
@@ -107,6 +109,7 @@ main (int argc, char *argv[])
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 	int rc = 0;
 
+	slurm_conf_init(NULL);
 	log_init (xbasename(argv[0]), log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
 	if (opt.verbose) {
@@ -186,7 +189,7 @@ _match_job(int opt_inx, int job_inx)
 	job_info_t *job_ptr = job_buffer_ptr->job_array;
 
 	job_ptr += job_inx;
-	if (opt.array_id[opt_inx] == (uint16_t) NO_VAL) {
+	if (opt.array_id[opt_inx] == NO_VAL) {
 		if ((opt.step_id[opt_inx] != SLURM_BATCH_SCRIPT) &&
 		    (!IS_JOB_RUNNING(job_ptr)))
 			return false;
@@ -218,7 +221,7 @@ _verify_job_ids (void)
 		}
 		if (((job_ptr[i].job_state >= JOB_COMPLETE) ||
 		     (i >= job_buffer_ptr->record_count)) &&
-		     (job_ptr[i].array_task_id == (uint16_t) NO_VAL) &&
+		     (job_ptr[i].array_task_id == NO_VAL) &&
 		     (opt.verbose >= 0)) {
 			if (opt.step_id[j] == SLURM_BATCH_SCRIPT)
 				error("Kill job error on job id %u: %s",
@@ -419,7 +422,7 @@ _cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
 					&num_active_threads_cond;
 
 				if ((!opt.interactive) && (filter_cnt == 0) &&
-				    (opt.array_id[j] == (uint16_t) NO_VAL) &&
+				    (opt.array_id[j] == NO_VAL) &&
 				    (opt.job_id[j] == job_ptr[i].array_job_id)&&
 				    (opt.step_id[j] == SLURM_BATCH_SCRIPT)) {
 					opt.job_id[j] = NO_VAL; /* !match_job */
@@ -480,8 +483,8 @@ _cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
 				&num_active_threads_cond;
 
 			cancel_info->array_job_id  = 0;
-			cancel_info->array_task_id = (uint16_t) NO_VAL;
-			cancel_info->array_flag = false;
+			cancel_info->array_task_id = NO_VAL;
+			cancel_info->array_flag    = false;
 
 			pthread_mutex_lock( &num_active_threads_lock );
 			num_active_threads++;
@@ -538,8 +541,8 @@ _cancel_job_id (void *ci)
 	bool msg_to_ctld = opt.ctld;
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
 	uint32_t job_id = cancel_info->job_id;
-	uint32_t array_job_id = cancel_info->array_job_id;
-	uint16_t array_task_id = cancel_info->array_task_id;
+	uint32_t array_job_id  = cancel_info->array_job_id;
+	uint32_t array_task_id = cancel_info->array_task_id;
 	uint16_t sig    = cancel_info->sig;
 
 	if (sig == (uint16_t)-1) {
@@ -617,8 +620,8 @@ _cancel_step_id (void *ci)
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
 	uint32_t job_id  = cancel_info->job_id;
 	uint32_t step_id = cancel_info->step_id;
-	uint32_t array_job_id = cancel_info->array_job_id;
-	uint16_t array_task_id = cancel_info->array_task_id;
+	uint32_t array_job_id  = cancel_info->array_job_id;
+	uint32_t array_task_id = cancel_info->array_task_id;
 	uint16_t sig     = cancel_info->sig;
 	bool sig_set = true;
 
@@ -690,7 +693,7 @@ _confirmation (int i, uint32_t step_id)
 
 	job_ptr = job_buffer_ptr->job_array ;
 	while (1) {
-		if (job_ptr[i].array_task_id == (uint16_t) NO_VAL) {
+		if (job_ptr[i].array_task_id == NO_VAL) {
 			snprintf(job_id_str, sizeof(job_id_str), "%u",
 				 job_ptr[i].job_id);
 		} else {

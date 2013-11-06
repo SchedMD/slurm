@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -170,8 +170,16 @@ typedef enum {
 #define CLUSTER_FLAG_XCPU   0x00000020 /* This has xcpu */
 #define CLUSTER_FLAG_AIX    0x00000040 /* This is an aix cluster */
 #define CLUSTER_FLAG_MULTSD 0x00000080 /* This cluster is multiple slurmd */
-#define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a cray XT */
+#define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a ALPS cray
+					* (deprecated) Same as CRAY_A */
+#define CLUSTER_FLAG_CRAY_A 0x00000100 /* This cluster is a ALPS cray */
 #define CLUSTER_FLAG_FE     0x00000200 /* This cluster is a front end system */
+#define CLUSTER_FLAG_CRAY_N 0x00000400 /* This cluster is a Native cray */
+
+
+/* Cluster Combo flags */
+#define CLUSTER_FLAG_CRAY   0x00000500 /* This cluster is a cray.
+					  Combo of CRAY_A | CRAY_N */
 
 /* Define assoc_mgr_association_usage_t below to avoid including
  * extraneous slurmdb headers */
@@ -288,19 +296,27 @@ typedef struct {
 	double consumed_energy; /* contains energy consumption in joules */
 	uint32_t cpu_min;
 	uint32_t cpu_min_nodeid; /* contains which node number it was on */
-	uint16_t cpu_min_taskid; /* contains which task number it was on */
+	uint32_t cpu_min_taskid; /* contains which task number it was on */
+	double disk_read_ave; /* average amount of disk read data, in mb */
+	double disk_read_max; /* maximum amount of disk read data, in mb */
+	uint32_t disk_read_max_nodeid; /* contains  node number max was on */
+	uint32_t disk_read_max_taskid;/* contains task number max was on */
+	double disk_write_ave; /* average amount of disk write data, in mb */
+	double disk_write_max; /* maximum amount of disk write data, in mb */
+	uint32_t disk_write_max_nodeid; /* contains  node number max was on */
+	uint32_t disk_write_max_taskid;/* contains task number max was on */
 	double pages_ave;
 	uint32_t pages_max;
 	uint32_t pages_max_nodeid; /* contains which node number it was on */
-	uint16_t pages_max_taskid; /* contains which task number it was on */
+	uint32_t pages_max_taskid; /* contains which task number it was on */
 	double rss_ave;
 	uint32_t rss_max;
 	uint32_t rss_max_nodeid; /* contains which node number it was on */
-	uint16_t rss_max_taskid; /* contains which task number it was on */
+	uint32_t rss_max_taskid; /* contains which task number it was on */
 	double vsize_ave;
 	uint32_t vsize_max;
 	uint32_t vsize_max_nodeid; /* contains which node number it was on */
-	uint16_t vsize_max_taskid; /* contains which task number it was on */
+	uint32_t vsize_max_taskid; /* contains which task number it was on */
 } slurmdb_stats_t;
 
 
@@ -326,6 +342,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
+	uint64_t consumed_energy; /* energy allocated in Joules */
 	uint32_t id;	/* association/wckey ID		*/
 	time_t period_start; /* when this record was started */
 } slurmdb_accounting_rec_t;
@@ -482,6 +499,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
+	uint64_t consumed_energy; /* energy allocated in Joules */
 	uint32_t cpu_count; /* number of cpus during time period */
 	uint64_t down_secs; /* number of cpu seconds down */
 	uint64_t idle_secs; /* number of cpu seconds idle */
@@ -557,6 +575,7 @@ typedef struct {
 	uint32_t priority;
 	uint32_t qosid;
 	uint32_t req_cpus;
+	uint32_t req_mem;
 	uint32_t requid;
 	uint32_t resvid;
 	uint32_t show_full;
@@ -831,7 +850,7 @@ typedef struct {
 typedef struct {
 	slurmdb_association_rec_t *assoc;
 	char *sort_name;
-	List childern;
+	List children;
 } slurmdb_hierarchical_rec_t;
 
 /************** report specific structures **************/
@@ -839,6 +858,7 @@ typedef struct {
 typedef struct {
 	char *acct;
 	char *cluster;
+	uint64_t consumed_energy;
 	uint64_t cpu_secs;
 	char *parent_acct;
 	char *user;
@@ -848,6 +868,7 @@ typedef struct {
 	char *acct;
 	List acct_list; /* list of char *'s */
 	List assoc_list; /* list of slurmdb_report_assoc_rec_t's */
+	uint64_t consumed_energy;
 	uint64_t cpu_secs;
 	char *name;
 	uid_t uid;
@@ -855,6 +876,7 @@ typedef struct {
 
 typedef struct {
 	List assoc_list; /* list of slurmdb_report_assoc_rec_t *'s */
+	uint64_t consumed_energy;
 	uint32_t cpu_count;
 	uint64_t cpu_secs;
 	char *name;

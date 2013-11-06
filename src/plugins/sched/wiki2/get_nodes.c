@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -87,7 +87,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
 	int node_rec_cnt = 0, buf_size = 0;
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	/* Locks: write node */
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
@@ -330,6 +330,13 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 
 	snprintf(tmp, sizeof(tmp), ":STATE=%s;", _get_node_state(node_ptr));
 	xstrcat(buf, tmp);
+
+	if (node_ptr->cpu_load != NO_VAL) {
+		snprintf(tmp, sizeof(tmp), "CPULOAD=%f;",
+			 (node_ptr->cpu_load / 100.0));
+		xstrcat(buf, tmp);
+	}
+
 	if (node_ptr->reason) {
 		/* Strip out any quotes, they confuse Moab */
 		char *reason, *bad_char;
@@ -364,12 +371,6 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	if (i > 0)
 		xstrcat(buf, ";");
 
-	if (node_ptr->cpu_load != NO_VAL) {
-		snprintf(tmp, sizeof(tmp), "CPULOAD=%f;",
-			 (node_ptr->cpu_load / 100.0));
-		xstrcat(buf, tmp);
-	}
-
 	if (node_ptr->arch) {
 		snprintf(tmp, sizeof(tmp), "ARCH=%s;", node_ptr->arch);
 		xstrcat(buf, tmp);
@@ -400,7 +401,7 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	if (update_time > 0)
 		return buf;
 
-	if (slurmctld_conf.fast_schedule) {
+	if (slurmctld_conf.fast_schedule && node_ptr->config_ptr) {
 		/* config from slurm.conf */
 		snprintf(tmp, sizeof(tmp),
 			"CMEMORY=%u;CDISK=%u;CPROC=%u;",

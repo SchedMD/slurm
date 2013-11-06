@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -82,6 +82,7 @@ typedef struct slurm_dbd_conf {
 	char *	 	default_qos;	/* default qos setting when
 					 * adding clusters              */
 	char *		log_file;	/* Log file			*/
+	uint16_t        log_fmt;        /* Log file timestamt format    */
 	uint16_t        msg_timeout;    /* message timeout		*/
 	char *		pid_file;	/* where to store current PID	*/
 	char *		plugindir;	/* dir to look for plugins	*/

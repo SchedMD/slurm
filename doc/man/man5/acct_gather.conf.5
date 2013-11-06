@@ -1,4 +1,4 @@
-.TH "acct_gather.conf" "5" "April 2013" "acct_gather.conf 1.0" "Slurm acct_gather.configuration file"
+.TH "acct_gather.conf" "3" "May 2013" "acct_gather.conf 1.0" "Slurm acct_gather.configuration file"
 
 .SH "NAME"
 acct_gather.conf \- Slurm configuration file for the acct_gather plugins
@@ -21,10 +21,19 @@ SLURM daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
-The following acct_gather.conf parameters are defined to control the general behavior of various plugins in SLURM.
+The following acct_gather.conf parameters are defined to control the general
+behavior of various plugins in SLURM.
+
+.LP
+The acct_gather.conf file is different than other Slurm .conf files.  Each
+plugin defines which options are available.  So if you do not load the
+respective plugin for an option that option will appear to be unknown by Slurm
+and could cause Slurm not to load.  If you decide to change plugin types you
+might also have to change the related options as well.
 
 .TP
-\fBEnergyIPMI\fR options used for acct_gather_energy/ipmi are as follows.
+\fBEnergyIPMI\fR
+Options used for AcctGatherEnergyType/ipmi are as follows:
 
 .RS
 .TP 20
@@ -35,15 +44,18 @@ This parameter is the number of seconds between BMC access samples.
 \fBEnergyIPMICalcAdjustment\fR=<yes|no>
 If set to "yes", the consumption between the last BMC access sample and
 a step consumption update is approximated to get more accurate task consumption.
-The adjustment is made at the step start and each time the consumption
-is updated, including the step end. The approximations are not cumulated, only
-the first and last adjustments are used to calculated the consumption.
-The default is "no".
+The adjustment is made at the step start and each time the
+consumption is updated, including the step end. The approximations are not
+accumulated, only the first and last adjustments are used to calculated the
+consumption. The default is "no".
 
 .TP
 \fBEnergyIPMIPowerSensor\fR=<number>
-This parameter is optional. The plugin will not search all available sensors to
-find the power sensor, but will just check the sensor is in Watt.
+This parameter is optional.  If the parameter is included, the plugin searches
+the node for a "watt" sensor with the number specified by <number>. If a
+matching sensor is found, that sensor is used for power data. If no matching
+sensor is found, a value of zero is returned for power data. If the parameter
+is omitted, the plugin will use the first "watt" sensor it finds.
 
 .LP
 The following acct_gather.conf parameters are defined to control the
@@ -58,6 +70,60 @@ Specify BMC Username.
 Specify BMC Password.
 .RE
 
+.TP
+\fBProfileHDF5\fR
+Options used for AcctGatherProfileType/hdf5 are as follows:
+
+.RS
+.TP 20
+\fBProfileHDF5Dir\fR=<path>
+This parameter is the path to the shared folder into which the
+acct_gather_profile plugin will write detailed data (usually as an HDF5 file).
+The directory is assumed to be on a file system shared by the controller and
+all compute nodes. This is a required parameter.
+
+.TP
+\fBProfileHDF5Default\fR
+A comma delimited list of data types to be collected for each job submission.
+Allowed values are:
+
+.RS
+.TP
+\fBAll\fR All data types are collected. (Cannot be combined with other values.)
+
+.TP
+\fBNone\fR No data types are collected. This is the default.
+ (Cannot be combined with other values.)
+
+.TP
+\fBEnergy\fR Energy data is collected.
+
+.TP
+\fBTask\fR Task (I/O, Memory, ...) data is collected.
+
+.TP
+\fBLustre\fR Lustre data is collected.
+
+.TP
+\fBNetwork\fR Network (InfiniBand) data is collected.
+.RE
+.RE
+
+.TP
+\fBInfinibandOFED\fR
+Options used for AcctGatherInfinbandType/ofed are as follows:
+
+.RS
+.TP 20
+\fBInfinibandOFEDFrequency\fR=<number>
+This parameter is the number of seconds between the calls to infiniband counters.
+
+.TP
+\fBInfinibandOFEDPort\fR=<number>
+This parameter represents the port number of the local Infiniband card that we are willing to monitor.
+The default port is 1.
+.RE
+.RE
 .SH "EXAMPLE"
 .LP
 .br
@@ -67,18 +133,32 @@ Specify BMC Password.
 .br
 ###
 .br
+# Parameters for AcctGatherEnergy/impi plugin
+.br
 EnergyIPMIFrequency=10
 .br
 EnergyIPMICalcAdjustment=yes
 .br
 #
+.br
+# Parameters for AcctGatherProfileType/hdf5 plugin
+.br
+ProfileHDF5Dir=/app/slurm/profile_data
+.br
+# Parameters for AcctGatherInfiniband/ofed plugin
+.br
+InfinibandOFEDFrequency=4
+.br
+InfinibandOFEDPort=1
+.br
+
 
 .SH "COPYING"
 Copyright (C) 2012-2013 Bull.
 Produced at Bull (cf, DISCLAIMER).
 .LP
 This file is part of SLURM, a resource management program.
-For details, see <http://www.schedmd.com/slurmdocs/>.
+For details, see <http://slurm.schedmd.com/>.
 .LP
 SLURM is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free

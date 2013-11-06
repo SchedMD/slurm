@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -345,8 +345,8 @@ slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 	verbose( "BEGIN AUTHD CREDENTIAL" );
 	verbose( "   UID: %u", cred->cred.uid );
 	verbose( "   GID: %u", cred->cred.gid );
-	verbose( "   Valid from: %s", ctime( &cred->cred.valid_from ) );
-	verbose( "   Valid to: %s", ctime( &cred->cred.valid_to ) );
+	verbose( "   Valid from: %s", slurm_ctime( &cred->cred.valid_from ) );
+	verbose( "   Valid to: %s", slurm_ctime( &cred->cred.valid_to ) );
 	verbose( "   Signature: 0x%02x%02x%02x%02x ...",
 			 cred->sig.data[ 0 ], cred->sig.data[ 1 ],
 			 cred->sig.data[ 2 ], cred->sig.data[ 3 ] );

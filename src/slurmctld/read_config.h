@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,6 +39,13 @@
 
 #ifndef _HAVE_READ_CONFIG_H
 #define _HAVE_READ_CONFIG_H
+
+/* Convert a comma delimited list of account names into a NULL terminated
+ * array of pointers to strings. Call accounts_list_free() to release memory */
+extern void accounts_list_build(char *accounts, char ***accounts_array);
+
+/* Free memory allocated for an account array by accounts_list_build() */
+extern void accounts_list_free(char ***accounts_array);
 
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.

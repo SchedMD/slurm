@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -88,7 +88,7 @@
  *  Maximum message size. Messages larger than this value (in bytes)
  *  will not be received.
  */
-#define MAX_MSG_SIZE     (128*1024*1024)
+#define MAX_MSG_SIZE     (1024*1024*1024)
 
 /****************************************************************
  * MIDDLE LAYER MSG FUNCTIONS

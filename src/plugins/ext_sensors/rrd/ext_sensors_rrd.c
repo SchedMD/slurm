@@ -5,7 +5,7 @@
  *  Written by Bull- Thomas Cadeau/Martin Perry/Yiannis Georgiou
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -555,9 +555,9 @@ extern int _ext_sensors_read_conf(void)
 	/* Get the ext_sensors.conf path and validate the file */
 	conf_path = get_extra_conf_path("ext_sensors.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
-		info("ext_sensors: No ext_sensors file (%s)", conf_path);
+		fatal("ext_sensors: No ext_sensors file (%s)", conf_path);
 	} else {
-		debug("ext_sensors: Reading ext_sensors file %s", conf_path);
+		debug2("ext_sensors: Reading ext_sensors file %s", conf_path);
 		tbl = s_p_hashtbl_create(options);
 		if (s_p_parse_file(tbl, NULL, conf_path, false) ==
 		    SLURM_ERROR) {
@@ -595,18 +595,36 @@ extern int _ext_sensors_read_conf(void)
 					|= EXT_SENSORS_OPT_COLDDOOR_TEMP;
 		}
 		xfree(temp_str);
+
+
 		s_p_get_uint32(&ext_sensors_cnf->min_watt,"MinWatt", tbl);
 		s_p_get_uint32(&ext_sensors_cnf->max_watt,"MaxWatt", tbl);
 		s_p_get_uint32(&ext_sensors_cnf->min_temp,"MinTemp", tbl);
 		s_p_get_uint32(&ext_sensors_cnf->max_temp,"MaxTemp", tbl);
-		s_p_get_string(&ext_sensors_cnf->energy_rra_name,
-			       "EnergyRRA", tbl);
-		s_p_get_string(&ext_sensors_cnf->temp_rra_name,
-			       "TempRRA", tbl);
+		if (!s_p_get_string(&ext_sensors_cnf->energy_rra_name,
+				    "EnergyRRA", tbl)) {
+			if (ext_sensors_cnf->dataopts
+			    & EXT_SENSORS_OPT_JOB_ENERGY)
+				fatal("ext_sensors/rrd: EnergyRRA "
+				      "must be set to gather JobData=energy.  "
+				      "Please set this value in your "
+				      "ext_sensors.conf file.");
+		}
+
+		if (!s_p_get_string(&ext_sensors_cnf->temp_rra_name,
+				    "TempRRA", tbl)) {
+			if (ext_sensors_cnf->dataopts
+			    & EXT_SENSORS_OPT_NODE_TEMP)
+				fatal("ext_sensors/rrd: TempRRA "
+				      "must be set to gather NodeData=temp.  "
+				      "Please set this value in your "
+				      "ext_sensors.conf file.");
+		}
 		s_p_get_string(&ext_sensors_cnf->energy_rrd_file,
 			       "EnergyPathRRD", tbl);
 		s_p_get_string(&ext_sensors_cnf->temp_rrd_file,
 			       "TempPathRRD", tbl);
+
 		s_p_hashtbl_destroy(tbl);
 	}
 	xfree(conf_path);
@@ -652,11 +670,115 @@ extern int ext_sensors_p_get_stependdata(struct step_record *step_rec)
 	time_t step_endtime = time(NULL);
 	int rc = SLURM_SUCCESS;
 
-	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_JOB_ENERGY)
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_JOB_ENERGY) {
 		step_rec->ext_sensors->consumed_energy =
 			RRD_consolidate(step_rec->start_time, step_endtime,
 					step_rec->step_node_bitmap);
+		if (step_rec->jobacct &&
+		    (!step_rec->jobacct->energy.consumed_energy
+		     || (step_rec->jobacct->energy.consumed_energy == NO_VAL))) {
+			step_rec->jobacct->energy.consumed_energy =
+				step_rec->ext_sensors->consumed_energy;
+		}
+	}
+
 	return rc;
+}
+
+extern List ext_sensors_p_get_config(void)
+{
+	config_key_pair_t *key_pair;
+	List ext_list = list_create(destroy_config_key_pair);
+
+	char *sep = ", ";
+	char *tmp_val = NULL;
+
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_JOB_ENERGY) {
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("JobData");
+		key_pair->value = xstrdup("energy");
+		list_append(ext_list, key_pair);
+	}
+
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_ENERGY)
+		tmp_val = xstrdup("energy");
+
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_TEMP) {
+		if (tmp_val)
+			xstrcat(tmp_val, sep);
+		xstrcat(tmp_val, "temp");
+	}
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("NodeData");
+	key_pair->value = tmp_val;
+	list_append(ext_list, key_pair);
+	tmp_val = NULL;
+
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_SWITCH_ENERGY)
+		tmp_val = xstrdup("energy");
+
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_SWITCH_TEMP) {
+		if (tmp_val)
+			xstrcat(tmp_val, sep);
+
+		xstrcat(tmp_val, "temp");
+	}
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SwitchData");
+	key_pair->value = tmp_val;
+	list_append(ext_list, key_pair);
+	tmp_val = NULL;
+
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_COLDDOOR_TEMP) {
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("ColdDoorData");
+		key_pair->value = xstrdup("temp");
+		list_append(ext_list, key_pair);
+	}
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MinWatt");
+	key_pair->value = xstrdup_printf("%u", ext_sensors_cnf->min_watt);
+	list_append(ext_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MaxWatt");
+	key_pair->value = xstrdup_printf("%u", ext_sensors_cnf->max_watt);
+	list_append(ext_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MinTemp");
+	key_pair->value = xstrdup_printf("%u", ext_sensors_cnf->min_temp);
+	list_append(ext_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MaxTemp");
+	key_pair->value = xstrdup_printf("%u", ext_sensors_cnf->max_temp);
+	list_append(ext_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyRRA");
+	key_pair->value = xstrdup(ext_sensors_cnf->energy_rra_name);
+	list_append(ext_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("TempRRA");
+	key_pair->value = xstrdup(ext_sensors_cnf->temp_rra_name);
+	list_append(ext_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyPathRRD");
+	key_pair->value = xstrdup(ext_sensors_cnf->energy_rrd_file);
+	list_append(ext_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("TempPathRRD");
+	key_pair->value = xstrdup(ext_sensors_cnf->temp_rrd_file);
+	list_append(ext_list, key_pair);
+
+	list_sort(ext_list, (ListCmpF) sort_key_pairs);
+
+	return ext_list;
 }
 
 /*
@@ -676,7 +798,6 @@ extern int init(void)
 
 extern int fini(void)
 {
-	ext_sensors_clear_free_conf();
+	_ext_sensors_clear_free_conf();
 	return SLURM_SUCCESS;
 }
-

@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -63,9 +63,10 @@ static int _find_node_inx (char *name)
 
 
 	for (i = 0; i < g_node_info_ptr->record_count; i++) {
-		if (!strcmp (name, g_node_info_ptr->node_array[i].name)) {
+		if (g_node_info_ptr->node_array[i].name == NULL)
+			continue;	/* Future node or other anomaly */
+		if (!strcmp(name, g_node_info_ptr->node_array[i].name))
 			return i;
-		}
 	}
 
 	return -1;
@@ -74,40 +75,17 @@ static int _find_node_inx (char *name)
 
 static void _display_topology(void)
 {
-	int i, match = 0, match_cnt = 0;
-	hostset_t hs;
-	int one_liner = 1;
+	int i, one_liner = 1;
 
-	if (TOPO_DEBUG)
+	if (TOPO_DEBUG) {
 		g_print("_display_topology,  record_count = %d\n",
 			g_topo_info_msg_ptr->record_count);
-	for (i=0; i<g_topo_info_msg_ptr->record_count; i++) {
+	}
 
-		if ((g_topo_info_msg_ptr->topo_array[i].nodes == NULL) ||
-		    (g_topo_info_msg_ptr->topo_array[i].nodes[0] == '\0'))
-			continue;
-
-		if (g_topo_info_msg_ptr->topo_array[i].level == 0) {
-			hs = hostset_create(g_topo_info_msg_ptr->
-					    topo_array[i].nodes);
-			if (hs == NULL)
-				fatal("hostset_create: memory "
-				      "allocation failure");
-
-		}
-
-		hostset_destroy(hs);
-		if (!match)
-			continue;
-		match_cnt++;
+	for (i = 0; i < g_topo_info_msg_ptr->record_count; i++) {
 		slurm_print_topo_record(stdout,
 					&g_topo_info_msg_ptr->topo_array[i],
 					one_liner);
-		if (match_cnt == 0) {
-			g_print("Topology information contains no switch or "
-				"node named %s",
-				g_topo_info_msg_ptr->topo_array[i].nodes);
-		}
 	}
 }
 
@@ -1082,7 +1060,7 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 	GtkWidget *event_box = gtk_event_box_new();
 	GtkWidget *label = gtk_label_new(display_data->name);
 	GtkWidget *close_button = gtk_event_box_new();
-	GtkWidget *table = gtk_table_new(1, 3, FALSE);
+	GtkWidget *table;
 	GtkWidget *image = NULL;
 	int err;
 
@@ -1762,7 +1740,7 @@ extern void destroy_popup_info(void *arg)
 	if (popup_win) {
 		*popup_win->running = 0;
 		g_mutex_lock(sview_mutex);
-		/* these are all childern of each other so must
+		/* these are all children of each other so must
 		   be freed in this order */
 		if (popup_win->grid_button_list) {
 			list_destroy(popup_win->grid_button_list);

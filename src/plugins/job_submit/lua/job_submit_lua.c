@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -98,11 +98,12 @@
  */
 const char plugin_name[]       	= "Job submit lua plugin";
 const char plugin_type[]       	= "job_submit/lua";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/job_submit.lua";
 static lua_State *L = NULL;
+static char *user_msg;
 
 /*
  *  Mutex for protecting multi-threaded access to this plugin.
@@ -115,7 +116,7 @@ static pthread_mutex_t lua_lock = PTHREAD_MUTEX_INITIALIZER;
 /*****************************************************************************\
  * We've provided a simple example of the type of things you can do with this
  * plugin. If you develop another plugin that may be of interest to others
- * please post it to slurm-dev@lists.llnl.gov  Thanks!
+ * please post it to slurm-dev@schedmd.com  Thanks!
 \*****************************************************************************/
 
 /* Generic stack dump function for debugging purposes */
@@ -199,10 +200,20 @@ static int _log_lua_error (lua_State *L)
 	return (0);
 }
 
+static int _log_lua_user_msg (lua_State *L)
+{
+	const char *msg = lua_tostring(L, -1);
+
+	xfree(user_msg);
+	user_msg = xstrdup(msg);
+	return (0);
+}
+
 static const struct luaL_Reg slurm_functions [] = {
-	{ "log",   _log_lua_msg   },
-	{ "error", _log_lua_error },
-	{ NULL,    NULL        }
+	{ "log",	_log_lua_msg   },
+	{ "error",	_log_lua_error },
+	{ "user_msg",	_log_lua_user_msg },
+	{ NULL,		NULL        }
 };
 
 static void _register_lua_slurm_output_functions (void)
@@ -230,6 +241,8 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "log_debug3");
 	luaL_loadstring (L, "slurm.log (5, string.format(unpack({...})))");
 	lua_setfield (L, -2, "log_debug4");
+	luaL_loadstring (L, "slurm.user_msg (string.format(unpack({...})))");
+	lua_setfield (L, -2, "log_user");
 
 	/*
 	 * slurm.SUCCESS, slurm.FAILURE and slurm.ERROR
@@ -285,7 +298,7 @@ static char *_get_default_account(uint32_t user_id)
 
 /* Get fields in an existing slurmctld job record
  * NOTE: This is an incomplete list of job record fields.
- * Add more as needed and send patches to slurm-dev@llnl.gov */
+ * Add more as needed and send patches to slurm-dev@schedmd.com */
 static int _get_job_rec_field (lua_State *L)
 {
 	const struct job_record *job_ptr = lua_touserdata(L, 1);
@@ -366,7 +379,7 @@ static int _get_job_req_field (lua_State *L)
 	} else if (!strcmp(name, "account")) {
 		lua_pushstring (L, job_desc->account);
 	} else if (!strcmp(name, "acctg_freq")) {
-		lua_pushnumber (L, job_desc->acctg_freq);
+		lua_pushstring (L, job_desc->acctg_freq);
 	} else if (!strcmp(name, "begin_time")) {
 		lua_pushnumber (L, job_desc->begin_time);
 	} else if (!strcmp(name, "comment")) {
@@ -451,6 +464,17 @@ static int _get_job_req_field (lua_State *L)
 		lua_pushstring (L, job_desc->work_dir);
 	} else if (!strcmp(name, "wckey")) {
 		lua_pushstring (L, job_desc->wckey);
+	} else if (!strcmp(name, "ntasks_per_core")) {
+		lua_pushnumber (L, job_desc->ntasks_per_core);
+	} else if (!strcmp(name, "boards_per_node")) {
+		lua_pushnumber (L, job_desc->boards_per_node);
+	} else if (!strcmp(name, "ntasks_per_board")) {
+		lua_pushnumber (L, job_desc->ntasks_per_board);
+	} else if (!strcmp(name, "ntasks_per_socket")) {
+		lua_pushnumber (L, job_desc->ntasks_per_socket);
+	} else if (!strcmp(name, "sockets_per_board")) {
+		lua_pushnumber (L, job_desc->sockets_per_board);
+
 	} else {
 		lua_pushnil (L);
 	}
@@ -473,7 +497,10 @@ static int _set_job_req_field (lua_State *L)
 		if (strlen(value_str))
 			job_desc->account = xstrdup(value_str);
 	} else if (!strcmp(name, "acctg_freq")) {
-		job_desc->acctg_freq = luaL_checknumber(L, 3);
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->acctg_freq);
+		if (strlen(value_str))
+			job_desc->acctg_freq = xstrdup(value_str);
 	} else if (!strcmp(name, "begin_time")) {
 		job_desc->begin_time = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "comment")) {
@@ -609,7 +636,7 @@ static int _set_job_req_field (lua_State *L)
 
 /* Get fields in an existing slurmctld partition record
  * NOTE: This is an incomplete list of partition record fields.
- * Add more as needed and send patches to slurm-dev@llnl.gov */
+ * Add more as needed and send patches to slurm-dev@schedmd.com */
 static int _get_part_rec_field (lua_State *L)
 {
 	const struct part_record *part_ptr = lua_touserdata(L, 1);
@@ -685,7 +712,7 @@ static int _check_lua_script_function(const char *name)
 /*
  *   Verify all required functions are defined in the job_submit/lua script
  */
-static int _check_lua_script_functions()
+static int _check_lua_script_functions(void)
 {
 	int rc = 0;
 	int i;
@@ -831,7 +858,8 @@ int fini (void)
 
 
 /* Lua script hook called for "submit job" event. */
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 	int rc = SLURM_ERROR;
 	slurm_mutex_lock (&lua_lock);
@@ -862,6 +890,12 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 		lua_pop(L, 1);
 	}
 	_stack_dump("job_submit, after lua_pcall", L);
+	if (user_msg) {
+		if (err_msg)
+			*err_msg = user_msg;
+		else
+			xfree(user_msg);
+	}
 
 out:	slurm_mutex_unlock (&lua_lock);
 	return rc;

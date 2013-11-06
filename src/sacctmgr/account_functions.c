@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -600,6 +600,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			assoc->shares_raw = start_assoc->shares_raw;
 
 			assoc->grp_cpu_mins = start_assoc->grp_cpu_mins;
+			assoc->grp_cpu_run_mins = start_assoc->grp_cpu_run_mins;
 			assoc->grp_cpus = start_assoc->grp_cpus;
 			assoc->grp_jobs = start_assoc->grp_jobs;
 			assoc->grp_mem = start_assoc->grp_mem;
@@ -636,6 +637,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	if (!list_count(acct_list) && !list_count(assoc_list)) {
 		printf(" Nothing new added.\n");
+		rc = SLURM_ERROR;
 		goto end_it;
 	} else if (!assoc_str) {
 		exit_code=1;
@@ -1060,6 +1062,7 @@ assoc_start:
 			}
 		} else if (ret_list) {
 			printf(" Nothing modified\n");
+			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Error with request: %s\n",
@@ -1212,6 +1215,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");
+		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",

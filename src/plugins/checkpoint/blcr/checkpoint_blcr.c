@@ -348,7 +348,7 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack16(check_ptr->disabled, buffer);
 		pack_time(check_ptr->time_stamp, buffer);
 		pack32(check_ptr->error_code, buffer);
@@ -365,7 +365,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack16(&check_ptr->disabled, buffer);
 		safe_unpack_time(&check_ptr->time_stamp, buffer);
 		safe_unpack32(&check_ptr->error_code, buffer);
@@ -390,7 +390,7 @@ extern check_jobinfo_t slurm_ckpt_copy_job(check_jobinfo_t jobinfo)
 	return (check_jobinfo_t) jobinfo_dest;
 }
 
-extern int slurm_ckpt_stepd_prefork(slurmd_job_t *job)
+extern int slurm_ckpt_stepd_prefork(stepd_step_rec_t *job)
 {
 	char *old_env = NULL, *new_env = NULL, *ptr = NULL, *save_ptr = NULL;
 
@@ -428,7 +428,7 @@ extern int slurm_ckpt_stepd_prefork(slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_signal_tasks(slurmd_job_t *job, char *image_dir)
+extern int slurm_ckpt_signal_tasks(stepd_step_rec_t *job, char *image_dir)
 {
 	char *argv[4];
 	char context_file[MAX_PATH_LEN];
@@ -537,7 +537,8 @@ extern int slurm_ckpt_signal_tasks(slurmd_job_t *job, char *image_dir)
 	return rc;
 }
 
-extern int slurm_ckpt_restart_task(slurmd_job_t *job, char *image_dir, int gtid)
+extern int slurm_ckpt_restart_task(stepd_step_rec_t *job,
+				   char *image_dir, int gtid)
 {
 	char *argv[3];
 	char context_file[MAX_PATH_LEN];

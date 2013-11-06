@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -101,6 +101,8 @@ typedef struct {
 	uint32_t min_cpu_load;
 	uint32_t max_cpu_load;
 
+	uint32_t max_cpus_per_node;
+
 	char *features;
 	char *gres;
 	char *reason;
@@ -148,6 +150,7 @@ struct sinfo_match_flags {
 	bool reason_timestamp_flag;
 	bool reason_user_flag;
 	bool cpu_load_flag;
+	bool max_cpus_per_node_flag;
 };
 
 /* Input parameters */

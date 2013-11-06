@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -50,6 +50,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
@@ -74,10 +75,10 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
-static slurmd_job_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
+static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 				 slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
-static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
+static void _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc);
 #endif
 static int process_cmdline (int argc, char *argv[]);
 
@@ -95,7 +96,7 @@ main (int argc, char *argv[])
 	slurm_addr_t *cli;
 	slurm_addr_t *self;
 	slurm_msg_t *msg;
-	slurmd_job_t *job;
+	stepd_step_rec_t *job;
 	int ngids;
 	gid_t *gids;
 	int rc = 0;
@@ -120,7 +121,7 @@ main (int argc, char *argv[])
 	 * on STDERR_FILENO for us. */
 	dup2(STDERR_FILENO, STDIN_FILENO);
 
-	/* Create the slurmd_job_t, mostly from info in a
+	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
 	if (!(job = _step_setup(cli, self, msg))) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
@@ -162,7 +163,10 @@ main (int argc, char *argv[])
 
 ending:
 #ifdef MEMORY_LEAK_DEBUG
+	acct_gather_conf_destroy();
 	_step_cleanup(job, msg, rc);
+
+	fini_setproctitle();
 
 	xfree(cli);
 	xfree(self);
@@ -187,6 +191,7 @@ static slurmd_conf_t * read_slurmd_conf_lite (int fd)
 	int len;
 	Buf buffer;
 	slurmd_conf_t *confl;
+	int tmp_int = 0;
 
 	/*  First check to see if we've already initialized the
 	 *   global slurmd_conf_t in 'conf'. Allocate memory if not.
@@ -220,6 +225,13 @@ static slurmd_conf_t * read_slurmd_conf_lite (int fd)
 			confl->log_opts.syslog_level = LOG_LEVEL_QUIET;
 	} else
 		confl->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+
+	confl->acct_freq_task = (uint16_t)NO_VAL;
+	tmp_int = acct_gather_parse_freq(PROFILE_TASK,
+				       confl->job_acct_gather_freq);
+	if (tmp_int != -1)
+		confl->acct_freq_task = tmp_int;
+
 
 	return (confl);
 rwfail:
@@ -279,8 +291,7 @@ static int handle_spank_mode (int argc, char *argv[])
 		log_alter (conf->log_opts, 0, conf->logfile);
 	close (STDIN_FILENO);
 
-	if (slurm_conf_init(NULL) != SLURM_SUCCESS)
-		return error ("Failed to read slurm config");
+	slurm_conf_init(NULL);
 
 	if (get_jobid_uid_from_env (&jobid, &uid) < 0)
 		return error ("spank environment invalid");
@@ -324,11 +335,16 @@ static int process_cmdline (int argc, char *argv[])
 static void
 _send_ok_to_slurmd(int sock)
 {
+	/* If running under memcheck stdout doesn't work correctly so
+	 * just skip it.
+	 */
+#ifndef SLURMSTEPD_MEMCHECK
 	int ok = SLURM_SUCCESS;
 	safe_write(sock, &ok, sizeof(int));
 	return;
 rwfail:
 	error("Unable to send \"ok\" to slurmd");
+#endif
 }
 
 static void
@@ -391,8 +407,6 @@ _init_from_slurmd(int sock, char **argv,
 	log_alter(conf->log_opts, 0, conf->logfile);
 
 	debug2("debug level is %d.", conf->debug_level);
-	/* acct info */
-	jobacct_gather_startpoll(conf->job_acct_gather_freq);
 
 	switch_g_slurmd_step_init();
 
@@ -484,10 +498,10 @@ rwfail:
 	exit(1);
 }
 
-static slurmd_job_t *
+static stepd_step_rec_t *
 _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 {
-	slurmd_job_t *job = NULL;
+	stepd_step_rec_t *job = NULL;
 
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
@@ -535,12 +549,12 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 
 #ifdef MEMORY_LEAK_DEBUG
 static void
-_step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
+_step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc)
 {
 	if (job) {
 		jobacctinfo_destroy(job->jobacct);
 		if (!job->batch)
-			job_destroy(job);
+			stepd_step_rec_destroy(job);
 	}
 	/*
 	 * The message cannot be freed until the jobstep is complete

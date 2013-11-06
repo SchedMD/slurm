@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -115,6 +115,7 @@ main (int argc, char *argv[])
 	input_field_count = 0;
 	quiet_flag        = 0;
 	verbosity         = 0;
+	slurm_conf_init(NULL);
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (getenv ("SCONTROL_ALL"))
@@ -127,8 +128,13 @@ main (int argc, char *argv[])
 		working_cluster_rec = list_peek(clusters);
 	}
 
-	while((opt_char = getopt_long(argc, argv, "adhM:oQvV",
-			long_options, &option_index)) != -1) {
+	while (1) {
+		if ((optind < argc) &&
+		    !strncasecmp(argv[optind], "setdebugflags", 8))
+			break;	/* avoid parsing "-<flagname>" as option */
+		if ((opt_char = getopt_long(argc, argv, "adhM:oQvV",
+					    long_options, &option_index)) == -1)
+			break;
 		switch (opt_char) {
 		case (int)'?':
 			fprintf(stderr, "Try \"scontrol --help\" for "
@@ -841,7 +847,7 @@ _process_command (int argc, char *argv[])
 		}
 	}
 	else if (strncasecmp (tag, "requeue", MAX(tag_len, 3)) == 0) {
-		if (argc > 2) {
+		if (argc > 3) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,
@@ -854,7 +860,30 @@ _process_command (int argc, char *argv[])
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			error_code = scontrol_requeue(argv[1]);
+			error_code = scontrol_requeue((argc - 1), &argv[1]);
+			if (error_code) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					slurm_perror ("slurm_requeue error");
+			}
+		}
+
+	}
+	else if (strncasecmp(tag, "requeuehold", 11) == 0) {
+		if (argc > 3) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					tag);
+		} else {
+			error_code = scontrol_requeue_hold((argc - 1), &argv[1]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
@@ -914,7 +943,7 @@ _process_command (int argc, char *argv[])
 		}
 	}
 	else if (strncasecmp (tag, "wait_job", MAX(tag_len, 2)) == 0) {
-		if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+		if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
 			fprintf(stderr,
 				"wait_job is handled automatically on Cray.\n");
 		} else if (argc > 2) {
@@ -1206,15 +1235,13 @@ _process_command (int argc, char *argv[])
 			exit_code = 1;
 			slurm_perror("job notify failure");
 		}
-	}
-	else {
+	}	else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", tag);
 	}
 
 	return 0;
 }
-
 
 /*
  * _create_it - create a slurm configuration per the supplied arguments
@@ -1423,6 +1450,8 @@ _show_it (int argc, char *argv[])
 		scontrol_print_step (val);
 	} else if (strncasecmp (tag, "topology", MAX(tag_len, 1)) == 0) {
 		scontrol_print_topo (val);
+	} else if (strncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
+		scontrol_print_licenses(val);
 	} else {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -1702,11 +1731,14 @@ _update_bluegene_subbp (int argc, char *argv[])
  */
 static int _update_slurmctld_debug(char *val)
 {
-	char *endptr;
+	char *endptr = NULL;
 	int error_code = SLURM_SUCCESS;
-	uint32_t level = (uint32_t)strtoul(val, &endptr, 10);
+	uint32_t level;
 
-	if (*endptr != '\0' || level > 9) {
+	if (val)
+		level = (uint32_t)strtoul(val, &endptr, 10);
+
+	if ((val == NULL) || (*endptr != '\0') || (level > 9)) {
 		error_code = 1;
 		if (quiet_flag != 1)
 			fprintf(stderr, "invalid debug level: %s\n",

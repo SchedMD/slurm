@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *  
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -25,6 +25,9 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+
+#ifndef _SLURMD_TERM_MONITOR_H
+#define _SLURMD_TERM_MONITOR_H
 
 /*
  * Start a monitor pthread that will wait for a period of time,
@@ -49,3 +52,5 @@ void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid);
  * said pthread.
  */
 void step_terminate_monitor_stop(void);
+
+#endif /* !_SLURMD_TERM_MONITOR_H */

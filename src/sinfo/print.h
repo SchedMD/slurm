@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -146,6 +146,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_com_invalid)
 #define format_add_cpu_load(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_cpu_load)
+#define format_add_max_cpus_per_node(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_max_cpus_per_node)
 
 /*****************************************************************************
  * Print Field Functions
@@ -227,5 +229,7 @@ int _print_com_invalid(sinfo_data_t * sinfo_data, int width,
 		       bool right_justify, char *suffix);
 int _print_cpu_load(sinfo_data_t * node_ptr, int width,
 		    bool right_justify, char *suffix);
+int _print_max_cpus_per_node(sinfo_data_t * sinfo_data, int width,
+			     bool right_justify, char *suffix);
 
 #endif

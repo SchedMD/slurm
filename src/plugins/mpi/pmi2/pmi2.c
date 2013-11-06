@@ -6,7 +6,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -183,10 +183,15 @@ static int
 _handle_abort(int fd, int lrank, client_req_t *req)
 {
 	int rc = SLURM_SUCCESS;
+	bool is_world = false;
 
 	debug3("mpi/pmi2: in _handle_abort");
-	/* no response needed. just cancel the job */
-	slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
+	client_req_parse_body(req);
+	client_req_get_bool(req, ISWORLD_KEY, &is_world);
+	/* no response needed. just cancel the job step if required */
+	if (is_world) {
+		slurm_kill_job_step(job_info.jobid, job_info.stepid, SIGKILL);
+	}
 	return rc;
 }
 

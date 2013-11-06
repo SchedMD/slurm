@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -82,6 +82,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -119,6 +120,7 @@
 #define OPT_SIGNAL      0x17
 #define OPT_TIME_VAL    0x18
 #define OPT_CPU_FREQ    0x19
+#define OPT_PROFILE     0x20
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -188,6 +190,7 @@
 #define LONG_OPT_LAUNCHER_OPTS   0x154
 #define LONG_OPT_CPU_FREQ        0x155
 #define LONG_OPT_LAUNCH_CMD      0x156
+#define LONG_OPT_PROFILE         0x157
 
 extern char **environ;
 
@@ -203,6 +206,7 @@ resource_allocation_response_msg_t *global_resp = NULL;
 static bool mpi_initialized = false;
 typedef struct env_vars env_vars_t;
 
+static int _get_task_count(void);
 
 /* Get a decimal integer from arg */
 static int  _get_int(const char *arg, const char *what, bool positive);
@@ -257,12 +261,52 @@ int initialize_and_process_args(int argc, char *argv[])
 			exit(1);
 		}
 		xfree(launch_type);
+		/* Massage ntasks value earlier than normal */
+		if (!opt.ntasks_set)
+			opt.ntasks = _get_task_count();
 		launch_g_create_job_step(NULL, 0, NULL, NULL);
 		exit(0);
 	}
 
 	return 1;
 
+}
+static int _get_task_count(void)
+{
+	char *cpus_per_node = NULL, *end_ptr = NULL;
+	int cpu_count, node_count, task_count, total_tasks = 0;
+
+	if (opt.ntasks_per_node != NO_VAL)
+		return (opt.min_nodes * opt.ntasks_per_node);
+	if (opt.cpus_set)
+		cpus_per_node = getenv("SLURM_JOB_CPUS_PER_NODE");
+	if (cpus_per_node) {
+		cpu_count = strtol(cpus_per_node, &end_ptr, 10);
+		task_count = cpu_count / opt.cpus_per_task;
+		while (1) {
+			if ((end_ptr[0] == '(') && (end_ptr[1] == 'x')) {
+				end_ptr += 2;
+				node_count = strtol(end_ptr, &end_ptr, 10);
+				task_count *= node_count;
+				total_tasks += task_count;
+				if (end_ptr[0] == ')')
+					end_ptr++;
+			} else if ((end_ptr[0] == ',') || (end_ptr[0] == 0))
+				total_tasks += task_count;
+			else {
+				error("Invalid value for environment variable "
+				      "SLURM_JOB_CPUS_PER_NODE (%s)",
+				      cpus_per_node);
+				break;
+			}
+			if (end_ptr[0] == ',')
+				end_ptr++;
+			if (end_ptr[0] == 0)
+				break;
+		}
+		return total_tasks;
+	}
+	return opt.min_nodes;
 }
 
 /*
@@ -357,6 +401,7 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
+	opt.core_spec = 0;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
 	opt.time_min = NO_VAL;
@@ -411,6 +456,7 @@ static void _opt_default()
 	opt.quiet = 0;
 	_verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
+	opt.warn_flags  = 0;
 	opt.warn_signal = 0;
 	opt.warn_time   = 0;
 
@@ -433,7 +479,7 @@ static void _opt_default()
 
 	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]    = (uint16_t) NO_VAL;
-		opt.geometry[i]	    = (uint16_t) NO_VAL;
+		opt.geometry[i]	    = 0;
 	}
 	opt.reboot          = false;
 	opt.no_rotate	    = false;
@@ -446,6 +492,7 @@ static void _opt_default()
 	opt.egid	    = (gid_t) -1;
 
 	opt.propagate	    = NULL;  /* propagate specific rlimits */
+	opt.profile	    = ACCT_GATHER_PROFILE_NOT_SET;
 
 	opt.prolog = slurm_get_srun_prolog();
 	opt.epilog = slurm_get_srun_epilog();
@@ -466,7 +513,7 @@ static void _opt_default()
 
 	opt.pty = false;
 	opt.open_mode = 0;
-	opt.acctg_freq = -1;
+	opt.acctg_freq = NULL;
 	opt.cpu_freq = NO_VAL;
 	opt.reservation = NULL;
 	opt.wckey = NULL;
@@ -497,7 +544,7 @@ struct env_vars {
 env_vars_t env_vars[] = {
 {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL             },
 {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL             },
-{"SLURM_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL             },
+{"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
 {"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL         },
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL             },
@@ -540,6 +587,7 @@ env_vars_t env_vars[] = {
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
+{"SLURM_PROFILE",       OPT_PROFILE,    NULL,               NULL             },
 {"SLURM_PROLOG",        OPT_STRING,     &opt.prolog,        NULL             },
 {"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
@@ -711,7 +759,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_SIGNAL:
 		if (get_signal_opts((char *)val, &opt.warn_signal,
-				    &opt.warn_time)) {
+				    &opt.warn_time, &opt.warn_flags)) {
 			error("Invalid signal specification: %s", val);
 			exit(error_exit);
 		}
@@ -720,7 +768,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-
+	case OPT_PROFILE:
+		opt.profile = acct_gather_profile_from_string((char *)val);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -787,6 +837,7 @@ static void _set_options(const int argc, char **argv)
 		{"relative",      required_argument, 0, 'r'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
+		{"core-spec",     required_argument, 0, 'S'},
 		{"time",          required_argument, 0, 't'},
 		{"threads",       required_argument, 0, 'T'},
 		{"unbuffered",    no_argument,       0, 'u'},
@@ -844,6 +895,7 @@ static void _set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
+		{"profile",          required_argument, 0, LONG_OPT_PROFILE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -871,7 +923,7 @@ static void _set_options(const int argc, char **argv)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
-		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
+		"o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
 	char *pos_delimit;
 #ifdef HAVE_PTY_H
 	char *tmp_str;
@@ -1070,6 +1122,9 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'s':
 			opt.shared = 1;
+			break;
+		case (int)'S':
+			opt.core_spec = _get_int(optarg, "core_spec", true);
 			break;
 		case (int)'t':
 			xfree(opt.time_limit_str);
@@ -1460,8 +1515,8 @@ static void _set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_ACCTG_FREQ:
-			opt.acctg_freq = _get_int(optarg, "acctg-freq",
-                                false);
+			xfree(opt.acctg_freq);
+			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_CPU_FREQ:
 		        if (cpu_freq_verify_param(optarg, &opt.cpu_freq))
@@ -1471,6 +1526,9 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
 			opt.wckey = xstrdup(optarg);
+			break;
+		case LONG_OPT_PROFILE:
+			opt.profile = acct_gather_profile_from_string(optarg);
 			break;
 		case LONG_OPT_RESERVATION:
 			xfree(opt.reservation);
@@ -1490,7 +1548,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal,
-					    &opt.warn_time)) {
+					    &opt.warn_time, &opt.warn_flags)) {
 				error("Invalid signal specification: %s",
 				      optarg);
 				exit(error_exit);
@@ -1614,7 +1672,7 @@ static void _opt_args(int argc, char **argv)
 
 	command_args = opt.argc;
 
-	if (!rest)
+	if (!rest && !opt.test_only)
 		fatal("No command given to execute.");
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
@@ -1647,7 +1705,7 @@ static void _opt_args(int argc, char **argv)
 	xassert((command_pos + command_args) <= opt.argc);
 
 	for (i = command_pos; i < opt.argc; i++) {
-		if (!rest[i-command_pos])
+		if (!rest || !rest[i-command_pos])
 			break;
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
 	}
@@ -1864,7 +1922,8 @@ static bool _opt_verify(void)
 		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
 					   CPU_BIND_TO_CORES |
 					   CPU_BIND_TO_THREADS |
-					   CPU_BIND_TO_LDOMS))) {
+					   CPU_BIND_TO_LDOMS |
+					   CPU_BIND_TO_BOARDS))) {
 			opt.cpu_bind_type |= CPU_BIND_TO_CORES;
 		}
 	}
@@ -1875,7 +1934,8 @@ static bool _opt_verify(void)
 		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
 					   CPU_BIND_TO_CORES |
 					   CPU_BIND_TO_THREADS |
-					   CPU_BIND_TO_LDOMS))) {
+					   CPU_BIND_TO_LDOMS |
+					   CPU_BIND_TO_BOARDS))) {
 			opt.cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 		}
 	}
@@ -1894,6 +1954,7 @@ static bool _opt_verify(void)
 		else
 			opt.min_nodes = hl_cnt;
 	}
+
 	if ((opt.nodes_set || opt.extra_set)				&&
 	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&&
 	    !opt.ntasks_set) {
@@ -1908,7 +1969,8 @@ static bool _opt_verify(void)
 			opt.ntasks *= opt.cores_per_socket;
 			opt.ntasks *= opt.threads_per_core;
 			opt.ntasks_set = true;
-		}
+		} else if (opt.ntasks_per_node != NO_VAL)
+			opt.ntasks *= opt.ntasks_per_node;
 
 		/* massage the numbers */
 		if (opt.nodelist) {
@@ -1933,7 +1995,6 @@ static bool _opt_verify(void)
 			/* Don't destroy hl here since it may be used later */
 		}
 	} else if (opt.nodes_set && opt.ntasks_set) {
-
 		/*
 		 * Make sure that the number of
 		 * max_nodes is <= number of tasks
@@ -1966,7 +2027,14 @@ static bool _opt_verify(void)
 					hostlist_ranged_string_xmalloc(hl);
 			}
 		}
-
+		if ((opt.ntasks_per_node != NO_VAL) &&
+		    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))&&
+		    (opt.ntasks != (opt.min_nodes * opt.ntasks_per_node))) {
+			error("task count inconsistent with node count and "
+			      "ntasks-per_node (%d != %d x %d).",
+			      opt.ntasks, opt.min_nodes, opt.ntasks_per_node);
+			opt.ntasks = opt.min_nodes * opt.ntasks_per_node;
+		}
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
 
 	if (hl)
@@ -2172,16 +2240,16 @@ static char *print_constraints()
 {
 	char *buf = xstrdup("");
 
-	if (opt.pn_min_cpus > 0)
+	if (opt.pn_min_cpus != NO_VAL)
 		xstrfmtcat(buf, "mincpus-per-node=%d ", opt.pn_min_cpus);
 
-	if (opt.pn_min_memory > 0)
+	if (opt.pn_min_memory != NO_VAL)
 		xstrfmtcat(buf, "mem-per-node=%dM ", opt.pn_min_memory);
 
-	if (opt.mem_per_cpu > 0)
+	if (opt.mem_per_cpu != NO_VAL)
 		xstrfmtcat(buf, "mem-per-cpu=%dM ", opt.mem_per_cpu);
 
-	if (opt.pn_min_tmp_disk > 0)
+	if (opt.pn_min_tmp_disk != NO_VAL)
 		xstrfmtcat(buf, "tmp-per-node=%ld ", opt.pn_min_tmp_disk);
 
 	if (opt.contiguous == true)
@@ -2203,7 +2271,6 @@ static char *print_constraints()
 
 static void _opt_list(void)
 {
-	int i;
 	char *str;
 
 	info("defined options for program `%s'", opt.progname);
@@ -2227,6 +2294,8 @@ static void _opt_list(void)
 	     opt.jobid_set ? "(set)" : "(default)");
 	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
+	info("profile        : `%s'",
+	     acct_gather_profile_to_string(opt.profile));
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);
@@ -2277,10 +2346,10 @@ static void _opt_list(void)
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
-		if (opt.conn_type[i] == (uint16_t) NO_VAL)
-			break;
-		info("conn_type[%d]    : %u", i, opt.conn_type[i]);
+	if (opt.conn_type[0] != (uint16_t) NO_VAL) {
+		str = conn_type_string_full(opt.conn_type);
+		info("conn_type      : %s", str);
+		xfree(str);
 	}
 	str = print_geometry(opt.geometry);
 	info("geometry       : %s", str);
@@ -2330,6 +2399,7 @@ static void _opt_list(void)
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
+	info("core-spec         : %d", opt.core_spec);
 	if (opt.resv_port_cnt != NO_VAL)
 		info("resv_port_cnt     : %d", opt.resv_port_cnt);
 	str = print_commandline(opt.argc, opt.argv);
@@ -2369,6 +2439,7 @@ static void _usage(void)
 "            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
+"            [--profile=...]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 #ifdef HAVE_BG_L_P
 "            [--geometry=XxYxZ] "
@@ -2389,6 +2460,7 @@ static void _usage(void)
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "            [--switches=max-switches{@max-time-to-wait}]\n"
+"            [--core-spec=cores]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2426,7 +2498,8 @@ static void _help(void)
 "  -l, --label                 prepend task number to lines of stdout/err\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "      --launch-cmd            print external launcher command line if not SLURM\n"
-"      --launcher-opts=        options for the external launcher command if not SLURM\n"
+"      --launcher-opts=        options for the external launcher command if not\n"
+"                              SLURM\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
@@ -2443,6 +2516,9 @@ static void _help(void)
 "  -O, --overcommit            overcommit resources\n"
 "  -p, --partition=partition   partition requested\n"
 "      --prolog=program        run \"program\" before launching job step\n"
+"      --profile=value         enable acct_gather_profile for detailed data\n"
+"                              value is all or none or any combination of\n"
+"                              energy, lustre, network or task\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"
@@ -2454,6 +2530,7 @@ static void _help(void)
 "      --restart-dir=dir       directory of checkpoint image files to restart\n"
 "                              from\n"
 "  -s, --share                 share nodes with other jobs\n"
+"  -S, --core-spec=cores       count of reserved cores\n"
 "      --slurmd-debug=level    slurmd debug level\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
@@ -2472,7 +2549,8 @@ static void _help(void)
 "      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
 "      --mem=MB                minimum amount of real memory\n"
-"      --mincpus=n             minimum number of logical processors (threads) per node\n"
+"      --mincpus=n             minimum number of logical processors (threads)\n"
+"                              per node\n"
 "      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"

@@ -5,7 +5,7 @@
  *  Written by Bull- Thomas Cadeau
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -58,11 +58,11 @@
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/fd.h"
 #include "src/slurmd/common/proctrack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "acct_gather_energy_ipmi_config.h"
-#include "acct_gather_energy_ipmi.h"
 
 /*
  * freeipmi includes for the lib
@@ -70,9 +70,19 @@
 #include <ipmi_monitoring.h>
 #include <ipmi_monitoring_bitmasks.h>
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+slurmd_conf_t *conf __attribute__((weak_import)) = NULL;
+#else
+slurmd_conf_t *conf = NULL;
+#endif
+
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
-#define TIMEOUT 10
+#define IPMI_VERSION 1		/* Data structure version number */
 #define NBFIRSTREAD 3
 
 /*
@@ -131,37 +141,58 @@ static acct_gather_energy_t *local_energy = NULL;
 static slurm_ipmi_conf_t slurm_ipmi_conf;
 static uint32_t debug_flags = 0;
 static bool flag_energy_accounting_shutdown = false;
-static bool flag_thread_run_running = false;
-static bool flag_thread_write_running = false;
 static bool flag_thread_started = false;
-static bool flag_slurmd_process = false;
+static bool flag_init = false;
 static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t cleanup_handler_thread = 0;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
-pthread_t thread_ipmi_id_write = 0;
-//__progname may need security for portability
-extern char *__progname;
-
-typedef struct ipmi_message {
-	uint32_t energy;
-	uint32_t watts;
-	time_t time;
-} ipmi_message_t;
 
 static bool _is_thread_launcher(void)
 {
-	if (__progname == NULL)
-		return false;
-	if (strcmp(__progname,"slurmd")==0) {
-		return true;
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmd");
 	}
-	return false;
+
+	return run;
+}
+
+static bool _run_in_daemon(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmd,slurmstepd");
+	}
+
+	return run;
 }
 
 static void _task_sleep(int rem)
 {
 	while (rem)
 		rem = sleep(rem);	// subject to interupt
+}
+
+static int _running_profile(void)
+{
+	static bool run = false;
+	static uint32_t profile_opt = ACCT_GATHER_PROFILE_NOT_SET;
+
+	if (profile_opt == ACCT_GATHER_PROFILE_NOT_SET) {
+		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
+					  &profile_opt);
+		if (profile_opt & ACCT_GATHER_PROFILE_ENERGY)
+			run = true;
+	}
+
+	return run;
 }
 
 /*
@@ -302,7 +333,7 @@ static int _check_power_sensor(void)
 		return SLURM_FAILURE;
 	}
 
-	if (sensor_units != IPMI_MONITORING_SENSOR_UNITS_WATTS) {
+	if (sensor_units != slurm_ipmi_conf.variable) {
 		error("Configured sensor is not in Watt, "
 		      "please check ipmi.conf");
 		return SLURM_FAILURE;
@@ -364,7 +395,7 @@ static int _find_power_sensor(void)
 			return SLURM_FAILURE;
 		}
 
-		if (sensor_units != IPMI_MONITORING_SENSOR_UNITS_WATTS)
+		if (sensor_units != slurm_ipmi_conf.variable)
 			continue;
 
 		if ((record_id =
@@ -384,6 +415,7 @@ static int _find_power_sensor(void)
 		} else {
 			error("ipmi read an empty value for power consumption");
 			rc = SLURM_FAILURE;
+			continue;
 		}
 		rc = SLURM_SUCCESS;
 		break;
@@ -439,31 +471,6 @@ static int _read_ipmi_values(void)
 }
 
 /*
- * _read_last_consumed_energy reads the pipe and remove it
- * update consumed_energy for tasks
- */
-static int _read_last_consumed_energy(ipmi_message_t* message)
-{
-	int rc = SLURM_SUCCESS;
-	int pipe;
-	char *name = NULL;
-
-	xstrfmtcat(name, "%s/%s_ipmi_pipe", conf->spooldir, conf->node_name);
-	pipe = open(name, O_RDONLY);
-	if (pipe < 0) {
-		error("ipmi: failed to read ipmi pipe: %m");
-		return SLURM_ERROR;
-	}
-	safe_read(pipe, message, sizeof(ipmi_message_t));
-	close(pipe);
-	remove(name);
-	return rc;
-rwfail:
-	error("Unable to recv consumption information.");
-	return SLURM_ERROR;
-}
-
-/*
  * _thread_update_node_energy calls _read_ipmi_values and updates all values
  * for node consumption
  */
@@ -476,38 +483,41 @@ static int _thread_update_node_energy(void)
 
 	rc = _read_ipmi_values();
 
-	slurm_mutex_lock(&ipmi_mutex);
 	if (rc == SLURM_SUCCESS) {
-		uint32_t additional_consumption;
-		if (previous_update_time == 0) {
-			additional_consumption = 0;
-			previous_update_time = last_update_time;
-		} else {
-			additional_consumption =
-				_get_additional_consumption(
-					previous_update_time,last_update_time,
-					local_energy->base_watts,
-					local_energy->current_watts);
-		}
 		if (local_energy->current_watts != 0) {
 			local_energy->base_watts = local_energy->current_watts;
 			local_energy->current_watts = last_update_watt;
-			local_energy->consumed_energy += additional_consumption;
+			if (previous_update_time == 0)
+				local_energy->base_consumed_energy = 0;
+			else
+				local_energy->base_consumed_energy =
+					_get_additional_consumption(
+						previous_update_time,
+						last_update_time,
+						local_energy->base_watts,
+						local_energy->current_watts);
+			local_energy->previous_consumed_energy =
+				local_energy->consumed_energy;
+			local_energy->consumed_energy +=
+				local_energy->base_consumed_energy;
 		}
+		if (previous_update_time == 0)
+			previous_update_time = last_update_time;
 		if (local_energy->current_watts == 0) {
 			local_energy->consumed_energy = 0;
 			local_energy->base_watts = 0;
 			local_energy->current_watts = last_update_watt;
 		}
+		local_energy->poll_time = time(NULL);
 	}
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		info("ipmi-thread = %d sec, current %d Watts, "
-		     "consumed %d Joules",
+		     "consumed %d Joules %d new",
 		     (int) (last_update_time - previous_update_time),
 		     local_energy->current_watts,
-		     local_energy->consumed_energy);
+		     local_energy->consumed_energy,
+		     local_energy->base_consumed_energy);
 	}
-	slurm_mutex_unlock(&ipmi_mutex);
 
 	return rc;
 }
@@ -517,7 +527,13 @@ static int _thread_update_node_energy(void)
  */
 static int _thread_init(void)
 {
+	static bool first = true;
+	static bool first_init = SLURM_FAILURE;
 	int rc = SLURM_SUCCESS;
+
+	if (!first)
+		return first_init;
+	first = false;
 
 	if (_init_ipmi_config() != SLURM_SUCCESS) {
 		//TODO verbose error?
@@ -528,13 +544,16 @@ static int _thread_init(void)
 		    || _check_power_sensor() != SLURM_SUCCESS) {
 			local_energy->current_watts = NO_VAL;
 		} else {
-			local_energy->current_watts = 0;
+			local_energy->current_watts = last_update_watt;
 		}
+		if (slurm_ipmi_conf.reread_sdr_cache)
+			//IPMI cache is reread only on initialisation
+			//This option need a big EnergyIPMITimeout
+			sensor_reading_flags ^=
+				IPMI_MONITORING_SENSOR_READING_FLAGS_REREAD_SDR_CACHE;
 	}
-	slurm_mutex_lock(&ipmi_mutex);
 	local_energy->consumed_energy = 0;
 	local_energy->base_watts = 0;
-	local_energy->current_watts = last_update_watt;
 	slurm_mutex_unlock(&ipmi_mutex);
 
 	if (rc != SLURM_SUCCESS)
@@ -543,123 +562,88 @@ static int _thread_init(void)
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("%s thread init", plugin_name);
+
+	first_init = SLURM_SUCCESS;
+
 	return rc;
 }
 
-/*
- * _thread_fini finalizes values for the ipmi thread
- */
-static int _thread_fini(void)
+static int _ipmi_send_profile(void)
 {
-	//acct_gather_energy_destroy(local_energy);
-	//local_energy = NULL;
-	if (ipmi_ctx)
-		ipmi_monitoring_ctx_destroy(ipmi_ctx);
-	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
-	return SLURM_SUCCESS;
-}
+	acct_energy_data_t ener;
 
-/*
- * _thread_ipmi_write is an independant thread writing in pipe
- */
-static void *_thread_ipmi_write(void *no_data)
-{
-	int pipe;
-	char *name = NULL;
-	ipmi_message_t message;
-
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	if (!_running_profile())
+		return SLURM_SUCCESS;
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("ipmi-thread-write: launched");
+		info("_ipmi_send_profile: consumed %d watts",
+		     local_energy->current_watts);
 
-	flag_thread_write_running = true;
-	flag_energy_accounting_shutdown = false;
+	memset(&ener, 0, sizeof(acct_energy_data_t));
+	/*TODO function to calculate Average CPUs Frequency*/
+	/*ener->cpu_freq = // read /proc/...*/
+	ener.cpu_freq = 1;
+	ener.time = time(NULL);
+	ener.power = local_energy->current_watts;
+	acct_gather_profile_g_add_sample_data(
+		ACCT_GATHER_PROFILE_ENERGY, &ener);
 
-	xstrfmtcat(name, "%s/%s_ipmi_pipe", conf->spooldir, conf->node_name);
-	remove(name);
-
-	while (!flag_energy_accounting_shutdown && flag_thread_run_running) {
-		mkfifo(name, 0777);
-		//wait until pipe is read
-		pipe = open(name, O_WRONLY);
-		slurm_mutex_lock(&ipmi_mutex);
-		message.energy = local_energy->consumed_energy;
-		message.watts = local_energy->current_watts;
-		message.time = last_update_time;
-		slurm_mutex_unlock(&ipmi_mutex);
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			info("ipmi-thread-write: write message on pipe");
-
-		safe_write(pipe, &(message), sizeof(ipmi_message_t));
-		close(pipe);
-		//wait for free pipe
-		while (access(name, F_OK) != -1) {//do nothing
-		}
-	}
-	remove(name);
-
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("ipmi-thread-write: ended");
-
-	flag_thread_write_running = false;
-	return NULL;
-rwfail:
-	error("Unable to send consumption information.");
-	return NULL;
+	return SLURM_ERROR;
 }
+
 
 /*
  * _thread_ipmi_run is the thread calling ipmi and launching _thread_ipmi_write
  */
 static void *_thread_ipmi_run(void *no_data)
 {
-	ipmi_message_t message_trash;
 // need input (attr)
 	int time_lost;
-	pthread_attr_t attr_write;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	flag_thread_run_running = true;
 	flag_energy_accounting_shutdown = false;
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread: launched");
 
-
+	slurm_mutex_lock(&ipmi_mutex);
 	if (_thread_init() != SLURM_SUCCESS) {
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			info("ipmi-thread: aborted");
-		flag_thread_run_running = false;
+		slurm_mutex_unlock(&ipmi_mutex);
 		return NULL;
 	}
+	slurm_mutex_unlock(&ipmi_mutex);
 
 	flag_thread_started = true;
-
-	//launch _thread_ipmi_write
-	slurm_attr_init(&attr_write);
-	if (pthread_create(&thread_ipmi_id_write, &attr_write,
-			   &_thread_ipmi_write, NULL)) {
-		//if (pthread_create(... (void *)arg)) {
-		debug("energy accounting failed to create _thread_ipmi_write "
-		      "thread: %m");
-	}
-	slurm_attr_destroy(&attr_write);
 
 	//loop until slurm stop
 	while (!flag_energy_accounting_shutdown) {
 		time_lost = (int)(time(NULL) - last_update_time);
-		_task_sleep(slurm_ipmi_conf.freq - time_lost);
+		if (time_lost <= slurm_ipmi_conf.freq)
+			_task_sleep(slurm_ipmi_conf.freq - time_lost);
+		else
+			_task_sleep(1);
+		slurm_mutex_lock(&ipmi_mutex);
 		_thread_update_node_energy();
+		slurm_mutex_unlock(&ipmi_mutex);
 	}
 
-	flag_thread_run_running = false;
-	_read_last_consumed_energy(&message_trash);
-	_thread_fini();
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread: ended");
+
+	return NULL;
+}
+
+static void *_cleanup_thread(void *no_data)
+{
+	if (thread_ipmi_id_run)
+		pthread_join(thread_ipmi_id_run, NULL);
+
+	if (ipmi_ctx)
+		ipmi_monitoring_ctx_destroy(ipmi_ctx);
+	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
 	return NULL;
 }
@@ -670,8 +654,6 @@ static void *_thread_launcher(void *no_data)
 	pthread_attr_t attr_run;
 	time_t begin_time;
 	int rc = SLURM_SUCCESS;
-
-	flag_slurmd_process = true;
 
 	slurm_attr_init(&attr_run);
 	if (pthread_create(&thread_ipmi_id_run, &attr_run,
@@ -684,25 +666,8 @@ static void *_thread_launcher(void *no_data)
 
 	begin_time = time(NULL);
 	while (rc == SLURM_SUCCESS) {
-		if (time(NULL) - begin_time > TIMEOUT) {
-			error("ipmi thread launch timeout");
-			rc = SLURM_ERROR;
-			break;
-		}
-		if (flag_thread_run_running)
-			break;
-		_task_sleep(1);
-	}
-
-	begin_time = time(NULL);
-	while (rc == SLURM_SUCCESS) {
-		if (time(NULL) - begin_time > TIMEOUT) {
+		if (time(NULL) - begin_time > slurm_ipmi_conf.timeout) {
 			error("ipmi thread init timeout");
-			rc = SLURM_ERROR;
-			break;
-		}
-		if (!flag_thread_run_running) {
-			error("ipmi thread lost");
 			rc = SLURM_ERROR;
 			break;
 		}
@@ -714,99 +679,83 @@ static void *_thread_launcher(void *no_data)
 	if (rc != SLURM_SUCCESS) {
 		error("%s threads failed to start in a timely manner",
 		     plugin_name);
-		if (thread_ipmi_id_write) {
-			pthread_cancel(thread_ipmi_id_write);
-			pthread_join(thread_ipmi_id_write, NULL);
-		}
-		flag_thread_write_running = false;
 
 		if (thread_ipmi_id_run) {
 			pthread_cancel(thread_ipmi_id_run);
 			pthread_join(thread_ipmi_id_run, NULL);
 		}
-		flag_thread_run_running = false;
 
 		flag_energy_accounting_shutdown = true;
+	} else {
+		/* This is here to join the decay thread so we don't core
+		 * dump if in the sleep, since there is no other place to join
+		 * we have to create another thread to do it. */
+		slurm_attr_init(&attr_run);
+		if (pthread_create(&cleanup_handler_thread, &attr_run,
+				   _cleanup_thread, NULL))
+			fatal("pthread_create error %m");
+
+		slurm_attr_destroy(&attr_run);
 	}
 
 	return NULL;
 }
 
-static int _get_joules_task(void)
+static int _get_joules_task(uint16_t delta)
 {
-	ipmi_message_t message;
-	time_t time_call = time(NULL);
-	if (local_energy->consumed_energy == NO_VAL ||
-		local_energy->base_consumed_energy == 0) {
-		local_energy->consumed_energy = NO_VAL;
+	acct_gather_energy_t *last_energy = NULL;
+	time_t now;
+	static bool first = true;
+	static uint32_t start_current_energy = 0;
+	uint32_t adjustment = 0;
+
+	last_energy = local_energy;
+	local_energy = NULL;
+
+	if (slurm_get_node_energy(NULL, delta, &local_energy)) {
+		error("_get_joules_task: can't get info from slurmd");
+		local_energy = last_energy;
 		return SLURM_ERROR;
 	}
+	now = time(NULL);
 
-	if (_read_last_consumed_energy(&message) != SLURM_SUCCESS) {
-		/* Don't set consumed_energy = NO_VAL here.  If we
-		   fail here we still have a coherent value.  If it
-		   appears during a sstat call, it's not a big deal,
-		   the value will be updated later with another sstat
-		   or at the end of the step.  But if it was at the end
-		   of the step then the value on the accounting is
-		   not right.
+	local_energy->previous_consumed_energy = last_energy->consumed_energy;
+
+	if (slurm_ipmi_conf.adjustment)
+		adjustment = _get_additional_consumption(
+			local_energy->poll_time, now,
+			local_energy->current_watts,
+			local_energy->current_watts);
+
+	if (!first) {
+		local_energy->consumed_energy -= start_current_energy;
+
+		local_energy->base_consumed_energy =
+			(local_energy->consumed_energy
+			 - last_energy->consumed_energy)
+			+ adjustment;
+	} else {
+		/* This is just for the step, so take all the pervious
+		   consumption out of the mix.
 		*/
-		//local_energy->consumed_energy = NO_VAL;
-		return SLURM_ERROR;
+		start_current_energy =
+			local_energy->consumed_energy + adjustment;
+		local_energy->base_consumed_energy = 0;
+		first = false;
 	}
 
-	if (slurm_ipmi_conf.adjustment) {
-		local_energy->consumed_energy =
-			message.energy -
-			local_energy->base_consumed_energy +
-			_get_additional_consumption(
-				message.time,time_call,
-				message.watts,message.watts);
-	} else {
-		local_energy->consumed_energy =
-			message.energy -
-			local_energy->base_consumed_energy;
-	}
+	local_energy->consumed_energy = local_energy->previous_consumed_energy
+		+ local_energy->base_consumed_energy;
 
-	if (debug_flags & DEBUG_FLAG_ENERGY) {
-		info("_get_joules_task_ipmi = consumed %d Joules"
-		     "(received %d from ipmi thread)",
-		     local_energy->consumed_energy,message.energy);
-	}
-	return SLURM_SUCCESS;
-}
+	acct_gather_energy_destroy(last_energy);
 
-static int _first_update_task_energy(void)
-{
-	ipmi_message_t message;
-	time_t time_call = time(NULL);
-	int nb_try=0, max_try=NBFIRSTREAD;
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("_get_joules_task: consumed %u Joules "
+		     "(received %u(%u watts) from slurmd)",
+		     local_energy->consumed_energy,
+		     local_energy->base_consumed_energy,
+		     local_energy->current_watts);
 
-	while (_read_last_consumed_energy(&message) != SLURM_SUCCESS) {
-		if (nb_try > max_try) {
-			local_energy->consumed_energy = NO_VAL;
-			return SLURM_ERROR;
-		}
-		nb_try++;
-		_task_sleep(1);
-	}
-
-	if (slurm_ipmi_conf.adjustment) {
-		local_energy->base_consumed_energy =
-			message.energy +
-			_get_additional_consumption(
-				message.time,time_call,
-				message.watts,message.watts);
-		local_energy->consumed_energy = 0;
-	} else {
-		local_energy->base_consumed_energy =
-			message.energy;
-		local_energy->consumed_energy = 0;
-	}
-	if (debug_flags & DEBUG_FLAG_ENERGY) {
-		info("_get_joules_task_ipmi = first %d Joules",
-		     local_energy->base_consumed_energy);
-	}
 	return SLURM_SUCCESS;
 }
 
@@ -816,47 +765,28 @@ static int _first_update_task_energy(void)
  */
 extern int init(void)
 {
-	int rc = SLURM_SUCCESS;
 	debug_flags = slurm_get_debug_flags();
-	local_energy = acct_gather_energy_alloc();
-	local_energy->consumed_energy=0;
-	local_energy->base_consumed_energy=0;
-	local_energy->base_watts=0;
-
 	/* put anything that requires the .conf being read in
 	   acct_gather_energy_p_conf_parse
 	*/
 
-	if (rc == SLURM_SUCCESS)
-		verbose("%s loaded", plugin_name);
-	else
-		flag_energy_accounting_shutdown = true;
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
-	flag_energy_accounting_shutdown = true;
-	time_t begin_fini = time(NULL);
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
 
-	while (flag_thread_run_running || flag_thread_write_running) {
-		if ((time(NULL) - begin_fini) > (slurm_ipmi_conf.freq + 1)) {
-			error("Ipmi threads not finilized in appropriate time. "
-			      "Exit plugin without finalizing threads.");
-			if (thread_ipmi_id_write) {
-				pthread_cancel(thread_ipmi_id_write);
-				pthread_join(thread_ipmi_id_write, NULL);
-			}
-			if (thread_ipmi_id_run) {
-				pthread_cancel(thread_ipmi_id_run);
-				pthread_join(thread_ipmi_id_run, NULL);
-			}
-			break;
-		}
-		_task_sleep(1);
-		//wait for thread stop
-	}
+	flag_energy_accounting_shutdown = true;
+
+	slurm_mutex_lock(&ipmi_mutex);
+	if (thread_ipmi_id_run)
+		pthread_cancel(thread_ipmi_id_run);
+	if (cleanup_handler_thread)
+		pthread_join(cleanup_handler_thread, NULL);
+	slurm_mutex_unlock(&ipmi_mutex);
+
 	acct_gather_energy_destroy(local_energy);
 	local_energy = NULL;
 	return SLURM_SUCCESS;
@@ -865,19 +795,32 @@ extern int fini(void)
 extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
+	xassert(_run_in_daemon());
 
 	return rc;
 }
 
 extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy)
+					 void *data)
 {
 	int rc = SLURM_SUCCESS;
+	acct_gather_energy_t *energy = (acct_gather_energy_t *)data;
+	time_t *last_poll = (time_t *)data;
+
+	xassert(_run_in_daemon());
 
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
 		slurm_mutex_lock(&ipmi_mutex);
-		_get_joules_task();
+		if (_is_thread_launcher()) {
+			if (_thread_init() == SLURM_SUCCESS)
+				_thread_update_node_energy();
+		} else
+			_get_joules_task(10); /* Since we don't have
+						 access to the
+						 frequency here just
+						 send in something.
+					      */
 		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
 		slurm_mutex_unlock(&ipmi_mutex);
 		break;
@@ -890,6 +833,11 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 			     energy->consumed_energy);
 		}
 		break;
+	case ENERGY_DATA_LAST_POLL:
+		slurm_mutex_lock(&ipmi_mutex);
+		*last_poll = local_energy->poll_time;
+		slurm_mutex_unlock(&ipmi_mutex);
+		break;
 	default:
 		error("acct_gather_energy_p_get_data: unknown enum %d",
 		      data_type);
@@ -900,13 +848,22 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 }
 
 extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy)
+					 void *data)
 {
 	int rc = SLURM_SUCCESS;
+	int *delta = (int *)data;
+
+	xassert(_run_in_daemon());
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
 		debug_flags = slurm_get_debug_flags();
+		break;
+	case ENERGY_DATA_PROFILE:
+		slurm_mutex_lock(&ipmi_mutex);
+		_get_joules_task(*delta);
+		_ipmi_send_profile();
+		slurm_mutex_unlock(&ipmi_mutex);
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",
@@ -922,35 +879,37 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 {
 //	s_p_options_t *full_options_ptr;
 	s_p_options_t options[] = {
-		{"EnergyIMPIDriverType", S_P_UINT32},
-		{"EnergyIMPIDisableAutoProbe", S_P_UINT32},
-		{"EnergyIMPIDriverAddress", S_P_UINT32},
-		{"EnergyIMPIRegisterSpacing", S_P_UINT32},
-		{"EnergyIMPIDriverDevice", S_P_STRING},
-		{"EnergyIMPIProtocolVersion", S_P_UINT32},
-		{"EnergyIMPIUsername", S_P_STRING},
-		{"EnergyIMPIPassword", S_P_STRING},
+		{"EnergyIPMIDriverType", S_P_UINT32},
+		{"EnergyIPMIDisableAutoProbe", S_P_UINT32},
+		{"EnergyIPMIDriverAddress", S_P_UINT32},
+		{"EnergyIPMIRegisterSpacing", S_P_UINT32},
+		{"EnergyIPMIDriverDevice", S_P_STRING},
+		{"EnergyIPMIProtocolVersion", S_P_UINT32},
+		{"EnergyIPMIUsername", S_P_STRING},
+		{"EnergyIPMIPassword", S_P_STRING},
 /* FIXME: remove these from the structure? */
-//		{"EnergyIMPIk_g", S_P_STRING},
-//		{"EnergyIMPIk_g_len", S_P_UINT32},
-		{"EnergyIMPIPrivilegeLevel", S_P_UINT32},
-		{"EnergyIMPIAuthenticationType", S_P_UINT32},
-		{"EnergyIMPICipherSuiteId", S_P_UINT32},
-		{"EnergyIMPISessionTimeout", S_P_UINT32},
-		{"EnergyIMPIRetransmissionTimeout", S_P_UINT32},
-		{"EnergyIMPIWorkaroundFlags", S_P_UINT32},
-		{"EnergyIMPIRereadSdrCache", S_P_BOOLEAN},
-		{"EnergyIMPIIgnoreNonInterpretableSensors", S_P_BOOLEAN},
-		{"EnergyIMPIBridgeSensors", S_P_BOOLEAN},
-		{"EnergyIMPIInterpretOemData", S_P_BOOLEAN},
-		{"EnergyIMPISharedSensors", S_P_BOOLEAN},
-		{"EnergyIMPIDiscreteReading", S_P_BOOLEAN},
-		{"EnergyIMPIIgnoreScanningDisabled", S_P_BOOLEAN},
-		{"EnergyIMPIAssumeBmcOwner", S_P_BOOLEAN},
-		{"EnergyIMPIEntitySensorNames", S_P_BOOLEAN},
-		{"EnergyIMPIFrequency", S_P_UINT32},
-		{"EnergyIMPICalcAdjustment", S_P_BOOLEAN},
-		{"EnergyIMPIPowerSensor", S_P_UINT32},
+//		{"EnergyIPMIk_g", S_P_STRING},
+//		{"EnergyIPMIk_g_len", S_P_UINT32},
+		{"EnergyIPMIPrivilegeLevel", S_P_UINT32},
+		{"EnergyIPMIAuthenticationType", S_P_UINT32},
+		{"EnergyIPMICipherSuiteId", S_P_UINT32},
+		{"EnergyIPMISessionTimeout", S_P_UINT32},
+		{"EnergyIPMIRetransmissionTimeout", S_P_UINT32},
+		{"EnergyIPMIWorkaroundFlags", S_P_UINT32},
+		{"EnergyIPMIRereadSdrCache", S_P_BOOLEAN},
+		{"EnergyIPMIIgnoreNonInterpretableSensors", S_P_BOOLEAN},
+		{"EnergyIPMIBridgeSensors", S_P_BOOLEAN},
+		{"EnergyIPMIInterpretOemData", S_P_BOOLEAN},
+		{"EnergyIPMISharedSensors", S_P_BOOLEAN},
+		{"EnergyIPMIDiscreteReading", S_P_BOOLEAN},
+		{"EnergyIPMIIgnoreScanningDisabled", S_P_BOOLEAN},
+		{"EnergyIPMIAssumeBmcOwner", S_P_BOOLEAN},
+		{"EnergyIPMIEntitySensorNames", S_P_BOOLEAN},
+		{"EnergyIPMIFrequency", S_P_UINT32},
+		{"EnergyIPMICalcAdjustment", S_P_BOOLEAN},
+		{"EnergyIPMIPowerSensor", S_P_UINT32},
+		{"EnergyIPMITimeout", S_P_UINT32},
+		{"EnergyIPMIVariable", S_P_STRING},
 		{NULL} };
 
 	transfer_s_p_options(full_options, options, full_options_cnt);
@@ -958,108 +917,309 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 
 extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 {
+	char *tmp_char;
+
 	/* Set initial values */
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
-	slurm_ipmi_conf.freq = DEFAULT_IPMI_FREQ;
 
-	if (!tbl) {
+	if (tbl) {
 		/* ipmi initialisation parameters */
 		s_p_get_uint32(&slurm_ipmi_conf.driver_type,
-			       "EnergyIMPIDriverType", tbl);
+			       "EnergyIPMIDriverType", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.disable_auto_probe,
-			       "EnergyIMPIDisableAutoProbe", tbl);
+			       "EnergyIPMIDisableAutoProbe", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.driver_address,
-			       "EnergyIMPIDriverAddress", tbl);
+			       "EnergyIPMIDriverAddress", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.register_spacing,
-			       "EnergyIMPIRegisterSpacing", tbl);
+			       "EnergyIPMIRegisterSpacing", tbl);
 
 		s_p_get_string(&slurm_ipmi_conf.driver_device,
-			       "EnergyIMPIDriverDevice", tbl);
+			       "EnergyIPMIDriverDevice", tbl);
 
 		s_p_get_uint32(&slurm_ipmi_conf.protocol_version,
-			       "EnergyIMPIProtocolVersion", tbl);
+			       "EnergyIPMIProtocolVersion", tbl);
 
 		if (!s_p_get_string(&slurm_ipmi_conf.username,
-				    "EnergyIMPIUsername", tbl))
+				    "EnergyIPMIUsername", tbl))
 			slurm_ipmi_conf.username = xstrdup(DEFAULT_IPMI_USER);
 
 		s_p_get_string(&slurm_ipmi_conf.password,
-			       "EnergyIMPIPassword", tbl);
+			       "EnergyIPMIPassword", tbl);
 		if (!slurm_ipmi_conf.password)
 			slurm_ipmi_conf.password = xstrdup("foopassword");
 
 		s_p_get_uint32(&slurm_ipmi_conf.privilege_level,
-			       "EnergyIMPIPrivilegeLevel", tbl);
+			       "EnergyIPMIPrivilegeLevel", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.authentication_type,
-			       "EnergyIMPIAuthenticationType", tbl);
+			       "EnergyIPMIAuthenticationType", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.cipher_suite_id,
-			       "EnergyIMPICipherSuiteId", tbl);
+			       "EnergyIPMICipherSuiteId", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.session_timeout,
-			       "EnergyIMPISessionTimeout", tbl);
+			       "EnergyIPMISessionTimeout", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.retransmission_timeout,
-			       "EnergyIMPIRetransmissionTimeout", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf. workaround_flags,
-			       "EnergyIMPIWorkaroundFlags", tbl);
+			       "EnergyIPMIRetransmissionTimeout", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf.workaround_flags,
+			       "EnergyIPMIWorkaroundFlags", tbl);
 
 		if (!s_p_get_boolean(&slurm_ipmi_conf.reread_sdr_cache,
-				     "EnergyIMPIRereadSdrCache", tbl))
+				     "EnergyIPMIRereadSdrCache", tbl))
 			slurm_ipmi_conf.reread_sdr_cache = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf.
 				     ignore_non_interpretable_sensors,
-				     "EnergyIMPIIgnoreNonInterpretableSensors",
+				     "EnergyIPMIIgnoreNonInterpretableSensors",
 				     tbl))
 			slurm_ipmi_conf.ignore_non_interpretable_sensors =
 				false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf.bridge_sensors,
-				     "EnergyIMPIBridgeSensors", tbl))
+				     "EnergyIPMIBridgeSensors", tbl))
 			slurm_ipmi_conf.bridge_sensors = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf.interpret_oem_data,
-				     "EnergyIMPIInterpretOemData", tbl))
+				     "EnergyIPMIInterpretOemData", tbl))
 			slurm_ipmi_conf.interpret_oem_data = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf.shared_sensors,
-				     "EnergyIMPISharedSensors", tbl))
+				     "EnergyIPMISharedSensors", tbl))
 			slurm_ipmi_conf.shared_sensors = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf.discrete_reading,
-				     "EnergyIMPIDiscreteReading", tbl))
+				     "EnergyIPMIDiscreteReading", tbl))
 			slurm_ipmi_conf.discrete_reading = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf.ignore_scanning_disabled,
-				     "EnergyIMPIIgnoreScanningDisabled", tbl))
+				     "EnergyIPMIIgnoreScanningDisabled", tbl))
 			slurm_ipmi_conf.ignore_scanning_disabled = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf.assume_bmc_owner,
-				     "EnergyIMPIAssumeBmcOwner", tbl))
+				     "EnergyIPMIAssumeBmcOwner", tbl))
 			slurm_ipmi_conf.assume_bmc_owner = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf.entity_sensor_names,
-				     "EnergyIMPIEntitySensorNames", tbl))
+				     "EnergyIPMIEntitySensorNames", tbl))
 			slurm_ipmi_conf.entity_sensor_names = false;
 
 		s_p_get_uint32(&slurm_ipmi_conf.freq,
-			       "EnergyIMPIFrequency", tbl);
+			       "EnergyIPMIFrequency", tbl);
 
 		if ((int)slurm_ipmi_conf.freq <= 0)
-			fatal("EnergyIMPIFrequency must be a positive integer "
+			fatal("EnergyIPMIFrequency must be a positive integer "
 			      "in acct_gather.conf.");
 
 		if (!s_p_get_boolean(&(slurm_ipmi_conf.adjustment),
-				     "EnergyIMPICalcAdjustment", tbl))
+				     "EnergyIPMICalcAdjustment", tbl))
 			slurm_ipmi_conf.adjustment = false;
 
 		s_p_get_uint32(&slurm_ipmi_conf.power_sensor_num,
-			       "EnergyIMPIPowerSensor", tbl);
+			       "EnergyIPMIPowerSensor", tbl);
+
+		s_p_get_uint32(&slurm_ipmi_conf.timeout,
+			       "EnergyIPMITimeout", tbl);
+
+		if (s_p_get_string(&tmp_char, "EnergyIPMIVariable", tbl)) {
+			if (!strcmp(tmp_char, "Temp"))
+				slurm_ipmi_conf.variable =
+					IPMI_MONITORING_SENSOR_TYPE_TEMPERATURE;
+			xfree(tmp_char);
+		}
 	}
 
-	flag_slurmd_process = _is_thread_launcher();
-	if (flag_slurmd_process) {
-		pthread_attr_t attr;
-		slurm_attr_init(&attr);
-		if (pthread_create(&thread_ipmi_id_launcher, &attr,
-				   &_thread_launcher, NULL)) {
-			//if (pthread_create(... (void *)arg)) {
-			debug("energy accounting failed to create "
-			      "_thread_launcher thread: %m");
-		}
-		slurm_attr_destroy(&attr);
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			info("%s thread launched", plugin_name);
-	} else
-		_first_update_task_energy();
+	if (!_run_in_daemon())
+		return;
+
+	if (!flag_init) {
+		local_energy = acct_gather_energy_alloc();
+		local_energy->consumed_energy=0;
+		local_energy->base_consumed_energy=0;
+		local_energy->base_watts=0;
+		flag_init = true;
+		if (_is_thread_launcher()) {
+			pthread_attr_t attr;
+			slurm_attr_init(&attr);
+			if (pthread_create(&thread_ipmi_id_launcher, &attr,
+					   &_thread_launcher, NULL)) {
+				//if (pthread_create(... (void *)arg)) {
+				debug("energy accounting failed to create "
+				      "_thread_launcher thread: %m");
+			}
+			slurm_attr_destroy(&attr);
+			if (debug_flags & DEBUG_FLAG_ENERGY)
+				info("%s thread launched", plugin_name);
+		} else
+			_get_joules_task(0);
+	}
+
+	verbose("%s loaded", plugin_name);
+}
+
+extern void acct_gather_energy_p_conf_values(List *data)
+{
+	config_key_pair_t *key_pair;
+
+	xassert(*data);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIDriverType");
+	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.driver_type);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIDisableAutoProbe");
+	key_pair->value = xstrdup_printf("%u",
+					 slurm_ipmi_conf.disable_auto_probe);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIDriverAddress");
+	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.driver_address);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIRegisterSpacing");
+	key_pair->value = xstrdup_printf("%u",
+					 slurm_ipmi_conf.register_spacing);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIDriverDevice");
+	key_pair->value = xstrdup(slurm_ipmi_conf.driver_device);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIProtocolVersion");
+	key_pair->value = xstrdup_printf("%u",
+					 slurm_ipmi_conf.protocol_version);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIUsername");
+	key_pair->value = xstrdup(slurm_ipmi_conf.username);
+	list_append(*data, key_pair);
+
+	/* Don't give out the password */
+	/* key_pair = xmalloc(sizeof(config_key_pair_t)); */
+	/* key_pair->name = xstrdup("EnergyIPMIPassword"); */
+	/* key_pair->value = xstrdup(slurm_ipmi_conf.password); */
+	/* list_append(*data, key_pair); */
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIPrivilegeLevel");
+	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.privilege_level);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIAuthenticationType");
+	key_pair->value = xstrdup_printf("%u",
+					 slurm_ipmi_conf.authentication_type);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMICipherSuiteId");
+	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.cipher_suite_id);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMISessionTimeout");
+	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.session_timeout);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIRetransmissionTimeout");
+	key_pair->value = xstrdup_printf(
+		"%u", slurm_ipmi_conf.retransmission_timeout);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIWorkaroundFlags");
+	key_pair->value = xstrdup_printf(
+		"%u", slurm_ipmi_conf.workaround_flags);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIRereadSdrCache");
+	key_pair->value = xstrdup(slurm_ipmi_conf.reread_sdr_cache
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIIgnoreNonInterpretableSensors");
+	key_pair->value = xstrdup(
+		slurm_ipmi_conf.ignore_non_interpretable_sensors
+		? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIBridgeSensors");
+	key_pair->value = xstrdup(slurm_ipmi_conf.bridge_sensors
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIInterpretOemData");
+	key_pair->value = xstrdup(slurm_ipmi_conf.interpret_oem_data
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMISharedSensors");
+	key_pair->value = xstrdup(slurm_ipmi_conf.shared_sensors
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIDiscreteReading");
+	key_pair->value = xstrdup(slurm_ipmi_conf.discrete_reading
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIIgnoreScanningDisabled");
+	key_pair->value = xstrdup(slurm_ipmi_conf.ignore_scanning_disabled
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIAssumeBmcOwner");
+	key_pair->value = xstrdup(slurm_ipmi_conf.assume_bmc_owner
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIEntitySensorNames");
+	key_pair->value = xstrdup(slurm_ipmi_conf.entity_sensor_names
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIFrequency");
+	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.freq);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMICalcAdjustment");
+	key_pair->value = xstrdup(slurm_ipmi_conf.adjustment
+				  ? "Yes" : "No");
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIPowerSensor");
+	key_pair->value = xstrdup_printf(
+		"%u", slurm_ipmi_conf.power_sensor_num);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMITimeout");
+	key_pair->value = xstrdup_printf("%u", slurm_ipmi_conf.timeout);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIVariable");
+	switch (slurm_ipmi_conf.variable) {
+	case IPMI_MONITORING_SENSOR_TYPE_TEMPERATURE:
+		key_pair->value = xstrdup("Temp");
+		break;
+	case IPMI_MONITORING_SENSOR_UNITS_WATTS:
+		key_pair->value = xstrdup("Watts");
+		break;
+	default:
+		key_pair->value = xstrdup("Unknown");
+		break;
+	}
+	list_append(*data, key_pair);
+
+	return;
+
 }

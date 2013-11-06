@@ -6,7 +6,7 @@
  *  Written by Danny Auble <da@schedmd.com> et. al.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -139,6 +139,7 @@ static void _pack_srun_ctx(slurm_step_ctx_t *ctx, Buf buffer)
 					 SLURM_PROTOCOL_VERSION);
 	pack_job_step_create_response_msg(ctx->step_resp, buffer,
 					  SLURM_PROTOCOL_VERSION);
+	pack32((uint32_t)ctx->launch_state->slurmctld_socket_fd, buffer);
 }
 
 static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
@@ -146,6 +147,7 @@ static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 	slurm_step_ctx_t *ctx = NULL;
 	uint8_t tmp_8;
 	int rc;
+	uint32_t tmp_32;
 
 	*step_ctx = NULL;
 	safe_unpack8(&tmp_8, buffer);
@@ -165,6 +167,10 @@ static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 						 SLURM_PROTOCOL_VERSION);
 	if (rc != SLURM_SUCCESS)
 		goto unpack_error;
+
+	safe_unpack32(&tmp_32, buffer);
+	ctx->launch_state = step_launch_state_create(ctx);
+	ctx->launch_state->slurmctld_socket_fd = tmp_32;
 
 	*step_ctx = ctx;
 	return SLURM_SUCCESS;
@@ -767,8 +773,13 @@ static bool _multi_prog_parse(char *line, int length, int step_id, int task_id)
 
 		_parse_prog_line(total_tasks, line, cmd, args, protocol);
 		return true;
+	}
 
-	} else if (task_id >= total_tasks) {
+	xassert(args);
+	xassert(cmd);
+	xassert(protocol);
+
+	if (task_id >= total_tasks) {
 		for (i = 0; i < total_tasks; i++) {
 			xfree(args[i]);
 			xfree(cmd[i]);
@@ -778,7 +789,9 @@ static bool _multi_prog_parse(char *line, int length, int step_id, int task_id)
 		xfree(protocol);
 		total_tasks = 0;
 		return false;
-	} else if (!cmd[task_id]) {
+	}
+
+	if (!cmd[task_id]) {
 		error("Configuration file invalid, no record for task id %d",
 		      task_id);
 		return true;
@@ -978,6 +991,9 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
+	/* Disable binding of the pvmd12 task so it has access to all resources
+	 * allocated to the job step and can use them for spawned tasks. */
+	opt.cpu_bind_type = CPU_BIND_NONE;
 	orig_task_num = task_num;
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
 						total_node_list,
@@ -1026,7 +1042,11 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	ii = 0;
 	for (i=orig_task_num; i<fd_cnt; i++)
 		rm_sockfds[ii++] = ctx_sockfds[i];
-
+	/* Since opt is a global variable we need to remove the
+	   dangling reference set here.  This shouldn't matter, but
+	   Clang reported it so we are making things quite here.
+	*/
+	opt.argv = NULL;
 	return 0;
 }
 
@@ -1835,6 +1855,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	    && pe_job_req->host_names && *pe_job_req->host_names) {
 		/* This means there was a hostfile used for this job.
 		 * So we need to set up the arbitrary distribution of it. */
+		int hostfile_count = 0;
 		char **names = pe_job_req->host_names;
 		opt.distribution = SLURM_DIST_ARBITRARY;
 		while (names && *names) {
@@ -1844,7 +1865,10 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 			else
 				opt.nodelist = xstrdup(strtok(*names, "."));
 			names++;
+			hostfile_count++;
 		}
+		if (pe_job_req->total_tasks == -1)
+			pe_job_req->total_tasks = hostfile_count;
 	}
 
 	if (pe_job_req->num_nodes != -1)

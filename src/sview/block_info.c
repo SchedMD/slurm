@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -223,10 +223,8 @@ static char *_set_running_job_str(List job_list, bool compact)
 	return NULL;
 }
 
-static void _block_list_del(void *object)
+static void _block_info_free(sview_block_info_t *block_ptr)
 {
-	sview_block_info_t *block_ptr = (sview_block_info_t *)object;
-
 	if (block_ptr) {
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
@@ -245,8 +243,16 @@ static void _block_list_del(void *object)
 		/* don't xfree(block_ptr->mp_inx);
 		   it isn't copied like the chars and is freed in the api
 		*/
-		xfree(block_ptr);
+	}
+}
 
+static void _block_list_del(void *object)
+{
+	sview_block_info_t *block_ptr = (sview_block_info_t *)object;
+
+	if (block_ptr) {
+		_block_info_free(block_ptr);
+		xfree(block_ptr);
 	}
 }
 
@@ -485,43 +491,9 @@ static void _update_info_block(List block_list,
 			_update_block_record(block_ptr,
 					     GTK_TREE_STORE(model));
 		else {
-			GtkTreePath *path = gtk_tree_path_new_first();
-
-			/* get the iter, or find out the list is empty
-			 * goto add */
-			if (gtk_tree_model_get_iter(
-				    model, &block_ptr->iter_ptr, path)) {
-				do {
-					/* search for the jobid and
-					   check to see if it is in
-					   the list */
-					gtk_tree_model_get(
-						model,
-						&block_ptr->iter_ptr,
-						SORTID_BLOCK,
-						&name, -1);
-					if (!strcmp(name,
-						    block_ptr->bg_block_name)) {
-						/* update with new info */
-						g_free(name);
-						_update_block_record(
-							block_ptr,
-							GTK_TREE_STORE(model));
-						block_ptr->iter_set = 1;
-						break;
-					}
-					g_free(name);
-				} while (gtk_tree_model_iter_next(
-						 model,
-						 &block_ptr->iter_ptr));
-			}
-
-			if (!block_ptr->iter_set) {
-				_append_block_record(block_ptr,
-						    GTK_TREE_STORE(model));
-				block_ptr->iter_set = true;
-			}
-			gtk_tree_path_free(path);
+			_append_block_record(block_ptr,
+					     GTK_TREE_STORE(model));
+			block_ptr->iter_set = true;
 		}
 	}
 
@@ -532,11 +504,15 @@ static void _update_info_block(List block_list,
 	last_model = model;
 }
 
-static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
-				      sview_block_info_t* rec_b)
+static int _sview_block_sort_aval_dec(void *s1, void *s2)
 {
-	int size_a = rec_a->cnode_cnt;
-	int size_b = rec_b->cnode_cnt;
+	sview_block_info_t *rec_a = *(sview_block_info_t **)s1;
+	sview_block_info_t *rec_b = *(sview_block_info_t **)s2;
+	int size_a;
+	int size_b;
+
+	size_a = rec_a->cnode_cnt;
+	size_b = rec_b->cnode_cnt;
 
 	if (list_count(rec_a->job_list) < list_count(rec_b->job_list))
 		return 1;
@@ -588,6 +564,8 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	static List block_list = NULL;
 	static partition_info_msg_t *last_part_info_ptr = NULL;
 	static block_info_msg_t *last_block_info_ptr = NULL;
+	List last_list = NULL;
+	ListIterator last_list_itr = NULL;
 	sview_block_info_t *block_ptr = NULL;
 	char tmp_mp_str[50];
 
@@ -608,9 +586,10 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 			return block_list;
 		}
-		list_flush(block_list);
-	} else
-		block_list = list_create(_block_list_del);
+		last_list = block_list;
+	}
+
+	block_list = list_create(_block_list_del);
 	if (!block_list) {
 		g_print("malloc error\n");
 		return NULL;
@@ -618,13 +597,31 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 	last_block_info_ptr = block_info_ptr;
 
+	if (last_list)
+		last_list_itr = list_iterator_create(last_list);
 	for (i=0; i<block_info_ptr->record_count; i++) {
 		/* If we don't have a block name just continue since
 		   ths block hasn't been made in the system yet. */
 		if (!block_info_ptr->block_array[i].bg_block_id)
 			continue;
 
-		block_ptr = xmalloc(sizeof(sview_block_info_t));
+		block_ptr = NULL;
+
+		if (last_list_itr) {
+			while ((block_ptr = list_next(last_list_itr))) {
+				if (!strcmp(block_ptr->bg_block_name,
+					    block_info_ptr->
+					    block_array[i].bg_block_id)) {
+					list_remove(last_list_itr);
+					_block_info_free(block_ptr);
+					break;
+				}
+			}
+			list_iterator_reset(last_list_itr);
+		}
+
+		if (!block_ptr)
+			block_ptr = xmalloc(sizeof(sview_block_info_t));
 		block_ptr->pos = i;
 		block_ptr->bg_block_name
 			= xstrdup(block_info_ptr->
@@ -706,6 +703,10 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	list_sort(block_list,
 		  (ListCmpF)_sview_block_sort_aval_dec);
 
+	if (last_list) {
+		list_iterator_destroy(last_list_itr);
+		list_destroy(last_list);
+	}
 
 	return block_list;
 }

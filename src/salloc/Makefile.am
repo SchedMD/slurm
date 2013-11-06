@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 
 bin_PROGRAMS = salloc
 
@@ -14,8 +14,10 @@ convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 salloc_LDADD = \
 	$(convenience_libs)
 
+if HAVE_ALPS_CRAY
 if HAVE_REAL_CRAY
   salloc_LDADD += -ljob
+endif
 endif
 
 salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \

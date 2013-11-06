@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -83,6 +83,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -114,6 +115,7 @@
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
+#define OPT_PROFILE     0x18
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_CPU_BIND    0x101
@@ -163,6 +165,7 @@
 #define LONG_OPT_GRES            0x141
 #define LONG_OPT_WAIT_ALL_NODES  0x142
 #define LONG_OPT_REQ_SWITCH      0x143
+#define LONG_OPT_PROFILE         0x144
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -299,11 +302,13 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
+	opt.core_spec = 0;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
 	opt.time_min = NO_VAL;
 	opt.time_min_str = NULL;
 	opt.partition = NULL;
+	opt.profile   = ACCT_GATHER_PROFILE_NOT_SET;
 
 	opt.job_name = NULL;
 	opt.jobid = NO_VAL;
@@ -325,6 +330,7 @@ static void _opt_default()
 
 	opt.quiet = 0;
 	opt.verbose = 0;
+	opt.warn_flags  = 0;
 	opt.warn_signal = 0;
 	opt.warn_time   = 0;
 
@@ -343,7 +349,7 @@ static void _opt_default()
 
 	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]    = (uint16_t) NO_VAL;
-		opt.geometry[i]	    = (uint16_t) NO_VAL;
+		opt.geometry[i]	    = 0;
 	}
 	opt.reboot          = false;
 	opt.no_rotate	    = false;
@@ -352,7 +358,7 @@ static void _opt_default()
 	opt.egid	    = (gid_t) -1;
 
 	opt.bell            = BELL_AFTER_DELAY;
-	opt.acctg_freq      = -1;
+	opt.acctg_freq      = NULL;
 	opt.no_shell	    = false;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
@@ -383,7 +389,7 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
-  {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL          },
+  {"SALLOC_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SALLOC_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL          },
@@ -399,6 +405,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL          },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
@@ -545,7 +552,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_SIGNAL:
 		if (get_signal_opts((char *)val, &opt.warn_signal,
-				    &opt.warn_time)) {
+				    &opt.warn_time, &opt.warn_flags)) {
 			error("Invalid signal specification: %s", val);
 			exit(error_exit);
 		}
@@ -564,7 +571,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-
+	case OPT_PROFILE:
+		opt.profile = acct_gather_profile_from_string((char *)val);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -624,6 +633,7 @@ void set_options(const int argc, char **argv)
 		{"quiet",         no_argument,       0, 'Q'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
+		{"core-spec",     required_argument, 0, 'S'},
 		{"time",          required_argument, 0, 't'},
 		{"usage",         no_argument,       0, 'u'},
 		{"verbose",       no_argument,       0, 'v'},
@@ -667,6 +677,7 @@ void set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"qos",		  required_argument, 0, LONG_OPT_QOS},
+		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
@@ -683,7 +694,7 @@ void set_options(const int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRst:uU:vVw:W:x:";
+		"+A:B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRsS:t:uU:vVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -831,6 +842,9 @@ void set_options(const int argc, char **argv)
 			break;
 		case 's':
 			opt.shared = 1;
+			break;
+		case 'S':
+			opt.core_spec = _get_int(optarg, "core_spec");
 			break;
 		case 't':
 			xfree(opt.time_limit_str);
@@ -1008,6 +1022,9 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_JOBID:
 			opt.jobid = _get_int(optarg, "jobid");
 			break;
+		case LONG_OPT_PROFILE:
+			opt.profile = acct_gather_profile_from_string(optarg);
+			break;
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
@@ -1093,7 +1110,8 @@ void set_options(const int argc, char **argv)
 			opt.ramdiskimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_ACCTG_FREQ:
-			opt.acctg_freq = _get_int(optarg, "acctg-freq");
+			xfree(opt.acctg_freq);
+			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_NOSHELL:
 			opt.no_shell = true;
@@ -1128,7 +1146,7 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal,
-					    &opt.warn_time)) {
+					    &opt.warn_time, &opt.warn_flags)) {
 				error("Invalid signal specification: %s",
 				      optarg);
 				exit(error_exit);
@@ -1207,8 +1225,11 @@ static void _opt_args(int argc, char **argv)
 			command_argc++;
 	}
 	command_argv = (char **) xmalloc((command_argc + 1) * sizeof(char *));
-	for (i = 0; i < command_argc; i++)
+	for (i = 0; i < command_argc; i++) {
+		if ((i == 0) && (rest == NULL))
+			break;	/* Fix for CLANG false positive */
 		command_argv[i] = xstrdup(rest[i]);
+	}
 	command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (!_opt_verify())
@@ -1315,7 +1336,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-#if defined(HAVE_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 	if (getenv("BASIL_RESERVATION_ID") != NULL) {
 		error("BASIL_RESERVATION_ID already set - running salloc "
 		      "within salloc?");
@@ -1570,6 +1591,10 @@ static bool _opt_verify(void)
 			opt.ntasks_per_node);
 	}
 
+	if (opt.profile)
+		setenvfs("SLURM_PROFILE=%s",
+			 acct_gather_profile_to_string(opt.profile));
+
 	return verified;
 }
 
@@ -1704,7 +1729,6 @@ static char *print_constraints()
 
 static void _opt_list(void)
 {
-	int i;
 	char *str;
 
 	info("defined options for program `%s'", opt.progname);
@@ -1753,14 +1777,16 @@ static void _opt_list(void)
 	if (opt.gres != NULL)
 		info("gres           : %s", opt.gres);
 	info("network        : %s", opt.network);
+	info("profile        : `%s'",
+	     acct_gather_profile_to_string(opt.profile));
 	info("qos            : %s", opt.qos);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
-		if (opt.conn_type[i] == (uint16_t) NO_VAL)
-			break;
-		info("conn_type[%d]   : %u", i, opt.conn_type[i]);
+	if (opt.conn_type[0] != (uint16_t) NO_VAL) {
+		str = conn_type_string_full(opt.conn_type);
+		info("conn_type      : %s", str);
+		xfree(str);
 	}
 	str = print_geometry(opt.geometry);
 	info("geometry       : %s", str);
@@ -1808,6 +1834,7 @@ static void _opt_list(void)
 	info("user command   : `%s'", str);
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
+	info("core-spec         : %d", opt.core_spec);
 	xfree(str);
 
 }
@@ -1842,8 +1869,9 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
-"              [--time-min=minutes] [--gres=list]\n"
+"              [--time-min=minutes] [--gres=list] [--profile=...]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
+"              [--core-spec=cores]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1883,10 +1911,14 @@ static void _help(void)
 "      --ntasks-per-node=n     number of tasks to invoke on each node\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -O, --overcommit            overcommit resources\n"
+"      --profile=value         enable acct_gather_profile for detailed data\n"
+"                              value is all or none or any combination of\n"
+"                              energy, lustre, network or task\n"
 "  -p, --partition=partition   partition requested\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -s, --share                 share nodes with other jobs\n"
+"  -S, --core-spec=cores       count of reserved cores\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
@@ -1899,7 +1931,8 @@ static void _help(void)
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -F, --nodefile=filename     request a specific list of hosts\n"
 "      --mem=MB                minimum amount of real memory\n"
-"      --mincpus=n             minimum number of logical processors (threads) per node\n"
+"      --mincpus=n             minimum number of logical processors (threads)\n"
+"                              per node\n"
 "      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"

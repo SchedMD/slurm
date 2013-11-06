@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -87,8 +87,9 @@
  * Add logic to permit reading of the previous version's state in order
  * to avoid losing reservations between releases major SLURM updates. */
 #define RESV_STATE_VERSION          "VER004"
-#define RESV_2_5_STATE_VERSION      "VER004"
-#define RESV_2_4_STATE_VERSION      "VER003"
+#define RESV_13_12_STATE_VERSION    "VER004"	/* SLURM version 13.12 */
+#define RESV_2_6_STATE_VERSION      "VER004"	/* SLURM version 2.6 */
+#define RESV_2_5_STATE_VERSION      "VER004"	/* SLURM version 2.5 */
 
 typedef struct resv_thread_args {
 	char *script;
@@ -405,7 +406,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	char *node_cnt_str = NULL;
 	int duration, i;
 
-	if (!(slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION))
+	if (!(slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION))
 		return;
 
 	if (resv_ptr->start_time != (time_t) NO_VAL) {
@@ -1572,7 +1573,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	List license_list = (List) NULL;
 	char *name1, *name2, *val1, *val2;
 	uint32_t total_node_cnt = NO_VAL;
-	bool account_not, user_not;
+	bool account_not = false, user_not = false;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -1799,7 +1800,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_ptr) {
 			info("Reservation request name duplication (%s)",
 			     resv_desc_ptr->name);
-			rc = ESLURM_RESERVATION_INVALID;
+			rc = ESLURM_RESERVATION_NAME_DUP;
 			goto bad_parse;
 		}
 	} else {
@@ -2214,14 +2215,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		val2  = resv_ptr->users;
 	} else
 		name2 = val2 = "";
-	info("sched: Updated reservation %s%s%s%s%s nodes=%s licenses=%s "
+	info("sched: Updated reservation=%s%s%s%s%s nodes=%s licenses=%s "
 	     "start=%s end=%s",
 	     resv_ptr->name, name1, val1, name2, val2,
 	     resv_ptr->node_list, resv_ptr->licenses, start_time, end_time);
 
 	_post_resv_update(resv_ptr, resv_backup);
 	_del_resv_rec(resv_backup);
-	set_node_maint_mode(true);
+	(void) set_node_maint_mode(true);
 	last_resv_update = now;
 	schedule_resv_save();
 	return error_code;
@@ -2283,7 +2284,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION)
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION)
 		info("delete_resv: Name=%s", resv_desc_ptr->name);
 
 	iter = list_iterator_create(resv_list);
@@ -2770,8 +2771,10 @@ extern int load_all_resv_state(int recover)
 	if (ver_str) {
 		if (!strcmp(ver_str, RESV_STATE_VERSION))
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		else if (!strcmp(ver_str, RESV_2_4_STATE_VERSION))
-			protocol_version = SLURM_2_4_PROTOCOL_VERSION;
+		else if (!strcmp(ver_str, RESV_2_6_STATE_VERSION))
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
+		else if (!strcmp(ver_str, RESV_2_5_STATE_VERSION))
+			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 	}
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("************************************************************");
@@ -3120,7 +3123,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	}
 
 	/* Need to create reservation containing multiple blocks */
-	resv_debug = slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION;
+	resv_debug = slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION;
 	for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
 		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
 						 resv_desc_ptr->node_cnt[i],
@@ -3644,7 +3647,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if (*when > resv_ptr->end_time) {
 			/* reservation ended earlier */
 			*when = resv_ptr->end_time;
-			job_ptr->priority = 0;	/* administrative hold */
+			if ((now > resv_ptr->end_time) ||
+			    ((job_ptr->details) &&
+			     (job_ptr->details->begin_time >
+			      resv_ptr->end_time)))
+				job_ptr->priority = 0;	/* admin hold */
 			return ESLURM_RESERVATION_INVALID;
 		}
 		if (job_ptr->details->req_node_bitmap &&
@@ -3677,7 +3684,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		}
 		list_iterator_destroy(iter);
 
-		if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
 			info("job_test_resv: job:%u reservation:%s nodes:%s",
 			     job_ptr->job_id, nodes, job_ptr->resv_name);
@@ -3740,8 +3747,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				bit_and(*node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);
 			} else {
-				info("job_test_resv: %s reservation uses "
-					"partial nodes", resv_ptr->name);
+				debug2("job_test_resv: %s reservation uses "
+				       "partial nodes", resv_ptr->name);
 				if (*exc_core_bitmap == NULL) {
 					*exc_core_bitmap =
 						bit_copy(resv_ptr->core_bitmap);
@@ -3999,19 +4006,23 @@ extern void fini_job_resv_check(void)
 			continue;
 		}
 		_advance_resv_time(resv_ptr);
-		if ((resv_ptr->job_pend_cnt   == 0) &&
-		    (resv_ptr->job_run_cnt    == 0) &&
+		if ((resv_ptr->job_run_cnt    == 0) &&
 		    (resv_ptr->maint_set_node == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_DAILY ) == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY) == 0)) {
-			debug("Purging vestigial reservation record %s",
-			      resv_ptr->name);
+			if (resv_ptr->job_pend_cnt) {
+				info("Purging vestigial reservation %s "
+				     "with %u pending jobs",
+				     resv_ptr->name, resv_ptr->job_pend_cnt);
+			} else {
+				debug("Purging vestigial reservation %s",
+				      resv_ptr->name);
+			}
 			_clear_job_resv(resv_ptr);
 			list_delete_item(iter);
 			last_resv_update = now;
 			schedule_resv_save();
 		}
-
 	}
 	list_iterator_destroy(iter);
 }
@@ -4036,16 +4047,21 @@ extern int send_resvs_to_accounting(void)
 	return SLURM_SUCCESS;
 }
 
-
-/* Set or clear NODE_STATE_MAINT for node_state as needed */
-extern void set_node_maint_mode(bool reset_all)
+/* Set or clear NODE_STATE_MAINT for node_state as needed
+ * IN reset_all - if true, then re-initialize all node information for all
+ *	reservations, but do not run any prologs or epilogs or count started
+ *	reservations
+ * RET count of newly started reservations
+ */
+extern int set_node_maint_mode(bool reset_all)
 {
+	int res_start_cnt = 0;
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	time_t now = time(NULL);
 
 	if (!resv_list)
-		return;
+		return res_start_cnt;
 
 	if (reset_all) {
 		int i;
@@ -4058,7 +4074,27 @@ extern void set_node_maint_mode(bool reset_all)
 	}
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (reset_all)
+			resv_ptr->maint_set_node = false;
+		if (resv_ptr->flags & RESERVE_FLAG_MAINT) {
+			if ((now >= resv_ptr->start_time) &&
+			    (now <  resv_ptr->end_time  )) {
+				if (!resv_ptr->maint_set_node) {
+					resv_ptr->maint_set_node = true;
+					_set_nodes_maint(resv_ptr, now);
+					last_node_update = now;
+				}
+			} else if (resv_ptr->maint_set_node) {
+				resv_ptr->maint_set_node = false;
+				_set_nodes_maint(resv_ptr, now);
+				last_node_update = now;
+			}
+		}
+
+		if (reset_all)	/* Defer reservation prolog/epilog */
+			continue;
 		if ((resv_ptr->start_time <= now) && !resv_ptr->run_prolog) {
+			res_start_cnt++;
 			resv_ptr->run_prolog = true;
 			_run_script(slurmctld_conf.resv_prolog, resv_ptr);
 		}
@@ -4066,24 +4102,10 @@ extern void set_node_maint_mode(bool reset_all)
 			resv_ptr->run_epilog = true;
 			_run_script(slurmctld_conf.resv_epilog, resv_ptr);
 		}
-		if (reset_all)
-			resv_ptr->maint_set_node = false;
-		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
-			continue;
-		if ((now >= resv_ptr->start_time) &&
-		    (now <  resv_ptr->end_time  )) {
-			if (!resv_ptr->maint_set_node) {
-				resv_ptr->maint_set_node = true;
-				_set_nodes_maint(resv_ptr, now);
-				last_node_update = now;
-			}
-		} else if (resv_ptr->maint_set_node) {
-			resv_ptr->maint_set_node = false;
-			_set_nodes_maint(resv_ptr, now);
-			last_node_update = now;
-		}
 	}
 	list_iterator_destroy(iter);
+
+	return res_start_cnt;
 }
 
 /* checks if node within node_record_table_ptr is in maint reservation */

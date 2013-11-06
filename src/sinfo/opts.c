@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -198,9 +198,11 @@ extern void parse_command_line(int argc, char *argv[])
 				      optarg);
 				exit(1);
 			}
-			if (hostlist_count(host_list) == 1)
+			if (hostlist_count(host_list) == 1) {
 				params.node_name_single = true;
-			else
+				xfree(params.nodes);
+				params.nodes = hostlist_deranged_string_xmalloc(host_list);
+			} else
 				params.node_name_single = false;
 			hostlist_destroy(host_list);
 			break;
@@ -482,9 +484,11 @@ _parse_format( char* format )
 {
 	int field_size;
 	bool right_justify;
-	char *prefix = NULL, *suffix = NULL, *token = NULL,
-		*tmp_char = NULL, *tmp_format = NULL;
+	char *prefix = NULL, *suffix = NULL, *token = NULL;
+	char *tmp_char = NULL, *tmp_format = NULL;
 	char field[1];
+	bool format_all = false;
+	int i;
 
 	if (format == NULL) {
 		fprintf( stderr, "Format option lacks specification\n" );
@@ -495,7 +499,16 @@ _parse_format( char* format )
 	if ((prefix = _get_prefix(format)))
 		format_add_prefix( params.format_list, 0, 0, prefix);
 
-	tmp_format = xstrdup( format );
+	if (!strcasecmp(format, "%all")) {
+		xstrfmtcat(tmp_format, "%c%c", '%', 'a');
+		for (i = 'b'; i <= 'z'; i++)
+			xstrfmtcat(tmp_format, "|%c%c", '%', (char) i);
+		for (i = 'A'; i <= 'Z'; i++)
+			xstrfmtcat(tmp_format, "|%c%c ", '%', (char) i);
+		format_all = true;
+	} else {
+		tmp_format = xstrdup(format);
+	}
 	token = strtok_r( tmp_format, "%", &tmp_char);
 	if (token && (format[0] != '%'))	/* toss header */
 		token = strtok_r( NULL, "%", &tmp_char );
@@ -512,7 +525,13 @@ _parse_format( char* format )
 			format_add_nodes_ai( params.format_list,
 					field_size,
 					right_justify,
-					suffix );
+					     suffix );
+		} else if (field[0] == 'B') {
+			params.match_flags.max_cpus_per_node_flag = true;
+			format_add_max_cpus_per_node( params.format_list,
+					     field_size,
+					     right_justify,
+					     suffix );
 		} else if (field[0] == 'c') {
 			params.match_flags.cpus_flag = true;
 			format_add_cpus( params.format_list,
@@ -713,6 +732,8 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (format_all) {
+			;	/* ignore */
 		} else {
 			prefix = xstrdup("%");
 			xstrcat(prefix, token);

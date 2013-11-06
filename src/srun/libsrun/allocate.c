@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -67,7 +67,7 @@
 #include "src/plugins/select/bluegene/bg_enums.h"
 #endif
 
-#ifdef HAVE_REAL_CRAY
+#if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 /*
  * On Cray installations, the libjob headers are not automatically installed
  * by default, while libjob.so always is, and kernels are > 2.6. Hence it is
@@ -156,7 +156,7 @@ static void _timeout_handler(srun_timeout_msg_t *msg)
 	if (msg->timeout != last_timeout) {
 		last_timeout = msg->timeout;
 		verbose("job time limit to be reached at %s",
-			ctime(&msg->timeout));
+			slurm_ctime(&msg->timeout));
 	}
 }
 
@@ -206,6 +206,16 @@ static bool _retry(void)
 		error("Unable to allocate resources: %s",
 		      slurm_strerror(ESLURM_NODES_BUSY));
 		error_exit = immediate_exit;
+		return false;
+	} else if ((errno == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
+		   (errno == SLURM_UNEXPECTED_MSG_ERROR) ||
+		   (errno == SLURM_PROTOCOL_INSANE_MSG_LENGTH)) {
+		static int external_msg_count = 0;
+		error("Srun communication socket apparently being written to "
+		      "by something other than Slurm");
+		if (external_msg_count++ < 4)
+			return true;
+		error("Unable to allocate resources: %m");
 		return false;
 	} else {
 		error("Unable to allocate resources: %m");
@@ -441,7 +451,34 @@ allocate_nodes(bool handle_signals)
 		 * Allocation granted!
 		 */
 		pending_job_id = resp->job_id;
+
+		/*
+		 * These values could be changed while the job was
+		 * pending so overwrite the request with what was
+		 * allocated so we don't have issues when we use them
+		 * in the step creation.
+		 */
+		if (opt.pn_min_memory != NO_VAL)
+			opt.pn_min_memory = (resp->pn_min_memory &
+					     (~MEM_PER_CPU));
+		else if (opt.mem_per_cpu != NO_VAL)
+			opt.mem_per_cpu = (resp->pn_min_memory &
+					   (~MEM_PER_CPU));
+		/*
+		 * FIXME: timelimit should probably also be updated
+		 * here since it could also change.
+		 */
+
 #ifdef HAVE_BG
+		uint32_t node_cnt = 0;
+		select_g_select_jobinfo_get(resp->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &node_cnt);
+		if ((node_cnt == 0) || (node_cnt == NO_VAL)) {
+			opt.min_nodes = node_cnt;
+			opt.max_nodes = node_cnt;
+		} /* else we just use the original request */
+
 		if (!_wait_bluegene_block_ready(resp)) {
 			if (!destroy_job)
 				error("Something is wrong with the "
@@ -449,6 +486,9 @@ allocate_nodes(bool handle_signals)
 			goto relinquish;
 		}
 #else
+		opt.min_nodes = resp->node_cnt;
+		opt.max_nodes = resp->node_cnt;
+
 		if (!_wait_nodes_ready(resp)) {
 			if (!destroy_job)
 				error("Something is wrong with the "
@@ -468,10 +508,11 @@ allocate_nodes(bool handle_signals)
 	return resp;
 
 relinquish:
-
-	slurm_free_resource_allocation_response_msg(resp);
-	if (!destroy_job)
-		slurm_complete_job(resp->job_id, 1);
+	if (resp) {
+		if (!destroy_job)
+			slurm_complete_job(resp->job_id, 1);
+		slurm_free_resource_allocation_response_msg(resp);
+	}
 	exit(error_exit);
 	return NULL;
 }
@@ -559,7 +600,7 @@ job_desc_msg_create_from_opts (void)
 	hostlist_t hl = NULL;
 
 	slurm_init_job_desc_msg(j);
-#ifdef HAVE_REAL_CRAY
+#if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 	uint64_t pagg_id = job_getjid(getpid());
 	/*
 	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session
@@ -580,6 +621,8 @@ job_desc_msg_create_from_opts (void)
 #endif
 
 	j->contiguous     = opt.contiguous;
+	if (opt.core_spec)
+		j->core_spec = opt.core_spec;
 	j->features       = opt.constraints;
 	j->gres           = opt.gres;
 	if (opt.immediate == 1)
@@ -593,8 +636,8 @@ job_desc_msg_create_from_opts (void)
 		j->argv    = (char **) xmalloc(sizeof(char *) * 2);
 		j->argv[0] = xstrdup(opt.argv[0]);
 	}
-	if (opt.acctg_freq >= 0)
-		j->acctg_freq     = opt.acctg_freq;
+	if (opt.acctg_freq)
+		j->acctg_freq     = xstrdup(opt.acctg_freq);
 	j->reservation    = opt.reservation;
 	j->wckey          = opt.wckey;
 
@@ -663,6 +706,8 @@ job_desc_msg_create_from_opts (void)
 		j->licenses = opt.licenses;
 	if (opt.network)
 		j->network = opt.network;
+	if (opt.profile)
+		j->profile = opt.profile;
 	if (opt.account)
 		j->account = opt.account;
 	if (opt.comment)

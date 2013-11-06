@@ -1,4 +1,4 @@
-.TH SACCT "1" "March 2010" "sacct 2.2" "Slurm components"
+.TH SACCT "1" "August 2013" "sacct 2.6" "Slurm components"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -54,10 +54,9 @@ gather and report incomplete information for these calls;
 \f2getrusage (3)\fP man page for information about which data are
 actually available on your system.
 .IP
-Elapsed time fields are presented as 2 fields, integral seconds and integral microseconds
-.IP
 Elapsed time fields are presented as
-[[days-]hours:]minutes:seconds.hundredths.
+[days-]hours:minutes:seconds[.microseconds].  Only 'CPU' fields will
+ever have microseconds.
 .IP
 The default input file is the file named in the
 \f3AccountingStorageLoc\fP parameter in slurm.conf.
@@ -120,21 +119,24 @@ Print a list of fields that can be specified with the \f3\-\-format\fP option.
 .ft 3
 Fields available:
 
-AllocCPUS       Account       AssocID       AveCPU
-AveCPUFreq      AvePages      AveRSS        AveVMSize
-BlockID         Cluster       Comment       ConsumedEnergy
-CPUTime         CPUTimeRAW    DerivedExitCode Elapsed
-Eligible        End           ExitCode      GID
-Group           JobID         JobName       Layout
-MaxPages        MaxPagesNode  MaxPagesTask  MaxRSS
-MaxRSSNode      MaxRSSTask    MaxVMSize     MaxVMSizeNode
-MaxVMSizeTask   MinCPU        MinCPUNode    MinCPUTask
-NCPUS           NNodes        NodeList      NTasks
-Priority        Partition     QOSRAW        ReqCPUS
-Reserved        ResvCPU       ResvCPURAW    Start
-State           Submit        Suspended     SystemCPU
-Timelimit       TotalCPU      UID           User
-UserCPU         WCKey         WCKeyID
+AllocCPUS       Account        AssocID          AveCPU
+AveCPUFreq      AveDiskRead    AveDiskWrite     AvePages
+AveRSS          AveVMSize      BlockID          Cluster
+Comment         ConsumedEnergy CPUTime          CPUTimeRAW
+DerivedExitCode Elapsed        Eligible         End
+ExitCode        GID            Group            JobID
+JobName         Layout         MaxDiskRead      MaxDiskReadNode
+MaxDiskReadTask MaxDiskWrite   MaxDiskWriteNode MaxDiskWriteTask
+MaxPages        MaxPagesNode   MaxPagesTask     MaxRSS
+MaxRSSNode      MaxRSSTask     MaxVMSize        MaxVMSizeNode
+MaxVMSizeTask   MinCPU         MinCPUNode       MinCPUTask
+NCPUS           NNodes         NodeList         NTasks
+Priority        Partition      QOSRAW           ReqCPUFreq
+ReqCPUs         ReqMem         Reserved         ResvCPU
+ResvCPURAW      Start          State            Submit
+Suspended       SystemCPU      Timelimit        TotalCPU
+UID             User           UserCPU          WCKey
+WCKeyID
 
 .ft 1
 .fi
@@ -207,7 +209,11 @@ maximum timelimit of the range.  Default is no restriction.
 Equivalent to specifying:
 .IP
 .na
-\-\-format=jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode
+\-\-format=jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,
+avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,
+maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,
+alloccpus,elapsed,state,exitcode,maxdiskread,maxdiskreadnode,maxdiskreadtask,
+avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite
 .ad
 
 .TP
@@ -288,6 +294,10 @@ the state name may be used (e.g. \f3CA\fP or \f3CANCELLED\fP) and the
 the the name is case insensitive (e.g. \f3ca\fP and \f3CA\fP both work).
 .RS
 .TP "20"
+\fBBF  BOOT_FAIL\fR
+Job terminated due to launch failure, typically due to a hardware failure
+(e.g. unable to boot the node or block and the job can not be requeued).
+.TP
 \f3CA  CANCELLED\fP
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.
@@ -397,8 +407,12 @@ Only show cumulative statistics for each job, not the intermediate steps.
 The following describes each job accounting field:
 .RS
 .TP "10"
-\f3alloccpus\fP
-Count of allocated processors.
+\f3ALL\fP
+Print all fields listed below.
+
+.TP
+\f3AllocCPUs\fP
+Count of allocated CPUs. Equivalant to \f3NCPUs\fP.
 
 .TP
 \f3account\fP
@@ -415,6 +429,14 @@ Average (system + user) CPU time of all tasks in job.
 .TP
 \f3AveCPUFreq\fP
 Average weighted CPU frequency of all tasks in job, in kHz.
+
+.TP
+\f3AveDiskRead\fP
+Average number of bytes read by all tasks in job.
+
+.TP
+\f3AveDiskWrite\fP
+Average number of bytes written by all tasks in job.
 
 .TP
 \f3AvePages\fP
@@ -563,6 +585,30 @@ What the layout of a step was when it was running.  This can be used
 to give you an idea of which node ran which rank in your job.
 
 .TP
+\f3MaxDiskRead\fP
+Maximum number of bytes read by all tasks in job.
+
+.TP
+\f3MaxDiskReadNode\fP
+The node on which the maxdiskread occurred.
+
+.TP
+\f3MaxDiskReadTask\fP
+The task ID where the maxdiskread occurred.
+
+.TP
+\f3MaxDiskWrite\fP
+Maximum number of bytes written by all tasks in job.
+
+.TP
+\f3MaxDiskWriteNode\fP
+The node on which the maxdiskwrite occurred.
+
+.TP
+\f3MaxDiskWriteTask\fP
+The task ID where the maxdiskwrite occurred.
+
+.TP
 \f3MaxPages\fP
 Maximum number of page faults of all tasks in job.
 
@@ -612,6 +658,8 @@ The task ID where the mincpu occurred.
 
 .TP
 \f3ncpus\fP
+Count of allocated CPUs. Equivalant to \f3AllocCPUs\fP
+
 Total number of CPUs allocated to the job.
 
 .TP
@@ -643,8 +691,19 @@ Name of Quality of Service.
 Id of Quality of Service.
 
 .TP
+\f3ReqCPUFreq\fP
+Requested CPU frequency for the step, in kHz.
+Note: This value applies only to a job step. No value is reported for the job.
+
+.TP
 \f3reqcpus\fP
 Required CPUs.
+
+.TP
+\f3ReqMem\fP
+Minimum required memory for the job, in MB. A 'c' at the end of
+number represents Memory Per CPU, a 'n' represents Memory Per Node.
+Note: This value is only from the job allocation, not the step.
 
 .TP
 \f3reserved\fP
@@ -669,7 +728,8 @@ Initiation time of the job in the same format as \f3end\fP.
 Displays the job status, or state.
 
 Output can be RUNNING, RESIZING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
-TIMEOUT, PREEMPTED or NODE_FAIL. If more information is available on the job state
+TIMEOUT, PREEMPTED, BOOT_FAIL or NODE_FAIL.
+If more information is available on the job state
 than will fit into the current field width (for example, the uid that CANCELLED
 a job) the state will be followed by a "+".  You can increase the size of
 the displayed state using the "%NUMBER" format modifier described earlier.
@@ -810,11 +870,12 @@ on the command line.
 .fi
 .RE
 .SH "COPYING"
-
 Copyright (C) 2005\-2007 Copyright Hewlett\-Packard Development Company L.P.
-.LP
-Copyright (C) 2008\-2009 Lawrence Livermore National Security. Produced at Lawrence Livermore National Laboratory (cf,
-DISCLAIMER). CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+.br
+Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -173,7 +173,7 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 		i_first = bit_ffs(node_bitmap);
 		i_last  = bit_fls(node_bitmap);
 	} else {
-		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
 			debug("(%s:%d) job id: %u -- No nodes in bitmap of "
 			      "job_record!",
 			      THIS_FILE, __LINE__, job_ptr->job_id);
@@ -198,7 +198,7 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 		else
 			count = 0;
 
-		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
 			debug("(%s:%d) job id: %u -- Count of "
 			      "GRES types in the gres_list is: %d",
 			      THIS_FILE, __LINE__, job_ptr->job_id, count);
@@ -206,7 +206,7 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 		/* Only reallocate when there is an increase in size of the
 		 * local arrays. */
 		if (count > oldcount) {
-			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
 				debug("(%s:%d) job id: %u -- Old GRES "
 				      "count: %d New GRES count: %d",
 				      THIS_FILE, __LINE__, job_ptr->job_id,
@@ -282,7 +282,7 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 		if (prefix[0] == '\0')
 			prefix = ",";
 
-		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
 			debug("(%s:%d) job id: %u -- gres_alloc substring=(%s)",
 			      THIS_FILE, __LINE__, job_ptr->job_id, buf);
 	}
@@ -396,7 +396,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	license_job_return(job_ptr);
 	acct_policy_job_fini(job_ptr);
-	if (slurm_sched_freealloc(job_ptr) != SLURM_SUCCESS)
+	if (slurm_sched_g_freealloc(job_ptr) != SLURM_SUCCESS)
 		error("slurm_sched_freealloc(%u): %m", job_ptr->job_id);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%u): %m", job_ptr->job_id);
@@ -479,9 +479,11 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		agent_args->node_count++;
 	}
 #else
+	if (!job_ptr->node_bitmap_cg)
+		build_cg_bitmap(job_ptr);
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (!bit_test(job_ptr->node_bitmap, i))
+		if (!bit_test(job_ptr->node_bitmap_cg, i))
 			continue;
 		if (IS_NODE_DOWN(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
@@ -509,8 +511,9 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	if ((agent_args->node_count - down_node_cnt) == 0) {
 		job_ptr->job_state &= (~JOB_COMPLETING);
+		job_hold_requeue(job_ptr);
 		delete_step_records(job_ptr);
-		slurm_sched_schedule();
+		slurm_sched_g_schedule();
 	}
 
 	if (agent_args->node_count == 0) {
@@ -1319,18 +1322,22 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	return error_code;
 }
 
-static void _preempt_jobs(List preemptee_job_list, int *error_code)
+static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
+			  int *error_code)
 {
 	ListIterator iter;
 	struct job_record *job_ptr;
 	uint16_t mode;
 	int job_cnt = 0, rc = SLURM_SUCCESS;
+	checkpoint_msg_t ckpt_msg;
 
 	iter = list_iterator_create(preemptee_job_list);
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
 		mode = slurm_job_preempt_mode(job_ptr);
 		if (mode == PREEMPT_MODE_CANCEL) {
 			job_cnt++;
+			if (!kill_pending)
+				continue;
 			if (slurm_job_check_grace(job_ptr) == SLURM_SUCCESS)
 				continue;
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
@@ -1339,7 +1346,9 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 				     job_ptr->job_id);
 			}
 		} else if (mode == PREEMPT_MODE_CHECKPOINT) {
-			checkpoint_msg_t ckpt_msg;
+			job_cnt++;
+			if (!kill_pending)
+				continue;
 			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 			ckpt_msg.op	   = CHECK_REQUEUE;
 			ckpt_msg.job_id    = job_ptr->job_id;
@@ -1356,15 +1365,16 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 				info("preempted job %u has been checkpointed",
 				     job_ptr->job_id);
 			}
-			job_cnt++;
 		} else if (mode == PREEMPT_MODE_REQUEUE) {
+			job_cnt++;
+			if (!kill_pending)
+				continue;
 			rc = job_requeue(0, job_ptr->job_id, -1,
-					 (uint16_t)NO_VAL, true);
+			                 (uint16_t)NO_VAL, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
 			}
-			job_cnt++;
 		} else if ((mode == PREEMPT_MODE_SUSPEND) &&
 			   (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
 			debug("preempted job %u suspended by gang scheduler",
@@ -1527,19 +1537,19 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS)){
 		struct job_details *detail_ptr = job_ptr->details;
 		time_t now = time(NULL);
+		bool kill_pending = true;
 		if ((detail_ptr->preempt_start_time != 0) &&
 		    (detail_ptr->preempt_start_time >
 		     (now - slurmctld_conf.kill_wait -
 		      slurmctld_conf.msg_timeout))) {
 			/* Job preemption may still be in progress,
-			 * do not preempt any more jobs yet */
-			error_code = ESLURM_NODES_BUSY;
-		} else {
-			_preempt_jobs(preemptee_job_list, &error_code);
-			if ((error_code == ESLURM_NODES_BUSY) &&
-			    (detail_ptr->preempt_start_time == 0)) {
-  				detail_ptr->preempt_start_time = now;
-			}
+			 * do not cancel or requeue any more jobs yet */
+			kill_pending = false;
+		}
+		_preempt_jobs(preemptee_job_list, kill_pending, &error_code);
+		if ((error_code == ESLURM_NODES_BUSY) &&
+		    (detail_ptr->preempt_start_time == 0)) {
+  			detail_ptr->preempt_start_time = now;
 		}
 	}
 	if (error_code) {
@@ -1563,16 +1573,19 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		} else if (error_code == ESLURM_RESERVATION_NOT_USABLE) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);
+		} else if ((job_ptr->state_reason == WAIT_BLOCK_MAX_ERR) ||
+			   (job_ptr->state_reason == WAIT_BLOCK_D_ACTION)) {
+			/* state_reason was already setup */
 		} else {
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
 			if (error_code == ESLURM_NODES_BUSY)
-				slurm_sched_job_is_pending();
+				slurm_sched_g_job_is_pending();
 		}
 		goto cleanup;
 	}
 	if (test_only) {	/* set if job not highest priority */
-		slurm_sched_job_is_pending();
+		slurm_sched_g_job_is_pending();
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
@@ -1652,6 +1665,16 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	slurmctld_diag_stats.jobs_started++;
 	acct_policy_job_begin(job_ptr);
 
+	/* Update the job_record's gres and gres_alloc fields with
+	 * strings representing the amount of each GRES type requested
+	 *  and allocated. */
+	_fill_in_gres_fields(job_ptr);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
+		debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
+		      "job_record->gres_alloc: (%s)",
+		      THIS_FILE, __LINE__, job_ptr->job_id,
+		      job_ptr->gres, job_ptr->gres_alloc);
+
 	/* If ran with slurmdbd this is handled out of band in the
 	 * job if happening right away.  If the job has already
 	 * become eligible and registered in the db then the start
@@ -1660,7 +1683,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	prolog_slurmctld(job_ptr);
-	slurm_sched_newalloc(job_ptr);
+	slurm_sched_g_newalloc(job_ptr);
 
       cleanup:
 	if (preemptee_job_list)
@@ -1677,16 +1700,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		}
 		xfree(node_set_ptr);
 	}
-
-	/* Update the job_record's gres and gres_alloc fields with
-	 * strings representing the amount of each GRES type requested
-	 *  and allocated. */
-	_fill_in_gres_fields(job_ptr);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-		debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
-		      "job_record->gres_alloc: (%s)",
-		      THIS_FILE, __LINE__, job_ptr->job_id,
-		      job_ptr->gres, job_ptr->gres_alloc);
 
 	return error_code;
 }
@@ -1713,19 +1726,19 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 
 	/* First build the GRES requested field. */
 	if ((req_config == NULL) || (req_config[0] == '\0')) {
-		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
 			debug("(%s:%d) job id: %u -- job_record->gres "
 			      "is empty or NULL; this is OK if no GRES "
 			      "was requested",
 			      THIS_FILE, __LINE__, job_ptr->job_id);
 
-		xfree(job_ptr->gres_req);
-		xstrcat(job_ptr->gres_req, "");
-	} else if ( job_ptr->node_cnt > 0 ) {
+		if (job_ptr->gres_req == NULL)
+			xstrcat(job_ptr->gres_req, "");
+
+	} else if (job_ptr->node_cnt > 0
+	           && job_ptr->gres_req == NULL) {
 		/* job_ptr->gres_req is rebuilt/replaced here */
 		tmp_str = xstrdup(req_config);
-		xfree(job_ptr->gres_req);
-		job_ptr->gres_req = xstrdup("");
 
 		tok = strtok_r(tmp_str, ",", &last);
 		while (tok) {
@@ -1755,7 +1768,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 
 			if (prefix[0] == '\0')
 				prefix = ",";
-			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
 				debug("(%s:%d) job id:%u -- ngres_req:"
 				      "%u, gres_req substring = (%s)",
 				      THIS_FILE, __LINE__,
@@ -1780,7 +1793,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 
 		/* Now build the GRES allocated field. */
 		rv = _build_gres_alloc_string(job_ptr, valtype);
-		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
 			debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
 			      "job_record->gres_alloc: (%s)",
 			      THIS_FILE, __LINE__, job_ptr->job_id,
@@ -2501,8 +2514,9 @@ extern void re_kill_job(struct job_record *job_ptr)
 				    ((--job_ptr->node_cnt) == 0)) {
 					last_node_update = time(NULL);
 					job_ptr->job_state &= (~JOB_COMPLETING);
+					job_hold_requeue(job_ptr);
 					delete_step_records(job_ptr);
-					slurm_sched_schedule();
+					slurm_sched_g_schedule();
 				}
 			}
 		} else if (!IS_NODE_NO_RESPOND(front_end_ptr)) {
@@ -2528,8 +2542,9 @@ extern void re_kill_job(struct job_record *job_ptr)
 			if ((job_ptr->node_cnt > 0) &&
 			    ((--job_ptr->node_cnt) == 0)) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
+				job_hold_requeue(job_ptr);
 				delete_step_records(job_ptr);
-				slurm_sched_schedule();
+				slurm_sched_g_schedule();
 				last_node_update = time(NULL);
 			}
 		} else if (!IS_NODE_NO_RESPOND(node_ptr)) {

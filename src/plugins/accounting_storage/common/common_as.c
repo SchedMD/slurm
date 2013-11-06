@@ -9,7 +9,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -65,9 +65,11 @@ extern char *wckey_month_table;
 /*
  * We want SLURMDB_MODIFY_ASSOC always to be the last
  */
-static int _sort_update_object_dec(slurmdb_update_object_t *object_a,
-				   slurmdb_update_object_t *object_b)
+static int _sort_update_object_dec(void *a, void *b)
 {
+	slurmdb_update_object_t *object_a = *(slurmdb_update_object_t **)a;
+	slurmdb_update_object_t *object_b = *(slurmdb_update_object_t **)b;
+
 	if ((object_a->type == SLURMDB_MODIFY_ASSOC)
 	    && (object_b->type != SLURMDB_MODIFY_ASSOC))
 		return 1;
@@ -516,7 +518,9 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 		if ((uid != slurmdbd_conf->slurm_user_id && uid != 0)
 		   && assoc_mgr_get_admin_level(db_conn, uid) < min_level)
 			is_admin = 0;
-	}
+	} else if (uid != 0)
+		is_admin = 0;
+
 	return is_admin;
 }
 

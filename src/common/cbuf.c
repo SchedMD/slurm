@@ -88,9 +88,7 @@
 #  ifndef lsd_nomem_error
 	static void * lsd_nomem_error(char *file, int line, char *mesg)
 	{
-		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
-			file, line, mesg, strerror(errno));
-		fflush(log_fp());
+		log_oom(file, line, mesg);
 		abort();
 		return NULL;
 	}

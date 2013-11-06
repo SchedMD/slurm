@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -58,7 +58,7 @@
  * at the end of the structure.
  */
 typedef struct slurm_mpi_ops {
-	int          (*slurmstepd_prefork)(const slurmd_job_t *job,
+	int          (*slurmstepd_prefork)(const stepd_step_rec_t *job,
 					   char ***env);
 	int          (*slurmstepd_init)   (const mpi_plugin_task_info_t *job,
 					   char ***env);
@@ -163,7 +163,7 @@ int mpi_hook_slurmstepd_init (char ***env)
 	return SLURM_SUCCESS;
 }
 
-int mpi_hook_slurmstepd_prefork (const slurmd_job_t *job, char ***env)
+int mpi_hook_slurmstepd_prefork (const stepd_step_rec_t *job, char ***env)
 {
 	if (mpi_hook_slurmstepd_init(env) == SLURM_ERROR)
 		return SLURM_ERROR;

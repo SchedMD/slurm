@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -47,7 +47,7 @@
 typedef struct {
 	bitstr_t *bitmap;
 	uint16_t cnode_cnt;
-	int *inx;
+	int32_t *inx;
 	enum node_states state;
 	char *str;
 } node_subgrp_t;

@@ -11,7 +11,7 @@
 #  CODE-OCEC-09-009. All rights reserved.
 #
 #  This file is part of SLURM, a resource management program.
-#  For details, see <http://www.schedmd.com/slurmdocs/>.
+#  For details, see <http://slurm.schedmd.com/>.
 #  Please also read the included file: DISCLAIMER.
 #
 #  SLURM is free software; you can redistribute it and/or modify it under
@@ -412,7 +412,7 @@ sub get_exec_host
 	my ($job) = @_;
 
 	my $execHost = "--";
-	if ($job->{'nodes'}) {
+	if ($job->{'nodes'} && $job->{'job_resrcs'}) {
 		my @allocNodes = ();
 		my $hl = Slurm::Hostlist::create($job->{'nodes'});
 		my $inx = 0;
@@ -478,7 +478,7 @@ sub print_job_select
 	       $job->{'name'},
 	       $sessID,
 	       $job->{'num_nodes'} || "--",
-	       $job->{'num_procs'} || "--",
+	       $job->{'num_cpus'} || "--",
 	       $job->{'job_min_memory'} || "--",
 	       hhmm($job->{'time_limit'} * 60),
 	       $job->{'stateCode'},
@@ -530,8 +530,8 @@ sub print_job_full
 	printf("\tResource_List.walltime = %s\n", hhmmss($job->{'time_limit'} * 60));
 	printf("\tResource_List.nodect = %d\n", $job->{'num_nodes'})
 		if $job->{'num_nodes'};
-	printf("\tResource_List.ncpus = %s\n", $job->{'num_procs'})
-		if $job->{'num_procs'};
+	printf("\tResource_List.ncpus = %s\n", $job->{'num_cpus'})
+		if $job->{'num_cpus'};
 
 	if ($job->{'reqNodes'}) {
 		my $nodeExpr = $job->{'reqNodes'};
@@ -597,7 +597,7 @@ sub print_part_limits
 
 	printf("%-16.16s   --      --    ", $part->{'name'});
 	if($part->{'max_time'} != INFINITE) {
-		printf("%8u ", $part->{'max_time'});
+		print(hhmmss($part->{'max_time'}*60));
 	} else {
 		printf("   --    ");
 

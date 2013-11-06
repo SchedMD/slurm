@@ -6,7 +6,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -575,7 +575,7 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 				  false, //will run
 				  NULL, // will_run_response_msg_t
 				  true, //allocate
-				  job_desc_msg.user_id, &job_ptr);
+				  job_desc_msg.user_id, &job_ptr, NULL);
 	unlock_slurmctld(job_write_lock);
 
 	/* cleanup */

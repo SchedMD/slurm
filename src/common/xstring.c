@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -220,7 +220,7 @@ void _xstrftimecat(char **buf, const char *fmt)
 /*
  * Append a ISO 8601 formatted timestamp to buffer buf, expand as needed
  */
-void _xiso8601timecat(char **buf)
+void _xiso8601timecat(char **buf, bool msec)
 {
 	char p[64] = "";
 	struct timeval tv;
@@ -235,18 +235,17 @@ void _xiso8601timecat(char **buf)
 	if (strftime(p, sizeof(p), "%Y-%m-%dT%T", &tm) == 0)
 		fprintf(stderr, "strftime() returned 0\n");
 
-#if defined LOG_TIME_MSEC	/* Add millisecond data */
-	_xstrfmtcat(buf, "%s.%3.3d", p, (int)(tv.tv_usec / 1000));
-#else
-	_xstrfmtcat(buf, "%s", p);
-#endif
+	if (msec)
+		_xstrfmtcat(buf, "%s.%3.3d", p, (int)(tv.tv_usec / 1000));
+	else
+		_xstrfmtcat(buf, "%s", p);
 }
 
 /*
  * Append a RFC 5424 formatted timestamp to buffer buf, expand as needed
  *
  */
-void _xrfc5424timecat(char **buf)
+void _xrfc5424timecat(char **buf, bool msec)
 {
 	char p[64] = "";
 	char z[12] = "";
@@ -272,11 +271,10 @@ void _xrfc5424timecat(char **buf)
 	z[4] = z[3];
 	z[3] = ':';
 
-#if defined LOG_TIME_MSEC	/* Add millisecond data */
-	_xstrfmtcat(buf, "%s.%3.3d%s", p, (int)(tv.tv_usec / 1000), z);
-#else
-	_xstrfmtcat(buf, "%s%s", p, z);
-#endif
+	if (msec)
+		_xstrfmtcat(buf, "%s.%3.3d%s", p, (int)(tv.tv_usec / 1000), z);
+	else
+		_xstrfmtcat(buf, "%s%s", p, z);
 }
 
 /*

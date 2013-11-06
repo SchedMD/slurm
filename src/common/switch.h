@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/switch.h - Generic switch (interconnect) info for slurm
+ *  src/common/switch.h - Generic switch (switch_g) info for slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -50,6 +50,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /* opaque data structures - no peeking! */
 #ifndef __switch_jobinfo_t_defined
@@ -81,7 +82,7 @@ extern int switch_fini (void);
  * IN dir_name - directory into which switch state is saved
  * RET         - slurm error code
  */
-extern int  switch_save   (char *dir_name);
+extern int  switch_g_save   (char *dir_name);
 
 /* restore any global switch state from a file within the specified directory
  * the actual file name used in plugin specific
@@ -90,21 +91,21 @@ extern int  switch_save   (char *dir_name);
  *               a clean slate.
  * RET         - slurm error code
  */
-extern int  switch_restore(char *dir_name, bool recover);
+extern int  switch_g_restore(char *dir_name, bool recover);
 
 /* clear all current switch window allocation information
  * RET         - slurm error code
  */
-extern int  switch_clear(void);
+extern int  switch_g_clear(void);
 
 /* return the number of a switch-specific error code */
-extern int switch_get_errno(void);
+extern int switch_g_get_errno(void);
 
 /* return a string description of a switch specific error code
  * IN errnum - switch specific error return code
  * RET       - string describing the nature of the error
  */
-extern char *switch_strerror(int errnum);
+extern char *switch_g_strerror(int errnum);
 
 /******************************************************\
  * JOB-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
@@ -112,49 +113,55 @@ extern char *switch_strerror(int errnum);
 
 /* allocate storage for a switch job credential
  * OUT jobinfo - storage for a switch job credential
+ * IN job_id   - job id of the job this is for.
+ * IN step_id  - step id of the job this is for.
  * RET         - slurm error code
- * NOTE: storage must be freed using g_switch_free_jobinfo
+ * NOTE: storage must be freed using g_switch_g_free_jobinfo
  */
-extern int  switch_alloc_jobinfo (switch_jobinfo_t **jobinfo);
+extern int  switch_g_alloc_jobinfo (switch_jobinfo_t **jobinfo,
+				    uint32_t job_id, uint32_t step_id);
 
 /* fill a job's switch credential
  * OUT jobinfo  - storage for a switch job credential
- * IN  nodelist - list of nodes to be used by the job
- * IN  tasks_per_node   - count of tasks per node in the job
- * IN  cyclic_alloc - task distribution pattern, 1=cyclic, 0=block
+ * IN  step_layout - the layout of the step with at least the nodes,
+ *                   tasks_per_node and tids set
  * IN  network  - plugin-specific network info (e.g. protocol)
- * NOTE: storage must be freed using g_switch_free_jobinfo
+ * NOTE: storage must be freed using g_switch_g_free_jobinfo
  */
-extern int  switch_build_jobinfo (switch_jobinfo_t *jobinfo,
-		char *nodelist, uint16_t *tasks_per_node, uint32_t **tids,
-		char *network);
+extern int  switch_g_build_jobinfo(switch_jobinfo_t *jobinfo,
+				   slurm_step_layout_t *step_layout,
+				   char *network);
 
 /* copy a switch job credential
  * IN jobinfo - the switch job credential to be copied
  * RET        - the copy
- * NOTE: returned value must be freed using g_switch_free_jobinfo
+ * NOTE: returned value must be freed using g_switch_g_free_jobinfo
  */
-extern switch_jobinfo_t *switch_copy_jobinfo(switch_jobinfo_t *jobinfo);
+extern switch_jobinfo_t *switch_g_copy_jobinfo(switch_jobinfo_t *jobinfo);
 
 /* free storage previously allocated for a switch job credential
  * IN jobinfo  - the switch job credential to be freed
  */
-extern void switch_free_jobinfo  (switch_jobinfo_t *jobinfo);
+extern void switch_g_free_jobinfo  (switch_jobinfo_t *jobinfo);
 
 /* pack a switch job credential into a buffer in machine independent form
  * IN jobinfo  - the switch job credential to be saved
  * OUT buffer  - buffer with switch credential appended
+ * IN protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
  */
-extern int  switch_pack_jobinfo  (switch_jobinfo_t *jobinfo, Buf buffer);
+extern int  switch_g_pack_jobinfo  (switch_jobinfo_t *jobinfo, Buf buffer,
+				    uint16_t protocol_version);
 
 /* unpack a switch job credential from a buffer
  * OUT jobinfo - the switch job credential read
  * IN  buffer  - buffer with switch credential read from current pointer loc
+ * IN  protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
- * NOTE: returned value must be freed using g_switch_free_jobinfo
+ * NOTE: returned value must be freed using g_switch_g_free_jobinfo
  */
-extern int  switch_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer);
+extern int  switch_g_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer,
+				    uint16_t protocol_version);
 
 /* get some field from a switch job credential
  * IN jobinfo - the switch job credential
@@ -193,16 +200,21 @@ extern bool switch_g_part_comp(void);
 /*
  * Restore the switch allocation information "jobinfo" for an already
  * allocated job step, most likely to restore the switch information
- * after a call to switch_clear().
+ * after a call to switch_g_clear().
  */
 extern int switch_g_job_step_allocated(switch_jobinfo_t *jobinfo,
 	char *nodelist);
+
+/*
+ * Initialize the switch plugin on the slurmctld.
+ */
+extern int switch_g_slurmctld_init(void);
 
 /* write job credential string representation to a file
  * IN fp      - an open file pointer
  * IN jobinfo - a switch job credential
  */
-extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo);
+extern void switch_g_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo);
 
 /* write job credential to a string
  * IN jobinfo - a switch job credential
@@ -210,7 +222,7 @@ extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo);
  * IN size    - byte size of buf
  * RET        - the string, same as buf
  */
-extern char *switch_sprint_jobinfo( switch_jobinfo_t *jobinfo,
+extern char *switch_g_sprint_jobinfo( switch_jobinfo_t *jobinfo,
 			char *buf, size_t size);
 
 /********************************************************************\
@@ -218,42 +230,42 @@ extern char *switch_sprint_jobinfo( switch_jobinfo_t *jobinfo,
 \********************************************************************/
 
 /*
- * Setup node for interconnect use.
+ * Setup node for switch_g use.
  *
  * This function is run from the top level slurmd only once per
  * slurmd run. It may be used, for instance, to perform some one-time
- * interconnect setup or spawn an error handling thread.
+ * switch_g setup or spawn an error handling thread.
  *
  */
-extern int interconnect_node_init(void);
+extern int switch_g_node_init(void);
 
 /*
- * Finalize interconnect on node.
+ * Finalize switch_g on node.
  *
  * This function is called once as slurmd exits (slurmd will wait for
  * this function to return before continuing the exit process)
  */
-extern int interconnect_node_fini(void);
+extern int switch_g_node_fini(void);
 
 
 /*
- * Notes on job related interconnect functions:
+ * Notes on job related switch_g functions:
  *
- * Interconnect functions are run within slurmd in the following way:
+ * switch_g functions are run within slurmd in the following way:
  * (Diagram courtesy of Jim Garlick [see qsw.c] )
  *
  *  Process 1 (root)        Process 2 (root, user)  |  Process 3 (user task)
  *                                                  |
- *  interconnect_preinit                            |
- *  fork ------------------ interconnect_init       |
+ *  switch_g_job_preinit                            |
+ *  fork ------------------ switch_g_job_init       |
  *  waitpid                 setuid, chdir, etc.     |
- *                          fork N procs -----------+--- interconnect_attach
+ *                          fork N procs -----------+--- switch_g_job_attach
  *                          wait all                |    exec mpi process
- *                          interconnect_fini*      |
- *  interconnect_postfini                           |
+ *                          switch_g_job_fini*      |
+ *  switch_g_job_postfini                           |
  *                                                  |
  *
- * [ *Note: interconnect_fini() is run as the uid of the job owner, not root ]
+ * [ *Note: switch_g_job_fini() is run as the uid of the job owner, not root ]
  */
 
 /*
@@ -261,20 +273,19 @@ extern int interconnect_node_fini(void);
  *
  * pre is run as root in the first slurmd process, the so called job
  * manager. This function can be used to perform any initialization
- * that needs to be performed in the same process as interconnect_fini()
+ * that needs to be performed in the same process as switch_g_job_fini()
  *
  */
-extern int interconnect_preinit(switch_jobinfo_t *jobinfo);
+extern int switch_g_job_preinit(switch_jobinfo_t *jobinfo);
 
 /*
- * initialize interconnect on node for job. This function is run from the
- * slurmstepd process (some interconnect implementations may require
- * interconnect init functions to be executed from a separate process
- * than the process executing interconnect_fini() [e.g. QsNet])
+ * initialize switch_g on node for job. This function is run from the
+ * slurmstepd process (some switch_g implementations may require
+ * switch_g init functions to be executed from a separate process
+ * than the process executing switch_g_job_fini() [e.g. QsNet])
  *
  */
-extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
-			     char *job_name);
+extern int switch_g_job_init(stepd_step_rec_t *job);
 
 /*
  * Determine if a job can be suspended
@@ -282,7 +293,7 @@ extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
  * IN jobinfo - switch information for a job step
  * RET SLURM_SUCCESS or error code
  */
-extern int interconnect_suspend_test(switch_jobinfo_t *jobinfo);
+extern int switch_g_job_suspend_test(switch_jobinfo_t *jobinfo);
 
 /*
  * Build data structure containing information needed to suspend or resume
@@ -291,7 +302,7 @@ extern int interconnect_suspend_test(switch_jobinfo_t *jobinfo);
  * IN jobinfo - switch information for a job step
  * RET data to be sent with job suspend/resume RPC
  */
-extern void interconnect_suspend_info_get(switch_jobinfo_t *jobinfo,
+extern void switch_g_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 					  void **suspend_info);
 /*
  * Pack data structure containing information needed to suspend or resume
@@ -299,69 +310,72 @@ extern void interconnect_suspend_info_get(switch_jobinfo_t *jobinfo,
  *
  * IN suspend_info - data to be sent with job suspend/resume RPC
  * IN/OUT buffer to hold the data
+ * IN protocol_version - version of Slurm we are talking to.
  */
-extern void interconnect_suspend_info_pack(void *suspend_info, Buf buffer);
+extern void switch_g_job_suspend_info_pack(void *suspend_info, Buf buffer,
+					   uint16_t protocol_version);
 /*
  * Unpack data structure containing information needed to suspend or resume
  * a job
  *
  * IN suspend_info - data to be sent with job suspend/resume RPC
  * IN/OUT buffer that holds the data
+ * IN protocol_version - version of Slurm we are talking to.
  * RET SLURM_SUCCESS or error code
  */
-extern int interconnect_suspend_info_unpack(void **suspend_info, Buf buffer);
+extern int switch_g_job_suspend_info_unpack(void **suspend_info, Buf buffer,
+					    uint16_t protocol_version);
 /*
  * Free data structure containing information needed to suspend or resume
  * a job
  *
  * IN suspend_info - data sent with job suspend/resume RPC
  */
-extern void interconnect_suspend_info_free(void *suspend_info);
+extern void switch_g_job_suspend_info_free(void *suspend_info);
 
 /*
  * Suspend a job's use of switch resources. This may reset MPI timeout values
- * and/or release switch resources. See also interconnect_resume().
+ * and/or release switch resources. See also switch_g_job_resume().
  *
  * IN max_wait - maximum number of seconds to wait for operation to complete
  * RET SLURM_SUCCESS or error code
  */
-extern int interconnect_suspend(void *suspend_info, int max_wait);
+extern int switch_g_job_suspend(void *suspend_info, int max_wait);
 
 /*
- * Resume a job's use of switch resources. See also interconnect_suspend().
+ * Resume a job's use of switch resources. See also switch_g_job_suspend().
  *
  * IN max_wait - maximum number of seconds to wait for operation to complete
  * RET SLURM_SUCCESS or error code
  */
-extern int interconnect_resume(void *suspend_infoo, int max_wait);
+extern int switch_g_job_resume(void *suspend_infoo, int max_wait);
 
 /*
- * This function is run from the same process as interconnect_init()
+ * This function is run from the same process as switch_g_job_init()
  * after all job tasks have exited. It is *not* run as root, because
  * the process in question has already setuid to the job owner.
  *
  */
-extern int interconnect_fini(switch_jobinfo_t *jobinfo);
+extern int switch_g_job_fini(switch_jobinfo_t *jobinfo);
 
 /*
- * Finalize interconnect on node.
+ * Finalize switch_g on node.
  *
  * This function is run from the initial slurmd process (same process
- * as interconnect_preinit()), and is run as root. Any cleanup routines
+ * as switch_g_job_preinit()), and is run as root. Any cleanup routines
  * that need to be run with root privileges should be run from this
  * function.
  */
-extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
-				uint32_t job_id, uint32_t step_id );
+extern int switch_g_job_postfini(stepd_step_rec_t *job);
 
 /*
- * attach process to interconnect
+ * attach process to switch_g_job
  * (Called from within the process, so it is appropriate to set
- * interconnect specific environment variables here)
+ * switch_g specific environment variables here)
  */
-extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
-		uint32_t nodeid, uint32_t procid, uint32_t nnodes,
-		uint32_t nprocs, uint32_t rank);
+extern int switch_g_job_attach(switch_jobinfo_t *jobinfo, char ***env,
+			       uint32_t nodeid, uint32_t procid,
+			       uint32_t nnodes, uint32_t nprocs, uint32_t rank);
 
 /*
  * Clear switch state on this node
@@ -389,14 +403,14 @@ extern int switch_g_build_node_info(switch_node_info_t *switch_node);
  * for network transmission.
  */
 extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
-	Buf buffer);
+				   Buf buffer, uint16_t protocol_version);
 
 /*
  * Unpack the data associated with a node's switch state record
  * from a buffer.
  */
 extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,
-	Buf buffer);
+				     Buf buffer, uint16_t protocol_version);
 
 /*
  * Release the storage associated with a node's switch state record.

@@ -1,0 +1,249 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test hdf5 acct_gather_profile (--profile=task)
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+#  Copyright (C) 2013 Bull S. A. S.
+#		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
+#
+#  Written by Rod Schultz <rod.schultz@bull.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "12.6"
+set exit_code   0
+set file_out    "test$test_id.output"
+set file_prog   "test$test_id.prog"
+set job_id      0
+
+proc get_jobacct_freq {} {
+	global scontrol
+	set task_freq 30
+	log_user 0
+	match_max -d 100000
+	spawn $scontrol show config
+	expect {
+		timeout {
+			send_user "\nCan't find JobAcctGatherFrequency in slurm.conf. Using $task_freq"
+			return $task_freq
+		}
+	}
+	wait
+	log_user 1
+	set opt ""
+	set lines [split $expect_out(buffer) "\n"]
+	set nl [llength $lines]
+	for {set lx 0} {$lx < $nl} {incr lx} {
+		set line [lindex $lines $lx]
+		if {[string first "JobAcctGatherFrequency" $line] != -1	} {
+			set poseq [string first "=" $line]
+			set opt [string range $line $poseq+2 end]
+			set opt [string tolower $opt]
+			break
+		}
+	}
+	if {$opt == ""} {
+		send_user "\nJobAcctGatherFrequency in slurm.conf. Using $task_freq"
+	}
+
+	set tokens [split $opt ","]
+	set nt [llength $tokens]
+	if {$nt == 1} {
+		if {[string first "task=" $opt] == -1} {
+			return $opt
+		}
+	}
+	for {set tx 0} {$tx < $nt} {incr tx} {
+		set opt [lindex $tokens $tx]
+		if {[string first "task=" $opt] != -1} {
+			return [string range $opt 5 end]
+		}
+	}
+	return task_freq
+}
+
+print_header $test_id
+
+if {[test_front_end]} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit $exit_code
+}
+
+# Check if acct_gather_profile/hdf5 is installed
+set profile 0
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "acct_gather_profile/hdf5" {
+		set profile 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$profile == 0} {
+	send_user "\nWARNING: acct_gather_profile/hdf5 not installed on this system\n"
+	exit 0
+}
+send_user "\nacct_gather_profile/hdf5 plugin installed\n"
+send_user "Note: this test takes 3 minutes to run\n"
+
+set task_freq [get_jobacct_freq]
+
+#
+# Build a test program to put a known load on the system
+#
+exec $bin_rm -f $file_prog
+exec $bin_cc -I$build_dir $file_prog.c -lm -o $file_prog
+exec $bin_chmod 700 $file_prog
+
+set timeout [expr $max_job_delay + 200]
+
+# Override task polling supplied by slurm.conf
+# I am not sure why we are doing this (but we are)
+# The original task_freq had a + 5 here.  That will always fail with a bad
+# allocation if you are enforcing memory limits, so we changed it to - 5
+# instead.  I don't think it really matters though.
+set task_freq [expr $task_freq - 5]
+set srun_pid [spawn $srun --acctg-freq=$task_freq --profile=task -t5 ./$file_prog]
+expect {
+	-re "SLURM_JobId=($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "error:" {
+		send_user "\nFAILURE: something happened on start of job\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+set timeout 10
+set srun_pid [spawn $sh5util -j $job_id]
+expect {
+	timeout {
+		send_user "\nFAILURE: sh5util merge not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+set hdf5_file "job_$job_id.h5"
+set srun_pid [spawn $sh5util -j $job_id -l Node:TimeSeries -s Tasks -o $file_out]
+expect {
+	timeout {
+		send_user "\nFAILURE: sh5util extract not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+set line ""
+set nerr 0
+set lno 0
+set fd 0
+set last_et 0
+set fd [open $file_out "r"]
+while {$fd > 0 && [gets $fd line] != -1} {
+	incr lno
+	if {$lno > 2} {
+		set tokens [split $line ","]
+		if {[llength $tokens] < 14} {
+			send_user "\nFAILURE: too few items on line $lno"
+			set exit_code 1
+			break;
+		}
+		set et [lindex $tokens 5]
+		set cur_et [expr $et - $last_et]
+		set last_et $et
+		set low_rd [expr 0.975 * 10 * $cur_et]
+		set hi_rd  [expr 1.025 * 10 * $cur_et]
+		if {$lno == 2 && $et < 30} {
+			send_user "\nWarning: jobacct_gather_freq < 30, results are unreliable\n"
+		}
+		if {$lno == 2 && $et < $task_freq} {
+			send_user "\nFAILURE: sample $et is not --acctg-freq=$task_freq\n"
+			set exit_code 1
+		}
+		set cputil [lindex $tokens 8]
+		# The range on cpu utilization is pretty wide
+		# Linux accounting resolution is only to one second, so in a
+		# typical 30 interval an extra second is 3%. The burn loop
+		# consumes a bit more that asked for. There is additional type
+		# managing the I/O portion. Slurm and linux also consume some
+		# cpu.
+		if {$cputil < 38.0} {
+			send_user "\nWarning: CPU Busy $cputil not near 40% on line $lno\n"
+			incr nerr
+		}
+		if {$cputil > 47.0} {
+			send_user "\nWarning: CPU Busy $cputil not near 40% on line $lno\n"
+			incr nerr
+		}
+		set rdmb [lindex $tokens 12]
+		if {$rdmb < $low_rd} {
+			send_user "\nWarning: Read Megabytes $rdmb not near 100.0 on line $lno\n"
+			incr nerr
+		}
+		if {$rdmb  > $hi_rd} {
+			send_user "\nWarning: Read Megabytes $rdmb not near 100.0 on line $lno\n"
+			incr nerr
+		}
+	}
+}
+close $fd
+
+if {$lno == 0} {
+	send_user "\nFAILURE: $file_out is empty\n"
+	set exit_code 1
+}
+
+if {$nerr > 3} {
+	send_user "\nFAILURE: $nerr is too many values out of range\n"
+		set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec rm -f $file_prog $file_out $hdf5_file
+	send_user "\nSUCCESS\n"
+} else {
+	exec mv $hdf5_file test$test_id.hdf5
+}
+
+exit $exit_code

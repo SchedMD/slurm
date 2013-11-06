@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -137,7 +137,6 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 	ptr->buffered_stdio = true;
 	memcpy(&ptr->local_fds, &fds, sizeof(fds));
 	ptr->gid = getgid();
-	ptr->acctg_freq  = (uint16_t) NO_VAL;
 	ptr->cpu_freq = NO_VAL;
 }
 
@@ -247,6 +246,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;
 	launch.switch_job	= ctx->step_resp->switch_job;
+	launch.profile		= params->profile;
 	launch.task_prolog	= params->task_prolog;
 	launch.task_epilog	= params->task_epilog;
 	launch.cpu_bind_type	= params->cpu_bind_type;
@@ -420,6 +420,7 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;
 	launch.switch_job	= ctx->step_resp->switch_job;
+	launch.profile		= params->profile;
 	launch.task_prolog	= params->task_prolog;
 	launch.task_epilog	= params->task_epilog;
 	launch.cpu_bind_type	= params->cpu_bind_type;
@@ -1706,7 +1707,7 @@ _exec_prog(slurm_msg_t *msg)
 	}
 	if (checkpoint) {
 		/* OpenMPI specific checkpoint support */
-		info("Checkpoint started at %s", ctime(&now));
+		info("Checkpoint started at %s", slurm_ctime(&now));
 		for (i=0; (exec_msg->argv[i] && (i<2)); i++) {
 			argv[i] = exec_msg->argv[i];
 		}
@@ -1753,10 +1754,10 @@ fini:	if (checkpoint) {
 		now = time(NULL);
 		if (exit_code) {
 			info("Checkpoint completion code %d at %s",
-				exit_code, ctime(&now));
+			     exit_code, slurm_ctime(&now));
 		} else {
 			info("Checkpoint completed successfully at %s",
-				ctime(&now));
+			     slurm_ctime(&now));
 		}
 		if (buf[0])
 			info("Checkpoint location: %s", buf);

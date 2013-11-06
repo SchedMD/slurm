@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -49,6 +49,7 @@ typedef struct licenses {
 } licenses_t;
 
 extern List license_list;
+extern time_t last_license_update;
 
 /* Get string of used license information. Caller must xfree return value */
 extern char *get_licenses_used(void);
@@ -117,5 +118,16 @@ extern List license_validate(char *licenses, bool *valid);
  *	names found in the two lists
  */
 extern bool license_list_overlap(List list_1, List list_2);
+
+/* pack_all_licenses()
+ *
+ * Get the licenses and the usage counters in the io buffer
+ * to be sent out to the library
+ */
+extern void
+get_all_license_info(char **buffer_ptr,
+                     int *buffer_size,
+                     uid_t uid,
+                     uint16_t protocol_version);
 
 #endif /* !_LICENSES_H */

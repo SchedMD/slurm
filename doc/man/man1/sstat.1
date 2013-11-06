@@ -117,6 +117,14 @@ Average (system + user) CPU time of all tasks in job.
 Average weighted CPU frequency of all tasks in job, in kHz.
 
 .TP
+\f3AveDiskRead\fP
+Average number of bytes read by all tasks in job.
+
+.TP
+\f3AveDiskWrite\fP
+Average number of bytes written by all tasks in job.
+
+.TP
 \f3AvePages\fP
 Average number of page faults of all tasks in job.
 
@@ -140,6 +148,30 @@ The number of the job or job step.
 It is in the form:
 \f2job.jobstep\fP\c
 \&.
+
+.TP
+\f3MaxDiskRead\fP
+Maximum number of bytes read by all tasks in job.
+
+.TP
+\f3MaxDiskReadNode\fP
+The node on which the maxdiskread occurred.
+
+.TP
+\f3MaxDiskReadTask\fP
+The task ID where the maxdiskread occurred.
+
+.TP
+\f3MaxDiskWrite\fP
+Maximum number of bytes written by all tasks in job.
+
+.TP
+\f3MaxDiskWriteNode\fP
+The node on which the maxdiskwrite occurred.
+
+.TP
+\f3MaxDiskWriteTask\fP
+The task ID where the maxdiskwrite occurred.
 
 .TP
 \f3MaxPages\fP
@@ -193,6 +225,9 @@ The task ID where the mincpu occurred.
 \f3NTasks\fP
 Total number of tasks in a job or step.
 
+.TP
+\f3ReqCPUFreq\fP
+Requested CPU frequency for the step, in kHz.
 
 .SH "EXAMPLES"
 
@@ -207,7 +242,8 @@ Total number of tasks in a job or step.
 .SH "COPYING"
 Copyright (C) 2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

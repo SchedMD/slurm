@@ -13,7 +13,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -38,6 +38,7 @@ set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 set file_prog   "test$test_id.prog"
+set file_name   "test$test_id.filename"
 set job_id      0
 set matches     0
 set aix         0
@@ -46,7 +47,7 @@ set aix         0
 set mem_size    1024000
 set sleep_time  21
 set ret_code    42
-
+set file_size   10485760
 print_header $test_id
 
 if {[test_front_end]} {
@@ -62,20 +63,20 @@ if {[test_launch_poe]} {
 	set launch_poe     1
 } else {
 	set max_time_error 5
-	set max_mem_error  4200
+	set max_mem_error  4300
 	set step_id        0
 	set launch_poe     0
 }
 
 proc _get_mem {prog} {
-	global sstat float number mem_size job_id step_id max_mem_error
+	global float number mem_size job_id step_id max_mem_error
 
 	set mem_used -1
 	set mem_task -1
 	set ave_used -1
 	set exit_code 0
 
-	spawn $prog --noheader -p --job=$job_id.$step_id --fields maxvmsize,maxvmsizetask,avevmsize
+	spawn $prog --noheader -p --job=$job_id.$step_id --format maxrss,maxrsstask,averss
 	expect {
 		-re "($float)(\[KMG\]*).($number).($float)(\[KMG\]*)" {
 			set mem_used  $expect_out(1,string)
@@ -83,28 +84,14 @@ proc _get_mem {prog} {
 			set mem_task  $expect_out(3,string)
 			set ave_used  $expect_out(4,string)
 			set scale2    $expect_out(5,string)
-			if {[string compare $scale1 "G"] == 0} {
-				set mem_used [expr $mem_used * 1024 * 1024]
-			} elseif {[string compare $scale1 "M"] == 0} {
-				set mem_used [expr $mem_used * 1024]
-			} elseif {[string compare $scale1 "K"] == 0} {
-				set mem_used [expr $mem_used * 1]
-			} else {
-				set mem_used [expr $mem_used / 1024]
-			}
-			if {[string compare $scale2 "G"] == 0} {
-				set ave_used [expr $ave_used * 1024 * 1024]
-			} elseif {[string compare $scale2 "M"] == 0} {
-				set ave_used [expr $ave_used * 1024]
-			} elseif {[string compare $scale2 "K"] == 0} {
-				set ave_used [expr $ave_used * 1]
-			} else {
-				set ave_used [expr $ave_used / 1024]
-			}
+
+			set mem_used [scale_to_ks $mem_used $scale1]
+			set ave_used [scale_to_ks $ave_used $scale2]
+
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
+			send_user "\nFAILURE: $prog not responding\n"
 			set exit_code 1
 		}
 		eof {
@@ -117,25 +104,102 @@ proc _get_mem {prog} {
 	}
 
 	if { $mem_used == -1 } {
-		send_user "\nFAILURE: sstat stat memory not found\n"
+		send_user "\nFAILURE: $prog stat memory not found\n"
 		return 1
 	} elseif { $mem_task == -1 } {
-		send_user "\nFAILURE: sstat stat memory task not found\n"
+		send_user "\nFAILURE: $prog stat memory task not found\n"
 		return 1
 	} elseif { $ave_used != $mem_used } {
-		send_user "\nFAILURE: sstat stat memory task not equal to ave memory\n"
+		send_user "\nFAILURE: $prog stat memory task not equal to ave memory\n"
 		return 1
 	}
 	# Compute error in KB
 	set diff_mem [expr $mem_used - $mem_size]
 	set error_mem [expr abs($diff_mem)]
 	if {($mem_used < $mem_size) || ($error_mem > $max_mem_error)} {
-		send_user "\nFAILURE: sstat memory use discrepancy of $error_mem KB\n"
+		send_user "\nFAILURE: $prog memory use discrepancy of $error_mem KB\n"
 		send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 		return 1
 	} else {
-		send_user "\nSUCCESS: sstat memory use discrepancy of $error_mem KB\n"
+		send_user "\nSUCCESS: $prog memory use discrepancy of $error_mem KB\n"
 	}
+	return 0
+}
+
+# Check the job written and read file size.
+proc _get_file_size {prog} {
+	global number float job_id step_id file_size
+
+	set max_disk_write  -1
+	set ave_disk_write  -1
+	set max_disk_read   -1
+	set ave_disk_read   -1
+
+	spawn $prog --noheader -p --job=$job_id.$step_id --format MaxDiskWrite,AveDiskWrite,MaxDiskRead,AveDiskRead
+	expect {
+		-re  "($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*)" {
+			set max_disk_write    $expect_out(1,string)
+			set scale1            $expect_out(2,string)
+			set ave_disk_write    $expect_out(3,string)
+			set scale2            $expect_out(4,string)
+			set max_disk_read     $expect_out(5,string)
+			set scale3            $expect_out(6,string)
+			set ave_disk_read     $expect_out(7,string)
+			set scale4            $expect_out(8,string)
+
+			set max_disk_write [scale_to_megs $max_disk_write $scale1]
+			set ave_disk_write [scale_to_megs $ave_disk_write $scale2]
+			set max_disk_read  [scale_to_megs $max_disk_read  $scale3]
+			set ave_disk_read  [scale_to_megs $ave_disk_read  $scale4]
+		}
+		timeout {
+			send_user "\nFAILURE: $prog not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set mb_file_size [ expr ($file_size/(1024 * 1024)) ]
+	if { $max_disk_write == -1 } {
+		send_user "\nFAILURE: MaxDiskWrite not reported\n"
+		return 1
+	}
+	if { $ave_disk_write == -1 } {
+		send_user "\nFAILURE: AveDiskWrite not reported\n"
+		return 1
+	}
+	if { $max_disk_read == -1 } {
+		send_user "\nFAILURE: MaxDiskRead not reported\n"
+		return 1
+	}
+	if { $ave_disk_read == -1 } {
+		send_user "\nFAILURE: AveDiskRead not reported\n"
+		return 1
+	}
+
+	if { $max_disk_write != $max_disk_read } {
+		send_user "\nFAILURE: written file size does not match read size "
+		send_user "file_size:$mb_file_size MB "
+		send_user "max_disk_write:$max_disk_write MB "
+		send_user "max_disk_read:$max_disk_read MB\n"
+		return 1
+	}
+
+	if { $ave_disk_write != $ave_disk_read } {
+		send_user "\nFAILURE: average written file size "
+		send_user "does not match average read size "
+		send_user "file_size:$mb_file_size MB "
+		send_user "ave_disk_write:$ave_disk_write MB"
+		send_user "ave_disk_read:$ave_disk_read MB\n"
+		return 1
+	}
+
+	send_user "\SUCCESS: $prog reported correct written and read file size\n"
+	send_user "file_size:$mb_file_size MB max_disk_write:$max_disk_write MB "
+	send_user "max_disk_read:$max_disk_read MB\n"
+
 	return 0
 }
 
@@ -152,6 +216,10 @@ expect {
 		exp_continue
 	}
 	-re "JobAcctGatherType *= jobacct_gather/linux" {
+		set supported_gather 1
+		exp_continue
+	}
+	-re "JobAcctGatherType *= jobacct_gather/cgroup" {
 		set supported_gather 1
 		exp_continue
 	}
@@ -188,12 +256,13 @@ exec $bin_cc -O -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
 make_bash_script $file_in "
-    $srun ./$file_prog $ret_code $sleep_time $mem_size
+    $srun ./$file_prog $ret_code $sleep_time $mem_size $file_size $file_name
 "
 
 #
 # Run a simple job
 # Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb>
+# <file_size> <file_name>
 #
 set config_prob 0
 set timeout [expr $max_job_delay + $sleep_time]
@@ -241,6 +310,10 @@ if {[_get_mem $sstat] != 0} {
 	set exit_code 1
 }
 
+if {[_get_file_size $sstat] != 0} {
+	set exit_code 1
+}
+
 #
 # Wait for job to complete
 #
@@ -253,7 +326,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Report basic sacct info
 #
 
-spawn $sacct --noheader -P --job=$job_id.$step_id --fields jobid,jobname,state,exitcode
+spawn $sacct --noheader -P --job=$job_id.$step_id --format jobid,jobname,state,exitcode
 expect {
 	-re "$job_id\.$step_id" {
 		incr matches
@@ -295,7 +368,7 @@ if {$matches < $match_target} {
 #   expected integer but got "08" (looks like invalid octal number)
 #
 set elapsed_time 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --fields elapsed
+spawn $sacct --noheader -P --job=$job_id.$step_id --format elapsed
 expect {
 	-re "($number):($number):(\[0-9\])(\[0-9\])" {
 		set hours $expect_out(1,string)
@@ -328,6 +401,10 @@ if {[_get_mem $sacct] != 0} {
 	set exit_code 1
 }
 
+if {[_get_file_size $sacct] != 0} {
+	set exit_code 1
+}
+
 if {$aix == 1 && $exit_code == 1} {
 	send_user "\nIf there were failures in the memory parts of this\n"
 	send_user "test, they are expected.  AIX doesn't do a great job\n"
@@ -338,7 +415,7 @@ if {$aix == 1 && $exit_code == 1} {
 }
 
 if {$exit_code == 0} {
-	exec rm -f $file_prog $file_in $file_out $file_err
+	exec rm -f $file_prog $file_in $file_out $file_err $file_name
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

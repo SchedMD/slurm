@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -152,7 +152,8 @@ extern void	scontrol_print_block (char *block_name);
 extern void	scontrol_print_res (char *reservation_name);
 extern void	scontrol_print_step (char *job_step_id_str);
 extern void	scontrol_print_topo (char *node_list);
-extern int	scontrol_requeue(char *job_step_id_str);
+extern int	scontrol_requeue(int argc, char **argv);
+extern int	scontrol_requeue_hold(int argc, char **argv);
 extern int	scontrol_suspend(char *op, char *job_id_str);
 extern int	scontrol_update_front_end (int argc, char *argv[]);
 extern int	scontrol_update_job (int argc, char *argv[]);
@@ -160,5 +161,5 @@ extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
 extern int	scontrol_update_res (int argc, char *argv[]);
 extern int	scontrol_update_step (int argc, char *argv[]);
-
+extern void	scontrol_print_licenses(const char *feature);
 #endif

@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -45,6 +45,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct job_queue_rec {
+	uint32_t job_id;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	uint32_t priority;

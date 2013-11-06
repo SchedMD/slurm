@@ -179,6 +179,13 @@ zero compute node job requests.</p>
 SLURM partitions explicitly configured with <b>MinNodes=0</b> (the default
 minimum node count for a partition is one compute node).</p>
 
+<h3>External Node Use</h3>
+
+<p>Slurm interactive jobs are not supported from external nodes, however
+batch job submissions and all of the other commands will work.
+If desired, the sbatch command can be used to submit a batch job that creates
+an xterm on an external node.</p>
+
 <h3>srun options translations on a Cray</h3>
 <p>The following <i>srun</i> options are translated to these <i>aprun</i>
 options. <i>srun</i> options not listed below have no equivalent <i>aprun</i>
@@ -666,6 +673,6 @@ login: # /etc/init.d/slurm start
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 January 2013</p>
+<p style="text-align:center;">Last modified 3 October 2013</p>
 
 <!--#include virtual="footer.txt"-->

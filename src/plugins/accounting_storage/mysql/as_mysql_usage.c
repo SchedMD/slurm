@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -240,8 +240,8 @@ static void *_cluster_rollup_usage(void *arg)
 	end_tm.tm_isdst = -1;
 	hour_end = mktime(&end_tm);
 
-/* 	info("hour start %s", ctime(&hour_start)); */
-/* 	info("hour end %s", ctime(&hour_end)); */
+/* 	info("hour start %s", slurm_ctime(&hour_start)); */
+/* 	info("hour end %s", slurm_ctime(&hour_end)); */
 /* 	info("diff is %d", hour_end-hour_start); */
 
 	slurm_mutex_lock(&rollup_lock);
@@ -265,8 +265,8 @@ static void *_cluster_rollup_usage(void *arg)
 	end_tm.tm_isdst = -1;
 	day_end = mktime(&end_tm);
 
-/* 	info("day start %s", ctime(&day_start)); */
-/* 	info("day end %s", ctime(&day_end)); */
+/* 	info("day start %s", slurm_ctime(&day_start)); */
+/* 	info("day end %s", slurm_ctime(&day_end)); */
 /* 	info("diff is %d", day_end-day_start); */
 
 	/* set up the month period */
@@ -290,8 +290,8 @@ static void *_cluster_rollup_usage(void *arg)
 	end_tm.tm_isdst = -1;
 	month_end = mktime(&end_tm);
 
-/* 	info("month start %s", ctime(&month_start)); */
-/* 	info("month end %s", ctime(&month_end)); */
+/* 	info("month start %s", slurm_ctime(&month_start)); */
+/* 	info("month end %s", slurm_ctime(&month_end)); */
 /* 	info("diff is %d", month_end-month_start); */
 
 	if ((hour_end - hour_start) > 0) {
@@ -425,7 +425,8 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		"resv_cpu_secs",
 		"over_cpu_secs",
 		"cpu_count",
-		"time_start"
+		"time_start",
+		"consumed_energy"
 	};
 
 	enum {
@@ -437,6 +438,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_OCPU,
 		CLUSTER_CPU_COUNT,
 		CLUSTER_START,
+		CLUSTER_ENERGY,
 		CLUSTER_COUNT
 	};
 
@@ -465,6 +467,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	xfree(tmp);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
@@ -487,10 +490,10 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		accounting_rec->resv_secs = slurm_atoull(row[CLUSTER_RCPU]);
 		accounting_rec->cpu_count = slurm_atoul(row[CLUSTER_CPU_COUNT]);
 		accounting_rec->period_start = slurm_atoul(row[CLUSTER_START]);
+		accounting_rec->consumed_energy = slurm_atoull(row[CLUSTER_ENERGY]);
 		list_append(cluster_rec->accounting_list, accounting_rec);
 	}
 	mysql_free_result(result);
-
 	return rc;
 }
 
@@ -526,6 +529,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		USAGE_ID,
 		USAGE_START,
 		USAGE_ACPU,
+		USAGE_ENERGY,
 		USAGE_COUNT
 	};
 
@@ -544,7 +548,8 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		char *temp_usage[] = {
 			"t3.id_assoc",
 			"t1.time_start",
-			"t1.alloc_cpu_secs"
+			"t1.alloc_cpu_secs",
+			"t1.consumed_energy",
 		};
 		usage_req_inx = temp_usage;
 
@@ -566,7 +571,8 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		char *temp_usage[] = {
 			"id_wckey",
 			"time_start",
-			"alloc_cpu_secs"
+			"alloc_cpu_secs",
+			"consumed_energy"
 		};
 		usage_req_inx = temp_usage;
 
@@ -648,6 +654,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		accounting_rec->id = slurm_atoul(row[USAGE_ID]);
 		accounting_rec->period_start = slurm_atoul(row[USAGE_START]);
 		accounting_rec->alloc_secs = slurm_atoull(row[USAGE_ACPU]);
+		accounting_rec->consumed_energy = slurm_atoull(row[USAGE_ENERGY]);
 		list_append(usage_list, accounting_rec);
 	}
 	mysql_free_result(result);
@@ -740,7 +747,8 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		USAGE_ID,
 		USAGE_START,
 		USAGE_ACPU,
-		USAGE_COUNT
+		USAGE_COUNT,
+		USAGE_ENERGY
 	};
 
 	switch (type) {
@@ -902,6 +910,7 @@ is_user:
 		accounting_rec->id = slurm_atoul(row[USAGE_ID]);
 		accounting_rec->period_start = slurm_atoul(row[USAGE_START]);
 		accounting_rec->alloc_secs = slurm_atoull(row[USAGE_ACPU]);
+		accounting_rec->consumed_energy = slurm_atoull(row[USAGE_ENERGY]);
 		list_append((*my_list), accounting_rec);
 	}
 	mysql_free_result(result);

@@ -105,6 +105,13 @@ its job size factor will be.  A job that requests all the nodes on the machine
 will get a job size factor of 1.0.  When the <i>PriorityFavorSmall</i> Boolean
 is YES, the single node job will receive the 1.0 job size factor.</P>
 
+<p>The <i>PriorityFlags</i> value of <i>SMALL_RELAIVE_TO_TIME</i> alters this
+behavior as follows. The job size in CPUs is divided by the time limit in
+minutes. The result is divided by the total number of CPUs in the system.
+Thus a full-system job with a time limit of one will receive a job size factor
+of 1.0, while a tiny job with a large time limit will receive a job size factor
+close to 0.0. 
+
 <!-------------------------------------------------------------------------->
 <a name=partition>
 <h2>Partition Factor</h2></a>
@@ -128,10 +135,10 @@ priority of all the QOS's to become the QOS factor.</P>
 <a name=fairshare>
 <h2>Fair-share Factor</h2></a>
 
-<b>Note:</b> Computing the fair-share factor requires the installation
+<P><b>Note:</b> Computing the fair-share factor requires the installation
 and operation of the <a href="accounting.html">SLURM Accounting
 Database</a> to provide the assigned shares and the consumed,
-computing resources described below.
+computing resources described below.</P>
 
 <P> The fair-share component to a job's priority influences the order in which a user's queued jobs are scheduled to run based on the portion of the computing resources they have been allocated and the resources their jobs have already consumed.  The fair-share factor does not involve a fixed allotment, whereby a user's access to a machine is cut off once that allotment is reached.</P>
 
@@ -267,7 +274,7 @@ Where:
 <P> The simplified formula for calculating the fair-share factor for usage that spans multiple time periods and subject to a half-life decay is:</P>
 
 <PRE>
-	F = 2**(-U/S)
+	F = 2**(-U/S/d)
 </PRE>
 
 Where:
@@ -279,6 +286,8 @@ Where:
 <DD> is the normalized shares
 <DT> U
 <DD> is the normalized usage factoring in half-life decay
+<DT> d
+<DD> is the FairShareDampeningFactor (a configuration parameter, default value of 1)
 </DL>
 
 <P> The fair-share factor will therefore range from zero to one, where one represents the highest priority for a job.  A fair-share factor of 0.5 indicates that the user's jobs have used exactly the portion of the machine that they have been allocated.  A fair-share factor of above 0.5 indicates that the user's jobs have consumed less than their allocated share while a fair-share factor below 0.5 indicates that the user's jobs have consumed more than their allocated share of the computing resources.</P>
@@ -568,6 +577,6 @@ PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 26 July 2012</p>
+<p style="text-align:center;">Last modified 1 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -94,7 +94,7 @@ static int _setup_association_cond_limits(
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "partition='%s'", object);
+			xstrfmtcat(*extra, "`partition`='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -221,7 +221,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		"id_assoc",
 		"user",
 		"acct",
-		"partition",
+		"`partition`",
 		"parent_acct",
 	};
 	enum {

@@ -23,7 +23,7 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 	FETCH_FIELD(hv, params, exclusive, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, immediate, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, job_id, uint32_t, FALSE); /* for slurm_step_ctx_create_no_alloc */
-	FETCH_FIELD(hv, params, mem_per_cpu, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, pn_min_memory, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
 	FETCH_FIELD(hv, params, gres, charp, FALSE);
 	FETCH_FIELD(hv, params, name, charp, FALSE);
@@ -34,6 +34,7 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 	FETCH_FIELD(hv, params, node_list, charp, FALSE);
 	FETCH_FIELD(hv, params, overcommit, bool, FALSE);
 	FETCH_FIELD(hv, params, plane_size, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, profile, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, relative, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, resv_port_cnt, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, task_count, uint32_t, FALSE);
@@ -136,6 +137,7 @@ hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t *params)
 	FETCH_FIELD(hv, params, msg_timeout, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, buffered_stdio, bool, FALSE);
 	FETCH_FIELD(hv, params, labelio, bool, FALSE);
+	FETCH_FIELD(hv, params, profile, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, remote_output_filename, charp, FALSE);
 	FETCH_FIELD(hv, params, remote_error_filename, charp, FALSE);
 	FETCH_FIELD(hv, params, remote_input_filename, charp, FALSE);
@@ -199,7 +201,7 @@ hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t *params)
 
 	FETCH_FIELD(hv, params, mpi_plugin_name, charp, FALSE);
 	FETCH_FIELD(hv, params, open_mode, uint8_t, FALSE);
-	FETCH_FIELD(hv, params, acctg_freq, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, acctg_freq, charp, FALSE);
 	FETCH_FIELD(hv, params, pty, bool, FALSE);
 	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
 	FETCH_FIELD(hv, params, restart_dir, charp, FALSE);

@@ -5,7 +5,7 @@
  *  Written by Alejandro Lucero <alucero@bsc.es>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -44,8 +44,9 @@
 
 #include <slurm.h>
 #include "src/common/macros.h"
-#include "src/common/xstring.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/xstring.h"
 
 /********************
  * Global Variables *
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
 {
 	int rc = 0;
 
+	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
 
 	if (sdiag_param == STAT_COMMAND_RESET) {
@@ -134,7 +136,7 @@ static int _print_info(void)
 
 	if (buf->bf_active) {
 		printf("\nBackfilling stats (WARNING: data obtained"
-		       " in the middle of backfilling execution\n");
+		       " in the middle of backfilling execution.)\n");
 	} else
 		printf("\nBackfilling stats\n");
 

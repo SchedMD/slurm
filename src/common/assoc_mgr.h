@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -68,10 +68,11 @@ typedef struct {
 } assoc_mgr_lock_t;
 
 /* Interval lock structure
- * we actually use three semaphores for each data type, see macros below
- *	(assoc_mgr_lock_datatype_t * 3 + 0) = read_lock
- *	(assoc_mgr_lock_datatype_t * 3 + 1) = write_lock
- *	(assoc_mgr_lock_datatype_t * 3 + 2) = write_wait_lock
+ * we actually use the count for each data type, see macros below
+ *   (assoc_mgr_lock_datatype_t * 4 + 0) = read_lock        read locks in use
+ *   (assoc_mgr_lock_datatype_t * 4 + 1) = write_lock       write locks in use
+ *   (assoc_mgr_lock_datatype_t * 4 + 2) = write_wait_lock  write locks pending
+ *   (assoc_mgr_lock_datatype_t * 4 + 3) = write_cnt_lock   write lock count
  */
 typedef enum {
 	ASSOC_LOCK,
@@ -83,7 +84,7 @@ typedef enum {
 } assoc_mgr_lock_datatype_t;
 
 typedef struct {
-	int entity[ASSOC_MGR_ENTITY_COUNT * 3];
+	int entity[ASSOC_MGR_ENTITY_COUNT * 4];
 } assoc_mgr_lock_flags_t;
 
 typedef struct {
@@ -97,7 +98,7 @@ typedef struct {
 } assoc_init_args_t;
 
 struct assoc_mgr_association_usage {
-	List childern_list;     /* list of childern associations
+	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
 
 	uint32_t grp_used_cpus; /* count of active jobs in the group

@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -66,7 +66,7 @@
 
 #define ERROR 2
 
-#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,consumedenergy"
+#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreq,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite"
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
@@ -83,11 +83,20 @@
 typedef enum {
 		PRINT_ACT_CPUFREQ,
 		PRINT_AVECPU,
+		PRINT_AVEDISKREAD,
+		PRINT_AVEDISKWRITE,
 		PRINT_AVEPAGES,
 		PRINT_AVERSS,
 		PRINT_AVEVSIZE,
 		PRINT_CONSUMED_ENERGY,
+		PRINT_CONSUMED_ENERGY_RAW,
 		PRINT_JOBID,
+		PRINT_MAXDISKREAD,
+		PRINT_MAXDISKREADNODE,
+		PRINT_MAXDISKREADTASK,
+		PRINT_MAXDISKWRITE,
+		PRINT_MAXDISKWRITENODE,
+		PRINT_MAXDISKWRITETASK,
 		PRINT_MAXPAGES,
 		PRINT_MAXPAGESNODE,
 		PRINT_MAXPAGESTASK,
@@ -103,6 +112,7 @@ typedef enum {
 		PRINT_NODELIST,
 		PRINT_NTASKS,
 		PRINT_PIDS,
+		PRINT_REQ_CPUFREQ,
 } sstat_print_types_t;
 
 

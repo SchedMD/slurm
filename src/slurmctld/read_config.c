@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -111,6 +111,7 @@ static int  _restore_node_state(int recover,
 				int old_node_record_count);
 static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				uint16_t flags);
+static void _stat_slurm_dirs(void);
 static int  _strcmp(const char *s1, const char *s2);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
@@ -121,6 +122,38 @@ static int  _update_preempt(uint16_t old_enable_preempt);
 #ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
 #endif
+
+/* Verify that Slurm directories are secure, not world writable */
+static void _stat_slurm_dirs(void)
+{
+	struct stat stat_buf;
+	char *problem_dir = NULL;
+
+	if ((stat(slurmctld_conf.plugindir, &stat_buf) == 0) &&
+	    (stat_buf.st_mode & S_IWOTH)) {
+		problem_dir = "PluginDir";
+	}
+	if ((stat(slurmctld_conf.plugstack, &stat_buf) == 0) &&
+	    (stat_buf.st_mode & S_IWOTH)) {
+		problem_dir = "PlugStack";
+	}
+	if ((stat(slurmctld_conf.slurmd_spooldir, &stat_buf) == 0) &&
+	    (stat_buf.st_mode & S_IWOTH)) {
+		problem_dir = "SlurmdSpoolDir";
+	}
+	if ((stat(slurmctld_conf.state_save_location, &stat_buf) == 0) &&
+	    (stat_buf.st_mode & S_IWOTH)) {
+		problem_dir = "StateSaveLocation";
+	}
+
+	if (problem_dir) {
+		error("################################################");
+		error("###       SEVERE SECURITY VULERABILTY        ###");
+		error("### %s DIRECTORY IS WORLD WRITABLE ###", problem_dir);
+		error("###         CORRECT FILE PERMISSIONS         ###");
+		error("################################################");
+	}
+}
 
 /*
  * _reorder_nodes_by_name - order node table in ascending order of name
@@ -497,6 +530,77 @@ static int _build_all_nodeline_info(void)
 	return rc;
 }
 
+/* Convert a comma delimited list of account names into a NULL terminated
+ * array of pointers to strings. Call accounts_list_free() to release memory */
+extern void accounts_list_build(char *accounts, char ***accounts_array)
+{
+	char *tmp_accts, *one_acct_name, *name_ptr = NULL, **tmp_array = NULL;
+	int array_len = 0, array_used = 0;
+
+	if (!accounts) {
+		*accounts_array = NULL;
+		return;
+	}
+
+	tmp_accts = xstrdup(accounts);
+	one_acct_name = strtok_r(tmp_accts, ",", &name_ptr);
+	while (one_acct_name) {
+		if (array_len < array_used + 2) {
+			array_len += 10;
+			xrealloc(tmp_array, sizeof(char *) * array_len);
+		}
+		tmp_array[array_used++] = xstrdup(one_acct_name);
+		one_acct_name = strtok_r(NULL, ",", &name_ptr);
+	}
+	xfree(tmp_accts);
+	xfree(*accounts_array);
+	*accounts_array = tmp_array;
+}
+/* Free memory allocated for an account array by accounts_list_build() */
+extern void accounts_list_free(char ***accounts_array)
+{
+	int i;
+
+	if (*accounts_array == NULL)
+		return;
+	for (i = 0; accounts_array[0][i]; i++)
+		xfree(accounts_array[0][i]);
+	xfree(*accounts_array);
+}
+
+/* Convert a comma delimited list of QOS names into a bitmap */
+extern void qos_list_build(char *qos, bitstr_t **qos_bits)
+{
+	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
+	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
+	bitstr_t *tmp_qos_bitstr;
+
+	if (!qos) {
+		*qos_bits = NULL;
+		return;
+	}
+
+	tmp_qos_bitstr = bit_alloc(g_qos_count);
+	tmp_qos = xstrdup(qos);
+	one_qos_name = strtok_r(tmp_qos, ",", &name_ptr);
+	while (one_qos_name) {
+		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+		qos_rec.name = one_qos_name;
+		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce,
+					  &qos_ptr) == SLURM_SUCCESS) {
+			bit_set(tmp_qos_bitstr, qos_rec.id);
+		} else {
+			error("Ignoring invalid Allow/DenyQOS value %s",
+			      one_qos_name);
+		}
+		one_qos_name = strtok_r(NULL, ",", &name_ptr);
+	}
+	xfree(tmp_qos);
+	FREE_NULL_BITMAP(*qos_bits);
+	*qos_bits = tmp_qos_bitstr;
+}
+
 /*
  * _build_single_partitionline_info - get a array of slurm_conf_partition_t
  *	structures from the slurm.conf reader, build table, and set values
@@ -562,9 +666,12 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part_ptr->flags |= PART_FLAG_ROOT_ONLY;
 	if (part->req_resv_flag)
 		part_ptr->flags |= PART_FLAG_REQ_RESV;
+	if (part->lln_flag)
+		part_ptr->flags |= PART_FLAG_LLN;
 	part_ptr->max_time       = part->max_time;
 	part_ptr->def_mem_per_cpu = part->def_mem_per_cpu;
 	part_ptr->default_time   = part->default_time;
+	part_ptr->max_cpus_per_node = part->max_cpus_per_node;
 	part_ptr->max_share      = part->max_share;
 	part_ptr->max_mem_per_cpu = part->max_mem_per_cpu;
 	part_ptr->max_nodes      = part->max_nodes;
@@ -577,10 +684,37 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->grace_time     = part->grace_time;
 	part_ptr->cr_type        = part->cr_type;
 
+	if (part->allow_accounts) {
+		xfree(part_ptr->allow_accounts);
+		part_ptr->allow_accounts = xstrdup(part->allow_accounts);
+		accounts_list_build(part_ptr->allow_accounts,
+				    &part_ptr->allow_account_array);
+	}
+
 	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);
 		part_ptr->allow_groups = xstrdup(part->allow_groups);
 	}
+
+	if (part->allow_qos) {
+		xfree(part_ptr->allow_qos);
+		part_ptr->allow_qos = xstrdup(part->allow_qos);
+		qos_list_build(part_ptr->allow_qos,&part_ptr->allow_qos_bitstr);
+	}
+
+	if (part->deny_accounts) {
+		xfree(part_ptr->deny_accounts);
+		part_ptr->deny_accounts = xstrdup(part->deny_accounts);
+		accounts_list_build(part_ptr->deny_accounts,
+				    &part_ptr->deny_account_array);
+	}
+
+	if (part->deny_qos) {
+		xfree(part_ptr->deny_qos);
+		part_ptr->deny_qos = xstrdup(part->deny_qos);
+		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
+	}
+
  	if (part->allow_alloc_nodes) {
  		if (part_ptr->allow_alloc_nodes) {
  			int cnt_tot, cnt_uniq;
@@ -721,7 +855,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	if (reconfig) {
 		/* in order to re-use job state information,
-		 * update nodes_completing string (based on node_bitmap) */
+		 * update nodes_completing string (based on node bitmaps) */
 		update_job_nodes_completing();
 
 		/* save node and partition states for reconfig RPC */
@@ -803,6 +937,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	rehash_jobs();
 	set_slurmd_addr();
 
+	_stat_slurm_dirs();
 	if (reconfig) {		/* Preserve state from memory */
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
@@ -827,11 +962,11 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		load_last_job_id();
 		reset_first_job_id();
-		(void) slurm_sched_reconfig();
+		(void) slurm_sched_g_reconfig();
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
 		load_last_job_id();
 		reset_first_job_id();
-		(void) slurm_sched_reconfig();
+		(void) slurm_sched_g_reconfig();
 	} else if (recover == 1) {	/* Load job & node state files */
 		(void) load_all_node_state(true);
 		(void) load_all_front_end_state(true);
@@ -888,8 +1023,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	} else {
 		load_all_resv_state(recover);
 		if (recover >= 1) {
-			(void) trigger_state_restore();
-			(void) slurm_sched_reconfig();
+			trigger_state_restore();
+			(void) slurm_sched_g_reconfig();
 		}
 	}
 
@@ -1168,6 +1303,14 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			}
 			/* Current partition found in slurm.conf,
 			 * report differences from slurm.conf configuration */
+			if (_strcmp(part_ptr->allow_accounts,
+				    old_part_ptr->allow_accounts)) {
+				error("Partition %s AllowAccounts differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->allow_accounts);
+				part_ptr->allow_accounts =
+					xstrdup(old_part_ptr->allow_accounts);
+			}
 			if (_strcmp(part_ptr->allow_groups,
 				    old_part_ptr->allow_groups)) {
 				error("Partition %s AllowGroups differs from "
@@ -1175,14 +1318,47 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				xfree(part_ptr->allow_groups);
 				part_ptr->allow_groups = xstrdup(old_part_ptr->
 								 allow_groups);
+				accounts_list_build(part_ptr->allow_accounts,
+						&part_ptr->allow_account_array);
+			}
+			if (_strcmp(part_ptr->allow_qos,
+				    old_part_ptr->allow_qos)) {
+				error("Partition %s AllowQos differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->allow_qos);
+				part_ptr->allow_qos = xstrdup(old_part_ptr->
+								 allow_qos);
+				qos_list_build(part_ptr->allow_qos,
+					       &part_ptr->allow_qos_bitstr);
+			}
+			if (_strcmp(part_ptr->deny_accounts,
+				    old_part_ptr->deny_accounts)) {
+				error("Partition %s DenyAccounts differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->deny_accounts);
+				part_ptr->deny_accounts =
+					xstrdup(old_part_ptr->deny_accounts);
+				accounts_list_build(part_ptr->deny_accounts,
+						&part_ptr->deny_account_array);
+			}
+			if (_strcmp(part_ptr->deny_qos,
+				    old_part_ptr->deny_qos)) {
+				error("Partition %s DenyQos differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->deny_qos);
+				part_ptr->deny_qos = xstrdup(old_part_ptr->
+							     deny_qos);
+				qos_list_build(part_ptr->deny_qos,
+					       &part_ptr->deny_qos_bitstr);
 			}
 			if (_strcmp(part_ptr->allow_alloc_nodes,
 				    old_part_ptr->allow_alloc_nodes)) {
 				error("Partition %s AllowNodes differs from "
 				      "slurm.conf", part_ptr->name);
 				xfree(part_ptr->allow_alloc_nodes);
-				part_ptr->allow_groups = xstrdup(old_part_ptr->
-							 allow_alloc_nodes);
+				part_ptr->allow_alloc_nodes =
+					xstrdup(old_part_ptr->
+						allow_alloc_nodes);
 			}
 			if (part_ptr->default_time !=
 			    old_part_ptr->default_time) {
@@ -1226,6 +1402,15 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 					part_ptr->flags |= PART_FLAG_REQ_RESV;
 				else
 					part_ptr->flags &= (~PART_FLAG_REQ_RESV);
+			}
+			if ((part_ptr->flags & PART_FLAG_LLN) !=
+			    (old_part_ptr->flags & PART_FLAG_LLN)) {
+				error("Partition %s LLN differs from "
+				      "slurm.conf", part_ptr->name);
+				if (old_part_ptr->flags & PART_FLAG_LLN)
+					part_ptr->flags |= PART_FLAG_LLN;
+				else
+					part_ptr->flags &= (~PART_FLAG_LLN);
 			}
 			if (part_ptr->max_nodes_orig !=
 			    old_part_ptr->max_nodes_orig) {
@@ -1300,9 +1485,25 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->name = xstrdup(old_part_ptr->name);
 			part_ptr->allow_alloc_nodes = xstrdup(old_part_ptr->
 							    allow_alloc_nodes);
+			part_ptr->allow_accounts = xstrdup(old_part_ptr->
+							   allow_accounts);
+			accounts_list_build(part_ptr->allow_accounts,
+					 &part_ptr->allow_account_array);
 			part_ptr->allow_groups = xstrdup(old_part_ptr->
 							 allow_groups);
+			part_ptr->allow_qos = xstrdup(old_part_ptr->
+						      allow_qos);
+			qos_list_build(part_ptr->allow_qos,
+				       &part_ptr->allow_qos_bitstr);
 			part_ptr->default_time = old_part_ptr->default_time;
+			part_ptr->deny_accounts = xstrdup(old_part_ptr->
+							  deny_accounts);
+			accounts_list_build(part_ptr->deny_accounts,
+					 &part_ptr->deny_account_array);
+			part_ptr->deny_qos = xstrdup(old_part_ptr->
+						     deny_qos);
+			qos_list_build(part_ptr->deny_qos,
+				       &part_ptr->deny_qos_bitstr);
 			part_ptr->flags = old_part_ptr->flags;
 			part_ptr->max_nodes = old_part_ptr->max_nodes;
 			part_ptr->max_nodes_orig = old_part_ptr->
@@ -1514,6 +1715,13 @@ static int _sync_nodes_to_comp_job(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->node_bitmap) && IS_JOB_COMPLETING(job_ptr)) {
 			update_cnt++;
+			/* This needs to be set up for the priority
+			   plugin and this happens before it is
+			   normally set up so do it now.
+			*/
+			if (!cluster_cpus)
+				set_cluster_cpus();
+
 			info("Job %u in completing state", job_ptr->job_id);
 			if (!job_ptr->node_bitmap_cg)
 				build_cg_bitmap(job_ptr);
@@ -1537,9 +1745,15 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 	uint16_t node_flags;
 	struct node_record *node_ptr = node_record_table_ptr;
 
-	job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
+	if (job_ptr->node_bitmap_cg) /* job completing */
+		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap_cg);
+	else
+		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+		if (job_ptr->node_bitmap_cg) { /* job completing */
+			if (bit_test(job_ptr->node_bitmap_cg, i) == 0)
+				continue;
+		} else if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;

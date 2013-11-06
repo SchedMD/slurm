@@ -5,7 +5,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -505,6 +505,7 @@ extern int launch_p_step_launch(
 	launch_params.remote_output_filename =fname_remote_string(job->ofname);
 	launch_params.remote_input_filename = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename = fname_remote_string(job->efname);
+	launch_params.profile = opt.profile;
 	launch_params.task_prolog = opt.task_prolog;
 	launch_params.task_epilog = opt.task_epilog;
 	launch_params.cpu_bind = opt.cpu_bind;

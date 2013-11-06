@@ -37,7 +37,7 @@ AC_DEFUN([X_AC_PRINTF_NULL], [
   AC_TRY_RUN([
 	#include <stdio.h>
 	#include <stdlib.h>
-	int main() { char tmp[8]; snprintf(tmp,8,"%s",NULL); exit(0); } ],
+	int main() { char tmp[8]; char *n=NULL; snprintf(tmp,8,"%s",n); exit(0); } ],
     printf_null_ok=yes,
     printf_null_ok=no,
     printf_null_ok=no)

@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -170,9 +170,11 @@ static int _sort_by_prio (void *x, void *y)
 {
 	int rc;
 	uint32_t job_prio1, job_prio2;
+	struct job_record *j1 = *(struct job_record **)x;
+	struct job_record *j2 = *(struct job_record **)y;
 
-	job_prio1 = _gen_job_prio((struct job_record *) x);
-	job_prio2 = _gen_job_prio((struct job_record *) y);
+	job_prio1 = _gen_job_prio(j1);
+	job_prio2 = _gen_job_prio(j2);
 
 	if (job_prio1 > job_prio2)
 		rc = 1;

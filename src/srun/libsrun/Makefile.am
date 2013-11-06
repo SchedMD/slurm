@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun
 
 noinst_LTLIBRARIES = libsrun.la
 

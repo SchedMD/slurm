@@ -1,0 +1,97 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validates that the JobAcctGatherFrequency value is enforced
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id   "1.72"
+set freq_val  0
+set exit_code 0
+
+if {[get_job_acct_freq] == 0} {
+	send_user "\nWARNING:this test requires JobAcctGatherFrequency to be set\n"
+	exit $exit_code
+}
+if {[check_node_mem] == 0} {
+	send_user "\nWARNING: this test requires that the nodes have memory\n"
+	exit $exit_code
+}
+
+print_header $test_id
+
+#
+# set value of freq_val to JobAcctGatherFrequency
+#
+set freq_val [get_job_acct_freq]
+
+set sub_match 0
+spawn $srun -v --mem=200 --acctg-freq=[expr $freq_val - 10] sleep 5
+expect {
+	-re "jobid" {
+		set sub_match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$sub_match != 1} {
+	send_user "\nFAILURE: srun did not submit job\n"
+	set exit_code 1
+}
+
+set sub_match 0
+spawn $srun -v --mem=200 --acctg-freq=[expr $freq_val + 10] sleep 5
+expect {
+	-re "Invalid accounting frequency" {
+		send_user "\nThis error is expect do not worry.\n"
+		set sub_match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$sub_match != 1} {
+	send_user "\nFAILURE: srun did not fail when it should have\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

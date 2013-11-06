@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -51,7 +51,7 @@
  * Returns SLURM_SUCCESS or SLURM_ERROR.
  */
 int
-pdebug_trace_process(slurmd_job_t *job, pid_t pid)
+pdebug_trace_process(stepd_step_rec_t *job, pid_t pid)
 {
 	/*  If task to be debugged, wait for it to stop via
 	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and
@@ -84,7 +84,7 @@ pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 			for (i = 0; i < job->node_tasks; i++) {
 				if (job->task[i]->pid == pid) {
 					job->task[i]->state =
-						SLURMD_TASK_COMPLETE;
+						STEPD_STEP_TASK_COMPLETE;
 				}
 			}
 
@@ -119,7 +119,7 @@ pdebug_trace_process(slurmd_job_t *job, pid_t pid)
  * Stop current task on exec() for connection from a parallel debugger
  */
 void
-pdebug_stop_current(slurmd_job_t *job)
+pdebug_stop_current(stepd_step_rec_t *job)
 {
 	/*
 	 * Stop the task on exec for TotalView to connect
@@ -157,8 +157,8 @@ static bool _pid_to_wake(pid_t pid)
 	/* skip over "PID (CMD) " */
 	if ((str_ptr = (char *)strrchr(proc_stat, ')')) == NULL)
 		return false;
-	if (sscanf(str_ptr + 2, 
-		   "%c %d %d %d %d %d %lu ", 
+	if (sscanf(str_ptr + 2,
+		   "%c %d %d %d %d %d %lu ",
 		   state, &ppid, &pgrp, &session, &tty, &tpgid, &flags) != 7)
 		return false;
 	if ((flags & CLONE_PTRACE) == 0)
@@ -177,7 +177,7 @@ static bool _pid_to_wake(pid_t pid)
 /*
  * Wake tasks currently stopped for parallel debugger attach
  */
-void pdebug_wake_process(slurmd_job_t *job, pid_t pid)
+void pdebug_wake_process(stepd_step_rec_t *job, pid_t pid)
 {
 	if ((job->task_flags & TASK_PARALLEL_DEBUG) && (pid > (pid_t) 0)) {
 		if (_pid_to_wake(pid)) {

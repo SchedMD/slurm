@@ -24,7 +24,7 @@ def include_virtual(matchobj):
 
     if os.access(filename, os.F_OK):
         #print 'Including file', filename
-        lines = file(filename, 'r').read()
+        lines = open(filename, 'r').read()
         return lines
     else:
         return matchobj.group(0)
@@ -65,9 +65,9 @@ for f in sys.argv[2:]:
 for filename in files:
     dirname, basefilename = os.path.split(filename)
     newfilename = basefilename[:-6] + '.html'
-    print 'Converting', filename, '->', newfilename
-    shtml = file(filename, 'r')
-    html = file(newfilename, 'w')
+    print('Converting', filename, '->', newfilename)
+    shtml = open(filename, 'r')
+    html = open(newfilename, 'w')
 
     for line in shtml.readlines():
         line = include_regex.sub(include_virtual, line)

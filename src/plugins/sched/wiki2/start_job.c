@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -306,6 +306,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	old_task_cnt = job_ptr->details->min_cpus;
 	job_ptr->details->min_cpus = MAX(task_cnt, old_task_cnt);
 	job_ptr->priority = 100000000;
+	job_ptr->state_reason = WAIT_NO_REASON;
 
  fini:	unlock_slurmctld(job_write_lock);
 	if (rc)

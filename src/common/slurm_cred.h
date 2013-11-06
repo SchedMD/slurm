@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -314,7 +314,7 @@ int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
  *
  * NOTE: caller must xfree the returned strings.
  */
-void format_core_allocs(slurm_cred_t *cred, char *node_name,
+void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 			 char **job_alloc_cores, char **step_alloc_cores,
 			 uint32_t *job_mem_limit, uint32_t *step_mem_limit);
 
@@ -339,7 +339,6 @@ void slurm_cred_print(slurm_cred_t *cred);
 sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 				  uint32_t job_id, char *nodes,
 				  time_t expiration);
-sbcast_cred_t *copy_sbcast_cred(sbcast_cred_t *sbcast_cred);
 void          delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
 int           extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				  sbcast_cred_t *sbcast_cred, uint16_t block_no,

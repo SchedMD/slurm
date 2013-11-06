@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -172,6 +172,8 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
+		if (step_ptr->step_node_bitmap == NULL)   /* pending step */
+			continue;
 		if ((bit_position >= 0) &&
 		    (!bit_test(step_ptr->step_node_bitmap, bit_position)))
 			continue;	/* job step not on this node */

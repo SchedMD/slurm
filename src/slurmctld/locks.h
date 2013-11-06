@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -103,10 +103,13 @@ typedef struct {
 }	slurmctld_lock_t;
 
 /* Interval lock structure
- * we actually use three semaphores for each data type, see macros below
- *	(lock_datatype_t * 3 + 0) = read_lock
- *	(lock_datatype_t * 3 + 1) = write_lock
- *	(lock_datatype_t * 3 + 2) = write_wait_lock
+ * we actually use the count for each data type, see macros below
+ *	(lock_datatype_t * 4 + 0) = read_lock		read locks in use
+ *	(lock_datatype_t * 4 + 1) = write_lock		write locks in use
+ *	(lock_datatype_t * 4 + 2) = write_wait_lock	write locks pending
+ *	(lock_datatype_t * 4 + 3) = write_cnt_lock	write lock count
+ * NOTE: If changing the number of functions (array size), then also change
+ * the size of "entity" in src/common/assoc_mgr.h
  */
 typedef enum {
 	CONFIG_LOCK,
@@ -116,12 +119,13 @@ typedef enum {
 	ENTITY_COUNT
 }	lock_datatype_t;
 
-#define read_lock(data_type)		(data_type * 3 + 0)
-#define write_lock(data_type)		(data_type * 3 + 1)
-#define write_wait_lock(data_type)	(data_type * 3 + 2)
+#define read_lock(data_type)		(data_type * 4 + 0)
+#define write_lock(data_type)		(data_type * 4 + 1)
+#define write_wait_lock(data_type)	(data_type * 4 + 2)
+#define write_cnt_lock(data_type)	(data_type * 4 + 3)
 
 typedef struct {
-	int entity[ENTITY_COUNT * 3];
+	int entity[ENTITY_COUNT * 4];
 }	slurmctld_lock_flags_t;
 
 

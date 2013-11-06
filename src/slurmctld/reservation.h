@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -77,8 +77,9 @@ extern int send_resvs_to_accounting(void);
 
 /* Set or clear NODE_STATE_MAINT for node_state as needed
  * IN reset_all - re-initialize all node information for all reservations
+ * RET count of newly started reservations
  */
-extern void set_node_maint_mode(bool reset_all);
+extern int set_node_maint_mode(bool reset_all);
 
 /* checks if node within node_record_table_ptr is in maint reservation */
 extern bool is_node_in_maint_reservation(int nodenum);

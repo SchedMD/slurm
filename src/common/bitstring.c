@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -73,7 +73,6 @@ strong_alias(bit_set_count,	slurm_bit_set_count);
 strong_alias(bit_set_count_range, slurm_bit_set_count_range);
 strong_alias(bit_clear_count,	slurm_bit_clear_count);
 strong_alias(bit_nset_max_count,slurm_bit_nset_max_count);
-strong_alias(int_and_set_count,	slurm_int_and_set_count);
 strong_alias(bit_rotate_copy,	slurm_bit_rotate_copy);
 strong_alias(bit_rotate,	slurm_bit_rotate);
 strong_alias(bit_fmt,		slurm_bit_fmt);
@@ -109,7 +108,7 @@ bit_alloc(bitoff_t nbits)
 
 	new = (bitstr_t *)calloc(_bitstr_words(nbits), sizeof(bitstr_t));
 	if (!new) {
-		fprintf(log_fp(), "bit_alloc: calloc failed\n");
+		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
 	}
 
@@ -134,7 +133,7 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 	obits = _bitstr_bits(b);
 	new = realloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
 	if (!new) {
-		fprintf(log_fp(), "bit_realloc: realloc failed\n");
+		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
 	}
 
@@ -270,7 +269,7 @@ bit_ffc(bitstr_t *b)
 	_assert_bitstr_valid(b);
 
 	while (bit < _bitstr_bits(b) && value == -1) {
-		int word = _bit_word(bit);
+		int32_t word = _bit_word(bit);
 
 		if (b[word] == BITSTR_MAXPOS) {
 			bit += sizeof(bitstr_t)*8;
@@ -293,11 +292,11 @@ bit_ffc(bitstr_t *b)
  *   RETURN             position of first bit in range (-1 if none found)
  */
 bitoff_t
-bit_nffc(bitstr_t *b, int n)
+bit_nffc(bitstr_t *b, int32_t n)
 {
 	bitoff_t value = -1;
 	bitoff_t bit;
-	int cnt = 0;
+	int32_t cnt = 0;
 
 	_assert_bitstr_valid(b);
 	assert(n > 0 && n < _bitstr_bits(b));
@@ -324,11 +323,11 @@ bit_nffc(bitstr_t *b, int n)
  *   RETURN             position of first bit in range (-1 if none found)
  */
 bitoff_t
-bit_noc(bitstr_t *b, int n, int seed)
+bit_noc(bitstr_t *b, int32_t n, int32_t seed)
 {
 	bitoff_t value = -1;
 	bitoff_t bit;
-	int cnt = 0;
+	int32_t cnt = 0;
 
 	_assert_bitstr_valid(b);
 	assert(n > 0 && n <= _bitstr_bits(b));
@@ -372,11 +371,11 @@ bit_noc(bitstr_t *b, int n, int seed)
  *   RETURN             position of first bit in range (-1 if none found)
  */
 bitoff_t
-bit_nffs(bitstr_t *b, int n)
+bit_nffs(bitstr_t *b, int32_t n)
 {
 	bitoff_t value = -1;
 	bitoff_t bit;
-	int cnt = 0;
+	int32_t cnt = 0;
 
 	_assert_bitstr_valid(b);
 	assert(n > 0 && n <= _bitstr_bits(b));
@@ -409,7 +408,7 @@ bit_ffs(bitstr_t *b)
 	_assert_bitstr_valid(b);
 
 	while (bit < _bitstr_bits(b) && value == -1) {
-		int word = _bit_word(bit);
+		int32_t word = _bit_word(bit);
 
 		if (b[word] == 0) {
 			bit += sizeof(bitstr_t)*8;
@@ -435,7 +434,7 @@ bitoff_t
 bit_fls(bitstr_t *b)
 {
 	bitoff_t bit, value = -1;
-	int word;
+	int32_t word;
 
 	_assert_bitstr_valid(b);
 
@@ -474,7 +473,8 @@ bit_fls(bitstr_t *b)
  *	to make set bits contiguous)
  */
 void
-bit_fill_gaps(bitstr_t *b) {
+bit_fill_gaps(bitstr_t *b)
+{
 	bitoff_t first, last;
 
 	_assert_bitstr_valid(b);
@@ -493,7 +493,8 @@ bit_fill_gaps(bitstr_t *b) {
  * return 1 if all bits set in b1 are also set in b2, 0 0therwise
  */
 int
-bit_super_set(bitstr_t *b1, bitstr_t *b2)  {
+bit_super_set(bitstr_t *b1, bitstr_t *b2)
+{
 	bitoff_t bit;
 
 	_assert_bitstr_valid(b1);
@@ -539,7 +540,8 @@ bit_equal(bitstr_t *b1, bitstr_t *b2)
  *   b2 (IN)		second bitstring
  */
 void
-bit_and(bitstr_t *b1, bitstr_t *b2) {
+bit_and(bitstr_t *b1, bitstr_t *b2)
+{
 	bitoff_t bit;
 
 	_assert_bitstr_valid(b1);
@@ -555,7 +557,8 @@ bit_and(bitstr_t *b1, bitstr_t *b2) {
  *   b1 (IN/OUT)	first bitmap
  */
 void
-bit_not(bitstr_t *b) {
+bit_not(bitstr_t *b)
+{
 	bitoff_t bit;
 
 	_assert_bitstr_valid(b);
@@ -570,7 +573,8 @@ bit_not(bitstr_t *b) {
  *   b2 (IN)		second bitmap
  */
 void
-bit_or(bitstr_t *b1, bitstr_t *b2) {
+bit_or(bitstr_t *b1, bitstr_t *b2)
+{
 	bitoff_t bit;
 
 	_assert_bitstr_valid(b1);
@@ -590,7 +594,7 @@ bitstr_t *
 bit_copy(bitstr_t *b)
 {
 	bitstr_t *new;
-	int newsize_bits;
+	int32_t newsize_bits;
 	size_t len = 0;  /* Number of bytes to memcpy() */
 
 	_assert_bitstr_valid(b);
@@ -607,7 +611,7 @@ bit_copy(bitstr_t *b)
 void
 bit_copybits(bitstr_t *dest, bitstr_t *src)
 {
-	int len;
+	int32_t len;
 
 	_assert_bitstr_valid(dest);
 	_assert_bitstr_valid(src);
@@ -660,12 +664,12 @@ hweight(uint64_t w)
  *   b (IN)		bitstring to check
  *   RETURN		count of set bits
  */
-int
+int32_t
 bit_set_count(bitstr_t *b)
 {
-	int count = 0;
+	int32_t count = 0;
 	bitoff_t bit, bit_cnt;
-	int word_size = sizeof(bitstr_t) * 8;
+	int32_t word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b);
 
@@ -687,12 +691,12 @@ bit_set_count(bitstr_t *b)
  *   end (IN)	last bit to check+1
  *   RETURN		count of set bits
  */
-int
-bit_set_count_range(bitstr_t *b, int start, int end)
+int32_t
+bit_set_count_range(bitstr_t *b, int32_t start, int32_t end)
 {
-	int count = 0, eow;
+	int32_t count = 0, eow;
 	bitoff_t bit;
-	const int word_size = sizeof(bitstr_t) * 8;
+	const int32_t word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b);
 	_assert_bit_valid(b,start);
@@ -717,12 +721,12 @@ bit_set_count_range(bitstr_t *b, int start, int end)
 /*
  * return number of bits set in b1 that are also set in b2, 0 if no overlap
  */
-extern int
+extern int32_t
 bit_overlap(bitstr_t *b1, bitstr_t *b2)
 {
-	int count = 0;
+	int32_t count = 0;
 	bitoff_t bit, bit_cnt;
-	int word_size = sizeof(bitstr_t) * 8;
+	int32_t word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
@@ -747,7 +751,7 @@ bit_overlap(bitstr_t *b1, bitstr_t *b2)
  *   b (IN)		bitstring to check
  *   RETURN		count of clear bits
  */
-int
+int32_t
 bit_clear_count(bitstr_t *b)
 {
 	_assert_bitstr_valid(b);
@@ -758,12 +762,12 @@ bit_clear_count(bitstr_t *b)
  *   b (IN)             bitstring to search
  *   RETURN             the largest number of contiguous bits set in b
  */
-int
+int32_t
 bit_nset_max_count(bitstr_t *b)
 {
 	bitoff_t bit;
-	int cnt = 0;
-	int maxcnt = 0;
+	int32_t  cnt = 0;
+	int32_t  maxcnt = 0;
 	uint32_t bitsize;
 
 	_assert_bitstr_valid(b);
@@ -787,28 +791,6 @@ bit_nset_max_count(bitstr_t *b)
 }
 
 /*
- * And an integer vector and a bitstring and sum the elements corresponding
- * to set entries in b2: SUM(i1 & b2)
- * Note: if b2 is longer than i1, then elements are wrapped into i1
- *   i1 (IN)		integer vector
- *   b2 (IN)		bitstring
- */
-int
-int_and_set_count(int *i1, int ilen, bitstr_t *b2) {
-	bitoff_t bit;
-	int sum;
-
-	_assert_bitstr_valid(b2);
-
-	sum = 0;
-	for (bit = 0; bit < _bitstr_bits(b2); bit++) {
-	    	if (bit_test(b2, bit))
-			sum += i1[bit % ilen];
-	}
-	return(sum);
-}
-
-/*
  * rotate b1 by n bits returning a rotated copy
  *   b1 (IN)		bitmap to rotate
  *   n  (IN)		rotation distance (+ = rotate left, - = rotate right)
@@ -817,7 +799,8 @@ int_and_set_count(int *i1, int ilen, bitstr_t *b2) {
  *   RETURN		new rotated bitmap
  */
 bitstr_t *
-bit_rotate_copy(bitstr_t *b1, int n, bitoff_t nbits) {
+bit_rotate_copy(bitstr_t *b1, int32_t n, bitoff_t nbits)
+{
 	bitoff_t bit, dst;
 	bitstr_t *new;
 	bitoff_t bitsize;
@@ -861,7 +844,8 @@ bit_rotate_copy(bitstr_t *b1, int n, bitoff_t nbits) {
  *   n  (IN)		rotation distance (+ = rotate left, - = rotate right)
  */
 void
-bit_rotate(bitstr_t *b1, int n) {
+bit_rotate(bitstr_t *b1, int32_t n)
+{
 	uint32_t bitsize;
 	bitstr_t *new;
 
@@ -880,10 +864,11 @@ bit_rotate(bitstr_t *b1, int n) {
  * build a bitmap containing the first nbits of b which are set
  */
 bitstr_t *
-bit_pick_cnt(bitstr_t *b, bitoff_t nbits) {
+bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
+{
 	bitoff_t bit = 0, new_bits, count = 0;
 	bitstr_t *new;
-	int word_size = sizeof(bitstr_t) * 8;
+	int32_t word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b);
 
@@ -895,7 +880,7 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits) {
 		return NULL;
 
 	while ((bit < _bitstr_bits(b)) && (count < nbits)) {
-		int word = _bit_word(bit);
+		int32_t word = _bit_word(bit);
 
 		if (b[word] == 0) {
 			bit += word_size;
@@ -942,9 +927,9 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits) {
  * Convert to range string format, e.g. 0-5,42
  */
 char *
-bit_fmt(char *str, int len, bitstr_t *b)
+bit_fmt(char *str, int32_t len, bitstr_t *b)
 {
-	int count = 0, ret, word;
+	int32_t count = 0, ret, word;
 	bitoff_t start, bit;
 
 	_assert_bitstr_valid(b);
@@ -987,10 +972,15 @@ bit_fmt(char *str, int len, bitstr_t *b)
 	return str;
 }
 
+/*
+ * Convert range string format, e.g. "0-5,42" to bitmap
+ * Ret 0 on success, -1 on error
+ */
 int
 bit_unfmt(bitstr_t *b, char *str)
 {
-	int *intvec, rc = 0;
+	int32_t *intvec;
+	int rc = 0;
 
 	_assert_bitstr_valid(b);
 	if (str[0] == '\0')	/* no bits set */
@@ -1011,15 +1001,15 @@ bit_unfmt(bitstr_t *b, char *str)
  * output: an array of integers
  * NOTE: the caller must xfree the returned memory
  */
-int *
+int32_t *
 bitfmt2int (char *bit_str_ptr)
 {
-	int *bit_int_ptr, i, bit_inx, size, sum, start_val;
+	int32_t *bit_int_ptr, i, bit_inx, size, sum, start_val;
 
 	if (bit_str_ptr == NULL)
 		return NULL;
 	size = strlen (bit_str_ptr) + 1;
-	bit_int_ptr = xmalloc ( sizeof (int) *
+	bit_int_ptr = xmalloc ( sizeof (int32_t) *
 			(size * 2 + 1));	/* more than enough space */
 
 	bit_inx = sum = 0;
@@ -1061,9 +1051,9 @@ bitfmt2int (char *bit_str_ptr)
  * NOTE: the caller must xfree the returned memory
  */
 char *
-inx2bitfmt (int *inx)
+inx2bitfmt (int32_t *inx)
 {
-	int j=0;
+	int32_t j = 0;
 	char *bit_char_ptr = NULL;
 
 	if (inx == NULL)
@@ -1080,9 +1070,10 @@ inx2bitfmt (int *inx)
 	return bit_char_ptr;
 }
 
-int inx2bitstr(bitstr_t *b, int *inx)
+int inx2bitstr(bitstr_t *b, int32_t *inx)
 {
-	int *p, rc=0;
+	int32_t *p;
+	int rc = 0;
 
 	assert(b);
 	assert(inx);
@@ -1150,13 +1141,14 @@ char * bit_fmt_hexmask(bitstr_t * bitmap)
  *                           MSB   LSB
  *   bitmap (OUT)  bitmap to update
  *   str (IN)      hex mask string to unformat
+ *   RET: 0 on success, -1 on error
  */
 int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 {
-	int bit_index = 0, len = strlen(str);
+	int32_t bit_index = 0, len = strlen(str);
 	int rc = 0;
 	const char *curpos = str + len - 1;
-	int current;
+	int32_t current;
 	bitoff_t bitsize = bit_size(bitmap);
 
 	bit_nclear(bitmap, 0, bitsize - 1);
@@ -1165,8 +1157,8 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 		len -= 2;
 	}
 
-	while(curpos >= str) {
-		current = (int) *curpos;
+	while (curpos >= str) {
+		current = (int32_t) *curpos;
 		if (isxdigit(current)) {	/* valid hex digit */
 			if (isdigit(current)) {
 				current -= '0';
@@ -1237,16 +1229,16 @@ char * bit_fmt_binmask(bitstr_t * bitmap)
  *   bitmap (OUT)  bitmap to update
  *   str (IN)      hex mask string to unformat
  */
-int bit_unfmt_binmask(bitstr_t * bitmap, const char* str)
+void bit_unfmt_binmask(bitstr_t * bitmap, const char* str)
 {
-	int bit_index = 0, len = strlen(str);
+	int32_t bit_index = 0, len = strlen(str);
 	const char *curpos = str + len - 1;
 	char current;
 	bitoff_t bitsize = bit_size(bitmap);
 
 	bit_nclear(bitmap, 0, bitsize - 1);
-	while(curpos >= str) {
-		current = (int) *curpos;
+	while (curpos >= str) {
+		current = (int32_t) *curpos;
 		current -= '0';
 		if ((current & 1) && (bit_index   < bitsize))
 			bit_set(bitmap, bit_index);
@@ -1254,7 +1246,6 @@ int bit_unfmt_binmask(bitstr_t * bitmap, const char* str)
 		curpos--;
 		bit_index++;
 	}
-	return 0;
 }
 
 /* Find the bit set at pos (0 - bitstr_bits) in bitstr b.
@@ -1264,10 +1255,10 @@ int bit_unfmt_binmask(bitstr_t * bitmap, const char* str)
  */
 
 bitoff_t
-bit_get_bit_num(bitstr_t *b, int pos)
+bit_get_bit_num(bitstr_t *b, int32_t pos)
 {
 	bitoff_t bit;
-	int cnt = 0;
+	int32_t cnt = 0;
 	bitoff_t bit_cnt;
 
 	_assert_bitstr_valid(b);
@@ -1294,11 +1285,11 @@ bit_get_bit_num(bitstr_t *b, int pos)
  *   RETURN             number bit is set in bitstring (-1 on error)
  */
 
-int
+int32_t
 bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 {
 	bitoff_t bit;
-	int cnt = -1;
+	int32_t cnt = -1;
 	bitoff_t bit_cnt;
 
 	_assert_bitstr_valid(b);

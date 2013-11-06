@@ -38,7 +38,7 @@ http://slurm.schedmd.com/cpu_management.html
 Submit a job array, multiple jobs to be executed with identical parameters.
 The \fIindexes\fR specification identifies what array index values should
 be used. Multiple values may be specified using a comma separated list and/or
-a range of values with a "\-" separator. For example, "\-\-array=0\-15" or 
+a range of values with a "\-" separator. For example, "\-\-array=0\-15" or
 "\-\-array=0,6,16\-32".
 A step function can also be specified with a suffix containing a colon and
 number. For example, "\-\-array=0\-15:4" is equivalent to "\-\-array=0,4,8,12".
@@ -53,12 +53,56 @@ be changed after job submission using the \fBscontrol\fR
 command.
 
 .TP
-\fB\-\-acctg\-freq\fR=<\fIseconds\fR>
-Define the job accounting sampling interval.
+\fB\-\-acctg\-freq\fR
+Define the job accounting and profiling sampling intervals.
 This can be used to override the \fIJobAcctGatherFrequency\fR parameter in SLURM's
 configuration file, \fIslurm.conf\fR.
-A value of zero disables the periodic job sampling and provides accounting
-information only on job termination (reducing SLURM interference with the job).
+The supported format is as follows:
+.RS
+.TP 12
+\fB\-\-acctg\-freq=\fR\fI<datatype>\fR\fB=\fR\fI<interval>\fR
+where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling
+interval for the jobacct_gather plugin or a
+sampling interval for a profiling type by the
+acct_gather_profile plugin. Multiple,
+comma-separated \fI<datatype>\fR=\fI<interval>\fR intervals
+may be specified. Supported datatypes are as follows:
+.RS
+.TP
+\fBtask=\fI<interval>\fR
+where \fI<interval>\fR is the task sampling interval in seconds
+for the jobacct_gather plugins and for task
+profiling by the acct_gather_profile plugin.
+.TP
+\fBenergy=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for energy profiling using the acct_gather_energy plugin
+.TP
+\fBnetwork=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for infiniband profiling using the acct_gather_infiniband
+plugin.
+.TP
+\fBfilesystem=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for filesystem profiling using the acct_gather_filesystem
+plugin.
+.TP
+.RE
+.RE
+.br
+The default value for the task sampling interval is 30.
+The default value for all other intervals is 0.
+An interval of 0 disables sampling of the specified type.
+If the task sampling interval is 0, accounting
+information is collected only at job termination (reducing SLURM
+interference with the job).
+.br
+.br
+Smaller (non\-zero) values have a greater impact upon job performance,
+but a value of 30 seconds is not likely to be noticeable for
+applications having less than 10,000 tasks.
+.RE
 
 .TP
 \fB\-B\fR \fB\-\-extra\-node\-info\fR=<\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]>
@@ -296,7 +340,8 @@ Not supported unless the entire node is allocated to the job.
 Bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
-preceded with an optional '0x'.
+preceded with an optional '0x'. Not supported unless the entire node is
+allocated to the job.
 .TP
 .B sockets
 Automatically generate masks binding tasks to sockets.
@@ -318,6 +363,12 @@ this can result in sub\-optimal binding.
 Automatically generate masks binding tasks to NUMA locality domains.
 If the number of tasks differs from the number of allocated locality domains
 this can result in sub\-optimal binding.
+.TP
+.B boards
+Automatically generate masks binding tasks to boards.
+If the number of tasks differs from the number of allocated boards
+this can result in sub\-optimal binding. This option is supported by the
+task/cgroup plugin only.
 .TP
 .B help
 Show this help message
@@ -386,7 +437,7 @@ file name specified in the "\fIfilename pattern\fR".
 By default both standard output and standard error are directed to the same file.
 For job arrays, the default file name is "slurm-%A_%a.out", "%A" is replaced
 by the job ID and "%a" with the array index.
-For other jobs, the default file name is "slurm-%J.out", where the "%J" is
+For other jobs, the default file name is "slurm-%j.out", where the "%j" is
 replaced by the job ID.
 See the \fB\-\-input\fR option for filename specification options.
 
@@ -461,17 +512,15 @@ may be the group name or the numerical group ID.
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
 Specifies a comma delimited list of generic consumable resources.
-The format of each entry on the list is "name[:count[*cpu]]".
+The format of each entry on the list is "name[:count]".
 The name is that of the consumable resource.
 The count is the number of those resources with a default value of 1.
-The specified resources will be allocated to the job on each node
-allocated unless "*cpu" is appended, in which case the resources
-will be allocated on a per cpu basis.
+The specified resources will be allocated to the job on each node.
 The available generic consumable resources is configurable by the system
 administrator.
 A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
-Examples of use include "\-\-gres=gpus:2*cpu,disk=40G" and "\-\-gres=help".
+Examples of use include "\-\-gres=gpu:2,mic=1" and "\-\-gres=help".
 
 .TP
 \fB\-H, \-\-hold\fR
@@ -511,6 +560,10 @@ necessary to grant its job allocation are immediately available.  If the
 job allocation will have to wait in a queue of pending jobs, the batch script
 will not be submitted.
 NOTE: There is limited support for this option with batch jobs.
+
+.TP
+\fB\-\-ignore\-pbs\fR
+Ignore any "#PBS" options specified in the batch script.
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=<\fIfilename pattern\fR>
@@ -637,7 +690,9 @@ of tasks is no larger than the number of allocated nodes.
 The tasks are distributed in blocks of a specified size.  The options
 include a number representing the size of the task block.  This is
 followed by an optional specification of the task distribution scheme
-within a block of tasks and between the blocks of tasks.  For more
+within a block of tasks and between the blocks of tasks.  The number of tasks
+distributed to each node is the same as for cyclic distribution, but the
+taskids assigned to each node depend on the plane size.  For more
 details (including examples and diagrams), please see
 .br
 http://slurm.schedmd.com/mc_support.html
@@ -1003,7 +1058,7 @@ file name specified in the "\fIfilename pattern\fR".
 By default both standard output and standard error are directed to the same file.
 For job arrays, the default file name is "slurm-%A_%a.out", "%A" is replaced
 by the job ID and "%a" with the array index.
-For other jobs, the default file name is "slurm-%J.out", where the "%J" is
+For other jobs, the default file name is "slurm-%j.out", where the "%j" is
 replaced by the job ID.
 See the \fB\-\-input\fR option for filename specification options.
 
@@ -1020,6 +1075,39 @@ the default behavior is to allow the slurm controller to select the default
 partition as designated by the system administrator. If the job can use more
 than one partition, specify their names in a comma separate list and the one
 offering earliest initiation will be used.
+
+.TP
+\fB\-\-profile\fR=<all|none|[energy[,|task[,|lustre[,|network]]]]>
+enables detailed data collection by the acct_gather_profile plugin.
+Detailed data are typically time-series that are stored in an HDF5 file for
+the job.
+
+.RS
+.TP 10
+\fBAll\fR
+All data types are collected. (Cannot be combined with other values.)
+
+.TP
+\fBNone\fR
+No data types are collected. This is the default.
+ (Cannot be combined with other values.)
+
+.TP
+\fBEnergy\fR
+Energy data is collected.
+
+.TP
+\fBTask\fR
+Task (I/O, Memory, ...) data is collected.
+
+.TP
+\fBLustre\fR
+Lustre data is collected.
+
+.TP
+\fBNetwork\fR
+Network (InfiniBand) data is collected.
+.RE
 
 .TP
 \fB\-\-propagate\fR[=\fIrlimitfR]
@@ -1103,7 +1191,14 @@ option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
 
 .TP
-\fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
+\fB\-S\fR, \fB\-\-core\-spec\fR=<\fInum\fR>
+Count of specialized cores per nodereserved by the job for system operations
+and not used by the application. The application will not use these cores,
+but will be charged for their allocation. Default value is zero.
+
+
+.TP
+\fB\-\-signal\fR=[B:]<\fIsig_num\fR>[@<\fIsig_time\fR>]
 When a job is within \fIsig_time\fR seconds of its end time,
 send it the signal \fIsig_num\fR.
 Due to the resolution of event handling by SLURM, the signal may
@@ -1113,6 +1208,8 @@ be sent up to 60 seconds earlier than specified.
 By default, no signal is sent before the job's end time.
 If a \fIsig_num\fR is specified without any \fIsig_time\fR,
 the default time will be 60 seconds.
+Use the "B:" option to signal the batch shell.
+By default all job steps will be signalled, but not the batch shell itself.
 
 .TP
 \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
@@ -1372,6 +1469,9 @@ Same as \fB\-g, \-\-geometry\fR
 \fBSBATCH_GET_USER_ENV\fR
 Same as \fB\-\-get\-user\-env\fR
 .TP
+\fBSBATCH_IGNORE_PBS\fR
+Same as \fB\-\-ignore\-pbs\fR
+.TP
 \fBSBATCH_IMMEDIATE\fR
 Same as \fB\-I, \-\-immediate\fR
 .TP
@@ -1410,6 +1510,9 @@ Same as \fB\-O, \-\-overcommit\fR
 .TP
 \fBSBATCH_PARTITION\fR
 Same as \fB\-p, \-\-partition\fR
+.TP
+\fBSBATCH_PROFILE\fR
+Same as \fB\-\-profile\fR
 .TP
 \fBSBATCH_QOS\fR
 Same as \fB\-\-qos\fR
@@ -1485,6 +1588,9 @@ Core_ID x threads_per_core + Thread_ID).
 \fBSLURM_CPUS_ON_NODE\fR
 Number of CPUS on the allocated node.
 .TP
+\fBSLURM_DISTRIBUTION\fR
+Same as \fB\-m, \-\-distribution\fR
+.TP
 \fBSLURM_GTIDS\fR
 Global task IDs running on this node.  Zero  origin and comma separated.
 .TP
@@ -1550,6 +1656,9 @@ This value is  propagated  to the spawned processes.
 .TP
 \fBSLURM_PROCID\fR
 The MPI rank (or relative process ID) of the current process
+.TP
+\fBSLURM_PROFILE\fR
+Same as \fB\-\-profile\fR
 .TP
 \fBSLURM_RESTART_COUNT\fR
 If the job has been restarted due to system failure or has been
@@ -1646,9 +1755,11 @@ host4
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+.br
+Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

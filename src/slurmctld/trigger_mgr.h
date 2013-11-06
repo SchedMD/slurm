@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -75,7 +75,7 @@ extern void trigger_primary_db_res_op(void);
 
 /* Save and restore state for slurmctld fail-over or restart */
 extern int  trigger_state_save(void);
-extern int  trigger_state_restore(void);
+extern void trigger_state_restore(void);
 
 /* Free all allocated memory */
 extern void trigger_fini(void);

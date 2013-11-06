@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -149,9 +149,7 @@ extern void lsd_fatal_error(char *file, int line, char *mesg);
 #  ifndef lsd_fatal_error
 	static void lsd_fatal_error(char *file, int line, char *mesg)
 	{
-		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
-			file, line, mesg, strerror(errno));
-		fflush(log_fp());
+		log_fatal(file, line, mesg, strerror(errno));
 	}
 #  endif /* !lsd_fatal_error */
 #endif /* !WITH_LSD_FATAL_ERROR_FUNC */
@@ -166,9 +164,7 @@ extern void * lsd_nomem_error(char *file, int line, char *mesg);
 #  ifndef lsd_nomem_error
 	static void * lsd_nomem_error(char *file, int line, char *mesg)
 	{
-		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
-			file, line, mesg, strerror(errno));
-		fflush(log_fp());
+		log_oom(file, line, mesg);
 		abort();
 		return NULL;
 	}
@@ -197,7 +193,7 @@ extern void * lsd_nomem_error(char *file, int line, char *mesg);
 #define MAX_RANGE    (64*1024)    /* 64K Hosts */
 
 /* max number of ranges that will be processed between brackets */
-#define MAX_RANGES   (12*1024)    /* 12K Ranges */
+#define MAX_RANGES   (64*1024)    /* 64K Hosts */
 
 /* size of internal hostname buffer (+ some slop), hostnames will probably
  * be truncated if longer than MAXHOSTNAMELEN */
@@ -1094,8 +1090,8 @@ static hostrange_t hostrange_intersect(hostrange_t h1, hostrange_t h2)
 
 	assert(hostrange_cmp(h1, h2) <= 0);
 
-	if ((hostrange_prefix_cmp(h1, h2) == 0)
-	    && (h1->hi > h2->lo)
+	if ((h1->hi > h2->lo)
+	    && (hostrange_prefix_cmp(h1, h2) == 0)
 	    && (hostrange_width_combine(h1, h2))) {
 
 		if (!(new = hostrange_copy(h1)))
@@ -1412,8 +1408,8 @@ static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
 		goto error;
 
 	if (hl->nranges > 0
-	    && hostrange_prefix_cmp(tail, hr) == 0
 	    && tail->hi == hr->lo - 1
+	    && hostrange_prefix_cmp(tail, hr) == 0
 	    && hostrange_width_combine(tail, hr)) {
 		tail->hi = hr->hi;
 	} else {
@@ -1832,21 +1828,26 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 	strncpy(tmp_prefix, prefix, sizeof(tmp_prefix));
 	if (((p = strrchr(tmp_prefix, '[')) != NULL) &&
 	    ((q = strrchr(p, ']')) != NULL)) {
-		struct _range prefix_range[MAX_RANGES];
-		struct _range *saved_range = range, *pre_range = prefix_range;
+		struct _range *prefix_range;
+		struct _range *saved_range = range, *pre_range;
 		unsigned long j, prefix_cnt = 0;
 		*p++ = '\0';
 		*q++ = '\0';
 		if (strrchr(tmp_prefix, '[') != NULL)
 			return -1;	/* third range is illegal */
+		prefix_range = xmalloc(sizeof(struct _range) * MAX_RANGES);
 		nr = _parse_range_list(p, prefix_range, MAX_RANGES, dims);
-		if (nr < 0)
+		if (nr < 0) {
+			xfree(prefix_range);
 			return -1;	/* bad numeric expression */
+		}
+		pre_range = prefix_range;
 		for (i = 0; i < nr; i++) {
 			prefix_cnt += pre_range->hi - pre_range->lo + 1;
 			if (prefix_cnt > MAX_PREFIX_CNT) {
 				/* Prevent overflow of memory with user input
 				 * of something like "a[0-999999999].b[0-9]" */
+				xfree(prefix_range);
 				return -1;
 			}
 			for (j = pre_range->lo; j <= pre_range->hi; j++) {
@@ -1863,6 +1864,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 			}
 			pre_range++;
 		}
+		xfree(prefix_range);
 		return 0;
 	}
 
@@ -1883,7 +1885,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 			   char *r_op, int dims)
 {
 	hostlist_t new = hostlist_new();
-	struct _range ranges[MAX_RANGES];
+	struct _range *ranges;
 	int nr, err;
 	char *p, *tok, *str, *orig;
 	char cur_tok[1024];
@@ -1896,6 +1898,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 		return NULL;
 	}
 
+	ranges = xmalloc(sizeof(struct _range) * MAX_RANGES);
 	while ((tok = _next_tok(sep, &str)) != NULL) {
 		strncpy(cur_tok, tok, 1024);
 		if ((p = strrchr(tok, '[')) != NULL) {
@@ -1931,6 +1934,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 		} else
 			hostlist_push_host_dims(new, cur_tok, dims);
 	}
+	xfree(ranges);
 
 	free(orig);
 	return new;
@@ -2445,8 +2449,8 @@ static void hostlist_collapse(hostlist_t hl)
 		hostrange_t hprev = hl->hr[i - 1];
 		hostrange_t hnext = hl->hr[i];
 
-		if (hostrange_prefix_cmp(hprev, hnext) == 0 &&
-		    hprev->hi == hnext->lo - 1 &&
+		if (hprev->hi == hnext->lo - 1 &&
+		    hostrange_prefix_cmp(hprev, hnext) == 0 &&
 		    hostrange_width_combine(hprev, hnext)) {
 			hprev->hi = hnext->hi;
 			hostlist_delete_range(hl, i);
@@ -2648,9 +2652,8 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	int m, len = 0;
 	int bracket_needed = _is_bracket_needed(hl, i);
 	int zeropad = 0;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+	if (is_cray_system()) {
 		/*
 		 * Find minimum common zero-padding prefix. Cray has nid%05u
 		 * syntax, factoring this out makes host strings much shorter.

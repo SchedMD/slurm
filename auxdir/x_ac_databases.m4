@@ -53,12 +53,9 @@ AC_DEFUN([X_AC_DATABASES],
        			CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
 			LIBS="$MYSQL_LIBS $save_LIBS"
 			AC_TRY_LINK([#include <mysql.h>],[
-					int main()
-					{
 						MYSQL mysql;
 						(void) mysql_init(&mysql);
 						(void) mysql_close(&mysql);
-					}
 					],
 				[ac_have_mysql="yes"],
 				[ac_have_mysql="no"])
@@ -77,12 +74,9 @@ AC_DEFUN([X_AC_DATABASES],
        				CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
 				LIBS="$MYSQL_LIBS $save_LIBS"
 				AC_TRY_LINK([#include <mysql.h>],[
-						int main()
-						{
 							MYSQL mysql;
 							(void) mysql_init(&mysql);
 							(void) mysql_close(&mysql);
-						}
 						],
 					[ac_have_mysql="yes"],
 					[ac_have_mysql="no"])
@@ -104,58 +98,4 @@ AC_DEFUN([X_AC_DATABASES],
 		fi
       	fi
 	AM_CONDITIONAL(WITH_MYSQL, test x"$ac_have_mysql" = x"yes")
-
-	#Check for PostgreSQL
-	ac_have_postgres="no"
-	_x_ac_pgsql_bin="no"
-	### Check for pg_config program
- 	AC_ARG_WITH(
-		[pg_config],
-		AS_HELP_STRING(--with-pg_config=PATH,
-			Specify path to pg_config binary),
-		[_x_ac_pgsql_bin="$withval"])
-
-	if test x$_x_ac_pgsql_bin = xno; then
-    		AC_PATH_PROG(HAVEPGCONFIG, pg_config, no)
-	else
-  		AC_PATH_PROG(HAVEPGCONFIG, pg_config, no, $_x_ac_pgsql_bin)
-	fi
-
-	if test x$HAVEPGCONFIG = xno; then
-		AC_MSG_WARN([*** pg_config not found. Evidently no PostgreSQL development libs installed on system.])
-	else
-		PGSQL_INCLUDEDIR=`$HAVEPGCONFIG --includedir`
-		PGSQL_LIBDIR=`$HAVEPGCONFIG --libdir`
-		PGSQL_CFLAGS="-I$PGSQL_INCLUDEDIR -L$PGSQL_LIBDIR"
-		save_CFLAGS="$CFLAGS"
-		CFLAGS="$PGSQL_CFLAGS $save_CFLAGS"
-
-		PGSQL_LIBS=" -lpq"
-	       	save_LIBS="$LIBS"
-		LIBS="$PGSQL_LIBS $save_LIBS"
-       		AC_TRY_LINK([#include <libpq-fe.h>],[
-				int main()
-       	  			{
-					PGconn     *conn;
-					conn = PQconnectdb("dbname = postgres");
-       					(void) PQfinish(conn);
-				}
-				],
-			[ac_have_pgsql="yes"],
-			[ac_have_pgsql="no"])
-		LIBS="$save_LIBS"
-       		CFLAGS="$save_CFLAGS"
-		if test "$ac_have_pgsql" = "yes"; then
-    			AC_MSG_RESULT([PostgreSQL test program built properly.])
-			AC_SUBST(PGSQL_LIBS)
-			AC_SUBST(PGSQL_CFLAGS)
-			AC_DEFINE(HAVE_PGSQL, 1, [Define to 1 if using PostgreSQL libaries])
-		else
-			PGSQL_CFLAGS=""
-			PGSQL_LIBS=""
-       			AC_MSG_WARN([*** PostgreSQL test program execution failed.])
-		fi
-      	fi
-	AM_CONDITIONAL(WITH_PGSQL, test x"$ac_have_pgsql" = x"yes")
-
 ])

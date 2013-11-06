@@ -6,7 +6,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -60,6 +60,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -427,6 +428,7 @@ main(int argc, char **argv)
 	atexit(remove_listen_socket);
 
 	/* copied from srun */
+	slurm_conf_init(NULL);
 	debug_level = _slurm_debug_env_val();
 	logopt.stderr_level += debug_level;
 	log_init(xbasename(argv[0]), logopt, 0, NULL);

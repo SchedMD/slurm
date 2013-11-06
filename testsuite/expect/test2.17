@@ -1,0 +1,228 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol displays and updates Allow/Deny Qos.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        "2.17"
+set qos_name       "test$test_id\_qos"
+set part_name      "test$test_id\_part"
+set exit_code      0
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME set admin=admin.\n"
+	exit 0
+}
+
+proc set_part_val {part_type part_val} {
+
+	global scontrol part_name exit_code
+
+	spawn $scontrol update partitionname=$part_name $part_type=$part_val
+	expect {
+		-re "Error" {
+			send_user "\nFAILURE: $part_type was not set\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc check_part {part_type part_val} {
+
+	global scontrol part_name exit_code
+
+	set val_found 0
+	spawn $scontrol show partition=$part_name
+	expect {
+		-re "$part_type=$part_val" {
+			set val_found 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$val_found != 1} {
+		send_user "\nFAILURE: $part_type was not set to $part_val\n"
+		set exit_code 1
+	}
+}
+
+proc delete_part { } {
+
+	global scontrol sacctmgr part_name qos_name
+
+	spawn $scontrol delete partition=$part_name
+	expect {
+		-re "error" {
+			send_user "\nFAILURE: scontrol did not remove "
+			"partition\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "FAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set del_acct 0
+	spawn $sacctmgr -i delete qos $qos_name
+	expect {
+		-re "Deleting QOS" {
+			set del_acct 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$del_acct != 1} {
+		send_user "\nFAILURE: Qos was not deleted\n"
+		set exit_code 1
+	}
+
+}
+
+spawn $scontrol create partition=$part_name
+expect {
+	-re "error" {
+		send_user "\nFAILURE: partition was not created\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set create_qos 0
+spawn $sacctmgr -i create qos $qos_name
+expect {
+	-re "Adding QOS" {
+		set create_qos 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$create_qos != 1} {
+	send_user "\nFAILURE: QOS was not created\n"
+	set exit_code 1
+}
+
+#
+# Set AllowQos
+#
+set_part_val AllowQos $qos_name
+
+#
+# Check that AllowQos is set
+#
+check_part AllowQos $qos_name
+
+#
+# Set AllowQos to ALL
+#
+set_part_val AllowQos ALL
+
+#
+# Check that Qos is set
+#
+check_part AllowQos ALL
+
+#
+# Set DenyQos
+#
+set_part_val DenyQos $qos_name
+
+#
+# Check that DenyQos is set
+#
+check_part DenyQos $qos_name
+
+#
+# set DenyQos to none
+#
+set_part_val DenyQos none
+
+#
+# Check that DenyQos is set to none
+#
+check_part DenyQos none
+
+#
+# Delete partition and Qos
+#
+delete_part
+
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

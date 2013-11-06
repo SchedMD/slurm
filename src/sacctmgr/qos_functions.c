@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -257,6 +257,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 				slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Description",
 					 MAX(command_len, 1))) {
+			if (!qos)
+				continue;
 			if (!qos->description)
 				qos->description =
 					strip_quotes(argv[i]+end, NULL, 1);
@@ -629,6 +631,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			qos->flags = start_qos->flags;
 			qos->grace_time = start_qos->grace_time;
 			qos->grp_cpu_mins = start_qos->grp_cpu_mins;
+			qos->grp_cpu_run_mins = start_qos->grp_cpu_run_mins;
 			qos->grp_cpus = start_qos->grp_cpus;
 			qos->grp_jobs = start_qos->grp_jobs;
 			qos->grp_mem = start_qos->grp_mem;
@@ -670,6 +673,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 
 	if (!list_count(qos_list)) {
 		printf(" Nothing new added.\n");
+		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
@@ -1018,6 +1022,7 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 		set = 1;
 	} else if (ret_list) {
 		printf(" Nothing modified\n");
+		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
@@ -1117,6 +1122,7 @@ extern int sacctmgr_delete_qos(int argc, char *argv[])
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");
+		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",

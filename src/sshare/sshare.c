@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -95,6 +95,7 @@ main (int argc, char *argv[])
 	quiet_flag        = 0;
 	verbosity         = 0;
 	memset(&req_msg, 0, sizeof(shares_request_msg_t));
+	slurm_conf_init(NULL);
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while((opt_char = getopt_long(argc, argv, "aA:hlM:npPqu:t:vV",

@@ -5,7 +5,7 @@
  *  Written by Bull- Thomas Cadeau/Martin Perry/Yiannis Georgiou
   *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -114,6 +114,11 @@ extern int ext_sensors_p_get_stependdata(struct step_record *step_rec)
 	return SLURM_SUCCESS;
 }
 
+extern List ext_sensors_p_get_config(void)
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -128,4 +133,3 @@ extern int fini(void)
 {
 	return SLURM_SUCCESS;
 }
-

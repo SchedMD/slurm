@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -57,7 +57,7 @@
 #define PMI_MAX_ID_LEN       16	/* Maximim size of PMI process group ID */
 #define PMI_MAX_KEY_LEN     256	/* Maximum size of a PMI key */
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
-#define PMI_MAX_VAL_LEN     256	/* Maximum size of a PMI value */
+#define PMI_MAX_VAL_LEN     1024 /* Maximum size of a PMI value */
 
 struct kvs_hosts {
 	uint32_t	task_id;	/* job step's task id */

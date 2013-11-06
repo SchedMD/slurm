@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -815,7 +815,7 @@ extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version)
 	int dim;
 
 	xassert(ba_mp);
-	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
 			_pack_ba_switch(&ba_mp->axis_switch[dim], buffer,
 					protocol_version);
@@ -840,26 +840,8 @@ extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version)
 		   ba_mp->prev_mp, ba_mp->state
 		*/
 	} else {
-		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-			_pack_ba_switch(&ba_mp->axis_switch[dim], buffer,
-					protocol_version);
-			pack16(ba_mp->coord[dim], buffer);
-			/* No need to pack the coord_str, we can figure that
-			   out from the coords packed.
-			*/
-		}
-		pack_bit_fmt(ba_mp->cnode_bitmap, buffer);
-
-		/* currently there is no need to pack
-		 * ba_mp->cnode_err_bitmap */
-
-		pack16(ba_mp->used, buffer);
-		/* These are only used on the original, not in the
-		   block ba_mp's.
-		   ba_mp->alter_switch, ba_mp->index, ba_mp->loc,
-		   ba_mp->next_mp, ba_mp->nodecard_loc,
-		   ba_mp->prev_mp, ba_mp->state
-		*/
+ 		error("pack_ba_mp: protocol_version "
+ 		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -874,7 +856,7 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 
 	*ba_mp_pptr = ba_mp;
 
-	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
 			if (_unpack_ba_switch(&ba_mp->axis_switch[dim], buffer,
 					      protocol_version)
@@ -907,34 +889,8 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 		ba_mp->ba_geo_index = orig_mp->ba_geo_index;
 		slurm_mutex_unlock(&ba_system_mutex);
 	} else {
-		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-			if (_unpack_ba_switch(&ba_mp->axis_switch[dim], buffer,
-					      protocol_version)
-			    != SLURM_SUCCESS)
-				goto unpack_error;
-			safe_unpack16(&ba_mp->coord[dim], buffer);
-			ba_mp->coord_str[dim] = alpha_num[ba_mp->coord[dim]];
-		}
-		ba_mp->coord_str[dim] = '\0';
-
-		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
-		if (bit_char) {
-			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
-			bit_unfmt(ba_mp->cnode_bitmap, bit_char);
-			xfree(bit_char);
-		}
-		safe_unpack16(&ba_mp->used, buffer);
-
-		/* Since index could of changed here we will go figure
-		 * it out again. */
-		slurm_mutex_lock(&ba_system_mutex);
-		if (!(orig_mp = coord2ba_mp(ba_mp->coord))) {
-			slurm_mutex_unlock(&ba_system_mutex);
-			goto unpack_error;
-		}
-		ba_mp->index = orig_mp->index;
-		ba_mp->ba_geo_index = orig_mp->ba_geo_index;
-		slurm_mutex_unlock(&ba_system_mutex);
+ 		error("unpack_ba_mp: protocol_version "
+ 		      "%hu not supported", protocol_version);
 	}
 	return SLURM_SUCCESS;
 

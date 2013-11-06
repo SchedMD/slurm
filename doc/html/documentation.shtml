@@ -18,6 +18,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="mpi_guide.html">MPI and UPC Users Guide</a></li>
 <li><a href="mc_support.html">Support for Multi-core/Multi-threaded Architectures</a></li>
 <li><a href="multi_cluster.html">Multi-Cluster Operation</a></li>
+<li><a href="hdf5_profile_user_guide.html">Profiling Using HDF5 User Guide</a></li>
 <li><a href="checkpoint_blcr.html">SLURM Checkpoint/Restart with BLCR</a></li>
 <li><a href="job_exit_code.html">Job Exit Codes</a></li>
 <li>Specific Systems</li>
@@ -41,16 +42,21 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="power_save.html">Power Saving Guide</a></li>
 <li><a href="prolog_epilog.html">Prolog and Epilog Guide</a></li>
 <li><a href="troubleshoot.html">Troubleshooting Guide</a></li>
+<li>Workload Prioritization</li>
+<ul>
+<li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
+<li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
+<li><a href="priority_multifactor3.html">Depth-Oblivious Fair-share Factor</a></li>
+</ul>
 <li>SLURM Scheduling</li>
 <ul>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
+<li><a href="core_spec.html">Core Specializatoin</a></li>
 <li><a href="dynalloc.html">Dynamic Resources Allocation (dynalloc)</a></li>
 <li><a href="elastic_computing.html">Elastic Computing</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
 <li><a href="high_throughput.html">High Throughput Computing Guide</a></li>
-<li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
-<li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
 <li><a href="preempt.html">Preemption</a></li>
 <li><a href="qos.html">Quality of Service (QOS)</a></li>
 <li><a href="resource_limits.html">Resource Limits</a></li>
@@ -79,6 +85,8 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="contributor.html">Contributor Agreement</a></li>
 <li><a href="programmer_guide.html">Programmer Guide</a></li>
 <li><a href="api.html">Application Programmer Interface (API) Guide</a></li>
+<li><a href="rpc.html">Remote Procedure Call (RPC) Update Guide</a></li>
+<li><a href="add.html">Adding Files or Plugins to Slurm</a></li>
 <li>Design Information</li>
 <ul>
 <li><a href="gres_design.html">Generic Resource (GRES) Design Guide</a></li>
@@ -96,6 +104,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="gres_plugins.html">Generic Resources (GRES) Plugin Programmer Guide</a></li>
 <li><a href="checkpoint_plugins.html">Job Checkpoint Plugin Programmer Guide</a></li>
 <li><a href="jobcompplugins.html">Job Completion Logging Plugin Programmer Guide</a></li>
+<li><a href="job_container_plugins.html">Slurm Job Container Plugin API</a></li>
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
 <li><a href="launch_plugins.html">Launch Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.html">MPI Plugin Programmer Guide</a></li>
@@ -103,6 +112,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
+<li><a href="acct_gather_profile_plugins.html">Profile Accounting Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="selectplugins.html">Resource Selection Plugin Programmer Guide</a></li>
 <li><a href="slurmctld_plugstack.html">Slurmctld Generic Plugin Programmer Guide</a></li>
@@ -112,6 +122,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 19 February 2013</p>
+<p style="text-align:center;">Last modified 1 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

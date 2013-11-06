@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 			info("slurmdbd running in background mode");
 			have_control = false;
 			backup = true;
-			run_backup();
+			run_dbd_backup();
 			if (!shutdown_time)
 				assoc_mgr_refresh_lists(db_conn, NULL);
 		} else if (slurmdbd_conf->dbd_host &&
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 			info("slurmdbd version %s started",
 			     SLURM_VERSION_STRING);
 			if (backup)
-				run_backup();
+				run_dbd_backup();
 		}
 
 		_request_registrations(db_conn);
@@ -365,8 +365,6 @@ static void _usage(char *prog_name)
 /* Reset slurmctld logging based upon configuration parameters */
 static void _update_logging(bool startup)
 {
-	char *log_fname = NULL;
-
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
 		slurmdbd_conf->debug_level = MIN(
@@ -382,13 +380,12 @@ static void _update_logging(bool startup)
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
 	else {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (slurmdbd_conf->log_file) {
+		if (slurmdbd_conf->log_file)
 			log_opts.syslog_level = LOG_LEVEL_QUIET;
-			log_fname = slurmdbd_conf->log_file;
-		}
 	}
 
-	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, log_fname);
+	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, slurmdbd_conf->log_file);
+	log_set_timefmt(slurmdbd_conf->log_fmt);
 	if (startup && slurmdbd_conf->log_file) {
 		int rc;
 		gid_t slurm_user_gid;
@@ -553,7 +550,7 @@ static void *_rollup_handler(void *db_conn)
 		/* run the roll up */
 		slurm_mutex_lock(&rollup_lock);
 		running_rollup = 1;
-		debug2("running rollup at %s", ctime(&start_time));
+		debug2("running rollup at %s", slurm_ctime(&start_time));
 		acct_storage_g_roll_usage(db_conn, 0, 0, 1);
 		running_rollup = 0;
 		slurm_mutex_unlock(&rollup_lock);
@@ -609,6 +606,8 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 		slurm_msg_t_init(&out_msg);
 		out_msg.msg_type = ACCOUNTING_REGISTER_CTLD;
 		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+		out_msg.protocol_version
+			= slurmdbd_translate_rpc(cluster_rec->rpc_version);
 		slurm_send_node_msg(fd, &out_msg);
 		/* We probably need to add matching recv_msg function
 		 * for an arbitray fd or should these be fire

@@ -5,7 +5,86 @@
 <p>Note that some of this material contains dated information.</p>
 
 <h2>Presentations</h2>
+
+<!--Slurm User Group Meeting 2013-->
+<li><b>Presentations from SLURM User Group Meeting, September 2013</b></li>
 <ul>
+
+<li>Welcome: <a href="SUG13/welcome.pdf">Welcome</a>
+Morris Jette (SchedMD)</li>
+
+<li>Keynote: <a href="SUG13/keynote.pdf">Future Outlook for Advanced Computing</a>
+Dona Crawford (LLNL)</li>
+
+<li>Technical: <a href="SUG13/version_26.pdf">Overview of Slurm version 2.6</a>,
+Morris Jette and Danny Auble (SchedMD), Yiannis Georgiou (Bull) </li>
+
+<li>Tutorial: <a href="SUG13/energy_sensors.pdf">Energy Accounting and External Sensor Plugins</a>,
+Yiannis Georgiou, Martin Perry, Thomas Cadeau (Bull), Danny Auble (SchedMD)</li>
+
+<!-- DO NOT POST
+<li>Technical: <a href="SUG13/tbd.pdf">Evaluation of Monitoring and Control Features for Power Management</a>,
+Yiannis Georgiou , Thomas Cadeau (Bull), Danny Auble, Moe Jette (SchedMD) Matthieu Hautreux (CEA)</li> -->
+
+<li>Technical: <a href="SUG13/debugging-slurm-0.4.pdf">Debugging Large Machines</a>,
+Matthieu Hautreux (CEA)</li>
+
+<li>Technical: <a href="SUG13/nice_ef.pdf">Creating easy to use HPC portals with NICE EnginFrame and Slurm</a>,
+Alberto Falzone, Paolo Maggi (Nice Software)</li>
+
+<!-- DO NOT POST
+<li>Technical: <a href="SUG13/tbd.pdf">Slurm evaluation using emulation and replay of real workload traces</a>,
+David Glesser, Yiannis Georgiou, Joseph Emeras, Olivier Richard (Bull)</li> -->
+
+<li>Tutorial: <a href="SUG13/profile_hdf5.pdf">Usage of new profiling functionalities</a>,
+ Rod Schultz, Yiannis Georgiou (Bull) Danny Auble (SchedMD)</li>
+
+<!-- day 2 -->
+
+<li>Technical: <a href="SUG13/nonstop.pdf">Fault Tolerant Workload Management</a>,
+David Bigagli, Morris Jette (SchedMD)</li>
+
+<li>Technical: <a href="SUG13/layouts_framework.pdf">Slurm Layouts Framework</a>,
+Yiannis Georgiou (Bull) Matthieu Hautreux (CEA)</li>
+
+<li>Technical: <a href="SUG13/license_management.pdf">License Management</a>,
+Bill Brophy (Bull)</li>
+
+<li>Technical: <a href="SUG13/Mslurm.pdf">Multi-Cluster Management</a>,
+Juan Pancorbo Armada (IRZ)</li>
+
+<!-- CANCELLED
+<li>Technical: <a href="SUG13/cray_xc30.pdf">Preparing Slurm for use on the Cray XC30</a>,
+Stephen Trofinoff, Colin McMurtrie (CSCS)</li> -->
+
+<li>Technical: <a href="SUG13/fairshare-improvement-0.4.pdf">
+Depth Oblivious Hierarchical Fairshare Priority Factor</a>,
+Francois Daikhate, Matthieu Hautreux (CEA)</li>
+
+<li>Technical: <a href="SUG13/Refactor_ALPS.pdf">Refactoring ALPS</a>,
+Dave Wallace (Cray)</li>
+
+<li>Site Report: <a href="SUG13/cea-site-report-0.6.pdf">CEA</a>,
+Francois Diakhate, Francis Belot, Matthieu Hautreux (CEA)</li>
+
+<li>Site Report: <a href="SUG13/GWU_site.pdf">George Washington University</a>,
+Tim Wickberg (George Washington University)</li>
+
+<li>Site Report: <a href="SUG13/BYU_site.pdf">Brigham Young University</a>,
+Ryan Cox (BYU)</li>
+
+<!-- DO NOT POST
+<li>Site Report: <a href="SUG13/desres-site.pdf">D.E. Shaw Research</a>,
+Doug Hughes, Chris Harwell, Eric Radman, Goran Pocina, Michael Fenn
+    (D.E. Shaw Research)</li>  -->
+
+<li>Site Report: <a href="SUG13/dresden_site.pdf">Technische Universitat Dresden</a>,
+Dr. Ulf Markwardt (Technische Universitat Dresden)</li>
+
+<li>Technical: <a href="SUG13/roadmap.pdf">Slurm Roadmap</a>,
+Morris Jette, Danny Auble (SchedMD), Yiannis Georgiou (Bull)</li>
+
+</ul>
 
 <!-- SC12 Slurm BOF-->
 <li><b>Presentations from Slurm Birds of a Feather, SuperComputing 2012, November 2012</b></li>
@@ -109,7 +188,7 @@ Joseph Emeras, INRIA/LIG</li>
 
 <li><a href="pdfs/LCS_cgroups_BULL.pdf">Resource Management with Linux Control Groups in HPC Clusters</a>
 Yiannis Georgiou, Bull
-(6th Linux Collaboration Summit, April 2012)</li>
+(6th Linux Collaboration Summit, April 2012)</li><br>
 
 <li><b>Presentations from SLURM Birds Of a Feather,
 SuperComputing 2011, November 2011</b></li>
@@ -156,7 +235,7 @@ Moe Jette, SchedMD LLC
 
 <!-- day 2 -->
 
-<li><a href="slurm_ug_2011/SLURM-Keynote-v.pdf">Challenges and Opportunities for Exscale
+<li><a href="slurm_ug_2011/SLURM-Keynote-v.pdf">Challenges and Opportunities for Exascale
 Resource Management and How Today's Petascale Systems are Guiding the Way</a>,
 William Kramer, NCSA
 </li>
@@ -200,7 +279,7 @@ Danny Auble, SchedMD LLC
 <!-- Use LLNL-PRES-461787 -->
 <li><a href="pdfs/slurm_sc10_bof.pdf">SLURM Version 2.2: Features and Release Plans</a>,
 Morris Jette, Danny Auble and Donald Lipari, Lawrence Livermore National Laboratory
-(Supercomputing 2010, November 2010)</li>
+(Supercomputing 2010, November 2010)</li><br>
 
 <li><b>Presentations from SLURM User Group Meeting, October 2010</b></li>
 <ul>
@@ -245,33 +324,33 @@ Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
 <!-- Use LLNL-PRES-402832 -->
 <li><a href="pdfs/slurm_sc09_bof.pdf">SLURM Community Meeting</a>,
 Morris Jette, Danny Auble and Don Lipari, Lawrence Livermore National Laboratory
-(Supercomputing 2009, November 2009)</li>
+(Supercomputing 2009, November 2009)</li><br>
 
 <!-- Use LLNL-PRES-408498 -->
 <li><a href="pdfs/slurm.sc08.bof.pdf">High Scalability Resource Management with
 SLURM</a>,
 Morris Jette, Lawrence Livermore National Laboratory
-(Supercomputing 2008, November 2008)</li>
+(Supercomputing 2008, November 2008)</li><br>
 
 <!-- Use LLNL-PRES-408510 -->
 <li><a href="pdfs/slurm.sc08.status.pdf">SLURM Status Report</a>,
 Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
-(Supercomputing 2008, November 2008)</li>
+(Supercomputing 2008, November 2008)</li><br>
 
 <!-- Use LLNL-PRES-402832 -->
 <li><a href="pdfs/slurm_v1.3.pdf">SLURM Version 1.3</a>,
 Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
-(May 2008)</li>
+(May 2008)</li><br>
 
 <!-- Use LLNL-PRES-403148 -->
 <li><a href="pdfs/slurm_moab.pdf">Managing Clusters with Moab and SLURM</a>,
 Morris Jette and Donald Lipari, Lawrence Livermore National Laboratory
-(May 2008)</li>
+(May 2008)</li><br>
 
 <!-- Use UCRL-PRES-230170 -->
 <li><a href="pdfs/slurm_v1.2.pdf">Resource Management at LLNL, SLURM Version 1.2</a>,
 Morris Jette, Danny Auble and Chris Morrone, Lawrence Livermore National Laboratory
-(April 2007)</li>
+(April 2007)</li><br>
 
 <!-- Use UCRL-PRES-219562 -->
 <li><a href="pdfs/lci.7.tutorial.pdf">Resource Management Using SLURM</a>,
@@ -283,7 +362,11 @@ Morris Jette, Lawrence Livermore National Laboratory
 
 <ul>
 
-<li>GreenSpot: Scheduling Energy Consumption in Green Datacenters,
+<li>Energy Accounting and Control with SLURM Resource and Job Management System,
+Yiannis Georgiou, et. al.
+(ICDCN 2014, January 2014)</li>
+
+<li>GreenSlot: Scheduling Energy Consumption in Green Datacenters,
 Inigo Goiri, et. al.
 (SuperComputing 2011, November 2011)</li>
 
@@ -331,6 +414,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 4 February 2013</p>
+<p style="text-align:center;">Last modified 30 September 2013</p>
 
 <!--#include virtual="footer.txt"-->

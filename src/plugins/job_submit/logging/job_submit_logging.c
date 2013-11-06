@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -97,16 +97,17 @@
  */
 const char plugin_name[]       	= "Job submit logging plugin";
 const char plugin_type[]       	= "job_submit/logging";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 /*****************************************************************************\
  * We've provided a simple example of the type of things you can do with this
  * plugin. If you develop another plugin that may be of interest to others
- * please post it to slurm-dev@lists.llnl.gov  Thanks!
+ * please post it to slurm-dev@schedmd.com  Thanks!
 \*****************************************************************************/
 
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 	/* Log select fields from a job submit request. See slurm/slurm.h
 	 * for information about additional fields in struct job_descriptor.

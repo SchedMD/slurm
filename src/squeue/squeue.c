@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -49,6 +49,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
+#include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/squeue/squeue.h"
 
@@ -74,6 +75,7 @@ main (int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int error_code = SLURM_SUCCESS;
 
+	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 	parse_command_line( argc, argv );
 	if (params.verbose) {
@@ -230,7 +232,7 @@ _print_job ( bool clear_old )
 				"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R");
 		} else {
 			xstrcat(params.format,
-				"%.18i %.9P %.8j %.8u  %.2t %.10M %.6D %R");
+				"%.18i %.9P %.8j %.8u %.2t %.10M %.6D %R");
 		}
 	}
 	if (params.format_list == NULL)

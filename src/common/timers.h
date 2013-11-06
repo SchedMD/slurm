@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -41,15 +41,15 @@
 
 #include <sys/time.h>
 
-#define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""
+#define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""; long delta_t;
 #define START_TIMER	gettimeofday(&tv1, NULL)
 #define END_TIMER	gettimeofday(&tv2, NULL); \
-                	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0)
+	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0, &delta_t)
 #define END_TIMER2(from) gettimeofday(&tv2, NULL); \
-	                 slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, 0)
+	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, 0, &delta_t)
 #define END_TIMER3(from, limit) gettimeofday(&tv2, NULL); \
-	                        slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, limit)
-#define DELTA_TIMER	slurm_diff_tv(&tv1, &tv2)
+	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, limit, &delta_t)
+#define DELTA_TIMER	delta_t
 #define TIME_STR 	tv_str
 
 /*
@@ -61,17 +61,10 @@
  * IN len_tv_str - size of tv_str in bytes
  * IN from - Name to be printed on long diffs
  * IN limit - limit to wait
+ * OUT delta_t - raw time difference in usec
  */
 extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 			      char *tv_str, int len_tv_str, char *from,
-			      long limit);
-
-/*
- * slurm_diff_tv - return the difference between two times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * RET time in micro-seconds
- */
-extern long slurm_diff_tv(struct timeval *tv1, struct timeval *tv2);
+			      long limit, long *delta_t);
 
 #endif

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -24,10 +24,21 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+
 int main (int argc, char *argv[])
 {
 	char *buffer;
 
+	/* Print the pid so the test1.34 script
+	 * can rm the core file core.getpid()
+	 * fflush() otherwise stdout loss in
+	 * the core dump.
+	 */
+	printf("%d\n", getpid());
+	fflush(stdout);
 	buffer = (char *) 0;
 	buffer[1] = 'a';
 	return;

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -44,7 +44,8 @@ void *_stat_thread(void *args);
 int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 		 uint32_t step_id);
 int _process_results();
-int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist);
+int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
+	     uint32_t req_cpufreq);
 
 /*
  * Globals
@@ -53,11 +54,21 @@ sstat_parameters_t params;
 print_field_t fields[] = {
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU},
 	{10, "AveCPUFreq", print_fields_str, PRINT_ACT_CPUFREQ},
+	{12, "AveDiskRead", print_fields_str, PRINT_AVEDISKREAD},
+	{12, "AveDiskWrite", print_fields_str, PRINT_AVEDISKWRITE},
 	{10, "AvePages", print_fields_str, PRINT_AVEPAGES},
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS},
 	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE},
 	{14, "ConsumedEnergy", print_fields_str, PRINT_CONSUMED_ENERGY},
+	{17, "ConsumedEnergyRaw", print_fields_double,
+	 PRINT_CONSUMED_ENERGY_RAW},
 	{-12, "JobID", print_fields_str, PRINT_JOBID},
+	{12, "MaxDiskRead", print_fields_str, PRINT_MAXDISKREAD},
+	{15, "MaxDiskReadNode", print_fields_str, PRINT_MAXDISKREADNODE},
+	{15, "MaxDiskReadTask", print_fields_uint, PRINT_MAXDISKREADTASK},
+	{12, "MaxDiskWrite", print_fields_str, PRINT_MAXDISKWRITE},
+	{16, "MaxDiskWriteNode", print_fields_str, PRINT_MAXDISKWRITENODE},
+	{16, "MaxDiskWriteTask", print_fields_uint, PRINT_MAXDISKWRITETASK},
 	{8, "MaxPages", print_fields_str, PRINT_MAXPAGES},
 	{12, "MaxPagesNode", print_fields_str, PRINT_MAXPAGESNODE},
 	{14, "MaxPagesTask", print_fields_uint, PRINT_MAXPAGESTASK},
@@ -73,6 +84,7 @@ print_field_t fields[] = {
 	{20, "Nodelist", print_fields_str, PRINT_NODELIST},
 	{8, "NTasks", print_fields_uint, PRINT_NTASKS},
 	{20, "Pids", print_fields_str, PRINT_PIDS},
+	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ},
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
@@ -82,7 +94,8 @@ List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
 
-int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
+int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
+	     uint32_t req_cpufreq)
 {
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
@@ -95,7 +108,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 
 	debug("requesting info for job %u.%u", jobid, stepid);
 	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist,
-				     &step_stat_response)) != SLURM_SUCCESS) {
+				      &step_stat_response)) != SLURM_SUCCESS) {
 		if (rc == ESLURM_INVALID_JOB_ID) {
 			debug("job step %u.%u has already completed",
 			      jobid, stepid);
@@ -119,6 +132,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 	step.job_ptr = &job;
 	step.stepid = stepid;
 	step.nodes = xmalloc(BUF_SIZE);
+	step.req_cpufreq = req_cpufreq;
 	step.stepname = NULL;
 	step.state = JOB_RUNNING;
 
@@ -164,6 +178,8 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 		step.stats.rss_ave /= (double)tot_tasks;
 		step.stats.vsize_ave /= (double)tot_tasks;
 		step.stats.pages_ave /= (double)tot_tasks;
+		step.stats.disk_read_ave /= (double)tot_tasks;
+		step.stats.disk_write_ave /= (double)tot_tasks;
 		step.stats.act_cpufreq /= (double)tot_tasks;
 		step.ntasks = tot_tasks;
 	}
@@ -176,10 +192,11 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 int main(int argc, char **argv)
 {
 	ListIterator itr = NULL;
-	uint32_t stepid = 0;
+	uint32_t req_cpufreq = NO_VAL;
+	uint32_t stepid = NO_VAL;
 	slurmdb_selected_step_t *selected_step = NULL;
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	error("The sstat command is not supported on Cray systems");
 	return 1;
 #endif
@@ -188,6 +205,7 @@ int main(int argc, char **argv)
 	return 1;
 #endif
 
+	slurm_conf_init(NULL);
 	print_fields_list = list_create(NULL);
 	print_fields_itr = list_iterator_create(print_fields_list);
 
@@ -208,7 +226,7 @@ int main(int argc, char **argv)
 			hostlist_t hl;
 
 			if (slurm_load_job(
-				   &job_ptr, selected_step->jobid, SHOW_ALL)) {
+				    &job_ptr, selected_step->jobid, SHOW_ALL)) {
 				error("couldn't get info for job %u",
 				      selected_step->jobid);
 				continue;
@@ -226,8 +244,8 @@ int main(int argc, char **argv)
 			job_step_info_response_msg_t *step_ptr = NULL;
 			int i = 0;
 			if (slurm_get_job_steps(
-				   0, selected_step->jobid, NO_VAL,
-				   &step_ptr, SHOW_ALL)) {
+				    0, selected_step->jobid, NO_VAL,
+				    &step_ptr, SHOW_ALL)) {
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);
 				continue;
@@ -236,7 +254,8 @@ int main(int argc, char **argv)
 			for (i = 0; i < step_ptr->job_step_count; i++) {
 				_do_stat(selected_step->jobid,
 					 step_ptr->job_steps[i].step_id,
-					 step_ptr->job_steps[i].nodes);
+					 step_ptr->job_steps[i].nodes,
+					 step_ptr->job_steps[i].cpu_freq);
 			}
 			slurm_free_job_step_info_response_msg(step_ptr);
 			continue;
@@ -244,8 +263,8 @@ int main(int argc, char **argv)
 			/* get the first running step to query against. */
 			job_step_info_response_msg_t *step_ptr = NULL;
 			if (slurm_get_job_steps(
-				   0, selected_step->jobid, NO_VAL,
-				   &step_ptr, SHOW_ALL)) {
+				    0, selected_step->jobid, NO_VAL,
+				    &step_ptr, SHOW_ALL)) {
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);
 				continue;
@@ -257,8 +276,9 @@ int main(int argc, char **argv)
 			}
 			stepid = step_ptr->job_steps[0].step_id;
 			nodelist = step_ptr->job_steps[0].nodes;
+			req_cpufreq = step_ptr->job_steps[0].cpu_freq;
 		}
-		_do_stat(selected_step->jobid, stepid, nodelist);
+		_do_stat(selected_step->jobid, stepid, nodelist, req_cpufreq);
 		if (free_nodelist && nodelist)
 			free(nodelist);
 	}

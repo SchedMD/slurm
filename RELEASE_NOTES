@@ -1,10 +1,10 @@
-RELEASE NOTES FOR SLURM VERSION 2.6
-21 March 2013
+RELEASE NOTES FOR SLURM VERSION 13.12
+29 August 2013
 
 
 IMPORTANT NOTE:
 If using the slurmdbd (SLURM DataBase Daemon) you must update this first.
-The 2.6 slurmdbd will work with SLURM daemons of version 2.4 and above.
+The 13.12 slurmdbd will work with SLURM daemons of version 2.5 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.  No real harm will come from updating
@@ -18,129 +18,130 @@ innodb_buffer_pool_size=64M
 under the [mysqld] reference in the my.cnf file and restarting the mysqld.
 This is needed when converting large tables over to the new database schema.
 
-SLURM can be upgraded from version 2.4 or 2.5 to version 2.6 without loss of
+SLURM can be upgraded from version 2.5 or 2.6 to version 13.12 without loss of
 jobs or other state information. Upgrading directly from an earlier version of
 SLURM will result in loss of state information.
 
 
 HIGHLIGHTS
 ==========
- - Added support for job arrays, which increases performance and ease of use
-   for sets of similar jobs.
- - Added slurmctld/dynalloc plugin for MapReduce+ support.
- - Added prolog and epilog support for advanced reservations.
- - Much faster throughput for job step execution with --exclusive option. The
-   srun process is notified when resources become available rather than
-   periodic polling.
- - Modify default installation locations for RPMs to match "make install":
-   _prefix /usr/local
-   _slurm_sysconfdir %{_prefix}/etc/slurm
-   _mandir %{_prefix}/share/man
-   _infodir %{_prefix}/share/info
- - Advanced reservations with hostname and core counts now supports asymetric
-   reservations (e.g. specific different core count for each node).
- - Make sched/backfill the default scheduling plugin rather than sched/builtin
-   (FIFO).
- - Add ext_sensors plugin - read doc/html/ext_sensorsplugins.shtml and
-   doc/man/man5/ext_sensors.conf.5
+ -- Added partition configuration parameters AllowAccounts, AllowQOS,
+    DenyAccounts and DenyQOS to provide greater control over use.
+ -- Added the ability to perform load based scheduling. Allocating resources to
+    jobs on the nodes with the largest number if idle CPUs.
+ -- Add mechanism for job_submit plugin to generate error message for srun,
+    salloc or sbatch to stderr. New argument added to job_submit function in
+    the plugin.
+ -- Support for Postgres database has long since been out of date and
+    problimatic, so it has been removed entirely.  If you would like to
+    use it the code still exists in <= 2.6, but will not be included in
+    this and future versions of the code.
+
+RPMBUILD CHANGES
+================
+ -- The rpmbuild option for a Cray system with ALPS has changed from
+    %_with_cray to %_with_cray_alps.
+ -- CRAY - Do not package Slurm's libpmi or libpmi2 libraries. The Cray version
+    of those libraries must be used.
+
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
- - Added "HealthCheckNodeState" configuration parameter identifing node states
-   on which HealthCheckProgram should be executed.
- - Added "MaxArraySize" configuration parameter specifying maximum job array
-   size.
- - Added "ResvEpilog" and "ResvProlog" configuration parameters to execute a
-   program at the beginning and end of a reservation.
- - Added new cray.conf parameter of "AlpsEngine" to specify the communication
-   protocol to be used for ALPS/BASIL.
- - Added new SelectTypeParameter value of "CR_ALLOCATE_FULL_SOCKET".
- - Added PriorityFlags value of "TICKET_BASED" and merged priority/multifactor2
-   plugin into priority/multifactor plugin.
- - Added "KeepAliveTime" controlling how long sockets used for srun/slurmstepd
-   communications are kept alive after disconnect.
- - Added "SlurmctldPlugstack" configuration parameter for generic stack of
-   slurmctld daemon plugins. Only the plugin's init and fini functions are
-   called.
- - Added "DynAllocPort" configuration parameter for use by slurmctld/dynalloc
-   plugin.
- - Added new "SchedulerParameters" configuration parameter of "bf_continue"
-   which permits the backfill scheduler to continue considering jobs for
-   backfill scheduling after yielding locks even if new jobs have been
-   submitted. This can result in lower priority jobs from being backfill
-   scheduled instead of newly arrived higher priority jobs, but will permit
-   more queued jobs to be considered for backfill scheduling.
- - Added options for front end nodes of "AllowGroups", "AllowUsers",
-   "DenyGroups", and "DenyUsers".
+ -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
+ -- Added partition configuration parameters AllowAccounts, AllowQOS,
+    DenyAccounts and DenyQOS to provide greater control over use.
+ -- SelectType: select/cray has been renamed select/alps.
+ -- Added SchedulingParameters paramter of "CR_LLN" and partition parameter of
+    "LLN=yes|no" to enable loadbased scheduling.
+ -- In "SchedulerParameters", change default max_job_bf value from 50 to 100.
+ -- Added "JobAcctGatherParams" configuration parameter. Value of "NoShare"
+    disables accounting for shared memory.
+ -- Added FairShareDampeningFactor configuration parameter to offer a greater
+    priority range based upon utilization.
+ -- Change MaxArraySize from 16-bit to 32-bit field.
+ -- Added fields to "scontrol show job" output: boards_per_node,
+    sockets_per_board, ntasks_per_node, ntasks_per_board, ntasks_per_socket,
+    ntasks_per_core, and nice.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
- - Added "ArchiveResvs" and "PurgeResvAfter" options to be able to handle old
-   reservations in the database.
+
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- - Added step "State" field to scontrol output.
- - Added "--array" option to sbatch for job array support.
- - Enlarged default JOBID and STEPID field sizes in squeue output to better
-   support job arrays. For job arrays, the job ID is no longer a single number
-   but has the format "JOBID_TASKID" while a step ID format is now
-   "JOBID_TASKID.STEPID".
- - Fully removed deprecated sacct --dump --fdump options.
- - Added partition "SelectTypeParameters" field to scontrol output.
- - Added Allocated Memory to node information displayed by sview and scontrol
-   commands.
- - Added username (%u) to the filename pattern for srun and sbatch commands.
+ -- Added sbatch --signal option of "B:" to signal the batch shell rather than
+    only the spawned job steps.
+ -- Added sinfo and squeue format option of "%all" to print all fields available
+    for the data type with a vertical bar separating each field.
+ -- Add StdIn, StdOut, and StdErr paths to job information dumped with
+    "scontrol show job".
+ -- Permit Slurm administrator to submit a batch job as any user.
+ -- Added -I|--item-extract option to sh5util to extract data item from series.
+ -- Add squeue output format options for job command and working directory
+    (%o and %Z respectively).
+ -- Add stdin/out/err to sview job output.
+ -- Added a new option to the scontrol command to view licenses that are configured
+    in use and avalable. 'scontrol show licenses'.
+ -- Permit jobs in finished state to be requeued.
+ -- Added a new option to scontrol to put a requeued job on hold. A requeued
+    job can be put in a new special state called SPECIAL_EXIT indicating
+    the job has exited with a special value.
+    "scontrol requeuehold state=SpecialExit 123".
+ -- Pending job steps will have step_id of INFINITE rather than NO_VAL and
+    will be reported as "TBD" by scontrol and squeue commands.
+ -- Added sgather tool to gather files from a job's compute nodes into a
+    central location.
+ -- Added -S/--core-spec option to salloc, sbatch and srun commands to reserve
+    specialized cores for system use.
 
 OTHER CHANGES
 =============
- - Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
- - Added SLURM_ARRAY_TASK_ID and SLURM_ARRAY_TASK_ID to environment of job
-   array.
- - Added milliseconds to default log message header (both RFC 5424 and ISO 8601
-   time formats). Disable milliseconds logging using the configure
-   parameter "--disable-log-time-msec". Default time format changes to
-   ISO 8601 (without time zone information). Specify "--enable-rfc5424time"
-   to restore the time zone information.
-
+ -- Added job_info() and step_info() functions to the gres plugins to extract
+    plugin specific fields from the job's or step's GRES data structure.
 
 API CHANGES
 ===========
- - Added function "slurm_ckpt_copy_job" to checkpoint plugins.
-
 
 Changed members of the following structs
 ========================================
- - Changed "core_cnt" from uint32_t to uint32_t* in resv_desc_msg_t.
+ -- partition_info, added: allow_accounts, allow_qos, deny_accounts,
+    deny_groups and deny_qos.
+ -- Struct job_info / slurm_job_info_t: Changed exc_node_inx, node_inx, and
+    req_node_inx from type int to type int32_t
+ -- Struct job_info / slurm_job_info_t: Changed array_task_id from type
+    uint16_t to type uint32_t
+ -- job_step_info_t: Changed node_inx from type int to type int32_t
+ -- Struct partition_info / partition_info_t: Changed node_inx from type int
+    to type int32_t
+ -- block_job_info_t: Changed cnode_inx from type int to type int32_t
+ -- block_info_t: Changed ionode_inx and mp_inx from type int to type int32_t
+ -- Struct reserve_info / reserve_info_t: Changed node_inx from type int to
+    type int32_t
 
 
 Added the following struct definitions
 ======================================
- - Added "allow_groups", "allow_users", "deny_groups" and "deny_users" fields
-   to front_end_info_t.
- - Added "state" field to job_step_info_t.
- - Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
- - Added "array_inx" field to job_desc_msg_t.
- - Added "array_job_id" and "array_job_id" fields to slurm_job_info_t.
- - Added "cr_type" field to partition_info_t.
- - Added allocated memory to node information available (within the existing
-   select_nodeinfo field of the node_info_t data structure).
-
+ -- struct job_info / slurm_job_info_t: Added std_err, std_in and std_out.
+ -- Struct job_info / slurm_job_info_t: Added core_spec
+ -- struct job_descriptorjob_desc_msg_t: Added core_spec
 
 Changed the following enums and #defines
 ========================================
-
+ -- Add new job_state of JOB_BOOT_FAIL for job terminations due to failure to
+    boot it's allocated nodes or BlueGene block.
 
 Added the following API's
 =========================
- - Added "slurm_load_job_user" function. This is a variation of
-   "slurm_load_jobs", but accepts a user ID argument, potentially resulting
-   in substantial performance improvement for "squeue --user=ID"
- - Added "slurm_load_node_single" function. This is a variation of
-   "slurm_load_nodes", but accepts a node name argument, potentially resulting
-   in substantial performance improvement for "sinfo --nodes=NAME".
 
+-- API for retrieving license information.
 
-Changed the following API's
+extern int slurm_load_licenses PARAMS((license_info_msg_t **));
+extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
+
+Change the following API's
 ===========================
+ -- Add task pointer to the task_post_term() function in task plugins. The
+    terminating task's PID is available in task->pid.
 
+DBD API Changes
+===============

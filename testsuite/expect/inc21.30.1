@@ -2,14 +2,12 @@
 # Purpose: Test of SLURM functionality
 #          to be called from test21.30
 #          Tests if the group nodes limit is enforced
-#
-#
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -31,16 +29,17 @@ proc inc21_30_1 {} {
 
 #test GrpNode limit
 
-	global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number
+	global srun salloc acct bin_sleep number grn_num
 	global exit_code
 
-	set jobmatch 0
-	spawn $salloc -N1 --account=$acct $srun $bin_sleep 10
+	send_user "\nStarting GrpNode limit test\n\n"
+	set job_id1  0
+	set job_id2  0
+	spawn $salloc -N$grn_num --account=$acct --exclusive $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
 			send_user "\njob $job_id1 has been submitted\n"
-			incr jobmatch
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not reponding\n"
@@ -50,32 +49,39 @@ proc inc21_30_1 {} {
 			wait
 		}
 	}
-
-	spawn $salloc -N2 --account=$acct $srun $bin_sleep 10
-	expect {
-		-re "job ($number)" {
-			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is expected.\n"
-			incr jobmatch
-		}
-		timeout {
-			send_user "\nFAILURE: salloc is not reponding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$jobmatch==0} {
+	if {$job_id1 == 0} {
 		send_user "\nFAILURE: jobs were not submitted\n"
 		set exit_code 1
+		return
 	}
 
-	# checks the state of the job
-	check_state $job_id2
+	spawn $salloc -N1 --account=$acct --exclusive $srun $bin_sleep 10
+	expect {
+		-re "job ($number) queued and waiting for resources" {
+			set job_id2 $expect_out(1,string)
+			send_user "\nJob $job_id2 is waiting for resources. This is expected.\n"
+		}
+		-re "Granted job allocation ($number)" {
+			send_user "\nFAILURE: This should have pended but did not\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: salloc is not reponding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id2 == 0} {
+		send_user "\nFAILURE: jobs were not submitted\n"
+		set exit_code 1
+	} else {
+		# checks the state of the job
+		check_state $job_id2
+	}
 
-	#cancels remaining jobs
+	# cancels remaining jobs
 	cancel_job $job_id1
 	cancel_job $job_id2
 }

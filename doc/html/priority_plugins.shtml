@@ -83,11 +83,14 @@ last job<br>
 <span class="commandline">job_ptr</span> (input) pointer to the job record.</p>
 <p style="margin-left:.2in"><b>Returns</b>: the priority assigned to the job</p>
 
-<p class="commandline">void priority_p_reconfig(void)</p>
+<p class="commandline">void priority_p_reconfig(bool assoc_clear)</p>
 <p style="margin-left:.2in"><b>Description</b>: Refresh the plugin's
 configuration. Called whenever slurmctld is reconfigured.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline">none</span></p>
+<span class="commandline">assoc_clear</span> (input) true if association
+and QOS used_cpu_run_secs field has been reset. This should be set to true
+when Slurm is reconfigured, but false if an RPC is used to change only the
+debug level of debug flags.</p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
 <p class="commandline">void priority_p_set_assoc_usage(acct_association_rec_t *assoc)</p>
@@ -106,14 +109,22 @@ that contains the specific jobs or users of interest (of any).</p>
 <p style="margin-left:.2in"><b>Returns</b>: a list of priority_factors_object_t's
 containing the requested job priority factors</p>
 
+<p class="commandline">void priority_p_job_end(struct job_record *job_ptr)</p>
+<p style="margin-left:.2in"><b>Description</b>: Handle ending of job
+  with decayable limits.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline">job_ptr</span> (input) pointer to the job record.</p>
+<p style="margin-left:.2in"><b>Returns</b>: void</p>
+
+
 <h2>Versioning</h2>
-<p> This document describes version 100 of the SLURM Priority API. Future
+<p> This document describes version 101 of the SLURM Priority API. Future
 releases of SLURM may revise this API. A priority plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM
 plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 February 2009</p>
+<p style="text-align:center;">Last modified 1 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

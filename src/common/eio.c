@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -278,7 +278,8 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		debug4("eio: handling events for %d objects",
 		       list_count(eio->obj_list));
 		nfds = _poll_setup_pollfds(pollfds, map, eio->obj_list);
-		if (nfds <= 0)
+		if ((nfds <= 0) ||
+		    (pollfds == NULL))	/* Fix for CLANG false positive */
 			goto done;
 
 		/*

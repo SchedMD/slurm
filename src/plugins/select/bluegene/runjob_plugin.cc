@@ -12,7 +12,7 @@
  *  Written by Danny Auble <da@schedmd.com> et. al.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -63,7 +63,24 @@ extern "C" {
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <log4cxx/logger.h>
+
 #include <iosfwd>
+
+static log4cxx::LoggerPtr slurm_ibm_logger(
+	log4cxx::Logger::getLogger("ibm.runjob.mux.slurm"));
+
+#define LOG_DEBUG_MSG(message_expr) \
+ LOG4CXX_DEBUG(slurm_ibm_logger, message_expr)
+
+#define LOG_INFO_MSG(message_expr) \
+ LOG4CXX_INFO(slurm_ibm_logger, message_expr)
+
+#define LOG_WARN_MSG(message_expr) \
+ LOG4CXX_WARN(slurm_ibm_logger, message_expr)
+
+#define LOG_ERROR_MSG(message_expr) \
+ LOG4CXX_ERROR(slurm_ibm_logger, message_expr)
 
 using namespace bgsched;
 
@@ -126,8 +143,8 @@ static void _send_failed_cnodes(uint32_t job_id, uint32_t step_id, uint16_t sig)
 		if ((count > max_tries)
 		    || rc == ESLURM_ALREADY_DONE || rc == ESLURM_INVALID_JOB_ID)
 			break;
-		std::cerr << "Trying to fail cnodes, message from slurmctld: "
-			  << slurm_strerror(rc) << std::endl;
+		LOG_WARN_MSG("Trying to fail cnodes, message from slurmctld: "
+			     << slurm_strerror(rc));
 		sleep (5);
 		count++;
 	}
@@ -142,13 +159,13 @@ Plugin::Plugin() :
 
 	runjob_list = list_create(_destroy_runjob_job);
 
-	std::cerr << "Slurm runjob plugin loaded version "
-		  << SLURM_VERSION_STRING << std::endl;
+	LOG_INFO_MSG("Slurm runjob plugin loaded version "
+		     << SLURM_VERSION_STRING);
 }
 
 Plugin::~Plugin()
 {
-	std::cerr << "Slurm runjob plugin finished" << std::endl;
+	LOG_INFO_MSG("Slurm runjob plugin finished");
 	slurm_mutex_lock(&runjob_list_lock);
 	list_destroy(runjob_list);
 	runjob_list = NULL;
@@ -157,6 +174,7 @@ Plugin::~Plugin()
 
 void Plugin::execute(bgsched::runjob::Verify& verify)
 {
+	LOG_DEBUG_MSG("Verify - Start");
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	unsigned geo[Dimension::NodeDims];
 	unsigned start_coords[Dimension::NodeDims];
@@ -368,6 +386,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	slurm_mutex_unlock(&runjob_list_lock);
 
 	slurm_free_job_step_info_response_msg(step_resp);
+	LOG_DEBUG_MSG("Verify - Done");
 	return;
 
 deny_job:
@@ -379,6 +398,7 @@ deny_job:
 
 void Plugin::execute(const bgsched::runjob::Started& data)
 {
+	LOG_DEBUG_MSG("Started start");
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	// ListIterator itr = NULL;
 	// runjob_job_t *runjob_job = NULL;
@@ -398,10 +418,12 @@ void Plugin::execute(const bgsched::runjob::Started& data)
 	// 	list_iterator_destroy(itr);
 	// }
 	// slurm_mutex_unlock(&runjob_list_lock);
+	LOG_DEBUG_MSG("Started - Done");
 }
 
 void Plugin::execute(const bgsched::runjob::Terminated& data)
 {
+	LOG_DEBUG_MSG("Terminated - Start");
 	ListIterator itr = NULL;
 	runjob_job_t *runjob_job = NULL;
 	uint16_t sig = 0;
@@ -428,21 +450,21 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 
 	if (!runjob_job) {
 		if (runjob_list)
-			std::cerr << "Couldn't find job running with pid, "
-				  << data.pid() << " ID " << data.job()
-				  << std::endl;
+			LOG_ERROR_MSG("Couldn't find job running with pid, "
+				      << data.pid() << " ID " << data.job());
+
 	} else if (data.kill_timeout()) {
-		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
-			  << " had a kill_timeout()" << std::endl;
+		LOG_ERROR_MSG(runjob_job->job_id << "." << runjob_job->step_id
+			      << " had a kill_timeout()");
 		/* In an older driver this wasn't always caught, so
 		   send it.
 		*/
 		sig = SIG_NODE_FAIL;
 	} else if (!data.message().empty()) {
-		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
-			  << " had a message of '" << data.message()
-			  << "'. ("
-			  << runjob_job->total_cnodes << ")" << std::endl;
+		LOG_ERROR_MSG(runjob_job->job_id << "." << runjob_job->step_id
+			      << " had a message of '" << data.message()
+			      << "'. ("
+			      << runjob_job->total_cnodes << ")");
 	} // else if (data.status() == 9)
 	  // 	sig = SIGKILL;
 
@@ -451,6 +473,7 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 			runjob_job->job_id, runjob_job->step_id, sig);
 
 	_destroy_runjob_job(runjob_job);
+	LOG_DEBUG_MSG("Terminated - Done");
 }
 
 extern "C" bgsched::runjob::Plugin* create()

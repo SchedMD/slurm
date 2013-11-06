@@ -7,11 +7,11 @@
 ##
   Meta:		1
   Name:		slurm
-  Major:	2
-  Minor:	6
+  Major:	13
+  Minor:	12
   Micro:	0
-  Version:	2.6.0
-  Release:	0pre2
+  Version:	13.12.0
+  Release:	0pre4
 
 ##
 #  When changing API_CURRENT update src/common/slurm_protocol_common.h
@@ -20,7 +20,12 @@
 #  In src/common/slurm_protocol_util.c check_header_version(),
 #  and _get_slurm_version()
 #  need to be updated also when changes are added also.
+#
+#  NOTE: The API version can not be the same as the Slurm version above.  The
+#        version in the code is referenced as a uint16_t which if 1312 was the
+#        API_CURRENT it would go over the limit.  So keep is a relatively
+#        small number.
 ##
-  API_CURRENT:	26
+  API_CURRENT:	27
   API_AGE:	0
   API_REVISION:	0

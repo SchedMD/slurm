@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -59,6 +59,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/slurmdbd/read_config.h"
+#include "src/common/slurm_strcasestr.h"
 
 /* Global variables */
 pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -143,6 +144,7 @@ extern int read_slurmdbd_conf(void)
 		{"DefaultQOS", S_P_STRING},
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
+		{"LogTimeFormat", S_P_STRING},
 		{"MessageTimeout", S_P_UINT16},
 		{"PidFile", S_P_STRING},
 		{"PluginDir", S_P_STRING},
@@ -235,6 +237,26 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
+
+		if (s_p_get_string(&temp_str, "LogTimeFormat", tbl)) {
+			if (slurm_strcasestr(temp_str, "iso8601_ms"))
+				slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
+			else if (slurm_strcasestr(temp_str, "iso8601"))
+				slurmdbd_conf->log_fmt = LOG_FMT_ISO8601;
+			else if (slurm_strcasestr(temp_str, "rfc5424_ms"))
+				slurmdbd_conf->log_fmt = LOG_FMT_RFC5424_MS;
+			else if (slurm_strcasestr(temp_str, "rfc5424"))
+				slurmdbd_conf->log_fmt = LOG_FMT_RFC5424;
+			else if (slurm_strcasestr(temp_str, "clock"))
+				slurmdbd_conf->log_fmt = LOG_FMT_CLOCK;
+			else if (slurm_strcasestr(temp_str, "short"))
+				slurmdbd_conf->log_fmt = LOG_FMT_SHORT;
+			else if (slurm_strcasestr(temp_str, "thread_id"))
+				slurmdbd_conf->log_fmt = LOG_FMT_THREAD_ID;
+			xfree(temp_str);
+		} else
+			slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
+
 		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
 				    "MessageTimeout", tbl))
 			slurmdbd_conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
@@ -247,28 +269,28 @@ extern int read_slurmdbd_conf(void)
 
 		slurmdbd_conf->private_data = 0; /* default visible to all */
 		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
-			if (strstr(temp_str, "account"))
+			if (slurm_strcasestr(temp_str, "account"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_ACCOUNTS;
-			if (strstr(temp_str, "job"))
+			if (slurm_strcasestr(temp_str, "job"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_JOBS;
-			if (strstr(temp_str, "node"))
+			if (slurm_strcasestr(temp_str, "node"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_NODES;
-			if (strstr(temp_str, "partition"))
+			if (slurm_strcasestr(temp_str, "partition"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_PARTITIONS;
-			if (strstr(temp_str, "reservation"))
+			if (slurm_strcasestr(temp_str, "reservation"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_RESERVATIONS;
-			if (strstr(temp_str, "usage"))
+			if (slurm_strcasestr(temp_str, "usage"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USAGE;
-			if (strstr(temp_str, "user"))
+			if (slurm_strcasestr(temp_str, "user"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USERS;
-			if (strstr(temp_str, "all"))
+			if (slurm_strcasestr(temp_str, "all"))
 				slurmdbd_conf->private_data = 0xffff;
 			xfree(temp_str);
 		}
@@ -452,13 +474,6 @@ extern int read_slurmdbd_conf(void)
 		if (!slurmdbd_conf->storage_loc)
 			slurmdbd_conf->storage_loc =
 				xstrdup(DEFAULT_ACCOUNTING_DB);
-	} else if (!strcmp(slurmdbd_conf->storage_type,
-			   "accounting_storage/pgsql")) {
-		if (!slurmdbd_conf->storage_port)
-			slurmdbd_conf->storage_port = DEFAULT_PGSQL_PORT;
-		if (!slurmdbd_conf->storage_loc)
-			slurmdbd_conf->storage_loc =
-				xstrdup(DEFAULT_ACCOUNTING_DB);
 	} else {
 		if (!slurmdbd_conf->storage_port)
 			slurmdbd_conf->storage_port = DEFAULT_STORAGE_PORT;
@@ -566,7 +581,7 @@ extern void log_config(void)
 				     tmp_str, sizeof(tmp_str), 1);
 	else
 		sprintf(tmp_str, "NONE");
-	debug2("PurgeSuspendAfter     = %s", tmp_str);
+	debug2("PurgeSuspendAfter = %s", tmp_str);
 
 	debug2("SlurmUser         = %s(%u)",
 	       slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
@@ -619,16 +634,16 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveEvents");
-	key_pair->value = xmalloc(16);
-	snprintf(key_pair->value, 16, "%u",
-		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_event) ? 1 : 0);
+	key_pair->value = xstrdup_printf(
+		"%u",
+		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_event) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveJobs");
-	key_pair->value = xmalloc(16);
-	snprintf(key_pair->value, 16, "%u",
-		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job) ? 1 : 0);
+	key_pair->value = xstrdup_printf(
+		"%u",
+		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -638,16 +653,16 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveSteps");
-	key_pair->value = xmalloc(16);
-	snprintf(key_pair->value, 16, "%u",
-		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step) ? 1 : 0);
+	key_pair->value = xstrdup_printf(
+		"%u",
+		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveSupend");
-	key_pair->value = xmalloc(16);
-	snprintf(key_pair->value, 16, "%u", SLURMDB_PURGE_ARCHIVE_SET(
-			 slurmdbd_conf->purge_suspend) ? 1 : 0);
+	key_pair->value = xstrdup_printf(
+		"%u", SLURMDB_PURGE_ARCHIVE_SET(
+			slurmdbd_conf->purge_suspend) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -683,14 +698,12 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DbdPort");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->dbd_port);
+	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->dbd_port);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DebugLevel");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%s",
+	key_pair->value = xstrdup_printf("%s",
 		 log_num2string(slurmdbd_conf->debug_level));
 	list_append(my_list, key_pair);
 
@@ -706,8 +719,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MessageTimeout");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u secs", slurmdbd_conf->msg_timeout);
+	key_pair->value = xstrdup_printf("%u secs", slurmdbd_conf->msg_timeout);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -789,9 +801,9 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmUser");
-	key_pair->value = xmalloc(128);
-	snprintf(key_pair->value, 128, "%s(%u)",
-		 slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
+	key_pair->value = xstrdup_printf("%s(%u)",
+					 slurmdbd_conf->slurm_user_name,
+					 slurmdbd_conf->slurm_user_id);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -813,8 +825,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("StoragePort");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->storage_port);
+	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->storage_port);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -829,14 +840,12 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TrackWCKey");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->track_wckey);
+	key_pair->value = xstrdup(slurmdbd_conf->track_wckey ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TrackSlurmctldDown");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->track_ctld);
+	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->track_ctld);
 	list_append(my_list, key_pair);
 
 	return my_list;

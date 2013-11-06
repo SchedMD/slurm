@@ -7,7 +7,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -317,8 +317,7 @@ static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size)
 {
 	size_t data_sent;
 
-	if (slurm_get_debug_flags())
-		info("dynalloc msg send:%s", buf);
+	info("dynalloc msg send:%s", buf);
 
 	data_sent = _write_bytes((int) new_fd, buf, size);
 	if (data_sent != size) {

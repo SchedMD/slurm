@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -149,7 +149,7 @@ static void _make_all_resv(void)
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = (struct step_record *)
 				   list_next(step_iterator))) {
-			if (step_ptr->state != JOB_RUNNING)
+			if (step_ptr->state < JOB_RUNNING)
 				continue;
 			_make_step_resv(step_ptr);
 		}

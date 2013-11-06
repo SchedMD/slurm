@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -47,9 +47,9 @@ extern bool primary_resumed;
 extern bool backup;
 extern bool have_control;
 
-/* run_backup - this is the backup dbd, it should run in standby
+/* run_dbd_backup - this is the backup dbd, it should run in standby
  *	mode, assuming control when the primary dbd stops responding */
-extern void run_backup(void);
+extern void run_dbd_backup(void);
 
 
 #endif

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -95,6 +95,14 @@ typedef struct slurm_gres_ops {
 						  void *gres_ptr );
 	void		(*send_stepd)		( int fd );
 	void		(*recv_stepd)		( int fd );
+	int		(*job_info)		( gres_job_state_t *job_gres_data,
+						  uint32_t node_inx,
+						  enum gres_job_data_type data_type,
+						  void *data);
+	int		(*step_info)		( gres_step_state_t *step_gres_data,
+						  uint32_t node_inx,
+						  enum gres_job_data_type data_type,
+						  void *data);
 } slurm_gres_ops_t;
 
 /* Gres plugin context, one for each gres type */
@@ -145,6 +153,10 @@ extern int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   bitstr_t *core_bitmap);
 static int	_job_config_validate(char *config, uint32_t *gres_cnt,
 				     slurm_gres_context_t *context_ptr);
+static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
+				 bool use_total_gres, bitstr_t *cpu_bitmap,
+				 int cpu_start_bit, int cpu_end_bit,
+				 char *gres_name, char *node_name);
 static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
 			     int node_offset, char *gres_name, uint32_t job_id,
 			     char *node_name);
@@ -245,6 +257,8 @@ static int _load_gres_plugin(char *plugin_name,
 		"step_set_env",
 		"send_stepd",
 		"recv_stepd",
+		"job_info",
+		"step_info",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -795,7 +809,6 @@ static int _no_gres_conf(uint32_t cpu_cnt)
 	slurm_mutex_lock(&gres_context_lock);
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
-	p = xmalloc(sizeof(gres_slurmd_conf_t *) * gres_context_cnt);
 	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
 		p->cpu_cnt	= cpu_cnt;
@@ -930,8 +943,6 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
 
 	safe_unpack16(&version, buffer);
-	if (version != SLURM_PROTOCOL_VERSION)
-		return SLURM_ERROR;
 
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
@@ -1689,7 +1700,7 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -2232,7 +2243,7 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack32(gres_job_ptr->gres_cnt_alloc, buffer);
@@ -2318,7 +2329,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			break;
 		rec_cnt--;
 
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -2458,6 +2469,43 @@ static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 	}
 }
 
+static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
+				 bool use_total_gres, bitstr_t *cpu_bitmap,
+				 int cpu_start_bit, int cpu_end_bit,
+				 char *gres_name, char *node_name)
+{
+	int i, j, cpus_ctld;
+	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
+	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
+	bitstr_t *avail_cpu_bitmap = NULL;
+
+	if (!node_gres_ptr->topo_cnt || !cpu_bitmap ||	/* No topology info */
+	    !job_gres_ptr->gres_cnt_alloc)		/* No job GRES */
+		return;
+
+	/* Determine which specific CPUs can be used */
+	avail_cpu_bitmap = bit_copy(cpu_bitmap);
+	bit_nclear(avail_cpu_bitmap, cpu_start_bit, cpu_end_bit);
+	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+		if (node_gres_ptr->topo_gres_cnt_avail[i] == 0)
+			continue;
+		if (!use_total_gres &&
+		    (node_gres_ptr->topo_gres_cnt_alloc[i] >=
+		     node_gres_ptr->topo_gres_cnt_avail[i]))
+			continue;
+		cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
+		_validate_gres_node_cpus(node_gres_ptr, cpus_ctld, node_name);
+		cpus_ctld = bit_size(node_gres_ptr->topo_cpus_bitmap[i]);
+		for (j = 0; j < cpus_ctld; j++) {
+			if (bit_test(node_gres_ptr->topo_cpus_bitmap[i], j)) {
+				bit_set(avail_cpu_bitmap, cpu_start_bit + j);
+			}
+		}
+	}
+	bit_and(cpu_bitmap, avail_cpu_bitmap);
+	FREE_NULL_BITMAP(avail_cpu_bitmap);
+}
+
 extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
@@ -2468,6 +2516,7 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cpus_avail = NULL, cpu_cnt = 0;
 	bitstr_t *alloc_cpu_bitmap = NULL;
+	bool test_cpu_map = true;
 
 	if (job_gres_ptr->gres_cnt_alloc && node_gres_ptr->topo_cnt &&
 	    *topo_set) {
@@ -2562,11 +2611,20 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		while (gres_avail < job_gres_ptr->gres_cnt_alloc) {
 			top_inx = -1;
 			for (j=0; j<node_gres_ptr->topo_cnt; j++) {
+				if (gres_avail && test_cpu_map &&
+				    !bit_overlap(alloc_cpu_bitmap,
+						 node_gres_ptr->
+						 topo_cpus_bitmap[j]))
+					continue;
 				if (top_inx == -1) {
 					if (cpus_avail[j])
 						top_inx = j;
 				} else if (cpus_avail[j] > cpus_avail[top_inx])
 					top_inx = j;
+			}
+			if ((top_inx < 0) && gres_avail && test_cpu_map) {
+				test_cpu_map = false;
+				continue;
 			}
 			if ((top_inx < 0) || (cpus_avail[top_inx] == 0)) {
 				cpu_cnt = 0;
@@ -2584,9 +2642,16 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				continue;
 			}
 			/* update counts of allocated CPUs and GRES */
+			if (gres_avail) {
+				bit_or(alloc_cpu_bitmap,
+				       node_gres_ptr->
+				       topo_cpus_bitmap[top_inx]);
+			} else {
+				bit_and(alloc_cpu_bitmap,
+					node_gres_ptr->
+					topo_cpus_bitmap[top_inx]);
+			}
 			gres_avail += i;
-			bit_and(alloc_cpu_bitmap,
-			        node_gres_ptr->topo_cpus_bitmap[top_inx]);
 			cpu_cnt = bit_set_count(alloc_cpu_bitmap);
 		}
 		if (cpu_bitmap && (cpu_cnt > 0)) {
@@ -2607,6 +2672,71 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			return (uint32_t) 0;	/* insufficient, gres to use */
 		return NO_VAL;
 	}
+}
+
+/*
+ * Clear the cpu_bitmap for CPUs which are not usable by this job (i.e. for
+ *	CPUs which are already bound to other jobs or lack GRES)
+ * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_gres_list - node's gres_list built by
+ *                     gres_plugin_node_config_validate()
+ * IN use_total_gres - if set then consider all gres resources as available,
+ *		       and none are commited to running jobs
+ * IN/OUT cpu_bitmap - Identification of available CPUs (NULL if no restriction)
+ * IN cpu_start_bit  - index into cpu_bitmap for this node's first CPU
+ * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU
+ */
+extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
+					bool use_total_gres,
+					bitstr_t *cpu_bitmap,
+					int cpu_start_bit, int cpu_end_bit,
+					char *node_name)
+{
+	int i;
+	ListIterator  job_gres_iter, node_gres_iter;
+	gres_state_t *job_gres_ptr, *node_gres_ptr;
+
+	if ((job_gres_list == NULL) || (cpu_bitmap == NULL))
+		return;
+	if (node_gres_list == NULL) {
+		bit_nclear(cpu_bitmap, cpu_start_bit, cpu_end_bit);
+		return;
+	}
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		node_gres_iter = list_iterator_create(node_gres_list);
+		while ((node_gres_ptr = (gres_state_t *)
+				list_next(node_gres_iter))) {
+			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
+				break;
+		}
+		list_iterator_destroy(node_gres_iter);
+		if (node_gres_ptr == NULL) {
+			/* node lack resources required by the job */
+			bit_nclear(cpu_bitmap, cpu_start_bit, cpu_end_bit);
+			break;
+		}
+
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id !=
+			    gres_context[i].plugin_id)
+				continue;
+			_job_core_filter(job_gres_ptr->gres_data,
+					 node_gres_ptr->gres_data,
+					 use_total_gres, cpu_bitmap,
+					 cpu_start_bit, cpu_end_bit,
+					 gres_context[i].gres_name, node_name);
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return;
 }
 
 /*
@@ -2637,7 +2767,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 	if (job_gres_list == NULL)
 		return NO_VAL;
 	if (node_gres_list == NULL)
-		return NO_VAL;
+		return 0;
 
 	cpu_cnt = NO_VAL;
 	(void) gres_plugin_init();
@@ -2712,7 +2842,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		      char *gres_name, uint32_t job_id, char *node_name,
 		      bitstr_t *core_bitmap)
 {
-	int i;
+	int i, sz1, sz2;
 	uint32_t gres_cnt;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
@@ -2756,6 +2886,8 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		/* proceed with request, give job what's available */
 	}
 
+	if (node_offset == 0)	/* Avoids memory leak on requeue */
+		xfree(job_gres_ptr->gres_cnt_step_alloc);
 	if (job_gres_ptr->gres_cnt_step_alloc == NULL) {
 		job_gres_ptr->gres_cnt_step_alloc =
 			xmalloc(sizeof(uint32_t) * node_cnt);
@@ -2826,6 +2958,14 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 			    !bit_overlap(core_bitmap,
 					 node_gres_ptr->topo_cpus_bitmap[i]))
 				continue;
+			sz1 = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
+			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
+			if (sz1 != sz2) {
+				/* Avoid abort on bit_overlap below */
+				error("Gres count mismatch for node %s "
+				      "(%d != %d)", node_name, sz1, sz2);
+				continue;
+			}
 			gres_cnt = bit_overlap(job_gres_ptr->
 					       gres_bit_alloc[node_offset],
 					       node_gres_ptr->
@@ -2857,7 +2997,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
  * Allocate resource to a job and update node and job gres information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *		gres_plugin_node_config_validate()
+ *		       gres_plugin_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_offset - zero-origin index to the node of interest
  * IN cpu_cnt     - number of CPUs allocated to this job on this node
@@ -2934,7 +3074,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
 			char *node_name)
 {
-	int i, len, gres_cnt;
+	int i, len, gres_cnt, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 
@@ -2994,6 +3134,10 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	    node_gres_ptr->topo_gres_bitmap &&
 	    node_gres_ptr->topo_gres_cnt_alloc) {
 		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
+			sz1 = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
+			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
+			if (sz1 != sz2)
+				continue;
 			gres_cnt = bit_overlap(job_gres_ptr->
 					       gres_bit_alloc[node_offset],
 					       node_gres_ptr->
@@ -3209,11 +3353,11 @@ step2:	if (!from_job_gres_list)
 			gres_job_ptr2->gres_cnt_alloc = gres_job_ptr->
 							gres_cnt_alloc;
 			gres_job_ptr2->node_cnt = new_node_cnt;
-			gres_job_ptr2->gres_bit_alloc = 
+			gres_job_ptr2->gres_bit_alloc =
 				xmalloc(sizeof(bitstr_t *) * new_node_cnt);
-			gres_job_ptr2->gres_bit_step_alloc = 
+			gres_job_ptr2->gres_bit_step_alloc =
 				xmalloc(sizeof(bitstr_t *) * new_node_cnt);
-			gres_job_ptr2->gres_cnt_step_alloc = 
+			gres_job_ptr2->gres_cnt_step_alloc =
 				xmalloc(sizeof(uint32_t) * new_node_cnt);
 			list_append(to_job_gres_list, gres_ptr2);
 		}
@@ -3350,7 +3494,7 @@ static void _job_state_log(void *gres_data, uint32_t job_id, char *gres_name)
 
 /*
  * Extract from the job record's gres_list the count of allocated resources of
- * 	the named gres gres typee.
+ * 	the named gres type.
  * IN job_gres_list  - job record's gres_list.
  * IN gres_name_type - the name of the gres type to retrieve the associated
  *	value from.
@@ -3428,7 +3572,7 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	
+
 	for (j=0; j<gres_context_cnt; j++) {
 		found = 0;
 		list_iterator_reset(gres_iter);
@@ -3541,7 +3685,7 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 		     job_gres_ptr->gres_cnt_step_alloc[node_offset]))
 			return 0;
 	} else {
-		error("gres/%s: step_test %u.%u gres_bit_alloc is NULL",
+		error("gres/%s: step_test %u.%u gres_cnt_step_alloc is NULL",
 		      gres_name, job_id, step_id);
 		return 0;
 	}
@@ -3899,7 +4043,7 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack32(gres_step_ptr->gres_cnt_alloc, buffer);
@@ -3965,7 +4109,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			break;
 		rec_cnt--;
 
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -4600,7 +4744,7 @@ extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
 	return rc;
 }
 
-extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc, 
+extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
 					int *gres_count)
 {
 	int i, j, p, gres_cnt = 0, len, found;
@@ -4653,7 +4797,7 @@ extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-/* Send GRES information to slurmstepd on the specified file descriptor*/
+/* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_plugin_send_stepd(int fd)
 {
 	int i;
@@ -4670,7 +4814,7 @@ extern void gres_plugin_send_stepd(int fd)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-/* Receive GRES information from slurmd on the specified file descriptor*/
+/* Receive GRES information from slurmd on the specified file descriptor */
 extern void gres_plugin_recv_stepd(int fd)
 {
 	int i;
@@ -4685,4 +4829,159 @@ extern void gres_plugin_recv_stepd(int fd)
 		break;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
+}
+
+/* Get generic GRES data types here. Call the plugin for others */
+static int _get_job_info(int gres_inx, gres_job_state_t *job_gres_data,
+			 uint32_t node_inx, enum gres_job_data_type data_type,
+			 void *data)
+{
+	uint32_t *u32_data = (uint32_t *) data;
+	bitstr_t **bit_data = (bitstr_t **) data;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_gres_data || !data)
+		return EINVAL;
+	if (node_inx >= job_gres_data->node_cnt)
+		return ESLURM_INVALID_NODE_COUNT;
+	if (data_type == GRES_JOB_DATA_COUNT) {
+		*u32_data = job_gres_data->gres_cnt_alloc;
+	} else if (data_type == GRES_JOB_DATA_BITMAP) {
+		if (job_gres_data->gres_bit_alloc)
+			*bit_data = job_gres_data->gres_bit_alloc[node_inx];
+		else
+			*bit_data = NULL;
+	} else {
+		/* Support here for plugin-specific data types */
+		rc = (*(gres_context[gres_inx].ops.job_info))
+			(job_gres_data, node_inx, data_type, data);
+	}
+
+	return rc;
+}
+
+/*
+ * get data from a job's GRES data structure
+ * IN job_gres_list  - job's GRES data structure
+ * IN gres_name - name of a GRES type
+ * IN node_inx - zero-origin index of the node within the job's allocation
+ *	for which data is desired
+ * IN data_type - type of data to get from the job's data
+ * OUT data - pointer to the data from job's GRES data structure
+ *            DO NOT FREE: This is a pointer into the job's data structure
+ * RET - SLURM_SUCCESS or error code
+ */
+extern int gres_get_job_info(List job_gres_list, char *gres_name,
+			     uint32_t node_inx,
+			     enum gres_job_data_type data_type, void *data)
+{
+	int i, rc = ESLURM_INVALID_GRES;
+	uint32_t plugin_id;
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_gres_data;
+
+	if (data == NULL)
+		return EINVAL;
+	if (job_gres_list == NULL)	/* No GRES allocated */
+		return ESLURM_INVALID_GRES;
+
+	(void) gres_plugin_init();
+	plugin_id = _build_id(gres_name);
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id != plugin_id)
+				continue;
+			job_gres_data = (gres_job_state_t *)
+					job_gres_ptr->gres_data;
+			rc = _get_job_info(i, job_gres_data, node_inx,
+					   data_type, data);
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/* Get generic GRES data types here. Call the plugin for others */
+static int _get_step_info(int gres_inx, gres_step_state_t *step_gres_data,
+			  uint32_t node_inx, enum gres_step_data_type data_type,
+			  void *data)
+{
+	uint32_t *u32_data = (uint32_t *) data;
+	bitstr_t **bit_data = (bitstr_t **) data;
+	int rc = SLURM_SUCCESS;
+
+	if (!step_gres_data || !data)
+		return EINVAL;
+	if (node_inx >= step_gres_data->node_cnt)
+		return ESLURM_INVALID_NODE_COUNT;
+	if (data_type == GRES_STEP_DATA_COUNT) {
+		*u32_data = step_gres_data->gres_cnt_alloc;
+	} else if (data_type == GRES_STEP_DATA_BITMAP) {
+		if (step_gres_data->gres_bit_alloc)
+			*bit_data = step_gres_data->gres_bit_alloc[node_inx];
+		else
+			*bit_data = NULL;
+	} else {
+		/* Support here for plugin-specific data types */
+		rc = (*(gres_context[gres_inx].ops.step_info))
+			(step_gres_data, node_inx, data_type, data);
+	}
+
+	return rc;
+}
+
+/*
+ * get data from a step's GRES data structure
+ * IN step_gres_list  - step's GRES data structure
+ * IN gres_name - name of a GRES type
+ * IN node_inx - zero-origin index of the node within the job's allocation
+ *	for which data is desired. Note this can differ from the step's
+ *	node allocation index.
+ * IN data_type - type of data to get from the step's data
+ * OUT data - pointer to the data from step's GRES data structure
+ *            DO NOT FREE: This is a pointer into the step's data structure
+ * RET - SLURM_SUCCESS or error code
+ */
+extern int gres_get_step_info(List step_gres_list, char *gres_name,
+			      uint32_t node_inx,
+			      enum gres_step_data_type data_type, void *data)
+{
+	int i, rc = ESLURM_INVALID_GRES;
+	uint32_t plugin_id;
+	ListIterator step_gres_iter;
+	gres_state_t *step_gres_ptr;
+	gres_step_state_t *step_gres_data;
+
+	if (data == NULL)
+		return EINVAL;
+	if (step_gres_list == NULL)	/* No GRES allocated */
+		return ESLURM_INVALID_GRES;
+
+	(void) gres_plugin_init();
+	plugin_id = _build_id(gres_name);
+
+	slurm_mutex_lock(&gres_context_lock);
+	step_gres_iter = list_iterator_create(step_gres_list);
+	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (step_gres_ptr->plugin_id != plugin_id)
+				continue;
+			step_gres_data = (gres_step_state_t *)
+					 step_gres_ptr->gres_data;
+			rc = _get_step_info(i, step_gres_data, node_inx,
+					    data_type, data);
+			break;
+		}
+	}
+	list_iterator_destroy(step_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
 }

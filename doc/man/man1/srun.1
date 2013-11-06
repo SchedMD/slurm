@@ -26,12 +26,56 @@ be changed after job submission using the \fBscontrol\fR
 command.
 
 .TP
-\fB\-\-acctg\-freq\fR=<\fIseconds\fR>
-Define the job accounting sampling interval.
+\fB\-\-acctg\-freq\fR
+Define the job accounting and profiling sampling intervals.
 This can be used to override the \fIJobAcctGatherFrequency\fR parameter in SLURM's
 configuration file, \fIslurm.conf\fR.
-A value of zero disables real the periodic job sampling and provides accounting
-information only on job termination (reducing SLURM interference with the job).
+The supported format is follows:
+.RS
+.TP 12
+\fB\-\-acctg\-freq=\fR\fI<datatype>\fR\fB=\fR\fI<interval>\fR
+where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling
+interval for the jobacct_gather plugin or a
+sampling interval for a profiling type by the
+acct_gather_profile plugin. Multiple,
+comma-separated \fI<datatype>\fR=\fI<interval>\fR intervals
+may be specified. Supported datatypes are as follows:
+.RS
+.TP
+\fBtask=\fI<interval>\fR
+where \fI<interval>\fR is the task sampling interval in seconds
+for the jobacct_gather plugins and for task
+profiling by the acct_gather_profile plugin.
+.TP
+\fBenergy=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for energy profiling using the acct_gather_energy plugin
+.TP
+\fBnetwork=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for infiniband profiling using the acct_gather_infiniband
+plugin.
+.TP
+\fBfilesystem=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for filesystem profiling using the acct_gather_filesystem
+plugin.
+.TP
+.RE
+.RE
+.br
+The default value for the task sampling interval
+is 30. The default value for all other intervals is 0.
+An interval of 0 disables sampling of the specified type.
+If the task sampling interval is 0, accounting
+information is collected only at job termination (reducing SLURM
+interference with the job).
+.br
+.br
+Smaller (non\-zero) values have a greater impact upon job performance,
+but a value of 30 seconds is not likely to be noticeable for
+applications having less than 10,000 tasks.
+.RE
 
 .TP
 \fB\-B\fR \fB\-\-extra\-node\-info\fR=<\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]>
@@ -228,8 +272,9 @@ To ensure that distinct CPUs are allocated to each job step, use the
 
 If the job step allocation includes an allocation with a number of
 sockets, cores, or threads equal to the number of tasks to be started
-then the tasks will by default be bound to the appropriate resources.
-Disable this mode of operation by explicitly setting "-\-cpu\-bind=none".
+then the tasks will by default be bound to the appropriate resources (auto
+binding). Disable this mode of operation by explicitly setting
+"-\-cpu\-bind=none".
 
 Note that a job step can be allocated different numbers of CPUs on each node
 or be allocated CPUs not starting at location zero. Therefore one of the
@@ -253,7 +298,7 @@ Quietly bind before task runs (default)
 Verbosely report binding before task runs
 .TP
 .B no[ne]
-Do not bind tasks to CPUs (default)
+Do not bind tasks to CPUs (default unless auto binding is applied)
 .TP
 .B rank
 Automatically bind by task rank.
@@ -266,18 +311,17 @@ where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 CPU IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they are interpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
-This option is currently only supported by the task/affinity plugin.
 .TP
 .B mask_cpu:<list>
 Bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
-preceded with an optional '0x'.
-Not supported unless the entire node is allocated to the job.
-This option is currently only supported by the task/affinity plugin.
+preceded with an optional '0x'. Not supported unless the entire node is
+allocated to the job.
 .TP
 .B rank_ldom
-Bind to a NUMA locality domain by rank
+Bind to a NUMA locality domain by rank. Not supported unless the entire
+node is allocated to the job.
 .TP
 .B map_ldom:<list>
 Bind by mapping NUMA locality domain IDs to tasks as specified where
@@ -313,6 +357,12 @@ this can result in sub\-optimal binding.
 Automatically generate masks binding tasks to NUMA locality domains.
 If the number of tasks differs from the number of allocated locality domains
 this can result in sub\-optimal binding.
+.TP
+.B boards
+Automatically generate masks binding tasks to boards.
+If the number of tasks differs from the number of allocated boards
+this can result in sub\-optimal binding. This option is supported by the
+task/cgroup plugin only.
 .TP
 .B help
 Show help message for cpu_bind
@@ -446,8 +496,10 @@ from commandline parameters.
 \fBsrun\fR will run \fIexecutable\fR just after the job step completes.
 The command line arguments for \fIexecutable\fR will be the command
 and arguments of the job step.  If \fIexecutable\fR is "none", then
-no epilog will be run.  This parameter overrides the SrunEpilog
-parameter in slurm.conf.
+no srun epilog will be run. This parameter overrides the SrunEpilog
+parameter in slurm.conf. This parameter is completely independent from
+the Epilog parameter in slurm.conf.
+
 
 .TP
 \fB\-\-exclusive\fR
@@ -481,17 +533,15 @@ may be the group name or the numerical group ID.
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
 Specifies a comma delimited list of generic consumable resources.
-The format of each entry on the list is "name[:count[*cpu]]".
+The format of each entry on the list is "name[:count]".
 The name is that of the consumable resource.
 The count is the number of those resources with a default value of 1.
-The specified resources will be allocated to the job on each node
-allocated unless "*cpu" is appended, in which case the resources
-will be allocated on a per cpu basis.
+The specified resources will be allocated to the job on each node.
 The available generic consumable resources is configurable by the system
 administrator.
 A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
-Examples of use include "\-\-gres=gpu:2*cpu,disk=40G" and "\-\-gres=help".
+Examples of use include "\-\-gres=gpu:2,mic=1" and "\-\-gres=help".
 NOTE: By default, a job step is allocated all of the generic resources that
 have allocated to the job. To change the behavior so that each job step is
 allocated no generic resources, explicitly set the value of \-\-gres to specify
@@ -667,7 +717,9 @@ of tasks is no larger than the number of allocated nodes.
 The tasks are distributed in blocks of a specified size.  The options
 include a number representing the size of the task block.  This is
 followed by an optional specification of the task distribution scheme
-within a block of tasks and between the blocks of tasks.  For more
+within a block of tasks and between the blocks of tasks.  The number of tasks
+distributed to each node is the same as for cyclic distribution, but the
+taskids assigned to each node depend on the plane size. For more
 details (including examples and diagrams), please see
 .br
 http://slurm.schedmd.com/mc_support.html
@@ -724,6 +776,9 @@ Default value is \fBDefMemPerNode\fR and the maximum value is
 seen using the \fBscontrol show config\fR command.
 This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
+Specifying a memory limit of zero for a job step will restrict the job step
+to the amount of memory allocated to the job, but not remove any of the job's
+memory allocation from being available to other job steps.
 Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 NOTE: Enforcement of memory limits currently relies upon the task/cgroup plugin
@@ -747,6 +802,9 @@ value will equal the original \fB\-\-mem\-per\-cpu\fR value specified by
 the user.
 This parameter would generally be used if individual processors
 are allocated to jobs (\fBSelectType=select/cons_res\fR).
+Specifying a memory limit of zero for a job step will restrict the job step
+to the amount of memory allocated to the job, but not remove any of the job's
+memory allocation from being available to other job steps.
 Also see \fB\-\-mem\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 
@@ -880,7 +938,8 @@ limit is changed.
 If a job node limit exceeds the number of nodes configured in the
 partition, the job will be rejected.
 Note that the environment
-variable \fBSLURM_NNODES\fR will be set to the count of nodes actually
+variable \fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
+will be set to the count of nodes actually
 allocated to the job. See the \fBENVIRONMENT VARIABLES\fR section
 for more information.  If \fB\-N\fR is not specified, the default
 behavior is to allocate enough nodes to satisfy the requirements of
@@ -924,7 +983,7 @@ order of preferences is IPONLY (which is not considered in User Space mode),
 HFI, IB, HPCE, and KMUX.
 .TP
 \fBCAU\fR=<\fIcount\fR>
-Number of Collecitve Accelleration Units (CAU) required.
+Number of Collecitve Acceleration Units (CAU) required.
 Applies only to IBM Power7-IH processors.
 Default value is zero.
 Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
@@ -1096,12 +1155,46 @@ than one partition, specify their names in a comma separate list and the one
 offering earliest initiation will be used.
 
 .TP
+\fB\-\-profile\fR=<all|none|[energy[,|task[,|lustre[,|network]]]]>
+enables detailed data collection by the acct_gather_profile plugin.
+Detailed data are typically time-series that are stored in an HDF5 file for
+the job.
+
+.RS
+.TP 10
+\fBAll\fR
+All data types are collected. (Cannot be combined with other values.)
+
+.TP
+\fBNone\fR
+No data types are collected. This is the default.
+ (Cannot be combined with other values.)
+
+.TP
+\fBEnergy\fR
+Energy data is collected.
+
+.TP
+\fBTask\fR
+Task (I/O, Memory, ...) data is collected.
+
+.TP
+\fBLustre\fR
+Lustre data is collected.
+
+.TP
+\fBNetwork\fR
+Network (InfiniBand) data is collected.
+.RE
+
+.TP
 \fB\-\-prolog\fR=<\fIexecutable\fR>
 \fBsrun\fR will run \fIexecutable\fR just before launching the job step.
 The command line arguments for \fIexecutable\fR will be the command
 and arguments of the job step.  If \fIexecutable\fR is "none", then
-no prolog will be run.  This parameter overrides the SrunProlog
-parameter in slurm.conf.
+no srun prolog will be run. This parameter overrides the SrunProlog
+parameter in slurm.conf. This parameter is completely independent from
+the Prolog parameter in slurm.conf.
 
 .TP
 \fB\-\-propagate\fR[=\fIrlimits\fR]
@@ -1216,6 +1309,13 @@ option takes precedence over the job's option.
 This option may result the allocation being granted sooner than if the \-\-share
 option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
+
+.TP
+\fB\-S\fR, \fB\-\-core\-spec\fR=<\fInum\fR>
+Count of specialized cores per nodereserved by the job for system operations
+and not used by the application. The application will not use these cores,
+but will be charged for their allocation. Default value is zero.
+
 
 .TP
 \fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
@@ -1391,6 +1491,9 @@ The host list will be assumed to be a filename if it contains a "/"
 character. If you specify a max node count (\-N1\-2) if there are more
 than 2 hosts in the file only the first 2 nodes will be used in the
 request list.
+Rather than repeating a host name multiple times, an asterisk and
+a repitition count may be appended to a host name. For example
+"host1,host1" and "host1*2" are equivalent.
 
 .TP
 \fB\-\-wckey\fR=<\fIwckey\fR>
@@ -1548,8 +1651,7 @@ a terminal is not possible.
 .PP
 For BGQ srun only supports stdin to 1 task running on the system.  By
 default it is taskid 0 but can be changed with the \-i<taskid> as
-described below, or \-\-launcher\-opts="\-\-stdinrank=<taskid>".  Outside
-of the taskid option none of the options below are available for a BGQ system.
+described below, or \-\-launcher\-opts="\-\-stdinrank=<taskid>".
 .PP
 This behavior may be changed with the
 \fB\-\-output\fR, \fB\-\-error\fR, and \fB\-\-input\fR
@@ -1590,7 +1692,8 @@ unique to a given jobid, stepid, node, or task. In each case,
 the appropriate number of files are opened and associated with
 the corresponding tasks. Note that any format string containing
 %t, %n, and/or %N will be written on the node executing the task
-rather than the node where \fBsrun\fR executes.
+rather than the node where \fBsrun\fR executes, these format specifiers
+are not supported on a BGQ system.
 .RS 10
 .TP
 \fB%A\fR
@@ -1780,6 +1883,9 @@ Same as \fB\-J, \-\-job\-name\fR except within an existing
 allocation, in which case it is ignored to avoid using the batch job's name
 as the name of each job step.
 .TP
+\fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
+Total number of nodes in the job’s resource allocation.
+.TP
 \fBSLURM_KILL_BAD_EXIT\fR
 Same as \fB\-K, \-\-kill\-on\-bad\-exit\fR
 .TP
@@ -1841,6 +1947,9 @@ Same as \fB\-p, \-\-partition\fR
 If set, then PMI key\-pairs will contain no duplicate keys.
 This is the case for MPICH2 and reduces overhead in testing for duplicates
 for improved performance
+.TP
+\fBSLURM_PROFILE\fR
+Same as \fB\-\-profile\fR
 .TP
 \fBSLURM_PROLOG\fR
 Same as \fB\-\-prolog\fR
@@ -2008,7 +2117,9 @@ Total number of nodes in the job's resource allocation
 Sets of node name, communication address and hostname for nodes allocated to
 the job from the cloud. Each element in the set if colon separated and each
 set is comma separated. For example:
-SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
+.na
+SLURM_NODE_ALIASES\:=\:ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
+.ad
 .TP
 \fBSLURM_NODEID\fR
 The relative node ID of the current node
@@ -2027,7 +2138,7 @@ This value is propagated to the spawned processes.
 The MPI rank (or relative process ID) of the current process
 .TP
 \fBSLURM_SRUN_COMM_HOST\fR
-IP adress of srun communication host.
+IP address of srun communication host.
 .TP
 \fBSLURM_SRUN_COMM_PORT\fR
 srun communication port.
@@ -2047,7 +2158,7 @@ Number of processes in the step.
 \fBSLURM_STEP_TASKS_PER_NODE\fR
 Number of processes per node within the step.
 .TP
-\fBSLURM_STEPID\fR (and \fBSLURM_STEP_ID\fR for backwards compatibility)
+\fBSLURM_STEP_ID\fR (and \fBSLURM_STEPID\fR for backwards compatibility)
 The step ID of the current job
 .TP
 \fBSLURM_SUBMIT_DIR\fR
@@ -2339,9 +2450,11 @@ wait
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+.br
+Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

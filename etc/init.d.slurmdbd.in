@@ -101,6 +101,7 @@ slurmstatus() {
     if [ $? = 0 ]; then
 	pidfile=${pidfile##*=}
 	pidfile=${pidfile%#*}
+	pidfile=${pidfile//\"/}
     else
 	pidfile=/var/run/slurmdbd.pid
     fi
@@ -178,7 +179,7 @@ case "$1" in
 		 start slurmdbd
 	fi
 	;;
-    reconfig)
+    reconfig|reload)
 	echo -n $"Reloading slurmdbd daemon configuration: "
 	killproc slurmdbd -HUP
 	echo

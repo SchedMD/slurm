@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -379,45 +379,49 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 
 	if (qos->preempt_list && list_count(qos->preempt_list)) {
 		char *preempt_val = NULL;
-		char *tmp_char = NULL, *begin_preempt = NULL;
+		char *tmp_char = NULL, *last_preempt = NULL;
+		char *tick = "";
 		ListIterator preempt_itr =
 			list_iterator_create(qos->preempt_list);
 
 		xstrcat(*cols, ", preempt");
 
-		begin_preempt = xstrdup("preempt");
-
 		while ((tmp_char = list_next(preempt_itr))) {
 			if (tmp_char[0] == '-') {
-				xstrfmtcat(preempt_val,
-					   "replace(%s, ',%s', '')",
-					   begin_preempt, tmp_char+1);
-				xfree(begin_preempt);
-				begin_preempt = preempt_val;
+				preempt_val = xstrdup_printf(
+					"replace(%s, ',%s', '')",
+					last_preempt ? last_preempt : "preempt",
+					tmp_char+1);
+				xfree(last_preempt);
+				last_preempt = preempt_val;
+				preempt_val = NULL;
 			} else if (tmp_char[0] == '+') {
-				xstrfmtcat(preempt_val,
-					   "concat("
-					   "replace(%s, ',%s', ''), ',%s')",
-					   begin_preempt,
-					   tmp_char+1, tmp_char+1);
+				preempt_val = xstrdup_printf(
+					"concat(replace(%s, ',%s', ''), ',%s')",
+					last_preempt ? last_preempt : "preempt",
+					tmp_char+1, tmp_char+1);
 				if (added_preempt)
 					xstrfmtcat(*added_preempt, ",%s",
 						   tmp_char+1);
-				xfree(begin_preempt);
-				begin_preempt = preempt_val;
+				xfree(last_preempt);
+				last_preempt = preempt_val;
+				preempt_val = NULL;
 			} else if (tmp_char[0]) {
 				xstrfmtcat(preempt_val, ",%s", tmp_char);
 				if (added_preempt)
 					xstrfmtcat(*added_preempt, ",%s",
 						   tmp_char);
+				tick = "\'";
 			} else
 				xstrcat(preempt_val, "");
 		}
 		list_iterator_destroy(preempt_itr);
-		xfree(begin_preempt);
-
-		xstrfmtcat(*vals, ", '%s'", preempt_val);
-		xstrfmtcat(*extra, ", preempt='%s'", preempt_val);
+		if (last_preempt) {
+			preempt_val = last_preempt;
+			last_preempt = NULL;
+		}
+		xstrfmtcat(*vals, ", %s%s%s", tick, preempt_val, tick);
+		xstrfmtcat(*extra, ", preempt=%s%s%s", tick, preempt_val, tick);
 		xfree(preempt_val);
 	}
 

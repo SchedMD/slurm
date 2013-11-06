@@ -18,6 +18,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="slurm.html">slurm</a></td><td>SLURM system overview.</td></tr>
 <tr><td><a href="smap.html">smap</a></td><td>graphically view information about SLURM jobs, partitions, and set configurations parameters.</td></tr>
 <tr><td><a href="sprio.html">sprio</a></td><td>view the factors that comprise a job's scheduling priority</td></tr>
+<tr><td><a href="sh5util.html">sh5util</a></td><td>merge utility for acct_gather_profile plugin.</td></tr>
 <tr><td><a href="squeue.html">squeue</a></td><td>view information about jobs located in the SLURM scheduling queue.</td></tr>
 <tr><td><a href="sreport.html">sreport</a></td><td>Generate reports from the slurm accounting data.</td></tr>
 <tr><td><a href="srun_cr.html">srun_cr</a></td><td>run parallel jobs with checkpoint/restart support</td></tr>
@@ -26,8 +27,10 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="sstat.html">sstat</a></td><td>Display various status information of a running job/step.</td></tr>
 <tr><td><a href="strigger.html">strigger</a></td><td>Used set, get or clear Slurm trigger information.</td></tr>
 <tr><td><a href="sview.html">sview</a></td><td>graphical user interface to view and modify SLURM state.</td></tr>
+<tr><td><a href="acct_gather.conf.html">acct_gather.conf</a></td><td>Slurm configuration file for the acct_gather plugins</td></tr>
 <tr><td><a href="bluegene.conf.html">bluegene.conf</a></td><td>Slurm configuration file for BlueGene systems</td></tr>
 <tr><td><a href="cgroup.conf.html">cgroup.conf</a></td><td>Slurm configuration file for the cgroup support</td></tr>
+<tr><td><a href="ext_sensors.conf.html">ext_sensors.conf</a></td><td>Slurm configuration file for the external sensor support</td></tr>
 <tr><td><a href="gres.conf.html">gres.conf</a></td><td>Slurm configuration file for generic resource management.</td></tr>
 <tr><td><a href="slurm.conf.html">slurm.conf</a></td><td>Slurm configuration file</td></tr>
 <tr><td><a href="slurmdbd.conf.html">slurmdbd.conf</a></td><td>Slurm Database Daemon (SlurmDBD) configuration file</td></tr>
@@ -41,6 +44,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </table>
 
 
-<p style="text-align:center;">Last modified 29 November 2012</p>
+<p style="text-align:center;">Last modified 10 July 2013</p>
 
 <!--#include virtual="footer.txt"-->

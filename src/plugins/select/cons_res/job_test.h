@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -61,7 +61,7 @@
 
 /* _job_test - does most of the real work for select_p_job_test(), which
  *	pretty much just handles load-leveling and max_share logic */
-int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
 		int mode, uint16_t cr_type,
 		enum node_cr_state job_node_req, uint32_t cr_node_cnt,

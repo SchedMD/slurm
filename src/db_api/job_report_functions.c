@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -49,8 +49,10 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
 
-static int _sort_group_asc(char *group_a, char *group_b)
+static int _sort_group_asc(void *v1, void *v2)
 {
+	char *group_a = *(char **)v1;
+	char *group_b = *(char **)v2;
 	int size_a = atoi(group_a);
 	int size_b = atoi(group_b);
 

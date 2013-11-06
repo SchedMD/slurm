@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -108,6 +108,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	char tmp1[16], tmp2[16];
 	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
+	char *allow_deny, *value;
 	uint16_t force, preempt_mode, val;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -124,20 +125,58 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	/****** Line 2 ******/
 
+	if ((part_ptr->allow_groups == NULL) ||
+	    (part_ptr->allow_groups[0] == '\0'))
+		sprintf(tmp_line, "AllowGroups=ALL");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "AllowGroups=%s", part_ptr->allow_groups);
+	}
+	xstrcat(out, tmp_line);
+
+	if (part_ptr->allow_accounts || !part_ptr->deny_accounts) {
+		allow_deny = "Allow";
+		if ((part_ptr->allow_accounts == NULL) ||
+		    (part_ptr->allow_accounts[0] == '\0'))
+			value = "ALL";
+		else
+			value = part_ptr->allow_accounts;
+	} else {
+		allow_deny = "Deny";
+		value = part_ptr->deny_accounts;
+	}
+	snprintf(tmp_line, sizeof(tmp_line),
+		 " %sAccounts=%s", allow_deny, value);
+	xstrcat(out, tmp_line);
+
+	if (part_ptr->allow_qos || !part_ptr->deny_qos) {
+		allow_deny = "Allow";
+		if ((part_ptr->allow_qos == NULL) ||
+		    (part_ptr->allow_qos[0] == '\0'))
+			value = "ALL";
+		else
+			value = part_ptr->allow_qos;
+	} else {
+		allow_deny = "Deny";
+		value = part_ptr->deny_qos;
+	}
+	snprintf(tmp_line, sizeof(tmp_line),
+		 " %sQos=%s", allow_deny, value);
+	xstrcat(out, tmp_line);
+
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 3 ******/
 	if (part_ptr->allow_alloc_nodes == NULL)
 		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s","ALL");
 	else
 		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s",
 			 part_ptr->allow_alloc_nodes);
 	xstrcat(out, tmp_line);
-	if ((part_ptr->allow_groups == NULL) ||
-	    (part_ptr->allow_groups[0] == '\0'))
-		sprintf(tmp_line, " AllowGroups=ALL");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			" AllowGroups=%s", part_ptr->allow_groups);
-	}
-	xstrcat(out, tmp_line);
+
 	if (part_ptr->alternate != NULL) {
 		snprintf(tmp_line, sizeof(tmp_line), " Alternate=%s",
 			 part_ptr->alternate);
@@ -154,8 +193,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line added here for BG partitions
-	 to keep with alphabetized output******/
+	/****** Line 4 added here for BG partitions only
+	 ****** to maintain alphabetized output ******/
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s",
@@ -167,7 +206,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			xstrcat(out, "\n   ");
 	}
 
-	/****** Line 3 ******/
+	/****** Line 5 ******/
 
 	if (part_ptr->default_time == INFINITE)
 		sprintf(tmp_line, "DefaultTime=UNLIMITED");
@@ -197,7 +236,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 4 ******/
+	/****** Line 6 ******/
 
 	if (part_ptr->max_nodes == INFINITE)
 		sprintf(tmp_line, "MaxNodes=UNLIMITED");
@@ -225,8 +264,19 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 				 UNIT_NONE);
 	else
 		snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->min_nodes);
-
 	sprintf(tmp_line, " MinNodes=%s", tmp1);
+	xstrcat(out, tmp_line);
+	if (part_ptr->flags & PART_FLAG_LLN)
+		sprintf(tmp_line, " LLN=YES");
+	else
+		sprintf(tmp_line, " LLN=NO");
+	xstrcat(out, tmp_line);
+	if (part_ptr->max_cpus_per_node == INFINITE)
+		sprintf(tmp_line, " MaxCPUsPerNode=UNLIMITED");
+	else {
+		sprintf(tmp_line, " MaxCPUsPerNode=%u",
+			part_ptr->max_cpus_per_node);
+	}
 	xstrcat(out, tmp_line);
 
 	if (one_liner)
@@ -247,7 +297,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			xstrcat(out, "\n   ");
 	}
 
-	/****** Line 6 ******/
+	/****** Line 7 ******/
 
 	sprintf(tmp_line, "Priority=%u", part_ptr->priority);
 	xstrcat(out, tmp_line);
@@ -286,7 +336,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 7 ******/
+	/****** Line 8 ******/
 
 	if (part_ptr->state_up == PARTITION_UP)
 		sprintf(tmp_line, "State=UP");
@@ -331,7 +381,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 8 ******/
+	/****** Line 9 ******/
 	if (part_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		snprintf(tmp_line, sizeof(tmp_line), "DefMemPerCPU=%u",
 			 part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
@@ -389,10 +439,10 @@ extern int slurm_load_partitions (time_t update_time,
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-        req.last_update  = update_time;
+	req.last_update  = update_time;
 	req.show_flags   = show_flags;
-        req_msg.msg_type = REQUEST_PARTITION_INFO;
-        req_msg.data     = &req;
+	req_msg.msg_type = REQUEST_PARTITION_INFO;
+	req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;

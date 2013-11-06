@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -103,6 +103,7 @@ main (int argc, char *argv[])
 	quiet_flag        = 0;
 	readonly_flag     = 0;
 	verbosity         = 0;
+	slurm_conf_init(NULL);
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while((opt_char = getopt_long(argc, argv, "hionpPQrsvV",
@@ -549,7 +550,7 @@ static void _add_it (int argc, char *argv[])
 		fprintf(stderr, "\"QOS\", or \"User\"\n");
 	}
 
-	if (error_code == SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }
@@ -590,7 +591,7 @@ static void _archive_it (int argc, char *argv[])
 		fprintf(stderr, "\"Dump\", or \"load\"\n");
 	}
 
-	if (error_code == SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }
@@ -653,7 +654,7 @@ static void _show_it (int argc, char *argv[])
 			"\"QOS\", \"Transaction\", \"User\", or \"WCKey\"\n");
 	}
 
-	if (error_code == SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }
@@ -704,7 +705,7 @@ static void _modify_it (int argc, char *argv[])
 			"or \"User\"\n");
 	}
 
-	if (error_code == SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }
@@ -755,7 +756,7 @@ static void _delete_it (int argc, char *argv[])
 		fprintf(stderr, "\"QOS\", or \"User\"\n");
 	}
 
-	if (error_code == SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }

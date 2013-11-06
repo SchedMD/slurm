@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -76,7 +76,8 @@
 
 typedef struct slurm_submit_ops {
 	int		(*submit)	( struct job_descriptor *job_desc,
-					  uint32_t submit_uid );
+					  uint32_t submit_uid,
+					  char **err_msg );
 	int		(*modify)	( struct job_descriptor *job_desc,
 					  struct job_record *job_ptr,
 					  uint32_t submit_uid );
@@ -227,17 +228,25 @@ extern int job_submit_plugin_reconfig(void)
  * Execute the job_submit() function in each job submit plugin.
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
+ * IN job_desc - Job request specification
+ * IN submit_uid - User issuing job submit request
+ * OUT err_msg - Custom error message to the user, caller to xfree results
  */
 extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
-				    uint32_t submit_uid)
+				    uint32_t submit_uid, char **err_msg)
 {
+	DEF_TIMERS;
 	int i, rc;
 
+	START_TIMER;
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i=0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].submit))(job_desc, submit_uid);
+		rc = (*(ops[i].submit))(job_desc, submit_uid, err_msg);
 	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER;
+	debug("job_submit_plugin_submit: %s", TIME_STR);
+
 	return rc;
 }
 
@@ -250,12 +259,17 @@ extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
 				    struct job_record *job_ptr,
 				    uint32_t submit_uid)
 {
+	DEF_TIMERS;
 	int i, rc;
 
+	START_TIMER;
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i=0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid);
 	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER;
+	debug("job_submit_plugin_modify: %s", TIME_STR);
+
 	return rc;
 }

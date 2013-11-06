@@ -36,6 +36,9 @@
 /* Define to 1 if using gtk+-2.12.0 or higher */
 #undef GTK2_USE_TOOLTIP
 
+/* Make sure we get the 1.8 HDF5 API */
+#undef H5_NO_DEPRECATED_SYMBOLS
+
 /* Define to 1 if 3-dimensional architecture */
 #undef HAVE_3D
 
@@ -45,7 +48,13 @@
 /* Define to 1 for AIX operating system */
 #undef HAVE_AIX
 
-/* Define to 1 if running against an Alps emulation */
+/* Define to 1 for Cray XT/XE systems using ALPS */
+#undef HAVE_ALPS_CRAY
+
+/* Define to 1 for emulating a Cray XT/XE system using ALPS */
+#undef HAVE_ALPS_CRAY_EMULATION
+
+/* Define to 1 if running against an ALPS emulation */
 #undef HAVE_ALPS_EMULATION
 
 /* Define to 1 if emulating or running on Blue Gene system */
@@ -74,12 +83,6 @@
 
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
-
-/* Define to 1 for Cray XT/XE systems */
-#undef HAVE_CRAY
-
-/* Define to 1 for emulating a Cray XT/XE system */
-#undef HAVE_CRAY_EMULATION
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
@@ -115,11 +118,17 @@
 /* Define to 1 if you have the `fdatasync' function. */
 #undef HAVE_FDATASYNC
 
+/* Define to 1 if you have the <float.h> header file. */
+#undef HAVE_FLOAT_H
+
 /* Define to 1 if freeipmi library found */
 #undef HAVE_FREEIPMI
 
 /* Define to 1 if running slurmd on front-end only */
 #undef HAVE_FRONT_END
+
+/* Defined if you have HDF5 support */
+#undef HAVE_HDF5
 
 /* Define to 1 if you have the `hstrerror' function. */
 #undef HAVE_HSTRERROR
@@ -173,6 +182,9 @@
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
 
+/* Define to 1 for Native Cray systems */
+#undef HAVE_NATIVE_CRAY
+
 /* Define to 1 if you have the <ncurses.h> header file. */
 #undef HAVE_NCURSES_H
 
@@ -184,6 +196,12 @@
 
 /* define if numa library installed */
 #undef HAVE_NUMA
+
+/* Define to 1 if ofed library found */
+#undef HAVE_OFED
+
+/* Define to 1 if using code with pma_query_via */
+#undef HAVE_OFED_PMA_QUERY_VIA
 
 /* define if you have openssl. */
 #undef HAVE_OPENSSL
@@ -200,9 +218,6 @@
 /* define if you have permapi_h */
 #undef HAVE_PERMAPI_H
 
-/* Define to 1 if using PostgreSQL libaries */
-#undef HAVE_PGSQL
-
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
 
@@ -218,6 +233,9 @@
 /* Define to 1 if you have the <pthread.h> header file. */
 #undef HAVE_PTHREAD_H
 
+/* Have PTHREAD_PRIO_INHERIT. */
+#undef HAVE_PTHREAD_PRIO_INHERIT
+
 /* Define to 1 if you have the `ptrace64' function. */
 #undef HAVE_PTRACE64
 
@@ -227,7 +245,7 @@
 /* Define if you are compiling with readline. */
 #undef HAVE_READLINE
 
-/* Define to 1 for running on a real Cray XT/XE system */
+/* Define to 1 for running on a real Cray system */
 #undef HAVE_REAL_CRAY
 
 /* Define to 1 if you have the `sched_setaffinity' function. */
@@ -363,9 +381,6 @@
 /* Define to 1 for --get-user-env to load user environment without .login */
 #undef LOAD_ENV_NO_LOGIN
 
-/* log timestamps to millisecond resolution */
-#undef LOG_TIME_MSEC
-
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
 #undef LT_OBJDIR
@@ -381,9 +396,6 @@
 
 /* Define to 1 if you are building a production release. */
 #undef NDEBUG
-
-/* Name of package */
-#undef PACKAGE
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
@@ -409,7 +421,7 @@
 /* Define the project's name. */
 #undef PROJECT
 
-/* Define to the necessary symbol if this constant uses a non-standard name on
+/* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
 #undef PTHREAD_CREATE_JOINABLE
 
@@ -506,10 +518,7 @@
 /* define if using ISO 8601 time format */
 #undef USE_ISO_8601
 
-/* define if using RFC 5424 time format */
-#undef USE_RFC5424_TIME
-
-/* Version number of package */
+/* Define the project's version. */
 #undef VERSION
 
 /* Define if you have pthreads. */

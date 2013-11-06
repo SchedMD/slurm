@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "January 2013" "squeue 2.6" "Slurm components"
+.TH SQUEUE "1" "November 2013" "squeue 13.12" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -116,7 +116,11 @@ only for jobs while others are valid only for job steps.
 Valid \fItype\fR specifications include:
 
 .RS
-.TP 4
+.TP 6
+\fB%all\fR
+Print all fields available for this data type with a vertical bar separating
+each field.
+.TP
 \fB%a\fR
 Account associated with the job.
 (Valid for jobs only)
@@ -125,6 +129,11 @@ Account associated with the job.
 Number of tasks created by a job step.
 This reports the value of the \fBsrun \-\-ntasks\fR option.
 (Valid for job steps only)
+.TP
+\fB%A\fR
+Job id.
+This will have a unique value for each element  of job arrays.
+(Valid for jobs only)
 .TP
 \fB%b\fR
 Generic resources (gres) required by the job or step.
@@ -179,7 +188,7 @@ Features required by the job.
 (Valid for jobs only)
 .TP
 \fB%F\fR
-Job array's job ID.
+Job array's job ID. This is the base job ID.
 (Valid for jobs only)
 .TP
 \fB%g\fR
@@ -202,6 +211,8 @@ When \-\-sockets\-per\-node has not been set, "*" is displayed.
 .TP
 \fB%i\fR
 Job or job step id.
+In the case of job arrays, the job ID format will be of the form
+"<base_job_id>_<index>".
 (Valid for jobs and job steps)
 .TP
 \fB%I\fR
@@ -263,6 +274,9 @@ List of nodes allocated to the job or job step. In the case of a
 \fICOMPLETING\fR job, the list of nodes will comprise only those
 nodes that have not yet been returned to service.
 (Valid for jobs and job steps)
+.TP
+\fB%o\fR
+The command to be executed.
 .TP
 \fB%O\fR
 Are contiguous nodes requested by the job.
@@ -351,10 +365,17 @@ Licenses reserved for the job.
 List of node names explicitly excluded by the job.
 (Valid for jobs only)
 .TP
+\fB%X\fR
+Count of cores reserved on each node for system use (core specialization).
+(Valid for jobs only)
+.TP
 \fB%z\fR
 Number of requested sockets, cores, and threads (S:C:T) per node for the job.
 When (S:C:T) has not been set, "*" is displayed.
 (Valid for jobs only)
+.TP
+\fB%Z\fR
+The job's working directory.
 .RE
 
 .TP
@@ -417,8 +438,9 @@ reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), SUSPENDED (S),
 COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
-FAILED (F), TIMEOUT (TO), PREEMPTED (PR) and NODE_FAIL (NF). Note the
-\fB<state_list>\fR supplied is case insensitive ("pd" and "PD" work the same).
+FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) and NODE_FAIL (NF).
+Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
+equivalent).
 See the \fBJOB STATE CODES\fR section below for more information.
 
 .TP
@@ -503,6 +525,10 @@ execution.
 The typical states are PENDING, RUNNING, SUSPENDED, COMPLETING, and COMPLETED.
 An explanation of each state follows.
 .TP 20
+\fBBF  BOOT_FAIL\fR
+Job terminated due to launch failure, typically due to a hardware failure
+(e.g. unable to boot the node or block and the job can not be requeued).
+.TP
 \fBCA  CANCELLED\fR
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.
@@ -649,9 +675,11 @@ Print information only about job step 65552.1:
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+.br
+Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

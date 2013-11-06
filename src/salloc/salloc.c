@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -73,7 +73,7 @@
 #ifdef HAVE_BG
 #include "src/common/node_select.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 #include "src/common/node_select.h"
 
 #ifdef HAVE_REAL_CRAY
@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
 
+	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 
@@ -247,7 +248,7 @@ int main(int argc, char *argv[])
 		 * after first making sure stdin is not redirected.
 		 */
 	} else if ((tpgid = tcgetpgrp(STDIN_FILENO)) < 0) {
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		verbose("no controlling terminal");
 #else
 		if (!opt.no_shell) {
@@ -343,7 +344,7 @@ int main(int argc, char *argv[])
 			error("Unable to allocate resources: %m");
 			error_exit = immediate_exit;
 		} else {
-			error("Failed to allocate resources: %m");
+			error("Job submit/allocate failed: %m");
 		}
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
@@ -407,8 +408,8 @@ int main(int argc, char *argv[])
 		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d",
 			opt.overcommit);
 	}
-	if (opt.acctg_freq >= 0) {
-		env_array_append_fmt(&env, "SLURM_ACCTG_FREQ", "%d",
+	if (opt.acctg_freq) {
+		env_array_append_fmt(&env, "SLURM_ACCTG_FREQ", "%s",
 			opt.acctg_freq);
 	}
 	if (opt.network)
@@ -588,7 +589,7 @@ static void _set_submit_dir_env(void)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
-#ifdef HAVE_REAL_CRAY
+#if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 	uint64_t pagg_id = job_getjid(getpid());
 	/*
 	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session
@@ -608,12 +609,15 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	}
 #endif
 	desc->contiguous = opt.contiguous ? 1 : 0;
+	if (opt.core_spec)
+		desc->core_spec = opt.core_spec;
 	desc->features = opt.constraints;
 	desc->gres = opt.gres;
 	if (opt.immediate == 1)
 		desc->immediate = 1;
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
+	desc->profile  = opt.profile;
 	desc->wckey  = xstrdup(opt.wckey);
 	if (opt.req_switch >= 0)
 		desc->req_switch = opt.req_switch;
@@ -657,8 +661,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->begin_time = opt.begin;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
-	if (opt.acctg_freq >= 0)
-		desc->acctg_freq = opt.acctg_freq;
+	if (opt.acctg_freq)
+		desc->acctg_freq = xstrdup(opt.acctg_freq);
 	if (opt.comment)
 		desc->comment = xstrdup(opt.comment);
 	if (opt.qos)
@@ -914,7 +918,7 @@ static void _timeout_handler(srun_timeout_msg_t *msg)
 	if (msg->timeout != last_timeout) {
 		last_timeout = msg->timeout;
 		verbose("Job allocation time limit to be reached at %s",
-			ctime(&msg->timeout));
+			slurm_ctime(&msg->timeout));
 	}
 }
 

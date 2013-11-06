@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -1174,10 +1174,10 @@ extern int agent_retry (int min_wait, bool mail_too)
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
-		uint32_t msg_type[5], i = 0;
+		uint32_t msg_type[5] = {0, 0, 0, 0, 0}, i = 0;
 		list_size = list_count(retry_list);
-		if ((list_size > MAX_AGENT_CNT)
-		&&  (difftime(now, last_msg_time) > 300)) {
+		if ((list_size > MAX_AGENT_CNT) &&
+		    (difftime(now, last_msg_time) > 300)) {
 			/* Note sizable backlog of work */
 			info("WARNING: agent retry_list size is %d",
 				list_size);
@@ -1530,11 +1530,10 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	else
 		mi->user_name = xstrdup(job_ptr->mail_user);
 
-	mi->message = xmalloc(256);
 	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
-	sprintf(mi->message, "SLURM Job_id=%u Name=%.24s %s%s",
-		job_ptr->job_id, job_ptr->name,
-		_mail_type_str(mail_type), job_time);
+	mi->message = xstrdup_printf("SLURM Job_id=%u Name=%s %s%s",
+				     job_ptr->job_id, job_ptr->name,
+				     _mail_type_str(mail_type), job_time);
 
 	debug("email msg to %s: %s", mi->user_name, mi->message);
 

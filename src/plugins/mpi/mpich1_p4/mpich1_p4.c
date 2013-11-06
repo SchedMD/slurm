@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -104,7 +104,7 @@ static pthread_mutex_t shutdown_lock;
 static pthread_cond_t  shutdown_cond;
 
 
-int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env)
+int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	debug("mpi/mpich1_p4: slurmstepd prefork");
 	return SLURM_SUCCESS;

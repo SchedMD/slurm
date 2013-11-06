@@ -1,0 +1,187 @@
+.TH "sh5util" "1" "SLURM 2.6" "June 2013" "SLURM Commands"
+.SH "NAME"
+.LP
+sh5util \- Tool for merging HDF5 files from the acct_gather_profile
+plugin that gathers detailed data for jobs running under SLURM
+
+.SH "SYNOPSIS"
+.LP
+sh5util
+
+.SH "DESCRIPTION"
+.LP
+sh5util merges HDF5 files produced on each node for each step of a job into
+one HDF5 file for the job. The resulting file can be viewed and manipulated
+by common HDF5 tools such as HDF5View, h5dump, h5edit, or h5ls.
+.LP
+sh5util also has two extract modes. The first, writes a limited set of
+data for specific nodes, steps, and data series in
+"comma separated value" form to a file which can be imported into other
+analysis tools such as spreadsheets.
+.LP
+The second, (Item-Extract) extracts one data time from one time series for all
+the samples on all the nodes from a jobs HDF5 profile.
+.TP
+\- Finds sample with maximum value of the item.
+.TP
+\- Write CSV file with min, ave, max, and item totals for each node for each
+sample
+
+
+.SH "OPTIONS"
+.LP
+
+.TP
+\fB\-E\fR, \fB\-\-extract\fR
+
+Extract data series from a merged job file.
+
+.RS
+.TP 10
+Extract mode options
+
+.TP
+\fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
+merged file to extract from (default ./job_$jobid.h5)
+
+.TP
+\fB\-N\fR, \fB\-\-node\fR=\fInodename\fR
+Node name to extract (default is all)
+
+.TP
+\fB\-l\fR, \fB\-\-level\fR=\fI[Node:Totals|Node:TimeSeries]\fR
+Level to which series is attached. (default Node:Totals)
+
+.TP
+\fB\-s\fR, \fB\-\-series\fR=\fI[Energy | Lustre | Network | Tasks | Task_#]\fR
+\fBTasks\fR is all tasks, \fBTask_#\fR (# is a task id) (default is everything)
+
+.RE
+
+.TP
+\fB\-I\fR, \fB\-\-item\-extract\fR
+
+Extract one data item from all samples of one data series from all nodes in a merged job file.
+
+.RS
+.TP 10
+Item-Extract mode options
+
+.TP
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Lustre | Network | Task]\fR
+
+.TP
+\fB\-d\fR, \fB\-\-data\fR
+Name of data item in series (See note below).
+
+.RE
+
+.TP
+\fB\-j\fR, \fB\-\-jobs\fR=\fI<job(.step)>\fR
+Format is <job(.step)>. Merge this job/step
+(or a comma-separated list of job steps). This option is required.
+Not specifying a step will result in all steps found to be processed.
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print this description of use.
+
+.TP
+\fB\-o\fR, \fB\-\-output\fR=\fIpath\fR
+.nf
+Path to a file into which to write.
+Default for merge is ./job_$jobid.h5
+Default for extract is ./extract_$jobid.csv
+.fi
+
+.TP
+\fB\-p\fR, \fB\-\-profiledir\fR=\fIdir\fR
+Directory location where node-step files exist default is set in
+acct_gather.conf.
+
+.TP
+\fB\-S\fR, \fB\-\-savefiles\fR
+Instead of removing node-step files after merging them into the job file,
+keep them around.
+
+.TP
+\fB\-\-user\fR=\fIuser\fR
+User who profiled job.
+(Handy for root user, defaults to user running this command.)
+
+.TP
+\fB\-\-usage\fR
+Display brief usage message.
+
+.SH "Data Items per Series"
+
+.TP
+\fBEnergy\fR
+.nf
+Power
+CPU_Frequency
+.fi
+
+.TP
+\fBLustre\fR
+.nf
+Reads
+Megabytes_Read
+Writes
+Megabytes_Write
+.fi
+
+.TP
+\fBNetwork\fR
+.nf
+Packets_In
+Megabytes_In
+Packets_Out
+Megabytes_Out
+.fi
+
+.TP
+\fBTask\fR
+.nf
+CPU_Frequency
+CPU_Time
+CPU_Utilization
+RSS
+VM_Size
+Pages
+Read_Megabytes
+Write_Megabytes
+.fi
+
+.SH "Examples"
+
+.TP
+Merge node-step files (as part of a sbatch script)
+.LP
+sbatch -n1 -d$SLURM_JOB_ID --wrap="sh5util --savefiles -j $SLURM_JOB_ID"
+
+.TP
+Extract all task data from a node
+.LP
+sh5util -j 42 -N snowflake01 --level=Node:TimeSeries --series=Tasks
+
+.TP
+Extract all energy data
+sh5util -j 42 --series=Energy --data=power
+
+.SH "COPYING"
+Copyright (C) 2013 Bull.
+.br
+Copyright (C) 2013 SchedMD LLC.
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP

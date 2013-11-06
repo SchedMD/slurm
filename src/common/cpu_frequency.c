@@ -5,7 +5,7 @@
  *  Written by Don Albert, <don.albert@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -221,7 +221,7 @@ rwfail:
  *  a pointer to a hex map string of the cpus to be used by this step
  */
 void
-cpu_freq_cpuset_validate(slurmd_job_t *job)
+cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 {
 	int cpuidx;
 	bitstr_t *cpus_to_set;
@@ -290,7 +290,7 @@ cpu_freq_cpuset_validate(slurmd_job_t *job)
  *  the list of cpus to be used by this step
  */
 void
-cpu_freq_cgroup_validate(slurmd_job_t *job, char *step_alloc_cores)
+cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 {
 	uint16_t start  = USHRT_MAX;
 	uint16_t end    = USHRT_MAX;
@@ -569,7 +569,7 @@ cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq)
  * set cpu frequency if possible for each cpu of the job step
  */
 void
-cpu_freq_set(slurmd_job_t *job)
+cpu_freq_set(stepd_step_rec_t *job)
 {
 	char path[SYSFS_PATH_MAX];
 	FILE *fp;
@@ -613,7 +613,7 @@ cpu_freq_set(slurmd_job_t *job)
  * default frequency and governor type
  */
 void
-cpu_freq_reset(slurmd_job_t *job)
+cpu_freq_reset(stepd_step_rec_t *job)
 {
 	char path[SYSFS_PATH_MAX];
 	FILE *fp;

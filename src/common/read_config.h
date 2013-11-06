@@ -11,7 +11,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -78,8 +78,11 @@ extern char *default_plugstack;
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct_gather/none"
 #define JOB_ACCT_GATHER_TYPE_NONE "jobacct_gather/none"
-#define DEFAULT_JOB_ACCT_GATHER_FREQ  30
+#define DEFAULT_JOB_ACCT_GATHER_FREQ  "30"
 #define DEFAULT_ACCT_GATHER_ENERGY_TYPE "acct_gather_energy/none"
+#define DEFAULT_ACCT_GATHER_PROFILE_TYPE "acct_gather_profile/none"
+#define DEFAULT_ACCT_GATHER_INFINIBAND_TYPE "acct_gather_infiniband/none"
+#define DEFAULT_ACCT_GATHER_FILESYSTEM_TYPE "acct_gather_filesystem/none"
 #define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
 #define DEFAULT_DISABLE_ROOT_JOBS   0
 #define DEFAULT_ENFORCE_PART_LIMITS 0
@@ -87,6 +90,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_JOB_COMP_LOC        "/var/log/slurm_jobcomp.log"
 #define DEFAULT_JOB_COMP_DB         "slurm_jobcomp_db"
+#define DEFAULT_JOB_CONTAINER_PLUGIN "job_container/none"
 #define DEFAULT_KEEP_ALIVE_TIME     ((uint16_t) NO_VAL)
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
@@ -96,7 +100,7 @@ extern char *default_plugstack;
 #  define DEFAULT_LAUNCH_TYPE         "launch/runjob"
 #elif defined HAVE_LIBNRT
 #  define DEFAULT_LAUNCH_TYPE         "launch/poe"
-#elif defined HAVE_REAL_CRAY
+#elif defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 #  define DEFAULT_LAUNCH_TYPE         "launch/aprun"
 #else
 #  define DEFAULT_LAUNCH_TYPE         "launch/slurm"
@@ -139,7 +143,9 @@ extern char *default_plugstack;
 #define DEFAULT_SCHEDTYPE           "sched/backfill"
 #ifdef HAVE_BG	/* Blue Gene specific default configuration parameters */
 #  define DEFAULT_SELECT_TYPE       "select/bluegene"
-#elif defined HAVE_CRAY
+#elif defined HAVE_ALPS_CRAY
+#  define DEFAULT_SELECT_TYPE       "select/alps"
+#elif defined HAVE_REAL_CRAY
 #  define DEFAULT_SELECT_TYPE       "select/cray"
 #else
 #  define DEFAULT_SELECT_TYPE       "select/linear"
@@ -153,7 +159,6 @@ extern char *default_plugstack;
 #define DEFAULT_STORAGE_LOC         "/var/log/slurm_jobacct.log"
 #define DEFAULT_STORAGE_USER        "root"
 #define DEFAULT_STORAGE_PORT        0
-#define DEFAULT_PGSQL_PORT          5432
 #define DEFAULT_MYSQL_PORT          3306
 #define DEFAULT_SUSPEND_RATE        60
 #define DEFAULT_SUSPEND_TIME        0
@@ -161,7 +166,7 @@ extern char *default_plugstack;
 #define DEFAULT_SWITCH_TYPE         "switch/none"
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
-#if defined HAVE_3D && !defined HAVE_CRAY
+#if defined HAVE_3D && !defined HAVE_ALPS_CRAY
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3d_torus"
 #else
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"
@@ -209,7 +214,15 @@ typedef struct slurm_conf_partition {
 	char *allow_alloc_nodes;/* comma delimited list of allowed
 				 * allocating nodes
 				 * NULL indicates all */
+	char *allow_accounts;   /* comma delimited list of accounts,
+				 * NULL indicates all */
 	char *allow_groups;	/* comma delimited list of groups,
+				 * NULL indicates all */
+	char *allow_qos;        /* comma delimited list of qos,
+			         * NULL indicates all */
+	char *deny_accounts;    /* comma delimited list of denied accounts,
+				 * NULL indicates all */
+	char *deny_qos;		/* comma delimited list of denied qos,
 				 * NULL indicates all */
 	char *alternate;	/* name of alternate partition */
 	uint16_t cr_type;	/* Custom CR values for partition (supported
@@ -222,6 +235,8 @@ typedef struct slurm_conf_partition {
 				     * default */
 	uint32_t grace_time;	/* default grace time for partition */
 	bool     hidden_flag;	/* 1 if hidden by default */
+	bool     lln_flag;	/* 1 if nodes are selected in LLN order */
+	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
@@ -497,12 +512,18 @@ extern void destroy_config_key_pair(void *object);
 extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_config_key_pair(void **object, uint16_t rpc_version,
 				  Buf buffer);
-extern int sort_key_pairs(config_key_pair_t *key_a, config_key_pair_t *key_b);
+extern int sort_key_pairs(void *v1, void *v2);
 /*
  * Return the pathname of the extra .conf file
  * return value must be xfreed
  */
 extern char *get_extra_conf_path(char *conf_name);
 
+/* Determine slurm_prog_name (calling process) is in list of daemons
+ *
+ * in - daemons (comma separated list of daemons i.e. slurmd,slurmstepd
+ * returns true if slurm_prog_name (set in log.c) is in list, false otherwise.
+ */
+extern bool run_in_daemon(char *daemons);
 
 #endif /* !_READ_CONFIG_H */

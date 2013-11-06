@@ -8,7 +8,7 @@
  *	Type "<ctrl-a>" to specify arguments for sattach
  *	Type "g" to start the program
  *
- * Information for other debuggers may be submitted to slurm-dev@lists.llnl.gov
+ * Information for other debuggers may be submitted to slurm-dev@schedmd.com
  */
 
 extern int sattach(int argc, char **argv);

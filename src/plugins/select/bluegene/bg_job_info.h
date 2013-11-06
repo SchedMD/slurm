@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -53,6 +53,7 @@ struct select_jobinfo {
 	uint32_t block_cnode_cnt; /* how many cnodes in the block
 				   * This is used to say we are
 				   * running a sub-block job. */
+	uint16_t cleaning;      /* if the job is cleaning or not */
 	uint32_t cnode_cnt;     /* how many cnodes in job running on block */
 	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
 	uint16_t dim_cnt;       /* how many dimensions this

@@ -12,7 +12,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -35,20 +35,27 @@ set test_id   "8.11"
 set exit_code 0
 set job_id    0
 set ret_code  0
+set launch_string "launching"
 
 if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 	send_user "\nWARNING: This test is only compatible with bluegene systems\n"
 	exit 0
 }
 
+if {![string compare [test_launch_type] "runjob"]} {
+	# On a real bluegene/Q the output is different so we have to
+	# account for that.
+	set launch_string "srun: auth"
+}
+
 #########salloc test###########
 # test salloc without overcommit
 proc salloc_submit {num_task} {
-	global exit_code salloc srun job_id number bin_sleep ret_code
+	global exit_code salloc srun job_id number bin_sleep ret_code launch_string
 
 	spawn $salloc -N1 -n$num_task --ntasks-per-node=$num_task $srun -v $bin_sleep 50
 	expect {
-		-re "launching" {
+		-re $launch_string {
 			set ret_code 0
 		}
 		-re "You requested" {
@@ -67,11 +74,11 @@ proc salloc_submit {num_task} {
 
 # test salloc with overcommit
 proc salloc_overcommit {num_task} {
-	global exit_code salloc srun job_id number bin_sleep ret_code
+	global exit_code salloc srun job_id number bin_sleep ret_code launch_string
 
 	spawn $salloc -N1 -n$num_task -O  --ntasks-per-node=$num_task $srun -v $bin_sleep 50
 	expect {
-		-re "launching" {
+		-re $launch_string {
 			set ret_code 0
 		}
 		-re "You requested" {

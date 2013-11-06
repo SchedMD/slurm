@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -162,6 +162,7 @@ static void _destroy_bg_config(bg_config_t *bg_conf)
 			bg_conf->ramdisk_list = NULL;
 		}
 
+		FREE_NULL_BITMAP(bg_conf->reboot_qos_bitmap);
 		xfree(bg_conf->slurm_user_name);
 		xfree(bg_conf->slurm_node_prefix);
 		xfree(bg_conf);
@@ -464,11 +465,11 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 #ifdef HAVE_BGQ
 	int dim;
 #endif
-	uint32_t count = NO_VAL, running_job = 0;
+	uint32_t count = NO_VAL;
 	struct job_record *job_ptr;
 	ListIterator itr;
 
-	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 		packstr(bg_record->blrtsimage, buffer);
 		pack_bit_fmt(bg_record->mp_bitmap, buffer);
@@ -524,57 +525,6 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
-	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
-		packstr(bg_record->bg_block_id, buffer);
-		packstr(bg_record->blrtsimage, buffer);
-		pack_bit_fmt(bg_record->mp_bitmap, buffer);
-#ifdef HAVE_BGQ
-		pack32(SYSTEM_DIMENSIONS, buffer);
-		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-			pack16(bg_record->conn_type[dim], buffer);
-#else
-		pack32(1, buffer); /* for dimensions of conn_type */
-		pack16(bg_record->conn_type[0], buffer);
-#endif
-		packstr(bg_record->ionode_str, buffer);
-		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
-
-		if (bg_record->job_list)
-			count = list_count(bg_record->job_list);
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(bg_record->job_list);
-			while ((job_ptr = list_next(itr))) {
-				if (job_ptr->magic != JOB_MAGIC) {
-					error("_pack_block 2.3: "
-					      "bad magic found when "
-					      "packing block %s",
-					      bg_record->bg_block_id);
-					list_delete_item(itr);
-					continue;
-				}
-				_local_pack_block_job_info(
-					job_ptr, buffer, protocol_version);
-			}
-			list_iterator_destroy(itr);
-		}
-		if ((count == 1) && running_job)
-			pack32((uint32_t)running_job, buffer);
-		else
-			pack32((uint32_t)bg_record->job_running, buffer);
-		count = NO_VAL;
-
-		packstr(bg_record->linuximage, buffer);
-		packstr(bg_record->mloaderimage, buffer);
-		packstr(bg_record->mp_str, buffer);
-		packnull(buffer); /* for mp_used_str */
-		pack32((uint32_t)bg_record->cnode_cnt, buffer);
-		pack16((uint16_t)bg_record->node_use, buffer);
-		packnull(buffer); /* for user_name */
-		packstr(bg_record->ramdiskimage, buffer);
-		packstr(bg_record->reason, buffer);
-		pack16((uint16_t)bg_record->state, buffer);
-		packnull(buffer); /* for mp_used_inx */
 	}
 }
 
@@ -589,7 +539,7 @@ static void _pack_block_ext(bg_record_t *bg_record, Buf buffer,
 
 	xassert(bg_record);
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (bg_record->ba_mp_list)
 			count = list_count(bg_record->ba_mp_list);
 		pack32(count, buffer);
@@ -624,7 +574,7 @@ static int _unpack_block_ext(bg_record_t *bg_record, Buf buffer,
 
 	xassert(bg_record);
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count == NO_VAL) {
 			error("_unpack_block_ext: bg_record record has no "
@@ -646,17 +596,6 @@ static int _unpack_block_ext(bg_record_t *bg_record, Buf buffer,
 		safe_unpack16(&temp16, buffer);
 		bg_record->full_block = temp16;
 		safe_pack32(bg_record->switch_count, buffer);
-	} else {
-		/* packing didn't exist before 2.3, so set things up
-		 * to go forward */
-		if (bg_conf->mp_cnode_cnt > bg_record->cnode_cnt) {
-			bg_record->cpu_cnt = bg_conf->cpus_per_mp /
-				(bg_conf->mp_cnode_cnt / bg_record->cnode_cnt);
-		} else {
-			bg_record->cpu_cnt = bg_conf->cpus_per_mp
-				* bg_record->mp_count;
-		}
-		process_nodes(bg_record, true);
 	}
 
 	return SLURM_SUCCESS;
@@ -1316,6 +1255,7 @@ extern int init(void)
 		if (bg_conf->ramdisk_list)
 			list_destroy(bg_conf->ramdisk_list);
 		bg_conf->ramdisk_list = list_create(destroy_image);
+		bg_conf->reboot_qos_bitmap = NULL;
 
 		ba_init(NULL, 1);
 
@@ -1828,11 +1768,34 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
+	int	rc = SLURM_ERROR;
+
 #ifdef HAVE_BG
-	return term_job(job_ptr);
-#else
-	return SLURM_ERROR;
+	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+	List kill_list = NULL;
+
+	jobinfo->cleaning = 1;
+
+	rc = term_job(job_ptr);
+	if (rc != SLURM_SUCCESS) {
+		error("select_p_job_fini: failed to terminate job %u",
+		      job_ptr->job_id);
+		return rc;
+	}
+
+	/* Make sure this job wasn't blocking something that failed
+	   earlier */
+	slurm_mutex_lock(&block_state_mutex);
+
+	bg_record_hw_failure(jobinfo->bg_record, &kill_list);
+
+	slurm_mutex_unlock(&block_state_mutex);
+
+	if (kill_list)
+		bg_record_post_hw_failure(&kill_list, 1);
+
 #endif
+	return rc;
 }
 
 extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
@@ -1862,12 +1825,13 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 	jobinfo = job_ptr->select_jobinfo->data;
 	bg_record = jobinfo->bg_record;
 
-	if (!bg_record)
+	if (!bg_record) {
 		fatal("This job %u does not have a bg block "
 		      "assigned to it, but for some reason we are "
 		      "trying to start a step on it?",
 		      job_ptr->job_id);
-	else if (bg_record->magic != BLOCK_MAGIC) {
+		return NULL;	/* Fix CLANG false positive */
+	} else if (bg_record->magic != BLOCK_MAGIC) {
 		bg_record = find_bg_record_in_list(
 			bg_lists->main, jobinfo->bg_block_id);
 		if (!bg_record || (bg_record->magic != BLOCK_MAGIC)) {
@@ -1878,7 +1842,8 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			      "and ending job.",
 			      job_ptr->job_id, jobinfo->bg_block_id);
 			slurm_mutex_unlock(&block_state_mutex);
-			bg_requeue_job(job_ptr->job_id, 0, 1);
+			bg_requeue_job(job_ptr->job_id, 0, 1, JOB_NODE_FAIL,
+				       false);
 			return NULL;
 		}
 		error("select_p_step_pick_nodes: Whoa, some how we got a "
@@ -1897,7 +1862,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		     "it has an action item of 'D' on it, ending job %u.",
 		     bg_record->bg_block_id, job_ptr->job_id);
 		slurm_mutex_unlock(&block_state_mutex);
-		bg_requeue_job(job_ptr->job_id, 0, 1);
+		bg_requeue_job(job_ptr->job_id, 0, 1, JOB_NODE_FAIL, false);
 		return NULL;
 	}
 
@@ -2059,6 +2024,11 @@ end_it:
 	return picked_mps;
 }
 
+extern int select_p_step_start(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
 	bg_record_t *bg_record = NULL;
@@ -2154,7 +2124,7 @@ extern int select_p_pack_select_info(time_t last_query_time,
 		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			if (bg_lists->main) {
 				/* Lock job read before block to avoid
 				 * deadlock job lock is needed because
@@ -2835,6 +2805,7 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	ListIterator itr, itr2;
 	ba_mp_t *ba_mp = NULL, *found_ba_mp;
 	int i;
+	List kill_list = NULL;
 
 	xassert(step_ptr);
 
@@ -2940,10 +2911,16 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&ba_system_mutex);
-	slurm_mutex_unlock(&block_state_mutex);
-	if (step_ptr->job_ptr->kill_on_node_fail)
-		bg_requeue_job(step_ptr->job_ptr->job_id, 0, 1);
 
+	bg_record_hw_failure(jobinfo->bg_record, &kill_list);
+
+	slurm_mutex_unlock(&block_state_mutex);
+
+	if (kill_list)
+		bg_record_post_hw_failure(&kill_list, 1);
+	else if (step_ptr->job_ptr->kill_on_node_fail)
+		bg_requeue_job(step_ptr->job_ptr->job_id, 0, 1, JOB_NODE_FAIL,
+			       false);
 #endif
 	return SLURM_SUCCESS;
 }

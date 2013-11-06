@@ -13,7 +13,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -304,7 +304,7 @@ puts $file ", ('$node0', '$cluster', $node0_cpus, $node0_down_start, $node0_down
 puts $file "on duplicate key update period_start=VALUES(period_start), period_end=VALUES(period_end);"
 
 #now we will put in a job running for an hour and 5 minutes
-puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, partition, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, alloc_cpus, nodelist, kill_requid, qos, deleted) values"
+puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, alloc_cpus, nodelist, kill_requid, qos, deleted) values"
 puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
 puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
 puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
@@ -346,7 +346,7 @@ if { $exit_code } {
 # Use sacct to see if the job loaded
 #
 set matches 0
-set my_pid [eval spawn $sacct -p -C $cluster --fields=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
+set my_pid [eval spawn $sacct -p -C $cluster --format=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"

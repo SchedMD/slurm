@@ -9,7 +9,7 @@
  *  Written by Morris Jette <jette1@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -108,7 +108,7 @@
  */
 const char	plugin_name[]		= "Gres MIC plugin";
 const char	plugin_type[]		= "gres/mic";
-const uint32_t	plugin_version		= 110;
+const uint32_t	plugin_version		= 120;
 
 static char	gres_name[]		= "mic";
 
@@ -122,7 +122,7 @@ static int nb_available_files;
  */
 extern int node_config_load(List gres_conf_list)
 {
-	int i, rc = SLURM_ERROR;
+	int i, rc = SLURM_SUCCESS;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int nb_mic = 0;	/* Number of MICs in the list */
@@ -133,7 +133,6 @@ extern int node_config_load(List gres_conf_list)
 	while ((gres_slurmd_conf = list_next(iter))) {
 		if (strcmp(gres_slurmd_conf->name, gres_name))
 			continue;
-		rc = SLURM_SUCCESS;
 		if (gres_slurmd_conf->file)
 			nb_mic++;
 	}
@@ -257,7 +256,7 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 	}
 }
 
-/* Send GRES information to slurmstepd on the specified file descriptor*/
+/* Send GRES information to slurmstepd on the specified file descriptor */
 extern void send_stepd(int fd)
 {
 	int i;
@@ -270,7 +269,7 @@ extern void send_stepd(int fd)
 rwfail:	error("gres_plugin_send_stepd failed");
 }
 
-/* Receive GRES information from slurmd on the specified file descriptor*/
+/* Receive GRES information from slurmd on the specified file descriptor */
 extern void recv_stepd(int fd)
 {
 	int i;
@@ -283,4 +282,16 @@ extern void recv_stepd(int fd)
 	return;
 
 rwfail:	error("gres_plugin_recv_stepd failed");
+}
+
+extern int job_info(gres_job_state_t *job_gres_data, uint32_t node_inx,
+		    enum gres_job_data_type data_type, void *data)
+{
+	return EINVAL;
+}
+
+extern int step_info(gres_step_state_t *step_gres_data, uint32_t node_inx,
+		     enum gres_step_data_type data_type, void *data)
+{
+	return EINVAL;
 }

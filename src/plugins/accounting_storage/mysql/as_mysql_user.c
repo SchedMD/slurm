@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -1121,12 +1121,13 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	if (private_data & PRIVATE_DATA_USERS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-			if (!is_user_any_coord(mysql_conn, &user)) {
-				error("Only admins/coordinators can "
-				      "access user data");
-				errno = ESLURM_ACCESS_DENIED;
-				return NULL;
-			}
+			assoc_mgr_fill_in_user(
+				mysql_conn, &user, 1, NULL);
+		}
+		if (!is_admin && !user.name) {
+			debug("User %u has no assocations, and is not admin, "
+			      "so not returning any users.", user.uid);
+			return NULL;
 		}
 	}
 

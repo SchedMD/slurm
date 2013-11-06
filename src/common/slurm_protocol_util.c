@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -42,26 +42,21 @@
 #include <string.h>
 #include <assert.h>
 
+#include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_util.h"
-#include "src/common/log.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
 
 uint16_t _get_slurm_version(uint32_t rpc_version)
 {
-	uint16_t version;
-
-	if (rpc_version >= 12)
-		version = SLURM_PROTOCOL_VERSION;
-	else if (rpc_version >= 11)
-		version = SLURM_2_5_PROTOCOL_VERSION;
-	else if (rpc_version >= 10)
-		version = SLURM_2_4_PROTOCOL_VERSION;
+	if (rpc_version >= SLURM_PROTOCOL_VERSION)
+		return SLURM_PROTOCOL_VERSION;
+	else if (rpc_version >= SLURMDBD_2_6_VERSION)
+		return SLURM_2_6_PROTOCOL_VERSION;
 	else
-		version = SLURM_2_3_PROTOCOL_VERSION;
-
-	return version;
+		return SLURM_2_5_PROTOCOL_VERSION;
 }
 
 /*
@@ -81,9 +76,10 @@ int check_header_version(header_t * header)
 
 	if (slurmdbd_conf) {
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
-		    (header->version != SLURM_2_5_PROTOCOL_VERSION) &&
-		    (header->version != SLURM_2_4_PROTOCOL_VERSION)) {
-			debug("unsupported RPC version %hu", header->version);
+		    (header->version != SLURM_2_6_PROTOCOL_VERSION) &&
+		    (header->version != SLURM_2_5_PROTOCOL_VERSION)) {
+			debug("unsupported RPC version %hu msg type %u",
+			      header->version, header->msg_type);
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 		}
 	} else if (header->version != check_version) {
@@ -101,10 +97,10 @@ int check_header_version(header_t * header)
 			break;
 		default:
 			if ((header->version != SLURM_PROTOCOL_VERSION)     &&
-			    (header->version != SLURM_2_5_PROTOCOL_VERSION) &&
-			    (header->version != SLURM_2_4_PROTOCOL_VERSION)) {
-				debug("unsupported RPC version %hu",
-				      header->version);
+			    (header->version != SLURM_2_6_PROTOCOL_VERSION) &&
+			    (header->version != SLURM_2_5_PROTOCOL_VERSION)) {
+				debug("Unsupported RPC version %hu msg type %u",
+				      header->version, header->msg_type);
 				slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 			}
 			break;
@@ -124,7 +120,7 @@ int check_header_version(header_t * header)
  */
 void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 {
-	memset(header, 0, sizeof(header));
+	memset(header, 0, sizeof(header_t));
 	/* Since the slurmdbd could talk to a host of different
 	   versions of slurm this needs to be kept current when the
 	   protocol version changes. */

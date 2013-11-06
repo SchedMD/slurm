@@ -5,7 +5,7 @@
  *  Copyright (C) 2005-2006 Hewlett-Packard Development Company, L.P.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,7 +38,7 @@
 
 static int is_power = -1;
 
-void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
+void slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval)
 {
 	char *bind_type, *action, *status, *units;
 	char mstr[1 + CPU_SETSIZE / 4];
@@ -132,7 +132,7 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 #endif
 }
 
-int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
+int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job)
 {
 	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;

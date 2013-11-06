@@ -4,7 +4,7 @@
 *  Written by Danny Auble <da@schedmd.com>
 *
 *  This file is part of SLURM, a resource management program.
-*  For details, see <http://www.schedmd.com/slurmdocs/>.
+*  For details, see <http://slurm.schedmd.com/>.
 *  Please also read the included file: DISCLAIMER.
 *
 *  SLURM is free software; you can redistribute it and/or modify it under
@@ -202,7 +202,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.task_count = opt.ntasks;
 
 	if (opt.mem_per_cpu != NO_VAL)
-		job->ctx_params.mem_per_cpu = opt.mem_per_cpu;
+		job->ctx_params.pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
+	else if (opt.pn_min_memory != NO_VAL)
+		job->ctx_params.pn_min_memory = opt.pn_min_memory;
 	if (opt.gres)
 		job->ctx_params.gres = opt.gres;
 	else

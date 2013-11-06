@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -82,9 +82,9 @@ static void _reopen_slurmdbd_fd(slurm_addr_t dbd_addr)
 	_open_slurmdbd_fd(dbd_addr);
 }
 
-/* run_backup - this is the backup controller, it should run in standby
+/* run_dbd_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
-extern void run_backup(void)
+extern void run_dbd_backup(void)
 {
 	slurm_addr_t dbd_addr;
 

@@ -10,7 +10,7 @@
  *  Written by Danny Auble <da@schedmd.com, da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -51,7 +51,6 @@
 #include "as_mysql_archive.h"
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
-#include "as_mysql_convert.h"
 #include "as_mysql_job.h"
 #include "as_mysql_jobacct_process.h"
 #include "as_mysql_problems.h"
@@ -656,12 +655,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	/* DEF_TIMERS; */
-	/* START_TIMER; */
-	if (as_mysql_convert_tables(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
-	/* END_TIMER; */
-	/* info("conversion took %s", TIME_STR); */
 
 	if (mysql_db_create_table(mysql_conn, acct_coord_table,
 				  acct_coord_table_fields,
@@ -885,6 +878,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_assoc", "int not null" },
 		{ "time_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0 not null" },
+		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -900,6 +894,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "idle_cpu_secs", "bigint default 0 not null" },
 		{ "resv_cpu_secs", "bigint default 0 not null" },
 		{ "over_cpu_secs", "bigint default 0 not null" },
+		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -935,6 +930,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_user", "int unsigned not null" },
 		{ "id_group", "int unsigned not null" },
 		{ "kill_requid", "int default -1 not null" },
+		{ "mem_req", "int unsigned default 0 not null" },
 		{ "nodelist", "text" },
 		{ "nodes_alloc", "int unsigned not null" },
 		{ "node_inx", "text" },
@@ -998,23 +994,32 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "sys_sec", "int unsigned default 0 not null" },
 		{ "sys_usec", "int unsigned default 0 not null" },
 		{ "max_pages", "int unsigned default 0 not null" },
-		{ "max_pages_task", "smallint unsigned default 0 not null" },
+		{ "max_pages_task", "int unsigned default 0 not null" },
 		{ "max_pages_node", "int unsigned default 0 not null" },
 		{ "ave_pages", "double unsigned default 0.0 not null" },
 		{ "max_rss", "bigint unsigned default 0 not null" },
-		{ "max_rss_task", "smallint unsigned default 0 not null" },
+		{ "max_rss_task", "int unsigned default 0 not null" },
 		{ "max_rss_node", "int unsigned default 0 not null" },
 		{ "ave_rss", "double unsigned default 0.0 not null" },
 		{ "max_vsize", "bigint unsigned default 0 not null" },
-		{ "max_vsize_task", "smallint unsigned default 0 not null" },
+		{ "max_vsize_task", "int unsigned default 0 not null" },
 		{ "max_vsize_node", "int unsigned default 0 not null" },
 		{ "ave_vsize", "double unsigned default 0.0 not null" },
 		{ "min_cpu", "int unsigned default 0 not null" },
-		{ "min_cpu_task", "smallint unsigned default 0 not null" },
+		{ "min_cpu_task", "int unsigned default 0 not null" },
 		{ "min_cpu_node", "int unsigned default 0 not null" },
 		{ "ave_cpu", "double unsigned default 0.0 not null" },
 		{ "act_cpufreq", "double unsigned default 0.0 not null" },
 		{ "consumed_energy", "double unsigned default 0.0 not null" },
+		{ "req_cpufreq", "int unsigned default 0 not null" },
+		{ "max_disk_read", "double unsigned default 0.0 not null" },
+		{ "max_disk_read_task", "int unsigned default 0 not null" },
+		{ "max_disk_read_node", "int unsigned default 0 not null" },
+		{ "ave_disk_read", "double unsigned default 0.0 not null" },
+		{ "max_disk_write", "double unsigned default 0.0 not null" },
+		{ "max_disk_write_task", "int unsigned default 0 not null" },
+		{ "max_disk_write_node", "int unsigned default 0 not null" },
+		{ "ave_disk_write", "double unsigned default 0.0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -1046,69 +1051,19 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
 		{ "over_cpu_secs", "bigint default 0" },
+		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	char table_name[200];
-	char *query = NULL;
-	bool def_exist = 0, user_table_exists = 0;
-	MYSQL_RES *result = NULL;
-
-	query = xstrdup_printf("show tables like '%s';", user_table);
-
-	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-	user_table_exists = mysql_num_rows(result);
-	mysql_free_result(result);
-	result = NULL;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_table);
-
-	/* See if the tables exist (if not new cluster, so no altering
-	   has to take place.)  table_name can't be used here since it
-	   has the "'s in it which don't work in this query.
-	*/
-	query = xstrdup_printf("show tables like '%s_%s';",
-			       cluster_name, assoc_table);
-
-	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-	/* Here if the tables do exist then set def_exist to 0 so we
-	   check for the fields afterwards.
-	*/
-	def_exist = mysql_num_rows(result) ? 0 : 1;
-	mysql_free_result(result);
-	result = NULL;
-	if (!def_exist) {
-		/* need to see if this table already has defaults or not */
-		query = xstrdup_printf(
-			"show columns from %s where Field='is_def';",
-			table_name);
-		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-			xfree(query);
-			return SLURM_ERROR;
-		}
-		xfree(query);
-		def_exist = mysql_num_rows(result);
-		mysql_free_result(result);
-		result = NULL;
-	}
-
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  assoc_table_fields,
 				  ", primary key (id_assoc), "
 				  " unique index (user(20), acct(20), "
-				  "partition(20)))")
+				  "`partition`(20)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1177,7 +1132,10 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name, job_table_fields,
 				  ", primary key (job_db_inx), "
 				  "unique index (id_job, "
-				  "id_assoc, time_submit))")
+				  "id_assoc, time_submit), "
+				  "key rollup (time_eligible, time_end), "
+				  "key sacct_def (id_user, time_start, "
+				  "time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1209,27 +1167,12 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		 cluster_name, suspend_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  suspend_table_fields,
-				  ")") == SLURM_ERROR)
+				  ", key job_db_inx_times (job_db_inx, "
+				  "time_start, time_end))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_table);
-	if (!def_exist) {
-		/* need to see if this table already has defaults or not */
-		query = xstrdup_printf(
-			"show columns from %s where Field='is_def';",
-			table_name);
-		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-			xfree(query);
-			return SLURM_ERROR;
-		}
-		xfree(query);
-		def_exist = mysql_num_rows(result);
-		mysql_free_result(result);
-		result = NULL;
-	}
-
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  wckey_table_fields,
 				  ", primary key (id_wckey), "
@@ -1264,13 +1207,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
-
-	if (!def_exist && user_table_exists)
-		/* now set the default for each user since the tables
-		 * exist, but the defaults don't. */
-		if (as_mysql_convert_user_defs(mysql_conn, cluster_name)
-		    != SLURM_SUCCESS)
-			return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -2153,8 +2089,10 @@ extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
 	       rollback);
 
 	if (!(mysql_conn = create_mysql_conn(
-		      conn_num, rollback, cluster_name)))
+		      conn_num, rollback, cluster_name))) {
 		fatal("couldn't get a mysql_conn");
+		return NULL;	/* Fix CLANG false positive error */
+	}
 
 	errno = SLURM_SUCCESS;
 	mysql_db_get_db_connection(mysql_conn, mysql_db_name, mysql_db_info);

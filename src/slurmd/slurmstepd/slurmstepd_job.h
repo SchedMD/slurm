@@ -1,15 +1,16 @@
 /*****************************************************************************\
- *  src/slurmd/slurmstepd/slurmstepd_job.h  slurmd_job_t definition
+ *  src/slurmd/slurmstepd/slurmstepd_job.h  stepd_step_rec_t definition
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -52,7 +53,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/list.h"
 #include "src/common/eio.h"
-#include "src/common/switch.h"
 #include "src/common/env.h"
 #include "src/common/io_hdr.h"
 #include "src/common/job_options.h"
@@ -62,11 +62,11 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
-typedef struct srun_key {
+typedef struct {
 	unsigned char data[SLURM_IO_KEY_SIZE];
 } srun_key_t;
 
-typedef struct srun_info {
+typedef struct {
 	srun_key_t *key;	   /* srun key for IO verification         */
 	slurm_addr_t resp_addr;	   /* response addr for task exit msg      */
 	slurm_addr_t ioaddr;       /* Address to connect on for normal I/O.
@@ -74,16 +74,16 @@ typedef struct srun_info {
 				      resp_addr. */
 } srun_info_t;
 
-typedef enum task_state {
-	SLURMD_TASK_INIT,
-	SLURMD_TASK_STARTING,
-	SLURMD_TASK_RUNNING,
-	SLURMD_TASK_COMPLETE
-} slurmd_task_state_t;
+typedef enum {
+	STEPD_STEP_TASK_INIT,
+	STEPD_STEP_TASK_STARTING,
+	STEPD_STEP_TASK_RUNNING,
+	STEPD_STEP_TASK_COMPLETE
+} stepd_step_task_state_t;
 
-typedef struct task_info {
+typedef struct {
 	pthread_mutex_t mutex;	    /* mutex to protect task state          */
-	slurmd_task_state_t state;  /* task state                           */
+	stepd_step_task_state_t state;  /* task state                       */
 
 	int             id;	    /* local task id                        */
 	uint32_t        gtid;	    /* global task id                       */
@@ -102,15 +102,17 @@ typedef struct task_info {
 	eio_obj_t      *out;        /* standard output event IO object      */
 	eio_obj_t      *err;        /* standard error event IO object       */
 
+	bool            killed_by_cmd; /* true if task killed by our signal */
+	bool            aborted;    /* true if task called abort            */
 	bool            esent;      /* true if exit status has been sent    */
 	bool            exited;     /* true if task has exited              */
 	int             estatus;    /* this task's exit status              */
 
 	uint32_t	argc;
 	char	      **argv;
-} slurmd_task_info_t;
+} stepd_step_task_info_t;
 
-typedef struct slurmd_job {
+typedef struct {
 	slurmstepd_state_t state;
 	uint32_t       jobid;  /* Current SLURM job id                      */
 	uint32_t       stepid; /* Current step id (or NO_VAL)               */
@@ -147,10 +149,11 @@ typedef struct slurmd_job {
 	bool           run_prolog; /* true if need to run prolog            */
 	bool           user_managed_io;
 	time_t         timelimit;  /* time at which job must stop           */
+	uint32_t       profile;	   /* Level of acct_gather_profile          */
 	char          *task_prolog; /* per-task prolog                      */
 	char          *task_epilog; /* per-task epilog                      */
 	struct passwd *pwd;   /* saved passwd struct for user job           */
-	slurmd_task_info_t  **task;  /* array of task information pointers  */
+	stepd_step_task_info_t  **task;  /* array of task information pointers*/
 	eio_handle_t  *eio;
 	List 	       sruns; /* List of srun_info_t pointers               */
 	List           clients; /* List of struct client_io_info pointers   */
@@ -209,31 +212,30 @@ typedef struct slurmd_job {
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */
 	List           job_gres_list;	/* Needed by GRES plugin */
 	List           step_gres_list;	/* Needed by GRES plugin */
-} slurmd_job_t;
+} stepd_step_rec_t;
 
 
-slurmd_job_t * job_create(launch_tasks_request_msg_t *msg);
-slurmd_job_t * job_batch_job_create(batch_job_launch_msg_t *msg);
+stepd_step_rec_t * stepd_step_rec_create(launch_tasks_request_msg_t *msg);
+stepd_step_rec_t * batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
-void job_kill(slurmd_job_t *job, int signal);
+void stepd_step_rec_destroy(stepd_step_rec_t *job);
 
-void job_destroy(slurmd_job_t *job);
-
-struct srun_info * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
+srun_info_t * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
 				    slurm_addr_t *ioaddr);
 
-void  srun_info_destroy(struct srun_info *srun);
+void  srun_info_destroy(srun_info_t *srun);
 
-slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
-				      char *ifname, char *ofname, char *efname);
+stepd_step_task_info_t * task_info_create(int taskid, int gtaskid,
+					  char *ifname, char *ofname,
+					  char *efname);
 
 /*
  *  Return a task info structure corresponding to pid.
  *   We inline it here so that it can be included from src/common/plugstack.c
  *   without undefined symbol warnings.
  */
-static inline slurmd_task_info_t *
-job_task_info_by_pid (slurmd_job_t *job, pid_t pid)
+static inline stepd_step_task_info_t *
+job_task_info_by_pid (stepd_step_rec_t *job, pid_t pid)
 {
 	uint32_t i;
 	for (i = 0; i < job->node_tasks; i++) {

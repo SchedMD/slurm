@@ -8,7 +8,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the supplied file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -171,6 +171,18 @@ test1.64   Test interuption of srun while waiting for resource allocation.
 test1.65   Test of srun --mpi=list option.
 test1.66   Test srun to make sure that the jobs are running on the correct node
 	    within a allocation.
+test1.67   Test that an srun program can move from the background to the
+           foreground.
+test1.68   Test that an srun program can move from the foreground to the
+           background.
+test1.69   Test that multiple srun programs execute simultaneously in the
+           background.
+test1.70   Validates that srun standard input and output work with binary files.
+test1.71   Validates that srun exit code matches that of a test program.
+test1.72   Validate that the JobAcctGatherFrequency value is enforced when
+	   used in srun.
+test1.73   Validate that the OverTimeLimit value set in the slurm.conf
+	   file is enforce when running a job with a timelimit.
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
 	   The test will print "WARNING" and terminate with an exit code of
@@ -185,7 +197,7 @@ test1.83   Test of contiguous option with multiple nodes (--contiguous option).
 	   Also see test1.14.
 test1.84   Test of cpus-per-task option on a single node (--cpus-per-task
 	   option).
-test1.85   REMOVED
+test1.85   Test of node selection from within a job step on existing allocation
 test1.86   Confirm node selection from within a job step on existing allocation
 	   (--nodelist, --exclude, --nodes and --nprocs options).
 test1.87   Confirm node selection from within a job step on existing allocation
@@ -219,6 +231,11 @@ test2.12   Validate scontrol show topology option.
 test2.13   Validate scontrol update command for job steps.
 test2.14   Validate scontrol update size of running job.
 test2.15   Validate scontrol update size of running job with some running tasks.
+test2.16   Validate scontrol displays and updates Allow/Deny accounts.
+test2.17   Validate scontrol displays and updates Allow/Deny Qos.
+test2.18   Validate that Allow/Deny accounts are enforced.
+test2.19   Validate that Allow/Deny Qos are enforced.
+test2.20   Validate scontrol show hostnames.
 
 
 test3.#    Testing of scontrol options (best run as SlurmUser or root).
@@ -408,7 +425,7 @@ test12.2   Test validity/accuracy of accounting data for exit code,
 test12.3   Test sacct filtering of records by account and job name.
 test12.4   Test sacct --b, g, j, l, n, p, u, v options.
 test12.5   Test sacct --helpformat option.
-
+test12.6   Test hdf5 acct_gather_profile (--profile=task)
 
 test13.#   Testing of switch plugins
 ====================================
@@ -547,6 +564,13 @@ test20.1   qsub command tests
 test20.2   qstat command tests
 test20.3   qdel command tests
 test20.4   pbsnodes command tests
+test20.5   Test the qalter --help option
+test20.6   Test the qalter -r option of altering a job's rerunnable flag
+test20.7   Test qalter's -o option for changing the stdout path of a job
+test20.8   Test the qalter -N option for changing the name of a job.
+test20.9   Test for the qalter --man option
+test20.10  Test for the qrerun --help option
+test20.11  Test for the qrerun --man option
 
 
 test21.#   Testing of sacctmgr commands and options.
@@ -635,3 +659,20 @@ test28.4   Validates scontrol update command for a job array with
 	   a job array index and the whole job array.
 test28.5   Validates that scontrol can hold and release a whole job
 	   array or an individual jobid index.
+test28.6   Validates that when a job array is submitted to multiple
+	   partitions that the jobs run on them.
+
+test29.#   Reserved.
+====================
+
+
+test30.#   Test of RPM builds.
+==============================
+test30.1   Validates that rpms are built with the correct prefix.
+
+
+test31.#   Test of Slurm Epilog and Prolog.
+===========================================
+test31.1   Validate that the epilog and prologs behave the way
+	   they should when starting at child process in the
+	   prolog/epilog.

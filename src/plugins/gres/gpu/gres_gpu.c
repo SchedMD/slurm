@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -106,13 +106,26 @@
  */
 const char	plugin_name[]		= "Gres GPU plugin";
 const char	plugin_type[]		= "gres/gpu";
-const uint32_t	plugin_version		= 110;
+const uint32_t	plugin_version		= 120;
 
 static char	gres_name[]		= "gpu";
 
 static int *gpu_devices = NULL;
 static int nb_available_files;
 
+extern int init(void)
+{
+	debug("%s: %s loaded", __func__, plugin_name);
+
+	return SLURM_SUCCESS;
+}
+extern int fini(void)
+{
+	debug("%s: unloading %s", __func__, plugin_name);
+	xfree(gpu_devices);
+
+	return SLURM_SUCCESS;
+}
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.
@@ -120,7 +133,7 @@ static int nb_available_files;
  */
 extern int node_config_load(List gres_conf_list)
 {
-	int i, rc = SLURM_ERROR;
+	int i, rc = SLURM_SUCCESS;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int nb_gpu = 0;	/* Number of GPUs in the list */
@@ -131,7 +144,6 @@ extern int node_config_load(List gres_conf_list)
 	while ((gres_slurmd_conf = list_next(iter))) {
 		if (strcmp(gres_slurmd_conf->name, gres_name))
 			continue;
-		rc = SLURM_SUCCESS;
 		if (gres_slurmd_conf->file)
 			nb_gpu++;
 	}
@@ -220,7 +232,8 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			if (gpu_devices && (gpu_devices[i] >= 0))
+			if (gpu_devices && (i < nb_available_files) &&
+			    (gpu_devices[i] >= 0))
 				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
 			else
 				xstrfmtcat(dev_list, "%d", i);
@@ -263,7 +276,8 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			if (gpu_devices && (gpu_devices[i] >= 0))
+			if (gpu_devices && (i < nb_available_files) &&
+			    (gpu_devices[i] >= 0))
 				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
 			else
 				xstrfmtcat(dev_list, "%d", i);
@@ -284,7 +298,7 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 	}
 }
 
-/* Send GRES information to slurmstepd on the specified file descriptor*/
+/* Send GRES information to slurmstepd on the specified file descriptor */
 extern void send_stepd(int fd)
 {
 	int i;
@@ -297,7 +311,7 @@ extern void send_stepd(int fd)
 rwfail:	error("gres_plugin_send_stepd failed");
 }
 
-/* Receive GRES information from slurmd on the specified file descriptor*/
+/* Receive GRES information from slurmd on the specified file descriptor */
 extern void recv_stepd(int fd)
 {
 	int i;
@@ -310,4 +324,16 @@ extern void recv_stepd(int fd)
 	return;
 
 rwfail:	error("gres_plugin_recv_stepd failed");
+}
+
+extern int job_info(gres_job_state_t *job_gres_data, uint32_t node_inx,
+		     enum gres_job_data_type data_type, void *data)
+{
+	return EINVAL;
+}
+
+extern int step_info(gres_step_state_t *step_gres_data, uint32_t node_inx,
+		     enum gres_step_data_type data_type, void *data)
+{
+	return EINVAL;
 }

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -52,9 +52,14 @@
 #endif
 #include <unistd.h>
 
-#include <sys/types.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -108,7 +113,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_create ( slurmd_job_t *job )
+extern int proctrack_p_plugin_create ( stepd_step_rec_t *job )
 {
 	return SLURM_SUCCESS;
 }
@@ -116,13 +121,13 @@ extern int slurm_container_plugin_create ( slurmd_job_t *job )
 /*
  * Uses job step process group id.
  */
-extern int slurm_container_plugin_add ( slurmd_job_t *job, pid_t pid )
+extern int proctrack_p_plugin_add ( stepd_step_rec_t *job, pid_t pid )
 {
 	job->cont_id = (uint64_t)job->pgid;
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_signal  ( uint64_t id, int signal )
+extern int proctrack_p_plugin_signal  ( uint64_t id, int signal )
 {
 	pid_t pid = (pid_t) id;
 
@@ -137,12 +142,12 @@ extern int slurm_container_plugin_signal  ( uint64_t id, int signal )
 	return SLURM_ERROR;
 }
 
-extern int slurm_container_plugin_destroy ( uint64_t id )
+extern int proctrack_p_plugin_destroy ( uint64_t id )
 {
 	return SLURM_SUCCESS;
 }
 
-extern uint64_t slurm_container_plugin_find(pid_t pid)
+extern uint64_t proctrack_p_plugin_find(pid_t pid)
 {
 	pid_t rc = getpgid(pid);
 
@@ -152,7 +157,7 @@ extern uint64_t slurm_container_plugin_find(pid_t pid)
 		return (uint64_t) rc;
 }
 
-extern bool slurm_container_plugin_has_pid(uint64_t cont_id, pid_t pid)
+extern bool proctrack_p_plugin_has_pid(uint64_t cont_id, pid_t pid)
 {
 	pid_t pgid = getpgid(pid);
 
@@ -163,7 +168,7 @@ extern bool slurm_container_plugin_has_pid(uint64_t cont_id, pid_t pid)
 }
 
 extern int
-slurm_container_plugin_wait(uint64_t cont_id)
+proctrack_p_plugin_wait(uint64_t cont_id)
 {
 	pid_t pgid = (pid_t)cont_id;
 	int delay = 1;
@@ -175,7 +180,7 @@ slurm_container_plugin_wait(uint64_t cont_id)
 
 	/* Spin until the process group is gone. */
 	while (killpg(pgid, 0) == 0) {
-		slurm_container_plugin_signal(cont_id, SIGKILL);
+		proctrack_p_plugin_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;
@@ -188,9 +193,61 @@ slurm_container_plugin_wait(uint64_t cont_id)
 }
 
 extern int
-slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
+proctrack_p_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
-	error("proctrack/pgid does not implement "
-	      "slurm_container_plugin_get_pids");
-	return SLURM_ERROR;
+	DIR *dir;
+	struct dirent *de;
+	char path[PATH_MAX], *endptr, *num, rbuf[1024];
+	char cmd[1024];
+	char state;
+	int fd, rc = SLURM_SUCCESS;
+	long pid, ppid, pgid, ret_l;
+	pid_t *pid_array = NULL;
+	int pid_count = 0;
+
+	if ((dir = opendir("/proc")) == NULL) {
+		error("opendir(/proc): %m");
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	while ((de = readdir(dir)) != NULL) {
+		num = de->d_name;
+		if ((num[0] < '0') || (num[0] > '9'))
+			continue;
+		ret_l = strtol(num, &endptr, 10);
+		if ((ret_l == LONG_MIN) || (ret_l == LONG_MAX) ||
+		    (errno == ERANGE)) {
+			error("couldn't do a strtol on str %s(%ld): %m",
+			      num, ret_l);
+			continue;
+		}
+		sprintf(path, "/proc/%s/stat", num);
+		if ((fd = open(path, O_RDONLY)) < 0) {
+			continue;
+		}
+		if (read(fd, rbuf, 1024) <= 0) {
+			close(fd);
+			continue;
+		}
+		close(fd);
+		if (sscanf(rbuf, "%ld %s %c %ld %ld",
+			   &pid, cmd, &state, &ppid, &pgid) != 5) {
+			continue;
+		}
+		if (pgid != (long) cont_id)
+			continue;
+		if (state == 'Z') {
+			debug3("Defunct process skipped: command=%s state=%c "
+			       "pid=%ld ppid=%ld pgid=%ld",
+			       cmd, state, pid, ppid, pgid);
+			continue;	/* Defunct, don't try to kill */
+		}
+		xrealloc(pid_array, sizeof(pid_t) * (pid_count + 1));
+		pid_array[pid_count++] = pid;
+	}
+	closedir(dir);
+
+fini:	*pids  = pid_array;
+	*npids = pid_count;
+	return rc;
 }

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -70,7 +70,7 @@
  *			  is duplicated. See NOTES below.
  * memory_allocated	- MB per node reserved for the job or step
  * memory_used		- MB per node of memory consumed by job steps
- * nhosts		- Number of nodes in the allocation on a
+ * nhosts		- Number of nodes in the allocation.  On a
  *                        bluegene machine this represents the number
  *                        of midplanes used.  This should always be
  *                        the number of bits set in node_bitmap.

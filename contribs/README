@@ -67,6 +67,8 @@ of the SLURM contribs distribution follows:
      existing SLURM allocation. Outside of a SLURM allocation, make's behavior
      will be unchanged. Designed for GNU make-3.81.
 
+  mic                [Tools for use on Intel MIC processors]
+
   mpich1.slurm.patch [ Patch to mpich1/p4 library for SLURM job task launch ]
      For SLURM based job initiations (from srun command), get the parameters
      from environment variables as needed. This allows for a truly parallel
@@ -85,6 +87,10 @@ of the SLURM contribs distribution follows:
      API to SLURM using php.  Not a complete API, but offers quite a few
      interfaces to existing SLURM proper APIs.
 
+  pmi2               [ PMI2 client library ]
+     User applications can link with this library to use Slurm's mpi/pmi2
+     plugin.
+
   ptrace.patch       [ Linux Kernel patch required to for TotalView use ]
      0. This has been fixed on most recent Linux kernels. Older versions of
      Linux may need this patch support TotalView.
@@ -92,6 +98,10 @@ of the SLURM contribs distribution follows:
      follows the PTRACE_ATTACH will block indefinitely.
      2. It is not possible to use PTRACE_DETACH to leave a process stopped,
      because ptrace ignores SIGSTOPs sent by the tracing process.
+
+  sgather            [ shell script ]
+     Gather remote files from a job into a central location. Reverse of of
+     sbcast command.
 
   sjobexit/          [ Perl programs ]
      Tools for managing job exit code records
@@ -130,3 +140,4 @@ of the SLURM contribs distribution follows:
   torque/            [ Wrapper Scripts for Torque migration to SLURM ]
      Helpful scripts to make transition to SLURM easier from PBS or Torque.
      These scripts are easily updatable if there is functionality missing.
+     NOTE: For the showq command, see https://github.com/pedmon/slurm_showq

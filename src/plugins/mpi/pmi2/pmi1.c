@@ -6,7 +6,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -119,7 +119,7 @@ _handle_get_maxes(int fd, int lrank, client_req_t *req)
 			   KVSNAMEMAX_KEY"=%d " KEYLENMAX_KEY"=%d "
 			   VALLENMAX_KEY"=%d\n",
 			   rc, MAXKVSNAME, MAXKEYLEN, MAXVALLEN);
-	rc = client_resp_send(resp, fd);
+	(void) client_resp_send(resp, fd);
 	client_resp_free(resp);
 
 	debug3("mpi/pmi2: out _handle_get_maxes");
@@ -138,7 +138,7 @@ _handle_get_universe_size(int fd, int lrank, client_req_t *req)
 	client_resp_append(resp, CMD_KEY"="UNIVSIZE_CMD" " RC_KEY"=%d "
 			   SIZE_KEY"=%d\n",
 			   rc, job_info.ntasks);
-	rc = client_resp_send(resp, fd);
+	(void) client_resp_send(resp, fd);
 	client_resp_free(resp);
 
 	debug3("mpi/pmi2: out _handle_get_universe_size");
@@ -162,7 +162,7 @@ _handle_get_appnum(int fd, int lrank, client_req_t *req)
 	 */
 	client_resp_append(resp, CMD_KEY"="APPNUM_CMD" " RC_KEY"=%d "
 			   APPNUM_KEY"=-1\n", rc);
-	rc = client_resp_send(resp, fd);
+	(void) client_resp_send(resp, fd);
 	client_resp_free(resp);
 
 	debug3("mpi/pmi2: out _handle_get_appnum");
@@ -582,8 +582,10 @@ _handle_pmi1_mcmd_buf(int fd, int lrank, int buf_size, int buf_len, char **pbuf)
 	tmp_ptr = NULL;
 	while (tmp_buf[0] != '\0') {
 		tmp_ptr = strstr(tmp_buf, ENDCMD_KEY"\n");
-		if ( tmp_ptr == NULL) {
+		if (tmp_ptr == NULL) {
 			error("mpi/pmi2: this is impossible");
+			rc = SLURM_ERROR;
+			break;
 		}
 		*tmp_ptr = '\0';
 		n = tmp_ptr - tmp_buf;

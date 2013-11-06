@@ -5,7 +5,7 @@
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -300,7 +300,7 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	return 0;
 }
 
-extern int task_cgroup_memory_create(slurmd_job_t *job)
+extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 {
 	int fstatus = SLURM_ERROR;
 
@@ -432,7 +432,7 @@ error:
 	return fstatus;
 }
 
-extern int task_cgroup_memory_attach_task(slurmd_job_t *job)
+extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job)
 {
 	int fstatus = SLURM_ERROR;
 	pid_t pid;

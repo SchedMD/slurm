@@ -52,8 +52,8 @@ for the application to manage Kerberos V credentials.</li>
 <li><b>Databases</b> can be used to store accounting information.
 See our <a href="accounting.html">Accounting</a> web page for more information.</li>
 <ul>
-<li><a href="http://www.mysql.com/">MySQL</a> (recommended)</li>
-<li><a href="http://www.postgresql.org/">PostgreSQL</a> (Not fully functional)</li>
+<li><a href="http://www.mysql.com/">MySQL</a></li>
+<li><a href="https://mariadb.org/">MariaDB</a></li>
 </ul><br>
 
 <li><b>Debuggers</b> and debugging tools</li>
@@ -92,23 +92,19 @@ functions such as intersection and difference. Download the code from:<br>
 <a href="http://www.nsc.liu.se/~kent/python-hostlist">
 http://www.nsc.liu.se/~kent/python-hostlist</a></li><br>
 
+<li><b>Interactive Script</b><br>
+A wrapper script that makes it very simple to get an interactive shell on a
+cluster. Download the code from:<br>
+<a href="https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interactive">
+https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interactive</a></li><br>
+
 <li><b>Interconnect</b> plugins (Switch plugin)</li>
 <ul>
 <li><b>Infiniband</b><br>
 The <b>topology.conf</b> file for an Infiniband switch can be automatically
 generated using the <b>ib2slurm</b> tool found here:
 <a href="https://github.com/fintler/ib2slurm">https://github.com/fintler/ib2slurm</a>.
-
-<li><b>QsNet</b><br>
-In order to build the "switch/elan" plugin for SLURM, you will need
-the <b>qsnetlibs</b> development libraries from
-<a href="http://www.quadrics.com">Quadrics</a>. The Elan
-plugin also requires the <b>libelanhosts</b> library and
-a corresponding /etc/elanhosts configuration file, used to map
-hostnames to Elan IDs. The libelanhosts source is available from
-<a href="http://www.schedmd.com/download/extras/libelanhosts-0.9-1.tgz">
-http://www.schedmd.com/download/extras/libelanhosts-0.9-1.tgz</a>.
-</ul><br>
+</ul>
 
 <li><b>I/O Watchdog</b><br>
 A facility for monitoring user applications, most notably parallel jobs,
@@ -164,6 +160,11 @@ Maui Scheduler</a></li>
 <li><a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a></li>
 </ul><br>
+
+<li><b>Command wrappers</b><br>
+There is a wrapper for Maui/Moab's showq command at
+<a href="https://github.com/pedmon/slurm_showq">
+https://github.com/pedmon/slurm_showq</a>.
 
 <li><b>Scripting interfaces</b>
 <ul>
@@ -223,8 +224,27 @@ there is
 <a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.  
 It has integration with Slurm as well as Torque resource managers.</li><br>
 
+<li><b>Accounting Tools</b><br>
+UBMoD is a web based tool for displaying accounting data from various resource
+managers. It aggregates the accounting data from sacct into a MySQL data
+warehouse and provide a front end web interface for browsing the data.
+For more information, see
+<a href="http://ubmod.sourceforge.net/resource-manager-slurm.html">UDMod home page</a> and
+<a href="https://github.com/ubccr/ubmod">source code</a>.</li><br>
+
+<li><b>MSlurm</b><br>
+Such a superstructure for the management of multiple Slurm environments is done
+with MSlurm. Thereby several Slurm clusters - even across multiple Slurm
+databases - can run parallel on a Slurm master and can be administered in an
+easy and elegantly manner.
+<ul>
+<li><a href="mslurm/mslurm_overview.pdf">Overview</a></li>
+<li><a href="mslurm/mslurm_install_instructions.pdf">Installation Instructions</a></li>
+<li><a href="mslurm/mslurm.tgz">Code</a></li>
+<ul>
+
 </ul>
 
-<p style="text-align:center;">Last modified 16 January 2013</p>
+<p style="text-align:center;">Last modified 30 October 2013</p>
 
 <!--#include virtual="footer.txt"-->

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -145,12 +145,12 @@ static int    _tot_wait (struct timeval *start_time);
  */
 extern uint16_t slurmdbd_translate_rpc(uint16_t rpc_version)
 {
-	if (rpc_version >= SLURMDBD_2_5_VERSION)
+	if (rpc_version >= SLURM_13_12_PROTOCOL_VERSION)
+		return SLURM_13_12_PROTOCOL_VERSION;
+	else if (rpc_version >= SLURMDBD_2_6_VERSION)
+		return SLURM_2_6_PROTOCOL_VERSION;
+	else
 		return SLURM_2_5_PROTOCOL_VERSION;
-	else if (rpc_version >= SLURMDBD_2_4_VERSION)
-		return SLURM_2_4_PROTOCOL_VERSION;
-
-	return SLURM_2_3_PROTOCOL_VERSION;
 }
 
 
@@ -460,6 +460,7 @@ again:
 		} else {
 			int rc;
 			fd_set_nonblocking(slurmdbd_fd);
+			fd_set_close_on_exec(slurmdbd_fd);
 			rc = _send_init_msg();
 			if (rc == SLURM_SUCCESS) {
 				if (from_ctld)
@@ -652,7 +653,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 			buffer);
 		break;
 	case DBD_GET_CONFIG:
-		if (rpc_version >= SLURMDBD_2_4_VERSION)
+		if (rpc_version >= SLURMDBD_2_5_VERSION)
 			packstr((char *)req->data, buffer);
 		break;
 	case DBD_GET_JOBS:
@@ -1491,10 +1492,14 @@ static int _send_init_msg()
 
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
+	if (!slurmdbd_cluster) {
+		debug("No ClusterName set.");
+		slurmdbd_cluster = slurm_get_cluster_name();
+	}
 	req.cluster_name = slurmdbd_cluster;
 	req.rollback = rollback_started;
-	req.version  = SLURMDBD_VERSION;
-	slurmdbd_pack_init_msg(&req, SLURMDBD_VERSION, buffer,
+	req.version  = SLURM_PROTOCOL_VERSION;
+	slurmdbd_pack_init_msg(&req, SLURM_PROTOCOL_VERSION, buffer,
 			       slurmdbd_auth_info);
 	/* if we have an issue with the pack we want to log the errno,
 	   but send anyway so we get it logged on the slurmdbd also */
@@ -1508,7 +1513,7 @@ static int _send_init_msg()
 	}
 
 	read_timeout = slurm_get_msg_timeout() * 1000;
-	rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
+	rc = _get_return_code(SLURM_PROTOCOL_VERSION, read_timeout);
 	if (tmp_errno)
 		errno = tmp_errno;
 	else if (rc != SLURM_SUCCESS)
@@ -1530,7 +1535,7 @@ static int _send_fini_msg(void)
 	pack16((uint16_t) DBD_FINI, buffer);
 	req.commit  = 0;
 	req.close_conn   = 1;
-	slurmdbd_pack_fini_msg(&req, SLURMDBD_VERSION, buffer);
+	slurmdbd_pack_fini_msg(&req, SLURM_PROTOCOL_VERSION, buffer);
 
 	_send_msg(buffer);
 	free_buf(buffer);
@@ -2068,11 +2073,11 @@ static void *_agent(void *x)
 				}
 				list_iterator_destroy(agent_itr);
 				buffer = pack_slurmdbd_msg(&list_req,
-							   SLURMDBD_VERSION);
+							   SLURM_PROTOCOL_VERSION);
 			} else if (cnt > 1) {
 				list_msg.my_list = agent_list;
 				buffer = pack_slurmdbd_msg(&list_req,
-							   SLURMDBD_VERSION);
+							   SLURM_PROTOCOL_VERSION);
 			} else
 				buffer = (Buf) list_peek(agent_list);
 		} else
@@ -2100,10 +2105,10 @@ static void *_agent(void *x)
 			}
 			error("slurmdbd: Failure sending message: %d: %m", rc);
 		} else if (list_msg.my_list) {
-			rc = _handle_mult_rc_ret(SLURMDBD_VERSION,
+			rc = _handle_mult_rc_ret(SLURM_PROTOCOL_VERSION,
 						 read_timeout);
 		} else {
-			rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
+			rc = _get_return_code(SLURM_PROTOCOL_VERSION, read_timeout);
 			if (rc == EAGAIN) {
 				if (agent_shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);
@@ -2189,7 +2194,7 @@ static void _save_dbd_state(void)
 	} else if (agent_list && list_count(agent_list)) {
 		char curr_ver_str[10];
 		snprintf(curr_ver_str, sizeof(curr_ver_str),
-			 "VER%d", SLURMDBD_VERSION);
+			 "VER%d", SLURM_PROTOCOL_VERSION);
 		buffer = init_buf(strlen(curr_ver_str));
 		packstr(curr_ver_str, buffer);
 		rc = _save_dbd_rec(fd, buffer);
@@ -2271,9 +2276,9 @@ static void _load_dbd_state(void)
 		if (ver_str) {
 			char curr_ver_str[10];
 			snprintf(curr_ver_str, sizeof(curr_ver_str),
-				 "VER%d", SLURMDBD_VERSION);
+				 "VER%d", SLURM_PROTOCOL_VERSION);
 			if (!strcmp(ver_str, curr_ver_str))
-				rpc_version = SLURMDBD_VERSION;
+				rpc_version = SLURM_PROTOCOL_VERSION;
 		}
 
 		xfree(ver_str);
@@ -2286,7 +2291,7 @@ static void _load_dbd_state(void)
 				buffer = _load_dbd_rec(fd);
 			if (buffer == NULL)
 				break;
-			if (rpc_version != SLURMDBD_VERSION) {
+			if (rpc_version != SLURM_PROTOCOL_VERSION) {
 				slurmdbd_msg_t msg;
 				int rc;
 				set_buf_offset(buffer, 0);
@@ -2297,7 +2302,7 @@ static void _load_dbd_state(void)
 					   keep it add more to it.
 					*/
 					rc = unpack_slurmdbd_msg(
-						&msg, SLURMDBD_VERSION, buffer);
+						&msg, SLURM_PROTOCOL_VERSION, buffer);
 					if ((rc == SLURM_SUCCESS)
 					    && !remaining_buf(buffer))
 						goto got_it;
@@ -2317,7 +2322,7 @@ static void _load_dbd_state(void)
 				free_buf(buffer);
 				if (rc == SLURM_SUCCESS)
 					buffer = pack_slurmdbd_msg(
-						&msg, SLURMDBD_VERSION);
+						&msg, SLURM_PROTOCOL_VERSION);
 				else
 					buffer = NULL;
 			}
@@ -2802,7 +2807,7 @@ extern void
 slurmdbd_pack_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg,
 			       uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		packstr(msg->cluster_nodes, buffer);
 		pack32(msg->cpu_count,    buffer);
 		pack_time(msg->event_time, buffer);
@@ -2819,7 +2824,7 @@ slurmdbd_unpack_cluster_cpus_msg(dbd_cluster_cpus_msg_t **msg,
 	msg_ptr = xmalloc(sizeof(dbd_cluster_cpus_msg_t));
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->cluster_nodes,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->cpu_count, buffer);
@@ -3020,7 +3025,7 @@ slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
 
 	/* Adding anything to this needs to happen after the version
 	   since this is where the reciever gets the version from. */
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		packstr(msg->cluster_name, buffer);
 	}
 
@@ -3115,7 +3120,7 @@ extern void
 slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 			       uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->db_index, buffer);
@@ -3139,7 +3144,7 @@ slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 	dbd_job_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_comp_msg_t));
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
@@ -3166,7 +3171,35 @@ slurmdbd_pack_job_start_msg(void *in,
 			    uint16_t rpc_version, Buf buffer)
 {
 	dbd_job_start_msg_t *msg = (dbd_job_start_msg_t *)in;
-	if (rpc_version >= SLURMDBD_2_5_VERSION) {
+	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+		packstr(msg->account, buffer);
+		pack32(msg->alloc_cpus, buffer);
+		pack32(msg->alloc_nodes, buffer);
+		pack32(msg->assoc_id, buffer);
+		packstr(msg->block_id, buffer);
+		pack32(msg->db_index, buffer);
+		pack_time(msg->eligible_time, buffer);
+		pack32(msg->gid, buffer);
+		packstr(msg->gres_alloc, buffer);
+		packstr(msg->gres_req, buffer);
+		packstr(msg->gres_used, buffer);
+		pack32(msg->job_id, buffer);
+		pack16(msg->job_state, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->nodes, buffer);
+		packstr(msg->node_inx, buffer);
+		packstr(msg->partition, buffer);
+		pack32(msg->priority, buffer);
+		pack32(msg->qos_id, buffer);
+		pack32(msg->req_cpus, buffer);
+		pack32(msg->req_mem, buffer);
+		pack32(msg->resv_id, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->submit_time, buffer);
+		pack32(msg->timelimit, buffer);
+		pack32(msg->uid, buffer);
+		packstr(msg->wckey, buffer);
+	} else if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_cpus, buffer);
 		pack32(msg->alloc_nodes, buffer);
@@ -3193,30 +3226,6 @@ slurmdbd_pack_job_start_msg(void *in,
 		pack32(msg->timelimit, buffer);
 		pack32(msg->uid, buffer);
 		packstr(msg->wckey, buffer);
-	} else if (rpc_version >= SLURMDBD_2_3_VERSION) {
-		packstr(msg->account, buffer);
-		pack32(msg->alloc_cpus, buffer);
-		pack32(msg->alloc_nodes, buffer);
-		pack32(msg->assoc_id, buffer);
-		packstr(msg->block_id, buffer);
-		pack32(msg->db_index, buffer);
-		pack_time(msg->eligible_time, buffer);
-		pack32(msg->gid, buffer);
-		pack32(msg->job_id, buffer);
-		pack16(msg->job_state, buffer);
-		packstr(msg->name, buffer);
-		packstr(msg->nodes, buffer);
-		packstr(msg->node_inx, buffer);
-		packstr(msg->partition, buffer);
-		pack32(msg->priority, buffer);
-		pack32(msg->qos_id, buffer);
-		pack32(msg->req_cpus, buffer);
-		pack32(msg->resv_id, buffer);
-		pack_time(msg->start_time, buffer);
-		pack_time(msg->submit_time, buffer);
-		pack32(msg->timelimit, buffer);
-		pack32(msg->uid, buffer);
-		packstr(msg->wckey, buffer);
 	}
 }
 
@@ -3228,7 +3237,7 @@ slurmdbd_unpack_job_start_msg(void **msg,
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURMDBD_2_5_VERSION) {
+	if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
@@ -3253,13 +3262,14 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpack32(&msg_ptr->priority, buffer);
 		safe_unpack32(&msg_ptr->qos_id, buffer);
 		safe_unpack32(&msg_ptr->req_cpus, buffer);
+		safe_unpack32(&msg_ptr->req_mem, buffer);
 		safe_unpack32(&msg_ptr->resv_id, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 		safe_unpack32(&msg_ptr->timelimit, buffer);
 		safe_unpack32(&msg_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
-	} else if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	} else if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
@@ -3268,6 +3278,12 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpack32(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->gres_alloc, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->gres_req, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
+				       buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack16(&msg_ptr->job_state, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
@@ -3300,7 +3316,7 @@ slurmdbd_pack_id_rc_msg(void *in,
 {
 	dbd_id_rc_msg_t *msg = (dbd_id_rc_msg_t *)in;
 
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->id, buffer);
 		pack32(msg->return_code, buffer);
@@ -3314,7 +3330,7 @@ slurmdbd_unpack_id_rc_msg(void **msg,
 	dbd_id_rc_msg_t *msg_ptr = xmalloc(sizeof(dbd_id_rc_msg_t));
 
 	*msg = msg_ptr;
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->id, buffer);
 		safe_unpack32(&msg_ptr->return_code, buffer);
@@ -3660,7 +3676,7 @@ extern void
 slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
 			     uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		pack32(msg->cpu_count, buffer);
 		packstr(msg->hostlist, buffer);
 		packstr(msg->reason, buffer);
@@ -3683,7 +3699,7 @@ slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 
 	msg_ptr->reason_uid = NO_VAL;
 
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpack32(&msg_ptr->cpu_count, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
@@ -3732,7 +3748,7 @@ extern void
 slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 				uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		pack16(msg->dimensions, buffer);
 		pack32(msg->flags, buffer);
 		pack32(msg->plugin_id_select, buffer);
@@ -3747,7 +3763,7 @@ slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 	dbd_register_ctld_msg_t *msg_ptr = xmalloc(
 		sizeof(dbd_register_ctld_msg_t));
 	*msg = msg_ptr;
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpack16(&msg_ptr->dimensions, buffer);
 		safe_unpack32(&msg_ptr->flags, buffer);
 		safe_unpack32(&msg_ptr->plugin_id_select, buffer);
@@ -3765,7 +3781,7 @@ extern void
 slurmdbd_pack_roll_usage_msg(dbd_roll_usage_msg_t *msg,
 			     uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		pack16(msg->archive_data, buffer);
 		pack_time(msg->end, buffer);
 		pack_time(msg->start, buffer);
@@ -3780,7 +3796,7 @@ slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg,
 
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpack16(&msg_ptr->archive_data, buffer);
 		safe_unpack_time(&msg_ptr->end, buffer);
 		safe_unpack_time(&msg_ptr->start, buffer);
@@ -3808,7 +3824,7 @@ slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 	pack_time(msg->start_time, buffer);
 	pack_time(msg->job_submit_time, buffer);
 	pack32(msg->step_id, buffer);
-	pack32(msg->total_cpus, buffer);
+	pack32(msg->total_tasks, buffer);
 }
 
 extern int
@@ -3817,18 +3833,20 @@ slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 {
 	dbd_step_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_comp_msg_t));
 	*msg = msg_ptr;
+
 	safe_unpack32(&msg_ptr->assoc_id, buffer);
 	safe_unpack32(&msg_ptr->db_index, buffer);
 	safe_unpack_time(&msg_ptr->end_time, buffer);
 	safe_unpack32(&msg_ptr->exit_code, buffer);
 	jobacctinfo_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
-			   rpc_version, PROTOCOL_TYPE_DBD, buffer);
+			   rpc_version, PROTOCOL_TYPE_DBD, buffer, 1);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack32(&msg_ptr->req_uid, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
 	safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 	safe_unpack32(&msg_ptr->step_id, buffer);
-	safe_unpack32(&msg_ptr->total_cpus, buffer);
+	safe_unpack32(&msg_ptr->total_tasks, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3844,7 +3862,22 @@ extern void
 slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg, uint16_t rpc_version,
 			     Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+		pack32(msg->assoc_id, buffer);
+		pack32(msg->db_index, buffer);
+		pack32(msg->job_id, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->nodes, buffer);
+		packstr(msg->node_inx, buffer);
+		pack32(msg->node_cnt, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->job_submit_time, buffer);
+		pack32(msg->req_cpufreq, buffer);
+		pack32(msg->step_id, buffer);
+		pack16(msg->task_dist, buffer);
+		pack32(msg->total_cpus, buffer);
+		pack32(msg->total_tasks, buffer);
+	} else {
 		pack32(msg->assoc_id, buffer);
 		pack32(msg->db_index, buffer);
 		pack32(msg->job_id, buffer);
@@ -3868,7 +3901,23 @@ slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
 	uint32_t uint32_tmp;
 	dbd_step_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_start_msg_t));
 	*msg = msg_ptr;
-	if (rpc_version >= SLURMDBD_2_3_VERSION) {
+
+	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->node_cnt, buffer);
+		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
+		safe_unpack32(&msg_ptr->req_cpufreq, buffer);
+		safe_unpack32(&msg_ptr->step_id, buffer);
+		safe_unpack16(&msg_ptr->task_dist, buffer);
+		safe_unpack32(&msg_ptr->total_cpus, buffer);
+		safe_unpack32(&msg_ptr->total_tasks, buffer);
+	} else {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);

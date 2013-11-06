@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -54,6 +54,7 @@
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	log_init("sbcast", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	error("The sbcast command is not supported on Cray systems");
 	return 1;
 #endif
@@ -84,6 +85,7 @@ int main(int argc, char *argv[])
 	error("The sbcast command is not supported on IBM BlueGene systems");
 	return 1;
 #endif
+	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
 	if (params.verbose) {
 		opts.stderr_level += params.verbose;
@@ -104,9 +106,9 @@ int main(int argc, char *argv[])
 	verbose("modes    = %o", (unsigned int) f_stat.st_mode);
 	verbose("uid      = %d", (int) f_stat.st_uid);
 	verbose("gid      = %d", (int) f_stat.st_gid);
-	verbose("atime    = %s", ctime(&f_stat.st_atime));
-	verbose("mtime    = %s", ctime(&f_stat.st_mtime));
-	verbose("ctime    = %s", ctime(&f_stat.st_ctime));
+	verbose("atime    = %s", slurm_ctime(&f_stat.st_atime));
+	verbose("mtime    = %s", slurm_ctime(&f_stat.st_mtime));
+	verbose("ctime    = %s", slurm_ctime(&f_stat.st_ctime));
 	verbose("size     = %ld", (long) f_stat.st_size);
 	verbose("-----------------------------");
 

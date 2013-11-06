@@ -74,30 +74,95 @@ will take precedence over the association's limits.
 <P> Here are the limits that will be imposed on jobs running under a
 QOS</P>
 
-<UL>
-<LI><b>GrpCpus</b> Maximum number of CPU's all jobs with this QOS can be allocated.
-<LI><b>GrpCPUMins</b> A hard limit of cpu minutes to be used by jobs
+<ul>
+<li><b>GrpCpus</b> The total count of cpus able to be used at any given
+  time from jobs running from this QOS.  If this limit is reached new
+  jobs will be queued but only allowed to run after resources have been
+  relinquished from this group.
+</li>
+
+<li><b>GrpCPUMins</b> A hard limit of cpu minutes to be used by jobs
   running from this QOS.  If this limit is reached all jobs running in
   this group will be killed, and no new jobs will be allowed to run.
-<LI><b>GrpCPURunMins</b> Maximum number of CPU minutes all jobs
+</li>
+
+<li><b>GrpCPURunMins</b> Maximum number of CPU minutes all jobs
   running with this QOS can run at the same time.  This takes into
   consideration time limit of running jobs.  If the limit is reached
   no new jobs are started until other jobs finish to allow time to
   free up.
-<LI><b>GrpJobs</b> Maximum number of jobs that can run with this QOS.
-<LI><b>GrpMemory</b> Maximum amount of memory (MB) all jobs with this QOS can be allocated.
-<LI><b>GrpNodes</b> Maximum number of nodes that can be allocated to all jobs with this QOS.
-<LI><b>GrpSubmitJobs</b> Maximum number of jobs with this QOS that can be in the system (no matter what state).
-<LI><b>GrpWall</b> Wall clock limit for all jobs running with this QOS.
-<LI><b>MaxCpusPerJob</b> Maximum number of CPU's any job with this QOS can be allocated.
-<LI><b>MaxCPUMinsPerJob</b> Maximum number of CPU*minutes any job with this QOS can run.
-<LI><b>MaxNodesPerJob</b> Maximum number of nodes that can be allocated to any job with this QOS.
-<LI><b>MaxWallDurationPerJob</b> Wall clock limit for any jobs running with this QOS.
-<LI><b>MaxCpusPerUser</b> Maximum number of CPU's any user with this QOS can be allocated.
-<LI><b>MaxJobsPerUser</b> Maximum number of jobs a user can run with this QOS.
-<LI><b>MaxNodesPerUser</b> Maximum number of nodes that can be allocated to any user with this QOS.
-<LI><b>MaxSubmitJobsPerUser</b> Maximum number of jobs with this QOS that can be in the system.
-</UL>
+</li>
+
+<li><b>GrpJobs</b>
+The total number of jobs able to run at any given time from this QOS.
+If this limit is reached new jobs will be queued but only allowed to
+run after previous jobs complete from this group.
+</li>
+
+<li><b>GrpMemory</b>
+The total amount of memory (MB) able to be used at any given time from
+jobs running from QOS.  If this limit is reached new jobs will be queued but only
+allowed to run after resources have been relinquished from this group.
+</li>
+
+<li><b>GrpNodes</b>
+The total count of nodes able to be used at any given time from jobs
+running from this QOS.  If this limit is reached new jobs will be queued
+but only allowed to run after resources have been relinquished from this group.
+</li>
+
+<li><b>GrpSubmitJobs</b>
+The total number of jobs able to be submitted to the system at any given time
+ from this QOS. If this limit is reached new submission requests will be denied
+until previous jobs complete from this group.
+</li>
+
+<li><b>GrpWall</b>
+The maximum wall clock time any job submitted to this group can run for.
+If this limit is reached submission requests will be denied and the
+running jobs will be killed.
+</li>
+
+<li><b>MaxCpusPerJob</b>
+The maximum size in cpus any given job can have from this QOS. If this limit
+is reached the job will be denied at submission.
+</li>
+
+<li><b>MaxCPUMinsPerJob</b>
+Maximum number of CPU*minutes any job with this QOS can run. Jobs submitted
+requesting time bigger than the QOS limit will pend possibly indefinitely.
+</li>
+
+<li><b>MaxNodesPerJob</b>
+The maximum size in nodes any given job can have from this association.
+If this limit is reached the job will be denied at submission.
+</li>
+
+<li><b>MaxWallDurationPerJob</b>
+The maximum wall clock time any job submitted to this QOS can run for.
+If this limit is reached the job will be denied at submission.
+</li>
+
+<li><b>MaxCpusPerUser</b>
+Maximum number of CPU's any user with this QOS can be allocated.
+If this limit is reached the job will be denied at submission.
+</li>
+
+<li><b>MaxJobsPerUser</b>
+Maximum number of jobs a user can run with this QOS.
+If this limit is reached the job will be denied at submission.
+</li>
+
+<li><b>MaxNodesPerUser</b>
+Maximum number of nodes that can be allocated to any user with this QOS.
+If this limit is reached the job will be denied at submission.
+</li>
+
+<li><b>MaxSubmitJobsPerUser</b>
+Maximum number of jobs with this QOS that can be in the system.
+If this limit is reached the job will be denied at submission.
+</li>
+</ul>
 
 <a name=qos_other>
 <h2>Other QOS Options</h2></a>

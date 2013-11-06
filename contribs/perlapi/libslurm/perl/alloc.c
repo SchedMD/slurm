@@ -32,7 +32,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	slurm_init_job_desc_msg(job_desc);
 
 	FETCH_FIELD(hv, job_desc, account, charp, FALSE);
-	FETCH_FIELD(hv, job_desc, acctg_freq, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc, acctg_freq, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, alloc_node, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, alloc_resp_port, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, alloc_sid, uint32_t, FALSE);
@@ -57,6 +57,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 			Perl_warn(aTHX_ "`argv' of job descriptor is not an array reference, ignored");
 		}
 	}
+	FETCH_FIELD(hv, job_desc, array_inx, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, begin_time, time_t, FALSE);
 	FETCH_FIELD(hv, job_desc, ckpt_interval, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, ckpt_dir, charp, FALSE);
@@ -111,6 +112,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, partition, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, plane_size, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, priority, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc, profile, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, qos, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, resp_host, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, req_nodes, charp, FALSE);

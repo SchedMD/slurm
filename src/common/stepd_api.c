@@ -10,7 +10,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -135,7 +135,7 @@ static void _handle_stray_script(const char *directory, uint32_t job_id)
 
 	snprintf(dir_path, sizeof(dir_path), "%s/job%05u", directory, job_id);
 	snprintf(file_path, sizeof(file_path), "%s/slurm_script", dir_path);
-	info("Purging vestigal job script %s", file_path);
+	info("Purging vestigial job script %s", file_path);
 	(void) unlink(file_path);
 	(void) rmdir(dir_path);
 }
@@ -304,7 +304,6 @@ stepd_get_info(int fd)
 {
 	int req = REQUEST_INFO;
 	slurmstepd_info_t *step_info;
-	uint16_t protocol_version;
 
 	step_info = xmalloc(sizeof(slurmstepd_info_t));
 	safe_write(fd, &req, sizeof(int));
@@ -313,14 +312,14 @@ stepd_get_info(int fd)
 	safe_read(fd, &step_info->jobid, sizeof(uint32_t));
 	safe_read(fd, &step_info->stepid, sizeof(uint32_t));
 
-	safe_read(fd, &protocol_version, sizeof(uint16_t));
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	safe_read(fd, &step_info->protocol_version, sizeof(uint16_t));
+	if (step_info->protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
 		safe_read(fd, &step_info->job_mem_limit, sizeof(uint32_t));
 		safe_read(fd, &step_info->step_mem_limit, sizeof(uint32_t));
 	} else {
 		error("stepd_get_info: protocol_version "
-		      "%hu not supported", protocol_version);
+		      "%hu not supported", step_info->protocol_version);
 		goto rwfail;
 	}
 	return step_info;
@@ -328,25 +327,6 @@ stepd_get_info(int fd)
 rwfail:
 	xfree(step_info);
 	return NULL;
-}
-
-/*
- * Send a signal to the process group of a job step.
- */
-int
-stepd_signal(int fd, int signal)
-{
-	int req = REQUEST_SIGNAL_PROCESS_GROUP;
-	int rc;
-
-	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &signal, sizeof(int));
-
-	/* Receive the return code */
-	safe_read(fd, &rc, sizeof(int));
-	return rc;
-rwfail:
-	return -1;
 }
 
 /*
@@ -504,6 +484,7 @@ _free_step_loc_t(step_loc_t *loc)
 		xfree(loc->directory);
 	if (loc->nodename)
 		xfree(loc->nodename);
+	xfree(loc->stepd_info);
 	xfree(loc);
 }
 
@@ -931,7 +912,8 @@ rwfail:
  * jobacctinfo_t must be freed after calling this function.
  */
 int
-stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp)
+stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp,
+		   uint16_t protocol_version)
 {
 	int req = REQUEST_STEP_STAT;
 	int rc = SLURM_SUCCESS;
@@ -949,7 +931,9 @@ stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp)
 	 * possible deadlock. */
 	if (wait_fd_readable(fd, 300))
 		goto rwfail;
-	rc = jobacctinfo_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);
+
+	rc = jobacctinfo_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd,
+				 protocol_version);
 
 	safe_read(fd, &tasks, sizeof(int));
 	resp->num_tasks = tasks;

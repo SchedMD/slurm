@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -45,11 +45,7 @@
 #include <time.h>
 
 /* getopt_long options, integers but not characters */
-#define OPT_LONG_ALLOCS	0x100
-#define OPT_LONG_DUP	0x101
-#define OPT_LONG_HELP	0x102
-#define OPT_LONG_USAGE	0x103
-#define OPT_LONG_NAME	0x104
+#define OPT_LONG_NAME	0x100
 
 void _help_fields_msg(void);
 void _help_msg(void);
@@ -75,7 +71,7 @@ void _help_fields_msg(void)
 			printf(" ");
 		else if (i)
 			printf("\n");
-		printf("%-13s", fields[i].name);
+		printf("%-17s", fields[i].name);
 	}
 	printf("\n");
 	return;
@@ -453,7 +449,10 @@ sacct [<OPTION>]                                                            \n\
                              maxrsstask,averss,maxpages,maxpagesnode,       \n\
                              maxpagestask,avepages,mincpu,mincpunode,       \n\
                              mincputask,avecpu,ntasks,alloccpus,elapsed,    \n\
-	                     state,exitcode,avecpufreq,consumedenergy'       \n\
+                             state,exitcode,avecpufreq,consumedenergy,      \n\
+                             maxdiskread,maxdiskreadnode,maxdiskreadtask,   \n\
+                             avediskread,maxdiskwrite,maxdiskwritenode,     \n\
+                             maxdiskwritetask,avediskread'                  \n\
      -L, --allclusters:                                                     \n\
 	           Display jobs ran on all clusters. By default, only jobs  \n\
                    ran on the cluster from where sacct is called are        \n\
@@ -607,49 +606,48 @@ void parse_command_line(int argc, char **argv)
 	bool set;
 
 	static struct option long_options[] = {
-                {"allusers",       no_argument,       0,                      'a'},
-                {"accounts",       required_argument, 0,                      'A'},
-                {"allocations",    no_argument,       &params.opt_allocs,     OPT_LONG_ALLOCS},
-                {"brief",          no_argument,       0,                      'b'},
-                {"completion",     no_argument,       &params.opt_completion, 'c'},
-                {"duplicates",     no_argument,       &params.opt_dup,        OPT_LONG_DUP},
-                {"helpformat",     no_argument,       0,                      'e'},
-                {"help-fields",    no_argument,       0,                      'e'},
-                {"endtime",        required_argument, 0,                      'E'},
-                {"file",           required_argument, 0,                      'f'},
-                {"gid",            required_argument, 0,                      'g'},
-                {"group",          required_argument, 0,                      'g'},
-                {"help",           no_argument,       0,                      'h'},
-                {"helpformat",     no_argument,       &params.opt_help,       OPT_LONG_HELP},
-                {"name",           required_argument, 0,                      OPT_LONG_NAME},
-                {"nnodes",         required_argument, 0,                      'i'},
-                {"ncpus",          required_argument, 0,                      'I'},
-                {"jobs",           required_argument, 0,                      'j'},
-                {"timelimit-min",  required_argument, 0,                      'k'},
-                {"timelimit-max",  required_argument, 0,                      'K'},
-                {"long",           no_argument,       0,                      'l'},
-                {"allclusters",    no_argument,       0,                      'L'},
-                {"cluster",        required_argument, 0,                      'M'},
-                {"clusters",       required_argument, 0,                      'M'},
-                {"nodelist",       required_argument, 0,                      'N'},
-                {"noheader",       no_argument,       0,                      'n'},
-                {"fields",         required_argument, 0,                      'o'},
-                {"format",         required_argument, 0,                      'o'},
-                {"parsable",       no_argument,       0,                      'p'},
-                {"parsable2",      no_argument,       0,                      'P'},
-                {"qos",            required_argument, 0,                      'q'},
-                {"partition",      required_argument, 0,                      'r'},
-                {"state",          required_argument, 0,                      's'},
-                {"starttime",      required_argument, 0,                      'S'},
-                {"truncate",       no_argument,       0,                      'T'},
-                {"uid",            required_argument, 0,                      'u'},
-                {"usage",          no_argument,       &params.opt_help,       OPT_LONG_USAGE},
-                {"user",           required_argument, 0,                      'u'},
-                {"verbose",        no_argument,       0,                      'v'},
-                {"version",        no_argument,       0,                      'V'},
-                {"wckeys",         required_argument, 0,                      'W'},
-                {"associations",   required_argument, 0,                      'x'},
-                {0,                0,		      0,                      0}};
+                {"allusers",       no_argument,       0,    'a'},
+                {"accounts",       required_argument, 0,    'A'},
+                {"allocations",    no_argument,       0,    'X'},
+                {"brief",          no_argument,       0,    'b'},
+                {"completion",     no_argument,       0,    'c'},
+                {"duplicates",     no_argument,       0,    'D'},
+                {"helpformat",     no_argument,       0,    'e'},
+                {"help-fields",    no_argument,       0,    'e'},
+                {"endtime",        required_argument, 0,    'E'},
+                {"file",           required_argument, 0,    'f'},
+                {"gid",            required_argument, 0,    'g'},
+                {"group",          required_argument, 0,    'g'},
+                {"help",           no_argument,       0,    'h'},
+                {"name",           required_argument, 0,    OPT_LONG_NAME},
+                {"nnodes",         required_argument, 0,    'i'},
+                {"ncpus",          required_argument, 0,    'I'},
+                {"jobs",           required_argument, 0,    'j'},
+                {"timelimit-min",  required_argument, 0,    'k'},
+                {"timelimit-max",  required_argument, 0,    'K'},
+                {"long",           no_argument,       0,    'l'},
+                {"allclusters",    no_argument,       0,    'L'},
+                {"cluster",        required_argument, 0,    'M'},
+                {"clusters",       required_argument, 0,    'M'},
+                {"nodelist",       required_argument, 0,    'N'},
+                {"noheader",       no_argument,       0,    'n'},
+                {"fields",         required_argument, 0,    'o'},
+                {"format",         required_argument, 0,    'o'},
+                {"parsable",       no_argument,       0,    'p'},
+                {"parsable2",      no_argument,       0,    'P'},
+                {"qos",            required_argument, 0,    'q'},
+                {"partition",      required_argument, 0,    'r'},
+                {"state",          required_argument, 0,    's'},
+                {"starttime",      required_argument, 0,    'S'},
+                {"truncate",       no_argument,       0,    'T'},
+                {"uid",            required_argument, 0,    'u'},
+                {"usage",          no_argument,       0,    'U'},
+                {"user",           required_argument, 0,    'u'},
+                {"verbose",        no_argument,       0,    'v'},
+                {"version",        no_argument,       0,    'V'},
+                {"wckeys",         required_argument, 0,    'W'},
+                {"associations",   required_argument, 0,    'x'},
+                {0,                0,		      0,    0}};
 
 	params.opt_uid = getuid();
 	params.opt_gid = getgid();
@@ -660,7 +658,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:dDeE:f:g:hi:I:j:k:K:lLM:nN:o:OpPq:r:s:S:Ttu:vVW:x:X",
+				"aA:bcC:DeE:f:g:hi:I:j:k:K:lLM:nN:o:pPq:r:s:S:Ttu:UvVW:x:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -883,6 +881,7 @@ void parse_command_line(int argc, char **argv)
 			slurm_addto_char_list(job_cond->associd_list, optarg);
 			break;
 		case 't':
+			/* 't' is deprecated and was replaced with 'X'.	*/
 		case 'X':
 			params.opt_allocs = 1;
 			break;
@@ -928,20 +927,14 @@ void parse_command_line(int argc, char **argv)
 	}
 
 	if (verbosity > 0) {
-		char *start_char =NULL, *end_char = NULL;
+		char start_char[25], end_char[25];
 
-		start_char = xstrdup(ctime(&job_cond->usage_start));
-		/* remove the new line */
-		start_char[strlen(start_char)-1] = '\0';
-		if (job_cond->usage_end) {
-			end_char = xstrdup(ctime(&job_cond->usage_end));
-			/* remove the new line */
-			end_char[strlen(end_char)-1] = '\0';
-		} else
-			end_char = xstrdup("Now");
+		slurm_ctime_r(&job_cond->usage_start, start_char);
+		if (job_cond->usage_end)
+			slurm_ctime_r(&job_cond->usage_end, end_char);
+		else
+			sprintf(end_char, "Now");
 		info("Jobs eligible from %s - %s", start_char, end_char);
-		xfree(start_char);
-		xfree(end_char);
 	}
 
 	debug("Options selected:\n"
@@ -1159,6 +1152,7 @@ void parse_command_line(int argc, char **argv)
 		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
+		bool newlen_set = false;
 
 		*end = 0;
 		while (isspace(*start))
@@ -1167,11 +1161,23 @@ void parse_command_line(int argc, char **argv)
 			continue;
 
 		if ((tmp_char = strstr(start, "\%"))) {
+			newlen_set = true;
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
 		}
 
 		command_len = strlen(start);
+
+		if (!strncasecmp("ALL", start, command_len)) {
+			for (i = 0; fields[i].name; i++) {
+				if (newlen_set)
+					fields[i].len = newlen;
+				list_append(print_fields_list, &fields[i]);
+				start = end + 1;
+			}
+			start = end + 1;
+			continue;
+		}
 
 		for (i = 0; fields[i].name; i++) {
 			if (!strncasecmp(fields[i].name, start, command_len))
@@ -1180,7 +1186,7 @@ void parse_command_line(int argc, char **argv)
 		error("Invalid field requested: \"%s\"", start);
 		exit(1);
 	foundfield:
-		if (newlen)
+		if (newlen_set)
 			fields[i].len = newlen;
 		list_append(print_fields_list, &fields[i]);
 		start = end + 1;
@@ -1241,6 +1247,8 @@ void do_list(void)
 			job->stats.rss_ave /= (double)cnt;
 			job->stats.vsize_ave /= (double)cnt;
 			job->stats.pages_ave /= (double)cnt;
+			job->stats.disk_read_ave /= (double)cnt;
+			job->stats.disk_write_ave /= (double)cnt;
 		}
 
 		if (job->show_full)

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -53,8 +53,7 @@ extern int unsetenv (const char *name)
 	len = strlen(name);
 	tmp = malloc(len + 3);
 	if (!tmp) {
-		fprintf(log_fp(), "unsetenvc: %s\n",
-			strerror(errno));
+		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
 	}
 	strcpy(tmp, name);

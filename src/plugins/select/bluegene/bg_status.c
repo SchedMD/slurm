@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -90,19 +90,22 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 				continue;
 
 			jobinfo = job_ptr->select_jobinfo->data;
-			if (kill_job_list) {
-				kill_job_struct_t *freeit =
-					(kill_job_struct_t *)
-					xmalloc(sizeof(freeit));
-				freeit->jobid = job_ptr->job_id;
-				list_push(kill_job_list, freeit);
+			if (!jobinfo->cleaning) {
+				if (kill_job_list) {
+					kill_job_struct_t *freeit =
+						(kill_job_struct_t *)
+						xmalloc(sizeof(freeit));
+					freeit->jobid = job_ptr->job_id;
+					list_push(kill_job_list, freeit);
+				}
+				error("Block %s was in a ready state "
+				      "for user %s but is being freed. "
+				      "Job %d was lost.",
+				      bg_record->bg_block_id,
+				      jobinfo->user_name,
+				      job_ptr->job_id);
+				jobinfo->cleaning = 1;
 			}
-			error("Block %s was in a ready state "
-			      "for user %s but is being freed. "
-			      "Job %d was lost.",
-			      bg_record->bg_block_id,
-			      jobinfo->user_name,
-			      job_ptr->job_id);
 		}
 		list_iterator_destroy(itr);
 	} else {
@@ -372,7 +375,8 @@ extern void bg_status_process_kill_job_list(List kill_job_list,
 	/* kill all the jobs from unexpectedly freed blocks */
 	while ((freeit = list_pop(kill_job_list))) {
 		debug2("Trying to requeue job %u", freeit->jobid);
-		bg_requeue_job(freeit->jobid, 0, slurmctld_locked);
+		bg_requeue_job(freeit->jobid, 0, slurmctld_locked, JOB_FAILED,
+			       false);
 		_destroy_kill_struct(freeit);
 	}
 }

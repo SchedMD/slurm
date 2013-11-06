@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -56,6 +56,7 @@
 #include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
 
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/strigger/strigger.h"
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	log_init("strigger", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
+	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
 	if (params.verbose) {
 		opts.stderr_level += params.verbose;

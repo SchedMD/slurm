@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -45,5 +45,9 @@
 #include "slurm/slurm.h"
 
 int parse_select_type_param(char *select_type_parameters, uint16_t *param);
+
+/* Convert SelectTypeParameter to equivalent string
+ * NOTE: Not reentrant */
+extern char *select_type_param_string(uint16_t select_type_param);
 
 #endif /*__SLURM_SELECTTYPE_INFO_H__*/

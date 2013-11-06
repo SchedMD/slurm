@@ -5,7 +5,7 @@
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -32,6 +32,12 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *****************************************************************************
+ * POE DEBUGING NOTES:
+ *
+ * MP_INFOLEVEL=4	Verbose POE logging
+ * MP_PMDLOG=yes	Write log files to /tmp/mplog.*
+ * SCI_DEBUG_FANOUT=#   Fanout of pmdv12 in launching tasks
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -178,8 +184,8 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 
 	if (opt.account)
 		setenv("SLURM_ACCOUNT", opt.account, 1);
-	if (opt.acctg_freq >= 0) {
-		snprintf(value, sizeof(value), "%d", opt.acctg_freq);
+	if (opt.acctg_freq) {
+		snprintf(value, sizeof(value), "%s", opt.acctg_freq);
 		setenv("SLURM_ACCTG_FREQ", value, 1);
 	}
 	if (opt.ckpt_dir)
@@ -498,7 +504,13 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 			/* instances options */
 			} else if (!strncasecmp(token, "instances=", 10)) {
-				/* Ignored */
+				type_ptr = token + 10;
+				setenv("MP_INSTANCES", type_ptr, 1);
+				if (opt.launch_cmd) {
+					xstrfmtcat(poe_cmd_line,
+						   " -instances %s",
+						   type_ptr);
+				}
 
 			/* network options */
 			} else if (!strcasecmp(token, "ip")   ||

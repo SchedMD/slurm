@@ -6,7 +6,7 @@
  *  Copyright (C) 2012 Bull-HN-PHX
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -66,6 +66,13 @@
 #include "src/common/slurm_acct_gather.h"
 #include "src/common/slurm_jobacct_gather.h"
 
+typedef struct acct_energy_data {
+	time_t		time;
+	uint64_t	power;
+	uint64_t	cpu_freq;
+} acct_energy_data_t;
+
+
 extern int acct_gather_energy_init(void); /* load the plugin */
 extern int acct_gather_energy_fini(void); /* unload the plugin */
 extern acct_gather_energy_t *acct_gather_energy_alloc(void);
@@ -77,11 +84,18 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 
 extern int acct_gather_energy_g_update_node_energy(void);
 extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy);
+					 void *data);
 extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy);
+					 void *data);
+extern int acct_gather_energy_startpoll(uint32_t frequency);
 extern void acct_gather_energy_g_conf_options(s_p_options_t **full_options,
 					      int *full_options_cnt);
 extern void acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl);
+
+/* Get the values from the plugin that are setup in the .conf
+ * file. This function should most likely only be called from
+ * src/common/slurm_acct_gather.c (acct_gather_get_values())
+ */
+extern void acct_gather_energy_g_conf_values(void *data);
 
 #endif /*__SLURM_ACCT_GATHER_ENERGY_H__*/

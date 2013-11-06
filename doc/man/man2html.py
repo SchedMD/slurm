@@ -129,7 +129,7 @@ def include_virtual(matchobj):
 
     if os.access(filename, os.F_OK):
         #print 'Including file', filename
-        lines = file(filename, 'r').read()
+        lines = open(filename, 'r').read()
         return lines
     else:
         return matchobj.group(0)
@@ -163,17 +163,17 @@ for f in sys.argv[4:]:
     mhtmlname = f[:posLastDot] + ".mhtml"
     cmd = "man2html " + f + "> " + mhtmlname
     os.system(cmd)
-    print ">>>>>>> " + mhtmlname
+    print(">>>>>>> " + mhtmlname)
     files.append(mhtmlname)
 
 for filename in files:
     dirname, basefilename = os.path.split(filename)
     newfilename = basefilename[:-6] + '.html'
-    print 'Converting', filename, '->', newfilename
-    shtml = file(filename, 'r')
-    html = file(newfilename, 'w')
+    print('Converting', filename, '->', newfilename)
+    shtml = open(filename, 'r')
+    html = open(newfilename, 'w')
 
-    lines = file(sys.argv[2], 'r').read()
+    lines = open(sys.argv[2], 'r').read()
     lines = lines.replace(".shtml",".html")
     lines = version_regex.sub(version_rewrite, lines)
     html.write(lines)
@@ -200,7 +200,7 @@ for filename in files:
 
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
-    lines = file(sys.argv[3], 'r').read()
+    lines = open(sys.argv[3], 'r').read()
     lines = version_regex.sub(version_rewrite, lines)
     html.write(lines)
 #    html.write(<!--#include virtual="footer.txt"-->)

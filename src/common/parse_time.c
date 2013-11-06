@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -76,6 +76,108 @@ static unit_names_t un[] = {
 	{"week",	4,	(7*24*60*60)},
 	{NULL,		0,	0}
 };
+
+/* _get_dash()
+ *
+ * Check if the string has a - and
+ * if it does replace it by a space.
+ */
+static uint16_t
+_get_dash(char *s)
+{
+	int cc;
+
+	cc = 0;
+	while (*s) {
+		if (*s == '-') {
+			++cc;
+			*s = ' ';
+		}
+		++s;
+	}
+
+	return cc;
+}
+
+/* _get_num_colon()
+ *
+ * Count the number of colons and
+ * replace them by spaces.
+ */
+static uint16_t
+_get_num_colon(char *s)
+{
+	int cc;
+
+	cc = 0;
+	while (*s) {
+		if (*s == ':') {
+			++cc;
+			*s = ' ';
+		}
+		++s;
+	}
+
+	return cc;
+}
+
+/* _is_valid_timespec()
+ *
+ * Validate that time format follows
+ * is supported.
+ */
+static bool
+_is_valid_timespec(const char *s)
+{
+	int digit;
+	int dash;
+	int colon;
+
+	digit = dash = colon = 0;
+
+	while (*s) {
+		if (*s >= '0' && *s <= '9') {
+			++digit;
+		} else if (*s == '-') {
+			++dash;
+			if (colon)
+				return false;
+		} else if (*s == ':') {
+			++colon;
+		} else {
+			return false;
+		}
+		++s;
+	}
+
+	if (!digit)
+		return false;
+
+	if (dash > 1
+	    || colon > 2)
+		return false;
+
+	if (dash) {
+		if (colon == 0
+		    && digit < 1)
+			return false;
+		if (colon == 1
+		    && digit < 3)
+			return false;
+		if (colon == 2
+		    && digit < 4)
+			return false;
+	} else {
+		if (colon == 1
+		    && digit < 2)
+			return false;
+		if (colon == 2
+		    && digit < 3)
+			return false;
+	}
+
+	return true;
+}
 
 /* convert time differential string into a number of seconds
  * time_str (in): string to parse
@@ -223,9 +325,15 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 {
 	int mon, day, yr;
 	int offset = *pos;
+	int len;
 
-	if (time_str[offset+4] && (time_str[offset+4] == '-')
-	   && time_str[offset+7] && (time_str[offset+7] == '-')) {
+	if (!time_str)
+		goto prob;
+
+	len = strlen(time_str);
+
+	if ((len >= (offset+7)) && (time_str[offset+4] == '-')
+	    && (time_str[offset+7] == '-')) {
 		/* get year */
 		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
 			goto prob;
@@ -626,7 +734,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
 		if (use_relative_format)
 			display_fmt = _relative_date_fmt(&time_tm);
 
-		strftime(string, size, display_fmt, &time_tm);
+		slurm_strftime(string, size, display_fmt, &time_tm);
 	}
 }
 
@@ -645,61 +753,90 @@ slurm_make_time_str (time_t *time, char *string, int size)
  */
 extern int time_str2secs(const char *string)
 {
-	int days = -1, hr = -1, min = -1, sec = -1;
-	int i, tmp = 0, res = 0;
+	uint16_t has_dash;
+	uint16_t num_colon;
+	char days[24] = {0};
+	char hours[24] = {0};
+	char minutes[24] = {0};
+	char seconds[24] = {0};
+	char *timestr;
+	char *p;
+	int d;
+	int h;
+	int m;
+	int s;
+	int n;
+	int cc;
 
 	if ((string == NULL) || (string[0] == '\0'))
 		return NO_VAL;	/* invalid input */
-	if ((!strcasecmp(string, "-1")) ||
-	    (!strcasecmp(string, "INFINITE")) ||
-	    (!strcasecmp(string, "UNLIMITED"))) {
+
+	if ((!strcasecmp(string, "-1"))
+	    || (!strcasecmp(string, "INFINITE"))
+	    || (!strcasecmp(string, "UNLIMITED"))) {
 		return INFINITE;
 	}
 
-	for (i=0; ; i++) {
-		if ((string[i] >= '0') && (string[i] <= '9')) {
-			tmp = (tmp * 10) + (string[i] - '0');
-		} else if (string[i] == '-') {
-			if (days != -1)
-				return NO_VAL;	/* invalid input */
-			days = tmp;
-			tmp = 0;
-		} else if ((string[i] == ':') || (string[i] == '\0')) {
-			if (min == -1) {
-				min = tmp;
-			} else if (sec == -1) {
-				sec = tmp;
-			} else if (hr == -1) {
-				hr = min;
-				min = sec;
-				sec = tmp;
-			} else
-				return NO_VAL;	/* invalid input */
-			tmp = 0;
-		} else
-			return NO_VAL;		/* invalid input */
+	if (! _is_valid_timespec(string))
+		return NO_VAL;
 
-		if (string[i] == '\0')
-			break;
+	timestr = p = strdup(string);
+	if (timestr == NULL)
+		return NO_VAL;
+
+	d = h = m = s = 0;
+
+	has_dash  = _get_dash(timestr);
+	num_colon = _get_num_colon(timestr);
+
+	if (has_dash) {
+		/* days- OR days-hours
+		 */
+		sscanf(timestr, "%s%s%n", days, hours, &n);
+		timestr = timestr + n;
+		d = atoi(days) * 86400;
+		h = atoi(hours) * 3600;
+
+		if (num_colon == 1) {
+			/* days-hours:minutes
+			 */
+			sscanf(timestr, "%s", minutes);
+			m = atoi(minutes) * 60;
+		} else if (num_colon == 2) {
+			/* days-hours:minutes:seconds
+			 */
+			sscanf(timestr, "%s%s", minutes, seconds);
+			m = atoi(minutes) * 60;
+			s = atoi(seconds);
+		}
+		goto bye;
 	}
 
-	if ((days != -1) && (hr == -1) && (min != 0)) {
-		/* format was "days-hr" or "days-hr:min" */
-		hr = min;
-		min = sec;
-		sec = 0;
+	/* minutes
+	 */
+	if (num_colon == 0) {
+		m = atoi(timestr) * 60;
+	} else if (num_colon == 1) {
+		/* minutes:seconds
+		 */
+		sscanf(timestr, "%s%s", minutes, seconds);
+		m = atoi(minutes) * 60;
+		s = atoi(seconds);
+	} else if (num_colon == 2) {
+		/* hours:minutes:seconds
+		 */
+		sscanf(timestr, "%s%s%s", hours, minutes, seconds);
+		h = atoi(hours) * 3600;
+		m = atoi(minutes) * 60;
+		s = atoi(seconds);
 	}
 
-	if (days == -1)
-		days = 0;
-	if (hr == -1)
-		hr = 0;
-	if (min == -1)
-		min = 0;
-	if (sec == -1)
-		sec = 0;
-	res = ((((days * 24) + hr) * 60) + min) * 60 + sec;
-	return res;
+bye:
+	cc = d + h + m + s;
+	free(p);
+
+	return cc;
+
 }
 extern int time_str2mins(const char *string)
 {

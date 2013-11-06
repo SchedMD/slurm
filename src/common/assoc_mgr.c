@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -434,12 +434,12 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 				assoc->usage->parent_assoc_ptr->usage =
 					create_assoc_mgr_association_usage();
 			if (!assoc->usage->
-			    parent_assoc_ptr->usage->childern_list)
+			    parent_assoc_ptr->usage->children_list)
 				assoc->usage->
-					parent_assoc_ptr->usage->childern_list =
+					parent_assoc_ptr->usage->children_list =
 					list_create(NULL);
 			list_append(assoc->usage->
-				    parent_assoc_ptr->usage->childern_list,
+				    parent_assoc_ptr->usage->children_list,
 				    assoc);
 		}
 
@@ -549,11 +549,11 @@ static int _post_association_list(List assoc_list)
 		list_iterator_reset(itr);
 		while ((assoc = list_next(itr))) {
 			int count = 0;
-			if (!assoc->usage->childern_list
-			    || !list_count(assoc->usage->childern_list))
+			if (!assoc->usage->children_list
+			    || !list_count(assoc->usage->children_list))
 				continue;
 			itr2 = list_iterator_create(
-				assoc->usage->childern_list);
+				assoc->usage->children_list);
 			while ((assoc2 = list_next(itr2))) {
 				if (assoc2->shares_raw != SLURMDB_FS_USE_PARENT)
 					count += assoc2->shares_raw;
@@ -1267,8 +1267,8 @@ extern void destroy_assoc_mgr_association_usage(void *object)
 		(assoc_mgr_association_usage_t *)object;
 
 	if (usage) {
-		if (usage->childern_list)
-			list_destroy(usage->childern_list);
+		if (usage->children_list)
+			list_destroy(usage->children_list);
 		FREE_NULL_BITMAP(usage->valid_qos);
 
 		xfree(usage);
@@ -1553,8 +1553,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	   is really in existance here, if they really want it they can
 	   use the pointer that is returned. */
 
-	/* if (!assoc->usage->childern_list) */
-	/* 	assoc->usage->childern_list = ret_assoc->usage->childern_list; */
+	/* if (!assoc->usage->children_list) */
+	/* 	assoc->usage->children_list = ret_assoc->usage->children_list; */
 	/* assoc->usage->grp_used_cpus   = ret_assoc->usage->grp_used_cpus; */
 	/* assoc->usage->grp_used_cpu_run_mins  = */
 	/* 	ret_assoc->usage->grp_used_cpu_run_mins; */
@@ -2513,7 +2513,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			if (setup_children)
 				parents_changed = 1; /* set since we need to
 							set the shares
-							of surrounding childern
+							of surrounding children
 						     */
 			if (remove_assoc_notify) {
 				/* since there are some deadlock
@@ -2551,12 +2551,12 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			assoc_mgr_association_list);
 
 		list_iterator_reset(itr);
-		/* flush the childern lists */
+		/* flush the children lists */
 		if (setup_children) {
 			while ((object = list_next(itr))) {
-				if (object->usage->childern_list)
+				if (object->usage->children_list)
 					list_flush(object->usage->
-						   childern_list);
+						   children_list);
 			}
 			list_iterator_reset(itr);
 		}
@@ -2581,11 +2581,11 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			if (setup_children) {
 				int count = 0;
 				ListIterator itr2 = NULL;
-				if (!object->usage->childern_list ||
-				    !list_count(object->usage->childern_list))
+				if (!object->usage->children_list ||
+				    !list_count(object->usage->children_list))
 					goto is_user;
 				itr2 = list_iterator_create(
-					object->usage->childern_list);
+					object->usage->children_list);
 				while ((rec = list_next(itr2))) {
 					if (rec->shares_raw
 					    != SLURMDB_FS_USE_PARENT)
@@ -3260,22 +3260,22 @@ extern void assoc_mgr_clear_used_info(void)
 	assoc_mgr_unlock(&locks);
 }
 
-static void _reset_children_usages(List childern_list)
+static void _reset_children_usages(List children_list)
 {
 	slurmdb_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 
-	if (!childern_list || !list_count(childern_list))
+	if (!children_list || !list_count(children_list))
 		return;
 
-	itr = list_iterator_create(childern_list);
+	itr = list_iterator_create(children_list);
 	while ((assoc = list_next(itr))) {
 		assoc->usage->usage_raw = 0.0;
 		assoc->usage->grp_used_wall = 0.0;
 		if (assoc->user)
 			continue;
 
-		_reset_children_usages(assoc->usage->childern_list);
+		_reset_children_usages(assoc->usage->children_list);
 	}
 	list_iterator_destroy(itr);
 }
@@ -3322,7 +3322,7 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_association_rec_t *assoc)
 /*
  *	The assoc is an account, so reset all children
  */
-	_reset_children_usages(sav_assoc->usage->childern_list);
+	_reset_children_usages(sav_assoc->usage->children_list);
 }
 
 extern int dump_assoc_mgr_state(char *state_save_location)
@@ -3338,7 +3338,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 	START_TIMER;
 	/* write header: version, time */
-	pack16(SLURMDBD_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
 	assoc_mgr_lock(&locks);
@@ -3347,7 +3347,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_user_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_USERS, buffer);
-		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_USERS, buffer);
 	}
 
@@ -3356,7 +3356,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_qos_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_QOS, buffer);
-		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_QOS, buffer);
 	}
 
@@ -3365,7 +3365,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_wckey_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_WCKEYS, buffer);
-		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_WCKEYS, buffer);
 	}
 	/* this needs to be done last so qos is set up
@@ -3375,7 +3375,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_association_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_ASSOCS, buffer);
-		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_ASSOCS, buffer);
 	}
 
@@ -3821,11 +3821,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_mgr_state header is %u", ver);
-	if (ver > SLURMDBD_VERSION || ver < SLURMDBD_VERSION_MIN) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURMDBD_VERSION_MIN) {
 		error("***********************************************");
 		error("Can not recover assoc_mgr state, incompatible version, "
 		      "got %u need > %u <= %u", ver,
-		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
+		      SLURMDBD_VERSION_MIN, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		assoc_mgr_unlock(&locks);

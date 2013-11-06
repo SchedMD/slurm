@@ -54,7 +54,7 @@ or several job steps may independently use a portion of the allocation.</p>
 <h2>Commands</h2>
 <p>Man pages exist for all SLURM daemons, commands, and API functions. The command
 option <span class="commandline">--help</span> also provides a brief summary of
-options. Note that the command options are all case insensitive.</p>
+options. Note that the command options are all case sensitive.</p>
 
 <p><span class="commandline"><b>sacct</b></span> is used to report job or job
 step accounting information about active or completed jobs.</p>

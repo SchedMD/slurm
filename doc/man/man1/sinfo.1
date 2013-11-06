@@ -1,4 +1,4 @@
-.TH SINFO "1" "December 2012" "sinfo 2.6" "Slurm components"
+.TH SINFO "1" "August 2013" "sinfo 13.12" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -113,7 +113,11 @@ maximum length of an node list to be printed.
 .IP
 The field specifications available include:
 .RS
-.TP 4
+.TP 6
+\fB%all\fR
+Print all fields available for this data type with a vertical bar separating
+each field.
+.TP
 \fB%a\fR
 State/availability of a partition
 .TP
@@ -121,6 +125,9 @@ State/availability of a partition
 Number of nodes by state in the format "allocated/idle".
 Do not use this with a node state option ("%t" or "%T") or
 the different node states will be placed on separate lines.
+.TP
+\fB%B\fR
+The max number of CPUs per node available to jobs in the partition.
 .TP
 \fB%c\fR
 Number of CPUs per node
@@ -466,7 +473,8 @@ man page or the \fBslurm.conf\fR(5) man page for more information.
 The node is not allocated to any jobs and is available for use.
 .TP
 \fBMAINT\fR
-The node is currently in a reservation with a flag value of "maintenance".
+The node is currently in a reservation with a flag value of "maintenance"
+or is scheduled to be rebooted.
 .TP
 \fBUNKNOWN\fR
 The SLURM controller has just started and the node's state
@@ -576,10 +584,11 @@ Not Responding                      dev8
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2009 Lawrence Livermore National Security.
-Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
+.br
+Copyright (C) 2010-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

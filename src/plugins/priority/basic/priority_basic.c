@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -53,6 +53,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_priority.h"
+#include "src/common/assoc_mgr.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -126,7 +127,7 @@ extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 	return new_prio;
 }
 
-extern void priority_p_reconfig(void)
+extern void priority_p_reconfig(bool assoc_clear)
 {
 	return;
 }
@@ -159,4 +160,62 @@ extern List priority_p_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg, uid_t uid)
 {
 	return(list_create(NULL));
+}
+
+extern void priority_p_job_end(struct job_record *job_ptr)
+{
+	uint64_t unused_cpu_run_secs = 0;
+	uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
+	slurmdb_association_rec_t *assoc_ptr;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	/* No unused cpu_run_secs if job ran past its time limit */
+	if (job_ptr->end_time >= job_ptr->start_time + time_limit_secs)
+		return;
+
+	unused_cpu_run_secs = job_ptr->total_cpus *
+		(job_ptr->start_time + time_limit_secs - job_ptr->end_time);
+
+	assoc_mgr_lock(&locks);
+	if (job_ptr->qos_ptr) {
+		slurmdb_qos_rec_t *qos_ptr =
+			(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		if (unused_cpu_run_secs >
+		    qos_ptr->usage->grp_used_cpu_run_secs) {
+			qos_ptr->usage->grp_used_cpu_run_secs = 0;
+			debug2("acct_policy_job_fini: "
+			       "grp_used_cpu_run_secs "
+			       "underflow for qos %s", qos_ptr->name);
+		} else
+			qos_ptr->usage->grp_used_cpu_run_secs -=
+				unused_cpu_run_secs;
+	}
+	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	while (assoc_ptr) {
+		/* If the job finished early remove the extra time now. */
+		if (unused_cpu_run_secs >
+		    assoc_ptr->usage->grp_used_cpu_run_secs) {
+			assoc_ptr->usage->grp_used_cpu_run_secs = 0;
+			debug2("acct_policy_job_fini: "
+			       "grp_used_cpu_run_secs "
+			       "underflow for account %s",
+			       assoc_ptr->acct);
+		} else {
+			assoc_ptr->usage->grp_used_cpu_run_secs -=
+				unused_cpu_run_secs;
+			debug4("acct_policy_job_fini: job %u. "
+			       "Removed %"PRIu64" unused seconds "
+			       "from assoc %s "
+			       "grp_used_cpu_run_secs = %"PRIu64"",
+			       job_ptr->job_id, unused_cpu_run_secs,
+			       assoc_ptr->acct,
+			       assoc_ptr->usage->grp_used_cpu_run_secs);
+		}
+		/* now handle all the group limits of the parents */
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+	assoc_mgr_unlock(&locks);
+
+	return;
 }

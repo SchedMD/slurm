@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -54,7 +54,9 @@
 #include "src/slurmctld/slurmctld.h"
 
 List license_list = (List) NULL;
+time_t last_license_update;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
+static void _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version);
 
 /* Print all licenses on a list */
 static inline void _licenses_print(char *header, List licenses, int job_id)
@@ -68,12 +70,12 @@ static inline void _licenses_print(char *header, List licenses, int job_id)
 	iter = list_iterator_create(licenses);
   	while ((license_entry = (licenses_t *) list_next(iter))) {
 		if (job_id == 0) {
-			info("licenses: %s=%s total=%u used=%u", 
+			info("licenses: %s=%s total=%u used=%u",
 			     header, license_entry->name,
 			     license_entry->total, license_entry->used);
 		} else {
-			info("licenses: %s=%s job_id=%u available=%u used=%u", 
-			     header, license_entry->name, job_id, 
+			info("licenses: %s=%s job_id=%u available=%u used=%u",
+			     header, license_entry->name, job_id,
 			     license_entry->total, license_entry->used);
 		}
 	}
@@ -202,8 +204,8 @@ extern char *get_licenses_used(void)
 			if (licenses_used)
 				xstrcat(licenses_used, ",");
 			xstrfmtcat(licenses_used, "%s:%u/%u",
-				   license_entry->name, license_entry->used,
-				   license_entry->total);
+			           license_entry->name, license_entry->used,
+			           license_entry->total);
 		}
 		list_iterator_destroy(iter);
 	}
@@ -216,6 +218,8 @@ extern char *get_licenses_used(void)
 extern int license_init(char *licenses)
 {
 	bool valid;
+
+	last_license_update = time(NULL);
 
 	slurm_mutex_lock(&license_mutex);
 	if (license_list)
@@ -309,17 +313,19 @@ extern List license_validate(char *licenses, bool *valid)
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		if (license_list) {
 			match = list_find_first(license_list,
-				_license_find_rec, license_entry->name);
+						_license_find_rec,
+						license_entry->name);
 		} else
 			match = NULL;
 		if (!match) {
-			debug("could not find license %s for job",
+			debug("License name requested (%s) does not exist",
 			      license_entry->name);
 			*valid = false;
 			break;
 		} else if (license_entry->total > match->total) {
-			debug("job wants more %s licenses than configured",
-			      match->name);
+			debug("Licenses count requested higher than configured "
+			      "(%s: %u > %u)",
+			      match->name, license_entry->total, match->total);
 			*valid = false;
 			break;
 		}
@@ -440,6 +446,8 @@ extern int license_job_get(struct job_record *job_ptr)
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
 
+	last_license_update = time(NULL);
+
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = (licenses_t *) list_next(iter))) {
@@ -474,6 +482,8 @@ extern int license_job_return(struct job_record *job_ptr)
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
 
+	last_license_update = time(NULL);
+
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = (licenses_t *) list_next(iter))) {
@@ -491,7 +501,7 @@ extern int license_job_return(struct job_record *job_ptr)
 			license_entry->used = 0;
 		} else {
 			/* This can happen after a reconfiguration */
-			error("job returning unknown license %s",
+			error("job returning unknown license name %s",
 			      license_entry->name);
 		}
 	}
@@ -525,4 +535,84 @@ extern bool license_list_overlap(List list_1, List list_2)
 	list_iterator_destroy(iter);
 
 	return match;
+}
+
+/* pack_all_licenses()
+ *
+ * Return license counters to the library.
+ */
+extern void
+get_all_license_info(char **buffer_ptr,
+                     int *buffer_size,
+                     uid_t uid,
+                     uint16_t protocol_version)
+{
+	ListIterator iter;
+	licenses_t *lic_entry;
+	uint32_t lics_packed;
+	int tmp_offset;
+	Buf buffer;
+	time_t now = time(NULL);
+
+	debug2("%s: calling for all licenses", __func__);
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	buffer = init_buf(BUF_SIZE);
+
+	/* write header: version and time
+	 */
+	lics_packed = 0;
+	pack32(lics_packed, buffer);
+	pack_time(now, buffer);
+
+	slurm_mutex_lock(&license_mutex);
+
+	if (license_list) {
+
+		iter = list_iterator_create(license_list);
+		while ((lic_entry = list_next(iter))) {
+			/* Now encode the license data structure.
+			 */
+			_pack_license(lic_entry, buffer, protocol_version);
+			++lics_packed;
+		}
+		list_iterator_destroy(iter);
+	}
+
+	slurm_mutex_unlock(&license_mutex);
+	debug2("%s: processed %d licenses", __func__, lics_packed);
+
+	/* put the real record count in the message body header
+	 */
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack32(lics_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
+}
+
+/* pack_license()
+ *
+ * Encode the licenses data structure.
+ *
+ *	char *		name;
+ *	uint32_t	total;
+ *	uint32_t	used;
+ *
+ */
+static void
+_pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		packstr(lic->name, buffer);
+		pack32(lic->total, buffer);
+		pack32(lic->used, buffer);
+	} else {
+		error("\
+%s: protocol_version %hu not supported", __func__, protocol_version);
+	}
 }

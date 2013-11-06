@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 
 if WITH_GNU_LD
 VERSION_SCRIPT = \
@@ -106,8 +106,8 @@ slurmapi_src =           \
 	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \
-	update_config.c
-
+	update_config.c  \
+	license_info.c
 
 common_dir = $(top_builddir)/src/common
 
@@ -152,7 +152,7 @@ libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libspank.o	\
 	$(top_builddir)/src/common/libcommon.o
 
-libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
+libslurm.o$(EXEEXT): $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 	$(LINK) $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 
 

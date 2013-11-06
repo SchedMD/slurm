@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -49,7 +49,7 @@
 static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason);
 static void _addto_mp_list(bg_record_t *bg_record,
 			   uint16_t *start, uint16_t *end);
-static int _ba_mp_cmpf_inc(ba_mp_t *node_a, ba_mp_t *node_b);
+static int _ba_mp_cmpf_inc(void *r1, void *r2);
 static void _set_block_avail(bg_record_t *bg_record);
 
 extern void print_bg_record(bg_record_t* bg_record)
@@ -456,10 +456,15 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
  * returns: -1: rec_a > rec_b   0: rec_a == rec_b   1: rec_a < rec_b
  *
  */
-extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
+extern int bg_record_cmpf_inc(void *r1, void *r2)
 {
-	int size_a = rec_a->cnode_cnt;
-	int size_b = rec_b->cnode_cnt;
+	bg_record_t *rec_a = *(bg_record_t **)r1;
+	bg_record_t *rec_b = *(bg_record_t **)r2;
+	int size_a;
+	int size_b;
+
+	size_a = rec_a->cnode_cnt;
+	size_b = rec_b->cnode_cnt;
 
 	/* We only look at this if we are ordering blocks larger than
 	 * a midplane, order of ionodes is how we order otherwise. */
@@ -496,8 +501,11 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
  * returns: -1: rec_a < rec_b   0: rec_a == rec_b   1: rec_a > rec_b
  *
  */
-extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
+extern int bg_record_sort_aval_inc(void *r1, void *r2)
 {
+	bg_record_t* rec_a = *(bg_record_t **)r1;
+	bg_record_t* rec_b = *(bg_record_t **)r2;
+
 	if ((rec_a->job_running == BLOCK_ERROR_STATE)
 	    && (rec_b->job_running != BLOCK_ERROR_STATE))
 		return 1;
@@ -546,7 +554,43 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	/* 		return -1; */
 	/* } */
 
-	return bg_record_cmpf_inc(rec_a, rec_b);
+	return bg_record_cmpf_inc(&rec_a, &rec_b);
+}
+
+/* set up structures needed for sub block jobs. */
+extern void setup_subblock_structs(bg_record_t *bg_record)
+{
+	ba_mp_t *ba_mp;
+
+	xassert(bg_record);
+
+	if (!bg_conf->sub_blocks || bg_record->mp_count != 1)
+		return;
+
+	xassert(bg_record->ba_mp_list);
+
+	ba_mp = list_peek(bg_record->ba_mp_list);
+	xassert(ba_mp);
+
+	/* This will be a list containing jobs running on this
+	   block */
+	if (!bg_record->job_list)
+		bg_record->job_list = list_create(NULL);
+
+	/* Create these now so we can deal with error
+	   cnodes if/when they happen.  Since this is
+	   the easiest place to figure it out for
+	   blocks that don't use the entire block */
+	FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
+	if ((ba_mp->cnode_bitmap =
+	     ba_create_ba_mp_cnode_bitmap(bg_record))) {
+		FREE_NULL_BITMAP(ba_mp->cnode_err_bitmap);
+		FREE_NULL_BITMAP(ba_mp->cnode_usable_bitmap);
+		ba_mp->cnode_err_bitmap =
+			bit_alloc(bg_conf->mp_cnode_cnt);
+		ba_mp->cnode_usable_bitmap =
+			bit_copy(ba_mp->cnode_bitmap);
+	}
 }
 
 /* Try to requeue job running on block and put block in an error state.
@@ -737,25 +781,8 @@ extern int add_bg_record(List records, List *used_nodes,
 			       "destroying this mp list");
 			list_destroy(bg_record->ba_mp_list);
 			bg_record->ba_mp_list = NULL;
-		} else if (bg_conf->sub_blocks && bg_record->mp_count == 1) {
-			ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
-			xassert(ba_mp);
-			/* This will be a list containing jobs running on this
-			   block */
-			bg_record->job_list = list_create(NULL);
-
-			/* Create these now so we can deal with error
-			   cnodes if/when they happen.  Since this is
-			   the easiest place to figure it out for
-			   blocks that don't use the entire block */
-			if ((ba_mp->cnode_bitmap =
-			     ba_create_ba_mp_cnode_bitmap(bg_record))) {
-		       		ba_mp->cnode_err_bitmap =
-					bit_alloc(bg_conf->mp_cnode_cnt);
-				ba_mp->cnode_usable_bitmap =
-					bit_copy(ba_mp->cnode_bitmap);
-			}
-		}
+		} else
+			setup_subblock_structs(bg_record);
 	} else {
 		List ba_mp_list = NULL;
 
@@ -1075,13 +1102,13 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			continue;
 
 		if (bg_record->job_running > NO_JOB_RUNNING) {
-			job_fail(bg_record->job_running);
+			job_fail(bg_record->job_running, JOB_NODE_FAIL);
 		} else if (bg_record->job_list) {
 			ListIterator job_itr = list_iterator_create(
 				bg_record->job_list);
 			struct job_record *job_ptr;
 			while ((job_ptr = list_next(job_itr))) {
-				job_fail(job_ptr->job_id);
+				job_fail(job_ptr->job_id, JOB_NODE_FAIL);
 			}
 			list_iterator_destroy(job_itr);
 		}
@@ -1680,6 +1707,140 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 	return rc;
 }
 
+/* block_state_mutex must be locked when coming in */
+extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
+{
+	List	kill_list = NULL;
+	ListIterator itr = NULL;
+	slurmdb_qos_rec_t *qos_ptr = NULL;
+	struct job_record *found_job_ptr;
+	select_jobinfo_t *jobinfo;
+
+	xassert(ret_kill_list);
+
+	if (!bg_record) {
+		error("bg_record_hw_failure: no block pointer");
+		return;
+	}
+
+	/* Don't wait to reboot a bad, single midplane block if there
+	 * are other jobs still running that have a preemptable qos
+	 * that is in the RebootQOSList */
+	if (!bg_conf->sub_blocks || !bg_conf->reboot_qos_bitmap
+	    || (bit_ffs(bg_conf->reboot_qos_bitmap) == -1)
+	    || (bg_record->mp_count > 1))
+		return;
+
+	/* Any block in these states can be ignored */
+	if (bg_record->free_cnt
+	    || ((!bg_record->err_ratio
+		|| (bg_record->err_ratio < bg_conf->max_block_err))
+		&& bg_record->action != BG_BLOCK_ACTION_FREE)
+	    || !bg_record->job_list
+	    || (list_count(bg_record->job_list) <= 1))
+		return;
+
+	/* Make sure all jobs still running in this bad block
+	 * all have a preemptable qos */
+	itr = list_iterator_create(bg_record->job_list);
+	while ((found_job_ptr = list_next(itr))) {
+		if (found_job_ptr->magic != JOB_MAGIC) {
+			error("select_p_job_fini: "
+			      "bad magic found when "
+			      "looking at block %s",
+			      bg_record->bg_block_id);
+			list_delete_item(itr);
+			continue;
+		}
+
+		jobinfo = found_job_ptr->select_jobinfo->data;
+
+		if (jobinfo->cleaning || !IS_JOB_RUNNING(found_job_ptr))
+			continue;
+
+		qos_ptr = (slurmdb_qos_rec_t *)found_job_ptr->qos_ptr;
+		if (qos_ptr) {
+			/* If we ever get one that
+			   isn't set correctly then we
+			   just exit.
+			*/
+			if (!bit_test(bg_conf->reboot_qos_bitmap,
+				      qos_ptr->id)) {
+				if (kill_list) {
+					list_destroy(kill_list);
+					kill_list = NULL;
+				}
+				break;
+			}
+			if (!kill_list)
+				kill_list = list_create(NULL);
+			list_append(kill_list, found_job_ptr);
+		}
+	}
+	list_iterator_destroy(itr);
+
+	if (kill_list) {
+		if (!*ret_kill_list) {
+			*ret_kill_list = kill_list;
+		} else {
+			list_transfer(*ret_kill_list, kill_list);
+			list_destroy(kill_list);
+		}
+		kill_list = NULL;
+	}
+	return;
+}
+
+/* block_state_mutex must be unlocked when coming in */
+extern void bg_record_post_hw_failure(
+	List *kill_list, bool slurmctld_locked)
+{
+	slurmdb_qos_rec_t *qos_ptr = NULL;
+	struct job_record *found_job_ptr;
+	select_jobinfo_t *jobinfo;
+	ListIterator itr;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
+	if (!*kill_list)
+		return;
+
+	if (!slurmctld_locked)
+		lock_slurmctld(job_write_lock);
+
+	/* The necessary conditions have been met.
+	 * Now, kill or requeue the preemptable
+	 * jobs */
+	itr = list_iterator_create(*kill_list);
+	/* Setting cleaning needs to be done before
+	   bg_requeue_job is called or we could have
+	   an issue where the jobs are requeued over and
+	   over again.
+	*/
+	while ((found_job_ptr = list_next(itr))) {
+		jobinfo = found_job_ptr->select_jobinfo->data;
+		jobinfo->cleaning = 1;
+	}
+	list_iterator_reset(itr);
+	while ((found_job_ptr = list_next(itr))) {
+		jobinfo = found_job_ptr->select_jobinfo->data;
+		qos_ptr = (slurmdb_qos_rec_t*)found_job_ptr->qos_ptr;
+
+		debug("Attempting to requeue %s job %u due "
+		      "to excessive node errors",
+		      qos_ptr->name, found_job_ptr->job_id);
+		bg_requeue_job(found_job_ptr->job_id, 0, 1,
+			       JOB_NODE_FAIL, 1);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(*kill_list);
+	*kill_list = NULL;
+	if (!slurmctld_locked)
+		unlock_slurmctld(job_write_lock);
+}
+
+
+
 /************************* local functions ***************************/
 
 /* block_state_mutex should be locked before calling */
@@ -1863,8 +2024,11 @@ static int _coord_cmpf_inc(uint16_t *coord_a, uint16_t *coord_b, int dim)
 
 }
 
-static int _ba_mp_cmpf_inc(ba_mp_t *mp_a, ba_mp_t *mp_b)
+static int _ba_mp_cmpf_inc(void *r1, void *r2)
 {
+	ba_mp_t *mp_a = *(ba_mp_t **)r1;
+	ba_mp_t *mp_b = *(ba_mp_t **)r2;
+
 	int rc = _coord_cmpf_inc(mp_a->coord, mp_b->coord, 0);
 
 	if (!rc) {

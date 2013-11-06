@@ -5,13 +5,13 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmd
 
-AM_CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
-INCLUDES = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
+AM_CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\" \
+	-I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
 slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)	   \
-	$(PLPA_LIBS) $(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
 	../common/libslurmd_common.la
 
 SLURMD_SOURCES = \
@@ -20,7 +20,8 @@ SLURMD_SOURCES = \
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
 	reverse_tree_math.c reverse_tree_math.h \
-	xcpu.c xcpu.h
+	xcpu.c xcpu.h \
+	slurmd_plugstack.c slurmd_plugstack.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 

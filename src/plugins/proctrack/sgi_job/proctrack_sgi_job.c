@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -192,40 +192,48 @@ int _job_getpidcnt (jid_t jid)
 	return ((*job_ops.getpidcnt) (jid));
 }
 
-int slurm_container_plugin_create (slurmd_job_t *job)
+int proctrack_p_plugin_create (stepd_step_rec_t *job)
 {
-	jid_t jid;
-	job->cont_id = (uint64_t) -1;
-
 	if (!libjob_handle)
 		init();
 
-	if ((jid = _job_create (0, job->uid, 0)) == (jid_t) -1) {
+	if ((job->cont_id = _job_create (0, job->uid, 0)) == (jid_t) -1) {
 		error ("Failed to create job container: %m");
 		return SLURM_ERROR;
 	}
-	debug ("created jid 0x%08lx", jid);
+
+	debug ("created jid 0x%08lx", job->cont_id);
 
 	return SLURM_SUCCESS;
 }
 
-int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
+/* NOTE: This function is called after slurmstepd spawns all user tasks.
+ * Since the slurmstepd was placed in the job container when the container
+ * was created and all of it's spawned tasks are placed into the container
+ * when forked, all we need to do is remove the slurmstepd from the container
+ * (once) at this time. */
+int proctrack_p_plugin_add (stepd_step_rec_t *job, pid_t pid)
 {
-	if (job->cont_id == (uint64_t) -1) {
-		job->cont_id = (uint64_t) _job_getjid (getpid());
-		/*
-		 *  Detach ourselves from the job container now that there
-		 *   is at least one other process in it.
-		 */
-		if (_job_detachpid (getpid()) == (jid_t) -1) {
-			error ("Failed to detach from job container: %m");
-			return SLURM_ERROR;
-		}
+	static bool first = 1;
+
+	if (!first)
+		return SLURM_SUCCESS;
+
+	first = 0;
+
+	/*
+	 *  Detach ourselves from the job container now that there
+	 *   is at least one other process in it.
+	 */
+	if (_job_detachpid(getpid()) == (jid_t) -1) {
+		error("Failed to detach from job container: %m");
+		return SLURM_ERROR;
 	}
+
 	return SLURM_SUCCESS;
 }
 
-int slurm_container_plugin_signal (uint64_t id, int sig)
+int proctrack_p_plugin_signal (uint64_t id, int sig)
 {
 	if ( (_job_killjid ((jid_t) id, sig) < 0)
 	   && (errno != ENODATA) && (errno != EBADF) )
@@ -233,7 +241,7 @@ int slurm_container_plugin_signal (uint64_t id, int sig)
 	return (SLURM_SUCCESS);
 }
 
-int slurm_container_plugin_destroy (uint64_t id)
+int proctrack_p_plugin_destroy (uint64_t id)
 {
 	int status;
 	_job_waitjid ((jid_t) id, &status, 0);
@@ -243,7 +251,7 @@ int slurm_container_plugin_destroy (uint64_t id)
 	return SLURM_SUCCESS;
 }
 
-uint64_t slurm_container_plugin_find (pid_t pid)
+uint64_t proctrack_p_plugin_find (pid_t pid)
 {
 	jid_t jid;
 
@@ -253,7 +261,7 @@ uint64_t slurm_container_plugin_find (pid_t pid)
 	return ((uint64_t) jid);
 }
 
-bool slurm_container_plugin_has_pid (uint64_t cont_id, pid_t pid)
+bool proctrack_p_plugin_has_pid (uint64_t cont_id, pid_t pid)
 {
 	jid_t jid;
 
@@ -265,7 +273,7 @@ bool slurm_container_plugin_has_pid (uint64_t cont_id, pid_t pid)
 	return true;
 }
 
-int slurm_container_plugin_wait (uint64_t id)
+int proctrack_p_plugin_wait (uint64_t id)
 {
 	int status;
 	if (_job_waitjid ((jid_t) id, &status, 0) == (jid_t)-1)
@@ -274,7 +282,7 @@ int slurm_container_plugin_wait (uint64_t id)
 	return SLURM_SUCCESS;
 }
 
-int slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
+int proctrack_p_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	int pidcnt, bufsize;
 	pid_t *p;

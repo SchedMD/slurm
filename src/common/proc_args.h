@@ -7,7 +7,7 @@
  *  from existing SLURM source code, particularly src/srun/opt.c
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -67,6 +67,10 @@ void print_slurm_version(void);
 
 /* print the available gres options */
 void print_gres_help(void);
+
+/* set distribution type strings from distribution type const */
+void set_distribution(task_dist_states_t distribution,
+		      char **dist, char **lllp_dist);
 
 /* verify the requested distribution type */
 task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size);
@@ -139,7 +143,8 @@ char *print_geometry(const uint16_t *geometry);
 /* Translate a signal option string "--signal=<int>[@<time>]" into
  * it's warn_signal and warn_time components.
  * RET 0 on success, -1 on failure */
-int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time);
+int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
+		    uint16_t *warn_flags);
 
 /* Convert a signal name to it's numeric equivalent.
  * Return 0 on failure */

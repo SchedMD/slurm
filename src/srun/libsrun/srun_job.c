@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -817,7 +817,7 @@ _job_create_structure(allocation_info_t *ainfo)
 #endif
 	}
 
-#elif defined HAVE_FRONT_END && !defined HAVE_CRAY
+#elif defined HAVE_FRONT_END && !defined HAVE_ALPS_CRAY
 	/* Limited job step support */
 	opt.overcommit = true;
 	job->nhosts = 1;

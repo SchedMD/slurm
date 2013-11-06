@@ -9,7 +9,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -46,9 +46,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "src/common/list.h"
+#include "src/common/slurm_xlator.h"
 #include "filetxt_jobacct_process.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"
@@ -74,7 +72,6 @@ typedef struct header {
 	time_t 	timestamp;
 	uint32_t uid;
 	uint32_t gid;
-	uint16_t rec_type;
 } filetxt_header_t;
 
 typedef struct {
@@ -255,7 +252,7 @@ static slurmdb_step_rec_t *_slurmdb_create_step_rec(
 	slurmdb_step_rec_t *slurmdb_step = slurmdb_create_step_rec();
 
 	slurmdb_step->elapsed = filetxt_step->elapsed;
-	slurmdb_step->end = filetxt_step->header.timestamp;
+	slurmdb_step->end = filetxt_step->end;
 	slurmdb_step->exitcode = filetxt_step->exitcode;
 	slurmdb_step->ncpus = filetxt_step->ncpus;
 	if (filetxt_step->nodes) {
@@ -267,8 +264,7 @@ static slurmdb_step_rec_t *_slurmdb_create_step_rec(
 	slurmdb_step->requid = filetxt_step->requid;
 	memcpy(&slurmdb_step->stats, &filetxt_step->stats,
 	       sizeof(slurmdb_stats_t));
-	slurmdb_step->start = filetxt_step->header.timestamp -
-		slurmdb_step->elapsed;
+	slurmdb_step->start = slurmdb_step->end - slurmdb_step->elapsed;
 	slurmdb_step->state = filetxt_step->status;
 	slurmdb_step->stepid = filetxt_step->stepnum;
 	slurmdb_step->stepname = xstrdup(filetxt_step->stepname);
@@ -316,7 +312,7 @@ no_cond:
 	slurmdb_job->cluster = NULL;
 	slurmdb_job->elapsed = filetxt_job->elapsed;
 	slurmdb_job->eligible = filetxt_job->header.job_submit;
-	slurmdb_job->end = filetxt_job->header.timestamp;
+	slurmdb_job->end = filetxt_job->end;
 	slurmdb_job->exitcode = filetxt_job->exitcode;
 	slurmdb_job->gid = filetxt_job->header.gid;
 	slurmdb_job->jobid = filetxt_job->header.jobnum;
@@ -335,8 +331,7 @@ no_cond:
 	memcpy(&slurmdb_job->stats, &filetxt_job->stats,
 	       sizeof(slurmdb_stats_t));
 	slurmdb_job->show_full = filetxt_job->show_full;
-	slurmdb_job->start = filetxt_job->header.timestamp -
-		slurmdb_job->elapsed;
+	slurmdb_job->start = slurmdb_job->end - slurmdb_job->elapsed;
 	slurmdb_job->state = filetxt_job->status;
 
 	slurmdb_job->steps = list_create(slurmdb_destroy_step_rec);
@@ -470,8 +465,8 @@ static FILE *_open_log_file(char *logfile)
 }
 
 static int _cmp_jrec(const void *a1, const void *a2) {
-	expired_rec_t *j1 = (expired_rec_t *) a1;
-	expired_rec_t *j2 = (expired_rec_t *) a2;
+	expired_rec_t *j1 = *(expired_rec_t **) a1;
+	expired_rec_t *j2 = *(expired_rec_t **) a2;
 
 	if (j1->job <  j2->job)
 		return -1;
@@ -996,7 +991,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		}
 	foundgid:
 
-		if (job_cond->jobname_list
+		if ((rec_type == JOB_START) && job_cond->jobname_list
 		    && list_count(job_cond->jobname_list)) {
 			itr = list_iterator_create(job_cond->jobname_list);
 			while((object = list_next(itr))) {
@@ -1035,7 +1030,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		}
 	foundjob:
 
-		if (job_cond->partition_list
+		if ((rec_type == JOB_START) && job_cond->partition_list
 		    && list_count(job_cond->partition_list)) {
 			itr = list_iterator_create(job_cond->partition_list);
 			while((object = list_next(itr)))
@@ -1222,6 +1217,8 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 		exp_rec = xmalloc(sizeof(expired_rec_t));
 		exp_rec->line = xstrdup(line);
 
+		for (i = 0; i < EXPIRE_READ_LENGTH; i++)
+			f[i] = fptr;	/* Initialization for bad data read */
 		for (i = 0; i < EXPIRE_READ_LENGTH; i++) {
 			f[i] = fptr;
 			fptr = strstr(fptr, " ");
@@ -1241,7 +1238,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 				list_append(keep_list, exp_rec);
 				continue;
 			}
-			if (job_cond->partition_list
+			if ((rec_type == JOB_START) && job_cond->partition_list
 			    && list_count(job_cond->partition_list)) {
 				itr = list_iterator_create(
 					job_cond->partition_list);

@@ -6,7 +6,7 @@
  *  Copyright (C) 2013 Bull-HN-PHX
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -77,4 +77,5 @@ extern int ext_sensors_data_unpack(ext_sensors_data_t **ext_sensors, Buf buffer,
 extern int ext_sensors_g_update_component_data(void);
 extern int ext_sensors_g_get_stepstartdata(struct step_record *step_rec);
 extern int ext_sensors_g_get_stependdata(struct step_record *step_rec);
+extern int ext_sensors_g_get_config(void *data);
 #endif /*__SLURM_EXT_SENSORS_H__*/

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -476,7 +476,7 @@ static print_field_t *_get_print_field(char *object)
 	} else if (!strncasecmp("RPC", object, MAX(command_len, 1))) {
 		field->type = PRINT_RPC_VERSION;
 		field->name = xstrdup("RPC");
-		field->len = 3;
+		field->len = 5;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("Share", object, MAX(command_len, 1))
 		   || !strncasecmp("FairShare", object, MAX(command_len, 2))) {
@@ -1263,7 +1263,7 @@ extern void sacctmgr_print_coord_list(
 		printf("%s", print_this);
 	else if (print_fields_parsable_print)
 		printf("%s|", print_this);
-	else {
+	else if (print_this) {
 		if (strlen(print_this) > abs_len)
 			print_this[abs_len-1] = '+';
 
@@ -1552,10 +1552,13 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 
 }
 
-extern int sort_coord_list(slurmdb_coord_rec_t *coord_a,
-			   slurmdb_coord_rec_t *coord_b)
+extern int sort_coord_list(void *a, void *b)
 {
-	int diff = strcmp(coord_a->name, coord_b->name);
+	slurmdb_coord_rec_t *coord_a = *(slurmdb_coord_rec_t **)a;
+	slurmdb_coord_rec_t *coord_b = *(slurmdb_coord_rec_t **)b;
+	int diff;
+
+	diff = strcmp(coord_a->name, coord_b->name);
 
 	if (diff < 0)
 		return -1;

@@ -1,0 +1,225 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol displays and updates Allow/Deny accounts.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        "2.16"
+set part_name      "test$test_id\_part"
+set acct_name      "test$test_id\_acct"
+set exit_code      0
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME set admin=admin.\n"
+	exit 0
+}
+
+proc set_part_val {part_type part_val} {
+
+	global scontrol part_name exit_code
+
+	spawn $scontrol update partitionname=$part_name $part_type=$part_val
+	expect {
+		-re "Error" {
+			send_user "\nFAILURE: $part_type was not set\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc check_part {part_type part_val} {
+
+	global scontrol part_name exit_code
+
+	set val_found 0
+	spawn $scontrol show partition=$part_name
+	expect {
+		-re "$part_type=$part_val" {
+			set val_found 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$val_found != 1} {
+		send_user "\nFAILURE: $part_type was not set to $part_val\n"
+		set exit_code 1
+	}
+}
+
+proc delete_part { } {
+
+	global scontrol sacctmgr part_name acct_name
+
+	spawn $scontrol delete partition=$part_name
+	expect {
+		-re "error" {
+			send_user "\nFAILURE: scontrol did not remove partition\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "FAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set del_acct 0
+	spawn $sacctmgr -i delete account $acct_name
+	expect {
+		-re "Deleting accounts" {
+			set del_acct 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$del_acct != 1} {
+		send_user "\nFAILURE: Account was not deleted\n"
+		set exit_code 1
+	}
+
+}
+
+spawn $scontrol create partition=$part_name
+expect {
+	-re "error" {
+		send_user "\nFAILURE: partition was not created\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set make_acct 0
+spawn $sacctmgr -i create account $acct_name
+expect {
+	-re "Adding Account" {
+		set make_acct 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if { $make_acct != 1 } {
+	send_user "\nFAILURE: Account was not added\n"
+	set exit_code 1
+}
+
+#
+# Set AllowAccount
+#
+set_part_val allowaccount $acct_name
+
+#
+# Check that AllowAccounts is set in the partition
+#
+check_part AllowAccounts $acct_name
+
+#
+# Set AllowAccounts back to all
+#
+set_part_val allowaccount ALL
+
+#
+# Check that AllowAccounts is set back to all
+#
+check_part AllowAccounts ALL
+
+#
+# Set DenyAccount
+#
+set_part_val denyaccount $acct_name
+
+#
+# Check that DenyAccount was set
+#
+check_part DenyAccounts $acct_name
+
+#
+# Set DenyAccount to none
+#
+set_part_val denyaccount none
+
+#
+# Check that DenyAccount was set to ALL
+#
+check_part DenyAccounts none
+
+#
+# Delete the partition and the Account
+#
+delete_part
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

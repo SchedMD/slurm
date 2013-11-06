@@ -7,7 +7,7 @@
  *  Matthieu Hautreux
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -130,7 +130,7 @@ extern int jobacct_gather_cgroup_memory_attach_task(
 	pid_t pid, jobacct_id_t *jobacct_id)
 {
 	xcgroup_t memory_cg;
-	slurmd_job_t *job;
+	stepd_step_rec_t *job;
 	uid_t uid;
 	gid_t gid;
 	uint32_t jobid;

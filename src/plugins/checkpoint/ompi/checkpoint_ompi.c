@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -251,7 +251,7 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack16(check_ptr->disabled, buffer);
 		pack16(check_ptr->reply_cnt, buffer);
 		pack16(check_ptr->wait_time, buffer);
@@ -271,7 +271,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack16(&check_ptr->disabled, buffer);
 		safe_unpack16(&check_ptr->reply_cnt, buffer);
 		safe_unpack16(&check_ptr->wait_time, buffer);

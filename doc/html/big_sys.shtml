@@ -20,8 +20,7 @@ exiting and includes the time for processing output. Your performance may
 vary due to differences hardware, software, and configuration.</p>
 <ul>
 <li>1,966,080 tasks on 122,880 compute nodes of a BlueGene/Q: 322 seconds</li>
-<li>49,152 tasks on 4,096 compute nodes of a Linux cluster: 96 seconds</li>
-<li>16,384 tasks on 1,024 compute nodes of a Linux cluster: 51 seconds</li>
+<li>30,000 tasks on 15,000 compute nodes of a Linux cluster: 30 seconds</li>
 </ul>
 
 <h2>System Configuration</h2>
@@ -157,6 +156,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 1 March 2013</p>
+<p style="text-align:center;">Last modified 5 August 2013</p>
 
 <!--#include virtual="footer.txt"-->

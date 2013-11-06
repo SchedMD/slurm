@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -70,12 +70,13 @@
  * In slurm_protocol_util.c check_header_version(), and init_header()
  * need to be updated also when changes are added */
 #define SLURM_PROTOCOL_VERSION ((SLURM_API_MAJOR << 8) | SLURM_API_AGE)
-#define SLURM_2_6_PROTOCOL_VERSION SLURM_PROTOCOL_VERSION
+#define SLURM_13_12_PROTOCOL_VERSION ((27 << 8) | 0)
+#define SLURM_2_6_PROTOCOL_VERSION ((26 << 8) | 0)
 #define SLURM_2_5_PROTOCOL_VERSION ((25 << 8) | 0)
+#if 0
+/* SLURM version 13.12 code removed support for protocol versions before 2.5 */
 #define SLURM_2_4_PROTOCOL_VERSION ((24 << 8) | 0)
 #define SLURM_2_3_PROTOCOL_VERSION ((23 << 8) | 0)
-#if 0
-/* SLURM version 2.5 code removed support for protocol versions before 2.2 */
 #define SLURM_2_2_PROTOCOL_VERSION ((22 << 8) | 0)
 #define SLURM_2_1_PROTOCOL_VERSION ((21 << 8) | 0)
 #define SLURM_2_0_PROTOCOL_VERSION ((20 << 8) | 0)

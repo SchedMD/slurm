@@ -20,6 +20,7 @@ Lead Slurm developers are:
 <li><a href="http://www.llnl.gov">Lawrence Livermore National Laboratory</a></li>
 <li><a href="http://www.lanl.gov">Los Alamos National Laboratory</a></li>
 <li><a href="http://english.nudt.edu.cn">National University of Defense Technology (NUDT, China)</a></li>
+<li><a href="http://www.nvidia.com">NVIDIA</a></li>
 <li><a href="http://www.ornl.gov">Oak Ridge National Laboratory</a></li>
 <li><a href="http://www.schedmd.com">SchedMD</a></li>
 <li><a href="http://www.cscs.ch">Swiss National Supercomputing Centre</a></li>
@@ -43,9 +44,10 @@ Lead Slurm developers are:
 <li>Bill Brophy (Bull)</li>
 <br>
 <li>Luis Cabellos (Instituto de Fisica de Cantabria, Spain)</li>
+<li>Thomas Cadeau (Bull)</li>
 <li>Hongjia Cao (National University of Defense Technology, China)</li>
 <li>Jimmy Cao (Greenplum/EMC)</li>
-<li>Ralph Castain (Los Alamos National Laboratory, Greenplum/EMC)</li>
+<li>Ralph Castain (Intel, Greenplum/EMC, Los Alamos National Laboratory)</li>
 <li>Fran&ccedil;ois Chevallier (CEA)</li>
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
@@ -68,22 +70,28 @@ Lead Slurm developers are:
 <li>Didier Gazen (Laboratoire d'Aerologie, France)</li>
 <li>Raphael Geissert (Debian)</li>
 <li>Yiannis Georgiou (Bull)</li>
+<li>Armin Gr&ouml;&szlig;linger (University Passau, Germany)</li>
 <li>Mark Grondona (Lawrence Livermore National Laboratory)</li>
 <li>Dmitri Gribenko</li>
 <li>Andriy Grytsenko (Massive Solutions Limited, Ukraine)</li>
+<li>Michael Gutteridge (Fred Hutchinson Cancer Research Center)</li>
 <br>
 <li>Chris Harwell (D. E. Shaw Research)</li>
 <li>Takao Hatazaki (HP)</li>
 <li>Matthieu Hautreux (CEA, France)</li>
+<li>Dave Henseler (Cray)</li>
 <li>Chris Holmes (HP)</li>
 <li>David H&ouml;ppner</li>
 <li>Nathan Huff (North Dakota State University)</li>
+<br>
+<li>Martins Innus (University of Buffalo)</li>
 <br>
 <li>David Jackson (Adaptive Computing)</li>
 <li>Alec Jensen (SchedMD)</li>
 <li>Klaus Joas (University Karlsruhe, Germany)</li>
 <li>Greg Johnson (Los Alamos National Laboratory)</li>
 <li>Magnus Jonsson (Ume&aring; University, Sweden)</li>
+<li>Matthias Jurenz (ZIH, TU Dresden, Germany)</li>
 <br>
 <li>Jason King (Lawrence Livermore National Laboratory)</li>
 <li>Yury Kiryanov (Intel)</li>
@@ -95,6 +103,7 @@ Lead Slurm developers are:
 <li>Puenlap Lee (Bull)</li>
 <li>Dennis Leepow</li>
 <li>Olli-Pekka Lehto (CSC-IT Center for Science Ltd., Finland)</li>
+<li>Piotr Lesnicki (Bull)</li>
 <li>Bernard Li (Genome Sciences Centre, Canada)</li>
 <li>Eric Lin (Bull)</li>
 <li>Donald Lipari (Lawrence Livermore National Laboratory)</li>
@@ -106,18 +115,23 @@ Lead Slurm developers are:
 <li>Chris Morrone (Lawrence Livermore National Laboratory)</li>
 <li>Pere Munt (Barcelona Supercomputing Center, Spain)</li>
 <br>
+<li>Denis Nadeau</li>
 <li>Mark Nelson (IBM)</li>
 <li>Michal Novotny (Masaryk University, Czech Republic)</li>
 <br>
 <li>Bryan O'Sullivan (Pathscale)</li>
 <li>Gennaro Oliva (Institute of High Performance Computing and Networking, Italy)</li>
+<li>Alan Orth (International Livestock Research Institute, Kenya)</li>
 <br>
+<li>Juan Pancorbo (Leibniz-Rechenzentrum, Germany)</li>
+<li>Chrysovalantis Paschoulas (Juelich Supercomputing Centre, Germany)</li>
 <li>R&eacute;mi Palancher</li>
 <li>Alejandro Lucero Palau (Barcelona Supercomputing Center, Spain)</li>
 <li>Daniel Palermo (HP)</li>
 <li>Martin Perry (Bull)</li>
 <li>Dan Phung (Lawrence Livermore National Laboratory/Columbia University)</li>
 <li>Ashley Pittman (Quadrics, UK)</li>
+<li>Ludovic Prevost (NEC, France)</li>
 <br>
 <li>Vijay Ramasubramanian (University of Maryland)</li>
 <li>Krishnakumar Ravi[KK] (HP)</li>
@@ -136,8 +150,10 @@ Lead Slurm developers are:
 <li>Federico Sacerdoti (D. E. Shaw Research)</li>
 <li>Aleksej Saushev</li>
 <li>Rod Schultz (Bull)</li>
+<li>Filip Skalski (University of Warsaw, Poland)</li>
 <li>Jason Sollom (Cray)</li>
 <li>Eric Soyez (Science+Computing)</li>
+<li>Marcin Stolarek</li>
 <li>Tyler Strickland (University of Florida)</li>
 <li>Jeff Squyres (LAM MPI)</li>
 <br>
@@ -148,11 +164,15 @@ Lead Slurm developers are:
 <li>Adam Todorski (Rensselaer Polytechnic Institute)</li>
 <li>Stephen Trofinoff (Swiss National Supercomputing Centre)</li>
 <br>
+<li>Garrison Vaughan</li>
+<br>
+<li>Daniel M. Weeks (Rensselaer Polytechnic Institute)</li>
 <li>Nathan Weeks (Iowa State University)</li>
 <li>Andy Wettstein (University of Chicago)</li>
 <li>Tim Wickberg (Rensselaer Polytechnic Institute)</li>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
 <li>Jay Windley (Linux NetworX)</li>
+<li>Eric Winter</li>
 <li>Anne-Marie Wunderlin (Bull)</li>
 <br>
 <li>Yair Yarom (The Hebrew University of Jerusalem, Israel)</li>
@@ -160,6 +180,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 27 March 2013</p>
+<p style="text-align:center;">Last modified 1 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

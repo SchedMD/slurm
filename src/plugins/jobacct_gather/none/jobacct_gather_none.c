@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -144,11 +144,6 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 extern int jobacct_gather_p_endpoll(void)
 {
 	return SLURM_SUCCESS;
-}
-
-extern void jobacct_gather_p_change_poll(uint16_t frequency)
-{
-	return;
 }
 
 extern void jobacct_gather_p_suspend_poll(void)

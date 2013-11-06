@@ -13,7 +13,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -558,109 +558,109 @@ proc sacct_vargs { soption vargs job_id} {
 
 set matches [sacct_job b $job_id]
 if {$matches != 2} {
-	send_user "\nFAILURE: sacct -b failed ($matches)\n"
+	send_user "\nFAILURE: sacct -b failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job -brief $job_id]
 if {$matches != 2} {
-	send_user "\nFAILURE: sacct --brief failed ($matches)\n"
+	send_user "\nFAILURE: sacct --brief failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sacct_vargs g $user_gid $job_id]
 if {$matches != 3} {
-	send_user "\nFAILURE: sacct -g failed ($matches)\n"
+	send_user "\nFAILURE: sacct -g failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sacct_vargs -gid $user_gid $job_id]
 if {$matches != 3} {
-	send_user "\nFAILURE: sacct --gid failed ($matches)\n"
+	send_user "\nFAILURE: sacct --gid failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sacct_vargs -group $user_gid $job_id]
 if {$matches != 3} {
-	send_user "\nFAILURE: sacct --group failed ($matches)\n"
+	send_user "\nFAILURE: sacct --group failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job l $job_id]
 if {$matches != 7} {
-	send_user "\nFAILURE: sacct --allusers failed ($matches)\n"
+	send_user "\nFAILURE: sacct --allusers failed ($matches != 7)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job -long $job_id]
 if {$matches != 7} {
-	send_user "\nFAILURE: sacct -l failed ($matches)\n"
+	send_user "\nFAILURE: sacct -l failed ($matches != 7)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job n $job_id]
 if {$matches != 1} {
-	send_user "\nFAILURE: sacct -n failed ($matches)\n"
+	send_user "\nFAILURE: sacct -n failed ($matches != 1)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job -noheader $job_id]
 if {$matches != 1} {
-	send_user "\nFAILURE: sacct -n failed ($matches)\n"
+	send_user "\nFAILURE: sacct -n failed ($matches != 1)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job p $job_id]
 if {$matches != 2} {
-	send_user "\nFAILURE: sacct -p failed ($matches)\n"
+	send_user "\nFAILURE: sacct -p failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job -parsable $job_id]
 if {$matches != 2} {
-	send_user "\nFAILURE: sacct --parsable failed ($matches)\n"
+	send_user "\nFAILURE: sacct --parsable failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job P $job_id]
 if {$matches != 2} {
-	send_user "\nFAILURE: sacct -P failed ($matches)\n"
+	send_user "\nFAILURE: sacct -P failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job -parsable2 $job_id]
 if {$matches != 2} {
-	send_user "\nFAILURE: sacct --parsable2 failed ($matches)\n"
+	send_user "\nFAILURE: sacct --parsable2 failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sacct_vargs u $user_name $job_id]
 if {$matches != 3} {
-	send_user "\nFAILURE: sacct -g failed ($matches)\n"
+	send_user "\nFAILURE: sacct -g failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sacct_vargs -uid $user_name $job_id]
 if {$matches != 3} {
-	send_user "\nFAILURE: sacct --gid failed ($matches)\n"
+	send_user "\nFAILURE: sacct --gid failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sacct_vargs -user $user_name $job_id]
 if {$matches != 3} {
-	send_user "\nFAILURE: sacct --group failed ($matches)\n"
+	send_user "\nFAILURE: sacct --group failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job v $job_id]
 if {$matches != 4} {
-	send_user "\nFAILURE: sacct -v failed ($matches)\n"
+	send_user "\nFAILURE: sacct -v failed ($matches != 4)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job -verbose $job_id]
 if {$matches != 4} {
-	send_user "\nFAILURE: sacct --verbosee failed ($matches)\n"
+	send_user "\nFAILURE: sacct --verbosee failed ($matches != 4)\n"
 	set exit_code 1
 }
 

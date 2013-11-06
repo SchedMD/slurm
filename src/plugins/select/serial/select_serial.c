@@ -3,7 +3,7 @@
  *  job allocations.
  *****************************************************************************
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -43,6 +43,7 @@
 #endif
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/slurm_selecttype_info.h"
 #include "select_serial.h"
 #include "dist_tasks.h"
 #include "job_test.h"
@@ -381,8 +382,8 @@ static void _create_part_data(void)
 /* List sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
-	struct job_record *job1_ptr = (struct job_record *) x;
-	struct job_record *job2_ptr = (struct job_record *) y;
+	struct job_record *job1_ptr = *(struct job_record **) x;
+	struct job_record *job2_ptr = *(struct job_record **) y;
 	return (int) SLURM_DIFFTIME(job1_ptr->end_time, job2_ptr->end_time);
 }
 
@@ -514,11 +515,20 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 				bit_nclear(this_row->row_bitmap, 0, size-1);
 			}
 		} else {
-			xassert(job_ptr);
-			xassert(job_ptr->job_resrcs);
-			remove_job_from_cores(job_ptr->job_resrcs,
-					      &this_row->row_bitmap,
-					      cr_node_num_cores);
+			if (job_ptr) { /* just remove the job */
+				xassert(job_ptr->job_resrcs);
+				remove_job_from_cores(job_ptr->job_resrcs,
+						      &(this_row->row_bitmap),
+						      cr_node_num_cores);
+			} else { /* totally rebuild the bitmap */
+				size = bit_size(this_row->row_bitmap);
+				bit_nclear(this_row->row_bitmap, 0, size-1);
+				for (j = 0; j < this_row->num_jobs; j++) {
+					add_job_to_cores(this_row->job_list[j],
+							 &(this_row->row_bitmap),
+							 cr_node_num_cores);
+				}
+			}
 		}
 		return;
 	}
@@ -1426,7 +1436,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	info("cons_res: select_p_node_init");
 	if ((cr_type & (CR_CPU | CR_CORE)) == 0) {
 		fatal("Invalid SelectTypeParameter: %s",
-		      sched_param_type_string(cr_type));
+		      select_type_param_string(cr_type));
 	}
 	if (node_ptr == NULL) {
 		error("select_p_node_init: node_ptr == NULL");
@@ -1596,9 +1606,16 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	if (!job_ptr->details)
 		return EINVAL;
+
 	if ((min_nodes > 1) || !_is_job_spec_serial(job_ptr)) {
 		info("select/serial: job %u not serial", job_ptr->job_id);
 		return SLURM_ERROR;
+	}
+
+	if (job_ptr->details->core_spec) {
+		verbose("select/serial: job %u core_spec(%u) not supported",
+			job_ptr->job_id, job_ptr->details->core_spec);
+		job_ptr->details->core_spec = 0;
 	}
 
 	job_node_share = _get_job_node_share(job_ptr);
@@ -1733,6 +1750,11 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  uint32_t node_count)
 {
 	return NULL;
+}
+
+extern int select_p_step_start(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_step_finish(struct step_record *step_ptr)
@@ -1900,6 +1922,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
@@ -1929,6 +1952,9 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	case SELECT_NODEDATA_RACK_MP:
 	case SELECT_NODEDATA_EXTRA_INFO:
 		*tmp_char = NULL;
+		break;
+	case SELECT_NODEDATA_MEM_ALLOC:
+		*uint32 = 0;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

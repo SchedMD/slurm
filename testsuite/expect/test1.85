@@ -1,0 +1,175 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of node selection from within a job step on existing allocation
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# NOTE:    This assumes node names are of the form <alpha><number>, where
+#          the value of <number> indicates the nodes relative location.
+#          Change tha node name parsing logic as needed for other formats.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by David Bigagli, SchedMD
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+#############################################################################!/usr/bin/expect
+
+source ./globals
+
+set test_id     "1.85"
+set prompt      "PROMPT: "
+
+print_header $test_id
+
+if {[test_launch_poe]} {
+        set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+        set node_name_env SLURM_STEP_NODELIST
+}
+
+# spawn an allocation to run on 2
+# hosts with 4 tasks.
+#
+spawn $salloc -N 2 -n 4 -t 1
+set salloc_id $spawn_id
+expect {
+	-re "Node count specification invalid|More processors requested" {
+		send_user "\nWARNING: can't test srun task distribution\n"
+		exit 0
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
+	-re "Granted job allocation ($number)" {
+		send_user "Allocation started\n"
+		send "export PS1=\"$prompt\"\r"
+		exp_continue
+	}
+	-re "\"$prompt" {
+		# skip this, just echo of setting prompt"
+		exp_continue
+	}
+	-re "$prompt" {
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		slow_kill $salloc_id
+		exit 1
+	}
+}
+
+# srun the nodelist allocated by slurm.
+set host_num 0
+set host_list ""
+send "$srun -l -n 1 -N 1 $bin_printenv SLURM_NODELIST\r"
+expect {
+	-re "($number): *($alpha_numeric_nodelist)" {
+		set host_num $expect_out(1,string)
+		set host_list $expect_out(2,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		set exit_code 1
+	}
+	-re $prompt {
+	}
+}
+
+# convert the nodelist into a list of hostnames.
+set count 0
+set host1 ""
+set host2 ""
+send "$srun -l -n1 -N1 $scontrol show hostnames $host_list\r"
+expect {
+	-re "($number): *($alpha_numeric_under)" {
+		if { $count == 0 } {
+			set host1 $expect_out(2,string)
+			incr count
+			exp_continue
+		}
+		if { $count == 1 } {
+			set host2 $expect_out(2,string)
+			incr count
+			exp_continue
+		}
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	-re $prompt {
+	}
+}
+send_user "Got exec hosts $host1 $host2\n"
+
+# reset the spawn process to be initial allocation
+# then srun a first task.
+set hostname ""
+set spawn_id $salloc_id
+send "$srun -l -n 1 -N 1 $bin_printenv $node_name_env\r"
+expect {
+	-re "($number): *($alpha_numeric_under)" {
+		set hostname $expect_out(2,string)
+		exp_continue
+	}
+	-re $prompt {
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+
+}
+
+# force the second task on the second node, at the end
+# make sure the task ran on the specified node.
+set hostname ""
+send "$srun -l -n 1 -N 1 -w $host2 $bin_printenv $node_name_env\r"
+expect {
+	-re "($number): *($alpha_numeric_under)" {
+		set hostname $expect_out(2,string)
+		exp_continue
+	}
+	-re $prompt {
+		send "exit\r"
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[ string compare $host2 $hostname] != 0} {
+	send_user "\nFAILURE: The execution hostname $hostname != $host2 requested hostname.\n"
+	exit 1
+}
+
+send_user "\nSUCCESS\n"

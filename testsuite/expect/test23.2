@@ -13,7 +13,7 @@
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -192,23 +192,10 @@ if {$real_memory < 100} {
 # Build input script file1
 #
 make_bash_script $file_in1 "
-  $srun $step_mem_opt $file_in2
+  $srun $step_mem_opt sleep 60 &
+  $srun $step_mem_opt sleep 60 &
+  $srun $step_mem_opt sleep 60
 "
-
-#
-# Build input script file2
-#
-make_bash_script $file_in2 "
-  $srun $step_mem_opt $file_in3
-"
-
-#
-# Build input script file3
-#
-make_bash_script $file_in3 "
-  $srun $step_mem_opt sleep 10
-"
-
 #
 # Spawn a job via srun using this account
 # NOTE: --mem option here and in scripts above to permit running more than one
@@ -256,12 +243,13 @@ if {$job_id3 == 0} {
 }
 
 #
-# Wait for job to start running, then signal it
+# Wait for job to start running, then status it
 #
 if {[wait_for_job $job_id3 "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
+sleep 5
 ################################################################
 #
 # Proc: sstat_job
@@ -274,8 +262,8 @@ if {[wait_for_job $job_id3 "RUNNING"] != 0} {
 #
 ################################################################
 
-proc sstat_job { soption job_id} {
-	global sstat
+proc sstat_job { soption job_id } {
+	global sstat number
 	set debug       0
 	set exit_code   0
 	set matches     0
@@ -283,234 +271,192 @@ proc sstat_job { soption job_id} {
 	send_user "sstat -$soption -p -j $job_id\n"
 
 	if { $soption == "-allsteps" || $soption == "a" } {
-
-	spawn $sstat -$soption -p -j $job_id
-	expect {
-		-re "SLURM accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sstat -$soption -p -j $job_id
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "$job_id.($number)" {
+				if {$debug} {send_user "\nmatch $expect_out(1,string)\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "$job_id.0" {
-			if {$debug} {send_user "\nmatch1\n"}
-			incr matches
-			exp_continue
+		if {$not_support != 0} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
 		}
-		-re "$job_id.1" {
-			if {$debug} {send_user "\nmatch2\n"}
-			incr matches
-			exp_continue
-		}
-		-re "$job_id.2" {
-			if {$debug} {send_user "\nmatch3\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+		return $matches
 	}
-
-	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
-	}
-	if {$matches != 3} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
-	return $matches
-}
 
 	if { $soption == "-noheader" || $soption == "n" } {
-
-	spawn $sstat -$soption -p -j $job_id
-	expect {
-		-re "SLURM accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sstat -$soption -p -j $job_id
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "JobID|MaxVMSize|MaxVMSizeNode|MaxVMSizeTask|	\
+				AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|	\
+				MaxPages|MaxPagesNode|MaxPagesTask|AvePages|	\
+				MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks" {
+				if {$debug} {send_user "\nmatch4\n"}
+				incr matches
+				exp_continue
+			}
+			-re "$job_id" {
+				if {$debug} {send_user "\nmatch5\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "JobID|MaxVMSize|MaxVMSizeNode|MaxVMSizeTask|	\
-			AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|	\
-			MaxPages|MaxPagesNode|MaxPagesTask|AvePages|	\
-			MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks" {
-			if {$debug} {send_user "\nmatch4\n"}
-			incr matches
-			exp_continue
+		if {$not_support != 0} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
 		}
-		-re "$job_id" {
-			if {$debug} {send_user "\nmatch5\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+		return $matches
 	}
-
-	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
-	}
-	if {$matches != 1} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
-	return $matches
-}
 
 	if { $soption == "-parsable" || $soption == "p" } {
-
-	spawn $sstat -$soption -p -j $job_id
-	expect {
-		-re "SLURM accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sstat -$soption -p -j $job_id
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
+				if {$debug} {send_user "\nmatch6\n"}
+				incr matches
+				exp_continue
+			}
+			-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
+				if {$debug} {send_user "\nmatch7\n"}
+				incr matches
+				exp_continue
+			}
+			-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks\\|" {
+				if {$debug} {send_user "\nmatch8\n"}
+				incr matches
+				exp_continue
+			}
+			-re "$job_id..\\|" {
+				if {$debug} {send_user "\nmatch9\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
-			if {$debug} {send_user "\nmatch6\n"}
-			incr matches
-			exp_continue
+		if {$not_support != 0} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
 		}
-		-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
-			if {$debug} {send_user "\nmatch7\n"}
-			incr matches
-			exp_continue
-		}
-		-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks\\|" {
-			if {$debug} {send_user "\nmatch8\n"}
-			incr matches
-			exp_continue
-		}
-		-re "$job_id..\\|" {
-			if {$debug} {send_user "\nmatch9\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+		return $matches
 	}
-
-	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
-	}
-	if {$matches != 4} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
-	return $matches
-}
 
 	if { $soption == "-parsable2" || $soption == "P" } {
-
-	spawn $sstat -$soption -j $job_id
-	expect {
-		-re "SLURM accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sstat -$soption -j $job_id
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
+				if {$debug} {send_user "\nmatch10\n"}
+				incr matches
+				exp_continue
+			}
+			-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
+				if {$debug} {send_user "\nmatch11\n"}
+				incr matches
+				exp_continue
+			}
+			-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks" {
+				if {$debug} {send_user "\nmatch12\n"}
+				incr matches
+				exp_continue
+			}
+			-re "$job_id..\\|" {
+				if {$debug} {send_user "\nmatch13\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" {
-			if {$debug} {send_user "\nmatch10\n"}
-			incr matches
-			exp_continue
+		if {$not_support != 0} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
 		}
-		-re "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" {
-			if {$debug} {send_user "\nmatch11\n"}
-			incr matches
-			exp_continue
-		}
-		-re "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks" {
-			if {$debug} {send_user "\nmatch12\n"}
-			incr matches
-			exp_continue
-		}
-		-re "$job_id..\\|" {
-			if {$debug} {send_user "\nmatch13\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
-	}
-	if {$matches != 4} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
 		return $matches
 	}
 
 	if { $soption == "-verbose" || $soption == "v" } {
-
-	spawn $sstat -$soption -p -j $job_id
-	expect {
-		-re "SLURM accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sstat -$soption -p -j $job_id
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "JobID.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" {
+				if {$debug} {send_user "\nmatch14\n"}
+				incr matches
+				exp_continue
+			}
+			-re "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages.MaxPagesNode.MaxPagesTask" {
+				if {$debug} {send_user "\nmatch15\n"}
+				incr matches
+				exp_continue
+			}
+			-re "AvePages.MinCPU.MinCPUNode.MinCPUTask.AveCPU.NTasks" {
+				if {$debug} {send_user "\nmatch16\n"}
+				incr matches
+				exp_continue
+			}
+			-re "$job_id" {
+				if {$debug} {send_user "\nmatch17\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "JobID.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" {
-			if {$debug} {send_user "\nmatch14\n"}
-			incr matches
-			exp_continue
+		if {$not_support != 0} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
 		}
-		-re "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages.MaxPagesNode.MaxPagesTask" {
-			if {$debug} {send_user "\nmatch15\n"}
-			incr matches
-			exp_continue
-		}
-		-re "AvePages.MinCPU.MinCPUNode.MinCPUTask.AveCPU.NTasks" {
-			if {$debug} {send_user "\nmatch16\n"}
-			incr matches
-			exp_continue
-		}
-		-re "$job_id" {
-			if {$debug} {send_user "\nmatch17\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
-	}
-	if {$matches != 4} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
 		return $matches
 	}
-
-
 }
 
 ################################################################
@@ -534,65 +480,58 @@ proc sstat_vargs { soption vargs job_id} {
 	send_user "sstat -$soption $vargs -p -j $job_id\n"
 
 	if { $soption == "o" || $soption == "-format" } {
-
-	spawn $sstat -$soption $vargs -p -j $job_id
-	expect {
-		-re "SLURM accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sstat -$soption $vargs -p -j $job_id
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "AveCPU.AvePages.AveRSS.AveVMSize" {
+				if {$debug} {send_user "\nmatch18\n"}
+				incr matches
+				exp_continue
+			}
+			-re "JobID.MaxPages.MaxPagesNode.MaxPagesTask" {
+				if {$debug} {send_user "\nmatch19\n"}
+				incr matches
+				exp_continue
+			}
+			-re "MaxRSS.MaxRSSNode.MaxRSSTask.MaxVMSize" {
+				if {$debug} {send_user "\nmatch20\n"}
+				incr matches
+				exp_continue
+			}
+			-re "MaxVMSizeNode.MaxVMSizeTask.MinCPU.MinCPUNode" {
+				if {$debug} {send_user "\nmatch21\n"}
+				incr matches
+				exp_continue
+			}
+			-re "MinCPUTask.NTasks" {
+				if {$debug} {send_user "\nmatch22\n"}
+				incr matches
+				exp_continue
+			}
+			-re "$job_id" {
+				if {$debug} {send_user "\nmatch23\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "AveCPU.AvePages.AveRSS.AveVMSize" {
-			if {$debug} {send_user "\nmatch18\n"}
-			incr matches
-			exp_continue
+		if {$not_support != 0} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
 		}
-		-re "JobID.MaxPages.MaxPagesNode.MaxPagesTask" {
-			if {$debug} {send_user "\nmatch19\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MaxRSS.MaxRSSNode.MaxRSSTask.MaxVMSize" {
-			if {$debug} {send_user "\nmatch20\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MaxVMSizeNode.MaxVMSizeTask.MinCPU.MinCPUNode" {
-			if {$debug} {send_user "\nmatch21\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MinCPUTask.NTasks" {
-			if {$debug} {send_user "\nmatch22\n"}
-			incr matches
-			exp_continue
-		}
-		-re "$job_id" {
-			if {$debug} {send_user "\nmatch23\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
-	}
-	if {$matches != 6} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
 		return $matches
 	}
 }
 ################################################################
-sleep 1
 set matches [sstat_job a $job_id3]
 if {$matches != 3} {
 	send_user "\nFAILURE: sstat -a failed ($matches)\n"
@@ -601,67 +540,67 @@ if {$matches != 3} {
 
 set matches [sstat_job -allsteps $job_id3]
 if {$matches != 3} {
-	send_user "\nFAILURE: sstat --allsteps failed ($matches)\n"
+	send_user "\nFAILURE: sstat --allsteps failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sstat_job n $job_id3]
 if {$matches != 1} {
-	send_user "\nFAILURE: sstat -n failed ($matches)\n"
+	send_user "\nFAILURE: sstat -n failed ($matches != 1)\n"
 	set exit_code 1
 }
 
 set matches [sstat_job -noheader $job_id3]
 if {$matches != 1} {
-	send_user "\nFAILURE: sstat --noheader failed ($matches)\n"
+	send_user "\nFAILURE: sstat --noheader failed ($matches != 1)\n"
 	set exit_code 1
 }
 
 set matches [sstat_job p $job_id3]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat -p failed ($matches)\n"
+	send_user "\nFAILURE: sstat -p failed ($matches != 4)\n"
 	set exit_code 1
 }
 
 set matches [sstat_job -parsable $job_id3]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat --parsable failed ($matches)\n"
+	send_user "\nFAILURE: sstat --parsable failed ($matches != 4)\n"
 	set exit_code 1
 }
 
 set matches [sstat_job P $job_id3]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat -P failed ($matches)\n"
+	send_user "\nFAILURE: sstat -P failed ($matches != 4)\n"
 	set exit_code 1
 }
 
 set matches [sstat_job -parsable2 $job_id3]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat --parsable2 failed ($matches)\n"
+	send_user "\nFAILURE: sstat --parsable2 failed ($matches != 4)\n"
 	set exit_code 1
 }
 
 set matches [sstat_job v $job_id3]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat -v failed ($matches)\n"
+	send_user "\nFAILURE: sstat -v failed ($matches != 4)\n"
 	set exit_code 1
 }
 
 set matches [sstat_job -verbose $job_id3]
 if {$matches != 4} {
-	send_user "\nFAILURE: sstat --verbose failed ($matches)\n"
+	send_user "\nFAILURE: sstat --verbose failed ($matches != 4)\n"
 	set exit_code 1
 }
 
 set matches [sstat_vargs o $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
 if {$matches != 6} {
-	send_user "\nFAILURE: sstat -o failed ($matches)\n"
+	send_user "\nFAILURE: sstat -o failed ($matches != 6)\n"
 	set exit_code 1
 }
 
 set matches [sstat_vargs -format $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
 if {$matches != 6} {
-	send_user "\nFAILURE: sstat --format failed ($matches)\n"
+	send_user "\nFAILURE: sstat --format failed ($matches != 6)\n"
 	set exit_code 1
 }
 

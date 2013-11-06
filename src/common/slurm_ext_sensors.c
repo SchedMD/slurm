@@ -6,7 +6,7 @@
  *  Written by Bull-HN-PHX/Martin Perry,
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -60,6 +60,7 @@ typedef struct slurm_ext_sensors_ops {
 	int (*update_component_data) (void);
 	int (*get_stepstartdata)     (struct step_record *step_rec);
 	int (*get_stependdata)       (struct step_record *step_rec);
+	List (*get_config)           (void);
 } slurm_ext_sensors_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -69,6 +70,7 @@ static const char *syms[] = {
 	"ext_sensors_p_update_component_data",
 	"ext_sensors_p_get_stepstartdata",
 	"ext_sensors_p_get_stependdata",
+	"ext_sensors_p_get_config",
 };
 
 static slurm_ext_sensors_ops_t ops;
@@ -127,6 +129,9 @@ extern ext_sensors_data_t *ext_sensors_alloc(void)
 {
 	ext_sensors_data_t *ext_sensors =
 		xmalloc(sizeof(struct ext_sensors_data));
+
+	ext_sensors->consumed_energy = NO_VAL;
+	ext_sensors->temperature = NO_VAL;
 
 	return ext_sensors;
 }
@@ -208,4 +213,17 @@ extern int ext_sensors_g_get_stependdata(struct step_record *step_rec)
 	retval = (*(ops.get_stependdata))(step_rec);
 
 	return retval;
+}
+
+extern int ext_sensors_g_get_config(void *data)
+{
+
+	List *tmp_list = (List *) data;
+
+	if (ext_sensors_init() < 0)
+		return SLURM_ERROR;
+
+	*tmp_list = (*(ops.get_config))();
+
+	return SLURM_SUCCESS;
 }

@@ -1,10 +1,12 @@
 
-htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
 
 generated_html = \
 	accounting.html \
 	accounting_storageplugins.html \
 	acct_gather_energy_plugins.html \
+	acct_gather_profile_plugins.html \
+	add.html \
 	api.html \
 	authplugins.html \
 	big_sys.html \
@@ -15,6 +17,7 @@ generated_html = \
 	cons_res.html \
 	cons_res_share.html \
 	contributor.html \
+	core_spec.html \
 	cpu_management.html \
 	cray.html \
 	crypto_plugins.html \
@@ -31,11 +34,13 @@ generated_html = \
 	gres_design.html \
 	gres_plugins.html \
 	help.html \
+	hdf5_profile_user_guide.html \
 	high_throughput.html \
 	ibm.html \
 	ibm-pe.html \
 	jobacct_gatherplugins.html \
 	job_array.html \
+	job_container_plugins.html \
 	job_exit_code.html \
 	job_launch.html \
 	job_submit_plugins.html \
@@ -59,6 +64,7 @@ generated_html = \
 	preemption_plugins.html \
 	priority_multifactor.html \
 	priority_multifactor2.html \
+	priority_multifactor3.html \
 	priority_plugins.html \
 	proctrack_plugins.html \
 	programmer_guide.html \
@@ -70,6 +76,7 @@ generated_html = \
 	reservations.html \
 	resource_limits.html \
 	rosetta.html \
+	rpc.html \
 	schedplugins.html \
 	select_design.html \
 	selectplugins.html \
@@ -98,8 +105,11 @@ html_DATA = \
 	configurator.easy.html \
 	entities.gif \
 	example_usage.gif \
+	hdf5_task_attr.png \
+	hdf5_job_outline.png \
 	ibm_pe_fig1.png \
 	ibm_pe_fig2.png \
+	k_function.gif \
 	linuxstyles.css \
 	lll.gif \
 	mc_support.gif \

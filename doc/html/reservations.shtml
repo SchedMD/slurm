@@ -6,14 +6,15 @@
 being executed by select users and/or select bank accounts.
 A resource reservation identifies the resources in that reservation
 and a time period during which the reservation is available.
-The resources which can be reserved include nodes and/or licenses.
+The resources which can be reserved include cores, nodes and/or licenses.
 Note that resource reservations are not compatible with SLURM's
 gang scheduler plugin since the termination time of running jobs
-is not possible to accurately predict.</p>
+cannot be accurately predicted.</p>
 
 <p>Note that reserved licenses are treated somewhat differently than reserved
-nodes. When nodes are reserved, then jobs using that reservation can use only
-those nodes and no other jobs can use those nodes. Reserved licenses can only
+cores or nodes. When cores or nodes are reserved, then jobs using that
+reservation can use only those resources and no other jobs can use those
+resources. Reserved licenses can only
 be used by jobs associated with that reservation, but licenses not explicitly
 reserved are available to any job. This eliminates the need to explicitly
 put licenses into every advanced reservation created.</p>
@@ -38,14 +39,13 @@ The "maint" flag is used to identify the reservation for accounting
 purposes as system maintenance.
 The "ignore_jobs" flag is used to indicate that we can ignore currently
 running jobs when creating this reservation.
-By default, only nodes which are not expected to have a running job
+By default, only resources which are not expected to have a running job
 at the start time can be reserved (the time limit of all running
 jobs will have been reached).
 In this case we can manually cancel the running jobs as needed
 to perform system maintenance.
 As the reservation time approaches,
-only jobs that can complete by the reservation time will be
-initiated.</p>
+only jobs that can complete by the reservation time will be initiated.</p>
 <pre>
 $ scontrol create reservation starttime=2009-02-06T16:00:00 \
    duration=120 user=root flags=maint,ignore_jobs nodes=ALL
@@ -62,7 +62,7 @@ ReservationName=root_3 StartTime=2009-02-06T16:00:00
 
 <p>A variation of this would be to configure license to represent system
 resources, such as a global file system.
-The system resource may not may not require an actual license for use, but
+The system resource may not require an actual license for use, but
 SLURM licenses can be used to prevent jobs needed the resource from being
 started when that resource is unavailable.
 One could create a reservation for all of those licenses in order to perform
@@ -148,32 +148,25 @@ ReservationName=alan_8 StartTime=2011-12-05T12:00:00
 </pre>
 
 <p>Note that specific nodes to be associated with the reservation are
-made immediately after creation of the reservation. This permits
+identified immediately after creation of the reservation. This permits
 users to stage files to the nodes in preparation for use during the
 reservation. Note that the reservation creation request can also
 identify the partition from which to select the nodes or _one_
 feature that every selected node must contain.</p>
 
-<p>On a smaller system, one might want to reserve specific CPUs rather than
-whole nodes. While the resolution of SLURM's resource reservation is that of
-whole nodes, one might configure each CPU as a license to SLURM and reserve
-those instead (we understand this is a kludge, but it does provide a way to
-work around this shortcoming in SLURM's code). Proper enforcement then requires
-that each job request one "cpu" license for each CPU to be allocated, which
-can be accomplished by an appropriate job_submit plugin. In the example below,
-we configure the system with one license named "cpu" for each CPU in the
-system, 64 in this example, then create a reservation for 32 CPUs. The
-user developed job_submit plugin would then explicitly set the job's
-licenses field to require one "cpu" for each physical CPU required to satisfy
-the request.</p>
+<p>On a smaller system, one might want to reserve cores rather than
+whole nodes. Slurm provides a core reservation capability in version 2.6.
+This capability permits the administrator to identify the core count to be
+reserved on each node as snown in the examples below.</p>
 <pre>
-$ scontrol show configuration | grep Licenses
-Licenses  = cpu:64
+# Create a two core reservation for user alan
+$ scontrol create reservation StartTime=now Duration=60 \
+  NodeCnt=1 CoreCnt=2 User=alan
 
-$ scontrol create reservation starttime=2009-04-06T16:00:00 \
-   duration=120 user=bob flags=license_only \
-   licenses=cpu:32
-Reservation created: bob_5
+# Create a reservation for user brenda with two cores on
+# node tux8 and 4 cores on node tux9
+$ scontrol create reservation StartTime=now Duration=60 \
+  Nodes=tux8,tux9 CoreCnt=2,4 User=brenda
 </pre>
 
 <p>Reservations can not only be created for the use of specific accounts and
@@ -207,7 +200,7 @@ reservation name. The job must be contained completely within the
 named reservation. The job will be canceled after the reservation
 reaches its EndTime. If letting the job continue execution after
 the reservation EndTime, a configuration option <i>ResvOverRun</i>
-can be set to control how long the job can continue execution.</p>
+in slurm.conf can be set to control how long the job can continue execution.</p>
 <pre>
 $ sbatch --reservation=alan_6 -N4 my.script
 sbatch: Submitted batch job 65540
@@ -309,20 +302,23 @@ associated with the reservation on an equal basis (e.g. if two users are
 eligible to use a reservation and neither does, each user will be reported
 to have used half of the reserved resources).</p>
 
+<h2>Prolog and Epilog</h2>
+
+<p>Slurm supports both a reservation prolog and epilog.
+They may be configured using the <b>ResvProlog</b> and <b>ResvEpilog</b>
+configuration parameters in the slurm.conf file.
+These scripts can be used to cancel jobs, modify partition configuration,
+etc.</p>
+
 <h2>Future Work</h2>
 
-<p>Several enhancements are anticipated at some point in the future.
-<ol>
-<li>Reservations made within a partition having gang scheduling assumes
+<p>Reservations made within a partition having gang scheduling assumes
 the highest level rather than the actual level of time-slicing when
 considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
-before a reservation given fewer jobs to time-slice with.</li>
-<li>Add support to reserve specific CPU counts rather than require whole
-nodes be reserved (work around described above).</li>
-</ol>
+before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 29 October 2012</p>
+<p style="text-align: center;">Last modified 13 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
 

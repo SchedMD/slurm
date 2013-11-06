@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -185,16 +185,31 @@ extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 		_wr_wrunlock(CONFIG_LOCK);
 }
 
-/* _wr_rdlock - Issue a read lock on the specified data type */
+/* _wr_rdlock - Issue a read lock on the specified data type
+ *	Wait until there are no write locks AND
+ *	no pending write locks (write_wait_lock == 0)
+ *
+ *	NOTE: Always favoring write locks can result in starvation for
+ *	read locks. To prevent this, read locks were permitted to be satisified
+ *	after 10 consecutive write locks. This prevented starvation, but
+ *	deadlock has been observed with some values for the count. */
 static bool _wr_rdlock(lock_datatype_t datatype, bool wait_lock)
 {
 	bool success = true;
 
 	slurm_mutex_lock(&locks_mutex);
 	while (1) {
-		if ((slurmctld_locks.entity[write_wait_lock(datatype)] == 0) &&
-		    (slurmctld_locks.entity[write_lock(datatype)] == 0)) {
+#if 1
+		if ((slurmctld_locks.entity[write_lock(datatype)] == 0) &&
+		    (slurmctld_locks.entity[write_wait_lock(datatype)] == 0)) {
+#else
+		/* SEE NOTE ABOVE */
+		if ((slurmctld_locks.entity[write_lock(datatype)] == 0) &&
+		    ((slurmctld_locks.entity[write_wait_lock(datatype)] == 0) ||
+		     (slurmctld_locks.entity[write_cnt_lock(datatype)] > 10))) {
+#endif
 			slurmctld_locks.entity[read_lock(datatype)]++;
+			slurmctld_locks.entity[write_cnt_lock(datatype)] = 0;
 			break;
 		} else if (!wait_lock) {
 			success = false;
@@ -231,6 +246,7 @@ static bool _wr_wrlock(lock_datatype_t datatype, bool wait_lock)
 		    (slurmctld_locks.entity[write_lock(datatype)] == 0)) {
 			slurmctld_locks.entity[write_lock(datatype)]++;
 			slurmctld_locks.entity[write_wait_lock(datatype)]--;
+			slurmctld_locks.entity[write_cnt_lock(datatype)]++;
 			break;
 		} else if (!wait_lock) {
 			slurmctld_locks.entity[write_wait_lock(datatype)]--;

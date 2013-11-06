@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -72,8 +72,18 @@ extern int *slurmdb_setup_cluster_dim_size(void)
 extern bool is_cray_system(void)
 {
 	if (working_cluster_rec)
-		return working_cluster_rec->flags & CLUSTER_FLAG_CRAYXT;
-#ifdef HAVE_CRAY
+		return working_cluster_rec->flags & CLUSTER_FLAG_CRAY;
+#if defined HAVE_ALPS_CRAY || defined HAVE_NATIVE_CRAY
+	return true;
+#endif
+	return false;
+}
+
+extern bool is_alps_cray_system(void)
+{
+	if (working_cluster_rec)
+		return working_cluster_rec->flags & CLUSTER_FLAG_CRAY_A;
+#ifdef HAVE_ALPS_CRAY
 	return true;
 #endif
 	return false;
@@ -121,11 +131,14 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 #ifdef MULTIPLE_SLURMD
 	cluster_flags |= CLUSTER_FLAG_MULTSD;
 #endif
-#ifdef HAVE_CRAY
-	cluster_flags |= CLUSTER_FLAG_CRAYXT;
+#ifdef HAVE_ALPS_CRAY
+	cluster_flags |= CLUSTER_FLAG_CRAY_A;
 #endif
 #ifdef HAVE_FRONT_END
 	cluster_flags |= CLUSTER_FLAG_FE;
+#endif
+#ifdef HAVE_NATIVE_CRAY
+	cluster_flags |= CLUSTER_FLAG_CRAY_N;
 #endif
 	return cluster_flags;
 }
@@ -147,8 +160,9 @@ static uint32_t _str_2_cluster_flags(char *flags_in)
 	if (slurm_strcasestr(flags_in, "Bluegene"))
 		return CLUSTER_FLAG_BG;
 
-	if (slurm_strcasestr(flags_in, "CrayXT"))
-		return CLUSTER_FLAG_CRAYXT;
+	if (slurm_strcasestr(flags_in, "AlpsCray")
+	    || slurm_strcasestr(flags_in, "CrayXT"))
+		return CLUSTER_FLAG_CRAY_A;
 
 	if (slurm_strcasestr(flags_in, "FrontEnd"))
 		return CLUSTER_FLAG_FE;
@@ -161,6 +175,9 @@ static uint32_t _str_2_cluster_flags(char *flags_in)
 
 	if (slurm_strcasestr(flags_in, "XCPU"))
 		return CLUSTER_FLAG_XCPU;
+
+	if (slurm_strcasestr(flags_in, "Cray"))
+		return CLUSTER_FLAG_CRAY_N;
 
 	return (uint32_t) 0;
 }
@@ -217,10 +234,10 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 		xstrcat(cluster_flags, "BGQ");
 	}
 
-	if (flags_in & CLUSTER_FLAG_CRAYXT) {
+	if (flags_in & CLUSTER_FLAG_CRAY_A) {
 		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "CrayXT");
+		xstrcat(cluster_flags, "AlpsCray");
 	}
 
 	if (flags_in & CLUSTER_FLAG_FE) {
@@ -245,6 +262,12 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "XCPU");
+	}
+
+	if (flags_in & CLUSTER_FLAG_CRAY_N) {
+		if (cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "Cray");
 	}
 
 	if (!cluster_flags)

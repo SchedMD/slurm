@@ -8,7 +8,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -31,9 +31,11 @@ proc inc21_30_2 {} {
 #test GrpCpus
 
      global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number exit_code
+     global grcpu_num
 
+     send_user "\nStarting GrpCPUs limit test\n\n"
      set jobmatch 0
-     spawn $salloc --account=$acct -n6 $srun $bin_sleep 5
+     spawn $salloc --account=$acct -n$grcpu_num $srun $bin_sleep 5
      expect {
 	     -re "Granted job allocation ($number)" {
 		     set job_id1 $expect_out(1,string)
@@ -42,14 +44,14 @@ proc inc21_30_2 {} {
 	     }
 	     timeout {
 		     send_user "\nFAILURE: salloc is not reponding\n"
-		     exit 1
+		     set exit_code 1
 	     }
 	     eof {
 		     wait
 	     }
      }
 
-     spawn $salloc --account=$acct -n6 $srun $bin_sleep 5
+     spawn $salloc --account=$acct -n1 $srun $bin_sleep 5
      expect {
 	     -re "job ($number)" {
 		     set job_id2 $expect_out(1,string)
@@ -58,7 +60,7 @@ proc inc21_30_2 {} {
 	     }
 	     timeout {
 		     send_user "\nFAILURE: salloc is not reponding\n"
-		     exit 1
+		     set exit_code 1
 	     }
 	     eof {
 		     wait
@@ -67,7 +69,7 @@ proc inc21_30_2 {} {
 
      if {$jobmatch==0} {
 	     send_user "\nFAILURE: jobs were not submitted\n"
-	     set exit 1
+	     set exit_code 1
      }
 
      # checks the state of the job

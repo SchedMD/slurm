@@ -11,7 +11,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -154,8 +154,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    int max_share, uint32_t req_nodes,
 		    List preemptee_candidates,
 		    List *preemptee_job_list);
-static int _sort_usable_nodes_dec(struct job_record *job_a,
-				  struct job_record *job_b);
+static int _sort_usable_nodes_dec(void *, void *);
 static bool _test_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static bool _test_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
@@ -1817,9 +1816,10 @@ static int _decr_node_job_cnt(int node_inx, struct job_record *job_ptr,
 {
 	struct node_record *node_ptr = node_record_table_ptr + node_inx;
 	struct part_cr_record *part_cr_ptr;
-	bool exclusive, is_job_running;
+	bool exclusive = false, is_job_running;
 
-	exclusive = (job_ptr->details->shared == 0);
+	if (job_ptr->details)
+		exclusive = (job_ptr->details->shared == 0);
 	if (exclusive) {
 		if (cr_ptr->nodes[node_inx].exclusive_cnt)
 			cr_ptr->nodes[node_inx].exclusive_cnt--;
@@ -1945,8 +1945,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		      pre_err, node_ptr->name);
 	}
 
-	if (cr_ptr->nodes[i].gres_list)
-		gres_list = cr_ptr->nodes[i].gres_list;
+	if (cr_ptr->nodes[node_inx].gres_list)
+		gres_list = cr_ptr->nodes[node_inx].gres_list;
 	else
 		gres_list = node_ptr->gres_list;
 	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
@@ -2261,7 +2261,10 @@ static void _init_node_cr(void)
 		if (job_resrcs_ptr->node_bitmap == NULL)
 			continue;
 
-		exclusive = (job_ptr->details->shared == 0);
+		if (job_ptr->details)
+			exclusive = (job_ptr->details->shared == 0);
+		else
+			exclusive = 0;
 		node_offset = -1;
 		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
@@ -2271,6 +2274,8 @@ static void _init_node_cr(void)
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
 			node_offset++;
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue; /* node already released */
 			node_ptr = node_record_table_ptr + i;
 			if (exclusive)
 				cr_ptr->nodes[i].exclusive_cnt++;
@@ -2378,9 +2383,11 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
  * Sort the usable_node element to put jobs in the correct
  * preemption order.
  */
-static int _sort_usable_nodes_dec(struct job_record *job_a,
-				  struct job_record *job_b)
+static int _sort_usable_nodes_dec(void *j1, void *j2)
 {
+	struct job_record *job_a = *(struct job_record **)j1;
+	struct job_record *job_b = *(struct job_record **)j2;
+
 	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
 		return -1;
 	else if (job_a->details->usable_nodes < job_b->details->usable_nodes)
@@ -2672,8 +2679,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 static int  _cr_job_list_sort(void *x, void *y)
 {
-	struct job_record *job1_ptr = (struct job_record *) x;
-	struct job_record *job2_ptr = (struct job_record *) y;
+	struct job_record *job1_ptr = *(struct job_record **) x;
+	struct job_record *job2_ptr = *(struct job_record **) y;
 	return (int) SLURM_DIFFTIME(job1_ptr->end_time, job2_ptr->end_time);
 }
 
@@ -2828,6 +2835,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (bit_set_count(bitmap) < min_nodes) {
 		slurm_mutex_unlock(&cr_mutex);
 		return EINVAL;
+	}
+
+	if (job_ptr->details->core_spec) {
+		verbose("select/linear: job %u core_spec(%u) not supported",
+			job_ptr->job_id, job_ptr->details->core_spec);
+		job_ptr->details->core_spec = 0;
 	}
 
 	if (job_ptr->details->shared)
@@ -3069,6 +3082,11 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  uint32_t node_count)
 {
 	return NULL;
+}
+
+extern int select_p_step_start(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_step_finish(struct step_record *step_ptr)

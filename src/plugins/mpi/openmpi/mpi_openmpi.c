@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -83,7 +83,7 @@ const char plugin_name[]        = "OpenMPI plugin";
 const char plugin_type[]        = "mpi/openmpi";
 const uint32_t plugin_version   = 100;
 
-int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env)
+int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	debug("mpi/openmpi: slurmstepd prefork");
 	return SLURM_SUCCESS;

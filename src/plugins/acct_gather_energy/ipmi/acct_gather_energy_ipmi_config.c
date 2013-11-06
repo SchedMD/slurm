@@ -5,7 +5,7 @@
  *  Written by Bull- Thomas Cadeau
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -54,13 +54,16 @@
 
 #include "acct_gather_energy_ipmi_config.h"
 
+#define TIMEOUT 10
+
 /* Local functions */
 extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 {
 	if (slurm_ipmi_conf) {
 		slurm_ipmi_conf->power_sensor_num = -1;
-		slurm_ipmi_conf->freq = -1;
+		slurm_ipmi_conf->freq = DEFAULT_IPMI_FREQ;
 		slurm_ipmi_conf->adjustment = false;
+		slurm_ipmi_conf->timeout = TIMEOUT;
 		slurm_ipmi_conf->driver_type = -1;
 		slurm_ipmi_conf->disable_auto_probe = 0;
 		slurm_ipmi_conf->driver_address = 0;
@@ -86,5 +89,7 @@ extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 		slurm_ipmi_conf->ignore_scanning_disabled = false;
 		slurm_ipmi_conf->assume_bmc_owner = false;
 		slurm_ipmi_conf->entity_sensor_names = false;
+		slurm_ipmi_conf->variable = IPMI_MONITORING_SENSOR_UNITS_WATTS;
+
 	}
 }

@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -45,6 +45,7 @@
 typedef struct {
 	int id;
 	uint64_t a_cpu;
+	uint64_t energy;
 } local_id_usage_t;
 
 typedef struct {
@@ -59,6 +60,7 @@ typedef struct {
 	uint64_t r_cpu;
 	time_t start;
 	time_t end;
+	uint64_t energy;
 } local_cluster_usage_t;
 
 typedef struct {
@@ -261,25 +263,27 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 	/*      c_usage->d_cpu + c_usage->a_cpu + */
 	/*      c_usage->r_cpu + c_usage->i_cpu, */
 	/*      c_usage->total_time, */
-	/*      ctime(&c_usage->start)); */
-	/* info("to %s", ctime(&c_usage->end)); */
+	/*      slurm_ctime(&c_usage->start)); */
+	/* info("to %s", slurm_ctime(&c_usage->end)); */
 	query = xstrdup_printf("insert into \"%s_%s\" "
 			       "(creation_time, "
 			       "mod_time, time_start, "
 			       "cpu_count, alloc_cpu_secs, "
 			       "down_cpu_secs, pdown_cpu_secs, "
 			       "idle_cpu_secs, over_cpu_secs, "
-			       "resv_cpu_secs) "
+			       "resv_cpu_secs, consumed_energy) "
 			       "values (%ld, %ld, %ld, %d, "
 			       "%"PRIu64", %"PRIu64", %"PRIu64", "
-			       "%"PRIu64", %"PRIu64", %"PRIu64")",
+			       "%"PRIu64", %"PRIu64", %"PRIu64", "
+			       "%"PRIu64")",
 			       cluster_name, cluster_hour_table,
 			       now, now,
 			       c_usage->start,
 			       c_usage->cpu_count,
 			       c_usage->a_cpu, c_usage->d_cpu,
 			       c_usage->pd_cpu, c_usage->i_cpu,
-			       c_usage->o_cpu, c_usage->r_cpu);
+			       c_usage->o_cpu, c_usage->r_cpu,
+			       c_usage->energy);
 
 	/* Spacing out the inserts here instead of doing them
 	   all at once in the end proves to be faster.  Just FYI
@@ -294,7 +298,8 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 			   "pdown_cpu_secs=VALUES(pdown_cpu_secs), "
 			   "idle_cpu_secs=VALUES(idle_cpu_secs), "
 			   "over_cpu_secs=VALUES(over_cpu_secs), "
-			   "resv_cpu_secs=VALUES(resv_cpu_secs)",
+			   "resv_cpu_secs=VALUES(resv_cpu_secs), "
+			   "consumed_energy=VALUES(consumed_energy)",
 			   now);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -478,18 +483,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	/* char start_char[20], end_char[20]; */
 
 	char *job_req_inx[] = {
-		"job_db_inx",
-		"id_job",
-		"id_assoc",
-		"id_wckey",
-		"time_eligible",
-		"time_start",
-		"time_end",
-		"time_suspended",
-		"cpus_alloc",
-		"cpus_req",
-		"id_resv"
-
+		"job.job_db_inx",
+		"job.id_job",
+		"job.id_assoc",
+		"job.id_wckey",
+		"job.time_eligible",
+		"job.time_start",
+		"job.time_end",
+		"job.time_suspended",
+		"job.cpus_alloc",
+		"job.cpus_req",
+		"job.id_resv",
+		"SUM(step.consumed_energy)"
 	};
 	char *job_str = NULL;
 	enum {
@@ -504,6 +509,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		JOB_REQ_ACPU,
 		JOB_REQ_RCPU,
 		JOB_REQ_RESVID,
+		JOB_REQ_ENERGY,
 		JOB_REQ_COUNT
 	};
 
@@ -555,8 +561,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xstrfmtcat(resv_str, ", %s", resv_req_inx[i]);
 	}
 
-/* 	info("begin start %s", ctime(&curr_start)); */
-/* 	info("begin end %s", ctime(&curr_end)); */
+/* 	info("begin start %s", slurm_ctime(&curr_start)); */
+/* 	info("begin end %s", slurm_ctime(&curr_end)); */
 	a_itr = list_iterator_create(assoc_usage_list);
 	c_itr = list_iterator_create(cluster_down_list);
 	w_itr = list_iterator_create(wckey_usage_list);
@@ -574,8 +580,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		debug3("%s curr hour is now %ld-%ld",
 		       cluster_name, curr_start, curr_end);
-/* 		info("start %s", ctime(&curr_start)); */
-/* 		info("end %s", ctime(&curr_end)); */
+/* 		info("start %s", slurm_ctime(&curr_start)); */
+/* 		info("end %s", slurm_ctime(&curr_end)); */
 
 		c_usage = _setup_cluster_usage(mysql_conn, cluster_name,
 					       curr_start, curr_end,
@@ -687,11 +693,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 
 		/* now get the jobs during this time only  */
-		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "(time_eligible < %ld && "
-				       "(time_end >= %ld || time_end = 0)) "
-				       "order by id_assoc, time_eligible",
+		query = xstrdup_printf("select %s from \"%s_%s\" as job "
+				       "left outer join \"%s_%s\" as step on "
+				       "job.job_db_inx=step.job_db_inx "
+				       "and (step.id_step>=0) "
+				       "where (job.time_eligible < %ld && "
+				       "(job.time_end >= %ld || "
+				       "job.time_end = 0)) "
+				       "group by job.job_db_inx "
+				       "order by job.id_assoc, "
+				       "job.time_eligible",
 				       job_str, cluster_name, job_table,
+				       cluster_name, step_table,
 				       curr_end, curr_start);
 
 		debug3("%d(%s:%d) query\n%s",
@@ -714,9 +727,12 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			time_t row_end = slurm_atoul(row[JOB_REQ_END]);
 			uint32_t row_acpu = slurm_atoul(row[JOB_REQ_ACPU]);
 			uint32_t row_rcpu = slurm_atoul(row[JOB_REQ_RCPU]);
+			uint64_t row_energy = 0;
 			int loc_seconds = 0;
 			seconds = 0;
 
+			if (row[JOB_REQ_ENERGY])
+				row_energy = slurm_atoull(row[JOB_REQ_ENERGY]);
 			if (row_start && (row_start < curr_start))
 				row_start = curr_start;
 
@@ -791,6 +807,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 
 			a_usage->a_cpu += seconds * row_acpu;
+			a_usage->energy += row_energy;
 
 			if (!track_wckey)
 				goto calc_cluster;
@@ -813,6 +830,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				last_wckeyid = wckey_id;
 			}
 			w_usage->a_cpu += seconds * row_acpu;
+			w_usage->energy += row_energy;
 			/* do the cluster allocated calculation */
 		calc_cluster:
 
@@ -910,6 +928,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				/*      row_acpu); */
 
 				c_usage->a_cpu += seconds * row_acpu;
+				c_usage->energy += row_energy;
 			}
 
 			/* now reserved time */
@@ -985,15 +1004,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		}
 
 		/* now apply the down time from the slurmctld disconnects */
-		list_iterator_reset(c_itr);
-		while ((loc_c_usage = list_next(c_itr)))
-			c_usage->d_cpu += loc_c_usage->total_time;
+		if (c_usage) {
+			list_iterator_reset(c_itr);
+			while ((loc_c_usage = list_next(c_itr)))
+				c_usage->d_cpu += loc_c_usage->total_time;
 
-		if ((rc = _process_cluster_usage(
-			     mysql_conn, cluster_name, curr_start,
-			     curr_end, now, c_usage)) != SLURM_SUCCESS) {
-			_destroy_local_cluster_usage(c_usage);
-			goto end_it;
+			if ((rc = _process_cluster_usage(
+				     mysql_conn, cluster_name, curr_start,
+				     curr_end, now, c_usage))
+			    != SLURM_SUCCESS) {
+				_destroy_local_cluster_usage(c_usage);
+				goto end_it;
+			}
 		}
 
 		list_iterator_reset(a_itr);
@@ -1003,28 +1025,32 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     a_usage->a_cpu); */
 			if (query) {
 				xstrfmtcat(query,
-					   ", (%ld, %ld, %d, %ld, %"PRIu64")",
+					   ", (%ld, %ld, %d, %ld, %"PRIu64", "
+					   "%"PRIu64")",
 					   now, now,
 					   a_usage->id, curr_start,
-					   a_usage->a_cpu);
+					   a_usage->a_cpu, a_usage->energy);
 			} else {
 				xstrfmtcat(query,
 					   "insert into \"%s_%s\" "
 					   "(creation_time, "
 					   "mod_time, id_assoc, time_start, "
-					   "alloc_cpu_secs) values "
-					   "(%ld, %ld, %d, %ld, %"PRIu64")",
+					   "alloc_cpu_secs, consumed_energy) "
+					   "values "
+					   "(%ld, %ld, %d, %ld, %"PRIu64", "
+					   "%"PRIu64")",
 					   cluster_name, assoc_hour_table,
 					   now, now,
 					   a_usage->id, curr_start,
-					   a_usage->a_cpu);
+					   a_usage->a_cpu, a_usage->energy);
 			}
 		}
 		if (query) {
 			xstrfmtcat(query,
 				   " on duplicate key update "
 				   "mod_time=%ld, "
-				   "alloc_cpu_secs=VALUES(alloc_cpu_secs);",
+				   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
+				   "consumed_energy=VALUES(consumed_energy);",
 				   now);
 
 			debug3("%d(%s:%d) query\n%s",
@@ -1048,28 +1074,32 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     w_usage->a_cpu); */
 			if (query) {
 				xstrfmtcat(query,
-					   ", (%ld, %ld, %d, %ld, %"PRIu64")",
+					   ", (%ld, %ld, %d, %ld, "
+					   "%"PRIu64", %"PRIu64")",
 					   now, now,
 					   w_usage->id, curr_start,
-					   w_usage->a_cpu);
+					   w_usage->a_cpu, w_usage->energy);
 			} else {
 				xstrfmtcat(query,
 					   "insert into \"%s_%s\" "
 					   "(creation_time, "
 					   "mod_time, id_wckey, time_start, "
-					   "alloc_cpu_secs) values "
-					   "(%ld, %ld, %d, %ld, %"PRIu64")",
+					   "alloc_cpu_secs, consumed_energy) "
+					   "values "
+					   "(%ld, %ld, %d, %ld, "
+					   "%"PRIu64", %"PRIu64")",
 					   cluster_name, wckey_hour_table,
 					   now, now,
 					   w_usage->id, curr_start,
-					   w_usage->a_cpu);
+					   w_usage->a_cpu, w_usage->energy);
 			}
 		}
 		if (query) {
 			xstrfmtcat(query,
 				   " on duplicate key update "
 				   "mod_time=%ld, "
-				   "alloc_cpu_secs=VALUES(alloc_cpu_secs);",
+				   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
+				   "consumed_energy=VALUES(consumed_energy);",
 				   now);
 
 			debug3("%d(%s:%d) query\n%s",
@@ -1106,8 +1136,8 @@ end_it:
 	list_destroy(wckey_usage_list);
 	list_destroy(resv_usage_list);
 
-/* 	info("stop start %s", ctime(&curr_start)); */
-/* 	info("stop end %s", ctime(&curr_end)); */
+/* 	info("stop start %s", slurm_ctime(&curr_start)); */
+/* 	info("stop end %s", slurm_ctime(&curr_end)); */
 
 	/* go check to see if we archive and purge */
 
@@ -1146,17 +1176,20 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 
 	while (curr_start < end) {
 		debug3("curr day is now %ld-%ld", curr_start, curr_end);
-/* 		info("start %s", ctime(&curr_start)); */
-/* 		info("end %s", ctime(&curr_end)); */
+/* 		info("start %s", slurm_ctime(&curr_start)); */
+/* 		info("end %s", slurm_ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, mod_time, "
 			"id_assoc, "
-			"time_start, alloc_cpu_secs) select %ld, %ld, "
-			"id_assoc, "
-			"%ld, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
+			"time_start, alloc_cpu_secs, consumed_energy) "
+			"select %ld, %ld, id_assoc, "
+			"%ld, @ASUM:=SUM(alloc_cpu_secs), "
+			"@ESUM:=SUM(consumed_energy) "
+			"from \"%s_%s\" where "
 			"(time_start < %ld && time_start >= %ld) "
 			"group by id_assoc on duplicate key update "
-			"mod_time=%ld, alloc_cpu_secs=@ASUM;",
+			"mod_time=%ld, alloc_cpu_secs=@ASUM, "
+			"consumed_energy=@ESUM;",
 			cluster_name, assoc_day_table, now, now, curr_start,
 			cluster_name, assoc_hour_table,
 			curr_end, curr_start, now);
@@ -1168,7 +1201,8 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, time_start, cpu_count, "
 			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
-			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
+			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs, "
+			   "consumed_energy) "
 			   "select %ld, %ld, "
 			   "%ld, @CPU:=MAX(cpu_count), "
 			   "@ASUM:=SUM(alloc_cpu_secs), "
@@ -1176,14 +1210,16 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
-			   "@RSUM:=SUM(resv_cpu_secs) from \"%s_%s\" where "
+			   "@RSUM:=SUM(resv_cpu_secs), "
+			   "@ESUM:=SUM(consumed_energy) from \"%s_%s\" where "
 			   "(time_start < %ld && time_start >= %ld) "
 			   "group by deleted "
 			   "on duplicate key update "
 			   "mod_time=%ld, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
 			   "pdown_cpu_secs=@PDSUM, idle_cpu_secs=@ISUM, "
-			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
+			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM, "
+			   "consumed_energy=@ESUM;",
 			   cluster_name, cluster_day_table,
 			   now, now, curr_start,
 			   cluster_name, cluster_hour_table,
@@ -1192,12 +1228,15 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, id_wckey, time_start, "
-				   "alloc_cpu_secs) select %ld, %ld, "
-				   "id_wckey, %ld, @ASUM:=SUM(alloc_cpu_secs) "
+				   "alloc_cpu_secs, consumed_energy) "
+				   "select %ld, %ld, "
+				   "id_wckey, %ld, @ASUM:=SUM(alloc_cpu_secs), "
+				   "@ESUM:=SUM(consumed_energy) "
 				   "from \"%s_%s\" where (time_start < %ld && "
 				   "time_start >= %ld) "
 				   "group by id_wckey on duplicate key update "
-				   "mod_time=%ld, alloc_cpu_secs=@ASUM;",
+				   "mod_time=%ld, alloc_cpu_secs=@ASUM, "
+				   "consumed_energy=@ESUM;",
 				   cluster_name, wckey_day_table,
 				   now, now, curr_start,
 				   cluster_name, wckey_hour_table,
@@ -1226,8 +1265,8 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		curr_end = mktime(&start_tm);
 	}
 
-/* 	info("stop start %s", ctime(&curr_start)); */
-/* 	info("stop end %s", ctime(&curr_end)); */
+/* 	info("stop start %s", slurm_ctime(&curr_start)); */
+/* 	info("stop end %s", slurm_ctime(&curr_end)); */
 
 	/* go check to see if we archive and purge */
 	rc = _process_purge(mysql_conn, cluster_name, archive_data,
@@ -1262,17 +1301,20 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 
 	while (curr_start < end) {
 		debug3("curr month is now %ld-%ld", curr_start, curr_end);
-/* 		info("start %s", ctime(&curr_start)); */
-/* 		info("end %s", ctime(&curr_end)); */
+/* 		info("start %s", slurm_ctime(&curr_start)); */
+/* 		info("end %s", slurm_ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, "
 			"mod_time, id_assoc, "
-			"time_start, alloc_cpu_secs) select "
+			"time_start, alloc_cpu_secs, consumed_energy) select "
 			"%ld, %ld, id_assoc, "
-			"%ld, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
+			"%ld, @ASUM:=SUM(alloc_cpu_secs), "
+			"@ESUM:=SUM(consumed_energy) "
+			"from \"%s_%s\" where "
 			"(time_start < %ld && time_start >= %ld) "
 			"group by id_assoc on duplicate key update "
-			"mod_time=%ld, alloc_cpu_secs=@ASUM;",
+			"mod_time=%ld, alloc_cpu_secs=@ASUM, "
+			"consumed_energy=@ESUM;",
 			cluster_name, assoc_month_table, now, now, curr_start,
 			cluster_name, assoc_day_table,
 			curr_end, curr_start, now);
@@ -1284,7 +1326,8 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, time_start, cpu_count, "
 			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
-			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
+			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs, "
+			   "consumed_energy) "
 			   "select %ld, %ld, "
 			   "%ld, @CPU:=MAX(cpu_count), "
 			   "@ASUM:=SUM(alloc_cpu_secs), "
@@ -1292,14 +1335,16 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
-			   "@RSUM:=SUM(resv_cpu_secs) from \"%s_%s\" where "
+			   "@RSUM:=SUM(resv_cpu_secs), "
+			   "@ESUM:=SUM(consumed_energy) from \"%s_%s\" where "
 			   "(time_start < %ld && time_start >= %ld) "
 			   "group by deleted "
 			   "on duplicate key update "
 			   "mod_time=%ld, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
 			   "pdown_cpu_secs=@PDSUM, idle_cpu_secs=@ISUM, "
-			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
+			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM, "
+			   "consumed_energy=@ESUM;",
 			   cluster_name, cluster_month_table,
 			   now, now, curr_start,
 			   cluster_name, cluster_day_table,
@@ -1308,13 +1353,16 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" "
 				   "(creation_time, mod_time, "
-				   "id_wckey, time_start, alloc_cpu_secs) "
+				   "id_wckey, time_start, alloc_cpu_secs, "
+				   "consumed_energy) "
 				   "select %ld, %ld, id_wckey, %ld, "
-				   "@ASUM:=SUM(alloc_cpu_secs) "
+				   "@ASUM:=SUM(alloc_cpu_secs), "
+				   "@ESUM:=SUM(consumed_energy) "
 				   "from \"%s_%s\" where (time_start < %ld && "
 				   "time_start >= %ld) "
 				   "group by id_wckey on duplicate key update "
-				   "mod_time=%ld, alloc_cpu_secs=@ASUM;",
+				   "mod_time=%ld, alloc_cpu_secs=@ASUM, "
+				   "consumed_energy=@ESUM;",
 				   cluster_name, wckey_month_table,
 				   now, now, curr_start,
 				   cluster_name, wckey_day_table,

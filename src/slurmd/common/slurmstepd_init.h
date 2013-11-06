@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -47,6 +47,10 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
+
+/* If you want to run memcheck on slurmstepd switch this comment */
+//#define SLURMSTEPD_MEMCHECK 1
+#undef SLURMSTEPD_MEMCHECK
 
 typedef enum slurmd_step_tupe {
 	LAUNCH_BATCH_JOB = 0,

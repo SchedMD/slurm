@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -54,10 +54,10 @@ void _help_fields_msg(void)
 
 	for (i = 0; fields[i].name; i++) {
 		if (i & 3)
-			printf("  ");
+			printf(" ");
 		else if (i)
 			printf("\n");
-		printf("%-13s", fields[i].name);
+		printf("%-17s", fields[i].name);
 	}
 	printf("\n");
 	return;
@@ -457,13 +457,6 @@ void parse_command_line(int argc, char **argv)
 	}
 	field_count = list_count(print_fields_list);
 
-	if (optind < argc) {
-		debug2("Error: Unknown arguments:");
-		for (i=optind; i<argc; i++)
-			debug2(" %s", argv[i]);
-		debug2("\n");
-		exit(1);
-	}
 
 	return;
 }

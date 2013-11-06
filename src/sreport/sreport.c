@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -101,6 +101,7 @@ main (int argc, char *argv[])
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
+	slurm_conf_init(NULL);
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	/* Check to see if we are running a supported accounting plugin */

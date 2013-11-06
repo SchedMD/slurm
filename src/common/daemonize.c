@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -44,6 +44,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
@@ -159,17 +161,18 @@ int
 create_pidfile(const char *pidfile, uid_t uid)
 {
 	FILE *fp;
-	int fd = -1;
+	int fd;
 
 	xassert(pidfile != NULL);
 	xassert(pidfile[0] == '/');
 
-	if (!(fp = fopen(pidfile, "w"))) {
+	fd = creat_cloexec(pidfile, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	if (fd < 0) {
 		error("Unable to open pidfile `%s': %m", pidfile);
 		return -1;
 	}
 
-	fd = fileno(fp);
+	fp = fdopen(fd, "w");
 
 	if (fd_get_write_lock(fd) < 0) {
 		error ("Unable to lock pidfile `%s': %m", pidfile);

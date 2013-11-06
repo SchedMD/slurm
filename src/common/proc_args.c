@@ -7,7 +7,7 @@
  *  from existing SLURM source code, particularly src/srun/opt.c
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -85,7 +85,7 @@
 /* print this version of SLURM */
 void print_slurm_version(void)
 {
-	printf("%s %s\n", PACKAGE, SLURM_VERSION_STRING);
+	printf("%s\n", PACKAGE_STRING);
 }
 
 /* print the available gres options */
@@ -98,6 +98,48 @@ void print_gres_help(void)
 		printf("%s", help_msg);
 	else
 		printf("No gres help is available\n");
+}
+
+void set_distribution(task_dist_states_t distribution,
+		      char **dist, char **lllp_dist)
+{
+	if (((int)distribution >= 0)
+	    && (distribution != SLURM_DIST_UNKNOWN)) {
+		switch (distribution) {
+		case SLURM_DIST_CYCLIC:
+			*dist      = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK:
+			*dist      = "block";
+			break;
+		case SLURM_DIST_PLANE:
+			*dist      = "plane";
+			*lllp_dist = "plane";
+			break;
+		case SLURM_DIST_ARBITRARY:
+			*dist      = "arbitrary";
+			break;
+		case SLURM_DIST_CYCLIC_CYCLIC:
+			*dist      = "cyclic:cyclic";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_BLOCK:
+			*dist      = "cyclic:block";
+			*lllp_dist = "block";
+			break;
+		case SLURM_DIST_BLOCK_CYCLIC:
+			*dist      = "block:cyclic";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK_BLOCK:
+			*dist      = "block:block";
+			*lllp_dist = "block";
+			break;
+		default:
+			error("unknown dist, type %d", distribution);
+			break;
+		}
+	}
 }
 
 /*
@@ -364,7 +406,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			return false;
 		}
 		xfree(min_str);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		if (*min_nodes < 0) {
 #else
 		if (*min_nodes == 0) {
@@ -386,7 +428,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		if (*min_nodes < 0) {
 #else
 		if (*min_nodes == 0) {
@@ -532,7 +574,7 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 {
 	bool tmp_val,ret_val;
 	int i,j;
-	int max_sockets, max_cores, max_threads;
+	int max_sockets = 0, max_cores, max_threads;
 	const char *cur_ptr = arg;
 	char buf[3][48]; /* each can hold INT64_MAX - INT64_MAX */
 	buf[0][0] = '\0';
@@ -792,8 +834,8 @@ char *print_geometry(const uint16_t *geometry)
 	char buf[32], *rc = NULL;
 	int dims = slurmdb_setup_cluster_dims();
 
-	if ((dims == 0)
-	||  (geometry[0] == (uint16_t)NO_VAL))
+	if ((dims == 0) || !geometry[0]
+	    ||  (geometry[0] == (uint16_t)NO_VAL))
 		return NULL;
 
 	for (i=0; i<dims; i++) {
@@ -810,13 +852,19 @@ char *print_geometry(const uint16_t *geometry)
 /* Translate a signal option string "--signal=<int>[@<time>]" into
  * it's warn_signal and warn_time components.
  * RET 0 on success, -1 on failure */
-int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time)
+int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
+		    uint16_t *warn_flags)
 {
 	char *endptr;
 	long num;
 
 	if (optarg == NULL)
 		return -1;
+
+	if (!strncasecmp(optarg, "B:", 2)) {
+		*warn_flags = KILL_JOB_BATCH;
+		optarg += 2;
+	}
 
 	endptr = strchr(optarg, '@');
 	if (endptr)

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -55,7 +55,7 @@
 extern int slurm_priority_init(void);
 extern int slurm_priority_fini(void);
 extern uint32_t priority_g_set(uint32_t last_prio, struct job_record *job_ptr);
-extern void priority_g_reconfig(void);
+extern void priority_g_reconfig(bool assoc_clear);
 
 /* sets up the normalized usage and the effective usage of an
  * association.
@@ -66,5 +66,11 @@ extern double priority_g_calc_fs_factor(long double usage_efctv,
 					long double shares_norm);
 extern List priority_g_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg, uid_t uid);
+
+/* Call at end of job to remove decayable limits at the end of the job
+ * at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
+ * READ_LOCK, READ_LOCK }; should be locked before calling this
+ */
+extern void priority_g_job_end(struct job_record *job_ptr);
 
 #endif /*_SLURM_PRIORIY_H */

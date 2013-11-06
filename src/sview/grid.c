@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -198,10 +198,15 @@ static void _add_button_signals(grid_button_t *grid_button)
  *           1: rec_a < rec_b
  *
  */
-static int _sort_button_inx(grid_button_t *button_a, grid_button_t *button_b)
+static int _sort_button_inx(void *b1, void *b2)
 {
-	int inx_a = button_a->inx;
-	int inx_b = button_b->inx;
+	grid_button_t *button_a = *(grid_button_t **)b1;
+	grid_button_t *button_b = *(grid_button_t **)b2;
+	int inx_a;
+	int inx_b;
+
+	inx_a = button_a->inx;
+	inx_b = button_b->inx;
 
 	if (inx_a < inx_b)
 		return -1;
@@ -499,7 +504,7 @@ static int _block_in_node(int *mp_inx, int inx)
 static void _build_empty_node(int coord_x, int coord_y,
 			      button_processor_t *button_processor)
 {
-	grid_button_t *grid_button = button_processor->grid_button;
+	grid_button_t *grid_button;
 
 	(*button_processor->coord_x) = coord_x;
 	(*button_processor->coord_y) = coord_y;
@@ -549,7 +554,7 @@ static int *_get_cluster_dims(void)
 {
 	int *my_dim_size = slurmdb_setup_cluster_dim_size();
 
-	if ((cluster_flags & CLUSTER_FLAG_CRAYXT) && my_dim_size) {
+	if ((cluster_flags & CLUSTER_FLAG_CRAY) && my_dim_size) {
 		static int cray_dim_size[3] = {-1, -1, -1};
 		/* For now, assume four nodes per coordinate all in
 		 * the same cage. Need to refine. */
@@ -600,7 +605,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 				g_error("bad node name %s\n", node_ptr->name);
 				return SLURM_ERROR;
 			}
-			if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+			if (cluster_flags & CLUSTER_FLAG_CRAY) {
 				len_a = strlen(node_ptr->node_addr);
 				if (len_a < cluster_dims) {
 					g_error("bad node addr %s\n",
@@ -654,7 +659,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	} else if (cluster_dims == 3) {
 		int x, y, z;
 		if (node_ptr) {
-			if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+			if (cluster_flags & CLUSTER_FLAG_CRAY) {
 				x = select_char2coord(
 					node_ptr->node_addr[len_a-3]);
 				y = select_char2coord(

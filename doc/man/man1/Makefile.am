@@ -1,4 +1,4 @@
-htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
 
 man1_MANS = \
 	sacct.1 \
@@ -14,6 +14,7 @@ man1_MANS = \
 	slurm.1 \
 	smap.1 \
 	sprio.1 \
+	sh5util.1 \
 	squeue.1 \
 	sreport.1 \
 	srun.1 \
@@ -40,6 +41,7 @@ html_DATA = \
 	sinfo.html \
 	smap.html \
 	sprio.html \
+	sh5util.html \
 	squeue.html \
 	sreport.html \
 	srun.html \

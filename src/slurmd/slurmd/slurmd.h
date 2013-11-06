@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -122,7 +122,9 @@ typedef struct slurmd_config {
 	slurm_fd_t      lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
+	uint16_t      log_fmt;          /* Log file timestamp format flag  */
 	int           debug_level;	/* logging detail level            */
+	uint16_t      debug_level_set;	/* debug_level set on command line */
 	uint32_t      debug_flags;	/* DebugFlags configured           */
 	int           daemonize:1;	/* daemonize flag		   */
 	int	      cleanstart:1;     /* clean start requested (-c)      */
@@ -133,9 +135,14 @@ typedef struct slurmd_config {
 	uint16_t	slurmd_timeout;	/* SlurmdTimeout                   */
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
-	uint16_t        job_acct_gather_freq;
-	char *job_acct_gather_type; /* job accounting gather type */
+	uint16_t        acct_freq_task;
+	char           *job_acct_gather_freq;
+	char           *job_acct_gather_type; /* job accounting gather type */
+	char           *job_acct_gather_params; /* job accounting gather params */
 	char           *acct_gather_energy_type; /*  */
+	char           *acct_gather_filesystem_type; /*  */
+	char           *acct_gather_infiniband_type; /*  */
+	char           *acct_gather_profile_type; /*  */
 	uint16_t	use_pam;
 	uint16_t	task_plugin_param; /* TaskPluginParams, expressed
 					 * using cpu_bind_type_t flags */

@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -119,13 +119,15 @@ int switch_p_libstate_clear ( void )
 /*
  * switch functions for job step specific credential
  */
-int switch_p_alloc_jobinfo ( switch_jobinfo_t **switch_job )
+int switch_p_alloc_jobinfo ( switch_jobinfo_t **switch_job,
+			     uint32_t job_id, uint32_t step_id )
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job, char *nodelist,
-		uint16_t *tasks_per_node,  uint32_t **tids, char *network )
+int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job,
+			     slurm_step_layout_t *step_layout,
+			     char *network )
 {
 	return SLURM_SUCCESS;
 }
@@ -140,12 +142,14 @@ void switch_p_free_jobinfo ( switch_jobinfo_t *switch_job )
 	return;
 }
 
-int switch_p_pack_jobinfo ( switch_jobinfo_t *switch_job, Buf buffer )
+int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+			  uint16_t protocol_version)
 {
 	return 0;
 }
 
-int switch_p_unpack_jobinfo ( switch_jobinfo_t *switch_job, Buf buffer )
+int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+			    uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
@@ -184,8 +188,7 @@ int switch_p_job_preinit ( switch_jobinfo_t *jobinfo )
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
-			      char *job_name)
+extern int switch_p_job_init (stepd_step_rec_t *job)
 {
 	return SLURM_SUCCESS;
 }
@@ -201,12 +204,14 @@ extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 	return;
 }
 
-extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer)
+extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer,
+					   uint16_t protocol_version)
 {
 	return;
 }
 
-extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer)
+extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer,
+					    uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
@@ -231,9 +236,9 @@ int switch_p_job_fini ( switch_jobinfo_t *jobinfo )
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini ( switch_jobinfo_t *jobinfo, uid_t pgid,
-				uint32_t job_id, uint32_t step_id )
+int switch_p_job_postfini (stepd_step_rec_t *job)
 {
+	uid_t pgid = job->jmgr_pid;
 	/*
 	 *  Kill all processes in the job's session
 	 */
@@ -242,8 +247,8 @@ int switch_p_job_postfini ( switch_jobinfo_t *jobinfo, uid_t pgid,
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %lu", job_id,
-		      step_id, (unsigned long) pgid);
+		debug("Job %u.%u: Bad pid valud %lu", job->jobid,
+		      job->stepid, (unsigned long) pgid);
 
 	return SLURM_SUCCESS;
 }
@@ -295,13 +300,13 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 }
 
 extern int switch_p_pack_node_info(switch_node_info_t *switch_node,
-	Buf buffer)
+				   Buf buffer, uint16_t protocol_version)
 {
 	return 0;
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
-	Buf buffer)
+				     Buf buffer, uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }

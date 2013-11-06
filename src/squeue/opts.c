@@ -3,12 +3,13 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2013 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -79,7 +80,6 @@ static List  _build_step_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
 static void  _help( void );
-static int   _max_cpus_per_node(void);
 static int   _parse_state( char* str, uint16_t* states );
 static void  _parse_token( char *token, char *field, int *field_size,
 			   bool *right_justify, char **suffix);
@@ -153,7 +153,7 @@ parse_command_line( int argc, char* argv[] )
 		case (int) 'A':
 		case (int) 'U':	/* backwards compatibility */
 			xfree(params.accounts);
-		        params.accounts = xstrdup(optarg);
+			params.accounts = xstrdup(optarg);
 			params.account_list =
 				_build_str_list( params.accounts );
 		break;
@@ -381,7 +381,7 @@ parse_command_line( int argc, char* argv[] )
 	if ( params.start_flag && !params.step_flag ) {
 		/* Set more defaults */
 		if (params.format == NULL)
-			params.format = xstrdup("%.7i %.9P %.8j %.8u  %.2t  %.19S %.6D %R");
+			params.format = xstrdup("%.7i %.9P %.8j %.8u %.2t %.19S %.6D %R");
 		if (params.sort == NULL)
 			params.sort = xstrdup("S");
 		if (params.states == NULL) {
@@ -408,40 +408,9 @@ parse_command_line( int argc, char* argv[] )
 		}
 		list_iterator_destroy(iterator);
 	}
-	if (params.job_id || params.user_id)
-		params.max_cpus = 1;	/* To minimize overhead */
-	else
-		params.max_cpus = _max_cpus_per_node();
 
 	if ( params.verbose )
 		_print_options();
-}
-
-/* Return the maximum number of processors for any node in the cluster. */
-static int   _max_cpus_per_node(void)
-{
-	int error_code, max_cpus = 1;
-	node_info_msg_t *node_info_ptr = NULL;
-
-	/* Since slurm_load_node() is a high-overhead function call, use
-	 * slurm_load_node_single() instead and assume a homogeneous cluster */
-#if 0
-	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				      params.all_flag);
-#else
-	error_code = slurm_load_node_single(&node_info_ptr, NULL,
-					    params.all_flag);
-#endif
-	if (error_code == SLURM_SUCCESS) {
-		int i;
-		node_info_t *node_ptr = node_info_ptr->node_array;
-		for (i=0; i<node_info_ptr->record_count; i++) {
-			max_cpus = MAX(max_cpus, node_ptr[i].cpus);
-		}
-		slurm_free_node_info_msg (node_info_ptr);
-	}
-
-	return max_cpus;
 }
 
 /*
@@ -490,6 +459,8 @@ extern int parse_format( char* format )
 	char *prefix = NULL, *suffix = NULL, *token = NULL;
 	char *tmp_char = NULL, *tmp_format = NULL;
 	char field[1];
+	bool format_all = false;
+	int i;
 
 	if (format == NULL) {
 		error ("Format option lacks specification.");
@@ -506,9 +477,16 @@ extern int parse_format( char* format )
 					       prefix);
 	}
 
-	field_size = strlen( format );
-	tmp_format = xmalloc( field_size + 1 );
-	strcpy( tmp_format, format );
+	if (!strcasecmp(format, "%all")) {
+		xstrfmtcat(tmp_format, "%c%c", '%', 'a');
+		for (i = 'b'; i <= 'z'; i++)
+			xstrfmtcat(tmp_format, "|%c%c", '%', (char) i);
+		for (i = 'A'; i <= 'Z'; i++)
+			xstrfmtcat(tmp_format, "|%c%c ", '%', (char) i);
+		format_all = true;
+	} else {
+		tmp_format = xstrdup(format);
+	}
 
 	token = strtok_r( tmp_format, "%", &tmp_char);
 	if (token && (format[0] != '%'))	/* toss header */
@@ -569,12 +547,14 @@ extern int parse_format( char* format )
 							   field_size,
 							   right_justify,
 							   suffix );
+			else if (format_all)
+				;	/* ignore */
 			else {
 				prefix = xstrdup("%");
 				xstrcat(prefix, token);
 				xfree(suffix);
 				suffix = prefix;
-				
+
 				step_format_add_invalid( params.format_list,
 							   field_size,
 							   right_justify,
@@ -589,6 +569,11 @@ extern int parse_format( char* format )
 							field_size,
 							right_justify,
 							suffix  );
+			else if (field[0] == 'A')
+				job_format_add_job_id2(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix);
 			else if (field[0] == 'b')
 				job_format_add_gres( params.format_list,
 						     field_size, right_justify,
@@ -718,6 +703,10 @@ extern int parse_format( char* format )
 				job_format_add_nodes( params.format_list,
 						      field_size,
 						      right_justify, suffix );
+			else if (field[0] == 'o')
+				job_format_add_command( params.format_list,
+							field_size,
+							right_justify, suffix);
 			else if (field[0] == 'O')
 				job_format_add_contiguous( params.format_list,
 							   field_size,
@@ -805,17 +794,29 @@ extern int parse_format( char* format )
 							  field_size,
 							  right_justify,
 							  suffix );
+			else if (field[0] == 'X')
+				job_format_add_core_spec( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
 			else if (field[0] == 'z')
 				job_format_add_num_sct( params.format_list,
 							   field_size,
 							   right_justify,
 							   suffix );
+			else if (field[0] == 'Z')
+				job_format_add_work_dir( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (format_all)
+				;	/* ignore */
 			else {
 				prefix = xstrdup("%");
 				xstrcat(prefix, token);
 				xfree(suffix);
 				suffix = prefix;
-				
+
 				job_format_add_invalid( params.format_list,
 							   field_size,
 							   right_justify,
@@ -911,7 +912,6 @@ _print_options(void)
 	printf( "iterate     = %d\n", params.iterate );
 	printf( "job_flag    = %d\n", params.job_flag );
 	printf( "jobs        = %s\n", params.jobs );
-	printf( "max_cpus    = %d\n", params.max_cpus ) ;
 	printf( "names       = %s\n", params.names );
 	printf( "nodes       = %s\n", hostlist ) ;
 	printf( "partitions  = %s\n", params.partitions ) ;

@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -46,6 +46,7 @@
 
 extern xcgroup_t task_memory_cg;
 extern xcgroup_t task_cpuacct_cg;
+extern xcgroup_t task_blkio_cg;
 
 extern int jobacct_gather_cgroup_cpuacct_init(
 	slurm_cgroup_conf_t *slurm_cgroup_conf);
@@ -63,6 +64,15 @@ extern int jobacct_gather_cgroup_memory_fini(
 	slurm_cgroup_conf_t *slurm_cgroup_conf);
 
 extern int jobacct_gather_cgroup_memory_attach_task(
+	pid_t pid, jobacct_id_t *jobacct_id);
+
+extern int jobacct_gather_cgroup_blkio_init(
+	slurm_cgroup_conf_t *slurm_cgroup_conf);
+
+extern int jobacct_gather_cgroup_blkio_fini(
+	slurm_cgroup_conf_t *slurm_cgroup_conf);
+
+extern int jobacct_gather_cgroup_blkio_attach_task(
 	pid_t pid, jobacct_id_t *jobacct_id);
 
 extern char* jobacct_cgroup_create_slurm_cg (xcgroup_ns_t* ns);

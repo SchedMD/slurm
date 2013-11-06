@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -55,9 +55,11 @@ void _destroy_local_cluster_rec(void *object)
 	xfree(object);
 }
 
-static int _sort_local_cluster(local_cluster_rec_t* rec_a,
-			       local_cluster_rec_t* rec_b)
+static int _sort_local_cluster(void *v1, void *v2)
 {
+	local_cluster_rec_t* rec_a = *(local_cluster_rec_t**)v1;
+	local_cluster_rec_t* rec_b = *(local_cluster_rec_t**)v2;
+
 	if (rec_a->start_time < rec_b->start_time)
 		return -1;
 	else if (rec_a->start_time > rec_b->start_time)

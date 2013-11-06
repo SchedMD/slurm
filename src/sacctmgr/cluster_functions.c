@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -187,6 +187,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 				if (*classification)
 					set = 1;
 			}
+		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
+					 MAX(command_len, 7))) {
+			exit_code=1;
+			fprintf(stderr, "GrpCPURunMins is not a valid option "
+				"for the root association of a cluster.\n");
+			break;
 		} else if (!strncasecmp(argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
 			exit_code=1;
@@ -350,6 +356,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 	if (!list_count(cluster_list)) {
 		printf(" Nothing new added.\n");
+		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
@@ -761,6 +768,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		set = 1;
 	} else if (ret_list) {
 		printf(" Nothing modified\n");
+		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
@@ -793,6 +801,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			set = 1;
 		} else if (ret_list) {
 			printf(" Nothing modified\n");
+			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Error with request: %s\n",
@@ -899,6 +908,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");
+		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",

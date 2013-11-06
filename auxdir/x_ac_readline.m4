@@ -37,7 +37,7 @@ AC_DEFUN([X_AC_READLINE],
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[	#include <stdio.h>
 	#include <readline/readline.h>
 	#include <readline/history.h>]], [[
-	char *line = readline("in:");]])],[AC_DEFINE([HAVE_READLINE], [1], 
+	readline("in:");]])],[AC_DEFINE([HAVE_READLINE], [1], 
                  [Define if you are compiling with readline.])],[READLINE_LIBS=""])
     LIBS="$saved_LIBS"
   fi

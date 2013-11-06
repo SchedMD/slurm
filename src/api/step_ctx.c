@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -64,9 +64,24 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_cred.h"
+#include "src/common/switch.h"
 #include "src/api/step_ctx.h"
+
+int step_signals[] = {
+	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
+	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
+static int destroy_step = 0;
+
+static void _signal_while_allocating(int signo)
+{
+	debug("Got signal %d", signo);
+	if (signo == SIGCONT)
+		return;
+
+	destroy_step = 1;
+}
 
 static void
 _job_fake_cred(struct slurm_step_ctx_struct *ctx)
@@ -127,7 +142,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->name = xstrdup(step_params->name);
 	step_req->no_kill = step_params->no_kill;
 	step_req->overcommit = step_params->overcommit ? 1 : 0;
-	step_req->mem_per_cpu = step_params->mem_per_cpu;
+	step_req->pn_min_memory = step_params->pn_min_memory;
 	step_req->time_limit = step_params->time_limit;
 
 	return step_req;
@@ -203,7 +218,7 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
-	int rc, time_left = timeout;
+	int i, rc, time_left = timeout;
 	int sock = -1;
 	short port = 0;
 	int errnum = 0;
@@ -232,12 +247,22 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 		struct pollfd fds;
 		fds.fd = sock;
 		fds.events = POLLIN;
+		xsignal_unblock(step_signals);
+		for (i = 0; step_signals[i]; i++)
+			xsignal(step_signals[i], _signal_while_allocating);
 		while ((rc = poll(&fds, 1, time_left)) <= 0) {
+			if (destroy_step)
+				break;
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
 			break;
 		}
-		rc = slurm_job_step_create(step_req, &step_resp);
+		xsignal_block(step_signals);
+		if (destroy_step) {
+			info("Cancelled pending job step");
+			errno = ESLURM_ALREADY_DONE;
+		} else
+			rc = slurm_job_step_create(step_req, &step_resp);
 	}
 
 	if ((rc < 0) || (step_resp == NULL)) {
@@ -308,14 +333,14 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 		step_req->min_nodes,
 		step_req->num_tasks);
 
-	if (switch_alloc_jobinfo(&step_resp->switch_job) < 0)
-		fatal("switch_alloc_jobinfo: %m");
-	if (switch_build_jobinfo(step_resp->switch_job,
-				 step_resp->step_layout->node_list,
-				 step_resp->step_layout->tasks,
-				 step_resp->step_layout->tids,
+	if (switch_g_alloc_jobinfo(&step_resp->switch_job,
+				   step_req->job_id,
+				   step_resp->job_step_id) < 0)
+		fatal("switch_g_alloc_jobinfo: %m");
+	if (switch_g_build_jobinfo(step_resp->switch_job,
+				 step_resp->step_layout,
 				 step_req->network) < 0)
-		fatal("switch_build_jobinfo: %m");
+		fatal("switch_g_build_jobinfo: %m");
 
 
 

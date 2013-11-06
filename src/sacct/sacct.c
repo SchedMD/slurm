@@ -6,7 +6,7 @@
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -49,6 +49,8 @@ print_field_t fields[] = {
 	{7,  "AssocID", print_fields_uint, PRINT_ASSOCID},
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU},
 	{10, "AveCPUFreq", print_fields_str, PRINT_ACT_CPUFREQ},
+	{14, "AveDiskRead", print_fields_str, PRINT_AVEDISKREAD},
+	{14, "AveDiskWrite", print_fields_str, PRINT_AVEDISKWRITE},
 	{10, "AvePages", print_fields_str, PRINT_AVEPAGES},
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS},
 	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE},
@@ -56,6 +58,8 @@ print_field_t fields[] = {
 	{10, "Cluster", print_fields_str, PRINT_CLUSTER},
 	{14, "Comment", print_fields_str, PRINT_COMMENT},
 	{14, "ConsumedEnergy", print_fields_str, PRINT_CONSUMED_ENERGY},
+	{17, "ConsumedEnergyRaw", print_fields_double,
+	 PRINT_CONSUMED_ENERGY_RAW},
 	{10, "CPUTime", print_fields_time_from_secs, PRINT_CPU_TIME},
 	{10, "CPUTimeRAW", print_fields_uint64, PRINT_CPU_TIME_RAW},
 	{15, "DerivedExitCode", print_fields_str, PRINT_DERIVED_EC},
@@ -68,6 +72,12 @@ print_field_t fields[] = {
 	{-12, "JobID", print_fields_str, PRINT_JOBID},
 	{10, "JobName", print_fields_str, PRINT_JOBNAME},
 	{9,  "Layout", print_fields_str, PRINT_LAYOUT},
+	{12, "MaxDiskRead", print_fields_str, PRINT_MAXDISKREAD},
+	{15, "MaxDiskReadNode", print_fields_str, PRINT_MAXDISKREADNODE},
+	{15, "MaxDiskReadTask", print_fields_uint, PRINT_MAXDISKREADTASK},
+	{12, "MaxDiskWrite", print_fields_str, PRINT_MAXDISKWRITE},
+	{16, "MaxDiskWriteNode", print_fields_str, PRINT_MAXDISKWRITENODE},
+	{16, "MaxDiskWriteTask", print_fields_uint, PRINT_MAXDISKWRITETASK},
 	{8,  "MaxPages", print_fields_str, PRINT_MAXPAGES},
 	{12, "MaxPagesNode", print_fields_str, PRINT_MAXPAGESNODE},
 	{14, "MaxPagesTask", print_fields_uint, PRINT_MAXPAGESTASK},
@@ -88,7 +98,9 @@ print_field_t fields[] = {
 	{10, "Partition", print_fields_str, PRINT_PARTITION},
 	{10, "QOS", print_fields_str, PRINT_QOS},
 	{6,  "QOSRAW", print_fields_uint, PRINT_QOSRAW},
+	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ},
 	{8,  "ReqCPUS", print_fields_uint, PRINT_REQ_CPUS},
+	{10, "ReqMem", print_fields_str, PRINT_REQ_MEM},
 	{10, "Reserved", print_fields_time_from_secs, PRINT_RESV},
 	{10, "ResvCPU", print_fields_time_from_secs, PRINT_RESV_CPU},
 	{10, "ResvCPURAW", print_fields_uint, PRINT_RESV_CPU},
@@ -117,6 +129,7 @@ int main(int argc, char **argv)
 	} op;
 	int rc = 0;
 
+	slurm_conf_init(NULL);
 	sacct_init();
 	parse_command_line(argc, argv);
 

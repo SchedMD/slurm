@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -57,8 +57,10 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 /* Change FRONT_END_STATE_VERSION value when changing the state save format */
-#define FRONT_END_STATE_VERSION      "VER001"
-#define FRONT_END_2_2_STATE_VERSION  "VER001"	/* SLURM version 2.2 */
+#define FRONT_END_STATE_VERSION        "VER001"
+#define FRONT_END_13_13_STATE_VERSION  "VER001"	/* SLURM version 13.12 */
+#define FRONT_END_2_5_STATE_VERSION    "VER001"	/* SLURM version 2.6 */
+#define FRONT_END_2_5_STATE_VERSION    "VER001"	/* SLURM version 2.5 */
 
 front_end_record_t *front_end_nodes = NULL;
 uint16_t front_end_node_cnt = 0;
@@ -141,7 +143,7 @@ static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 		pack32(dump_front_end_ptr->reason_uid, buffer);
 
 		pack_time(dump_front_end_ptr->slurmd_start_time, buffer);
-	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack_time(dump_front_end_ptr->boot_time, buffer);
 		packstr(dump_front_end_ptr->name, buffer);
 		pack16(dump_front_end_ptr->node_state, buffer);
@@ -498,8 +500,10 @@ extern void restore_front_end_state(int recover)
 	iter = list_iterator_create(front_end_list);
 	while ((slurm_conf_fe_ptr = (slurm_conf_frontend_t *)
 				    list_next(iter))) {
-		if (slurm_conf_fe_ptr->frontends == NULL)
+		if (slurm_conf_fe_ptr->frontends == NULL) {
 			fatal("FrontendName is NULL");
+			return;	/* Prevent CLANG false positive */
+		}
 		for (i = 0; i < front_end_node_cnt; i++) {
 			if (strcmp(front_end_nodes[i].name,
 				   slurm_conf_fe_ptr->frontends) == 0)
@@ -587,7 +591,7 @@ extern void restore_front_end_state(int recover)
 		fatal("front_end_node_cnt > tree_width (%u > %u)",
 		      front_end_node_cnt, tree_width);
 	}
-	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FRONT_END)
 		log_front_end_state();
 #endif
 }
@@ -618,7 +622,7 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 	buffer = init_buf(BUF_SIZE * 2);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack_time(now, buffer);
@@ -821,7 +825,7 @@ extern int load_all_front_end_state(bool state_only)
 
 	while (remaining_buf (buffer) > 0) {
 		uint16_t base_state;
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpack16 (&node_state,  buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
@@ -993,7 +997,7 @@ extern void sync_front_end_state(void)
 		}
 	}
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FRONT_END)
 		log_front_end_state();
 #endif
 }

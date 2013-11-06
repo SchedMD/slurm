@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -1148,7 +1148,7 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 		"control_host='%s', control_port=%u, last_port=%u, "
 		"rpc_version=%d, dimensions=%d, flags=%u, "
 		"plugin_id_select=%d where name='%s';",
-		cluster_table, now, address, port, port, SLURMDBD_VERSION,
+		cluster_table, now, address, port, port, SLURM_PROTOCOL_VERSION,
 		SYSTEM_DIMENSIONS, flags, select_get_plugin_id(), cluster);
 	xstrfmtcat(query,
 		   "insert into %s "

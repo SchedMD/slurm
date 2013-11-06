@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -175,6 +175,7 @@ static xppid_t **_build_hashtbl(void)
 		    (errno == ERANGE)) {
 			error("couldn't do a strtol on str %s(%ld): %m",
 			      num, ret_l);
+			continue;
 		}
 		if (endptr == NULL || *endptr != 0)
 			continue;
@@ -186,12 +187,11 @@ static xppid_t **_build_hashtbl(void)
 			close(fd);
 			continue;
 		}
+		close(fd);
 		if (sscanf(rbuf, "%ld %s %c %ld", &pid, cmd, &state, &ppid)
 		    != 4) {
-			close(fd);
 			continue;
 		}
-		close(fd);
 		if (state == 'Z') {
 			debug3("Defunct process skipped: command=%s state=%c "
 			       "pid=%ld ppid=%ld", cmd, state, pid, ppid);

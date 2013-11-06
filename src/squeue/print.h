@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -86,8 +86,12 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_array_task_id)
 #define job_format_add_batch_host(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_batch_host)
+#define job_format_add_core_spec(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_core_spec)
 #define job_format_add_job_id(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_job_id)
+#define job_format_add_job_id2(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_job_id2)
 #define job_format_add_partition(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_partition)
 #define job_format_add_prefix(list,wid,right,prefix) \
@@ -181,8 +185,13 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_comment)
 #define job_format_add_reservation(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_reservation)
+#define job_format_add_command(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_command)
+#define job_format_add_work_dir(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_work_dir)
 #define job_format_add_invalid(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,(void*)_print_com_invalid)
+
 
 /*****************************************************************************
  * Job Line Print Functions
@@ -193,7 +202,11 @@ int _print_job_array_task_id(job_info_t * job, int width, bool right_justify,
 			     char* suffix);
 int _print_job_batch_host(job_info_t * job, int width, bool right_justify,
 			char* suffix);
+int _print_job_core_spec(job_info_t * job, int width, bool right_justify,
+			 char* suffix);
 int _print_job_job_id(job_info_t * job, int width, bool right_justify,
+			char* suffix);
+int _print_job_job_id2(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_prefix(job_info_t * job, int width, bool right_justify,
 			char* suffix);
@@ -283,6 +296,10 @@ int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 int _print_job_comment(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_reservation(job_info_t * job, int width, bool right_justify,
+			char* suffix);
+int _print_job_command(job_info_t * job, int width, bool right_justify,
+		        char* suffix);
+int _print_job_work_dir(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 
 /*****************************************************************************

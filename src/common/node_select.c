@@ -16,7 +16,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -60,8 +60,8 @@
 
 /*
  * Must be synchronized with slurm_select_ops_t in node_select.h.
- * Also must be synchronized with the other_plugin.c in
- * the select/cray plugin. (We tried to make it so we only had to
+ * Also must be synchronized with the other_select.c in
+ * the select/other lib. (We tried to make it so we only had to
  * define it once, but it didn't seem to work.)
  */
 const char *node_select_syms[] = {
@@ -83,6 +83,7 @@ const char *node_select_syms[] = {
 	"select_p_job_suspend",
 	"select_p_job_resume",
 	"select_p_step_pick_nodes",
+	"select_p_step_start",
 	"select_p_step_finish",
 	"select_p_pack_select_info",
 	"select_p_select_nodeinfo_pack",
@@ -237,17 +238,33 @@ extern int slurm_select_init(bool only_default)
 		}
 #endif
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
+		if (strcasecmp(type, "select/alps")) {
+			error("%s is incompatible with Cray system "
+			      "running alps", type);
+			fatal("Use SelectType=select/alps");
+		}
+#else
+		if (!strcasecmp(type, "select/alps")) {
+			fatal("Requested SelectType=select/alps "
+			      "in slurm.conf, but not running on a ALPS Cray "
+			      "system.  If looking to emulate a Alps Cray "
+			      "system use --enable-alps-cray-emulation.");
+		}
+#endif
+
+#ifdef HAVE_NATIVE_CRAY
 		if (strcasecmp(type, "select/cray")) {
-			error("%s is incompatible with Cray", type);
+			error("%s is incompatible with a native Cray system.",
+			      type);
 			fatal("Use SelectType=select/cray");
 		}
 #else
 		if (!strcasecmp(type, "select/cray")) {
 			fatal("Requested SelectType=select/cray "
-			      "in slurm.conf, but not running on a Cray "
-			      "system.  If looking to emulate a Cray "
-			      "system use --enable-cray-emulation.");
+			      "in slurm.conf, but not running on a native Cray "
+			      "system.  If looking to run on a Cray "
+			      "system natively use --enable-native-cray.");
 		}
 #endif
 	}
@@ -710,6 +727,19 @@ extern bitstr_t *select_g_step_pick_nodes(struct job_record *job_ptr,
 }
 
 /*
+ * Post pick_nodes operations for the step.
+ * IN/OUT step_ptr - step pointer to operate on.
+ */
+extern int select_g_step_start(struct step_record *step_ptr)
+{
+	if (slurm_select_init(0) < 0)
+		return SLURM_ERROR;
+
+	return (*(ops[select_context_default].step_start))
+		(step_ptr);
+}
+
+/*
  * clear what happened in select_g_step_pick_nodes
  * IN/OUT step_ptr - Flush the resources from the job and step.
  */
@@ -749,7 +779,7 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 	} else
 		plugin_id = select_context_default;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id),
 		       buffer);
 	} else {
@@ -773,7 +803,7 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
@@ -1006,7 +1036,7 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 	} else
 		plugin_id = select_context_default;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id), buffer);
 	} else {
 		error("select_g_select_jobinfo_pack: protocol_version "
@@ -1034,7 +1064,7 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*jobinfo = jobinfo_ptr;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);

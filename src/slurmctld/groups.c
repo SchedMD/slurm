@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -85,12 +85,12 @@ struct group_cache_rec {
  */
 extern uid_t *get_group_members(char *group_name)
 {
-	char grp_buffer[PW_BUF_SIZE];
+	char *grp_buffer = NULL;
   	struct group grp,  *grp_result = NULL;
 	struct passwd *pwd_result = NULL;
 	uid_t *group_uids = NULL, my_uid;
 	gid_t my_gid;
-	int i, j, uid_cnt;
+	int buflen = PW_BUF_SIZE, i, j, res, uid_cnt;
 #ifdef HAVE_AIX
 	FILE *fp = NULL;
 #elif defined (__APPLE__) || defined (__CYGWIN__)
@@ -105,13 +105,27 @@ extern uid_t *get_group_members(char *group_name)
 		return group_uids;
 	}
 
+#if defined(_SC_GETGR_R_SIZE_MAX)
+	i = sysconf(_SC_GETGR_R_SIZE_MAX);
+	buflen = MAX(buflen, i);
+#endif
+	grp_buffer = xmalloc(buflen);
 	/* We need to check for !grp_result, since it appears some
-	 * versions of this function do not return an error on failure.
-	 */
-	if (getgrnam_r(group_name, &grp, grp_buffer, PW_BUF_SIZE,
-		       &grp_result) || (grp_result == NULL)) {
-		error("Could not find configured group %s", group_name);
-		return NULL;
+	 * versions of this function do not return an error on failure. */
+	while (1) {
+		res = getgrnam_r(group_name, &grp, grp_buffer, buflen,
+				 &grp_result);
+		if ((res != 0) && (errno == ERANGE)) {
+			buflen *= 2;
+			xrealloc(grp_buffer, buflen);
+			continue;
+		}
+		if ((res != 0) || (grp_result == NULL)) {
+			error("Could not find configured group %s", group_name);
+			xfree(grp_buffer);
+			return NULL;
+		}
+		break;
 	}
 	my_gid = grp_result->gr_gid;
 
@@ -119,15 +133,32 @@ extern uid_t *get_group_members(char *group_name)
 	uid_cnt = 0;
 #ifdef HAVE_AIX
 	setgrent_r(&fp);
-	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
+	while (1) {
+		res = getgrent_r(&grp, grp_buffer, buflen, &fp);
+		if ((res != 0) && (errno == ERANGE)) {
+			buflen *= 2;
+			xrealloc(grp_buffer, buflen);
+			continue;
+		}
+		if (res != 0)
+			break;
 		grp_result = &grp;
 #elif defined (__APPLE__) || defined (__CYGWIN__)
 	setgrent();
-	while ((grp_result = getgrent()) != NULL) {
+	while (1) {
+		if ((grp_result = getgrent()) == NULL)
+			break;
 #else
 	setgrent();
-	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
-			  &grp_result) == 0 && grp_result != NULL) {
+	while (1) {
+		res = getgrent_r(&grp, grp_buffer, buflen, &grp_result);
+		if ((res != 0) && (errno == ERANGE)) {
+			buflen *= 2;
+			xrealloc(grp_buffer, buflen);
+			continue;
+		}
+		if ((res != 0) || (grp_result == NULL))
+			break;
 #endif
 	        if (grp_result->gr_gid == my_gid) {
 			if (strcmp(grp_result->gr_name, group_name)) {
@@ -182,7 +213,7 @@ extern uid_t *get_group_members(char *group_name)
 #else
 	endpwent();
 #endif
-
+	xfree(grp_buffer);
 	_put_group_cache(group_name, group_uids, j);
 	_log_group_members(group_name, group_uids);
 	return group_uids;

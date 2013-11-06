@@ -5,12 +5,12 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmstepd
 
-INCLUDES = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 slurmstepd_LDADD = 				   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
-	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS) \
+	$(PAM_LIBS) $(UTIL_LIBS) \
 	../common/libslurmd_common.la
 
 slurmstepd_SOURCES = 	        	\

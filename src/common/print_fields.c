@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -38,21 +38,10 @@
 \*****************************************************************************/
 #include "src/common/print_fields.h"
 #include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 
 int print_fields_parsable_print = 0;
 int print_fields_have_header = 1;
-
-static int _sort_char_list(char *name_a, char *name_b)
-{
-	int diff = strcmp(name_a, name_b);
-
-	if (diff < 0)
-		return -1;
-	else if (diff > 0)
-		return 1;
-
-	return 0;
-}
 
 extern void destroy_print_field(void *object)
 {
@@ -77,7 +66,7 @@ extern void print_fields_header(List print_fields_list)
 	field_count = list_count(print_fields_list);
 
 	itr = list_iterator_create(print_fields_list);
-	while((field = list_next(itr))) {
+	while ((field = list_next(itr))) {
 		if (print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && (curr_inx == field_count))
@@ -94,7 +83,7 @@ extern void print_fields_header(List print_fields_list)
 	printf("\n");
 	if (print_fields_parsable_print)
 		return;
-	while((field = list_next(itr))) {
+	while ((field = list_next(itr))) {
 		int abs_len = abs(field->len);
 		printf("%*.*s ", abs_len, abs_len,
 		       "-----------------------------------------------------");
@@ -107,10 +96,7 @@ extern void print_fields_date(print_field_t *field, time_t value, int last)
 {
 	int abs_len = abs(field->len);
 	char temp_char[abs_len+1];
-	time_t now = value;
 
-	if (!now)
-		now = time(NULL);
 	slurm_make_time_str(&value, (char *)temp_char, sizeof(temp_char));
 	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	   && last)
@@ -368,9 +354,9 @@ extern void print_fields_char_list(print_field_t *field, List value, int last)
 		else
 			print_this = xstrdup(" ");
 	} else {
-		list_sort(value, (ListCmpF)_sort_char_list);
+		list_sort(value, (ListCmpF)slurm_sort_char_list_asc);
 		itr = list_iterator_create(value);
-		while((object = list_next(itr))) {
+		while ((object = list_next(itr))) {
 			if (print_this)
 				xstrfmtcat(print_this, ",%s", object);
 			else
@@ -384,7 +370,7 @@ extern void print_fields_char_list(print_field_t *field, List value, int last)
 		printf("%s", print_this);
 	else if (print_fields_parsable_print)
 		printf("%s|", print_this);
-	else {
+	else if (print_this) {
 		if (strlen(print_this) > abs_len)
 			print_this[abs_len-1] = '+';
 

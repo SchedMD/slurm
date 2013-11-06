@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -45,6 +45,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 {
 	xassert(conf != NULL);
 	packstr(conf->hostname, buffer);
+	pack16(conf->cpus, buffer);
 	pack16(conf->boards, buffer);
 	pack16(conf->sockets, buffer);
 	pack16(conf->cores, buffer);
@@ -58,7 +59,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	packstr(conf->logfile, buffer);
 	packstr(conf->task_prolog, buffer);
 	packstr(conf->task_epilog, buffer);
-	pack16(conf->job_acct_gather_freq, buffer);
+	packstr(conf->job_acct_gather_freq, buffer);
 	packstr(conf->job_acct_gather_type, buffer);
 	pack16(conf->propagate_prio, buffer);
 	pack32(conf->debug_flags, buffer);
@@ -77,6 +78,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	uint32_t uint32_tmp;
 
 	safe_unpackstr_xmalloc(&conf->hostname, &uint32_tmp, buffer);
+	safe_unpack16(&conf->cpus, buffer);
 	safe_unpack16(&conf->boards, buffer);
 	safe_unpack16(&conf->sockets, buffer);
 	safe_unpack16(&conf->cores, buffer);
@@ -90,7 +92,8 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	safe_unpackstr_xmalloc(&conf->logfile,     &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->task_prolog, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->task_epilog, &uint32_tmp, buffer);
-	safe_unpack16(&conf->job_acct_gather_freq, buffer);
+	safe_unpackstr_xmalloc(&conf->job_acct_gather_freq, &uint32_tmp,
+			       buffer);
 	safe_unpackstr_xmalloc(&conf->job_acct_gather_type, &uint32_tmp,
 			       buffer);
 	safe_unpack16(&conf->propagate_prio, buffer);
@@ -111,6 +114,8 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 
 unpack_error:
 	error("unpack_error in unpack_slurmd_conf_lite_no_alloc: %m");
+	xfree(conf->job_acct_gather_freq);
+	xfree(conf->job_acct_gather_type);
 	xfree(conf->hostname);
 	xfree(conf->spooldir);
 	xfree(conf->node_name);

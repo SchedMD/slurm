@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -208,10 +208,10 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
 					int *gres_count);
 
-/* Send GRES information to slurmstepd on the specified file descriptor*/
+/* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_plugin_send_stepd(int fd);
 
-/* Receive GRES information from slurmd on the specified file descriptor*/
+/* Receive GRES information from slurmd on the specified file descriptor */
 extern void gres_plugin_recv_stepd(int fd);
 
 /*
@@ -363,6 +363,25 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 					uint16_t protocol_version);
 
 /*
+ * Clear the cpu_bitmap for CPUs which are not usable by this job (i.e. for
+ *	CPUs which are already bound to other jobs or lack GRES)
+ * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_gres_list - node's gres_list built by
+ *                     gres_plugin_node_config_validate()
+ * IN use_total_gres - if set then consider all gres resources as available,
+ *		       and none are commited to running jobs
+ * IN/OUT cpu_bitmap - Identification of available CPUs (NULL if no restriction)
+ * IN cpu_start_bit  - index into cpu_bitmap for this node's first CPU
+ * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU
+ * IN node_name      - name of the node (for logging)
+ */
+extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
+					bool use_total_gres,
+					bitstr_t *cpu_bitmap,
+					int cpu_start_bit, int cpu_end_bit,
+					char *node_name);
+
+/*
  * Determine how many CPUs on the node can be used by this job
  * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
@@ -386,7 +405,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
  * Allocate resource to a job and update node and job gres information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *		gres_plugin_node_config_validate()
+ *		       gres_plugin_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_offset - zero-origin index to the node of interest
  * IN cpu_cnt     - number of CPUs allocated to this job on this node
@@ -440,7 +459,7 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list);
 
 /*
  * Extract from the job record's gres_list the count of allocated resources of
- * 	the named gres gres typee.
+ * 	the named gres type.
  * IN job_gres_list  - job record's gres_list.
  * IN gres_name_type - the name of the gres type to retrieve the associated
  *	value from.
@@ -599,5 +618,46 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
  * RET count of this GRES allocated to this job
  */
 extern uint32_t gres_get_value_by_type(List job_gres_list, char* gres_name);
+
+enum gres_job_data_type {
+	GRES_JOB_DATA_COUNT,	/* data-> uint32_t  */
+	GRES_JOB_DATA_BITMAP,	/* data-> bitstr_t* */
+};
+
+/*
+ * get data from a job's GRES data structure
+ * IN job_gres_list  - job's GRES data structure
+ * IN gres_name - name of a GRES type
+ * IN node_inx - zero-origin index of the node within the job's allocation
+ *	for which data is desired
+ * IN data_type - type of data to get from the job's data
+ * OUT data - pointer to the data from job's GRES data structure
+ *            DO NOT FREE: This is a pointer into the job's data structure
+ * RET - SLURM_SUCCESS or error code
+ */
+extern int gres_get_job_info(List job_gres_list, char *gres_name,
+			     uint32_t node_inx,
+			     enum gres_job_data_type data_type, void *data);
+
+enum gres_step_data_type {
+	GRES_STEP_DATA_COUNT,	/* data-> uint32_t  */
+	GRES_STEP_DATA_BITMAP,	/* data-> bitstr_t* */
+};
+
+/*
+ * get data from a step's GRES data structure
+ * IN job_gres_list  - step's GRES data structure
+ * IN gres_name - name of a GRES type
+ * IN node_inx - zero-origin index of the node within the job's allocation
+ *	for which data is desired. Note this can differ from the step's
+ *	node allocation index.
+ * IN data_type - type of data to get from the step's data
+ * OUT data - pointer to the data from step's GRES data structure
+ *            DO NOT FREE: This is a pointer into the step's data structure
+ * RET - SLURM_SUCCESS or error code
+ */
+extern int gres_get_step_info(List step_gres_list, char *gres_name,
+			      uint32_t node_inx,
+			      enum gres_step_data_type data_type, void *data);
 
 #endif /* !_GRES_H */

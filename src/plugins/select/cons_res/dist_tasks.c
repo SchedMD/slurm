@@ -9,7 +9,7 @@
  *  Written by Martin Perry <martin.perry@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -70,6 +70,8 @@ uint32_t comb_counts[MAX_BOARDS][MAX_BOARDS] =
    {6,15,20,15,6,1,0,0},
    {7,21,35,35,21,7,1,0},
    {8,28,56,70,56,28,8,1}};
+
+static int *sockets_cpu_cnt = NULL;
 
 /* Generate all combinations of k integers from the
  * set of integers 0 to n-1.
@@ -134,8 +136,11 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	uint32_t n, i, tid, maxtasks, l;
 	uint16_t *avail_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
-	if (!job_res || !job_res->cpus) {
-		error("cons_res: _compute_c_b_task_dist given NULL job_ptr");
+	bool log_over_subscribe = true;
+
+	if (!job_res || !job_res->cpus || !job_res->nhosts) {
+		error("cons_res: _compute_c_b_task_dist invalid allocation "
+		      "for job %u", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -146,10 +151,12 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	/* ncpus is already set the number of tasks if overcommit is used */
 	if (!job_ptr->details->overcommit &&
 	    (job_ptr->details->cpus_per_task > 1)) {
-		if (job_ptr->details->ntasks_per_node == 0)
+		if (job_ptr->details->ntasks_per_node == 0) {
 			maxtasks = maxtasks / job_ptr->details->cpus_per_task;
-		else
-			maxtasks = job_ptr->details->ntasks_per_node * job_res->nhosts;
+		} else {
+			maxtasks = job_ptr->details->ntasks_per_node *
+				   job_res->nhosts;
+		}
 	}
 
 	/* Safe guard if the user didn't specified a lower number of
@@ -161,16 +168,20 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	}
 	if (job_ptr->details->cpus_per_task == 0)
 		job_ptr->details->cpus_per_task = 1;
+	if (job_ptr->details->overcommit)
+		log_over_subscribe = false;
 	for (tid = 0, i = job_ptr->details->cpus_per_task ; (tid < maxtasks);
 	     i += job_ptr->details->cpus_per_task ) { /* cycle counter */
 		bool space_remaining = false;
-		if (over_subscribe) {
+		if (over_subscribe && log_over_subscribe) {
 			/* 'over_subscribe' is a relief valve that guards
 			 * against an infinite loop, and it *should* never
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available cpus
 			 */
-			error("cons_res: _compute_c_b_task_dist oversubscribe");
+			error("cons_res: _compute_c_b_task_dist "
+			      "oversubscribe for job %u", job_ptr->job_id);
+			log_over_subscribe = false	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			if ((i <= avail_cpus[n]) || over_subscribe) {
@@ -200,8 +211,11 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	uint32_t n, i, p, tid, maxtasks, l;
 	uint16_t *avail_cpus, plane_size = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
-	if (!job_res || !job_res->cpus) {
-		error("cons_res: _compute_plane_dist given NULL job_res");
+	bool log_over_subscribe = true;
+
+	if (!job_res || !job_res->cpus || !job_res->nhosts) {
+		error("cons_res: _compute_c_b_task_dist invalid allocation "
+		      "for job %u", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -220,16 +234,19 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
-
+	if (job_ptr->details->overcommit)
+		log_over_subscribe = false;
 	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
 		bool space_remaining = false;
-		if (over_subscribe) {
+		if (over_subscribe && log_over_subscribe) {
 			/* 'over_subscribe' is a relief valve that guards
 			 * against an infinite loop, and it *should* never
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available cpus
 			 */
-			error("cons_res: _compute_plane_dist oversubscribe");
+			error("cons_res: _compute_plane_dist oversubscribe "
+			      "for job %u", job_ptr->job_id);
+			log_over_subscribe = false	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			for (p = 0; p < plane_size && (tid < maxtasks); p++) {
@@ -254,6 +271,26 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	}
 	xfree(avail_cpus);
 	return SLURM_SUCCESS;
+}
+
+/* qsort compare function for ascending int list */
+static int _cmp_int_ascend(const void *a, const void *b)
+{
+	return (*(int*)a - *(int*)b);
+}
+
+/* qsort compare function for descending int list */
+static int _cmp_int_descend(const void *a, const void *b)
+{
+	return (*(int*)b - *(int*)a);
+}
+
+
+/* qsort compare function for board combination socket list
+ * NOTE: sockets_cpu_cnt is a global symbol in this module */
+static int _cmp_sock(const void *a, const void *b)
+{
+	return (sockets_cpu_cnt[*(int*)b] -  sockets_cpu_cnt[*(int*)a]);
 }
 
 /* sync up core bitmap with new CPU count using a best-fit approach
@@ -283,7 +320,6 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	int elig_idx, comb_brd_idx, sock_list_idx, comb_min, board_num;
 	int* boards_cpu_cnt;
 	int* sort_brds_cpu_cnt;
-	int* sockets_cpu_cnt;
 	int* board_combs;
 	int* socket_list;
 	int* elig_brd_combs;
@@ -299,27 +335,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	uint16_t req_cpus,best_fit_cpus = 0;
 	uint32_t best_fit_location = 0;
 	uint64_t ncomb_brd;
-	bool sufficient,best_fit_sufficient;
-
-	/* qsort compare function for ascending int list */
-	int _cmp_int_ascend (const void *a, const void *b)
-	{
-		return (*(int*)a - *(int*)b);
-	}
-
-	/* qsort compare function for descending int list */
-	int _cmp_int_descend (const void *a, const void *b)
-	{
-		return (*(int*)b - *(int*)a);
-	}
-
-	/* qsort compare function for board combination socket
-	 * list */
-	int _cmp_sock (const void *a, const void *b)
-	{
-		 return (sockets_cpu_cnt[*(int*)b] -
-				 sockets_cpu_cnt[*(int*)a]);
-	}
+	bool sufficient, best_fit_sufficient;
 
 	if (!job_res)
 		return;
@@ -552,10 +568,12 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			if ( best_fit_cpus == 0 )
 				break;
 
+			j = best_fit_location;
+			if (sock_per_brd)
+				j /= sock_per_brd;
 			debug3("cons_res: best_fit: using node[%u]: "
 			       "board[%u]: socket[%u]: %u cores available",
-			       n, best_fit_location/sock_per_brd,
-			       best_fit_location,
+			       n, j, best_fit_location,
 			       sockets_cpu_cnt[best_fit_location]);
 
 			/* select socket cores from last to first */
@@ -658,8 +676,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	bool *sock_used, *sock_avoid;
 	bool alloc_cores = false, alloc_sockets = false;
 	uint16_t ntasks_per_core = 0xffff, ntasks_per_socket = 0xffff;
-	int error_code = SLURM_SUCCESS, socket_best_fit;
-	uint32_t total_cpus, *cpus_cnt;
+	int error_code = SLURM_SUCCESS;
 
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
 		return error_code;
@@ -726,52 +743,39 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		for (s = 0; s < sockets; s++) {
 			sock_start[s] = c + (s * cps);
 			sock_end[s]   = sock_start[s] + cps;
+			sock_avoid[s] = false;
+			sock_used[s]  = false;
 		}
 		core_cnt = 0;
 		cpus  = job_res->cpus[i];
 
-		/* Pack job onto socket(s) with best fit */
-		socket_best_fit = -1;
-		total_cpus = 0;
-		cpus_cnt = xmalloc(sizeof(uint32_t)* sockets);
-		for (s = 0; s < sockets; s++) {
-			for (j = sock_start[s]; j < sock_end[s]; j++) {
-				if (bit_test(core_map, j))
-					cpus_cnt[s] += vpus;
-			}
-			total_cpus += cpus_cnt[s];
-		}
-		for (s = 0; s < sockets && total_cpus > cpus; s++) {
-			if ((ntasks_per_socket != 0xffff) &&
-			    (cpus_cnt[s] > ntasks_per_socket)) {
-				int x_cpus = cpus_cnt[s] - ntasks_per_socket;
-				x_cpus = MIN(x_cpus, (total_cpus - cpus));
-				cpus_cnt[s] -= x_cpus;
-				total_cpus  -= x_cpus;
-			}
-			if ((cpus_cnt[s] >= cpus) &&
-			    ((socket_best_fit == -1) ||
-			     (cpus_cnt[s] < cpus_cnt[socket_best_fit])))
-				socket_best_fit = s;
-		}
-		if (socket_best_fit != -1) {
-			/* Use one socket with best fit, avoid all others */
+		if (ntasks_per_socket != 0xffff) {
+			int x_cpus;
+			uint32_t total_cpus = 0;
+			uint32_t *cpus_cnt = xmalloc(sizeof(uint32_t)* sockets);
 			for (s = 0; s < sockets; s++) {
-				if (s != socket_best_fit)
-					sock_avoid[s] = true;
+				for (j = sock_start[s]; j < sock_end[s]; j++) {
+					if (bit_test(core_map, j))
+						cpus_cnt[s] += vpus;
+				}
+				total_cpus += cpus_cnt[s];
 			}
-			total_cpus = cpus;
-		} else if (ntasks_per_socket != 0xffff) {
-			/* Avoid sockets that can't start ntasks */
+			for (s = 0; s < sockets && total_cpus > cpus; s++) {
+				if (cpus_cnt[s] > ntasks_per_socket) {
+					x_cpus = cpus_cnt[s] -ntasks_per_socket;
+					cpus_cnt[s] = ntasks_per_socket;
+					total_cpus -= x_cpus;
+				}
+			}
 			for (s = 0; s < sockets && total_cpus > cpus; s++) {
 				if ((cpus_cnt[s] <= ntasks_per_socket) &&
-				    ((total_cpus - cpus_cnt[s]) >= cpus)) {
+				    (total_cpus - cpus_cnt[s] >= cpus)) {
 					sock_avoid[s] = true;
 					total_cpus -= cpus_cnt[s];
 				}
 			}
+			xfree(cpus_cnt);
 		}
-		xfree(cpus_cnt);
 
 		while (cpus > 0) {
 			uint16_t prev_cpus = cpus;

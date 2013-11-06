@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -73,6 +73,7 @@
 #include "src/common/pack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
@@ -238,14 +239,23 @@ int main(int argc, char *argv[])
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
-	pthread_t assoc_cache_thread;
+	pthread_t assoc_cache_thread = (pthread_t) 0;
 	slurm_trigger_callbacks_t callbacks;
 	char *dir_name;
+
+	/*
+	 * Make sure we have no extra open files which
+	 * would be propagated to spawned tasks.
+	 */
+	cnt = sysconf(_SC_OPEN_MAX);
+	for (i = 3; i < cnt; i++)
+		close(i);
 
 	/*
 	 * Establish initial configuration
 	 */
 	_init_config();
+	slurm_conf_init(NULL);
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	sched_log_init(argv[0], sched_log_opts, LOG_DAEMON, NULL);
 	slurmctld_pid = getpid();
@@ -257,10 +267,14 @@ int main(int argc, char *argv[])
 	_update_nice();
 	_kill_old_slurmctld();
 
+	for (i = 0; i < 3; i++)
+		fd_set_close_on_exec(i);
+
 	if (daemonize) {
 		slurmctld_config.daemonize = 1;
 		if (daemon(1, 1))
 			error("daemon(): %m");
+		log_set_timefmt(slurmctld_conf.log_fmt);
 		log_alter(log_opts, LOG_DAEMON,
 			  slurmctld_conf.slurmctld_logfile);
 		sched_log_alter(sched_log_opts, LOG_DAEMON,
@@ -407,8 +421,8 @@ int main(int argc, char *argv[])
 		slurm_attr_destroy(&thread_attr);
 	}
 
-	info("slurmctld version %s started on cluster %s",
-	     SLURM_VERSION_STRING, slurmctld_cluster_name);
+	info("%s version %s started on cluster %s",
+	     slurm_prog_name, SLURM_VERSION_STRING, slurmctld_cluster_name);
 
 	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
@@ -439,6 +453,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize preempt plugin" );
 	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
+	if (acct_gather_conf_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize acct_gather plugins" );
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
 	if (jobacct_gather_init() != SLURM_SUCCESS )
@@ -447,6 +463,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize job_submit plugin");
 	if (ext_sensors_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize ext_sensors plugin");
+	if (switch_g_slurmctld_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize switch plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -459,13 +477,13 @@ int main(int argc, char *argv[])
 			    slurmctld_conf.backup_controller) == 0)) {
 			slurm_sched_fini();	/* make sure shutdown */
 			primary = 0;
-			run_backup();
+			run_backup(&callbacks);
 		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			trigger_primary_ctld_res_ctrl();
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
-			if (switch_restore(slurmctld_conf.state_save_location,
+			if (switch_g_restore(slurmctld_conf.state_save_location,
 					   recover ? true : false))
 				fatal(" failed to initialize switch plugin" );
 			if ((error_code = read_slurm_conf(recover, false))) {
@@ -576,7 +594,7 @@ int main(int argc, char *argv[])
 
 		/* termination of controller */
 		dir_name = slurm_get_state_save_location();
-		switch_save(dir_name);
+		switch_g_save(dir_name);
 		xfree(dir_name);
 		slurm_priority_fini();
 		slurmctld_plugstack_fini();
@@ -584,6 +602,9 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
+		slurmctld_config.thread_id_sig  = (pthread_t) 0;
+		slurmctld_config.thread_id_rpc  = (pthread_t) 0;
+		slurmctld_config.thread_id_save = (pthread_t) 0;
 
 		if (running_cache) {
 			/* break out and end the association cache
@@ -659,11 +680,13 @@ int main(int argc, char *argv[])
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
+	ext_sensors_fini();
 	gres_plugin_fini();
 	job_submit_plugin_fini();
 	slurm_preempt_fini();
 	g_slurm_jobcomp_fini();
 	jobacct_gather_fini();
+	acct_gather_conf_destroy();
 	slurm_select_fini();
 	slurm_topo_fini();
 	checkpoint_fini();
@@ -785,12 +808,12 @@ static int _reconfigure_slurm(void)
 		_update_cred_key();
 		set_slurmctld_state_loc();
 	}
-	slurm_sched_partition_change();	/* notify sched plugin */
+	slurm_sched_g_partition_change();	/* notify sched plugin */
 	unlock_slurmctld(config_write_lock);
 	assoc_mgr_set_missing_uids();
 	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();
-	priority_g_reconfig();          /* notify priority plugin too */
+	priority_g_reconfig(true);	/* notify priority plugin too */
 	schedule(0);			/* has its own locks */
 	save_all_state();
 
@@ -906,13 +929,20 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	/* initialize ports for RPCs */
 	lock_slurmctld(config_read_lock);
 	nports = slurmctld_conf.slurmctld_port_count;
+	if (nports == 0) {
+		fatal("slurmctld port count is zero");
+		return NULL;	/* Fix CLANG false positive */
+	}
 	sockfd = xmalloc(sizeof(slurm_fd_t) * nports);
 	for (i=0; i<nports; i++) {
 		sockfd[i] = slurm_init_msg_engine_addrname_port(
 					node_addr,
 					slurmctld_conf.slurmctld_port+i);
-		if (sockfd[i] == SLURM_SOCKET_ERROR)
+		if (sockfd[i] == SLURM_SOCKET_ERROR) {
 			fatal("slurm_init_msg_engine_addrname_port error %m");
+			return NULL;	/* Fix CLANG false positive */
+		}
+		fd_set_close_on_exec(sockfd[i]);
 		slurm_get_stream_addr(sockfd[i], &srv_addr);
 		slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));
 		debug2("slurmctld listening on %s:%d", ip, ntohs(port));
@@ -964,6 +994,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			_free_server_thread();
 			continue;
 		}
+		fd_set_close_on_exec(newsockfd);
 		conn_arg = xmalloc(sizeof(connection_arg_t));
 		conn_arg->newsockfd = newsockfd;
 		if (slurmctld_config.shutdown_time)
@@ -1093,36 +1124,16 @@ static void _free_server_thread(void)
 
 static int _accounting_cluster_ready()
 {
-	struct node_record *node_ptr;
-	int i;
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
-	uint32_t cpus = 0;
 	bitstr_t *total_node_bitmap = NULL;
 	char *cluster_nodes = NULL;
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	lock_slurmctld(node_read_lock);
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (node_ptr->name == '\0')
-			continue;
-#ifdef SLURM_NODE_ACCT_REGISTER
-		if (slurmctld_conf.fast_schedule)
-			cpus += node_ptr->config_ptr->cpus;
-		else
-			cpus += node_ptr->cpus;
-#else
-		cpus += node_ptr->config_ptr->cpus;
-#endif
-	}
 
-	/* Since cluster_cpus is used else where we need to keep a
-	   local var here to avoid race conditions on cluster_cpus
-	   not being correct.
-	*/
-	cluster_cpus = cpus;
+	set_cluster_cpus();
 
 	/* Now get the names of all the nodes on the cluster at this
 	   time and send it also.
@@ -1272,10 +1283,13 @@ static void _queue_reboot_msg(void)
 	want_nodes_reboot = false;
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (!IS_NODE_MAINT(node_ptr) || /* do it only if node */
-		    is_node_in_maint_reservation(i)) /*isn't in reservation */
+		if (!IS_NODE_MAINT(node_ptr))
 			continue;
-		want_nodes_reboot = true; /* mark it for the next cycle */
+		if (is_node_in_maint_reservation(i)) {
+			/* defer if node isn't in reservation */
+			want_nodes_reboot = true;
+			continue;
+		}
 		if (IS_NODE_IDLE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_POWER_UP(node_ptr)) /* only active idle nodes */
 			want_reboot = true;
@@ -1284,8 +1298,10 @@ static void _queue_reboot_msg(void)
 			want_reboot = true; /* system just restarted */
 		else
 			want_reboot = false;
-		if (!want_reboot)
+		if (!want_reboot) {
+			want_nodes_reboot = true;	/* defer reboot */
 			continue;
+		}
 		if (reboot_agent_args == NULL) {
 			reboot_agent_args = xmalloc(sizeof(agent_arg_t));
 			reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
@@ -1337,6 +1353,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_uid_update;
 	static time_t last_reboot_msg_time;
 	static bool ping_msg_sent = false;
+	static bool run_job_scheduler = false;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int group_time, group_force;
@@ -1435,7 +1452,8 @@ static void *_slurmctld_background(void *no_data)
 			now = time(NULL);
 			last_resv_time = now;
 			lock_slurmctld(node_write_lock);
-			set_node_maint_mode(false);
+			if (set_node_maint_mode(false) > 0)
+				run_job_scheduler = true;
 			unlock_slurmctld(node_write_lock);
 		}
 
@@ -1557,9 +1575,11 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_write_lock);
 		}
 
-		if (difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) {
+		if ((difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) ||
+		    run_job_scheduler) {
 			now = time(NULL);
 			last_sched_time = now;
+			run_job_scheduler = false;
 			if (schedule(INFINITE))
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();
@@ -1596,7 +1616,7 @@ static void *_slurmctld_background(void *no_data)
 			last_node_acct = now;
 			_accounting_cluster_ready();
 		}
- 
+
 
 		if (last_proc_req_start == 0) {
 			/* Stats will reset at midnight (aprox).
@@ -1683,6 +1703,35 @@ extern void send_all_to_accounting(time_t event_time)
 	send_jobs_to_accounting();
 	send_nodes_to_accounting(event_time);
 	send_resvs_to_accounting();
+}
+
+/* A slurmctld lock needs to at least have a node read lock set before
+ * this is called */
+extern void set_cluster_cpus(void)
+{
+	uint32_t cpus = 0;
+	struct node_record *node_ptr;
+	int i;
+
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0')
+			continue;
+#ifdef SLURM_NODE_ACCT_REGISTER
+		if (slurmctld_conf.fast_schedule)
+			cpus += node_ptr->config_ptr->cpus;
+		else
+			cpus += node_ptr->cpus;
+#else
+		cpus += node_ptr->config_ptr->cpus;
+#endif
+	}
+
+	/* Since cluster_cpus is used else where we need to keep a
+	   local var here to avoid race conditions on cluster_cpus
+	   not being correct.
+	*/
+	cluster_cpus = cpus;
 }
 
 /*
@@ -1941,7 +1990,6 @@ void update_logging(void)
 	int rc;
 	uid_t slurm_user_id  = slurmctld_conf.slurm_user_id;
 	gid_t slurm_user_gid = gid_from_uid(slurm_user_id);
-	char *log_fname = NULL;
 
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
@@ -1961,13 +2009,15 @@ void update_logging(void)
 
 	if (daemonize) {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (slurmctld_conf.slurmctld_logfile) {
+		if (slurmctld_conf.slurmctld_logfile)
 			log_opts.syslog_level = LOG_LEVEL_FATAL;
-			log_fname = slurmctld_conf.slurmctld_logfile;
-		}
 	} else
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
-	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, log_fname);
+
+	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
+		  slurmctld_conf.slurmctld_logfile);
+
+	log_set_timefmt(slurmctld_conf.log_fmt);
 
 	/*
 	 * SchedLogLevel restore
@@ -2042,10 +2092,9 @@ static void _init_pidfile(void)
 		error("SlurmctldPid == SlurmdPid, use different names");
 
 	/* Don't close the fd returned here since we need to keep the
-	   fd open to maintain the write lock.
-	*/
-	create_pidfile(slurmctld_conf.slurmctld_pidfile,
-		       slurmctld_conf.slurm_user_id);
+	 * fd open to maintain the write lock */
+	(void) create_pidfile(slurmctld_conf.slurmctld_pidfile,
+			      slurmctld_conf.slurm_user_id);
 }
 
 /*

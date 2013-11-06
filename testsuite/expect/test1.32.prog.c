@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -74,7 +74,7 @@ main (int argc, char **argv)
 	printf("WAITING\n");
 	fflush(stdout);
 
-	while (!sigusr1_cnt || !sigusr2_cnt) {
+	while ((sigusr1_cnt + sigusr2_cnt) < 2) {
 		sleep(1);
 	}
 	printf("FINI: sig1:%d sig2:%d\n", sigusr1_cnt, sigusr2_cnt);

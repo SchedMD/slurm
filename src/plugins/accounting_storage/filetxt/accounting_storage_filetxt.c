@@ -9,7 +9,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -39,7 +39,7 @@
 \*****************************************************************************/
 
 #include <strings.h>
-#include "src/common/node_select.h"
+#include "src/common/slurm_xlator.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "filetxt_jobacct_process.h"
 
@@ -224,7 +224,7 @@ extern int init ( void )
 			fclose(LOGFILE);
 
 		if (*log_file != '/')
-			fatal("JobAcctLogfile must specify an "
+			fatal("AccountingStorageLoc must specify an "
 			      "absolute pathname");
 		if (stat(log_file, &statbuf)==0)/* preserve current file mode */
 			prot = statbuf.st_mode;

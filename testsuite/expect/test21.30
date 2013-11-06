@@ -11,7 +11,7 @@
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
-# For details, see <http://www.schedmd.com/slurmdocs/>.
+# For details, see <http://slurm.schedmd.com/>.
 # Please also read the included file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
@@ -42,9 +42,6 @@ source ./inc21.30.8
 set test_id	"21.30"
 set exit_code	0
 set acct        test_acct
-set job_id1     ""
-set job_id2     ""
-set job_id3     ""
 set user_name   ""
 set qosname     name
 set qostest     [format "%s %s" $test_id "qosTest"]
@@ -88,8 +85,8 @@ proc check_state { job } {
 	}
 
 	if {$state_match != 1} {
-		send_user "\nFAILURE job is running when it should be pending\n"
-		exit 1
+		send_user "\nFAILURE job should be pending, but is not\n"
+		set exit_code 1
 	}
 
 }
@@ -160,9 +157,26 @@ proc endit { } {
 
 	if {$exit_code == 0} {
 		print_success $test_id
+	} else {
+		send_user "\nFAILURE: test $test_id\n"
 	}
 
 	exit $exit_code
+}
+
+#
+# Check accounting configuration and terminate if limits not enforced.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+} elseif { [test_enforce_limits] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
+	exit 0
+}
+if { [test_limits_enforced] == 0 } {
+	send_user "\nWARNING: This test can't be run without enforcing limits\n"
+	exit 0
 }
 
 #gets user
@@ -235,7 +249,7 @@ expect {
 
 mod_qos $grn_num -1 -1 -1 -1 -1 -1 -1
 
-sleep 5
+sleep 1
 #test GrpNode limit
 inc21_30_1
 if {$exit_code != 0} {
@@ -244,46 +258,67 @@ if {$exit_code != 0} {
 
 mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1
 
-sleep 5
+sleep 1
 #test GrpCpus
 inc21_30_2
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 -1 $grjobs_num -1 -1 -1 -1 -1
 
-sleep 5
+sleep 1
 # test GrpJob limits
 inc21_30_3
+if {$exit_code != 0} {
+	endit
+}
 
 
 mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1
 
-sleep 5
+sleep 1
 # test GrpSubmit
 inc21_30_4
+if {$exit_code != 0} {
+	endit
+}
 
 
 mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1
 
-sleep 5
+sleep 1
 #test MaxCpus limits
 inc21_30_5
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 -1 -1 -1 -1 $maxnode_num -1 -1
 
-sleep 5
+sleep 1
 #test MaxNode limit
 inc21_30_6
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 -1 -1 -1 -1 -1 $maxjobs_num -1
 
-sleep 5
+sleep 1
 #test MaxJobs limit
 inc21_30_7
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 -1 -1 -1 -1 -1 -1 $maxjobsub_num
 
-sleep 5
+sleep 1
 #test MaxJobsSubmits limit
 inc21_30_8
+if {$exit_code != 0} {
+	endit
+}
 
 endit

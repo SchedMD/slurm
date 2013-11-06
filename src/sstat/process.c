@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -95,4 +95,16 @@ void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
 	else
 		dest->consumed_energy += from->consumed_energy;
 	dest->act_cpufreq += from->act_cpufreq;
+	if (dest->disk_read_max < from->disk_read_max) {
+		dest->disk_read_max = from->disk_read_max;
+		dest->disk_read_max_nodeid = from->disk_read_max_nodeid;
+		dest->disk_read_max_taskid = from->disk_read_max_taskid;
+	}
+	dest->disk_read_ave += from->disk_read_ave;
+	if (dest->disk_write_max < from->disk_write_max) {
+		dest->disk_write_max = from->disk_write_max;
+		dest->disk_write_max_nodeid = from->disk_write_max_nodeid;
+		dest->disk_write_max_taskid = from->disk_write_max_taskid;
+	}
+	dest->disk_write_ave += from->disk_write_ave;
 }

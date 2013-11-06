@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -77,6 +77,7 @@ typedef struct {
 	uint16_t quarter_cnode_cnt;
 	uint16_t quarter_ionode_cnt;
 	List ramdisk_list;
+	bitstr_t *reboot_qos_bitmap;
 	uint32_t slurm_debug_flags;
 	uint32_t slurm_debug_level;
 	char *slurm_node_prefix;

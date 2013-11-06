@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -268,8 +268,7 @@ extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc);
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
 extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond);
-extern int sort_coord_list(slurmdb_coord_rec_t *coord_a,
-			   slurmdb_coord_rec_t *coord_b);
+extern int sort_coord_list(void *, void *);
 extern List sacctmgr_process_format_list(List format_list);
 
 /* you need to free the objects returned from these functions */

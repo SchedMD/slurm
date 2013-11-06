@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -59,10 +59,9 @@
 #include "src/common/slurm_accounting_storage.h"
 
 /*
- * SLURMDBD_VERSION is the version of the slurmdbd protocol currently
- *	being used (i.e. this code). Increment this value whenever an
- *	RPC is modified. When modifing an existing RPC copy the old
- *	version and the create a new pack/unpack for the new rpc_version.
+ * SLURMDBD_VERSION in 13.12 this was changed to be the same as
+ * SLURM_PROTOCOL_VERSION in 14.12 we can remove all instances of
+ * SLURMDBD_*VERSION* SLURMDBD_VERSION was already replaced.
  *
  * SLURMDBD_VERSION_MIN is the minimum protocol version which slurmdbd
  *	will accept. Messages being sent to the slurmdbd from commands
@@ -74,14 +73,11 @@
  *
  * The slurmdbd should be at least as current as any Slurm cluster
  *	communicating with it (e.g. it will not accept messages with a
- *	version higher than SLURMDBD_VERSION).
+ *	version higher than SLURM_VERSION).
  */
-#define SLURMDBD_VERSION       12
-#define SLURMDBD_2_6_VERSION   12 /* 2.6 */
-#define SLURMDBD_2_5_VERSION   11 /* 2.5 */
-#define SLURMDBD_2_4_VERSION   10 /* 2.4 */
-#define SLURMDBD_2_3_VERSION	9 /* 2.3 */
-#define SLURMDBD_VERSION_MIN	9
+#define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
+#define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
+#define SLURMDBD_VERSION_MIN   11
 
 /* SLURM DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
@@ -278,6 +274,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t priority;	/* job priority */
 	uint32_t qos_id;        /* qos job is running with */
 	uint32_t req_cpus;	/* count of req processors */
+	uint32_t req_mem;       /* requested minimum memory */
 	uint32_t resv_id;	/* reservation id */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time */
@@ -363,7 +360,6 @@ typedef struct dbd_step_comp_msg {
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
 	uint32_t step_id;	/* step ID */
-	uint32_t total_cpus;	/* count of allocated processors */
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_comp_msg_t;
 
@@ -379,6 +375,7 @@ typedef struct dbd_step_start_msg {
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
+	uint32_t req_cpufreq;   /* requested CPU frequency */
 	uint32_t step_id;	/* step ID */
 	uint16_t task_dist;     /* layout method of step */
 	uint32_t total_cpus;	/* count of allocated processors */

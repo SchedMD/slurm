@@ -111,7 +111,8 @@ AC_DEFUN([X_AC_SLURM_PROGRAM_INVOCATION_NAME],
 [
   AC_MSG_CHECKING([for program_invocation_name])
 
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([[extern char *program_invocation_name;]], [[char *p; p = program_invocation_name; printf("%s\n", p);]])],[got_program_invocation_name=yes],[
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>
+extern char *program_invocation_name;]], [[char *p; p = program_invocation_name; printf("%s\n", p);]])],[got_program_invocation_name=yes],[
   ])
 
   AC_MSG_RESULT(${got_program_invocation_name=no})
@@ -181,7 +182,7 @@ done
 SLURM_API_MAJOR=`expr $SLURM_API_CURRENT - $SLURM_API_AGE`
 SLURM_API_VERSION=`printf "0x%02x%02x%02x" $SLURM_API_MAJOR $SLURM_API_AGE $SLURM_API_REVISION`
 
-AC_DEFINE_UNQUOTED(SLURM_API_VERSION, $SLURM_API_VERSION, [Define the API's version])
+AC_DEFINE_UNQUOTED(SLURM_API_VERSION,  $SLURM_API_VERSION,  [Define the API's version])
 AC_DEFINE_UNQUOTED(SLURM_API_CURRENT,  $SLURM_API_CURRENT,  [API current version])
 AC_DEFINE_UNQUOTED(SLURM_API_MAJOR,    $SLURM_API_MAJOR,    [API current major])
 AC_DEFINE_UNQUOTED(SLURM_API_AGE,      $SLURM_API_AGE,      [API current age])

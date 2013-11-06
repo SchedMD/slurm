@@ -6,7 +6,7 @@
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -93,7 +93,7 @@ _remove_tree_sock(void)
 }
 
 static int
-_setup_stepd_job_info(const slurmd_job_t *job, char ***env)
+_setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 {
 	char *p;
 	int i;
@@ -147,7 +147,7 @@ _setup_stepd_job_info(const slurmd_job_t *job, char ***env)
 	/*
 	 * how to get the mapping info from stepd directly?
 	 * there is the task distribution info in the launch_tasks_request_msg_t,
-	 * but it is not stored in the slurmd_job_t.
+	 * but it is not stored in the stepd_step_rec_t.
 	 */
 	p = getenvp(*env, PMI2_PROC_MAPPING_ENV);
 	if (!p) {
@@ -167,7 +167,7 @@ _setup_stepd_job_info(const slurmd_job_t *job, char ***env)
 }
 
 static int
-_setup_stepd_tree_info(const slurmd_job_t *job, char ***env)
+_setup_stepd_tree_info(const stepd_step_rec_t *job, char ***env)
 {
 	hostlist_t hl;
 	char srun_host[64];
@@ -240,7 +240,7 @@ _setup_stepd_tree_info(const slurmd_job_t *job, char ***env)
 	/* init kvs seq to 0. TODO: reduce array size */
 	tree_info.children_kvs_seq = xmalloc(sizeof(uint32_t) *
 					     job_info.nnodes);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -248,7 +248,7 @@ _setup_stepd_tree_info(const slurmd_job_t *job, char ***env)
  * setup sockets for slurmstepd
  */
 static int
-_setup_stepd_sockets(const slurmd_job_t *job, char ***env)
+_setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 {
 	struct sockaddr_un sa;
 	int i;
@@ -290,7 +290,7 @@ _setup_stepd_sockets(const slurmd_job_t *job, char ***env)
 }
 
 static int
-_setup_stepd_kvs(const slurmd_job_t *job, char ***env)
+_setup_stepd_kvs(const stepd_step_rec_t *job, char ***env)
 {
 	int rc = SLURM_SUCCESS, i = 0, pp_cnt = 0;
 	char *p, env_key[32], *ppkey, *ppval;
@@ -333,7 +333,7 @@ _setup_stepd_kvs(const slurmd_job_t *job, char ***env)
 }
 
 extern int
-pmi2_setup_stepd(const slurmd_job_t *job, char ***env)
+pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
 {
 	int rc;
 
@@ -605,7 +605,7 @@ _setup_srun_tree_info(const mpi_plugin_client_info_t *job)
 	/* init kvs seq to 0. TODO: reduce array size */
 	tree_info.children_kvs_seq = xmalloc(sizeof(uint32_t) *
 					     job_info.nnodes);
-	
+
 	return SLURM_SUCCESS;
 }
 

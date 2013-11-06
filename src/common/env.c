@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -62,6 +62,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
+#include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
@@ -138,7 +139,7 @@ static int _setup_particulars(uint32_t cluster_flags,
 			error("Can't set MPIRUN_PARTITION "
 			      "environment variable");
 		}
-	} else if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+	} else if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
 		uint32_t resv_id = 0;
 
 		select_g_select_jobinfo_get(select_jobinfo,
@@ -225,48 +226,6 @@ static bool _discard_env(char *name, char *value)
 	return false;
 }
 
-static void _set_distribution(task_dist_states_t distribution,
-			      char **dist, char **lllp_dist)
-{
-	if (((int)distribution >= 0)
-	    &&  (distribution != SLURM_DIST_UNKNOWN)) {
-		switch(distribution) {
-		case SLURM_DIST_CYCLIC:
-			*dist      = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK:
-			*dist      = "block";
-			break;
-		case SLURM_DIST_PLANE:
-			*dist      = "plane";
-			*lllp_dist = "plane";
-			break;
-		case SLURM_DIST_ARBITRARY:
-			*dist      = "arbitrary";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC:
-			*dist      = "cyclic";
-			*lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK:
-			*dist      = "cyclic";
-			*lllp_dist = "block";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC:
-			*dist      = "block";
-			*lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK:
-			*dist      = "block";
-			*lllp_dist = "block";
-			break;
-		default:
-			error("unknown dist, type %d", distribution);
-			break;
-		}
-	}
-}
-
 /*
  * Return the number of elements in the environment `env'
  */
@@ -321,6 +280,8 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		else
 			rc = 1;
 	} else {
+		/* XXX Space is allocated on the heap and will never
+		 * be reclaimed. */
 		xstrfmtcat(str, "%s=%s", name, value);
 		rc = putenv(str);
 	}
@@ -382,12 +343,6 @@ int setup_env(env_t *env, bool preserve_env)
 	if (env == NULL)
 		return SLURM_ERROR;
 
-	if (env->task_pid
-	  && setenvf(&env->env, "SLURM_TASK_PID", "%d", (int)env->task_pid)) {
-		error("Unable to set SLURM_TASK_PID environment variable");
-		 rc = SLURM_FAILURE;
-	}
-
 	if (!preserve_env && env->ntasks) {
 		if (setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
 			error("Unable to set SLURM_NTASKS "
@@ -436,7 +391,7 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	_set_distribution(env->distribution, &dist, &lllp_dist);
+	set_distribution(env->distribution, &dist, &lllp_dist);
 	if (dist)
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
@@ -490,6 +445,8 @@ int setup_env(env_t *env, bool preserve_env)
 			xstrcat(str_bind_type, "sockets,");
 		} else if (env->cpu_bind_type & CPU_BIND_TO_LDOMS) {
 			xstrcat(str_bind_type, "ldoms,");
+		} else if (env->cpu_bind_type & CPU_BIND_TO_BOARDS) {
+			xstrcat(str_bind_type, "boards,");
 		}
 		if (env->cpu_bind_type & CPU_BIND_NONE) {
 			xstrcat(str_bind_type, "none");
@@ -662,7 +619,7 @@ int setup_env(env_t *env, bool preserve_env)
 		char *str;
 
 		if (env->cpu_freq & CPU_FREQ_RANGE_FLAG) {
-			switch (env->cpu_freq) 
+			switch (env->cpu_freq)
 			{
 			case CPU_FREQ_LOW :
 				str="low";
@@ -716,29 +673,44 @@ int setup_env(env_t *env, bool preserve_env)
 			error("Unable to set SLURM_JOB_ID environment");
 			rc = SLURM_FAILURE;
 		}
-		/* and for backwards compatability... */
+		/* and for backwards compatibility... */
 		if (setenvf(&env->env, "SLURM_JOBID", "%d", env->jobid)) {
 			error("Unable to set SLURM_JOBID environment");
 			rc = SLURM_FAILURE;
 		}
 	}
 
-	if (env->nodeid >= 0
-	    && setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
-		error("Unable to set SLURM_NODEID environment");
-		rc = SLURM_FAILURE;
-	}
+	if (!(cluster_flags & CLUSTER_FLAG_BG)
+	    && !(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
+		/* These aren't relavant to a system not using Slurm
+		   as the launcher.  Since there isn't a flag for that
+		   we check for the flags we do have.
+		*/
+		if (env->task_pid
+		    && setenvf(&env->env, "SLURM_TASK_PID", "%d",
+			       (int)env->task_pid)) {
+			error("Unable to set SLURM_TASK_PID environment "
+			      "variable");
+			rc = SLURM_FAILURE;
+		}
+		if (env->nodeid >= 0
+		    && setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
+			error("Unable to set SLURM_NODEID environment");
+			rc = SLURM_FAILURE;
+		}
 
-	if (env->procid >= 0
-	    && setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
-		error("Unable to set SLURM_PROCID environment");
-		rc = SLURM_FAILURE;
-	}
+		if (env->procid >= 0
+		    && setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
+			error("Unable to set SLURM_PROCID environment");
+			rc = SLURM_FAILURE;
+		}
 
-	if (env->localid >= 0
-	    && setenvf(&env->env, "SLURM_LOCALID", "%d", env->localid)) {
-		error("Unable to set SLURM_LOCALID environment");
-		rc = SLURM_FAILURE;
+		if (env->localid >= 0
+		    && setenvf(&env->env, "SLURM_LOCALID", "%d",
+			       env->localid)) {
+			error("Unable to set SLURM_LOCALID environment");
+			rc = SLURM_FAILURE;
+		}
 	}
 
 	if (env->stepid >= 0) {
@@ -756,6 +728,12 @@ int setup_env(env_t *env, bool preserve_env)
 	if (!preserve_env && env->nhosts
 	    && setenvf(&env->env, "SLURM_NNODES", "%d", env->nhosts)) {
 		error("Unable to set SLURM_NNODES environment var");
+		rc = SLURM_FAILURE;
+	}
+
+	if (env->nhosts
+	    && setenvf(&env->env, "SLURM_JOB_NUM_NODES", "%d", env->nhosts)) {
+		error("Unable to set SLURM_JOB_NUM_NODES environment var");
 		rc = SLURM_FAILURE;
 	}
 
@@ -989,7 +967,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
 				alloc->alias_list);
 
-	_set_distribution(desc->task_dist, &dist, &lllp_dist);
+	set_distribution(desc->task_dist, &dist, &lllp_dist);
 	if (dist)
 		env_array_overwrite_fmt(dest, "SLURM_DISTRIBUTION", "%s",
 					dist);
@@ -1012,13 +990,13 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		uint32_t tmp_mem = alloc->pn_min_memory & (~MEM_PER_CPU);
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		env_array_overwrite_fmt(dest, "APRUN_DEFAULT_MEMORY", "%u",
 					tmp_mem);
 #endif
 	} else if (alloc->pn_min_memory) {
 		uint32_t tmp_mem = alloc->pn_min_memory;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		uint32_t i, max_cpus_per_node = 1;
 		for (i = 0; i < alloc->num_cpu_groups; i++) {
 			if ((i == 0) ||
@@ -1139,7 +1117,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
 					"%u", num_nodes);
 	}
-	if (batch->array_task_id != (uint16_t) NO_VAL) {
+	if (batch->array_task_id != NO_VAL) {
 		env_array_overwrite_fmt(dest, "SLURM_ARRAY_JOB_ID", "%u",
 					batch->array_job_id);
 		env_array_overwrite_fmt(dest, "SLURM_ARRAY_TASK_ID", "%u",
@@ -1207,13 +1185,13 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		uint32_t tmp_mem = batch->pn_min_memory & (~MEM_PER_CPU);
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		env_array_overwrite_fmt(dest, "CRAY_AUTO_APRUN_OPTIONS",
 					"\"-m%u\"", tmp_mem);
 #endif
 	} else if (batch->pn_min_memory) {
 		uint32_t tmp_mem = batch->pn_min_memory;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		uint32_t i, max_cpus_per_node = 1;
 		for (i = 0; i < batch->num_cpu_groups; i++) {
 			if ((i == 0) ||
@@ -1224,7 +1202,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 #endif
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_NODE", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		tmp_mem /= max_cpus_per_node;
 		env_array_overwrite_fmt(dest, "CRAY_AUTO_APRUN_OPTIONS",
 					"\"-m%u\"", tmp_mem);
@@ -1844,7 +1822,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	struct stat buf;
 
 	if (geteuid() != (uid_t)0) {
-		fatal("WARNING: you must be root to use --get-user-env");
+		error("SlurmdUser must be root to use --get-user-env");
 		return NULL;
 	}
 

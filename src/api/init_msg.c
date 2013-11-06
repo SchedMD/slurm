@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -58,10 +58,10 @@
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
-	job_desc_msg->acctg_freq	= (uint16_t) NO_VAL;
 	job_desc_msg->alloc_sid		= NO_VAL;
 	job_desc_msg->conn_type[0]	= (uint16_t) NO_VAL;
 	job_desc_msg->contiguous	= (uint16_t) NO_VAL;
+	job_desc_msg->core_spec		= (uint16_t) NO_VAL;
 	job_desc_msg->cores_per_socket	= (uint16_t) NO_VAL;
 	job_desc_msg->cpu_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
@@ -124,6 +124,7 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->default_time   = (uint32_t) NO_VAL;
 	update_part_msg->def_mem_per_cpu = (uint32_t) NO_VAL;
 	update_part_msg->grace_time     = (uint32_t) NO_VAL;
+	update_part_msg->max_cpus_per_node = NO_VAL;
 	update_part_msg->max_mem_per_cpu = (uint32_t) NO_VAL;
 	update_part_msg->max_nodes 	= NO_VAL;
 	update_part_msg->max_share 	= (uint16_t) NO_VAL;

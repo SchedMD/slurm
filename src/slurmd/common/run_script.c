@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -54,11 +54,13 @@
 #include <string.h>
 #include <glob.h>
 
+#include "slurm/slurm_errno.h"
+#include "src/common/list.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/xassert.h"
-#include "src/common/list.h"
 
+#include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/run_script.h"
 
 /*
@@ -106,15 +108,16 @@ int waitpid_timeout (const char *name, pid_t pid, int *pstatus, int timeout)
  * Run a prolog or epilog script (does NOT drop privileges)
  * name IN: class of program (prolog, epilog, etc.),
  * path IN: pathname of program to run
- * jobid IN: info on associated job
+ * job_id IN: info on associated job
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
  * env IN: environment variables to use on exec, sets minimal environment
  *	if NULL
+ * uid IN: user ID of job owner
  * RET 0 on success, -1 on failure.
  */
 static int
-run_one_script(const char *name, const char *path, uint32_t jobid,
-	   int max_wait, char **env)
+_run_one_script(const char *name, const char *path, uint32_t job_id,
+		int max_wait, char **env, uid_t uid)
 {
 	int status;
 	pid_t cpid;
@@ -123,9 +126,9 @@ run_one_script(const char *name, const char *path, uint32_t jobid,
 	if (path == NULL || path[0] == '\0')
 		return 0;
 
-	if (jobid) {
+	if (job_id) {
 		debug("[job %u] attempting to run %s [%s]",
-			jobid, name, path);
+			job_id, name, path);
 	} else
 		debug("attempting to run %s [%s]", name, path);
 
@@ -140,6 +143,16 @@ run_one_script(const char *name, const char *path, uint32_t jobid,
 	}
 	if (cpid == 0) {
 		char *argv[2];
+
+		/* container_g_add_pid needs to be called in the
+		   forked process part of the fork to avoid a race
+		   condition where if this process makes a file or
+		   detacts itself from a child before we add the pid
+		   to the container in the parent of the fork.
+		*/
+		if (container_g_add_pid(job_id, getpid(), getuid())
+		    != SLURM_SUCCESS)
+			error("container_g_add_pid(%u): %m", job_id);
 
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
@@ -204,8 +217,8 @@ static List _script_list_create (const char *pattern)
 	return l;
 }
 
-int run_script(const char *name, const char *pattern, uint32_t jobid,
-	   int max_wait, char **env)
+int run_script(const char *name, const char *pattern, uint32_t job_id,
+	       int max_wait, char **env, uid_t uid)
 {
 	int rc = 0;
 	List l;
@@ -221,7 +234,7 @@ int run_script(const char *name, const char *pattern, uint32_t jobid,
 
 	i = list_iterator_create (l);
 	while ((s = list_next (i))) {
-		rc = run_one_script (name, s, jobid, max_wait, env);
+		rc = _run_one_script (name, s, job_id, max_wait, env, uid);
 		if (rc) {
 			error ("%s: exited with status 0x%04x\n", s, rc);
 			break;

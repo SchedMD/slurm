@@ -10,7 +10,7 @@
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -55,9 +55,11 @@
 #include <string.h>
 
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
@@ -108,7 +110,6 @@ static uint64_t cont_id = (uint64_t)NO_VAL;
 static pthread_mutex_t task_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool jobacct_shutdown = true;
-static bool jobacct_suspended = 0;
 static bool plugin_polling = true;
 
 static uint32_t jobacct_job_id     = 0;
@@ -167,11 +168,35 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _write_jobacct_id(int fd, jobacct_id_t *jobacct_id,
+			      uint16_t rpc_version)
+{
+	if (jobacct_id) {
+		safe_write(fd, &jobacct_id->nodeid, sizeof(uint32_t));
+		safe_write(fd, &jobacct_id->taskid, sizeof(uint16_t));
+	} else {
+		uint32_t no32 = NO_VAL;
+		uint16_t no16 = (uint16_t)NO_VAL;
+		safe_write(fd, &no32, sizeof(uint32_t));
+		safe_write(fd, &no16, sizeof(uint16_t));
+	}
+rwfail:
+	return;
+}
+
+static int _read_jobacct_id(int fd, jobacct_id_t *jobacct_id,
+			    uint16_t rpc_version)
+{
+	safe_read(fd, &jobacct_id->nodeid, sizeof(uint32_t));
+	safe_read(fd, &jobacct_id->taskid, sizeof(uint16_t));
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
 static void _poll_data(void)
 {
-	if (jobacct_suspended)
-		return;
-
 	/* Update the data */
 	slurm_mutex_lock(&task_list_lock);
 	(*(ops.poll_data))(task_list, pgid_plugin, cont_id);
@@ -192,16 +217,22 @@ static void _task_sleep(int rem)
 
 static void *_watch_tasks(void *arg)
 {
+	int type = PROFILE_TASK;
 	/* Give chance for processes to spawn before starting
 	 * the polling. This should largely eliminate the
 	 * the chance of having /proc open when the tasks are
 	 * spawned, which would prevent a valid checkpoint/restart
 	 * with some systems */
 	_task_sleep(1);
-
-	while (!jobacct_shutdown) {  /* Do this until shutdown is requested */
+	while (!jobacct_shutdown && acct_gather_profile_running) {
+		/* Do this until shutdown is requested */
 		_poll_data();
-		_task_sleep(freq);
+		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
+		pthread_cond_wait(
+			&acct_gather_profile_timer[type].notify,
+			&acct_gather_profile_timer[type].notify_mutex);
+		slurm_mutex_unlock(&acct_gather_profile_timer[type].
+				   notify_mutex);
 	}
 	return NULL;
 }
@@ -333,54 +364,12 @@ extern int jobacct_gather_endpoll(void)
 	if (task_list)
 		list_destroy(task_list);
 	task_list = NULL;
-	slurm_mutex_unlock(&task_list_lock);
 
 	retval = (*(ops.endpoll))();
 
+	slurm_mutex_unlock(&task_list_lock);
+
 	return retval;
-}
-
-extern void jobacct_gather_change_poll(uint16_t frequency)
-{
-	if (jobacct_gather_init() < 0)
-		return;
-
-	if (plugin_polling && freq == 0 && frequency != 0) {
-		pthread_attr_t attr;
-		pthread_t _watch_tasks_thread_id;
-		/* create polling thread */
-		slurm_attr_init(&attr);
-		if (pthread_attr_setdetachstate(&attr,
-						PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-
-		if  (pthread_create(&_watch_tasks_thread_id, &attr,
-				    &_watch_tasks, NULL)) {
-			debug("jobacct-gather failed to create _watch_tasks "
-			      "thread: %m");
-			frequency = 0;
-		}
-		else
-			debug3("jobacct-gather LINUX dynamic logging enabled");
-		slurm_attr_destroy(&attr);
-		jobacct_shutdown = false;
-	}
-
-	freq = frequency;
-	debug("jobacct-gather: frequency changed = %d", frequency);
-	if (freq == 0)
-		jobacct_shutdown = true;
-	return;
-}
-
-extern void jobacct_gather_suspend_poll(void)
-{
-	jobacct_suspended = true;
-}
-
-extern void jobacct_gather_resume_poll(void)
-{
-	jobacct_suspended = false;
 }
 
 extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
@@ -570,24 +559,26 @@ extern void jobacct_gather_handle_mem_limit(
 	if (jobacct_job_id && jobacct_mem_limit &&
 	    (total_job_mem > jobacct_mem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded %u KB memory limit, being "
-			      "killed", jobacct_job_id, jobacct_mem_limit);
-		} else {
-			error("Step %u.%u exceeded %u KB memory limit, being "
-			      "killed", jobacct_job_id, jobacct_step_id,
+			error("Job %u exceeded memory limit (%u > %u), being "
+			      "killed", jobacct_job_id, total_job_mem,
 			      jobacct_mem_limit);
+		} else {
+			error("Step %u.%u exceeded memory limit (%u > %u), "
+			      "being killed", jobacct_job_id, jobacct_step_id,
+			      total_job_mem, jobacct_mem_limit);
 		}
 		_acct_kill_step();
 	} else if (jobacct_job_id && jobacct_vmem_limit &&
 		   (total_job_vsize > jobacct_vmem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded %u KB virtual memory limit, "
-			      "being killed", jobacct_job_id,
-			      jobacct_vmem_limit);
+			error("Job %u exceeded virtual memory limit "
+			      "(%u > %u), being killed", jobacct_job_id,
+			      total_job_vsize, jobacct_vmem_limit);
 		} else {
-			error("Step %u.%u exceeded %u KB virtual memory "
-			      "limit, being killed", jobacct_job_id,
-			      jobacct_step_id, jobacct_vmem_limit);
+			error("Step %u.%u exceeded virtual memory limit "
+			      "(%u > %u), being killed", jobacct_job_id,
+			      jobacct_step_id, total_job_vsize,
+			      jobacct_vmem_limit);
 		}
 		_acct_kill_step();
 	}
@@ -598,6 +589,7 @@ extern void jobacct_gather_handle_mem_limit(
 extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 {
 	struct jobacctinfo *jobacct;
+	jobacct_id_t temp_id;
 
 	if (!plugin_polling)
 		return NULL;
@@ -605,7 +597,6 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct = xmalloc(sizeof(struct jobacctinfo));
 
 	if (!jobacct_id) {
-		jobacct_id_t temp_id;
 		temp_id.taskid = (uint16_t)NO_VAL;
 		temp_id.nodeid = (uint32_t)NO_VAL;
 		jobacct_id = &temp_id;
@@ -630,6 +621,12 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct->tot_cpu = 0;
 	jobacct->act_cpufreq = 0;
 	memset(&jobacct->energy, 0, sizeof(acct_gather_energy_t));
+	jobacct->max_disk_read = 0;
+	memcpy(&jobacct->max_disk_read_id, jobacct_id, sizeof(jobacct_id_t));
+	jobacct->tot_disk_read = 0;
+	jobacct->max_disk_write = 0;
+	memcpy(&jobacct->max_disk_write_id, jobacct_id, sizeof(jobacct_id_t));
+	jobacct->tot_disk_write = 0;
 
 	return jobacct;
 }
@@ -641,12 +638,14 @@ extern void jobacctinfo_destroy(void *object)
 }
 
 extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
-			       enum jobacct_data_type type, void *data)
+			       enum jobacct_data_type type, void *data,
+			       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
 	struct rusage *rusage = (struct rusage *)data;
 	uint32_t *uint32 = (uint32_t *) data;
+	double *dub = (double *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 
@@ -658,7 +657,90 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		memcpy(jobacct, send, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		safe_write(*fd, jobacct, sizeof(struct jobacctinfo));
+		if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+			int len;
+			Buf buffer = init_buf(0);
+			jobacctinfo_pack(jobacct, protocol_version,
+					 PROTOCOL_TYPE_SLURM, buffer);
+			len = get_buf_offset(buffer);
+			safe_write(*fd, &len, sizeof(int));
+			safe_write(*fd, get_buf_data(buffer), len);
+			free_buf(buffer);
+		} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+			safe_write(*fd, &jobacct->user_cpu_sec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->user_cpu_usec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->sys_cpu_sec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->sys_cpu_usec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_vsize, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_rss, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_rss, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_pages, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_pages, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->min_cpu, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->act_cpufreq,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->energy.consumed_energy,
+				   sizeof(uint32_t));
+
+			safe_write(*fd, &jobacct->max_disk_read,
+				   sizeof(double));
+			safe_write(*fd, &jobacct->tot_disk_read,
+				   sizeof(double));
+			safe_write(*fd, &jobacct->max_disk_write,
+				   sizeof(double));
+			safe_write(*fd, &jobacct->tot_disk_write,
+				   sizeof(double));
+
+			_write_jobacct_id(*fd, &jobacct->max_vsize_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_rss_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_pages_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->min_cpu_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_disk_read_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_disk_write_id,
+					  protocol_version);
+		} else {
+			safe_write(*fd, &jobacct->user_cpu_sec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->user_cpu_usec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->sys_cpu_sec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->sys_cpu_usec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_vsize, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_rss, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_rss, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_pages, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_pages, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->min_cpu, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->act_cpufreq,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->energy.consumed_energy,
+				   sizeof(uint32_t));
+
+			_write_jobacct_id(*fd, &jobacct->max_vsize_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_rss_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_pages_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->min_cpu_id,
+					  protocol_version);
+		}
+
 		break;
 	case JOBACCT_DATA_RUSAGE:
 		jobacct->user_cpu_sec = rusage->ru_utime.tv_sec;
@@ -708,6 +790,24 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	case JOBACCT_DATA_CONSUMED_ENERGY:
 		jobacct->energy.consumed_energy = *uint32;
 		break;
+	case JOBACCT_DATA_MAX_DISK_READ:
+		jobacct->max_disk_read = *dub;
+		break;
+	case JOBACCT_DATA_MAX_DISK_READ_ID:
+		jobacct->max_disk_read_id = *jobacct_id;
+		break;
+	case JOBACCT_DATA_TOT_DISK_READ:
+		jobacct->tot_disk_read = *dub;
+		break;
+	case JOBACCT_DATA_MAX_DISK_WRITE:
+		jobacct->max_disk_write = *dub;
+		break;
+	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
+		jobacct->max_disk_write_id = *jobacct_id;
+		break;
+	case JOBACCT_DATA_TOT_DISK_WRITE:
+		jobacct->tot_disk_write = *dub;
+		break;
 	default:
 		debug("jobacct_g_set_setinfo data_type %d invalid", type);
 	}
@@ -718,11 +818,13 @@ rwfail:
 }
 
 extern int jobacctinfo_getinfo(
-	jobacctinfo_t *jobacct, enum jobacct_data_type type, void *data)
+	jobacctinfo_t *jobacct, enum jobacct_data_type type, void *data,
+	uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
 	uint32_t *uint32 = (uint32_t *) data;
+	double *dub = (double *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct rusage *rusage = (struct rusage *)data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
@@ -730,12 +832,95 @@ extern int jobacctinfo_getinfo(
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
+	/* jobacct needs to be allocated before this is called.	*/
+	xassert(jobacct);
+
 	switch (type) {
 	case JOBACCT_DATA_TOTAL:
 		memcpy(send, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		safe_read(*fd, jobacct, sizeof(struct jobacctinfo));
+		if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+			char* buf;
+			int len;
+			Buf buffer;
+
+			safe_read(*fd, &len, sizeof(int));
+			buf = xmalloc(len);
+			safe_read(*fd, buf, len);
+			buffer = create_buf(buf, len);
+			jobacctinfo_unpack(&jobacct, protocol_version,
+					   PROTOCOL_TYPE_SLURM, buffer, 0);
+			free_buf(buffer);
+		} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+			safe_read(*fd, &jobacct->user_cpu_sec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->user_cpu_usec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->sys_cpu_sec, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->sys_cpu_usec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_vsize, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_rss, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_rss, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_pages, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_pages, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->min_cpu, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->act_cpufreq, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->energy.consumed_energy,
+				  sizeof(uint32_t));
+
+			safe_read(*fd, &jobacct->max_disk_read, sizeof(double));
+			safe_read(*fd, &jobacct->tot_disk_read, sizeof(double));
+			safe_read(*fd, &jobacct->max_disk_write,
+				  sizeof(double));
+			safe_read(*fd, &jobacct->tot_disk_write,
+				  sizeof(double));
+
+			_read_jobacct_id(*fd, &jobacct->max_vsize_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_rss_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_pages_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->min_cpu_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_disk_read_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_disk_write_id,
+					 protocol_version);
+		} else {
+			safe_read(*fd, &jobacct->user_cpu_sec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->user_cpu_usec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->sys_cpu_sec, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->sys_cpu_usec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_vsize, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_rss, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_rss, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_pages, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_pages, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->min_cpu, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->act_cpufreq, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->energy.consumed_energy,
+				  sizeof(uint32_t));
+
+			_read_jobacct_id(*fd, &jobacct->max_vsize_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_rss_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_pages_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->min_cpu_id,
+					 protocol_version);
+		}
+
 		break;
 	case JOBACCT_DATA_RUSAGE:
 		memset(rusage, 0, sizeof(struct rusage));
@@ -786,6 +971,24 @@ extern int jobacctinfo_getinfo(
 	case JOBACCT_DATA_CONSUMED_ENERGY:
 		*uint32 = jobacct->energy.consumed_energy;
 		break;
+	case JOBACCT_DATA_MAX_DISK_READ:
+		*dub = jobacct->max_disk_read;
+		break;
+	case JOBACCT_DATA_MAX_DISK_READ_ID:
+		*jobacct_id = jobacct->max_disk_read_id;
+		break;
+	case JOBACCT_DATA_TOT_DISK_READ:
+		*dub = jobacct->tot_disk_read;
+		break;
+	case JOBACCT_DATA_MAX_DISK_WRITE:
+		*dub = jobacct->max_disk_write;
+		break;
+	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
+		*jobacct_id = jobacct->max_disk_write_id;
+		break;
+	case JOBACCT_DATA_TOT_DISK_WRITE:
+		*dub = jobacct->tot_disk_write;
+		break;
 	default:
 		debug("jobacct_g_set_getinfo data_type %d invalid", type);
 	}
@@ -816,7 +1019,46 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (!jobacct) {
+			for (i = 0; i < 14; i++)
+				pack32((uint32_t) 0, buffer);
+			for (i = 0; i < 4; i++)
+				packdouble((double) 0, buffer);
+			for (i = 0; i < 6; i++)
+				_pack_jobacct_id(NULL, rpc_version, buffer);
+			return;
+		}
+
+		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->max_vsize, buffer);
+		pack32((uint32_t)jobacct->tot_vsize, buffer);
+		pack32((uint32_t)jobacct->max_rss, buffer);
+		pack32((uint32_t)jobacct->tot_rss, buffer);
+		pack32((uint32_t)jobacct->max_pages, buffer);
+		pack32((uint32_t)jobacct->tot_pages, buffer);
+		pack32((uint32_t)jobacct->min_cpu, buffer);
+		pack32((uint32_t)jobacct->tot_cpu, buffer);
+		pack32((uint32_t)jobacct->act_cpufreq, buffer);
+		pack32((uint32_t)jobacct->energy.consumed_energy, buffer);
+
+		packdouble((double)jobacct->max_disk_read, buffer);
+		packdouble((double)jobacct->tot_disk_read, buffer);
+		packdouble((double)jobacct->max_disk_write, buffer);
+		packdouble((double)jobacct->tot_disk_write, buffer);
+
+		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_disk_read_id, rpc_version,
+			buffer);
+		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
+			buffer);
+	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (!jobacct) {
 			for (i = 0; i < 14; i++)
 				pack32((uint32_t) 0, buffer);
@@ -876,7 +1118,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 
 extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			      uint16_t rpc_version, uint16_t protocol_type,
-			      Buf buffer)
+			      Buf buffer, bool alloc)
 {
 	uint32_t uint32_tmp;
 
@@ -896,8 +1138,53 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (alloc)
 		*jobacct = xmalloc(sizeof(struct jobacctinfo));
+
+	if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_usec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_usec = uint32_tmp;
+		safe_unpack32(&(*jobacct)->max_vsize, buffer);
+		safe_unpack32(&(*jobacct)->tot_vsize, buffer);
+		safe_unpack32(&(*jobacct)->max_rss, buffer);
+		safe_unpack32(&(*jobacct)->tot_rss, buffer);
+		safe_unpack32(&(*jobacct)->max_pages, buffer);
+		safe_unpack32(&(*jobacct)->tot_pages, buffer);
+		safe_unpack32(&(*jobacct)->min_cpu, buffer);
+		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
+		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
+		safe_unpack32(&(*jobacct)->energy.consumed_energy, buffer);
+
+		safe_unpackdouble(&(*jobacct)->max_disk_read, buffer);
+		safe_unpackdouble(&(*jobacct)->tot_disk_read, buffer);
+		safe_unpackdouble(&(*jobacct)->max_disk_write, buffer);
+		safe_unpackdouble(&(*jobacct)->tot_disk_write, buffer);
+
+		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_disk_read_id,
+			rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_disk_write_id,
+			rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -930,7 +1217,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
-		*jobacct = xmalloc(sizeof(struct jobacctinfo));
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -968,7 +1254,8 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 unpack_error:
 	debug2("jobacctinfo_unpack: unpack_error: size_buf(buffer) %u",
 	       size_buf(buffer));
-	xfree(*jobacct);
+	if (alloc)
+		xfree(*jobacct);
        	return SLURM_ERROR;
 }
 
@@ -1038,6 +1325,18 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 		dest->energy.consumed_energy = NO_VAL;
 	else
 		dest->energy.consumed_energy += from->energy.consumed_energy;
+
+	if (dest->max_disk_read < from->max_disk_read) {
+		dest->max_disk_read = from->max_disk_read;
+		dest->max_disk_read_id = from->max_disk_read_id;
+	}
+	dest->tot_disk_read += from->tot_disk_read;
+
+	if (dest->max_disk_write < from->max_disk_write) {
+		dest->max_disk_write = from->max_disk_write;
+		dest->max_disk_write_id = from->max_disk_write_id;
+	}
+	dest->tot_disk_write += from->tot_disk_write;
 }
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
@@ -1063,7 +1362,16 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	stats->cpu_ave = (double)jobacct->tot_cpu;
 	stats->act_cpufreq = (double)jobacct->act_cpufreq;
 	if (jobacct->energy.consumed_energy == NO_VAL)
-		stats->consumed_energy = NO_VAL;
+		stats->consumed_energy = (double)NO_VAL;
 	else
-		stats->consumed_energy = (double)jobacct->energy.consumed_energy;
+		stats->consumed_energy =
+			(double)jobacct->energy.consumed_energy;
+	stats->disk_read_max = jobacct->max_disk_read;
+	stats->disk_read_max_nodeid = jobacct->max_disk_read_id.nodeid;
+	stats->disk_read_max_taskid = jobacct->max_disk_read_id.taskid;
+	stats->disk_read_ave = jobacct->tot_disk_read;
+	stats->disk_write_max = jobacct->max_disk_write;
+	stats->disk_write_max_nodeid = jobacct->max_disk_write_id.nodeid;
+	stats->disk_write_max_taskid = jobacct->max_disk_write_id.taskid;
+	stats->disk_write_ave = jobacct->tot_disk_write;
 }

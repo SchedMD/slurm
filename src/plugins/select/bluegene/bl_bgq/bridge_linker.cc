@@ -7,7 +7,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -402,6 +402,7 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 			select_jobinfo_t *jobinfo = (select_jobinfo_t *)
 				job_ptr->select_jobinfo->data;
 			jobinfo->bg_record = NULL;
+			jobinfo->cleaning = 0;
 		}
 		unlock_slurmctld(job_read_lock);
 	}

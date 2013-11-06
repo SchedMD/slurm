@@ -3,15 +3,18 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-bin_SCRIPTS = pbsnodes qdel qhold qrls qstat qsub mpiexec
+bin_SCRIPTS = pbsnodes qalter qdel qhold qrerun qrls qstat qsub mpiexec generate_pbs_nodefile
 
 pbsnodes:
+qalter:
 qdel:
 qhold:
+qrerun:
 qrls:
 qstat:
 qsub:
 mpiexec:
+generate_pbs_nodefile:
 
 _perldir=$(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
 

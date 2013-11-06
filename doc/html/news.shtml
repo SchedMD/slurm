@@ -4,68 +4,99 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#25">SLURM Version 2.5, November 2012</a></li>
-<li><a href="#26">SLURM Version 2.6, scheduled for April 2013</a></li>
-<li><a href="#27">SLURM Version 2.7 and beyond</a></li>
+<li><a href="#26">Slurm Version 2.6, June 2013</a></li>
+<li><a href="#1312">Slurm Version 13.12, December 2013</a></li>
+<li><a href="#1406">Slurm Version 14.06 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
 
-
-<h2><a name="25">Major Updates in SLURM Version 2.5</a></h2>
-<p>SLURM Version 2.5 was release in November 2012.
+<h2><a name="26">Major Updates in Slurm Version 2.6</a></h2>
+<p>SLURM Version 2.6 was released in July 2013.
 Major enhancements include:
 <ul>
-<li>Support added for Intel&reg; Many Integrated Core (MIC) processors.</li> 
-<li>User control over CPU frequency of each job step.</li>
-<li>Recording power usage information for each job.</li>
-<li>Advanced reservation of cores rather than whole nodes.</li>
-<li>Integration with IBM's
-<a href="http://www-03.ibm.com/systems/software/parallel/">Parallel Environment</a>
-including POE (Parallel Operating Environment) and NRT (Network Resource Table) API.</li>
-<li>Highly optimized throughput for serial jobs in a new "select/serial"
-plugin.</li>
-<li>CPU load is information available</li>
-<li>Configurable number of CPUs available to jobs in each SLURM partition,
-which provides a mechanism to reserve CPUs for use with GPUs.</li>
-</ul>
-
-<h2><a name="26">Major Updates in SLURM Version 2.6</a></h2>
-<p>SLURM Version 2.6 is scheduled for release in April 2013.
-Major enhancements planned include:
-<ul>
 <li>Support for job arrays, which increases performance and ease of use
-   for sets of similar jobs.</li>
-<li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce</a> support
-(launches ~1000x faster, runs ~10x faster).</li>
+    for sets of similar jobs.</li>
+<li><a href="hdf5_profile_user_guide.html">Job profiling</a> capability added
+    to record a wide variety of job characteristics for each task on a user
+    configurable periodic basis. Data currently available includes CPU use,
+    memory use, energy use, Infiniband network use, Lustre file system use,
+    etc.</li>
+<li>Support for MPICH2 using PMI2 communications interface with much greater
+    scalability.</li>
 <li>Prolog and epilog support for advanced reservations.</li>
 <li>Much faster throughput for job step execution with --exclusive option. The
     srun process is notified when resources become available rather than
     periodic polling.</li>
 <li>Support improved for Intel MIC (Many Integrated Core) processor.</li>
 <li>Advanced reservations with hostname and core counts now supports asymmetric
-reservations (e.g. specific different core count for each node).</li>
-<li>Finer-grained BlueGene resouce management (partitions/queues and advanced
-reservations containing less than a whole midplane).</li>
+    reservations (e.g. specific different core count for each node).</li>
+<li><a href="ext_sensorsplugins.html">External sensor plugin infrastructure</a>
+    added to record power consumption, temperature, etc.</li>
+<li>Improved performance for high-throughput computing.</li>
+<li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce+</a> support
+    (launches ~1000x faster, runs ~10x faster).</li>
+<li>Added "MaxCPUsPerNode" partition configuration parameter. This can be
+    especially useful to schedule GPUs. For example a node can be associated
+    with two Slurm partitions (e.g. "cpu" and "gpu") and the partition/queue
+    "cpu" could be limited to only a subset of the node's CPUs, insuring that
+    one or more CPUs would be available to jobs in the "gpu" partition/queue.</li>
 </ul>
+</p>
 
-<h2><a name="27">Major Updates in SLURM Version 2.7 and beyond</a></h2>
+<h2><a name="1312">Major Updates in Slurm Version 13.12</a></h2>
+<p>NOTICE: Starting with 13.12 we will be numbering Slurm versions
+with a YEAR.MONTH format.<br>
+SLURM Version 13.12 release is planned in December 2013.
+Major enhancements include:
+<ul>
+<li>Integration with
+    <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
+    license management.</li>
+<li>Layouts framework, which will be the basis for further developments toward
+    optimizing scheduling with respect to additional parameters such as temperature
+    and power consumption.</li>
+<li>Energy consumption added as a factor in fair-share scheduling.</li>
+<li>Energy aware scheduling added with respect to power caps.</li>
+<li>Improved user support for fault-tolerance (e.g. "hot spare" resources).</li>
+<li>New partition configuration parameters: AllowAccounts, AllowQOS,
+    DenyAccounts and DenyQOS.</li>
+<li>Scalability improvements for MPI initialization including communication of
+    the compute node network interface details.</li>
+<li>Defer sending SIGKILL signal to processes while a core dump is in progress.</li>
+<li>Other important enhancements that can not be made public at this time...</li>
+</ul>
+</p>
+
+
+<h2><a name="1406">Major Updates in Slurm Version 14.06 and beyond</a></h2>
 <p> Detailed plans for release dates and contents of additional SLURM releases
 have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Scheduling optimized for energy efficiency.</li>
-<li>Improved user support for fault-tolerance (e.g. "hot spare" resources).</li>
+<li>Distributed architecture to support the management of resources with Intel
+    MIC processors.</li>
+<li>Support of I/O as a new resources, including proxy I/O nodes with data
+    locality.</li>
+<li>Improved scheduling support for job dependencies (e.g. pre-processing,
+    post-processing, co-processing on I/O nodes, etc.) to optimize overall
+    system utilization.</li>
+<li>IP communications over InfiniBand network for improved performance.</li>
+<li>Support for heterogeneous GPU environments (i.e. user specification of
+    desired GPU types).</li>
+<li>Fault-tolerance and jobs dynamic adaptation through communication protocol
+    between Slurm , MPI libraries and the application.</li>
+<li>Improved support for high-throughput computing (e.g. multiple slurmctld
+    daemons on a single cluster).</li>
+<li>Scheduling fully optimized for energy efficiency.</li>
 <li>Numerous enhancements to advanced resource reservations (e.g. start or
-end the reservation early depending upon the workload).</li>
+    end the reservation early depending upon the workload).</li>
 <li>Add Kerberos credential support including credential forwarding
-and refresh.</li>
+    and refresh.</li>
 <li>Improved support for provisioning and virtualization.</li> 
 <li>Provide a web-based SLURM administration tool.</li>
-<li>Scheduling optimized for energy efficiency.</li>
-<li>Integration with
-<a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
-license management.</li>
+<li>Finer-grained BlueGene resouce management (partitions/queues and advanced
+    reservations containing less than a whole midplane).</li>
 </ul>
 
 <h2><a name="security">Security Patches</a></h2>
@@ -73,25 +104,25 @@ license management.</li>
 <a href="http://cve.mitre.org/">http://cve.mitre.org/</a>.</p>
 <ul>
 <li>CVE-2009-0128<br>
-There is a potential security vulnerability in SLURM where a user could
-build an invalid job credential in order to execute a job (under his
-correct UID and GID) on resources not allocated to that user. This
-vulnerability exists only when the crypto/openssl plugin is used and was
-fixed in SLURM version 1.3.0.</li>
+    There is a potential security vulnerability in SLURM where a user could
+    build an invalid job credential in order to execute a job (under his
+    correct UID and GID) on resources not allocated to that user. This
+    vulnerability exists only when the crypto/openssl plugin is used and was
+    fixed in SLURM version 1.3.0.</li>
 <li>CVE-2009-2084<br>
-SLURM failed to properly set supplementary groups before invoking (1) sbcast
-from the slurmd daemon or (2) strigger from the slurmctld daemon, which might
-allow local SLURM users to modify files and gain privileges. This was fixed
-in SLURM version 1.3.14.</li>
+    SLURM failed to properly set supplementary groups before invoking (1) sbcast
+    from the slurmd daemon or (2) strigger from the slurmctld daemon, which might
+    allow local SLURM users to modify files and gain privileges. This was fixed
+    in SLURM version 1.3.14.</li>
 <li>CVE-2010-3308<br>
-There is a potential security vulnerability where if the init.d scripts are
-executed by user root or SlurmUser to initiate the SLURM daemons and the
-LD_LIBRARY_PATH is not set and the operating system interprets a blank entry
-in the path as "." (current working directory) and that directory contains a
-trojan library, then that library will be used by the SLURM daemon with
-unpredictable results. This was fixed in SLURM version 2.1.14.</li>
+    There is a potential security vulnerability where if the init.d scripts are
+    executed by user root or SlurmUser to initiate the SLURM daemons and the
+    LD_LIBRARY_PATH is not set and the operating system interprets a blank entry
+    in the path as "." (current working directory) and that directory contains a
+    trojan library, then that library will be used by the SLURM daemon with
+    unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 March 2013</p>
+<p style="text-align:center;">Last modified 31 July 2013</p>
 
 <!--#include virtual="footer.txt"-->

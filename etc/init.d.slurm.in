@@ -139,6 +139,7 @@ slurmstatus() {
     if [ $? = 0 ]; then
 	pidfile=${pidfile##*=}
 	pidfile=${pidfile%#*}
+	pidfile=${pidfile//\"/}
     else
 	pidfile=/var/run/${base}.pid
     fi
@@ -286,7 +287,7 @@ case "$1" in
 	    done
 	fi
 	;;
-    reconfig)
+    reconfig|reload)
 	for prog in `$BINDIR/scontrol show daemons`; do
 	    echo -n $"Reloading $prog daemon configuration: "
 	    killproc $prog -HUP

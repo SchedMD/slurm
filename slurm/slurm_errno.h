@@ -9,7 +9,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -193,6 +193,7 @@ enum {
 	ESLURM_INTERCONNECT_BUSY,
 	ESLURM_RESERVATION_EMPTY,
 	ESLURM_INVALID_ARRAY,
+	ESLURM_RESERVATION_NAME_DUP,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
@@ -259,7 +260,10 @@ enum {
 	ESLURM_JOBS_RUNNING_ON_ASSOC,
 	ESLURM_CLUSTER_DELETED,
 	ESLURM_ONE_CHANGE,
-	ESLURM_BAD_NAME
+	ESLURM_BAD_NAME,
+
+	/* plugin and custom errors */
+	ESLURM_MISSING_TIME_LIMIT       = 8000
 };
 
 /* look up an errno value */

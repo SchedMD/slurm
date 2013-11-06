@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 
 bin_PROGRAMS = scontrol
 
@@ -18,7 +18,8 @@ scontrol_SOURCES =	\
 	update_job.c	\
 	update_node.c	\
 	update_part.c	\
-	update_step.c
+	update_step.c   \
+	info_lics.c
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 

@@ -1,6 +1,12 @@
 <!--#include virtual="header.txt"-->
 
 <h1><a name="top">Frequently Asked Questions</a></h1>
+
+<h2>For Management</h2>
+<ol>
+<li><a href="#foss">Why should I use Slurm or other Free Open Source Software (FOSS)</a></li>
+</ol>
+
 <h2>For Users</h2>
 <ol>
 <li><a href="#comp">Why is my job/node in COMPLETING state?</a></li>
@@ -49,6 +55,8 @@ SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
 <li><a href="#estimated_start_time">Why does squeue (and "scontrol show
 jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
+<li><a href="#mic">How can I run programs with on an Intel Phi (MIC) processor?</a></li>
+<li><a href="#req">How to requeue a job in complete or failed state?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -148,8 +156,33 @@ priority/multifactor plugin?</a></li>
 script for Slurm?</a></li>
 <li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
 <li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
+<li><a href="#salloc_default_command">Can the salloc command be configured to
+launch a shell on a node in the job's allocation?</a></li>
+<li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
+<li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
+<li><a href="#sssd">I am having trouble using SSSD with Slurm.</a></li>
+<li><a href="#ha_db">How critical is configuring high availability for my
+  database?</a></li>
+<li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
+<li><a href="#reboot">Why is a compute node down with the reason set to
+"Node unexpectedly rebooted"?</a></li>
+<li><a href="#reqspec">How to requeue a job which has exited with a specific exit code.</a></li>
 </ol>
 
+<h2>For Management</h2>
+<p><a name="foss"><b>1. Why should I use Slurm or other Free Open Source Software (FOSS)?</b></a><br>
+Free Open Source Software (FOSS) does not mean that it is without cost.
+It does mean that the you have access to the code so that you are free to
+use it, study it, and/or enhance it.
+If the software is large and complex, like Slurm or the Linux kernel,
+then its use is not without cost.
+If your work is important, you'll want the leading Slurm experts at your
+disposal to keep your systems operating at peak efficiency.
+While Slurm has a global development community incorporating leading edge
+technology, <a href="http://www.schedmd.com">SchedMD</a> personnel have developed
+most of the code and can provide competitively priced commercial support.
+Customers switching from commercial workload mangers to Slurm typically
+report higher scalability, better performance and lower costs.</p>
 
 <h2>For Users</h2>
 <p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
@@ -859,6 +892,105 @@ exit 0
 $ srun -n <tasks> ./fluent-srun.sh
 </pre>
 
+<p><a name="mic"><b>28. How can I run programs with on an Intel Phi (MIC)
+processor?</b></a><br>
+Two programming models are suported, offloading and native mode.
+For a good description of how to build and run applications, please see
+<a href="https://confluence.csc.fi/display/HPCproto/HPC+Prototypes#HPCPrototypes-Nativeprogrammingmodel">CSC MIC documentation</a>.
+Note that some of the information presented in this document is configuration
+dependent. The <i>mpirun-mic</i> is included in the Slurm distribution in the
+<i>contribs/mic</i> directory. Excerpts of the CSC documentation follows.</p>
+
+<p><b>Executable Auto-Offloading</b><br>
+The Phi nodes have Executable Auto-Offloading (EAO) enabled by default.
+This feature is developed at CSC and is not currently in the standard Xeon Phi
+distribution.
+With this feature, any executable in the K1OM (MIC) binary format that the user
+tries to run on the host, will transparently be executed on the Xeon Phi
+coprocessor card instead. The execution is performed using the /usr/bin/micrun
+script.</p>
+<p>By default all environment variables with the MIC_ prefix will be passed to
+the binary, with the prefix stripped away. For example
+(MIC_LD_LIBRARY_PATH -> LD_LIBRARY_PATH).</p>
+<p>EAO can be disabled by setting the environment variable MICRUN_DISABLE
+(i.e. export MICRUN_DISABLE=1).</p>
+
+<p><b>Offload programming model</b><br>
+The Intel compilers support offload compilation automatically. This means
+either offloading a code section using offload pragmas or calling an
+offload-enabled library. (e.g. MKL).</p>
+<p>In order to run offload jobs, one needs to set the GRES (Generic Resource
+Scheduling) parameter '--gres=mic:1'. For example:</p>
+<pre>
+$ srun --gres=mic:1 ./hello
+</pre>
+<p>If this is not set, the user will the following warning:</p>
+<pre>
+offload warning: OFFLOAD_DEVICES device number -1 does not correspond to a physical device
+</pre>
+
+<p><b>Native OpenMP code</b><br>
+To compile OpenMP code natively, you can use the -mmicflag.</p>
+<pre>
+$ module load intel
+$ icc -mmic -openmp hello.c -o hello.mic
+</pre>
+<p>To run, use the srun command. You may need to explicity specify a Slurm partitiion containing MIC processors, for example:</p>
+<pre>
+$ srun -p mic ./hello.mic
+</pre>
+
+<p><a name="req"><b>29. How to requeue a job in complete or failed state?</b></a>
+<br>
+<p>
+Slurm supports requeue jobs in done or failed state. Use the
+command:
+<p align=left><b>scontrol requeue job_id</b></p>
+</head>
+</p>
+The job will be requeued back in PENDING state and scheduled again.
+See man(1) scontrol.
+</p>
+<p>Consider a simple job like this:</p>
+<pre>
+$cat zoppo
+#!/bin/sh
+echo "hello, world"
+exit 10
+
+$sbatch -o here ./zoppo
+Submitted batch job 10
+</pre>
+<p>
+The job finishes in FAILED state because it exits with
+a non zero value. We can requeue the job back to
+the PENDING state and the job will be dispatched again.
+</p>
+<pre>
+$->scontrol requeue 10
+$->squeue
+     JOBID PARTITION  NAME     USER   ST   TIME  NODES NODELIST(REASON)
+      10      mira    zoppo    david  PD   0:00    1   (NonZeroExitCode)
+$->squeue
+    JOBID PARTITION   NAME     USER ST     TIME  NODES NODELIST(REASON)
+      10      mira    zoppo    david  R    0:03    1      alanz1
+</pre>
+<p>
+Slurm supports requeuing jobs in hold state with the command:
+<p align=left><b>'scontrol requeuehold job_id'</b></p>
+The job can be in state RUNNING, SUSPENDED, COMPLETED or FAILED
+before being requeued.
+</p>
+<pre>
+$->scontrol requeuehold 10
+$->squeue
+    JOBID PARTITION  NAME     USER ST       TIME  NODES NODELIST(REASON)
+    10      mira    zoppo    david PD       0:00      1 (JobHeldUser)
+</pre>
+
+</p>
+
+
 <p class="footer"><a href="#top">top</a></p>
 
 
@@ -1079,7 +1211,16 @@ slurm.conf (<i>SlurmdLogFile</i> and <i>SlurmdPidFile</i>). </li>
 <li>When starting the <i>slurmd</i> daemon, include the <i>NodeName</i>
 of the node that it is supposed to serve on the execute line (e.g.
 "slurmd -N hostname").</li>
+<li> This is an example of the <i>slurm.conf</i> file with the  emulated nodes
+and ports configuration. Any valid value for the CPUs, memory or other
+valid node resources can be specified.</li>
 </ol>
+
+<pre>
+NodeName=dummy26[1-100] NodeHostName=achille Port=[6001-6100] NodeAddr=127.0.0.1 CPUs=4 RealMemory=6000
+PartitionName=mira Default=yes Nodes=dummy26[1-100]
+</pre>
+
 <p>It is strongly recommended that SLURM version 1.2 or higher be used
 for this due to its improved support for multiple slurmd daemons.
 See the
@@ -1523,6 +1664,24 @@ SLURM?</b></a></br>
 <p>The following lines should also be added to the global <i>.tvdrc</i> file
 for TotalView to operate with SLURM:
 <pre>
+# Enable debug server bulk launch: Checked
+dset -set_as_default TV::bulk_launch_enabled true
+
+# Command:
+# Beginning with TV 7X.1, TV supports SLURM and %J.
+# Specify --mem-per-cpu=0 in case Slurm configured with default memory
+# value and we want TotalView to share the job's memory limit without
+# consuming any of the job's memory so as to block other job steps.
+dset -set_as_default TV::bulk_launch_string {srun --mem-per-cpu=0 -N%N -n%N -w`awk -F. 'BEGIN {ORS=","} {if (NR==%N) ORS=""; print $1}' %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}
+
+# Temp File 1 Prototype:
+# Host Lines:
+# SLURM NodeNames need to be unadorned hostnames. In case %R returns
+# fully qualified hostnames, list the hostnames in %t1 here, and use
+# awk in the launch string above to strip away domain name suffixes.
+dset -set_as_default TV::bulk_launch_tmpfile1_host_lines {%R}
+</pre></p>
+<!-- OLD FORMAT
 dset TV::parallel_configs {
 	name: SLURM;
 	description: SLURM;
@@ -1533,7 +1692,7 @@ dset TV::parallel_configs {
 	env: ;
 	force_env: false;
 }
-</pre></p>
+!-->
 
 <p><a name="git_patch"><b>44. How can a patch file be generated from a SLURM
 commit in github?</b></a></br>
@@ -1564,7 +1723,7 @@ $ scontrol release &lt;jobid&gt;
 health check script for Slurm?</b></a></br>
 Probably the most comprehensive and lightweight health check tool out
 there is
-<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.  
+<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.
 It has integration with Slurm as well as Torque resource managers.</p>
 
 <p><a name="add_nodes"><b>48. What process should I follow to add nodes to Slurm?</b></a></br>
@@ -1595,8 +1754,160 @@ without restarting the slurmctld daemon, but it is possible to dynamically
 reserve licenses and remove them from being available to jobs on the system
 (e.g. "scontrol update reservation=licenses_held licenses=foo:5,bar:2").</p>
 
+<p><a name="salloc_default_command"><b>50. Can the salloc command be configured to
+launch a shell on a node in the job's allocation?</b></a></br>
+Yes, just use the SallocDefaultCommand configuration parameter in your
+slurm.conf file as shown below.</p>
+<pre>
+SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none $SHELL"
+</pre>
+
+<p><a name="upgrade"><b>51. What should I be aware of when upgrading Slurm?</b></a></br>
+See the Quick Start Administrator Guide <a href="quickstart_admin.html#upgrade">Upgrade</a>
+section for details.</p>
+
+<p><a name="torque"><b>52. How easy is it to switch from PBS or Torque to Slurm?</b></a></br>
+A lot of users don't even notice the difference.
+Slurm has wrappers available for the mpiexec, pbsnodes, qdel, qhold, qrls,
+qstat, and qsub commands (see contribs/torque in the distribution and the
+"slurm-torque" RPM).
+There is also a wrapper for the showq command at
+<a href="https://github.com/pedmon/slurm_showq">
+https://github.com/pedmon/slurm_showq</a>.
+Slurm recognizes and translates the "#PBS" options in batch scripts.
+Most, but not all options are supported.
+Please share any enhancements that you make.</p>
+
+<p><a name="sssd"><b>53. I am having trouble using SSSD with Slurm.</b></a></br>
+SSSD or System Security Services Deamon does not allow enumeration of group
+members by default.
+SSSD is also case sensitive, which could possible raise other issues.
+Add the following lines to <i>/etc/ssd/ssd.conf</i> on your head node to
+address these issues:</p>
+<pre>
+enumerate = True
+case_sensitive = False
+</pre>
+
+<p><a name="ha_db"><b>54. How critical is configuring high availability for my
+database?</b></a></br>
+<ul>
+<li>Consider if you really need mysql failover. Short outage of slurdbd is not
+a problem, because slurmctld will store all data in memory and send it to
+slurmdbd when it's back operating. The slurmctld daemon will also cache all
+user limits and fair share information.</li>
+<li>You cannot use ndb, since slurmdbd/mysql uses a keys on BLOB values (and
+maybe something more from the incompatibility list).</li>
+<li>You can set up "classical" Linux HA, with heartbeat/corosync to migrate
+IP between master/backup mysql servers and:</li>
+<ul>
+  <li>Configure one way replication of mysql, and change master/backup roles on
+    failure</li>
+  <li>Use shared storage for master/slave mysql servers database, and start
+    backup on master mysql failure.</li>
+</ul>
+</ul>
+
+<p><a name="sql"><b>55.How can I use double quotes in MySQL queries?</b></a></br>
+Execute:
+<pre>
+SET session sql_mode='ANSI_QUOTES';
+</pre>
+<p>This will allow double quotes in querries like this:</p>
+<pre>
+show columns from "tux_assoc_table" where Field='is_def';
+</pre>
+
+<p><a name="reboot"><b>56. Why is a compute node down with the reason set to
+"Node unexpectedly rebooted"?</b></a></br>
+This is indicative of the slurmctld daemon running on the cluster's head node
+as well as the slurmd daemon on the compute node when the compute node reboots.
+If you which to prevent this condition from setting the node into a DOWN state
+then configure ReturnToService to 2. See the slurm.conf man page for details.
+Otherwise use the scontrol or sview to manually return the node to service.</p>
+
+<p><a name="reqspec"><b>57.How to requeue a job which has exited with a specific exit code.
+</b></a>
+<p>
+Slurm supports requeue in hold with a <b>SPECIAL_EXIT</b> state using the
+command:
+<p>
+<b>scontrol requeuehold State=SpecialExit job_id</b>.
+</p>
+See man scontrol(1).
+This is useful when users want to requeue and flag a job which has exited with a
+specific error case.
+</p>
+<pre>
+$->scontrol requeuehold State=SpecialExit 10
+$->squeue
+   JOBID PARTITION  NAME     USER  ST       TIME  NODES NODELIST(REASON)
+    10      mira    zoppo    david SE       0:00      1 (JobHeldUser)
+</pre>
+<p>
+The job can be later released and ran again.
+</p>
+<p>
+The requeueing of jobs which exit with a specific exit code can be
+automated using an <b>EpilogSlurmctld</b>, see man(5) slurm.conf.
+This is an example of a script which exit code depends on the existence
+of a file.
+</p>
+
+<pre>
+$->cat exitme
+#!/bin/sh
+#
+echo "hi! `date`"
+if [ ! -e "/tmp/myfile" ]; then
+  echo "going out with 8"
+  exit 8
+fi
+rm /tmp/myfile
+echo "going out with 0"
+exit 0
+</pre>
+<p>
+
+This is an example of an EpilogSlurmctld that checks the job exit value
+looking at the <b>SLURM_JOB_EXIT2</b> environment variable and requeues a job if
+it exited with value 8. The SLURM_JOB_EXIT2 has the format exit:sig, the first
+number is the exit code, typically as set by the exit() function.
+The second number of the signal that caused the process to terminate if
+it was terminated by a signal.
+</p>
+
+<pre>
+$->cat slurmctldepilog
+#!/bin/sh
+
+export PATH=/bin:/home/slurm/linux/bin
+LOG=/home/slurm/linux/log/logslurmepilog
+
+echo "Start `date`" >> $LOG 2>&1
+echo "Job $SLURM_JOBID exitcode $SLURM_JOB_EXIT_CODE2" >> $LOG 2>&1
+exitcode=`echo $SLURM_JOB_EXIT_CODE2|awk '{split($0, a, ":"); print a[1]}'` >> $LOG 2>&1
+if [ "$exitcode" == "8" ]; then
+   echo "Found REQUEUE_EXIT_CODE: $REQUEUE_EXIT_CODE" >> $LOG 2>&1
+   scontrol requeuehold state=SpecialExit $SLURM_JOBID >> $LOG 2>&1
+   echo $? >> $LOG 2>&1
+else
+   echo "Job $SLURM_JOBID exit all right" >> $LOG 2>&1
+fi
+echo "Done `date`" >> $LOG 2>&1
+
+exit 0
+</pre>
+<p>
+Using the exitme script as an example we have it to exit with value 8 at
+the first run, then when it gets requeued in hold with SpecialExit state
+we touch the file /tmp/myfile, then release the job which will finish
+in COMPLETE state.
+</p>
+</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 April 2013</p>
+<p style="text-align:center;">Last modified 3 October 2013</p>
 
 <!--#include virtual="footer.txt"-->

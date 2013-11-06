@@ -8,7 +8,7 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -667,7 +667,7 @@ empty:
 
 	acct_list = list_create(slurmdb_destroy_account_rec);
 
-	if (acct_cond && acct_cond->with_assocs) {
+	if (acct_cond && acct_cond->assoc_cond && acct_cond->with_assocs) {
 		/* We are going to be freeing the inners of
 		   this list in the acct->name so we don't
 		   free it here
@@ -703,7 +703,7 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if (acct_cond && acct_cond->with_assocs
+	if (acct_cond && acct_cond->with_assocs && acct_cond->assoc_cond
 	    && list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;

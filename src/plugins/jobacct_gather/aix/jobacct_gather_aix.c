@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -46,6 +46,9 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_acct_gather_infiniband.h"
+#include "../common/common_jag.h"
 
 #ifdef HAVE_AIX
 #include <procinfo.h>
@@ -89,21 +92,24 @@ const uint32_t plugin_version = 200;
 /* Other useful declarations */
 static int pagesize = 0;
 
+static bool _run_in_daemon(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmstepd");
+	}
+
+	return run;
+}
+
 #ifdef HAVE_AIX
-typedef struct prec {	/* process record */
-	pid_t   pid;
-	pid_t   ppid;
-	int     usec;   /* user cpu time */
-	int     ssec;   /* system cpu time */
-	int     pages;  /* pages */
-	float	rss;	/* maxrss */
-	float	vsize;	/* max virtual size */
-} prec_t;
 
 /* Finally, pre-define all the routines. */
 
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
-static void _destroy_prec(void *object);
 
 /* system call to get process table */
 extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *,
@@ -134,10 +140,10 @@ extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *,
  *
  * THREADSAFE! Only one thread ever gets here.
  */
-static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
+static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 {
 	ListIterator itr;
-	prec_t *prec = NULL;
+	jag_prec_t *prec = NULL;
 
 	itr = list_iterator_create(prec_list);
 	while((prec = list_next(itr))) {
@@ -158,55 +164,17 @@ static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
 	return;
 }
 
-/*
- * jobacct_gather_p_poll_data() - Build a table of all current processes
- *
- * IN/OUT: task_list - list containing current processes.
- * IN: pgid_plugin - if we are running with the pgid plugin.
- * IN: cont_id - container id of processes if not running with pgid.
- *
- * OUT:	none
- *
- * THREADSAFE! Only one thread ever gets here.  It is locked in
- * slurm_jobacct_gather.
- *
- * Assumption:
- *    Any file with a name of the form "/proc/[0-9]+/stat"
- *    is a Linux-style stat entry. We disregard the data if they look
- *    wrong.
- */
-extern void jobacct_gather_p_poll_data(
-	List task_list, bool pgid_plugin, uint64_t cont_id)
+static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
+		       jag_callbacks_t *callbacks)
 {
-	struct procsinfo proc;
-	pid_t *pids = NULL;
-	int npids = 0;
-	int i;
-	uint32_t total_job_mem = 0, total_job_vsize = 0;
+	jag_prec_t *prec = NULL;
 	int pid = 0;
-	static int processing = 0;
-	prec_t *prec = NULL;
-	struct jobacctinfo *jobacct = NULL;
-	List prec_list = NULL;
-	ListIterator itr;
-	ListIterator itr2;
-
-	if (!pgid_plugin && (cont_id == (uint64_t)NO_VAL)) {
-		debug("cont_id hasn't been set yet not running poll");
-		return;
-	}
-
-	if (processing) {
-		debug("already running, returning");
-		return;
-	}
-
-	processing = 1;
-	prec_list = list_create(_destroy_prec);
 
 	if (!pgid_plugin) {
+		pid_t *pids = NULL;
+		int npids = 0;
 		/* get only the processes in the proctrack container */
-		slurm_container_get_pids(cont_id, &pids, &npids);
+		proctrack_g_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
 			debug4("no pids in this container %"PRIu64"", cont_id);
 			goto finished;
@@ -252,65 +220,39 @@ extern void jobacct_gather_p_poll_data(
 /*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
 		}
 	}
-	if (!list_count(prec_list))
-		goto finished;
-
-	slurm_mutex_lock(&jobacct_lock);
-	if (!task_list || !list_count(task_list)) {
-		slurm_mutex_unlock(&jobacct_lock);
-		goto finished;
-	}
-	itr = list_iterator_create(task_list);
-	while ((jobacct = list_next(itr))) {
-		itr2 = list_iterator_create(prec_list);
-		while ((prec = list_next(itr2))) {
-			//debug2("pid %d ? %d", prec->ppid, jobacct->pid);
-			if (prec->pid == jobacct->pid) {
-				uint32_t cpu_calc = prec->ssec + prec->usec;
-
-				/* find all my descendents */
-				_get_offspring_data(prec_list, prec,
-						    prec->pid);
-
-				/* tally their usage */
-				jobacct->max_rss =
-					MAX(jobacct->max_rss, (int)prec->rss);
-				jobacct->tot_rss = prec->rss;
-				total_job_mem += prec->rss;
-				jobacct->max_vsize =
-					MAX(jobacct->max_vsize,
-					    (int)prec->vsize);
-				jobacct->tot_vsize = prec->vsize;
-				total_job_vsize += prec->vsize;
-				jobacct->max_pages =
-					MAX(jobacct->max_pages, prec->pages);
-				jobacct->tot_pages = prec->pages;
-				jobacct->min_cpu =
-					MAX(jobacct->min_cpu, cpu_calc);
-				jobacct->tot_cpu = cpu_calc;
-				debug2("%d size now %d %d time %d",
-				      jobacct->pid, jobacct->max_rss,
-				      jobacct->max_vsize, jobacct->tot_cpu);
-				break;
-			}
-		}
-		list_iterator_destroy(itr2);
-	}
-	list_iterator_destroy(itr);
-
-	jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
-
-finished:
-	list_destroy(prec_list);
-	processing = 0;
-
-	return;
 }
 
-static void _destroy_prec(void *object)
+/*
+ * jobacct_gather_p_poll_data() - Build a table of all current processes
+ *
+ * IN/OUT: task_list - list containing current processes.
+ * IN: pgid_plugin - if we are running with the pgid plugin.
+ * IN: cont_id - container id of processes if not running with pgid.
+ *
+ * OUT:	none
+ *
+ * THREADSAFE! Only one thread ever gets here.  It is locked in
+ * slurm_jobacct_gather.
+ *
+ * Assumption:
+ *    Any file with a name of the form "/proc/[0-9]+/stat"
+ *    is a Linux-style stat entry. We disregard the data if they look
+ *    wrong.
+ */
+extern void jobacct_gather_p_poll_data(
+	List task_list, bool pgid_plugin, uint64_t cont_id)
 {
-	prec_t *prec = (prec_t *)object;
-	xfree(prec);
+	static jag_callbacks_t callbacks;
+	static bool first = 1;
+
+	if (first) {
+		memset(&callbacks, 0, sizeof(jag_callbacks_t));
+		first = 0;
+		callbacks.get_precs = _get_precs;
+		callbacks.get_offspring_data = _get_offspring_data;
+	}
+
+	jag_common_poll_data(task_list, pgid_plugin, cont_id, &callbacks);
 	return;
 }
 
@@ -322,7 +264,10 @@ static void _destroy_prec(void *object)
  */
 extern int init ( void )
 {
-	pagesize = getpagesize()/1024;
+	if (_run_in_daemon()) {
+		jag_common_init(1);
+		pagesize = getpagesize()/1024;
+	}
 
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -330,6 +275,12 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	if (_run_in_daemon()) {
+		/* just to make sure it closes things up since we call it
+		 * from here */
+		acct_gather_energy_fini();
+	}
+
 	return SLURM_SUCCESS;
 }
 

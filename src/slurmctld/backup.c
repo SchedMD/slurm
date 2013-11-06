@@ -8,7 +8,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -60,6 +60,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -105,8 +106,9 @@ static int backup_sigarray[] = {
 
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
-void run_backup(void)
+void run_backup(slurm_trigger_callbacks_t *callbacks)
 {
+	int i;
 	uint32_t trigger_type;
 	time_t last_ping = 0;
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
@@ -149,7 +151,10 @@ void run_backup(void)
 	trigger_type = TRIGGER_TYPE_BU_CTLD_RES_OP;
 	_trigger_slurmctld_event(trigger_type);
 
-	sleep(5);       /* Give the primary slurmctld set-up time */
+	for (i = 0; ((i < 5) && (slurmctld_config.shutdown_time == 0)); i++) {
+		sleep(1);       /* Give the primary slurmctld set-up time */
+	}
+
 	/* repeatedly ping ControlMachine */
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
@@ -212,10 +217,19 @@ void run_backup(void)
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
 	pthread_join(slurmctld_config.thread_id_rpc, NULL);
 
+	if (!acct_db_conn) {
+		/* Make sure we get a connection right away to avoid
+		   race condition on this happening too late.
+		*/
+		acct_db_conn = acct_storage_g_get_connection(
+			callbacks, 0, false,
+			slurmctld_cluster_name);
+	}
+
 	/* clear old state and read new state */
 	lock_slurmctld(config_write_lock);
 	job_fini();
-	if (switch_restore(slurmctld_conf.state_save_location, true)) {
+	if (switch_g_restore(slurmctld_conf.state_save_location, true)) {
 		error("failed to restore switch state");
 		abort();
 	}

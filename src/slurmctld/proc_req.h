@@ -7,7 +7,7 @@
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -66,11 +66,12 @@ extern int slurm_drain_nodes(char *node_list, char *reason,
  * slurm_fail_job - terminate a job due to a launch failure
  *	no-op for jobs already terminated
  * job_id IN - slurm job id
+ * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
  * RET SLURM_SUCCESS or error code
  * NOTE: This is utilzed by plugins and not via RPC and it sets its
  *	own locks.
  */
-extern int slurm_fail_job(uint32_t job_id);
+extern int slurm_fail_job(uint32_t job_id, uint16_t job_state);
 
 /* Copy an array of type char **, xmalloc() the array and xstrdup() the
  * strings in the array */
