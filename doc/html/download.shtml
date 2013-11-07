@@ -9,7 +9,7 @@ SLURM has also been packaged for
 <a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
 (both named <i>slurm-llnl</i>).</p>
 
-<p>A <a href="http://www.bsc.es/plantillaA.php?cat_id=705">SLURM simulator</a>
+<p>A <a href="http://www.bsc.es/marenostrum-support-services/services/slurm-simulator">SLURM simulator</a>
 is available to assess various scheduling policies.
 Under simulation jobs are not actually executed. Instead a job execution trace
 from a real system or a synthetic trace are used.</p>
@@ -245,6 +245,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 30 October 2013</p>
+<p style="text-align:center;">Last modified 7 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
