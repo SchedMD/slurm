@@ -158,16 +158,16 @@ Write_Megabytes
 .TP
 Merge node-step files (as part of a sbatch script)
 .LP
-sbatch -n1 -d$SLURM_JOB_ID --wrap="sh5util --savefiles -j $SLURM_JOB_ID"
+sbatch \-n1 \-d$SLURM_JOB_ID \-\-wrap="sh5util \-\-savefiles \-j $SLURM_JOB_ID"
 
 .TP
 Extract all task data from a node
 .LP
-sh5util -j 42 -N snowflake01 --level=Node:TimeSeries --series=Tasks
+sh5util \-j 42 \-N snowflake01 \-\-level=Node:TimeSeries \-\-series=Tasks
 
 .TP
 Extract all energy data
-sh5util -j 42 --series=Energy --data=power
+sh5util \-j 42 \-\-series=Energy \-\-data=power
 
 .SH "COPYING"
 Copyright (C) 2013 Bull.
