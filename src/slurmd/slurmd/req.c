@@ -4302,7 +4302,11 @@ _build_env(job_env_t *job_env)
 	if (job_env->spank_job_env_size)
 		env_array_merge(&env, (const char **) job_env->spank_job_env);
 
+	slurm_mutex_lock(&conf->config_mutex);
+	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
 	setenvf(&env, "SLURM_CONF", conf->conffile);
+	slurm_mutex_unlock(&conf->config_mutex);
+
 	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->jobid);
 	setenvf(&env, "SLURM_JOB_UID",   "%u", job_env->uid);
 	name = uid_to_string(job_env->uid);
@@ -4312,10 +4316,6 @@ _build_env(job_env_t *job_env)
 	setenvf(&env, "SLURM_UID",   "%u", job_env->uid);
 	if (job_env->node_list)
 		setenvf(&env, "SLURM_NODELIST", "%s", job_env->node_list);
-
-	slurm_mutex_lock(&conf->config_mutex);
-	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
-	slurm_mutex_unlock(&conf->config_mutex);
 
 	if (job_env->resv_id) {
 #if defined(HAVE_BG)
