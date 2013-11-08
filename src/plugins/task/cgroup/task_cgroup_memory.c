@@ -454,7 +454,6 @@ extern int task_cgroup_memory_attach_task(slurmd_job_t *job)
 extern int task_cgroup_memory_check_oom(slurmd_job_t *job) {
 	xcgroup_t memory_cg;
 	uint64_t memory_memsw_failcnt;
-	size_t memory_memsw_failcnt_size;
 
 	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
 		if (xcgroup_lock(&memory_cg) == XCGROUP_SUCCESS) {
