@@ -451,7 +451,7 @@ extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job)
 	return fstatus;
 }
 
-extern int task_cgroup_memory_check_oom(slurmd_job_t *job)
+extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 {
 	xcgroup_t memory_cg;
 	uint64_t memory_memsw_failcnt;
