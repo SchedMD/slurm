@@ -289,6 +289,9 @@ extern int task_pre_launch (slurmd_job_t *job)
  */
 extern int task_post_term (slurmd_job_t *job)
 {
+	if (use_memory) {
+		task_cgroup_memory_check_oom(job);
+	}
 	return SLURM_SUCCESS;
 }
 
