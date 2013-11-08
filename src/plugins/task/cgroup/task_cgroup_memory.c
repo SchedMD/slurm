@@ -451,11 +451,13 @@ extern int task_cgroup_memory_attach_task(slurmd_job_t *job)
 	return fstatus;
 }
 
-extern int task_cgroup_memory_check_oom(slurmd_job_t *job) {
+extern int task_cgroup_memory_check_oom(slurmd_job_t *job)
+{
 	xcgroup_t memory_cg;
 	uint64_t memory_memsw_failcnt;
 
-	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
+	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
+	    == XCGROUP_SUCCESS) {
 		if (xcgroup_lock(&memory_cg) == XCGROUP_SUCCESS) {
 			/* for some reason the job cgroup limit is hit
 			 * for a step and vice versa...
@@ -464,14 +466,14 @@ extern int task_cgroup_memory_check_oom(slurmd_job_t *job) {
 			xcgroup_get_uint64_param(&step_memory_cg,
 						 "memory.memsw.failcnt",
 						 &memory_memsw_failcnt);
-			if(memory_memsw_failcnt > 0)
+			if (memory_memsw_failcnt > 0)
 				error("Exceeded step memory limit at some "
 				      "point. oom-killer likely "
 				      "killed a process.");
 			xcgroup_get_uint64_param(&job_memory_cg,
 						 "memory.memsw.failcnt",
 						 &memory_memsw_failcnt);
-			if(memory_memsw_failcnt > 0)
+			if (memory_memsw_failcnt > 0)
 				error("Exceeded job memory limit at some "
 				      "point. oom-killer likely "
 				      "killed a process.");

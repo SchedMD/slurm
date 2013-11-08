@@ -55,6 +55,7 @@ extern int task_cgroup_memory_create(slurmd_job_t *job);
 /* create a task cgroup and attach the task to it */
 extern int task_cgroup_memory_attach_task(slurmd_job_t *job);
 
+/* detect if oom ran on a step or job and print notice of said event */
 extern int task_cgroup_memory_check_oom(slurmd_job_t *job);
 
 #endif
