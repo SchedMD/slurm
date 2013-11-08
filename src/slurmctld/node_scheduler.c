@@ -511,7 +511,6 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	if ((agent_args->node_count - down_node_cnt) == 0) {
 		job_ptr->job_state &= (~JOB_COMPLETING);
-		job_hold_requeue(job_ptr);
 		delete_step_records(job_ptr);
 		slurm_sched_g_schedule();
 	}
@@ -2514,7 +2513,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 				    ((--job_ptr->node_cnt) == 0)) {
 					last_node_update = time(NULL);
 					job_ptr->job_state &= (~JOB_COMPLETING);
-					job_hold_requeue(job_ptr);
 					delete_step_records(job_ptr);
 					slurm_sched_g_schedule();
 				}
@@ -2542,7 +2540,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 			if ((job_ptr->node_cnt > 0) &&
 			    ((--job_ptr->node_cnt) == 0)) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
-				job_hold_requeue(job_ptr);
 				delete_step_records(job_ptr);
 				slurm_sched_g_schedule();
 				last_node_update = time(NULL);

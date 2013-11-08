@@ -2293,7 +2293,6 @@ extern int kill_job_by_front_end_name(char *node_name)
 				}
 				if (job_ptr->node_cnt == 0) {
 					job_ptr->job_state &= (~JOB_COMPLETING);
-					job_hold_requeue(job_ptr);
 					delete_step_records(job_ptr);
 					slurm_sched_g_schedule();
 				}
@@ -2520,7 +2519,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 			}
 			if (job_ptr->node_cnt == 0) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
-				job_hold_requeue(job_ptr);
 				delete_step_records(job_ptr);
 				slurm_sched_g_schedule();
 			}
@@ -10396,12 +10394,12 @@ extern int job_requeue(uid_t uid,
 		goto reply;
 	}
 
-	if (IS_JOB_COMPLETING(job_ptr)) {
-		if (IS_JOB_PENDING(job_ptr))
-			goto reply;	/* already requeued */
-		rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
+	/* In the process of completing or
+	 * already requeued.
+	 */
+	if (IS_JOB_COMPLETING(job_ptr)
+		|| (IS_JOB_PENDING(job_ptr)))
 		goto reply;
-	}
 
 	/* nothing else to do if pending */
 	if (IS_JOB_PENDING(job_ptr))
@@ -11431,7 +11429,6 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 		job_ptr->node_bitmap_cg = bit_alloc(node_record_count);
 		job_ptr->job_state &= (~JOB_COMPLETING);
 	}
-	job_hold_requeue(job_ptr);
 }
 
 /* job_hold_requeue()
@@ -11447,6 +11444,7 @@ void
 job_hold_requeue(struct job_record *job_ptr)
 {
 	uint32_t state;
+	uint32_t flags;
 
 	xassert(job_ptr);
 
@@ -11463,7 +11461,8 @@ job_hold_requeue(struct job_record *job_ptr)
 	 * we are not requeueing the job from
 	 * job_requeue() but from job_epilog_complete().
 	 */
-	job_ptr->job_state = JOB_PENDING;
+	flags = job_ptr->job_state & JOB_STATE_FLAGS;
+	job_ptr->job_state = JOB_PENDING | flags;
 
 	/* Test if user wants to requeue the job
 	 * in hold or with a special exit value.
