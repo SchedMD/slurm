@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Added squeue format option of "%X" (core specialization count).
  -- Added core specialization web page (just a start for now).
+ -- Added the SLURM_ARRAY_JOB_ID and SLURM_ARRAY_TASK_ID
+    in epilogi slurmctld environment.
 
 * Changes in Slurm 13.12.0pre4
 ==============================
