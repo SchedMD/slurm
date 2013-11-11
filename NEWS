@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Added squeue format option of "%X" (core specialization count).
  -- Added core specialization web page (just a start for now).
+ -- Added the SLURM_ARRAY_JOB_ID and SLURM_ARRAY_TASK_ID
+    in epilogi slurmctld environment.
 
 * Changes in Slurm 13.12.0pre4
 ==============================
@@ -136,6 +138,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Correction to hostlist parsing bug introduced in v2.6.4 for hostlists with
     more than one numeric range in brackets (e.g. rack[0-3]_blade[0-63]").
+ -- Add notification if using proctrack/cgroup and task/cgroup when oom hits.
 
 * Changes in Slurm 2.6.4
 ========================

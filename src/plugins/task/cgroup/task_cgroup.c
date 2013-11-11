@@ -289,6 +289,9 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
  */
 extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task)
 {
+	if (use_memory) {
+		task_cgroup_memory_check_oom(job);
+	}
 	return SLURM_SUCCESS;
 }
 

@@ -47,7 +47,8 @@ static int _parse_restart_args(int argc, char **argv,
 			       uint16_t *stick, char **image_dir);
 static void _update_job_size(uint32_t job_id);
 static int _parse_requeue_flags(char *, uint32_t *state_flags);
-
+static inline bool is_job_array(const char *);
+static uint32_t get_array_job_id(const char *);
 /*
  * scontrol_checkpoint - perform some checkpoint/resume operation
  * IN op - checkpoint operation
@@ -350,11 +351,20 @@ scontrol_requeue(int argc, char **argv)
 		return 0;
 	}
 
-	job_id = (uint32_t)strtol(argv[0], &next_str, 10);
-	if (next_str[0] != '\0') {
-		fprintf(stderr, "Invalid job id specified\n");
-		exit_code = 1;
-		return 0;
+	if (is_job_array(argv[0])) {
+		job_id = get_array_job_id(argv[0]);
+		if (job_id == NO_VAL) {
+			fprintf(stderr, "Invalid array job id specified\n");
+			exit_code = 1;
+			return 0;
+		}
+	} else {
+		job_id = (uint32_t)strtol(argv[0], &next_str, 10);
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job id specified\n");
+			exit_code = 1;
+			return 0;
+		}
 	}
 
 	rc = slurm_requeue(job_id, 0);
@@ -378,11 +388,20 @@ scontrol_requeue_hold(int argc, char **argv)
 	else
 		job_id_str = argv[1];
 
-	job_id = (uint32_t)strtol(job_id_str, &next_str, 10);
-	if (next_str[0] != '\0') {
-		fprintf(stderr, "Invalid job id specified\n");
-		exit_code = 1;
-		return 0;
+	if (is_job_array(job_id_str)) {
+		job_id = get_array_job_id(job_id_str);
+		if (job_id == NO_VAL) {
+			fprintf(stderr, "Invalid array job id specified\n");
+			exit_code = 1;
+			return 0;
+		}
+	} else {
+		job_id = (uint32_t)strtol(job_id_str, &next_str, 10);
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job id specified\n");
+			exit_code = 1;
+			return 0;
+		}
 	}
 
 	if (argc == 2) {
@@ -1007,4 +1026,74 @@ _parse_requeue_flags(char *s, uint32_t *state)
 
 	xfree(p0);
 	return -1;
+}
+
+/* is_job_array()
+ * Detect the _ jobid separator.
+ */
+static inline bool
+is_job_array(const char *jobid)
+{
+	int cc;
+
+	cc = 0;
+	while (*jobid) {
+		if (*jobid == '_')
+			++cc;
+		++jobid;
+	}
+	if (cc == 1)
+		return true;
+	return false;
+}
+
+/* get_array_job_id()
+ */
+static uint32_t
+get_array_job_id(const char *jobid)
+{
+	char job_id[64];
+	char *taskid;
+	char *next_str;
+	int ntaskid;
+	int njobid;
+	int cc;
+	int ujobid;
+	job_info_msg_t *job_info;
+
+	if (strlen(jobid) > 63)
+		return NO_VAL;
+
+	strcpy(job_id, jobid);
+
+	taskid = strchr(job_id, '_');
+	if (taskid == NULL)
+		return NO_VAL;
+
+	*taskid = 0;
+	++taskid;
+
+	ntaskid = (uint32_t)strtol(taskid, &next_str, 10);
+	if (next_str[0] != '\0')
+		return NO_VAL;
+
+	njobid = (uint32_t)strtol(job_id, &next_str, 10);
+	if (next_str[0] != '\0')
+		return NO_VAL;
+
+	cc = slurm_load_job(&job_info, njobid, SHOW_ALL);
+	if (cc < 0)
+		return NO_VAL;
+
+	ujobid = -1;
+	for (cc = 0; cc < job_info->record_count; cc++) {
+		if (ntaskid == job_info->job_array[cc].array_task_id) {
+			ujobid = job_info->job_array[cc].job_id;
+			break;
+		}
+	}
+
+	slurm_free_job_info_msg(job_info);
+
+	return ujobid;
 }
