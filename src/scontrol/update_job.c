@@ -1110,6 +1110,7 @@ _get_job_ids(const char *jobid, uint32_t *num_ids)
 	int i;
 	int cc;
 
+	task_id = 0;
 	job_info = _get_job_info(jobid, &task_id);
 	if (job_info == NULL)
 		return NULL;
