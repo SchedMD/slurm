@@ -274,13 +274,15 @@ Requeue a running, suspended or finished SLURM batch job into pending state.
 Requeue a running, suspended or finished SLURM batch job into pending state,
 moreover the job is put in held state (priority zero). A held job can be
 release using scontrol to reset its priority (e.g. "scontrol release <job_id>").
-.TP 20
+The command accepts the following option:
+.RS
+.TP 12
 \fIState=SpecialExit\fP
-The "SpecialExit" keyword specifies that the job has to be put in a
-special state \fBJOB_SPECIAL_EXIT\fP. The "scontrol show job" command
-will display the JobState as \fBSPECIAL_EXIT\fP, while the "squeue"
-command as \fBSE\fP.
-.TP
+The "SpecialExit" keyword specifies that the job
+has to be put in a special state \fBJOB_SPECIAL_EXIT\fP.
+The "scontrol show job" command will display the JobState as
+\fBSPECIAL_EXIT\fP, while the "squeue" command as \fBSE\fP.
+.RE
 
 \fBresume\fP \fIjob_id\fP
 Resume a previously suspended job. Also see \fBsuspend\fR.
