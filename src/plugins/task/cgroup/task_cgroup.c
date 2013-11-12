@@ -289,8 +289,14 @@ extern int task_pre_launch (slurmd_job_t *job)
  */
 extern int task_post_term (slurmd_job_t *job)
 {
-	if (use_memory) {
+	static bool ran = false;
+
+	/* Only run this on the first call since this will run for
+	 * every task on the node.
+	 */
+	if (use_memory && !ran) {
 		task_cgroup_memory_check_oom(job);
+		ran = true;
 	}
 	return SLURM_SUCCESS;
 }
