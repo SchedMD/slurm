@@ -9,6 +9,7 @@
 #  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 #  Written by Danny Auble <auble1@llnl.gov>.
 #  CODE-OCEC-09-009. All rights reserved.
+#  Additions by Troy Baer <tbaer@utk.edu>
 #
 #  This file is part of SLURM, a resource management program.
 #  For details, see <http://slurm.schedmd.com/>.
@@ -54,11 +55,17 @@ use Switch;
 Main:
 {
     # Parse Command Line Arguments
-    my ($all, $help, $man);
+    my ($all, $clear, $help, $man, $shortlist, $printnote, $offline, $reset, $setnote);
     GetOptions(
-        'a'      => \$all,
-        'help|?' => \$help,
-        'man'    => \$man,
+        'all|a'       => \$all,
+	'clear|c'     => \$clear,
+        'help|?'      => \$help,
+        'list|l'      => \$shortlist,
+        'man'         => \$man,
+        'note|n'      => \$printnote,
+	'offline|o'   => \$offline,
+        'reset|r'     => \$reset,
+        'setnote|N=s' => \$setnote
       )
       or pod2usage(2);
 
@@ -83,52 +90,138 @@ Main:
 
     # Use sole remaining argument as nodeIds
     my @nodeIds = @ARGV;
+    my $slurm = Slurm::new();
 
 
-    my $resp = Slurm->load_node(0, SHOW_ALL);
+    # handle all of the node update operations
+    if ( defined $clear || defined $offline || defined $reset ) {
+           my $oprc = 0;
+           foreach my $node (@nodeIds) {
+	           my $nodestate;
+		   if ( defined $clear || defined $reset ) {
+                           $nodestate = {node_names=>$node,node_state=>NODE_RESUME};
+		   } elsif ( defined $offline ) {
+                           $nodestate = {node_names=>$node,node_state=>NODE_STATE_DRAIN};
+		   }
+		   if ( defined $setnote ) {
+		           $nodestate->{'reason'} = $setnote;
+		   }
+                   my $rc = $slurm->update_node($nodestate);
+                   if ( $rc!=0 ) {
+                           $oprc += $rc;
+                   }
+           }
+           exit($oprc);
+    }
+
+    # if we've gotten to this point, we're doing some kind of list operation
+    my $resp = $slurm->load_node(0, SHOW_ALL);
     if(!$resp) {
 	    die "Problem loading node.\n";
     }
 
-
+    my $update = $resp->{last_update};
     foreach my $node (@{$resp->{node_array}}) {
+            #print STDERR join(",",keys($node))."\n";
 	    my $nodeId    = $node->{'name'};
 	    my $rCProc    = $node->{'cpus'};
+	    my $rBoards   = $node->{'boards'};
+	    my $rSockets  = $node->{'sockets'};
+            my $rCores    = $node->{'cores'};
+            my $rThreads  = $node->{'threads'};
 	    my $features  = $node->{'features'};
 	    my $rAMem     = $node->{'real_memory'};
 	    my $rAProc    = ($node->{'cpus'} -
 		    ($node->{'alloc_cpus'} + $node->{'err_cpus'}));
-	    my $state = lc(Slurm->node_state_string($node->{'node_state'}));
+	    my $state     = lc(Slurm->node_state_string($node->{'node_state'}));
+            my $reason    = $node->{'reason'};
+	    my $gres      = $node->{'gres'};
+	    my $os        = lc($node->{'os'});
+	    my $arch      = $node->{'arch'};
+	    my $disksize  = $node->{'tmp_disk'};
 
-#these aren't really defined in slurm, so I am not sure what to get them from
-	    my $os        = $node->{'OS'};
-	    my $load      = $node->{'LOAD'};
-	    my $arch      = $node->{'ARCH'};
-#
+	    # deal w/ specific types of gres
+	    my $gpus = 0;
+	    my $mics = 0;
+	    if ( defined $gres ) {
+                  my @gres = split(/,/,$gres);
+                  foreach my $grestype ( @gres ) {
+                          my @elt = split(/:/,$grestype);
+			  if ( $#elt>0 && $elt[0] eq "gpu" ) {
+			          $gpus = int($elt[1]);
+			  }
+			  if ( $#elt>0 && $elt[0] eq "mic" ) {
+			          $mics = int($elt[1]);
+			  }
+		  }
+	    }
+
+            # find job(s) on node
+	    my $jobs;
+	    if ( $state eq "allocated" ) {
+                    # how to get list of jobs on node efficiently?
+            }
+
+            # this isn't really defined in SLURM, so I am not sure how to get it
+	    my $load;
+
+	    # mangle SLURM states into PBS equivs
+	    my $pbsstate = $state;
+	    $pbsstate =~ s/drained/offline/g;
+	    $pbsstate =~ s/idle/free/g;
+            $pbsstate =~ s/\*//g;
+	    if ( $state eq "allocated" ) {
+	            if ( $rAProc>0 ) {
+                            $pbsstate = "busy";
+		    } else {
+                            $pbsstate = "job-exclusive";
+		    }
+	    }
 
 	    # Filter nodes according to options and arguments
 	    if (@nodeIds) {
 		    next unless grep /^$nodeId/, @nodeIds;
 	    }
 
-	    # Prepare variables
+            if ( !defined($shortlist) ) {
+	            # Prepare variables
+	            my @status = ();
+		    push @status, "rectime=$update" if defined $update;
+		    push @status, "jobs=$jobs" if defined $jobs;
+		    push @status, "state=$pbsstate" if defined $pbsstate;
+	            push @status, "slurmstate=$state" if defined $state;
+		    push @status, "size=".(int($disksize)*1024)."kb:".(int($disksize)*1024)."kb" if defined $disksize;
+		    push @status, "gres=$gres" if defined $gres;
+		    push @status, "message=\"$reason\"" if defined $reason;
+	            push @status, "loadave=" . sprintf("%.2f", $load) if defined $load;
+	            push @status, "ncpus=${rCProc}" if defined $rCProc;
+		    push @status, "boards=${rBoards}" if defined $rBoards;
+		    push @status, "sockets=${rSockets}" if defined $rSockets;
+	            push @status, "cores=${rCores}" if defined $rCores;
+		    push @status, "threads=${rThreads}" if defined $rThreads;
+	            push @status, "availmem=${rAMem}mb" if defined $rAMem;
+         	    push @status, "opsys=$os" if defined $os;
+	            push @status, "arch=$arch" if defined $arch;
 
-	    my @status = ();
-	    push @status, "opsys=$os" if $os;
-	    push @status, "loadave=" . sprintf("%.2f", $load) if defined $load;
-	    push @status, "state=$state";
-
-	    # Print the node attributes
-	    printf "%s\n",             $nodeId;
-	    printf "    state = %s\n", $state;
-	    printf "    pcpus = %s\n", $rCProc if $rCProc;
-	    printf "    properties = %s\n", join(' ', split(/:/, $features))
-		    if $features;
-	    printf "    status = %s\n", join(',', @status) if @status;
-	    printf "    resources_available.arch = %s\n", $arch if $arch;
-	    printf "    resources_available.mem = %smb\n", $rAMem if defined $rAMem;
-	    printf "    resources_available.ncpus = %s\n", $rAProc if defined $rAProc;
-	    print "\n";
+         	    # Print the node attributes
+    	            printf "%s\n",             $nodeId;
+	            printf "    state = %s\n", $pbsstate;
+	            printf "    np = %s\n", $rCProc if $rCProc;
+	            printf "    properties = %s\n", join(' ', split(/:/, $features))
+		      if $features;
+                    printf "    ntype = cluster\n";
+	            printf "    status = %s\n", join(',', @status) if @status;
+		    printf "    note = %s\n", $reason if defined $reason;
+		    printf "    gpus = %d\n", $gpus if $gpus>0;
+		    printf "    mics = %d\n", $mics if $mics>0;
+	            print "\n";
+	     } else {
+	            if ( $state =~ /drained|down/i ) {
+                            printf "%s\t\t%s",$nodeId,$pbsstate;
+                            printf "\t\t%s",$reason if ( defined $printnote && defined $reason );
+                            print "\n";
+                    }
+             }
     }
 
     # Exit with status code
@@ -142,15 +235,20 @@ __END__
 
 =head1 NAME
 
-B<pbsnodes> - display host information in a familiar pbs format
+B<pbsnodes> - display and manipulate host information in a PBS-like format
 
 =head1 SYNOPSIS
 
 B<pbsnodes> [B<-a>] [I<node_id>...]
 
+B<pbsnodes> B<-l> [B<-n>]
+
+B<pbsnodes> B<-{c|r|o}> [I<node_id>...] [ B<-N> "note/reason string"]
+
 =head1 DESCRIPTION
 
-The B<pbsnodes> command displays information about nodes.
+The B<pbsnodes> command displays and manipulates information about
+nodes.
 
 =head1 OPTIONS
 
@@ -158,7 +256,31 @@ The B<pbsnodes> command displays information about nodes.
 
 =item B<-a>
 
-Display information for all nodes. This is the default if no node name is specified.
+Display information for all nodes. This is the default if no node name
+is specified.
+
+=item B<-c>
+
+Clear OFFLINE from listed nodes.
+
+=item B<-l>
+
+List node names and their state for nodes that are DOWN, OFFLINE, or
+UNKNOWN.
+
+=item B<-N>
+
+Specify a "note/reason" attribute.  Use "" to clear field.
+
+=item B<-n>
+
+Show the "note/reason" attribute for nodes that are DOWN, OFFLINE, or
+UNKNOWN.  This option requires B<-l>.
+
+=item B<-r>
+
+Reset the listed nodes by clearing OFFLINE.  Functionally equivalent
+to B<-c>.
 
 =item B<-? | --help>
 
