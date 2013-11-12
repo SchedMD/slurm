@@ -28,10 +28,20 @@ the cgroup.</li>
 <li>additional state objects specific to each subsystem.</li>
 </ul>
 </ul>
-<p><b>NOTE:</b> There can be a serious performance problem with memory cgroups
+
+<h2>General Usage Notes</h2>
+<ul>
+<li>There can be a serious performance problem with memory cgroups
 on conventional multi-socket, multi-core nodes in kernels prior to 2.6.38 due
 to contention between processors for a spinlock.  This problem seems to have
-been completely fixed in the 2.6.38 kernel.</p>
+been completely fixed in the 2.6.38 kernel.</li>
+<li>Debian and derivatives (e.g. Ubuntu) usually exclude the memory and memsw
+ (swap) cgroups by default.  To include them, add the following parameters to
+the kernel command line: <pre>cgroup_enable=memory swapaccount=1</pre>
+This can usually be placed in /etc/default/grub inside the
+<i>GRUB_CMDLINE_LINUX</i> variable.  A command such as <i>update-grub</i> must
+be run after updating the file.
+</ul>
 
 <h2>Use of Cgroups in SLURM</h2>
 <p>SLURM provides cgroup versions of a number of plugins.</p>
@@ -174,6 +184,6 @@ the following example.</li>
 </ul>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 October 2012</p>
+<p style="text-align:center;">Last modified 8 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

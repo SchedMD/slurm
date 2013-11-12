@@ -451,6 +451,22 @@ extern int task_cgroup_memory_attach_task(slurmd_job_t *job)
 	return fstatus;
 }
 
+/* return 1 if failcnt file exists and is > 0 */
+int failcnt_non_zero(xcgroup_t* cg, char* param)
+{
+	int fstatus = XCGROUP_ERROR;
+	uint64_t value;
+	fstatus = xcgroup_get_uint64_param(cg,
+					   param,
+					   &value);
+	if(fstatus != XCGROUP_SUCCESS) {
+		debug2("unable to read '%s' from '%s'", param, cg->path);
+		return 0;
+	}
+	else
+		return value > 0;
+}
+
 extern int task_cgroup_memory_check_oom(slurmd_job_t *job)
 {
 	xcgroup_t memory_cg;
@@ -463,20 +479,26 @@ extern int task_cgroup_memory_check_oom(slurmd_job_t *job)
 			 * for a step and vice versa...
 			 * can't tell which is which so we'll treat
 			 * them the same */
-			xcgroup_get_uint64_param(&step_memory_cg,
-						 "memory.memsw.failcnt",
-						 &memory_memsw_failcnt);
-			if (memory_memsw_failcnt > 0)
+			if(failcnt_non_zero(&step_memory_cg,
+					     "memory.memsw.failcnt"))
 				error("Exceeded step memory limit at some "
-				      "point. oom-killer likely "
-				      "killed a process.");
-			xcgroup_get_uint64_param(&job_memory_cg,
-						 "memory.memsw.failcnt",
-						 &memory_memsw_failcnt);
-			if (memory_memsw_failcnt > 0)
+				      "point. oom-killer likely killed a "
+				      "process.");
+			else if(failcnt_non_zero(&step_memory_cg,
+						  "memory.failcnt"))
+				error("Exceeded step memory limit at some "
+				      "point. Step may have been partially "
+				      "swapped out to disk.");
+			if(failcnt_non_zero(&job_memory_cg,
+					     "memory.memsw.failcnt"))
 				error("Exceeded job memory limit at some "
-				      "point. oom-killer likely "
-				      "killed a process.");
+				      "point. oom-killer likely killed a "
+				      "process.");
+			else if(failcnt_non_zero(&job_memory_cg,
+						  "memory.failcnt"))
+				error("Exceeded job memory limit at some "
+				      "point. Job may have been partially "
+				      "swapped out to disk.");
 			xcgroup_unlock(&memory_cg);
 		} else
 			error("task/cgroup task_cgroup_memory_check_oom: "
