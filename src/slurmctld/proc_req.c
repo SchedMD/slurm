@@ -3658,8 +3658,19 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 
 	job_ptr = find_job_record(req_ptr->job_id);
 	if (job_ptr == NULL) {
+		slurm_msg_t resp_msg;
+		return_code_msg_t rc_msg;
+
 		info("%s: %u: %s", __func__, req_ptr->job_id,
 		     slurm_strerror(ESLURM_INVALID_JOB_ID));
+
+		slurm_msg_t_init(&resp_msg);
+		resp_msg.protocol_version = msg->protocol_version;
+		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		rc_msg.return_code = ESLURM_INVALID_JOB_ID;
+		resp_msg.data      = &rc_msg;
+		slurm_send_node_msg(msg->conn_fd, &resp_msg);
+
 		return;
 	}
 
