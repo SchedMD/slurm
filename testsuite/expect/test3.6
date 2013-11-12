@@ -179,22 +179,27 @@ if {$hidden == 0} {
 	set exit_code 1
 }
 
-#
-# Confirm partition is hidden by default
-#
-spawn $scontrol show part $part_name
-expect {
-	-re "PartitionName" {
-		send_user "\nFAILURE: partition not hidden\n"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
+set uid [get_my_uid]
+
+# This test will not work for user root since they always see all partitions
+if {$uid > 0} {
+	#
+	# Confirm partition is hidden by default
+	#
+	spawn $scontrol show part $part_name
+	expect {
+		-re "PartitionName" {
+			send_user "\nFAILURE: partition not hidden\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
 }
 
