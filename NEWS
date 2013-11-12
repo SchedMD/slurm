@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Added the SLURM_ARRAY_JOB_ID and SLURM_ARRAY_TASK_ID
     in epilogi slurmctld environment.
  -- Fix bug in job step allocation failing due to memory limit.
+ -- Modify the pbsnodes script to reflect its output on a TORQUE system.
 
 * Changes in Slurm 13.12.0pre4
 ==============================
