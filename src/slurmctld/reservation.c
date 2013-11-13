@@ -80,6 +80,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
+#define _DEBUG		0
 #define ONE_YEAR	(365 * 24 * 60 * 60)
 #define RESV_MAGIC	0x3b82
 
@@ -1394,8 +1395,10 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack32(&core_cnt,		buffer);
 		safe_unpackstr_xmalloc(&core_inx_str, &uint32_tmp, buffer);
 		if (core_inx_str == NULL) {
-			debug2("Reservation %s has no core_bitmap",
+#if _DEBUG
+			info("Reservation %s has no core_bitmap",
 			     resv_ptr->name);
+#endif
 		} else {
 			resv_ptr->core_bitmap = bit_alloc(core_cnt);
 			bit_unfmt(resv_ptr->core_bitmap, core_inx_str);
@@ -1767,9 +1770,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					rc = ESLURM_INVALID_NODE_NAME;
 					goto bad_parse;
 				}
-				debug2("Requesting %d cores for node_list %d", 
-					resv_desc_ptr->core_cnt[nodeinx], 
-					nodeinx);
+#if _DEBUG
+				info("Requesting %d cores for node_list %d", 
+				     resv_desc_ptr->core_cnt[nodeinx], 
+				     nodeinx);
+#endif
 				nodeinx++;
 			}
 			rc = _select_nodes(resv_desc_ptr, &part_ptr,
@@ -1852,13 +1857,17 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 
 	if (!resv_desc_ptr->core_cnt) {
-		debug2("reservation using full nodes");
+#if _DEBUG
+		info("reservation using full nodes");
+#endif
 		_set_cpu_cnt(resv_ptr);
 		resv_ptr->full_nodes = 1;
 	} else {
 		resv_ptr->cpu_cnt = bit_set_count(resv_ptr->core_bitmap);
-		debug2("reservation using partial nodes: core count %u",
-		       resv_ptr->cpu_cnt);
+#if _DEBUG
+		info("reservation using partial nodes: core count %u",
+		     resv_ptr->cpu_cnt);
+#endif
 		resv_ptr->full_nodes = 0;
 	}
 
@@ -2964,7 +2973,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 
 	/* Don't use node already reserved */
-	if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
+	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
+	    !(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
 		iter = list_iterator_create(resv_list);
 		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 			if (resv_ptr->end_time <= now)
@@ -3164,7 +3174,6 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 	int i_core, i_node;
 	int start = 0;
 	int rep_count = 0;
-	char str[200];
 	job_resources_t *job_res = job_ptr->job_resrcs;
 
 	if (!job_res->core_bitmap)
@@ -3172,18 +3181,18 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 
 	total_nodes = bit_set_count(job_res->node_bitmap);
 
-	debug2("Checking %d (of %d) nodes for job %u, core_bitmap_size: %d",
-	       total_nodes, bit_size(job_res->node_bitmap),
-	       job_ptr->job_id, bit_size(job_res->core_bitmap));
-
+#if _DEBUG
+{
+	char str[200];
 	bit_fmt(str, sizeof(str), job_res->core_bitmap);
-	debug2("job coremap: %s", str);
+	info("Checking %d nodes (of %d) for job %u, "
+	     "core_bitmap:%s core_bitmap_size:%d",
+	     total_nodes, bit_size(job_res->node_bitmap),
+	     job_ptr->job_id, str, bit_size(job_res->core_bitmap));
+}
+#endif
 
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
-
-	debug2("Let's see core distribution for jobid: %u",
-	       job_ptr->job_id);
-	debug2("Total number of nodes: %d", total_nodes);
 
 	if (*core_bitmap == NULL)
 		_create_cluster_core_bitmap(core_bitmap);
@@ -3196,9 +3205,11 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 		int repeat_node_conf = job_res->sock_core_rep_count[rep_count++];
 		int node_bitmap_inx;
 
-		debug2("Working with %d cores per node. Same node conf repeated"
-		       " %d times (start core offset %d)",
-		       cores_in_a_node, repeat_node_conf, start);
+#if _DEBUG
+		info("Working with %d cores per node. Same node conf repeated "
+		     "%d times (start core offset %d)",
+		     cores_in_a_node, repeat_node_conf, start);
+#endif
 
 		i_node += repeat_node_conf;
 
@@ -3212,8 +3223,10 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 			allocated = 0;
 
 			for (i_core=0;i_core < cores_in_a_node;i_core++) {
-				debug2("i_core: %d, start: %d, allocated: %d",
-				       i_core, start, allocated);
+#if _DEBUG
+				info("i_core: %d, start: %d, allocated: %d",
+				     i_core, start, allocated);
+#endif
 				if (bit_test(job_ptr->job_resrcs->core_bitmap,
 					     i_core + start)) {
 					allocated++;
@@ -3221,13 +3234,16 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 					global_core_start + i_core);
 				}
 			}
-			debug2("Checking node %d, allocated: %d, "
-			       "cores_in_a_node: %d", node_bitmap_inx,
-			       allocated, cores_in_a_node);
-
+#if _DEBUG
+			info("Checking node %d, allocated: %d, "
+			     "cores_in_a_node: %d", node_bitmap_inx,
+			     allocated, cores_in_a_node);
+#endif
 			if (allocated == cores_in_a_node) {
 				/* We can exclude this node */
-				debug2("Excluding node %d", node_bitmap_inx);
+#if _DEBUG
+				info("Excluding node %d", node_bitmap_inx);
+#endif
 				bit_clear(avail_bitmap, node_bitmap_inx);
 			}
 			start += cores_in_a_node;
@@ -3243,17 +3259,21 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	bitstr_t *save_bitmap, *ret_bitmap, *tmp_bitmap;
+	bitstr_t *orig_bitmap, *save_bitmap = NULL, *ret_bitmap, *tmp_bitmap;
+	int total_node_cnt;
 
-	if (bit_set_count(avail_bitmap) < node_cnt) {
+	total_node_cnt = bit_set_count(avail_bitmap);
+	if (total_node_cnt < node_cnt) {
 		verbose("reservation requests more nodes than are available");
 		return NULL;
+	} else if ((total_node_cnt == node_cnt) &&
+		   (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
+		return select_g_resv_test(avail_bitmap, node_cnt,
+					  resv_desc_ptr->core_cnt, core_bitmap);
 	}
 
-	save_bitmap = bit_copy(avail_bitmap);
-	bit_or(avail_bitmap, save_bitmap);	/* restore avail_bitmap */
+	orig_bitmap = bit_copy(avail_bitmap);
 	job_iterator = list_iterator_create(job_list);
-
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
@@ -3269,12 +3289,21 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 						 core_bitmap);
 		}
 	}
-
 	list_iterator_destroy(job_iterator);
-	ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt,
-					resv_desc_ptr->core_cnt, core_bitmap);
-	if (ret_bitmap)
-		goto fini;
+
+	total_node_cnt = bit_set_count(avail_bitmap);
+	if (total_node_cnt >= node_cnt) {
+		/* NOTE: select_g_resv_test() does NOT preserve avail_bitmap,
+		 * so we do that here and other calls to that function */
+		save_bitmap = bit_copy(avail_bitmap);
+		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt,
+						resv_desc_ptr->core_cnt,
+						core_bitmap);
+		if (ret_bitmap)
+			goto fini;
+		bit_or(avail_bitmap, save_bitmap);
+		FREE_NULL_BITMAP(save_bitmap);
+	}
 
 	/* Next: Try to reserve nodes that will be allocated to a limited
 	 * number of running jobs. We could sort the jobs by priority, QOS,
@@ -3289,14 +3318,21 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 				continue;
 			if (job_ptr->end_time < resv_desc_ptr->start_time)
 				continue;
-			tmp_bitmap = bit_copy(save_bitmap);
+			tmp_bitmap = bit_copy(orig_bitmap);
 			bit_and(tmp_bitmap, job_ptr->node_bitmap);
-			if (bit_set_count(tmp_bitmap) > 0) {
+			if (bit_set_count(tmp_bitmap) > 0)
 				bit_or(avail_bitmap, tmp_bitmap);
+			total_node_cnt = bit_set_count(avail_bitmap);
+			if (total_node_cnt >= node_cnt) {
+				save_bitmap = bit_copy(avail_bitmap);
 				ret_bitmap = select_g_resv_test(avail_bitmap,
 						node_cnt,
 						resv_desc_ptr->core_cnt,
 						core_bitmap);
+				if (!ret_bitmap) {
+					bit_or(avail_bitmap, save_bitmap);
+					FREE_NULL_BITMAP(save_bitmap);
+				}
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);
 			if (ret_bitmap)
@@ -3305,17 +3341,16 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 		list_iterator_destroy(job_iterator);
 	}
 
-fini:	FREE_NULL_BITMAP(save_bitmap);
-#if 0
+fini:	FREE_NULL_BITMAP(orig_bitmap);
+	FREE_NULL_BITMAP(save_bitmap);
+#if _DEBUG
 	if (ret_bitmap) {
 		char str[300];
 		bit_fmt(str, (sizeof(str) - 1), ret_bitmap);
-		info("pick_idle_nodes getting %s from select cons_res", str);
+		info("_pick_idle_node_cnt: node bitmap:%s", str);
 		if (*core_bitmap) {
 			bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
-			info("pick_idle_nodes getting core_cnt:%d coremap:%s "
-			     "from select/cons_res",
-			     resv_desc_ptr->core_cnt, str);
+			info("_pick_idle_node_cnt: core bitmap:%s", str);
 		}
 	}
 #endif
@@ -3741,14 +3776,18 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 
 			if ((resv_ptr->full_nodes) ||
 			    (!job_ptr->details->shared)) {
-				debug2("reservation uses full nodes or job will"
-				       " not share nodes");
+#if _DEBUG
+				info("reservation uses full nodes or job will "
+				     "not share nodes");
+#endif
 				bit_not(resv_ptr->node_bitmap);
 				bit_and(*node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);
 			} else {
-				debug2("job_test_resv: %s reservation uses "
-				       "partial nodes", resv_ptr->name);
+#if _DEBUG
+				info("job_test_resv: %s reservation uses "
+				     "partial nodes", resv_ptr->name);
+#endif
 				if (*exc_core_bitmap == NULL) {
 					*exc_core_bitmap =
 						bit_copy(resv_ptr->core_bitmap);
