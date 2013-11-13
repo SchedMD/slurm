@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Correction to hostlist parsing bug introduced in v2.6.4 for hostlists with
     more than one numeric range in brackets (e.g. rack[0-3]_blade[0-63]").
  -- Add notification if using proctrack/cgroup and task/cgroup when oom hits.
+ -- Corrections to advanced reservation logic with overlapping jobs.
 
 * Changes in Slurm 2.6.4
 ========================

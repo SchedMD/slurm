@@ -2961,7 +2961,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 
 	/* Don't use node already reserved */
-	if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
+	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
+	    !(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
 		iter = list_iterator_create(resv_list);
 		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 			if (resv_ptr->end_time <= now)
@@ -3240,17 +3241,21 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	bitstr_t *save_bitmap, *ret_bitmap, *tmp_bitmap;
+	bitstr_t *orig_bitmap, *save_bitmap = NULL, *ret_bitmap, *tmp_bitmap;
+	int total_node_cnt;
 
-	if (bit_set_count(avail_bitmap) < node_cnt) {
+	total_node_cnt = bit_set_count(avail_bitmap);
+	if (total_node_cnt < node_cnt) {
 		verbose("reservation requests more nodes than are available");
 		return NULL;
+	} else if ((total_node_cnt == node_cnt) &&
+		   (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
+		return select_g_resv_test(avail_bitmap, node_cnt,
+					  resv_desc_ptr->core_cnt, core_bitmap);
 	}
 
-	save_bitmap = bit_copy(avail_bitmap);
-	bit_or(avail_bitmap, save_bitmap);	/* restore avail_bitmap */
+	orig_bitmap = bit_copy(avail_bitmap);
 	job_iterator = list_iterator_create(job_list);
-
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
@@ -3266,12 +3271,21 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 						 core_bitmap);
 		}
 	}
-
 	list_iterator_destroy(job_iterator);
-	ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt,
-					resv_desc_ptr->core_cnt, core_bitmap);
-	if (ret_bitmap)
-		goto fini;
+
+	total_node_cnt = bit_set_count(avail_bitmap);
+	if (total_node_cnt >= node_cnt) {
+		/* NOTE: select_g_resv_test() does NOT preserve avail_bitmap,
+		 * so we do that here and other calls to that function */
+		save_bitmap = bit_copy(avail_bitmap);
+		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt,
+						resv_desc_ptr->core_cnt,
+						core_bitmap);
+		if (ret_bitmap)
+			goto fini;
+		bit_or(avail_bitmap, save_bitmap);
+		FREE_NULL_BITMAP(save_bitmap);
+	}
 
 	/* Next: Try to reserve nodes that will be allocated to a limited
 	 * number of running jobs. We could sort the jobs by priority, QOS,
@@ -3286,14 +3300,21 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 				continue;
 			if (job_ptr->end_time < resv_desc_ptr->start_time)
 				continue;
-			tmp_bitmap = bit_copy(save_bitmap);
+			tmp_bitmap = bit_copy(orig_bitmap);
 			bit_and(tmp_bitmap, job_ptr->node_bitmap);
-			if (bit_set_count(tmp_bitmap) > 0) {
+			if (bit_set_count(tmp_bitmap) > 0)
 				bit_or(avail_bitmap, tmp_bitmap);
+			total_node_cnt = bit_set_count(avail_bitmap);
+			if (total_node_cnt >= node_cnt) {
+				save_bitmap = bit_copy(avail_bitmap);
 				ret_bitmap = select_g_resv_test(avail_bitmap,
 						node_cnt,
 						resv_desc_ptr->core_cnt,
 						core_bitmap);
+				if (!ret_bitmap) {
+					bit_or(avail_bitmap, save_bitmap);
+					FREE_NULL_BITMAP(save_bitmap);
+				}
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);
 			if (ret_bitmap)
@@ -3302,7 +3323,8 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 		list_iterator_destroy(job_iterator);
 	}
 
-fini:	FREE_NULL_BITMAP(save_bitmap);
+fini:	FREE_NULL_BITMAP(orig_bitmap);
+	FREE_NULL_BITMAP(save_bitmap);
 #if 0
 	if (ret_bitmap) {
 		char str[300];
