@@ -79,6 +79,14 @@ struct select_nodeinfo {
 	select_nodeinfo_t	*other_nodeinfo;
 };
 
+typedef struct {
+	uint64_t apid;
+	uint32_t exit_code;
+	uint32_t jobid;
+	char *nodelist;
+	bool step;
+} nhc_info_t;
+
 #define NODEINFO_MAGIC 0x85ad
 #define MAX_PTHREAD_RETRIES  1
 
@@ -145,42 +153,44 @@ const uint32_t plugin_version	= 100;
 
 extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
 
-static int _run_nhc(uint32_t jobid, uint64_t apid, char *nodelist, bool step)
+static int _run_nhc(nhc_info_t *nhc_info)
 {
 #ifdef HAVE_NATIVE_CRAY
-	int argc = 9, status = 1, wait_rc;
+	int argc = 11, status = 1, wait_rc, i = 0;
 	char *argv[argc];
 	pid_t cpid;
-	char *jobid_char = NULL, *apid_char = NULL, *nodelist_nids = NULL;
+	char *jobid_char = NULL, *apid_char = NULL, *nodelist_nids = NULL,
+		*exit_char = NULL;
 	DEF_TIMERS;
 
 	START_TIMER;
 
-	jobid_char = xstrdup_printf("%u", jobid);
-	apid_char = xstrdup_printf("%"PRIu64"", apid);
-	nodelist_nids = cray_nodelist2nids(NULL, nodelist);
+	apid_char = xstrdup_printf("%"PRIu64"", nhc_info->apid);
+	exit_char = xstrdup_printf("%u", nhc_info->exit_code);
+	jobid_char = xstrdup_printf("%u", nhc_info->jobid);
+	nodelist_nids = cray_nodelist2nids(NULL, nhc_info->nodelist);
 
-	argv[0] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
-	argv[1] = "-r";
-	argv[2] = jobid_char;
-	argv[3] = "-a";
-	argv[4] = apid_char;
-	argv[5] = "-m";
-	if (step) {
-		argv[6] = "application";
-	} else {
-		argv[6] = "reservation";
-	}
-	argv[7] = nodelist_nids;
-	argv[8] = NULL;
+	argv[i++] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
+	argv[i++] = "-a";
+	argv[i++] = apid_char;
+	argv[i++] = "-e";
+	argv[i++] = exit_char;
+	argv[i++] = "-r";
+	argv[i++] = jobid_char;
+	argv[i++] = "-m";
+	argv[i++] = nhc_info->step ? "application" : "reservation";
+	argv[i++] = nodelist_nids;
+	argv[i++] = NULL;
 
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("Calling NHC for jobid %u and apid %"PRIu64" "
-		     "on nodes %s(%s)",
-		     jobid, apid, nodelist, nodelist_nids);
+		     "on nodes %s(%s) exit code %u",
+		     nhc_info->jobid, nhc_info->apid,
+		     nhc_info->nodelist, nodelist_nids,
+		     nhc_info->exit_code);
 	}
 
-	if (!nodelist || !nodelist_nids) {
+	if (!nhc_info->nodelist || !nodelist_nids) {
 		/* already done */
 		goto fini;
 	}
@@ -215,15 +225,16 @@ static int _run_nhc(uint32_t jobid, uint64_t apid, char *nodelist, bool step)
 	if (status != 0) {
 		error("_run_nhc jobid %u and apid %"PRIu64" exit "
 		      "status %u:%u took: %s",
-		      jobid, apid, WEXITSTATUS(status),
+		      nhc_info->jobid, nhc_info->apid, WEXITSTATUS(status),
 		      WTERMSIG(status), TIME_STR);
 	} else if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("_run_nhc jobid %u and apid %"PRIu64" completed took: %s",
-		     jobid, apid, TIME_STR);
+		     nhc_info->jobid, nhc_info->apid, TIME_STR);
 
  fini:
-	xfree(jobid_char);
 	xfree(apid_char);
+	xfree(exit_char);
+	xfree(jobid_char);
 	xfree(nodelist_nids);
 
 	return status;
@@ -231,7 +242,7 @@ static int _run_nhc(uint32_t jobid, uint64_t apid, char *nodelist, bool step)
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("simluating calling NHC for jobid %u "
 		     "and apid %"PRIu64" on nodes %s",
-		     jobid, apid, nodelist);
+		     nhc_info->jobid, nhc_info->apid, nhc_info->nodelist);
 
 	/* simulate sleeping */
 	sleep(2);
@@ -242,8 +253,7 @@ static int _run_nhc(uint32_t jobid, uint64_t apid, char *nodelist, bool step)
 static void *_job_fini(void *args)
 {
 	struct job_record *job_ptr = (struct job_record *)args;
-	uint32_t job_id = 0;
-	char *node_list = NULL;
+	nhc_info_t nhc_info;
 
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
@@ -258,15 +268,17 @@ static void *_job_fini(void *args)
 		return NULL;
 	}
 
+	memset(&nhc_info, 0, sizeof(nhc_info_t));
 	lock_slurmctld(job_read_lock);
-	job_id = job_ptr->job_id;
-	node_list = xstrdup(job_ptr->nodes);
+	nhc_info.jobid = job_ptr->job_id;
+	nhc_info.nodelist = xstrdup(job_ptr->nodes);
+	nhc_info.exit_code = 1; /* hard code to 1 to always run */
 	unlock_slurmctld(job_read_lock);
 
 	/* run NHC */
-	_run_nhc(job_id, 0, node_list, 0);
+	_run_nhc(&nhc_info);
 	/***********/
-	xfree(node_list);
+	xfree(nhc_info.nodelist);
 
 	lock_slurmctld(job_write_lock);
 	if (job_ptr->magic == JOB_MAGIC) {
@@ -277,7 +289,7 @@ static void *_job_fini(void *args)
 		jobinfo->cleaning = 0;
 	} else
 		error("_job_fini: job %u had a bad magic, "
-		      "this should never happen", job_id);
+		      "this should never happen", nhc_info.jobid);
 
 	unlock_slurmctld(job_write_lock);
 
@@ -288,9 +300,7 @@ static void *_step_fini(void *args)
 {
 	struct step_record *step_ptr = (struct step_record *)args;
 	select_jobinfo_t *jobinfo = NULL;
-	uint64_t apid = 0;
-	uint32_t jobid = 0;
-	char *node_list = NULL;
+	nhc_info_t nhc_info;
 
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
@@ -306,28 +316,32 @@ static void *_step_fini(void *args)
 		return NULL;
 	}
 
+	memset(&nhc_info, 0, sizeof(nhc_info_t));
+	nhc_info.step = 1;
 	lock_slurmctld(job_read_lock);
-	jobid = step_ptr->job_ptr->job_id;
-	apid = SLURM_ID_HASH(step_ptr->job_ptr->job_id, step_ptr->step_id);
+	nhc_info.jobid = step_ptr->job_ptr->job_id;
+	nhc_info.apid = SLURM_ID_HASH(step_ptr->job_ptr->job_id,
+				      step_ptr->step_id);
+	nhc_info.exit_code = step_ptr->exit_code;
 
 	if (!step_ptr->step_layout || !step_ptr->step_layout->node_list) {
 		if (step_ptr->job_ptr)
-			node_list = xstrdup(step_ptr->job_ptr->nodes);
+			nhc_info.nodelist = xstrdup(step_ptr->job_ptr->nodes);
 	} else
-		node_list = xstrdup(step_ptr->step_layout->node_list);
+		nhc_info.nodelist = xstrdup(step_ptr->step_layout->node_list);
 	unlock_slurmctld(job_read_lock);
 
 	/* run NHC */
-	_run_nhc(jobid, apid, node_list, 1);
+	_run_nhc(&nhc_info);
 	/***********/
 
-	xfree(node_list);
+	xfree(nhc_info.nodelist);
 
 	lock_slurmctld(job_write_lock);
 	if (!step_ptr->job_ptr || !step_ptr->step_node_bitmap) {
 		error("For some reason we don't have a step_node_bitmap or "
 		      "a job_ptr for %"PRIu64".  This should never happen.",
-		      apid);
+		      nhc_info.apid);
 	} else {
 		other_step_finish(step_ptr);
 
