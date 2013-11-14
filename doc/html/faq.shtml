@@ -1040,9 +1040,14 @@ Create a resource reservation as described by SLURM's
 
 <p><a name="pam"><b>9. How can PAM be used to control a user's limits on
 or access to compute nodes?</b></a><br>
-First, enable SLURM's use of PAM by setting <i>UsePAM=1</i> in
+You will need to build and install Slurm including it's PAM module
+(a <i>slurm_pam</i> package is provided, the code is located in the
+<i>contribs/pam</i> directory).
+First, enable Slurm's use of PAM by setting <i>UsePAM=1</i> in
 <i>slurm.conf</i>.<br>
-Second, establish a PAM configuration file for slurm in <i>/etc/pam.d/slurm</i>.
+Second, establish PAM configuration file(s) for Slurm in <i>/etc/pam.conf</i>
+or the appropriate files in the <i>/etc/pam.d</i> directory (e.g.
+<i>/etc/pam.d/sshd</i> by adding the line "account required pam_slurm.so".
 A basic configuration you might use is:</p>
 <pre>
 account  required  pam_unix.so
@@ -1056,7 +1061,7 @@ For example, to set the locked memory limit to unlimited for all users:</p>
 *   hard   memlock   unlimited
 *   soft   memlock   unlimited
 </pre>
-<p>Finally, you need to disable SLURM's forwarding of the limits from the
+<p>Finally, you need to disable Slurm's forwarding of the limits from the
 session from which the <i>srun</i> initiating the job ran. By default
 all resource limits are propagated from that session. For example, adding
 the following line to <i>slurm.conf</i> will prevent the locked memory
@@ -1775,6 +1780,6 @@ Otherwise use the scontrol or sview to manually return the node to service.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 October 2013</p>
+<p style="text-align:center;">Last modified 14 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
