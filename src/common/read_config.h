@@ -145,7 +145,7 @@ extern char *default_plugstack;
 #  define DEFAULT_SELECT_TYPE       "select/bluegene"
 #elif defined HAVE_ALPS_CRAY
 #  define DEFAULT_SELECT_TYPE       "select/alps"
-#elif defined HAVE_REAL_CRAY
+#elif defined HAVE_NATIVE_CRAY
 #  define DEFAULT_SELECT_TYPE       "select/cray"
 #else
 #  define DEFAULT_SELECT_TYPE       "select/linear"
