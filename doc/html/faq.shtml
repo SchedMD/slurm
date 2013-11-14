@@ -56,6 +56,8 @@ SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
 jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
 <li><a href="#mic">How can I run programs with on an Intel Phi (MIC) processor?</a></li>
+<li><a href="#cpu_count">Slurm documentation refers to CPUs, cores and threads.
+  What exactly is considered a CPU?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -937,6 +939,26 @@ $ icc -mmic -openmp hello.c -o hello.mic
 <pre>
 $ srun -p mic ./hello.mic
 </pre>
+
+<p><a name="cpu_count"><b>29. Slurm documentation refers to CPUs, cores and threads.
+What exactly is considered a CPU?</b></a><br>
+If your nodes are configured with hyperthreading, then a CPU is equivalent
+to a hyperthread.
+Otherwise a CPU is equivalent to a core.
+You can determine if your nodes have more than one thread per core
+using the command "scontrol show node" and looking at the values of
+"ThreadsPerCore".</p>
+<p>Note that even on systems with hyperthreading enabled, the resources will
+generally be allocated to jobs at the level of a core (see NOTE below).
+Two different jobs will not share a core.
+For example, a job requesting resources for three tasks on a node with
+ThreadsPerCore=2 will be allocated two full cores.
+Note that Slurm commands contain a multitude of options to control
+resource allocation with respect to base boards, sockets, cores and threads.</p>
+<p>(<b>NOTE:</b> An exception to this would be if the system administrator
+configured SelectTypeParameters=CR_CPU and each node's CPU count without its
+socket/core/thread specification. In that case, each thread would be
+independently scheduled as a CPU. This is not a typical configuration.)
 
 <p class="footer"><a href="#top">top</a></p>
 
