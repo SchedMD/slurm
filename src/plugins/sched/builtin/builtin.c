@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  builtin.h - header for simple builtin scheduler plugin.
+ *  builtin.c - Simple builtin (FIFO) scheduler plugin.
  *		Periodically when pending jobs can start.
  *		This is a minimal implementation of the logic found in
  *		src/plugins/sched/backfill/backfill.c and disregards

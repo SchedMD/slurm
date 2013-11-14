@@ -1433,8 +1433,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		} else if (nodes_needed > 0) {
 			if (step_spec->max_nodes <= nodes_picked_cnt) {
 				*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
-			} else if (step_spec->min_nodes <=
-				   (nodes_picked_cnt + mem_blocked_nodes)) {
+			} else if (step_spec->min_nodes <= (node_avail_cnt +
+				   nodes_picked_cnt + mem_blocked_nodes)) {
 				*return_code = ESLURM_NODES_BUSY;
 			} else if (!bit_super_set(job_ptr->node_bitmap,
 						  up_node_bitmap)) {

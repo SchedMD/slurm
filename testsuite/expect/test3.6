@@ -39,6 +39,12 @@ set part_name      "QA_TEST"
 
 print_header $test_id
 
+# This test will not work for user root since they always see all partitions
+if {[get_my_uid] == 0} {
+	send_user "\nWARNING: This test will not work correctly for user root.\n"
+	exit $exit_code
+}
+
 #
 # Confirm that no hidden partition is seen by default
 #
@@ -88,7 +94,7 @@ if {$found == 1} {
 # created to test this feature, which only super users can do
 #
 if {[test_super_user] == 0} {
-	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
+	send_user "\nWARNING: can not test more unless SlurmUser\n"
 	exit $exit_code
 }
 

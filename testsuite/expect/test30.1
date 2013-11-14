@@ -72,6 +72,11 @@ proc check_path {path file_name} {
 
 }
 
+if {[test_cray] || [test_alps]} {
+	send_user "Warning: This test does not work correctly on a Cray (Native or ALPS) system";
+	exit $exit_code
+}
+
 exec rsync -av $src_dir/slurm.spec /tmp
 
 # Replace fields in the slurm.spec files with the correct values
