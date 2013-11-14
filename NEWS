@@ -145,6 +145,7 @@ documents those changes that are of interest to users and admins.
     more than one numeric range in brackets (e.g. rack[0-3]_blade[0-63]").
  -- Add notification if using proctrack/cgroup and task/cgroup when oom hits.
  -- Corrections to advanced reservation logic with overlapping jobs.
+ -- job_submit/lua - add cpus_per_task field to those available.
 
 * Changes in Slurm 2.6.4
 ========================
