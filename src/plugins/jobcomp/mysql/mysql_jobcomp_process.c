@@ -133,7 +133,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 		job = xmalloc(sizeof(jobcomp_job_rec_t));
 		if (row[JOBCOMP_REQ_JOBID])
-			job->jobid = atoi(row[JOBCOMP_REQ_JOBID]);
+			job->jobid = slurm_atoul(row[JOBCOMP_REQ_JOBID]);
 		job->partition = xstrdup(row[JOBCOMP_REQ_PARTITION]);
 		temp_time = atoi(row[JOBCOMP_REQ_STARTTIME]);
 		slurm_make_time_str(&temp_time,
@@ -148,22 +148,22 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 		job->end_time = xstrdup(time_str);
 		if (row[JOBCOMP_REQ_UID])
-			job->uid = atoi(row[JOBCOMP_REQ_UID]);
+			job->uid = slurm_atoul(row[JOBCOMP_REQ_UID]);
 		job->uid_name = xstrdup(row[JOBCOMP_REQ_USER_NAME]);
 		if (row[JOBCOMP_REQ_GID])
-			job->gid = atoi(row[JOBCOMP_REQ_GID]);
+			job->gid = slurm_atoul(row[JOBCOMP_REQ_GID]);
 		job->gid_name = xstrdup(row[JOBCOMP_REQ_GROUP_NAME]);
 		job->jobname = xstrdup(row[JOBCOMP_REQ_NAME]);
 		job->nodelist = xstrdup(row[JOBCOMP_REQ_NODELIST]);
 		if (row[JOBCOMP_REQ_NODECNT])
-			job->node_cnt = atoi(row[JOBCOMP_REQ_NODECNT]);
+			job->node_cnt = slurm_atoul(row[JOBCOMP_REQ_NODECNT]);
 		if (row[JOBCOMP_REQ_STATE]) {
 			i = atoi(row[JOBCOMP_REQ_STATE]);
 			job->state = xstrdup(job_state_string(i));
 		}
 		job->timelimit = xstrdup(row[JOBCOMP_REQ_TIMELIMIT]);
 		if (row[JOBCOMP_REQ_MAXPROCS])
-			job->max_procs = atoi(row[JOBCOMP_REQ_MAXPROCS]);
+			job->max_procs = slurm_atoul(row[JOBCOMP_REQ_MAXPROCS]);
 		job->connection = xstrdup(row[JOBCOMP_REQ_CONNECTION]);
 		job->reboot = xstrdup(row[JOBCOMP_REQ_REBOOT]);
 		job->rotate = xstrdup(row[JOBCOMP_REQ_ROTATE]);
