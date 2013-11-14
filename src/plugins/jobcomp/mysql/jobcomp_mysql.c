@@ -84,9 +84,9 @@ mysql_conn_t *jobcomp_mysql_conn = NULL;
 char *jobcomp_table = "jobcomp_table";
 storage_field_t jobcomp_table_fields[] = {
 	{ "jobid", "int not null" },
-	{ "uid", "smallint unsigned not null" },
+	{ "uid", "int unsigned not null" },
 	{ "user_name", "tinytext not null" },
-	{ "gid", "smallint unsigned not null" },
+	{ "gid", "int unsigned not null" },
 	{ "group_name", "tinytext not null" },
 	{ "name", "tinytext not null" },
 	{ "state", "smallint not null" },
