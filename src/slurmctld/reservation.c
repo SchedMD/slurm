@@ -3259,7 +3259,8 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	bitstr_t *orig_bitmap, *save_bitmap = NULL, *ret_bitmap, *tmp_bitmap;
+	bitstr_t *orig_bitmap, *save_bitmap = NULL;
+	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
 	int total_node_cnt;
 
 	total_node_cnt = bit_set_count(avail_bitmap);
