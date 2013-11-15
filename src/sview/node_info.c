@@ -160,6 +160,7 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, NODE_PAGE, "Drain Midplane", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Undrain Midplane", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Resume Midplane", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Set Midplane Down",
 	 TRUE, ADMIN_PAGE},
@@ -167,6 +168,7 @@ static display_data_t options_data_node[] = {
 	 TRUE, ADMIN_PAGE},
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Drain Node", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Undrain Node", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Resume Node", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Set Node(s) Down", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Node(s) Idle", TRUE, ADMIN_PAGE},
@@ -1222,6 +1224,12 @@ extern int update_state_node(GtkDialog *dialog,
 		entry = create_entry();
 		label = gtk_label_new(tmp_char);
 		state = NODE_STATE_DOWN;
+	} else if (!strncasecmp("undrain", type, 5)) {
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Are you sure you want to undrain node(s) %s?",
+			 nodelist);
+		label = gtk_label_new(tmp_char);
+		state = NODE_STATE_UNDRAIN;
 	} else {
 
 		if (!strncasecmp("make", type, 4))
@@ -1312,6 +1320,11 @@ extern GtkListStore *create_model_node(int type)
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "resume",
+				   1, i,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "undrain",
 				   1, i,
 				   -1);
 		for(i = 0; i < NODE_STATE_END; i++) {
@@ -1950,6 +1963,8 @@ extern void cluster_change_node(void)
 			if (!display_data->name) {
 			} else if (!strcmp(display_data->name, "Drain Node"))
 				display_data->name = "Drain Midplane";
+			else if (!strcmp(display_data->name, "Undrain Node"))
+				display_data->name = "Undrain Midplane";
 			else if (!strcmp(display_data->name, "Resume Node"))
 				display_data->name = "Resume Midplane";
 			else if (!strcmp(display_data->name, "Put Node Down"))
@@ -1968,6 +1983,9 @@ extern void cluster_change_node(void)
 			} else if (!strcmp(display_data->name,
 					   "Drain Midplanes"))
 				display_data->name = "Drain Nodes";
+			else if (!strcmp(display_data->name,
+					   "Undrain Midplanes"))
+				display_data->name = "Undrain Nodes";
 			else if (!strcmp(display_data->name,
 					 "Resume Midplanes"))
 				display_data->name = "Resume Nodes";

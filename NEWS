@@ -9,6 +9,9 @@ documents those changes that are of interest to users and admins.
     in epilogi slurmctld environment.
  -- Fix bug in job step allocation failing due to memory limit.
  -- Modify the pbsnodes script to reflect its output on a TORQUE system.
+ -- Add ability to clear a node's DRAIN flag using scontrol or sview by setting
+    it's state to "UNDRAIN". The node's base state (e.g. "DOWN" or "IDLE") will
+    not be changed.
 
 * Changes in Slurm 13.12.0pre4
 ==============================

@@ -1127,7 +1127,18 @@ int update_node ( update_node_msg_t * update_node_msg )
 					}
 				} else
 					state_val = base_state;
+			} else if (state_val == NODE_STATE_UNDRAIN) {
+				if (IS_NODE_IDLE(node_ptr) &&
+				    IS_NODE_DRAIN(node_ptr)) {
+					clusteracct_storage_g_node_up(
+						acct_db_conn,
+						node_ptr,
+						now);
+				}
+				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				state_val = base_state;
 			}
+
 			if ((state_val == NODE_STATE_DOWN) ||
 			    (state_val == NODE_STATE_FUTURE)) {
 				/* We must set node DOWN before killing
@@ -1678,6 +1689,7 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 		case NODE_STATE_NO_RESPOND:
 		case NODE_STATE_POWER_SAVE:
 		case NODE_STATE_POWER_UP:
+		case NODE_STATE_UNDRAIN:
 			return true;
 
 		case NODE_RESUME:
