@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Add ability to clear a node's DRAIN flag using scontrol or sview by setting
     it's state to "UNDRAIN". The node's base state (e.g. "DOWN" or "IDLE") will
     not be changed.
+ -- Modify the output of 'scontrol show partition' by displaying DefMemPerCPU=UNLIMITED
+    and MaxMemPerCPU=UNLIMITED when these limits are configured as 0.
 
 * Changes in Slurm 13.12.0pre4
 ==============================
@@ -197,7 +199,7 @@ documents those changes that are of interest to users and admins.
  -- Fix sacctmgr modify qos set preempt+/-=.
  -- BLUEGENE - fix issue where node count wasn't set up correctly when srun
     preforms the allocation, regression in 2.6.3.
- -- Add support for dependencies of job array elements (e.g. 
+ -- Add support for dependencies of job array elements (e.g.
     "sbatch --depend=afterok:123_4 ...") or all elements of a job array (e.g.
     "sbatch --depend=afterok:123 ...").
  -- Add support for new options in sbatch qsub wrapper:
