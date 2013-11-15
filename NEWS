@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
     not be changed.
  -- Modify the output of 'scontrol show partition' by displaying DefMemPerCPU=UNLIMITED
     and MaxMemPerCPU=UNLIMITED when these limits are configured as 0.
+ -- mpirun-mic - Major re-write of the command wrapper for Xeon Phi use.
 
 * Changes in Slurm 13.12.0pre4
 ==============================
