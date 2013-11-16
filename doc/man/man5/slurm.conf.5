@@ -254,6 +254,16 @@ acct_gather.conf file.
 .RE
 
 .TP
+\fBAuthInfo\fR
+Additional information to be used for authentication of communications
+between the Slurm daemons (slurmctld and slurmd) and the Slurm
+clients.  The interpretation of this option is specific to the
+configured \fBAuthType\fR.  In the case of \fIauth/munge\fR, the value
+of this parameter can specify the socket of a MUNGE daemon other than
+the default MUNGE daemon.  If not set, the default authentication
+information will be used.
+
+.TP
 \fBAuthType\fR
 The authentication method for communications between SLURM
 components.

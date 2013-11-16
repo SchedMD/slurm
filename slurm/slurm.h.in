@@ -2024,6 +2024,7 @@ typedef struct slurm_ctl_conf {
 	char *acct_gather_infiniband_type; /* infiniband accounting type */
 	char *acct_gather_filesystem_type; /* filesystem accounting type */
 	uint16_t acct_gather_node_freq; /* secs between node acct request */
+	char *authinfo;		/* authentication info */
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;/* name of slurmctld secondary server */

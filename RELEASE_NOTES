@@ -62,6 +62,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
  -- Added fields to "scontrol show job" output: boards_per_node,
     sockets_per_board, ntasks_per_node, ntasks_per_board, ntasks_per_socket,
     ntasks_per_core, and nice.
+ -- Added new configuration parameter of AuthInfo to specify port used by
+    authentication plugin.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

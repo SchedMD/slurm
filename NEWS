@@ -12,9 +12,12 @@ documents those changes that are of interest to users and admins.
  -- Add ability to clear a node's DRAIN flag using scontrol or sview by setting
     it's state to "UNDRAIN". The node's base state (e.g. "DOWN" or "IDLE") will
     not be changed.
- -- Modify the output of 'scontrol show partition' by displaying DefMemPerCPU=UNLIMITED
-    and MaxMemPerCPU=UNLIMITED when these limits are configured as 0.
+ -- Modify the output of 'scontrol show partition' by displaying
+    DefMemPerCPU=UNLIMITED and MaxMemPerCPU=UNLIMITED when these limits are
+    configured as 0.
  -- mpirun-mic - Major re-write of the command wrapper for Xeon Phi use.
+ -- Add new configuration parameter of AuthInfo to specify port used by
+    authentication plugin.
 
 * Changes in Slurm 13.12.0pre4
 ==============================

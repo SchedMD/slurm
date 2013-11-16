@@ -4758,6 +4758,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->acct_gather_node_freq, buffer);
 		packstr(build_ptr->acct_gather_profile_type, buffer);
 
+		packstr(build_ptr->authinfo, buffer);
 		packstr(build_ptr->authtype, buffer);
 
 		packstr(build_ptr->backup_addr, buffer);
@@ -5465,6 +5466,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_profile_type,
 				       &uint32_tmp, buffer);
 
+		safe_unpackstr_xmalloc(&build_ptr->authinfo,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->authtype,
 				       &uint32_tmp, buffer);
 
