@@ -712,7 +712,7 @@ static int _attempt_backfill(void)
 			continue;	/* started in other partition */
 		if (!avail_front_end(job_ptr))
 			continue;	/* No available frontend for this job */
-		if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+		if (job_ptr->array_task_id != NO_VAL) {
 			if (reject_array_job_id == job_ptr->array_job_id)
 				continue;  /* already rejected array element */
 			/* assume reject whole array for now, clear if OK */
