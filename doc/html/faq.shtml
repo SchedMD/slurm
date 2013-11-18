@@ -56,7 +56,7 @@ SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
 jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
 <li><a href="#mic">How can I run programs with on an Intel Phi (MIC) processor?</a></li>
-<li><a href="#req">How to requeue a job in complete or failed state?</a></li>
+<li><a href="#req">How can a job in complete or failed state be requeued?</a></li>
 <li><a href="#cpu_count">Slurm documentation refers to CPUs, cores and threads.
   What exactly is considered a CPU?</a></li>
 </ol>
@@ -942,7 +942,7 @@ $ icc -mmic -openmp hello.c -o hello.mic
 $ srun -p mic ./hello.mic
 </pre>
 
-<p><a name="req"><b>29. How to requeue a job in complete or failed state?</b></a>
+<p><a name="req"><b>29. How can a job in complete or failed state be requeued?</b></a>
 <br>
 <p>
 Slurm supports requeue jobs in done or failed state. Use the
