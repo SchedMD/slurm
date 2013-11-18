@@ -85,6 +85,7 @@ Lead Slurm developers are:
 <li>Chris Holmes (HP)</li>
 <li>David H&ouml;ppner</li>
 <li>Nathan Huff (North Dakota State University)</li>
+<li>Michel Hummel (Thales Group)</li>
 <br>
 <li>Martins Innus (University of Buffalo)</li>
 <br>
@@ -182,6 +183,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 11 November 2013</p>
+<p style="text-align:center;">Last modified 18 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
