@@ -424,18 +424,18 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?slurm_with_debug:--enable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
-	%{?with_db2_dir} \
-	%{?with_pam_dir}	\
-	%{?with_proctrack}	\
-	%{?with_cpusetdir} \
-	%{?with_apbasildir} \
-	%{?with_xcpu} \
-	%{?with_mysql_config} \
-	%{?with_pg_config} \
-	%{?with_ssl}		\
-	%{?with_munge}      \
-	%{?with_blcr}      \
-	%{?slurm_with_cray:--enable-native-cray}      \
+	%{?with_db2_dir:--with-db2-dir=%{?with_db2_dir}} \
+	%{?with_pam_dir:--with-pam_dir=%{?with_pam_dir}} \
+	%{?with_proctrack:--with-proctrack=%{?with_proctrack}}\
+	%{?with_cpusetdir:--with-cpusetdir=%{?with_cpusetdir}} \
+	%{?with_apbasildir:--with-apbasildir=%{?with_apbasildir}} \
+	%{?with_xcpu:--with-xcpu=%{?with_xcpu}} \
+	%{?with_mysql_config:--with-mysql_config=%{?with_mysql_config}} \
+	%{?with_pg_config:--with-pg_config=%{?with_pg_config}} \
+	%{?with_ssl:--with-ssl=%{?with_ssl}} \
+	%{?with_munge:--with-munge=%{?with_munge}}\
+	%{?with_blcr:--with-blcr=%{?with_blcr}}\
+	%{?slurm_with_cray:--enable-native-cray}
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
