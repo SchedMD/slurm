@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
  -- mpirun-mic - Major re-write of the command wrapper for Xeon Phi use.
  -- Add new configuration parameter of AuthInfo to specify port used by
     authentication plugin.
+ -- Fixed conditional rpm compiling.
 
 * Changes in Slurm 13.12.0pre4
 ==============================
