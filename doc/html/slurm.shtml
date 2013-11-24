@@ -53,7 +53,7 @@ help identify load imbalances and other anomalies.</li>
 </ul></p>
 
 <p>Slurm provides workload management on many of the most powerful computers in
-the world. On the June 2013 <a href="http://www.top500.org">Top500</a> list,
+the world. On the November 2013 <a href="http://www.top500.org">Top500</a> list,
 five of the ten top systems use Slurm including the number one system.
 These five systems alone contain over 5.7 million cores.
 A few of the systems using Slurm are listed below:
@@ -70,6 +70,15 @@ an <a href="http://www.ibm.com">IBM</a> BlueGene/Q system at
 <a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>
 with 1.6 petabytes of memory, 96 racks, 98,304 compute nodes, and 1.6
 million cores, with a peak performance of over 17.17 Petaflops.</li>
+
+<li><a href="http://www.cscs.ch/computers/piz_daint/index.html">Piz Daint</a>
+a <a href="http://www.cray.com">Cray</a> XC30 system at the
+<a href="http://www.cscs.ch">Swiss National Supercomputing Centre</a>
+with 28 racks and 5,272 hybrid compute nodes each with an
+<a href="http://www.intel.com">Intel</a> Xeon E5-2670 CPUs
+plus an <a href="http://www.nvidia.com">NVIDIA</a> Tesla K20X GPUs
+for a total of 115,984 compute cores and
+a peak performance of 6.27 Petaflops.</li>
 
 <li><a href="http://www.tacc.utexas.edu/stampede">Stampede</a> at the
 <a href="http://www.tacc.utexas.edu">Texas Advanced Computing Center/University of Texas</a>
@@ -104,15 +113,8 @@ performance) plus 778 ATI Radeon 5870 GPUs (2.1 Petaflops peak
 performance single precision and 599 Teraflops double precision) and
 QDR Infiniband interconnect.</li>
 
-<li><a href="http://www.cscs.ch/compute_resources">Rosa</a>,
-a <a href="http://www.cray.com">Cray</a> XT5 at the
-<a href="http://www.cscs.ch">Swiss National Supercomputer Centre</a>
-named after Monte Rosa in the Swiss-Italian Alps, elevation 4,634m.
-3,688 AMD hexa-core Opteron @ 2.4 GHz, 28.8 TB DDR2 RAM, 290 TB Disk,
-9.6 GB/s interconnect bandwidth (Seastar).</li>
-
 </ul>
 
-<p style="text-align:center;">Last modified 1 July 2013</p>
+<p style="text-align:center;">Last modified 24 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

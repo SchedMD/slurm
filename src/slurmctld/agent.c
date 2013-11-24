@@ -1626,9 +1626,9 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		/* ready to launch, adjust time limit for boot time */
 		if (delay_time && (job_ptr->time_limit != INFINITE) &&
 		    (!wiki2_sched)) {
-			info("Job %u launch delayed by %d secs, "
-			     "updating end_time",
-			     launch_msg_ptr->job_id, delay_time);
+			verbose("Job %u launch delayed by %d secs, "
+				"updating end_time",
+				launch_msg_ptr->job_id, delay_time);
 			job_ptr->end_time += delay_time;
 		}
 		queued_req_ptr->last_attempt = (time_t) 0;
@@ -1644,9 +1644,9 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		      "sending batch request anyway...");
 		if (delay_time && (job_ptr->time_limit != INFINITE) &&
 		    (!wiki2_sched)) {
-			info("Job %u launch delayed by %d secs, "
-			     "updating end_time",
-			     launch_msg_ptr->job_id, delay_time);
+			verbose("Job %u launch delayed by %d secs, "
+				"updating end_time",
+				launch_msg_ptr->job_id, delay_time);
 			job_ptr->end_time += delay_time;
 		}
 		queued_req_ptr->last_attempt = (time_t) 0;
