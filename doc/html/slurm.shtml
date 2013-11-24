@@ -72,7 +72,7 @@ with 1.6 petabytes of memory, 96 racks, 98,304 compute nodes, and 1.6
 million cores, with a peak performance of over 17.17 Petaflops.</li>
 
 <li><a href="http://www.cscs.ch/computers/piz_daint/index.html">Piz Daint</a>
-a <a href="http://www.cray.com">Cray</a> SC30 system at the
+a <a href="http://www.cray.com">Cray</a> XC30 system at the
 <a href="http://www.cscs.ch">Swiss National Supercomputing Centre</a>
 with 28 racks and 5,272 hybrid compute nodes each with an
 <a href="http://www.intel.com">Intel</a> Xeon E5-2670 CPUs
