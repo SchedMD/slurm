@@ -5923,8 +5923,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->gres_used);
 	FREE_NULL_LIST(job_ptr->gres_list);
 	xfree(job_ptr->licenses);
-	if (job_ptr->license_list)
-		list_destroy(job_ptr->license_list);
+	FREE_NULL_LIST(job_ptr->license_list);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
