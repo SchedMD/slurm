@@ -5,8 +5,8 @@
 <h2>Index</h2>
 <ul>
 <li><a href="#26">Slurm Version 2.6, June 2013</a></li>
-<li><a href="#1312">Slurm Version 13.12, December 2013</a></li>
-<li><a href="#1406">Slurm Version 14.06 and beyond</a></li>
+<li><a href="#1403">Slurm Version 14.03, March 2014</a></li>
+<li><a href="#1409">Slurm Version 14.09 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
 
@@ -43,10 +43,10 @@ Major enhancements include:
 </ul>
 </p>
 
-<h2><a name="1312">Major Updates in Slurm Version 13.12</a></h2>
-<p>NOTICE: Starting with 13.12 we will be numbering Slurm versions
+<h2><a name="1403">Major Updates in Slurm Version 14.03</a></h2>
+<p>NOTICE: Starting with 14.03 we will be numbering Slurm versions
 with a YEAR.MONTH format.<br>
-SLURM Version 13.12 release is planned in December 2013.
+SLURM Version 14.03 release is planned in March 2014.
 Major enhancements include:
 <ul>
 <li>Integration with
@@ -68,7 +68,7 @@ Major enhancements include:
 </p>
 
 
-<h2><a name="1406">Major Updates in Slurm Version 14.06 and beyond</a></h2>
+<h2><a name="1409">Major Updates in Slurm Version 14.09 and beyond</a></h2>
 <p> Detailed plans for release dates and contents of additional SLURM releases
 have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
