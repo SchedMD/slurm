@@ -1502,7 +1502,8 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 #endif	/* HAVE_FRONT_END */
 	if ((port_count != alias_count) && (port_count > 1)) {
 		error("Port count must equal that of NodeName "
-		      "records or there must be no more than one");
+		      "records or there must be no more than one (%u != %u)",
+		      port_count, alias_count);
 		goto cleanup;
 	}
 
