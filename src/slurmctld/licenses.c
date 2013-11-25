@@ -279,10 +279,7 @@ extern int license_update(char *licenses)
 extern void license_free(void)
 {
 	slurm_mutex_lock(&license_mutex);
-	if (license_list) {
-		list_destroy(license_list);
-		license_list = (List) NULL;
-	}
+	FREE_NULL_LIST(license_list);
 	slurm_mutex_unlock(&license_mutex);
 }
 
