@@ -449,7 +449,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 	int i;
 	int dims = slurmdb_setup_cluster_dims();
 
-	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (jobinfo) {
 			if (jobinfo->dim_cnt)
 				dims = jobinfo->dim_cnt;
@@ -600,7 +600,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 
 	jobinfo->magic = JOBINFO_MAGIC;
 
-	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack16(&jobinfo->dim_cnt, buffer);
 
 		xassert(jobinfo->dim_cnt);

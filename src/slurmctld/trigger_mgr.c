@@ -76,7 +76,7 @@
 
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
 #define TRIGGER_STATE_VERSION        "VER004"
-#define TRIGGER_13_12_STATE_VERSION  "VER004"	/* SLURM version 13.12 */
+#define TRIGGER_14_03_STATE_VERSION  "VER004"	/* SLURM version 14.03 */
 #define TRIGGER_2_6_STATE_VERSION    "VER004"	/* SLURM version 2.6 */
 #define TRIGGER_2_5_STATE_VERSION    "VER004"	/* SLURM version 2.5 */
 

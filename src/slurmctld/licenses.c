@@ -604,7 +604,7 @@ get_all_license_info(char **buffer_ptr,
 static void
 _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);
 		pack32(lic->total, buffer);
 		pack32(lic->used, buffer);

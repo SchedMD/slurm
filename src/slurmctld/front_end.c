@@ -58,8 +58,8 @@
 
 /* Change FRONT_END_STATE_VERSION value when changing the state save format */
 #define FRONT_END_STATE_VERSION        "VER001"
-#define FRONT_END_13_13_STATE_VERSION  "VER001"	/* SLURM version 13.12 */
-#define FRONT_END_2_5_STATE_VERSION    "VER001"	/* SLURM version 2.6 */
+#define FRONT_END_13_13_STATE_VERSION  "VER001"	/* SLURM version 14.03 */
+#define FRONT_END_2_6_STATE_VERSION    "VER001"	/* SLURM version 2.6 */
 #define FRONT_END_2_5_STATE_VERSION    "VER001"	/* SLURM version 2.5 */
 
 front_end_record_t *front_end_nodes = NULL;

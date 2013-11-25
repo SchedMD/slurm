@@ -86,7 +86,7 @@
 
 /* Change NODE_STATE_VERSION value when changing the state save format */
 #define NODE_STATE_VERSION        "VER006"
-#define NODE_13_12_STATE_VERSION  "VER006"	/* SLURM version 13.12 */
+#define NODE_14_03_STATE_VERSION  "VER006"	/* SLURM version 14.03 */
 #define NODE_2_6_STATE_VERSION    "VER006"	/* SLURM version 2.6 */
 #define NODE_2_5_STATE_VERSION    "VER006"	/* SLURM version 2.5 */
 

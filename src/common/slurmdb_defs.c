@@ -2218,11 +2218,11 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	slurm_msg_t_init(&req);
 	slurm_set_addr_char(&req.address, port, host);
 
-	/* We standarized on SLURM_PROTOCOL_VERSION in 13.12 in 14.12
+	/* We standarized on SLURM_PROTOCOL_VERSION in 14.03 in 15.03
 	   this check can go away as well as the rpc_version of the
 	   accounting_update_msg_t.
 	*/
-	if (rpc_version >= SLURM_13_12_PROTOCOL_VERSION)
+	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION)
 		req.protocol_version = rpc_version;
 
 	req.msg_type = ACCOUNTING_UPDATE_MSG;

@@ -92,7 +92,7 @@
  * Add logic to permit reading of the previous version's state in order
  * to avoid losing reservations between releases major SLURM updates. */
 #define RESV_STATE_VERSION          "VER004"
-#define RESV_13_12_STATE_VERSION    "VER004"	/* SLURM version 13.12 */
+#define RESV_14_03_STATE_VERSION    "VER004"	/* SLURM version 14.03 */
 #define RESV_2_6_STATE_VERSION      "VER004"	/* SLURM version 2.6 */
 #define RESV_2_5_STATE_VERSION      "VER004"	/* SLURM version 2.5 */
 
