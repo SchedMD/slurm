@@ -225,6 +225,7 @@ extern int basil_inventory(void)
 	struct basil_rsvn *rsvn;
 	int slurm_alps_mismatch = 0;
 	int rc = SLURM_SUCCESS;
+	int rel_rc;
 	time_t now = time(NULL);
 	static time_t slurm_alps_mismatch_time = (time_t) 0;
 	static bool logged_sync_timeout = false;
@@ -376,10 +377,16 @@ extern int basil_inventory(void)
 		 */
 
 		if ((job_ptr == NULL) && (strcmp(rsvn->batch_id, "UNKNOWN"))) {
-
 			error("orphaned ALPS reservation %u, trying to remove",
 			      rsvn->rsvn_id);
-			basil_safe_release(rsvn->rsvn_id, inv);
+			rel_rc = basil_safe_release(rsvn->rsvn_id, inv);
+			if (rel_rc) {
+				error("ALPS reservation %u removal FAILED: %s",
+				      rsvn->rsvn_id, basil_strerror(rel_rc));
+			} else {
+				debug("ALPS reservation %u removed",
+				      rsvn->rsvn_id);
+			}
 			slurm_alps_mismatch = true;
 		}
 	}
