@@ -9745,18 +9745,17 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 		job_ptr->details->begin_time = now + 10;
 		if (!with_slurmdbd)
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		/* Since this could happen on a launch we need to make sure the
+		 * submit isn't the same as the last submit so put now + 1 so
+		 * we get different records in the database */
+		if (now == job_ptr->details->submit_time)
+			now++;
+		job_ptr->details->submit_time = now;
 	}
 
 	/* Reset this after the batch step has finished or the batch step
 	 * information will be attributed to the next run of the job. */
 	job_ptr->db_index = 0;
-
-	/* Since this could happen on a launch we need to make sure the submit
-	 * isn't the same as the last submit so put now + 1 so we get
-	 * different records in the database */
-	if (now == job_ptr->details->submit_time)
-		now++;
-	job_ptr->details->submit_time = now;
 }
 
 
