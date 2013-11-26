@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
  -- Add new configuration parameter of AuthInfo to specify port used by
     authentication plugin.
  -- Fixed conditional rpm compiling.
+ -- Corrected slurmstepd ident name when loggind to syslog.
 
 * Changes in Slurm 14.03.0pre4
 ==============================
