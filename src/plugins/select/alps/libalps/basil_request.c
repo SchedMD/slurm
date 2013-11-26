@@ -193,6 +193,7 @@ int basil_request(struct basil_parse_data *bp)
 	int ec, rc = -BE_UNKNOWN;
 	FILE *apbasil;
 	pid_t pid;
+	DEF_TIMERS;
 
 	if (log_sel == -1)
 		_init_log_config();
@@ -204,6 +205,7 @@ int basil_request(struct basil_parse_data *bp)
 	assert(bp->version < BV_MAX);
 	assert(bp->method > BM_none && bp->method < BM_MAX);
 
+	START_TIMER;
 	pid = popen2(cray_conf->apbasil, &to_child, &from_child, true);
 	if (pid < 0)
 		fatal("popen2(\"%s\", ...)", cray_conf->apbasil);
@@ -263,9 +265,13 @@ int basil_request(struct basil_parse_data *bp)
 
 	rc = parse_basil(bp, from_child);
 	ec = wait_for_child(pid);
+	END_TIMER;
 	if (ec) {
 		error("%s child process for BASIL %s method exited with %d",
 		      cray_conf->apbasil, bm_names[bp->method], ec);
+	} else if (DELTA_TIMER > 5000000) {	/* 5 seconds limit */
+		info("%s child process for BASIL %s method time %s",
+		     cray_conf->apbasil, bm_names[bp->method], TIME_STR);
 	}
 
 	return rc;

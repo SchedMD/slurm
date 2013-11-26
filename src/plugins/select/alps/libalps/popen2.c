@@ -58,15 +58,27 @@ pid_t popen2(const char *path, int *to_child, int *from_child, bool no_stderr)
 	int child_in[2], child_out[2];
 	pid_t pid;
 
-	if (access(path, X_OK) < 0)
+	if (access(path, X_OK) < 0) {
+		error("popen2: can not execute %s: %m", path);
 		return -1;
+	}
 
-	if (pipe(child_in) < 0 || pipe(child_out) < 0)
+	if (pipe(child_in) < 0) {
+		error("popen2: pipe error: %m");
 		return -1;
+	}
+	if (pipe(child_out) < 0) {
+		error("popen2: pipe error: %m");
+		close(child_in[0]);
+		close(child_in[1]);
+		return -1;
+	}
 
 	pid = fork();
-	if (pid < 0)
+	if (pid < 0) {
+		error("popen2: fork error: %m");
 		return -1;
+	}
 
 	if (pid == 0) {
 		/*
