@@ -45,9 +45,10 @@ documents those changes that are of interest to users and admins.
  -- Added configuration parameter FairShareDampeningFactor to offer a greater
     priority range based upon utilization.
  -- Change MaxArraySize and job's array_task_id from 16-bit to 32-bit field.
+    Additional Slurm enhancements are be required to support larger job arrays.
  -- Added -S/--core-spec option to salloc, sbatch and srun commands to reserve
     specialized cores for system use. Modify scontrol and sview to get/set
-    the new field
+    the new field. No enforcement exists yet for these new options.
     struct job_info / slurm_job_info_t: Added core_spec
     struct job_descriptorjob_desc_msg_t: Added core_spec
 
