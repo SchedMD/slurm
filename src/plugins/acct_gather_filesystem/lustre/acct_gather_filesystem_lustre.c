@@ -37,18 +37,16 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-
+#include <dirent.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <limits.h>
+#include <netinet/in.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <fcntl.h>
 #include <sys/stat.h>
-#include <signal.h>
-#include <dirent.h>
-
 #include <unistd.h>
-#include <getopt.h>
-#include <netinet/in.h>
-
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_acct_gather_filesystem.h"
