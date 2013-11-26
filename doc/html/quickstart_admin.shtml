@@ -45,6 +45,8 @@ NOTE: You will need to install this configuration file on all nodes of the clust
 <li><i>rpm --install &lt;the rpm files&gt;</i></li>
 </ol>
 
+<p>FreeBSD administrators should see the <a href="#FreeBSD">FreeBSD</a> section below.</p>
+
 <h2>Building and Installing SLURM</h2>
 
 <p>Instructions to build and install SLURM manually are shown below.
@@ -685,8 +687,25 @@ versions (e.g. 2.5.0-pre1 to 2.5.0-pre2).
 We'll try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
+<a name="FreeBSD"><h2>FreeBSD</h2></a>
+
+<p>FreeBSD administrators can install the latest stable slurm as a binary
+package using:</p>
+<pre>
+pkg install slurm-hpc
+</pre>
+
+<p>Or, it can be built and installed from source using:</p>
+<pre>
+cd /usr/ports/sysutils/slurm-hpc && make install
+</pre>
+
+<p>The binary package installs a minimal slurm configuration suitable for
+typical compute nodes.  Installing from source allows the user to enable
+options such as mysql, postgresql, and gui tools via a configuration menu.</p>
+
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align: center;">Last modified 10 September 2013</p>
+<p style="text-align:center;">Last modified 26 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
