@@ -750,6 +750,10 @@ enum select_plugindata_info {
 extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 			      char *node_name);
 
+/* Complete a batch job requeue logic after all steps complete so that
+ * subsequent jobs appear in a separate accounting record. */
+void batch_requeue_fini(struct job_record  *job_ptr);
+
 /* Build a bitmap of nodes completing this job */
 extern void build_cg_bitmap(struct job_record *job_ptr);
 

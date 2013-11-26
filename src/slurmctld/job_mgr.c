@@ -9292,59 +9292,63 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	/* nodes_completing is out of date, rebuild when next saved */
 	xfree(job_ptr->nodes_completing);
 	if (!IS_JOB_COMPLETING(job_ptr)) {	/* COMPLETED */
-		if (IS_JOB_PENDING(job_ptr) && (job_ptr->batch_flag)) {
-			time_t now = time(NULL);
-			info("requeue batch job %u", job_ptr->job_id);
-			/* Clear everything so this appears to be a new job
-			 * and then restart it in accounting. */
-			job_ptr->start_time = job_ptr->end_time = 0;
-			job_ptr->total_cpus = 0;
-			/* Current code (<= 2.1) has it so we start the new
-			 * job with the next step id.  This could be used
-			 * when restarting to figure out which step the
-			 * previous run of this job stopped on. */
-
-			//job_ptr->next_step_id = 0;
-			job_ptr->node_cnt = 0;
-#ifdef HAVE_BG
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_BLOCK_ID,
-				"unassigned");
-#endif
-			xfree(job_ptr->nodes);
-			xfree(job_ptr->nodes_completing);
-			FREE_NULL_BITMAP(job_ptr->node_bitmap);
-			if (job_ptr->details) {
-				/* the time stamp on the new batch launch
-				 * credential must be larger than the time
-				 * stamp on the revoke request. Also the
-				 * I/O must be all cleared out and the
-				 * named socket purged, so delay for at
-				 * least ten seconds. */
-				job_ptr->details->begin_time = time(NULL) + 10;
-				if (!with_slurmdbd)
-					jobacct_storage_g_job_start(
-						acct_db_conn, job_ptr);
-			}
-
-			/* Reset this after the batch step has
-			 * finished or the batch step information will
-			 * be attributed to the next run of the job. */
-			job_ptr->db_index = 0;
-
-			/* Since this could happen on a launch we need to make
-			 * sure the submit isn't the same as the last submit so
-			 * put now + 1 so we get different records in the
-			 * database */
-			if (now == job_ptr->details->submit_time)
-				now++;
-			job_ptr->details->submit_time = now;
-		}
+		batch_requeue_fini(job_ptr);
 		return true;
 	} else
 		return false;
 }
+
+/* Complete a batch job requeue logic after all steps complete so that
+ * subsequent jobs appear in a separate accounting record. */
+void batch_requeue_fini(struct job_record  *job_ptr)
+{
+	time_t now;
+
+	if (IS_JOB_COMPLETING(job_ptr) ||
+	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
+		return;
+
+	info("requeue batch job %u", job_ptr->job_id);
+	now = time(NULL);
+	/* Clear everything so this appears to be a new job and then restart
+	 * it in accounting. */
+	job_ptr->start_time = job_ptr->end_time = 0;
+	job_ptr->total_cpus = 0;
+	/* Current code (<= 2.1) has it so we start the new job with the next
+	 * step id.  This could be used when restarting to figure out which
+	 * step the previous run of this job stopped on. */
+	//job_ptr->next_step_id = 0;
+
+	job_ptr->node_cnt = 0;
+#ifdef HAVE_BG
+	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID, "unassigned");
+#endif
+	xfree(job_ptr->nodes);
+	xfree(job_ptr->nodes_completing);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	if (job_ptr->details) {
+		/* the time stamp on the new batch launch credential must be
+		 * larger than the time stamp on the revoke request. Also the
+		 * I/O must be all cleared out and the named socket purged,
+		 * so delay for at least ten seconds. */
+		job_ptr->details->begin_time = now + 10;
+		if (!with_slurmdbd)
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	}
+
+	/* Reset this after the batch step has finished or the batch step
+	 * information will be attributed to the next run of the job. */
+	job_ptr->db_index = 0;
+
+	/* Since this could happen on a launch we need to make sure the submit
+	 * isn't the same as the last submit so put now + 1 so we get
+	 * different records in the database */
+	if (now == job_ptr->details->submit_time)
+		now++;
+	job_ptr->details->submit_time = now;
+}
+
 
 /* job_fini - free all memory associated with job records */
 void job_fini (void)
