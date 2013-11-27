@@ -22,7 +22,6 @@
 # --with openssl     %_with_openssl     1    require openssl RPM to be installed
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
 # --with percs       %_with_percs       1    build percs RPM
-# --with postgres    %_with_postgres    1    require postgresql support
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
@@ -52,7 +51,6 @@
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
 %slurm_without_opt mysql
-%slurm_without_opt postgres
 %slurm_without_opt blcr
 %slurm_without_opt openssl
 
@@ -149,10 +147,6 @@ BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 BuildRequires: mysql-devel >= 5.0.0
 %endif
 
-%if %{slurm_with postgres}
-BuildRequires: postgresql-devel >= 8.0.0
-%endif
-
 %if %{slurm_with cray_alps}
 BuildRequires: cray-MySQL-devel-enterprise
 Requires: cray-MySQL-devel-enterprise
@@ -219,7 +213,7 @@ partition management, job management, scheduling and accounting modules
 # sure we get the correct installdir
 %define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
-# AIX doesn't always give the correct install prefix here for mans 
+# AIX doesn't always give the correct install prefix here for mans
 %ifos aix5.3
 %define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; $P="/usr/share"; $T =~ s/$P//; print $T;')
 %else
@@ -303,7 +297,7 @@ database changes to slurmctld daemons on each cluster
 Summary: SLURM SQL support
 Group: System Environment/Base
 %description sql
-SLURM SQL support. Contains interfaces to MySQL and PostGreSQL
+SLURM SQL support. Contains interfaces to MySQL.
 
 %package plugins
 Summary: SLURM plugins (loadable shared objects)
@@ -435,7 +429,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?with_ssl:--with-ssl=%{?with_ssl}} \
 	%{?with_munge:--with-munge=%{?with_munge}}\
 	%{?with_blcr:--with-blcr=%{?with_blcr}}\
-	%{?slurm_with_cray:--enable-native-cray}
+	%{?slurm_with_cray:--enable-native-cray}\
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
