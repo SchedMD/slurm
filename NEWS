@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Corrections to advanced reservation logic with overlapping jobs.
  -- job_submit/lua - add cpus_per_task field to those available.
  -- Add cpu_load to the node information available using the Perl API.
+ -- Correct a job's GRES allocation data in accounting records for non-Cray
+    systems.
 
 * Changes in Slurm 2.6.4
 ========================

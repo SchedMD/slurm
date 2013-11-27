@@ -312,6 +312,32 @@ extern void gres_plugin_node_state_dealloc_all(List gres_list);
 extern void gres_plugin_node_state_log(List gres_list, char *node_name);
 
 /*
+ * Fill in an array of GRES type ids contained within the given node gres_list
+ *		and an array of corresponding counts of those GRES types.
+ * IN gres_list - a List of GRES types found on a node.
+ * IN arr_len - Length of the arrays (the number of elements in the gres_list).
+ * IN gres_count_ids, gres_count_vals - the GRES type ID's and values found
+ *	 	in the gres_list.
+ * IN val_type - Type of value desired, see GRES_VAL_TYPE_*
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_node_count(List gres_list, int arr_len,
+				  int *gres_count_ids, int *gres_count_vals,
+				  int val_type);
+
+/*
+ * Fill in an array of GRES type ids contained within the given job gres_list
+ *		and an array of corresponding counts of those GRES types.
+ * IN gres_list - a List of GRES types allocated to a job.
+ * IN arr_len - Length of the arrays (the number of elements in the gres_list).
+ * IN gres_count_ids, gres_count_vals - the GRES type ID's and values found
+ *	 	in the gres_list.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_job_count(List gres_list, int arr_len,
+				 int *gres_count_ids, int *gres_count_vals);
+
+/*
  * Given a job's requested gres configuration, validate it and build a gres list
  * IN req_config - job request's gres input string
  * OUT gres_list - List of Gres records for this job to track usage
@@ -459,7 +485,7 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list);
 
 /*
  * Extract from the job record's gres_list the count of allocated resources of
- * 	the named gres gres typee.
+ * 	the named gres gres type.
  * IN job_gres_list  - job record's gres_list.
  * IN gres_name_type - the name of the gres type to retrieve the associated
  *	value from.
@@ -587,19 +613,6 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
  */
 extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 				    uint32_t job_id, uint32_t step_id);
-
-/*
- * Fill in an array of GRES type ids contained within the given gres_list
- *		and an array of corresponding counts of those GRES types.
- * IN gres_list - a List of GRES types found on a node.
- * IN arrlen - Length of the arrays (the number of elements in the gres_list).
- * IN gres_count_ids, gres_count_vals - the GRES type ID's and values found
- *	 	in the gres_list.
- * RET SLURM_SUCCESS or error code
- */
-extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
-				     int* gres_count_ids, int* gres_count_vals,
-				     int valtype);
 
 /*
  * Map a given GRES type ID back to a GRES type name.

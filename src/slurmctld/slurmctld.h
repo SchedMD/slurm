@@ -524,7 +524,7 @@ struct job_record {
 					 * wait call) */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
-	char *gres;			/* generic resources requested by job*/
+	char *gres;			/* generic resources requested by job */
 	List gres_list;			/* generic resource allocation detail */
 	char *gres_alloc;		/* Allocated GRES added over all nodes
 					 * to be passed to slurmdbd */
