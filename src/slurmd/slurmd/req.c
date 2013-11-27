@@ -135,6 +135,7 @@ typedef struct {
 	uint32_t spank_job_env_size;
 	char *resv_id;
 	uid_t uid;
+	char *user_name;
 } job_env_t;
 
 static int  _abort_job(uint32_t job_id, uint32_t slurm_rc);
@@ -142,8 +143,8 @@ static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(job_env_t *job_env);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
-static int  _get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups,
-			   gid_t **groups);
+static int  _get_grouplist(char **user_name, uid_t my_uid, gid_t my_gid,
+			   int *ngroups, gid_t **groups);
 static bool _is_batch_job_finished(uint32_t job_id);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
@@ -455,11 +456,13 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	Buf buffer = NULL;
 	slurm_msg_t msg;
 	uid_t uid = (uid_t)-1;
+	gid_t gid = (uid_t)-1;
 	gids_t *gids = NULL;
 
 	int rank;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
+	char *user_name = NULL;
 	slurm_addr_t parent_addr = {0};
 	char pwd_buffer[PW_BUF_SIZE];
 	struct passwd pwd, *pwd_result;
@@ -579,7 +582,9 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	/* send req over to slurmstepd */
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
+		gid = (uid_t)((batch_job_launch_msg_t *)req)->gid;
 		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;
+		user_name = ((batch_job_launch_msg_t *)req)->user_name;
 		msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
 	case LAUNCH_TASKS:
@@ -588,7 +593,9 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		 * auth credential in _rpc_launch_tasks().  req->gid
 		 * has NOT yet been checked!
 		 */
+		gid = (uid_t)((launch_tasks_request_msg_t *)req)->gid;
 		uid = (uid_t)((launch_tasks_request_msg_t *)req)->uid;
+		user_name = ((launch_tasks_request_msg_t *)req)->user_name;
 		msg.msg_type = REQUEST_LAUNCH_TASKS;
 		break;
 	default:
@@ -605,20 +612,41 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	free_buf(buffer);
 	buffer = NULL;
 
-	/* send cached group ids array for the relevant uid */
-	debug3("_send_slurmstepd_init: call to getpwuid_r");
-	if (getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE, &pwd_result) ||
-	    (pwd_result == NULL)) {
-		error("_send_slurmstepd_init getpwuid_r: %m");
+#ifdef HAVE_NATIVE_CRAY
+	/* Try to avoid calling this on a system which is a native
+	 * cray.  getpwuid_r is slow on the compute nodes and this has
+	 * in theory been verified earlier.
+	 */
+	if (!user_name) {
+#endif
+		/* send cached group ids array for the relevant uid */
+		debug3("_send_slurmstepd_init: call to getpwuid_r");
+		if (getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE,
+			       &pwd_result) || (pwd_result == NULL)) {
+			error("_send_slurmstepd_init getpwuid_r: %m");
+			len = 0;
+			safe_write(fd, &len, sizeof(int));
+			errno = ESLURMD_UID_NOT_FOUND;
+			return errno;
+		}
+		debug3("_send_slurmstepd_init: return from getpwuid_r");
+		gid = pwd_result->pw_gid;
+		if (!user_name)
+			user_name = pwd_result->pw_name;
+#ifdef HAVE_NATIVE_CRAY
+	}
+#endif
+	if (!user_name) {
+		/* Sanity check since gids_cache_lookup will fail
+		 * with a NULL. */
+		error("_send_slurmstepd_init No user name for %d: %m", uid);
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
 		errno = ESLURMD_UID_NOT_FOUND;
 		return errno;
 	}
-	debug3("_send_slurmstepd_init: return from getpwuid_r");
 
-	if ((gids = _gids_cache_lookup(pwd_result->pw_name,
-				       pwd_result->pw_gid))) {
+	if ((gids = _gids_cache_lookup(user_name, gid))) {
 		int i;
 		uint32_t tmp32;
 		safe_write(fd, &gids->ngids, sizeof(int));
@@ -1092,6 +1120,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
+		job_env.user_name = req->user_name;
 		rc =  _run_prolog(&job_env);
 		if (rc) {
 			int term_sig, exit_status;
@@ -1420,6 +1449,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
+		job_env.user_name = req->user_name;
 		/*
 	 	 * Run job prolog on this node
 	 	 */
@@ -2717,22 +2747,24 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
  * in groups and the count of gids in ngroups. The caller must free
  * the group list array pointed to by groups */
 static int
-_get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups, gid_t **groups)
+_get_grouplist(char **user_name, uid_t my_uid, gid_t my_gid,
+	       int *ngroups, gid_t **groups)
 {
-	char *user_name = uid_to_string(my_uid);
+	if (!*user_name)
+		*user_name = uid_to_string(my_uid);
 
-	if (user_name == NULL) {
+	if (!*user_name) {
 		error("sbcast: Could not find uid %ld", (long)my_uid);
 		return -1;
 	}
 
 	*groups = (gid_t *) xmalloc(*ngroups * sizeof(gid_t));
 
-	if (getgrouplist(user_name, my_gid, *groups, ngroups) < 0) {
+	if (getgrouplist(*user_name, my_gid, *groups, ngroups) < 0) {
 	        *groups = xrealloc(*groups, *ngroups * sizeof(gid_t));
-	        getgrouplist(user_name, my_gid, *groups, ngroups);
+	        getgrouplist(*user_name, my_gid, *groups, ngroups);
 	}
-	xfree(user_name);
+
 	return 0;
 
 }
@@ -2812,7 +2844,8 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		      req_uid, job_id, req->fname, req->block_no);
 	}
 
-	if ((rc = _get_grouplist(req_uid, req_gid, &ngroups, &groups)) < 0) {
+	if ((rc = _get_grouplist(&req->user_name, req_uid,
+				 req_gid, &ngroups, &groups)) < 0) {
 		error("sbcast: getgrouplist(%u): %m", req_uid);
 		return rc;
 	}
@@ -4288,8 +4321,8 @@ _rpc_update_time(slurm_msg_t *msg)
 static char **
 _build_env(job_env_t *job_env)
 {
-	char *name;
 	char **env = xmalloc(sizeof(char *));
+	bool user_name_set = 0;
 
 	env[0]  = NULL;
 	if (!valid_spank_job_env(job_env->spank_job_env,
@@ -4309,9 +4342,19 @@ _build_env(job_env_t *job_env)
 
 	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->jobid);
 	setenvf(&env, "SLURM_JOB_UID",   "%u", job_env->uid);
-	name = uid_to_string(job_env->uid);
-	setenvf(&env, "SLURM_JOB_USER", "%s", name);
-	xfree(name);
+
+#ifndef HAVE_NATIVE_CRAY
+	/* uid_to_string on a cray is a heavy call, so try to avoid it */
+	if (!job_env->user_name) {
+		job_env->user_name = uid_to_string(job_env->uid);
+		user_name_set = 1;
+	}
+#endif
+
+	setenvf(&env, "SLURM_JOB_USER", "%s", job_env->user_name);
+	if (user_name_set)
+		xfree(job_env->user_name);
+
 	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
 	setenvf(&env, "SLURM_UID",   "%u", job_env->uid);
 	if (job_env->node_list)

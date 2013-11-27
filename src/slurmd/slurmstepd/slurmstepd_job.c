@@ -101,56 +101,39 @@ static int _check_acct_freq_task(uint32_t job_mem_lim, char *acctg_freq)
 	return 0;
 }
 
-static struct passwd *
-_pwd_create(uid_t uid)
-{
-	struct passwd *pwd = xmalloc(sizeof(*pwd));
-	struct passwd *ppwd = getpwuid(uid);
-
-	if (!ppwd) {
-		xfree(pwd);
-		return NULL;
-	}
-
-	pwd->pw_name   = xstrdup(ppwd->pw_name);
-	pwd->pw_passwd = xstrdup(ppwd->pw_passwd);
-	pwd->pw_gecos  = xstrdup(ppwd->pw_gecos);
-	pwd->pw_shell  = xstrdup(ppwd->pw_shell);
-	pwd->pw_dir    = xstrdup(ppwd->pw_dir);
-	pwd->pw_uid    = ppwd->pw_uid;
-	pwd->pw_gid    = ppwd->pw_gid;
-
-	return pwd;
-}
-
-static void
-_pwd_destroy(struct passwd *pwd)
-{
-	if (!pwd)
-		return;
-	xfree(pwd->pw_name);
-	xfree(pwd->pw_passwd);
-	xfree(pwd->pw_gecos);
-	xfree(pwd->pw_shell);
-	xfree(pwd->pw_dir);
-	xfree(pwd);
-}
-
-/* returns 0 if invalid gid, otherwise returns 1 */
+/* returns 0 if invalid gid, otherwise returns 1.  Set gid with
+ * correct gid if root launched job.  Also set user_name
+ * if not already set. */
 static int
-_valid_gid(struct passwd *pwd, gid_t *gid)
+_valid_uid_gid(uid_t uid, gid_t *gid, char **user_name)
 {
+	struct passwd *pwd;
 	struct group *grp;
 	int i;
 
-	if (!pwd)
+#ifdef HAVE_NATIVE_CRAY
+	/* already verified */
+	if (*user_name)
+		return 1;
+#endif
+
+	pwd = getpwuid(uid);
+	if (!pwd) {
+		error("uid %ld not found on system", (long) uid);
+		slurm_seterrno(ESLURMD_UID_NOT_FOUND);
 		return 0;
+	}
+
+	if (!*user_name)
+		*user_name = xstrdup(pwd->pw_name);
+
 	if (pwd->pw_gid == *gid)
 		return 1;
 
 	grp = getgrgid(*gid);
 	if (!grp) {
 		error("gid %ld not found on system", (long)(*gid));
+		slurm_seterrno(ESLURMD_GID_NOT_FOUND);
 		return 0;
 	}
 
@@ -160,7 +143,7 @@ _valid_gid(struct passwd *pwd, gid_t *gid)
 		return 1;
 	}
 	for (i = 0; grp->gr_mem[i]; i++) {
-	       	if (strcmp(pwd->pw_name,grp->gr_mem[i]) == 0) {
+		if (!strcmp(pwd->pw_name, grp->gr_mem[i])) {
 			pwd->pw_gid = *gid;
 		       	return 1;
 	       	}
@@ -177,6 +160,8 @@ _valid_gid(struct passwd *pwd, gid_t *gid)
 	}
 	error("uid %ld is not a member of gid %ld",
 		(long)pwd->pw_uid, (long)(*gid));
+	slurm_seterrno(ESLURMD_GID_NOT_FOUND);
+
 	return 0;
 }
 
@@ -312,7 +297,6 @@ _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 extern stepd_step_rec_t *
 stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 {
-	struct passwd *pwd = NULL;
 	stepd_step_rec_t  *job = NULL;
 	srun_info_t   *srun = NULL;
 	slurm_addr_t     resp_addr;
@@ -322,21 +306,12 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 	xassert(msg != NULL);
 	xassert(msg->complete_nodelist != NULL);
 	debug3("entering stepd_step_rec_create");
-	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
-		error("uid %ld not found on system", (long) msg->uid);
-		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
-		return NULL;
-	}
-	if (!_valid_gid(pwd, &(msg->gid))) {
-		slurm_seterrno (ESLURMD_GID_NOT_FOUND);
-		_pwd_destroy(pwd);
-		return NULL;
-	}
 
-	if (_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq)) {
-		_pwd_destroy(pwd);
+	if (!_valid_uid_gid((uid_t)msg->uid, &(msg->gid), &(msg->user_name)))
 		return NULL;
-	}
+
+	if (_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq))
+		return NULL;
 
 	job = xmalloc(sizeof(stepd_step_rec_t));
 #ifndef HAVE_FRONT_END
@@ -354,13 +329,13 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 	}
 
 	job->state	= SLURMSTEPD_STEP_STARTING;
-	job->pwd	= pwd;
 	job->node_tasks	= msg->tasks_to_launch[nodeid];
 	job->ntasks	= msg->ntasks;
 	job->jobid	= msg->job_id;
 	job->stepid	= msg->job_step_id;
 
 	job->uid	= (uid_t) msg->uid;
+	job->user_name  = xstrdup(msg->user_name);
 	job->gid	= (gid_t) msg->gid;
 	job->cwd	= xstrdup(msg->cwd);
 	job->task_dist	= msg->task_dist;
@@ -492,7 +467,6 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 extern stepd_step_rec_t *
 batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 {
-	struct passwd *pwd;
 	stepd_step_rec_t *job;
 	srun_info_t  *srun = NULL;
 	char *in_name;
@@ -501,26 +475,15 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	debug3("entering batch_stepd_step_rec_create");
 
-	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
-		error("uid %ld not found on system", (long) msg->uid);
-		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
+	if (!_valid_uid_gid((uid_t)msg->uid, &(msg->gid), &(msg->user_name)))
 		return NULL;
-	}
-	if (!_valid_gid(pwd, &(msg->gid))) {
-		slurm_seterrno (ESLURMD_GID_NOT_FOUND);
-		_pwd_destroy(pwd);
-		return NULL;
-	}
 
-	if (_check_acct_freq_task(msg->job_mem, msg->acctg_freq)) {
-		_pwd_destroy(pwd);
+	if (_check_acct_freq_task(msg->job_mem, msg->acctg_freq))
 		return NULL;
-	}
 
 	job = xmalloc(sizeof(stepd_step_rec_t));
 
 	job->state   = SLURMSTEPD_STEP_STARTING;
-	job->pwd     = pwd;
 	if (msg->cpus_per_node)
 		job->cpus    = msg->cpus_per_node[0];
 	job->node_tasks  = 1;
@@ -545,6 +508,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->node_name  = xstrdup(conf->node_name);
 
 	job->uid     = (uid_t) msg->uid;
+	job->user_name  = xstrdup(msg->user_name);
 	job->gid     = (gid_t) msg->gid;
 	job->cwd     = xstrdup(msg->work_dir);
 
@@ -629,8 +593,6 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	_array_free(&job->env);
 	_array_free(&job->argv);
 
-	_pwd_destroy(job->pwd);
-
 	for (i = 0; i < job->node_tasks; i++)
 		_task_info_destroy(job->task[i], job->multi_prog);
 	list_destroy(job->sruns);
@@ -640,6 +602,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);
 	xfree(job->step_alloc_cores);
+	xfree(job->user_name);
 	xfree(job);
 }
 

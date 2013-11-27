@@ -445,6 +445,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 
 	if (msg) {
 		xfree(msg->acctg_freq);
+		xfree(msg->user_name);
 		xfree(msg->alias_list);
 		xfree(msg->nodes);
 		xfree(msg->cpu_bind);
@@ -721,6 +722,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		xfree(msg->env);
 	}
 	xfree(msg->acctg_freq);
+	xfree(msg->user_name);
 	xfree(msg->alias_list);
 	xfree(msg->cwd);
 	xfree(msg->cpu_bind);
@@ -2376,6 +2378,7 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 	if (msg) {
 		xfree(msg->block);
 		xfree(msg->fname);
+		xfree(msg->user_name);
 		delete_sbcast_cred(msg->cred);
 		xfree(msg);
 	}

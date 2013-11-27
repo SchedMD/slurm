@@ -1355,7 +1355,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	if (_drop_privileges (job, false, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
-	if (pam_setup(job->pwd->pw_name, conf->hostname)
+	if (pam_setup(job->user_name, conf->hostname)
 	    != SLURM_SUCCESS){
 		error ("error in pam_setup");
 		rc = SLURM_ERROR;
@@ -1900,7 +1900,7 @@ _make_batch_dir(stepd_step_rec_t *job)
 		goto error;
 	}
 
-	if (chown(path, (uid_t) -1, (gid_t) job->pwd->pw_gid) < 0) {
+	if (chown(path, (uid_t) -1, (gid_t) job->gid) < 0) {
 		error("chown(%s): %m", path);
 		goto error;
 	}
@@ -2172,7 +2172,7 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 	if (getuid() != (uid_t) 0)
 		return SLURM_SUCCESS;
 
-	if (setegid(job->pwd->pw_gid) < 0) {
+	if (setegid(job->gid) < 0) {
 		error("setegid: %m");
 		return -1;
 	}
@@ -2181,7 +2181,7 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 		error("_initgroups: %m");
 	}
 
-	if (do_setuid && seteuid(job->pwd->pw_uid) < 0) {
+	if (do_setuid && seteuid(job->uid) < 0) {
 		error("seteuid: %m");
 		return -1;
 	}
@@ -2195,7 +2195,7 @@ _reclaim_privileges(struct priv_state *ps)
 	int rc = SLURM_SUCCESS;
 
 	/*
-	 * No need to reclaim privileges if our uid == pwd->pw_uid
+	 * No need to reclaim privileges if our uid == job->uid
 	 */
 	if (geteuid() == ps->saved_uid)
 		goto done;
@@ -2341,12 +2341,12 @@ _become_user(stepd_step_rec_t *job, struct priv_state *ps)
 	/*
 	 * Now drop real, effective, and saved uid/gid
 	 */
-	if (setregid(job->pwd->pw_gid, job->pwd->pw_gid) < 0) {
+	if (setregid(job->gid, job->gid) < 0) {
 		error("setregid: %m");
 		return SLURM_ERROR;
 	}
 
-	if (setreuid(job->pwd->pw_uid, job->pwd->pw_uid) < 0) {
+	if (setreuid(job->uid, job->uid) < 0) {
 		error("setreuid: %m");
 		return SLURM_ERROR;
 	}
@@ -2359,8 +2359,6 @@ static int
 _initgroups(stepd_step_rec_t *job)
 {
 	int rc;
-	char *username;
-	gid_t gid;
 
 	if (job->ngids > 0) {
 		xassert(job->gids);
@@ -2368,16 +2366,14 @@ _initgroups(stepd_step_rec_t *job)
 		return setgroups(job->ngids, job->gids);
 	}
 
-	username = job->pwd->pw_name;
-	gid = job->pwd->pw_gid;
-	debug2("Uncached user/gid: %s/%ld", username, (long)gid);
-	if ((rc = initgroups(username, gid))) {
+	debug2("Uncached user/gid: %s/%ld", job->user_name, (long)job->gid);
+	if ((rc = initgroups(job->user_name, job->gid))) {
 		if ((errno == EPERM) && (getuid() != (uid_t) 0)) {
 			debug("Error in initgroups(%s, %ld): %m",
-			      username, (long)gid);
+			      job->user_name, (long)job->gid);
 		} else {
 			error("Error in initgroups(%s, %ld): %m",
-			      username, (long)gid);
+			      job->user_name, (long)job->gid);
 		}
 		return -1;
 	}
@@ -2439,7 +2435,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 
 	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
 
-	if (_access(path, 5, job->pwd->pw_uid, job->pwd->pw_gid) < 0) {
+	if (_access(path, 5, job->uid, job->gid) < 0) {
 		error("Could not run %s [%s]: access denied", name, path);
 		return -1;
 	}

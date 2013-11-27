@@ -58,6 +58,7 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/sbcast/sbcast.h"
@@ -208,6 +209,7 @@ static void _bcast_file(void)
 	bcast_msg.force		= params.force;
 	bcast_msg.modes		= f_stat.st_mode;
 	bcast_msg.uid		= f_stat.st_uid;
+	bcast_msg.user_name	= uid_to_string(f_stat.st_uid);
 	bcast_msg.gid		= f_stat.st_gid;
 	buffer			= xmalloc(buf_size);
 	bcast_msg.block		= buffer;
@@ -235,6 +237,6 @@ static void _bcast_file(void)
 			break;	/* end of file */
 		bcast_msg.block_no++;
 	}
-
+	xfree(bcast_msg.user_name);
 	xfree(buffer);
 }

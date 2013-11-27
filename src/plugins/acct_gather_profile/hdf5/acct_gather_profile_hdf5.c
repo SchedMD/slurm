@@ -184,14 +184,14 @@ static int _create_directories()
 		      hdf5_conf.dir);
 	chmod(hdf5_conf.dir, 0755);
 
-	user_dir = xstrdup_printf("%s/%s", hdf5_conf.dir, g_job->pwd->pw_name);
+	user_dir = xstrdup_printf("%s/%s", hdf5_conf.dir, g_job->user_name);
 	if (((rc = stat(user_dir, &st)) < 0) && (errno == ENOENT)) {
 		if (mkdir(user_dir, 0700) < 0)
 			fatal("mkdir(%s): %m", user_dir);
 	}
 	chmod(user_dir, 0700);
-	if (chown(user_dir, (uid_t)g_job->pwd->pw_uid,
-		  (gid_t)g_job->pwd->pw_gid) < 0)
+	if (chown(user_dir, (uid_t)g_job->uid,
+		  (gid_t)g_job->gid) < 0)
 		error("chown(%s): %m", user_dir);
 
 	xfree(user_dir);
@@ -334,7 +334,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 
 	profile_file_name = xstrdup_printf(
 		"%s/%s/%u_%u_%s.h5",
-		hdf5_conf.dir, g_job->pwd->pw_name,
+		hdf5_conf.dir, g_job->user_name,
 		g_job->jobid, g_job->stepid, g_job->node_name);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -348,8 +348,8 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	file_id = H5Fcreate(profile_file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
 			    H5P_DEFAULT);
 
-	if (chown(profile_file_name, (uid_t)g_job->pwd->pw_uid,
-		  (gid_t)g_job->pwd->pw_gid) < 0)
+	if (chown(profile_file_name, (uid_t)g_job->uid,
+		  (gid_t)g_job->gid) < 0)
 		error("chown(%s): %m", profile_file_name);
 	chmod(profile_file_name,  0600);
 	xfree(profile_file_name);

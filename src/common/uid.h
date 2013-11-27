@@ -42,6 +42,7 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <pwd.h>
 
 /*
  * In an ideal world, we could use sysconf(_SC_GETPW_R_SIZE_MAX) to get the
@@ -50,6 +51,12 @@
  * Diito for _SC_GETGR_R_SIZE_MAX. Use 64k byte buffer by default.
  */
 #define PW_BUF_SIZE 65536
+
+/* Retry getpwuid_r while return code is EINTR so we always get the
+ * info.  Return return code of getpwuid_r.
+ */
+extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
+			     size_t bufsiz, struct passwd **result);
 
 /*
  * Return validated uid_t for string in ``name'' which contains
