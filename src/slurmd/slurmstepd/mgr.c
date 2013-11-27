@@ -2234,7 +2234,11 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 	if (conf->log_opts.stderr_level > LOG_LEVEL_DEBUG3)
 		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG3;
 
+#if defined(MULTIPLE_SLURMD)
+	snprintf(argv0, sizeof(argv0), "slurmstepd-%s", conf->node_name);
+#else
 	snprintf(argv0, sizeof(argv0), "slurmstepd");
+#endif
 	/*
 	 * reinitialize log
 	 */

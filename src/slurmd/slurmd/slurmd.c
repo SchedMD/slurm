@@ -1805,6 +1805,19 @@ static void _update_logging(void)
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 	log_set_timefmt(conf->log_fmt);
+
+	/* If logging to syslog and running in
+	 * MULTIPLE_SLURMD mode add my node_name
+	 * in the name tag for syslog.
+	 */
+#if defined(MULTIPLE_SLURMD)
+	if (conf->logfile == NULL) {
+		char buf[64];
+
+		snprintf(buf, sizeof(buf), "slurmd-%s", conf->node_name);
+		log_set_argv0(buf);
+	}
+#endif
 }
 
 /* Reset slurmd nice value */
