@@ -573,9 +573,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 			       struct job_record *job_ptr)
 {
 	uint32_t i, j, num_jobs, size;
-	int x, *jstart;
+	int x;
 	struct part_row_data *this_row, *orig_row;
-	struct job_resources **tmpjobs;
 	struct sort_support *ss;
 
 	if (!p_ptr->row)
@@ -641,19 +640,15 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	size = bit_size(p_ptr->row[0].row_bitmap);
 
 	/* create a master job list and clear out ALL row data */
-	tmpjobs = xmalloc(num_jobs * sizeof(struct job_resources *));
-	jstart  = xmalloc(num_jobs * sizeof(int));
 	ss = xmalloc(num_jobs * sizeof(struct sort_support));
 	x = 0;
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-			tmpjobs[x] = p_ptr->row[i].job_list[j];
+			ss[x].tmpjobs = p_ptr->row[i].job_list[j];
 			p_ptr->row[i].job_list[j] = NULL;
-			jstart[x] = bit_ffs(tmpjobs[x]->node_bitmap);
-			jstart[x] = cr_get_coremap_offset(jstart[x]);
-			jstart[x] += bit_ffs(tmpjobs[x]->core_bitmap);
-			ss[x].jstart = jstart[x];
-			ss[x].tmpjobs = tmpjobs[x];
+			ss[x].jstart = bit_ffs(ss[x].tmpjobs->node_bitmap);
+			ss[x].jstart = cr_get_coremap_offset(ss[x].jstart);
+			ss[x].jstart += bit_ffs(ss[x].tmpjobs->core_bitmap);
 			x++;
 		}
 		p_ptr->row[i].num_jobs = 0;
@@ -672,36 +667,32 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	 *     - fixme: JOB SHUFFLING BETWEEN ROWS NEEDS TESTING
 	 */
 	qsort(ss, num_jobs, sizeof(struct sort_support), _compare_support);
-	for (i = 0; i < num_jobs; i++) {
-		jstart[i] = ss[i].jstart;
-		tmpjobs[i] = ss[i].tmpjobs;
-	}
-
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
 		for (i = 0; i < num_jobs; i++) {
 			char cstr[64], nstr[64];
-			if (tmpjobs[i]->core_bitmap) {
+			if (ss[i].tmpjobs->core_bitmap) {
 				bit_fmt(cstr, (sizeof(cstr)-1) ,
-					tmpjobs[i]->core_bitmap);
+					ss[i].tmpjobs->core_bitmap);
 			} else
 				sprintf(cstr, "[no core_bitmap]");
-			if (tmpjobs[i]->node_bitmap) {
+			if (ss[i].tmpjobs->node_bitmap) {
 				bit_fmt(nstr, (sizeof(nstr)-1),
-					tmpjobs[i]->node_bitmap);
+					ss[i].tmpjobs->node_bitmap);
 			} else
 				sprintf(nstr, "[no node_bitmap]");
-			info("DEBUG:  jstart %d job nb %s cb %s", jstart[i],
-			     nstr, cstr);
+			info("DEBUG:  jstart %d job nb %s cb %s",
+			     ss[i].jstart, nstr, cstr);
 		}
 	}
 
 	/* add jobs to the rows */
 	for (j = 0; j < num_jobs; j++) {
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (_can_job_fit_in_row(tmpjobs[j], &(p_ptr->row[i]))) {
+			if (_can_job_fit_in_row(ss[j].tmpjobs,
+						&(p_ptr->row[i]))) {
 				/* job fits in row, so add it */
-				_add_job_to_row(tmpjobs[j], &(p_ptr->row[i]));
-				tmpjobs[j] = NULL;
+				_add_job_to_row(ss[j].tmpjobs,&(p_ptr->row[i]));
+				ss[j].tmpjobs = NULL;
 				break;
 			}
 		}
@@ -711,7 +702,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 
 	/* test for dangling jobs */
 	for (j = 0; j < num_jobs; j++) {
-		if (tmpjobs[j])
+		if (ss[j].tmpjobs)
 			break;
 	}
 	if (j < num_jobs) {
@@ -751,8 +742,6 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 
 	if (orig_row)
 		_destroy_row_data(orig_row, p_ptr->num_rows);
-	xfree(tmpjobs);
-	xfree(jstart);
 	xfree(ss);
 
 	return;
