@@ -160,6 +160,9 @@ documents those changes that are of interest to users and admins.
     systems.
  -- Substantial performance improvement for systems with Shared=YES or FORCE
     and large numbers of running jobs (replace bubble sort with quick sort).
+ -- proctrack/cgroup - Add locking to prevent race condition where one job step
+    is ending for a user or job at the same time another job stepsis starting
+    and the user or job container is deleted from under the starting job step.
 
 * Changes in Slurm 2.6.4
 ========================
