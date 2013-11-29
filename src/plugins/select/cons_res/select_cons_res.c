@@ -223,6 +223,12 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  List preemptee_candidates, List *preemptee_job_list,
 			  bitstr_t *exc_core_bitmap);
 
+struct sort_support {
+	int jstart;
+	struct job_resources *tmpjobs;
+};
+static int _compare_support(const void *, const void *);
+
 static void _dump_job_res(struct job_resources *job) {
 	char str[64];
 
@@ -569,7 +575,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	uint32_t i, j, num_jobs, size;
 	int x, *jstart;
 	struct part_row_data *this_row, *orig_row;
-	struct job_resources **tmpjobs, *job;
+	struct job_resources **tmpjobs;
+	struct sort_support *ss;
 
 	if (!p_ptr->row)
 		return;
@@ -636,6 +643,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	/* create a master job list and clear out ALL row data */
 	tmpjobs = xmalloc(num_jobs * sizeof(struct job_resources *));
 	jstart  = xmalloc(num_jobs * sizeof(int));
+	ss = xmalloc(num_jobs * sizeof(struct sort_support));
 	x = 0;
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
@@ -644,6 +652,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 			jstart[x] = bit_ffs(tmpjobs[x]->node_bitmap);
 			jstart[x] = cr_get_coremap_offset(jstart[x]);
 			jstart[x] += bit_ffs(tmpjobs[x]->core_bitmap);
+			ss[x].jstart = jstart[x];
+			ss[x].tmpjobs = tmpjobs[x];
 			x++;
 		}
 		p_ptr->row[i].num_jobs = 0;
@@ -661,19 +671,10 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	 *     - may still get scenarios where jobs should switch rows
 	 *     - fixme: JOB SHUFFLING BETWEEN ROWS NEEDS TESTING
 	 */
+	qsort(ss, num_jobs, sizeof(struct sort_support), _compare_support);
 	for (i = 0; i < num_jobs; i++) {
-		for (j = i+1; j < num_jobs; j++) {
-			if (jstart[j] < jstart[i]
-			    || (jstart[j] == jstart[i] &&
-				tmpjobs[j]->ncpus > tmpjobs[i]->ncpus)) {
-				x = jstart[i];
-				jstart[i] = jstart[j];
-				jstart[j] = x;
-				job = tmpjobs[i];
-				tmpjobs[i] = tmpjobs[j];
-				tmpjobs[j] = job;
-			}
-		}
+		jstart[i] = ss[i].jstart;
+		tmpjobs[i] = ss[i].tmpjobs;
 	}
 
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
@@ -752,6 +753,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 		_destroy_row_data(orig_row, p_ptr->num_rows);
 	xfree(tmpjobs);
 	xfree(jstart);
+	xfree(ss);
+
 	return;
 
 	/* LEFTOVER DESIGN THOUGHTS, PRESERVED HERE */
@@ -1815,6 +1818,22 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	return rc;
 }
 
+static int
+_compare_support(const void *v, const void *v1)
+{
+	struct sort_support *s;
+	struct sort_support *s1;
+
+	s = (struct sort_support *)v;
+	s1 = (struct sort_support *)v1;
+
+	if (s->jstart > s1->jstart
+		|| (s->jstart == s1->jstart
+			&& s->tmpjobs->ncpus > s1->tmpjobs->ncpus))
+		return 1;
+
+	return 0;
+}
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
