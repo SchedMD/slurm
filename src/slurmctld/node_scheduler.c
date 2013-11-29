@@ -1859,11 +1859,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 	if ( !job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
 		/* Now build the GRES allocated field. */
 		rv = _build_gres_alloc_string(job_ptr);
-<<<<<<< HEAD
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
-=======
-		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
->>>>>>> slurm-2.6
 			debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
 			      "job_record->gres_alloc: (%s)",
 			      THIS_FILE, __LINE__, job_ptr->job_id,
