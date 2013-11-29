@@ -485,7 +485,11 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list);
 
 /*
  * Extract from the job record's gres_list the count of allocated resources of
+<<<<<<< HEAD
  * 	the named gres type.
+=======
+ * 	the named gres gres type.
+>>>>>>> slurm-2.6
  * IN job_gres_list  - job record's gres_list.
  * IN gres_name_type - the name of the gres type to retrieve the associated
  *	value from.

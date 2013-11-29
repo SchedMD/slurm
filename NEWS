@@ -158,6 +158,8 @@ documents those changes that are of interest to users and admins.
  -- Add cpu_load to the node information available using the Perl API.
  -- Correct a job's GRES allocation data in accounting records for non-Cray
     systems.
+ -- Substantial performance improvement for systems with Shared=YES or FORCE
+    and large numbers of running jobs (replace bubble sort with quick sort).
 
 * Changes in Slurm 2.6.4
 ========================
