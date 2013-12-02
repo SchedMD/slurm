@@ -1006,7 +1006,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			 bool slurmctld_locked, char *reason)
 {
 	List requests = NULL;
-	List delete_list = NULL, pass_list = NULL;
+	List delete_list = NULL, pass_list = NULL, kill_list = NULL;
 	ListIterator itr = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL,
 		tmp_record, *error_bg_record = NULL;
@@ -1102,14 +1102,15 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			continue;
 
 		if (bg_record->job_running > NO_JOB_RUNNING) {
-			job_fail(bg_record->job_running, JOB_NODE_FAIL);
+			bg_status_add_job_kill_list(bg_record->job_ptr,
+						    &kill_list);
 		} else if (bg_record->job_list) {
 			ListIterator job_itr = list_iterator_create(
 				bg_record->job_list);
 			struct job_record *job_ptr;
-			while ((job_ptr = list_next(job_itr))) {
-				job_fail(job_ptr->job_id, JOB_NODE_FAIL);
-			}
+			while ((job_ptr = list_next(job_itr)))
+				bg_status_add_job_kill_list(job_ptr,
+							    &kill_list);
 			list_iterator_destroy(job_itr);
 		}
 		/* If Running Dynamic mode and the block is
@@ -1408,6 +1409,11 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	slurm_mutex_unlock(&block_state_mutex);
 
 cleanup:
+	if (kill_list) {
+		bg_status_process_kill_job_list(kill_list, JOB_NODE_FAIL, 1);
+		list_destroy(kill_list);
+	}
+
 	if (!slurmctld_locked)
 		unlock_slurmctld(job_write_lock);
 	FREE_NULL_BITMAP(tmp_record.mp_bitmap);

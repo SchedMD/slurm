@@ -803,7 +803,7 @@ extern int sync_jobs(List job_list)
 {
 	ListIterator itr;
 	struct job_record  *job_ptr = NULL;
-	List block_list = NULL;
+	List block_list = NULL, kill_list = NULL;
 	static bool run_already = false;
 	bg_record_t *bg_record = NULL;
 
@@ -872,10 +872,9 @@ extern int sync_jobs(List job_list)
 		}
 
 		if (!bg_record) {
-			/* Don't use slurm_fail_job, locks are already
-			   in place.
-			*/
-			job_fail(job_ptr->job_id, JOB_BOOT_FAIL);
+			/* Can't fail it just now, we have locks in
+			   place. */
+			bg_status_add_job_kill_list(job_ptr, &kill_list);
 			_destroy_bg_action(bg_action_ptr);
 			continue;
 		}
@@ -900,6 +899,14 @@ extern int sync_jobs(List job_list)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+
+	if (kill_list) {
+		/* slurmctld is already locked up, so handle this right after
+		 * the unlock of block_state_mutex.
+		 */
+		bg_status_process_kill_job_list(kill_list, JOB_BOOT_FAIL, 1);
+		list_destroy(kill_list);
+	}
 
 	/* Insure that all other blocks are free of users */
 	if (block_list) {
