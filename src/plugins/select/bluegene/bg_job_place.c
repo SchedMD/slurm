@@ -962,7 +962,8 @@ static int _check_for_booted_overlapping_blocks(
 
 					if (kill_job_list) {
 						bg_status_process_kill_job_list(
-							kill_job_list, 1);
+							kill_job_list,
+							JOB_FAILED, 1);
 						list_destroy(kill_job_list);
 					}
 					free_block_list(NO_VAL, tmp_list, 1, 0);

@@ -705,7 +705,7 @@ static int _do_block_poll(void)
 	slurm_mutex_unlock(&block_state_mutex);
 	unlock_slurmctld(job_read_lock);
 
-	bg_status_process_kill_job_list(kill_job_list, 0);
+	bg_status_process_kill_job_list(kill_job_list, JOB_FAILED, 0);
 
 #endif
 	return updated;

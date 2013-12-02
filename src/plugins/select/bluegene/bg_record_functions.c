@@ -634,7 +634,7 @@ extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if (kill_job_list) {
-		bg_status_process_kill_job_list(kill_job_list, 0);
+		bg_status_process_kill_job_list(kill_job_list, JOB_FAILED, 0);
 		list_destroy(kill_job_list);
 	}
 
