@@ -270,7 +270,7 @@ static int _run_nhc(nhc_info_t *nhc_info)
 		info("_run_nhc jobid %u and apid %"PRIu64" completed took: %s",
 		     nhc_info->jobid, nhc_info->apid, TIME_STR);
 
- fini:
+fini:
 	xfree(apid_char);
 	xfree(exit_char);
 	xfree(jobid_char);
@@ -407,7 +407,7 @@ static void *_aeld_event_loop(void *args)
 	fds[0].fd = sessionfd;
 	fds[0].events = POLLIN | POLLPRI | POLLRDHUP;
 	while ((rv = TEMP_FAILURE_RETRY(poll(fds, 1, AELD_EVENT_INTERVAL)))
-		!= -1) {
+	       != -1) {
 		// There was activity on the file descriptor, get state
 		if (rv > 0) {
 			rv = alpsc_ev_get_session_state(&errmsg, session);
@@ -442,7 +442,7 @@ static void *_aeld_event_loop(void *args)
 			if (rv > 0) {
 				_handle_aeld_error(
 					"alpsc_ev_set_application_info",
-						   errmsg, rv, &session);
+					errmsg, rv, &session);
 				_start_session(&session, &sessionfd);
 				fds[0].fd = sessionfd;
 			}
@@ -485,13 +485,13 @@ static void _initialize_event(alpsc_ev_app_t *event,
 			return;
 		}
 		hlit = hostlist_iterator_create(hl);
-	    if (hlit == NULL) {
+		if (hlit == NULL) {
 			hostlist_destroy(hl);
 			return;
 		}
 
 		event->nodes = xmalloc(step_ptr->step_layout->node_cnt
-				* sizeof(int32_t));
+				       * sizeof(int32_t));
 
 		while ((node = hostlist_next(hlit)) != NULL) {
 			rv = sscanf(node, "nid%"SCNd32,
@@ -508,7 +508,7 @@ static void _initialize_event(alpsc_ev_app_t *event,
 		hostlist_iterator_destroy(hlit);
 		hostlist_destroy(hl);
 	} else {
-	    // TODO: do we have to worry about batch scripts?
+		// TODO: do we have to worry about batch scripts?
 	}
 	return;
 }
@@ -644,7 +644,7 @@ static void _update_app(struct job_record *job_ptr,
 			if (app_list[i].apid == apid) {
 				// Found it, update the state
 				app_list[i].state =
-				    (state == ALPSC_EV_SUSPEND) ?
+					(state == ALPSC_EV_SUSPEND) ?
 					ALPSC_EV_SUSPEND : ALPSC_EV_START;
 				break;
 			}
@@ -845,7 +845,7 @@ extern int init ( void )
 #ifdef HAVE_NATIVE_CRAY
 	// Spawn the aeld thread, only in slurmctld.
 	if (run_in_daemon("slurmctld")) {
-	    _spawn_cleanup_thread(NULL, _aeld_event_loop);
+		_spawn_cleanup_thread(NULL, _aeld_event_loop);
 	}
 #endif
 
@@ -1049,7 +1049,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 	if (aeld_running) {
 		i = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = (struct step_record *)list_next(i))
-			!= NULL) {
+		       != NULL) {
 			_update_app(job_ptr, step_ptr, ALPSC_EV_SUSPEND);
 		}
 		list_iterator_destroy(i);
@@ -1069,7 +1069,7 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 	if (aeld_running) {
 		i = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = (struct step_record *)list_next(i))
-			!= NULL) {
+		       != NULL) {
 			_update_app(job_ptr, step_ptr, ALPSC_EV_RESUME);
 		}
 		list_iterator_destroy(i);
@@ -1443,7 +1443,7 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	}
 
 	switch (mode) {
-	/* See comment in select_p_select_jobinfo_sprint() regarding format. */
+		/* See comment in select_p_select_jobinfo_sprint() regarding format. */
 	default:
 		xstrcat(buf, other_select_jobinfo_xstrdup(
 				jobinfo->other_jobinfo, mode));

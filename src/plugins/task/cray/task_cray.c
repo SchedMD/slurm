@@ -134,7 +134,7 @@ extern int fini (void)
  * task_p_slurmd_batch_request()
  */
 extern int task_p_slurmd_batch_request (uint32_t job_id,
-		batch_job_launch_msg_t *req)
+					batch_job_launch_msg_t *req)
 {
 	debug("task_p_slurmd_batch_request: %u", job_id);
 	return SLURM_SUCCESS;
@@ -144,11 +144,11 @@ extern int task_p_slurmd_batch_request (uint32_t job_id,
  * task_p_slurmd_launch_request()
  */
 extern int task_p_slurmd_launch_request (uint32_t job_id,
-		launch_tasks_request_msg_t *req,
-		uint32_t node_id)
+					 launch_tasks_request_msg_t *req,
+					 uint32_t node_id)
 {
 	debug("task_p_slurmd_launch_request: %u.%u %u",
-			job_id, req->job_step_id, node_id);
+	      job_id, req->job_step_id, node_id);
 	return SLURM_SUCCESS;
 }
 
@@ -156,8 +156,8 @@ extern int task_p_slurmd_launch_request (uint32_t job_id,
  * task_p_slurmd_reserve_resources()
  */
 extern int task_p_slurmd_reserve_resources (uint32_t job_id,
-		launch_tasks_request_msg_t *req,
-		uint32_t node_id)
+					    launch_tasks_request_msg_t *req,
+					    uint32_t node_id)
 {
 	debug("task_p_slurmd_reserve_resources: %u %u", job_id, node_id);
 	return SLURM_SUCCESS;
@@ -198,7 +198,7 @@ extern int task_p_slurmd_release_resources (uint32_t job_id)
 extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
 	debug("task_p_pre_setuid: %u.%u",
-			job->jobid, job->stepid);
+	      job->jobid, job->stepid);
 
 	return SLURM_SUCCESS;
 }
@@ -213,7 +213,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	int rc;
 
 	debug("task_p_pre_launch: %u.%u, task %d",
-			job->jobid, job->stepid, job->envtp->procid);
+	      job->jobid, job->stepid, job->envtp->procid);
 	/*
 	 * Send the rank to the application's PMI layer via an environment
 	 * variable.
@@ -300,7 +300,7 @@ extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
  *	followed by TaskEpilog program (from slurm.conf).
  */
 extern int task_p_post_term (stepd_step_rec_t *job,
-		stepd_step_task_info_t *task)
+			     stepd_step_task_info_t *task)
 {
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	char status;
