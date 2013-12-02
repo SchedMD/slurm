@@ -162,7 +162,7 @@ expect {
 }
 
 set hdf5_file "job_$job_id.h5"
-set srun_pid [spawn $sh5util -j $job_id -l Node:TimeSeries -s Tasks -o $file_out]
+set srun_pid [spawn $sh5util -j $job_id -E -l Node:TimeSeries -s Tasks -o $file_out]
 expect {
 	timeout {
 		send_user "\nFAILURE: sh5util extract not responding\n"

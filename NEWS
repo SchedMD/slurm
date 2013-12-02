@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     authentication plugin.
  -- Fixed conditional rpm compiling.
  -- Corrected slurmstepd ident name when loggind to syslog.
+ -- Fixed sh5util loop when there are no node-step files.
 
 * Changes in Slurm 14.03.0pre4
 ==============================
