@@ -164,6 +164,7 @@ documents those changes that are of interest to users and admins.
  -- proctrack/cgroup - Add locking to prevent race condition where one job step
     is ending for a user or job at the same time another job stepsis starting
     and the user or job container is deleted from under the starting job step.
+ -- Fixed sh5util loop when there are no node-step files.
 
 * Changes in Slurm 2.6.4
 ========================
