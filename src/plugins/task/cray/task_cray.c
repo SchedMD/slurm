@@ -51,8 +51,11 @@
 #include <unistd.h>
 #include <sys/param.h>
 #include <errno.h>
-#include <numa.h>
 #include "limits.h"
+
+#ifdef HAVE_NUMA
+#include <numa.h>
+#endif
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
@@ -107,8 +110,10 @@ const char plugin_name[]        = "task CRAY plugin";
 const char plugin_type[]        = "task/cray";
 const uint32_t plugin_version   = 100;
 
+#ifdef HAVE_NUMA
 // TODO: Remove this prototype once the prototype appears in numa.h.
 unsigned int numa_bitmask_weight(const struct bitmask *bmp);
+#endif
 
 #ifdef HAVE_NATIVE_CRAY
 static int _get_numa_nodes(char *path, int *cnt, int **numa_array);

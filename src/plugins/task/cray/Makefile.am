@@ -6,7 +6,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_CPPFLAGS)
 
-AM_CFLAGS = $(CRAY_ALPSCOMM_CN_CFLAGS) -lnuma
+AM_CFLAGS = $(CRAY_ALPSCOMM_CN_CFLAGS) $(NUMA_LIBS)
 
 pkglib_LTLIBRARIES = task_cray.la
 
