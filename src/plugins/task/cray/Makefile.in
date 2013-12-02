@@ -162,7 +162,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 task_cray_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_task_cray_la_OBJECTS = task_cray.lo
+am_task_cray_la_OBJECTS = task_cray_la-task_cray.lo
 task_cray_la_OBJECTS = $(am_task_cray_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -260,10 +260,18 @@ CHECK_LIBS = @CHECK_LIBS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CRAY_ALPSC_CN_CPPFLAGS = @CRAY_ALPSC_CN_CPPFLAGS@
+CRAY_ALPSC_CN_LDFLAGS = @CRAY_ALPSC_CN_LDFLAGS@
+CRAY_ALPSC_SN_CPPFLAGS = @CRAY_ALPSC_SN_CPPFLAGS@
+CRAY_ALPSC_SN_LDFLAGS = @CRAY_ALPSC_SN_LDFLAGS@
 CRAY_CPPFLAGS = @CRAY_CPPFLAGS@
 CRAY_LDFLAGS = @CRAY_LDFLAGS@
+CRAY_SELECT_CPPFLAGS = @CRAY_SELECT_CPPFLAGS@
+CRAY_SELECT_LDFLAGS = @CRAY_SELECT_LDFLAGS@
 CRAY_SWITCH_CPPFLAGS = @CRAY_SWITCH_CPPFLAGS@
 CRAY_SWITCH_LDFLAGS = @CRAY_SWITCH_LDFLAGS@
+CRAY_TASK_CPPFLAGS = @CRAY_TASK_CPPFLAGS@
+CRAY_TASK_LDFLAGS = @CRAY_TASK_LDFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -467,11 +475,13 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_CPPFLAGS)
+AM_CFLAGS = $(CRAY_ALPSCOMM_CN_CFLAGS) -lnuma
 pkglib_LTLIBRARIES = task_cray.la
 
 # Null task plugin.
 task_cray_la_SOURCES = task_cray.c
-task_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+task_cray_la_CPPFLAGS = $(CRAY_TASK_CPPFLAGS) $(AM_CPPFLAGS)
+task_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_LDFLAGS) $(CRAY_TASK_LDFLAGS)
 task_cray_la_LIBADD = $(CRAY_LDFLAGS)
 all: all-am
 
@@ -552,7 +562,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_cray.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_cray_la-task_cray.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -574,6 +584,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+task_cray_la-task_cray.lo: task_cray.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(task_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT task_cray_la-task_cray.lo -MD -MP -MF $(DEPDIR)/task_cray_la-task_cray.Tpo -c -o task_cray_la-task_cray.lo `test -f 'task_cray.c' || echo '$(srcdir)/'`task_cray.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/task_cray_la-task_cray.Tpo $(DEPDIR)/task_cray_la-task_cray.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='task_cray.c' object='task_cray_la-task_cray.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(task_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o task_cray_la-task_cray.lo `test -f 'task_cray.c' || echo '$(srcdir)/'`task_cray.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

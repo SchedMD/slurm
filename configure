@@ -684,8 +684,16 @@ SLURMD_PORT
 SLURMCTLD_PORT
 DEBUG_MODULES_FALSE
 DEBUG_MODULES_TRUE
+CRAY_TASK_LDFLAGS
+CRAY_TASK_CPPFLAGS
 CRAY_SWITCH_LDFLAGS
 CRAY_SWITCH_CPPFLAGS
+CRAY_SELECT_LDFLAGS
+CRAY_SELECT_CPPFLAGS
+CRAY_ALPSC_SN_LDFLAGS
+CRAY_ALPSC_SN_CPPFLAGS
+CRAY_ALPSC_CN_LDFLAGS
+CRAY_ALPSC_CN_CPPFLAGS
 CRAY_LDFLAGS
 CRAY_CPPFLAGS
 HAVE_ALPS_CRAY_EMULATION_FALSE
@@ -21869,28 +21877,34 @@ $as_echo "#define HAVE_ALPS_CRAY_EMULATION 1" >>confdefs.h
       test -f "$_test_dir/lib64/libalpscomm_cn.so" || continue
       test -f "$_test_dir/lib64/libalpscomm_sn.so" || continue
 
-      CRAY_SWITCH_CPPFLAGS="$CRAY_SWITCH_CPPFLAGS -I$_test_dir/include"
-      CRAY_SWITCH_LDFLAGS="$CRAY_SWITCH_LDFLAGS -L$_test_dir/lib64 -lalpscomm_cn -lalpscomm_sn"
 
-      CPPFLAGS="$CRAY_CPPFLAGS $CRAY_SWITCH_CPPFLAGS $saved_CPPFLAGS"
-      LIBS="$CRAY_LDFLAGS $CRAY_SWITCH_LDFLAGS $saved_LIBS"
+      CRAY_ALPSC_CN_CPPFLAGS="$CRAY_ALPSC_CN_CPPFLAGS -I$_test_dir/include"
+      CRAY_ALPSC_SN_CPPFLAGS="$CRAY_ALPSC_SN_CPPFLAGS -I$_test_dir/include"
+      CRAY_ALPSC_CN_LDFLAGS="$CRAY_ALPSC_CN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_cn"
+      CRAY_ALPSC_SN_LDFLAGS="$CRAY_ALPSC_SN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_sn"
 
-# FIXME: alpscomm_cn.h appeared to not work correctly here.
-# Missing #include <netinet/in.h>.  Cray needs to add it for things to
-# work correctly.
-# #include <alpscomm_cn.h>
-# alpsc_flush_lustre((char **)0);
+      CRAY_SWITCH_CPPFLAGS="$CRAY_SWITCH_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
+      CRAY_SWITCH_LDFLAGS="$CRAY_SWITCH_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
+      CRAY_SELECT_CPPFLAGS="$CRAY_SELECT_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
+      CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
+      CRAY_TASK_CPPFLAGS="$CRAY_TASK_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS"
+      CRAY_TASK_LDFLAGS="$CRAY_TASK_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS"
+
+      CPPFLAGS="$CRAY_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $saved_CPPFLAGS"
+      LIBS="$CRAY_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $saved_LIBS"
 
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <job.h>
              #include <alpscomm_sn.h>
+	     #include <alpscomm_cn.h>
 
 int
 main ()
 {
  job_getjidcnt();
 	      alpsc_release_cookies((char **)0, 0, 0);
+	      alpsc_flush_lustre((char **)0);
 
 
   ;
@@ -22124,6 +22138,14 @@ else
   HAVE_ALPS_CRAY_EMULATION_TRUE='#'
   HAVE_ALPS_CRAY_EMULATION_FALSE=
 fi
+
+
+
+
+
+
+
+
 
 
 
