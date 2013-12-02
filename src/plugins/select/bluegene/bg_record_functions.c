@@ -1745,7 +1745,7 @@ extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
 	itr = list_iterator_create(bg_record->job_list);
 	while ((found_job_ptr = list_next(itr))) {
 		if (found_job_ptr->magic != JOB_MAGIC) {
-			error("select_p_job_fini: "
+			error("bg_record_hw_failure: "
 			      "bad magic found when "
 			      "looking at block %s",
 			      bg_record->bg_block_id);
