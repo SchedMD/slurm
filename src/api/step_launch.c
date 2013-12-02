@@ -47,6 +47,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
