@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
     is ending for a user or job at the same time another job stepsis starting
     and the user or job container is deleted from under the starting job step.
  -- Fixed sh5util loop when there are no node-step files.
+ -- Fix race condition on batch job termination that could result in a job exit
+    code of 0xfffffffe if the slurmd on node zero registers its active jobs at
+    the same time that slurmstepd is recording the job's exit code.
 
 * Changes in Slurm 2.6.4
 ========================
