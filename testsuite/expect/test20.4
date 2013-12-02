@@ -45,7 +45,7 @@ if {[file executable $pbsnodes] == 0} {
 set matches 0
 spawn $pbsnodes
 expect {
-	-re "state.*pcpus" {
+	-re "state.*np" {
 		incr matches
 		exp_continue
 	}
