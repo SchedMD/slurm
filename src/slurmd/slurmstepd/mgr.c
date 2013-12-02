@@ -349,9 +349,6 @@ batch_finish(stepd_step_rec_t *job, int rc)
 
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
-	if (job->batchdir && (rmdir(job->batchdir) < 0))
-		error("rmdir(%s): %m",  job->batchdir);
-	xfree(job->batchdir);
 
 #ifdef HAVE_ALPS_CRAY
 	_call_select_plugin_from_stepd(job, 0, select_g_job_fini);
@@ -375,6 +372,13 @@ batch_finish(stepd_step_rec_t *job, int rc)
 			job->jobid, job->stepid, rc, step_complete.step_rc);
 		_send_step_complete_msgs(job);
 	}
+
+	/* Do not purge directory until slurmctld is notified of batch job
+	 * completion to avoid race condition with slurmd registering missing
+	 * batch job. */
+	if (job->batchdir && (rmdir(job->batchdir) < 0))
+		error("rmdir(%s): %m",  job->batchdir);
+	xfree(job->batchdir);
 }
 
 /*
@@ -395,13 +399,13 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 	_setargs(job);
 
 	if ((job->batchdir = _make_batch_dir(job)) == NULL) {
-		goto cleanup1;
+		goto cleanup;
 	}
 
 	xfree(job->argv[0]);
 
 	if ((job->argv[0] = _make_batch_script(msg, job->batchdir)) == NULL) {
-		goto cleanup2;
+		goto cleanup;
 	}
 
 	/* this is the new way of setting environment variables */
@@ -414,12 +418,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 
 	return job;
 
-cleanup2:
-	if (job->batchdir && (rmdir(job->batchdir) < 0))
-		error("rmdir(%s): %m",  job->batchdir);
-	xfree(job->batchdir);
-
-cleanup1:
+cleanup:
 	error("batch script setup failed for job %u.%u",
 	      msg->job_id, msg->step_id);
 
@@ -430,6 +429,13 @@ cleanup1:
 			job, ESLURMD_CREATE_BATCH_DIR_ERROR, -1);
 	} else
 		_send_step_complete_msgs(job);
+
+	/* Do not purge directory until slurmctld is notified of batch job
+	 * completion to avoid race condition with slurmd registering missing
+	 * batch job. */
+	if (job->batchdir && (rmdir(job->batchdir) < 0))
+		error("rmdir(%s): %m",  job->batchdir);
+	xfree(job->batchdir);
 
 	return NULL;
 }
