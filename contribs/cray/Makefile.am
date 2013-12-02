@@ -9,3 +9,7 @@ EXTRA_DIST = \
 	libalps_test_programs.tar.gz	\
 	opt_modulefiles_slurm		\
 	pam_job.c
+
+sbin_SCRIPTS = slurmconfgen.py
+
+sysconf_DATA = slurm.conf.template

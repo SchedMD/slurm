@@ -5,6 +5,7 @@
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2010-2013 SchedMD <http://www.schedmd.com>.
  *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
+ *  Copyright 2013 Cray Inc. All Rights Reserved.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1970,6 +1971,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_INFINIBAND	0x00400000	/* AcctGatherInfiniband plugin */
 #define DEBUG_FLAG_FILESYSTEM 	0x00800000      /* AcctGatherFilesystem plugin */
 #define DEBUG_FLAG_JOB_CONT 	0x01000000      /* JobContainer plugin */
+#define DEBUG_FLAG_TASK 	0x02000000      /* TaskType plugin */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to

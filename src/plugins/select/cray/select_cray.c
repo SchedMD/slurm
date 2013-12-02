@@ -2,6 +2,7 @@
  *  select_cray.c - node selection plugin for cray systems.
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC
+ *  Copyright 2013 Cray Inc. All Rights Reserved.
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -34,6 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE 1
+
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #  if HAVE_STDINT_H
@@ -48,6 +51,7 @@
 #endif
 
 #include <stdio.h>
+#include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -56,6 +60,8 @@
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/slurmctld/locks.h"
 #include "other_select.h"
+
+#include "alpscomm_sn.h"
 
 /**
  * struct select_jobinfo - data specific to Cray node selection plugin
@@ -108,6 +114,40 @@ int bg_recover = NOT_FROM_CONTROLLER;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 #endif
 
+#ifdef HAVE_NATIVE_CRAY
+/* Used for aeld communication */
+alpsc_ev_app_t *app_list = NULL;	// List of running/suspended apps
+int32_t app_list_size = 0;		// Number of running/suspended apps
+size_t app_list_capacity = 0;		// Capacity of app list
+alpsc_ev_app_t *event_list = NULL;	// List of app state changes
+int32_t event_list_size = 0;		// Number of events
+size_t event_list_capacity = 0;		// Capacity of event list
+volatile sig_atomic_t aeld_running = 0;	// 0 if the aeld thread has exited
+					// 1 if the session is temporarily down
+					// 2 if the session is running
+pthread_mutex_t aeld_mutex = PTHREAD_MUTEX_INITIALIZER;	// Mutex for the above
+
+#define AELD_SESSION_INTERVAL	60	// aeld session retry interval (s)
+#define AELD_EVENT_INTERVAL	100	// aeld event sending interval (ms)
+
+/* Static functions used for aeld communication */
+static void _handle_aeld_error(const char *funcname, char *errmsg, int rv,
+			       alpsc_ev_session_t **session);
+static void _clear_event_list(alpsc_ev_app_t *list, int32_t *size);
+static void _start_session(alpsc_ev_session_t **session, int *sessionfd);
+static void *_aeld_event_loop(void *args);
+static void _initialize_event(alpsc_ev_app_t *event,
+			      struct job_record *job_ptr,
+			      struct step_record *step_ptr,
+			      alpsc_ev_app_state_e state);
+static void _copy_event(alpsc_ev_app_t *dest, alpsc_ev_app_t *src);
+static void _free_event(alpsc_ev_app_t *event);
+static void _add_to_app_list(alpsc_ev_app_t **list, int32_t *size,
+			     size_t *capacity, alpsc_ev_app_t *app);
+static void _update_app(struct job_record *job_ptr,
+			struct step_record *step_ptr,
+			alpsc_ev_app_state_e state);
+#endif
 
 /* All current (2011) XT/XE installations have a maximum dimension of 3,
  * smaller systems deploy a 2D Torus which has no connectivity in
@@ -116,7 +156,6 @@ slurmdb_cluster_rec_t *working_cluster_rec = NULL;
  * that could easily be wrong if built on a non Cray system. */
 static int select_cray_dim_size[3] = {-1};
 static uint32_t debug_flags = 0;
-
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -249,6 +288,384 @@ static int _run_nhc(nhc_info_t *nhc_info)
 	return 0;
 #endif
 }
+
+#ifdef HAVE_NATIVE_CRAY
+/*
+ * Clean up after a fatal error
+ */
+static void _aeld_cleanup(void)
+{
+	aeld_running = 0;
+
+	// Free any used memory
+	pthread_mutex_lock(&aeld_mutex);
+	_clear_event_list(app_list, &app_list_size);
+	app_list_capacity = 0;
+	xfree(app_list);
+	_clear_event_list(event_list, &event_list_size);
+	event_list_capacity = 0;
+	xfree(event_list);
+	pthread_mutex_unlock(&aeld_mutex);
+}
+
+/*
+ * Deal with an aeld error.
+ */
+static void _handle_aeld_error(const char *funcname, char *errmsg, int rv,
+			       alpsc_ev_session_t **session)
+{
+	error("%s failed: %s", funcname, errmsg);
+	free(errmsg);
+	aeld_running = 1;
+	alpsc_ev_destroy_session(*session);
+	*session = NULL;
+
+	// Unrecoverable errors
+	if (rv == 1 || rv == 2) {
+		_aeld_cleanup();
+		pthread_exit(NULL);
+	}
+	return;
+}
+
+/*
+ * Clear all events from the event list. Must already have the aeld_mutex
+ * locked.
+ */
+static void _clear_event_list(alpsc_ev_app_t *list, int32_t *size)
+{
+	int32_t i;
+
+	for (i = 0; i < *size; i++) {
+		_free_event(&list[i]);
+	}
+	*size = 0;
+	return;
+}
+
+/*
+ * Start an aeld session.
+ */
+static void _start_session(alpsc_ev_session_t **session, int *sessionfd)
+{
+	int rv;
+	char *errmsg;
+
+	while (1) {
+		pthread_mutex_lock(&aeld_mutex);
+
+		// Clear out the event list
+		_clear_event_list(event_list, &event_list_size);
+
+		// Create the session
+		rv = alpsc_ev_create_session(&errmsg, session, app_list,
+					     app_list_size);
+
+		pthread_mutex_unlock(&aeld_mutex);
+
+		if (rv) {
+			_handle_aeld_error("alpsc_ev_create_session",
+					   errmsg, rv, session);
+		} else {
+			// Get the session fd
+			rv = alpsc_ev_get_session_fd(&errmsg, *session,
+						     sessionfd);
+			if (rv) {
+				_handle_aeld_error("alpsc_ev_get_session_fd",
+						   errmsg, rv, session);
+			} else {
+				aeld_running = 2;
+				break;
+			}
+		}
+
+		// If we get here, start over
+		sleep(AELD_SESSION_INTERVAL);
+	}
+
+	debug("%s: Created aeld session fd %d", __func__, *sessionfd);
+	return;
+}
+
+/*
+ * Run the aeld communication event loop, sending events as we get
+ * them and all apps on sync requests.
+ */
+static void *_aeld_event_loop(void *args)
+{
+	int rv, sessionfd;
+	alpsc_ev_session_t *session = NULL;
+	struct pollfd fds[1];
+	char *errmsg;
+
+	aeld_running = 1;
+
+	// Start out by creating a session
+	_start_session(&session, &sessionfd);
+
+	// Now poll on the session fd
+	fds[0].fd = sessionfd;
+	fds[0].events = POLLIN | POLLPRI | POLLRDHUP;
+	while ((rv = TEMP_FAILURE_RETRY(poll(fds, 1, AELD_EVENT_INTERVAL)))
+		!= -1) {
+		// There was activity on the file descriptor, get state
+		if (rv > 0) {
+			rv = alpsc_ev_get_session_state(&errmsg, session);
+			if (rv > 0) {
+				_handle_aeld_error("alpsc_ev_get_session_state",
+						   errmsg, rv, &session);
+				_start_session(&session, &sessionfd);
+				fds[0].fd = sessionfd;
+			} else if (rv == -1) {
+				// Sync event
+				debug("aeld sync event");
+				aeld_running = 1;
+				alpsc_ev_destroy_session(session);
+				session = NULL;
+				_start_session(&session, &sessionfd);
+				fds[0].fd = sessionfd;
+			}
+			// Do nothing when rv == 0
+		}
+
+		// Process the event list
+		pthread_mutex_lock(&aeld_mutex);
+		if (event_list_size > 0) {
+			// Send event list to aeld
+			rv = alpsc_ev_set_application_info(&errmsg, session,
+							   event_list,
+							   event_list_size);
+
+			// Clear the event list
+			_clear_event_list(event_list, &event_list_size);
+			pthread_mutex_unlock(&aeld_mutex);
+			if (rv > 0) {
+				_handle_aeld_error(
+					"alpsc_ev_set_application_info",
+						   errmsg, rv, &session);
+				_start_session(&session, &sessionfd);
+				fds[0].fd = sessionfd;
+			}
+		} else {
+			pthread_mutex_unlock(&aeld_mutex);
+		}
+	}
+
+	error("%s: poll failed: %m", __func__);
+	_aeld_cleanup();
+	return NULL;
+}
+
+/*
+ * Initialize an alpsc_ev_app_t
+ */
+static void _initialize_event(alpsc_ev_app_t *event,
+			      struct job_record *job_ptr,
+			      struct step_record *step_ptr,
+			      alpsc_ev_app_state_e state)
+{
+	hostlist_t hl;
+	hostlist_iterator_t hlit;
+	char *node;
+	int rv;
+
+	event->apid = SLURM_ID_HASH(job_ptr->job_id, step_ptr->step_id);
+	event->uid = job_ptr->user_id;
+	event->app_name = xstrdup(step_ptr->name);
+	event->batch_id = xmalloc(20);	// More than enough to hold max uint32
+	snprintf(event->batch_id, 20, "%"PRIu32, job_ptr->job_id);
+	event->state = state;
+	event->nodes = NULL;
+	event->num_nodes = 0;
+
+	// Fill in nodes and num_nodes
+	if (step_ptr->step_layout) {
+		hl = hostlist_create(step_ptr->step_layout->node_list);
+		if (hl == NULL) {
+			return;
+		}
+		hlit = hostlist_iterator_create(hl);
+	    if (hlit == NULL) {
+			hostlist_destroy(hl);
+			return;
+		}
+
+		event->nodes = xmalloc(step_ptr->step_layout->node_cnt
+				* sizeof(int32_t));
+
+		while ((node = hostlist_next(hlit)) != NULL) {
+			rv = sscanf(node, "nid%"SCNd32,
+				    &event->nodes[event->num_nodes]);
+			if (rv) {
+				event->num_nodes++;
+			} else {
+				debug("%s: couldn't parse node %s, skipping",
+				      __func__, node);
+			}
+			free(node);
+		}
+
+		hostlist_iterator_destroy(hlit);
+		hostlist_destroy(hl);
+	} else {
+	    // TODO: do we have to worry about batch scripts?
+	}
+	return;
+}
+
+/*
+ * Copy an alpsc_ev_app_t
+ */
+static void _copy_event(alpsc_ev_app_t *dest, alpsc_ev_app_t *src)
+{
+        dest->apid = src->apid;
+        dest->uid = src->uid;
+        dest->app_name = xstrdup(src->app_name);
+        dest->batch_id = xstrdup(src->batch_id);
+        dest->state = src->state;
+        if (src->num_nodes > 0 && src->nodes != NULL) {
+                dest->nodes = xmalloc(src->num_nodes * sizeof(int32_t));
+                memcpy(dest->nodes, src->nodes,
+		       src->num_nodes * sizeof(int32_t));
+                dest->num_nodes = src->num_nodes;
+        } else {
+                dest->nodes = NULL;
+                dest->num_nodes = 0;
+        }
+        return;
+}
+
+/*
+ * Free an alpsc_ev_app_t
+ */
+static void _free_event(alpsc_ev_app_t *event)
+{
+	xfree(event->app_name);
+	xfree(event->batch_id);
+	xfree(event->nodes);
+	return;
+}
+
+/*
+ * Add to a list. Must have the aeld_mutex locked.
+ */
+static void _add_to_app_list(alpsc_ev_app_t **list, int32_t *size,
+			     size_t *capacity, alpsc_ev_app_t *app)
+{
+	// Realloc if necessary
+	if (*size + 1 > *capacity) {
+		if (*capacity == 0) {
+			*capacity = 16;
+		} else {
+			*capacity *= 2;
+		}
+		*list = xrealloc(*list, *capacity * sizeof(alpsc_ev_app_t));
+	}
+
+	// Copy the event to the destination
+	_copy_event(*list + *size, app);
+	(*size)++;
+	return;
+}
+
+/*
+ * For starting apps, push to the app list. For ending apps, removes from the
+ * app list. For suspend/resume apps, edits the app list. Always adds to the
+ * event list.
+ */
+static void _update_app(struct job_record *job_ptr,
+			struct step_record *step_ptr,
+			alpsc_ev_app_state_e state)
+{
+	uint64_t apid;
+	int32_t i;
+	alpsc_ev_app_t app;
+	int found;
+
+	// If aeld thread isn't running, do nothing
+	if (aeld_running == 0) {
+		return;
+	}
+
+	// Fill in the new event
+	_initialize_event(&app, job_ptr, step_ptr, state);
+
+	pthread_mutex_lock(&aeld_mutex);
+
+	// Add it to the event list, only if aeld is up
+	if (aeld_running == 2) {
+		_add_to_app_list(&event_list, &event_list_size,
+				 &event_list_capacity, &app);
+	}
+
+	// Now deal with the app list
+	// Maintain app list even if aeld is down, so we have it ready when
+	// it comes up.
+	switch(state) {
+	case ALPSC_EV_START:
+		// This is new, add to the app list
+		_add_to_app_list(&app_list, &app_list_size,
+				 &app_list_capacity, &app);
+		break;
+	case ALPSC_EV_END:
+		// Search for the app matching this apid
+		found = 0;
+		apid = SLURM_ID_HASH(job_ptr->job_id, step_ptr->step_id);
+		for (i = 0; i < app_list_size; i++) {
+			if (app_list[i].apid == apid) {
+				found = 1;
+
+				// Free allocated info
+				_free_event(&app_list[i]);
+
+				// Copy last list entry to this spot
+				if (i < app_list_size - 1) {
+					memcpy(&app_list[i],
+					       &app_list[app_list_size - 1],
+					       sizeof(alpsc_ev_app_t));
+				}
+
+				app_list_size--;
+				break;
+			}
+		}
+
+		// Not found
+		if (!found) {
+			debug("Application %"PRIu64" not found in app list",
+			      apid);
+		}
+		break;
+	case ALPSC_EV_SUSPEND:
+	case ALPSC_EV_RESUME:
+		// Search for the app matching this apid
+		apid = SLURM_ID_HASH(job_ptr->job_id, step_ptr->step_id);
+		for (i = 0; i < app_list_size; i++) {
+			if (app_list[i].apid == apid) {
+				// Found it, update the state
+				app_list[i].state =
+				    (state == ALPSC_EV_SUSPEND) ?
+					ALPSC_EV_SUSPEND : ALPSC_EV_START;
+				break;
+			}
+		}
+
+		// Not found
+		if (i >= app_list_size) {
+			debug("Application %"PRIu64" not found in app list",
+			      apid);
+		}
+		break;
+	default:
+		break;
+	}
+
+	pthread_mutex_unlock(&aeld_mutex);
+
+	_free_event(&app);
+	return;
+}
+#endif
 
 static void *_job_fini(void *args)
 {
@@ -424,6 +841,14 @@ extern int init ( void )
 	if (select_type_param & CR_OTHER_CONS_RES)
 		plugin_id = 108;
 	debug_flags = slurm_get_debug_flags();
+
+#ifdef HAVE_NATIVE_CRAY
+	// Spawn the aeld thread, only in slurmctld.
+	if (run_in_daemon("slurmctld")) {
+	    _spawn_cleanup_thread(NULL, _aeld_event_loop);
+	}
+#endif
+
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -616,11 +1041,41 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 
 extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 {
+#ifdef HAVE_NATIVE_CRAY
+	ListIterator i;
+	struct step_record *step_ptr = NULL;
+
+	// Make an event for each job step
+	if (aeld_running) {
+		i = list_iterator_create(job_ptr->step_list);
+		while ((step_ptr = (struct step_record *)list_next(i))
+			!= NULL) {
+			_update_app(job_ptr, step_ptr, ALPSC_EV_SUSPEND);
+		}
+		list_iterator_destroy(i);
+	}
+#endif
+
 	return other_job_suspend(job_ptr, indf_susp);
 }
 
 extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 {
+#ifdef HAVE_NATIVE_CRAY
+	ListIterator i;
+	struct step_record *step_ptr = NULL;
+
+	// Make an event for each job step
+	if (aeld_running) {
+		i = list_iterator_create(job_ptr->step_list);
+		while ((step_ptr = (struct step_record *)list_next(i))
+			!= NULL) {
+			_update_app(job_ptr, step_ptr, ALPSC_EV_RESUME);
+		}
+		list_iterator_destroy(i);
+	}
+#endif
+
 	return other_job_resume(job_ptr, indf_susp);
 }
 
@@ -633,6 +1088,12 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 extern int select_p_step_start(struct step_record *step_ptr)
 {
+#ifdef HAVE_NATIVE_CRAY
+	if (aeld_running) {
+		_update_app(step_ptr->job_ptr, step_ptr, ALPSC_EV_START);
+	}
+#endif
+
 	return other_step_finish(step_ptr);
 }
 
@@ -640,6 +1101,12 @@ extern int select_p_step_start(struct step_record *step_ptr)
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
 	select_jobinfo_t *jobinfo = step_ptr->select_jobinfo->data;
+
+#ifdef HAVE_NATIVE_CRAY
+	if (aeld_running) {
+		_update_app(step_ptr->job_ptr, step_ptr, ALPSC_EV_END);
+	}
+#endif
 
 	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
 		debug3("NHC_No_Steps set not running NHC on steps.");
@@ -787,7 +1254,6 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
-//	uint64_t *uint64 = (uint64_t *) data;
 
 	if (jobinfo == NULL) {
 		error("select/cray jobinfo_set: jobinfo not set");
