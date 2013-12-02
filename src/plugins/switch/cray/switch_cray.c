@@ -181,7 +181,7 @@ static void _print_alpsc_pe_info(alpsc_peInfo_t alps_info)
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job)
 {
-	int i, j, rc, cnt;
+	int i, j, rc, cnt = 0;
 	int32_t *nodes;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
@@ -317,7 +317,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 {
 
 #ifdef HAVE_NATIVE_CRAY
-	int i, rc, cnt;
+	int i, rc, cnt = 0;
 	uint32_t port = 0;
 	int num_cookies = 2;
 	char *err_msg = NULL;
@@ -719,7 +719,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 #ifdef HAVE_NATIVE_CRAY
 	slurm_cray_jobinfo_t *sw_job = (slurm_cray_jobinfo_t *) job->switch_job;
-	int rc, num_ptags, cmd_index, num_app_cpus, i, j, cnt;
+	int rc, num_ptags, cmd_index, num_app_cpus, i, j, cnt = 0;
 	int mem_scaling, cpu_scaling;
 	int total_cpus = 0;
 	uint32_t total_mem = 0;
