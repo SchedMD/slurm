@@ -42,6 +42,10 @@ if {[file executable $qalter] == 0} {
 	exit 0
 }
 
+if {[file executable $bin_perldoc] == 0} {
+	send_user "\nWARNING: $bin_perldoc does not exist\n"
+	exit 0
+}
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "$qalter --man >$file_out"
 exec ./$file_in
