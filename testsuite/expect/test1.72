@@ -51,7 +51,7 @@ print_header $test_id
 set freq_val [get_job_acct_freq]
 
 set sub_match 0
-spawn $srun -v --mem=200 --acctg-freq=[expr $freq_val - 10] sleep 5
+spawn $srun -v --mem=200 --acctg-freq=[expr $freq_val - 1] sleep 5
 expect {
 	-re "jobid" {
 		set sub_match 1
