@@ -1703,6 +1703,20 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(comp_msg->job_id);
 
+	if (job_ptr && job_ptr->batch_host &&
+	    strcmp(job_ptr->batch_host, comp_msg->node_name)) {
+		/* This can be the result of the slurmd on the batch_host
+		 * failing, but the slurmstepd continuing to run. Then the
+		 * batch job is requeued and started on a different node.
+		 * The end result is one batch complete RPC from each node. */
+		error("Batch completion for job %u sent from wrong node "
+		      "(%s rather than %s), ignored request",
+		      comp_msg->job_id,
+		      comp_msg->node_name, comp_msg->node_name);
+		slurm_send_rc_msg(msg, error_code);
+		return;
+	}
+
 	/* Send batch step info to accounting */
 	if (association_based_accounting && job_ptr) {
 		struct step_record batch_step;
