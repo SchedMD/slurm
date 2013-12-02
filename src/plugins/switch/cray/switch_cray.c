@@ -160,9 +160,6 @@ static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
 static int _get_cpu_total(void);
 static int _assign_port(uint32_t *ret_port);
 static int _release_port(uint32_t real_port);
-#endif
-
-#ifdef HAVE_NATIVE_CRAY
 static void _free_alpsc_pe_info(alpsc_peInfo_t alpsc_pe_info);
 
 static void _print_alpsc_pe_info(alpsc_peInfo_t alps_info)
