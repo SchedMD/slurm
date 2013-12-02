@@ -56,14 +56,15 @@
 #include <linux/limits.h>
 #include <sched.h>
 #include <math.h>
-#include <job.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/pack.h"
 #include "src/common/gres.h"
+
 #ifdef HAVE_NATIVE_CRAY
+#include <job.h> /* Cray's job module component */
 #include "alpscomm_cn.h"
 #include "alpscomm_sn.h"
 #endif
@@ -153,8 +154,8 @@ typedef struct slurm_cray_jobinfo {
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job);
 static int _list_str_to_array(char *list, int *cnt, int32_t **numbers);
-static void _recursive_rmdir(const char *dirnm);
 #ifdef HAVE_NATIVE_CRAY
+static void _recursive_rmdir(const char *dirnm);
 static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
 			 uint32_t **host_to_task_map, int32_t *first_pe);
 static int _get_cpu_total(void);
@@ -1712,6 +1713,7 @@ static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
 	return ret;
 }
 
+#ifdef HAVE_NATIVE_CRAY
 /*
  * Recursive directory delete
  *
@@ -1785,7 +1787,6 @@ fileDel: st = unlink(dirnm);
 	}
 }
 
-#ifdef HAVE_NATIVE_CRAY
 /*
  * Function: get_cpu_total
  * Description:

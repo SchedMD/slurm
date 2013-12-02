@@ -57,7 +57,10 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+#ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_cn.h"
+#endif
 
 // Filename to write status information to
 // This file consists of job->node_tasks + 1 bytes. Each byte will
@@ -107,8 +110,10 @@ const uint32_t plugin_version   = 100;
 // TODO: Remove this prototype once the prototype appears in numa.h.
 unsigned int numa_bitmask_weight(const struct bitmask *bmp);
 
+#ifdef HAVE_NATIVE_CRAY
 static int _get_numa_nodes(char *path, int *cnt, int **numa_array);
 static int _get_cpu_masks(char *path, cpu_set_t **cpuMasks);
+#endif
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -210,6 +215,7 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
  */
 extern int task_p_pre_launch (stepd_step_rec_t *job)
 {
+#ifdef HAVE_NATIVE_CRAY
 	int rc;
 
 	debug("task_p_pre_launch: %u.%u, task %d",
@@ -241,7 +247,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		error("%s: Failed to set %s", __func__, LLI_STATUS_OFFS_ENV);
 		return SLURM_ERROR;
 	}
-
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -251,6 +257,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
  */
 extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
 {
+#ifdef HAVE_NATIVE_CRAY
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	int rv, fd;
 
@@ -291,6 +298,7 @@ extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
 	info("Created file %s", llifile);
 
 	TEMP_FAILURE_RETRY(close(fd));
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -302,6 +310,7 @@ extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
 extern int task_p_post_term (stepd_step_rec_t *job,
 			     stepd_step_task_info_t *task)
 {
+#ifdef HAVE_NATIVE_CRAY
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	char status;
 	int rv, fd;
@@ -358,6 +367,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 		slurm_terminate_job_step(job->jobid, job->stepid);
 	}
 
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -367,6 +377,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
  */
 extern int task_p_post_step (stepd_step_rec_t *job)
 {
+#ifdef HAVE_NATIVE_CRAY
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	int rc, cnt;
 	char *err_msg = NULL, path[PATH_MAX];
@@ -453,8 +464,8 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 
 	if (rc != 1) {
 		if (err_msg) {
-			error("(%s: %d: %s) alpsc_compact_mem failed: %s", THIS_FILE,
-			      __LINE__, __FUNCTION__, err_msg);
+			error("(%s: %d: %s) alpsc_compact_mem failed: %s",
+			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
 			free(err_msg);
 		} else {
 			error("(%s: %d: %s) alpsc_compact_mem failed:"
@@ -468,12 +479,14 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		     __FUNCTION__, err_msg);
 		free(err_msg);
 	}
-
+#endif
 	return SLURM_SUCCESS;
 }
 
+#ifdef HAVE_NATIVE_CRAY
+
 /*
- * Function: get_numa_nodes
+ * Function: _get_numa_nodes
  * Description:
  *  Returns a count of the NUMA nodes that the application is running on.
  *
@@ -568,7 +581,7 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
 }
 
 /*
- * Function: get_cpu_masks
+ * Function: _get_cpu_masks
  * Description:
  *
  *  Returns a cpu_set_t containing the masks of the CPUs within the NUMA nodes
@@ -654,6 +667,6 @@ static int _get_cpu_masks(char *path, cpu_set_t **cpuMasks) {
 	}
 
 	numa_free_cpumask(bm);
-
 	return 0;
 }
+#endif

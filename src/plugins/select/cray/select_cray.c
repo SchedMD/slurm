@@ -61,7 +61,9 @@
 #include "src/slurmctld/locks.h"
 #include "other_select.h"
 
+#ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_sn.h"
+#endif
 
 /**
  * struct select_jobinfo - data specific to Cray node selection plugin
