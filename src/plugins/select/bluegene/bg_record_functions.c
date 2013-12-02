@@ -1823,7 +1823,6 @@ extern void bg_record_post_hw_failure(
 	}
 	list_iterator_reset(itr);
 	while ((found_job_ptr = list_next(itr))) {
-		jobinfo = found_job_ptr->select_jobinfo->data;
 		qos_ptr = (slurmdb_qos_rec_t*)found_job_ptr->qos_ptr;
 
 		debug("Attempting to requeue %s job %u due "
