@@ -119,12 +119,12 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "jobcomp";
-	char *type;
-
-	if (init_run && g_context)
-		return retval;
+	char *type = NULL;
 
 	slurm_mutex_lock( &context_lock );
+
+	if (init_run && g_context)
+		goto done;
 
 	if (g_context)
 		plugin_context_destroy(g_context);
