@@ -1106,9 +1106,9 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 	int dump_size, rc;
 	slurm_msg_t response_msg;
 	job_id_msg_t *job_id_msg = (job_id_msg_t *) msg->data;
-	/* Locks: Read config job, write node (for hiding) */
+	/* Locks: Read config, job, and node info */
 	slurmctld_lock_t job_read_lock = {
-		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;

@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- Correct logic returning remaining job dependencies in job information
     reported by scontrol and squeue. Eliminates vestigial descriptors with
     no job ID values (e.g. "afterany").
+ -- Improve performance of REQUEST_JOB_INFO_SINGLE RPC by removing unnecessary
+    locks.
 
 * Changes in Slurm 2.6.4
 ========================
