@@ -71,6 +71,8 @@ char *alpha_num  __attribute__((weak_import)) =
 void *acct_db_conn  __attribute__((weak_import)) = NULL;
 char *slurmctld_cluster_name  __attribute__((weak_import)) = NULL;
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
+uint32_t g_qos_count __attribute__((weak_import));
+List assoc_mgr_qos_list __attribute__((weak_import)) = NULL;
 #else
 slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
@@ -84,6 +86,8 @@ char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 void *acct_db_conn = NULL;
 char *slurmctld_cluster_name = NULL;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
+uint32_t g_qos_count;
+List assoc_mgr_qos_list = NULL;
 #endif
 
 /*
