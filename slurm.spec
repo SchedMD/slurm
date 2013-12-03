@@ -156,7 +156,13 @@ Requires: cray-MySQL-devel-enterprise
 BuildRequires: cray-MySQL-devel-enterprise
 BuildRequires: cray-libalpscomm_cn-devel
 BuildRequires: cray-libalpscomm_sn-devel
+BuildRequires: libnuma-devel
+BuildConflicts: cray-libnuma1
+BuildRequires: libhwloc-devel
 BuildRequires: cray-libjob-devel
+BuildRequires: gtk2-devel
+BuildRequires: glib2-devel
+BuildRequires: pkg-config
 %endif
 
 %ifnos aix5.3
@@ -458,9 +464,8 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 # Cray's version of libpmi should be used.
 %if %{slurm_with cray} || %{slurm_with cray_alps}
    rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
-   if [ -d /opt/modulefiles ]; then
-      install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm
-   fi
+   install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release}
+   echo -e '#%Module\nset ModulesVersion "%{version}-%{release}"' > $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
 %endif
@@ -572,8 +577,10 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
   echo /usr/sbin/rcslurm				>> $LIST
 
-test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm &&
-  echo /opt/modulefiles/slurm/opt_modulefiles_slurm	>> $LIST
+test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release} &&
+  echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
+test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version &&
+  echo /opt/modulefiles/slurm/.version >> $LIST
 
 # Make ld.so.conf.d file
 mkdir -p $RPM_BUILD_ROOT/etc/ld.so.conf.d
@@ -744,6 +751,10 @@ rm -rf $RPM_BUILD_ROOT
 /etc/ld.so.conf.d/slurm.conf
 %if %{slurm_with cray} || %{slurm_with cray_alps}
 %dir /opt/modulefiles/slurm
+%endif
+%if %{slurm_with cray}
+%config %{_sysconfdir}/slurm.conf.template
+%{_sbindir}/slurmconfgen.py
 %endif
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/cgroup.conf.example
