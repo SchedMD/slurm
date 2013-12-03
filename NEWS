@@ -20,6 +20,9 @@ documents those changes that are of interest to users and admins.
  -- Fix race condition on batch job termination that could result in a job exit
     code of 0xfffffffe if the slurmd on node zero registers its active jobs at
     the same time that slurmstepd is recording the job's exit code.
+ -- Correct logic returning remaining job dependencies in job information
+    reported by scontrol and squeue. Eliminates vestigial descriptors with
+    no job ID values (e.g. "afterany").
 
 * Changes in Slurm 2.6.4
 ========================
