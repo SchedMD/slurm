@@ -6,6 +6,19 @@
 
 <h2>Presentations</h2>
 
+<!-- SC13 Slurm BOF-->
+<li><b>Presentations from Slurm Birds of a Feather, SC13, November 2013</b></li>
+<ul>
+<li><a href="SC13_BOF/SC13_BOF_SchedMD.pdf">Slurm Workload Manager Project Report</a>,
+Morris Jette and Danny Auble, SchedMD</li>
+
+<li><a href="SC13_BOF/SC13_BOF_Bull.pdf">Bull's Slurm Roadmapt</a>,
+Eric Monchalin, Bull</li>
+
+<li><a href="SC13_BOF/SC13_BOF_Cray.pdf">Native Slurm on Cray XC30</a>,
+David Wallace, Cray</li>
+</ul>
+
 <!--Slurm User Group Meeting 2013-->
 <li><b>Presentations from SLURM User Group Meeting, September 2013</b></li>
 <ul>
@@ -414,6 +427,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 30 September 2013</p>
+<p style="text-align:center;">Last modified 3 December 2013</p>
 
 <!--#include virtual="footer.txt"-->
