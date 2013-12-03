@@ -89,7 +89,7 @@ expect {
 		wait
 	}
 }
-
+exec $bin_rm -fr /tmp/slurm/.git
 exec $bin_sed -i "s/Name:    see META file/Name:    Slurm/g" /tmp/slurm/slurm.spec
 exec $bin_sed -i "s/Version: see META file/Version: 0/g" /tmp/slurm/slurm.spec
 exec $bin_sed -i "s/Release: see META file/Release: 0/g" /tmp/slurm/slurm.spec
