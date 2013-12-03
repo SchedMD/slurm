@@ -6023,6 +6023,15 @@ static int _list_find_job_old(void *job_entry, void *key)
 	return 1;		/* Purge the job */
 }
 
+/* Determine if a given job should be seen by a specific user */
+static bool _hide_job(struct job_record *job_ptr, uid_t uid)
+{
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account))
+		return true;
+	return false;
+}
 
 /*
  * pack_all_jobs - dump all job information for all jobs in
@@ -6071,10 +6080,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
 			continue;
 
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
-		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account))
+		if (_hide_job(job_ptr, uid))
 			continue;
 
 		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
@@ -6131,23 +6137,32 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	pack32(jobs_packed, buffer);
 	pack_time(time(NULL), buffer);
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_id != job_id) &&
-		    ((job_ptr->array_task_id == NO_VAL) ||
-		     (job_ptr->array_job_id  != job_id)))
-			continue;
+	job_ptr = find_job_record(job_id);
+	if (job_ptr && (job_ptr->array_task_id == NO_VAL)) {
+		if (!_hide_job(job_ptr, uid)) {
+			pack_job(job_ptr, show_flags, buffer, protocol_version,
+				 uid);
+			jobs_packed++;
+		}
+	} else {
+		/* Job ID not found. It could reference a job array. */
+		job_iterator = list_iterator_create(job_list);
+		while ((job_ptr = (struct job_record *) 
+				  list_next(job_iterator))) {
+			if ((job_ptr->job_id != job_id) &&
+			    ((job_ptr->array_task_id ==  NO_VAL) ||
+			     (job_ptr->array_job_id  != job_id)))
+				continue;
 
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
-		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account))
-			break;
+			if (_hide_job(job_ptr, uid))
+				break;
 
-		pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
-		jobs_packed++;
+			pack_job(job_ptr, show_flags, buffer, protocol_version,
+				 uid);
+			jobs_packed++;
+		}
+		list_iterator_destroy(job_iterator);
 	}
-	list_iterator_destroy(job_iterator);
 
 	if (jobs_packed == 0) {
 		free_buf(buffer);
