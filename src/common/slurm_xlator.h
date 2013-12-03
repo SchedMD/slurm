@@ -275,6 +275,7 @@
 #define destroy_config_key_pair	slurm_destroy_config_key_pair
 #define get_extra_conf_path	slurm_get_extra_conf_path
 #define sort_key_pairs		slurm_sort_key_pairs
+#define run_in_daemon           slurm_run_in_daemon
 
 /* slurm_auth.[ch] functions
  * None exported today.
@@ -364,6 +365,10 @@
 #define s_p_hashtbl_destroy		slurm_s_p_hashtbl_destroy
 #define s_p_parse_file			slurm_s_p_parse_file
 
+/* slurm_step_layout.[ch] functions */
+#define pack_slurm_step_layout          slurm_pack_slurm_step_layout
+#define unpack_slurm_step_layout        slurm_unpack_slurm_step_layout
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
@@ -387,5 +392,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_step_layout.h"
 
 #endif /*__SLURM_XLATOR_H__*/
