@@ -77,16 +77,6 @@ if {[test_cray] || [test_alps]} {
 	exit $exit_code
 }
 
-exec rsync -av $src_dir/slurm.spec /tmp
-
-# Replace fields in the slurm.spec files with the correct values
-# NOTE: If the test fails prematurely, you the slurm.spec file must be restored
-exec $bin_sed -i "s/Name:    see META file/Name:    Slurm/g" $src_dir/slurm.spec
-exec $bin_sed -i "s/Version: see META file/Version: 0/g" $src_dir/slurm.spec
-exec $bin_sed -i "s/Release: see META file/Release: 0/g" $src_dir/slurm.spec
-exec $bin_sed -i "s/Source: %{name}-%{version}-%{release}.tgz/Source: Slurm-0-0.tar.bz2/g" $src_dir/slurm.spec
-exec $bin_sed -i "s/%setup -n %{name}-%{version}-%{release}/%setup -n $file_name/g" $src_dir/slurm.spec
-
 set timeout 1000
 exec $bin_rm -fr /tmp/slurm
 spawn $bin_cp -L -r -v $src_dir /tmp/slurm
@@ -99,6 +89,12 @@ expect {
 		wait
 	}
 }
+
+exec $bin_sed -i "s/Name:    see META file/Name:    Slurm/g" /tmp/slurm/slurm.spec
+exec $bin_sed -i "s/Version: see META file/Version: 0/g" /tmp/slurm/slurm.spec
+exec $bin_sed -i "s/Release: see META file/Release: 0/g" /tmp/slurm/slurm.spec
+exec $bin_sed -i "s/Source: %{name}-%{version}-%{release}.tgz/Source: Slurm-0-0.tar.bz2/g" /tmp/slurm/slurm.spec
+exec $bin_sed -i "s/%setup -n %{name}-%{version}-%{release}/%setup -n $file_name/g" /tmp/slurm/slurm.spec
 
 set build_match 0
 spawn tar -v -jcf $tar_name -C /tmp slurm
@@ -238,8 +234,7 @@ check_path /opt/slurm/slurm_lib lib
 # Check that web pages are in the correct place
 check_path /tmp/slurm_data/data accounting.html
 
-# Clean up vestigial files and restore original slurm.spec file
-exec $bin_mv /tmp/slurm.spec $src_dir/slurm.spec
+# Clean up vestigial files
 exec $bin_rm -fr /tmp/slurm $tar_name /tmp/built_rpms
 
 if {$exit_code == 0} {
