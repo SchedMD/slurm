@@ -86,7 +86,8 @@ host_triplet = @host@
 target_triplet = @target@
 subdir = contribs/cray
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(srcdir)/opt_modulefiles_slurm.in
+	$(srcdir)/opt_modulefiles_slurm.in \
+	$(srcdir)/slurmconfgen.py.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
@@ -132,7 +133,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
-CONFIG_CLEAN_FILES = opt_modulefiles_slurm
+CONFIG_CLEAN_FILES = opt_modulefiles_slurm slurmconfgen.py
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -468,6 +469,8 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 opt_modulefiles_slurm: $(top_builddir)/config.status $(srcdir)/opt_modulefiles_slurm.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+slurmconfgen.py: $(top_builddir)/config.status $(srcdir)/slurmconfgen.py.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-sbinSCRIPTS: $(sbin_SCRIPTS)
 	@$(NORMAL_INSTALL)
