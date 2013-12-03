@@ -468,6 +468,8 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
    echo -e '#%Module\nset ModulesVersion "%{version}-%{release}"' > $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
+   rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/slurm.conf.template
+   rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurmconfgen.py
 %endif
 
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
