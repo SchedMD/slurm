@@ -1637,7 +1637,7 @@ _abort_job(uint32_t job_id, uint32_t slurm_rc)
 	resp.job_id       = job_id;
 	resp.job_rc       = 1;
 	resp.slurm_rc     = slurm_rc;
-	resp.node_name    = NULL;	/* unused */
+	resp.node_name    = conf->node_name;
 	resp.jobacct      = NULL;       /* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;

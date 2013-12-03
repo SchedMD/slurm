@@ -1703,7 +1703,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(comp_msg->job_id);
 
-	if (job_ptr && job_ptr->batch_host &&
+	if (job_ptr && job_ptr->batch_host && comp_msg->node_name &&
 	    strcmp(job_ptr->batch_host, comp_msg->node_name)) {
 		/* This can be the result of the slurmd on the batch_host
 		 * failing, but the slurmstepd continuing to run. Then the
