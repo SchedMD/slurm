@@ -26,7 +26,7 @@
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
 #
-#  Allow defining --with and --without build options or %_with and %without in .rpmmacors
+#  Allow defining --with and --without build options or %_with and %without in .rpmmacros
 #    slurm_with    builds option by default unless --without is specified
 #    slurm_without builds option iff --with specified
 #
