@@ -214,11 +214,8 @@ static int _run_nhc(nhc_info_t *nhc_info)
 	argv[i++] = exit_char;
 	argv[i++] = "-r";
 	argv[i++] = jobid_char;
-	/* When the -u option is added to xtcleanup_after uncomment
-	   these lines.
-	*/
-	/* argv[i++] = "-u"; */
-	/* argv[i++] = user_char; */
+	argv[i++] = "-u";
+	argv[i++] = user_char;
 	argv[i++] = "-m";
 	argv[i++] = nhc_info->step ? "application" : "reservation";
 	argv[i++] = nodelist_nids;
