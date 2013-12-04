@@ -5,6 +5,9 @@
 <p>Please see the <a href="quickstart.html">Quick Start User Guide</a> for a
 general overview.</p>
 
+<p>Also see <a href="platforms.html">Platforms</a> for a list of supported
+computer platforms.</p>
+
 <h2>Super Quick Start</h2>
 <ol>
 <li>Make sure that you have synchronized clocks plus consistent users and groups
@@ -706,6 +709,6 @@ options such as mysql, postgresql, and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 November 2013</p>
+<p style="text-align:center;">Last modified 4 December 2013</p>
 
 <!--#include virtual="footer.txt"-->
