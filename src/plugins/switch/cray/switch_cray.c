@@ -873,6 +873,11 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 			return SLURM_ERROR;
 		}
 
+		/* If the submission didn't come from srun (API style)
+		 * perhaps they didn't fill in things correctly.
+		 */
+		if (!job->cpus_per_task)
+			job->cpus_per_task = 1;
 		/*
 		 * Scaling
 		 * For the CPUS round the scaling to the nearest integer.
@@ -880,7 +885,6 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		 * 100%.
 		 * If the scaling is zero, then return an error.
 		 */
-
 		num_app_cpus = job->node_tasks * job->cpus_per_task;
 		if (num_app_cpus <= 0) {
 			error("(%s: %d: %s) num_app_cpus <=0: %d",
