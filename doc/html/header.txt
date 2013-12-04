@@ -50,11 +50,11 @@ window.onresize = window_check;
 <div id="slurmh2">About</div>
 <ul>
 	  <li><a href="overview.shtml" class="nav">Overview</a></li>
-	  <li><a href="meetings.shtml" class="nav">Meetings</a></li>
 	  <li><a href="news.shtml" class="nav">What's New</a></li>
-	  <li><a href="publications.shtml" class="nav">Publications</a></li>
-	  <li><a href="testimonials.shtml" class="nav">Testimonials</a></li>
 	  <li><a href="team.shtml" class="nav">SLURM Team</a></li>
+	  <li><a href="meetings.shtml" class="nav">Meetings</a></li>
+	  <li><a href="testimonials.shtml" class="nav">Testimonials</a></li>
+	  <li><a href="disclaimer.shtml" class="nav">Legal Notices</a></li>
 </ul>
 <div id="slurmh2">Using</div>
 <ul>
@@ -62,13 +62,13 @@ window.onresize = window_check;
 	  <li><a href="documentation.shtml" class="nav">Documentation</a></li>
 	  <li><a href="faq.shtml" class="nav">FAQ</a></li>
 	  <li><a href="help.shtml" class="nav">Getting Help</a></li>
-	  <li><a href="mail.shtml"  class="nav">Mailing Lists</a></p>
+	  <li><a href="mail.shtml"  class="nav">Mailing Lists</a></li>
+	  <li><a href="publications.shtml" class="nav">Publications</a></li>
 </ul>
 <div id="slurmh2">Installing</div>
 <ul>
 	  <li><a href="download.shtml" class="nav">Download</a></li>
 	  <li><a href="quickstart_admin.shtml" class="nav">Installation Guide</a></li>
-	  <li><a href="platforms.shtml" class="nav">Platforms</a></li>
 </ul>
 <a href="http://www.schedmd.com"><img class="displayed" src="schedmd.png" width="130" usemap="#Map"></a>
 </div>
