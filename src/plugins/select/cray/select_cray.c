@@ -93,6 +93,7 @@ typedef struct {
 	uint32_t jobid;
 	char *nodelist;
 	bool step;
+	uint32_t user_id;
 } nhc_info_t;
 
 #define NODEINFO_MAGIC 0x85ad
@@ -197,11 +198,11 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
 static int _run_nhc(nhc_info_t *nhc_info)
 {
 #ifdef HAVE_NATIVE_CRAY
-	int argc = 11, status = 1, wait_rc, i = 0;
+	int argc = 13, status = 1, wait_rc, i = 0;
 	char *argv[argc];
 	pid_t cpid;
 	char *jobid_char = NULL, *apid_char = NULL, *nodelist_nids = NULL,
-		*exit_char = NULL;
+		*exit_char = NULL, *user_char = NULL;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -209,6 +210,7 @@ static int _run_nhc(nhc_info_t *nhc_info)
 	apid_char = xstrdup_printf("%"PRIu64"", nhc_info->apid);
 	exit_char = xstrdup_printf("%u", nhc_info->exit_code);
 	jobid_char = xstrdup_printf("%u", nhc_info->jobid);
+	user_char = xstrdup_printf("%u", nhc_info->user_id);
 	nodelist_nids = cray_nodelist2nids(NULL, nhc_info->nodelist);
 
 	argv[i++] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
@@ -218,6 +220,11 @@ static int _run_nhc(nhc_info_t *nhc_info)
 	argv[i++] = exit_char;
 	argv[i++] = "-r";
 	argv[i++] = jobid_char;
+	/* When the -u option is added to xtcleanup_after uncomment
+	   these lines.
+	*/
+	/* argv[i++] = "-u"; */
+	/* argv[i++] = user_char; */
 	argv[i++] = "-m";
 	argv[i++] = nhc_info->step ? "application" : "reservation";
 	argv[i++] = nodelist_nids;
@@ -276,6 +283,7 @@ fini:
 	xfree(apid_char);
 	xfree(exit_char);
 	xfree(jobid_char);
+	xfree(user_char);
 	xfree(nodelist_nids);
 
 	return status;
@@ -692,6 +700,7 @@ static void *_job_fini(void *args)
 	nhc_info.jobid = job_ptr->job_id;
 	nhc_info.nodelist = xstrdup(job_ptr->nodes);
 	nhc_info.exit_code = 1; /* hard code to 1 to always run */
+	nhc_info.user_id = job_ptr->user_id;
 	unlock_slurmctld(job_read_lock);
 
 	/* run NHC */
@@ -742,6 +751,7 @@ static void *_step_fini(void *args)
 	nhc_info.apid = SLURM_ID_HASH(step_ptr->job_ptr->job_id,
 				      step_ptr->step_id);
 	nhc_info.exit_code = step_ptr->exit_code;
+	nhc_info.user_id = step_ptr->job_ptr->user_id;
 
 	if (!step_ptr->step_layout || !step_ptr->step_layout->node_list) {
 		if (step_ptr->job_ptr)
