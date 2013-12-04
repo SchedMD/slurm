@@ -2210,6 +2210,8 @@ static void *_run_epilog(void *arg)
 		goto fini;
 	}
 	if (cpid == 0) {
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else
@@ -2328,6 +2330,8 @@ static void *_run_prolog(void *arg)
 		goto fini;
 	}
 	if (cpid == 0) {
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else
