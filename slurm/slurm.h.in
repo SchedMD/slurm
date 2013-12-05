@@ -313,6 +313,7 @@ enum job_state_reason {
 	WAIT_NODE_NOT_AVAIL,	/* required node is DOWN or DRAINED */
 	WAIT_HELD_USER,		/* job is held by user */
 	WAIT_FRONT_END,		/* Front end nodes are DOWN */
+	WAIT_PROLOG,		/* Prolog is running */
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */
 	FAIL_DOWN_NODE,		/* some node in the allocation failed */
 	FAIL_BAD_CONSTRAINTS,	/* constraints can not be satisfied */
@@ -1997,6 +1998,8 @@ typedef struct reservation_name_msg {
 #define HEALTH_CHECK_NODE_MIXED	0x0004	/* execute on partially allocated nodes */
 #define HEALTH_CHECK_NODE_ANY	0xffff	/* execute on all node states */
 
+#define PROLOG_FLAG_ALLOC 0x0001 /* execute prolog upon allocation */
+
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
 #define LOG_FMT_RFC5424_MS      2
@@ -2139,6 +2142,8 @@ typedef struct slurm_ctl_conf {
 	char *prolog_slurmctld;	/* pathname of job prolog run by slurmctld */
 	uint16_t propagate_prio_process; /* process priority propagation,
 					  * see PROP_PRIO_* */
+	uint16_t prolog_flags; /* set some flags for prolog configuration
+				  see PROLOG_FLAG_* */
 	char *propagate_rlimits;/* Propagate (all/specific) resource limits */
 	char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	char *reboot_program;	/* program to reboot the node */
@@ -2647,6 +2652,14 @@ extern int slurm_terminate_job PARAMS((uint32_t job_id));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_terminate_job_step PARAMS((uint32_t job_id, uint32_t step_id));
+
+/*
+ * slurm_complete_prolog - note the completion of a prolog
+ * IN job_id - the job's id
+ * IN prolog_return_code - prolog exit code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_complete_prolog PARAMS((uint32_t job_id, uint32_t prolog_return_code));
 
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS

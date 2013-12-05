@@ -485,6 +485,18 @@ extern char *slurm_conf_expand_slurmd_path(const char *path,
 					   const char *node_name);
 
 /*
+ * prolog_flags2str - convert a PrologFlags uint16_t to the equivalent string
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *prolog_flags2str(uint16_t prolog_flags);
+
+/*
+ * prolog_str2flags - Convert a PrologFlags string to the equivalent uint16_t
+ * Returns NO_VAL if invalid
+ */
+extern uint16_t prolog_str2flags(char *prolog_flags);
+
+/*
  * debug_flags2str - convert a DebugFlags uint32_t to the equivalent string
  * Returns an xmalloc()ed string which the caller must free with xfree().
  */

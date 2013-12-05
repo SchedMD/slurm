@@ -265,6 +265,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
 	{"PrologSlurmctld", S_P_STRING},
+	{"PrologFlags", S_P_STRING},
 	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
@@ -2283,6 +2284,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->private_data              = 0;
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
+	ctl_conf_ptr->prolog_flags				= 0;
 	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
@@ -3474,6 +3476,16 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->prolog, "Prolog", hashtbl);
 	s_p_get_string(&conf->prolog_slurmctld, "PrologSlurmctld", hashtbl);
 
+	if (s_p_get_string(&temp_str, "PrologFlags", hashtbl)) {
+		conf->prolog_flags = prolog_str2flags(temp_str);
+		if (conf->prolog_flags == (uint16_t) NO_VAL) {
+			fatal("PrologFlags invalid: %s", temp_str);
+		}
+		xfree(temp_str);
+	} else { /* Default: no Prolog Flags are set */
+		conf->prolog_flags = 0;
+	}
+
 	if (!s_p_get_uint16(&conf->propagate_prio_process,
 			"PropagatePrioProcess", hashtbl)) {
 		conf->propagate_prio_process = PROP_PRIO_OFF;
@@ -3916,6 +3928,53 @@ slurm_conf_expand_slurmd_path(const char *path, const char *node_name)
 	xstrsubstitute(dir, "%n", node_name);
 
 	return dir;
+}
+
+/*
+ * prolog_flags2str - convert a PrologFlags uint16_t to the equivalent string
+ * Keep in sync with prolog_str2flags() below
+ */
+extern char * prolog_flags2str(uint16_t prolog_flags)
+{
+	char *rc = NULL;
+
+	if (prolog_flags & PROLOG_FLAG_ALLOC) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Alloc");
+	}
+
+	return rc;
+}
+
+/*
+ * prolog_str2flags - Convert a PrologFlags string to the equivalent uint16_t
+ * Keep in sync with prolog_flags2str() above
+ * Returns NO_VAL if invalid
+ */
+extern uint16_t prolog_str2flags(char *prolog_flags)
+{
+	uint16_t rc = 0;
+	char *tmp_str, *tok, *last = NULL;
+
+	if (!prolog_flags)
+		return rc;
+
+	tmp_str = xstrdup(prolog_flags);
+	tok = strtok_r(tmp_str, ",", &last);
+	while (tok) {
+		if (strcasecmp(tok, "Alloc") == 0)
+			rc |= PROLOG_FLAG_ALLOC;
+		else {
+			error("Invalid PrologFlag: %s", tok);
+			rc = (uint16_t)NO_VAL;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+
+	return rc;
 }
 
 /*

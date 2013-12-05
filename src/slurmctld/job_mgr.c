@@ -3559,6 +3559,43 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 }
 
 /*
+ * prolog_complete - note the normal termination of the prolog
+ * IN job_id - id of the job which completed
+ * IN requeue - job should be run again if possible
+ * IN prolog_return_code - prolog's return code,
+ *    if set then set job state to FAILED
+ * RET - 0 on success, otherwise ESLURM error code
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+extern int prolog_complete(uint32_t job_id, bool requeue,
+		uint32_t prolog_return_code)
+{
+	struct job_record *job_ptr;
+
+	debug("completing prolog for job %u", job_id);
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		info("prolog_complete: invalid JobId=%u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if (IS_JOB_COMPLETING(job_ptr))
+		return SLURM_SUCCESS;
+
+	if (requeue && (job_ptr->batch_flag > 1)) {
+		/* Failed one requeue, just kill it */
+		requeue = 0;
+		if (prolog_return_code == 0)
+			prolog_return_code = 1;
+		error("Prolog launch failure, JobId=%u", job_ptr->job_id);
+	}
+
+	job_ptr->state_reason = WAIT_NO_REASON;
+	return SLURM_SUCCESS;
+}
+
+/*
  * job_complete - note the normal termination the specified job
  * IN job_id - id of the job which completed
  * IN uid - user id of user issuing the RPC

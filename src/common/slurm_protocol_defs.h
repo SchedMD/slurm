@@ -327,6 +327,10 @@ typedef enum {
 	TASK_USER_MANAGED_IO_STREAM,
 	REQUEST_KILL_PREEMPTED,
 
+	REQUEST_LAUNCH_PROLOG,
+	REQUEST_COMPLETE_PROLOG,
+	RESPONSE_PROLOG_EXECUTING,
+
 	SRUN_PING = 7001,
 	SRUN_TIMEOUT,
 	SRUN_NODE_FAIL,
@@ -576,6 +580,11 @@ typedef struct complete_batch_script {
 	uint32_t user_id;	/* user the job runs as */
 } complete_batch_script_msg_t;
 
+typedef struct complete_prolog {
+	uint32_t job_id;
+	uint32_t prolog_rc;
+} complete_prolog_msg_t;
+
 typedef struct step_complete_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;
@@ -815,6 +824,20 @@ typedef struct reattach_tasks_response_msg {
 	uint32_t *local_pids;   /* list of process ids on this node */
 	char     **executable_names; /* array of length "ntasks"    */
 } reattach_tasks_response_msg_t;
+
+typedef struct prolog_launch_msg {
+	uint32_t job_id;		/* slurm job_id */
+	uint32_t uid;
+	uint32_t gid;
+	char *alias_list;		/* node name/address/hostnamne aliases */
+	char *nodes;			/* list of nodes allocated to job_step */
+	char *std_err;			/* pathname of stderr */
+	char *std_out;			/* pathname of stdout */
+	char *work_dir;			/* full pathname of working directory */
+	char **spank_job_env;	/* SPANK job environment variables */
+	uint32_t spank_job_env_size;			/* size of spank_job_env */
+	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
+} prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {
 	uint32_t array_job_id;	/* job array master job ID */
@@ -1125,8 +1148,11 @@ extern void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t *msg);
 extern void slurm_free_complete_job_allocation_msg(
 		complete_job_allocation_msg_t * msg);
+extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg);
 extern void slurm_free_complete_batch_script_msg(
 		complete_batch_script_msg_t * msg);
+extern void slurm_free_complete_prolog_msg(
+		complete_prolog_msg_t * msg);
 extern void slurm_free_launch_tasks_request_msg(
 		launch_tasks_request_msg_t * msg);
 extern void slurm_free_launch_tasks_response_msg(

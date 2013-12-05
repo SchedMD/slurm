@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed sh5util loop when there are no node-step files.
  -- Add SLURM_CLUSTER_NAME to environment variables passed to PrologSlurmctld,
     Prolog, EpilogSlurmctld, and Epilog
+ -- Add the idea of running a prolog right when an allocation happens
+    instead of when running on the node for the first time.
 
 * Changes in Slurm 14.03.0pre4
 ==============================

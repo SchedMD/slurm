@@ -156,6 +156,7 @@ static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_abort_job(slurm_msg_t *);
 static void _rpc_batch_job(slurm_msg_t *msg, bool new_msg);
+static void _rpc_prolog(slurm_msg_t *msg);
 static void _rpc_job_notify(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
 static void _rpc_checkpoint_tasks(slurm_msg_t *);
@@ -261,6 +262,12 @@ slurmd_req(slurm_msg_t *msg)
 	}
 
 	switch(msg->msg_type) {
+	case REQUEST_LAUNCH_PROLOG:
+		debug2("Processing RPC: REQUEST_LAUNCH_PROLOG");
+		_rpc_prolog(msg);
+		last_slurmctld_msg = time(NULL);
+		slurm_free_prolog_launch_msg(msg->data);
+		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
 		debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
 		/* Mutex locking moved into _rpc_batch_job() due to
@@ -1106,7 +1113,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 #ifndef HAVE_FRONT_END
-	if (first_job_run) {
+	if (first_job_run && !(slurm_get_prolog_flags() & PROLOG_FLAG_ALLOC)) {
 		int rc;
 		job_env_t job_env;
 
@@ -1384,6 +1391,64 @@ static void _note_batch_job_finished(uint32_t job_id)
 	if (++next_fini_job_inx >= FINI_JOB_CNT)
 		next_fini_job_inx = 0;
 	slurm_mutex_unlock(&fini_mutex);
+}
+
+static void _rpc_prolog(slurm_msg_t *msg)
+{
+	int  rc = SLURM_SUCCESS;
+	char *resv_id = NULL;
+	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+
+	if (req == NULL)
+		return;
+
+#ifdef HAVE_CRAY
+	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
+				  SELECT_PRINT_RESV_ID);
+#endif
+	if (slurm_send_rc_msg(msg, rc) < 0) {
+		error("Error starting prolog: %m");
+	}
+	if (rc) {
+		int term_sig, exit_status;
+		if (WIFSIGNALED(rc)) {
+			exit_status = 0;
+			term_sig    = WTERMSIG(rc);
+		} else {
+			exit_status = WEXITSTATUS(rc);
+			term_sig    = 0;
+		}
+		error("[job %u] prolog start failed status=%d:%d",
+		      req->job_id, exit_status, term_sig);
+		rc = ESLURMD_PROLOG_FAILED;
+	}
+
+	if (container_g_create(req->job_id))
+		error("container_g_create(%u): %m", req->job_id);
+
+	rc = _run_prolog(req->job_id, req->uid, resv_id,
+			 req->spank_job_env, req->spank_job_env_size,
+			 req->nodes);
+
+	if (rc) {
+		int term_sig, exit_status;
+		if (WIFSIGNALED(rc)) {
+			exit_status = 0;
+			term_sig    = WTERMSIG(rc);
+		} else {
+			exit_status = WEXITSTATUS(rc);
+			term_sig    = 0;
+		}
+		error("[job %u] prolog failed status=%d:%d",
+		      req->job_id, exit_status, term_sig);
+		rc = ESLURMD_PROLOG_FAILED;
+	}
+
+    if(slurm_complete_prolog(req->job_id, rc) < 0) {
+		error("Error finishing prolog: %m");
+	}
+
+	xfree(resv_id);
 }
 
 static void

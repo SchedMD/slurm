@@ -130,6 +130,8 @@ static bitstr_t *_valid_features(struct job_details *detail_ptr,
 
 static int _fill_in_gres_fields(struct job_record *job_ptr);
 
+static void _launch_prolog(struct job_record *job_ptr);
+
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
  *	the given job_details record.  If it wasn't set, return 0xffff.
@@ -196,7 +198,7 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 }
 
 /*
- * _get_gres_config - Fill in the gres_alloc string field for a given 
+ * _get_gres_config - Fill in the gres_alloc string field for a given
  *      job_record with the count of gres on each node (e.g. for whole node
  *	allocations.
  * IN job_ptr - the job record whose "gres_alloc" field is to be constructed
@@ -1302,7 +1304,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		    (avail_nodes >= min_nodes)		&&
 		    ((job_ptr->details->req_node_bitmap == NULL) ||
 		     bit_super_set(job_ptr->details->req_node_bitmap,
-                                   avail_bitmap))) {
+				   avail_bitmap))) {
 			if (*preemptee_job_list) {
 				list_destroy(*preemptee_job_list);
 				*preemptee_job_list = NULL;
@@ -1446,7 +1448,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			if (!kill_pending)
 				continue;
 			rc = job_requeue(0, job_ptr->job_id, -1,
-			                 (uint16_t)NO_VAL, true);
+					 (uint16_t)NO_VAL, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
@@ -1761,6 +1763,14 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	prolog_slurmctld(job_ptr);
 	slurm_sched_g_newalloc(job_ptr);
 
+	/* Request asynchronous launch of a prolog for a
+	 * non batch job. For a batch job the prolog will be
+	 * started synchroniously by slurmd. */
+	if (job_ptr->batch_flag == 0 &&
+		(slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)) {
+		_launch_prolog(job_ptr);
+	}
+
       cleanup:
 	if (preemptee_job_list)
 		list_destroy(preemptee_job_list);
@@ -1778,6 +1788,54 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	return error_code;
+}
+
+/*
+ * Launch prolog via RPC to slurmd. This is useful when we need to run
+ * prolog at allocation stage. Then we ask slurmd to launch the prolog
+ * asynchroniously and wait on REQUEST_COMPLETE_PROLOG message from slurmd.
+ */
+static void _launch_prolog(struct job_record *job_ptr)
+{
+	prolog_launch_msg_t *prolog_msg_ptr;
+	agent_arg_t *agent_arg_ptr;
+	prolog_msg_ptr = (prolog_launch_msg_t *)
+				xmalloc(sizeof(prolog_launch_msg_t));
+
+	xassert(job_ptr);
+	xassert(job_ptr->batch_host);
+	xassert(prolog_msg_ptr);
+
+	/* Locks: Write job */
+	job_ptr->state_reason = WAIT_PROLOG;
+
+	prolog_msg_ptr->job_id = job_ptr->job_id;
+	prolog_msg_ptr->uid = job_ptr->user_id;
+	prolog_msg_ptr->gid = job_ptr->group_id;
+	prolog_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
+	prolog_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	prolog_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
+	prolog_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
+	prolog_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
+	prolog_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
+	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
+														job_ptr->spank_job_env);
+
+	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
+	agent_arg_ptr->retry = 0;
+	agent_arg_ptr->node_count = 1;
+  #ifdef HAVE_FRONT_END
+      xassert(job_ptr->front_end_ptr);
+      xassert(job_ptr->front_end_ptr->name);
+      agent_arg_ptr->hostlist = hostlist_create(job_ptr->front_end_ptr->name);
+  #else
+      agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
+  #endif
+	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
+	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
+
+	/* Launch the RPC via agent */
+	agent_queue_request(agent_arg_ptr);
 }
 
 /*
@@ -1812,7 +1870,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			xstrcat(job_ptr->gres_req, "");
 
 	} else if (job_ptr->node_cnt > 0
-	           && job_ptr->gres_req == NULL) {
+		   && job_ptr->gres_req == NULL) {
 		/* job_ptr->gres_req is rebuilt/replaced here */
 		tmp_str = xstrdup(req_config);
 
@@ -2257,7 +2315,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	 * scheduling jobs on powered down nodes where possible. */
 	for (i = (node_set_inx-1); i >= 0; i--) {
 		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
-				        power_node_bitmap);
+					power_node_bitmap);
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].nodes) {

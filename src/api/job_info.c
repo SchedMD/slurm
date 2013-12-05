@@ -1437,8 +1437,11 @@ extern int slurm_job_node_ready(uint32_t job_id)
 		else	/* EAGAIN */
 			rc = READY_JOB_ERROR;
 		slurm_free_return_code_msg(resp.data);
-	} else
+	} else if (resp.msg_type == RESPONSE_PROLOG_EXECUTING) {
 		rc = READY_JOB_ERROR;
+	} else {
+		rc = READY_JOB_ERROR;
+	}
 
 	return rc;
 }

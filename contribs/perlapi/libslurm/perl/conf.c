@@ -146,6 +146,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, priority_reset_period, uint16_t);
 	if(conf->priority_type)
 		STORE_FIELD(hv, conf, priority_type, charp);
+	STORE_FIELD(hv, conf, prolog_flags, uint16_t);
 
 	STORE_FIELD(hv, conf, priority_weight_age, uint32_t);
 	STORE_FIELD(hv, conf, priority_weight_fs, uint32_t);
@@ -368,6 +369,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, proctrack_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, prolog, charp, FALSE);
 	FETCH_FIELD(hv, conf, prolog_slurmctld, charp, FALSE);
+	FETCH_FIELD(hv, conf, prolog_flags, uint16_t, TRUE);
 
 	FETCH_FIELD(hv, conf, propagate_prio_process, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, propagate_rlimits, charp, FALSE);

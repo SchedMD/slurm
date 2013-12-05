@@ -375,6 +375,14 @@ static void _pack_complete_job_allocation_msg(
 static int _unpack_complete_job_allocation_msg(
 	complete_job_allocation_msg_t ** msg_ptr, Buf buffer,
 	uint16_t protocol_version);
+
+static void _pack_complete_prolog_msg(
+	complete_prolog_msg_t * msg, Buf buffer,
+	uint16_t protocol_version);
+static int _unpack_complete_prolog_msg(
+	complete_prolog_msg_t ** msg_ptr, Buf buffer,
+	uint16_t protocol_version);
+
 static void _pack_complete_batch_script_msg(
 	complete_batch_script_msg_t * msg, Buf buffer,
 	uint16_t protocol_version);
@@ -412,6 +420,11 @@ static void _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg,
 static int _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg,
 					Buf buffer,
 					uint16_t protocol_version);
+
+static void _pack_prolog_launch_msg(prolog_launch_msg_t * msg,
+				Buf buffer, uint16_t protocol_version);
+static int _unpack_prolog_launch_msg(prolog_launch_msg_t ** msg,
+				Buf buffer, uint16_t protocol_version);
 
 static void _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 			       uint16_t protocol_version);
@@ -967,6 +980,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(complete_job_allocation_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_COMPLETE_PROLOG:
+		_pack_complete_prolog_msg(
+			(complete_prolog_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
 	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		_pack_complete_batch_script_msg(
@@ -1048,6 +1066,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					   msg->data, buffer,
 					   msg->protocol_version);
 		break;
+	case REQUEST_LAUNCH_PROLOG:
+		_pack_prolog_launch_msg((prolog_launch_msg_t *)
+					   msg->data, buffer, msg->protocol_version);
+		break;
+	case RESPONSE_PROLOG_EXECUTING:
 	case RESPONSE_JOB_READY:
 	case RESPONSE_SLURM_RC:
 		_pack_return_code_msg((return_code_msg_t *) msg->data,
@@ -1554,6 +1577,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(complete_job_allocation_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_COMPLETE_PROLOG:
+		rc = _unpack_complete_prolog_msg(
+			(complete_prolog_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
 	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		rc = _unpack_complete_batch_script_msg(
@@ -1644,6 +1672,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						  & (msg->data), buffer,
 						  msg->protocol_version);
 		break;
+	case REQUEST_LAUNCH_PROLOG:
+		rc = _unpack_prolog_launch_msg((prolog_launch_msg_t **)
+						  & (msg->data), buffer, msg->protocol_version);
+		break;
+	case RESPONSE_PROLOG_EXECUTING:
 	case RESPONSE_JOB_READY:
 	case RESPONSE_SLURM_RC:
 		rc = _unpack_return_code_msg((return_code_msg_t **)
@@ -4884,6 +4917,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->proctrack_type, buffer);
 		packstr(build_ptr->prolog, buffer);
 		packstr(build_ptr->prolog_slurmctld, buffer);
+		pack16(build_ptr->prolog_flags, buffer);
 		pack16(build_ptr->propagate_prio_process, buffer);
 		packstr(build_ptr->propagate_rlimits, buffer);
 		packstr(build_ptr->propagate_rlimits_except, buffer);
@@ -5633,6 +5667,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 		safe_unpackstr_xmalloc(&build_ptr->prolog_slurmctld,
 				       &uint32_tmp, buffer);
+		safe_unpack16(&build_ptr->prolog_flags, buffer);
 		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits,
 				       &uint32_tmp, buffer);
@@ -8459,6 +8494,87 @@ _unpack_complete_job_allocation_msg(
 unpack_error:
 	slurm_free_complete_job_allocation_msg(msg);
 	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_complete_prolog_msg(
+	complete_prolog_msg_t * msg, Buf buffer,
+	uint16_t protocol_version)
+{
+	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->prolog_rc, buffer);
+}
+
+static int
+_unpack_complete_prolog_msg(
+	complete_prolog_msg_t ** msg_ptr, Buf buffer,
+	uint16_t protocol_version)
+{
+	complete_prolog_msg_t *msg;
+
+	msg = xmalloc(sizeof(complete_prolog_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->prolog_rc, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_complete_prolog_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_prolog_launch_msg(
+	prolog_launch_msg_t * msg, Buf buffer,
+	uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+
+	pack32(msg->job_id, buffer);
+	pack32(msg->uid, buffer);
+	pack32(msg->gid, buffer);
+	packstr(msg->alias_list, buffer);
+	packstr(msg->nodes, buffer);
+	packstr(msg->std_err, buffer);
+	packstr(msg->std_out, buffer);
+	packstr(msg->work_dir, buffer);
+	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
+}
+
+static int
+_unpack_prolog_launch_msg(
+	prolog_launch_msg_t ** msg, Buf buffer,
+	uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	prolog_launch_msg_t *launch_msg_ptr;
+
+	xassert(msg != NULL);
+	launch_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
+	*msg = launch_msg_ptr;
+
+	safe_unpack32(&launch_msg_ptr->job_id, buffer);
+	safe_unpack32(&launch_msg_ptr->uid, buffer);
+	safe_unpack32(&launch_msg_ptr->gid, buffer);
+
+	safe_unpackstr_xmalloc(&launch_msg_ptr->alias_list, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->std_err, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->std_out, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp, buffer);
+
+	safe_unpackstr_array(&launch_msg_ptr->spank_job_env,
+			     &launch_msg_ptr->spank_job_env_size,
+			     buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_prolog_launch_msg(launch_msg_ptr);
+	*msg = NULL;
 	return SLURM_ERROR;
 }
 

@@ -78,3 +78,32 @@ slurm_complete_job (uint32_t job_id, uint32_t job_return_code)
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
+
+/*
+ * slurm_complete_prolog - note the completion of a prolog
+ * IN job_id - the job's id
+ * IN prolog_return_code - prolog exit code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int
+slurm_complete_prolog (uint32_t job_id, uint32_t prolog_return_code)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	complete_prolog_msg_t req;
+
+	slurm_msg_t_init(&req_msg);
+	req.job_id		= job_id;
+	req.prolog_rc	= prolog_return_code;
+
+	req_msg.msg_type= REQUEST_COMPLETE_PROLOG;
+	req_msg.data	= &req;
+
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+		return SLURM_ERROR;
+
+	if (rc)
+		slurm_seterrno_ret(rc);
+
+	return SLURM_PROTOCOL_SUCCESS;
+}

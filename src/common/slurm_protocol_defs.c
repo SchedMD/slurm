@@ -439,6 +439,31 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	}
 }
 
+extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
+{
+	int i;
+
+	if (msg) {
+		xfree(msg->alias_list);
+		xfree(msg->nodes);
+		xfree(msg->std_err);
+		xfree(msg->std_out);
+		xfree(msg->work_dir);
+
+		for (i = 0; i < msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
+
+		xfree(msg);
+	}
+}
+
+extern void slurm_free_complete_prolog_msg(
+	complete_prolog_msg_t * msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 {
 	int i;
@@ -952,6 +977,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 	switch (inx) {
 	case WAIT_NO_REASON:
 		return "None";
+	case WAIT_PROLOG:
+		return "Prolog";
 	case WAIT_PRIORITY:
 		return "Priority";
 	case WAIT_DEPENDENCY:
@@ -2596,6 +2623,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		slurm_free_complete_job_allocation_msg(data);
 		break;
+	case REQUEST_COMPLETE_PROLOG:
+		slurm_free_complete_prolog_msg(data);
+		break;
 	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		slurm_free_complete_batch_script_msg(data);
@@ -2608,6 +2638,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_JOB_STEP_PIDS:
 		slurm_free_job_step_pids(data);
+		break;
+	case REQUEST_LAUNCH_PROLOG:
+		slurm_free_prolog_launch_msg(data);
 		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_JOB_WILL_RUN:
