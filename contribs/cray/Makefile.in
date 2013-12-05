@@ -84,6 +84,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@HAVE_NATIVE_CRAY_FALSE@am__append_1 = slurmconfgen.py slurm.conf.template
 subdir = contribs/cray
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/opt_modulefiles_slurm.in \
@@ -427,14 +428,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-EXTRA_DIST = \
-	etc_sysconfig_slurm		\
-	libalps_test_programs.tar.gz	\
-	opt_modulefiles_slurm		\
-	pam_job.c
-
-sbin_SCRIPTS = slurmconfgen.py
-sysconf_DATA = slurm.conf.template
+EXTRA_DIST = etc_sysconfig_slurm libalps_test_programs.tar.gz \
+	opt_modulefiles_slurm pam_job.c $(am__append_1)
+@HAVE_NATIVE_CRAY_TRUE@sbin_SCRIPTS = slurmconfgen.py
+@HAVE_NATIVE_CRAY_TRUE@sysconf_DATA = slurm.conf.template
 all: all-am
 
 .SUFFIXES:
