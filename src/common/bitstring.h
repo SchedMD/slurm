@@ -103,52 +103,6 @@ typedef bitstr_t bitoff_t;
 /* max bit position in word */
 #define BITSTR_MAXPOS		(sizeof(bitstr_t)*8 - 1)
 
-/* word of the bitstring bit is in */
-#define	_bit_word(bit) 		(((bit) >> BITSTR_SHIFT) + BITSTR_OVERHEAD)
-
-/* address of the byte containing bit */
-#define _bit_byteaddr(name, bit) \
-	((char *)((name) + BITSTR_OVERHEAD) + ((bit) >> BITSTR_SHIFT_WORD8))
-
-/* mask for the bit within its word */
-#ifdef SLURM_BIGENDIAN
-#define	_bit_mask(bit) ((bitstr_t)1 << (BITSTR_MAXPOS - ((bit)&BITSTR_MAXPOS)))
-#else
-#define	_bit_mask(bit) ((bitstr_t)1 << ((bit)&BITSTR_MAXPOS))
-#endif
-
-/* number of bits actually allocated to a bitstr */
-#define _bitstr_bits(name) 	((name)[1])
-
-/* magic cookie stored here */
-#define _bitstr_magic(name) 	((name)[0])
-
-/* words in a bitstring of nbits bits */
-#define	_bitstr_words(nbits)	\
-	((((nbits) + BITSTR_MAXPOS) >> BITSTR_SHIFT) + BITSTR_OVERHEAD)
-
-/* check signature */
-#define _assert_bitstr_valid(name) do { \
-	assert((name) != NULL); \
-	assert(_bitstr_magic(name) == BITSTR_MAGIC \
-			    || _bitstr_magic(name) == BITSTR_MAGIC_STACK); \
-} while (0)
-
-/* check bit position */
-#define _assert_bit_valid(name,bit) do { \
-	assert((bit) >= 0); \
-	assert((bit) < _bitstr_bits(name)); 	\
-} while (0)
-
-/*
- * external macros
- */
-
-/* allocate a bitstring on the stack */
-/* XXX bit_decl does not check if nbits overflows word 1 */
-#define	bit_decl(name, nbits) \
-	(name)[_bitstr_words(nbits)] = { BITSTR_MAGIC_STACK, (nbits) }
-
 /* compat with Vixie macros */
 bitstr_t *bit_alloc(bitoff_t nbits);
 int bit_test(bitstr_t *b, bitoff_t bit);

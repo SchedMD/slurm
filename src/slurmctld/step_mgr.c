@@ -2989,7 +2989,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->exit_node_bitmap = bit_alloc(nodes);
 		step_ptr->exit_code = req->step_rc;
 	} else {
-		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
+		nodes = bit_size(step_ptr->exit_node_bitmap);
 #if defined HAVE_BGQ || defined HAVE_ALPS_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
@@ -3225,7 +3225,7 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
 		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
-		pack16((uint16_t) _bitstr_bits(step_ptr->exit_node_bitmap),
+		pack16((uint16_t) bit_size(step_ptr->exit_node_bitmap),
 			buffer);
 	}
 	if (step_ptr->core_bitmap_job) {
