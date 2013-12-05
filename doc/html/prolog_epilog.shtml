@@ -54,7 +54,9 @@ allocations, when and where they run.</p>
 			</td>
 			<td width="40%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-				First job or job step initiation on that node</font></p>
+				First job or job step initiation on that node (by default);
+				PrologFlags=Alloc will force the script to be executed at
+				job allocation</font></p>
 			</td>
 		</tr>
 		<tr>

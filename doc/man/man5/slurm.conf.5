@@ -1520,6 +1520,22 @@ node being set to a DOWN state and the job requeued to executed on another node.
 See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
+\fBPrologFlags\fR
+Flags to control the Prolog behavior. By default no flags are set.
+Currently the only option defined is:
+.RS
+.TP 6
+\fBAlloc\fR
+If set, the Prolog script will be executed at job allocation. By default,
+Prolog is executed just before the task is launched. Therefore, when salloc
+is started, no Prolog is executed. \fBAlloc\fR is useful for preparing things
+before a user starts to use any allocated resources.
+In particular, this flag is needed on a Cray system when cluster compatibility
+mode is enabled.
+.TP
+.RE
+
+.TP
 \fBPrologSlurmctld\fR
 Fully qualified pathname of a program for the slurmctld daemon to execute
 before granting a new job allocation (e.g.

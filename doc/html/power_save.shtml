@@ -212,8 +212,12 @@ for use.</p>
 <p>The <i>salloc</i> and <i>srun</i> commands which create a resource
 allocation automatically wait for the nodes to power up in SLURM version 2.2.
 When using earlier versions of SLURM, <i>salloc</i> will return immediately
-after a resource allocation is made and one can execute "<i>srun /bin/true</i>"
-to insure that all nodes are booted and ready for use.</p>
+after a resource allocation is made, and one can execute "<i>srun /bin/true</i>"
+to ensure that all nodes are booted and ready for use.</p>
+
+<p>Execution of the <i>salloc</i> command also triggers execution of the <i>Prolog</i>
+script if the <i>Alloc</i> flag is set in <i>PrologFlags</i>. In this case <i>salloc</i>
+waits for script termination before returning control to the user.</p>
 
 <h2>Fault Tolerance</h2>
 

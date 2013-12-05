@@ -666,6 +666,28 @@ sdb: # /etc/init.d/slurm start
 login: # /etc/init.d/slurm start
 </pre>
 
+<h3>Cluster Compatibility Mode</h3>
+
+<p>It is possible to use SLURM to allocate resources for jobs
+that run in Cray's Cluster Compatibility Mode (CCM). In order
+to set this up, first install the CCM packages according to Cray
+documentation. As part of the CCM packages, a prologue and epilogue
+script will be installed. Add/change the following flags in slurm.conf
+to enable the scripts:</p>
+
+<pre>
+PrologFlags=Alloc
+Prolog=/opt/cray/ccm/default/etc/slurm.prolog.frontend
+Epilog=/opt/cray/ccm/default/etc/slurm.epilog.frontend
+</pre>
+
+<p>To run jobs in CCM, a SLURM partition should be created in slurm.conf.
+The name of that partition should be put into the CCM_QUEUES variable in
+this file: /etc/opt/cray/ccm/ccm.conf</p>
+
+<p>Any job that requests resources from said partition will then run in
+Cluster Compatibility Mode.</p>
+
 <h3>launch/aprun plugin configuration</h3>
 
 <p>By default the launch plugin on a Cray is on set
