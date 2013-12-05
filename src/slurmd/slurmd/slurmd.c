@@ -887,6 +887,7 @@ _read_config(void)
 
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
+	_free_and_set(&conf->cluster_name, xstrdup(cf->cluster_name));
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
 	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
@@ -1035,6 +1036,7 @@ _print_conf(void)
 	else
 		i = 0;
 	debug3("CacheGroups = %d",       i);
+	debug3("ClusterName = %s",       conf->cluster_name);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       cf->slurmd_debug);
 	debug3("CPUs        = %-2u (CF: %2u, HW: %2u)",
@@ -1142,6 +1144,7 @@ _destroy_conf(void)
 		xfree(conf->acct_gather_profile_type);
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
+		xfree(conf->cluster_name);
 		xfree(conf->conffile);
 		xfree(conf->epilog);
 		xfree(conf->health_check_program);
@@ -1181,6 +1184,7 @@ _print_config(void)
 	int days, hours, mins, secs;
 	char name[128];
 
+	printf("ClusterName=%s ", conf->cluster_name);
 	gethostname_short(name, sizeof(name));
 	printf("NodeName=%s ", name);
 

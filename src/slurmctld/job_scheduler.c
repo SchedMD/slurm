@@ -2172,10 +2172,19 @@ static char **_build_env(struct job_record *job_ptr)
 	sprintf(buf, "%d:%d", exit_code, signal);
 	setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
 
-	if (job_ptr->array_job_id != 0)
-		setenvf(&my_env, "SLURM_ARRAY_JOB_ID", "%u", job_ptr->array_job_id);
-	if (job_ptr->array_task_id != NO_VAL)
-		setenvf(&my_env, "SLURM_ARRAY_TASK_ID", "%u", job_ptr->array_task_id);
+	if (job_ptr->array_job_id != 0) {
+		setenvf(&my_env, "SLURM_ARRAY_JOB_ID", "%u",
+			job_ptr->array_job_id);
+	}
+	if (job_ptr->array_task_id != NO_VAL) {
+		setenvf(&my_env, "SLURM_ARRAY_TASK_ID", "%u",
+			job_ptr->array_task_id);
+	}
+
+	if (slurmctld_cluster_name) {
+		setenvf(&my_env, "SLURM_CLUSTER_NAME", "%s",
+			slurmctld_cluster_name);
+	}
 
 	setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u", job_ptr->exit_code);
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);

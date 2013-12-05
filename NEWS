@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed conditional rpm compiling.
  -- Corrected slurmstepd ident name when loggind to syslog.
  -- Fixed sh5util loop when there are no node-step files.
+ -- Add SLURM_CLUSTER_NAME to environment variables passed to PrologSlurmctld,
+    Prolog, EpilogSlurmctld, and Epilog
 
 * Changes in Slurm 14.03.0pre4
 ==============================

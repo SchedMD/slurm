@@ -75,6 +75,7 @@ typedef struct slurmd_config {
 	char         *prog;		/* Program basename		   */
 	char         ***argv;           /* pointer to argument vector      */
 	int          *argc;             /* pointer to argument count       */
+	char         *cluster_name; 	/* conf ClusterName		   */
 	char         *hostname;	 	/* local hostname		   */
 	uint16_t     cpus;              /* lowest-level logical processors */
 	uint16_t     boards;            /* total boards count              */
