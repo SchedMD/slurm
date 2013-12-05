@@ -3224,9 +3224,11 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 	pack32(step_ptr->pn_min_memory, buffer);
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
+		uint16_t bit_cnt = 0;
+		if (step_ptr->exit_node_bitmap)
+			bit_cnt = bit_size(step_ptr->exit_node_bitmap);
 		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
-		pack16((uint16_t) bit_size(step_ptr->exit_node_bitmap),
-			buffer);
+		pack16(bit_cnt, buffer);
 	}
 	if (step_ptr->core_bitmap_job) {
 		uint32_t core_size = bit_size(step_ptr->core_bitmap_job);
