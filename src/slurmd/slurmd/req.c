@@ -1396,16 +1396,12 @@ static void _note_batch_job_finished(uint32_t job_id)
 static void _rpc_prolog(slurm_msg_t *msg)
 {
 	int  rc = SLURM_SUCCESS;
-	char *resv_id = NULL;
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+	job_env_t job_env;
 
 	if (req == NULL)
 		return;
 
-#ifdef HAVE_CRAY
-	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-				  SELECT_PRINT_RESV_ID);
-#endif
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error starting prolog: %m");
 	}
@@ -1426,9 +1422,22 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (container_g_create(req->job_id))
 		error("container_g_create(%u): %m", req->job_id);
 
-	rc = _run_prolog(req->job_id, req->uid, resv_id,
-			 req->spank_job_env, req->spank_job_env_size,
-			 req->nodes);
+	memset(&job_env, 0, sizeof(job_env_t));
+
+	job_env.jobid = req->job_id;
+	job_env.node_list = req->nodes;
+	job_env.spank_job_env = req->spank_job_env;
+	job_env.spank_job_env_size = req->spank_job_env_size;
+	job_env.uid = req->uid;
+#if defined(HAVE_BG)
+		select_g_select_jobinfo_get(req->select_jobinfo,
+					    SELECT_JOBDATA_BLOCK_ID,
+					    &job_env.resv_id);
+#elif defined(HAVE_ALPS_CRAY)
+		job_env.resv_id = select_g_select_jobinfo_xstrdup(
+			req->select_jobinfo, SELECT_PRINT_RESV_ID);
+#endif
+	rc = _run_prolog(&job_env);
 
 	if (rc) {
 		int term_sig, exit_status;
@@ -1444,11 +1453,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		rc = ESLURMD_PROLOG_FAILED;
 	}
 
-    if(slurm_complete_prolog(req->job_id, rc) < 0) {
+	if (slurm_complete_prolog(req->job_id, rc) < 0) {
 		error("Error finishing prolog: %m");
 	}
-
-	xfree(resv_id);
 }
 
 static void
