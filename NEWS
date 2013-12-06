@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     Prolog, EpilogSlurmctld, and Epilog
  -- Add the idea of running a prolog right when an allocation happens
     instead of when running on the node for the first time.
+ -- If user runs 'scontrol reconfig' but hostnames or the host count changes
+    the slurmctld throws a fatal error.
 
 * Changes in Slurm 14.03.0pre4
 ==============================
