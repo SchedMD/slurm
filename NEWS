@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
  -- Fix if hwloc_get_nbobjs_by_type() returns zero core count (set to 1).
  -- Added ApbasilTimeout parameter to the cray.conf configuration file.
  -- Handle in the API if parts of the node structure are NULL.
+ -- Fix srun hang when IO fails to start at launch.
 
 * Changes in Slurm 2.6.4
 ========================
