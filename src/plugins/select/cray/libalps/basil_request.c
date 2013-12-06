@@ -5,6 +5,7 @@
  * Portions Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
  * Licensed under the GPLv2.
  */
+#include "basil_interface.h"
 #include "parser_internal.h"
 #include <stdarg.h>
 #include <unistd.h>
@@ -12,6 +13,9 @@
 int   log_sel = -1;
 char *xml_log_loc = NULL;
 char  xml_log_file_name[256] = "";
+
+pthread_cond_t  timer_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t timer_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Function: _write_xml
@@ -182,6 +186,30 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r,
 		   "</BasilRequest>\n");
 }
 
+static void *_timer_func(void *raw_data)
+{
+	pid_t child = *(pid_t *)raw_data;
+	int time_out;
+	struct timespec ts;
+
+	time_out = cray_conf->apbasil_timeout;
+	debug2("This is a timer thread for process: %d (slurmctld)--"
+	       "timeout: %d, apbasil pid: %d\n", getpid(), time_out, child);
+
+	pthread_mutex_lock(&timer_lock);
+	ts.tv_sec  = time(NULL);
+	ts.tv_nsec = 0;
+	ts.tv_sec += time_out;
+	if (pthread_cond_timedwait(&timer_cond, &timer_lock, &ts) == ETIMEDOUT){
+		info("Apbasil taking too long--terminating apbasil pid: %d",
+		     child);
+		kill(child, SIGKILL);
+		debug2("Exiting timer thread, apbasil pid had been: %d", child);
+	}
+	pthread_mutex_unlock(&timer_lock);
+	pthread_exit(NULL);
+}
+
 /*
  * basil_request - issue BASIL request and parse response
  * @bp:	method-dependent parse data to guide the parsing process
@@ -194,6 +222,9 @@ int basil_request(struct basil_parse_data *bp)
 	int ec, i, rc = -BE_UNKNOWN;
 	FILE *apbasil;
 	pid_t pid = -1;
+	pthread_t thread;
+	pthread_attr_t attr;
+	int time_it_out = 1;
 	DEF_TIMERS;
 
 	if (log_sel == -1)
@@ -203,6 +234,17 @@ int basil_request(struct basil_parse_data *bp)
 		error("No alps client defined");
 		return 0;
 	}
+
+	if ((cray_conf->apbasil_timeout == 0) ||
+	    (cray_conf->apbasil_timeout == (uint16_t) NO_VAL)) {
+		debug2("No ApbasilTimeout configured (%u)",
+		       cray_conf->apbasil_timeout);
+		time_it_out = 0;
+	} else {
+		slurm_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	}
+
 	assert(bp->version < BV_MAX);
 	assert(bp->method > BM_none && bp->method < BM_MAX);
 
@@ -214,6 +256,10 @@ int basil_request(struct basil_parse_data *bp)
 	}
 	if (pid < 0)
 		fatal("popen2(\"%s\", ...)", cray_conf->apbasil);
+
+	if (time_it_out) {
+		pthread_create(&thread, &attr, _timer_func, (void*)&pid);
+	}
 
 	/* write out request */
 	apbasil = fdopen(to_child, "w");
@@ -270,6 +316,15 @@ int basil_request(struct basil_parse_data *bp)
 
 	rc = parse_basil(bp, from_child);
 	ec = wait_for_child(pid);
+
+	if (time_it_out) {
+		slurm_attr_destroy(&attr);
+		debug2("Killing the timer thread.");
+		pthread_mutex_lock(&timer_lock);
+		pthread_cond_broadcast(&timer_cond);
+		pthread_mutex_unlock(&timer_lock);
+	}
+
 	END_TIMER;
 	if (ec) {
 		error("%s child process for BASIL %s method exited with %d",
