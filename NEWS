@@ -179,6 +179,8 @@ documents those changes that are of interest to users and admins.
     locks and use hash function to find the desired job.
  -- jobcomp/filetxt - Reopen the file when slurmctld daemon is reconfigured
     or gets SIGHUP.
+ -- Remove notice of CVE with very old/deprecated versions of Slurm in
+    news.html.
 
 * Changes in Slurm 2.6.4
 ========================
