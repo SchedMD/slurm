@@ -305,7 +305,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** power Line ******/
-	if (node_ptr->energy->current_watts == NO_VAL)
+	if (!node_ptr->energy || node_ptr->energy->current_watts == NO_VAL)
 		snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=n/s "
 				"LowestJoules=n/s ConsumedJoules=n/s");
 	else
@@ -321,19 +321,22 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** external sensors Line ******/
-	if (node_ptr->ext_sensors->consumed_energy == NO_VAL)
+	if (!node_ptr->ext_sensors
+	    || node_ptr->ext_sensors->consumed_energy == NO_VAL)
 		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=n/s ");
 	else
 		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=%u ",
 			 node_ptr->ext_sensors->consumed_energy);
 	xstrcat(out, tmp_line);
-	if (node_ptr->ext_sensors->current_watts == NO_VAL)
+	if (!node_ptr->ext_sensors
+	    || node_ptr->ext_sensors->current_watts == NO_VAL)
 		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsWatts=n/s ");
 	else
 		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsWatts=%u ",
 			 node_ptr->ext_sensors->current_watts);
 	xstrcat(out, tmp_line);
-	if (node_ptr->ext_sensors->temperature == NO_VAL)
+	if (!node_ptr->ext_sensors
+	    || node_ptr->ext_sensors->temperature == NO_VAL)
 		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsTemp=n/s");
 	else
 		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsTemp=%u",
