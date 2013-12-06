@@ -181,6 +181,7 @@ documents those changes that are of interest to users and admins.
     or gets SIGHUP.
  -- Remove notice of CVE with very old/deprecated versions of Slurm in
     news.html.
+ -- Fix if hwloc_get_nbobjs_by_type() returns zero core count (set to 1).
 
 * Changes in Slurm 2.6.4
 ========================

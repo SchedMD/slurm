@@ -237,6 +237,12 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	}
 	nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology, objtype[SOCKET]);
 	nobj[CORE]   = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
+	/*
+	 * Workaround for hwloc
+	 * hwloc_get_nbobjs_by_type() returns 0 on some architectures.
+	 */
+	if ( nobj[CORE] == 0 )
+	    nobj[CORE] = 1;
 	actual_cpus  = hwloc_get_nbobjs_by_type(topology, objtype[PU]);
 	nobj[PU]     = actual_cpus/nobj[CORE];  /* threads per core */
 	nobj[CORE]  /= nobj[SOCKET];            /* cores per socket */

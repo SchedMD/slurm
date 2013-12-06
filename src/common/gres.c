@@ -2920,6 +2920,14 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	} else if (node_gres_ptr->gres_bit_alloc) {
 		job_gres_ptr->gres_bit_alloc[node_offset] =
 				bit_alloc(node_gres_ptr->gres_cnt_avail);
+		i = bit_size(node_gres_ptr->gres_bit_alloc);
+		if (i < node_gres_ptr->gres_cnt_avail) {
+			error("gres/%s: node %s gres bitmap size bad (%d < %u)",
+			      gres_name, i, node_gres_ptr->gres_cnt_avail);
+			node_gres_ptr->gres_bit_alloc =
+				bit_realloc(node_gres_ptr->gres_bit_alloc,
+					    node_gres_ptr->gres_cnt_avail);
+		}
 		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
