@@ -1027,7 +1027,9 @@ job_manager(stepd_step_rec_t *job)
 		goto fail2;
 	}
 
-	/* calls pam_setup() and requires pam_finish() if successful */
+	/* Calls pam_setup() and requires pam_finish() if
+	 * successful.  Only check for < 0 here since other slurm
+	 * error codes could come that are more descriptive. */
 	if ((rc = _fork_all_tasks(job, &io_initialized)) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
@@ -1035,10 +1037,12 @@ job_manager(stepd_step_rec_t *job)
 	}
 
 	/*
-	 * If IO initialization failed, return SLURM_SUCCESS
-	 * or the node will be drain otherwise
+	 * If IO initialization failed, return SLURM_SUCCESS (on a
+	 * batch step) or the node will be drain otherwise.  Regular
+	 * srun needs the error sent or it will hang waiting for the
+	 * launch to happen.
 	 */
-	if ((rc == SLURM_SUCCESS) && !io_initialized)
+	if ((rc != SLURM_SUCCESS) || !io_initialized)
 		goto fail2;
 
 	io_close_task_fds(job);
@@ -1389,7 +1393,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		error("IO setup failed: %m");
 		job->task[0]->estatus = 0x0100;
 		step_complete.step_rc = 0x0100;
-		rc = SLURM_SUCCESS;	/* drains node otherwise */
+		if (job->batch)
+			rc = SLURM_SUCCESS;	/* drains node otherwise */
 		goto fail1;
 	} else {
 		*io_initialized = true;

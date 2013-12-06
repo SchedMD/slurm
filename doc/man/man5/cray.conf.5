@@ -1,4 +1,4 @@
-.TH "cray.conf" "5" "January 2015" "cray.conf 2.6" "Slurm configuration file"
+.TH "cray.conf" "5" "December 2013" "cray.conf 2.6" "Slurm configuration file"
 
 .SH "NAME"
 cray.conf \- Slurm configuration file for the Cray\-specific information
@@ -42,6 +42,11 @@ The default value is \fI/usr\fR.
 \fBapbasil\fR=<pathname>
 Fully qualified pathname to the apbasil command.
 The default value is \fI/usr/bin/apbasil\fR.
+
+.TP
+\fBapbasilTimeout\fR=<seconds>
+How many seconds to wait for the apbasil command to complete before killing it.
+By default, wait indefinitely
 
 .TP
 \fBapkill\fR=<pathname>

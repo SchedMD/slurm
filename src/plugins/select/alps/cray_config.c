@@ -52,16 +52,17 @@
 cray_config_t *cray_conf = NULL;
 
 s_p_options_t cray_conf_file_options[] = {
-	{"AlpsDir", S_P_STRING},	/* Vestigial option */
-	{"apbasil", S_P_STRING},
-	{"apkill", S_P_STRING},
-	{"AlpsEngine", S_P_STRING},
-	{"SDBdb", S_P_STRING},
-	{"SDBhost", S_P_STRING},
-	{"SDBpass", S_P_STRING},
-	{"SDBport", S_P_UINT32},
-	{"SDBuser", S_P_STRING},
-	{"SyncTimeout", S_P_UINT32},
+	{"AlpsDir",        S_P_STRING},	/* Vestigial option */
+	{"apbasil",        S_P_STRING},
+	{"ApbasilTimeout", S_P_UINT16},
+	{"apkill",         S_P_STRING},
+	{"AlpsEngine",     S_P_STRING},
+	{"SDBdb",          S_P_STRING},
+	{"SDBhost",        S_P_STRING},
+	{"SDBpass",        S_P_STRING},
+	{"SDBport",        S_P_UINT32},
+	{"SDBuser",        S_P_STRING},
+	{"SyncTimeout",    S_P_UINT32},
 	{NULL}
 };
 
@@ -81,14 +82,15 @@ extern int create_config(void)
 	cray_conf_file = get_extra_conf_path("cray.conf");
 
 	if (stat(cray_conf_file, &config_stat) < 0) {
-		cray_conf->apbasil  = xstrdup(DEFAULT_APBASIL);
-		cray_conf->apkill   = xstrdup(DEFAULT_APKILL);
-		cray_conf->sdb_db   = xstrdup(DEFAULT_CRAY_SDB_DB);
-		cray_conf->sdb_host = xstrdup(DEFAULT_CRAY_SDB_HOST);
-		cray_conf->sdb_pass = xstrdup(DEFAULT_CRAY_SDB_PASS);
-		cray_conf->sdb_port = DEFAULT_CRAY_SDB_PORT;
-		cray_conf->sdb_user = xstrdup(DEFAULT_CRAY_SDB_USER);
-		cray_conf->sync_timeout = DEFAULT_CRAY_SYNC_TIMEOUT;
+		cray_conf->apbasil          = xstrdup(DEFAULT_APBASIL);
+		cray_conf->apbasil_timeout  = DEFAULT_APBASIL_TIMEOUT;
+		cray_conf->apkill           = xstrdup(DEFAULT_APKILL);
+		cray_conf->sdb_db           = xstrdup(DEFAULT_CRAY_SDB_DB);
+		cray_conf->sdb_host         = xstrdup(DEFAULT_CRAY_SDB_HOST);
+		cray_conf->sdb_pass         = xstrdup(DEFAULT_CRAY_SDB_PASS);
+		cray_conf->sdb_port         = DEFAULT_CRAY_SDB_PORT;
+		cray_conf->sdb_user         = xstrdup(DEFAULT_CRAY_SDB_USER);
+		cray_conf->sync_timeout     = DEFAULT_CRAY_SYNC_TIMEOUT;
 		xfree(cray_conf_file);
 		goto end_it;
 	}
@@ -119,6 +121,8 @@ extern int create_config(void)
 
 	if (!s_p_get_string(&cray_conf->apbasil, "apbasil", tbl))
 		cray_conf->apbasil = xstrdup(DEFAULT_APBASIL);
+	if (!s_p_get_uint16(&cray_conf->apbasil_timeout, "ApbasilTimeout", tbl))
+		cray_conf->apbasil_timeout = DEFAULT_APBASIL_TIMEOUT;
 	if (!s_p_get_string(&cray_conf->apkill, "apkill", tbl))
 		cray_conf->apkill = xstrdup(DEFAULT_APKILL);
 
@@ -144,8 +148,9 @@ end_it:
 #if 0
 	info("Cray conf is...");
 	info("\tapbasil=\t%s", cray_conf->apbasil);
+	info("\ApbasilTimeout=\t%s", cray_conf->apbasil);
 	info("\tapkill=\t\t%s", cray_conf->apkill);
-	info("\tAlpsEngine=\t\t%s", cray_conf->alps_engine);
+	info("\tAlpsEngine=\t\t%u", cray_conf->apbasil_timeout);
 	info("\tSDBdb=\t\t%s", cray_conf->sdb_db);
 	info("\tSDBhost=\t%s", cray_conf->sdb_host);
 	info("\tSDBpass=\t%s", cray_conf->sdb_pass);
