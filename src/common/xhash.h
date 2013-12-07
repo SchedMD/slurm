@@ -2,6 +2,7 @@
  *  xtree.h - functions used for hash table manament
  *****************************************************************************
  *  Copyright (C) 2012 CEA/DAM/DIF
+ *  Copyright (C) 2013 SchedMD LLC. Written by David Bigagli
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -111,6 +112,54 @@ void xhash_walk(xhash_t* table,
  *                  after this call.
  */
 void xhash_free(xhash_t* table);
+
+/* String hash table using the pjw hashing algorithm
+ * and chaining conflict resolution.
+ * Includes a double linked list implementation.
+ */
+struct hash_entry {
+	struct hash_entry *forw;
+	struct hash_entry *back;
+	char *key;
+	void *data;
+};
+
+struct hash_tab {
+	uint32_t size;
+	uint32_t num_ents;
+	struct list_ **lists;
+};
+
+struct list_ {
+    struct list_ *forw;
+    struct list_ *back;
+    uint32_t num_ents;
+    char *name;
+};
+
+#define LIST_NUM_ENTS(L) ((L)->num_ents)
+
+extern struct list_ *list_make(const char *);
+extern int  list_insert_(struct list_ *,
+						 struct list_ *,
+						 struct list_ *);
+extern int list_push_(struct list_ *,
+					  struct list_ *);
+extern int list_enque(struct list_ *,
+					  struct list_ *);
+extern struct list_ * list_rm(struct list_ *,
+							  struct list_ *);
+struct list_ *list_pop_(struct list_ *);
+extern struct list_ *list_deque(struct list_ *);
+extern void list_free(struct list_ *, void (*f)(void *));
+
+
+extern struct hash_tab *hash_make(uint32_t);
+extern int hash_install(struct hash_tab *, const char *, void *);
+extern void *hash_lookup(struct hash_tab *, const char *);
+extern void *hash_remove(struct hash_tab *, const char *);
+extern void hash_free(struct hash_tab *, void (*f)(char *key, void *data));
+
 
 #endif
 

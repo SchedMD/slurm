@@ -2,6 +2,7 @@
  *  xtree.c - functions used for hash table manament
  *****************************************************************************
  *  Copyright (C) 2012 CEA/DAM/DIF
+ *  Copyright (C) 2013 SchedMD LLC. Written by David Bigagli
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -36,6 +37,7 @@
 #include "src/common/xhash.h"
 #include "src/common/xmalloc.h"
 #include "src/common/uthash/uthash.h"
+#include "src/common/xstring.h"
 
 #if 0
 /* undefine default allocators */
@@ -163,3 +165,439 @@ void xhash_free(xhash_t* table)
 	xfree(table);
 }
 
+/* String hash table using the pjw hashing algorithm
+ * and chaining conflict resolution.
+ * Includes a double linked list implementation.
+ */
+
+static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static int _find_closest_prime(int);
+static int _is_prime(int);
+static int _pjw_hash(const char *, uint32_t);
+
+static int primes[] = {
+	293,
+	941,
+	1427,
+	1619,
+	2153,
+	5483,
+	10891,       /* 10K */
+	24571,
+	69857,
+	111697,
+	200003,
+	1000003,     /* 1MB */
+	2000003,
+	8000099,
+	16000097,
+	50000063,    /* 50 MB */
+	100000081,   /* 100 MB */
+	150999103,
+	250000103,   /* 250MB */
+	500000101,   /* 500MB */
+	750003379,   /* 750MB */
+	1000004897,  /* 1GB */
+	2002950673   /* 2GB that's one mother */
+};
+
+/* hash_make()
+ */
+struct hash_tab *
+hash_make(uint32_t size)
+{
+	struct hash_tab *t;
+	int cc;
+
+	cc = _find_closest_prime(size);
+
+	t = xmalloc(1 * sizeof(struct hash_tab));
+	t->num_ents = 0;
+	t->size = cc;
+	t->lists = xmalloc(cc * sizeof(struct list_ *));
+	t->size = cc;
+
+	return t;
+}
+
+/* hash_install()
+ */
+int
+hash_install(struct hash_tab *t, const char *key, void *data)
+{
+	int cc;
+	struct hash_entry *e;
+
+	if (t == NULL
+		|| key == NULL)
+		return -1;
+
+	/* FIXME rehash the table if
+	 * t->num >= 0.9 * t->size
+	 */
+
+	slurm_mutex_lock(&hash_mutex);
+
+	if (hash_lookup(t, key)) {
+		slurm_mutex_unlock(&hash_mutex);
+		return -1;
+	}
+
+	e = xmalloc(1 * sizeof(struct hash_entry));
+	e->key = xstrdup(key);
+	e->data = data;
+
+	cc = _pjw_hash(key, t->size);
+	if (t->lists[cc] == NULL)
+		t->lists[cc] = list_make("");
+	list_push_(t->lists[cc], (struct list_ *)e);
+	t->num_ents++;
+
+	slurm_mutex_unlock(&hash_mutex);
+
+	return 0;
+}
+
+/* hash_lookup()
+ */
+void *
+hash_lookup(struct hash_tab *t, const char *key)
+{
+	struct hash_entry *e;
+	int cc;
+
+	if (t == NULL
+		|| key == NULL)
+		return NULL;
+
+	cc = _pjw_hash(key, t->size);
+	if (t->lists[cc] == NULL)
+		return NULL;
+
+	for (e = (struct hash_entry *)t->lists[cc]->forw;
+		 e!= (void *)t->lists[cc];
+		 e = e->forw) {
+		if (strcmp(e->key, key) == 0)
+			return e->data;
+	}
+
+	return NULL;
+}
+
+/* hash_remove()
+ */
+void *
+hash_remove(struct hash_tab *t, const char *key)
+{
+	struct hash_entry *e;
+	int cc;
+	void *v;
+
+	if (t == NULL
+		|| key == NULL)
+		return NULL;
+
+	cc = _pjw_hash(key, t->size);
+	if (t->lists[cc] == NULL)
+		return NULL;
+
+	for (e = (struct hash_entry *)t->lists[cc]->forw;
+		 e!= (void *)t->lists[cc];
+		 e = e->forw) {
+
+		if (strcmp(e->key, key) == 0) {
+			list_rm(t->lists[cc], (struct list_ *)e);
+			t->num_ents--;
+			v = e->data;
+			xfree(e->key);
+			xfree(e);
+			return v;
+		}
+	}
+
+	return NULL;
+}
+
+/* hash_free()
+ */
+void
+hash_free(struct hash_tab *t,
+		  void (*f)(char *key, void *data))
+{
+	int cc;
+	struct hash_entry *e;
+
+	if (t == NULL)
+		return;
+
+	for (cc = 0; cc < t->size; cc++) {
+
+		if (t->lists[cc] == NULL)
+			continue;
+
+		while ((e = (struct hash_entry *)list_pop_(t->lists[cc]))) {
+			if (f)
+				(*f)(e->key, e->data);
+			xfree(e->key);
+			xfree(e);
+			xfree(t->lists[cc]->name);
+			xfree(t->lists[cc]);
+		}
+		list_free(t->lists[cc], NULL);
+	}
+}
+
+/* _find_closest_prime()
+ */
+static int
+_find_closest_prime(int s)
+{
+	int n;
+	int cc;
+
+	if (_is_prime(s))
+		return s;
+
+	n = sizeof(primes)/sizeof(primes[0]);
+
+	for (cc = 0; cc < n; cc++) {
+		if (s < primes[cc])
+			return primes[cc];
+	}
+
+	return primes[n - 1];
+}
+
+/* _is_prime()
+ */
+int
+_is_prime(int s)
+{
+	int cc;
+
+	/* Try all divisors upto square
+	 * root of s;
+	 */
+	for (cc = 2; cc*cc <= s; cc++) {
+		if ((s % cc) == 0)
+			return 0;
+	}
+	return 1;
+}
+
+/* _pjw_hash()
+ *
+ * Hash a string using an algorithm taken from Aho, Sethi, and Ullman,
+ * "Compilers: Principles, Techniques, and Tools," Addison-Wesley,
+ * 1985, p. 436.  PJW stands for Peter J. Weinberger, who apparently
+ * originally suggested the function.
+ */
+static int
+_pjw_hash(const char *x, uint32_t size)
+{
+	const char *s = x;
+	unsigned int h = 0;
+	unsigned int g;
+
+	while (*s != 0)  {
+		h = (h << 4) + *s++;
+		if ((g = h & (unsigned int) 0xf0000000) != 0)
+			h = (h ^ (g >> 24)) ^ g;
+    }
+
+  return h % size;
+}
+
+
+/* Simple double linked list.
+ * The idea is very simple we have 2 insertion methods
+ * enqueue which adds at the end of the queue and push
+ * which adds at the front. Then we simply pick the first
+ * element in the queue. If you have inserted by enqueue
+ * you get a FCFS policy if you pushed you get a stack policy.
+ *
+ *
+ * FCFS
+ *
+ *   H->1->2->3->4
+ *
+ * you retrive elements as 1, 2 etc
+ *
+ * Stack:
+ *
+ * H->4->3->2->1
+ *
+ * you retrieve elements as 4,3, etc
+ *
+ *
+ */
+
+struct list_ *
+list_make(const char *name)
+{
+    struct list_ *list;
+
+    list = xmalloc(1 * sizeof(struct list_));
+    list->forw = list->back = list;
+
+    list->name = xstrdup(name);
+
+    return list;
+
+} /* list_make() */
+
+/* listinisert()
+ *
+ * Using cartesian coordinates the head h is at
+ * zero and elemets are pushed along x axes.
+ *
+ *       <-- back ---
+ *      /             \
+ *     h <--> e2 <--> e
+ *      \             /
+ *        --- forw -->
+ *
+ * The h points the front, the first element of the list,
+ * elements can be pushed in front or enqueued at the back.
+ *
+ */
+int
+list_insert_(struct list_ *h,
+			 struct list_ *e,
+			 struct list_ *e2)
+{
+    /*  before: h->e
+     */
+
+    e->back->forw = e2;
+    e2->back = e->back;
+    e->back = e2;
+    e2->forw = e;
+
+    /* after h->e2->e
+     */
+
+    h->num_ents++;
+
+    return h->num_ents;
+
+} /* list_insert() */
+
+/*
+ * list_enqueue()
+ *
+ * Enqueue a new element at the end
+ * of the list.
+ *
+ * listenque()/listdeque()
+ * implements FCFS policy.
+ *
+ */
+int
+list_enque(struct list_ *h,
+		   struct list_ *e2)
+{
+    /* before: h->e
+     */
+    list_insert_(h, h, e2);
+    /* after: h->e->e2
+     */
+    return 0;
+}
+
+/* list_deque()
+ */
+struct list_ *
+list_deque(struct list_ *h)
+{
+    struct list_   *e;
+
+    if (h->forw == h)
+        return NULL;
+
+    /* before: h->e->e2
+     */
+
+    e = list_rm(h, h->forw);
+
+    /* after: h->e2
+     */
+
+    return e;
+}
+
+/*
+ * list_push()
+ *
+ * Push e at the front of the list
+ *
+ * H --> e --> e2
+ *
+ */
+int
+list_push_(struct list_ *h,
+		   struct list_ *e2)
+{
+    /* before: h->e
+     */
+    list_insert_(h, h->forw, e2);
+
+    /* after: h->e2->e
+     */
+
+    return 0;
+}
+
+/* list_pop()
+ */
+struct list_ *
+list_pop_(struct list_ *h)
+{
+    struct list_ *e;
+
+    e = list_deque(h);
+
+    return e;
+}
+
+/* list_rm()
+ */
+struct list_ *
+list_rm(struct list_ *h,
+		struct list_ *e)
+{
+    if (h->num_ents == 0)
+        return NULL;
+
+    e->back->forw = e->forw;
+    e->forw->back = e->back;
+    h->num_ents--;
+
+    return e;
+
+} /* listrm() */
+
+
+/* list_free()
+ */
+void
+list_free(struct list_ *list,
+		  void (*f)(void *))
+{
+    struct list_ *l;
+
+	if (l == NULL)
+		return;
+
+    while ((l = list_pop_(list))) {
+        if (f == NULL)
+            xfree(l);
+        else
+            (*f)(l);
+    }
+
+	list->num_ents = 0;
+    xfree(list->name);
+    xfree(list);
+}
