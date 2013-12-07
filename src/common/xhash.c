@@ -183,23 +183,23 @@ static int primes[] = {
 	1619,
 	2153,
 	5483,
-	10891,       /* 10K */
+	10891,		 /* 10K */
 	24571,
 	69857,
 	111697,
 	200003,
-	1000003,     /* 1MB */
+	1000003,	 /* 1MB */
 	2000003,
 	8000099,
 	16000097,
-	50000063,    /* 50 MB */
-	100000081,   /* 100 MB */
+	50000063,	 /* 50 MB */
+	100000081,	 /* 100 MB */
 	150999103,
-	250000103,   /* 250MB */
-	500000101,   /* 500MB */
-	750003379,   /* 750MB */
-	1000004897,  /* 1GB */
-	2002950673   /* 2GB that's one mother */
+	250000103,	 /* 250MB */
+	500000101,	 /* 500MB */
+	750003379,	 /* 750MB */
+	1000004897,	 /* 1GB */
+	2002950673	 /* 2GB that's one mother */
 };
 
 /* hash_make()
@@ -400,11 +400,11 @@ _pjw_hash(const char *x, uint32_t size)
 	unsigned int h = 0;
 	unsigned int g;
 
-	while (*s != 0)  {
+	while (*s != 0)	 {
 		h = (h << 4) + *s++;
 		if ((g = h & (unsigned int) 0xf0000000) != 0)
 			h = (h ^ (g >> 24)) ^ g;
-    }
+	}
 
   return h % size;
 }
@@ -420,7 +420,7 @@ _pjw_hash(const char *x, uint32_t size)
  *
  * FCFS
  *
- *   H->1->2->3->4
+ *	 H->1->2->3->4
  *
  * you retrive elements as 1, 2 etc
  *
@@ -436,14 +436,14 @@ _pjw_hash(const char *x, uint32_t size)
 struct list_ *
 list_make(const char *name)
 {
-    struct list_ *list;
+	struct list_ *list;
 
-    list = xmalloc(1 * sizeof(struct list_));
-    list->forw = list->back = list;
+	list = xmalloc(1 * sizeof(struct list_));
+	list->forw = list->back = list;
 
-    list->name = xstrdup(name);
+	list->name = xstrdup(name);
 
-    return list;
+	return list;
 
 } /* list_make() */
 
@@ -452,11 +452,11 @@ list_make(const char *name)
  * Using cartesian coordinates the head h is at
  * zero and elemets are pushed along x axes.
  *
- *       <-- back ---
- *      /             \
- *     h <--> e2 <--> e
- *      \             /
- *        --- forw -->
+ *		 <-- back ---
+ *		/			  \
+ *	   h <--> e2 <--> e
+ *		\			  /
+ *		  --- forw -->
  *
  * The h points the front, the first element of the list,
  * elements can be pushed in front or enqueued at the back.
@@ -467,20 +467,20 @@ list_insert_(struct list_ *h,
 			 struct list_ *e,
 			 struct list_ *e2)
 {
-    /*  before: h->e
-     */
+	/*	before: h->e
+	 */
 
-    e->back->forw = e2;
-    e2->back = e->back;
-    e->back = e2;
-    e2->forw = e;
+	e->back->forw = e2;
+	e2->back = e->back;
+	e->back = e2;
+	e2->forw = e;
 
-    /* after h->e2->e
-     */
+	/* after h->e2->e
+	 */
 
-    h->num_ents++;
+	h->num_ents++;
 
-    return h->num_ents;
+	return h->num_ents;
 
 } /* list_insert() */
 
@@ -498,12 +498,12 @@ int
 list_enque(struct list_ *h,
 		   struct list_ *e2)
 {
-    /* before: h->e
-     */
-    list_insert_(h, h, e2);
-    /* after: h->e->e2
-     */
-    return 0;
+	/* before: h->e
+	 */
+	list_insert_(h, h, e2);
+	/* after: h->e->e2
+	 */
+	return 0;
 }
 
 /* list_deque()
@@ -511,20 +511,20 @@ list_enque(struct list_ *h,
 struct list_ *
 list_deque(struct list_ *h)
 {
-    struct list_   *e;
+	struct list_   *e;
 
-    if (h->forw == h)
-        return NULL;
+	if (h->forw == h)
+		return NULL;
 
-    /* before: h->e->e2
-     */
+	/* before: h->e->e2
+	 */
 
-    e = list_rm(h, h->forw);
+	e = list_rm(h, h->forw);
 
-    /* after: h->e2
-     */
+	/* after: h->e2
+	 */
 
-    return e;
+	return e;
 }
 
 /*
@@ -539,14 +539,14 @@ int
 list_push_(struct list_ *h,
 		   struct list_ *e2)
 {
-    /* before: h->e
-     */
-    list_insert_(h, h->forw, e2);
+	/* before: h->e
+	 */
+	list_insert_(h, h->forw, e2);
 
-    /* after: h->e2->e
-     */
+	/* after: h->e2->e
+	 */
 
-    return 0;
+	return 0;
 }
 
 /* list_pop()
@@ -554,11 +554,11 @@ list_push_(struct list_ *h,
 struct list_ *
 list_pop_(struct list_ *h)
 {
-    struct list_ *e;
+	struct list_ *e;
 
-    e = list_deque(h);
+	e = list_deque(h);
 
-    return e;
+	return e;
 }
 
 /* list_rm()
@@ -567,14 +567,14 @@ struct list_ *
 list_rm(struct list_ *h,
 		struct list_ *e)
 {
-    if (h->num_ents == 0)
-        return NULL;
+	if (h->num_ents == 0)
+		return NULL;
 
-    e->back->forw = e->forw;
-    e->forw->back = e->back;
-    h->num_ents--;
+	e->back->forw = e->forw;
+	e->forw->back = e->back;
+	h->num_ents--;
 
-    return e;
+	return e;
 
 } /* listrm() */
 
@@ -585,19 +585,19 @@ void
 list_free(struct list_ *list,
 		  void (*f)(void *))
 {
-    struct list_ *l = NULL;
+	struct list_ *l;
 
-	if (l == NULL)
+	if (list == NULL)
 		return;
 
-    while ((l = list_pop_(list))) {
-        if (f == NULL)
-            xfree(l);
-        else
-            (*f)(l);
-    }
+	while ((l = list_pop_(list))) {
+		if (f == NULL)
+			xfree(l);
+		else
+			(*f)(l);
+	}
 
 	list->num_ents = 0;
-    xfree(list->name);
-    xfree(list);
+	xfree(list->name);
+	xfree(list);
 }
