@@ -585,7 +585,7 @@ void
 list_free(struct list_ *list,
 		  void (*f)(void *))
 {
-    struct list_ *l;
+    struct list_ *l = NULL;
 
 	if (l == NULL)
 		return;
