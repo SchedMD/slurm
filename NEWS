@@ -33,6 +33,9 @@ documents those changes that are of interest to users and admins.
  -- Added ApbasilTimeout parameter to the cray.conf configuration file.
  -- Handle in the API if parts of the node structure are NULL.
  -- Fix srun hang when IO fails to start at launch.
+ -- Fix for GRES bitmap not matching the GRES count resulting in abort
+    (requires manual resetting of GRES count, changes to gres.conf file,
+    and slurmd restarts)
 
 * Changes in Slurm 2.6.4
 ========================
