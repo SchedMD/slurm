@@ -35,7 +35,8 @@ documents those changes that are of interest to users and admins.
  -- Fix srun hang when IO fails to start at launch.
  -- Fix for GRES bitmap not matching the GRES count resulting in abort
     (requires manual resetting of GRES count, changes to gres.conf file,
-    and slurmd restarts)
+    and slurmd restarts).
+ -- Modify sview to better support job arrays.
 
 * Changes in Slurm 2.6.4
 ========================

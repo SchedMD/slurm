@@ -70,6 +70,8 @@ typedef struct {
 	int job_id;
 	int state;
 	int step_id;
+	int array_job_id;
+	int array_task_id;
 } jobs_foreach_t;
 
 typedef struct {
@@ -201,7 +203,7 @@ static char *_initial_page_opts = ("JobID,Partition,BG_Block,"
 static display_data_t display_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_INT, SORTID_JOBID, "JobID", FALSE, EDIT_NONE, refresh_job,
+	{G_TYPE_STRING, SORTID_JOBID, "JobID", FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR,
 	 refresh_job, create_model_job, admin_edit_job},
@@ -1564,7 +1566,13 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   SELECT_PRINT_RAMDISK_IMAGE));
 	}
 
-	snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_id);
+	if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+		snprintf(tmp_char, sizeof(tmp_char), "%u_%u (%u)",
+			 job_ptr->array_job_id, job_ptr->array_task_id,
+			 job_ptr->job_id);
+	} else {
+		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_id);
+	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_JOBID),
@@ -1860,7 +1868,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
 	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
 	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
-	char tmp_rqswitch[40];
+	char tmp_rqswitch[40],  tmp_job_id[40];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
 	char *tmp_reason, *tmp_nodes;
 	char time_buf[32];
@@ -1876,11 +1884,16 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		 job_ptr->alloc_node, job_ptr->alloc_sid);
 
 	if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%u_%u (%u)",
+			 job_ptr->array_job_id, job_ptr->array_task_id,
+			 job_ptr->job_id);
 		snprintf(tmp_array_job_id,  sizeof(tmp_array_job_id),  "%u",
 			 job_ptr->array_job_id);
 		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "%u",
 			 job_ptr->array_task_id);
 	} else {
+		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%u",
+			 job_ptr->job_id);
 		snprintf(tmp_array_job_id,  sizeof(tmp_array_job_id),  "N/A");
 		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "N/A");
 	}
@@ -2097,7 +2110,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_FEATURES,     job_ptr->features,
 			   SORTID_GRES,         job_ptr->gres,
 			   SORTID_GROUP_ID,     tmp_group_id,
-			   SORTID_JOBID,        job_ptr->job_id,
+			   SORTID_JOBID,        tmp_job_id,
 			   SORTID_LICENSES,     job_ptr->licenses,
 			   SORTID_MEM_MIN,      tmp_mem_min,
 			   SORTID_NAME,         job_ptr->name,
@@ -2276,9 +2289,15 @@ static void _layout_step_record(GtkTreeView *treeview,
 						 SORTID_USER_ID), uname);
 	xfree(uname);
 
-	snprintf(tmp_char, sizeof(tmp_char), "%u.%u",
-		 step_ptr->job_id,
-		 step_ptr->step_id);
+	if (step_ptr->array_job_id) {
+		snprintf(tmp_char, sizeof(tmp_char), "%u_%u.%u (%u.%u)",
+			 step_ptr->array_job_id, step_ptr->array_task_id,
+			 step_ptr->step_id,
+			 step_ptr->job_id, step_ptr->step_id);
+	} else {
+		snprintf(tmp_char, sizeof(tmp_char), "%u.%u",
+			 step_ptr->job_id, step_ptr->step_id);
+	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_JOBID),
@@ -2374,6 +2393,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	char tmp_nodes[50];
 	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
 	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
+	char tmp_step_id[40];
 	time_t now_time = time(NULL);
 	enum job_states state;
 	int color_inx = step_ptr->step_id % sview_colors_cnt;
@@ -2424,6 +2444,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	slurm_make_time_str((time_t *)&step_ptr->start_time, tmp_time_start,
 			    sizeof(tmp_time_start));
 
+	snprintf(tmp_step_id, sizeof(tmp_step_id), "%u", step_ptr->step_id);
+
 	tmp_uname = uid_to_string((uid_t)step_ptr->user_id);
 
 	gtk_tree_store_set(treestore, iter,
@@ -2432,7 +2454,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_COLOR_INX,    color_inx,
 			   SORTID_CPUS,         tmp_cpu_min,
 			   SORTID_GRES,         step_ptr->gres,
-			   SORTID_JOBID,        step_ptr->step_id,
+			   SORTID_JOBID,        tmp_step_id,
 			   SORTID_NAME,         step_ptr->name,
 			   SORTID_NODE_INX,     step_ptr->node_inx,
 			   SORTID_NODELIST,     tmp_nodes,
@@ -2509,10 +2531,13 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 			       sizeof(GtkTreeIter));
 		}
 		while (1) {
+			char *tmp_stepid;
 			/* search for the jobid and check to see if
-			   it is in the list */
+			 * it is in the list */
 			gtk_tree_model_get(model, step_iter, SORTID_JOBID,
-					   &stepid, -1);
+					   &tmp_stepid, -1);
+			stepid = atoi(tmp_stepid);
+			g_free(tmp_stepid);
 			if (stepid == (int)step_ptr->step_id) {
 				/* update with new info */
 				_update_step_record(step_ptr,
@@ -2578,8 +2603,16 @@ static void _update_info_job(List info_list,
 			sview_job_info->iter_set = false;
 
 		if (sview_job_info->iter_set) {
+			char *tmp_jobid, *offset;
 			gtk_tree_model_get(model, &sview_job_info->iter_ptr,
-					   SORTID_JOBID, &jobid, -1);
+					   SORTID_JOBID, &tmp_jobid, -1);
+			offset = strchr(tmp_jobid, '(');
+			if (offset)
+				offset++;
+			else
+				offset = tmp_jobid;
+			jobid = atoi(offset);
+			g_free(tmp_jobid);
 			if (jobid != job_ptr->job_id) /* Bad pointer */
 				sview_job_info->iter_set = false;
 		}
@@ -2587,6 +2620,7 @@ static void _update_info_job(List info_list,
 			_update_job_record(sview_job_info,
 					   GTK_TREE_STORE(model));
 		else {
+			char *tmp_jobid, *offset;
 			GtkTreePath *path = gtk_tree_path_new_first();
 
 			/* get the iter, or find out the list is empty
@@ -2594,14 +2628,20 @@ static void _update_info_job(List info_list,
 			if (gtk_tree_model_get_iter(
 				    model, &sview_job_info->iter_ptr, path)) {
 				do {
-					/* search for the jobid and
-					   check to see if it is in
-					   the list */
+					/* search for the jobid and check to
+					 * see if it is in the list */
 					gtk_tree_model_get(
 						model,
 						&sview_job_info->iter_ptr,
 						SORTID_JOBID,
-						&jobid, -1);
+						&tmp_jobid, -1);
+					offset = strchr(tmp_jobid, '(');
+					if (offset)
+						offset++;
+					else
+						offset = tmp_jobid;
+					jobid = atoi(offset);
+					g_free(tmp_jobid);
 					if (jobid == job_ptr->job_id) {
 						/* update with new info */
 						_update_job_record(
@@ -3164,6 +3204,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 	GtkTreeIter iter;
 	job_desc_msg_t *job_msg = xmalloc(sizeof(job_desc_msg_t));
+	char *tmp_jobid, *offset;
 
 	char *temp = NULL;
 	char *old_text = NULL;
@@ -3179,9 +3220,17 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 
 	slurm_init_job_desc_msg(job_msg);
 	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
-			   SORTID_JOBID, &job_msg->job_id,
+			   SORTID_JOBID, &tmp_jobid,
 			   column, &old_text,
 			   -1);
+	offset = strchr(tmp_jobid, '(');
+	if (offset)
+		offset++;
+	else
+		offset = tmp_jobid;
+	job_msg->job_id = atoi(offset);
+	g_free(tmp_jobid);
+
 	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
 			   SORTID_ALLOC, &stepid, -1);
 	if (stepid)
@@ -3717,13 +3766,22 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	GError *error = NULL;
 	int i=0;
 	char *type;
+	char *tmp_jobid, *offset;
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		type = "Midplane";
 	else
 		type = "Node";
 
-	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
+	gtk_tree_model_get(model, iter, SORTID_JOBID, &tmp_jobid, -1);
+	offset = strchr(tmp_jobid, '(');
+	if (offset)
+		offset++;
+	else
+		offset = tmp_jobid;
+	jobid = atoi(offset);
+	g_free(tmp_jobid);
+
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
 
 	if (stepid)
@@ -3988,10 +4046,22 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 {
 	uint32_t jobid = NO_VAL;
 	uint32_t stepid = NO_VAL;
+	uint32_t array_job_id = NO_VAL, array_task_id = NO_VAL;
 	int state;
 	jobs_foreach_t *fe_ptr = NULL;
+	char *tmp_jobid, *offset, *end_ptr;
 
-	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
+	gtk_tree_model_get(model, iter, SORTID_JOBID, &tmp_jobid, -1);
+	offset = strchr(tmp_jobid, '(');
+	if (offset) {
+		array_job_id  = strtol(tmp_jobid, &end_ptr, 10);
+		array_task_id = strtol(end_ptr+1, NULL, 10);
+		offset++;
+	} else
+		offset = tmp_jobid;
+	jobid = atoi(offset);
+	g_free(tmp_jobid);
+
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
 
 	if (stepid)
@@ -4008,6 +4078,8 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	fe_ptr->job_id = jobid;
 	fe_ptr->step_id = stepid;
 	fe_ptr->state = state;
+	fe_ptr->array_job_id = array_job_id;
+	fe_ptr->array_task_id = array_task_id;
 
 	list_append(foreach_list, fe_ptr); /* stuff target away*/
 
@@ -4016,10 +4088,13 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	else
 		xstrcat(stacked_job_list, ": ");
 
-	if (stepid == NO_VAL)
+	if (array_task_id == NO_VAL)
 		xstrfmtcat(stacked_job_list, "%u", jobid);
 	else
-		xstrfmtcat(stacked_job_list, "%u.%u", jobid, stepid);
+		xstrfmtcat(stacked_job_list, "%u_%u",
+			   array_job_id, array_task_id);
+	if (stepid != NO_VAL)
+		xstrfmtcat(stacked_job_list, ".%u", stepid);
 }
 
 static void _edit_each_job (GtkTreeModel *model, GtkTreeIter *iter,
@@ -4147,6 +4222,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
 	GtkWidget *popup;
+	char *tmp_jobid, *offset;
 
 	if (strcmp(type, "Edit Job") == 0)
 		return _edit_jobs(model, iter, type, treeview);
@@ -4159,7 +4235,15 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 			NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
-	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
+	gtk_tree_model_get(model, iter, SORTID_JOBID, &tmp_jobid, -1);
+	offset = strchr(tmp_jobid, '(');
+	if (offset)
+		offset++;
+	else
+		offset = tmp_jobid;
+	jobid = atoi(offset);
+	g_free(tmp_jobid);
+
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
 	if (stepid)
 		stepid = NO_VAL;
