@@ -987,7 +987,8 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 				      tmp_name, count, node_name);
 				count = 1024;
 			}
-			gres_context[j].has_file = has_file;
+			if (has_file)	/* Don't clear if already set */
+				gres_context[j].has_file = has_file;
 			break;
  		}
 		if (j >= gres_context_cnt) {
@@ -1407,7 +1408,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	else if (gres_data->gres_cnt_avail == NO_VAL)
 		gres_data->gres_cnt_avail = 0;
 
-	if (context_ptr->has_file) {
+	if (context_ptr->has_file || gres_data->gres_cnt_avail) {
 		if (gres_data->gres_bit_alloc == NULL) {
 			gres_data->gres_bit_alloc =
 				bit_alloc(gres_data->gres_cnt_avail);
@@ -1534,7 +1535,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	else if (gres_data->gres_cnt_avail == NO_VAL)
 		gres_data->gres_cnt_avail = 0;
 
-	if (context_ptr->has_file) {
+	if (context_ptr->has_file || gres_data->gres_cnt_avail) {
 		if (gres_data->gres_bit_alloc == NULL) {
 			gres_data->gres_bit_alloc =
 				bit_alloc(gres_data->gres_cnt_avail);
