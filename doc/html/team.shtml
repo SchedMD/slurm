@@ -2,7 +2,7 @@
 
 <h1>Slurm Team</h1>
 <p>Slurm development has been a joint effort of many companies and
-organizations. Over 100 individuals have contributed to the project.
+organizations. Over 130 individuals have contributed to the project.
 Lead Slurm developers are:
 <ul>
 <li>Danny Auble (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
@@ -85,6 +85,7 @@ Lead Slurm developers are:
 <li>Chris Holmes (HP)</li>
 <li>David H&ouml;ppner</li>
 <li>Nathan Huff (North Dakota State University)</li>
+<li>Michel Hummel (Thales Group)</li>
 <br>
 <li>Martins Innus (University of Buffalo)</li>
 <br>
@@ -151,6 +152,7 @@ Lead Slurm developers are:
 <br>
 <li>Federico Sacerdoti (D. E. Shaw Research)</li>
 <li>Aleksej Saushev</li>
+<li>Chris Scheller (University of Michigan)</li>
 <li>Rod Schultz (Bull)</li>
 <li>Filip Skalski (University of Warsaw, Poland)</li>
 <li>Jason Sollom (Cray)</li>
@@ -182,6 +184,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 11 November 2013</p>
+<p style="text-align:center;">Last modified 18 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

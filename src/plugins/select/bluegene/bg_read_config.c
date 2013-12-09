@@ -874,7 +874,8 @@ no_calc:
 		      "STATIC LayoutMode.  Please update your bluegene.conf.");
 
 #ifdef HAVE_BGQ
-	if (s_p_get_string(&tmp_char, "RebootQOSList", tbl)) {
+	if ((bg_recover != NOT_FROM_CONTROLLER)
+	    && s_p_get_string(&tmp_char, "RebootQOSList", tbl)) {
 		bool valid;
 		char *token, *last = NULL;
 		slurmdb_qos_rec_t *qos = NULL;

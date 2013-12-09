@@ -36,25 +36,26 @@ YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
 PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGES.</p>
 
-<h1>Copyrights</h1>
+<h1>Copyright Notice</h1>
 
-<p>SLURM represents the collaborative efforts of roughly 100 people representing
+<p>SLURM represents the collaborative efforts of roughly 130 people representing
 roughtly 40 different organizations world-wide. A current list of contributors
 can be found at the <a href="team.html">SLURM Team</a> web page.</p>
 
 <p>While many organizations contributed code and/or documentation without
 including a copyright notice, the following copyright notices are found in
 SLURM's code and documenation files:<br>
+Copyright (C) 2013 Cray<br>
 Copyright (C) 2011 Trinity Centre for High Performance Computing<br>
-Copyright (C) 2010-2012 SchedMD LLC<br>
-Copyright (C) 2009 CEA/DAM/DIF<br>
+Copyright (C) 2010-2013 SchedMD LLC<br>
+Copyright (C) 2009-2013 CEA/DAM/DIF<br>
 Copyright (C) 2012 CSC-IT Center for Science Ltd.<br>
 Copyright (C) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)<br>
 Copyright (C) 2008-2011 Lawrence Livermore National Security<br>
 Copyright (C) 2008 Vijay Ramasubramanian<br>
 Copyright (C) 2007-2008 Red Hat, Inc.<br>
 Copyright (C) 2007-2009 National University of Defense Technology, China<br>
-Copyright (C) 2007-2012 Bull<br>
+Copyright (C) 2007-2013 Bull<br>
 Copyright (c) 2005-2010 Troy D. Hanson http://uthash.sourceforge.net<br>
 Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.<br>
 Copyright (C) 2004-2009, Marcus Holland-Moritz<br>
@@ -87,7 +88,15 @@ necessarily state or reflect those of the United States government or
 Lawrence Livermore National Security, LLC, and shall not be used for 
 advertising or product endorsement purposes.</p>
 
-<p style="text-align: center;">Last modified 12 December 2012</p>
+<h1>Trademark Notice</h1>
+
+<p>The Trademarks, logos and service marks ("Trademarks") displayed on this web
+site are the property of SchedMD LLC or other third parties and are not licensed
+for you hereunder.
+You are not permitted to use the Trademarks without the prior written consent
+of SchedMD LLC or such other third party, who may own the Trademarks.</p>
+
+<p style="text-align: center;">Last modified 26 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
 

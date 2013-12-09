@@ -383,10 +383,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	/****** Line 9 ******/
 	if (part_ptr->def_mem_per_cpu & MEM_PER_CPU) {
-		snprintf(tmp_line, sizeof(tmp_line), "DefMemPerCPU=%u",
-			 part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
-		xstrcat(out, tmp_line);
-
+		if (part_ptr->def_mem_per_cpu == MEM_PER_CPU) {
+			xstrcat(out, "DefMemPerCPU=UNLIMITED");
+		} else {
+			snprintf(tmp_line, sizeof(tmp_line), "DefMemPerCPU=%u",
+				part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
+			xstrcat(out, tmp_line);
+		}
 	} else if (part_ptr->def_mem_per_cpu == 0) {
 		xstrcat(out, "DefMemPerNode=UNLIMITED");
 	} else {
@@ -396,10 +399,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	}
 
 	if (part_ptr->max_mem_per_cpu & MEM_PER_CPU) {
-		snprintf(tmp_line, sizeof(tmp_line), " MaxMemPerCPU=%u",
-			 part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
-		xstrcat(out, tmp_line);
-
+		if (part_ptr->max_mem_per_cpu == MEM_PER_CPU) {
+			xstrcat(out, " MaxMemPerCPU=UNLIMITED");
+		} else {
+			snprintf(tmp_line, sizeof(tmp_line), " MaxMemPerCPU=%u",
+				part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
+			xstrcat(out, tmp_line);
+		}
 	} else if (part_ptr->max_mem_per_cpu == 0) {
 		xstrcat(out, " MaxMemPerNode=UNLIMITED");
 	} else {

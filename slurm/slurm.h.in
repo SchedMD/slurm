@@ -5,6 +5,7 @@
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2010-2013 SchedMD <http://www.schedmd.com>.
  *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
+ *  Copyright 2013 Cray Inc. All Rights Reserved.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -312,6 +313,7 @@ enum job_state_reason {
 	WAIT_NODE_NOT_AVAIL,	/* required node is DOWN or DRAINED */
 	WAIT_HELD_USER,		/* job is held by user */
 	WAIT_FRONT_END,		/* Front end nodes are DOWN */
+	WAIT_PROLOG,		/* Prolog is running */
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */
 	FAIL_DOWN_NODE,		/* some node in the allocation failed */
 	FAIL_BAD_CONSTRAINTS,	/* constraints can not be satisfied */
@@ -581,6 +583,7 @@ enum node_states {
 };
 #define NODE_STATE_BASE       0x000f
 #define NODE_STATE_FLAGS      0xfff0
+#define NODE_STATE_UNDRAIN    0x0040	/* Clear DRAIN flag for a node */
 #define NODE_STATE_CLOUD      0x0080	/* node comes from cloud */
 #define NODE_RESUME           0x0100	/* Restore a DRAINED, DRAINING, DOWN
 					 * or FAILING node to service (e.g.
@@ -1969,6 +1972,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_INFINIBAND	0x00400000	/* AcctGatherInfiniband plugin */
 #define DEBUG_FLAG_FILESYSTEM 	0x00800000      /* AcctGatherFilesystem plugin */
 #define DEBUG_FLAG_JOB_CONT 	0x01000000      /* JobContainer plugin */
+#define DEBUG_FLAG_TASK 	0x02000000      /* TaskType plugin */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
@@ -1993,6 +1997,8 @@ typedef struct reservation_name_msg {
 #define HEALTH_CHECK_NODE_ALLOC	0x0002	/* execute on fully allocated nodes */
 #define HEALTH_CHECK_NODE_MIXED	0x0004	/* execute on partially allocated nodes */
 #define HEALTH_CHECK_NODE_ANY	0xffff	/* execute on all node states */
+
+#define PROLOG_FLAG_ALLOC 0x0001 /* execute prolog upon allocation */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
@@ -2023,6 +2029,7 @@ typedef struct slurm_ctl_conf {
 	char *acct_gather_infiniband_type; /* infiniband accounting type */
 	char *acct_gather_filesystem_type; /* filesystem accounting type */
 	uint16_t acct_gather_node_freq; /* secs between node acct request */
+	char *authinfo;		/* authentication info */
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;/* name of slurmctld secondary server */
@@ -2135,6 +2142,8 @@ typedef struct slurm_ctl_conf {
 	char *prolog_slurmctld;	/* pathname of job prolog run by slurmctld */
 	uint16_t propagate_prio_process; /* process priority propagation,
 					  * see PROP_PRIO_* */
+	uint16_t prolog_flags; /* set some flags for prolog configuration
+				  see PROLOG_FLAG_* */
 	char *propagate_rlimits;/* Propagate (all/specific) resource limits */
 	char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	char *reboot_program;	/* program to reboot the node */
@@ -2643,6 +2652,14 @@ extern int slurm_terminate_job PARAMS((uint32_t job_id));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_terminate_job_step PARAMS((uint32_t job_id, uint32_t step_id));
+
+/*
+ * slurm_complete_prolog - note the completion of a prolog
+ * IN job_id - the job's id
+ * IN prolog_return_code - prolog exit code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_complete_prolog PARAMS((uint32_t job_id, uint32_t prolog_return_code));
 
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS

@@ -53,6 +53,13 @@
 #include "src/common/node_select.h"
 #include "src/common/slurmdb_defs.h"
 
+/*
+** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+** for details.
+ */
+strong_alias(pack_slurm_step_layout, slurm_pack_slurm_step_layout);
+strong_alias(unpack_slurm_step_layout, slurm_unpack_slurm_step_layout);
+
 /* build maps for task layout on nodes */
 static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     const char *arbitrary_nodes,

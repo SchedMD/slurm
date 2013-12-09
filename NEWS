@@ -1,7 +1,7 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in Slurm 13.12.0pre5
+* Changes in Slurm 14.03.0pre5
 ==============================
  -- Added squeue format option of "%X" (core specialization count).
  -- Added core specialization web page (just a start for now).
@@ -9,8 +9,26 @@ documents those changes that are of interest to users and admins.
     in epilogi slurmctld environment.
  -- Fix bug in job step allocation failing due to memory limit.
  -- Modify the pbsnodes script to reflect its output on a TORQUE system.
+ -- Add ability to clear a node's DRAIN flag using scontrol or sview by setting
+    it's state to "UNDRAIN". The node's base state (e.g. "DOWN" or "IDLE") will
+    not be changed.
+ -- Modify the output of 'scontrol show partition' by displaying
+    DefMemPerCPU=UNLIMITED and MaxMemPerCPU=UNLIMITED when these limits are
+    configured as 0.
+ -- mpirun-mic - Major re-write of the command wrapper for Xeon Phi use.
+ -- Add new configuration parameter of AuthInfo to specify port used by
+    authentication plugin.
+ -- Fixed conditional rpm compiling.
+ -- Corrected slurmstepd ident name when loggind to syslog.
+ -- Fixed sh5util loop when there are no node-step files.
+ -- Add SLURM_CLUSTER_NAME to environment variables passed to PrologSlurmctld,
+    Prolog, EpilogSlurmctld, and Epilog
+ -- Add the idea of running a prolog right when an allocation happens
+    instead of when running on the node for the first time.
+ -- If user runs 'scontrol reconfig' but hostnames or the host count changes
+    the slurmctld throws a fatal error.
 
-* Changes in Slurm 13.12.0pre4
+* Changes in Slurm 14.03.0pre4
 ==============================
  -- Remove the ThreadID documentation from slurm.conf. This functionality has
     been obsoleted by the LogTimeFormat.
@@ -34,13 +52,14 @@ documents those changes that are of interest to users and admins.
  -- Added configuration parameter FairShareDampeningFactor to offer a greater
     priority range based upon utilization.
  -- Change MaxArraySize and job's array_task_id from 16-bit to 32-bit field.
+    Additional Slurm enhancements are be required to support larger job arrays.
  -- Added -S/--core-spec option to salloc, sbatch and srun commands to reserve
     specialized cores for system use. Modify scontrol and sview to get/set
-    the new field
+    the new field. No enforcement exists yet for these new options.
     struct job_info / slurm_job_info_t: Added core_spec
     struct job_descriptorjob_desc_msg_t: Added core_spec
 
-* Changes in Slurm 13.12.0pre3
+* Changes in Slurm 14.03.0pre3
 ==============================
  -- Do not set SLURM_NODEID environment variable on front-end systems.
  -- Convert bitmap functions to use int32_t instead of int in data structures
@@ -66,7 +85,7 @@ documents those changes that are of interest to users and admins.
     "Job submit/allocate failed"
  -- Modify slurmctld message retry logic to support Cray cold-standby SDB.
 
-* Changes in Slurm 13.12.0pre2
+* Changes in Slurm 14.03.0pre2
 ==============================
  -- Added "JobAcctGatherParams" configuration parameter. Value of "NoShare"
     disables accounting for shared memory.
@@ -91,7 +110,7 @@ documents those changes that are of interest to users and admins.
     configured in use and avalable. 'scontrol show licenses'.
  -- MySQL - Made Slurm compatible with 5.6
 
-* Changes in Slurm 13.12.0pre1
+* Changes in Slurm 14.03.0pre1
 ==============================
  -- sview - improve scalability
  -- Add task pointer to the task_post_term() function in task plugins. The
@@ -142,6 +161,32 @@ documents those changes that are of interest to users and admins.
     more than one numeric range in brackets (e.g. rack[0-3]_blade[0-63]").
  -- Add notification if using proctrack/cgroup and task/cgroup when oom hits.
  -- Corrections to advanced reservation logic with overlapping jobs.
+ -- job_submit/lua - add cpus_per_task field to those available.
+ -- Add cpu_load to the node information available using the Perl API.
+ -- Correct a job's GRES allocation data in accounting records for non-Cray
+    systems.
+ -- Substantial performance improvement for systems with Shared=YES or FORCE
+    and large numbers of running jobs (replace bubble sort with quick sort).
+ -- proctrack/cgroup - Add locking to prevent race condition where one job step
+    is ending for a user or job at the same time another job stepsis starting
+    and the user or job container is deleted from under the starting job step.
+ -- Fixed sh5util loop when there are no node-step files.
+ -- Fix race condition on batch job termination that could result in a job exit
+    code of 0xfffffffe if the slurmd on node zero registers its active jobs at
+    the same time that slurmstepd is recording the job's exit code.
+ -- Correct logic returning remaining job dependencies in job information
+    reported by scontrol and squeue. Eliminates vestigial descriptors with
+    no job ID values (e.g. "afterany").
+ -- Improve performance of REQUEST_JOB_INFO_SINGLE RPC by removing unnecessary
+    locks and use hash function to find the desired job.
+ -- jobcomp/filetxt - Reopen the file when slurmctld daemon is reconfigured
+    or gets SIGHUP.
+ -- Remove notice of CVE with very old/deprecated versions of Slurm in
+    news.html.
+ -- Fix if hwloc_get_nbobjs_by_type() returns zero core count (set to 1).
+ -- Added ApbasilTimeout parameter to the cray.conf configuration file.
+ -- Handle in the API if parts of the node structure are NULL.
+ -- Fix srun hang when IO fails to start at launch.
 
 * Changes in Slurm 2.6.4
 ========================
@@ -193,7 +238,7 @@ documents those changes that are of interest to users and admins.
  -- Fix sacctmgr modify qos set preempt+/-=.
  -- BLUEGENE - fix issue where node count wasn't set up correctly when srun
     preforms the allocation, regression in 2.6.3.
- -- Add support for dependencies of job array elements (e.g. 
+ -- Add support for dependencies of job array elements (e.g.
     "sbatch --depend=afterok:123_4 ...") or all elements of a job array (e.g.
     "sbatch --depend=afterok:123 ...").
  -- Add support for new options in sbatch qsub wrapper:

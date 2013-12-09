@@ -97,6 +97,7 @@ static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
+static int          _is_prolog_finished(uint32_t job_id);
 static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
 				       uid_t uid, uint32_t *step_id);
 static int          _make_step_cred(struct step_record *step_rec,
@@ -114,6 +115,7 @@ inline static void  _slurm_rpc_checkpoint_task_comp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_job_allocation(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg);
+inline static void  _slurm_rpc_complete_prolog(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_front_end(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
@@ -174,6 +176,9 @@ inline static void  _slurm_rpc_dump_licenses(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 
 extern diag_stats_t slurmctld_diag_stats;
+
+extern int prolog_complete(uint32_t job_id, bool requeue,
+		uint32_t prolog_return_code);
 
 /*
  * slurmctld_req  - Process an individual RPC request
@@ -249,6 +254,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		_slurm_rpc_complete_job_allocation(msg);
 		slurm_free_complete_job_allocation_msg(msg->data);
+		break;
+	case REQUEST_COMPLETE_PROLOG:
+		_slurm_rpc_complete_prolog(msg);
+		slurm_free_complete_prolog_msg(msg->data);
 		break;
 	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
@@ -532,6 +541,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 		xstrdup(conf->acct_gather_profile_type);
 	conf_ptr->acct_gather_node_freq = conf->acct_gather_node_freq;
 
+	conf_ptr->authinfo            = xstrdup(conf->authinfo);
 	conf_ptr->authtype            = xstrdup(conf->authtype);
 
 	conf_ptr->backup_addr         = xstrdup(conf->backup_addr);
@@ -643,6 +653,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);
 	conf_ptr->prolog              = xstrdup(conf->prolog);
 	conf_ptr->prolog_slurmctld    = xstrdup(conf->prolog_slurmctld);
+	conf_ptr->prolog_flags        = conf->prolog_flags;
 	conf_ptr->propagate_prio_process =
 		slurmctld_conf.propagate_prio_process;
 	conf_ptr->propagate_rlimits   = xstrdup(conf->propagate_rlimits);
@@ -1122,9 +1133,9 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 	int dump_size, rc;
 	slurm_msg_t response_msg;
 	job_id_msg_t *job_id_msg = (job_id_msg_t *) msg->data;
-	/* Locks: Read config job, write node (for hiding) */
+	/* Locks: Read config, job, and node info */
 	slurmctld_lock_t job_read_lock = {
-		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
@@ -1661,6 +1672,46 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	}
 }
 
+/* _slurm_rpc_complete_prolog - process RPC to note the
+ *	completion of a prolog */
+static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	complete_prolog_msg_t *comp_msg =
+		(complete_prolog_msg_t *) msg->data;
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK
+	};
+	bool job_requeue = false;
+
+	/* init */
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_COMPLETE_PROLOG from "
+	       "JobId=%u", comp_msg->job_id);
+
+	lock_slurmctld(job_write_lock);
+
+	error_code = prolog_complete(comp_msg->job_id,
+				  job_requeue, comp_msg->prolog_rc);
+
+	unlock_slurmctld(job_write_lock);
+
+	END_TIMER2("_slurm_rpc_complete_prolog");
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_complete_prolog JobId=%u: %s ",
+		     comp_msg->job_id, slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		debug2("_slurm_rpc_complete_prolog JobId=%u %s",
+		       comp_msg->job_id, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+}
+
 /* _slurm_rpc_complete_batch - process RPC from slurmstepd to note the
  *	completion of a batch script */
 static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
@@ -1701,6 +1752,20 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(comp_msg->job_id);
+
+	if (job_ptr && job_ptr->batch_host && comp_msg->node_name &&
+	    strcmp(job_ptr->batch_host, comp_msg->node_name)) {
+		/* This can be the result of the slurmd on the batch_host
+		 * failing, but the slurmstepd continuing to run. Then the
+		 * batch job is requeued and started on a different node.
+		 * The end result is one batch complete RPC from each node. */
+		error("Batch completion for job %u sent from wrong node "
+		      "(%s rather than %s), ignored request",
+		      comp_msg->job_id,
+		      comp_msg->node_name, comp_msg->node_name);
+		slurm_send_rc_msg(msg, error_code);
+		return;
+	}
 
 	/* Send batch step info to accounting */
 	if (association_based_accounting && job_ptr) {
@@ -3531,11 +3596,31 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
-		response_msg.msg_type = RESPONSE_JOB_READY;
 		rc_msg.return_code = result;
 		response_msg.data = &rc_msg;
+		if(_is_prolog_finished(id_msg->job_id)) {
+			response_msg.msg_type = RESPONSE_JOB_READY;
+		} else {
+			response_msg.msg_type = RESPONSE_PROLOG_EXECUTING;
+		}
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
+}
+
+/* Check if prolog has already finished */
+static int _is_prolog_finished(uint32_t job_id) {
+	int is_running = 0;
+	struct job_record  *job_ptr;
+
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	lock_slurmctld(job_read_lock);
+	job_ptr = find_job_record(job_id);
+	if (job_ptr) {
+		is_running = (job_ptr->state_reason != WAIT_PROLOG);
+	}
+	unlock_slurmctld(job_read_lock);
+	return is_running;
 }
 
 /* get node select info plugin */

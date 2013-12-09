@@ -349,9 +349,6 @@ batch_finish(stepd_step_rec_t *job, int rc)
 
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
-	if (job->batchdir && (rmdir(job->batchdir) < 0))
-		error("rmdir(%s): %m",  job->batchdir);
-	xfree(job->batchdir);
 
 #ifdef HAVE_ALPS_CRAY
 	_call_select_plugin_from_stepd(job, 0, select_g_job_fini);
@@ -375,6 +372,13 @@ batch_finish(stepd_step_rec_t *job, int rc)
 			job->jobid, job->stepid, rc, step_complete.step_rc);
 		_send_step_complete_msgs(job);
 	}
+
+	/* Do not purge directory until slurmctld is notified of batch job
+	 * completion to avoid race condition with slurmd registering missing
+	 * batch job. */
+	if (job->batchdir && (rmdir(job->batchdir) < 0))
+		error("rmdir(%s): %m",  job->batchdir);
+	xfree(job->batchdir);
 }
 
 /*
@@ -395,13 +399,13 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 	_setargs(job);
 
 	if ((job->batchdir = _make_batch_dir(job)) == NULL) {
-		goto cleanup1;
+		goto cleanup;
 	}
 
 	xfree(job->argv[0]);
 
 	if ((job->argv[0] = _make_batch_script(msg, job->batchdir)) == NULL) {
-		goto cleanup2;
+		goto cleanup;
 	}
 
 	/* this is the new way of setting environment variables */
@@ -414,12 +418,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 
 	return job;
 
-cleanup2:
-	if (job->batchdir && (rmdir(job->batchdir) < 0))
-		error("rmdir(%s): %m",  job->batchdir);
-	xfree(job->batchdir);
-
-cleanup1:
+cleanup:
 	error("batch script setup failed for job %u.%u",
 	      msg->job_id, msg->step_id);
 
@@ -430,6 +429,13 @@ cleanup1:
 			job, ESLURMD_CREATE_BATCH_DIR_ERROR, -1);
 	} else
 		_send_step_complete_msgs(job);
+
+	/* Do not purge directory until slurmctld is notified of batch job
+	 * completion to avoid race condition with slurmd registering missing
+	 * batch job. */
+	if (job->batchdir && (rmdir(job->batchdir) < 0))
+		error("rmdir(%s): %m",  job->batchdir);
+	xfree(job->batchdir);
 
 	return NULL;
 }
@@ -1021,7 +1027,9 @@ job_manager(stepd_step_rec_t *job)
 		goto fail2;
 	}
 
-	/* calls pam_setup() and requires pam_finish() if successful */
+	/* Calls pam_setup() and requires pam_finish() if
+	 * successful.  Only check for < 0 here since other slurm
+	 * error codes could come that are more descriptive. */
 	if ((rc = _fork_all_tasks(job, &io_initialized)) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
@@ -1029,10 +1037,12 @@ job_manager(stepd_step_rec_t *job)
 	}
 
 	/*
-	 * If IO initialization failed, return SLURM_SUCCESS
-	 * or the node will be drain otherwise
+	 * If IO initialization failed, return SLURM_SUCCESS (on a
+	 * batch step) or the node will be drain otherwise.  Regular
+	 * srun needs the error sent or it will hang waiting for the
+	 * launch to happen.
 	 */
-	if ((rc == SLURM_SUCCESS) && !io_initialized)
+	if ((rc != SLURM_SUCCESS) || !io_initialized)
 		goto fail2;
 
 	io_close_task_fds(job);
@@ -1355,7 +1365,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	if (_drop_privileges (job, false, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
-	if (pam_setup(job->pwd->pw_name, conf->hostname)
+	if (pam_setup(job->user_name, conf->hostname)
 	    != SLURM_SUCCESS){
 		error ("error in pam_setup");
 		rc = SLURM_ERROR;
@@ -1383,7 +1393,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		error("IO setup failed: %m");
 		job->task[0]->estatus = 0x0100;
 		step_complete.step_rc = 0x0100;
-		rc = SLURM_SUCCESS;	/* drains node otherwise */
+		if (job->batch)
+			rc = SLURM_SUCCESS;	/* drains node otherwise */
 		goto fail1;
 	} else {
 		*io_initialized = true;
@@ -1900,7 +1911,7 @@ _make_batch_dir(stepd_step_rec_t *job)
 		goto error;
 	}
 
-	if (chown(path, (uid_t) -1, (gid_t) job->pwd->pw_gid) < 0) {
+	if (chown(path, (uid_t) -1, (gid_t) job->gid) < 0) {
 		error("chown(%s): %m", path);
 		goto error;
 	}
@@ -2172,7 +2183,7 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 	if (getuid() != (uid_t) 0)
 		return SLURM_SUCCESS;
 
-	if (setegid(job->pwd->pw_gid) < 0) {
+	if (setegid(job->gid) < 0) {
 		error("setegid: %m");
 		return -1;
 	}
@@ -2181,7 +2192,7 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 		error("_initgroups: %m");
 	}
 
-	if (do_setuid && seteuid(job->pwd->pw_uid) < 0) {
+	if (do_setuid && seteuid(job->uid) < 0) {
 		error("seteuid: %m");
 		return -1;
 	}
@@ -2195,7 +2206,7 @@ _reclaim_privileges(struct priv_state *ps)
 	int rc = SLURM_SUCCESS;
 
 	/*
-	 * No need to reclaim privileges if our uid == pwd->pw_uid
+	 * No need to reclaim privileges if our uid == job->uid
 	 */
 	if (geteuid() == ps->saved_uid)
 		goto done;
@@ -2234,7 +2245,11 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 	if (conf->log_opts.stderr_level > LOG_LEVEL_DEBUG3)
 		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG3;
 
-	snprintf(argv0, sizeof(argv0), "slurmd[%s]", conf->node_name);
+#if defined(MULTIPLE_SLURMD)
+	snprintf(argv0, sizeof(argv0), "slurmstepd-%s", conf->node_name);
+#else
+	snprintf(argv0, sizeof(argv0), "slurmstepd");
+#endif
 	/*
 	 * reinitialize log
 	 */
@@ -2337,12 +2352,12 @@ _become_user(stepd_step_rec_t *job, struct priv_state *ps)
 	/*
 	 * Now drop real, effective, and saved uid/gid
 	 */
-	if (setregid(job->pwd->pw_gid, job->pwd->pw_gid) < 0) {
+	if (setregid(job->gid, job->gid) < 0) {
 		error("setregid: %m");
 		return SLURM_ERROR;
 	}
 
-	if (setreuid(job->pwd->pw_uid, job->pwd->pw_uid) < 0) {
+	if (setreuid(job->uid, job->uid) < 0) {
 		error("setreuid: %m");
 		return SLURM_ERROR;
 	}
@@ -2355,8 +2370,6 @@ static int
 _initgroups(stepd_step_rec_t *job)
 {
 	int rc;
-	char *username;
-	gid_t gid;
 
 	if (job->ngids > 0) {
 		xassert(job->gids);
@@ -2364,16 +2377,14 @@ _initgroups(stepd_step_rec_t *job)
 		return setgroups(job->ngids, job->gids);
 	}
 
-	username = job->pwd->pw_name;
-	gid = job->pwd->pw_gid;
-	debug2("Uncached user/gid: %s/%ld", username, (long)gid);
-	if ((rc = initgroups(username, gid))) {
+	debug2("Uncached user/gid: %s/%ld", job->user_name, (long)job->gid);
+	if ((rc = initgroups(job->user_name, job->gid))) {
 		if ((errno == EPERM) && (getuid() != (uid_t) 0)) {
 			debug("Error in initgroups(%s, %ld): %m",
-			      username, (long)gid);
+			      job->user_name, (long)job->gid);
 		} else {
 			error("Error in initgroups(%s, %ld): %m",
-			      username, (long)gid);
+			      job->user_name, (long)job->gid);
 		}
 		return -1;
 	}
@@ -2435,7 +2446,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 
 	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
 
-	if (_access(path, 5, job->pwd->pw_uid, job->pwd->pw_gid) < 0) {
+	if (_access(path, 5, job->uid, job->gid) < 0) {
 		error("Could not run %s [%s]: access denied", name, path);
 		return -1;
 	}

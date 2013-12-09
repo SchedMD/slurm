@@ -122,6 +122,10 @@ static int  _update_preempt(uint16_t old_enable_preempt);
 #ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
 #endif
+static int _compare_hostnames(struct node_record *old_node_table,
+							  int old_node_count,
+							  struct node_record *node_table,
+							  int node_count);
 
 /* Verify that Slurm directories are secure, not world writable */
 static void _stat_slurm_dirs(void)
@@ -891,6 +895,14 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* Build node and partition information based upon slurm.conf file */
 	_build_all_nodeline_info();
+	if (reconfig) {
+		if (_compare_hostnames(old_node_table_ptr,
+							   old_node_record_count,
+							   node_record_table_ptr,
+							   node_record_count) < 0) {
+			fatal("%s: hostnames inconsistency detected", __func__);
+		}
+	}
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
 	if (!reconfig)
@@ -1890,8 +1902,7 @@ static int _restore_job_dependencies(void)
 		}
 
 		license_list = license_validate(job_ptr->licenses, &valid);
-		if (job_ptr->license_list)
-			list_destroy(job_ptr->license_list);
+		FREE_NULL_LIST(job_ptr->license_list);
 		if (valid)
 			job_ptr->license_list = license_list;
 		if (IS_JOB_RUNNING(job_ptr))
@@ -1943,4 +1954,58 @@ static void _acct_restore_active_jobs(void)
 		}
 	}
 	list_iterator_destroy(job_iterator);
+}
+
+/* _compare_hostnames()
+ */
+static int
+_compare_hostnames(struct node_record *old_node_table,
+				   int old_node_count,
+				   struct node_record *node_table,
+				   int node_count)
+{
+	int cc;
+	int set_size;
+	char *old_ranged;
+	char *ranged;
+	hostset_t old_set;
+	hostset_t set;
+
+	if (old_node_count != node_count) {
+		error("%s: node count has changed before reconfiguration \
+from %d to %d. You have to restart slurmctld.",
+			  __func__, old_node_count, node_count);
+		return -1;
+	}
+
+	old_set = hostset_create("");
+	for (cc = 0; cc < old_node_count; cc++)
+		hostset_insert(old_set, old_node_table[cc].name);
+
+	set = hostset_create("");
+	for (cc = 0; cc < node_count; cc++)
+		hostset_insert(set, node_table[cc].name);
+
+	set_size = MAXHOSTNAMELEN * node_count * sizeof(char)
+		+ node_count * sizeof(char) + 1;
+
+	old_ranged = xmalloc(set_size);
+	ranged = xmalloc(set_size);
+
+	hostset_ranged_string(old_set, set_size, old_ranged);
+	hostset_ranged_string(set, set_size, ranged);
+
+	cc = 0;
+	if (strcmp(old_ranged, ranged) != 0) {
+		error("%s: node names changed before reconfiguration. \
+You have to restart slurmctld.", __func__);
+		cc = -1;
+	}
+
+	hostset_destroy(old_set);
+	hostset_destroy(set);
+	xfree(old_ranged);
+	xfree(ranged);
+
+	return cc;
 }

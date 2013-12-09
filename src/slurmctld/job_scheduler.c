@@ -49,6 +49,7 @@
 #if defined(__FreeBSD__)
 #include <signal.h> /* for SIGKILL */
 #endif
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1396,6 +1397,52 @@ extern void print_job_dependency(struct job_record *job_ptr)
 }
 
 /*
+ * Remove a dependency from within the job dependency string.
+ */
+static void _rm_dependency(struct job_record *job_ptr,
+			   struct depend_spec *dep_ptr)
+{
+	int rmv_len;
+	char *base_off, *rmv_dep, *rmv_off;
+
+	if (dep_ptr->array_task_id == INFINITE) {
+		rmv_dep = xstrdup_printf(":%u_*", dep_ptr->job_id);
+	} else if (dep_ptr->array_task_id != NO_VAL) {
+		rmv_dep = xstrdup_printf(":%u_%u",
+					 dep_ptr->job_id,
+					 dep_ptr->array_task_id);
+	} else {
+		rmv_dep = xstrdup_printf(":%u", dep_ptr->job_id);
+	}
+	rmv_len = strlen(rmv_dep);
+	base_off = job_ptr->details->dependency;
+	while ((rmv_off = strstr(base_off, rmv_dep))) {
+		if (isdigit(rmv_off[rmv_len])) {
+			/* Partial job ID match (e.g. "123" rather than "12") */
+			base_off += rmv_len;
+			continue;
+		}
+		memmove(rmv_off, rmv_off + rmv_len,
+			strlen(rmv_off + rmv_len) + 1);
+		if (rmv_off[0] == ':')
+			continue;
+		if ((rmv_off == job_ptr->details->dependency) ||
+		    ! isalpha(rmv_off[-1]))
+			continue;
+		/* Remove dependency type also (e.g. "afterany"); */
+		for (base_off = rmv_off - 1;
+		     base_off > job_ptr->details->dependency; base_off--) {
+			if (!isalpha(base_off[0])) {
+				base_off++;
+				break;
+			}
+		}
+		memmove(base_off, rmv_off, strlen(rmv_off) + 1);
+	}
+	xfree(rmv_dep);
+}
+
+/*
  * Determine if a job's dependencies are met
  * RET: 0 = no dependencies
  *      1 = dependencies remain
@@ -1509,21 +1556,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		} else
 			failure = true;
 		if (clear_dep) {
-			char *rmv_dep;
-			if (dep_ptr->array_task_id == INFINITE) {
-				rmv_dep = xstrdup_printf(":%u_*",
-							 dep_ptr->job_id);
-			} else if (dep_ptr->array_task_id != NO_VAL) {
-				rmv_dep = xstrdup_printf(":%u_%u",
-							dep_ptr->job_id,
-							dep_ptr->array_task_id);
-			} else {
-				rmv_dep = xstrdup_printf(":%u",
-							 dep_ptr->job_id);
-			}
-			xstrsubstitute(job_ptr->details->dependency,
-				       rmv_dep, "");
-			xfree(rmv_dep);
+			_rm_dependency(job_ptr, dep_ptr);
 			list_delete_item(depend_iter);
 		}
 	}
@@ -2140,10 +2173,19 @@ static char **_build_env(struct job_record *job_ptr)
 	sprintf(buf, "%d:%d", exit_code, signal);
 	setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
 
-	if (job_ptr->array_job_id != 0)
-		setenvf(&my_env, "SLURM_ARRAY_JOB_ID", "%u", job_ptr->array_job_id);
-	if (job_ptr->array_task_id != NO_VAL)
-		setenvf(&my_env, "SLURM_ARRAY_TASK_ID", "%u", job_ptr->array_task_id);
+	if (job_ptr->array_job_id != 0) {
+		setenvf(&my_env, "SLURM_ARRAY_JOB_ID", "%u",
+			job_ptr->array_job_id);
+	}
+	if (job_ptr->array_task_id != NO_VAL) {
+		setenvf(&my_env, "SLURM_ARRAY_TASK_ID", "%u",
+			job_ptr->array_task_id);
+	}
+
+	if (slurmctld_cluster_name) {
+		setenvf(&my_env, "SLURM_CLUSTER_NAME", "%s",
+			slurmctld_cluster_name);
+	}
 
 	setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u", job_ptr->exit_code);
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
@@ -2178,6 +2220,8 @@ static void *_run_epilog(void *arg)
 		goto fini;
 	}
 	if (cpid == 0) {
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else
@@ -2296,6 +2340,8 @@ static void *_run_prolog(void *arg)
 		goto fini;
 	}
 	if (cpid == 0) {
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else

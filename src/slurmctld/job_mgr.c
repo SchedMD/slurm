@@ -106,7 +106,7 @@
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
 #define JOB_STATE_VERSION       "VER015"
-#define JOB_13_12_STATE_VERSION "VER015"	/* SLURM version 13.12 */
+#define JOB_14_03_STATE_VERSION "VER015"	/* SLURM version 14.03 */
 #define JOB_2_6_STATE_VERSION   "VER014"	/* SLURM version 2.6 */
 #define JOB_2_5_STATE_VERSION   "VER013"	/* SLURM version 2.5 */
 
@@ -946,7 +946,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 
-	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
 		safe_unpack32(&assoc_id, buffer);
@@ -1759,7 +1759,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -3556,6 +3556,43 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	agent_args->node_count = 1;/* slurm/477 be sure to update node_count */
 	agent_queue_request(agent_args);
 	return;
+}
+
+/*
+ * prolog_complete - note the normal termination of the prolog
+ * IN job_id - id of the job which completed
+ * IN requeue - job should be run again if possible
+ * IN prolog_return_code - prolog's return code,
+ *    if set then set job state to FAILED
+ * RET - 0 on success, otherwise ESLURM error code
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+extern int prolog_complete(uint32_t job_id, bool requeue,
+		uint32_t prolog_return_code)
+{
+	struct job_record *job_ptr;
+
+	debug("completing prolog for job %u", job_id);
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		info("prolog_complete: invalid JobId=%u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if (IS_JOB_COMPLETING(job_ptr))
+		return SLURM_SUCCESS;
+
+	if (requeue && (job_ptr->batch_flag > 1)) {
+		/* Failed one requeue, just kill it */
+		requeue = 0;
+		if (prolog_return_code == 0)
+			prolog_return_code = 1;
+		error("Prolog launch failure, JobId=%u", job_ptr->job_id);
+	}
+
+	job_ptr->state_reason = WAIT_NO_REASON;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -5923,8 +5960,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->gres_used);
 	FREE_NULL_LIST(job_ptr->gres_list);
 	xfree(job_ptr->licenses);
-	if (job_ptr->license_list)
-		list_destroy(job_ptr->license_list);
+	FREE_NULL_LIST(job_ptr->license_list);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
@@ -6024,6 +6060,15 @@ static int _list_find_job_old(void *job_entry, void *key)
 	return 1;		/* Purge the job */
 }
 
+/* Determine if a given job should be seen by a specific user */
+static bool _hide_job(struct job_record *job_ptr, uid_t uid)
+{
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account))
+		return true;
+	return false;
+}
 
 /*
  * pack_all_jobs - dump all job information for all jobs in
@@ -6072,10 +6117,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
 			continue;
 
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
-		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account))
+		if (_hide_job(job_ptr, uid))
 			continue;
 
 		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
@@ -6132,23 +6174,32 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	pack32(jobs_packed, buffer);
 	pack_time(time(NULL), buffer);
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_id != job_id) &&
-		    ((job_ptr->array_task_id == NO_VAL) ||
-		     (job_ptr->array_job_id  != job_id)))
-			continue;
+	job_ptr = find_job_record(job_id);
+	if (job_ptr && (job_ptr->array_task_id == NO_VAL)) {
+		if (!_hide_job(job_ptr, uid)) {
+			pack_job(job_ptr, show_flags, buffer, protocol_version,
+				 uid);
+			jobs_packed++;
+		}
+	} else {
+		/* Job ID not found. It could reference a job array. */
+		job_iterator = list_iterator_create(job_list);
+		while ((job_ptr = (struct job_record *) 
+				  list_next(job_iterator))) {
+			if ((job_ptr->job_id != job_id) &&
+			    ((job_ptr->array_task_id ==  NO_VAL) ||
+			     (job_ptr->array_job_id  != job_id)))
+				continue;
 
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
-		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account))
-			break;
+			if (_hide_job(job_ptr, uid))
+				break;
 
-		pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
-		jobs_packed++;
+			pack_job(job_ptr, show_flags, buffer, protocol_version,
+				 uid);
+			jobs_packed++;
+		}
+		list_iterator_destroy(job_iterator);
 	}
-	list_iterator_destroy(job_iterator);
 
 	if (jobs_packed == 0) {
 		free_buf(buffer);
@@ -6187,7 +6238,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
-	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
 		pack32(dump_job_ptr->array_task_id, buffer);
@@ -6769,7 +6820,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			pack16(detail_ptr->shared, buffer);
 			pack16(detail_ptr->contiguous, buffer);
@@ -9703,59 +9754,62 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	/* nodes_completing is out of date, rebuild when next saved */
 	xfree(job_ptr->nodes_completing);
 	if (!IS_JOB_COMPLETING(job_ptr)) {	/* COMPLETED */
-		if (IS_JOB_PENDING(job_ptr) && (job_ptr->batch_flag)) {
-			time_t now = time(NULL);
-			info("requeue batch job %u", job_ptr->job_id);
-			/* Clear everything so this appears to be a new job
-			 * and then restart it in accounting. */
-			job_ptr->start_time = job_ptr->end_time = 0;
-			job_ptr->total_cpus = 0;
-			/* Current code (<= 2.1) has it so we start the new
-			 * job with the next step id.  This could be used
-			 * when restarting to figure out which step the
-			 * previous run of this job stopped on. */
-
-			//job_ptr->next_step_id = 0;
-			job_ptr->node_cnt = 0;
-#ifdef HAVE_BG
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_BLOCK_ID,
-				"unassigned");
-#endif
-			xfree(job_ptr->nodes);
-			xfree(job_ptr->nodes_completing);
-			FREE_NULL_BITMAP(job_ptr->node_bitmap);
-			if (job_ptr->details) {
-				/* the time stamp on the new batch launch
-				 * credential must be larger than the time
-				 * stamp on the revoke request. Also the
-				 * I/O must be all cleared out and the
-				 * named socket purged, so delay for at
-				 * least ten seconds. */
-				job_ptr->details->begin_time = time(NULL) + 10;
-				if (!with_slurmdbd)
-					jobacct_storage_g_job_start(
-						acct_db_conn, job_ptr);
-			}
-
-			/* Reset this after the batch step has
-			 * finished or the batch step information will
-			 * be attributed to the next run of the job. */
-			job_ptr->db_index = 0;
-
-			/* Since this could happen on a launch we need to make
-			 * sure the submit isn't the same as the last submit so
-			 * put now + 1 so we get different records in the
-			 * database */
-			if (now == job_ptr->details->submit_time)
-				now++;
-			job_ptr->details->submit_time = now;
-		}
+		batch_requeue_fini(job_ptr);
 		return true;
 	} else
 		return false;
 }
+
+/* Complete a batch job requeue logic after all steps complete so that
+ * subsequent jobs appear in a separate accounting record. */
+void batch_requeue_fini(struct job_record  *job_ptr)
+{
+	time_t now;
+
+	if (IS_JOB_COMPLETING(job_ptr) ||
+	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
+		return;
+
+	info("requeue batch job %u", job_ptr->job_id);
+	now = time(NULL);
+	/* Clear everything so this appears to be a new job and then restart
+	 * it in accounting. */
+	job_ptr->start_time = job_ptr->end_time = 0;
+	job_ptr->total_cpus = 0;
+	/* Current code (<= 2.1) has it so we start the new job with the next
+	 * step id.  This could be used when restarting to figure out which
+	 * step the previous run of this job stopped on. */
+	//job_ptr->next_step_id = 0;
+
+	job_ptr->node_cnt = 0;
+#ifdef HAVE_BG
+	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID, "unassigned");
+#endif
+	xfree(job_ptr->nodes);
+	xfree(job_ptr->nodes_completing);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	if (job_ptr->details) {
+		/* the time stamp on the new batch launch credential must be
+		 * larger than the time stamp on the revoke request. Also the
+		 * I/O must be all cleared out and the named socket purged,
+		 * so delay for at least ten seconds. */
+		job_ptr->details->begin_time = now + 10;
+		if (!with_slurmdbd)
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		/* Since this could happen on a launch we need to make sure the
+		 * submit isn't the same as the last submit so put now + 1 so
+		 * we get different records in the database */
+		if (now == job_ptr->details->submit_time)
+			now++;
+		job_ptr->details->submit_time = now;
+	}
+
+	/* Reset this after the batch step has finished or the batch step
+	 * information will be attributed to the next run of the job. */
+	job_ptr->db_index = 0;
+}
+
 
 /* job_fini - free all memory associated with job records */
 void job_fini (void)

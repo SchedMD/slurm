@@ -59,8 +59,8 @@
 #include "src/common/slurm_accounting_storage.h"
 
 /*
- * SLURMDBD_VERSION in 13.12 this was changed to be the same as
- * SLURM_PROTOCOL_VERSION in 14.12 we can remove all instances of
+ * SLURMDBD_VERSION in 14.03 this was changed to be the same as
+ * SLURM_PROTOCOL_VERSION in 15.03 we can remove all instances of
  * SLURMDBD_*VERSION* SLURMDBD_VERSION was already replaced.
  *
  * SLURMDBD_VERSION_MIN is the minimum protocol version which slurmdbd

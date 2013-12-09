@@ -1,0 +1,410 @@
+#!/usr/bin/python
+#
+# (c) Copyright 2013 Cray Inc.  All Rights Reserved.
+#
+# slurmconfgen.py
+#
+# A script to generate a slurm configuration file automatically. Should be
+# run from a service node on the system to be configured. With no arguments,
+# writes configuration to stdout.
+#
+# With --reconfigure argument, this command must be run as root on the boot
+# node. It backs up slurm.conf to slurm.conf.<timestamp>, overwrites slurm.conf
+# with the new configuration, and updates Slurm with the new configuration.
+
+import subprocess, os, shutil, sys, datetime, tempfile, stat, re, time, socket
+
+#######################################
+# sdb_query
+#######################################
+def sdb_query(query):
+	""" Query the SDB. Returns the results, space separated. """
+	# Set correct path for isql
+	os.environ['ODBCSYSINI']='/etc/opt/cray/sysadm/'
+
+	# Call isql
+	isql = subprocess.Popen(["isql", "XTAdmin", "-b", "-v", "-x0x20"],
+		stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+		stderr=subprocess.PIPE)
+
+	# Execute the query
+	(out, err) = isql.communicate(query)
+	if len(err) > 0:
+		raise Exception(err)
+
+	return out
+
+#######################################
+# get_nodes
+#######################################
+def get_nodes():
+	""" Get the nodes from the SDB. Returns a list of tuples with
+	    entries for nodeid, memory, cores, sockets, compute units, gpu """
+
+	# Query the SDB for the info
+	out = sdb_query("SELECT nodeid,availmem,numcores,sockets,cu,avail \
+		FROM attributes LEFT JOIN processor ON nodeid=processor_id \
+			LEFT JOIN gpus ON nodeid=node_id \
+		WHERE processor_type='compute' ORDER BY nodeid;")
+
+	# Now out should contain all the compute node information
+	nodes = []
+	for line in out.splitlines():
+		fields = line.split()
+		if len(fields) == 5:
+			# This doesn't have a GPU
+			nodes.append(tuple([int(x) for x in fields]) + (0,))
+		elif len(fields) == 6:
+			# This does have a GPU
+			nodes.append(tuple([int(x) for x in fields]))
+		else:
+			raise Exception("Couldn't parse line " + line)
+
+	return nodes
+
+#######################################
+# split_nodes
+#######################################
+"""
+Test data from opal-p2:
+[(24,32768,40,2,20,0), (25,32768,40,2,20,0), (26,32768,40,2,20,0),
+ (27,32768,40,2,20,0), (32,32768,16,1,8,1), (33,32768,16,1,8,1),
+ (34,32768,16,1,8,1), (35,32768,16,1,8,1), (48,65536,32,2,16,0),
+ (49,65536,32,2,16,0), (50,65536,32,2,16,0), (51,65536,32,2,16,0)]
+"""
+def split_nodes(nodelist):
+	""" Given a list of nodes as returned by get_nodes,
+	    returns a tuple of equivalence class representative
+	    list, equivalence class nid list. """
+
+	class_reps = []
+	class_nodes = []
+
+	for node in nodelist:
+		nodeid, memory, cores, sockets, cu, gpu = node
+
+		# Check if this matches an existing representative
+		i = 0
+		match = False
+		for rep in class_reps:
+			rnodeid, rmemory, rcores, rsockets, rcu, rgpu = rep
+			if (memory == rmemory and cores == rcores
+				and sockets == rsockets
+				and cu == rcu and gpu == rgpu):
+				# It matches, add to the nodes for this class
+				class_nodes[i].append(nodeid)
+				match = True
+				break
+			i += 1
+
+		# We didn't find a matching equivalence class, make a new one
+		if not match:
+			class_reps.append(node)
+			class_nodes.append([nodeid])
+
+	return class_reps, class_nodes
+
+######################################
+# range_str
+######################################
+def range_str(range_start, range_end, field_width):
+	""" Returns a string representation of the given range
+		using the given field width """
+	if range_end < range_start:
+		raise Exception('Range end before range start')
+	elif range_start == range_end:
+		return "{0:0{1}d}".format(range_end, field_width)
+	elif range_start + 1 == range_end:
+		return "{0:0{2}d},{1:0{2}d}".format(range_start, range_end,
+			field_width)
+
+	return "{0:0{2}d}-{1:0{2}d}".format(range_start, range_end,
+		field_width)
+
+######################################
+# rli_compress
+######################################
+def rli_compress(nidlist):
+	""" Given a list of node ids, rli compress them into a slurm hostlist
+	   (ex. list [1,2,3,5] becomes string nid0000[1-3,5]) """
+
+	# Determine number of digits in the highest nid number
+	numdigits = len(str(max(nidlist)))
+	if numdigits > 5:
+		raise Exception('Nid number too high')
+
+	# Create start of the hostlist
+	rli = "nid" + ('0' * (5 - numdigits)) + '['
+
+	range_start = nidlist[0]
+	range_end = nidlist[0]
+	add_comma = False
+	for nid in nidlist:
+		# If nid too large, append to rli and start fresh
+		if nid > range_end + 1 or nid < range_end:
+			rli += ("," if add_comma else "") + \
+				range_str(range_start, range_end, numdigits)
+			add_comma = True
+			range_start = nid
+
+		range_end = nid
+
+	# Append the last range
+	rli += ("," if add_comma else "") \
+		+ range_str(range_start, range_end, numdigits) + ']'
+
+	return rli
+
+#######################################
+# format_nodes
+#######################################
+def format_nodes(class_reps, class_nodes):
+	""" Given a list of class representatives and lists of nodes in those
+	    classes, formats a string in slurm.conf format
+	    (ex. NodeName=nid00[024-027] CPUs=40 Sockets=2 CoresPerSocket=10
+	    ThreadsPerCore=2 RealMemory=32768) """
+
+	i = 0
+	nodestr = ""
+	for rep in class_reps:
+		nodeid, memory, cores, sockets, cu, gpu = rep
+		feature = " Feature=gpu" if gpu > 0 else ""
+		nodestr += "NodeName={0} CPUs={1:d} Sockets={2:d} \
+ CoresPerSocket={3:d} ThreadsPerCore={4:d} RealMemory={5:d}{6:s}\n".format(
+ 			rli_compress(class_nodes[i]), cores, sockets,
+			cu/sockets, cores/cu,
+ 			memory, feature)
+ 		i += 1
+
+ 	return nodestr
+
+#######################################
+# get_mem_per_cpu
+#######################################
+def get_mem_per_cpu(nodes):
+	""" Give a list of nodes formatted as in get_nodes, determines the
+	    default memory per cpu (mem)/(cores)
+	    and max memory per cpu, returned as a tuple """
+
+	defmem = 0
+	maxmem = 0
+	for node in nodes:
+		if node[1] > maxmem:
+			maxmem = node[1]
+
+		mem_per_thread = node[1] / node[2]
+		if defmem == 0 or mem_per_thread < defmem:
+			defmem = mem_per_thread
+
+	return (defmem, maxmem)
+
+
+
+#######################################
+# cluster_name
+#######################################
+def get_cluster_name():
+	""" Gets the cluster name from /etc/xthostname """
+
+	with open("/etc/xthostname", "r") as xthostname:
+		return xthostname.readline().rstrip()
+
+#######################################
+# xtopview
+#######################################
+def xtopview(cmd):
+	""" Runs the given command in xtopview -e,
+	    retries if xtopview is in use """
+
+	while True:
+		try:
+			subprocess.check_call(["xtopview", "-e", cmd])
+		except subprocess.CalledProcessError as e:
+			if e.returncode == 208:
+				print "xtopview in use, retrying in 10 seconds"
+				time.sleep(10)
+				continue
+			else:
+				raise
+		break
+
+#######################################
+# get_control_machine
+#######################################
+def get_control_machine(config):
+	""" Parses the ControlMachine from the given config string """
+
+	for line in config.splitlines():
+		m = re.match(r"\s*ControlMachine\s*=\s*([^#\s]+)", line)
+		if m:
+			return m.group(1)
+
+	raise Exception("Failed to parse ControlMachine from config")
+
+#######################################
+# get_sdb_hostname
+#######################################
+def get_sdb_hostname(reconfigure):
+	""" Gets the hostname of the sdb """
+
+	# ssh should work on reconfigure since we're root
+	# on the boot node
+	if reconfigure:
+		ssh = subprocess.Popen(["ssh", "sdb", "hostname"],
+			stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+		(out, err) = ssh.communicate()
+
+		if len(err) > 0:
+			raise err
+
+		return out.strip()
+	else:
+		return "sdb"
+
+#######################################
+# write_slurm_conf
+#######################################
+def get_slurm_conf(infile, replace):
+	""" Reads from infile, replaces following the given dictionary,
+		and returns the result as a string """
+
+	with open(infile, "r") as template:
+		text = template.read()
+
+		# Using replace is less elegant than using string.format, but avoids
+		# KeyErrors if the user removes keys from the template file
+		for i, j in replace.iteritems():
+			text = text.replace(i, j)
+
+		return text
+
+#######################################
+# replace_slurm_conf
+#######################################
+def replace_slurm_conf(tmpfname, slurmconf):
+	""" Backs up existing slurm.conf files and replaces
+		them with the new copy """
+	opview_dir = "/rr/current"
+	slurmconf_dir = "/software/slurm"
+	curtime = datetime.datetime.today().strftime('%Y%m%d%H%M%S')
+	slurmconf_bak = slurmconf + "." + curtime
+
+	# Make the slurm directory
+	if not os.path.isdir(opview_dir + slurmconf_dir):
+		print "Creating {0} directory".format(opview_dir +
+			slurmconf_dir)
+		os.mkdir(opview_dir + slurmconf_dir, 0755)
+
+	# If it exists, copy the current slurm.conf to a backup
+	if os.path.isfile(opview_dir + slurmconf_dir + slurmconf):
+		print "Copying {0} to {1}".format(
+			opview_dir + slurmconf_dir + slurmconf,
+			opview_dir + slurmconf_dir + slurmconf_bak)
+		shutil.copy2(opview_dir + slurmconf_dir + slurmconf,
+			opview_dir + slurmconf_dir + slurmconf_bak)
+
+	# Overwrite slurm.conf
+	print "Moving {0} to {1}".format(tmpfname,
+		opview_dir + slurmconf_dir + slurmconf)
+	shutil.move(tmpfname, opview_dir + slurmconf_dir + slurmconf)
+
+	# If it exists, move the boot root slurm.conf to a backup
+	if os.path.isfile(sysconfdir + slurmconf):
+		if os.path.islink(sysconfdir + slurmconf):
+			print "Removing {0}".format(sysconfdir + slurmconf)
+			os.unlink(sysconfdir + slurmconf)
+		else:
+			print "Moving {0} to {1}".format(sysconfdir +
+				slurmconf,
+				sysconfdir + slurmconf_bak)
+			os.rename(sysconfdir + slurmconf,
+				sysconfdir + slurmconf_bak)
+
+	# Create symlink in boot root
+	print "Linking {0} to {1}".format(sysconfdir + slurmconf,
+		opview_dir + slurmconf_dir + slurmconf)
+	os.symlink(opview_dir + slurmconf_dir + slurmconf,
+		sysconfdir + slurmconf)
+
+	# Create symlink in shared root
+	print "Linking {0} to {1} in xtopview".format(sysconfdir + slurmconf,
+		slurmconf_dir + slurmconf)
+	xtopview("ln -b -S {0} -s {1} {2}".format("." + curtime,
+		slurmconf_dir + slurmconf,
+		sysconfdir + slurmconf))
+
+#######################################
+# main
+#######################################
+if __name__ == "__main__":
+	# Some constant file names
+	sysconfdir = "@sysconfdir@"
+	bindir = "@bindir@"
+	slurmconf = "/slurm.conf"
+	slurmconf_template = slurmconf + ".template"
+	restart_slurm = "/etc/init.d/slurm restart"
+	scontrol = bindir + "/scontrol"
+
+	reconfigure = len(sys.argv) > 1 and sys.argv[1] == "--reconfigure"
+
+	# Get nodes using isql
+	nodes = get_nodes()
+
+	# Split them into equivalence classes
+	class_reps, class_nodes = split_nodes(nodes)
+
+	# Determine the min and max memory per cpu
+	defmem, maxmem = get_mem_per_cpu(nodes)
+
+	# Create the replacement dictionary
+	replace = {
+		'{sysconfdir}' : sysconfdir,
+		'{slurmdspooldir}' : "/var/spool/slurmd",
+		'{slurmctldspooldir}' : "/var/spool/slurm",
+		'{defmem}' : str(defmem),
+		'{maxmem}' : str(maxmem),
+		'{clustername}' : get_cluster_name(),
+		'{computenodes}' : format_nodes(class_reps, class_nodes),
+		'{nodelist}' : rli_compress([node[0] for node in nodes]),
+		'{sdb}' : get_sdb_hostname(reconfigure) }
+
+	# Read and format the template
+	text = get_slurm_conf(sysconfdir + slurmconf_template, replace)
+
+	# Reconfigure if needed
+	if reconfigure:
+		# Do some basic sanity checks
+		if "boot" not in socket.gethostname():
+			print >> sys.stderr, \
+				"--reconfigure must be run from the boot node"
+			exit(1)
+		if os.geteuid() != 0:
+			print >> sys.stderr, \
+				"--reconfigure must be run as root"
+			exit(1)
+
+		# Write text to temporary file
+		outfile = tempfile.NamedTemporaryFile(delete=False)
+		os.chmod(outfile.name,
+			stat.S_IRUSR | stat.S_IWUSR |
+			stat.S_IRGRP | stat.S_IROTH)
+		print >> outfile, text
+		outfile.close()
+
+		print "Wrote new configuration to {0}".format(outfile.name)
+
+		# Replace slurm.conf with the temporary file
+		replace_slurm_conf(outfile.name, slurmconf)
+
+		# Reconfigure Slurm
+		control_machine = get_control_machine(text)
+		print "Running {0} on {1}".format(restart_slurm,
+			control_machine)
+		subprocess.check_call(["ssh", control_machine, restart_slurm])
+		print "Running {0} reconfigure".format(scontrol)
+		subprocess.check_call([scontrol, "reconfigure"])
+	else:
+		# Just print to stdout
+		print text
+

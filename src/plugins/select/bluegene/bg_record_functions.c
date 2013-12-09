@@ -634,7 +634,7 @@ extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if (kill_job_list) {
-		bg_status_process_kill_job_list(kill_job_list, 0);
+		bg_status_process_kill_job_list(kill_job_list, JOB_FAILED, 0);
 		list_destroy(kill_job_list);
 	}
 
@@ -1006,7 +1006,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			 bool slurmctld_locked, char *reason)
 {
 	List requests = NULL;
-	List delete_list = NULL, pass_list = NULL;
+	List delete_list = NULL, pass_list = NULL, kill_list = NULL;
 	ListIterator itr = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL,
 		tmp_record, *error_bg_record = NULL;
@@ -1102,14 +1102,15 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			continue;
 
 		if (bg_record->job_running > NO_JOB_RUNNING) {
-			job_fail(bg_record->job_running, JOB_NODE_FAIL);
+			bg_status_add_job_kill_list(bg_record->job_ptr,
+						    &kill_list);
 		} else if (bg_record->job_list) {
 			ListIterator job_itr = list_iterator_create(
 				bg_record->job_list);
 			struct job_record *job_ptr;
-			while ((job_ptr = list_next(job_itr))) {
-				job_fail(job_ptr->job_id, JOB_NODE_FAIL);
-			}
+			while ((job_ptr = list_next(job_itr)))
+				bg_status_add_job_kill_list(job_ptr,
+							    &kill_list);
 			list_iterator_destroy(job_itr);
 		}
 		/* If Running Dynamic mode and the block is
@@ -1408,6 +1409,11 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	slurm_mutex_unlock(&block_state_mutex);
 
 cleanup:
+	if (kill_list) {
+		bg_status_process_kill_job_list(kill_list, JOB_NODE_FAIL, 1);
+		list_destroy(kill_list);
+	}
+
 	if (!slurmctld_locked)
 		unlock_slurmctld(job_write_lock);
 	FREE_NULL_BITMAP(tmp_record.mp_bitmap);
@@ -1745,7 +1751,7 @@ extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
 	itr = list_iterator_create(bg_record->job_list);
 	while ((found_job_ptr = list_next(itr))) {
 		if (found_job_ptr->magic != JOB_MAGIC) {
-			error("select_p_job_fini: "
+			error("bg_record_hw_failure: "
 			      "bad magic found when "
 			      "looking at block %s",
 			      bg_record->bg_block_id);
@@ -1823,7 +1829,6 @@ extern void bg_record_post_hw_failure(
 	}
 	list_iterator_reset(itr);
 	while ((found_job_ptr = list_next(itr))) {
-		jobinfo = found_job_ptr->select_jobinfo->data;
 		qos_ptr = (slurmdb_qos_rec_t*)found_job_ptr->qos_ptr;
 
 		debug("Attempting to requeue %s job %u due "

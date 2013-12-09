@@ -76,7 +76,7 @@
 
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
 #define TRIGGER_STATE_VERSION        "VER004"
-#define TRIGGER_13_12_STATE_VERSION  "VER004"	/* SLURM version 13.12 */
+#define TRIGGER_14_03_STATE_VERSION  "VER004"	/* SLURM version 14.03 */
 #define TRIGGER_2_6_STATE_VERSION    "VER004"	/* SLURM version 2.6 */
 #define TRIGGER_2_5_STATE_VERSION    "VER004"	/* SLURM version 2.5 */
 
@@ -1468,8 +1468,8 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 		int i;
 		bool run_as_self = (uid == getuid());
 
-		for (i=0; i<128; i++)
-			close(i);
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else

@@ -64,8 +64,8 @@ static int _getpwnam_r (const char *name, struct passwd *pwd, char *buf,
 	return (rc);
 }
 
-static int _getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
-		size_t bufsiz, struct passwd **result)
+extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
+			     size_t bufsiz, struct passwd **result)
 {
 	int rc;
 	while (1) {
@@ -113,7 +113,7 @@ uid_from_string (char *name, uid_t *uidp)
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
-	if (_getpwuid_r (l, &pwd, buffer, PW_BUF_SIZE, &result) != 0)
+	if (slurm_getpwuid_r(l, &pwd, buffer, PW_BUF_SIZE, &result) != 0)
 		return -1;
 
 	*uidp = (uid_t) l;
@@ -131,7 +131,7 @@ uid_to_string (uid_t uid)
 	if (uid == 0)
 		return xstrdup("root");
 
-	rc = _getpwuid_r (uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
 	if (result && (rc == 0))
 		ustring = xstrdup(result->pw_name);
 	else
@@ -147,7 +147,7 @@ gid_from_uid (uid_t uid)
 	gid_t gid;
 	int rc;
 
-	rc = _getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
 	if (result && (rc == 0))
 		gid = result->pw_gid;
 	else

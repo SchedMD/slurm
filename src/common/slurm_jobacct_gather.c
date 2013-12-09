@@ -657,7 +657,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		memcpy(jobacct, send, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 			int len;
 			Buf buffer = init_buf(0);
 			jobacctinfo_pack(jobacct, protocol_version,
@@ -840,7 +840,7 @@ extern int jobacctinfo_getinfo(
 		memcpy(send, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 			char* buf;
 			int len;
 			Buf buffer;

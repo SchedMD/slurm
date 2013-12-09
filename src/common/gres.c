@@ -2920,6 +2920,15 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	} else if (node_gres_ptr->gres_bit_alloc) {
 		job_gres_ptr->gres_bit_alloc[node_offset] =
 				bit_alloc(node_gres_ptr->gres_cnt_avail);
+		i = bit_size(node_gres_ptr->gres_bit_alloc);
+		if (i < node_gres_ptr->gres_cnt_avail) {
+			error("gres/%s: node %s gres bitmap size bad (%d < %u)",
+			      gres_name, node_name,
+			      i, node_gres_ptr->gres_cnt_avail);
+			node_gres_ptr->gres_bit_alloc =
+				bit_realloc(node_gres_ptr->gres_bit_alloc,
+					    node_gres_ptr->gres_cnt_avail);
+		}
 		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
@@ -4685,16 +4694,62 @@ extern uint32_t gres_get_value_by_type(List job_gres_list, char* gres_name)
 }
 
 /*
- * Fill in an array of GRES type ids contained within the given gres_list
+ * Fill in an array of GRES type ids contained within the given job gres_list
+ *		and an array of corresponding counts of those GRES types.
+ * IN gres_list - a List of GRES types allocated to a job.
+ * IN arr_len - Length of the arrays (the number of elements in the gres_list).
+ * IN gres_count_ids, gres_count_vals - the GRES type ID's and values found
+ *	 	in the gres_list.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_job_count(List gres_list, int arr_len,
+				 int *gres_count_ids, int *gres_count_vals)
+{
+	ListIterator  job_gres_iter;
+	gres_state_t* job_gres_ptr;
+	void*         job_gres_data;
+	int           rc, ix = 0;
+
+	rc = gres_plugin_init();
+	if ((rc == SLURM_SUCCESS) && (arr_len <= 0))
+		rc = EINVAL;
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	slurm_mutex_lock(&gres_context_lock);
+
+	job_gres_iter = list_iterator_create(gres_list);
+	while ((job_gres_ptr = (gres_state_t*) list_next(job_gres_iter))) {
+		gres_job_state_t *job_gres_state_ptr;
+		job_gres_data = job_gres_ptr->gres_data;
+		job_gres_state_ptr = (gres_job_state_t *) job_gres_data;
+		xassert(job_gres_state_ptr);
+
+		gres_count_ids[ix]  = job_gres_ptr->plugin_id;
+		gres_count_vals[ix] = job_gres_state_ptr->gres_cnt_alloc;
+		if (++ix >= arr_len)
+			break;
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/*
+ * Fill in an array of GRES type ids contained within the given node gres_list
  *		and an array of corresponding counts of those GRES types.
  * IN gres_list - a List of GRES types found on a node.
  * IN arrlen - Length of the arrays (the number of elements in the gres_list).
  * IN gres_count_ids, gres_count_vals - the GRES type ID's and values found
  *	 	in the gres_list.
+ * IN val_type - Type of value desired, see GRES_VAL_TYPE_*
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
-		 int* gres_count_ids, int* gres_count_vals, int valtype)
+extern int gres_plugin_node_count(List gres_list, int arr_len,
+				  int* gres_count_ids, int* gres_count_vals,
+				  int val_type)
 {
 	ListIterator  node_gres_iter;
 	gres_state_t* node_gres_ptr;
@@ -4703,7 +4758,7 @@ extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
 	int           rc, ix = 0;
 
 	rc = gres_plugin_init();
-	if ((rc == SLURM_SUCCESS) && (arrlen <= 0))
+	if ((rc == SLURM_SUCCESS) && (arr_len <= 0))
 		rc = EINVAL;
 	if (rc != SLURM_SUCCESS)
 		return rc;
@@ -4718,7 +4773,7 @@ extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
 		node_gres_state_ptr = (gres_node_state_t *) node_gres_data;
 		xassert(node_gres_state_ptr);
 
-		switch(valtype) {
+		switch(val_type) {
 		case(GRES_VAL_TYPE_FOUND):
 			val = node_gres_state_ptr->gres_cnt_found;
 			break;
@@ -4734,7 +4789,7 @@ extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
 
 		gres_count_ids[ix]  = node_gres_ptr->plugin_id;
 		gres_count_vals[ix] = val;
-		if (++ix >= arrlen)
+		if (++ix >= arr_len)
 			break;
 	}
 	list_iterator_destroy(node_gres_iter);

@@ -184,7 +184,8 @@ rwfail:		 /* process rest of script output */
  * RET 0 on success, -1 on failure.
  */
 static int
-_run_script_and_set_env(const char *name, const char *path, stepd_step_rec_t *job)
+_run_script_and_set_env(const char *name, const char *path,
+			stepd_step_rec_t *job)
 {
 	int status, rc, nread;
 	pid_t cpid;

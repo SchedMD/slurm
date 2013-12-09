@@ -3,6 +3,7 @@
 import re
 import sys
 import os
+import codecs
 
 include_pat = r'(<!--\s*#include\s*virtual\s*=\s*"([^"]+)"\s*-->)'
 include_regex = re.compile(include_pat)
@@ -66,8 +67,8 @@ for filename in files:
     dirname, basefilename = os.path.split(filename)
     newfilename = basefilename[:-6] + '.html'
     print('Converting', filename, '->', newfilename)
-    shtml = open(filename, 'r')
-    html = open(newfilename, 'w')
+    shtml = codecs.open(filename, 'r', encoding='utf-8')
+    html = codecs.open(newfilename, 'w', encoding='utf-8')
 
     for line in shtml.readlines():
         line = include_regex.sub(include_virtual, line)

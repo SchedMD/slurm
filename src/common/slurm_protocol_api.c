@@ -90,6 +90,7 @@ static slurm_protocol_config_t *proto_conf = &proto_conf_default;
 static int message_timeout = -1;
 
 /* STATIC FUNCTIONS */
+static char *_get_auth_info(void);
 static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
 static int   _unpack_msg_uid(Buf buffer);
@@ -313,6 +314,23 @@ uint16_t slurm_get_kill_on_bad_exit(void)
 		slurm_conf_unlock();
 	}
 	return kill_on_bad_exit;
+}
+
+/* slurm_get_prolog_flags
+ * RET PrologFlags value from slurm.conf
+ */
+uint32_t slurm_get_prolog_flags(void)
+{
+	uint32_t prolog_flags = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		prolog_flags = conf->prolog_flags;
+		slurm_conf_unlock();
+	}
+	return prolog_flags;
 }
 
 /* slurm_get_debug_flags
@@ -1289,6 +1307,28 @@ char *slurm_get_accounting_storage_pass(void)
 		slurm_conf_unlock();
 	}
 	return storage_pass;
+}
+
+/* _get_auth_info
+ * returns the auth_info from slurmctld_conf object
+ * cache value in local buffer for best performance
+ * RET char *    - auth info
+ */
+static char *_get_auth_info(void)
+{
+	static bool loaded_auth_info = false;
+	static char *auth_info = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (loaded_auth_info)
+		return auth_info;
+
+	conf = slurm_conf_lock();
+	auth_info = xstrdup(conf->authinfo);
+	slurm_conf_unlock();
+
+	loaded_auth_info = true;
+	return auth_info;
 }
 
 /* _global_auth_key
@@ -2482,8 +2522,10 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
 					  _global_auth_key() );
-	} else
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
+	} else {
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
+					  _get_auth_info() );
+	}
 
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
@@ -2650,8 +2692,10 @@ List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout)
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
 					  _global_auth_key() );
-	} else
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
+	} else {
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
+					  _get_auth_info() );
+	}
 
 	if (rc != SLURM_SUCCESS) {
 		error("authentication: %s ",
@@ -2882,8 +2926,10 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
 					  _global_auth_key() );
-	} else
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
+	} else {
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
+					  _get_auth_info() );
+	}
 
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
@@ -2976,7 +3022,8 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY)
 		auth_cred = g_slurm_auth_create(NULL, 2, _global_auth_key());
 	else
-		auth_cred = g_slurm_auth_create(NULL, 2, NULL);
+		auth_cred = g_slurm_auth_create(NULL, 2, _get_auth_info());
+
 	if (auth_cred == NULL) {
 		error("authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );

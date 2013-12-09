@@ -1454,14 +1454,13 @@ static void _mail_proc(mail_info_t *mi)
 	if (pid < 0) {		/* error */
 		error("fork(): %m");
 	} else if (pid == 0) {	/* child */
-		int fd;
-		(void) close(0);
-		(void) close(1);
-		(void) close(2);
-		fd = open("/dev/null", O_RDWR); // 0
-		if (dup(fd) == -1) // 1
+		int fd, i;
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
+		fd = open("/dev/null", O_RDWR); // fd = 0
+		if (dup(fd) == -1)		// fd = 1
 			error("Couldn't do a dup for 1: %m");
-		if (dup(fd) == -1) // 2
+		if (dup(fd) == -1)		// fd = 2
 			error("Couldn't do a dup for 2 %m");
 		execle(slurmctld_conf.mail_prog, "mail",
 			"-s", mi->message, mi->user_name,
@@ -1626,9 +1625,9 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		/* ready to launch, adjust time limit for boot time */
 		if (delay_time && (job_ptr->time_limit != INFINITE) &&
 		    (!wiki2_sched)) {
-			info("Job %u launch delayed by %d secs, "
-			     "updating end_time",
-			     launch_msg_ptr->job_id, delay_time);
+			verbose("Job %u launch delayed by %d secs, "
+				"updating end_time",
+				launch_msg_ptr->job_id, delay_time);
 			job_ptr->end_time += delay_time;
 		}
 		queued_req_ptr->last_attempt = (time_t) 0;
@@ -1644,9 +1643,9 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		      "sending batch request anyway...");
 		if (delay_time && (job_ptr->time_limit != INFINITE) &&
 		    (!wiki2_sched)) {
-			info("Job %u launch delayed by %d secs, "
-			     "updating end_time",
-			     launch_msg_ptr->job_id, delay_time);
+			verbose("Job %u launch delayed by %d secs, "
+				"updating end_time",
+				launch_msg_ptr->job_id, delay_time);
 			job_ptr->end_time += delay_time;
 		}
 		queued_req_ptr->last_attempt = (time_t) 0;

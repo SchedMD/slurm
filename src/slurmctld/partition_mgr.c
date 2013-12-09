@@ -73,7 +73,7 @@
 
 /* Change PART_STATE_VERSION value when changing the state save format */
 #define PART_STATE_VERSION        "VER004"
-#define PART_13_12_STATE_VERSION  "VER004"	/* SLURM version 13.12 */
+#define PART_14_03_STATE_VERSION  "VER004"	/* SLURM version 14.03 */
 #define PART_2_6_STATE_VERSION    "VER004"	/* SLURM version 2.6 */
 #define PART_2_5_STATE_VERSION    "VER003"	/* SLURM version 2.5 */
 
@@ -557,7 +557,7 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
@@ -1066,7 +1066,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 {
 	uint32_t altered;
 
-	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else

@@ -232,6 +232,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AuthInfo");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->authinfo);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AuthType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->authtype);
 	list_append(ret_list, key_pair);
@@ -833,6 +838,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PrologSlurmctld");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->prolog_slurmctld);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("PrologFlags");
+	key_pair->value = prolog_flags2str(slurm_ctl_conf_ptr->prolog_flags);
 	list_append(ret_list, key_pair);
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u",

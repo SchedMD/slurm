@@ -1024,6 +1024,14 @@ static int _merge_step_files(void)
 			H5Gclose(jgid_nodes);
 			H5Gclose(jgid_step);
 		}
+
+		/* If we did not find the step 0
+		 * bail out.
+		 */
+		if (stepx == 0
+			&& !found_files)
+			break;
+
 		stepx++;
 	}
 

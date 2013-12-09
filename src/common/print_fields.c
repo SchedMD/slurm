@@ -148,7 +148,7 @@ extern void print_fields_int(print_field_t *field, int value, int last)
 {
 	int abs_len = abs(field->len);
 	/* (value == unset)  || (value == cleared) */
-	if ((value == NO_VAL) || (value == INFINITE)) {
+	if ((value == (int)NO_VAL) || (value == (int)INFINITE)) {
 		if (print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
@@ -230,7 +230,7 @@ extern void print_fields_double(print_field_t *field, double value, int last)
 {
 	int abs_len = abs(field->len);
 	/* (value == unset)  || (value == cleared) */
-	if ((value == NO_VAL) || (value == INFINITE)) {
+	if ((value == (double)NO_VAL) || (value == (double)INFINITE)) {
 		if (print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
@@ -258,7 +258,8 @@ extern void print_fields_long_double(
 {
 	int abs_len = abs(field->len);
 	/* (value == unset)  || (value == cleared) */
-	if ((value == NO_VAL) || (value == INFINITE)) {
+	if ((value == (long double)NO_VAL)
+	    || (value == (long double)INFINITE)) {
 		if (print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)

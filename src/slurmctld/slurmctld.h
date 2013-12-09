@@ -538,7 +538,7 @@ struct job_record {
 					 * wait call) */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
-	char *gres;			/* generic resources requested by job*/
+	char *gres;			/* generic resources requested by job */
 	List gres_list;			/* generic resource allocation detail */
 	char *gres_alloc;		/* Allocated GRES added over all nodes
 					 * to be passed to slurmdbd */
@@ -764,6 +764,10 @@ enum select_plugindata_info {
  */
 extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 			      char *node_name);
+
+/* Complete a batch job requeue logic after all steps complete so that
+ * subsequent jobs appear in a separate accounting record. */
+void batch_requeue_fini(struct job_record  *job_ptr);
 
 /* Build a bitmap of nodes completing this job */
 extern void build_cg_bitmap(struct job_record *job_ptr);

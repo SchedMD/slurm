@@ -130,6 +130,8 @@ static bitstr_t *_valid_features(struct job_details *detail_ptr,
 
 static int _fill_in_gres_fields(struct job_record *job_ptr);
 
+static void _launch_prolog(struct job_record *job_ptr);
+
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
  *	the given job_details record.  If it wasn't set, return 0xffff.
@@ -144,17 +146,65 @@ static uint16_t _get_ntasks_per_core(struct job_details *details) {
 }
 
 /*
- * _build_gres_alloc_string - Fill in the gres_alloc string field for a
- *      given job_record
- *	also claim required licenses and resources reserved by accounting
- *	policy association
+ * _get_gres_alloc - Fill in the gres_alloc string field for a given
+ *      job_record with the count of actually alllocated gres on each node
  * IN job_ptr - the job record whose "gres_alloc" field is to be constructed
- * IN valtype - The type of count associated which each allocated GRES type
- *              to retreive and record in the string.
  * RET Error number.  Currently not used (always set to 0).
  */
+static int _get_gres_alloc(struct job_record *job_ptr)
+{
+	char                buf[128], *prefix="";
+	char                gres_name[64];
+	int                 i, rv;
+	int                 node_cnt;
+	int                 gres_type_count;
+	int                 *gres_count_ids, *gres_count_vals;
 
-static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
+	xstrcat(job_ptr->gres_alloc, "");
+	if (!job_ptr->node_bitmap || !job_ptr->gres_list)
+		return SLURM_SUCCESS;
+
+	node_cnt = bit_set_count(job_ptr->node_bitmap);
+	gres_type_count = list_count(job_ptr->gres_list);
+	gres_count_ids  = xmalloc(sizeof(int) * gres_type_count);
+	gres_count_vals = xmalloc(sizeof(int) * gres_type_count);
+	rv = gres_plugin_job_count(job_ptr->gres_list, gres_type_count,
+				   gres_count_ids, gres_count_vals);
+	if (rv == SLURM_SUCCESS) {
+		for (i = 0; i < gres_type_count; i++) {
+			if (!gres_count_ids[i])
+				break;
+			gres_count_vals[i] *= node_cnt;
+			/* Map the GRES type id back to a GRES type name. */
+			gres_gresid_to_gresname(gres_count_ids[i], gres_name,
+						sizeof(gres_name));
+			sprintf(buf,"%s%s:%d", prefix, gres_name,
+				gres_count_vals[i]);
+			xstrcat(job_ptr->gres_alloc, buf);
+			if (prefix[0] == '\0')
+				prefix = ",";
+
+			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+				debug("(%s:%d) job id: %u -- gres_alloc "
+				      "substring=(%s)",
+				      THIS_FILE, __LINE__, job_ptr->job_id, buf);
+			}
+		}
+	}
+	xfree(gres_count_ids);
+	xfree(gres_count_vals);
+
+	return rv;
+}
+
+/*
+ * _get_gres_config - Fill in the gres_alloc string field for a given
+ *      job_record with the count of gres on each node (e.g. for whole node
+ *	allocations.
+ * IN job_ptr - the job record whose "gres_alloc" field is to be constructed
+ * RET Error number.  Currently not used (always set to 0).
+ */
+static int _get_gres_config(struct job_record *job_ptr)
 {
 	char                buf[128], *prefix="";
 	List                gres_list;
@@ -186,7 +236,7 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 	gres_count_vals = xmalloc(sizeof(int) * gres_type_count);
 
 	/* Loop through each node allocated to the job tallying all GRES
-	 * types found.*/
+	 * types found. */
 	for (ix = i_first; ix <= i_last; ix++) {
 		if (!bit_test(node_bitmap, ix))
 			continue;
@@ -222,10 +272,10 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 		}
 
 		if (gres_list) {
-			gres_num_gres_alloced_all(gres_list, count,
-						  gres_count_ids_loc,
-						  gres_count_vals_loc,
-						  valtype);
+			gres_plugin_node_count(gres_list, count,
+					       gres_count_ids_loc,
+					       gres_count_vals_loc,
+					       GRES_VAL_TYPE_CONFIG);
 		}
 
 		/* Combine the local results into the master count results */
@@ -290,6 +340,35 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 	xfree(gres_count_vals);
 
 	return rv;
+}
+
+/*
+ * _build_gres_alloc_string - Fill in the gres_alloc string field for a
+ *      given job_record
+ *	also claim required licenses and resources reserved by accounting
+ *	policy association
+ * IN job_ptr - the job record whose "gres_alloc" field is to be constructed
+ * RET Error number.  Currently not used (always set to 0).
+ */
+static int _build_gres_alloc_string(struct job_record *job_ptr)
+{
+	static int          val_type = -1;
+
+	if (val_type == -1) {
+		char *select_type = slurm_get_select_type();
+		/* Find out which select type plugin we have so we can decide
+		 * what value to look for. */
+		if (!strcmp(select_type, "select/cray"))
+			val_type = GRES_VAL_TYPE_CONFIG;
+		else
+			val_type = GRES_VAL_TYPE_ALLOC;
+		xfree(select_type);
+	}
+
+	if (val_type == GRES_VAL_TYPE_CONFIG)
+		return _get_gres_config(job_ptr);
+	else
+		return _get_gres_alloc(job_ptr);
 }
 
 /*
@@ -1225,7 +1304,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		    (avail_nodes >= min_nodes)		&&
 		    ((job_ptr->details->req_node_bitmap == NULL) ||
 		     bit_super_set(job_ptr->details->req_node_bitmap,
-                                   avail_bitmap))) {
+				   avail_bitmap))) {
 			if (*preemptee_job_list) {
 				list_destroy(*preemptee_job_list);
 				*preemptee_job_list = NULL;
@@ -1369,7 +1448,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			if (!kill_pending)
 				continue;
 			rc = job_requeue(0, job_ptr->job_id, -1,
-			                 (uint16_t)NO_VAL, true);
+					 (uint16_t)NO_VAL, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
@@ -1684,6 +1763,14 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	prolog_slurmctld(job_ptr);
 	slurm_sched_g_newalloc(job_ptr);
 
+	/* Request asynchronous launch of a prolog for a
+	 * non batch job. For a batch job the prolog will be
+	 * started synchroniously by slurmd. */
+	if (job_ptr->batch_flag == 0 &&
+		(slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)) {
+		_launch_prolog(job_ptr);
+	}
+
       cleanup:
 	if (preemptee_job_list)
 		list_destroy(preemptee_job_list);
@@ -1704,6 +1791,54 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 }
 
 /*
+ * Launch prolog via RPC to slurmd. This is useful when we need to run
+ * prolog at allocation stage. Then we ask slurmd to launch the prolog
+ * asynchroniously and wait on REQUEST_COMPLETE_PROLOG message from slurmd.
+ */
+static void _launch_prolog(struct job_record *job_ptr)
+{
+	prolog_launch_msg_t *prolog_msg_ptr;
+	agent_arg_t *agent_arg_ptr;
+	prolog_msg_ptr = (prolog_launch_msg_t *)
+				xmalloc(sizeof(prolog_launch_msg_t));
+
+	xassert(job_ptr);
+	xassert(job_ptr->batch_host);
+	xassert(prolog_msg_ptr);
+
+	/* Locks: Write job */
+	job_ptr->state_reason = WAIT_PROLOG;
+
+	prolog_msg_ptr->job_id = job_ptr->job_id;
+	prolog_msg_ptr->uid = job_ptr->user_id;
+	prolog_msg_ptr->gid = job_ptr->group_id;
+	prolog_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
+	prolog_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	prolog_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
+	prolog_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
+	prolog_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
+	prolog_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
+	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
+														job_ptr->spank_job_env);
+
+	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
+	agent_arg_ptr->retry = 0;
+	agent_arg_ptr->node_count = 1;
+  #ifdef HAVE_FRONT_END
+      xassert(job_ptr->front_end_ptr);
+      xassert(job_ptr->front_end_ptr->name);
+      agent_arg_ptr->hostlist = hostlist_create(job_ptr->front_end_ptr->name);
+  #else
+      agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
+  #endif
+	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
+	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
+
+	/* Launch the RPC via agent */
+	agent_queue_request(agent_arg_ptr);
+}
+
+/*
  * Update a job_record's gres (required GRES)
  * and gres_alloc (allocated GRES) fields according
  * to the information found in the job_record and its
@@ -1721,7 +1856,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 	char *req_config  = job_ptr->gres;
 	char *tmp_str;
 	uint32_t ngres_req;
-	int      valtype, rv = 0;
+	int      rv = SLURM_SUCCESS;
 
 	/* First build the GRES requested field. */
 	if ((req_config == NULL) || (req_config[0] == '\0')) {
@@ -1735,7 +1870,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			xstrcat(job_ptr->gres_req, "");
 
 	} else if (job_ptr->node_cnt > 0
-	           && job_ptr->gres_req == NULL) {
+		   && job_ptr->gres_req == NULL) {
 		/* job_ptr->gres_req is rebuilt/replaced here */
 		tmp_str = xstrdup(req_config);
 
@@ -1780,18 +1915,8 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 	}
 
 	if ( !job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
-		char *select_type = slurm_get_select_type();
-
-		/* Find out which select type plugin we have so we can decide
-		 * what value to look for. */
-		if (!strcmp(select_type, "select/cray"))
-			valtype = GRES_VAL_TYPE_CONFIG;
-		else
-			valtype = GRES_VAL_TYPE_ALLOC;
-		xfree(select_type);
-
 		/* Now build the GRES allocated field. */
-		rv = _build_gres_alloc_string(job_ptr, valtype);
+		rv = _build_gres_alloc_string(job_ptr);
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
 			debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
 			      "job_record->gres_alloc: (%s)",
@@ -2190,7 +2315,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	 * scheduling jobs on powered down nodes where possible. */
 	for (i = (node_set_inx-1); i >= 0; i--) {
 		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
-				        power_node_bitmap);
+					power_node_bitmap);
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].nodes) {

@@ -633,7 +633,7 @@ extern void free_block_list(uint32_t job_id, List track_list,
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if (kill_job_list) {
-		bg_status_process_kill_job_list(kill_job_list, 0);
+		bg_status_process_kill_job_list(kill_job_list, JOB_FAILED, 0);
 		list_destroy(kill_job_list);
 		kill_job_list = NULL;
 	}

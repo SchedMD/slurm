@@ -5,9 +5,8 @@
 <h2>Index</h2>
 <ul>
 <li><a href="#26">Slurm Version 2.6, June 2013</a></li>
-<li><a href="#1312">Slurm Version 13.12, December 2013</a></li>
-<li><a href="#1406">Slurm Version 14.06 and beyond</a></li>
-<li><a href="#security">Security Patches</a></li>
+<li><a href="#1403">Slurm Version 14.03, March 2014</a></li>
+<li><a href="#1409">Slurm Version 14.09 and beyond</a></li>
 </ul>
 
 <h2><a name="26">Major Updates in Slurm Version 2.6</a></h2>
@@ -43,10 +42,10 @@ Major enhancements include:
 </ul>
 </p>
 
-<h2><a name="1312">Major Updates in Slurm Version 13.12</a></h2>
-<p>NOTICE: Starting with 13.12 we will be numbering Slurm versions
+<h2><a name="1403">Major Updates in Slurm Version 14.03</a></h2>
+<p>NOTICE: Starting with 14.03 we will be numbering Slurm versions
 with a YEAR.MONTH format.<br>
-SLURM Version 13.12 release is planned in December 2013.
+SLURM Version 14.03 release is planned in March 2014.
 Major enhancements include:
 <ul>
 <li>Integration with
@@ -67,8 +66,7 @@ Major enhancements include:
 </ul>
 </p>
 
-
-<h2><a name="1406">Major Updates in Slurm Version 14.06 and beyond</a></h2>
+<h2><a name="1409">Major Updates in Slurm Version 14.09 and beyond</a></h2>
 <p> Detailed plans for release dates and contents of additional SLURM releases
 have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
@@ -99,30 +97,6 @@ to coordinate activities. Future development plans includes:
     reservations containing less than a whole midplane).</li>
 </ul>
 
-<h2><a name="security">Security Patches</a></h2>
-<p>Common Vulnerabilities and Exposure (CVE)</a> information is available at<br>
-<a href="http://cve.mitre.org/">http://cve.mitre.org/</a>.</p>
-<ul>
-<li>CVE-2009-0128<br>
-    There is a potential security vulnerability in SLURM where a user could
-    build an invalid job credential in order to execute a job (under his
-    correct UID and GID) on resources not allocated to that user. This
-    vulnerability exists only when the crypto/openssl plugin is used and was
-    fixed in SLURM version 1.3.0.</li>
-<li>CVE-2009-2084<br>
-    SLURM failed to properly set supplementary groups before invoking (1) sbcast
-    from the slurmd daemon or (2) strigger from the slurmctld daemon, which might
-    allow local SLURM users to modify files and gain privileges. This was fixed
-    in SLURM version 1.3.14.</li>
-<li>CVE-2010-3308<br>
-    There is a potential security vulnerability where if the init.d scripts are
-    executed by user root or SlurmUser to initiate the SLURM daemons and the
-    LD_LIBRARY_PATH is not set and the operating system interprets a blank entry
-    in the path as "." (current working directory) and that directory contains a
-    trojan library, then that library will be used by the SLURM daemon with
-    unpredictable results. This was fixed in SLURM version 2.1.14.</li>
-</ul>
-
-<p style="text-align:center;">Last modified 31 July 2013</p>
+<p style="text-align:center;">Last modified 05 December 2013</p>
 
 <!--#include virtual="footer.txt"-->

@@ -204,9 +204,16 @@ int proctrack_p_plugin_add(stepd_step_rec_t *job, pid_t pid)
 
 int proctrack_p_plugin_signal(uint64_t id, int sig)
 {
-	if ((job_killjid((jid_t) id, sig) < 0)
-	   && (errno != ENODATA) && (errno != EBADF) )
-		return (SLURM_ERROR);
+	if (!threadid) {
+		if ((job_killjid((jid_t) id, sig) < 0)
+		    && (errno != ENODATA) && (errno != EBADF) )
+			return (SLURM_ERROR);
+	} else if (sig == SIGKILL) {
+		/* job ended before it started */
+		_end_container_thread();
+	} else
+		error("Trying to send signal %d a container 0x%08lx "
+		      "that hasn't had anything added to it yet", sig, id);
 	return (SLURM_SUCCESS);
 }
 
@@ -216,7 +223,9 @@ int proctrack_p_plugin_destroy(uint64_t id)
 
 	debug("destroying 0x%08lx 0x%08lx", id, threadid);
 
-	job_waitjid((jid_t) id, &status, 0);
+	if (!threadid)
+		job_waitjid((jid_t) id, &status, 0);
+
 	/*  Assume any error means job doesn't exist. Therefore,
 	 *   return SUCCESS to slurmd so it doesn't retry continuously
 	 */
@@ -248,7 +257,8 @@ bool proctrack_p_plugin_has_pid (uint64_t cont_id, pid_t pid)
 int proctrack_p_plugin_wait(uint64_t id)
 {
 	int status;
-	if (job_waitjid((jid_t) id, &status, 0) == (jid_t)-1)
+
+	if (!threadid && job_waitjid((jid_t) id, &status, 0) == (jid_t)-1)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

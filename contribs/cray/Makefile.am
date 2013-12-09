@@ -9,3 +9,10 @@ EXTRA_DIST = \
 	libalps_test_programs.tar.gz	\
 	opt_modulefiles_slurm		\
 	pam_job.c
+
+if HAVE_NATIVE_CRAY
+sbin_SCRIPTS = slurmconfgen.py
+sysconf_DATA = slurm.conf.template
+else
+EXTRA_DIST += slurmconfgen.py slurm.conf.template
+endif

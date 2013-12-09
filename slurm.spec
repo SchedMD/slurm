@@ -22,12 +22,11 @@
 # --with openssl     %_with_openssl     1    require openssl RPM to be installed
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
 # --with percs       %_with_percs       1    build percs RPM
-# --with postgres    %_with_postgres    1    require postgresql support
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
 #
-#  Allow defining --with and --without build options or %_with and %without in .rpmmacors
+#  Allow defining --with and --without build options or %_with and %without in .rpmmacros
 #    slurm_with    builds option by default unless --without is specified
 #    slurm_without builds option iff --with specified
 #
@@ -52,7 +51,6 @@
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
 %slurm_without_opt mysql
-%slurm_without_opt postgres
 %slurm_without_opt blcr
 %slurm_without_opt openssl
 
@@ -149,10 +147,6 @@ BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 BuildRequires: mysql-devel >= 5.0.0
 %endif
 
-%if %{slurm_with postgres}
-BuildRequires: postgresql-devel >= 8.0.0
-%endif
-
 %if %{slurm_with cray_alps}
 BuildRequires: cray-MySQL-devel-enterprise
 Requires: cray-MySQL-devel-enterprise
@@ -162,7 +156,13 @@ Requires: cray-MySQL-devel-enterprise
 BuildRequires: cray-MySQL-devel-enterprise
 BuildRequires: cray-libalpscomm_cn-devel
 BuildRequires: cray-libalpscomm_sn-devel
+BuildRequires: libnuma-devel
+BuildConflicts: cray-libnuma1
+BuildRequires: libhwloc-devel
 BuildRequires: cray-libjob-devel
+BuildRequires: gtk2-devel
+BuildRequires: glib2-devel
+BuildRequires: pkg-config
 %endif
 
 %ifnos aix5.3
@@ -219,7 +219,7 @@ partition management, job management, scheduling and accounting modules
 # sure we get the correct installdir
 %define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
-# AIX doesn't always give the correct install prefix here for mans 
+# AIX doesn't always give the correct install prefix here for mans
 %ifos aix5.3
 %define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; $P="/usr/share"; $T =~ s/$P//; print $T;')
 %else
@@ -303,7 +303,7 @@ database changes to slurmctld daemons on each cluster
 Summary: SLURM SQL support
 Group: System Environment/Base
 %description sql
-SLURM SQL support. Contains interfaces to MySQL and PostGreSQL
+SLURM SQL support. Contains interfaces to MySQL.
 
 %package plugins
 Summary: SLURM plugins (loadable shared objects)
@@ -424,18 +424,18 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?slurm_with_debug:--enable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
-	%{?with_db2_dir} \
-	%{?with_pam_dir}	\
-	%{?with_proctrack}	\
-	%{?with_cpusetdir} \
-	%{?with_apbasildir} \
-	%{?with_xcpu} \
-	%{?with_mysql_config} \
-	%{?with_pg_config} \
-	%{?with_ssl}		\
-	%{?with_munge}      \
-	%{?with_blcr}      \
-	%{?slurm_with_cray:--enable-native-cray}      \
+	%{?with_db2_dir:--with-db2-dir=%{?with_db2_dir}} \
+	%{?with_pam_dir:--with-pam_dir=%{?with_pam_dir}} \
+	%{?with_proctrack:--with-proctrack=%{?with_proctrack}}\
+	%{?with_cpusetdir:--with-cpusetdir=%{?with_cpusetdir}} \
+	%{?with_apbasildir:--with-apbasildir=%{?with_apbasildir}} \
+	%{?with_xcpu:--with-xcpu=%{?with_xcpu}} \
+	%{?with_mysql_config:--with-mysql_config=%{?with_mysql_config}} \
+	%{?with_pg_config:--with-pg_config=%{?with_pg_config}} \
+	%{?with_ssl:--with-ssl=%{?with_ssl}} \
+	%{?with_munge:--with-munge=%{?with_munge}}\
+	%{?with_blcr:--with-blcr=%{?with_blcr}}\
+	%{?slurm_with_cray:--enable-native-cray}\
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
@@ -464,11 +464,12 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 # Cray's version of libpmi should be used.
 %if %{slurm_with cray} || %{slurm_with cray_alps}
    rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
-   if [ -d /opt/modulefiles ]; then
-      install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm
-   fi
+   install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release}
+   echo -e '#%Module\nset ModulesVersion "%{version}-%{release}"' > $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
+   rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/slurm.conf.template
+   rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurmconfgen.py
 %endif
 
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
@@ -578,8 +579,10 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
   echo /usr/sbin/rcslurm				>> $LIST
 
-test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm &&
-  echo /opt/modulefiles/slurm/opt_modulefiles_slurm	>> $LIST
+test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release} &&
+  echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
+test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version &&
+  echo /opt/modulefiles/slurm/.version >> $LIST
 
 # Make ld.so.conf.d file
 mkdir -p $RPM_BUILD_ROOT/etc/ld.so.conf.d
@@ -750,6 +753,10 @@ rm -rf $RPM_BUILD_ROOT
 /etc/ld.so.conf.d/slurm.conf
 %if %{slurm_with cray} || %{slurm_with cray_alps}
 %dir /opt/modulefiles/slurm
+%endif
+%if %{slurm_with cray}
+%config %{_sysconfdir}/slurm.conf.template
+%{_sbindir}/slurmconfgen.py
 %endif
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/cgroup.conf.example
@@ -1043,5 +1050,5 @@ fi
 
 
 %changelog
-* Wed Jun 26 2013 Morris Jette <jette@schedmd.com> 13.12.0-0pre1
+* Wed Jun 26 2013 Morris Jette <jette@schedmd.com> 14.03.0-0pre1
 Various cosmetic fixes for rpmlint errors

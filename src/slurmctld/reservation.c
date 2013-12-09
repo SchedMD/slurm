@@ -84,11 +84,15 @@
 #define ONE_YEAR	(365 * 24 * 60 * 60)
 #define RESV_MAGIC	0x3b82
 
+/* Permit sufficient time for slurmctld failover or other long delay before
+ * considering a reservation time specification being invalid */
+#define MAX_RESV_DELAY	600
+
 /* Change RESV_STATE_VERSION value when changing the state save format
  * Add logic to permit reading of the previous version's state in order
  * to avoid losing reservations between releases major SLURM updates. */
 #define RESV_STATE_VERSION          "VER004"
-#define RESV_13_12_STATE_VERSION    "VER004"	/* SLURM version 13.12 */
+#define RESV_14_03_STATE_VERSION    "VER004"	/* SLURM version 14.03 */
 #define RESV_2_6_STATE_VERSION      "VER004"	/* SLURM version 2.6 */
 #define RESV_2_5_STATE_VERSION      "VER004"	/* SLURM version 2.5 */
 
@@ -1584,7 +1588,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	/* Validate the request */
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
-		if (resv_desc_ptr->start_time < (now - 60)) {
+		if (resv_desc_ptr->start_time < (now - MAX_RESV_DELAY)) {
 			info("Reservation request has invalid start time");
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
@@ -1593,7 +1597,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_desc_ptr->start_time = now;
 
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
-		if (resv_desc_ptr->end_time < (now - 60)) {
+		if (resv_desc_ptr->end_time < (now - MAX_RESV_DELAY)) {
 			info("Reservation request has invalid end time");
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
@@ -3259,7 +3263,8 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	bitstr_t *orig_bitmap, *save_bitmap = NULL, *ret_bitmap, *tmp_bitmap;
+	bitstr_t *orig_bitmap, *save_bitmap = NULL;
+	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
 	int total_node_cnt;
 
 	total_node_cnt = bit_set_count(avail_bitmap);

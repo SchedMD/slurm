@@ -312,8 +312,8 @@ static pid_t _run_prog(char *prog, char *arg)
 
 	child = fork();
 	if (child == 0) {
-		for (i=0; i<128; i++)
-			close(i);
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else

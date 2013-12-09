@@ -68,7 +68,6 @@ fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 	unsigned int wid   = 0;
 	char *name = NULL;
 	char *orig = xstrdup(format);
-	char *uname;
 	char *p, *q;
 	int id;
 
@@ -133,10 +132,11 @@ fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 				q = ++p;
 				break;
 			case 'u':  /* '%u' => user name      */
-				uname = uid_to_string(job->uid);
+				if (!job->user_name)
+					job->user_name =
+						uid_to_string(job->uid);
 				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%s", uname);
-				xfree(uname);
+				xstrfmtcat(name, "%s", job->user_name);
 				q = ++p;
 				break;
 			case 'J':  /* '%J' => jobid.stepid */

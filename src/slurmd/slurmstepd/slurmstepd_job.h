@@ -141,6 +141,7 @@ typedef struct {
 	uint32_t       cpu_freq;       /* requested cpu frequency           */
 	switch_jobinfo_t *switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
+	char          *user_name;
 	gid_t         gid;     /* group ID for job                          */
 	int           ngids;   /* length of the following gids array        */
 	gid_t        *gids;    /* array of gids for user specified in uid   */
@@ -152,7 +153,6 @@ typedef struct {
 	uint32_t       profile;	   /* Level of acct_gather_profile          */
 	char          *task_prolog; /* per-task prolog                      */
 	char          *task_epilog; /* per-task epilog                      */
-	struct passwd *pwd;   /* saved passwd struct for user job           */
 	stepd_step_task_info_t  **task;  /* array of task information pointers*/
 	eio_handle_t  *eio;
 	List 	       sruns; /* List of srun_info_t pointers               */
