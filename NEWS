@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
     (requires manual resetting of GRES count, changes to gres.conf file,
     and slurmd restarts).
  -- Modify sview to better support job arrays.
+ -- Modify squeue to support longer job ID values (for many job array tasks).
 
 * Changes in Slurm 2.6.4
 ========================

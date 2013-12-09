@@ -388,16 +388,24 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 	} else if ((job->array_task_id != (uint16_t) NO_VAL) &&
 		   !params.array_flag && IS_JOB_PENDING(job)  &&
 		   job->node_inx) {
-		int i;
-		char id[FORMAT_STRING_SIZE], task_str[FORMAT_STRING_SIZE];
+		int i, local_width = width;
+		char *id = NULL, *task_str = NULL;
 		bitstr_t *task_bits = bit_alloc(0xffff);
 		for (i = 1; i <= job->node_inx[0]; i++)
 			bit_set(task_bits, job->node_inx[i]);
-		bit_fmt(task_str, sizeof(task_str), task_bits);
-		snprintf(id, FORMAT_STRING_SIZE, "%u_[%s]",
+		if (local_width == 0) {
+			local_width = bit_set_count(task_bits) *
+				      FORMAT_STRING_SIZE;
+		}
+		id = xmalloc(local_width);
+		task_str = xmalloc(local_width);
+		bit_fmt(task_str, local_width, task_bits);
+		snprintf(id, local_width, "%u_[%s]",
 			 job->array_job_id, task_str);
 		_print_str(id, width, right, true);
 		bit_free(task_bits);
+		xfree(id);
+		xfree(task_str);
 	} else if (job->array_task_id != (uint16_t) NO_VAL) {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u_%u",
