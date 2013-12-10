@@ -314,6 +314,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 		return NULL;
 
 	job = xmalloc(sizeof(stepd_step_rec_t));
+	job->msg = msg;
 #ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 	job->node_name = xstrdup(conf->node_name);
