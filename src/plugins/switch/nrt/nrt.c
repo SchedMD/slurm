@@ -3478,52 +3478,6 @@ unpack_error:
 }
 
 /* Used by: all */
-extern slurm_nrt_jobinfo_t *
-nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
-{
-	slurm_nrt_jobinfo_t *new;
-	int i;
-	int base_size = 0, table_size;
-
-	xassert(job);
-	xassert(job->magic == NRT_JOBINFO_MAGIC);
-
-	if (nrt_alloc_jobinfo(&new)) {
-		error("Allocating new jobinfo");
-		slurm_seterrno(ENOMEM);
-		return NULL;
-	}
-	memcpy(new, job, sizeof(slurm_nrt_jobinfo_t));
-
-	new->tableinfo = (nrt_tableinfo_t *) xmalloc(job->tables_per_task *
-						     sizeof(nrt_table_info_t));
-	for (i = 0; i < job->tables_per_task; i++) {
-		if (!job->user_space ||
-		    (job->tableinfo->adapter_type == NRT_IPONLY)) {
-			base_size = sizeof(nrt_ip_task_info_t);
-		} else if (job->tableinfo->adapter_type == NRT_IB) {
-			base_size = sizeof(nrt_ib_task_info_t);
-		} else if (job->tableinfo->adapter_type == NRT_HFI) {
-			base_size = sizeof(nrt_hfi_task_info_t);
-		} else if ((job->tableinfo->adapter_type == NRT_HPCE) ||
-		           (job->tableinfo->adapter_type == NRT_KMUX)) {
-			base_size = sizeof(nrt_hpce_task_info_t);
-		} else {
-			error("nrt_copy_jobinfo: Missing support for adapter "
-			      "type %s",
-			      _adapter_type_str(job->tableinfo->adapter_type));
-		}
-		new->tableinfo[i].table_length = job->tableinfo[i].table_length;
-		table_size = base_size * job->tableinfo[i].table_length;
-		new->tableinfo->table = xmalloc(table_size);
-		memcpy(new->tableinfo[i].table, job->tableinfo[i].table,
-		       table_size);
-	}
-
-	return new;
-}
-
-/* Used by: all */
 extern void
 nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp)
 {

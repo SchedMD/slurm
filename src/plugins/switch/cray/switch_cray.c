@@ -434,46 +434,6 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	return SLURM_SUCCESS;
 }
 
-switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
-{
-	int i;
-	slurm_cray_jobinfo_t *old = (slurm_cray_jobinfo_t *) switch_job;
-	switch_jobinfo_t *new_init;
-	slurm_cray_jobinfo_t *new;
-	size_t sz;
-
-	if (!old || (old->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		debug2("(%s: %d: %s) switch_job was NULL", THIS_FILE, __LINE__,
-		       __FUNCTION__);
-		return NULL;
-	}
-	xassert(((slurm_cray_jobinfo_t *)switch_job)->magic
-		== CRAY_JOBINFO_MAGIC);
-
-	if (switch_p_alloc_jobinfo(&new_init, old->jobid, old->stepid)) {
-		error("Allocating new jobinfo");
-		slurm_seterrno(ENOMEM);
-		return NULL ;
-	}
-
-	new = (slurm_cray_jobinfo_t *) new_init;
-	// Copy over non-malloced memory.
-	*new = *old;
-
-	new->cookies = (char **) xmalloc(old->num_cookies * sizeof(char **));
-	for (i = 0; i < old->num_cookies; i++) {
-		new->cookies[i] = xstrdup(old->cookies[i]);
-	}
-
-	sz = sizeof(*(new->cookie_ids));
-	new->cookie_ids = xmalloc(old->num_cookies * sz);
-	memcpy(new->cookie_ids, old->cookie_ids, old->num_cookies * sz);
-
-	new->step_layout = slurm_step_layout_copy(old->step_layout);
-
-	return (switch_jobinfo_t *) new;
-}
-
 /*
  *
  */

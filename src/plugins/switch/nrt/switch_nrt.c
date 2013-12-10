@@ -668,20 +668,6 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	return err;
 }
 
-extern switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
-{
-	switch_jobinfo_t *j;
-
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_copy_jobinfo()");
-
-	j = (switch_jobinfo_t *)nrt_copy_jobinfo((slurm_nrt_jobinfo_t *)switch_job);
-	if (!j)
-		error("nrt_copy_jobinfo failed");
-
-	return j;
-}
-
 extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)

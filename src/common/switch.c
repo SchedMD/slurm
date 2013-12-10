@@ -65,7 +65,6 @@ typedef struct slurm_switch_ops {
 	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
 					    slurm_step_layout_t *step_layout,
 					    char *network);
-	switch_jobinfo_t *(*copy_jobinfo)  ( switch_jobinfo_t *jobinfo );
 	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
 	int          (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo,
 					    Buf buffer,
@@ -140,7 +139,6 @@ static const char *syms[] = {
 	"switch_p_libstate_restore",
 	"switch_p_alloc_jobinfo",
 	"switch_p_build_jobinfo",
-	"switch_p_copy_jobinfo",
 	"switch_p_free_jobinfo",
 	"switch_p_pack_jobinfo",
 	"switch_p_unpack_jobinfo",
@@ -278,14 +276,6 @@ extern int  switch_g_build_jobinfo(switch_jobinfo_t *jobinfo,
 		return SLURM_ERROR;
 
 	return (*(ops.build_jobinfo))( jobinfo, step_layout, network );
-}
-
-extern switch_jobinfo_t *switch_g_copy_jobinfo(switch_jobinfo_t *jobinfo)
-{
-	if ( switch_init() < 0 )
-		return NULL;
-
-	return (*(ops.copy_jobinfo))( jobinfo );
 }
 
 extern void switch_g_free_jobinfo(switch_jobinfo_t *jobinfo)
