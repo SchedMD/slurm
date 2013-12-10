@@ -181,8 +181,7 @@ static void _print_alpsc_pe_info(alpsc_peInfo_t alps_info)
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job)
 {
-	int i, j, rc, cnt = 0;
-	int32_t *nodes;
+	int i, j;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		error("(%s: %d: %s) job pointer was NULL", THIS_FILE, __LINE__,
@@ -220,18 +219,6 @@ static void _print_jobinfo(slurm_cray_jobinfo_t *job)
 		info("  ------");
 		info("  task_cnt: %" PRIu32, job->step_layout->task_cnt);
 		info("  --- hosts to task---");
-		rc = _list_str_to_array(job->step_layout->node_list, &cnt,
-					&nodes);
-		if (rc) {
-			error("(%s: %d: %s) node_list_str_to_array failed",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-		}
-		if (job->step_layout->node_cnt != cnt) {
-			error("(%s: %d: %s) list_str_to_array returned count %"
-			      PRIu32 "does not match expected count %d",
-			      THIS_FILE, __LINE__, __FUNCTION__, cnt,
-			      job->step_layout->node_cnt);
-		}
 
 		for (i = 0; i < job->step_layout->node_cnt; i++) {
 			info("Host: %d", i);
