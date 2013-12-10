@@ -170,8 +170,9 @@ extern int gres_plugin_help_msg(char *msg, int msg_size);
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
  * IN cpu_cnt - Number of CPUs on configured on this node
+ * IN array_len - count of elements in dev_path and gres_name
  */
-extern int gres_plugin_node_config_load(uint32_t cpu_cnt);
+extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name);
 
 /*
  * Pack this node's gres configuration into a buffer
@@ -184,11 +185,13 @@ extern int gres_plugin_node_config_pack(Buf buffer);
  * OUT dev_path - the devices paths as written on gres.conf file
  * OUT gres_name - the names of the devices (ex. gpu, nic,..)
  * IN array_len - count of elements in dev_path and gres_name
+ * IN node_name - Name of this compute node
  * OUT int - number of lines of gres.conf file
  */
 extern int gres_plugin_node_config_devices_path(char **dev_path,
 						char **gres_name,
-						int array_len);
+						int array_len,
+						char *node_name);
 
 /*
  * Provide information about the allocate gres devices for a particular job

@@ -99,7 +99,7 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		goto error;
 	}
 
-	(void) gres_plugin_node_config_load(cpunum);
+	(void) gres_plugin_node_config_load(cpunum, conf->node_name);
 
 	strcpy(cgroup_allowed_devices_file,
 	       slurm_cgroup_conf->allowed_devices_file);
@@ -230,7 +230,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	  */
 	gres_conf_lines = gres_plugin_node_config_devices_path(dev_path,
 							       gres_name,
-							       PATH_MAX);	
+							       PATH_MAX,
+							       job->node_name);	
 
 	/* 
 	 * create the entry for cgroup devices subsystem with major minor

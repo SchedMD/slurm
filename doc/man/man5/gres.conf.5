@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "July 2012" "gres.conf 2.3" "Slurm configuration file"
+.TH "gres.conf" "5" "December 2013" "gres.conf 14.03" "Slurm configuration file"
 .SH "NAME"
 gres.conf \- Slurm configuration file for generic resource management.
 
@@ -87,8 +87,15 @@ Network Interface Card
 Intel Many Integrated Core (MIC) processor
 .RE
 
+.TP
+\fBNodeName\fR
+An optional NodeName specification can be used to permit one gres.conf file to
+be used for all compute nodes in a cluster by specifying the node(s) that each
+line should apply to.
+The NodeName specification can use a Slurm hostlist specification as shown in
+the example below.
 
-.SH "EXAMPLE"
+.SH "EXAMPLES"
 .LP
 .br
 ##################################################################
@@ -108,6 +115,20 @@ Name=gpu File=/dev/nvidia2 CPUs=2,3
 Name=gpu File=/dev/nvidia3 CPUs=2,3
 .br
 Name=bandwidth Count=20M
+
+.LP
+.br
+##################################################################
+.br
+# SLURM's Generic Resource (GRES) configuration file
+.br
+# Use a single gres.conf file for all compute nodes
+.br
+##################################################################
+.br
+NodeName=tux[0\-15]  Name=gpu File=/dev/nvidia[0\-3]
+.br
+NodeName=tux[16\-31] Name=gpu File=/dev/nvidia[0\-7]
 
 .SH "COPYING"
 Copyright (C) 2010 The Regents of the University of California.

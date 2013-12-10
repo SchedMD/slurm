@@ -131,6 +131,7 @@ static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
 static bool gres_debug = false;
 static slurm_gres_context_t *gres_context = NULL;
+static char *gres_node_name = NULL;
 static char *gres_plugin_list = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
@@ -187,6 +188,9 @@ static void	_node_state_log(void *gres_data, char *node_name,
 static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 				   const char *key, const char *value,
 				   const char *line, char **leftover);
+static int	_parse_gres_config2(void **dest, slurm_parser_enum_t type,
+				    const char *key, const char *value,
+				    const char *line, char **leftover);
 static void	_set_gres_cnt(char *orig_config, char **new_config,
 			      uint32_t new_cnt, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len);
@@ -437,6 +441,7 @@ extern int gres_plugin_fini(void)
 	int i, j, rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&gres_context_lock);
+	xfree(gres_node_name);
 	if (gres_context_cnt < 0)
 		goto fini;
 
@@ -645,6 +650,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
+		{"Name",  S_P_STRING},	/* Gres type name */
 		{NULL}
 	};
 	int i;
@@ -657,7 +663,17 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	s_p_parse_line(tbl, *leftover, leftover);
 
 	p = xmalloc(sizeof(gres_slurmd_conf_t));
-	p->name = xstrdup(value);
+	if (!value) {
+		if (!s_p_get_string(&p->name, "Name", tbl)) {
+			error("Invalid gres data, no type name (%s)", line);
+			xfree(p);
+			s_p_hashtbl_destroy(tbl);
+			return 0;
+		}
+	} else {
+		p->name = xstrdup(value);
+	}
+
 	p->cpu_cnt = gres_cpu_cnt;
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
 		bitstr_t *cpu_bitmap;	/* Just use to validate config */
@@ -708,17 +724,48 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_destroy(tbl);
 
 	for (i=0; i<gres_context_cnt; i++) {
-		if (strcasecmp(value, gres_context[i].gres_name) == 0)
+		if (strcasecmp(p->name, gres_context[i].gres_name) == 0)
 			break;
 	}
 	if (i >= gres_context_cnt) {
-		error("Ignoring gres.conf Name=%s", value);
+		error("Ignoring gres.conf Name=%s", p->name);
 		_destroy_gres_slurmd_conf(p);
 		return 0;
 	}
 	p->plugin_id = gres_context[i].plugin_id;
 	*dest = (void *)p;
 	return 1;
+}
+static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
+			       const char *key, const char *value,
+			       const char *line, char **leftover)
+{
+	static s_p_options_t _gres_options[] = {
+		{"Count", S_P_STRING},	/* Number of Gres available */
+		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
+		{"File",  S_P_STRING},	/* Path to Gres device */
+		{"Name",  S_P_STRING},	/* Gres type name */
+		{NULL}
+	};
+	s_p_hashtbl_t *tbl;
+
+	if (gres_node_name && value) {
+		bool match = false;
+		hostlist_t hl;
+		hl = hostlist_create(value);
+		if (hl) {
+			match = (hostlist_find(hl, gres_node_name) >= 0);
+			hostlist_destroy(hl);
+		}
+		if (!match) {
+			debug("skipping GRES for NodeName=%s %s", value, line);
+			tbl = s_p_hashtbl_create(_gres_options);
+			s_p_parse_line(tbl, *leftover, leftover);
+			s_p_hashtbl_destroy(tbl);
+			return 0;
+		}
+	}
+	return _parse_gres_config(dest, type, key, NULL, line, leftover);
 }
 
 static void _validate_config(slurm_gres_context_t *context_ptr)
@@ -750,14 +797,16 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 
 extern int gres_plugin_node_config_devices_path(char **dev_path,
 						char **gres_name,
-						int array_len)
+						int array_len,
+						char *node_name)
 {
 	static s_p_options_t _gres_options[] = {
-		{"Name", S_P_ARRAY, _parse_gres_config, NULL},
+		{"Name",     S_P_ARRAY, _parse_gres_config,  NULL},
+		{"NodeName", S_P_ARRAY, _parse_gres_config2, NULL},
 		{NULL}
 	};
 
-	int count, i;
+	int count = 0, count2 = 0, i, j;
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
@@ -772,6 +821,8 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 	}
 
 	slurm_mutex_lock(&gres_context_lock);
+	if (!gres_node_name && node_name)
+		gres_node_name = xstrdup(node_name);
 	tbl = s_p_hashtbl_create(_gres_options);
 	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
 		fatal("error opening/reading %s", gres_conf_file);
@@ -791,11 +842,25 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 			}
 		}
 	}
+	if (s_p_get_array((void ***) &gres_array, &count2, "NodeName", tbl)) {
+		if ((count + count2) > array_len) {
+			error("GRES device count exceeds array size (%d > %d)",
+			      (count + count2), array_len);
+			count2 = array_len - count;
+		}
+		for (i = 0, j = count; i < count2; i++, j++) {
+			if ((gres_array[i]) && (gres_array[i]->file)) {
+				dev_path[j]   = gres_array[i]->file;
+				gres_name[j]  = gres_array[i]->name;
+				gres_array[i] = NULL;
+			}
+		}
+	}
 	s_p_hashtbl_destroy(tbl);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	xfree(gres_conf_file);
-	return count;
+	return (count + count2);
 }
 
 /* No gres.conf file found.
@@ -831,15 +896,17 @@ static int _no_gres_conf(uint32_t cpu_cnt)
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
  * IN cpu_cnt - Number of CPUs on configured on this node
+ * IN node_name - Name of this node
  */
-extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
+extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name)
 {
 	static s_p_options_t _gres_options[] = {
-		{"Name", S_P_ARRAY, _parse_gres_config, NULL},
+		{"Name",     S_P_ARRAY, _parse_gres_config,  NULL},
+		{"NodeName", S_P_ARRAY, _parse_gres_config2, NULL},
 		{NULL}
 	};
 
-	int count, i, rc;
+	int count = 0, i, rc;
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
@@ -858,6 +925,8 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 	}
 
 	slurm_mutex_lock(&gres_context_lock);
+	if (!gres_node_name && node_name)
+		gres_node_name = xstrdup(node_name);
 	gres_cpu_cnt = cpu_cnt;
 	tbl = s_p_hashtbl_create(_gres_options);
 	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
@@ -865,6 +934,12 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
 	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(gres_conf_list, gres_array[i]);
+			gres_array[i] = NULL;
+		}
+	}
+	if (s_p_get_array((void ***) &gres_array, &count, "NodeName", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(gres_conf_list, gres_array[i]);
 			gres_array[i] = NULL;
