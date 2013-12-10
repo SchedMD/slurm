@@ -332,7 +332,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		error("(%s: %d: %s) list_str_to_array returned count %"
 		      PRIu32 "does not match expected count %d",
 		      THIS_FILE, __LINE__,
-		      __FUNCTION__, cnt, job->step_layout->node_cnt);
+		      __FUNCTION__, cnt, step_layout->node_cnt);
 	}
 
 	/*
