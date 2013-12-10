@@ -88,7 +88,7 @@ and commands are denoted below.
 		  library is installed. MUNGE is used as the default
 		  authentication mechanism.</li>
 <li> <b>Authd</b> The auth/authd plugin will be built and installed if
-		  the libauth library and its dependency libe are installed.
+		  the libauth library and its dependency libs are installed.
 		  </li>
 <li> <b>sview</b> The sview command will be built only if and <i>gtk+-2.0</i>
 		  is installed</li>
@@ -668,7 +668,7 @@ the slurmd daemons on the compute nodes.
 Generally upgrading Slurm on all of the login and compute nodes is recommended,
 although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
-Also see the note above about reverse compatability.</p>
+Also see the note above about reverse compatibility.</p>
 
 <p>Pretty much each new major and/or minor release of Slurm (e.g. 2.4.x to 2.5.x)
 involves changes to the state files with new data structures, new options, etc.
