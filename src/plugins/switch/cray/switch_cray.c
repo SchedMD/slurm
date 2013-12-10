@@ -149,7 +149,6 @@ typedef struct slurm_cray_jobinfo {
 	uint32_t       stepid; /* Current step id */
 	/* Cray Application ID; A unique combination of the job id and step id*/
 	uint64_t apid;
-	slurm_step_layout_t *step_layout;
 } slurm_cray_jobinfo_t;
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job);
@@ -181,7 +180,7 @@ static void _print_alpsc_pe_info(alpsc_peInfo_t alps_info)
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job)
 {
-	int i, j;
+	int i;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		error("(%s: %d: %s) job pointer was NULL", THIS_FILE, __LINE__,
@@ -209,25 +208,6 @@ static void _print_jobinfo(slurm_cray_jobinfo_t *job)
 		info("  cookie_ids[%d]: %" PRIu32, i, job->cookie_ids[i]);
 	}
 	info("  ------");
-	if (job->step_layout) {
-		info("  node_cnt: %" PRIu32, job->step_layout->node_cnt);
-		info("  node_list: %s", job->step_layout->node_list);
-		info("  --- tasks ---");
-		for (i = 0; i < job->step_layout->node_cnt; i++) {
-			info("  tasks[%d] = %u", i, job->step_layout->tasks[i]);
-		}
-		info("  ------");
-		info("  task_cnt: %" PRIu32, job->step_layout->task_cnt);
-		info("  --- hosts to task---");
-
-		for (i = 0; i < job->step_layout->node_cnt; i++) {
-			info("Host: %d", i);
-			for (j = 0; j < job->step_layout->tasks[i]; j++) {
-				info("Task: %d", job->step_layout->tids[i][j]);
-			}
-		}
-		info("  ------");
-	}
 	info("--END Jobinfo--");
 }
 
@@ -287,7 +267,6 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 	new->jobid = job_id;
 	new->stepid = step_id;
 	new->apid = SLURM_ID_HASH(job_id, step_id);
-	new->step_layout = NULL;
 	*switch_job = (switch_jobinfo_t *) new;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -419,16 +398,11 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 
 	/*
 	 * Populate the switch_jobinfo_t struct
-	 * Make a copy of the step_layout, so that switch_p_free_jobinfo can
-	 * consistently free it later whether it's dealing with a copy that was
-	 * created by this function or any other like switch_p_copy_jobinfo or
-	 * switch_p_unpack_jobinfo.
 	 */
 	job->num_cookies = num_cookies;
 	job->cookies = s_cookies;
 	job->cookie_ids = s_cookie_ids;
 	job->port = port;
-	job->step_layout = slurm_step_layout_copy(step_layout);
 
 #endif
 	return SLURM_SUCCESS;
@@ -477,10 +451,6 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 		}
 	}
 
-	if (NULL != job->step_layout) {
-		slurm_step_layout_destroy(job->step_layout);
-	}
-
 	xfree(job);
 
 	return;
@@ -516,8 +486,6 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	packstr_array(job->cookies, job->num_cookies, buffer);
 	pack32_array(job->cookie_ids, job->num_cookies, buffer);
 	pack32(job->port, buffer);
-	pack_slurm_step_layout(job->step_layout, buffer,
-			       SLURM_PROTOCOL_VERSION);
 
 	return 0;
 }
@@ -528,16 +496,18 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 
 	int rc;
 	uint32_t num_cookies;
+	slurm_cray_jobinfo_t *job;
 
-	if (NULL == switch_job) {
+	if (!switch_job) {
 		debug2("(%s: %d: %s) switch_job was NULL", THIS_FILE, __LINE__,
 		       __FUNCTION__);
 		return SLURM_SUCCESS;
 	}
 
-	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
-
 	xassert(buffer);
+
+	job = (slurm_cray_jobinfo_t *) switch_job;
+
 	rc = unpack32(&job->magic, buffer);
 	if (rc != SLURM_SUCCESS) {
 		error("(%s: %d: %s) unpack32 of magic failed. Return code: %d",
@@ -595,15 +565,6 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		goto unpack_error;
 	}
 
-	rc = unpack_slurm_step_layout(&(job->step_layout), buffer,
-				      SLURM_PROTOCOL_VERSION);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32 step_layout failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
-
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("(%s:%d: %s) switch_jobinfo_t contents:",
 		     THIS_FILE, __LINE__, __FUNCTION__);
@@ -615,15 +576,25 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 unpack_error:
 	error("(%s:%d: %s) Unpacking error", THIS_FILE, __LINE__,
 	      __FUNCTION__);
-	if (job->cookies) {
-		xfree(job->cookies);
+
+	if (job->num_cookies) {
+		// Free the cookie_ids
+		if (job->cookie_ids)
+			xfree(job->cookie_ids);
+
+		if (job->cookies) {
+			int i;
+			// Free the individual cookie strings.
+			for (i = 0; i < job->num_cookies; i++) {
+				if (job->cookies[i])
+					xfree(job->cookies[i]);
+			}
+
+			// Free the cookie array
+			xfree(job->cookies);
+		}
 	}
-	if (job->cookie_ids) {
-		xfree(job->cookie_ids);
-	}
-	if (job->step_layout) {
-		slurm_step_layout_destroy(job->step_layout);
-	}
+
 	return SLURM_ERROR;
 }
 
@@ -947,7 +918,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * Fill in alpsc_pe_info.firstPeHere
 	 */
 	rc = _get_first_pe(job->nodeid, job->node_tasks,
-			   sw_job->step_layout->tids,
+			   job->msg->global_task_ids,
 			   &first_pe_here);
 	if (rc < 0) {
 		error("(%s: %d: %s) get_first_pe failed", THIS_FILE, __LINE__,
@@ -962,7 +933,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * The peNidArray maps tasks to nodes.
 	 * Basically, reverse the tids variable which maps nodes to tasks.
 	 */
-	rc = _list_str_to_array(sw_job->step_layout->node_list, &cnt, &nodes);
+	rc = _list_str_to_array(job->msg->complete_nodelist, &cnt, &nodes);
 	if (rc < 0) {
 		error("(%s: %d: %s) list_str_to_array failed",
 		      THIS_FILE, __LINE__, __FUNCTION__);
@@ -974,19 +945,18 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		      THIS_FILE, __LINE__, __FUNCTION__);
 		return SLURM_ERROR;
 	}
-	if (sw_job->step_layout->node_cnt != cnt) {
+	if (job->msg->nnodes != cnt) {
 		error("(%s: %d: %s) list_str_to_array returned count %"
 		      PRIu32 "does not match expected count %d",
 		      THIS_FILE, __LINE__, __FUNCTION__, cnt,
-		      sw_job->step_layout->node_cnt);
+		      job->msg->nnodes);
 	}
 
-	task_to_nodes_map = xmalloc(sw_job->step_layout->task_cnt *
-				    sizeof(int32_t));
+	task_to_nodes_map = xmalloc(job->msg->ntasks * sizeof(int32_t));
 
-	for (i = 0; i < sw_job->step_layout->node_cnt; i++) {
-		for (j = 0; j < sw_job->step_layout->tasks[i]; j++) {
-			task = sw_job->step_layout->tids[i][j];
+	for (i = 0; i < job->msg->nnodes; i++) {
+		for (j = 0; j < job->msg->tasks_to_launch[i]; j++) {
+			task = job->msg->global_task_ids[i][j];
 			task_to_nodes_map[task] = nodes[i];
 			if (debug_flags & DEBUG_FLAG_SWITCH) {
 				info("(%s:%d: %s) peNidArray:\tTask: %d\tNode:"
@@ -1041,10 +1011,10 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * have to be filled in when support for them is added.
 	 * Currently, it's all zeros.
 	 */
-	size = sw_job->step_layout->node_cnt * sizeof(int);
+	size = job->msg->nnodes * sizeof(int);
 	alpsc_pe_info.nodeCpuArray = xmalloc(size);
 	memset(alpsc_pe_info.nodeCpuArray, 0, size);
-	if (sw_job->step_layout->node_cnt && !alpsc_pe_info.nodeCpuArray) {
+	if (job->msg->nnodes && !alpsc_pe_info.nodeCpuArray) {
 		free(alpsc_pe_info.peCmdMapArray);
 		error("(%s: %d: %s) failed to calloc nodeCpuArray.", THIS_FILE,
 		      __LINE__, __FUNCTION__);
@@ -1549,6 +1519,7 @@ extern int switch_p_slurmd_step_init(void)
 }
 
 #ifdef HAVE_NATIVE_CRAY
+
 /*
  * Function: get_first_pe
  * Description:
