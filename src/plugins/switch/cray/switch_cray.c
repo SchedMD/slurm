@@ -665,6 +665,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		return SLURM_SUCCESS;
 	}
 
+	xassert(job->msg);
 	xassert(sw_job->magic == CRAY_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
