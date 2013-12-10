@@ -493,8 +493,6 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 			    uint16_t protocol_version)
 {
-
-	int rc;
 	uint32_t num_cookies;
 	slurm_cray_jobinfo_t *job;
 
@@ -508,12 +506,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 
 	job = (slurm_cray_jobinfo_t *) switch_job;
 
-	rc = unpack32(&job->magic, buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32 of magic failed. Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
+	safe_unpack32(&job->magic, buffer);
 
 	if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
 		debug2("(%s: %d: %s) Nothing to unpack.",
@@ -522,20 +515,8 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	}
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
-	rc = unpack32(&(job->num_cookies), buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32 of num_cookies failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
-	rc = unpackstr_array(&(job->cookies), &num_cookies, buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpackstr_array cookies failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
+	safe_unpack32(&(job->num_cookies), buffer);
+	safe_unpackstr_array(&(job->cookies), &num_cookies, buffer);
 	if (num_cookies != job->num_cookies) {
 		error("(%s: %d: %s) Wrong number of cookies received."
 		      " Expected: %" PRIu32 "Received: %" PRIu32,
@@ -543,13 +524,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		      job->num_cookies, num_cookies);
 		goto unpack_error;
 	}
-	rc = unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32_array cookie IDs failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
+	safe_unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
 	if (num_cookies != job->num_cookies) {
 		error("(%s: %d: %s) Wrong number of cookie IDs received."
 		      " Expected: %" PRIu32 "Received: %" PRIu32,
@@ -557,13 +532,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		      job->num_cookies, num_cookies);
 		goto unpack_error;
 	}
-
-	rc = unpack32(&job->port, buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32 PMI port failed. Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
+	safe_unpack32(&job->port, buffer);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("(%s:%d: %s) switch_jobinfo_t contents:",
