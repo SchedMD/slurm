@@ -1148,14 +1148,14 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * Set the Job's APID
 	 */
 	job_setapid(getpid(), sw_job->apid);
-#endif
 
 	return SLURM_SUCCESS;
 
-#ifdef HAVE_NATIVE_CRAY
 error_free_alpsc_pe_info_t:
 	_free_alpsc_pe_info(alpsc_pe_info);
 	return SLURM_ERROR;
+#else
+	return SLURM_SUCCESS;
 #endif
 }
 
