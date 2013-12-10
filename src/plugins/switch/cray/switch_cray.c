@@ -153,8 +153,8 @@ typedef struct slurm_cray_jobinfo {
 } slurm_cray_jobinfo_t;
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job);
-static int _list_str_to_array(char *list, int *cnt, int32_t **numbers);
 #ifdef HAVE_NATIVE_CRAY
+static int _list_str_to_array(char *list, int *cnt, int32_t **numbers);
 static void _recursive_rmdir(const char *dirnm);
 static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
 			 uint32_t **host_to_task_map, int32_t *first_pe);
@@ -1630,7 +1630,6 @@ static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
 	}
 	return ret;
 }
-#endif
 
 /*
  * Function: _list_str_to_array
@@ -1706,7 +1705,6 @@ static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
 	return ret;
 }
 
-#ifdef HAVE_NATIVE_CRAY
 /*
  * Recursive directory delete
  *
