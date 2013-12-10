@@ -1674,7 +1674,7 @@ static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
 	 * Create an integer array of item_ptr in the same order as in the list.
 	 */
 	i = 0;
-	item_ptr = *numbers = xmalloc((*cnt) * sizeof(uint32_t));
+	item_ptr = *numbers = xmalloc((*cnt) * sizeof(int32_t));
 	while ((str = hostlist_shift(hl))) {
 		if (!(cptr = strpbrk(str, "0123456789"))) {
 			error("(%s: %d: %s) Error: Node was not recognizable:"
