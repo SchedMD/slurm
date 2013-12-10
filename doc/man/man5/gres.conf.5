@@ -58,6 +58,11 @@ use of resources allocated to a different user).
 If \fBFile\fR is specified then \fBCount\fR must be either set to the number
 of file names specified or not set (the default value is the number of files
 specified).
+Slurm must track the utilization of each individual device If device file
+names are specified, which involves more overhead than just tracking the
+device counts.
+Use the \fBFile\fR parameter only if the \fBCount\fR is not sufficient for
+tracking purposes.
 NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
 the option must be specified on all nodes and SLURM will track the assignment
 of each specific resource on each node. Otherwise SLURM will only track a
