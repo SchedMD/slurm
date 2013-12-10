@@ -278,7 +278,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 {
 	slurm_cray_jobinfo_t *new;
 
-	xassert(switch_job != NULL);
+	xassert(switch_job);
 	new = (slurm_cray_jobinfo_t *) xmalloc(sizeof(slurm_cray_jobinfo_t));
 	new->magic = CRAY_JOBINFO_MAGIC;
 	new->num_cookies = 0;
@@ -675,7 +675,7 @@ void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 			      size_t size)
 {
-	if ((buf != NULL) && size) {
+	if (buf && size) {
 		buf[0] = '\0';
 		return buf;
 	}
@@ -833,7 +833,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		 * node
 		 */
 		f = fopen("/proc/meminfo", "r");
-		if (f == NULL ) {
+		if (!f) {
 			error("(%s: %d: %s) Failed to open /proc/meminfo: %m",
 			      THIS_FILE, __LINE__, __FUNCTION__);
 			return SLURM_ERROR;
@@ -1084,8 +1084,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	size = sw_job->step_layout->node_cnt * sizeof(int);
 	alpsc_pe_info.nodeCpuArray = xmalloc(size);
 	memset(alpsc_pe_info.nodeCpuArray, 0, size);
-	if (sw_job->step_layout->node_cnt &&
-	    (alpsc_pe_info.nodeCpuArray == NULL )) {
+	if (sw_job->step_layout->node_cnt && !alpsc_pe_info.nodeCpuArray) {
 		free(alpsc_pe_info.peCmdMapArray);
 		error("(%s: %d: %s) failed to calloc nodeCpuArray.", THIS_FILE,
 		      __LINE__, __FUNCTION__);
@@ -1453,7 +1452,7 @@ extern int switch_p_free_node_info(switch_node_info_t **switch_node)
 extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 				       char *buf, size_t size)
 {
-	if ((buf != NULL )&& size) {
+	if (buf && size) {
 		buf[0] = '\0';
 		return buf;
 	}
@@ -1617,7 +1616,7 @@ static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
 		      __FUNCTION__);
 		return -1;
 	}
-	if (host_to_task_map == NULL ) {
+	if (!host_to_task_map) {
 		error("(%s: %d: %s) host_to_task_map == NULL",
 		      THIS_FILE, __LINE__, __FUNCTION__);
 		return -1;
@@ -1717,7 +1716,7 @@ static void _recursive_rmdir(const char *dirnm)
 	struct stat st_buf;
 
 	/* Don't do anything if there is no directory name */
-	if (dirnm == NULL ) {
+	if (!dirnm) {
 		return;
 	}
 	dirp = opendir(dirnm);
@@ -1795,7 +1794,7 @@ static int _get_cpu_total(void)
 
 	f = fopen("/sys/devices/system/cpu/online", "r");
 
-	if (f == NULL ) {
+	if (!f) {
 		error("(%s: %d: %s) Failed to open file"
 		      " /sys/devices/system/cpu/online: %m",
 		      THIS_FILE, __LINE__, __FUNCTION__);
@@ -1894,7 +1893,7 @@ static int _assign_port(uint32_t *real_port)
 {
 	int port, tmp, attempts = 0;
 
-	if (real_port == NULL ) {
+	if (!real_port) {
 		error("(%s: %d: %s) real_port address was NULL.",
 		      THIS_FILE, __LINE__, __FUNCTION__);
 		return -1;
