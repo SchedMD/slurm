@@ -1652,21 +1652,20 @@ static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
 
 	int32_t *item_ptr = NULL;
 	hostlist_t hl;
-	int i, ret = 0, num_items;
+	int i, ret = 0;
 	char *str, *cptr = NULL;
 
 	/*
 	 * Create a hostlist
 	 */
-	if ((hl = hostlist_create(list)) == NULL ) {
+	if (!(hl = hostlist_create(list))) {
 		error("hostlist_create error on %s", list);
 		return -1;
 	}
 
-	num_items = hostlist_count(hl);
-	*cnt = num_items;
+	*cnt = hostlist_count(hl);
 
-	if (num_items == 0) {
+	if (!*cnt) {
 		*numbers = NULL;
 		return 0;
 	}
@@ -1674,28 +1673,21 @@ static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
 	/*
 	 * Create an integer array of item_ptr in the same order as in the list.
 	 */
-	item_ptr = *numbers = xmalloc(num_items * sizeof(uint32_t));
-	for (i = 0; i < num_items; i++) {
-		// str must be freed using free(), not xfree()
-		str = hostlist_shift(hl);
-		if (str == NULL ) {
-			error("(%s: %d: %s) hostlist_shift error",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-			xfree(item_ptr);
-			hostlist_destroy(hl);
-			return -1;
-		}
-		cptr = strpbrk(str, "0123456789");
-		if (cptr == NULL ) {
+	i = 0;
+	item_ptr = *numbers = xmalloc((*cnt) * sizeof(uint32_t));
+	while ((str = hostlist_shift(hl))) {
+		if (!(cptr = strpbrk(str, "0123456789"))) {
 			error("(%s: %d: %s) Error: Node was not recognizable:"
 			      " %s",
 			      THIS_FILE, __LINE__, __FUNCTION__, str);
 			free(str);
 			xfree(item_ptr);
+			*numbers = NULL;
 			hostlist_destroy(hl);
 			return -1;
 		}
 		item_ptr[i] = atoll(cptr);
+		i++;
 		free(str);
 	}
 
