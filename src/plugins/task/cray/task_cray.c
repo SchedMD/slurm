@@ -589,13 +589,22 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
  * Function: _get_cpu_masks
  * Description:
  *
- *  Returns a cpu_set_t containing the masks of the CPUs within the NUMA nodes
- *  that are in use by the application.
+ *  Returns cpuMasks which contains an array of a cpu_set_t cpumask one per
+ *  NUMA node id within the numaNodes array; the cpumask identifies
+ *  which CPUs are within that NUMA node.
  *
- *  IN char* path -- The path to the directory containing the files containing
- *                   information about NUMA nodes.
- *  OUT cpu_set_t **cpuMasks -- Pointer to the CPUS used by the application.
- *                              Must be freed via CPU_FREE() by the caller.
+ *  It does the following.
+ *  0.  Uses the cpuset.mems file to determine the total number of Numa Nodes
+ *      and their individual index numbers.
+ *  1.  Uses numa_node_to_cpus to get the bitmask of CPUs for each Numa Node.
+ *  2.  Obtains the bitmask of CPUs for the cpuset from the cpuset.cpus file.
+ *  3.  Bitwise-ANDs the bitmasks from steps #1 and #2 to obtain the CPUs
+ *      allowed per Numa Node bitmask.
+ *
+ *  IN int num_numa_nodes -- Number of NUMA nodes in numa_array
+ *  IN int32_t *numa_array -- Array of NUMA nodes length num_numa_nodes
+ *  OUT cpu_set_t **cpuMasks -- An array of cpu_set_t's one per NUMA node
+ *                              The caller must free *cpuMasks via xfree().
  * RETURN
  *  0 on success and -1 on failure.
  */
