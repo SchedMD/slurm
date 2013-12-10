@@ -659,6 +659,11 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	char *buff = NULL;
 	size_t size;
 
+	// Dummy variables to satisfy alpsc_write_placement_file
+	int control_nid = 0, num_branches = 0;
+	struct sockaddr_in control_soc;
+	alpsc_branchInfo_t alpsc_branch_info;
+
 	if (!sw_job || (sw_job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
 		       THIS_FILE, __LINE__, __FUNCTION__);
@@ -674,10 +679,6 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		     THIS_FILE, __LINE__, __FUNCTION__, job->jobid,
 		     sw_job->jobid);
 	}
-	// Dummy variables to satisfy alpsc_write_placement_file
-	int control_nid = 0, num_branches = 0;
-	struct sockaddr_in control_soc;
-	alpsc_branchInfo_t alpsc_branch_info;
 
 	rc = alpsc_attach_cncu_container(&err_msg, sw_job->jobid, job->cont_id);
 	if (rc != 1) {
