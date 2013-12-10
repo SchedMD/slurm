@@ -690,6 +690,11 @@ versions (e.g. 2.5.0-pre1 to 2.5.0-pre2).
 We'll try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
+<p>If you have built your own version of Slurm plugins, they will likely
+need modification to support a new version of Slurm. It is common for plugins
+to add new functions and function arguments during major updates.
+See the RELEASE_NOTES file for details.</p>
+
 <a name="FreeBSD"><h2>FreeBSD</h2></a>
 
 <p>FreeBSD administrators can install the latest stable slurm as a binary
@@ -709,6 +714,6 @@ options such as mysql, postgresql, and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 December 2013</p>
+<p style="text-align:center;">Last modified 10 December 2013</p>
 
 <!--#include virtual="footer.txt"-->
