@@ -1,0 +1,154 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Confirms job array dependencies.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id       "28.7"
+set exit_code     0
+set array_size    3
+set script        "test$test_id\.bash"
+set top_array_task_id [expr $array_size - 1]
+
+print_header $test_id
+
+if {$array_size > [get_array_config]} {
+	send_user "\nWARNING: MaxArraySize is too small\n"
+	exit 0
+}
+
+exec $bin_rm -f $script
+make_bash_script $script "sleep 10; sleep \$SLURM_ARRAY_TASK_ID"
+
+#
+# Submit a job array for first dependency test
+#
+set job_id 0
+spawn $sbatch -N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null $script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+#
+# Submit a dependent job depedent upon a single job array element of that job array
+#
+set timeout $max_job_delay
+set match_job_state 0
+set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id\_$top_array_task_id $scontrol show job $job_id\_$top_array_task_id]
+expect {
+	-re "JobState=COMPLETED|COMPLETING" {
+		set match_job_state 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match_job_state != 1} {
+	send_user "\nFAILURE: Dependent job not completed\n"
+	set exit_code 1
+}
+if {$exit_code != 0} {
+	exit $exit_code
+}
+send_user "\nSo far, so good\n\n\n"
+
+#
+# Submit a job array for second dependency test
+#
+set job_id 0
+spawn $sbatch -N1 -t1 -a 0-[expr $array_size - 1] -o /dev/null -e /dev/null $script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+#
+# Submit a dependent job depedent upon a full job array
+#
+set timeout $max_job_delay
+set match_job_state 0
+set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id $scontrol show job $job_id]
+expect {
+	-re "JobState=COMPLETED|COMPLETING" {
+		incr match_job_state
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match_job_state != $array_size} {
+	send_user "\nFAILURE: Dependent job not completed ($match_job_state != $array_size)\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+if {$exit_code == 0} {
+	exec $bin_rm -f $script
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

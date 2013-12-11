@@ -172,11 +172,11 @@ test1.65   Test of srun --mpi=list option.
 test1.66   Test srun to make sure that the jobs are running on the correct node
 	    within a allocation.
 test1.67   Test that an srun program can move from the background to the
-           foreground.
+	   foreground.
 test1.68   Test that an srun program can move from the foreground to the
-           background.
+	   background.
 test1.69   Test that multiple srun programs execute simultaneously in the
-           background.
+	   background.
 test1.70   Validates that srun standard input and output work with binary files.
 test1.71   Validates that srun exit code matches that of a test program.
 test1.72   Validate that the JobAcctGatherFrequency value is enforced when
@@ -661,6 +661,8 @@ test28.5   Validates that scontrol can hold and release a whole job
 	   array or an individual jobid index.
 test28.6   Validates that when a job array is submitted to multiple
 	   partitions that the jobs run on them.
+test28.7   Confirms job array dependencies.
+
 
 test29.#   Reserved.
 ====================
