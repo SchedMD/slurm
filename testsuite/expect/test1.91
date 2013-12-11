@@ -52,22 +52,7 @@ if {[test_launch_poe]} {
 #
 # Test if task affinity support is supported.
 #
-set affinity 0
-log_user 0
-spawn $scontrol show config
-expect {
-	-re "TaskPlugin *= task/($alpha)" {
-		if {![string compare $expect_out(1,string) "affinity"] || ![string compare $expect_out(1,string) "cgroup"]} {
-			set affinity 1
-		}
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$affinity == 0} {
+if {![test_affinity]} {
 	send_user "\nWARNING: task affinity not supported on this system\n"
 	exit 0
 }
