@@ -7649,11 +7649,11 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack32(msg->nnodes, buffer);
 		pack16(msg->cpus_per_task, buffer);
 		pack16(msg->task_dist, buffer);
+		pack16(msg->node_cpus, buffer);
 
 		slurm_cred_pack(msg->cred, buffer);
 		for (i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
-			pack16(msg->cpus_allocated[i], buffer);
 			pack32_array(msg->global_task_ids[i],
 				     (uint32_t) msg->tasks_to_launch[i],
 				     buffer);
@@ -7727,7 +7727,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		slurm_cred_pack(msg->cred, buffer);
 		for (i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
-			pack16(msg->cpus_allocated[i], buffer);
+			pack16(0, buffer);
 			pack32_array(msg->global_task_ids[i],
 				     (uint32_t) msg->tasks_to_launch[i],
 				     buffer);
@@ -7801,7 +7801,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		slurm_cred_pack(msg->cred, buffer);
 		for (i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
-			pack16(msg->cpus_allocated[i], buffer);
+			pack16(0, buffer);
 			pack32_array(msg->global_task_ids[i],
 				     (uint32_t) msg->tasks_to_launch[i],
 				     buffer);
@@ -7894,16 +7894,15 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->nnodes, buffer);
 		safe_unpack16(&msg->cpus_per_task, buffer);
 		safe_unpack16(&msg->task_dist, buffer);
+		safe_unpack16(&msg->node_cpus, buffer);
 
 		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;
 		msg->tasks_to_launch = xmalloc(sizeof(uint16_t) * msg->nnodes);
-		msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
 		msg->global_task_ids = xmalloc(sizeof(uint32_t *) *
 					       msg->nnodes);
 		for (i = 0; i < msg->nnodes; i++) {
 			safe_unpack16(&msg->tasks_to_launch[i], buffer);
-			safe_unpack16(&msg->cpus_allocated[i], buffer);
 			safe_unpack32_array(&msg->global_task_ids[i],
 					    &uint32_tmp,
 					    buffer);
@@ -7997,12 +7996,11 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;
 		msg->tasks_to_launch = xmalloc(sizeof(uint16_t) * msg->nnodes);
-		msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
 		msg->global_task_ids = xmalloc(sizeof(uint32_t *) *
 					       msg->nnodes);
 		for (i = 0; i < msg->nnodes; i++) {
 			safe_unpack16(&msg->tasks_to_launch[i], buffer);
-			safe_unpack16(&msg->cpus_allocated[i], buffer);
+			safe_unpack16(&uint16, buffer); /* not needed */
 			safe_unpack32_array(&msg->global_task_ids[i],
 					    &uint32_tmp,
 					    buffer);
@@ -8096,12 +8094,11 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;
 		msg->tasks_to_launch = xmalloc(sizeof(uint16_t) * msg->nnodes);
-		msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
 		msg->global_task_ids = xmalloc(sizeof(uint32_t *) *
 					       msg->nnodes);
 		for (i = 0; i < msg->nnodes; i++) {
 			safe_unpack16(&msg->tasks_to_launch[i], buffer);
-			safe_unpack16(&msg->cpus_allocated[i], buffer);
+			safe_unpack16(&uint16, buffer); /* not needed */
 			safe_unpack32_array(&msg->global_task_ids[i],
 					    &uint32_tmp,
 					    buffer);

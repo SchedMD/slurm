@@ -415,7 +415,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 	job->nnodes  = msg->nnodes;
 	job->nodeid  = nodeid;
 	job->debug   = msg->slurmd_debug;
-	job->cpus    = msg->cpus_allocated[nodeid];
+	job->cpus    = msg->node_cpus;
 
 	/* This needs to happen before acct_gather_profile_startpoll
 	   and only really looks at the profile in the job.
