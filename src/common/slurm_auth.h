@@ -94,19 +94,12 @@ enum {
     SLURM_AUTH_FIRST_LOCAL_ERROR    /* Always keep me last. */
 };
 
-/*
- * Text labels for advisory arguments passed to plugin functions.
- * Use these labels rather than string literals in order to avoid
- * misspellings.
- */
-#define ARG_HOST_LIST		"HostList"
-#define ARG_TIMEOUT		"Timeout"
-
-/*
- * Return the argument descriptor for the argument vectors in the
- * plugin API.
- */
-const arg_desc_t *slurm_auth_get_arg_desc( void );
+/* Arguments passed to plugin functions */
+enum {
+	ARG_HOST_LIST = 0,
+	ARG_TIMEOUT,
+	ARG_COUNT,
+};
 
 /*
  * SLURM authentication context opaque type.

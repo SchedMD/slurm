@@ -95,12 +95,6 @@ const char plugin_type[]        = "auth/authd";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 90;
 
-/*
- * Where to find the timeout in the argument vector.  This is set
- * during initialization and should not change.
- */
-static int timeout_idx = -1;
-
 /* Default timeout. */
 static const int AUTHD_TTL = 2;
 
@@ -125,19 +119,7 @@ enum {
 
 int init( void )
 {
-	const arg_desc_t *desc;
-
 	verbose( "authd authentication module initializing" );
-
-	if ( ( desc = slurm_auth_get_arg_desc() ) == NULL ) {
-		error( "unable to query SLURM for argument vector layout" );
-		return SLURM_ERROR;
-	}
-
-	if ( ( timeout_idx = arg_idx_by_name( desc, ARG_TIMEOUT ) ) < 0 ) {
-		error( "Required argument 'Timeout' not provided" );
-		return SLURM_ERROR;
-	}
 
 	return SLURM_SUCCESS;
 }
@@ -167,7 +149,7 @@ slurm_auth_create( void *argv[], char *auth_info )
 
 	cred->cred.valid_from = time( NULL );
 
-	ttl = timeout_idx >= 0 ? (int) argv[ timeout_idx ] : AUTHD_TTL;
+	ttl = (int) argv[ARG_TIMEOUT];
 	/*
 	 * In debug mode read the time-to-live from an environment
 	 * variable.
@@ -177,7 +159,8 @@ slurm_auth_create( void *argv[], char *auth_info )
 		char *env = getenv( "SLURM_AUTHD_TTL" );
 		if ( env ) {
 			ttl = atoi( env );
-			if ( ttl <= 0 ) ttl = AUTHD_TTL;
+			if ( ttl <= 0 )
+				ttl = AUTHD_TTL;
 		}
 	}
 #endif /*NDEBUG*/

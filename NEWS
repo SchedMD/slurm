@@ -194,6 +194,9 @@ documents those changes that are of interest to users and admins.
     and slurmd restarts).
  -- Modify sview to better support job arrays.
  -- Modify squeue to support longer job ID values (for many job array tasks).
+ -- Fix race condition in authentication credential creation that could corrupt
+    memory. (NOTE: This race condition has existed since 2003 and would be
+    exceedingly rare.)
 
 * Changes in Slurm 2.6.4
 ========================
