@@ -49,22 +49,7 @@ if { [test_launch_poe] } {
 # Test if memory affinity support is supported.
 #
 set affinity [test_affinity]
-set fast_sched 0
-log_user 0
-spawn $scontrol show config
-expect {
-	-re "FastSchedule *= ($number)" {
-		set fast_sched $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$fast_sched > 1} {
-	send_user "\nWARNING: FastSchedule > 1 not compatable with this test\n"
-	exit 0
-}
+
 spawn ls /usr/include/numa.h
 expect {
 	-nocase "no such file" {
