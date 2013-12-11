@@ -107,7 +107,6 @@ const uint32_t plugin_version   = 10;
 const uint32_t min_plug_version = 10; /* minimum version accepted */
 
 static int plugin_errno = SLURM_SUCCESS;
-static int host_list_idx = -1;
 static int bad_cred_test = -1;
 
 
@@ -164,11 +163,6 @@ int init ( void )
 		bad_cred_test = atoi(fail_test_env);
 	else
 		bad_cred_test = 0;
-
-	host_list_idx = arg_idx_by_name( slurm_auth_get_arg_desc(),
-			                 ARG_HOST_LIST );
-	if (host_list_idx == -1)
-		return SLURM_ERROR;
 
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;

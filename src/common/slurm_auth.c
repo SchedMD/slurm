@@ -98,45 +98,15 @@ static slurm_auth_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-/*
- * Order of advisory arguments passed to some of the plugins.
- */
-static arg_desc_t auth_args[] = {
-        { ARG_HOST_LIST },
-        { ARG_TIMEOUT },
-        { NULL }
-};
-
-
-const arg_desc_t *
-slurm_auth_get_arg_desc( void )
-{
-        return auth_args;
-}
-
 static void **
-slurm_auth_marshal_args( void *hosts, int timeout )
+_slurm_auth_marshal_args(void *hosts, int timeout)
 {
-        static int hostlist_idx = -1;
-        static int timeout_idx = -1;
-        static int count = sizeof( auth_args ) / sizeof( struct _arg_desc ) - 1;
         void **argv;
 
-        /* Get indices from descriptor, if we haven't already. */
-        if ( ( hostlist_idx == -1 ) &&
-             ( timeout_idx == -1 ) ) {
-                hostlist_idx = arg_idx_by_name( auth_args, ARG_HOST_LIST );
-                timeout_idx = arg_idx_by_name( auth_args, ARG_TIMEOUT );
-        }
-
-        argv = xmalloc( count * sizeof( void * ) );
-
-        /* Marshal host list.  Don't quite know how to do this yet. */
-        argv[ hostlist_idx ] = hosts;
-
-        /* Marshal timeout.
-         * This strange looking code avoids warnings on IA64 */
-        argv[ timeout_idx ] = ((char *) NULL) + timeout;
+        argv = xmalloc(ARG_COUNT * sizeof(void *));
+        argv[ARG_HOST_LIST] = hosts;
+        /* This strange looking code avoids warnings on IA64 */
+        argv[ARG_TIMEOUT] = ((char *) NULL) + timeout;
 
         return argv;
 }
@@ -245,7 +215,7 @@ g_slurm_auth_create( void *hosts, int timeout, char *auth_info )
 	if ( auth_dummy )
 		return xmalloc(0);
 
-        if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
+        if ( ( argv = _slurm_auth_marshal_args(hosts, timeout) ) == NULL ) {
                 return NULL;
         }
 
@@ -270,7 +240,6 @@ int
 g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
 {
         int ret;
-        void **argv = (void **) NULL;
 
         if ( slurm_auth_init(NULL) < 0 )
                 return SLURM_ERROR;
@@ -278,12 +247,7 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
 	if ( auth_dummy )
 		return SLURM_SUCCESS;
 
-        if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
-                return SLURM_ERROR;
-        }
-
         ret = (*(ops.verify))( cred, auth_info );
-        xfree( argv );
         return ret;
 }
 
