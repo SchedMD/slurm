@@ -11,7 +11,6 @@
 # Copyright (C) 2009-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
-# CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <http://slurm.schedmd.com/>.
@@ -33,12 +32,12 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "test21.26"
+set test_id     "21.26"
 set exit_code   0
 set tc1		[get_cluster_name]
 set ta1		slurm_test-account.1
 set ta2		slurm_test-account.2
-set qos1		qqostest
+set qos1	qqostest
 set tu1         slurm_test-user.1
 set access_err  0
 
@@ -55,7 +54,7 @@ if { [test_account_storage] == 0 } {
 }
 
 #
-#make sure we have permission to do this work
+# Make sure we have permission to do this work
 #
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
@@ -68,7 +67,10 @@ proc end_test { } {
 	incr exit_code [remove_user "" "" "$tu1"]
 	incr exit_code [remove_acct "" "$ta1,$ta2"]
 	incr exit_code [remove_qos "$qos1"]
-	incr exit_code [mod_acct "$tc1" "" "root" "" "" "$qos_val" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+	if { [string length $qos_val] } {
+		incr exit_code [mod_acct "$tc1" "" "root" "" "" "$qos_val" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+	}
+	return $exit_code
 }
 
 
@@ -82,6 +84,7 @@ remove_qos "$qos1"
 # get the qos of root on the cluster since we are going to set it to
 # nothing here.  And put it back at the end of the test.
 set match 0
+set qos_val ""
 set my_pid [eval spawn $sacctmgr list cluster $tc1 format=cluster,qos -np]
 expect {
 	-re "There was a problem" {
@@ -145,7 +148,9 @@ if { $exit_code } {
 }
 #====Done add user====Done building test associations===Begin test section=======
 
-#======Verify initial associations=============
+# Verify initial associations
+# NOTE: We do not use regular expressions below due to it's inability to test
+# for a literal "|"
 set matches 0
 set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 expect {
@@ -153,15 +158,27 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		exit 1
 	}
-	-re "\n.root.(|root)." {
+	"\n|root||" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta1.(|$tu1)." {
+	"\n|root|root|" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta2.(|$tu1)." {
+	"\n|$ta1||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta1|$tu1|" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta2||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta2|$tu1|" {
 		incr matches
 		exp_continue
 	}
@@ -174,14 +191,13 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 6} {
-	send_user "\nFAILURE: Initial sacctmgr add failed with ($matches)\n"
+	send_user "\nFAILURE: Initial sacctmgr add failed ($matches != 6)\n"
 	end_test
 	exit 1
 }
 
-#======Begin Modification to Add $qos1 to $account1=======
+#======Begin Modification to Add $qos1 to $ta1=======
 #modify test1 account to add test QoS
 incr exit_code [mod_acct "$tc1" "" "$ta1" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
@@ -192,21 +208,32 @@ if { $exit_code } {
 #=======Done Modifying Account=======Next is Verify=======
 set matches 0
 set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
-
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		exit 1
 	}
-	-re "\n.root.(|root)." {
+	"\n|root||" {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$ta1.(|$tu1)." {
+	"\n|root|root|" {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$ta2.(|$tu1)." {
+	"\n$qos1|$ta1||" {
+		incr matches
+		exp_continue
+	}
+	"\n$qos1|$ta1|$tu1|" {
+		incr matches
+		exp_continue
+	}
+	"\n$qos1|$ta2||" {
+		incr matches
+		exp_continue
+	}
+	"\n$qos1|$ta2|$tu1|" {
 		incr matches
 		exp_continue
 	}
@@ -219,9 +246,8 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 6} {
-	send_user "\nFAILURE: failed on verify of +$qos1 to account $account1 ($matches)\n"
+	send_user "\nFAILURE: failed on verify of +$qos1 to account $ta1 ($matches != 6)\n"
 	end_test
 	exit 1
 }
@@ -242,15 +268,27 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		exit 1
 	}
-	-re "\n.root.(|root)." {
+	"\n|root||" {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$ta1.(|$tu1)." {
+	"\n|root|root|" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta2.(|$tu1)." {
+	"\n$qos1|$ta1||" {
+		incr matches
+		exp_continue
+	}
+	"\n$qos1|$ta1|$tu1|" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta2||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta2|$tu1|" {
 		incr matches
 		exp_continue
 	}
@@ -263,15 +301,14 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 6} {
-	send_user "\nFAILURE: verify of -$qos1 from account $ta2 ($matches)\n"
+	send_user "\nFAILURE: verify of -$qos1 from account $ta2 ($matches != 6)\n"
 	end_test
 	exit 1
 }
 
 
-#======Begin Modification to Subtract $qos1 from $account1=======
+#======Begin Modification to Subtract $qos1 from $ta1=======
 #modify test1 account to remove test QoS
 incr exit_code [mod_acct "$tc1" "" "$ta1" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
@@ -287,15 +324,27 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		exit 1
 	}
-	-re "\n.root.(|root)." {
+	"\n|root||" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta1.(|$tu1)." {
+	"\n|root|root|" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta2.(|$tu1)." {
+	"\n|$ta1||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta1|$tu1|" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta2||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta2|$tu1|" {
 		incr matches
 		exp_continue
 	}
@@ -308,14 +357,13 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 6} {
-	send_user "\nFAILURE: verify of -$qos1 from account $account1 ($matches)\n"
+	send_user "\nFAILURE: verify of -$qos1 from account $ta1 ($matches != 6)\n"
 	end_test
 	exit 1
 }
 
-#=====Begin Modification to Add $qos1 from $account2=======
+#=====Begin Modification to Add $qos1 from $ta2=======
 #modify test2 account to add test QoS
 incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
@@ -332,15 +380,27 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		exit 1
 	}
-	-re "\n.root.(|root)." {
+	"\n|root||" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta1.(|$tu1)." {
+	"\n|root|root|" {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$ta2.(|$tu1)." {
+	"\n|$ta1||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta1|$tu1|" {
+		incr matches
+		exp_continue
+	}
+	"\n$qos1|$ta2||" {
+		incr matches
+		exp_continue
+	}
+	"\n$qos1|$ta2|$tu1|" {
 		incr matches
 		exp_continue
 	}
@@ -353,9 +413,8 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 6} {
-	send_user "\nFAILURE: failed on verify of +$qos1 to account $account2 ($matches)\n"
+	send_user "\nFAILURE: failed on verify of +$qos1 to account $ta2 ($matches != 6)\n"
 	end_test
 	exit 1
 }
@@ -377,15 +436,27 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		exit 1
 	}
-	-re "$qos1.root.(|root)." {
+	"\n$qos1|root||" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta1.(|$tu1)." {
+	"\n$qos1|root|root|" {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$ta2.(|$tu1)." {
+	"\n|$ta1||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta1|$tu1|" {
+		incr matches
+		exp_continue
+	}
+	"\n$qos1|$ta2||" {
+		incr matches
+		exp_continue
+	}
+	"\n$qos1|$ta2|$tu1|" {
 		incr matches
 		exp_continue
 	}
@@ -398,9 +469,8 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 6} {
-	send_user "\nFAILURE: failed on verify of +$qos1 to account root ($matches)\n"
+	send_user "\nFAILURE: failed on verify of +$qos1 to account root ($matches != 6)\n"
 	end_test
 	exit 1
 }
@@ -422,15 +492,27 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		exit 1
 	}
-	-re "$qos1.root.(|root)." {
+	"\n$qos1|root||" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta1.(|$tu1)." {
+	"\n$qos1|root|root|" {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$ta2.(|$tu1)." {
+	"\n|$ta1||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta1|$tu1|" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta2||" {
+		incr matches
+		exp_continue
+	}
+	"\n|$ta2|$tu1|" {
 		incr matches
 		exp_continue
 	}
@@ -443,13 +525,11 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 6} {
-	send_user "\nFAILURE: failed on verify of -$qos1 to account $account2 ($matches)\n"
+	send_user "\nFAILURE: failed on verify of -$qos1 to account $ta2 ($matches != 6)\n"
 	end_test
 	exit 1
 }
-
 
 #======Done With List====== Ending=======
 # This is the end below here
