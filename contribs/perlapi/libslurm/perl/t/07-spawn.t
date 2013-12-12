@@ -94,7 +94,6 @@ SKIP: {
     }
 }
 
-
 # 11
 SKIP: {
     skip "no step ctx", 1 unless $ctx;
@@ -147,7 +146,9 @@ SKIP: {
 # 15
 SKIP: {
     skip "no step ctx", 1 unless $ctx2;
-    $rc = $ctx2->daemon_per_node_hack();
+    my ($data1);
+    $data1 = 1;
+    $rc = $ctx2->daemon_per_node_hack("test", 1, \$data1);
     ok($rc == SLURM_SUCCESS, "daemon per node hack")
 	or diag("step ctx daemon per node hack" . $slurm->strerror());
 }

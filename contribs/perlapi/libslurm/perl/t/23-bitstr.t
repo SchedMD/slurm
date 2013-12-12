@@ -1,5 +1,5 @@
 #!/usr/bin/perl -T
-use Test::More tests => 39;
+use Test::More tests => 38;
 use Slurm qw(:constant);
 
 
@@ -128,13 +128,6 @@ ok($cnt == 24, "bit clear count") or diag("clear_count: $cnt");
 $cnt = $bm->nset_max_count();
 ok($cnt == 8, "bit nset max count") or diag("nset_max_count: $cnt");
 
-
-# 23
-$ia = [];
-$ia->[$_] = $_ for (16 .. 23);
-$sum = $bm->int_and_set_count($ia);
-ok($sum == 156, "bit int and set count") or diag("nset_and_count: $sum");
-
 # $bm fmt: "16-23"
 
 # 24
@@ -187,9 +180,9 @@ ok($str eq "00000000000000000000000011110000", "bit fmt binmask") or diag("fmt_b
 
 
 # 32
-$rc = $bm->unfmt_binmask("0000000111111110000000011110001");
+$bm->unfmt_binmask("0000000111111110000000011110001");
 $cnt = $bm->set_count();
-ok($rc == 0 && $cnt == 13, "bit unfmt binmask") or diag("unfmt_binmask: $rc, $cnt");
+ok($cnt == 13, "bit unfmt binmask") or diag("unfmt_binmask: $cnt");
 
 
 # $bm fmt: "0-0,4-7,16-23"
