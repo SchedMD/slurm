@@ -1163,6 +1163,7 @@ _pre_task_privileged(stepd_step_rec_t *job, int taskid, struct priv_state *sp)
 	if (task_g_pre_launch_priv(job) < 0)
 		return error("pre_launch_priv failed");
 
+	/* sp->gid_list should already be initialized */
 	return(_drop_privileges (job, true, sp, false));
 }
 
@@ -1466,7 +1467,9 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 
 			/*
 			 *  Reclaim privileges and call any plugin hooks
-			 *   that may require elevated privs
+			 *  that may require elevated privs
+			 *  sprivs.gid_list is already set from the
+			 *  _drop_privileges call above, no not reinitialize.
 			 */
 			if (_pre_task_privileged(job, i, &sprivs) < 0)
 				exit(1);
@@ -2152,7 +2155,9 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	return SLURM_SUCCESS;
 }
 
-
+/* If get_list is false make sure ps->gid_list is initialized before
+ * hand to prevent xfree.
+ */
 static int
 _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 		 struct priv_state *ps, bool get_list)
@@ -2175,8 +2180,6 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 			xfree(ps->gid_list);
 			return -1;
 		}
-	} else {
-		ps->gid_list = NULL;	/* initialize to prevent xfree */
 	}
 
 	/*
@@ -2475,6 +2478,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
+		sprivs.gid_list = NULL;	/* initialize to prevent xfree */
 		if (_drop_privileges(job, true, &sprivs, false) < 0) {
 			error("run_script_as_user _drop_privileges: %m");
 			/* child process, should not return */
