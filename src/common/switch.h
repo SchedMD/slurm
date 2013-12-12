@@ -132,13 +132,6 @@ extern int  switch_g_build_jobinfo(switch_jobinfo_t *jobinfo,
 				   slurm_step_layout_t *step_layout,
 				   char *network);
 
-/* copy a switch job credential
- * IN jobinfo - the switch job credential to be copied
- * RET        - the copy
- * NOTE: returned value must be freed using g_switch_g_free_jobinfo
- */
-extern switch_jobinfo_t *switch_g_copy_jobinfo(switch_jobinfo_t *jobinfo);
-
 /* free storage previously allocated for a switch job credential
  * IN jobinfo  - the switch job credential to be freed
  */

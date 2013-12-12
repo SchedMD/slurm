@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     instead of when running on the node for the first time.
  -- If user runs 'scontrol reconfig' but hostnames or the host count changes
     the slurmctld throws a fatal error.
+ -- gres.conf - Add "NodeName" specification so that a single gres.conf file
+    can be used for a heterogeneous cluster.
 
 * Changes in Slurm 14.03.0pre4
 ==============================
@@ -187,6 +189,19 @@ documents those changes that are of interest to users and admins.
  -- Added ApbasilTimeout parameter to the cray.conf configuration file.
  -- Handle in the API if parts of the node structure are NULL.
  -- Fix srun hang when IO fails to start at launch.
+ -- Fix for GRES bitmap not matching the GRES count resulting in abort
+    (requires manual resetting of GRES count, changes to gres.conf file,
+    and slurmd restarts).
+ -- Modify sview to better support job arrays.
+ -- Modify squeue to support longer job ID values (for many job array tasks).
+ -- Fix race condition in authentication credential creation that could corrupt
+    memory. (NOTE: This race condition has existed since 2003 and would be
+    exceedingly rare.)
+ -- HDF5 - Fix minor memory leak.
+ -- Slurmstepd variable initialization - Without this patch, free() is called
+    on a random memory location (i.e. whatever is on the stack), which can
+    result in slurmstepd dying and a completed job not being purged in a
+    timely fashion.
 
 * Changes in Slurm 2.6.4
 ========================

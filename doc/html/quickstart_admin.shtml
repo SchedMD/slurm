@@ -88,7 +88,7 @@ and commands are denoted below.
 		  library is installed. MUNGE is used as the default
 		  authentication mechanism.</li>
 <li> <b>Authd</b> The auth/authd plugin will be built and installed if
-		  the libauth library and its dependency libe are installed.
+		  the libauth library and its dependency libs are installed.
 		  </li>
 <li> <b>sview</b> The sview command will be built only if and <i>gtk+-2.0</i>
 		  is installed</li>
@@ -668,7 +668,7 @@ the slurmd daemons on the compute nodes.
 Generally upgrading Slurm on all of the login and compute nodes is recommended,
 although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
-Also see the note above about reverse compatability.</p>
+Also see the note above about reverse compatibility.</p>
 
 <p>Pretty much each new major and/or minor release of Slurm (e.g. 2.4.x to 2.5.x)
 involves changes to the state files with new data structures, new options, etc.
@@ -690,6 +690,34 @@ versions (e.g. 2.5.0-pre1 to 2.5.0-pre2).
 We'll try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
+<p>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values.
+If your Slurm daemon down time associated with an upgrade take longer than
+the timeout value, nodes may be marked DOWN and their jobs killed.
+You can either increase timeout values during an upgrade or insure that your
+slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
+The recommended upgrade order is as follows:</p>
+<ol>
+<li>Shutdown the slurmdbd daemon</li>
+<li>Upgrade the slurmdbd daemon</li>
+<li>Restart the slurmdbd daemon</li>
+<li>Shutdown the slurmctld daemon(s)</li>
+<li>Shutdown the slurmd daemons on the compute nodes</li>
+<li>Upgrade the slurmctld and slurmd daemons</li>
+<li>Restart the slurmd daemons on the compute nodes</li>
+<li>Restart the slurmctld daemon(s)</li>
+</ol>
+<p><b>Note</b>: The slurmd daemons must be restarted before the slurmctld
+daemons or within the SlurmdTimeout value.
+It is also possible to update the slurmd daemons on a node-by-node basis
+after the slurmctld daemon(s) are upgraded, but do make sure their down
+time is below the SlurmdTimeout value.
+</p>
+
+<p>If you have built your own version of Slurm plugins, they will likely
+need modification to support a new version of Slurm. It is common for plugins
+to add new functions and function arguments during major updates.
+See the RELEASE_NOTES file for details.</p>
+
 <a name="FreeBSD"><h2>FreeBSD</h2></a>
 
 <p>FreeBSD administrators can install the latest stable slurm as a binary
@@ -709,6 +737,6 @@ options such as mysql, postgresql, and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 December 2013</p>
+<p style="text-align:center;">Last modified 11 December 2013</p>
 
 <!--#include virtual="footer.txt"-->

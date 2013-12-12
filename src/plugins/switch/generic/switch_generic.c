@@ -438,45 +438,6 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	return SLURM_SUCCESS;
 }
 
-switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
-{
-	sw_gen_step_info_t *old_step_info = (sw_gen_step_info_t *) switch_job;
-	sw_gen_step_info_t *new_step_info;
-	sw_gen_node_t *old_node_ptr, *new_node_ptr;
-	sw_gen_ifa_t *old_ifa_ptr, *new_ifa_ptr;
-	int i, j;
-
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_copy_jobinfo() starting");
-	xassert(old_step_info);
-	xassert(old_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
-	new_step_info = xmalloc(sizeof(sw_gen_step_info_t));
-	new_step_info->magic = SW_GEN_STEP_INFO_MAGIC;
-	new_step_info->node_cnt = old_step_info->node_cnt;
-	new_step_info->node_array = xmalloc(sizeof(sw_gen_node_t *) *
-					    new_step_info->node_cnt);
-	for (i = 0; i < old_step_info->node_cnt; i++) {
-		old_node_ptr = old_step_info->node_array[i];
-		new_node_ptr = xmalloc(sizeof(sw_gen_node_t));
-		new_step_info->node_array[i] = new_node_ptr;
-		new_node_ptr->node_name = xstrdup(old_node_ptr->node_name);
-		new_node_ptr->ifa_cnt = old_node_ptr->ifa_cnt;
-		new_node_ptr->ifa_array = xmalloc(sizeof(sw_gen_node_t *) *
-						  new_node_ptr->ifa_cnt);
-		for (j = 0; j < old_node_ptr->ifa_cnt; j++) {
-			old_ifa_ptr = old_node_ptr->ifa_array[j];
-			new_ifa_ptr = xmalloc(sizeof(sw_gen_node_t));
-			new_node_ptr->ifa_array[j] = new_ifa_ptr;
-			new_ifa_ptr->ifa_addr = xstrdup(old_ifa_ptr->ifa_addr);
-			new_ifa_ptr->ifa_family = xstrdup(old_ifa_ptr->
-							  ifa_family);
-			new_ifa_ptr->ifa_name = xstrdup(old_ifa_ptr->ifa_name);
-		}
-	}
-
-	return NULL;
-}
-
 void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
 	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;

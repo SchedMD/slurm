@@ -45,6 +45,9 @@ print_header $test_id
 if {[get_array_config] < [expr $array_size + 1]} {
 	send_user "\nWARNING: MaxArraySize is to small for this test\n"
 	exit 0
+} elseif {[test_super_user] == 0} {
+	send_user "\nWARNING: This test must be done from a super-user\n"
+	exit 1
 }
 
 make_bash_script $script "

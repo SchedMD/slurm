@@ -45,8 +45,8 @@ RPMBUILD CHANGES
     of those libraries must be used.
 
 
-CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
-=============================================================
+CONFIGURATION FILE CHANGES (see man appropriate man page for details)
+=====================================================================
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
     DenyAccounts and DenyQOS to provide greater control over use.
@@ -64,6 +64,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
     ntasks_per_core, and nice.
  -- Added new configuration parameter of AuthInfo to specify port used by
     authentication plugin.
+ -- gres.conf - Add "NodeName" specification so that a single gres.conf file
+    can be used for a heterogeneous cluster.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

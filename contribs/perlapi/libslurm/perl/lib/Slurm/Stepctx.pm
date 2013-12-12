@@ -89,7 +89,7 @@ Get user managed I/O sockets. TODO: describe the parameters.
 
 =back    
 
-=head3 $rc = $ctx->daemon_per_node_hack();
+=head3 $rc = $ctx->daemon_per_node_hack($node_list, $node_cnt, $curr_task_num);
 
 Hack the step context to run a single process per node, regardless of the settings selected at Slurm::Stepctx::create() time.
 

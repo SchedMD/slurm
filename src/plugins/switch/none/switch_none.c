@@ -132,11 +132,6 @@ int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job,
 	return SLURM_SUCCESS;
 }
 
-switch_jobinfo_t *switch_p_copy_jobinfo  ( switch_jobinfo_t *switch_job )
-{
-	return NULL;
-}
-
 void switch_p_free_jobinfo ( switch_jobinfo_t *switch_job )
 {
 	return;

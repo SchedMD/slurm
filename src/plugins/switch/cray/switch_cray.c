@@ -149,12 +149,11 @@ typedef struct slurm_cray_jobinfo {
 	uint32_t       stepid; /* Current step id */
 	/* Cray Application ID; A unique combination of the job id and step id*/
 	uint64_t apid;
-	slurm_step_layout_t *step_layout;
 } slurm_cray_jobinfo_t;
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job);
-static int _list_str_to_array(char *list, int *cnt, int32_t **numbers);
 #ifdef HAVE_NATIVE_CRAY
+static int _list_str_to_array(char *list, int *cnt, int32_t **numbers);
 static void _recursive_rmdir(const char *dirnm);
 static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
 			 uint32_t **host_to_task_map, int32_t *first_pe);
@@ -181,8 +180,7 @@ static void _print_alpsc_pe_info(alpsc_peInfo_t alps_info)
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job)
 {
-	int i, j, rc, cnt = 0;
-	int32_t *nodes;
+	int i;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		error("(%s: %d: %s) job pointer was NULL", THIS_FILE, __LINE__,
@@ -210,37 +208,6 @@ static void _print_jobinfo(slurm_cray_jobinfo_t *job)
 		info("  cookie_ids[%d]: %" PRIu32, i, job->cookie_ids[i]);
 	}
 	info("  ------");
-	if (job->step_layout) {
-		info("  node_cnt: %" PRIu32, job->step_layout->node_cnt);
-		info("  node_list: %s", job->step_layout->node_list);
-		info("  --- tasks ---");
-		for (i = 0; i < job->step_layout->node_cnt; i++) {
-			info("  tasks[%d] = %u", i, job->step_layout->tasks[i]);
-		}
-		info("  ------");
-		info("  task_cnt: %" PRIu32, job->step_layout->task_cnt);
-		info("  --- hosts to task---");
-		rc = _list_str_to_array(job->step_layout->node_list, &cnt,
-					&nodes);
-		if (rc) {
-			error("(%s: %d: %s) node_list_str_to_array failed",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-		}
-		if (job->step_layout->node_cnt != cnt) {
-			error("(%s: %d: %s) list_str_to_array returned count %"
-			      PRIu32 "does not match expected count %d",
-			      THIS_FILE, __LINE__, __FUNCTION__, cnt,
-			      job->step_layout->node_cnt);
-		}
-
-		for (i = 0; i < job->step_layout->node_cnt; i++) {
-			info("Host: %d", i);
-			for (j = 0; j < job->step_layout->tasks[i]; j++) {
-				info("Task: %d", job->step_layout->tids[i][j]);
-			}
-		}
-		info("  ------");
-	}
 	info("--END Jobinfo--");
 }
 
@@ -291,7 +258,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 {
 	slurm_cray_jobinfo_t *new;
 
-	xassert(switch_job != NULL);
+	xassert(switch_job);
 	new = (slurm_cray_jobinfo_t *) xmalloc(sizeof(slurm_cray_jobinfo_t));
 	new->magic = CRAY_JOBINFO_MAGIC;
 	new->num_cookies = 0;
@@ -300,7 +267,6 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 	new->jobid = job_id;
 	new->stepid = step_id;
 	new->apid = SLURM_ID_HASH(job_id, step_id);
-	new->step_layout = NULL;
 	*switch_job = (switch_jobinfo_t *) new;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -345,7 +311,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		error("(%s: %d: %s) list_str_to_array returned count %"
 		      PRIu32 "does not match expected count %d",
 		      THIS_FILE, __LINE__,
-		      __FUNCTION__, cnt, job->step_layout->node_cnt);
+		      __FUNCTION__, cnt, step_layout->node_cnt);
 	}
 
 	/*
@@ -432,59 +398,14 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 
 	/*
 	 * Populate the switch_jobinfo_t struct
-	 * Make a copy of the step_layout, so that switch_p_free_jobinfo can
-	 * consistently free it later whether it's dealing with a copy that was
-	 * created by this function or any other like switch_p_copy_jobinfo or
-	 * switch_p_unpack_jobinfo.
 	 */
 	job->num_cookies = num_cookies;
 	job->cookies = s_cookies;
 	job->cookie_ids = s_cookie_ids;
 	job->port = port;
-	job->step_layout = slurm_step_layout_copy(step_layout);
 
 #endif
 	return SLURM_SUCCESS;
-}
-
-switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
-{
-	int i;
-	slurm_cray_jobinfo_t *old = (slurm_cray_jobinfo_t *) switch_job;
-	switch_jobinfo_t *new_init;
-	slurm_cray_jobinfo_t *new;
-	size_t sz;
-
-	if (!old || (old->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		debug2("(%s: %d: %s) switch_job was NULL", THIS_FILE, __LINE__,
-		       __FUNCTION__);
-		return NULL;
-	}
-	xassert(((slurm_cray_jobinfo_t *)switch_job)->magic
-		== CRAY_JOBINFO_MAGIC);
-
-	if (switch_p_alloc_jobinfo(&new_init, old->jobid, old->stepid)) {
-		error("Allocating new jobinfo");
-		slurm_seterrno(ENOMEM);
-		return NULL ;
-	}
-
-	new = (slurm_cray_jobinfo_t *) new_init;
-	// Copy over non-malloced memory.
-	*new = *old;
-
-	new->cookies = (char **) xmalloc(old->num_cookies * sizeof(char **));
-	for (i = 0; i < old->num_cookies; i++) {
-		new->cookies[i] = xstrdup(old->cookies[i]);
-	}
-
-	sz = sizeof(*(new->cookie_ids));
-	new->cookie_ids = xmalloc(old->num_cookies * sz);
-	memcpy(new->cookie_ids, old->cookie_ids, old->num_cookies * sz);
-
-	new->step_layout = slurm_step_layout_copy(old->step_layout);
-
-	return (switch_jobinfo_t *) new;
 }
 
 /*
@@ -530,10 +451,6 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 		}
 	}
 
-	if (NULL != job->step_layout) {
-		slurm_step_layout_destroy(job->step_layout);
-	}
-
 	xfree(job);
 
 	return;
@@ -569,8 +486,6 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	packstr_array(job->cookies, job->num_cookies, buffer);
 	pack32_array(job->cookie_ids, job->num_cookies, buffer);
 	pack32(job->port, buffer);
-	pack_slurm_step_layout(job->step_layout, buffer,
-			       SLURM_PROTOCOL_VERSION);
 
 	return 0;
 }
@@ -578,25 +493,20 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 			    uint16_t protocol_version)
 {
-
-	int rc;
 	uint32_t num_cookies;
+	slurm_cray_jobinfo_t *job;
 
-	if (NULL == switch_job) {
+	if (!switch_job) {
 		debug2("(%s: %d: %s) switch_job was NULL", THIS_FILE, __LINE__,
 		       __FUNCTION__);
 		return SLURM_SUCCESS;
 	}
 
-	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
-
 	xassert(buffer);
-	rc = unpack32(&job->magic, buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32 of magic failed. Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
+
+	job = (slurm_cray_jobinfo_t *) switch_job;
+
+	safe_unpack32(&job->magic, buffer);
 
 	if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
 		debug2("(%s: %d: %s) Nothing to unpack.",
@@ -605,20 +515,8 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	}
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
-	rc = unpack32(&(job->num_cookies), buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32 of num_cookies failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
-	rc = unpackstr_array(&(job->cookies), &num_cookies, buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpackstr_array cookies failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
+	safe_unpack32(&(job->num_cookies), buffer);
+	safe_unpackstr_array(&(job->cookies), &num_cookies, buffer);
 	if (num_cookies != job->num_cookies) {
 		error("(%s: %d: %s) Wrong number of cookies received."
 		      " Expected: %" PRIu32 "Received: %" PRIu32,
@@ -626,13 +524,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		      job->num_cookies, num_cookies);
 		goto unpack_error;
 	}
-	rc = unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32_array cookie IDs failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
+	safe_unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
 	if (num_cookies != job->num_cookies) {
 		error("(%s: %d: %s) Wrong number of cookie IDs received."
 		      " Expected: %" PRIu32 "Received: %" PRIu32,
@@ -640,22 +532,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		      job->num_cookies, num_cookies);
 		goto unpack_error;
 	}
-
-	rc = unpack32(&job->port, buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32 PMI port failed. Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
-
-	rc = unpack_slurm_step_layout(&(job->step_layout), buffer,
-				      SLURM_PROTOCOL_VERSION);
-	if (rc != SLURM_SUCCESS) {
-		error("(%s: %d: %s) unpack32 step_layout failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
-		goto unpack_error;
-	}
+	safe_unpack32(&job->port, buffer);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("(%s:%d: %s) switch_jobinfo_t contents:",
@@ -668,15 +545,25 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 unpack_error:
 	error("(%s:%d: %s) Unpacking error", THIS_FILE, __LINE__,
 	      __FUNCTION__);
-	if (job->cookies) {
-		xfree(job->cookies);
+
+	if (job->num_cookies) {
+		// Free the cookie_ids
+		if (job->cookie_ids)
+			xfree(job->cookie_ids);
+
+		if (job->cookies) {
+			int i;
+			// Free the individual cookie strings.
+			for (i = 0; i < job->num_cookies; i++) {
+				if (job->cookies[i])
+					xfree(job->cookies[i]);
+			}
+
+			// Free the cookie array
+			xfree(job->cookies);
+		}
 	}
-	if (job->cookie_ids) {
-		xfree(job->cookie_ids);
-	}
-	if (job->step_layout) {
-		slurm_step_layout_destroy(job->step_layout);
-	}
+
 	return SLURM_ERROR;
 }
 
@@ -688,7 +575,7 @@ void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 			      size_t size)
 {
-	if ((buf != NULL) && size) {
+	if (buf && size) {
 		buf[0] = '\0';
 		return buf;
 	}
@@ -741,12 +628,18 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	char *buff = NULL;
 	size_t size;
 
+	// Dummy variables to satisfy alpsc_write_placement_file
+	int control_nid = 0, num_branches = 0;
+	struct sockaddr_in control_soc;
+	alpsc_branchInfo_t alpsc_branch_info;
+
 	if (!sw_job || (sw_job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
 		       THIS_FILE, __LINE__, __FUNCTION__);
 		return SLURM_SUCCESS;
 	}
 
+	xassert(job->msg);
 	xassert(sw_job->magic == CRAY_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -755,10 +648,6 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		     THIS_FILE, __LINE__, __FUNCTION__, job->jobid,
 		     sw_job->jobid);
 	}
-	// Dummy variables to satisfy alpsc_write_placement_file
-	int control_nid = 0, num_branches = 0;
-	struct sockaddr_in control_soc;
-	alpsc_branchInfo_t alpsc_branch_info;
 
 	rc = alpsc_attach_cncu_container(&err_msg, sw_job->jobid, job->cont_id);
 	if (rc != 1) {
@@ -846,7 +735,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		 * node
 		 */
 		f = fopen("/proc/meminfo", "r");
-		if (f == NULL ) {
+		if (!f) {
 			error("(%s: %d: %s) Failed to open /proc/meminfo: %m",
 			      THIS_FILE, __LINE__, __FUNCTION__);
 			return SLURM_ERROR;
@@ -1000,7 +889,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * Fill in alpsc_pe_info.firstPeHere
 	 */
 	rc = _get_first_pe(job->nodeid, job->node_tasks,
-			   sw_job->step_layout->tids,
+			   job->msg->global_task_ids,
 			   &first_pe_here);
 	if (rc < 0) {
 		error("(%s: %d: %s) get_first_pe failed", THIS_FILE, __LINE__,
@@ -1015,7 +904,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * The peNidArray maps tasks to nodes.
 	 * Basically, reverse the tids variable which maps nodes to tasks.
 	 */
-	rc = _list_str_to_array(sw_job->step_layout->node_list, &cnt, &nodes);
+	rc = _list_str_to_array(job->msg->complete_nodelist, &cnt, &nodes);
 	if (rc < 0) {
 		error("(%s: %d: %s) list_str_to_array failed",
 		      THIS_FILE, __LINE__, __FUNCTION__);
@@ -1027,19 +916,18 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		      THIS_FILE, __LINE__, __FUNCTION__);
 		return SLURM_ERROR;
 	}
-	if (sw_job->step_layout->node_cnt != cnt) {
+	if (job->msg->nnodes != cnt) {
 		error("(%s: %d: %s) list_str_to_array returned count %"
 		      PRIu32 "does not match expected count %d",
 		      THIS_FILE, __LINE__, __FUNCTION__, cnt,
-		      sw_job->step_layout->node_cnt);
+		      job->msg->nnodes);
 	}
 
-	task_to_nodes_map = xmalloc(sw_job->step_layout->task_cnt *
-				    sizeof(int32_t));
+	task_to_nodes_map = xmalloc(job->msg->ntasks * sizeof(int32_t));
 
-	for (i = 0; i < sw_job->step_layout->node_cnt; i++) {
-		for (j = 0; j < sw_job->step_layout->tasks[i]; j++) {
-			task = sw_job->step_layout->tids[i][j];
+	for (i = 0; i < job->msg->nnodes; i++) {
+		for (j = 0; j < job->msg->tasks_to_launch[i]; j++) {
+			task = job->msg->global_task_ids[i][j];
 			task_to_nodes_map[task] = nodes[i];
 			if (debug_flags & DEBUG_FLAG_SWITCH) {
 				info("(%s:%d: %s) peNidArray:\tTask: %d\tNode:"
@@ -1094,11 +982,10 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * have to be filled in when support for them is added.
 	 * Currently, it's all zeros.
 	 */
-	size = sw_job->step_layout->node_cnt * sizeof(int);
+	size = job->msg->nnodes * sizeof(int);
 	alpsc_pe_info.nodeCpuArray = xmalloc(size);
 	memset(alpsc_pe_info.nodeCpuArray, 0, size);
-	if (sw_job->step_layout->node_cnt &&
-	    (alpsc_pe_info.nodeCpuArray == NULL )) {
+	if (job->msg->nnodes && !alpsc_pe_info.nodeCpuArray) {
 		free(alpsc_pe_info.peCmdMapArray);
 		error("(%s: %d: %s) failed to calloc nodeCpuArray.", THIS_FILE,
 		      __LINE__, __FUNCTION__);
@@ -1230,14 +1117,14 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * Set the Job's APID
 	 */
 	job_setapid(getpid(), sw_job->apid);
-#endif
 
 	return SLURM_SUCCESS;
 
-#ifdef HAVE_NATIVE_CRAY
 error_free_alpsc_pe_info_t:
 	_free_alpsc_pe_info(alpsc_pe_info);
 	return SLURM_ERROR;
+#else
+	return SLURM_SUCCESS;
 #endif
 }
 
@@ -1466,7 +1353,7 @@ extern int switch_p_free_node_info(switch_node_info_t **switch_node)
 extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 				       char *buf, size_t size)
 {
-	if ((buf != NULL )&& size) {
+	if (buf && size) {
 		buf[0] = '\0';
 		return buf;
 	}
@@ -1603,6 +1490,7 @@ extern int switch_p_slurmd_step_init(void)
 }
 
 #ifdef HAVE_NATIVE_CRAY
+
 /*
  * Function: get_first_pe
  * Description:
@@ -1630,7 +1518,7 @@ static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
 		      __FUNCTION__);
 		return -1;
 	}
-	if (host_to_task_map == NULL ) {
+	if (!host_to_task_map) {
 		error("(%s: %d: %s) host_to_task_map == NULL",
 		      THIS_FILE, __LINE__, __FUNCTION__);
 		return -1;
@@ -1643,17 +1531,18 @@ static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
 	}
 	return ret;
 }
-#endif
 
 /*
- * Function: list_str_to_array
+ * Function: _list_str_to_array
  * Description:
  * 	Convert the list string into an array of integers.
  *
- * IN list -- The list string
- * OUT cnt  -- The number of numbers in the list string
+ * IN list     -- The list string
+ * OUT cnt     -- The number of numbers in the list string
  * OUT numbers -- Array of integers;  Caller is responsible to xfree()
- *                 this.
+ *                this.
+ *
+ * N.B. Caller is responsible to xfree() numbers.
  *
  * RETURNS
  * Returns 0 on success and -1 on failure.
@@ -1664,21 +1553,20 @@ static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
 
 	int32_t *item_ptr = NULL;
 	hostlist_t hl;
-	int i, ret = 0, num_items;
+	int i, ret = 0;
 	char *str, *cptr = NULL;
 
 	/*
 	 * Create a hostlist
 	 */
-	if ((hl = hostlist_create(list)) == NULL ) {
+	if (!(hl = hostlist_create(list))) {
 		error("hostlist_create error on %s", list);
 		return -1;
 	}
 
-	num_items = hostlist_count(hl);
-	*cnt = num_items;
+	*cnt = hostlist_count(hl);
 
-	if (num_items == 0) {
+	if (!*cnt) {
 		*numbers = NULL;
 		return 0;
 	}
@@ -1686,28 +1574,21 @@ static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
 	/*
 	 * Create an integer array of item_ptr in the same order as in the list.
 	 */
-	item_ptr = *numbers = xmalloc(num_items * sizeof(uint32_t));
-	for (i = 0; i < num_items; i++) {
-		// str must be freed using free(), not xfree()
-		str = hostlist_shift(hl);
-		if (str == NULL ) {
-			error("(%s: %d: %s) hostlist_shift error",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-			xfree(item_ptr);
-			hostlist_destroy(hl);
-			return -1;
-		}
-		cptr = strpbrk(str, "0123456789");
-		if (cptr == NULL ) {
+	i = 0;
+	item_ptr = *numbers = xmalloc((*cnt) * sizeof(int32_t));
+	while ((str = hostlist_shift(hl))) {
+		if (!(cptr = strpbrk(str, "0123456789"))) {
 			error("(%s: %d: %s) Error: Node was not recognizable:"
 			      " %s",
 			      THIS_FILE, __LINE__, __FUNCTION__, str);
 			free(str);
 			xfree(item_ptr);
+			*numbers = NULL;
 			hostlist_destroy(hl);
 			return -1;
 		}
 		item_ptr[i] = atoll(cptr);
+		i++;
 		free(str);
 	}
 
@@ -1717,7 +1598,6 @@ static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
 	return ret;
 }
 
-#ifdef HAVE_NATIVE_CRAY
 /*
  * Recursive directory delete
  *
@@ -1738,7 +1618,7 @@ static void _recursive_rmdir(const char *dirnm)
 	struct stat st_buf;
 
 	/* Don't do anything if there is no directory name */
-	if (dirnm == NULL ) {
+	if (!dirnm) {
 		return;
 	}
 	dirp = opendir(dirnm);
@@ -1816,7 +1696,7 @@ static int _get_cpu_total(void)
 
 	f = fopen("/sys/devices/system/cpu/online", "r");
 
-	if (f == NULL ) {
+	if (!f) {
 		error("(%s: %d: %s) Failed to open file"
 		      " /sys/devices/system/cpu/online: %m",
 		      THIS_FILE, __LINE__, __FUNCTION__);
@@ -1915,7 +1795,7 @@ static int _assign_port(uint32_t *real_port)
 {
 	int port, tmp, attempts = 0;
 
-	if (real_port == NULL ) {
+	if (!real_port) {
 		error("(%s: %d: %s) real_port address was NULL.",
 		      THIS_FILE, __LINE__, __FUNCTION__);
 		return -1;

@@ -222,11 +222,17 @@ static int _run_nhc(nhc_info_t *nhc_info)
 	argv[i++] = NULL;
 
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("Calling NHC for jobid %u and apid %"PRIu64" "
-		     "on nodes %s(%s) exit code %u",
-		     nhc_info->jobid, nhc_info->apid,
-		     nhc_info->nodelist, nodelist_nids,
-		     nhc_info->exit_code);
+		if (nhc_info->step)
+			info("Calling NHC for jobid %u and apid %"PRIu64" "
+			     "on nodes %s(%s) exit code %u",
+			     nhc_info->jobid, nhc_info->apid,
+			     nhc_info->nodelist, nodelist_nids,
+			     nhc_info->exit_code);
+		else
+			info("Calling NHC for jobid %u and apid %"PRIu64" "
+			     "on nodes %s(%s)",
+			     nhc_info->jobid, nhc_info->apid,
+			     nhc_info->nodelist, nodelist_nids);
 	}
 
 	if (!nhc_info->nodelist || !nodelist_nids) {

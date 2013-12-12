@@ -276,7 +276,6 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 		launch.task_flags |= TASK_PARALLEL_DEBUG;
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
-	launch.cpus_allocated  = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
 	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
@@ -454,7 +453,6 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 		launch.task_flags |= TASK_PARALLEL_DEBUG;
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
-	launch.cpus_allocated  = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
 	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;

@@ -816,21 +816,21 @@ slurm_step_ctx_t *
 slurm_step_ctx_create_no_alloc(slurm_t self, HV *step_params, uint32_t step_id)
 	PREINIT:
 		slurm_step_ctx_params_t sp;
-	INIT:
-		if (hv_to_slurm_step_ctx_params(step_params, &sp) < 0) {
-			XSRETURN_UNDEF;
-		}
+	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		&sp, step_id
-	POSTCALL:
+		if (hv_to_slurm_step_ctx_params(step_params, &sp) < 0) {
+			XSRETURN_UNDEF;
+		}
+		RETVAL = slurm_step_ctx_create_no_alloc(&sp, step_id);
 		if (RETVAL == NULL) {
 			XSRETURN_UNDEF;
 		}
+	OUTPUT:
+		RETVAL
 
 ######################################################################
 MODULE=Slurm PACKAGE=Slurm::Stepctx PREFIX=slurm_step_ctx_
@@ -1001,6 +1001,16 @@ slurm_step_ctx_DESTROY(slurm_step_ctx_t *ctx)
 	CODE:
 		slurm_step_ctx_destroy(ctx);
 
+int
+slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx, char *node_list, uint32_t node_cnt, void *curr_task_num)
+        PREINIT:
+	        uint32_t *tmp32;
+        CODE:
+	        tmp32 = (uint32_t *)curr_task_num;
+
+                RETVAL = slurm_step_ctx_daemon_per_node_hack(ctx, node_list, node_cnt, tmp32);
+        OUTPUT:
+	        RETVAL
 
 #####################################################################
 MODULE=Slurm PACKAGE=Slurm::Stepctx PREFIX=slurm_step_
@@ -1638,6 +1648,7 @@ slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id, char *nodel
 				XSRETURN_UNDEF;
 			}
 		} else {
+			errno = rc;
 			XSRETURN_UNDEF;
 		}
 	OUTPUT:
@@ -1664,6 +1675,7 @@ slurm_job_step_get_pids(slurm_t self, uint32_t job_id, uint32_t step_id, char *n
 				XSRETURN_UNDEF;
 			}
 		} else {
+			errno = rc;
 			XSRETURN_UNDEF;
 		}
 	OUTPUT:
@@ -2795,32 +2807,13 @@ int
 slurm_bit_set_count(bitstr_t *b)
 
 int
+slurm_bit_set_count_range(bitstr_t *b, int start, int end)
+
+int
 slurm_bit_clear_count(bitstr_t *b)
 
 int
 slurm_bit_nset_max_count(bitstr_t *b)
-
-# $sum = $bitmap->int_and_set_count($array);
-int
-slurm_bit_int_and_set_count(bitstr_t *b, AV* av)
-	PREINIT:
-		int i, len, *vec;
-		SV **svp;
-	CODE:
-		len = av_len(av) + 1;
-		New(0, vec, len, int);
-		for (i = 0; i < len; i ++) {
-			svp = av_fetch(av, i, FALSE);
-			if (! svp) {
-				vec[i] = 0;
-			} else {
-				vec[i] = SvIV(*svp);
-			}
-		}
-		RETVAL = slurm_int_and_set_count(vec, len, b);
-		Safefree(vec);
-	OUTPUT:
-		RETVAL
 
 bitstr_t *
 slurm_bit_rotate_copy(bitstr_t *b, int n, bitoff_t nbits)

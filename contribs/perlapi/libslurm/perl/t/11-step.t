@@ -67,7 +67,7 @@ SKIP: {
     my $layout = $slurm->job_step_stat($resp->{job_steps}->[0]->{job_id},
 				       $resp->{job_steps}->[0]->{step_id});
     ok(ref($layout) eq "HASH" || $slurm->get_errno() == ESLURM_INVALID_JOB_ID, "job step stat")
-	or diag("job_step_stat: " . $slurm->sterror());
+	or diag("job_step_stat: " . $slurm->strerror());
 }
 
 
@@ -77,7 +77,7 @@ SKIP: {
     my $layout = $slurm->job_step_get_pids($resp->{job_steps}->[0]->{job_id},
 					   $resp->{job_steps}->[0]->{step_id});
     ok(ref($layout) eq "HASH" || $slurm->get_errno() == ESLURM_INVALID_JOB_ID, "job step get pids")
-	or diag("job_step_get_pids: " . $slurm->sterror());
+	or diag("job_step_get_pids: " . $slurm->strerror());
 }
 
 

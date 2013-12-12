@@ -314,6 +314,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 		return NULL;
 
 	job = xmalloc(sizeof(stepd_step_rec_t));
+	job->msg = msg;
 #ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 	job->node_name = xstrdup(conf->node_name);
@@ -414,7 +415,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 	job->nnodes  = msg->nnodes;
 	job->nodeid  = nodeid;
 	job->debug   = msg->slurmd_debug;
-	job->cpus    = msg->cpus_allocated[nodeid];
+	job->cpus    = msg->node_cpus;
 
 	/* This needs to happen before acct_gather_profile_startpoll
 	   and only really looks at the profile in the job.

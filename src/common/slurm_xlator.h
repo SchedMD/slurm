@@ -359,11 +359,21 @@
 #define destroy_select_ba_request	slurm_destroy_select_ba_request
 
 /* parse_config.[ch] functions */
-#define s_p_get_string			slurm_s_p_get_string
-#define s_p_get_uint32			slurm_s_p_get_uint32
-#define s_p_hashtbl_create		slurm_s_p_hashtbl_create
-#define s_p_hashtbl_destroy		slurm_s_p_hashtbl_destroy
-#define s_p_parse_file			slurm_s_p_parse_file
+#define s_p_hashtbl_create	slurm_s_p_hashtbl_create
+#define s_p_hashtbl_destroy	slurm_s_p_hashtbl_destroy
+#define s_p_parse_file		slurm_s_p_parse_file
+#define s_p_parse_pair		slurm_s_p_parse_pair
+#define s_p_parse_line		slurm_s_p_parse_line
+#define s_p_hashtbl_merge 	slurm_s_p_hashtbl_merge
+#define s_p_get_string		slurm_s_p_get_string
+#define s_p_get_long		slurm_s_p_get_long
+#define s_p_get_uint16		slurm_s_p_get_uint16
+#define s_p_get_uint32		slurm_s_p_get_uint32
+#define s_p_get_pointer		slurm_s_p_get_pointer
+#define s_p_get_array		slurm_s_p_get_array
+#define s_p_get_boolean		slurm_s_p_get_boolean
+#define s_p_dump_values		slurm_s_p_dump_values
+#define transfer_s_p_options	slurm_transfer_s_p_options
 
 /* slurm_step_layout.[ch] functions */
 #define pack_slurm_step_layout          slurm_pack_slurm_step_layout

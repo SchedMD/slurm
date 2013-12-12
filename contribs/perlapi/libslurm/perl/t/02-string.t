@@ -81,7 +81,7 @@ cmp_ok($str, "eq", "VIRTUAL", "node use type string");
 
 # 16
 $str = $slurm->bg_block_state_string(4);
-cmp_ok($str, "eq", "DEALLOC", "bg block state string");
+cmp_ok($str, "eq", "Ready", "bg block state string");
 
 
 
