@@ -1141,7 +1141,7 @@ _pre_task_privileged(slurmd_job_t *job, int taskid, struct priv_state *sp)
 	if (pre_launch_priv(job) < 0)
 		return error("pre_launch_priv failed");
 
-	/* sp->get_list should already be initialized */
+	/* sp->gid_list should already be initialized */
 	return(_drop_privileges (job, true, sp, false));
 }
 
@@ -1446,7 +1446,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 			/*
 			 *  Reclaim privileges and call any plugin hooks
 			 *  that may require elevated privs
-			 *  sprivs.get_list is already set from the
+			 *  sprivs.gid_list is already set from the
 			 *  _drop_privileges call above, no not reinitialize.
 			 */
 			if (_pre_task_privileged(job, i, &sprivs) < 0)
