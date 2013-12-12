@@ -1094,6 +1094,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 {
 	uint32_t uint32_tmp;
 
+	jobacct_gather_init();
 	if (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD))
 		return SLURM_SUCCESS;
 
