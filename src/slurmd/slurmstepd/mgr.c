@@ -2150,6 +2150,8 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid,
 			xfree(ps->gid_list);
 			return -1;
 		}
+	} else {
+		ps->gid_list = NULL;	/* initialize to prevent xfree */
 	}
 
 	/*
