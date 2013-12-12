@@ -239,6 +239,7 @@ extern int init(void)
 
 extern int fini(void)
 {
+	xfree(hdf5_conf.dir);
 	return SLURM_SUCCESS;
 }
 

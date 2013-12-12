@@ -197,6 +197,11 @@ documents those changes that are of interest to users and admins.
  -- Fix race condition in authentication credential creation that could corrupt
     memory. (NOTE: This race condition has existed since 2003 and would be
     exceedingly rare.)
+ -- HDF5 - Fix minor memory leak.
+ -- Slurmstepd variable initialization - Without this patch, free() is called
+    on a random memory location (i.e. whatever is on the stack), which can
+    result in slurmstepd dying and a completed job not being purged in a
+    timely fashion.
 
 * Changes in Slurm 2.6.4
 ========================
