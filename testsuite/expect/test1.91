@@ -175,6 +175,15 @@ expect {
 	-re $prompt {
 	}
 }
+set timeout 1
+expect {
+	-re $prompt {
+		exp_continue
+	}
+	timeout {
+	}
+}
+set timeout 30
 
 #############################################################################
 #
