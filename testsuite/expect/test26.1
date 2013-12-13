@@ -40,7 +40,7 @@ set node_name      ""
 print_header $test_id
 
 if {![test_alps]} {
-        send_user "\nWARNING: This test is only compatible with Cray systems\n"
+        send_user "\nWARNING: This test is only compatible with Cray ALPS systems\n"
         exit $exit_code
 }
 
