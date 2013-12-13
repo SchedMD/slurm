@@ -280,7 +280,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		else
 			rc = 1;
 	} else {
-		int size = sizeof(char *) * (strlen(name)+strlen(value)+1);
+		int size = strlen(name) + strlen(value) + 1;
 		/* XXX Space is allocated on the heap and will never
 		 * be reclaimed.
 		 * Also you can not use xmalloc here since some of the
