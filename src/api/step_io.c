@@ -338,6 +338,13 @@ _server_read(eio_obj_t *obj, List objs)
 					"header");
 			} else
 				error("Unrecognized output message type");
+			/* If all remote eios are gone, shutdown
+			 * the i/o channel with stepd.
+			 */
+			if (s->remote_stdout_objs == 0
+				&& s->remote_stderr_objs == 0) {
+				obj->shutdown = true;
+			}
 			list_enqueue(s->cio->free_outgoing, s->in_msg);
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;

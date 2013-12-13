@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
  -- gres.conf - Add "NodeName" specification so that a single gres.conf file
     can be used for a heterogeneous cluster.
  -- Add flag to accounting RPC to indicate if job data is packed or not.
+ -- After all srun tasks have terminated on a node close the stdout/stderr
+    channel with the slurmstepd on that node.
 
 * Changes in Slurm 14.03.0pre4
 ==============================
