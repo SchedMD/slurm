@@ -1002,9 +1002,9 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			     Buf buffer)
 {
 	int i = 0;
+	bool no_pack;
 
-	if (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD))
-		return;
+	no_pack = (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD));
 
 	/* The function can take calls from both DBD and from regular
 	 * SLURM functions.  We choose to standardize on using the
@@ -1019,7 +1019,53 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		if (no_pack) {
+			pack8((uint8_t) 0, buffer);
+			return;
+		}
+		pack8((uint8_t) 1, buffer);
+		if (!jobacct) {
+			for (i = 0; i < 14; i++)
+				pack32((uint32_t) 0, buffer);
+			for (i = 0; i < 4; i++)
+				packdouble((double) 0, buffer);
+			for (i = 0; i < 6; i++)
+				_pack_jobacct_id(NULL, rpc_version, buffer);
+			return;
+		}
+
+		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->max_vsize, buffer);
+		pack32((uint32_t)jobacct->tot_vsize, buffer);
+		pack32((uint32_t)jobacct->max_rss, buffer);
+		pack32((uint32_t)jobacct->tot_rss, buffer);
+		pack32((uint32_t)jobacct->max_pages, buffer);
+		pack32((uint32_t)jobacct->tot_pages, buffer);
+		pack32((uint32_t)jobacct->min_cpu, buffer);
+		pack32((uint32_t)jobacct->tot_cpu, buffer);
+		pack32((uint32_t)jobacct->act_cpufreq, buffer);
+		pack32((uint32_t)jobacct->energy.consumed_energy, buffer);
+
+		packdouble((double)jobacct->max_disk_read, buffer);
+		packdouble((double)jobacct->tot_disk_read, buffer);
+		packdouble((double)jobacct->max_disk_write, buffer);
+		packdouble((double)jobacct->tot_disk_write, buffer);
+
+		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_disk_read_id, rpc_version,
+			buffer);
+		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
+			buffer);
+	} else if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (no_pack)
+			return;
 		if (!jobacct) {
 			for (i = 0; i < 14; i++)
 				pack32((uint32_t) 0, buffer);
@@ -1059,6 +1105,8 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
 			buffer);
 	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		if (no_pack)
+			return;
 		if (!jobacct) {
 			for (i = 0; i < 14; i++)
 				pack32((uint32_t) 0, buffer);
@@ -1087,32 +1135,8 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
 		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
 	} else {
-		if (!jobacct) {
-			for (i = 0; i < 12; i++)
-				pack32((uint32_t) 0, buffer);
-			for (i = 0; i < 4; i++)
-				_pack_jobacct_id(NULL, rpc_version, buffer);
-			return;
-		}
-
-		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
-		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->max_vsize, buffer);
-		pack32((uint32_t)jobacct->tot_vsize, buffer);
-		pack32((uint32_t)jobacct->max_rss, buffer);
-		pack32((uint32_t)jobacct->tot_rss, buffer);
-		pack32((uint32_t)jobacct->max_pages, buffer);
-		pack32((uint32_t)jobacct->tot_pages, buffer);
-		pack32((uint32_t)jobacct->min_cpu, buffer);
-		pack32((uint32_t)jobacct->tot_cpu, buffer);
-
-		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
-
+		info("jobacctinfo_pack version %u not supported", rpc_version);
+		return;
 	}
 }
 
@@ -1121,9 +1145,11 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			      Buf buffer, bool alloc)
 {
 	uint32_t uint32_tmp;
+	uint8_t  uint8_tmp;
+	bool no_pack;
 
-	if (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD))
-		return SLURM_SUCCESS;
+	jobacct_gather_init();
+	no_pack = (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD));
 
 	/* The function can take calls from both DBD and from regular
 	 * SLURM functions.  We choose to standardize on using the
@@ -1138,10 +1164,59 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if (alloc)
-		*jobacct = xmalloc(sizeof(struct jobacctinfo));
+	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp == (uint8_t) 0)
+			return SLURM_SUCCESS;
+		if (alloc)
+			*jobacct = xmalloc(sizeof(struct jobacctinfo));
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_usec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_usec = uint32_tmp;
+		safe_unpack32(&(*jobacct)->max_vsize, buffer);
+		safe_unpack32(&(*jobacct)->tot_vsize, buffer);
+		safe_unpack32(&(*jobacct)->max_rss, buffer);
+		safe_unpack32(&(*jobacct)->tot_rss, buffer);
+		safe_unpack32(&(*jobacct)->max_pages, buffer);
+		safe_unpack32(&(*jobacct)->tot_pages, buffer);
+		safe_unpack32(&(*jobacct)->min_cpu, buffer);
+		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
+		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
+		safe_unpack32(&(*jobacct)->energy.consumed_energy, buffer);
 
-	if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpackdouble(&(*jobacct)->max_disk_read, buffer);
+		safe_unpackdouble(&(*jobacct)->tot_disk_read, buffer);
+		safe_unpackdouble(&(*jobacct)->max_disk_write, buffer);
+		safe_unpackdouble(&(*jobacct)->tot_disk_write, buffer);
+
+		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_disk_read_id,
+			rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_disk_write_id,
+			rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (no_pack)
+			return SLURM_SUCCESS;
+		if (alloc)
+			*jobacct = xmalloc(sizeof(struct jobacctinfo));
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1185,6 +1260,10 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			rpc_version, buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		if (no_pack)
+			return SLURM_SUCCESS;
+		if (alloc)
+			*jobacct = xmalloc(sizeof(struct jobacctinfo));
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1217,36 +1296,9 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_sec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_usec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_sec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_usec = uint32_tmp;
-		safe_unpack32(&(*jobacct)->max_vsize, buffer);
-		safe_unpack32(&(*jobacct)->tot_vsize, buffer);
-		safe_unpack32(&(*jobacct)->max_rss, buffer);
-		safe_unpack32(&(*jobacct)->tot_rss, buffer);
-		safe_unpack32(&(*jobacct)->max_pages, buffer);
-		safe_unpack32(&(*jobacct)->tot_pages, buffer);
-		safe_unpack32(&(*jobacct)->min_cpu, buffer);
-		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
-
-		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
-			buffer)!= SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
-			buffer)!= SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
-			buffer)!= SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
-			buffer)!= SLURM_SUCCESS)
-			goto unpack_error;
-
+		info("jobacctinfo_unpack version %u not supported",
+		     rpc_version);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;

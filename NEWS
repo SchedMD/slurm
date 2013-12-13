@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     the slurmctld throws a fatal error.
  -- gres.conf - Add "NodeName" specification so that a single gres.conf file
     can be used for a heterogeneous cluster.
+ -- Add flag to accounting RPC to indicate if job data is packed or not.
 
 * Changes in Slurm 14.03.0pre4
 ==============================

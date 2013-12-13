@@ -81,6 +81,9 @@ static int _set_limit(char **env, slurm_rlimits_info_t *rli);
  * OF THE CURRENT SLURMD.LOG THE STEPD WILL CORE THE NEXT TIME
  * ANYTHING IS WRITTEN TO IT.  SO IF RUNNING +DEBUG2 AND THE USER IS
  * GETTING CORES WITH FILE SYSTEM LIMIT ERRORS THIS IS THE REASON.
+ *
+ * NOTE: The slurmstepd will not normally write a core file due to setuid().
+ * Run as normal user to disable setuid() and permit a core file to be written.
  */
 
 int set_user_limits(stepd_step_rec_t *job)
@@ -194,7 +197,7 @@ set_umask(stepd_step_rec_t *job)
 }
 
 /*
- * Set rlimit using value of env vars such as SLURM_RLIMIT_CORE if
+ * Set rlimit using value of env vars such as SLURM_RLIMIT_FSIZE if
  * the slurm config file has PropagateResourceLimits=YES or the user
  * requested it with srun --propagate.
  *
