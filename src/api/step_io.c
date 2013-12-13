@@ -305,11 +305,11 @@ _server_read(eio_obj_t *obj, List objs)
 
 		n = io_hdr_read_fd(obj->fd, &s->header);
 		if (n <= 0) { /* got eof or error on socket read */
+			error("%s: fd %d got error or unexpected eof reading header",
+				  __func__, obj->fd);
 			if (s->cio->sls)
 				step_launch_notify_io_failure(s->cio->sls,
-							      s->node_id);
-			debug3("got error or unexpected eof "
-			       "on _server_read header");
+											  s->node_id);
 			close(obj->fd);
 			obj->fd = -1;
 			s->in_eof = true;
@@ -380,11 +380,11 @@ _server_read(eio_obj_t *obj, List objs)
 			}
 		}
 		if (n <= 0) { /* got eof or unhandled error */
+			error("%s: fd %d got error or unexpected eof reading messge body",
+				  __func__, obj->fd);
 			if (s->cio->sls)
 				step_launch_notify_io_failure(
 					s->cio->sls, s->node_id);
-			debug3("got error or unexpected eof "
-			       "on _server_read body");
 			close(obj->fd);
 			obj->fd = -1;
 			s->in_eof = true;

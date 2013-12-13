@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- Add flag to accounting RPC to indicate if job data is packed or not.
  -- After all srun tasks have terminated on a node close the stdout/stderr
     channel with the slurmstepd on that node.
+ -- In case of i/o error with slurmstepd log an error message and abort the
+    job.
 
 * Changes in Slurm 14.03.0pre4
 ==============================
