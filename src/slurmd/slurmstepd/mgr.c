@@ -1747,7 +1747,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			/* Modify copy of job's environment. Do not alter in
 			 * place or concurrent searches of the environment can
 			 * generate invalid memory references. */
-			job->envtp->env = env_array_copy(job->env);
+			job->envtp->env = env_array_copy((const char **) job->env);
 			setup_env(job->envtp, false);
 			tmp_env = job->env;
 			job->env = job->envtp->env;
