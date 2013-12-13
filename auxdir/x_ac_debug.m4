@@ -10,7 +10,7 @@
 #  DESCRIPTION:
 #    Add support for the "--enable-debug", "--enable-memory-leak-debug",
 #    "--disable-partial-attach", "--enable-front-end" and 
-#    "enable-simulator" configure script options.
+#    "--enable-simulator" configure script options.
 #
 #    options.
 #    If debugging is enabled, CFLAGS will be prepended with the debug flags.
