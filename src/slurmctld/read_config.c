@@ -557,7 +557,7 @@ extern void accounts_list_build(char *accounts, char ***accounts_array)
 		one_acct_name = strtok_r(NULL, ",", &name_ptr);
 	}
 	xfree(tmp_accts);
-	xfree(*accounts_array);
+	accounts_list_free(accounts_array);
 	*accounts_array = tmp_array;
 }
 /* Free memory allocated for an account array by accounts_list_build() */
