@@ -531,6 +531,7 @@ static void *_wdog(void *args)
 	ret_data_info_t *ret_data_info = NULL;
 
 	if ( (agent_ptr->msg_type == SRUN_JOB_COMPLETE)			||
+	     (agent_ptr->msg_type == SRUN_REQUEST_SUSPEND)		||
 	     (agent_ptr->msg_type == SRUN_STEP_MISSING)			||
 	     (agent_ptr->msg_type == SRUN_STEP_SIGNAL)			||
 	     (agent_ptr->msg_type == SRUN_EXEC)				||
@@ -620,6 +621,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
+		   (agent_ptr->msg_type == SRUN_REQUEST_SUSPEND)	||
 		   (agent_ptr->msg_type == SRUN_STEP_MISSING)		||
 		   (agent_ptr->msg_type == SRUN_STEP_SIGNAL)		||
 		   (agent_ptr->msg_type == SRUN_EXEC)			||
