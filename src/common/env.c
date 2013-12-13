@@ -280,14 +280,14 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		else
 			rc = 1;
 	} else {
-		int size = strlen(name) + strlen(value) + 1;
+		int size = strlen(name) + strlen(value) + 2;
 		/* XXX Space is allocated on the heap and will never
 		 * be reclaimed.
 		 * Also you can not use xmalloc here since some of the
 		 * external api's like perl will crap out when they
 		 * try to free it.
 		 */
-		str = malloc(size + 1);
+		str = malloc(size);
 		snprintf(str, size, "%s=%s", name, value);
 		rc = putenv(str);
 	}
