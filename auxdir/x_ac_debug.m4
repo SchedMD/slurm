@@ -9,7 +9,9 @@
 #
 #  DESCRIPTION:
 #    Add support for the "--enable-debug", "--enable-memory-leak-debug",
-#    "--disable-partial-attach" and "--enable-front-end" configure script 
+#    "--disable-partial-attach", "--enable-front-end" and 
+#    "enable-simulator" configure script options.
+#
 #    options.
 #    If debugging is enabled, CFLAGS will be prepended with the debug flags.
 #    The NDEBUG macro (used by assert) will also be set accordingly.
