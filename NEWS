@@ -49,6 +49,7 @@ documents those changes that are of interest to users and admins.
  -- Fix slurmstepd race condition when separate threads are reading and 
     modifying the job's environment, which can result in the slurmstepd failing
     with an invalid memory reference.
+ -- Fix erroneous error messages when running gang scheduling.
 
 * Changes in Slurm 2.6.4
 ========================
