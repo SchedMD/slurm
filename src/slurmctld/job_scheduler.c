@@ -240,7 +240,6 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	int reason;
-	int inx;
 
 	job_queue = list_create(_job_queue_rec_del);
 	job_iterator = list_iterator_create(job_list);
