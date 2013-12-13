@@ -748,7 +748,7 @@ again:
 		for (i = 0; i < info->cio->num_nodes; i++) {
 			msg->ref_count++;
 			if (info->cio->ioserver[i] == NULL)
-				/* client_io_handler_abort() or 
+				/* client_io_handler_abort() or
 				 * client_io_handler_downnodes() called */
 				verbose("ioserver stream of node %d not yet "
 					"initialized", i);
