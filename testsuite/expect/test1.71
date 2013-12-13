@@ -1,9 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          validates that srun exit code matches that of a
-#          test program
-#
+#          validates that srun exit code matches that of a test program
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -55,7 +53,9 @@ int main(char **argv, int argc)
 exec $bin_cc -std=c99 -o $file_out $file_c
 exec $bin_chmod 700 $file_out
 
+# Set core size ulimit to zero
 make_bash_script $script "
+ulimit -c 0
 ./$file_out
 echo exit_code = $?
 "

@@ -337,7 +337,7 @@ exec_task(stepd_step_rec_t *job, int i)
 {
 	uint32_t *gtids;		/* pointer to arrary of ranks */
 	int fd, j;
-	stepd_step_task_info_t *task = job->task[i];
+	char **tmp_env;
 
 	if (i == 0)
 		_make_tmpdir(job);
@@ -352,7 +352,6 @@ exec_task(stepd_step_rec_t *job, int i)
 	job->envtp->stepid = job->stepid;
 	job->envtp->nodeid = job->nodeid;
 	job->envtp->cpus_on_node = job->cpus;
-	job->envtp->env = job->env;
 	job->envtp->procid = task->gtid;
 	job->envtp->localid = task->id;
 	job->envtp->task_pid = getpid();
@@ -365,10 +364,18 @@ exec_task(stepd_step_rec_t *job, int i)
 	job->envtp->distribution = -1;
 	job->envtp->ckpt_dir = xstrdup(job->ckpt_dir);
 	job->envtp->batch_flag = job->batch;
+
+	/* Modify copy of job's environment. Do not alter in place or
+	 * concurrent searches of the environment can generate invalid memory
+	 * references. */
+	job->envtp->env = env_array_copy((const char **) job->env);
 	setup_env(job->envtp, false);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
+	tmp_env = job->env;
 	job->env = job->envtp->env;
+	env_array_free(tmp_env);
 	job->envtp->env = NULL;
+
 	xfree(job->envtp->task_count);
 
 	if (task->argv[0] && *task->argv[0] != '/') {
