@@ -134,9 +134,6 @@ AC_DEFUN([X_AC_CRAY],
     ac_have_real_cray="yes"
     ac_have_native_cray="yes"
     AC_DEFINE(HAVE_NATIVE_CRAY, 1, [Define to 1 for running on a Cray in native mode without ALPS])
-    AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
-    AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
-    AC_DEFINE(HAVE_NATIVE_CRAY,  1, [Define to 1 for Native Cray systems])
     AC_DEFINE(HAVE_REAL_CRAY,    1, [Define to 1 for running on a real Cray system])
   else
     # Check for a Cray-specific file:
