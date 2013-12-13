@@ -46,6 +46,9 @@ documents those changes that are of interest to users and admins.
     on a random memory location (i.e. whatever is on the stack), which can
     result in slurmstepd dying and a completed job not being purged in a
     timely fashion.
+ -- Fix slurmstepd race condition when separate threads are reading and 
+    modifying the job's environment, which can result in the slurmstepd failing
+    with an invalid memory reference.
 
 * Changes in Slurm 2.6.4
 ========================

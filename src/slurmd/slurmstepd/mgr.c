@@ -1688,6 +1688,8 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 	int completed = 0;
 	jobacctinfo_t *jobacct = NULL;
 	struct rusage rusage;
+	char **tmp_env;
+
 	do {
 		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
 		if (pid == -1) {
@@ -1737,14 +1739,20 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 
 			t->exited  = true;
 			t->estatus = status;
-			job->envtp->env = job->env;
 			job->envtp->procid = t->gtid;
 			job->envtp->localid = t->id;
-
 			job->envtp->distribution = -1;
 			job->envtp->batch_flag = job->batch;
+
+			/* Modify copy of job's environment. Do not alter in
+			 * place or concurrent searches of the environment can
+			 * generate invalid memory references. */
+			job->envtp->env = env_array_copy(job->env);
 			setup_env(job->envtp, false);
+			tmp_env = job->env;
 			job->env = job->envtp->env;
+			env_array_free(tmp_env);
+
 			if (job->task_epilog) {
 				_run_script_as_user("user task_epilog",
 						    job->task_epilog,
