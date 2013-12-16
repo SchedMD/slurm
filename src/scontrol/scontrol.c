@@ -604,6 +604,7 @@ _process_command (int argc, char *argv[])
 	int error_code = 0;
 	char *tag = argv[0];
 	int tag_len = 0;
+	int i;
 
 	if (argc < 1) {
 		exit_code = 1;
@@ -872,49 +873,39 @@ _process_command (int argc, char *argv[])
 		 (strncasecmp (tag, "holdu", 5) == 0) ||
 		 (strncasecmp (tag, "uhold", 5) == 0) ||
 	         (strncasecmp (tag, "release", MAX(tag_len, 3)) == 0)) {
-		if (argc > 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
-		}
-		else if (argc < 2) {
+		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			error_code = scontrol_hold(argv[0], argv[1]);
-			if (error_code) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					slurm_perror ("slurm_update_job error");
+			for (i = 1; i < argc; i++) {
+				error_code = scontrol_hold(argv[0], argv[i]);
+				if (error_code) {
+					exit_code = 1;
+					if (quiet_flag != 1)
+						slurm_perror("slurm_suspend error");
+				}
 			}
 		}
 	}
 	else if ((strncasecmp (tag, "suspend", MAX(tag_len, 2)) == 0) ||
 	         (strncasecmp (tag, "resume", MAX(tag_len, 3)) == 0)) {
-		if (argc > 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
-		}
-		else if (argc < 2) {
+		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			error_code = scontrol_suspend(argv[0], argv[1]);
-			if (error_code) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					slurm_perror ("slurm_suspend error");
+			for (i = 1; i < argc; i++) {
+				error_code = scontrol_suspend(argv[0], argv[i]);
+				if (error_code) {
+					exit_code = 1;
+					if (quiet_flag != 1)
+						slurm_perror ("slurm_suspend error");
+				}
 			}
 		}
 	}
@@ -1766,8 +1757,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      delete blocks.                               \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
-     hold <job_id>            prevent specified job from starting (see release)\n\
-     holdu <job_id>           place user hold on specified job (see release)\n\
+     hold <jobid_list>        prevent specified job from starting (see release)\n\
+     holdu <jobid_list>       place user hold on specified job (see release)\n\
      hide                     do not display information about hidden      \n\
 			      partitions                                   \n\
      listpids <job_id<.step>> List pids associated with the given jobid, or\n\
@@ -1785,9 +1776,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      reboot_nodes [<nodelist>]  reboot the nodes when they become idle.    \n\
                               By default all nodes are rebooted.           \n\
      reconfigure              re-read configuration files.                 \n\
-     release <job_id>         permit specified job to start (see hold)     \n\
+     release <jobid_list>     permit specified job to start (see hold)     \n\
      requeue <job_id>         re-queue a batch job                         \n\
-     resume <job_id>          resume previously suspended job (see suspend)\n\
+     resume <jobid_list>      resume previously suspended job (see suspend)\n\
      setdebug <level>         set slurmctld debug level                    \n\
      setdebugflags [+|-]<flag>  add or remove slurmctld DebugFlags         \n\
      schedloglevel <slevel>   set scheduler log level                      \n\
@@ -1795,9 +1786,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
 			      (the primary controller will be stopped)     \n\
-     suspend <job_id>         susend specified job (see resume)            \n\
+     suspend <jobid_list>     susend specified job (see resume)            \n\
      takeover                 ask slurm backup controller to take over     \n\
-     uhold <job_id>           place user hold on specified job (see release)\n\
+     uhold <jobid_list>           place user hold on specified job (see release)\n\
      update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
 			      step or bluegene block/submp configuration   \n\
      verbose                  enable detailed logging.                     \n\

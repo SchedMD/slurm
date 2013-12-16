@@ -180,9 +180,10 @@ configured as hidden or partitions that are unavailable to the user's group.
 This is the default behavior.
 
 .TP
-\fBhold\fP \fIjob_id\fP
+\fBhold\fP \fIjob_id_list\fP
 Prevent a pending job from beginning started (sets it's priority to 0).
 Use the \fIrelease\fP command to permit the job to be scheduled.
+Multiple job ID values may be specified separated by spaces.
 Note that when a job is held by a system administrator using the \fBhold\fP
 command, only a system administrator may release the job for execution (also
 see the \fBuhold\fP command). When the job is held by its owner, it may also
@@ -262,16 +263,20 @@ or SlurmdPort. The slurmctld daemon must be restarted if nodes are added to
 or removed from the cluster.
 
 .TP
-\fBrelease\fP \fIjob_id\fP
-Release a previously held job to begin execution. Also see \fBhold\fR.
+\fBrelease\fP \fIjob_id_list\fP
+Release a previously held job to begin execution.
+Multiple job ID values may be specified separated by spaces.
+Also see \fBhold\fR.
 
 .TP
 \fBrequeue\fP \fIjob_id\fP
 Requeue a running or pending SLURM batch job.
 
 .TP
-\fBresume\fP \fIjob_id\fP
-Resume a previously suspended job. Also see \fBsuspend\fR.
+\fBresume\fP \fIjob_id_list\fP
+Resume a previously suspended job.
+Multiple job ID values may be specified separated by spaces.
+Also see \fBsuspend\fR.
 
 .TP
 \fBschedloglevel\fP \fILEVEL\fP
@@ -366,8 +371,9 @@ only the slurmctld daemon being shutdown and the slurmd daemons
 remaining active.
 
 .TP
-\fBsuspend\fP \fIjob_id\fP
+\fBsuspend\fP \fIjob_id_list\fP
 Suspend a running job.
+Multiple job ID values may be specified separated by spaces.
 Use the \fIresume\fP command to resume its execution.
 User processes must stop on receipt of SIGSTOP signal and resume
 upon receipt of SIGCONT for this operation to be effective.
@@ -386,8 +392,9 @@ primary SLURM controller is scheduled down.
 (Note: SLURM's primary controller will take the control back at startup.)
 
 .TP
-\fBuhold\fP \fIjob_id\fP
+\fBuhold\fP \fIjob_id_list\fP
 Prevent a pending job from being started (sets it's priority to 0).
+Multiple job ID values may be specified separated by spaces.
 Use the \fIrelease\fP command to permit the job to be scheduled.
 This command is designed for a system administrator to hold a job so that
 the job owner may release it rather than requiring the intervention of a

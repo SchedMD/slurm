@@ -50,7 +50,9 @@ documents those changes that are of interest to users and admins.
     modifying the job's environment, which can result in the slurmstepd failing
     with an invalid memory reference.
  -- Fix erroneous error messages when running gang scheduling.
- -- Fix minor memory leak
+ -- Fix minor memory leak.
+ -- scontrol modified to suspend, resume, hold, uhold, or release multiple
+    jobs in a space separated list.
 
 * Changes in Slurm 2.6.4
 ========================
