@@ -53,6 +53,7 @@ documents those changes that are of interest to users and admins.
  -- Fix minor memory leak.
  -- scontrol modified to suspend, resume, hold, uhold, or release multiple
     jobs in a space separated list.
+ -- Minor debug error when a connection goes away at the end of a job.
 
 * Changes in Slurm 2.6.4
 ========================
