@@ -64,18 +64,20 @@ if {[slurmd_user_root] == 0} {
 # NOTE: we broadcast the file "sbcast", just for convenienc
 #
 set pid         [pid]
-set file1       "/tmp/test.$pid.1.$test_id"
-set file2       "/tmp/test.$pid.2.$test_id"
+set file1       "/tmp/test.$test_id.$pid.1"
+set file2       "/tmp/test.$test_id.$pid.2"
 exec $bin_rm -f $file_out $file_err
 make_bash_script $file_in "
+  echo '+++ Test 1 +++'
   $srun rm -f $file1
-  $srun $bin_echo dummy >$file1
+  $srun $bin_cp $sbatch $file1
   $sbcast $sbcast $file1
   $srun $bin_cmp $sbcast $file1
   $srun $bin_rm -f $file1
 
+  echo '+++ Test 2 +++'
   $srun rm -f $file2
-  $srun $bin_echo dummy >$file2
+  $srun $bin_cp $sbatch $file2
   $sbcast $sbcast --force $file2
   $srun $bin_cmp $sbcast $file2
   $srun $bin_rm -f $file2

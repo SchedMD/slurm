@@ -50,8 +50,9 @@ if { [string length $partition] == 0 } {
 	set partition [default_partition]
 }
 
+set timeout $max_job_delay
+set env(SLURM_TIMELIMIT) 1
 set protocols { "mpi" "lapi" "pami" }
-
 foreach proto $protocols {
 	#
 	# execute poe with a specific node count
