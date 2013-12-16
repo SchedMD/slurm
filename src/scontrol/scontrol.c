@@ -1788,7 +1788,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      (the primary controller will be stopped)     \n\
      suspend <jobid_list>     susend specified job (see resume)            \n\
      takeover                 ask slurm backup controller to take over     \n\
-     uhold <jobid_list>           place user hold on specified job (see release)\n\
+     uhold <jobid_list>       place user hold on specified job (see release)\n\
      update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
 			      step or bluegene block/submp configuration   \n\
      verbose                  enable detailed logging.                     \n\
