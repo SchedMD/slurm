@@ -152,7 +152,7 @@ bit_alloc(bitoff_t nbits)
 {
 	bitstr_t *new;
 
-	new = (bitstr_t *)calloc(_bitstr_words(nbits), sizeof(bitstr_t));
+	new = (bitstr_t *)xmalloc(_bitstr_words(nbits) * sizeof(bitstr_t));
 	if (!new) {
 		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
@@ -172,12 +172,10 @@ bit_alloc(bitoff_t nbits)
 bitstr_t *
 bit_realloc(bitstr_t *b, bitoff_t nbits)
 {
-	bitoff_t obits;
 	bitstr_t *new = NULL;
 
 	_assert_bitstr_valid(b);
-	obits = _bitstr_bits(b);
-	new = realloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
+	new = xrealloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
 	if (!new) {
 		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
@@ -185,8 +183,7 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 
 	_assert_bitstr_valid(new);
 	_bitstr_bits(new) = nbits;
-	if (nbits > obits)
-		bit_nclear(new, obits, nbits - 1);
+
 	return new;
 }
 
@@ -200,7 +197,7 @@ bit_free(bitstr_t *b)
 	assert(b);
 	assert(_bitstr_magic(b) == BITSTR_MAGIC);
 	_bitstr_magic(b) = 0;
-	free(b);
+	xfree(b);
 }
 
 /*
