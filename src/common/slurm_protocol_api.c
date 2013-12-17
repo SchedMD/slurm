@@ -2489,10 +2489,18 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 		slurm_addr_t resp_addr;
 		char addr_str[32];
 		int uid = _unpack_msg_uid(buffer);
-		slurm_get_peer_addr(fd, &resp_addr);
-		slurm_print_slurm_addr(&resp_addr, addr_str, sizeof(addr_str));
-		error("Invalid Protocol Version %u from uid=%d at %s",
-		      header.version, uid, addr_str);
+
+		if (!slurm_get_peer_addr(fd, &resp_addr)) {
+			slurm_print_slurm_addr(
+				&resp_addr, addr_str, sizeof(addr_str));
+			error("Invalid Protocol Version %u from uid=%d at %s",
+			      header.version, uid, addr_str);
+		} else {
+			error("Invalid Protocol Version %u from uid=%d from "
+			      "problem connection: %m",
+			      header.version, uid);
+		}
+
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -2658,10 +2666,17 @@ List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout)
 		slurm_addr_t resp_addr;
 		char addr_str[32];
 		int uid = _unpack_msg_uid(buffer);
-		slurm_get_peer_addr(fd, &resp_addr);
-		slurm_print_slurm_addr(&resp_addr, addr_str, sizeof(addr_str));
-		error("Invalid Protocol Version %u from uid=%d at %s",
-		      header.version, uid, addr_str);
+		if (!slurm_get_peer_addr(fd, &resp_addr)) {
+			slurm_print_slurm_addr(
+				&resp_addr, addr_str, sizeof(addr_str));
+			error("Invalid Protocol Version %u from uid=%d at %s",
+			      header.version, uid, addr_str);
+		} else {
+			error("Invalid Protocol Version %u from uid=%d from "
+			      "problem connection: %m",
+			      header.version, uid);
+		}
+
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -2849,10 +2864,18 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 		slurm_addr_t resp_addr;
 		char addr_str[32];
 		int uid = _unpack_msg_uid(buffer);
-		slurm_get_peer_addr(fd, &resp_addr);
-		slurm_print_slurm_addr(&resp_addr, addr_str, sizeof(addr_str));
-		error("Invalid Protocol Version %u from uid=%d at %s",
-		      header.version, uid, addr_str);
+
+		if (!slurm_get_peer_addr(fd, &resp_addr)) {
+			slurm_print_slurm_addr(
+				&resp_addr, addr_str, sizeof(addr_str));
+			error("Invalid Protocol Version %u from uid=%d at %s",
+			      header.version, uid, addr_str);
+		} else {
+			error("Invalid Protocol Version %u from uid=%d from "
+			      "problem connection: %m",
+			      header.version, uid);
+		}
+
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -3077,11 +3100,19 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 	} else if (rc < 0) {
 		slurm_addr_t peer_addr;
 		char addr_str[32];
-
-		slurm_get_peer_addr(fd, &peer_addr);
-		slurm_print_slurm_addr(&peer_addr, addr_str, sizeof(addr_str));
-		error("slurm_msg_sendto: address:port=%s msg_type=%u: %m",
-		      addr_str, msg->msg_type);
+		if (!slurm_get_peer_addr(fd, &peer_addr)) {
+			slurm_print_slurm_addr(
+				&peer_addr, addr_str, sizeof(addr_str));
+			error("slurm_msg_sendto: address:port=%s "
+			      "msg_type=%u: %m",
+			      addr_str, msg->msg_type);
+		} else if (errno == ENOTCONN)
+			debug3("slurm_msg_sendto: peer has disappeared "
+			       "for msg_type=%u",
+			       msg->msg_type);
+		else
+			error("slurm_msg_sendto: msg_type=%u: %m",
+			      msg->msg_type);
 	}
 
 	free_buf(buffer);
