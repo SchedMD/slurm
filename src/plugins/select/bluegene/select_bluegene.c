@@ -2899,18 +2899,32 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
 		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
 
-			if (!found_ba_mp->used
-			    || !bit_test(step_ptr->step_node_bitmap,
-					 found_ba_mp->index))
+			if (!found_ba_mp->used)
 				continue;
+
+			if (!bit_test(step_ptr->step_node_bitmap,
+				      found_ba_mp->index)) {
+				/* Make sure we get the count of this midplane
+				   even if it isn't in this particular step.
+				*/
+				bg_record->cnode_err_cnt += bit_set_count(
+					found_ba_mp->cnode_err_bitmap);
+				continue;
+			}
 
 			/* perhaps this block isn't involved in this
 			   error */
 			if (jobinfo->units_avail
 			    && found_ba_mp->cnode_usable_bitmap
 			    && bit_overlap(found_ba_mp->cnode_usable_bitmap,
-					   ba_mp->cnode_err_bitmap))
+					   ba_mp->cnode_err_bitmap)) {
+				/* Make sure we get the count of this midplane
+				   even if it isn't in this particular step.
+				*/
+				bg_record->cnode_err_cnt += bit_set_count(
+					found_ba_mp->cnode_err_bitmap);
 				continue;
+			}
 
 			if (!found_ba_mp->cnode_err_bitmap)
 				found_ba_mp->cnode_err_bitmap =
