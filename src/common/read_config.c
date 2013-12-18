@@ -4099,6 +4099,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Switch");
 	}
+	if (debug_flags & DEBUG_FLAG_TASK) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Task");
+	}
 	if (debug_flags & DEBUG_FLAG_TRIGGERS) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4172,6 +4177,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_STEPS;
 		else if (strcasecmp(tok, "Switch") == 0)
 			rc |= DEBUG_FLAG_SWITCH;
+		else if (strcasecmp(tok, "Task") == 0)
+			rc |= DEBUG_FLAG_TASK;
 		else if (strcasecmp(tok, "Trigger") == 0)
 			rc |= DEBUG_FLAG_TRIGGERS;
 		else if (strcasecmp(tok, "Triggers") == 0)
