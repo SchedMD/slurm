@@ -35,11 +35,11 @@ set test_id        "2.19"
 set user_name      ""
 set node_name      ""
 set host_name      ""
-set acct1          "acct_1"
-set acct2          "acct_2"
-set qos_g          "qos_good"
-set qos_b          "qos_bad"
-set part_name      "test$test_id\_part"
+set acct1          "test${test_id}_acct_1"
+set acct2          "test${test_id}_acct_2"
+set qos_good       "test${test_id}_qos_good"
+set qos_bad        "test${test_id}_qos_bad"
+set part_name      "test${test_id}_part"
 set exit_code      0
 
 print_header $test_id
@@ -57,7 +57,6 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 }
 
 proc set_part_val {part_type part_val} {
-
 	global scontrol part_name exit_code
 
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
@@ -77,8 +76,7 @@ proc set_part_val {part_type part_val} {
 }
 
 proc delete_part { } {
-
-	global scontrol sacctmgr part_name qos_g qos_b acct1 acct2 exit_code
+	global scontrol sacctmgr part_name qos_good qos_bad acct1 acct2 exit_code
 
 	spawn $scontrol delete partition=$part_name
 	expect {
@@ -98,7 +96,7 @@ proc delete_part { } {
 	}
 
 	set del_part 0
-	spawn $sacctmgr -i delete qos $qos_g $qos_b
+	spawn $sacctmgr -i delete qos $qos_good $qos_bad
 	expect {
 		-re "Deleting QOS" {
 			incr del_part
@@ -128,15 +126,11 @@ proc delete_part { } {
 		}
 	}
 
-	if {$del_part != 2} {
-		send_user "\nFAILURE: Qos/account was not deleted\n"
-		set exit_code 1
-	}
+	return $del_part
 
 }
 
 proc create_qos { acct qos } {
-
 	global sacctmgr user_name exit_code
 
 	set create_qos 0
@@ -191,9 +185,7 @@ proc create_qos { acct qos } {
 
 
 proc test_part {acct qos part qos_con } {
-
 	global srun host_name part_name exit_code
-
 
 	set sub_job 0
 	spawn $srun -A $acct --qos $qos -p $part hostname
@@ -220,10 +212,10 @@ proc test_part {acct qos part qos_con } {
 			wait
 		}
 	}
-
-
 }
 
+# Delete any vestigial qos or accounts
+delete_part
 
 spawn $bin_id -un
 expect {
@@ -304,23 +296,23 @@ expect {
 	}
 }
 
-# NOTE: qos_g (good qos) should always work and
-# qos_b (bad qos) should always cause an error
+# NOTE: qos_good should always work and
+# qos_bad should always cause an error
 
 #
 # Create good QOS
 #
-create_qos $acct1 $qos_g
+create_qos $acct1 $qos_good
 
 #
 # Create bad QOS
 #
-create_qos $acct2 $qos_b
+create_qos $acct2 $qos_bad
 
 #
 # Set Allow Qos to good value
 #
-set_part_val allowqos $qos_g
+set_part_val allowqos $qos_good
 
 ######Testing AllowQos######
 send_user "\nTesting AllowQos\n"
@@ -329,20 +321,20 @@ send_user "\nTesting AllowQos\n"
 # Test partition with good Qos
 # 0 = good test / 1 = bad test
 #
-test_part $acct1 $qos_g $part_name 0
+test_part $acct1 $qos_good $part_name 0
 
 #
 # Test partition with bad Qos
 # 0 = good test / 1 = bad test
 #
-test_part $acct2 $qos_b $part_name 1
+test_part $acct2 $qos_bad $part_name 1
 
 #
 # Set Allow Qos back to all and set
 # Deny Qos to bad value
 #
 set_part_val allowqos ALL
-set_part_val denyqos $qos_b
+set_part_val denyqos $qos_bad
 
 ######Testing DenyQos#####
 send_user "\nTesting DenyQos\n"
@@ -351,18 +343,20 @@ send_user "\nTesting DenyQos\n"
 # Test partition with good Qos
 # 0 = good test / 1 = bad test
 #
-test_part $acct1 $qos_g $part_name 0
+test_part $acct1 $qos_good $part_name 0
 
 #
 # Test partition with bad Qos
 # 0 = good test / 1 = bad test
 #
-test_part $acct2 $qos_b $part_name 1
+test_part $acct2 $qos_bad $part_name 1
 
-delete_part
+if {[delete_part] != 2} {
+	send_user "\nFAILURE: Qos/account was not deleted\n"
+	set exit_code 1
+}
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
-
