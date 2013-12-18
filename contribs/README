@@ -8,7 +8,6 @@ SLURM as their documentation. A quick description of the subdirectories
 of the SLURM contribs distribution follows:
 
   cray                [Tools for use on Cray systems]
-     etc_init_d_munge      - /etc/init.d/munge script for use with Munge
      etc_sysconfig_slurm   - /etc/sysconfig/slurm for Cray XT/XE systems
      libalps_test_programs.tar.gz - set of tools to verify ALPS/BASIL support
 			     logic. Note that this currently requires:
@@ -29,18 +28,8 @@ of the SLURM contribs distribution follows:
 			     contact the SDB to generate system-specific information
 			     needed in slurm.conf (e.g. "NodeName=nid..." and
 			     "PartitionName= Nodes=nid... MaxNodes=...".
-     munge_build_script.sh - script to build Munge from sources for Cray system
      opt_modulefiles_slurm - enables use of Munge as soon as built
-     slurm-build-script.sh - script to build SLURM from sources for Cray system.
-			     set LIBROOT and SLURM_SRC environment variables
-			     before use, for example:
-			     LIBROOT=/ufs/slurm/build
-			     SLURM_SRC=${SLURM_SRC:-${LIBROOT}/slurm-2.3.0-0.pre4}
-     srun.pl               - A perl wrapper for the aprun command. Use of this
-			     wrapper requires that SLURM's perlapi be installed.
-			     Execute configure with the --with-srun2aprun option
-			     to build and install this instead of SLURM's normal
-			     srun command.
+     pam_job.c             - Less verbose version of the default Cray job service.
 
   env_cache_builder.c [C program]
      This program will build an environment variable cache file for specific
