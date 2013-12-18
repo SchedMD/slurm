@@ -676,6 +676,9 @@ in the <a href="resource_limits.html">Resource Limits</a> document.</p>
   time from jobs running from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
+  Each job's node allocation is counted separately
+  (i.e. if a single node has resources allocated to two jobs, this is counted
+  as two allocated nodes).
 </li>
 
 <li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
