@@ -109,6 +109,9 @@ allowed to run after resources have been relinquished from this group.
 The total count of nodes able to be used at any given time from jobs
 running from this QOS.  If this limit is reached new jobs will be queued
 but only allowed to run after resources have been relinquished from this group.
+Each job's node allocation is counted separately
+(i.e. if a single node has resources allocated to two jobs, this is counted
+as two allocated nodes).
 </li>
 
 <li><b>GrpSubmitJobs</b>
