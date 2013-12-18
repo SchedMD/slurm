@@ -198,7 +198,7 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
 		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
-			int set_count;
+			int cnt_diff;
 
 			if (!found_ba_mp->used
 			    || (found_ba_mp->index != ba_mp->index))
@@ -208,40 +208,63 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 				found_ba_mp->cnode_err_bitmap =
 					bit_alloc(bg_conf->mp_cnode_cnt);
 
-			/* Check to make sure we haven't already got
-			   some of these or not through the cnode catch.
-			*/
-			set_count = bit_set_count(
-				found_ba_mp->cnode_err_bitmap);
-
 			if (state == Hardware::SoftwareFailure) {
-				bit_nset(found_ba_mp->cnode_err_bitmap, 0,
-					 bit_size(found_ba_mp->
-						  cnode_err_bitmap)-1);
-				if (bg_record->cnode_cnt
-				    < bg_conf->mp_cnode_cnt)
-					bg_record->cnode_err_cnt =
-						bg_record->cnode_cnt;
-				else
-					bg_record->cnode_err_cnt +=
-						(bg_conf->mp_cnode_cnt
-						 - set_count);
-				bg_status_remove_jobs_from_failed_block(
-					bg_record, ba_mp->index,
-					1, delete_list, &kill_job_list);
+				/* Check to make sure we haven't already got
+				   some of these or not through the cnode catch.
+				*/
+				if ((cnt_diff = bit_clear_count(
+					     found_ba_mp->cnode_err_bitmap))) {
+					bit_nset(found_ba_mp->cnode_err_bitmap,
+						 0,
+						 bit_size(found_ba_mp->
+							  cnode_err_bitmap)-1);
+					if (bg_record->cnode_cnt
+					    < bg_conf->mp_cnode_cnt)
+						bg_record->cnode_err_cnt =
+							bg_record->cnode_cnt;
+					else
+						bg_record->cnode_err_cnt +=
+							cnt_diff;
+					bg_status_remove_jobs_from_failed_block(
+						bg_record, ba_mp->index,
+						1, delete_list, &kill_job_list);
+				}
 			} else {
-				bit_nclear(found_ba_mp->cnode_err_bitmap, 0,
-					   bit_size(found_ba_mp->
-						    cnode_err_bitmap)-1);
-				if (bg_record->cnode_cnt
-				    < bg_conf->mp_cnode_cnt)
-					bg_record->cnode_err_cnt = 0;
-				else
-					bg_record->cnode_err_cnt -= set_count;
+				/* Check to make sure we haven't already got
+				   some of these or not through the cnode catch.
+				*/
+				if ((cnt_diff = bit_set_count(
+					     found_ba_mp->cnode_err_bitmap))) {
+					bit_nclear(found_ba_mp->
+						   cnode_err_bitmap, 0,
+						   bit_size(
+							   found_ba_mp->
+							   cnode_err_bitmap)-1);
+					if (bg_record->cnode_cnt
+					    < bg_conf->mp_cnode_cnt)
+						bg_record->cnode_err_cnt = 0;
+					else
+						bg_record->cnode_err_cnt -=
+							cnt_diff;
+				}
 			}
 			break;
 		}
 		list_iterator_destroy(itr2);
+
+		if ((int32_t)bg_record->cnode_err_cnt >
+		    (int32_t)bg_record->cnode_cnt) {
+			error("_handle_soft_error_midplane: "
+			      "got more cnodes in error than are "
+			      "possible %d > %d",
+			      bg_record->cnode_err_cnt, bg_record->cnode_cnt);
+			bg_record->cnode_err_cnt = bg_record->cnode_cnt;
+		} else if ((int32_t)bg_record->cnode_err_cnt < 0) {
+			error("_handle_soft_error_midplane: "
+			      "cnode err underflow %d < 0",
+			      bg_record->cnode_err_cnt);
+			bg_record->cnode_err_cnt = 0;
+		}
 
 		err_ratio = (float)bg_record->cnode_err_cnt
 			/ (float)bg_record->cnode_cnt;
@@ -259,6 +282,7 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 			      bg_record->bg_block_id,
 			      bg_record->cnode_err_cnt,
 			      bg_record->err_ratio);
+		last_bg_update = time(NULL);
 	}
 	list_iterator_destroy(itr);
 }
