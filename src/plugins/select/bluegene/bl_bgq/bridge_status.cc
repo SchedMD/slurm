@@ -282,6 +282,7 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 			      bg_record->bg_block_id,
 			      bg_record->cnode_err_cnt,
 			      bg_record->err_ratio);
+		last_bg_update = time(NULL);
 	}
 	list_iterator_destroy(itr);
 }
