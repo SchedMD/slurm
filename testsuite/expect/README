@@ -678,3 +678,19 @@ test31.#   Test of Slurm Epilog and Prolog.
 test31.1   Validate that the epilog and prologs behave the way
 	   they should when starting at child process in the
 	   prolog/epilog.
+
+
+test32.#   Test of slurms sgather options.
+==========================================
+test32.1   Validates that the sgather --usage option reports the usage.
+test32.2   Validates that the sgather --help option reports the help message.
+test32.3   Validates that the sgather -V (Version) option reports the version.
+test32.4   Validates that sgather copies specified files from compute nodes.
+test32.5   Validates that sgather -k keeps the original source file.
+test32.6   Validates that sgather -C compress the copied file.
+test32.7   Validates that sgather -f ignores nonexistent source files.
+test32.8   Validates that sgather -F changes the fanout message.
+test32.9   Validates that sgather -p option perserves file state.
+test32.10  Validates that sgather -r copies files recursively.
+test32.11  Validates that sgather -v prints the output loging of the job.
+test32.12  Validates that sgather -t changes the timeout message.
