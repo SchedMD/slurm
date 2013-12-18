@@ -75,7 +75,8 @@ $srun $bin_cp $sgather $sgather_tmp
 $sgather -C $sgather_tmp $sgather_out
 sum $sgather ${sgather_out}\*
 $bin_rm ${sgather_out}\*
-$srun $bin_rm $sgather_tmp
+$srun ls -l $sgather_tmp
+$srun $bin_rm -f $sgather_tmp
 exit 0
 "
 
@@ -124,6 +125,7 @@ if {[wait_for_file $file_out] == 0} {
 		-re "No such file or directory" {
 			send_user "\nError is expected. No worries.\n"
 			incr rm_cnt
+			exp_continue
 		}
 		eof {
 			wait
@@ -134,8 +136,8 @@ if {$file_cnt != $node_cnt} {
 	send_user "\nFAILURE: Failed to gather files from all allocated nodes ($file_cnt != $node_cnt)\n"
 	exit 1
 }
-if {$rm_cnt != $node_cnt} {
-	send_user "\nFAILURE: Failed to remove gathered files from all allocated nodes ($rm_cnt != $node_cnt)\n"
+if {$rm_cnt == 0} {
+	send_user "\nFAILURE: Failed to remove gathered files from all allocated nodes ($rm_cnt == 0)\n"
 	exit 1
 }
 

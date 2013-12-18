@@ -75,7 +75,8 @@ $srun $bin_cp $sgather $sgather_tmp
 $sgather -v $sgather_tmp $sgather_out
 sum $sgather ${sgather_out}\*
 $bin_rm ${sgather_out}\*
-$srun $bin_rm $sgather_tmp
+$srun ls -l $sgather_tmp
+$srun $bin_rm -f $sgather_tmp
 exit 0
 "
 
@@ -129,6 +130,7 @@ if {[wait_for_file $file_out] == 0} {
 		-re "No such file or directory" {
 			send_user "\nError is expected. No worries.\n"
 			incr rm_cnt
+			exp_continue
 		}
 		eof {
 			wait

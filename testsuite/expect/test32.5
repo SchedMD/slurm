@@ -75,7 +75,8 @@ $srun $bin_cp $sgather $sgather_tmp
 $sgather -k $sgather_tmp $sgather_out
 sum $sgather ${sgather_out}\*
 $bin_rm ${sgather_out}\*
-$srun $bin_rm $sgather_tmp
+$srun ls -l $sgather_tmp
+$srun $bin_rm -f $sgather_tmp
 exit 0
 "
 
@@ -123,6 +124,7 @@ if {[wait_for_file $file_out] == 0} {
 		-re "No such file or directory" {
 			send_user "\nFAILURE: Failed to keep gathered files from all allocated nodes\n"
 			set exit_code 1
+			exp_continue
 		}
 		eof {
 			wait

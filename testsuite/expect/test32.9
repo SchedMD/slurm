@@ -77,7 +77,8 @@ $srun ls -l $sgather_tmp
 $sgather -p $sgather_tmp $sgather_out
 ls -l ${sgather_out}\*
 $bin_rm ${sgather_out}\*
-$srun $bin_rm $sgather_tmp
+$srun ls -l $sgather_tmp
+$srun $bin_rm -f $sgather_tmp
 exit 0
 "
 
@@ -118,14 +119,15 @@ if {[wait_for_file $file_out] == 0} {
 		-re "No such file or directory" {
 			send_user "\nError is expected. No worries.\n"
 			incr rm_cnt
+			exp_continue
 		}
 		eof {
 			wait
 		}
 	}
 }
-if {$matches != [expr $node_cnt + 1]} {
-	send_user "\nFAILURE: Failed to preserve file time ($matches != [expr $node_cnt + 1])\n"
+if {$matches != [expr $node_cnt * 2]} {
+	send_user "\nFAILURE: Failed to preserve file time ($matches != [expr $node_cnt * 2])\n"
 	exit 1
 }
 
