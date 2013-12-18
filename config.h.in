@@ -494,6 +494,9 @@
 /* Define Slurm installation prefix */
 #undef SLURM_PREFIX
 
+/* Define to 1 if running slurm simulator */
+#undef SLURM_SIMULATOR
+
 /* SLURM Version Number */
 #undef SLURM_VERSION_NUMBER
 
