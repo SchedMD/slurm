@@ -55,6 +55,9 @@ documents those changes that are of interest to users and admins.
     jobs in a space separated list.
  -- Minor debug error when a connection goes away at the end of a job.
  -- Validate return code from calls to slurm_get_peer_addr
+ -- BGQ - Fix issues with making sure all cnodes are accounted for when mulitple
+    steps cause multiple cnodes in one allocation to go into error at the
+    same time.
 
 * Changes in Slurm 2.6.4
 ========================
