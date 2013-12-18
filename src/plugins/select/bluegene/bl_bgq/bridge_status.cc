@@ -252,6 +252,20 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 		}
 		list_iterator_destroy(itr2);
 
+		if ((int32_t)bg_record->cnode_err_cnt >
+		    (int32_t)bg_record->cnode_cnt) {
+			error("_handle_soft_error_midplane: "
+			      "got more cnodes in error than are "
+			      "possible %d > %d",
+			      bg_record->cnode_err_cnt, bg_record->cnode_cnt);
+			bg_record->cnode_err_cnt = bg_record->cnode_cnt;
+		} else if ((int32_t)bg_record->cnode_err_cnt < 0) {
+			error("_handle_soft_error_midplane: "
+			      "cnode err underflow %d < 0",
+			      bg_record->cnode_err_cnt);
+			bg_record->cnode_err_cnt = 0;
+		}
+
 		err_ratio = (float)bg_record->cnode_err_cnt
 			/ (float)bg_record->cnode_cnt;
 		bg_record->err_ratio = err_ratio * 100;
