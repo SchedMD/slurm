@@ -371,6 +371,10 @@ else
   AC_MSG_RESULT([no])
 fi
 
+dnl Check for file src/simulation_lib/slurm_sim.h
+dnl
+X_AC_SLURM_SIMULATION
+
 
 AUTHD_LIBS="-lauth -le"
 savedLIBS="$LIBS"
