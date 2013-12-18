@@ -2910,7 +2910,7 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 			    && found_ba_mp->cnode_usable_bitmap
 			    && bit_overlap(found_ba_mp->cnode_usable_bitmap,
 					   ba_mp->cnode_err_bitmap))
-					continue;
+				continue;
 
 			if (!found_ba_mp->cnode_err_bitmap)
 				found_ba_mp->cnode_err_bitmap =
