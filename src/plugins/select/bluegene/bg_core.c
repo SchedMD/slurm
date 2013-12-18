@@ -495,7 +495,12 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 			ba_mp_t *found_ba_mp;
 			ListIterator itr =
 				list_iterator_create(bg_record->ba_mp_list);
-			debug("block %s is free, but has %u cnodes in error",
+			debug("Block %s is free, but has %u cnodes in error.  "
+			      "This can happen if a large block goes into "
+			      "error and then is freed and the state of "
+			      "the block changes before the "
+			      "database informs all the cnodes are back to "
+			      "normal.  This is no big deal.",
 			      bg_record->bg_block_id, bg_record->cnode_err_cnt);
 			while ((found_ba_mp = list_next(itr))) {
 				if (!found_ba_mp->used)
