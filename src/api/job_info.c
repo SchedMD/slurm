@@ -478,21 +478,23 @@ line6:
 			max_nodes = job_ptr->max_nodes;
 		} else if (job_ptr->max_nodes)
 			max_nodes = min_nodes;
-	} else {
+	} else if (IS_JOB_PENDING(job_ptr)) {
 		min_nodes = job_ptr->num_nodes;
 		if ((min_nodes == 1) && (job_ptr->num_cpus > 1)
 		    && job_ptr->ntasks_per_node
 		    && (job_ptr->ntasks_per_node != (uint16_t) NO_VAL)) {
-			int num_tasks = job_ptr->num_cpus;
-			if (job_ptr->cpus_per_task != (uint16_t) NO_VAL)
-				num_tasks /= job_ptr->cpus_per_task;
-			min_nodes = (num_tasks + 1) / job_ptr->ntasks_per_node;
-			if (min_nodes > num_tasks)
-				min_nodes = num_tasks;
-			else if (!min_nodes)
-				min_nodes = 1;
+			int node_cnt2 = job_ptr->num_cpus;
+			node_cnt2 = (node_cnt2 + job_ptr->ntasks_per_node - 1)
+				    / job_ptr->ntasks_per_node;
+			if (min_nodes < node_cnt2)
+				min_nodes = node_cnt2;
 		}
 		max_nodes = job_ptr->max_nodes;
+		if (max_nodes && (max_nodes < min_nodes))
+			min_nodes = max_nodes;
+	} else {
+		min_nodes = job_ptr->num_nodes;
+		max_nodes = 0;
 	}
 
 	_sprint_range(tmp1, sizeof(tmp1), job_ptr->num_cpus, job_ptr->max_cpus);

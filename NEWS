@@ -58,6 +58,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix issues with making sure all cnodes are accounted for when mulitple
     steps cause multiple cnodes in one allocation to go into error at the
     same time.
+ -- scontrol show job - Correct NumNodes value calculated based upon job
+    specifications.
 
 * Changes in Slurm 2.6.4
 ========================
