@@ -2054,8 +2054,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					   step_jobinfo->ionode_str);
 			info("select_p_step_pick_nodes: new step for job %u "
 			     "will be running on %s relative %s",
-			     job_ptr->job_id, bg_record->bg_block_id, tmp_char,
-			     rel_str);
+			     job_ptr->job_id, tmp_char, rel_str);
 			xfree(tmp_char);
 		}
 		step_jobinfo->cnode_cnt = node_count;
