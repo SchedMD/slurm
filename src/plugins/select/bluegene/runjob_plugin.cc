@@ -46,6 +46,7 @@ extern "C" {
 #  include "config.h"
 #endif
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -186,7 +187,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	job_step_info_response_msg_t * step_resp = NULL;
 	job_step_info_t *step_ptr = NULL;
 	runjob_job_t *runjob_job = NULL;
-	char tmp_char[16];
+	char tmp_char[16], *tmp_str = NULL;
 	std::string message = "Unknown failure";
 
 	geo[0] = NO_VAL;
@@ -262,10 +263,17 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_IONODES,
-				     &runjob_job->total_cnodes)) {
+				     &tmp_str)) {
 		message = "Can't get the cnode string!";
 		goto deny_job;
 	}
+
+	if (tmp_str) {
+		runjob_job->total_cnodes =
+			xstrdup_printf("%s[%s]", step_ptr->nodes, tmp_str);
+		xfree(tmp_str);
+	} else
+		runjob_job->total_cnodes = xstrdup(step_ptr->nodes);
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_BLOCK_NODE_CNT,

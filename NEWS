@@ -64,6 +64,8 @@ documents those changes that are of interest to users and admins.
     midplane block that starts on a higher coordinate than it ends (i.e if a
     block has midplanes [0010,0013] 0013 is the start even though it is
     listed second in the hostlist).
+ -- BGQ - Add midplane to the total_cnodes used in the runjob_mux plugin
+    for better debug.
 
 * Changes in Slurm 2.6.4
 ========================
