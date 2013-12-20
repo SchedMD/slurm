@@ -71,6 +71,9 @@ extern "C" {
 static log4cxx::LoggerPtr slurm_ibm_logger(
 	log4cxx::Logger::getLogger("ibm.runjob.mux.slurm"));
 
+#define LOG_TRACE_MSG(message_expr) \
+ LOG4CXX_TRACE(slurm_ibm_logger, message_expr)
+
 #define LOG_DEBUG_MSG(message_expr) \
  LOG4CXX_DEBUG(slurm_ibm_logger, message_expr)
 
@@ -175,7 +178,7 @@ Plugin::~Plugin()
 
 void Plugin::execute(bgsched::runjob::Verify& verify)
 {
-	LOG_DEBUG_MSG("Verify - Start");
+	LOG_TRACE_MSG("Verify - Start");
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	unsigned geo[Dimension::NodeDims];
 	unsigned start_coords[Dimension::NodeDims];
@@ -221,7 +224,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	}
 
-	LOG_DEBUG_MSG("Getting info for step " << runjob_job->job_id
+	LOG_TRACE_MSG("Getting info for step " << runjob_job->job_id
 		      << "." << runjob_job->step_id);
 	if (slurm_get_job_steps((time_t) 0, runjob_job->job_id,
 				runjob_job->step_id,
@@ -403,7 +406,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	slurm_mutex_unlock(&runjob_list_lock);
 
 	slurm_free_job_step_info_response_msg(step_resp);
-	LOG_DEBUG_MSG("Verify - Done");
+	LOG_TRACE_MSG("Verify - Done");
 	return;
 
 deny_job:
@@ -415,7 +418,7 @@ deny_job:
 
 void Plugin::execute(const bgsched::runjob::Started& data)
 {
-	LOG_DEBUG_MSG("Started start");
+	LOG_TRACE_MSG("Started start");
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	// ListIterator itr = NULL;
 	// runjob_job_t *runjob_job = NULL;
@@ -435,12 +438,12 @@ void Plugin::execute(const bgsched::runjob::Started& data)
 	// 	list_iterator_destroy(itr);
 	// }
 	// slurm_mutex_unlock(&runjob_list_lock);
-	LOG_DEBUG_MSG("Started - Done");
+	LOG_TRACE_MSG("Started - Done");
 }
 
 void Plugin::execute(const bgsched::runjob::Terminated& data)
 {
-	LOG_DEBUG_MSG("Terminated - Start");
+	LOG_TRACE_MSG("Terminated - Start");
 	ListIterator itr = NULL;
 	runjob_job_t *runjob_job = NULL;
 	uint16_t sig = 0;
@@ -490,7 +493,7 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 			runjob_job->job_id, runjob_job->step_id, sig);
 
 	_destroy_runjob_job(runjob_job);
-	LOG_DEBUG_MSG("Terminated - Done");
+	LOG_TRACE_MSG("Terminated - Done");
 }
 
 extern "C" bgsched::runjob::Plugin* create()
