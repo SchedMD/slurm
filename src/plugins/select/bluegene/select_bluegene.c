@@ -2902,6 +2902,10 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 			if (!found_ba_mp->used)
 				continue;
 
+			if (!found_ba_mp->cnode_err_bitmap)
+				found_ba_mp->cnode_err_bitmap =
+					bit_alloc(bg_conf->mp_cnode_cnt);
+
 			if (!bit_test(step_ptr->step_node_bitmap,
 				      found_ba_mp->index)) {
 				/* Make sure we get the count of this midplane
@@ -2925,10 +2929,6 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 					found_ba_mp->cnode_err_bitmap);
 				continue;
 			}
-
-			if (!found_ba_mp->cnode_err_bitmap)
-				found_ba_mp->cnode_err_bitmap =
-					bit_alloc(bg_conf->mp_cnode_cnt);
 
 			bit_or(found_ba_mp->cnode_err_bitmap,
 			       ba_mp->cnode_err_bitmap);
