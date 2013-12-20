@@ -2173,9 +2173,13 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim)
 
 static uint16_t _find_distance(uint16_t start, uint16_t end, int dim)
 {
-	if (end < start)
-		return (((DIM_SIZE[dim]-1) - start) + end) * 4;
-	else
+	/* If we started at a position that requires us to wrap around
+	 * make sure we add the 1 to end to get the correct relative
+	 * position.
+	 */
+	if (end < start) {
+		return (((DIM_SIZE[dim]-1) - start) + (end+1)) * 4;
+	} else
 		return (end - start) * 4;
 }
 

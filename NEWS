@@ -60,6 +60,10 @@ documents those changes that are of interest to users and admins.
     same time.
  -- scontrol show job - Correct NumNodes value calculated based upon job
     specifications.
+ -- BGQ - Fix issue if user runs multiple sub-block jobs inside a multiple
+    midplane block that starts on a higher coordinate than it ends (i.e if a
+    block has midplanes [0010,0013] 0013 is the start even though it is
+    listed second in the hostlist).
 
 * Changes in Slurm 2.6.4
 ========================
