@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
     channel with the slurmstepd on that node.
  -- In case of i/o error with slurmstepd log an error message and abort the
     job.
+ -- Add --test-only option to sbatch command to validate the script and options.
+    The response includes expected start time and resources to be allocated.
 
 * Changes in Slurm 14.03.0pre4
 ==============================

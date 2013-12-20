@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.6" "January 2013" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 14.03" "December 2014" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -1250,6 +1250,12 @@ limit be imposed.  Acceptable time formats include "minutes",
 \fB\-\-tasks\-per\-node\fR=<\fIn\fR>
 Specify the number of tasks to be launched per node.
 Equivalent to \fB\-\-ntasks\-per\-node\fR.
+
+.TP
+\fB\-\-test\-only\fR
+Validate the batch script and return an estimate of when a job would be
+scheduled to run given the current job queue and all the other arguments
+specifying the job requirements. No job is actually submitted.
 
 .TP
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>

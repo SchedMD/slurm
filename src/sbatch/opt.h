@@ -180,6 +180,7 @@ typedef struct sbatch_options {
 	int spank_job_env_size;	/* size of spank_job_env	*/
 	int umask;		/* job umask for PBS		*/
 	int core_spec;		/* --core-spec=n,      -S n	*/
+	bool test_only;		/* --test-only			*/
 } opt_t;
 
 extern opt_t opt;

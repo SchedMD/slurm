@@ -165,6 +165,14 @@ int main(int argc, char *argv[])
 	if (_check_cluster_specific_settings(&desc) != SLURM_SUCCESS)
 		exit(error_exit);
 
+	if (opt.test_only) {
+		if (slurm_job_will_run(&desc) != SLURM_SUCCESS) {
+			slurm_perror("allocation failure");
+			exit (1);
+		}
+		exit (0);
+	}
+
 	while (slurm_submit_batch_job(&desc, &resp) < 0) {
 		static char *msg;
 

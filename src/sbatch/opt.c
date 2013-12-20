@@ -175,6 +175,7 @@
 #define LONG_OPT_EXPORT_FILE     0x153
 #define LONG_OPT_PROFILE         0x154
 #define LONG_OPT_IGNORE_PBS      0x155
+#define LONG_OPT_TEST_ONLY       0x156
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -389,6 +390,8 @@ static void _opt_default()
 	opt.ckpt_interval = 0;
 	opt.ckpt_interval_str = NULL;
 	opt.ckpt_dir = xstrdup(opt.cwd);
+
+	opt.test_only   = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -733,6 +736,7 @@ static struct option long_options[] = {
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
+	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1303,15 +1307,6 @@ static void _set_options(int argc, char **argv)
 		case 'w':
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
-#ifdef HAVE_BG
-			info("\tThe nodelist option should only be used if\n"
-			     "\tthe block you are asking for can be created.\n"
-			     "\tIt should also include all the midplanes you\n"
-			     "\twant to use, partial lists may not\n"
-			     "\twork correctly.\n"
-			     "\tPlease consult smap before using this option\n"
-			     "\tor your job may be stuck with no way to run.");
-#endif
 			break;
 		case 'x':
 			xfree(opt.exc_nodes);
@@ -1655,6 +1650,9 @@ static void _set_options(int argc, char **argv)
 			/* Ignore here, needed to process earlier,
 			 * when the batch script was read. */
                         break;
+		case LONG_OPT_TEST_ONLY:
+			opt.test_only = true;
+			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
 				error("Unrecognized command line parameter %c",
@@ -2538,6 +2536,17 @@ static bool _opt_verify(void)
 		} else {
 			setenvf(NULL, "SBATCH_MEM_BIND", "%s", tmp);
 		}
+	}
+
+	if (opt.nodelist && (!opt.test_only)) {
+#ifdef HAVE_BG
+		info("\tThe nodelist option should only be used if\n"
+		     "\tthe block you are asking for can be created.\n"
+		     "\tIt should also include all the midplanes you\n"
+		     "\twant to use, partial lists will not work correctly.\n"
+		     "\tPlease consult smap before using this option\n"
+		     "\tor your job may be stuck with no way to run.");
+#endif
 	}
 
 	return verified;

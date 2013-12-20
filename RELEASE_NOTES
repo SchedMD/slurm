@@ -97,6 +97,8 @@ COMMAND CHANGES (see man pages for details)
     central location.
  -- Added -S/--core-spec option to salloc, sbatch and srun commands to reserve
     specialized cores for system use.
+ -- Add --test-only option to sbatch command to validate the script and options.
+    The response includes expected start time and resources to be allocated.
 
 OTHER CHANGES
 =============
