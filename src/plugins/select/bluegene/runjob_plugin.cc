@@ -46,6 +46,7 @@ extern "C" {
 #  include "config.h"
 #endif
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -69,6 +70,9 @@ extern "C" {
 
 static log4cxx::LoggerPtr slurm_ibm_logger(
 	log4cxx::Logger::getLogger("ibm.runjob.mux.slurm"));
+
+#define LOG_TRACE_MSG(message_expr) \
+ LOG4CXX_TRACE(slurm_ibm_logger, message_expr)
 
 #define LOG_DEBUG_MSG(message_expr) \
  LOG4CXX_DEBUG(slurm_ibm_logger, message_expr)
@@ -174,7 +178,7 @@ Plugin::~Plugin()
 
 void Plugin::execute(bgsched::runjob::Verify& verify)
 {
-	LOG_DEBUG_MSG("Verify - Start");
+	LOG_TRACE_MSG("Verify - Start");
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	unsigned geo[Dimension::NodeDims];
 	unsigned start_coords[Dimension::NodeDims];
@@ -186,12 +190,12 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	job_step_info_response_msg_t * step_resp = NULL;
 	job_step_info_t *step_ptr = NULL;
 	runjob_job_t *runjob_job = NULL;
-	char tmp_char[16];
+	char tmp_char[16], *tmp_str = NULL;
 	std::string message = "Unknown failure";
+	uint16_t dim;
 
 	geo[0] = NO_VAL;
 	start_coords[0] = NO_VAL;
-
 	runjob_job = (runjob_job_t *)xmalloc(sizeof(runjob_job_t));
 	runjob_job->job_id = NO_VAL;
 	runjob_job->step_id = NO_VAL;
@@ -220,6 +224,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	}
 
+	LOG_TRACE_MSG("Getting info for step " << runjob_job->job_id
+		      << "." << runjob_job->step_id);
 	if (slurm_get_job_steps((time_t) 0, runjob_job->job_id,
 				runjob_job->step_id,
 				&step_resp, SHOW_ALL)) {
@@ -262,10 +268,17 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_IONODES,
-				     &runjob_job->total_cnodes)) {
+				     &tmp_str)) {
 		message = "Can't get the cnode string!";
 		goto deny_job;
 	}
+
+	if (tmp_str) {
+		runjob_job->total_cnodes =
+			xstrdup_printf("%s[%s]", step_ptr->nodes, tmp_str);
+		xfree(tmp_str);
+	} else
+		runjob_job->total_cnodes = xstrdup(step_ptr->nodes);
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_BLOCK_NODE_CNT,
@@ -290,7 +303,6 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	} else if ((step_cnode_cnt < block_cnode_cnt)
 		   && (step_cnode_cnt <= 512)) {
-		uint16_t dim;
 		uint16_t tmp_uint16[HIGHEST_DIMENSIONS];
 
 		sub_block_job = 1;
@@ -349,6 +361,14 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	}
 
+	if (sub_block_job) {
+		char corner_str[Dimension::NodeDims];
+		for (dim=0; dim<Dimension::NodeDims; dim++)
+			corner_str[dim] = alpha_num[start_coords[dim]];
+		LOG_DEBUG_MSG(runjob_job->job_id << "." << runjob_job->step_id
+			      << " " << runjob_job->total_cnodes
+			      << " relative " << corner_str);
+	}
 
 	/* set the scheduler_data to be the job id so we can filter on
 	   it when we go to clean up the job in the slurmctld.
@@ -386,7 +406,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	slurm_mutex_unlock(&runjob_list_lock);
 
 	slurm_free_job_step_info_response_msg(step_resp);
-	LOG_DEBUG_MSG("Verify - Done");
+	LOG_TRACE_MSG("Verify - Done");
 	return;
 
 deny_job:
@@ -398,7 +418,7 @@ deny_job:
 
 void Plugin::execute(const bgsched::runjob::Started& data)
 {
-	LOG_DEBUG_MSG("Started start");
+	LOG_TRACE_MSG("Started start");
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	// ListIterator itr = NULL;
 	// runjob_job_t *runjob_job = NULL;
@@ -418,12 +438,12 @@ void Plugin::execute(const bgsched::runjob::Started& data)
 	// 	list_iterator_destroy(itr);
 	// }
 	// slurm_mutex_unlock(&runjob_list_lock);
-	LOG_DEBUG_MSG("Started - Done");
+	LOG_TRACE_MSG("Started - Done");
 }
 
 void Plugin::execute(const bgsched::runjob::Terminated& data)
 {
-	LOG_DEBUG_MSG("Terminated - Start");
+	LOG_TRACE_MSG("Terminated - Start");
 	ListIterator itr = NULL;
 	runjob_job_t *runjob_job = NULL;
 	uint16_t sig = 0;
@@ -473,7 +493,7 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 			runjob_job->job_id, runjob_job->step_id, sig);
 
 	_destroy_runjob_job(runjob_job);
-	LOG_DEBUG_MSG("Terminated - Done");
+	LOG_TRACE_MSG("Terminated - Done");
 }
 
 extern "C" bgsched::runjob::Plugin* create()
