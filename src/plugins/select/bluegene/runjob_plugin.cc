@@ -189,10 +189,10 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	runjob_job_t *runjob_job = NULL;
 	char tmp_char[16], *tmp_str = NULL;
 	std::string message = "Unknown failure";
+	uint16_t dim;
 
 	geo[0] = NO_VAL;
 	start_coords[0] = NO_VAL;
-
 	runjob_job = (runjob_job_t *)xmalloc(sizeof(runjob_job_t));
 	runjob_job->job_id = NO_VAL;
 	runjob_job->step_id = NO_VAL;
@@ -221,6 +221,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	}
 
+	LOG_DEBUG_MSG("Getting info for step " << runjob_job->job_id
+		      << "." << runjob_job->step_id);
 	if (slurm_get_job_steps((time_t) 0, runjob_job->job_id,
 				runjob_job->step_id,
 				&step_resp, SHOW_ALL)) {
@@ -298,7 +300,6 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	} else if ((step_cnode_cnt < block_cnode_cnt)
 		   && (step_cnode_cnt <= 512)) {
-		uint16_t dim;
 		uint16_t tmp_uint16[HIGHEST_DIMENSIONS];
 
 		sub_block_job = 1;
@@ -357,6 +358,14 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	}
 
+	if (sub_block_job) {
+		char corner_str[Dimension::NodeDims];
+		for (dim=0; dim<Dimension::NodeDims; dim++)
+			corner_str[dim] = alpha_num[start_coords[dim]];
+		LOG_DEBUG_MSG(runjob_job->job_id << "." << runjob_job->step_id
+			      << " " << runjob_job->total_cnodes
+			      << " relative " << corner_str);
+	}
 
 	/* set the scheduler_data to be the job id so we can filter on
 	   it when we go to clean up the job in the slurmctld.
