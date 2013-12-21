@@ -277,12 +277,12 @@ prevent users from accessing invalid accounts.
 (NOTE: The association is a combination of cluster, account,
 user names and optional partition name.)
 <br>
-Without AccountingStorageEnforce being set (the default behavior)
+<b>Without AccountingStorageEnforce being set (the default behavior)
 jobs will be executed based upon policies configured in SLURM on each
-cluster.
+cluster.</b>
 <br>
 It is advisable to run without the option 'limits' set when running a
-scheduler on top of SLURM, like Moab, that does not update in real
+scheduler on top of SLURM like Moab that does not update in real
 time their limits per association.</li>
 
 <li><b>AccountingStorageHost</b>: The name or address of the host where
@@ -633,17 +633,23 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 </ul>
 
-<h2>Limit enforcement</h2>
+<h2>Limit Enforcement</h2>
 
 <p>When limits are developed they will work in this order.
-If a user has a limit set SLURM will read in those,
+If a user has a limit set Slurm will read in those,
 if not we will refer to the account associated with the job.
 If the account doesn't have the limit set we will refer to
 the cluster's limits.
 If the cluster doesn't have the limit set no limit will be enforced.</p>
 
 <p>All of the above entities can include limits as described below and
-in the <a href="resource_limits.html">Resource Limits</a> document.</p>
+in the <a href="resource_limits.html">Resource Limits</a> document.
+In enable any limit enforcement you must at least have
+<b>AccountingStorageEnforce=limits</b> in your slurm.conf,
+otherwise even if you have limits set they will not be enforced.
+Other options for AccountingStorageEnforce and the explanation for
+each are found on the <a href="resource_limits.html">Resource
+Limits</a> document.</p>
 
 <ul>
 
