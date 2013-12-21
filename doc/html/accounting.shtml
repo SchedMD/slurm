@@ -2,7 +2,7 @@
 
 <h1>Accounting and Resource Limits</h1>
 
-<p>SLURM can be configured to collect accounting information for every
+<p>Slurm can be configured to collect accounting information for every
 job and job step executed.
 Accounting records can be written to a simple text file or a database.
 Information is available about both currently executing jobs and
@@ -267,12 +267,12 @@ prevent users from accessing invalid accounts.
 (NOTE: The association is a combination of cluster, account,
 user names and optional partition name.)
 <br>
-Without AccountingStorageEnforce being set (the default behavior)
+<b>Without AccountingStorageEnforce being set (the default behavior)
 jobs will be executed based upon policies configured in SLURM on each
-cluster.
+cluster.</b>
 <br>
 It is advisable to run without the option 'limits' set when running a
-scheduler on top of SLURM, like Moab, that does not update in real
+scheduler on top of SLURM like Moab that does not update in real
 time their limits per association.</li>
 
 <li><b>AccountingStorageHost</b>: The name or address of the host where
@@ -617,17 +617,23 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 </ul>
 
-<h2>Limit enforcement</h2>
+<h2>Limit Enforcement</h2>
 
 <p>When limits are developed they will work in this order.
-If a user has a limit set SLURM will read in those,
+If a user has a limit set Slurm will read in those,
 if not we will refer to the account associated with the job.
 If the account doesn't have the limit set we will refer to
 the cluster's limits.
 If the cluster doesn't have the limit set no limit will be enforced.</p>
 
 <p>All of the above entities can include limits as described below and
-in the <a href="resource_limits.html">Resource Limits</a> document.</p>
+in the <a href="resource_limits.html">Resource Limits</a> document.
+In enable any limit enforcement you must at least have
+<b>AccountingStorageEnforce=limits</b> in your slurm.conf,
+otherwise even if you have limits set they will not be enforced.
+Other options for AccountingStorageEnforce and the explanation for
+each are found on the <a href="resource_limits.html">Resource
+Limits</a> document.</p>
 
 <ul>
 
@@ -744,7 +750,7 @@ sacctmgr modify user set default=none where default=test
 </pre>
 <p>will change all users with a default account of "test" to account "none".
 Once an entity has been added, modified or removed, the change is
-sent to the appropriate SLURM daemons and will be available for use
+sent to the appropriate Slurm daemons and will be available for use
 instantly.</p>
 
 <h2>Removing Entities</h2>
