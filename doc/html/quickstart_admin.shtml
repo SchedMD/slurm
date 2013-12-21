@@ -733,7 +733,7 @@ cd /usr/ports/sysutils/slurm-hpc && make install
 
 <p>The binary package installs a minimal slurm configuration suitable for
 typical compute nodes.  Installing from source allows the user to enable
-options such as mysql, postgresql, and gui tools via a configuration menu.</p>
+options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 

@@ -17,7 +17,6 @@ abbreviation for the type of scheduler. We recommend, for example:</p>
 <li><b>none</b>&#151;No job logging.</li>
 <li><b>filetxt</b>&#151;Log job information to a text file.</li>
 <li><b>mysql</b>&#151;Job completion is written to a mysql database.</li>
-<li><b>pgsql</b>&#151;Job completion is written to a pgsql database.</li>
 <li><b>script</b>&#151;Execute a script passing in job information in environment variables.</li>
 </ul>
 The <b>sacct</b> program with option <b>-c</b> can be used to display
