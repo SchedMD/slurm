@@ -2,7 +2,7 @@
 
 <h1>Accounting and Resource Limits</h1>
 
-<p>SLURM can be configured to collect accounting information for every
+<p>Slurm can be configured to collect accounting information for every
 job and job step executed.
 Accounting records can be written to a simple text file or a database.
 Information is available about both currently executing jobs and
@@ -760,7 +760,7 @@ sacctmgr modify user set default=none where default=test
 </pre>
 <p>will change all users with a default account of "test" to account "none".
 Once an entity has been added, modified or removed, the change is
-sent to the appropriate SLURM daemons and will be available for use
+sent to the appropriate Slurm daemons and will be available for use
 instantly.</p>
 
 <h2>Removing Entities</h2>
