@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 2.6.6
+========================
+
 * Changes in Slurm 2.6.5
 ========================
  -- Correction to hostlist parsing bug introduced in v2.6.4 for hostlists with
