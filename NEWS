@@ -229,6 +229,7 @@ documents those changes that are of interest to users and admins.
     listed second in the hostlist).
  -- BGQ - Add midplane to the total_cnodes used in the runjob_mux plugin
     for better debug.
+ -- Update AllocNodes paragraph in slurm.conf.5.
 
 * Changes in Slurm 2.6.4
 ========================
