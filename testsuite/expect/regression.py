@@ -114,7 +114,11 @@ def main(argv=None):
             passed_tests.append(test)
             sys.stdout.write('\n')
             if not options.keep_logs:
-                os.remove(testlog_name)
+                try:
+                    os.remove(testlog_name)
+                except IOError as e:
+                    print >> sys.stderr, 'ERROR failed to close %s %s' \
+                        % (testlog_name, e)
         else:
             failed_tests.append(test)
             os.rename(testlog_name, testlog_name+'.failed')
