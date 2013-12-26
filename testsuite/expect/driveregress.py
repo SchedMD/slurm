@@ -54,7 +54,9 @@ def init_log(htab, conf):
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
 
+        # create file logger
         fh = logging.FileHandler(logfile)
+
         # create formatter
         formatter \
             = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',\
@@ -97,7 +99,7 @@ def read_config(confile):
     for section in conf.sections():
         logger.info( 'section -> %s', section)
         for option in conf.options(section):
-            logger.info( '%s = %s', option, conf.get(section, option))
+            logger.info( '%s = %s' % (option, conf.get(section, option)))
 
     return conf
 
@@ -108,7 +110,8 @@ def read_params(htab, conf):
         htab['root'] = root
         logger.info( 'root -> %s', root)
     except ConfigParser.NoOptionError as e:
-        print >> sys.stderr, 'Error root option missing from configuration', e
+        logger.fatal('Error root option missing from configuration %s' % (e))
+        exit(0)
 
     try:
         mailto = conf.get('params', 'mailto')
@@ -140,12 +143,13 @@ def configure_and_build(htab, section, conf):
         slurmd = '%s/slurmd' % (sbindir)
         arturo = '%s/arturo' % (sbindir)
 
+        # this is the build file log
         try:
             if not os.path.isdir(logdir):
                 os.makedirs(logdir)
             lfile = open(logfile, 'w')
         except IOError as e:
-            print >> sys.stderr, 'mkdir() or open() failed', e
+            logger.error('mkdir() or open() failed %s' % e)
 
         logger.info( 'buildpath -> %s', buildpath)
         logger.info( 'prefix -> %s', prefix)
@@ -167,6 +171,36 @@ def configure_and_build(htab, section, conf):
         os.chdir(buildpath)
         logger.info('cd -> %s', os.getcwd())
 
+        logger.info('running -> make uninstall')
+        make = 'make uninstall'
+        try:
+            proc = subprocess.Popen(make,
+                                    shell=True,
+                                    stdout = lfile,
+                                    stderr = lfile)
+        except Exception :
+            logger.error('Error make uninstall failed, make for the very first time?')
+
+        rc = proc.wait()
+        if rc != 0:
+            logger.error('make uninstal exit with status %s, \
+make for the very first time?' % (rc))
+
+        logger.info('running -> make clean')
+        make = 'make distclean'
+        try:
+            proc = subprocess.Popen(make,
+                                    shell=True,
+                                    stdout = lfile,
+                                    stderr = lfile)
+        except Exception :
+            logger.error('Error make distclean failed, make for the very first time?')
+
+        rc = proc.wait()
+        if rc != 0:
+            logger.error('make distclean exit with status %s, \
+make for the very first time?' % (rc))
+
         if multi != 0:
             configure = \
                 '%s/configure --prefix=%s --enable-debug --enable-multiple-slurmd' % \
@@ -179,15 +213,13 @@ def configure_and_build(htab, section, conf):
             proc = subprocess.Popen(configure,
                                     shell=True,
                                     stdout=lfile,
-                                    stderr=subprocess.PIPE)
+                                    stderr=lfile)
         except OSError as e:
-            print >> sys.stderr, 'Error execution failed:', e
+            logger.error('Error execution failed:' % (e))
 
         rc = proc.wait()
         if rc != 0:
-            for line in proc.stderr:
-                print >> sys.stderr, 'Error configure failed'
-                print('configure stderr: ' + line.rstrip())
+            logger.critical('configure failed with status %s' % (rc))
 
         make = '/usr/bin/make -j 4 install'
         logger.info( 'cd -> %s', os.getcwd())
@@ -196,15 +228,13 @@ def configure_and_build(htab, section, conf):
             proc = subprocess.Popen(make,
                                     shell=True,
                                     stdout=lfile,
-                                    stderr=subprocess.PIPE)
+                                    stderr=lfile)
         except OSError as e:
-            print >> sys.stderr, 'Error execution failed:', e
+            logger.error('Error execution failed:' % (e))
 
         rc = proc.wait()
         if rc != 0:
-            for line in proc.stderr:
-                print >> sys.stderr, 'Error make failed'
-                print('configure stderr: ' + line.rstrip())
+            logger.critical('make -j 4 failed with status %s' % (rc))
 
         lfile.close()
         # Use hash table to communicate across
@@ -233,7 +263,7 @@ def git_update(srcdir):
     try:
         proc = subprocess.check_call([gitpull], shell=True)
     except Exception as e:
-        print >> sys.stderr, 'Failed to run git pull on', srcdir, e
+        logger.error('Failed to run git pull on %s %s' % (srcdir, e))
 
 def start_daemons(htab):
 
@@ -241,14 +271,14 @@ def start_daemons(htab):
     try:
         subprocess.check_call([htab['slurmdbd']])
     except Exception as e:
-        print >> sys.stderr, 'Error failed starting slurmdbd', e
+        logger.error('Failed starting slurmdbd %s ' % (e))
         return -1
     logger.info('slurmdbd started')
 
     try:
         subprocess.check_call([htab['slurmctld']])
     except Exception as e:
-        print >> sys.stderr, 'Error failed starting slurmdbd', e
+        logger.error('Failed starting slurmdbd %s' % (e))
         return -1
     logger.info('slurmctld started')
 
@@ -258,7 +288,7 @@ def start_daemons(htab):
         else:
             subprocess.check_call([htab['slurmd']])
     except Exception as e:
-        print >> sys.stderr, 'Error failed starting slurmd/arturo', e
+        logger.error('Failed starting slurmd/arturo %s' % (e))
         return -1
     logger.info('slurmd/arturo started')
 
@@ -275,14 +305,12 @@ def start_daemons(htab):
                             stderr=None)
     rc = proc.wait()
     if rc != 0:
-        print >> sys.stderr, 'Error sinfo failed to check cluster state'
-        return -1
+        logger.error('sinfo failed to check cluster state')
     for line in proc.stdout:
         if line.strip() == 'idle':
             logger.info( 'Cluster state is ok -> %s', line.strip())
         else:
-            print >> sys.stderr, 'Failed to get correct cluster status'
-            return -1
+            logger.error('Failed to get correct cluster status %s' % line.strip())
 
 def run_regression(htab):
 
@@ -330,14 +358,17 @@ def run_regression(htab):
 
 def send_result(htab):
 
+    if not htab['mailto']:
+        logger.info('No mail will be sent..')
+        return
+
     mailmsg = '%s/mailmsg' % (htab['logdir'])
-    ended = False
+
     try:
         f = open(htab['regfile'])
     except IOError as e:
         logger.error('Error failed to open regression output file %s %s', \
                          f.name, e)
-
     try:
         fp = open(mailmsg, 'w')
     except IOError as e:
@@ -345,27 +376,26 @@ def send_result(htab):
 
     # open the regression file and send the tail
     # of it starting at 'Ending'
+    ended = False
     for line in f:
         lstr = line.strip('\n')
         if not ended and lstr.find('Ended') != -1:
             ended = True
         if ended:
-            print >> f2, lstr
+            print >> fp, lstr
 
     try:
         f.close()
     except IOError as e:
         print >> sys.stderr, \
-            'Failed closing did the regression ran all right ?', f.name, e
+            'Failed closing %s, %s did the regression ran all right ?' \
+            % (f.name, e)
     try:
         fp.close()
     except IOError as e:
         print >> sys.stderr, \
-            'Failed closing did the regression terminated all right ?', fp.name, e
-
-    me = 'david@schedmd.com'
-    to = 'david@schedmd.com'
-#    cc = 'da@schedmd.com'
+            'Failed closing %s, %s did the regression terminated all right ?' \
+            % (fp.name, e)
 
     # Open a plain text file for reading.  For this example, assume that
     # the text file contains only ASCII characters.
@@ -374,11 +404,13 @@ def send_result(htab):
     msg = MIMEText(fp.read())
     fp.close()
 
+    me = 'david@schedmd.com'
+    to = htab['mailto']
     # me == the sender's email address
-    # you == the recipient's email address
+    # to == the recipient's email address
     msg['Subject'] = 'Regression results %s@%s' % (htab['test'], htab['cas'])
     msg['From'] = me
-    msg['To'] = me
+    msg['To'] = to
 #    msg['CC'] = cc
 
     # Send the message via our own SMTP server, but don't include the
@@ -414,8 +446,8 @@ def main():
         if os.path.isfile('driver.conf'):
             cfile = 'driver.conf'
         else :
-            print >> sys.stderr, 'Error path to configuration file not specified'
-            print >> sys.stderr, 'default driver.conf not found'
+            logger.critical('path to configuration file not specified')
+            logger.critical('default driver.conf not found')
             return -1
     else:
         cfile = args.config_file
@@ -467,6 +499,7 @@ def main():
                     logger.info( \
                         '%s test %s pid %d done with status %d',\
                             os.getpid(), children[pid], pid, w[1])
+# TODO shutdown the cluster
         except OSError:
             logger.info('%s: All tests done...', os.getpid())
             break
