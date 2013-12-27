@@ -1769,6 +1769,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		      "(%s rather than %s), ignored request",
 		      comp_msg->job_id,
 		      comp_msg->node_name, job_ptr->batch_host);
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		slurm_send_rc_msg(msg, error_code);
 		return;
 	}
