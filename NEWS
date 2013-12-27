@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.6
 ========================
+ -- sched/backfill - Fix bug that could result in failing to reserve resources
+    for high priority jobs.
 
 * Changes in Slurm 2.6.5
 ========================

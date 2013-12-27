@@ -644,7 +644,7 @@ static int _attempt_backfill(void)
 	slurmctld_diag_stats.bf_active = 1;
 
 	node_space = xmalloc(sizeof(node_space_map_t) *
-			     (max_backfill_job_cnt + 3));
+			     (max_backfill_job_cnt * 2 + 1));
 	node_space[0].begin_time = sched_start;
 	node_space[0].end_time = sched_start + backfill_window;
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
@@ -1225,19 +1225,22 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			placed = true;
 		}
 		if (placed == true) {
-			j = node_space[j].next;
-			if (j && (end_reserve < node_space[j].end_time)) {
-				/* insert end entry record */
-				i = *node_space_recs;
-				node_space[i].begin_time = end_reserve;
-				node_space[i].end_time = node_space[j].
-							 end_time;
-				node_space[j].end_time = end_reserve;
-				node_space[i].avail_bitmap =
-					bit_copy(node_space[j].avail_bitmap);
-				node_space[i].next = node_space[j].next;
-				node_space[j].next = i;
-				(*node_space_recs)++;
+			while ((j = node_space[j].next)) {
+				if (end_reserve < node_space[j].end_time) {
+					/* insert end entry record */
+					i = *node_space_recs;
+					node_space[i].begin_time = end_reserve;
+					node_space[i].end_time = node_space[j].
+								 end_time;
+					node_space[j].end_time = end_reserve;
+					node_space[i].avail_bitmap =
+						bit_copy(node_space[j].
+							 avail_bitmap);
+					node_space[i].next = node_space[j].next;
+					node_space[j].next = i;
+					(*node_space_recs)++;
+					break;
+				}
 			}
 			break;
 		}
