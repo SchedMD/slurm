@@ -206,7 +206,7 @@ Users can specify which of these \fBfeatures\fR are required by their job
 using the constraint option.
 Only nodes having features matching the job constraints will be used to
 satisfy the request.
-Multiple constraints may be specified with AND, OR, exclusive OR,
+Multiple constraints may be specified with AND, OR, matching OR,
 resource counts, etc.
 Supported \fbconstraint\fR options include:
 .PD 1
@@ -233,7 +233,7 @@ If only nodes with at least one of specified features will be used.
 The vertical bar is used for an OR operator.
 For example, \fB\-\-constraint="intel|amd"\fR
 .TP
-\fBExclusive OR\fR
+\fBMatching OR\fR
 If only one of a set of possible options should be used for all allocated
 nodes, then use the OR operator and enclose the options within square brackets.
 For example: "\fB\-\-constraint=[rack1|rack2|rack3|rack4]"\fR might
