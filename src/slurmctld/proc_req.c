@@ -1974,11 +1974,11 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		return;
 	}
 #endif
-	if (error_code == SLURM_SUCCESS) {
-		_throttle_start(&active_rpc_cnt);
-		lock_slurmctld(job_write_lock);
-		error_code = step_create(req_step_msg, &step_rec, false);
-	}
+
+	_throttle_start(&active_rpc_cnt);
+	lock_slurmctld(job_write_lock);
+	error_code = step_create(req_step_msg, &step_rec, false);
+
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred,
 					     msg->protocol_version);
