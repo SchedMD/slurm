@@ -35,6 +35,7 @@ import datetime
 import smtplib
 from email.mime.text import MIMEText
 import logging
+import glob
 
 """This program is a driver for the Slurm regression program."""
 # Print the usage if asked for
@@ -58,9 +59,8 @@ def init_log(htab, conf):
         fh = logging.FileHandler(logfile)
 
         # create formatter
-        formatter \
-            = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',\
-                                    datefmt='%b %d %H:%M:%S')
+        formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',
+                                      datefmt='%b %d %H:%M:%S')
 
         # add formatter to ch
         ch.setFormatter(formatter)
@@ -120,138 +120,172 @@ def read_params(htab, conf):
     except ConfigParser.NoOptionError :
         pass
 
-def configure_and_build(htab, section, conf):
+# clean up the daemon logs from previous run
+def cleanup_logs(htab, version, arch):
 
-        test = section
+    # pdb.set_trace()
+    # hose slurmctld and slurmdbd logs
+    logdir = '%s/clusters/%s/%s/log' % (htab['root'], version, arch)
+    logger.info('cd logdir -> %s' % (logdir))
+    os.chdir(logdir)
+    for f in glob.iglob('*'):
         try:
-            version = conf.get(section, 'version')
-            arch = conf.get(section, 'arch')
-            multi = conf.get(section, 'multiple_slurmd')
+            os.unlink(f)
         except:
             pass
 
-        logger.info('%s %s %s %s', test, version, arch, multi)
-        buildpath = '%s/clusters/%s/%s/build' % (htab['root'], version, arch)
-        sbindir = '%s/clusters/%s/%s/sbin' % (htab['root'], version, arch)
-        bindir = '%s/clusters/%s/%s/bin' % (htab['root'], version, arch)
-        prefix = '%s/clusters/%s/%s' % (htab['root'], version, arch)
-        srcdir = '%s/distrib/%s/slurm' % (htab['root'], version)
-        logdir = '%s/log/%s' % (htab['root'], test)
-        logfile = '%s/%s.build' % (logdir, htab['cas'])
-        slurmdbd = '%s/slurmdbd' % (sbindir)
-        slurmctld = '%s/slurmctld' % (sbindir)
-        slurmd = '%s/slurmd' % (sbindir)
-        arturo = '%s/arturo' % (sbindir)
-
-        # this is the build file log
+    # hose slurmd logs
+    logdir = '%s/clusters/%s/%s/log/log' % (htab['root'], version, arch)
+    logger.info('cd logdir -> %s' % (logdir))
+    os.chdir(logdir)
+    for f in glob.iglob('*'):
         try:
-            if not os.path.isdir(logdir):
-                os.makedirs(logdir)
-            lfile = open(logfile, 'w')
-        except IOError as e:
-            logger.error('mkdir() or open() failed %s' % e)
+            os.unlink(f)
+        except:
+            pass
 
-        logger.info( 'buildpath -> %s', buildpath)
-        logger.info( 'prefix -> %s', prefix)
-        logger.info( 'srcdir -> %s', srcdir)
-        logger.info( 'logdir -> %s', logdir)
-        logger.info( 'logfile -> %s', logfile)
-        logger.info( 'sbindir -> %s', sbindir)
-        logger.info( 'bindir -> %s', bindir)
-        logger.info( 'slurmdbd -> %s', slurmdbd)
-        logger.info( 'slurmctld -> %s', slurmctld)
-        logger.info( 'slurmd -> %s', slurmd)
-        logger.info( 'arturo -> %s', arturo)
+# section is the test name
+def configure_and_build(htab, section, conf):
 
-        # before configuring let's make sure to pull
-        # the github repository
-        git_update(srcdir)
+    multi = 0
+    try:
+        version = conf.get(section, 'version')
+        arch = conf.get(section, 'arch')
+        multi = conf.get(section, 'multiple_slurmd')
+        multiname = conf.get(section, 'multi_name')
+    except:
+        pass
 
-        # configure and build
-        os.chdir(buildpath)
-        logger.info('cd -> %s', os.getcwd())
+    logger.info('test: %s version: %s arch: %s multi: %s multiname: %s' \
+                    % (section, version, arch, multi, multiname))
+    buildpath = '%s/clusters/%s/%s/build' % (htab['root'], version, arch)
+    sbindir = '%s/clusters/%s/%s/sbin' % (htab['root'], version, arch)
+    bindir = '%s/clusters/%s/%s/bin' % (htab['root'], version, arch)
+    prefix = '%s/clusters/%s/%s' % (htab['root'], version, arch)
+    srcdir = '%s/distrib/%s/slurm' % (htab['root'], version)
+    logdir = '%s/log/%s' % (htab['root'], section)
+    logfile = '%s/%s.build' % (logdir, htab['cas'])
+    slurmdbd = '%s/slurmdbd' % (sbindir)
+    slurmctld = '%s/slurmctld' % (sbindir)
+    slurmd = '%s/slurmd' % (sbindir)
+    arturo = '%s/arturo' % (sbindir)
 
-        logger.info('running -> make uninstall')
-        make = 'make uninstall'
-        try:
-            proc = subprocess.Popen(make,
-                                    shell=True,
-                                    stdout = lfile,
-                                    stderr = lfile)
-        except Exception :
-            logger.error('Error make uninstall failed, make for the very first time?')
-
-        rc = proc.wait()
-        if rc != 0:
-            logger.error('make uninstal exit with status %s, \
-make for the very first time?' % (rc))
-
-        logger.info('running -> make clean')
-        make = 'make distclean'
-        try:
-            proc = subprocess.Popen(make,
-                                    shell=True,
-                                    stdout = lfile,
-                                    stderr = lfile)
-        except Exception :
-            logger.error('Error make distclean failed, make for the very first time?')
-
-        rc = proc.wait()
-        if rc != 0:
-            logger.error('make distclean exit with status %s, \
-make for the very first time?' % (rc))
-
-        if multi != 0:
-            configure = \
-                '%s/configure --prefix=%s --enable-debug --enable-multiple-slurmd' % \
-                (srcdir, prefix)
-        else:
-            configure = '%s/configure --prefix=%s --enable-debug' % (srcdir, prefix, multi)
-
-        logger.info('running -> %s', configure)
-        try:
-            proc = subprocess.Popen(configure,
-                                    shell=True,
-                                    stdout=lfile,
-                                    stderr=lfile)
-        except OSError as e:
-            logger.error('Error execution failed:' % (e))
-
-        rc = proc.wait()
-        if rc != 0:
-            logger.critical('configure failed with status %s' % (rc))
-
-        make = '/usr/bin/make -j 4 install'
-        logger.info( 'cd -> %s', os.getcwd())
-        logger.info('running -> %s', make)
-        try:
-            proc = subprocess.Popen(make,
-                                    shell=True,
-                                    stdout=lfile,
-                                    stderr=lfile)
-        except OSError as e:
-            logger.error('Error execution failed:' % (e))
-
-        rc = proc.wait()
-        if rc != 0:
-            logger.critical('make -j 4 failed with status %s' % (rc))
-
-        lfile.close()
-        # Use hash table to communicate across
-        # functions.
-        htab['buildpath'] = buildpath
-        htab['prefix'] = prefix
-        htab['srcdir'] = srcdir
-        htab['logdir'] = logdir
-        htab['logfile'] = logfile
-        htab['sbindir'] = sbindir
-        htab['bindir'] = bindir
-        htab['slurmdbd'] = slurmdbd
-        htab['slurmctld']= slurmctld
-        htab['slurmd'] = slurmd
-        htab['arturo'] = arturo
+    # Use hash table to communicate across
+    # functions.
+    htab['buildpath'] = buildpath
+    htab['prefix'] = prefix
+    htab['srcdir'] = srcdir
+    htab['logdir'] = logdir
+    htab['logfile'] = logfile
+    htab['sbindir'] = sbindir
+    htab['bindir'] = bindir
+    htab['slurmdbd'] = slurmdbd
+    htab['slurmctld']= slurmctld
+    htab['slurmd'] = slurmd
+    htab['arturo'] = arturo
+    if multi != 0:
         htab['multi'] = multi
+        htab['multiname'] = multiname
 
+    logger.info( 'buildpath -> %s', buildpath)
+    logger.info( 'prefix -> %s', prefix)
+    logger.info( 'srcdir -> %s', srcdir)
+    logger.info( 'logdir -> %s', logdir)
+    logger.info( 'logfile -> %s', logfile)
+    logger.info( 'sbindir -> %s', sbindir)
+    logger.info( 'bindir -> %s', bindir)
+    logger.info( 'slurmdbd -> %s', slurmdbd)
+    logger.info( 'slurmctld -> %s', slurmctld)
+    logger.info( 'slurmd -> %s', slurmd)
+    logger.info( 'arturo -> %s', arturo)
+
+    # clean up logdir
+    cleanup_logs(htab, version, arch)
+
+    # before configuring let's make sure to pull
+    # the github repository
+    git_update(srcdir)
+
+    # configure and build
+    os.chdir(buildpath)
+    logger.info('cd -> %s', os.getcwd())
+
+    # this is the build file log
+    try:
+        if not os.path.isdir(logdir):
+            os.makedirs(logdir)
+    except IOError as e:
+        logger.error('mkdir() or open() failed %s' % e)
+
+    lfile = open(logfile, 'w')
+    logger.info('build log file %s' % (lfile.name))
+
+    logger.info('running -> make uninstall')
+    make = 'make uninstall'
+    try:
+        proc = subprocess.Popen(make,
+                                shell=True,
+                                stdout = lfile,
+                                stderr = lfile)
+    except Exception :
+        logger.error('Error make uninstall failed, make for the very first time?')
+
+    rc = proc.wait()
+    if rc != 0:
+        logger.error('make uninstal exit with status %s,\
+ make for the very first time?' % (rc))
+
+    logger.info('running -> make clean')
+    make = 'make distclean'
+    try:
+        proc = subprocess.Popen(make,
+                                shell=True,
+                                stdout = lfile,
+                                stderr = lfile)
+    except Exception :
+        logger.error('Error make distclean failed, make for the very first time?')
+
+    rc = proc.wait()
+    if rc != 0:
+        logger.error('make distclean exit with status %s,\
+ make for the very first time?' % (rc))
+
+    if 'multi' in htab:
+        configure = ('%s/configure --prefix=%s --enable-debug\
+ --enable-multiple-slurmd' %
+                     (srcdir, prefix))
+    else:
+        configure = '%s/configure --prefix=%s --enable-debug' % (srcdir, prefix)
+
+    logger.info('running -> %s', configure)
+    try:
+        proc = subprocess.Popen(configure,
+                                shell=True,
+                                stdout=lfile,
+                                stderr=lfile)
+    except OSError as e:
+        logger.error('Error execution failed:' % (e))
+
+    rc = proc.wait()
+    if rc != 0:
+        logger.critical('configure failed with status %s' % (rc))
+
+    make = '/usr/bin/make -j 4 install'
+    logger.info( 'cd -> %s', os.getcwd())
+    logger.info('running -> %s', make)
+    try:
+        proc = subprocess.Popen(make,
+                                shell=True,
+                                stdout=lfile,
+                                stderr=lfile)
+    except OSError as e:
+        logger.error('Error execution failed:' % (e))
+
+    rc = proc.wait()
+    if rc != 0:
+        logger.critical('make -j 4 failed with status %s' % (rc))
+
+    lfile.close()
 
 def git_update(srcdir):
 
@@ -269,28 +303,38 @@ def start_daemons(htab):
 
     logger.info('starting daemons...')
     try:
-        subprocess.check_call([htab['slurmdbd']])
+        proc = subprocess.Popen(htab['slurmdbd'])
+        proc.wait()
     except Exception as e:
         logger.error('Failed starting slurmdbd %s ' % (e))
         return -1
     logger.info('slurmdbd started')
 
     try:
-        subprocess.check_call([htab['slurmctld']])
+        proc = subprocess.Popen(htab['slurmctld'])
+        proc.wait()
     except Exception as e:
         logger.error('Failed starting slurmdbd %s' % (e))
         return -1
     logger.info('slurmctld started')
 
+    #pdb.set_trace()
+    n = 1
     try:
-        if htab['multi'] != 0:
-            subprocess.check_call([htab['arturo'], htab['multi']])
+        if 'multi' in htab:
+            for n in range(1, int(htab['multi']) + 1):
+                slurmd = '%s -N %s%d' % (htab['slurmd'], htab['multiname'], n)
+                proc = subprocess.Popen(slurmd, shell=True)
+                proc.wait()
+                logger.info('%s started' % (slurmd))
         else:
-            subprocess.check_call([htab['slurmd']])
+            proc = subprocess.Popen(htab['slurmd'])
+            proc.wait()
+            htab[n] = proc.pid
+            logger.info('slurmd started')
     except Exception as e:
-        logger.error('Failed starting slurmd/arturo %s' % (e))
+        logger.error('Failed starting slurmd %s' % (e))
         return -1
-    logger.info('slurmd/arturo started')
 
     logger.info('Wait 5 secs for all slurmd to come up...')
     time.sleep(5)
@@ -308,9 +352,10 @@ def start_daemons(htab):
         logger.error('sinfo failed to check cluster state')
     for line in proc.stdout:
         if line.strip() == 'idle':
-            logger.info( 'Cluster state is ok -> %s', line.strip())
+            logger.info( 'Cluster state is ok -> %s' % line.strip())
         else:
-            logger.error('Failed to get correct cluster status %s' % line.strip())
+            logger.error('Failed to get correct cluster status %s'
+                         % line.strip())
 
 def run_regression(htab):
 
@@ -324,7 +369,7 @@ def run_regression(htab):
     try:
         f = open('globals.local', 'w')
     except IOError as e:
-        logger.error('Error failed opening globals.local %s', e)
+        logger.error('Error failed opening globals.local %s' % (e))
         return -1
 
     z = 'set slurm_dir %s' % (htab['prefix'])
@@ -339,11 +384,11 @@ def run_regression(htab):
     try:
         rf = open(regfile, 'w')
     except IOError as e:
-        logger.error('Error failed to open %s %s', regfile, e)
+        logger.error('Error failed to open %s %s' % (regfile, e))
         return -1
 
 #    pdb.set_trace()
-    logger.info('running regression %s', regress)
+    logger.info('running regression %s' % (regress))
 
     try:
         proc = subprocess.Popen(regress,
@@ -351,7 +396,7 @@ def run_regression(htab):
                                 stdout=rf,
                                 stderr=rf)
     except OSError as e:
-        logger.error('Error execution failed %s', e)
+        logger.error('Error execution failed %s' % (e))
 
     proc.wait()
     rf.close()
@@ -367,12 +412,12 @@ def send_result(htab):
     try:
         f = open(htab['regfile'])
     except IOError as e:
-        logger.error('Error failed to open regression output file %s %s', \
-                         f.name, e)
+        logger.error('Error failed to open regression output file %s %s'
+                     % (f.name, e))
     try:
         fp = open(mailmsg, 'w')
     except IOError as e:
-        logger.error('Error failed open mailmsg file %s %s', mailmsg, e)
+        logger.error('Error failed open mailmsg file %s %s' % (mailmsg, e))
 
     # open the regression file and send the tail
     # of it starting at 'Ending'
@@ -387,15 +432,13 @@ def send_result(htab):
     try:
         f.close()
     except IOError as e:
-        print >> sys.stderr, \
-            'Failed closing %s, %s did the regression ran all right ?' \
-            % (f.name, e)
+        logger.error('Failed closing %s, %s did the regression ran all right ?'
+                     % (f.name, e))
     try:
         fp.close()
     except IOError as e:
-        print >> sys.stderr, \
-            'Failed closing %s, %s did the regression terminated all right ?' \
-            % (fp.name, e)
+        logger.error('Failed closing %s, %s did the regression terminated all right ?'
+                     % (fp.name, e))
 
     # Open a plain text file for reading.  For this example, assume that
     # the text file contains only ASCII characters.
@@ -425,7 +468,7 @@ def send_result(htab):
 def set_environ(htab):
 
     os.environ['PATH'] = '/bin:/usr/bin:%s' % (htab['bindir'])
-    logger.info( 'PATH-> %s', os.environ['PATH'])
+    logger.info( 'PATH-> %s' % (os.environ['PATH']))
 
 
 # Da main of da driver
@@ -434,10 +477,10 @@ def main():
     # Define program argument list, create and invoke
     # the parser
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--config_file', \
-                            help = 'specify the location of the config file')
-    parser.add_argument('-L', '--log',\
-                            help = 'generate log file under the section directory')
+    parser.add_argument('-f', '--config_file',
+                        help = 'specify the location of the config file')
+    parser.add_argument('-L', '--log',
+                        help = 'generate log file under the section directory')
 
     args = parser.parse_args()
     htab = {}
@@ -478,30 +521,30 @@ def main():
 
         pid = os.fork()
         if pid == 0:
-            logger.info('child running test %s pid %s', section, os.getpid())
+            logger.info('child running test %s pid %s' % (section, os.getpid()))
             htab['test'] = section
             configure_and_build(htab, section, conf)
             set_environ(htab)
             start_daemons(htab)
-            time.sleep(5)
             run_regression(htab)
             send_result(htab)
             exit(0)
         else:
             children[pid] = section
 
-    logger.info('%s waiting for all tests to complete', os.getpid())
+    logger.info('%s waiting for all tests to complete' % (os.getpid()))
     while True:
         try:
             w = os.wait()
             for t in children:
                 if t == w[0]:
-                    logger.info( \
-                        '%s test %s pid %d done with status %d',\
-                            os.getpid(), children[pid], pid, w[1])
-# TODO shutdown the cluster
+                    logger.info('%s test %s pid %d done status %d'
+                                % (os.getpid(), children[pid], pid, w[1]))
         except OSError:
-            logger.info('%s: All tests done...', os.getpid())
+            logger.info('%s: all tests done...' % (os.getpid()))
+            bye = 'pkill slurm'
+            subprocess.Popen(bye, shell=True).wait()
+            logger.info('%s: clusters shut down...' % (os.getpid()))
             break
     return 0
 
