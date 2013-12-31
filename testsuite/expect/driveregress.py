@@ -180,7 +180,6 @@ def configure_and_build(htab, conf, section):
         pass
 
     logger.info( 'root -> %s', htab['root'])
-
     logger.info('test: %s version: %s arch: %s multi: %s multiname: %s' \
                     % (section, version, arch, multi, multiname))
     buildpath = '%s/clusters/%s/%s/build' % (htab['root'], version, arch)
@@ -214,6 +213,8 @@ def configure_and_build(htab, conf, section):
         htab['multi'] = multi
         htab['multiname'] = multiname
     htab['section'] = section
+    htab['version'] = version
+    htab['arch'] = arch
 
     logger.info( 'buildpath -> %s', buildpath)
     logger.info( 'prefix -> %s', prefix)
@@ -481,7 +482,7 @@ def send_result(htab):
     except IOError as e:
         logger.error('Error failed open mailmsg file %s' % (e))
 
-    print >> fp, 'Finished test', htab['section']
+    print >> fp, 'Finished test', htab['section'], htab['version'], htab['arch']
     # open the regression file and send the tail
     # of it starting at 'Ending'
     ended = False
