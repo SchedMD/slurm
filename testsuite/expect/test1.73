@@ -202,9 +202,8 @@ exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
 reconfig
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
 	exec $bin_rm -f $good_script $bad_script $good_job $bad_job
 	exec $bin_rm -f $conf_script $cwd/slurm.conf.orig
+	send_user "\nSUCCESS\n"
 }
 exit $exit_code

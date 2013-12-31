@@ -51,21 +51,20 @@ if {[test_front_end] != 0} {
 file delete $test_prog
 exec $bin_cc -o $test_prog ${test_prog}.c
 exec $bin_chmod 700 $test_prog
+make_bash_script $file_in "
+./$test_prog
+$bin_rm -f *${test_prog}*core /tmp/*${test_prog}*core core.*"
 
 #
 # Spawn program and check for task exit messages from srun
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -n1 -t1 ./$test_prog]
+set srun_pid [spawn $srun -n1 -t1 ./$file_in]
 expect {
 	-re "Segmentation fault" {
 		send_user "\nThis Seg Fault was expected, no worries\n"
 		set matches 1
-		exp_continue
-	}
-	-re "($number)" {
-		set proc_pid "$expect_out(0,string)"
 		exp_continue
 	}
 	timeout {
@@ -86,16 +85,6 @@ if {$matches != 1} {
 # Post-processing
 #
 if {$exit_code == 0} {
-	make_bash_script $file_in "\
-$bin_rm -f *${test_prog}*core /tmp/*${test_prog}*core core.$proc_pid"
-#	Run with "spawn" rather than "exec" to better handle other user's core
-#	files that we can not delete
-	spawn ./$file_in
-	expect {
-		eof {
-			wait
-		}
-	}
 	exec $bin_rm -f $file_in $test_prog
 	send_user "\nSUCCESS\n"
 }

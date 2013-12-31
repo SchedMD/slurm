@@ -334,7 +334,7 @@ expect {
 			set sockets_per_node $expect_out(1,string)
 		}
 		exp_continue
-	}	
+	}
 	eof {
 		wait
 	}
@@ -387,6 +387,7 @@ if {$cons_res_actived == 1} {
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm $file_in
 	send_user "\nSUCCESS\n"
 } else {
 	send_user "\nFAILURE\n"

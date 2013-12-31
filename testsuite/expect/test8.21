@@ -340,6 +340,7 @@ for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm $file_prog
 	send_user "\nSUCCESS\n"
 } else {
 	cancel_job $job_id
