@@ -36,39 +36,44 @@ import smtplib
 from email.mime.text import MIMEText
 import logging
 import glob
+import shutil
 
 """This program is a driver for the Slurm regression program."""
-# Print the usage if asked for
-def usage():
-    print 'regress.py: [-h] slurm_version (e.g. 2.6.4)'
 
 logger = logging.getLogger('log.py')
-def init_log(htab, conf):
+formatter = None
 
-    for section in conf.sections():
-        if section == 'params':
-            continue
+def init_log():
 
-        logfile = '%s/log/%s/Log' % (htab['root'], section)
-        logger.setLevel(logging.DEBUG)
-        # create console handler and set level to debug
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
+    logger = logging.getLogger('log.py')
+    logger.setLevel(logging.DEBUG)
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',
+                                  datefmt='%b %d %H:%M:%S')
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    # add ch to logger
+    logger.addHandler(ch)
 
-        # create file logger
+def init_log_file(htab, section):
+
+    logfile = '%s/log/%s/Log' % (htab['root'], section)
+    # create file logger
+    try:
         fh = logging.FileHandler(logfile)
+    except IOError as e:
+        logger.error('Cannot create log file %s' % (e))
+        return None
 
-        # create formatter
-        formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',
-                                      datefmt='%b %d %H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',
+                                  datefmt='%b %d %H:%M:%S')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
 
-        # add formatter to ch
-        ch.setFormatter(formatter)
-        fh.setFormatter(formatter)
-
-        # add ch to logger
-        logger.addHandler(ch)
-        logger.addHandler(fh)
+    return fh
 
 # Read the driver configuration which is in ini format
 #
@@ -97,28 +102,11 @@ def read_config(confile):
         return -1
 
     for section in conf.sections():
-        logger.info( 'section -> %s', section)
+        logger.info('section -> %s', section)
         for option in conf.options(section):
-            logger.info( '%s = %s' % (option, conf.get(section, option)))
+            logger.info('%s = %s' % (option, conf.get(section, option)))
 
     return conf
-
-def read_params(htab, conf):
-
-    try:
-        root = conf.get('params', 'root')
-        htab['root'] = root
-        logger.info( 'root -> %s', root)
-    except ConfigParser.NoOptionError as e:
-        logger.fatal('Error root option missing from configuration %s' % (e))
-        exit(0)
-
-    try:
-        mailto = conf.get('params', 'mailto')
-        htab['mailto'] = mailto
-        logger.info( 'mailto -> %s', mailto)
-    except ConfigParser.NoOptionError :
-        pass
 
 # clean up the daemon logs from previous run
 def cleanup_logs(htab, version, arch):
@@ -144,10 +132,45 @@ def cleanup_logs(htab, version, arch):
         except:
             pass
 
+    # hose the spool here we can safely remove all subdirectories
+    logger.info('cd spooldir -> %s' % (htab['spooldir']))
+    os.chdir(htab['spooldir'])
+    shutil.rmtree(htab['spooldir'])
+    os.mkdir(htab['spooldir'], 0755)
+
+def check_dirs(htab) :
+
+    if os.path.isdir(htab['buildpath']) is False:
+        logger.critical('%s ENOENT' % (htab['buildpath']))
+        return False
+    if os.path.isdir(htab['sbindir']) is False:
+        logger.critical('%s ENOENT' % (htab['sbindir']))
+        return False
+    if os.path.isdir(htab['bindir']) is False:
+        logger.critical('%s ENOENT' % (htab['bindir']))
+        return False
+    if os.path.isdir(htab['logdir']) is False:
+        logger.critical('%s ENOENT' % (htab['logdir']))
+        return False
+    if os.path.isdir(htab['spooldir']) is False:
+        logger.critical('%s ENOENT' % (htab['spooldir']))
+        return False
+
+    return True
+
 # section is the test name
-def configure_and_build(htab, section, conf):
+def configure_and_build(htab, conf, section):
 
     multi = 0
+    multiname = None
+
+    try:
+        mailto = conf.get(section, 'mailto')
+        htab['mailto'] = mailto
+        logger.info( 'mailto -> %s', mailto)
+    except ConfigParser.NoOptionError :
+        pass
+
     try:
         version = conf.get(section, 'version')
         arch = conf.get(section, 'arch')
@@ -156,15 +179,18 @@ def configure_and_build(htab, section, conf):
     except:
         pass
 
+    logger.info( 'root -> %s', htab['root'])
+
     logger.info('test: %s version: %s arch: %s multi: %s multiname: %s' \
                     % (section, version, arch, multi, multiname))
     buildpath = '%s/clusters/%s/%s/build' % (htab['root'], version, arch)
     sbindir = '%s/clusters/%s/%s/sbin' % (htab['root'], version, arch)
+    spooldir = '%s/clusters/%s/%s/spool' % (htab['root'], version, arch)
     bindir = '%s/clusters/%s/%s/bin' % (htab['root'], version, arch)
     prefix = '%s/clusters/%s/%s' % (htab['root'], version, arch)
     srcdir = '%s/distrib/%s/slurm' % (htab['root'], version)
     logdir = '%s/log/%s' % (htab['root'], section)
-    logfile = '%s/%s.build' % (logdir, htab['cas'])
+    logfile = '%s/build' % (logdir)
     slurmdbd = '%s/slurmdbd' % (sbindir)
     slurmctld = '%s/slurmctld' % (sbindir)
     slurmd = '%s/slurmd' % (sbindir)
@@ -179,6 +205,7 @@ def configure_and_build(htab, section, conf):
     htab['logfile'] = logfile
     htab['sbindir'] = sbindir
     htab['bindir'] = bindir
+    htab['spooldir'] = spooldir
     htab['slurmdbd'] = slurmdbd
     htab['slurmctld']= slurmctld
     htab['slurmd'] = slurmd
@@ -186,6 +213,7 @@ def configure_and_build(htab, section, conf):
     if multi != 0:
         htab['multi'] = multi
         htab['multiname'] = multiname
+    htab['section'] = section
 
     logger.info( 'buildpath -> %s', buildpath)
     logger.info( 'prefix -> %s', prefix)
@@ -202,6 +230,10 @@ def configure_and_build(htab, section, conf):
     # clean up logdir
     cleanup_logs(htab, version, arch)
 
+    # check if all directories exist
+    if check_dirs(htab) is False:
+        return False
+
     # before configuring let's make sure to pull
     # the github repository
     git_update(srcdir)
@@ -217,7 +249,7 @@ def configure_and_build(htab, section, conf):
     except IOError as e:
         logger.error('mkdir() or open() failed %s' % e)
 
-    lfile = open(logfile, 'w')
+    lfile = open(logfile, 'a')
     logger.info('build log file %s' % (lfile.name))
 
     logger.info('running -> make uninstall')
@@ -287,6 +319,8 @@ def configure_and_build(htab, section, conf):
 
     lfile.close()
 
+    return True
+
 def git_update(srcdir):
 
     logger.info('running git pull on -> %s', srcdir)
@@ -303,18 +337,30 @@ def start_daemons(htab):
 
     logger.info('starting daemons...')
     try:
-        proc = subprocess.Popen(htab['slurmdbd'])
-        proc.wait()
+        proc = subprocess.Popen(htab['slurmdbd'], stdout = None,
+                                stderr = subprocess.PIPE)
+        rc = proc.wait()
+        if rc != 0:
+            logger.critic('Problems starting %s' % (htab['slurmdbd']))
+            for line in proc.stderr:
+                logger.critic('stderr: %s' % (line.strip()))
+            return False
     except Exception as e:
         logger.error('Failed starting slurmdbd %s ' % (e))
         return -1
     logger.info('slurmdbd started')
 
     try:
-        proc = subprocess.Popen(htab['slurmctld'])
-        proc.wait()
+        proc = subprocess.Popen(htab['slurmctld'], stdout = None,
+                                stderr = subprocess.PIPE)
+        rc = proc.wait()
+        if rc != 0:
+            logger.critic('Problems starting %s' % (htab['slurmctld']))
+            for line in proc.stderr:
+                logger.critic('stderr: %s' % (line.strip()))
+            return False
     except Exception as e:
-        logger.error('Failed starting slurmdbd %s' % (e))
+        logger.error('Failed starting slurmctld %s' % (e))
         return -1
     logger.info('slurmctld started')
 
@@ -324,13 +370,24 @@ def start_daemons(htab):
         if 'multi' in htab:
             for n in range(1, int(htab['multi']) + 1):
                 slurmd = '%s -N %s%d' % (htab['slurmd'], htab['multiname'], n)
-                proc = subprocess.Popen(slurmd, shell=True)
-                proc.wait()
+                proc = subprocess.Popen(slurmd, shell = True, stdout = None,
+                                        stderr = subprocess.PIPE)
+                rc = proc.wait()
+                if rc != 0:
+                    logger.critic('Problems starting %s' % (htab['slurmd']))
+                    for line in proc.stderr:
+                        logger.critic('stderr: %s' % (line.strip()))
+                    return False
                 logger.info('%s started' % (slurmd))
         else:
-            proc = subprocess.Popen(htab['slurmd'])
-            proc.wait()
-            htab[n] = proc.pid
+            proc = subprocess.Popen(htab['slurmd'], stdout = None,
+                                    stderr = subprocess.PIPE)
+            rc = proc.wait()
+            if rc != 0:
+                logger.critic('Problems starting %s' % (htab['slurmd']))
+                for line in proc.stderr:
+                    logger.critic('stderr: %s' % (line.strip()))
+                return False
             logger.info('slurmd started')
     except Exception as e:
         logger.error('Failed starting slurmd %s' % (e))
@@ -379,8 +436,9 @@ def run_regression(htab):
     f.close()
 
     # Write regression output into logfile
-    regfile = '%s/%s.reg' % (htab['logdir'], htab['cas'])
+    regfile = '%s/regression' % (htab['logdir'])
     htab['regfile'] = regfile
+
     try:
         rf = open(regfile, 'w')
     except IOError as e:
@@ -405,20 +463,25 @@ def send_result(htab):
 
     if not htab['mailto']:
         logger.info('No mail will be sent..')
+        os.rename(htab['regfile'], 'regression-')
         return
+
+    os.chdir(htab['logdir'])
+    logger.info('Sending result from %s' % (htab['logdir']))
 
     mailmsg = '%s/mailmsg' % (htab['logdir'])
 
     try:
         f = open(htab['regfile'])
     except IOError as e:
-        logger.error('Error failed to open regression output file %s %s'
-                     % (f.name, e))
+        logger.error('Error failed to open regression output file %s'
+                     % (e))
     try:
         fp = open(mailmsg, 'w')
     except IOError as e:
-        logger.error('Error failed open mailmsg file %s %s' % (mailmsg, e))
+        logger.error('Error failed open mailmsg file %s' % (e))
 
+    print >> fp, 'Finished test', htab['section']
     # open the regression file and send the tail
     # of it starting at 'Ending'
     ended = False
@@ -462,8 +525,12 @@ def send_result(htab):
     #    s.sendmail(me, [to] + [cc], msg.as_string())
     s.sendmail(me, [to], msg.as_string())
     s.quit()
-    # ciao ...
-    os.unlink(mailmsg)
+    # ciao ... save latest copies...
+
+    logger.info('email sent to %s' % (to))
+
+    os.rename(mailmsg, 'mailsmsg-')
+    os.rename(htab['regfile'], 'regression-')
 
 def set_environ(htab):
 
@@ -479,11 +546,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--config_file',
                         help = 'specify the location of the config file')
-    parser.add_argument('-L', '--log',
-                        help = 'generate log file under the section directory')
 
     args = parser.parse_args()
-    htab = {}
+
+    # initialize logging
+    init_log()
 
     if not args.config_file:
         if os.path.isfile('driver.conf'):
@@ -495,57 +562,48 @@ def main():
     else:
         cfile = args.config_file
 
-    if args.log:
-        htab['log'] = 1
-
 #    pdb.set_trace()
 
-    # Process the configuration file
+    # process the configuration file
     conf = read_config(cfile)
 
     # process the params section of the ini file
-    read_params(htab, conf)
-
-    init_log(htab, conf)
-
-    dt = datetime.datetime.now()
-    cas = '%s-%s:%s:%s' % (dt.month, dt.day, dt.hour, dt.minute)
-    logger.info('cas -> %s', cas)
-
-    htab['cas'] = cas
-    children = {}
     for section in conf.sections():
 
-        if section == 'params':
-            continue
-
-        pid = os.fork()
-        if pid == 0:
-            logger.info('child running test %s pid %s' % (section, os.getpid()))
-            htab['test'] = section
-            configure_and_build(htab, section, conf)
-            set_environ(htab)
-            start_daemons(htab)
-            run_regression(htab)
-            send_result(htab)
-            exit(0)
-        else:
-            children[pid] = section
-
-    logger.info('%s waiting for all tests to complete' % (os.getpid()))
-    while True:
+        htab = {}
         try:
-            w = os.wait()
-            for t in children:
-                if t == w[0]:
-                    logger.info('%s test %s pid %d done status %d'
-                                % (os.getpid(), children[pid], pid, w[1]))
-        except OSError:
-            logger.info('%s: all tests done...' % (os.getpid()))
-            bye = 'pkill slurm'
-            subprocess.Popen(bye, shell=True).wait()
-            logger.info('%s: clusters shut down...' % (os.getpid()))
-            break
+            root = conf.get(section, 'root')
+            htab['root'] = root
+            logger.info( 'root -> %s', root)
+        except ConfigParser.NoOptionError as e:
+            logger.fatal('Error root option missing from configuration %s' % (e))
+            exit(-1)
+
+        fh = init_log_file(htab, section)
+
+        dt = datetime.datetime.now()
+        cas = '%s-%s:%s:%s' % (dt.month, dt.day, dt.hour, dt.minute)
+        logger.info('cas -> %s', cas)
+        htab['cas'] = cas
+
+        logger.info('child running test %s pid %s' % (section, os.getpid()))
+        htab['test'] = section
+        if configure_and_build(htab, conf, section) is False:
+            logger.critical('Configure and build failed, cannot run')
+            exit(-1)
+        set_environ(htab)
+        if start_daemons(htab) is False:
+            logger.critical('Failed starting daemons, cannot run')
+            exit(-1)
+        run_regression(htab)
+        send_result(htab)
+        logger.removeHandler(fh)
+
+    logger.info('%s: all tests done...' % (os.getpid()))
+    bye = 'pkill slurm'
+    subprocess.Popen(bye, shell=True).wait()
+    logger.info('%s: clusters shut down...' % (os.getpid()))
+
     return 0
 
 if __name__ == '__main__':
