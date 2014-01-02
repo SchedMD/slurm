@@ -380,7 +380,7 @@ _server_read(eio_obj_t *obj, List objs)
 			}
 		}
 		if (n <= 0) { /* got eof or unhandled error */
-			error("%s: fd %d got error or unexpected eof reading messge body",
+			error("%s: fd %d got error or unexpected eof reading message body",
 				  __func__, obj->fd);
 			if (s->cio->sls)
 				step_launch_notify_io_failure(
