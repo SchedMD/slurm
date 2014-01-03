@@ -724,7 +724,7 @@ int setup_env(env_t *env, bool preserve_env)
 			error("Unable to set SLURM_STEP_ID environment");
 			rc = SLURM_FAILURE;
 		}
-		/* and for backwards compatability... */
+		/* and for backwards compatibility... */
 		if (setenvf(&env->env, "SLURM_STEPID", "%d", env->stepid)) {
 			error("Unable to set SLURM_STEPID environment");
 			rc = SLURM_FAILURE;

@@ -572,7 +572,7 @@ _handle_info(int fd, stepd_step_rec_t *job)
 
 	/* protocol_version was added in SLURM version 2.2,
 	 * so it needed to be added later in the data sent
-	 * for backward compatability (so that it doesn't
+	 * for backward compatibility (so that it doesn't
 	 * get confused for a huge UID, job ID or step ID;
 	 * we should be save in avoiding huge node IDs). */
 	safe_write(fd, &protocol_version, sizeof(uint16_t));
