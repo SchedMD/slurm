@@ -23,13 +23,7 @@ Throughput is also improved because overcommitting the resources provides
 opportunities for "local backfilling" to occur (see example below).
 </P>
 <P>
-In SLURM version 2.0 and earlier, the <I>sched/gang</I> plugin provides
-timeslicing.
-In SLURM version 2.1, the gang scheduling logic was moved directly into the
-main code bases to permit use of both gang scheduling plus the backfill
-scheduler plugin, <i>sched/backfill</I>.
-In either case, the gang scheduling logic monitors each of the partitions in
-SLURM.
+The gang scheduling logic monitors each of the partitions in Slurm.
 If a new job has been allocated to resources in a partition that have already
 been allocated to an existing job, then the plugin will suspend the new job
 until the configured <I>SchedulerTimeslice</I> interval has elapsed.
@@ -74,7 +68,8 @@ memory at the same time.
 </LI>
 <LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>:
-If you wish to enforce memory limits, accounting must be enabled
+If you wish to enforce memory limits, either that task/cgroup must be
+configured to limit each job's memory use or accounting must be enabled
 using the <I>JobAcctGatherType</I> and <I>JobAcctGatherFrequency</I>
 parameters. If accounting is enabled and a job exceeds its configured
 memory limits, it will be canceled in order to prevent it from
@@ -111,10 +106,6 @@ described above, restart SLURM if it is already running. Any change to the
 plugin settings in SLURM requires a full restart of the daemons. If you
 just change the partition <I>Shared</I> setting, this can be updated with
 <I>scontrol reconfig</I>.
-</P>
-<P>
-For an advanced topic discussion on the potential use of swap space,
-see "Making use of swap space" in the "Future Work" section below.
 </P>
 
 <H2>Timeslicer Design and Operation</H2>
@@ -508,25 +499,6 @@ Note that <I>CR_Core_Memory</I> supports CPU binding, while
 <I>CR_CPU_Memory</I> does not.
 </P>
 
-<H2>Future Work</H2>
-
-<P>
-<B>Making use of swap space</B>: (note that this topic is not currently
-scheduled for development, unless someone would like to pursue this) It should
-be noted that timeslicing does provide an interesting mechanism for high
-performance jobs to make use of swap space.
-The optimal scenario is one in which suspended jobs are "swapped out" and
-active jobs are "swapped in".
-The swapping activity would only occur once every  <I>SchedulerTimeslice</I>
-interval.
-</P>
-<P>
-However, SLURM should first be modified to include support for scheduling jobs
-into swap space and to provide controls to prevent overcommitting swap space.
-For now this idea could be experimented with by disabling memory support in
-the selector and submitting appropriately sized jobs.
-</P>
-
-<p style="text-align:center;">Last modified 2 October 2012</p>
+<p style="text-align:center;">Last modified 3 January 2014</p>
 
 <!--#include virtual="footer.txt"-->
