@@ -1,10 +1,10 @@
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2011 Lawrence Livermore National Security.
-# Copyright (C) 2010-2013 SchedMD LLC
+# Copyright (C) 2010-2014 SchedMD LLC
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# Additionals by Joseph Donaghy <donaghy1@llnl.gov>
+# Additions by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
@@ -60,7 +60,7 @@ quite verbose. Failure information is written to standard error. A good
 way to run "regression" is to write its standard output to one file and
 either write standard error to another file or print it to the terminal.
 Execution time of the full test suite is roughly 80 minutes, but can vary
-considerably with the architecuture, configuration, and system load. Some
+considerably with the architecture, configuration, and system load. Some
 tests send e-mail, so check for four e-mail messages set the the user
 running the tests. Here is an example.
     $ ./regression >slurm.test.tux.Aug3
@@ -74,7 +74,7 @@ for the keyword "FAILURE" will typically locate the failing test. Note
 that some of the tests are architecture or configuration specific.  Also
 note that most tests are designed to be run as a normal user. Tests 3.#
 are designed to be run as user root or SlurmUser, but will be skipped
-when the full test suite is executed as an unpriviledged user. The full
+when the full test suite is executed as an unprivileged user. The full
 test suite is typically executed many times by the SLURM developers on a
 variety of systems before a SLURM release is made. This has resulted in
 high system reliability. When SLURM bugs are found or features added,
@@ -151,7 +151,7 @@ test1.46   Test srun option --kill-on-bad-exit
 test1.47   Test of job dependencies with singleton parameter.
 test1.48   Test of srun mail options (--mail-type and --mail-user options).
 test1.49   Test of srun task-prolog and task-epilog options.
-test1.50   Test of running non-existant job, confirm timely termination.
+test1.50   Test of running non-existent job, confirm timely termination.
 test1.51   Test propagation of umask to spawned tasks.
 test1.52   Test of hostfile logic.
 test1.53   Test of --signal option.
@@ -166,8 +166,8 @@ test1.59   Test of hostfile logic for job steps
 test1.60   Test of labelling output when writing a file per task or per node
 test1.61   Test of srun job step time limit
 test1.62   Test of gres/gpu plugin (if configured).
-test1.63   Test of srun --disbale-status/-X option, SIGINT to be sent to tasks.
-test1.64   Test interuption of srun while waiting for resource allocation.
+test1.63   Test of srun --disable-status/-X option, SIGINT to be sent to tasks.
+test1.64   Test interruption of srun while waiting for resource allocation.
 test1.65   Test of srun --mpi=list option.
 test1.66   Test srun to make sure that the jobs are running on the correct node
 	    within a allocation.
@@ -211,7 +211,7 @@ test1.93   Test of LAM-MPI functionality
 test1.94   Test of MPICH2 task spawn logic
 test1.95   Basic UPC (Unified Parallel C) test via srun.
 test1.96   Basic SHMEM test via srun.
-**NOTE**   The above tests for mutliple processor/partition systems only
+**NOTE**   The above tests for multiple processor/partition systems only
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
@@ -219,7 +219,7 @@ test2.1    Validate scontrol version command.
 test2.2    Validate scontrol help command.
 test2.3    Validate scontrol ping command.
 test2.4    Validate scontrol exit, quit, and !! commands.
-test2.5    Validate scontrol show commands for configuation, daemons,
+test2.5    Validate scontrol show commands for configuration, daemons,
 	   nodes, frontends, and partitions.
 test2.6    Validate scontrol verbose and quiet options.
 test2.7    Validate scontrol pidinfo command.
@@ -268,7 +268,7 @@ test4.5    Test sinfo node information filtering (--state and --nodes options).
 test4.6    Test sinfo iteration (--iterate option).
 test4.7    Confirm that sinfo verbose option works (--verbose option).
 test4.8    Check sinfo output without header (--noheader option).
-test4.9    Check sinfo formating options (--format option and SINFO_FORMAT
+test4.9    Check sinfo formatting options (--format option and SINFO_FORMAT
 	   environment variable).
 test4.10   Confirm that sinfo reports a proper version number (--version
 	   option).
@@ -281,7 +281,7 @@ test5.#    Testing of squeue options.
 test5.1    Confirm squeue usage option works (--usage option).
 test5.2    Confirm squeue help option works (--help option).
 test5.3    Test squeue iteration (--iterate option).
-test5.4    Test squeue formating options (--noheader, --format and --step
+test5.4    Test squeue formatting options (--noheader, --format and --step
 	   options and SQUEUE_FORMAT environment variable).
 test5.5    Test squeue sorting (--sort option).
 test5.6    Test squeue filtering (--jobs, --nodelist, --states, --steps and
@@ -362,15 +362,15 @@ test8.11   Bluegene/Q only: Test that certain number of tasks will submit to
 	   srun.
 test8.20   Bluegene/Q only: Test that job step allocations are a valid size
 	   and within the job's allocation
-test8.21   Bluegene/Q only: Test that multple job step allocations are
+test8.21   Bluegene/Q only: Test that multiple job step allocations are
 	   properly packed within the job's allocation
 test8.22   Bluegene/Q only: Stress test of running many job step allocations
 	   within the job's allocation
-test8.23   Bluegene/Q only: Test that multple jobs allocations are properly
+test8.23   Bluegene/Q only: Test that multiple jobs allocations are properly
 	   packed within a midplane
-test8.24   Bluegene/Q only: Test advanced reservation creation with mutliple
+test8.24   Bluegene/Q only: Test advanced reservation creation with multiple
 	   blocks.
-test8.25   Bluegene/P only: Confirm salloc can reserve the HTC partitons.
+test8.25   Bluegene/P only: Confirm salloc can reserve the HTC partitions.
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
@@ -462,17 +462,17 @@ test15.7   Test of processors, memory, and temporary disk space
 	   Also test that priority zero job is not started (--hold option).
 test15.8   Test of immediate allocation option (--immediate option).
 test15.9   Confirm that salloc exit code processing.
-test15.10  Confirm that a job allocates the proper procesor count (--tasks)
+test15.10  Confirm that a job allocates the proper processor count (--tasks)
 test15.11  Test of --nice and --job-name options.
 test15.12  Verify node configuration specification (--constraint option).
 test15.13  Verify the appropriate job environment variables are set
-test15.14  Test of job dependencies (--depedency option).
+test15.14  Test of job dependencies (--dependency option).
 test15.15  Test of user signal upon allocation (--bell and --no-bell options)
 test15.16  Verify that SLURM directed environment variables are processed:
 	   SALLOC_BELL and SALLOC_NO_BELL (can't really confirm from Expect)
 test15.17  Test the launch of a batch job within an existing job allocation.
 	   This logic is used by LSF
-test15.18  Test of running non-existant job, confirm timely termination.
+test15.18  Test of running non-existent job, confirm timely termination.
 test15.19  Confirm that a job executes with the proper node count
 	   (--nodes option).
 test15.20  Confirm that a job executes with the specified nodes
@@ -484,7 +484,7 @@ test15.23  Test of environment variables that control salloc actions:
 	   SALLOC_DEBUG and SALLOC_TIMELIMIT
 test15.24  Test of --overcommit option.
 test15.25  Test of job account(--account option).
-test15.26  Test interuption of salloc while waiting for resource allocation.
+test15.26  Test interruption of salloc while waiting for resource allocation.
 
 test16.#   Testing of sattach options.
 ======================================
@@ -526,12 +526,12 @@ test17.15  Verify that user user limits are propagated to the job
 test17.16  Verify that command line arguments get forwarded to job script
 test17.17  Confirm that node sharing flags are respected  (--nodelist and
 	   --share options)
-test17.18  Test of job dependencies and deferred begin time (--depedency
+test17.18  Test of job dependencies and deferred begin time (--dependency
 	   and --begin options).
 test17.19  Test of job submit to multiple partitions (--partition).
 test17.20  Test of mail options (--mail-type and --mail-user options)
 test17.21  Tests #SLURM entry functionality in a batch script
-test17.22  Test of running non-existant job, confirm timely termination.
+test17.22  Test of running non-existent job, confirm timely termination.
 test17.23  Test of nice value specification (--nice option).
 test17.24  Test of --partition and --verbose options.
 test17.25  Verify environment variables controlling sbatch are processed:
@@ -650,7 +650,7 @@ test27.5   sdiag --reset
 test28.#   Testing of job array options.
 ========================================
 test28.1   Confirms sbatch --array and scancel of the job arrays.
-test28.2   checks that the --array environment varibles are correct, and
+test28.2   checks that the --array environment variables are correct, and
 	   checks that the --output and -error files were created and
 	   contain the correct information.
 test28.3   Validates that the scontrol show job contains the job array
@@ -680,8 +680,8 @@ test31.1   Validate that the epilog and prologs behave the way
 	   prolog/epilog.
 
 
-test32.#   Test of slurms sgather options.
-==========================================
+test32.#   Test of sgather command and options.
+===============================================
 test32.1   Validates that the sgather --usage option reports the usage.
 test32.2   Validates that the sgather --help option reports the help message.
 test32.3   Validates that the sgather -V (Version) option reports the version.
@@ -692,5 +692,5 @@ test32.7   Validates that sgather -f ignores nonexistent source files.
 test32.8   Validates that sgather -F changes the fanout message.
 test32.9   Validates that sgather -p option perserves file state.
 test32.10  Validates that sgather -r copies files recursively.
-test32.11  Validates that sgather -v prints the output loging of the job.
+test32.11  Validates that sgather -v prints the output logging of the job.
 test32.12  Validates that sgather -t changes the timeout message.
