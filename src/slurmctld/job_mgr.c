@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2014 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -2275,6 +2275,9 @@ extern int kill_job_by_front_end_name(char *node_name)
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
+				job_ptr->pre_sus_time = (time_t) 0;
+				job_ptr->suspend_time = (time_t) 0;
+				job_ptr->tot_sus_time = (time_t) 0;
 
 				/* restart from periodic checkpoint */
 				if (job_ptr->ckpt_interval &&
@@ -2509,6 +2512,9 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
+				job_ptr->pre_sus_time = (time_t) 0;
+				job_ptr->suspend_time = (time_t) 0;
+				job_ptr->tot_sus_time = (time_t) 0;
 
 				/* restart from periodic checkpoint */
 				if (job_ptr->ckpt_interval &&
