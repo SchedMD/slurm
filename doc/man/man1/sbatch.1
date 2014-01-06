@@ -19,7 +19,8 @@ jobs for some time before its required resources become available.
 
 By default both standard output and standard error are directed to a file of
 the name "slurm\-%j.out", where the "%j" is replaced with the job allocation
-number.
+number. The file will be generated on the first node of the job allocation.
+Other than the batch script itself, Slurm does no movement of user files.
 
 When the job allocation is finally granted for the batch script, SLURM
 runs a single copy of the batch script on the first node in the set of
