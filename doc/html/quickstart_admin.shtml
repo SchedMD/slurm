@@ -654,7 +654,7 @@ if the major and/or minor release number changes.
 Slurm daemons will support RPCs and state files from the two previous minor or
 releases (e.g. a version 2.6.x SlurmDBD will support slurmctld daemons and
 commands with a version of 2.4.x or 2.5.x).
-This means that upgrading at least ones each year is strongly recommended.
+This means that upgrading at least once each year is strongly recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the micro release number generally represent only bug fixes,
 but may also include very minor enhancements.</p>

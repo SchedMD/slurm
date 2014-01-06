@@ -205,11 +205,16 @@ compute nodes.
 The user doesn't need to be able to login, but his user ID
 must exist.</li>
 
-<li>Check that a consistent version of SLURM exists on all of
+<li>Check that compatible versions of SLURM exists on all of
 the nodes (execute "<i>sinfo -V</i>" or "<i>rpm -qa | grep slurm</i>").
-If the first two digits of the version number match it should
-work fine, but version 1.1 commands will not work with
-version 1.2 daemons or vise-versa.</li>
+The Slurm version numbers contain three digits, which represent
+the major, minor and micro release numbers in that order (e.g. 2.5.3 is
+major=2, minor=5, micro=3).
+Changes in the RPCs (remote procedure calls) and state files will only be made
+if the major and/or minor release number changes.
+Slurm daemons will support RPCs and state files from the two previous minor or
+releases (e.g. a version 2.6.x SlurmDBD will support slurmctld daemons and
+commands with a version of 2.4.x or 2.5.x).</li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
@@ -296,6 +301,6 @@ partition 000.
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 February 2012</p>
+<p style="text-align:center;">Last modified 6 January 20124</p>
 
 <!--#include virtual="footer.txt"-->
