@@ -9924,6 +9924,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		if (rc != SLURM_SUCCESS)
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op, indf_susp);
+		if (job_ptr->priority == 0)
+			set_job_prio(job_ptr);
 		job_ptr->job_state = JOB_RUNNING;
 		job_ptr->tot_sus_time +=
 			difftime(now, job_ptr->suspend_time);

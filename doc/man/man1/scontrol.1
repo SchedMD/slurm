@@ -378,6 +378,7 @@ Use the \fIresume\fP command to resume its execution.
 User processes must stop on receipt of SIGSTOP signal and resume
 upon receipt of SIGCONT for this operation to be effective.
 Not all architectures and configurations support job suspension.
+If a suspended job is requeued, it will be placed in a held state.
 
 .TP
 \fBtakeover\fP
