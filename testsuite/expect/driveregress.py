@@ -40,26 +40,27 @@ import shutil
 
 """This program is a driver for the Slurm regression program."""
 
-logger = logging.getLogger('log.py')
+logger = logging.getLogger('driveregress.py')
+logger.setLevel(logging.DEBUG)
 
 def init_console():
+
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    logger.addHandler(ch)
     formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',
                                   datefmt='%b %d %H:%M:%S')
     ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 def init_log(htab):
 
-    logdir = '%s/log/%s' % (htab['root'], htab['section'])
-    if not os.path.isdir(logdir):
-        os.mkdir(logdir)
+    testlogdir = '%s/log/%s' % (htab['root'], htab['section'])
+    if not os.path.isdir(testlogdir):
+        os.mkdir(testlogdir)
 
-    logfile = '%s/log/%s/Log' % (htab['root'], htab['section'])
+    htab['testlogdir'] = testlogdir
+    testlogfile = '%s/log/%s/Log' % (htab['root'], htab['section'])
 
-    logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler(logfile)
+    fh = logging.FileHandler(testlogfile)
     formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',
                                   datefmt='%b %d %H:%M:%S')
     fh.setFormatter(formatter)
@@ -101,9 +102,8 @@ def cleanup_logs(htab):
 
     # pdb.set_trace()
     # hose slurmctld and slurmdbd logs
-    logdir = '%s/clusters/%s/%s/log' % (htab['root'], htab['version'], htab['arch'])
-    logger.info('cd logdir -> %s' % (logdir))
-    os.chdir(logdir)
+    logger.info('cd logdir -> %s' % (htab['logdir']))
+    os.chdir(htab['logdir'])
     for f in glob.iglob('*'):
         try:
             os.unlink(f)
@@ -111,9 +111,9 @@ def cleanup_logs(htab):
             pass
 
     # hose slurmd logs
-    logdir = '%s/clusters/%s/%s/log/log' %  (htab['root'], htab['version'], htab['arch'])
-    logger.info('cd logdir -> %s' % (logdir))
-    os.chdir(logdir)
+    slogdir = '%s/log' %  (htab['logdir'])
+    logger.info('cd logdir -> %s' % (slogdir))
+    os.chdir(slogdir)
     for f in glob.iglob('*'):
         try:
             os.unlink(f)
@@ -121,9 +121,8 @@ def cleanup_logs(htab):
             pass
 
     # hose the spool
-    spooldir = '%s/clusters/%s/%s/spool' % (htab['root'], htab['version'], htab['arch'])
-    shutil.rmtree(spooldir)
-    os.mkdir(spooldir)
+    shutil.rmtree(htab['spooldir'])
+    os.mkdir(htab['spooldir'])
 
 # section is the test name
 def configure_and_build(htab, conf, section):
@@ -146,20 +145,14 @@ def configure_and_build(htab, conf, section):
     except:
         pass
 
-    try:
-        mailto = conf.get(section, 'mailto')
-        htab['mailto'] = mailto
-        logger.info( 'mailto -> %s', mailto)
-    except ConfigParser.NoOptionError :
-        pass
-
     buildpath = '%s/clusters/%s/%s/build' % (htab['root'], version, arch)
     sbindir = '%s/clusters/%s/%s/sbin' % (htab['root'], version, arch)
     spooldir = '%s/clusters/%s/%s/spool' % (htab['root'], version, arch)
     bindir = '%s/clusters/%s/%s/bin' % (htab['root'], version, arch)
     prefix = '%s/clusters/%s/%s' % (htab['root'], version, arch)
     srcdir = '%s/distrib/%s/slurm' % (htab['root'], version)
-    logdir = '%s/log/%s' % (htab['root'], section)
+    logdir = '%s/clusters/%s/%s/log' % (htab['root'], version, arch)
+
     slurmdbd = '%s/slurmdbd' % (sbindir)
     slurmctld = '%s/slurmctld' % (sbindir)
     slurmd = '%s/slurmd' % (sbindir)
@@ -186,22 +179,19 @@ def configure_and_build(htab, conf, section):
     logger.info('test: %s version: %s arch: %s multi: %s multiname: %s'
                 % (section, htab['version'], htab['arch'],
                    htab['multi'], htab['multiname']))
-    logger.info( 'buildpath -> %s', buildpath)
-    logger.info( 'prefix -> %s', prefix)
-    logger.info( 'srcdir -> %s', srcdir)
-    logger.info( 'logdir -> %s', logdir)
-    logger.info( 'sbindir -> %s', sbindir)
-    logger.info( 'bindir -> %s', bindir)
-    logger.info( 'slurmdbd -> %s', slurmdbd)
-    logger.info( 'slurmctld -> %s', slurmctld)
-    logger.info( 'slurmd -> %s', slurmd)
+    logger.info('buildpath -> %s', buildpath)
+    logger.info('prefix -> %s', prefix)
+    logger.info('srcdir -> %s', srcdir)
+    logger.info('logdir -> %s', logdir)
+    logger.info('spooldir -> %s', spooldir)
+    logger.info('sbindir -> %s', sbindir)
+    logger.info('bindir -> %s', bindir)
+    logger.info('slurmdbd -> %s', slurmdbd)
+    logger.info('slurmctld -> %s', slurmctld)
+    logger.info('slurmd -> %s', slurmd)
 
     # clean up logdir
     cleanup_logs(htab)
-
-    # check if all directories exist
-    if check_dirs(htab) is False:
-        return False
 
     # before configuring let's make sure to pull
     # the github repository
@@ -212,14 +202,8 @@ def configure_and_build(htab, conf, section):
     logger.info('cd -> %s', os.getcwd())
 
     # this is the build file log
-    try:
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
-    except IOError as e:
-        logger.error('mkdir() or open() failed %s' % e)
-
-    logfile = '%s/Build' % (logdir)
-    lfile = open(logfile, 'w')
+    buildlog = '%s/Build' % (htab['testlogdir'])
+    lfile = open(buildlog, 'w')
     logger.info('build log file -> %s' % (lfile.name))
 
     logger.info('running -> make uninstall')
@@ -384,6 +368,27 @@ def start_daemons(htab):
             logger.error('Failed to get correct cluster status %s'
                          % line.strip())
 
+def kill_daemons(htab):
+
+    piddir = '%s/pid' % (htab['logdir'])
+
+    ld = [htab['logdir'], piddir]
+    for l in ld:
+        os.chdir(l)
+        for pf in glob.iglob('*.pid'):
+            try:
+                f = open(pf, 'r')
+            except IOError as e:
+                logger.error('No pidfile? -> %s %s' % (pf, e))
+            else :
+                pid = f.readline().strip()
+                logger.info('Got %s pid -> %s' % (f.name, pid))
+                try:
+                    os.kill(int(pid), 15)
+                except OSError as e:
+                    logger.error('Cannot kill %s? %s' % (pid, e))
+                f.close()
+
 def run_regression(htab):
 
     testdir = '%s/testsuite/expect' % (htab['srcdir'])
@@ -406,7 +411,7 @@ def run_regression(htab):
     f.close()
 
     # Write regression output into logfile
-    regfile = '%s/Regression' % (htab['logdir'])
+    regfile = '%s/Regression' % (htab['testlogdir'])
     htab['regfile'] = regfile
 
     try:
@@ -436,10 +441,10 @@ def send_result(htab):
         os.rename(htab['regfile'], 'regression-')
         return
 
-    os.chdir(htab['logdir'])
-    logger.info('Sending result from %s' % (htab['logdir']))
+    os.chdir(htab['testlogdir'])
+    logger.info('Sending result from %s' % (htab['testlogdir']))
 
-    mailmsg = '%s/mailmsg' % (htab['logdir'])
+    mailmsg = '%s/mailmsg' % (htab['testlogdir'])
 
     try:
         f = open(htab['regfile'])
@@ -485,7 +490,7 @@ def send_result(htab):
     to = htab['mailto']
     # me == the sender's email address
     # to == the recipient's email address
-    msg['Subject'] = 'Regression results %s@%s' % (htab['test'], htab['cas'])
+    msg['Subject'] = 'Regression results %s@%s' % (htab['section'], htab['cas'])
     msg['From'] = me
     msg['To'] = to
 #    msg['CC'] = cc
@@ -532,15 +537,16 @@ def main():
 
 #    pdb.set_trace()
 
+    dt = datetime.datetime.now()
+    cas = '%s-%s:%s:%s' % (dt.month, dt.day, dt.hour, dt.minute)
+    logger.info('Starting %s cas -> %s', os.getpid(), cas)
+
     # process the configuration file
     conf = read_config(cfile)
 
-    dt = datetime.datetime.now()
-    cas = '%s-%s:%s:%s' % (dt.month, dt.day, dt.hour, dt.minute)
-    logger.info('cas -> %s', cas)
-
     for section in conf.sections():
         htab = {}
+        htab['cas'] = cas
         try:
             root = conf.get(section, 'root')
             htab['root'] = root
@@ -550,18 +556,16 @@ def main():
         htab['section'] = section
         fh = init_log(htab)
         logger.info('Root %s of section %s' % (htab['root'], htab['section']))
-        configure_and_build(htab, section, conf)
+        configure_and_build(htab, conf, section)
         set_environ(htab)
         start_daemons(htab)
         run_regression(htab)
         send_result(htab)
-        logger.info('%s tests %s done' % (os.getpid(), section))
+        kill_daemons(htab)
+        logger.info('test %s done daemons killed' % (section))
         logger.removeHandler(fh)
 
-    logger.info('%s: all tests done...' % (os.getpid()))
-    bye = 'pkill slurm'
-    subprocess.Popen(bye, shell=True).wait()
-    logger.info('%s: clusters shut down...' % (os.getpid()))
+    logger.info('all tests done...')
 
     return 0
 
