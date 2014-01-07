@@ -1941,27 +1941,37 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		node_ptr->cpus    = reg_msg->cpus;
 	}
 
-	if ((slurmctld_conf.fast_schedule != 2) &&
-	    (reg_msg->real_memory < config_ptr->real_memory)) {
-		error("Node %s has low real_memory size (%u < %u)",
-		      reg_msg->node_name, reg_msg->real_memory,
-		      config_ptr->real_memory);
-		error_code  = EINVAL;
-		if (reason_down)
-			xstrcat(reason_down, ", ");
-		xstrcat(reason_down, "Low RealMemory");
+	if (reg_msg->real_memory < config_ptr->real_memory) {
+		if (slurmctld_conf.fast_schedule == 0) {
+			debug("Node %s has low real_memory size (%u < %u)",
+			      reg_msg->node_name, reg_msg->real_memory,
+			      config_ptr->real_memory);
+		} else if (slurmctld_conf.fast_schedule == 1) {
+			error("Node %s has low real_memory size (%u < %u)",
+			      reg_msg->node_name, reg_msg->real_memory,
+			      config_ptr->real_memory);
+			error_code  = EINVAL;
+			if (reason_down)
+				xstrcat(reason_down, ", ");
+			xstrcat(reason_down, "Low RealMemory");
+		}
 	}
 	node_ptr->real_memory = reg_msg->real_memory;
 
-	if ((slurmctld_conf.fast_schedule != 2) &&
-	    (reg_msg->tmp_disk < config_ptr->tmp_disk)) {
-		error("Node %s has low tmp_disk size (%u < %u)",
-		      reg_msg->node_name, reg_msg->tmp_disk,
-		      config_ptr->tmp_disk);
-		error_code = EINVAL;
-		if (reason_down)
-			xstrcat(reason_down, ", ");
-		xstrcat(reason_down, "Low TmpDisk");
+	if (reg_msg->tmp_disk < config_ptr->tmp_disk) {
+		if (slurmctld_conf.fast_schedule == 0) {
+			debug("Node %s has low tmp_disk size (%u < %u)",
+			      reg_msg->node_name, reg_msg->tmp_disk,
+			      config_ptr->tmp_disk);
+		} else if (slurmctld_conf.fast_schedule == 1) {
+			error("Node %s has low tmp_disk size (%u < %u)",
+			      reg_msg->node_name, reg_msg->tmp_disk,
+			      config_ptr->tmp_disk);
+			error_code = EINVAL;
+			if (reason_down)
+				xstrcat(reason_down, ", ");
+			xstrcat(reason_down, "Low TmpDisk");
+		}
 	}
 	node_ptr->tmp_disk = reg_msg->tmp_disk;
 
