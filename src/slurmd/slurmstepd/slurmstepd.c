@@ -404,7 +404,9 @@ _init_from_slurmd(int sock, char **argv,
 	/* receive conf from slurmd */
 	if ((conf = read_slurmd_conf_lite (sock)) == NULL)
 		fatal("Failed to read conf from slurmd");
+
 	log_alter(conf->log_opts, 0, conf->logfile);
+	log_set_timefmt(conf->log_fmt);
 
 	debug2("debug level is %d.", conf->debug_level);
 

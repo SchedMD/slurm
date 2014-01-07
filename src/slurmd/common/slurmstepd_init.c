@@ -71,6 +71,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	packstr(conf->node_topo_addr, buffer);
 	packstr(conf->node_topo_pattern, buffer);
 	pack32((uint32_t)conf->port, buffer);
+	pack16(conf->log_fmt, buffer);
 }
 
 extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
@@ -109,6 +110,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	safe_unpackstr_xmalloc(&conf->node_topo_addr, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->node_topo_pattern, &uint32_tmp, buffer);
 	safe_unpack32(&uint32_tmp, buffer);
+	safe_unpack16(&conf->log_fmt, buffer);
 	conf->port = uint32_tmp;
 	return SLURM_SUCCESS;
 
