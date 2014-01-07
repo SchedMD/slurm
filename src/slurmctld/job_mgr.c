@@ -2275,9 +2275,6 @@ extern int kill_job_by_front_end_name(char *node_name)
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
-				job_ptr->pre_sus_time = (time_t) 0;
-				job_ptr->suspend_time = (time_t) 0;
-				job_ptr->tot_sus_time = (time_t) 0;
 
 				/* restart from periodic checkpoint */
 				if (job_ptr->ckpt_interval &&
@@ -2296,6 +2293,10 @@ extern int kill_job_by_front_end_name(char *node_name)
 				 * removes the submit we need to add it
 				 * again. */
 				acct_policy_add_job_submit(job_ptr);
+
+				if (!job_ptr->node_bitmap_cg ||
+				    bit_set_count(job_ptr->node_bitmap_cg) == 0)
+					batch_requeue_fini(job_ptr);
 			} else {
 				info("Killing job_id %u on failed node %s",
 				     job_ptr->job_id, node_name);
@@ -2512,9 +2513,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
-				job_ptr->pre_sus_time = (time_t) 0;
-				job_ptr->suspend_time = (time_t) 0;
-				job_ptr->tot_sus_time = (time_t) 0;
 
 				/* restart from periodic checkpoint */
 				if (job_ptr->ckpt_interval &&
@@ -2533,6 +2531,10 @@ extern int kill_running_job_by_node_name(char *node_name)
 				 * removes the submit we need to add it
 				 * again. */
 				acct_policy_add_job_submit(job_ptr);
+
+				if (!job_ptr->node_bitmap_cg ||
+				    bit_set_count(job_ptr->node_bitmap_cg) == 0)
+					batch_requeue_fini(job_ptr);
 			} else {
 				info("Killing job_id %u on failed node %s",
 				     job_ptr->job_id, node_name);
@@ -9333,8 +9335,12 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	now = time(NULL);
 	/* Clear everything so this appears to be a new job and then restart
 	 * it in accounting. */
-	job_ptr->start_time = job_ptr->end_time = 0;
+	job_ptr->start_time = 0;
+	job_ptr->end_time = 0;
 	job_ptr->total_cpus = 0;
+	job_ptr->pre_sus_time = 0;
+	job_ptr->suspend_time = 0;
+	job_ptr->tot_sus_time = 0;
 	/* Current code (<= 2.1) has it so we start the new job with the next
 	 * step id.  This could be used when restarting to figure out which
 	 * step the previous run of this job stopped on. */
