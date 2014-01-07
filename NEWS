@@ -175,6 +175,8 @@ documents those changes that are of interest to users and admins.
     for high priority jobs.
  -- Correct job RunTime if requeued from suspended state.
  -- Reset job priority from zero (held) on manual resume from suspend state.
+ -- If FastSchedule=0 then do not DOWN a node with low memory or disk size.
+ -- Remove vestigial note.
 
 * Changes in Slurm 2.6.5
 ========================

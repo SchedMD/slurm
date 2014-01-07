@@ -25,12 +25,6 @@ California, and shall not be used for advertising or product endorsement
 purposes.
 
 
-NOTIFICATION OF COMMERCIAL USE
-
-Commercialization of this product is prohibited without notifying the 
-Department of Energy (DOE) or Lawrence Livermore National Laboratory (LLNL).
-
-
 USE OF THIS PATCH
 
 This patch makes use of SLURM's srun command to launch all tasks.

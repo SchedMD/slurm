@@ -2640,6 +2640,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 					job_ptr->job_state &= (~JOB_COMPLETING);
 					delete_step_records(job_ptr);
 					slurm_sched_g_schedule();
+					batch_requeue_fini(job_ptr);
+					last_node_update = time(NULL);
 				}
 			}
 		} else if (!IS_NODE_NO_RESPOND(front_end_ptr)) {
@@ -2667,6 +2669,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 				job_ptr->job_state &= (~JOB_COMPLETING);
 				delete_step_records(job_ptr);
 				slurm_sched_g_schedule();
+				batch_requeue_fini(job_ptr);
 				last_node_update = time(NULL);
 			}
 		} else if (!IS_NODE_NO_RESPOND(node_ptr)) {
