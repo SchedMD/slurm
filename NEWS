@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- Reset job priority from zero (held) on manual resume from suspend state.
  -- If FastSchedule=0 then do not DOWN a node with low memory or disk size.
  -- Remove vestigial note.
+ -- Update sshare.1 man page making it consistent with sacctmgr.1.
 
 * Changes in Slurm 2.6.5
 ========================
