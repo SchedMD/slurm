@@ -1564,6 +1564,41 @@ static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr)
 	resv_ptr->cpu_cnt = cpu_cnt;
 }
 
+/*
+ * _license_validate2 - A variant of license_validate which considers the
+ * licenses used by overlapping reservations
+ */
+static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
+{
+	List license_list, merged_list;
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+	char *merged_licenses;
+
+	license_list = license_validate(resv_desc_ptr->licenses, valid);
+	if (!valid || (resv_desc_ptr->licenses == NULL))
+		return license_list;
+
+	merged_licenses = xstrdup(resv_desc_ptr->licenses);
+	iter = list_iterator_create(resv_list);
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->licenses   == NULL) ||
+		    (resv_ptr->end_time   <= resv_desc_ptr->start_time) ||
+		    (resv_ptr->start_time >= resv_desc_ptr->end_time))
+			continue;	/* No overlap */
+		if (resv_desc_ptr->name &&
+		    !strcmp(resv_desc_ptr->name, resv_ptr->name))
+			continue;	/* Modifying this reservation */
+		xstrcat(merged_licenses, ",");
+		xstrcat(merged_licenses, resv_ptr->licenses);
+	}
+	list_iterator_destroy(iter);
+	merged_list = license_validate(merged_licenses, valid);
+	xfree(merged_licenses);
+	FREE_NULL_LIST(merged_list);
+	return license_list;
+}
+
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 {
@@ -1656,8 +1691,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	if (resv_desc_ptr->licenses) {
 		bool valid;
-		license_list = license_validate(resv_desc_ptr->licenses,
-						&valid);
+		license_list = _license_validate2(resv_desc_ptr, &valid);
 		if (!valid) {
 			info("Reservation request has invalid licenses %s",
 			     resv_desc_ptr->licenses);
@@ -2044,8 +2078,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->licenses) {
 		bool valid = true;
 		List license_list;
-		license_list = license_validate(resv_desc_ptr->licenses,
-						&valid);
+		license_list = _license_validate2(resv_desc_ptr, &valid);
 		if (!valid) {
 			info("Reservation invalid license update (%s)",
 			     resv_desc_ptr->licenses);

@@ -3,8 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.0pre6
 ==============================
--- Modify slurmstepd to log messages according to the LogTimeFormat
-   parameter in slurm.conf.
+ -- Modify slurmstepd to log messages according to the LogTimeFormat
+    parameter in slurm.conf.
+ -- Insure that overlapping reservations do not oversubscribe available
+    licenses.
 
 * Changes in Slurm 14.03.0pre5
 ==============================
