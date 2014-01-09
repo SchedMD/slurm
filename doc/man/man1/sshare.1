@@ -108,12 +108,18 @@ the effective usage charged to them or their accounts.
 
 .TP
 \f3GrpCPUMins\fP
-The CPU-minutes limit set on the account.
+The CPU-minutes limit set on the account. The total number of cpu
+minutes that can possibly be used by past, present and future jobs
+running from this account and its children.
 
 .TP
 \f3CPURunMins\fP
-The number of CPU-minutes accumulated by jobs currently running against
-the account.
+The number of CPU-minutes allocated by jobs currently running against
+the account. Used to limit the combined total number of CPU minutes
+used by all jobs running with this account and its children.
+This takes into consideration time limit of running jobs and consumes it,
+if the limit is reached no new jobs are started until other jobs finish
+to allow time to free up.
 
 .SH "EXAMPLES"
 .eo
