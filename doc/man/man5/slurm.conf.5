@@ -658,7 +658,7 @@ Consider which value you want to be used for scheduling purposes.
 \fB1\fR (default)
 Consider the configuration of each node to be that specified in the
 slurm.conf configuration file and any node with less than the
-configured resources will be set DOWN.
+configured resources will be set to DRAIN.
 .TP
 \fB0\fR
 Base scheduling decisions upon the actual configuration of each individual
@@ -672,7 +672,7 @@ be established later).
 \fB2\fR
 Consider the configuration of each node to be that specified in the
 slurm.conf configuration file and any node with less than the
-configured resources will \fBnot\fR be set DOWN.
+configured resources will \fBnot\fR be set DRAIN.
 This can be useful for testing purposes.
 .RE
 

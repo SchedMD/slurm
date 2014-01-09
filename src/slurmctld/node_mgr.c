@@ -1917,13 +1917,19 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		last_node_update = time (NULL);
 	}
+
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
+
 	if (error_code) {
-		if (!IS_NODE_DOWN(node_ptr)) {
-			error ("Setting node %s state to DOWN",
-				reg_msg->node_name);
+		if (!IS_NODE_DOWN(node_ptr)
+			&& !IS_NODE_DRAIN(node_ptr)
+			&& ! IS_NODE_FAIL(node_ptr)) {
+			error ("Setting node %s state to DRAIN",
+				   reg_msg->node_name);
+			drain_nodes(reg_msg->node_name,
+						reason_down,
+						slurmctld_conf.slurm_user_id);
 		}
-		set_node_down(reg_msg->node_name, reason_down);
 		last_node_update = time (NULL);
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {

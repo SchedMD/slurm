@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Insure that overlapping reservations do not oversubscribe available
     licenses.
  -- Added core specialization logic to select/cons_res plugin.
+ -- When using FastSchedule = 1 the nodes with less than configured resources
+    are not longer set DOWN, they are set to DRAIN instead.
 
 * Changes in Slurm 14.03.0pre5
 ==============================
