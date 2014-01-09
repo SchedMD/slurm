@@ -55,6 +55,9 @@
 /* for acceptable performance */
 #define MAX_BOARDS 8
 
+/* Enables module specific debugging */
+#define _DEBUG 0
+
 /* Combination counts
  * comb_counts[n-1][k-1] = number of combinations of
  *   k items from a set of n items
@@ -112,6 +115,24 @@ void _gen_combs(int *comb_list, int n, int k)
 			comb[i] = comb[i - 1] + 1;
 	}
 	xfree(comb);
+}
+
+/* Enable detailed logging of cr_dist() node and core bitmaps */
+static inline void _log_select_maps(char *loc, bitstr_t *node_map,
+				    bitstr_t *core_map)
+{
+#if _DEBUG
+	char str[100];
+
+	if (node_map) {
+		bit_fmt(str, (sizeof(str) - 1), node_map);
+		info("%s nodemap: %s", loc, str);
+	}
+	if (core_map) {
+		bit_fmt(str, (sizeof(str) - 1), core_map);
+		info("%s coremap: %s", loc, str);
+	}
+#endif
 }
 
 /* _compute_task_c_b_task_dist - compute the number of tasks on each
@@ -214,7 +235,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	bool log_over_subscribe = true;
 
 	if (!job_res || !job_res->cpus || !job_res->nhosts) {
-		error("cons_res: _compute_c_b_task_dist invalid allocation "
+		error("cons_res: _compute_plane_dist invalid allocation "
 		      "for job %u", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
@@ -715,7 +736,6 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	size  = bit_size(job_res->node_bitmap);
 	csize = bit_size(core_map);
 	for (c = 0, i = 0, n = 0; n < size; n++) {
-
 		if (bit_test(job_res->node_bitmap, n) == 0)
 			continue;
 		sockets = select_node_record[n].sockets;
@@ -790,7 +810,6 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 					} else
 						sock_start[s]++;
 				}
-
 				if (sock_start[s] == sock_end[s])
 					/* this socket is unusable */
 					continue;
@@ -880,7 +899,8 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 {
 	int error_code, cr_cpu = 1;
 
-	if (job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) {
+	if ((job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) &&
+	    (job_ptr->details->core_spec == 0)) {
 		/* the job has been allocated an EXCLUSIVE set of nodes,
 		 * so it gets all of the bits in the core_bitmap and
 		 * all of the available CPUs in the cpus array */
@@ -889,6 +909,8 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 		return SLURM_SUCCESS;
 	}
 
+	_log_select_maps("cr_dist/start", job_ptr->job_resrcs->node_bitmap,
+			 job_ptr->job_resrcs->core_bitmap);
 	if (job_ptr->details->task_dist == SLURM_DIST_PLANE) {
 		/* perform a plane distribution on the 'cpus' array */
 		error_code = _compute_plane_dist(job_ptr);
@@ -956,5 +978,8 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 		error("select/cons_res: invalid task_dist entry");
 		return SLURM_ERROR;
 	}
+
+	_log_select_maps("cr_dist/fini", job_ptr->job_resrcs->node_bitmap,
+			 job_ptr->job_resrcs->core_bitmap);
 	return error_code;
 }

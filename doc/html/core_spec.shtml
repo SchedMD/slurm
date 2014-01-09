@@ -1,7 +1,7 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Core Specialization</h1>
-<p>Core Specialization is a feature designed to isolate system overhead
+<p>Core specialization is a feature designed to isolate system overhead
 (system interrupts, etc.) to designated cores on a compute node.
 This can reduce applications interrupts ranks to improve completion time.
 The job will be charged for all allocated cores, but will not be able to
@@ -9,21 +9,56 @@ directly use the specialized cores.</p>
 
 <h2>Command Options</h2>
 <p>All job allocation commands (<i>salloc</i>, <i>sbatch</i> and <i>srun</i>)
-accept the <i>-S</i> or <i>--core-spec</i> option with a core count value
+accept the <i>-S</i> or <i>--core-spec</i> option with a core count value argument
 (e.g. "-S 1" or "--core-spec=2"). The count identifies the number of cores
 to be reserved for system overhead on each allocated compute node.
-The core specialization count can be viewed using the <i>scontrol</i>,
-<i>sview</i> and <i>squeue</i> commands.
+Each job's core specialization count can be viewed using the <i>scontrol</i>,
+<i>sview</i> or <i>squeue</i> command.
 Use the <i>squeue</i> command with the "%X" format option to see the count
 (it is not reported in the default output format).
 The <i>scontrol</i> and <i>sview</i> commands can also be used to modify
 the count for pending jobs.</p>
+
+<p>Configuring core specialization for a job implicitly sets its
+<i>--exclusive</i> option, reserving entire nodes for the job, however
+the number of CPUs available for the job's steps will not exceed that
+explicitly requested by the job. For example "salloc -n1 --core-spec=1 bash"
+will result in one entire node being reserved for the job, but only one CPU
+will be available for subsequent job steps. The remaining CPUs on the node
+(at least one core because of "--core-spec=1") will only be available for
+system use. The job will be changed for all CPUs on the node and the job's
+NumCPUs value reported by the <i>scontrol</i>, <i>sview</i> and <i>squeue</i>
+commands will reflect all CPUS on all allocated nodes as will the job's
+accounting.</p>
+
+<h2>Core Selection</h2>
+<p>Cores selected for specialization will always follow the same assignment
+algorithm.
+The first core selected will be the highest numbered core on the highest
+numbered socket.
+Subsequent cores selected will be the highest numbered core on the lower
+numbered sockets.
+If additional cores are required, they well come from the next highest numbered
+cores on each socket.
+By way of example, consider a node with two sockets, each with four cores.
+The specialized cores will be selected in the following order:<br>
+socket: 1 core: 3<br>
+socket: 0 core: 3<br>
+socket: 1 core: 2<br>
+socket: 0 core: 2<br>
+socket: 1 core: 1<br>
+socket: 0 core: 1<br>
+socket: 1 core: 0<br>
+socket: 0 core: 0</p>
+
+<p>Note that core specialization reservation may impact the use of some
+job allocation request options, especially --cores-per-socket.</p>
 
 <h2>System Configuration</h2>
 <p>Core Specialization is only supported if <i>SelectType</i> is configured
 as either <i>select/cons_res</i> or <i>select/cray</i>. A job's core
 specialization option will be silently cleared on other configurations.</p>
 
-<p style="text-align:center;">Last modified 5 November 2013</p>
+<p style="text-align:center;">Last modified 8 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

@@ -116,6 +116,7 @@
 #define OPT_EXPORT        0x17
 #define OPT_CLUSTERS      0x18
 #define OPT_TIME_VAL      0x19
+#define OPT_CORE_SPEC     0x1a
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
 
@@ -424,6 +425,7 @@ env_vars_t env_vars[] = {
   {"SLURM_CLUSTERS",       OPT_CLUSTERS,   &opt.clusters,      NULL          },
   {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
+  {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL          },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },

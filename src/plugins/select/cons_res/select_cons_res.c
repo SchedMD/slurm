@@ -2022,6 +2022,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	if (!job_ptr->details)
 		return EINVAL;
 
+
+	if (job_ptr->details->core_spec && job_ptr->details->shared) {
+		info("Setting Shared=0 for job %u with CoreSpec=%u",
+		      job_ptr->job_id, job_ptr->details->core_spec);
+		job_ptr->details->shared = 0;
+	}
+
 	if (!job_ptr->details->mc_ptr)
 		job_ptr->details->mc_ptr = _create_default_mc();
 	job_node_req = _get_job_node_req(job_ptr);
