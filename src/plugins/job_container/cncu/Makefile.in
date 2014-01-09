@@ -160,8 +160,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-job_container_cncu_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+job_container_cncu_la_LIBADD =
 am_job_container_cncu_la_OBJECTS = job_container_cncu.lo
 job_container_cncu_la_OBJECTS = $(am_job_container_cncu_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -261,12 +260,8 @@ CHECK_LIBS = @CHECK_LIBS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
-CRAY_ALPSC_CN_CPPFLAGS = @CRAY_ALPSC_CN_CPPFLAGS@
-CRAY_ALPSC_CN_LDFLAGS = @CRAY_ALPSC_CN_LDFLAGS@
-CRAY_ALPSC_SN_CPPFLAGS = @CRAY_ALPSC_SN_CPPFLAGS@
-CRAY_ALPSC_SN_LDFLAGS = @CRAY_ALPSC_SN_LDFLAGS@
-CRAY_CPPFLAGS = @CRAY_CPPFLAGS@
-CRAY_LDFLAGS = @CRAY_LDFLAGS@
+CRAY_JOB_CPPFLAGS = @CRAY_JOB_CPPFLAGS@
+CRAY_JOB_LDFLAGS = @CRAY_JOB_LDFLAGS@
 CRAY_SELECT_CPPFLAGS = @CRAY_SELECT_CPPFLAGS@
 CRAY_SELECT_LDFLAGS = @CRAY_SELECT_LDFLAGS@
 CRAY_SWITCH_CPPFLAGS = @CRAY_SWITCH_CPPFLAGS@
@@ -475,13 +470,14 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_JOB_CPPFLAGS)
 pkglib_LTLIBRARIES = job_container_cncu.la
 
 # job_container/cncu plugin.
 job_container_cncu_la_SOURCES = job_container_cncu.c
-job_container_cncu_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-job_container_cncu_la_LIBADD = $(CRAY_LDFLAGS)
+job_container_cncu_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+	$(CRAY_JOB_LDFLAGS)
+
 all: all-am
 
 .SUFFIXES:

@@ -160,9 +160,8 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-switch_cray_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_switch_cray_la_OBJECTS = switch_cray_la-switch_cray.lo
+switch_cray_la_LIBADD =
+am_switch_cray_la_OBJECTS = switch_cray.lo
 switch_cray_la_OBJECTS = $(am_switch_cray_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -261,12 +260,8 @@ CHECK_LIBS = @CHECK_LIBS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
-CRAY_ALPSC_CN_CPPFLAGS = @CRAY_ALPSC_CN_CPPFLAGS@
-CRAY_ALPSC_CN_LDFLAGS = @CRAY_ALPSC_CN_LDFLAGS@
-CRAY_ALPSC_SN_CPPFLAGS = @CRAY_ALPSC_SN_CPPFLAGS@
-CRAY_ALPSC_SN_LDFLAGS = @CRAY_ALPSC_SN_LDFLAGS@
-CRAY_CPPFLAGS = @CRAY_CPPFLAGS@
-CRAY_LDFLAGS = @CRAY_LDFLAGS@
+CRAY_JOB_CPPFLAGS = @CRAY_JOB_CPPFLAGS@
+CRAY_JOB_LDFLAGS = @CRAY_JOB_LDFLAGS@
 CRAY_SELECT_CPPFLAGS = @CRAY_SELECT_CPPFLAGS@
 CRAY_SELECT_LDFLAGS = @CRAY_SELECT_LDFLAGS@
 CRAY_SWITCH_CPPFLAGS = @CRAY_SWITCH_CPPFLAGS@
@@ -476,16 +471,13 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common \
-	$(CRAY_CPPFLAGS) $(CRAY_SWITCH_CPPFLAGS)
+	$(CRAY_SWITCH_CPPFLAGS)
 
-AM_CFLAGS = $(CRAY_ALPSCOMM_CN_CFLAGS) $(CRAY_ALPSCOMM_SN_CFLAGS)
 pkglib_LTLIBRARIES = switch_cray.la
 
 # Null switch plugin.
 switch_cray_la_SOURCES = switch_cray.c
-switch_cray_la_CPPFLAGS = $(CRAY_SWITCH_CPPFLAGS) $(AM_CPPFLAGS)
-switch_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_LDFLAGS) $(CRAY_SWITCH_LDFLAGS)
-switch_cray_la_LIBADD = $(CRAY_LDFLAGS)
+switch_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_SWITCH_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -565,7 +557,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_cray_la-switch_cray.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_cray.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -587,13 +579,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-switch_cray_la-switch_cray.lo: switch_cray.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(switch_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT switch_cray_la-switch_cray.lo -MD -MP -MF $(DEPDIR)/switch_cray_la-switch_cray.Tpo -c -o switch_cray_la-switch_cray.lo `test -f 'switch_cray.c' || echo '$(srcdir)/'`switch_cray.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/switch_cray_la-switch_cray.Tpo $(DEPDIR)/switch_cray_la-switch_cray.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='switch_cray.c' object='switch_cray_la-switch_cray.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(switch_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o switch_cray_la-switch_cray.lo `test -f 'switch_cray.c' || echo '$(srcdir)/'`switch_cray.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
