@@ -63,6 +63,9 @@ AC_DEFUN([X_AC_CRAY],
   elif test "$ac_have_native_cray" = "yes"; then
     _x_ac_cray_job_dir="job/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"
+    _x_ac_cray_rca_dir="rca/default"
+    _x_ac_cray_krca_dir="krca/default"
+    _x_ac_cray_hss_devel_dir="/opt/cray-hss-devel/default"
 
     _x_ac_cray_dirs="/opt/cray"
 
@@ -78,8 +81,8 @@ AC_DEFUN([X_AC_CRAY],
 
       saved_CPPFLAGS="$CPPFLAGS"
       saved_LIBS="$LIBS"
-      CRAY_CPPFLAGS="-I$_test_dir/include"
-      CRAY_LDFLAGS="-L$_test_dir/lib64 -ljob"
+      CRAY_JOB_CPPFLAGS="$CRAY_JOB_CPPFLAGS -I$_test_dir/include"
+      CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -L$_test_dir/lib64 -ljob"
 
       _test_dir="$d/$_x_ac_cray_alpscomm_dir"
       test -d "$_test_dir" || continue
@@ -90,31 +93,57 @@ AC_DEFUN([X_AC_CRAY],
       test -f "$_test_dir/lib64/libalpscomm_cn.so" || continue
       test -f "$_test_dir/lib64/libalpscomm_sn.so" || continue
 
-
       CRAY_ALPSC_CN_CPPFLAGS="$CRAY_ALPSC_CN_CPPFLAGS -I$_test_dir/include"
       CRAY_ALPSC_SN_CPPFLAGS="$CRAY_ALPSC_SN_CPPFLAGS -I$_test_dir/include"
       CRAY_ALPSC_CN_LDFLAGS="$CRAY_ALPSC_CN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_cn"
       CRAY_ALPSC_SN_LDFLAGS="$CRAY_ALPSC_SN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_sn"
 
-      CRAY_SWITCH_CPPFLAGS="$CRAY_SWITCH_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
-      CRAY_SWITCH_LDFLAGS="$CRAY_SWITCH_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
-      CRAY_SELECT_CPPFLAGS="$CRAY_SELECT_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
-      CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
+      _test_dir="$d/$_x_ac_cray_rca_dir"
+      test -d "$_test_dir" || continue
+      test -d "$_test_dir/include" || continue
+      test -f "$_test_dir/include/rca_lib.h" || continue
+      test -d "$_test_dir/lib64" || continue
+      test -f "$_test_dir/lib64/librca.so" || continue
+
+      CRAY_RCA_CPPFLAGS="$CRAY_RCA_CPPFLAGS -I$_test_dir/include"
+      CRAY_RCA_LDFLAGS="$CRAY_RCA_LDFLAGS -L$_test_dir/lib64 -lrca"
+
+      _test_dir="$d/$_x_ac_cray_krca_dir"
+      test -d "$_test_dir" || continue
+      test -d "$_test_dir/include" || continue
+      test -f "$_test_dir/include/rca_types.h" || continue
+
+      CRAY_RCA_CPPFLAGS="$CRAY_RCA_CPPFLAGS -I$_test_dir/include"
+
+      _test_dir="$_x_ac_cray_hss_devel_dir"
+      test -d "$_test_dir" || continue
+      test -d "$_test_dir/include" || continue
+      test -f "$_test_dir/include/rsms/rs_event.h" || continue
+
+      CRAY_RCA_CPPFLAGS="$CRAY_RCA_CPPFLAGS -I$_test_dir/include"
+
+
+      CRAY_SWITCH_CPPFLAGS="$CRAY_SWITCH_CPPFLAGS $CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
+      CRAY_SWITCH_LDFLAGS="$CRAY_SWITCH_LDFLAGS $CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
+      CRAY_SELECT_CPPFLAGS="$CRAY_SELECT_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $CRAY_RCA_CPPFLAGS"
+      CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $CRAY_RCA_LDFLAGS"
       CRAY_TASK_CPPFLAGS="$CRAY_TASK_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS"
       CRAY_TASK_LDFLAGS="$CRAY_TASK_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS"
 
-      CPPFLAGS="$CRAY_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $saved_CPPFLAGS"
-      LIBS="$CRAY_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $saved_LIBS"
+      CPPFLAGS="$CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $CRAY_RCA_CPPFLAGS $saved_CPPFLAGS"
+      LIBS="$CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $CRAY_RCA_LDFLAGS $saved_LIBS"
 
       AC_LINK_IFELSE(
         [AC_LANG_PROGRAM(
 	   [[#include <job.h>
              #include <alpscomm_sn.h>
 	     #include <alpscomm_cn.h>
+	     #include <rca_lib.h>
 	   ]],
 	   [[ job_getjidcnt();
 	      alpsc_release_cookies((char **)0, 0, 0);
 	      alpsc_flush_lustre((char **)0);
+	      rca_unregister();
 	   ]]
 	)],
         [have_cray_files="yes"],
@@ -182,12 +211,8 @@ AC_DEFUN([X_AC_CRAY],
   AM_CONDITIONAL(HAVE_ALPS_EMULATION, test "$ac_have_alps_emulation" = "yes")
   AM_CONDITIONAL(HAVE_ALPS_CRAY_EMULATION, test "$ac_have_alps_cray_emulation" = "yes")
 
-  AC_SUBST(CRAY_CPPFLAGS)
-  AC_SUBST(CRAY_LDFLAGS)
-  AC_SUBST(CRAY_ALPSC_CN_CPPFLAGS)
-  AC_SUBST(CRAY_ALPSC_CN_LDFLAGS)
-  AC_SUBST(CRAY_ALPSC_SN_CPPFLAGS)
-  AC_SUBST(CRAY_ALPSC_SN_LDFLAGS)
+  AC_SUBST(CRAY_JOB_CPPFLAGS)
+  AC_SUBST(CRAY_JOB_LDFLAGS)
   AC_SUBST(CRAY_SELECT_CPPFLAGS)
   AC_SUBST(CRAY_SELECT_LDFLAGS)
   AC_SUBST(CRAY_SWITCH_CPPFLAGS)
