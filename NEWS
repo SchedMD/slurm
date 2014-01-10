@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Added core specialization logic to select/cons_res plugin.
  -- When using FastSchedule = 1 the nodes with less than configured resources
     are not longer set DOWN, they are set to DRAIN instead.
+ -- Modified 'sacctmgr show associations' command to show GrpCPURunMins
+    by default.
 
 * Changes in Slurm 14.03.0pre5
 ==============================

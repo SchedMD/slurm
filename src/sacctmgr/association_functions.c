@@ -733,7 +733,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 					      "Share,GrpJ,GrpN,GrpCPUs,GrpMEM,"
 					      "GrpS,GrpWall,GrpCPUMins,MaxJ,"
 					      "MaxN,MaxCPUs,MaxS,MaxW,"
-					      "MaxCPUMins,QOS,DefaultQOS");
+					      "MaxCPUMins,QOS,DefaultQOS,GrpCPURunMins");
 	}
 	print_fields_list = sacctmgr_process_format_list(format_list);
 	list_destroy(format_list);
