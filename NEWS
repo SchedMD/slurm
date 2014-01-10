@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
     are not longer set DOWN, they are set to DRAIN instead.
  -- Modified 'sacctmgr show associations' command to show GrpCPURunMins
     by default.
+ -- Replace the hostlist_push() function with a more efficient hostlist_push_host().
 
 * Changes in Slurm 14.03.0pre5
 ==============================

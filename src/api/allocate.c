@@ -628,9 +628,9 @@ char *slurm_read_hostfile(char *filename, int n)
 			    (i = atoi(asterisk + 1))) {
 				asterisk[0] = '\0';
 				for (j = 0; j < i; j++)
-					hostlist_push(hostlist, host_name);
+					hostlist_push_host(hostlist, host_name);
 			} else {
-				hostlist_push(hostlist, host_name);
+				hostlist_push_host(hostlist, host_name);
 			}
 			host_name = strtok_r(NULL, ",", &save_ptr);
 		}

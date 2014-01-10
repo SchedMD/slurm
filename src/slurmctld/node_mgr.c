@@ -2739,7 +2739,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 #ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
-		hostlist_push(kill_agent_args->hostlist, front_end_ptr->name);
+		hostlist_push_host(kill_agent_args->hostlist, front_end_ptr->name);
 		kill_agent_args->node_count++;
 	}
 #else
@@ -2749,7 +2749,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
 			continue;
-		hostlist_push(kill_agent_args->hostlist, node_ptr->name);
+		hostlist_push_host(kill_agent_args->hostlist, node_ptr->name);
 		kill_agent_args->node_count++;
 	}
 #endif

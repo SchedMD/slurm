@@ -195,7 +195,7 @@ static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 			if (rc == 0) {
 				uniq_node_ptr = node_ptr;
 				if (hl) {
-					hostlist_push(hl, node_ptr->name);
+					hostlist_push_host(hl, node_ptr->name);
 				} else {
 					hl = hostlist_create(node_ptr->name);
 					if (!hl) {

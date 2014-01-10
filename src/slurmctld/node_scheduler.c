@@ -554,7 +554,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			}
 		}
 
-		hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+		hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 		agent_args->node_count++;
 	}
 #else
@@ -583,7 +583,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);
 
-		hostlist_push(agent_args->hostlist, node_ptr->name);
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 #endif
@@ -2645,9 +2645,9 @@ extern void re_kill_job(struct job_record *job_ptr)
 				}
 			}
 		} else if (!IS_NODE_NO_RESPOND(front_end_ptr)) {
-			(void) hostlist_push_host(kill_hostlist,
+			(void) hostlist_push_host_host(kill_hostlist,
 						  job_ptr->batch_host);
-			hostlist_push(agent_args->hostlist,
+			hostlist_push_host(agent_args->hostlist,
 				      job_ptr->batch_host);
 			agent_args->node_count++;
 		}
@@ -2674,7 +2674,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			}
 		} else if (!IS_NODE_NO_RESPOND(node_ptr)) {
 			(void)hostlist_push_host(kill_hostlist, node_ptr->name);
-			hostlist_push(agent_args->hostlist, node_ptr->name);
+			hostlist_push_host(agent_args->hostlist, node_ptr->name);
 			agent_args->node_count++;
 		}
 	}

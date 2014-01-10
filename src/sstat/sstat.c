@@ -156,7 +156,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 			print_fields(&step);
 			xfree(step.pid_str);
 		} else {
-			hostlist_push(hl, step_stat->step_pids->node_name);
+			hostlist_push_host(hl, step_stat->step_pids->node_name);
 			ntasks += step_stat->num_tasks;
 			if (step_stat->jobacct) {
 				jobacctinfo_2_stats(&temp_stats,

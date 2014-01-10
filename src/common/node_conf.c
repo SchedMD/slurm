@@ -506,7 +506,7 @@ char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort)
 	for (i = first; i <= last; i++) {
 		if (bit_test(bitmap, i) == 0)
 			continue;
-		hostlist_push(hl, node_record_table_ptr[i].name);
+		hostlist_push_host(hl, node_record_table_ptr[i].name);
 	}
 	if (sort)
 		hostlist_sort(hl);

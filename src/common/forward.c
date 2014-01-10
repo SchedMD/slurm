@@ -527,7 +527,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 			name = hostlist_shift(hl);
 			if (!name)
 				break;
-			hostlist_push(forward_hl, name);
+			hostlist_push_host(forward_hl, name);
 			free(name);
 		}
 
@@ -617,7 +617,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 			name = hostlist_shift(hl);
 			if (!name)
 				break;
-			hostlist_push(fwd_tree->tree_hl, name);
+			hostlist_push_host(fwd_tree->tree_hl, name);
 			free(name);
 		}
 

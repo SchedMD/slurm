@@ -2515,7 +2515,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	while ((ba_node[count] = list_next(itr))) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("name = %s", ba_node[count]->coord_str);
-		hostlist_push(hostlist, ba_node[count]->coord_str);
+		hostlist_push_host(hostlist, ba_node[count]->coord_str);
 		count++;
 	}
 	list_iterator_destroy(itr);

@@ -748,13 +748,13 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 			continue;
 
 		if (ctx->step_resp->step_layout->front_end) {
-			hostlist_push(hl,
+			hostlist_push_host(hl,
 				      ctx->step_resp->step_layout->front_end);
 			break;
 		} else {
 			name = nodelist_nth_host(sls->layout->node_list,
 						 node_id);
-			hostlist_push(hl, name);
+			hostlist_push_host(hl, name);
 			free(name);
 		}
 	}
@@ -1661,7 +1661,7 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 
 	for (i=0; i<msg->tasks_to_launch[nodeid]; i++) {
 		sprintf(tmp_str, "%u", msg->global_task_ids[nodeid][i]);
-		hostlist_push(hl, tmp_str);
+		hostlist_push_host(hl, tmp_str);
 	}
 	task_list = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);

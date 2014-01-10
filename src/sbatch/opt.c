@@ -1894,7 +1894,7 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 			_get_next_pbs_node_part(node_opts, &i);
 		} else if (isalpha(node_opts[i])) {
 			temp = _get_pbs_node_name(node_opts, &i);
-			hostlist_push(hl, temp);
+			hostlist_push_host(hl, temp);
 			xfree(temp);
 		} else
 			i++;

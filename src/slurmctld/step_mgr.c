@@ -133,7 +133,7 @@ static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
 	return rem_cpus;
 }
 
-/* Select the optimal node count for a job step based upon it's min and 
+/* Select the optimal node count for a job step based upon it's min and
  * max target, available resources, and nodes already picked */
 static int _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 			 int nodes_avail, int nodes_picked_cnt)
@@ -534,13 +534,13 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 
 #ifdef HAVE_FRONT_END
 	xassert(step_ptr->job_ptr->batch_host);
-	hostlist_push(agent_args->hostlist, step_ptr->job_ptr->batch_host);
+	hostlist_push_host(agent_args->hostlist, step_ptr->job_ptr->batch_host);
 	agent_args->node_count = 1;
 #else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
-		hostlist_push(agent_args->hostlist,
+		hostlist_push_host(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
 	}
@@ -1442,7 +1442,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 			goto cleanup;
 		}
-	} 
+	}
 	if (step_spec->cpu_count) {
 		/* make sure the selected nodes have enough cpus */
 		cpus_picked_cnt = _count_cpus(job_ptr, nodes_picked,
@@ -3063,7 +3063,7 @@ static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 		node_inx++;
 		if ((node_inx >= range_first)
 		&&  (node_inx <= range_last)) {
-			hostlist_push(hl,
+			hostlist_push_host(hl,
 				node_record_table_ptr[i].name);
 		}
 	}
@@ -3672,13 +3672,13 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
-	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count++;
 #else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
-		hostlist_push(agent_args->hostlist,
+		hostlist_push_host(agent_args->hostlist,
 			node_record_table_ptr[i].name);
 		agent_args->node_count++;
 	}

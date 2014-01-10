@@ -263,7 +263,7 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 		       step_ptr->step_node_bitmap);
 		port_array[i] += port_resv_min;
 		snprintf(port_str, sizeof(port_str), "[%d]", port_array[i]);
-		hostlist_push(hl, port_str);
+		hostlist_push_host(hl, port_str);
 	}
 	hostlist_sort(hl);
 	step_ptr->resv_ports = hostlist_ranged_string_xmalloc(hl);

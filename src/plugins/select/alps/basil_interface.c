@@ -193,7 +193,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		}
 
 		sprintf(tmp, "nid%05u", node->node_id);
-		hostlist_push(hl, tmp);
+		hostlist_push_host(hl, tmp);
 	}
 	free_inv(inv);
 	if (bad_node) {

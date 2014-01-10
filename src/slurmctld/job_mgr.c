@@ -6192,7 +6192,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	} else {
 		/* Job ID not found. It could reference a job array. */
 		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = (struct job_record *) 
+		while ((job_ptr = (struct job_record *)
 				  list_next(job_iterator))) {
 			if ((job_ptr->job_id != job_id) &&
 			    ((job_ptr->array_task_id ==  NO_VAL) ||
@@ -9048,7 +9048,7 @@ static void _send_job_kill(struct job_record *job_ptr)
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
 	    (front_end_ptr = job_ptr->front_end_ptr)) {
-		hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+		hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 		agent_args->node_count++;
 	}
 #else
@@ -9058,7 +9058,7 @@ static void _send_job_kill(struct job_record *job_ptr)
 	     i < node_record_count; i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap_cg, i))
 			continue;
-		hostlist_push(agent_args->hostlist, node_ptr->name);
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 #endif
@@ -9626,13 +9626,13 @@ _xmit_new_end_time(struct job_record *job_ptr)
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
-	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count  = 1;
 #else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		hostlist_push(agent_args->hostlist,
+		hostlist_push_host(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
 	}
@@ -10071,13 +10071,13 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
-	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count = 1;
 #else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		hostlist_push(agent_args->hostlist,
+		hostlist_push_host(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
 	}
@@ -10142,14 +10142,14 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
-	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count = 1;
 #else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		hostlist_push(agent_args->hostlist,
-			      node_record_table_ptr[i].name);
+		hostlist_push_host(agent_args->hostlist,
+						   node_record_table_ptr[i].name);
 		agent_args->node_count++;
 	}
 #endif

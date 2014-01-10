@@ -1594,7 +1594,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 	sview_part_sub->mem_total  += node_ptr->real_memory;
 	sview_part_sub->node_cnt   += node_scaling;
 	list_append(sview_part_sub->node_ptr_list, node_ptr);
-	hostlist_push(sview_part_sub->hl, node_ptr->name);
+	hostlist_push_host(sview_part_sub->hl, node_ptr->name);
 }
 
 /*

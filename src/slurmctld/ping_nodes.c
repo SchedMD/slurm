@@ -218,7 +218,7 @@ void ping_nodes (void)
 		 * can generate a flood of incoming RPCs. */
 		if (IS_NODE_UNKNOWN(front_end_ptr) || restart_flag ||
 		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
-			hostlist_push(reg_agent_args->hostlist,
+			hostlist_push_host(reg_agent_args->hostlist,
 				      front_end_ptr->name);
 			reg_agent_args->node_count++;
 			continue;
@@ -234,7 +234,7 @@ void ping_nodes (void)
 		    IS_NODE_DOWN(front_end_ptr))
 			continue;
 
-		hostlist_push(ping_agent_args->hostlist, front_end_ptr->name);
+		hostlist_push_host(ping_agent_args->hostlist, front_end_ptr->name);
 		ping_agent_args->node_count++;
 	}
 #else
@@ -283,7 +283,7 @@ void ping_nodes (void)
 		 * can generate a flood of incoming RPCs. */
 		if (IS_NODE_UNKNOWN(node_ptr) || restart_flag ||
 		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
-			hostlist_push(reg_agent_args->hostlist,
+			hostlist_push_host(reg_agent_args->hostlist,
 				      node_ptr->name);
 			reg_agent_args->node_count++;
 			continue;
@@ -298,7 +298,7 @@ void ping_nodes (void)
 		if (IS_NODE_NO_RESPOND(node_ptr) && IS_NODE_DOWN(node_ptr))
 			continue;
 
-		hostlist_push(ping_agent_args->hostlist, node_ptr->name);
+		hostlist_push_host(ping_agent_args->hostlist, node_ptr->name);
 		ping_agent_args->node_count++;
 	}
 #endif
@@ -362,7 +362,7 @@ extern void run_health_check(void)
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
-		hostlist_push(check_agent_args->hostlist, front_end_ptr->name);
+		hostlist_push_host(check_agent_args->hostlist, front_end_ptr->name);
 		check_agent_args->node_count++;
 	}
 #else
@@ -403,7 +403,7 @@ extern void run_health_check(void)
 			}
 		}
 
-		hostlist_push(check_agent_args->hostlist, node_ptr->name);
+		hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
 		check_agent_args->node_count++;
 	}
 #endif
@@ -444,7 +444,7 @@ extern void update_nodes_acct_gather_data(void)
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
-		hostlist_push(agent_args->hostlist, front_end_ptr->name);
+		hostlist_push_host(agent_args->hostlist, front_end_ptr->name);
 		agent_args->node_count++;
 	}
 #else
@@ -453,7 +453,7 @@ extern void update_nodes_acct_gather_data(void)
 		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr))
 			continue;
-		hostlist_push(agent_args->hostlist, node_ptr->name);
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 #endif

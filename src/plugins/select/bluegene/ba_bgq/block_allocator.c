@@ -1777,7 +1777,7 @@ static char *_copy_from_main(List main_mps, List ret_list)
 				     "mp %s is used", new_mp->coord_str);
 			new_mp->used = BA_MP_USED_TRUE;
 			if (hostlist)
-				hostlist_push(hostlist, new_mp->coord_str);
+				hostlist_push_host(hostlist, new_mp->coord_str);
 			else
 				hostlist = hostlist_create(new_mp->coord_str);
 		}
@@ -1843,7 +1843,7 @@ static char *_reset_altered_mps(List main_mps, bool get_name)
 				     ba_mp->used);
 			if (get_name) {
 				if (hostlist)
-					hostlist_push(hostlist,
+					hostlist_push_host(hostlist,
 						      ba_mp->coord_str);
 				else
 					hostlist = hostlist_create(

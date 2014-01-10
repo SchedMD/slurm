@@ -445,12 +445,12 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			name = hostlist_shift(agent_arg_ptr->hostlist);
 			if (!name)
 				break;
-			hostlist_push(hl, name);
+			hostlist_push_host(hl, name);
 			free(name);
 			i++;
 		}
 		hostlist_uniq(hl);
-		thread_ptr[thr_count].nodelist = 
+		thread_ptr[thr_count].nodelist =
 			hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 #if 0
@@ -1061,7 +1061,7 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 		      ret_data_info->node_name, count);
 
 		if (agent_arg_ptr) {
-			hostlist_push(agent_arg_ptr->hostlist,
+			hostlist_push_host(agent_arg_ptr->hostlist,
 				      ret_data_info->node_name);
 
 			if ((++(*spot)) == count) {
@@ -1106,7 +1106,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 			debug("got the name %s to resend",
 			      thread_ptr[i].nodelist);
-			hostlist_push(agent_arg_ptr->hostlist,
+			hostlist_push_host(agent_arg_ptr->hostlist,
 				      thread_ptr[i].nodelist);
 
 			if ((++j) == count)

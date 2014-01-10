@@ -159,11 +159,11 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 				name = hostlist_shift(hl);
 				if (!name)
 					break;
-				hostlist_push(new_hl, name);
+				hostlist_push_host(new_hl, name);
 				free(name);
 				i++;
 			}
-			thread_info[threads_used].nodelist = 
+			thread_info[threads_used].nodelist =
 				hostlist_ranged_string_xmalloc(new_hl);
 			hostlist_destroy(new_hl);
 			slurm_msg_t_init(&thread_info[threads_used].msg);

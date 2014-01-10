@@ -1308,7 +1308,7 @@ static void _queue_reboot_msg(void)
 			reboot_agent_args->retry = 0;
 			reboot_agent_args->hostlist = hostlist_create("");
 		}
-		hostlist_push(reboot_agent_args->hostlist, node_ptr->name);
+		hostlist_push_host(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;
 		node_ptr->node_state = NODE_STATE_FUTURE |
 				(node_ptr->node_state & NODE_STATE_FLAGS);

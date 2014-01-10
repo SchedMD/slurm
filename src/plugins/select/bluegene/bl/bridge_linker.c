@@ -1234,7 +1234,7 @@ static bg_record_t *_translate_object_to_block(rm_partition_t *block_ptr,
 			 ba_mp->coord_str);
 
 
-		hostlist_push(hostlist, node_name_tmp);
+		hostlist_push_host(hostlist, node_name_tmp);
 	}
 	bg_record->mp_str = hostlist_ranged_string_xmalloc(hostlist);
 	hostlist_destroy(hostlist);

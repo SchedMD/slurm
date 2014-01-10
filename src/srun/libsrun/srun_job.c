@@ -276,7 +276,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				xfree(buf);
 				while ((node_name = hostlist_shift(tmp_hl)) &&
 				       (i < diff)) {
-					hostlist_push(inc_hl, node_name);
+					hostlist_push_host(inc_hl, node_name);
 					i++;
 				}
 				hostlist_destroy(tmp_hl);
