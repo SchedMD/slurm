@@ -490,7 +490,7 @@ again:
 		}
 	}
 	if (n < client->out_remaining) {
-		error("Only wrote %d of %d bytes to socket", 
+		error("Only wrote %d of %d bytes to socket",
 		      n, client->out_remaining);
 	} else
 		debug5("Wrote %d bytes to socket", n);
@@ -1769,17 +1769,8 @@ _send_eof_msg(struct task_read_info *out)
 		debug5("======================== Enqueued eof message");
 		xassert(client->magic == CLIENT_IO_MAGIC);
 
-		/* Some clients only take certain I/O streams */
-		if (out->type==SLURM_IO_STDOUT) {
-			if (client->ltaskid_stdout != -1 &&
-			    client->ltaskid_stdout != out->ltaskid)
-				continue;
-		}
-		if (out->type==SLURM_IO_STDERR) {
-			if (client->ltaskid_stderr != -1 &&
-			    client->ltaskid_stderr != out->ltaskid)
-				continue;
-		}
+		/* Send eof message to all clients.
+		 */
 
 		if (list_enqueue(client->msg_queue, msg))
 			msg->ref_count++;
