@@ -552,24 +552,22 @@ static bool _valid_prog(char *file_name)
 	struct stat buf;
 
 	if (file_name[0] != '/') {
-		debug("power_save program %s not absolute pathname",
-		     file_name);
+		error("power_save program %s not absolute pathname", file_name);
 		return false;
 	}
 
 	if (access(file_name, X_OK) != 0) {
-		debug("power_save program %s not executable", file_name);
+		error("power_save program %s not executable", file_name);
 		return false;
 	}
 
 	if (stat(file_name, &buf)) {
-		debug("power_save program %s not found", file_name);
+		error("power_save program %s not found", file_name);
 		return false;
 	}
 	if (buf.st_mode & 022) {
-		debug("power_save program %s has group or "
-		      "world write permission",
-		      file_name);
+		error("power_save program %s has group or "
+		      "world write permission", file_name);
 		return false;
 	}
 
