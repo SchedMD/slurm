@@ -2645,7 +2645,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 				}
 			}
 		} else if (!IS_NODE_NO_RESPOND(front_end_ptr)) {
-			(void) hostlist_push_host_host(kill_hostlist,
+			(void) hostlist_push_host(kill_hostlist,
 						  job_ptr->batch_host);
 			hostlist_push_host(agent_args->hostlist,
 				      job_ptr->batch_host);
