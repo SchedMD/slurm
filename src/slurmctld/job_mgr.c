@@ -4438,7 +4438,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		else
 			job_ptr->state_reason = WAIT_HELD;
 	} else if (job_ptr->priority != NO_VAL) {
-		job_ptr->direct_set_prio = true;
+		job_ptr->direct_set_prio = 1;
 	}
 
 	error_code = update_job_dependency(job_ptr, job_desc->dependency);
