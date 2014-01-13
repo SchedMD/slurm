@@ -1429,7 +1429,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		goto unpack_error;
 	}
 
-	if (priority > 1) {
+	if ((priority > 1) && (direct_set_prio == 0)) {
 		highest_prio = MAX(highest_prio, priority);
 		lowest_prio  = MIN(lowest_prio,  priority);
 	}
@@ -6824,7 +6824,7 @@ extern void sync_job_priorities(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->priority)
+		if ((job_ptr->priority) && (job_ptr->direct_set_prio == 0))
 			job_ptr->priority += prio_boost;
 	}
 	list_iterator_destroy(job_iterator);
