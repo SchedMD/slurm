@@ -1445,7 +1445,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		goto unpack_error;
 	}
 
-	if (priority > 1) {
+	if ((priority > 1) && (direct_set_prio == 0)) {
 		highest_prio = MAX(highest_prio, priority);
 		lowest_prio  = MIN(lowest_prio,  priority);
 	}
@@ -4652,7 +4652,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		else
 			job_ptr->state_reason = WAIT_HELD;
 	} else if (job_ptr->priority != NO_VAL) {
-		job_ptr->direct_set_prio = true;
+		job_ptr->direct_set_prio = 1;
 	}
 
 	error_code = update_job_dependency(job_ptr, job_desc->dependency);
@@ -7252,7 +7252,7 @@ extern void sync_job_priorities(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->priority)
+		if ((job_ptr->priority) && (job_ptr->direct_set_prio == 0))
 			job_ptr->priority += prio_boost;
 	}
 	list_iterator_destroy(job_iterator);
