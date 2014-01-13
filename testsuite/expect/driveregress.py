@@ -511,8 +511,9 @@ def send_result(htab):
 def set_environ(htab):
 
     os.environ['PATH'] = '/bin:/usr/bin:%s' % (htab['bindir'])
-    logger.info( 'PATH-> %s' % (os.environ['PATH']))
-
+    logger.info('PATH-> %s' % (os.environ['PATH']))
+    os.environ['LD_LIBRARY_PATH'] = '/usr/local/openmpi/lib'
+    logger.info('LD_LIBRARY_PATH-> %s' % (os.environ['LD_LIBRARY_PATH']))
 
 # Da main of da driver
 def main():
