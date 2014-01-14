@@ -155,10 +155,8 @@ test1.50   Test of running non-existent job, confirm timely termination.
 test1.51   Test propagation of umask to spawned tasks.
 test1.52   Test of hostfile logic.
 test1.53   Test of --signal option.
-test1.54   Test of running different executables with different arguments
-	   for each task (--multi-prog option).
-test1.55   Make certain that srun behaves when its controlling terminal
-	   disappears.
+test1.54   Test of MPMD (--multi-prog option).
+test1.55   Verify srun behaves when its controlling terminal disappears.
 test1.56   Test buffered standard IO with really long lines
 test1.57   Test of srun --jobid for a new job allocation (used by Moab)
 test1.58   Test of srun --jobid for an existing job allocation
