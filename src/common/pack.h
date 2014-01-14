@@ -325,21 +325,18 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define unpack_bit_str(bitmap,buf) do {	\
-	assert(bitmap != NULL);                         \
+	char *tmp_str = NULL;				\
+	uint32_t _size = NO_VAL;			\
 	assert(*bitmap == NULL);                        \
 	assert(buf->magic == BUF_MAGIC);		\
-	if (bitmap) {					\
-		char *tmp_str = NULL;      		\
-		uint32_t _size = NO_VAL;		\
-		safe_unpack32(&_size, buf);             \
-		if(_size != NO_VAL) {                   \
-			*bitmap = bit_alloc(_size);	\
-			safe_unpackstr_xmalloc(&tmp_str, &_size, buf); \
-			bit_unfmt(*bitmap, tmp_str);    \
-			xfree(tmp_str);			\
-		} else					\
-			*bitmap = NULL;                 \
-	}                                               \
+	safe_unpack32(&_size, buf);			\
+	if (_size != NO_VAL) {				\
+		*bitmap = bit_alloc(_size);			       \
+		safe_unpackstr_xmalloc(&tmp_str, &_size, buf);	       \
+		bit_unfmt(*bitmap, tmp_str);			       \
+		xfree(tmp_str);					       \
+	} else							       \
+		*bitmap = NULL;					       \
 } while (0)
 
 #define unpackstr_ptr		                        \
