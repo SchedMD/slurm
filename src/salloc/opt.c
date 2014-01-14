@@ -1562,6 +1562,11 @@ static bool _opt_verify(void)
 #ifdef HAVE_AIX
 	if (opt.network == NULL)
 		opt.network = "us,sn_all,bulk_xfer";
+#elseif HAVE_NATIVE_CRAY
+	if (opt.network && opt.shared)
+		fatal("Requesting network performance counters requires "
+		      "exclusive access.  Please add the --exclusive option "
+		      "to your request.");
 #endif
 
 	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
@@ -1976,6 +1981,12 @@ static void _help(void)
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
 "AIX related options:\n"
 "      --network=type          communication protocol to be used\n"
+"\n"
+#endif
+#ifdef HAVE_NATIVE_CRAY			/* Native Cray specific options */
+"Cray related options:\n"
+"      --network=type          Use network performace counters\n"
+"                              (system, network, or processor)\n"
 "\n"
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */

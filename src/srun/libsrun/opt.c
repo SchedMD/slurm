@@ -1650,6 +1650,14 @@ static void _opt_args(int argc, char **argv)
 		opt.network = "us,sn_all,bulk_xfer";
 		setenv("SLURM_NETWORK", opt.network, 1);
 	}
+#elseif HAVE_NATIVE_CRAY
+	/* only fatal on the allocation */
+	if (opt.network && opt.shared && (opt.jobid == NO_VAL))
+		fatal("Requesting network performance counters requires "
+		      "exclusive access.  Please add the --exclusive option "
+		      "to your request.");
+	if (opt.network)
+		setenv("SLURM_NETWORK", opt.network, 1);
 #endif
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
@@ -2597,6 +2605,12 @@ static void _help(void)
 #if defined HAVE_AIX || defined HAVE_LIBNRT /* IBM PE specific options */
 "PE related options:\n"
 "      --network=type          communication protocol to be used\n"
+"\n"
+#endif
+#ifdef HAVE_NATIVE_CRAY			/* Native Cray specific options */
+"Cray related options:\n"
+"      --network=type          Use network performace counters\n"
+"                              (system, network, or processor)\n"
 "\n"
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */
