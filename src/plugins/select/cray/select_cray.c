@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  select_cray.c - node selection plugin for cray systems.
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC
+ *  Copyright (C) 2013-2014 SchedMD LLC
  *  Copyright 2013 Cray Inc. All Rights Reserved.
  *  Written by Danny Auble <da@schedmd.com>
  *
@@ -56,13 +56,16 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
+#include "src/common/pack.h"
 #include "src/slurmctld/locks.h"
 #include "other_select.h"
 
 #ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_sn.h"
+#include <rca_lib.h>
 #endif
 
 /**
@@ -71,8 +74,10 @@
  * @other_jobinfo:	hook into attached, "other" node selection plugin.
  */
 struct select_jobinfo {
+	bitstr_t               *blade_map;
 	uint16_t                cleaning;
 	uint16_t		magic;
+	uint8_t                 npc;
 	select_jobinfo_t	*other_jobinfo;
 };
 #define JOBINFO_MAGIC 0x86ad
@@ -83,7 +88,9 @@ struct select_jobinfo {
  * @other_nodeinfo:	hook into attached, "other" node selection plugin.
  */
 struct select_nodeinfo {
+	uint32_t                blade_id;
 	uint16_t		magic;
+	uint32_t                nid;
 	select_nodeinfo_t	*other_nodeinfo;
 };
 
@@ -96,12 +103,34 @@ typedef struct {
 	uint32_t user_id;
 } nhc_info_t;
 
+typedef struct {
+	uint64_t id;
+	uint32_t job_cnt;
+	bitstr_t *node_bitmap;
+} blade_info_t;
+
+typedef enum {
+	NPC_NONE, // Don't use network performance counters.
+	NPC_SYS, // Use the system-wide network performance counters.
+	NPC_NET, // Use the network tiles counters
+	NPC_PROC, // Use the processor tiles counters
+} npc_type_t;
+
 #define NODEINFO_MAGIC 0x85ad
 #define MAX_PTHREAD_RETRIES  1
 
 /* Change CRAY_STATE_VERSION value when changing the state save
  * format i.e. state_safe() */
 #define CRAY_STATE_VERSION      "VER001"
+
+#define GET_BLADE_SLOT(_X) \
+	(int16_t)(_X & 0x000000000000ffff)
+#define GET_BLADE_CAGE(_X) \
+	(int16_t)((_X & 0x00000000ffff0000) >> 16)
+#define GET_BLADE_ROW(_X) \
+	(int16_t)((_X & 0x0000ffff00000000) >> 32)
+#define GET_BLADE_X(_X) \
+	(int16_t)((_X & 0xffff000000000000) >> 48)
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -111,13 +140,25 @@ typedef struct {
 slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
+struct node_record *node_record_table_ptr __attribute__((weak_import));
+int node_record_count __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 int bg_recover = NOT_FROM_CONTROLLER;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
+struct node_record *node_record_table_ptr;
+int node_record_count;
 #endif
 
+static blade_info_t *blade_array = NULL;
+static bitstr_t *blades_running_jobs = NULL;
+static bitstr_t *blades_running_npc = NULL;
+static uint32_t blade_cnt = 0;
+static pthread_mutex_t blade_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 #ifdef HAVE_NATIVE_CRAY
+
+
 /* Used for aeld communication */
 alpsc_ev_app_t *app_list = NULL;	// List of running/suspended apps
 int32_t app_list_size = 0;		// Number of running/suspended apps
@@ -674,6 +715,117 @@ static void _update_app(struct job_record *job_ptr,
 }
 #endif
 
+static void _remove_job_from_blades(select_jobinfo_t *jobinfo)
+{
+	int i;
+
+	slurm_mutex_lock(&blade_mutex);
+	for (i=0; i<blade_cnt; i++) {
+		if (!bit_test(jobinfo->blade_map, i))
+			continue;
+		blade_array[i].job_cnt--;
+		if ((int32_t)blade_array[i].job_cnt < 0) {
+			error("blade %d job_cnt underflow", i);
+			blade_array[i].job_cnt = 0;
+		}
+
+		if (jobinfo->npc) {
+			bit_not(blades_running_npc);
+			bit_or(blades_running_npc,
+			       blade_array[i].node_bitmap);
+			bit_not(blades_running_npc);
+		}
+
+		if (!blade_array[i].job_cnt) {
+			bit_not(blades_running_jobs);
+			bit_or(blades_running_jobs,
+			       blade_array[i].node_bitmap);
+			bit_not(blades_running_jobs);
+		}
+	}
+	slurm_mutex_unlock(&blade_mutex);
+}
+
+static void _free_blade(blade_info_t *blade_info)
+{
+	FREE_NULL_BITMAP(blade_info->node_bitmap);
+}
+
+static void _pack_blade(blade_info_t *blade_info, Buf buffer,
+			uint16_t protocol_version)
+{
+	pack64(blade_info->id, buffer);
+	pack32(blade_info->job_cnt, buffer);
+	pack_bit_str(blade_info->node_bitmap, buffer);
+}
+
+static int _unpack_blade(blade_info_t *blade_info, Buf buffer,
+			 uint16_t protocol_version)
+{
+	safe_unpack64(&blade_info->id, buffer);
+	safe_unpack32(&blade_info->job_cnt, buffer);
+	unpack_bit_str(&blade_info->node_bitmap, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("Problem unpacking blade info");
+	return SLURM_ERROR;
+
+}
+
+/* job_write and blade_mutex must be locked before calling */
+static void _set_job_running(struct job_record *job_ptr)
+{
+	int i;
+	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+	select_nodeinfo_t *nodeinfo;
+
+	for (i=0; i<node_record_count; i++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+
+		nodeinfo = node_record_table_ptr[i].select_nodeinfo->data;
+		if (!bit_test(jobinfo->blade_map, nodeinfo->blade_id)) {
+			bit_set(jobinfo->blade_map,
+				nodeinfo->blade_id);
+			if (!blade_array[nodeinfo->blade_id].job_cnt)
+				bit_or(blades_running_jobs,
+				       blade_array[nodeinfo->blade_id].
+				       node_bitmap);
+
+			blade_array[nodeinfo->blade_id].job_cnt++;
+
+			if (jobinfo->npc)
+				bit_or(blades_running_npc,
+				       blade_array[nodeinfo->blade_id].
+				       node_bitmap);
+		}
+	}
+}
+
+/* job_write and blade_mutex must be locked before calling */
+static void _set_job_running_restore(select_jobinfo_t *jobinfo)
+{
+	int i;
+
+	xassert(jobinfo);
+	xassert(jobinfo->blade_map);
+
+	for (i=0; i<blade_cnt; i++) {
+		if (!bit_test(jobinfo->blade_map, i))
+			continue;
+
+		if (!blade_array[i].job_cnt)
+			bit_or(blades_running_jobs, blade_array[i].node_bitmap);
+
+		blade_array[i].job_cnt++;
+
+		if (jobinfo->npc)
+			bit_or(blades_running_npc, blade_array[i].node_bitmap);
+	}
+}
+
 static void *_job_fini(void *args)
 {
 	struct job_record *job_ptr = (struct job_record *)args;
@@ -708,9 +860,12 @@ static void *_job_fini(void *args)
 	lock_slurmctld(job_write_lock);
 	if (job_ptr->magic == JOB_MAGIC) {
 		select_jobinfo_t *jobinfo = NULL;
+
 		other_job_fini(job_ptr);
 
 		jobinfo = job_ptr->select_jobinfo->data;
+
+		_remove_job_from_blades(jobinfo);
 		jobinfo->cleaning = 0;
 	} else
 		error("_job_fini: job %u had a bad magic, "
@@ -809,9 +964,13 @@ static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 				 uint16_t protocol_version)
 {
 	if (!jobinfo) {
+		pack_bit_str(NULL, buffer);
 		pack16(0, buffer);
+		pack8(0, buffer);
 	} else {
+		pack_bit_str(jobinfo->blade_map, buffer);
 		pack16(jobinfo->cleaning, buffer);
+		pack8(jobinfo->npc, buffer);
 	}
 }
 
@@ -824,7 +983,9 @@ static int _select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 
 	jobinfo->magic = JOBINFO_MAGIC;
 
+	unpack_bit_str(&jobinfo->blade_map, buffer);
 	safe_unpack16(&jobinfo->cleaning, buffer);
+	safe_unpack8(&jobinfo->npc, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -864,6 +1025,19 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	int i;
+
+	slurm_mutex_lock(&blade_mutex);
+
+	FREE_NULL_BITMAP(blades_running_jobs);
+	FREE_NULL_BITMAP(blades_running_npc);
+
+	for (i=0; i<blade_cnt; i++)
+		_free_blade(&blade_array[i]);
+	xfree(blade_array);
+
+	slurm_mutex_unlock(&blade_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -874,36 +1048,265 @@ extern int fini ( void )
 
 extern int select_p_state_save(char *dir_name)
 {
+	int error_code = 0, log_fd, i;
+	char *old_file, *new_file, *reg_file;
+	Buf buffer = init_buf(BUF_SIZE);
+
+	DEF_TIMERS;
+
+	debug("cray: select_p_state_save");
+	START_TIMER;
+	/* write header: time */
+	packstr(CRAY_STATE_VERSION, buffer);
+
+	slurm_mutex_lock(&blade_mutex);
+
+	pack32(blade_cnt, buffer);
+
+	/* write blade records to buffer */
+	for (i=0; i<blade_cnt; i++)
+		_pack_blade(&blade_array[i], buffer, SLURM_PROTOCOL_VERSION);
+
+	slurm_mutex_unlock(&blade_mutex);
+
+	/* write the buffer to file */
+	slurm_conf_lock();
+	old_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(old_file, "/blade_state.old");
+	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(reg_file, "/blade_state");
+	new_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(new_file, "/blade_state.new");
+	slurm_conf_unlock();
+
+	log_fd = creat(new_file, 0600);
+	if (log_fd < 0) {
+		error("Can't save state, error creating file %s, %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		if (link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+
+	free_buf(buffer);
+	END_TIMER2("select_p_state_save");
+
 	return other_state_save(dir_name);
 }
 
 extern int select_p_state_restore(char *dir_name)
 {
+	int state_fd, i;
+	char *state_file = NULL;
+	Buf buffer = NULL;
+	char *data = NULL;
+	int data_size = 0;
+	int data_allocated, data_read = 0;
+	char *ver_str = NULL;
+	uint32_t ver_str_len;
+	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint32_t record_count;
+
+	debug("cray: select_p_state_restore");
+
+	static time_t last_config_update = (time_t) 0;
+
+	/* only run on startup */
+	if (last_config_update)
+		return SLURM_SUCCESS;
+
+	last_config_update = time(NULL);
+
+	state_file = xstrdup(dir_name);
+	xstrcat(state_file, "/blade_state");
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("No blade state file (%s) to recover", state_file);
+		xfree(state_file);
+		return SLURM_SUCCESS;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m",
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+
+	buffer = create_buf(data, data_size);
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	debug3("Version string in blade_state header is %s", ver_str);
+	if (ver_str) {
+		if (!strcmp(ver_str, CRAY_STATE_VERSION)) {
+			protocol_version = SLURM_PROTOCOL_VERSION;
+		}
+	}
+
+	if (protocol_version == (uint16_t)NO_VAL) {
+		error("***********************************************");
+		error("Can not recover blade state, "
+		      "data version incompatible");
+		error("***********************************************");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
+
+	slurm_mutex_lock(&blade_mutex);
+
+	safe_unpack32(&record_count, buffer);
+
+	if (record_count != blade_cnt)
+		error("For some reason we have a different blade_cnt than we "
+		      "did before, this may cause issue.  Got %u expecting %u.",
+		      record_count, blade_cnt);
+
+	for (i=0; i<record_count; i++) {
+		blade_info_t blade_info;
+
+		memset(&blade_info, 0, sizeof(blade_info_t));
+
+		if (_unpack_blade(&blade_info, buffer, protocol_version))
+			goto unpack_error;
+		if (blade_info.id == blade_array[i].id) {
+			//blade_array[i].job_cnt = blade_info.job_cnt;
+			if (!bit_equal(blade_array[i].node_bitmap,
+				       blade_info.node_bitmap))
+				error("Blade %"PRIu64"(%d %d %d %d) "
+				      "has changed it's nodes!  "
+				      "Unexpected results could "
+				      "happen if jobs are running!",
+				      blade_info.id,
+				      GET_BLADE_X(blade_info.id),
+				      GET_BLADE_ROW(blade_info.id),
+				      GET_BLADE_CAGE(blade_info.id),
+				      GET_BLADE_SLOT(blade_info.id));
+		} else {
+			int j;
+			for (j=0; j<blade_cnt; j++) {
+				if (blade_info.id == blade_array[j].id) {
+					/* blade_array[j].job_cnt = */
+					/* 	blade_info.job_cnt; */
+					if (!bit_equal(blade_array[j].
+						       node_bitmap,
+						       blade_info.node_bitmap))
+						error("Blade %"PRIu64"(%d "
+						      "%d %d %d) "
+						      "has changed it's "
+						      "nodes!  "
+						      "Unexpected results "
+						      "could "
+						      "happen if jobs are "
+						      "running!",
+						      blade_info.id,
+						      GET_BLADE_X(
+							      blade_info.id),
+						      GET_BLADE_ROW(
+							      blade_info.id),
+						      GET_BLADE_CAGE(
+							      blade_info.id),
+						      GET_BLADE_SLOT(
+							      blade_info.id));
+					break;
+				}
+			}
+			error("Blade %"PRIu64"(%d %d %d %d) "
+			      "is no longer at location %d, but at %d!  "
+			      "Unexpected results could "
+			      "happen if jobs are running!",
+			      blade_info.id,
+			      GET_BLADE_X(blade_info.id),
+			      GET_BLADE_ROW(blade_info.id),
+			      GET_BLADE_CAGE(blade_info.id),
+			      GET_BLADE_SLOT(blade_info.id),
+			      i, j);
+		}
+		_free_blade(&blade_info);
+	}
+	slurm_mutex_unlock(&blade_mutex);
+
 	return other_state_restore(dir_name);
+
+unpack_error:
+	slurm_mutex_unlock(&blade_mutex);
+
+	error("Incomplete blade data checkpoint file, you may get "
+	      "unexpected issues if jobs were running.");
+	free_buf(buffer);
+	/* Since this is more of a sanity check continue without FAILURE. */
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_job_init(List job_list)
 {
 	static bool run_already = false;
 
-	/* Execute only on initial startup. We don't support bgblock
-	 * creation on demand today, so there is no need to re-sync data. */
+	/* Execute only on initial startup. */
 	if (run_already)
 		return other_job_init(job_list);
 
 	run_already = true;
 
-	if (!(slurmctld_conf.select_type_param & CR_NHC_NO)
-	    && job_list && list_count(job_list)) {
+	slurm_mutex_lock(&blade_mutex);
+	if (job_list && list_count(job_list)) {
 		ListIterator itr = list_iterator_create(job_list);
 		struct job_record *job_ptr;
+		select_jobinfo_t *jobinfo;
 
 		if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_job_init: syncing jobs");
 
 		while ((job_ptr = list_next(itr))) {
-			select_jobinfo_t *jobinfo =
-				job_ptr->select_jobinfo->data;
+
+			jobinfo = job_ptr->select_jobinfo->data;
+			if (jobinfo->cleaning || IS_JOB_RUNNING(job_ptr))
+				_set_job_running_restore(jobinfo);
 
 			if (!(slurmctld_conf.select_type_param & CR_NHC_STEP_NO)
 			    && job_ptr->step_list
@@ -921,12 +1324,18 @@ extern int select_p_job_init(List job_list)
 				}
 				list_iterator_destroy(itr_step);
 			}
-			jobinfo = job_ptr->select_jobinfo->data;
-			if (jobinfo && jobinfo->cleaning)
-				_spawn_cleanup_thread(job_ptr, _job_fini);
+
+			if (!(slurmctld_conf.select_type_param & CR_NHC_NO)) {
+				jobinfo = job_ptr->select_jobinfo->data;
+				if (jobinfo && jobinfo->cleaning)
+					_spawn_cleanup_thread(
+						job_ptr, _job_fini);
+			}
 		}
 		list_iterator_destroy(itr);
 	}
+
+	slurm_mutex_unlock(&blade_mutex);
 
 	return other_job_init(job_list);
 }
@@ -941,6 +1350,121 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
+	select_nodeinfo_t *nodeinfo = NULL;
+	struct node_record *node_rec;
+	int i, j;
+	uint64_t blade_id = 0;
+#ifdef HAVE_NATIVE_CRAY
+	int nn, end_nn, last_nn = 0;
+	bool found = 0;
+	rs_node_array_t nl;
+
+	if (rca_get_sysnodes(&nl)) {
+		error("Could not get system node list from RCA: %m");
+		return SLURM_ERROR;
+	}
+#endif
+	slurm_mutex_lock(&blade_mutex);
+
+	if (!blade_array)
+		blade_array = xmalloc(sizeof(blade_info_t) * node_cnt);
+
+	if (!blades_running_jobs)
+		blades_running_jobs = bit_alloc(node_cnt);
+
+	if (!blades_running_npc)
+		blades_running_npc = bit_alloc(node_cnt);
+
+	for (i = 0; i < node_cnt; i++) {
+		node_rec = &node_ptr[i];
+		if (!node_rec->select_nodeinfo)
+			node_rec->select_nodeinfo =
+				select_g_select_nodeinfo_alloc();
+		nodeinfo = node_rec->select_nodeinfo->data;
+		if (nodeinfo->nid == NO_VAL) {
+			char *nid_char;
+
+			if (!(nid_char = strpbrk(node_rec->name,
+						 "0123456789"))) {
+				error("(%s: %d: %s) Error: Node was not "
+				      "recognizable: %s",
+				      THIS_FILE, __LINE__, __FUNCTION__,
+				      node_rec->name);
+				slurm_mutex_unlock(&blade_mutex);
+				return SLURM_ERROR;
+			}
+
+			nodeinfo->nid = atoll(nid_char);
+		}
+
+#ifdef HAVE_NATIVE_CRAY
+		end_nn = nl.na_len;
+
+	start_again:
+
+		for (nn = last_nn; nn < end_nn; nn++) {
+			if ((uint32_t)RSN_GET_FLD(
+				    nl.na_ids[nn].rs_node_flat, NID)
+			    == nodeinfo->nid) {
+				found = 1;
+				blade_id = RSN_GET_FLD(
+					nl.na_ids[nn].rs_node_flat, X);
+				blade_id <<= 16;
+				blade_id += RSN_GET_FLD(
+					nl.na_ids[nn].rs_node_flat, ROW);
+				blade_id <<= 16;
+				blade_id += RSN_GET_FLD(
+					nl.na_ids[nn].rs_node_flat, CAGE);
+				blade_id <<= 16;
+				blade_id += RSN_GET_FLD(
+					nl.na_ids[nn].rs_node_flat, SLOT);
+				last_nn = nn;
+				break;
+			}
+		}
+
+		if (end_nn != nl.na_len) {
+			/* already looped */
+			fatal("Node %s(%d) isn't found on the system",
+			      node_ptr->name, nodeinfo->nid);
+		} else if (!found) {
+			end_nn = last_nn;
+			last_nn = 0;
+			debug2("starting again looking for %s(%u)",
+			      node_ptr->name, nodeinfo->nid);
+			goto start_again;
+		}
+#else
+		blade_id = nodeinfo->nid % 4; /* simulate 4 blades
+					       * round robin style */
+#endif
+		for (j = 0; j < blade_cnt; j++)
+			if (blade_array[j].id == blade_id)
+				break;
+
+		nodeinfo->blade_id = j;
+
+		if (j == blade_cnt) {
+			blade_cnt++;
+			blade_array[j].node_bitmap = bit_alloc(node_cnt);
+		}
+
+		bit_set(blade_array[j].node_bitmap, i);
+		blade_array[j].id = blade_id;
+
+		debug2("got %s(%u) blade %u %"PRIu64" %"PRIu64" %d %d %d %d",
+		       node_rec->name, nodeinfo->nid, nodeinfo->blade_id,
+		       blade_id, blade_array[nodeinfo->blade_id].id,
+		       GET_BLADE_X(blade_array[nodeinfo->blade_id].id),
+		       GET_BLADE_ROW(blade_array[nodeinfo->blade_id].id),
+		       GET_BLADE_CAGE(blade_array[nodeinfo->blade_id].id),
+		       GET_BLADE_SLOT(blade_array[nodeinfo->blade_id].id));
+	}
+	/* give back the memory */
+	xrealloc(blade_array, sizeof(blade_info_t) * blade_cnt);
+
+	slurm_mutex_unlock(&blade_mutex);
+
 	return other_node_init(node_ptr, node_cnt);
 }
 
@@ -988,6 +1512,37 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     List *preemptee_job_list,
 			     bitstr_t *exc_core_bitmap)
 {
+	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+	slurm_mutex_lock(&blade_mutex);
+	if (jobinfo->npc == NPC_NONE) {
+		if (mode != SELECT_MODE_TEST_ONLY) {
+			bit_not(blades_running_npc);
+			bit_and(bitmap, blades_running_npc);
+			bit_not(blades_running_npc);
+		}
+	} else {
+		/* If looking for network performance counters unmark
+		   all the nodes that are in use since they cannot be used.
+		*/
+		if (mode != SELECT_MODE_TEST_ONLY) {
+			bit_not(blades_running_jobs);
+			bit_and(bitmap, blades_running_jobs);
+			bit_not(blades_running_jobs);
+		}
+		/* They need the whole system */
+		info("got %d", min_nodes);
+	}
+
+	/* char *tmp = bitmap2node_name(bitmap); */
+	/* char *tmp2 = bitmap2node_name(blades_running_jobs); */
+	/* char *tmp3 = bitmap2node_name(blades_running_npc); */
+
+	/* info("trying %u on %s '%s' '%s'", job_ptr->job_id, tmp, tmp2, tmp3); */
+	/* xfree(tmp); */
+	/* xfree(tmp2); */
+	/* xfree(tmp3); */
+	slurm_mutex_unlock(&blade_mutex);
+
 	return other_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 			      req_nodes, mode, preemptee_candidates,
 			      preemptee_job_list, exc_core_bitmap);
@@ -995,7 +1550,28 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
+	select_jobinfo_t *jobinfo;
+
 	xassert(job_ptr);
+	xassert(job_ptr->select_jobinfo);
+	xassert(job_ptr->select_jobinfo->data);
+
+	jobinfo = job_ptr->select_jobinfo->data;
+
+	slurm_mutex_lock(&blade_mutex);
+
+	if (!jobinfo->blade_map)
+		jobinfo->blade_map = bit_alloc(blade_cnt);
+
+	_set_job_running(job_ptr);
+
+	/* char *tmp2 = bitmap2node_name(blades_running_jobs); */
+	/* char *tmp3 = bitmap2node_name(blades_running_npc); */
+
+	/* info("adding %u '%s' '%s'", job_ptr->job_id, tmp2, tmp3); */
+	/* xfree(tmp2); */
+	/* xfree(tmp3); */
+	slurm_mutex_unlock(&blade_mutex);
 
 	return other_job_begin(job_ptr);
 }
@@ -1035,6 +1611,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 
+#ifdef HAVE_NATIVE_CRAY
+
 	if (slurmctld_conf.select_type_param & CR_NHC_NO) {
 		debug3("NHC_No set, not running NHC after allocations");
 		other_job_fini(job_ptr);
@@ -1044,6 +1622,20 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	jobinfo->cleaning = 1;
 
 	_spawn_cleanup_thread(job_ptr, _job_fini);
+#else
+	other_job_fini(job_ptr);
+	_remove_job_from_blades(jobinfo);
+
+	/* slurm_mutex_lock(&blade_mutex); */
+	/* char *tmp2 = bitmap2node_name(blades_running_jobs); */
+	/* char *tmp3 = bitmap2node_name(blades_running_npc); */
+
+	/* info("removed %u '%s' '%s'", job_ptr->job_id, tmp2, tmp3); */
+	/* xfree(tmp2); */
+	/* xfree(tmp3); */
+	/* slurm_mutex_unlock(&blade_mutex); */
+
+#endif
 
 	return SLURM_SUCCESS;
 }
@@ -1109,13 +1701,12 @@ extern int select_p_step_start(struct step_record *step_ptr)
 
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
+#ifdef HAVE_NATIVE_CRAY
 	select_jobinfo_t *jobinfo = step_ptr->select_jobinfo->data;
 
-#ifdef HAVE_NATIVE_CRAY
 	if (aeld_running) {
 		_update_app(step_ptr->job_ptr, step_ptr, ALPSC_EV_END);
 	}
-#endif
 
 	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
 		debug3("NHC_No_Steps set not running NHC on steps.");
@@ -1144,6 +1735,10 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	_spawn_cleanup_thread(step_ptr, _step_fini);
 
 	return SLURM_SUCCESS;
+#else
+	other_step_finish(step_ptr);
+	return SLURM_SUCCESS;
+#endif
 }
 
 extern int select_p_pack_select_info(time_t last_query_time,
@@ -1159,6 +1754,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 
 	nodeinfo->magic = NODEINFO_MAGIC;
+	nodeinfo->nid   = NO_VAL;
 	nodeinfo->other_nodeinfo = other_select_nodeinfo_alloc();
 
 	return nodeinfo;
@@ -1251,7 +1847,12 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 extern select_jobinfo_t *select_p_select_jobinfo_alloc(void)
 {
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
+
 	jobinfo->magic = JOBINFO_MAGIC;
+
+	if (blade_cnt)
+		jobinfo->blade_map = bit_alloc(blade_cnt);
+
 	jobinfo->other_jobinfo = other_select_jobinfo_alloc();
 
 	return jobinfo;
@@ -1263,6 +1864,7 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	char *in_char = (char *) data;
 
 	if (jobinfo == NULL) {
 		error("select/cray jobinfo_set: jobinfo not set");
@@ -1276,6 +1878,18 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 	switch (data_type) {
 	case SELECT_JOBDATA_CLEANING:
 		jobinfo->cleaning = *uint16;
+		break;
+	case SELECT_JOBDATA_NETWORK:
+		if (!in_char || !strlen(in_char)
+		    || !strcmp(in_char, "none"))
+			jobinfo->npc = NPC_NONE;
+		else if (!strcmp(in_char, "system"))
+			jobinfo->npc = NPC_SYS;
+		else if (!strcmp(in_char, "network"))
+			jobinfo->npc = NPC_NET;
+		else if (!strcmp(in_char, "processor"))
+			jobinfo->npc = NPC_PROC;
+
 		break;
 	default:
 		rc = other_select_jobinfo_set(jobinfo, data_type, data);
@@ -1344,6 +1958,7 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
 		}
 
 		jobinfo->magic = 0;
+		FREE_NULL_BITMAP(jobinfo->blade_map);
 		other_select_jobinfo_free(jobinfo->other_jobinfo);
 		xfree(jobinfo);
 	}
@@ -1496,7 +2111,17 @@ extern int select_p_update_node_state(struct node_record *node_ptr)
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
-	return other_alter_node_cnt(type, data);
+	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
+	switch (type) {
+	case SELECT_SET_NODE_CNT:
+		if (job_desc->network && !strcmp(job_desc->network, "system"))
+			job_desc->min_cpus = job_desc->min_nodes =
+				job_desc->max_nodes = node_record_count;
+		return SLURM_SUCCESS;
+		break;
+	default:
+		return other_alter_node_cnt(type, data);
+	}
 }
 
 extern int select_p_reconfigure(void)
