@@ -112,6 +112,12 @@ typedef struct {
 	char	      **argv;
 } stepd_step_task_info_t;
 
+typedef struct {		/* MPMD specifications, needed for Cray */
+	int num_cmds;		/* Number of executables in MPMD set */
+	int *start_pe;		/* Starting rank of each executable in set */
+	int *total_pe;		/* Total ranks of each executable in set */
+} mpmd_set_t;
+
 typedef struct {
 	slurmstepd_state_t state;
 	uint32_t       jobid;  /* Current SLURM job id                      */
@@ -215,8 +221,8 @@ typedef struct {
 	launch_tasks_request_msg_t *msg; /* When a non-batch step this
 					  * is the message sent.  DO
 					  * NOT FREE, IT IS JUST A
-					  * POINTER.
-					  */
+					  * POINTER. */
+	mpmd_set_t     *mpmd_set;	/* MPMD specifications for Cray */
 } stepd_step_rec_t;
 
 

@@ -41,6 +41,14 @@
 
 #include "slurmstepd_job.h"
 
+/* Parse an MPMD file and determine count and layout of each task for use
+ * with Cray systems. Builds the mpmd_set structure in the job record. */
+extern void multi_prog_parse(stepd_step_rec_t *job);
+
+/* Free memory associated with a job's MPMD data structure built by
+ * multi_prog_parse() and used for Cray system. */
+extern void mpmd_free(stepd_step_rec_t *job);
+
 /* Execute a single task based upon the config_data (contents of config_file)
  * and the environment variables supplied.
  *

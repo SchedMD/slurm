@@ -57,6 +57,7 @@
 #include "multi_prog.h"
 
 #define MAX_ARGC 128
+#define _DEBUG   0
 
 /*
  * Test if the specified rank is included in the supplied task range 
@@ -195,7 +196,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 		while (*p != '\0' && !isspace (*p))
 			p ++;
 		if (*p == '\0') {
-			error("Invalid configuration line: %s", line);
+			error("Invalid MPMD configuration line %d", line_num);
 			goto fail;
 		}
 		*p ++ = '\0';
@@ -293,4 +294,132 @@ fail:
 	prog_argv[0] = NULL;
 	*argv = prog_argv;
 	return -1;
+}
+
+/* Parse an MPMD file and determine count and layout of each task for use
+ * with Cray systems. Builds the mpmd_set structure in the job record. */
+extern void multi_prog_parse(stepd_step_rec_t *job)
+{
+	int i, j, line_num = 0, rank_id, total_ranks = 0;
+	char *line = NULL, *local_data = NULL;
+	char *end_ptr = NULL, *save_ptr = NULL, *tmp_str;
+	char *rank_spec = NULL, *args_spec = NULL;
+	char *p = NULL;
+	char **tmp_cmd, *one_rank;
+	hostlist_t hs;
+
+	tmp_cmd = xmalloc(sizeof(char *) * job->ntasks);
+	local_data = xstrdup(job->argv[1]);
+	while (1) {
+		if (line_num)
+			line = strtok_r(NULL, "\n", &save_ptr);
+		else
+			line = strtok_r(local_data, "\n", &save_ptr);
+		if (!line)
+			break;
+		line_num++;
+
+		p = line;
+		while ((*p != '\0') && isspace(*p)) /* remove leading spaces */
+			p++;
+		if (*p == '#')	/* only whole-line comments handled */
+			continue;
+		if (*p == '\0') /* blank line ignored */
+			continue;
+
+		rank_spec = p;	/* Rank specification for this line */
+		while ((*p != '\0') && !isspace(*p))
+			p++;
+		if (*p == '\0')
+			goto fail;
+		*p++ = '\0';
+
+		while ((*p != '\0') && isspace(*p)) /* remove leading spaces */
+			p++;
+		if (*p == '\0') /* blank line ignored */
+			continue;
+
+		args_spec = p;	/* command only */
+		while ((*p != '\0') && !isspace(*p))
+			p++;
+		*p++ = '\0';
+		tmp_str = xmalloc(strlen(rank_spec) + 3);
+		sprintf(tmp_str, "[%s]", rank_spec);
+		hs = hostlist_create(tmp_str);
+		xfree(tmp_str);
+		if (!hs)
+			goto fail;
+		while ((one_rank = hostlist_pop(hs))) {
+			rank_id = strtol(one_rank, &end_ptr, 10);
+			if ((end_ptr[0] != '\0') || (rank_id < 0) ||
+			    (rank_id >= job->ntasks)) {
+				free(one_rank);
+				hostlist_destroy(hs);
+				goto fail;
+			}
+			free(one_rank);
+			if (tmp_cmd[rank_id])	/* duplicate cmd for rank */
+				xfree(tmp_cmd[rank_id]);
+			else
+				total_ranks++;
+			tmp_cmd[rank_id] = xstrdup(args_spec);
+		}
+		hostlist_destroy(hs);
+	}
+	if (total_ranks != job->ntasks)
+		goto fail;
+
+#if _DEBUG
+	info("MPMD num_pe:%u", job->ntasks);
+#endif
+	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
+	job->mpmd_set->start_pe = xmalloc(sizeof(int) * job->ntasks);
+	job->mpmd_set->total_pe = xmalloc(sizeof(int) * job->ntasks);
+	for (i = 0, j = 0; i < job->ntasks; i++) {
+		if (i == 0) {
+			job->mpmd_set->start_pe[j] = i;
+			job->mpmd_set->total_pe[j]++;
+		} else if (!strcmp(tmp_cmd[i-1], tmp_cmd[i])) {
+			job->mpmd_set->total_pe[j]++;
+		} else {
+#if _DEBUG
+			info("MPMD command:%s start_pe[%d]:%d total_pe[%d]:%d ",
+			     tmp_cmd[i-1], j, job->mpmd_set->start_pe[j],
+			     j, job->mpmd_set->total_pe[j]);
+#endif
+			j++;
+			job->mpmd_set->start_pe[j] = i;
+			job->mpmd_set->total_pe[j]++;
+		}
+	}
+#if _DEBUG
+	info("MPMD command:%s start_pe[%d]:%d total_pe[%d]:%d ",
+	     tmp_cmd[i-1], j, job->mpmd_set->start_pe[j],
+	     j, job->mpmd_set->total_pe[j]);
+#endif
+
+	for (i = 0; i < job->ntasks; i++)
+		xfree(tmp_cmd[i]);
+	xfree(tmp_cmd);
+	xfree(local_data);
+	return;
+
+fail:	error("Invalid MPMD configuration line %d", line_num);
+	for (i = 0; i < job->ntasks; i++)
+		xfree(tmp_cmd[i]);
+	xfree(tmp_cmd);
+	xfree(local_data);
+	return;
+}
+
+/* Free memory associated with a job's MPMD data structure built by
+ * multi_prog_parse() and used for Cray system. */
+extern void mpmd_free(stepd_step_rec_t *job)
+{
+	if (!job->mpmd_set)
+		return;
+
+	xfree(job->mpmd_set->start_pe);
+	xfree(job->mpmd_set->total_pe);
+	xfree(job->mpmd_set);
 }

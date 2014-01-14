@@ -230,6 +230,8 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
 	job->task = (stepd_step_task_info_t **)
 		xmalloc(job->node_tasks * sizeof(stepd_step_task_info_t *));
 
+//	if (switch/cray)
+//		multi_prog_parse(job);
 	for (i = 0; i < job->node_tasks; i++){
 		in = _expand_stdio_filename(ifname, gtid[i], job);
 		out = _expand_stdio_filename(ofname, gtid[i], job);
@@ -599,6 +601,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	list_destroy(job->sruns);
 	xfree(job->envtp);
 	xfree(job->node_name);
+	mpmd_free(job);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);
