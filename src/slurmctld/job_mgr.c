@@ -4471,7 +4471,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-#ifdef HAVE_BG
 	/* This needs to be done after the association acct policy check since
 	 * it looks at unaltered nodes for bluegene systems
 	 */
@@ -4487,7 +4486,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	debug3("after alteration asking for nodes %u-%u cpus %u-%u",
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->min_cpus, job_desc->max_cpus);
-#endif
 
 	if (job_desc->exc_nodes) {
 		error_code = node_name2bitmap(job_desc->exc_nodes, false,
