@@ -3816,7 +3816,7 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 
 	job_hold_requeue(job_ptr);
 
-	info("%s: %u: %s", __func__, req_ptr->job_id, TIME_STR);
+	info("%s: JobID=%u: %s", __func__, req_ptr->job_id, TIME_STR);
 
 	/* Functions below provide their own locking
 	 */
