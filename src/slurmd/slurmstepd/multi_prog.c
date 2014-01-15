@@ -311,9 +311,12 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	char *rank_spec = NULL, *args_spec = NULL;
 	char *p = NULL;
 	char **tmp_cmd, *one_rank;
-	hostlist_t hs;
+	uint32_t *ranks_node_id = NULL;	/* Node ID for each rank */
+	uint32_t *node_id2nid = NULL;	/* Map Slurm node ID to Cray NID name */
+	hostlist_t hl;
 
 	tmp_cmd = xmalloc(sizeof(char *) * job->ntasks);
+	ranks_node_id = xmalloc(sizeof(uint32_t) * job->ntasks);
 	local_data = xstrdup(job->argv[1]);
 	while (1) {
 		if (line_num)
@@ -350,16 +353,16 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		*p++ = '\0';
 		tmp_str = xmalloc(strlen(rank_spec) + 3);
 		sprintf(tmp_str, "[%s]", rank_spec);
-		hs = hostlist_create(tmp_str);
+		hl = hostlist_create(tmp_str);
 		xfree(tmp_str);
-		if (!hs)
+		if (!hl)
 			goto fail;
-		while ((one_rank = hostlist_pop(hs))) {
+		while ((one_rank = hostlist_pop(hl))) {
 			rank_id = strtol(one_rank, &end_ptr, 10);
 			if ((end_ptr[0] != '\0') || (rank_id < 0) ||
 			    (rank_id >= job->ntasks)) {
 				free(one_rank);
-				hostlist_destroy(hs);
+				hostlist_destroy(hl);
 				goto fail;
 			}
 			free(one_rank);
@@ -369,15 +372,34 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 				total_ranks++;
 			tmp_cmd[rank_id] = xstrdup(args_spec);
 		}
-		hostlist_destroy(hs);
+		hostlist_destroy(hl);
 	}
 	if (total_ranks != job->ntasks)
 		goto fail;
 
 #if _DEBUG
-	info("MPMD num_pe:%u", job->ntasks);		/* Total rank count */
-	info("MPMD num_pe_here:%u", job->node_tasks);	/* Node's rank count */
-	info("MPMD node_index:%u", job->nodeid);	/* This node's index */
+	info("MPMD NumPEs:%u", job->ntasks);		/* Total rank count */
+	info("MPMD NumPEsHere:%u", job->node_tasks);	/* Node's rank count */
+#endif
+
+	node_id2nid = xmalloc(sizeof(uint32_t) * job->nnodes);
+	if (job->msg->complete_nodelist &&
+	    ((hl = hostlist_create(job->msg->complete_nodelist)))) {
+		i = 0;
+		while ((one_rank = hostlist_shift(hl))) {
+			if (i >= job->nnodes) {
+				error("MPMD more nodes in nodelist than count "
+				      "(cnt:%u nodelist:%s)", job->nnodes,
+				      job->msg->complete_nodelist);
+			}
+			for (j = 0; one_rank[j] && !isdigit(one_rank[j]); j++)
+				;	
+			node_id2nid[i++] = strtol(one_rank + j, &end_ptr, 10);
+			free(one_rank);
+		}
+		hostlist_destroy(hl);
+	}
+
 	for (i = 0; i < job->nnodes; i++) {
 		if (!job->task_cnts) {
 			error("MPMD job->task_cnts is NULL");
@@ -396,14 +418,21 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 			break;
 		}
 		for (j = 0; j < job->task_cnts[i]; j++) {
-			info("MPMD placement node[%d] rank:%u", i, gtid[i][j]);
+			if (gtid[i][j] >= job->ntasks) {
+				error("MPMD gtid[%d][%d] is invalid (%u >= %u)",
+				      i, j, gtid[i][j], job->ntasks);
+				break;
+			}
+			ranks_node_id[gtid[i][j]] = i;
 		}
 	}
-#endif
+
 	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
-	job->mpmd_set->start_pe = xmalloc(sizeof(int) * job->ntasks);
-	job->mpmd_set->total_pe = xmalloc(sizeof(int) * job->ntasks);
+	job->mpmd_set->start_pe  = xmalloc(sizeof(int) * job->ntasks);
+	job->mpmd_set->total_pe  = xmalloc(sizeof(int) * job->ntasks);
+	job->mpmd_set->placement = xmalloc(sizeof(int) * job->ntasks);
 	for (i = 0, j = 0; i < job->ntasks; i++) {
+		job->mpmd_set->placement[i] = node_id2nid[ranks_node_id[i]];
 		if (i == 0) {
 			job->mpmd_set->start_pe[j] = i;
 			job->mpmd_set->total_pe[j]++;
@@ -424,20 +453,22 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	info("MPMD command:%s start_pe[%d]:%d total_pe[%d]:%d ",
 	     tmp_cmd[i-1], j, job->mpmd_set->start_pe[j],
 	     j, job->mpmd_set->total_pe[j]);
+	for (i = 0; i < job->ntasks; i++) {
+		info("MPMD Placement[%d] nid%5.5d",
+		     i, job->mpmd_set->placement[i]);
+	}
 #endif
 
-	for (i = 0; i < job->ntasks; i++)
+fini:	for (i = 0; i < job->ntasks; i++)
 		xfree(tmp_cmd[i]);
 	xfree(tmp_cmd);
 	xfree(local_data);
+	xfree(node_id2nid);
+	xfree(ranks_node_id);
 	return;
 
 fail:	error("Invalid MPMD configuration line %d", line_num);
-	for (i = 0; i < job->ntasks; i++)
-		xfree(tmp_cmd[i]);
-	xfree(tmp_cmd);
-	xfree(local_data);
-	return;
+	goto fini;
 }
 
 /* Free memory associated with a job's MPMD data structure built by
@@ -447,6 +478,7 @@ extern void mpmd_free(stepd_step_rec_t *job)
 	if (!job->mpmd_set)
 		return;
 
+	xfree(job->mpmd_set->placement);
 	xfree(job->mpmd_set->start_pe);
 	xfree(job->mpmd_set->total_pe);
 	xfree(job->mpmd_set);

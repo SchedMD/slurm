@@ -116,6 +116,7 @@ typedef struct {		/* MPMD specifications, needed for Cray */
 	int num_cmds;		/* Number of executables in MPMD set */
 	int *start_pe;		/* Starting rank of each executable in set */
 	int *total_pe;		/* Total ranks of each executable in set */
+	int *placement;		/* NID associated with each rank in set */
 } mpmd_set_t;
 
 typedef struct {
