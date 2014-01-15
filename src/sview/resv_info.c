@@ -785,6 +785,7 @@ static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr)
 		if (!sview_resv_info_ptr)
 			sview_resv_info_ptr =
 				xmalloc(sizeof(sview_resv_info_t));
+		sview_resv_info_ptr->resv_name = xstrdup(resv_ptr->name);
 		sview_resv_info_ptr->pos = i;
 		sview_resv_info_ptr->resv_ptr = resv_ptr;
 		sview_resv_info_ptr->color_inx = i % sview_colors_cnt;
