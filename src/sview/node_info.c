@@ -1396,15 +1396,15 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		display_data_node->set_menu = local_display_data->set_menu;
 		goto reset_curs;
 	}
-	/* Since the node_info_ptr could change out from under us we
-	   always need to check if it is new or not.
-	*/
-	/* if (display_widget && toggled) { */
-	/* 	gtk_widget_destroy(display_widget); */
-	/* 	display_widget = NULL; */
-	/* 	info("going to display it"); */
-	/* 	goto display_it; */
-	/* } */
+
+	if (display_widget && toggled) {
+		gtk_widget_destroy(display_widget);
+		display_widget = NULL;
+		/* Since the node_info_ptr could change out from under
+		 * us we always need to check if it is new or not.
+		 */
+		/* goto display_it; */
+	}
 	if ((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	    == SLURM_NO_CHANGE_IN_DATA) {
 		if (!display_widget || view == ERROR_VIEW)
@@ -1525,14 +1525,14 @@ extern void specific_info_node(popup_info_t *popup_win)
 	if (!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_node, SORTID_CNT);
 
-	/* Since the node_info_ptr could change out from under us we
-	   always need to check if it is new or not.
-	*/
-	/* if (node_info_ptr && popup_win->toggled) { */
-	/* 	gtk_widget_destroy(spec_info->display_widget); */
-	/* 	spec_info->display_widget = NULL; */
-	/* 	goto display_it; */
-	/* } */
+	if (node_info_ptr && popup_win->toggled) {
+		gtk_widget_destroy(spec_info->display_widget);
+		spec_info->display_widget = NULL;
+		/* Since the node_info_ptr could change out from under
+		 * us we always need to check if it is new or not.
+		 */
+		/* goto display_it; */
+	}
 
 	if ((error_code = get_new_info_node(&node_info_ptr,
 					    popup_win->force_refresh))

@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
  -- Increase the PW_BUF_SIZE so the getgrnam_r() can process large user groups.
  -- Do not reset a job's priority when the slurmctld restarts if previously
     set to some specific value.
+ -- sview - Fix regression where the Node tab wasn't able to add/remove columns.
 
 * Changes in Slurm 2.6.5
 ========================
