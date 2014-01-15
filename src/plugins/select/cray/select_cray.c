@@ -1529,8 +1529,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			bit_and(bitmap, blades_running_jobs);
 			bit_not(blades_running_jobs);
 		}
-		/* They need the whole system */
-		info("got %d", min_nodes);
 	}
 
 	/* char *tmp = bitmap2node_name(bitmap); */
