@@ -198,7 +198,7 @@ static int _read_lustre_counters(void )
 					debug3("Lustre Counter "
 					       "%"PRIu64" "
 					       "write_bytes %"PRIu64" "
-					       "writes\n",
+					       "writes",
 					       lustre_se.lustre_write_bytes,
 					       lustre_se.lustre_nb_writes);
 				}
@@ -212,7 +212,7 @@ static int _read_lustre_counters(void )
 					debug3("Lustre Counter "
 					       "%"PRIu64" "
 					       "read_bytes %"PRIu64" "
-					       "reads\n",
+					       "reads",
 					       lustre_se.lustre_read_bytes,
 					       lustre_se.lustre_nb_reads);
 				}
