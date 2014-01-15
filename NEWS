@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     can take place without loss of jobs
  -- Add version number to node and front-end configuration information visible
     using the scontrol tool.
+ -- Add idea of a RESERVED flag for node state so idle resources are marked
+    not "idle" when in a reservation.
 
 * Changes in Slurm 14.03.0pre5
 ==============================

@@ -157,7 +157,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  bitstr_t **resv_bitmap, bitstr_t **core_bitmap);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr);
-static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now);
+static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
+			     uint16_t flags);
 static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
@@ -2344,7 +2345,8 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 
 		if (resv_ptr->maint_set_node) {
 			resv_ptr->maint_set_node = false;
-			_set_nodes_maint(resv_ptr, now);
+			_set_nodes_flags(resv_ptr, now,
+					 (NODE_STATE_RES | NODE_STATE_MAINT));
 			last_node_update = now;
 		}
 
@@ -4143,29 +4145,33 @@ extern int set_node_maint_mode(bool reset_all)
 	if (reset_all) {
 		int i;
 		struct node_record *node_ptr;
+		uint16_t flags = (NODE_STATE_RES | NODE_STATE_MAINT);
+
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i <= node_record_count;
 		     i++, node_ptr++) {
-			node_ptr->node_state &= (~NODE_STATE_MAINT);
+			node_ptr->node_state &= (~flags);
 		}
 	}
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		uint16_t flags = NODE_STATE_RES;
 		if (reset_all)
 			resv_ptr->maint_set_node = false;
-		if (resv_ptr->flags & RESERVE_FLAG_MAINT) {
-			if ((now >= resv_ptr->start_time) &&
-			    (now <  resv_ptr->end_time  )) {
-				if (!resv_ptr->maint_set_node) {
-					resv_ptr->maint_set_node = true;
-					_set_nodes_maint(resv_ptr, now);
-					last_node_update = now;
-				}
-			} else if (resv_ptr->maint_set_node) {
-				resv_ptr->maint_set_node = false;
-				_set_nodes_maint(resv_ptr, now);
+		if (resv_ptr->flags & RESERVE_FLAG_MAINT)
+			flags |= NODE_STATE_MAINT;
+
+		if ((now >= resv_ptr->start_time) &&
+		    (now <  resv_ptr->end_time  )) {
+			if (!resv_ptr->maint_set_node) {
+				resv_ptr->maint_set_node = true;
+				_set_nodes_flags(resv_ptr, now, flags);
 				last_node_update = now;
 			}
+		} else if (resv_ptr->maint_set_node) {
+			resv_ptr->maint_set_node = false;
+			_set_nodes_flags(resv_ptr, now, flags);
+			last_node_update = now;
 		}
 
 		if (reset_all)	/* Defer reservation prolog/epilog */
@@ -4251,20 +4257,21 @@ extern void update_part_nodes_in_resv(struct part_record *part_ptr)
 	list_iterator_destroy(iter);
 }
 
-static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now)
+static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
+			     uint16_t flags)
 {
 	int i, i_first, i_last;
 	struct node_record *node_ptr;
 
 	if (!resv_ptr->node_bitmap) {
-		error("maintenance reservation %s lacks a bitmap",
+		error("_set_nodes_flags: reservation %s lacks a bitmap",
 		      resv_ptr->name);
 		return;
 	}
 
 	i_first = bit_ffs(resv_ptr->node_bitmap);
 	if (i_first < 0) {
-		error("maintenance reservation %s includes no nodes",
+		error("_set_nodes_flags: reservation %s includes no nodes",
 		      resv_ptr->name);
 		return;
 	}
@@ -4275,9 +4282,9 @@ static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now)
 
 		node_ptr = node_record_table_ptr + i;
 		if (resv_ptr->maint_set_node)
-			node_ptr->node_state |= NODE_STATE_MAINT;
+			node_ptr->node_state |= flags;
 		else
-			node_ptr->node_state &= (~NODE_STATE_MAINT);
+			node_ptr->node_state &= (~flags);
 		/* mark that this node is now down and in maint mode
 		 * or was removed from maint mode */
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
