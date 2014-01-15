@@ -374,7 +374,8 @@ typedef struct slurmctld_resv {
 	List license_list;	/* structure with license info		*/
 	char *licenses;		/* required system licenses		*/
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
-	bool maint_set_node;	/* NODE_STATE_MAINT set for nodes	*/
+	bool flags_set_node;	/* flags (i.e. NODE_STATE_MAINT |
+				 * NODE_STATE_RES) set for nodes	*/
 	char *name;		/* name of reservation			*/
 	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
 	uint32_t node_cnt;	/* count of nodes required		*/
