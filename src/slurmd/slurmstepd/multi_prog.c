@@ -458,17 +458,17 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		}
 	}
 #if _DEBUG
-	info("MPMD Apid=%"PRIu64"", job->mpmd_set->apid);
+	info("MPMD Apid:%"PRIu64"", job->mpmd_set->apid);
 	info("MPMD NumPEs:%u", job->ntasks);		/* Total rank count */
 	info("MPMD NumPEsHere:%u", job->node_tasks);	/* Node's rank count */
-	info("MPMD NumCmds=%d", job->mpmd_set->num_cmds);
+	info("MPMD NumCmds:%d", job->mpmd_set->num_cmds);
 	for (i = 0; i < job->mpmd_set->num_cmds; i++) {
 		info("MPMD Command:%s FirstPE: %d StartPE:%d TotalPEs:%d ",
 		     job->mpmd_set->command[i],  job->mpmd_set->first_pe[i],
 		     job->mpmd_set->start_pe[i], job->mpmd_set->total_pe[i]);
 	}
 	for (i = 0; i < job->ntasks; i++) {
-		info("MPMD Placement[%d] nid%5.5d",
+		info("MPMD Placement[%d]:nid%5.5d",
 		     i, job->mpmd_set->placement[i]);
 	}
 #endif
