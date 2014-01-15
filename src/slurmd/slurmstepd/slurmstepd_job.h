@@ -113,6 +113,7 @@ typedef struct {
 } stepd_step_task_info_t;
 
 typedef struct {		/* MPMD specifications, needed for Cray */
+	uint64_t apid;		/* Application ID */
 	int num_cmds;		/* Number of executables in MPMD set */
 	char **command;		/* Array of command name for each executable */
 	int *first_pe;		/* First rank on this node of each executable,

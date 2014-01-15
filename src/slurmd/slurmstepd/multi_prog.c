@@ -316,6 +316,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	hostlist_t hl;
 
 	tmp_cmd = xmalloc(sizeof(char *) * job->ntasks);
+	node_id2nid = xmalloc(sizeof(uint32_t) * job->nnodes);
 	ranks_node_id = xmalloc(sizeof(uint32_t) * job->ntasks);
 	local_data = xstrdup(job->argv[1]);
 	while (1) {
@@ -377,12 +378,6 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	if (total_ranks != job->ntasks)
 		goto fail;
 
-#if _DEBUG
-	info("MPMD NumPEs:%u", job->ntasks);		/* Total rank count */
-	info("MPMD NumPEsHere:%u", job->node_tasks);	/* Node's rank count */
-#endif
-
-	node_id2nid = xmalloc(sizeof(uint32_t) * job->nnodes);
 	if (job->msg->complete_nodelist &&
 	    ((hl = hostlist_create(job->msg->complete_nodelist)))) {
 		i = 0;
@@ -428,6 +423,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	}
 
 	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
+	job->mpmd_set->apid      = SLURM_ID_HASH(job->jobid, job->stepid);
 	job->mpmd_set->command   = xmalloc(sizeof(char *) * job->ntasks);
 	job->mpmd_set->first_pe  = xmalloc(sizeof(int) * job->ntasks);
 	job->mpmd_set->start_pe  = xmalloc(sizeof(int) * job->ntasks);
@@ -461,6 +457,9 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		}
 	}
 #if _DEBUG
+	info("MPMD Apid=%"PRIu64"", job->mpmd_set->apid);
+	info("MPMD NumPEs:%u", job->ntasks);		/* Total rank count */
+	info("MPMD NumPEsHere:%u", job->node_tasks);	/* Node's rank count */
 	info("MPMD NumCmds=%d", job->mpmd_set->num_cmds);
 	for (i = 0; i < job->mpmd_set->num_cmds; i++) {
 		info("MPMD Command:%s FirstPE: %d StartPE:%d TotalPEs:%d ",
