@@ -428,31 +428,45 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	}
 
 	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
+	job->mpmd_set->command   = xmalloc(sizeof(char *) * job->ntasks);
+	job->mpmd_set->first_pe  = xmalloc(sizeof(int) * job->ntasks);
 	job->mpmd_set->start_pe  = xmalloc(sizeof(int) * job->ntasks);
 	job->mpmd_set->total_pe  = xmalloc(sizeof(int) * job->ntasks);
 	job->mpmd_set->placement = xmalloc(sizeof(int) * job->ntasks);
 	for (i = 0, j = 0; i < job->ntasks; i++) {
 		job->mpmd_set->placement[i] = node_id2nid[ranks_node_id[i]];
 		if (i == 0) {
+			job->mpmd_set->num_cmds++;
+			if (ranks_node_id[i] == job->nodeid)
+				job->mpmd_set->first_pe[j] = i;
+			else
+				job->mpmd_set->first_pe[j] = -1;
+			job->mpmd_set->command[j] = xstrdup(tmp_cmd[i]);
 			job->mpmd_set->start_pe[j] = i;
 			job->mpmd_set->total_pe[j]++;
-		} else if (!strcmp(tmp_cmd[i-1], tmp_cmd[i])) {
+		} else if ((job->mpmd_set->placement[i] ==
+			    job->mpmd_set->placement[i-1]) &&
+			   !strcmp(tmp_cmd[i-1], tmp_cmd[i])) {
 			job->mpmd_set->total_pe[j]++;
 		} else {
-#if _DEBUG
-			info("MPMD command:%s start_pe[%d]:%d total_pe[%d]:%d ",
-			     tmp_cmd[i-1], j, job->mpmd_set->start_pe[j],
-			     j, job->mpmd_set->total_pe[j]);
-#endif
 			j++;
+			if (ranks_node_id[i] == job->nodeid)
+				job->mpmd_set->first_pe[j] = i;
+			else
+				job->mpmd_set->first_pe[j] = -1;
+			job->mpmd_set->num_cmds++;
+			job->mpmd_set->command[j] = xstrdup(tmp_cmd[i]);
 			job->mpmd_set->start_pe[j] = i;
 			job->mpmd_set->total_pe[j]++;
 		}
 	}
 #if _DEBUG
-	info("MPMD command:%s start_pe[%d]:%d total_pe[%d]:%d ",
-	     tmp_cmd[i-1], j, job->mpmd_set->start_pe[j],
-	     j, job->mpmd_set->total_pe[j]);
+	info("MPMD NumCmds=%d", job->mpmd_set->num_cmds);
+	for (i = 0; i < job->mpmd_set->num_cmds; i++) {
+		info("MPMD Command:%s FirstPE: %d StartPE:%d TotalPEs:%d ",
+		     job->mpmd_set->command[i],  job->mpmd_set->first_pe[i],
+		     job->mpmd_set->start_pe[i], job->mpmd_set->total_pe[i]);
+	}
 	for (i = 0; i < job->ntasks; i++) {
 		info("MPMD Placement[%d] nid%5.5d",
 		     i, job->mpmd_set->placement[i]);
@@ -475,9 +489,17 @@ fail:	error("Invalid MPMD configuration line %d", line_num);
  * multi_prog_parse() and used for Cray system. */
 extern void mpmd_free(stepd_step_rec_t *job)
 {
+	int i;
+
 	if (!job->mpmd_set)
 		return;
 
+	if (job->mpmd_set->command) {
+		for (i = 0; i < job->ntasks; i++)
+			xfree(job->mpmd_set->command[i]);
+		xfree(job->mpmd_set->command);
+	}
+	xfree(job->mpmd_set->first_pe);
 	xfree(job->mpmd_set->placement);
 	xfree(job->mpmd_set->start_pe);
 	xfree(job->mpmd_set->total_pe);

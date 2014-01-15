@@ -114,9 +114,14 @@ typedef struct {
 
 typedef struct {		/* MPMD specifications, needed for Cray */
 	int num_cmds;		/* Number of executables in MPMD set */
+	char **command;		/* Array of command name for each executable */
+	int *first_pe;		/* First rank on this node of each executable,
+				 * -1 if executable not on this node,
+				 * otherwise the same as start_pe */
 	int *start_pe;		/* Starting rank of each executable in set */
 	int *total_pe;		/* Total ranks of each executable in set */
-	int *placement;		/* NID associated with each rank in set */
+
+	int *placement;		/* NID of each rank (ntasks in length) */
 } mpmd_set_t;
 
 typedef struct {
