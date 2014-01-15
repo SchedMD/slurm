@@ -2514,7 +2514,9 @@ static bool _opt_verify(void)
 	if (opt.network == NULL)
 		opt.network = "us,sn_all,bulk_xfer";
 	setenv("SLURM_NETWORK", opt.network, 1);
-#elseif HAVE_NATIVE_CRAY
+#endif
+
+#ifdef HAVE_NATIVE_CRAY
 	if (opt.network && opt.shared)
 		fatal("Requesting network performance counters requires "
 		      "exclusive access.  Please add the --exclusive option "

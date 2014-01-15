@@ -1650,7 +1650,9 @@ static void _opt_args(int argc, char **argv)
 		opt.network = "us,sn_all,bulk_xfer";
 		setenv("SLURM_NETWORK", opt.network, 1);
 	}
-#elseif HAVE_NATIVE_CRAY
+#endif
+
+#ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
 	if (opt.network && opt.shared && (opt.jobid == NO_VAL))
 		fatal("Requesting network performance counters requires "
@@ -1659,6 +1661,7 @@ static void _opt_args(int argc, char **argv)
 	if (opt.network)
 		setenv("SLURM_NETWORK", opt.network, 1);
 #endif
+
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 

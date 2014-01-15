@@ -1562,7 +1562,9 @@ static bool _opt_verify(void)
 #ifdef HAVE_AIX
 	if (opt.network == NULL)
 		opt.network = "us,sn_all,bulk_xfer";
-#elseif HAVE_NATIVE_CRAY
+#endif
+
+#ifdef HAVE_NATIVE_CRAY
 	if (opt.network && opt.shared)
 		fatal("Requesting network performance counters requires "
 		      "exclusive access.  Please add the --exclusive option "
