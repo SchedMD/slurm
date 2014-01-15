@@ -120,7 +120,7 @@ static uint32_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Default path to lustre stats */
-const char proc_base_path[] = "/proc/fs/lustre/";
+const char proc_base_path[] = "/proc/fs/lustre";
 
 /**
  *  is lustre fs supported
@@ -142,8 +142,8 @@ static int _check_lustre_fs(void)
 			sprintf(lustre_directory, "%s/llite", proc_base_path);
 			proc_dir = opendir(proc_base_path);
 			if (!proc_dir) {
-				debug2("not able to read %s",
-					lustre_directory);
+				error("%s: not able to read %s %m",
+					  __func__, lustre_directory);
 				rc = SLURM_FAILURE;
 			} else {
 				closedir(proc_dir);
@@ -155,8 +155,17 @@ static int _check_lustre_fs(void)
 	return rc;
 }
 
-/**
- * read counters from all mounted lustre fs
+/* _read_lustre_counters()
+ * Read counters from all mounted lustre fs
+ * from the file stats under the directories:
+ *
+ * /proc/fs/lustre/llite/lustre-xxxx
+ *
+ * From the file stat we use 2 entries:
+ *
+ * read_bytes          17996 samples [bytes] 0 4194304 30994606834
+ * write_bytes         9007 samples [bytes] 2 4194304 31008331389
+ *
  */
 static int _read_lustre_counters(void )
 {
@@ -172,60 +181,81 @@ static int _read_lustre_counters(void )
 
 	proc_dir = opendir(lustre_dir);
 	if (proc_dir == NULL) {
-		error("Cannot open %s\n", lustre_dir);
+		error("%s: Cannot open %s %m", __func__, lustre_dir);
 		return SLURM_FAILURE;
 	}
 
-	entry = readdir(proc_dir);
+	while ((entry = readdir(proc_dir))) {
+		bool bread;
+		bool bwrote;
 
-	while (entry != NULL) {
+		if (strcmp(entry->d_name, ".") == 0
+			|| strcmp(entry->d_name, "..") == 0)
+			continue;
+
 		snprintf(path_stats, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
-			entry->d_name);
-		debug3("Found file %s\n", path_stats);
+				 entry->d_name);
+		debug3("%s: Found file %s", __func__, path_stats);
 
 		fff = fopen(path_stats, "r");
-		if (fff) {
-			while(1) {
-				if (!fgets(buffer,BUFSIZ,fff))
-					break;
-
-				if (strstr(buffer, "write_bytes")) {
-					sscanf(buffer,
-					       "%*s %"PRIu64" %*s %*s "
-					       "%*d %*d %"PRIu64"",
-					       &lustre_se.lustre_nb_writes,
-					       &lustre_se.lustre_write_bytes);
-					debug3("Lustre Counter "
-					       "%"PRIu64" "
-					       "write_bytes %"PRIu64" "
-					       "writes",
-					       lustre_se.lustre_write_bytes,
-					       lustre_se.lustre_nb_writes);
-				}
-
-				if (strstr(buffer, "read_bytes")) {
-					sscanf(buffer,
-					       "%*s %"PRIu64" %*s %*s "
-					       "%*d %*d %"PRIu64"",
-					       &lustre_se.lustre_nb_reads,
-					       &lustre_se.lustre_read_bytes);
-					debug3("Lustre Counter "
-					       "%"PRIu64" "
-					       "read_bytes %"PRIu64" "
-					       "reads",
-					       lustre_se.lustre_read_bytes,
-					       lustre_se.lustre_nb_reads);
-				}
-			}
-			fclose(fff);
+		if (fff == NULL) {
+			error("%s: Cannot open %s %m", __func__, path_stats);
+			continue;
 		}
-		entry = readdir(proc_dir);
+
+		bread = bwrote = false;
+		while (fgets(buffer, BUFSIZ, fff)) {
+
+			if (bread && bwrote)
+				break;
+
+			if (strstr(buffer, "write_bytes")) {
+				sscanf(buffer,
+					   "%*s %"PRIu64" %*s %*s "
+					   "%*d %*d %"PRIu64"",
+					   &lustre_se.lustre_nb_writes,
+					   &lustre_se.lustre_write_bytes);
+				debug3("%s "
+					   "%"PRIu64" "
+					   "write_bytes %"PRIu64" "
+					   "writes",
+					   __func__,
+					   lustre_se.lustre_write_bytes,
+					   lustre_se.lustre_nb_writes);
+				bwrote = true;
+			}
+
+			if (strstr(buffer, "read_bytes")) {
+				sscanf(buffer,
+					   "%*s %"PRIu64" %*s %*s "
+					   "%*d %*d %"PRIu64"",
+					   &lustre_se.lustre_nb_reads,
+					   &lustre_se.lustre_read_bytes);
+				debug3("%s "
+					   "%"PRIu64" "
+					   "read_bytes %"PRIu64" "
+					   "reads",
+					   __func__,
+					   lustre_se.lustre_read_bytes,
+					   lustre_se.lustre_nb_reads);
+				bread = true;
+			}
+		}
+		fclose(fff);
+
 		lustre_se.all_lustre_write_bytes +=
 			lustre_se.lustre_write_bytes;
 		lustre_se.all_lustre_read_bytes += lustre_se.lustre_read_bytes;
 		lustre_se.all_lustre_nb_writes += lustre_se.lustre_nb_writes;
 		lustre_se.all_lustre_nb_reads += lustre_se.lustre_nb_reads;
-	}
+		debug3("%s: all_lustre_write_bytes %lu all_lustre_read_bytes %lu ",
+			   __func__, lustre_se.all_lustre_write_bytes,
+			   lustre_se.all_lustre_read_bytes);
+		debug3("%s: all_lustre_nb_writes %lu all_lustre_nb_reads %lu",
+			   __func__, lustre_se.all_lustre_nb_writes,
+			   lustre_se.all_lustre_nb_reads);
+
+	} /* while ((entry = readdir(proc_dir)))  */
 	closedir(proc_dir);
 
 	lustre_se.last_update_time = lustre_se.update_time;
@@ -258,7 +288,7 @@ static int _update_node_filesystem(void)
 	fls->write_size = (double) lustre_se.all_lustre_write_bytes / 1048576;
 	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, fls);
 
-	debug3("Collection of Lustre counters Finished");
+	debug3("%s: Collection of Lustre counters Finished", __func__);
 	xfree(fls);
 
 

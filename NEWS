@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Modified 'sacctmgr show associations' command to show GrpCPURunMins
     by default.
  -- Replace the hostlist_push() function with a more efficient hostlist_push_host().
+ -- Modify the reading of lustre file system statistics to print more information
+    when debug and when io error occur.
 
 * Changes in Slurm 14.03.0pre5
 ==============================
