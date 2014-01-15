@@ -370,7 +370,20 @@ extern void multi_prog_parse(stepd_step_rec_t *job)
 		goto fail;
 
 #if _DEBUG
-	info("MPMD num_pe:%u", job->ntasks);
+	info("MPMD num_pe:%u", job->ntasks);		/* Total rank count */
+	info("MPMD num_pe_here:%u", job->node_tasks);	/* Node's rank count */
+//FIXME: DO WE HAVE OR NEED OTHER NODE'S RANK INFO?
+	for (i = 0; i < job->node_tasks; i++) {
+		if (!job->task) {
+			error("MPMD task is NULL");
+			break;
+		}
+		if (!job->task[i]) {
+			error("MPMD task[%d] is NULL", i);
+			break;
+		}
+		info("MPMD placement[%d] rank:%u", i, job->task[i]->gtid);
+	}
 #endif
 	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
 	job->mpmd_set->start_pe = xmalloc(sizeof(int) * job->ntasks);
