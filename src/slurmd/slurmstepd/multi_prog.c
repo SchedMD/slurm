@@ -440,9 +440,10 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 			job->mpmd_set->command[j] = xstrdup(tmp_cmd[i]);
 			job->mpmd_set->start_pe[j] = i;
 			job->mpmd_set->total_pe[j]++;
-		} else if ((job->mpmd_set->placement[i] ==
-			    job->mpmd_set->placement[i-1]) &&
-			   !strcmp(tmp_cmd[i-1], tmp_cmd[i])) {
+		} else if (!strcmp(tmp_cmd[i-1], tmp_cmd[i])) {
+			if ((ranks_node_id[i] == job->nodeid) &&
+			    (job->mpmd_set->first_pe[j] == -1))
+				job->mpmd_set->first_pe[j] = i;
 			job->mpmd_set->total_pe[j]++;
 		} else {
 			j++;
