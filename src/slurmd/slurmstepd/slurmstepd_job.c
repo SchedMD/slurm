@@ -73,7 +73,7 @@
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
 static void _srun_info_destructor(void *arg);
-static void _job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
+static void _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 				char *ifname, char *ofname, char *efname);
 static void _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog);
 
@@ -215,10 +215,10 @@ _expand_stdio_filename(char *filename, int gtaskid, stepd_step_rec_t *job)
 }
 
 static void
-_job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
+_job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 		    char *ifname, char *ofname, char *efname)
 {
-	int          i;
+	int          i, node_id = job->nodeid;
 	char        *in, *out, *err;
 
 	if (job->node_tasks == 0) {
@@ -231,10 +231,11 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
 		xmalloc(job->node_tasks * sizeof(stepd_step_task_info_t *));
 
 	for (i = 0; i < job->node_tasks; i++){
-		in = _expand_stdio_filename(ifname, gtid[i], job);
-		out = _expand_stdio_filename(ofname, gtid[i], job);
-		err = _expand_stdio_filename(efname, gtid[i], job);
-		job->task[i] = task_info_create(i, gtid[i], in, out, err);
+		in = _expand_stdio_filename(ifname, gtid[node_id][i], job);
+		out = _expand_stdio_filename(ofname, gtid[node_id][i], job);
+		err = _expand_stdio_filename(efname, gtid[node_id][i], job);
+		job->task[i] = task_info_create(i, gtid[node_id][i], in, out,
+						err);
 		if (!job->multi_prog) {
 			job->task[i]->argc = job->argc;
 			job->task[i]->argv = job->argv;
@@ -243,9 +244,10 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
 
 	if (job->multi_prog) {
 //		if (switch/cray)
-//			multi_prog_parse(job);
+//			multi_prog_parse(job, gtid);
 		for (i = 0; i < job->node_tasks; i++){
-			multi_prog_get_argv(job->argv[1], job->env, gtid[i],
+			multi_prog_get_argv(job->argv[1], job->env,
+					    gtid[node_id][i],
 					    &job->task[i]->argc,
 					    &job->task[i]->argv,
 					    job->argc, job->argv);
@@ -335,6 +337,9 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 
 	job->state	= SLURMSTEPD_STEP_STARTING;
 	job->node_tasks	= msg->tasks_to_launch[nodeid];
+	i = sizeof(uint16_t) * msg->nnodes;
+	job->task_cnts  = xmalloc(i);
+	memcpy(job->task_cnts, msg->tasks_to_launch, i);
 	job->ntasks	= msg->ntasks;
 	job->jobid	= msg->job_id;
 	job->stepid	= msg->job_step_id;
@@ -463,7 +468,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 
 	list_append(job->sruns, (void *) srun);
 
-	_job_init_task_info(job, msg->global_task_ids[nodeid],
+	_job_init_task_info(job, msg->global_task_ids,
 			    msg->ifname, msg->ofname, msg->efname);
 
 	return job;
@@ -608,6 +613,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);
 	xfree(job->step_alloc_cores);
+	xfree(job->task_cnts);
 	xfree(job->user_name);
 	xfree(job);
 }

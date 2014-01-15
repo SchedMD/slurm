@@ -128,6 +128,7 @@ typedef struct {
 	uint32_t       ntasks; /* total number of tasks in current job      */
 	uint32_t       nodeid; /* relative position of this node in job     */
 	uint32_t       node_tasks; /* number of tasks on *this* node        */
+	uint16_t      *task_cnts;  /* Number of tasks on each node in job   */
 	uint32_t       cpus_per_task;	/* number of cpus desired per task  */
 	uint32_t       debug;  /* debug level for job slurmd                */
 	uint32_t       job_mem;  /* MB of memory reserved for the job       */

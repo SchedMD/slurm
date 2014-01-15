@@ -296,9 +296,14 @@ fail:
 	return -1;
 }
 
-/* Parse an MPMD file and determine count and layout of each task for use
- * with Cray systems. Builds the mpmd_set structure in the job record. */
-extern void multi_prog_parse(stepd_step_rec_t *job)
+/*
+ * Parse an MPMD file and determine count and layout of each task for use
+ * with Cray systems. Builds the mpmd_set structure in the job record.
+ *
+ * IN/OUT job - job step details, builds mpmd_set structure
+ * IN gtid - Array of global task IDs, indexed by node_id and task
+ */
+extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 {
 	int i, j, line_num = 0, rank_id, total_ranks = 0;
 	char *line = NULL, *local_data = NULL;
@@ -372,17 +377,27 @@ extern void multi_prog_parse(stepd_step_rec_t *job)
 #if _DEBUG
 	info("MPMD num_pe:%u", job->ntasks);		/* Total rank count */
 	info("MPMD num_pe_here:%u", job->node_tasks);	/* Node's rank count */
-//FIXME: DO WE HAVE OR NEED OTHER NODE'S RANK INFO?
-	for (i = 0; i < job->node_tasks; i++) {
-		if (!job->task) {
-			error("MPMD task is NULL");
+	info("MPMD node_index:%u", job->nodeid);	/* This node's index */
+	for (i = 0; i < job->nnodes; i++) {
+		if (!job->task_cnts) {
+			error("MPMD job->task_cnts is NULL");
 			break;
 		}
-		if (!job->task[i]) {
-			error("MPMD task[%d] is NULL", i);
+		if (!job->task_cnts[i]) {
+			error("MPMD job->task_cnts[%d] is NULL", i);
 			break;
 		}
-		info("MPMD placement[%d] rank:%u", i, job->task[i]->gtid);
+		if (!gtid) {
+			error("MPMD gtid is NULL");
+			break;
+		}
+		if (!gtid[i]) {
+			error("MPMD gtid[%d] is NULL", i);
+			break;
+		}
+		for (j = 0; j < job->task_cnts[i]; j++) {
+			info("MPMD placement node[%d] rank:%u", i, gtid[i][j]);
+		}
 	}
 #endif
 	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
