@@ -157,6 +157,7 @@ typedef struct {
 
 	/* JOB specific info */
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
+	uint16_t  job_core_spec;	/* count of specialized cores */
 	char     *job_hostlist;		/* list of nodes allocated to JOB */
 	uint32_t  job_mem_limit;	/* MB of memory reserved per node OR
 					 * real memory per CPU | MEM_PER_CPU,
@@ -185,7 +186,8 @@ int slurm_crypto_fini(void);
  *
  * Returns NULL on failure.
  */
-slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg);
+slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
+				uint16_t protocol_version);
 
 /*
  * Copy a slurm credential.
@@ -220,7 +222,7 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg);
  *   - Credential has not been replayed
  */
 int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
-		      slurm_cred_arg_t *arg);
+		      slurm_cred_arg_t *arg, uint16_t protocol_version);
 
 /*
  * Rewind the last play of credential cred. This allows the credential
@@ -293,7 +295,7 @@ void slurm_cred_destroy(slurm_cred_t *cred);
 /*
  * Pack a slurm credential for network transmission
  */
-void slurm_cred_pack(slurm_cred_t *cred, Buf buffer);
+void slurm_cred_pack(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version);
 
 /*
  * Unpack a slurm job credential

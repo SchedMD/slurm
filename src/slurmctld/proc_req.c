@@ -99,9 +99,11 @@ static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _is_prolog_finished(uint32_t job_id);
 static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
-				       uid_t uid, uint32_t *step_id);
+				       uid_t uid, uint32_t *step_id,
+				       uint16_t protocol_version);
 static int          _make_step_cred(struct step_record *step_rec,
-				    slurm_cred_t **slurm_cred);
+				    slurm_cred_t **slurm_cred,
+				    uint16_t protocol_version);
 static void         _throttle_fini(int *active_rpc_cnt);
 static void         _throttle_start(int *active_rpc_cnt);
 
@@ -801,7 +803,7 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 
 /* create a credential for a given job step, return error code */
 static int _make_step_cred(struct step_record *step_ptr,
-			   slurm_cred_t **slurm_cred)
+			   slurm_cred_t **slurm_cred, uint16_t protocol_version)
 {
 	slurm_cred_arg_t cred_arg;
 	struct job_record* job_ptr = step_ptr->job_ptr;
@@ -816,6 +818,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.uid      = job_ptr->user_id;
 
 	cred_arg.job_core_bitmap = job_resrcs_ptr->core_bitmap;
+	cred_arg.job_core_spec   = job_ptr->details->core_spec;
 	cred_arg.job_hostlist    = job_resrcs_ptr->nodes;
 	cred_arg.job_mem_limit   = job_ptr->details->pn_min_memory;
 	cred_arg.job_nhosts      = job_resrcs_ptr->nhosts;
@@ -836,7 +839,8 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;
 	cred_arg.sock_core_rep_count = job_resrcs_ptr->sock_core_rep_count;
 
-	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg);
+	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
+					protocol_version);
 	if (*slurm_cred == NULL) {
 		error("slurm_cred_create error");
 		return ESLURM_INVALID_JOB_CREDENTIAL;
@@ -1972,7 +1976,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		error_code = step_create(req_step_msg, &step_rec, false);
 	}
 	if (error_code == SLURM_SUCCESS) {
-		error_code = _make_step_cred(step_rec, &slurm_cred);
+		error_code = _make_step_cred(step_rec, &slurm_cred,
+					     msg->protocol_version);
 		ext_sensors_g_get_stepstartdata(step_rec);
 	}
 	END_TIMER2("_slurm_rpc_job_step_create");
@@ -2967,7 +2972,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			}
 
 			error_code = _launch_batch_step(job_desc_msg, uid,
-							&step_id);
+							&step_id,
+							msg->protocol_version);
 			unlock_slurmctld(job_write_lock);
 			_throttle_fini(&active_rpc_cnt);
 			END_TIMER2("_slurm_rpc_submit_batch_job");
@@ -4019,8 +4025,8 @@ _xduparray2(uint32_t size, char ** array)
  * IN: uid launching this batch job, which has already been validated.
  * OUT: SLURM error code if launch fails, or SLURM_SUCCESS
  */
-int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
-		       uint32_t *step_id)
+static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
+			      uint32_t *step_id, uint16_t protocol_version)
 {
 	struct job_record  *job_ptr;
 	time_t now = time(NULL);
@@ -4114,7 +4120,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 						pn_min_memory;
 	}
 
-	if (make_batch_job_cred(launch_msg_ptr, job_ptr)) {
+	if (make_batch_job_cred(launch_msg_ptr, job_ptr, protocol_version)) {
 		error("aborting batch step %u.%u", job_ptr->job_id,
 		      job_ptr->group_id);
 		xfree(launch_msg_ptr->nodes);

@@ -622,8 +622,10 @@ next_part:		part_ptr = (struct part_record *)
 			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
 			     job_ptr->job_id, job_ptr->nodes,
 			     job_ptr->total_cpus);
-			if (job_ptr->details->prolog_running == 0)
-				launch_msg = build_launch_job_msg(job_ptr);
+			if (job_ptr->details->prolog_running == 0) {
+				launch_msg = build_launch_job_msg(job_ptr,
+							msg->protocol_version);
+			}
 		}
 		break;
 	}
@@ -1180,7 +1182,8 @@ extern int sort_job_queue2(void *x, void *y)
 }
 
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
-extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr)
+extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
+						    uint16_t protocol_version)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
 
@@ -1203,7 +1206,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr)
 	launch_msg_ptr->pn_min_memory = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->restart_cnt   = job_ptr->restart_cnt;
 
-	if (make_batch_job_cred(launch_msg_ptr, job_ptr)) {
+	if (make_batch_job_cred(launch_msg_ptr, job_ptr, protocol_version)) {
 		error("aborting batch job %u", job_ptr->job_id);
 		/* FIXME: This is a kludge, but this event indicates a serious
 		 * problem with OpenSSH and should never happen. We are
@@ -1259,7 +1262,7 @@ extern void launch_job(struct job_record *job_ptr)
 	batch_job_launch_msg_t *launch_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
 
-	launch_msg_ptr = build_launch_job_msg(job_ptr);
+	launch_msg_ptr = build_launch_job_msg(job_ptr, SLURM_PROTOCOL_VERSION);
 	if (launch_msg_ptr == NULL)
 		return;
 
@@ -1283,7 +1286,8 @@ extern void launch_job(struct job_record *job_ptr)
  * RET 0 or error code
  */
 extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
-			       struct job_record *job_ptr)
+			       struct job_record *job_ptr,
+			       uint16_t protocol_version)
 {
 	slurm_cred_arg_t cred_arg;
 	job_resources_t *job_resrcs_ptr;
@@ -1299,6 +1303,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 
 	cred_arg.job_hostlist        = job_resrcs_ptr->nodes;
 	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
+	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
 	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
 	cred_arg.job_gres_list       = job_ptr->gres_list;
@@ -1318,7 +1323,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.sock_core_rep_count = job_resrcs_ptr->sock_core_rep_count;
 
 	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
-						 &cred_arg);
+						 &cred_arg, protocol_version);
 
 	if (launch_msg_ptr->cred)
 		return SLURM_SUCCESS;

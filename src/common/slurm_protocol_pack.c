@@ -3842,7 +3842,7 @@ pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 		pack32(msg->job_step_id, buffer);
 		pack_slurm_step_layout(
 			msg->step_layout, buffer, protocol_version);
-		slurm_cred_pack(msg->cred, buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
 		select_g_select_jobinfo_pack(
 			msg->select_jobinfo, buffer, protocol_version);
 		switch_g_pack_jobinfo(msg->switch_job, buffer,
@@ -7451,7 +7451,7 @@ _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 	for (i = 0; i < msg->num_io_port; i++)
 		pack16((uint16_t)msg->io_port[i], buffer);
 
-	slurm_cred_pack(msg->cred, buffer);
+	slurm_cred_pack(msg->cred, buffer, protocol_version);
 }
 
 static int
@@ -7651,7 +7651,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->task_dist, buffer);
 		pack16(msg->node_cpus, buffer);
 
-		slurm_cred_pack(msg->cred, buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
 		for (i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
 			pack32_array(msg->global_task_ids[i],
@@ -7724,7 +7724,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->cpus_per_task, buffer);
 		pack16(msg->task_dist, buffer);
 
-		slurm_cred_pack(msg->cred, buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
 		for (i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
 			pack16(0, buffer);
@@ -7798,7 +7798,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->cpus_per_task, buffer);
 		pack16(msg->task_dist, buffer);
 
-		slurm_cred_pack(msg->cred, buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
 		for (i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
 			pack16(0, buffer);
@@ -9502,7 +9502,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 
 		pack32(msg->job_mem, buffer);
 
-		slurm_cred_pack(msg->cred, buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
 					     protocol_version);
@@ -9555,7 +9555,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 
 		pack32(msg->job_mem, buffer);
 
-		slurm_cred_pack(msg->cred, buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
 					     protocol_version);
@@ -9607,7 +9607,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 
 		pack32(msg->job_mem, buffer);
 
-		slurm_cred_pack(msg->cred, buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
 					     protocol_version);

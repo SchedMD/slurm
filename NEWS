@@ -12,9 +12,15 @@ documents those changes that are of interest to users and admins.
     are not longer set DOWN, they are set to DRAIN instead.
  -- Modified 'sacctmgr show associations' command to show GrpCPURunMins
     by default.
- -- Replace the hostlist_push() function with a more efficient hostlist_push_host().
- -- Modify the reading of lustre file system statistics to print more information
-    when debug and when io error occur.
+ -- Replace the hostlist_push() function with a more efficient
+    hostlist_push_host().
+ -- Modify the reading of lustre file system statistics to print more
+    information when debug and when io error occur.
+ -- Add specialized core count field to job credential data.
+    NOTE: This changes the communications protocol from other pre-releases of
+    version 14.03. All programs must be cancelled and daemons upgraded from
+    previous pre-releases of version 14.03. Upgrades from version 2.6 or earlier
+    can take place without loss of jobs
 
 * Changes in Slurm 14.03.0pre5
 ==============================

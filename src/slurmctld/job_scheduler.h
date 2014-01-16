@@ -70,7 +70,8 @@ extern List build_job_queue(bool clear_start, bool backfill);
 
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
 extern batch_job_launch_msg_t *build_launch_job_msg(
-					struct job_record *job_ptr);
+					struct job_record *job_ptr,
+					uint16_t protocol_versin);
 /*
  * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	terminated.
@@ -109,7 +110,8 @@ extern void launch_job(struct job_record *job_ptr);
  * RET 0 or error code
  */
 extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
-			       struct job_record *job_ptr);
+			       struct job_record *job_ptr,
+			       uint16_t protocol_version);
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(struct job_record *job_ptr);

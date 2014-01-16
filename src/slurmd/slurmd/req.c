@@ -836,7 +836,8 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
  */
 static int
 _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
-		      int node_id, hostset_t *step_hset)
+		      int node_id, hostset_t *step_hset,
+		      uint16_t protocol_version)
 {
 	slurm_cred_arg_t arg;
 	hostset_t        s_hset = NULL;
@@ -854,7 +855,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	 * First call slurm_cred_verify() so that all valid
 	 * credentials are checked
 	 */
-	if ((rc = slurm_cred_verify(conf->vctx, cred, &arg)) < 0) {
+	rc = slurm_cred_verify(conf->vctx, cred, &arg, protocol_version);
+	if (rc < 0) {
 		verified = false;
 		if ((!user_ok) || (errno != ESLURMD_INVALID_JOB_CREDENTIAL))
 			return SLURM_ERROR;
@@ -1105,7 +1107,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 #endif
-	if (_check_job_credential(req, req_uid, nodeid, &step_hset) < 0) {
+	if (_check_job_credential(req, req_uid, nodeid, &step_hset,
+				  msg->protocol_version) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m",
 		      (long) req_uid, host);
