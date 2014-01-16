@@ -2235,10 +2235,12 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		}
 		lock_slurmctld(job_write_lock);
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
-		error_code = validate_nodes_via_front_end(node_reg_stat_msg);
+		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
+							msg->protocol_version);
 #else
 		validate_jobs_on_node(node_reg_stat_msg);
-		error_code = validate_node_specs(node_reg_stat_msg);
+		error_code = validate_node_specs(node_reg_stat_msg,
+						 msg->protocol_version);
 #endif
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_node_registration");

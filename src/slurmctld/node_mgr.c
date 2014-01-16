@@ -795,7 +795,62 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		packstr (dump_node_ptr->name, buffer);
+		packstr (dump_node_ptr->node_hostname, buffer);
+		packstr (dump_node_ptr->comm_name, buffer);
+		pack16  (dump_node_ptr->node_state, buffer);
+		pack16  (dump_node_ptr->protocol_version, buffer);
+		/* On a bluegene system always use the regular node
+		* infomation not what is in the config_ptr.
+		*/
+	#ifndef HAVE_BG
+		if (slurmctld_conf.fast_schedule) {
+			/* Only data from config_record used for scheduling */
+			pack16(dump_node_ptr->config_ptr->cpus, buffer);
+			pack16(dump_node_ptr->config_ptr->boards, buffer);
+			pack16(dump_node_ptr->config_ptr->sockets, buffer);
+			pack16(dump_node_ptr->config_ptr->cores, buffer);
+			pack16(dump_node_ptr->config_ptr->threads, buffer);
+			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
+			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
+		} else {
+	#endif
+			/* Individual node data used for scheduling */
+			pack16(dump_node_ptr->cpus, buffer);
+			pack16(dump_node_ptr->boards, buffer);
+			pack16(dump_node_ptr->sockets, buffer);
+			pack16(dump_node_ptr->cores, buffer);
+			pack16(dump_node_ptr->threads, buffer);
+			pack32(dump_node_ptr->real_memory, buffer);
+			pack32(dump_node_ptr->tmp_disk, buffer);
+	#ifndef HAVE_BG
+		}
+	#endif
+		pack32(dump_node_ptr->cpu_load, buffer);
+		pack32(dump_node_ptr->config_ptr->weight, buffer);
+		pack32(dump_node_ptr->reason_uid, buffer);
+
+		pack_time(dump_node_ptr->boot_time, buffer);
+		pack_time(dump_node_ptr->reason_time, buffer);
+		pack_time(dump_node_ptr->slurmd_start_time, buffer);
+
+		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
+					      buffer, protocol_version);
+
+		packstr(dump_node_ptr->arch, buffer);
+		packstr(dump_node_ptr->features, buffer);
+		if (dump_node_ptr->gres)
+			packstr(dump_node_ptr->gres, buffer);
+		else
+			packstr(dump_node_ptr->config_ptr->gres, buffer);
+		packstr(dump_node_ptr->os, buffer);
+		packstr(dump_node_ptr->reason, buffer);
+		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
+					protocol_version);
+		ext_sensors_data_pack(dump_node_ptr->ext_sensors, buffer,
+					protocol_version);
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
 		packstr (dump_node_ptr->node_hostname, buffer);
 		packstr (dump_node_ptr->comm_name, buffer);
@@ -1742,10 +1797,12 @@ extern int update_node_record_acct_gather_data(
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
  * IN reg_msg - node registration message
+ * IN protocol_version - Version of Slurm on this node
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * NOTE: READ lock_slurmctld config before entry
  */
-extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
+extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
+			       uint16_t protocol_version)
 {
 	int error_code, i, node_inx;
 	struct config_record *config_ptr;
@@ -1764,6 +1821,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	config_ptr = node_ptr->config_ptr;
 	error_code = SLURM_SUCCESS;
 
+	node_ptr->protocol_version = protocol_version;
 	if (cr_flag == NO_VAL) {
 		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
 		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
@@ -2109,11 +2167,13 @@ static front_end_record_t * _front_end_reg(
  *	a valid configuration as soon as the front-end registers. Individual
  *	nodes will not register with this configuration
  * IN reg_msg - node registration message
+ * IN protocol_version - Version of Slurm on this node
  * RET 0 if no error, SLURM error code otherwise
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_nodes_via_front_end(
-		slurm_node_registration_status_msg_t *reg_msg)
+		slurm_node_registration_status_msg_t *reg_msg,
+		uint16_t protocol_version)
 {
 	int error_code = 0, i, j, rc;
 	bool update_node_state = false;
@@ -2137,6 +2197,7 @@ extern int validate_nodes_via_front_end(
 	if (front_end_ptr == NULL)
 		return ESLURM_INVALID_NODE_NAME;
 
+	front_end_ptr->protocol_version = protocol_version;
 	if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		error("Prolog failed on node %s", reg_msg->node_name);
 		/* Do NOT set the node DOWN here. Unlike non-front-end systems,

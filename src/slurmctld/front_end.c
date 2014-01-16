@@ -129,7 +129,22 @@ static int _open_front_end_state_file(char **state_file)
 static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 			    Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		packstr(dump_front_end_ptr->allow_groups, buffer);
+		packstr(dump_front_end_ptr->allow_users, buffer);
+		pack_time(dump_front_end_ptr->boot_time, buffer);
+		packstr(dump_front_end_ptr->deny_groups, buffer);
+		packstr(dump_front_end_ptr->deny_users, buffer);
+		packstr(dump_front_end_ptr->name, buffer);
+		pack16(dump_front_end_ptr->node_state, buffer);
+		pack16(dump_front_end_ptr->protocol_version, buffer);
+
+		packstr(dump_front_end_ptr->reason, buffer);
+		pack_time(dump_front_end_ptr->reason_time, buffer);
+		pack32(dump_front_end_ptr->reason_uid, buffer);
+
+		pack_time(dump_front_end_ptr->slurmd_start_time, buffer);
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		packstr(dump_front_end_ptr->allow_groups, buffer);
 		packstr(dump_front_end_ptr->allow_users, buffer);
 		pack_time(dump_front_end_ptr->boot_time, buffer);

@@ -191,3 +191,15 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 		       msg->global_task_ids[node_id][i]);
 	}
 }
+
+/* Given a Slurm protocol version, return the version of Slurm that uses it */
+extern char *protocol_to_version(uint16_t protocol_version)
+{
+	if (protocol_version == SLURM_14_03_PROTOCOL_VERSION)
+		return "14.03";
+	if (protocol_version == SLURM_2_6_PROTOCOL_VERSION)
+		return "2.6";
+	if (protocol_version == SLURM_2_5_PROTOCOL_VERSION)
+		return "2.5";
+	return "N/A";
+}

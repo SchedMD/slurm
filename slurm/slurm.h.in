@@ -1583,6 +1583,7 @@ typedef struct node_info {
 	char *node_hostname;	/* node's hostname (optional) */
 	uint16_t node_state;	/* see enum node_states */
 	char *os;		/* operating system currently running */
+	uint16_t protocol_version; /* Slurm version number */
 	uint32_t real_memory;	/* configured MB of real memory on the node */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	time_t reason_time;	/* Time stamp when reason was set, ignore if
@@ -1621,6 +1622,7 @@ typedef struct front_end_info {
 	char *deny_users;		/* denied user string */
 	char *name;			/* node name */
 	uint16_t node_state;		/* see enum node_states */
+	uint16_t protocol_version;	/* Slurm version number */
 	char *reason;			/* reason for node being DOWN or
 					 * DRAINING */
 	time_t reason_time;		/* Time stamp when reason was set,

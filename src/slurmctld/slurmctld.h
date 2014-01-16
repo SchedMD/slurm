@@ -277,6 +277,7 @@ typedef struct front_end_record {
 					 * clear after logging this */
 	slurm_addr_t slurm_addr;	/* network address */
 	uint16_t port;			/* frontend specific port */
+	uint16_t protocol_version;	/* Slurm version number */
 	char *reason;			/* reason for down frontend node */
 	time_t reason_time;		/* Time stamp when reason was set,
 					 * ignore if no reason is set. */
@@ -1969,21 +1970,25 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
  * IN reg_msg - node registration message
+ * IN protocol_version - Version of Slurm on this node
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * NOTE: READ lock_slurmctld config before entry
  */
-extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg);
+extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
+			       uint16_t protocol_version);
 
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
  *	a valid configuration as soon as the front-end registers. Individual
  *	nodes will not register with this configuration
  * IN reg_msg - node registration message
+ * IN protocol_version - Version of Slurm on this node
  * RET 0 if no error, SLURM error code otherwise
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_nodes_via_front_end(
-		slurm_node_registration_status_msg_t *reg_msg);
+		slurm_node_registration_status_msg_t *reg_msg,
+		uint16_t protocol_version);
 
 /*
  * validate_slurm_user - validate that the uid is authorized to see

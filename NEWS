@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     version 14.03. All programs must be cancelled and daemons upgraded from
     previous pre-releases of version 14.03. Upgrades from version 2.6 or earlier
     can take place without loss of jobs
+ -- Add version number to node and front-end configuration information visible
+    using the scontrol tool.
 
 * Changes in Slurm 14.03.0pre5
 ==============================

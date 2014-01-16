@@ -3000,7 +3000,47 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 	xassert(node != NULL);
 
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
+		safe_unpack16(&node->node_state, buffer);
+		safe_unpack16(&node->protocol_version, buffer);
+
+		safe_unpack16(&node->cpus, buffer);
+		safe_unpack16(&node->boards, buffer);
+		safe_unpack16(&node->sockets, buffer);
+		safe_unpack16(&node->cores, buffer);
+		safe_unpack16(&node->threads, buffer);
+
+		safe_unpack32(&node->real_memory, buffer);
+		safe_unpack32(&node->tmp_disk, buffer);
+		safe_unpack32(&node->cpu_load, buffer);
+		safe_unpack32(&node->weight, buffer);
+		safe_unpack32(&node->reason_uid, buffer);
+
+		safe_unpack_time(&node->boot_time, buffer);
+		safe_unpack_time(&node->reason_time, buffer);
+		safe_unpack_time(&node->slurmd_start_time, buffer);
+
+		select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer,
+						protocol_version);
+
+		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
+		if (acct_gather_energy_unpack(&node->energy, buffer,
+					      protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
+					      protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
 				       buffer);
@@ -9270,7 +9310,26 @@ _unpack_front_end_info_members(front_end_info_t *front_end, Buf buffer,
 
 	xassert(front_end != NULL);
 
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&front_end->allow_groups, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->allow_users, &uint32_tmp,
+				       buffer);
+		safe_unpack_time(&front_end->boot_time, buffer);
+		safe_unpackstr_xmalloc(&front_end->deny_groups, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->deny_users, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->name, &uint32_tmp, buffer);
+		safe_unpack16(&front_end->node_state, buffer);
+		safe_unpack16(&front_end->protocol_version, buffer);
+
+		safe_unpackstr_xmalloc(&front_end->reason, &uint32_tmp, buffer);
+		safe_unpack_time(&front_end->reason_time, buffer);
+		safe_unpack32(&front_end->reason_uid, buffer);
+
+		safe_unpack_time(&front_end->slurmd_start_time, buffer);
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&front_end->allow_groups, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&front_end->allow_users, &uint32_tmp,

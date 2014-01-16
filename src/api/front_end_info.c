@@ -137,6 +137,9 @@ slurm_sprint_front_end_table (front_end_info_t * front_end_ptr,
 	snprintf(tmp_line, sizeof(tmp_line), "State=%s%s ",
 		 node_state_string(my_state), drain_str);
 	xstrcat(out, tmp_line);
+	snprintf(tmp_line, sizeof(tmp_line), "Version=%s ",
+		 protocol_to_version(front_end_ptr->protocol_version));
+	xstrcat(out, tmp_line);
 	if (front_end_ptr->reason_time) {
 		char *user_name = uid_to_string(front_end_ptr->reason_uid);
 		slurm_make_time_str((time_t *)&front_end_ptr->reason_time,
@@ -164,6 +167,10 @@ slurm_sprint_front_end_table (front_end_info_t * front_end_ptr,
 			    time_str, sizeof(time_str));
 	snprintf(tmp_line, sizeof(tmp_line), "SlurmdStartTime=%s", time_str);
 	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
 
 	/****** Line 3 (optional) ******/
 	if (front_end_ptr->allow_groups || front_end_ptr->allow_users ||
