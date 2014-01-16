@@ -1260,9 +1260,22 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 extern void launch_job(struct job_record *job_ptr)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
+	uint16_t protocol_version = (uint16_t) NO_VAL;
 	agent_arg_t *agent_arg_ptr;
 
-	launch_msg_ptr = build_launch_job_msg(job_ptr, SLURM_PROTOCOL_VERSION);
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr;
+	front_end_ptr = find_front_end_record(job_ptr->batch_host);
+	if (front_end_ptr)
+		protocol_version = front_end_ptr->protocol_version;
+#else
+	struct node_record *node_ptr;
+	node_ptr = find_node_record(job_ptr->batch_host);
+	if (node_ptr)
+		protocol_version = node_ptr->protocol_version;
+#endif
+
+	launch_msg_ptr = build_launch_job_msg(job_ptr, protocol_version);
 	if (launch_msg_ptr == NULL)
 		return;
 
