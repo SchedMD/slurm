@@ -687,7 +687,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_NODES:
 		opt.nodes_set_env = get_resource_arg_range( val ,"OPT_NODES",
 							     &opt.min_nodes,
-							     &opt.max_nodes, 
+							     &opt.max_nodes,
 							     false);
 		if (opt.nodes_set_env == false) {
 			error("\"%s=%s\" -- invalid node count. ignoring...",
@@ -2122,7 +2122,7 @@ extern void init_spank_env(void)
 		spank_set_job_env(name, value, 1);
 		xfree(name);
 	}
-		
+
 }
 
 /* Functions used by SPANK plugins to read and write job environment
@@ -2444,7 +2444,8 @@ static void _usage(void)
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "            [--switches=max-switches{@max-time-to-wait}]\n"
-"            [-w hosts...] [-x hosts...] executable [args...]\n");
+"            [-w hosts...] [-x hosts...] executable [args...]\n"
+"            [--acctg-freq=<datatype>=<interval>");
 }
 
 static void _help(void)
@@ -2457,6 +2458,9 @@ static void _help(void)
 "Parallel run options:\n"
 "  -A, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
+"      --acctg-freq=<datatype>=<interval> accounting and profiling sampling\n" "                              intervals. Supported datatypes:\n"
+"                              task=<interval> energy=<interval>\n"
+"                              network=<interval> filesystem=<interval>\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --checkpoint=time       job step checkpoint interval\n"
 "      --checkpoint-dir=dir    directory to store job step checkpoint image \n"

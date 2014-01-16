@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- sview - Fix regression where the Node tab wasn't able to add/remove columns.
  -- Fix slurmstepd lock when job terminates inside the infiniband
     network traffic accounting plugin.
+ -- Correct the documentation to read filesystem instead of Lustre. Update
+    the srun help.
 
 * Changes in Slurm 2.6.5
 ========================

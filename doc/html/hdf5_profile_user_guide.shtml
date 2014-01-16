@@ -160,8 +160,9 @@ combined with other values.)
 <DT><B>Energy</B>
 <DD>Energy data is collected.</DD></DT>
 
-<DT><B>Lustre</B>
-<DD>Lustre data is collected.</DD></DT>
+<DT><B>Filesystem</B>
+<DD>Filesystem data is collected. Currently only
+Lustre filesystem is supported.</DD></DT>
 
 <DT><B>Network</B>
 <DD>Network (InfiniBand) data is collected.</DD></DT>
