@@ -1587,7 +1587,7 @@ extern char *node_state_string(uint16_t inx)
 		if (no_resp_flag)
 			return "IDLE*";
 		if (net_flag)
-			return "NETPERF";
+			return "PERFCTRS";
 		if (res_flag)
 			return "RESERVED";
 		return "IDLE";
