@@ -202,8 +202,6 @@ extern int acct_gather_profile_fini(void)
 	if (!g_context)
 		goto done;
 
-	init_run = false;
-
 	for (i=0; i < PROFILE_CNT; i++) {
 		switch (i) {
 		case PROFILE_ENERGY:
@@ -226,6 +224,7 @@ extern int acct_gather_profile_fini(void)
 	}
 
 	rc = plugin_context_destroy(g_context);
+	init_run = false;
 	g_context = NULL;
 done:
 	slurm_mutex_unlock(&g_context_lock);

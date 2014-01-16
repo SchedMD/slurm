@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Do not reset a job's priority when the slurmctld restarts if previously
     set to some specific value.
  -- sview - Fix regression where the Node tab wasn't able to add/remove columns.
+ -- Fix slurmstepd lock when job terminates inside the infiniband
+    network traffic accounting plugin.
 
 * Changes in Slurm 2.6.5
 ========================
