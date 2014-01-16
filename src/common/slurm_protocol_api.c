@@ -2150,6 +2150,19 @@ uint16_t slurm_get_task_plugin_param(void)
 	return task_plugin_param;
 }
 
+/* slurm_get_core_spec_plugin
+ * RET core_spec plugin name, must be xfreed by caller */
+char *slurm_get_core_spec_plugin(void)
+{
+	char *core_spec_plugin = NULL;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	core_spec_plugin = xstrdup(conf->core_spec_plugin);
+	slurm_conf_unlock();
+	return core_spec_plugin;
+}
+
 /* slurm_get_job_container_plugin
  * RET job_container plugin name, must be xfreed by caller */
 char *slurm_get_job_container_plugin(void)

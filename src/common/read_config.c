@@ -177,6 +177,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"BatchStartTimeout", S_P_UINT16},
 	{"CheckpointType", S_P_STRING},
 	{"CacheGroups", S_P_UINT16},
+	{"CoreSpecPlugin", S_P_STRING},
 	{"ClusterName", S_P_STRING},
 	{"CompleteWait", S_P_UINT16},
 	{"ControlAddr", S_P_STRING},
@@ -2115,6 +2116,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
+	xfree (ctl_conf_ptr->core_spec_plugin);
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
@@ -2221,6 +2223,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->complete_wait		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
+	xfree (ctl_conf_ptr->core_spec_plugin);
 	xfree (ctl_conf_ptr->crypto_type);
 	ctl_conf_ptr->def_mem_per_cpu           = 0;
 	ctl_conf_ptr->debug_flags		= 0;
@@ -2795,6 +2798,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->group_info = DEFAULT_GROUP_INFO;
 	if (s_p_get_uint16(&uint16_tmp, "CacheGroups", hashtbl) && uint16_tmp)
 		conf->group_info |= GROUP_CACHE;
+
+	if (!s_p_get_string(&conf->core_spec_plugin, "CoreSpecPlugin",
+	    hashtbl)) {
+		conf->core_spec_plugin =
+			xstrdup(DEFAULT_CORE_SPEC_PLUGIN);
+	}
 	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateForce", hashtbl) &&
 	    uint16_tmp)
 		conf->group_info |= GROUP_FORCE;

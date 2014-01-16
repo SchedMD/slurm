@@ -47,6 +47,8 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- Added CoreSpecPlugin configuration parameter and core specialization plugin
+    infrastructure.
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
     DenyAccounts and DenyQOS to provide greater control over use.

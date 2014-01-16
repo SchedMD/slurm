@@ -4844,6 +4844,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->complete_wait, buffer);
 		packstr(build_ptr->control_addr, buffer);
 		packstr(build_ptr->control_machine, buffer);
+		packstr(build_ptr->core_spec_plugin, buffer);
 		packstr(build_ptr->crypto_type, buffer);
 
 		pack32(build_ptr->def_mem_per_cpu, buffer);
@@ -5561,6 +5562,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->control_machine,
 				       &uint32_tmp,buffer);
+		safe_unpackstr_xmalloc(&build_ptr->core_spec_plugin,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint32_tmp,
 				       buffer);
 

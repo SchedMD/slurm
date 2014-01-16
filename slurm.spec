@@ -862,6 +862,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/acct_gather_profile_none.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
+%{_libdir}/slurm/core_spec_cray.so
+%{_libdir}/slurm/core_spec_none.so
 %{_libdir}/slurm/ext_sensors_none.so
 %{_libdir}/slurm/gres_gpu.so
 %{_libdir}/slurm/gres_mic.so

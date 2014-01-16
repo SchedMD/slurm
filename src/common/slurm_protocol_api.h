@@ -711,6 +711,10 @@ char *slurm_get_task_plugin(void);
 /* slurm_get_task_plugin_param */
 uint16_t slurm_get_task_plugin_param(void);
 
+/* slurm_get_core_spec_plugin
+ * RET core_spec plugin name, must be xfreed by caller */
+char *slurm_get_core_spec_plugin(void);
+
 /* slurm_get_job_container_plugin
  * RET job_container plugin name, must be xfreed by caller */
 char *slurm_get_job_container_plugin(void);

@@ -6,6 +6,7 @@ SUBDIRS = \
 	acct_gather_filesystem  \
 	auth			\
 	checkpoint		\
+	core_spec		\
 	crypto			\
 	ext_sensors		\
 	gres			\

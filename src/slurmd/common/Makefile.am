@@ -9,6 +9,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 noinst_LTLIBRARIES = libslurmd_common.la
 libslurmd_common_la_SOURCES =    \
+	core_spec_plugin.c core_spec_plugin.h \
 	job_container_plugin.c job_container_plugin.h \
 	proctrack.c proctrack.h \
 	setproctitle.c setproctitle.h \

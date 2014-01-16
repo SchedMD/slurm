@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     using the scontrol tool.
  -- Add idea of a RESERVED flag for node state so idle resources are marked
     not "idle" when in a reservation.
+ -- Added core specialization plugin infrastructure.
 
 * Changes in Slurm 14.03.0pre5
 ==============================

@@ -399,6 +399,21 @@ slurmctld daemon is running on only one of these hosts at a time.
 See the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
 .TP
+\fBCoreSpecPlugin\fR
+Identifies the plugins to be used for enforcement of core specialization.
+The slurmd daemon must be restarted for a change in CoreSpecPlugin
+to take effect.
+Acceptable values at present include:
+.RS
+.TP 20
+\fBcore_spec/cray\fR
+used only for Cray systems
+.TP
+\fBcore_spec/none\fR
+used for all other system types
+.RE
+
+.TP
 \fBCryptoType\fR
 The cryptographic signature tool to be used in the creation of
 job step credentials.

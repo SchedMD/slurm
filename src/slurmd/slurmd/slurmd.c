@@ -99,12 +99,13 @@
 #include "src/common/xsignal.h"
 #include "src/common/plugstack.h"
 
-#include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmd/req.h"
-#include "src/slurmd/slurmd/get_mach_stat.h"
-#include "src/slurmd/slurmd/slurmd_plugstack.h"
+#include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/req.h"
+#include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmd/slurmd_plugstack.h"
 
 #define GETOPT_ARGS	"cCd:Df:hL:Mn:N:vV"
 
@@ -305,6 +306,8 @@ main (int argc, char *argv[])
 		fatal("Unable to initialize job_container plugin.");
 	if (container_g_restore(conf->spooldir, !conf->cleanstart))
 		error("Unable to restore job_container state.");
+	if (core_spec_g_init() < 0)
+		fatal("Unable to initialize core specialization plugin.");
 	if (switch_g_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
 	if (conf->cleanstart && switch_g_clear_node_state())
@@ -1583,6 +1586,7 @@ cleanup:
 static int
 _slurmd_fini(void)
 {
+	core_spec_g_fini();
 	switch_g_node_fini();
 	jobacct_gather_fini();
 	acct_gather_profile_fini();

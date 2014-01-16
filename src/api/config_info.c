@@ -301,6 +301,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CoreSpecPlugin");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->core_spec_plugin);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CryptoType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->crypto_type);
 	list_append(ret_list, key_pair);
