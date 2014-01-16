@@ -584,7 +584,14 @@ enum node_states {
 };
 #define NODE_STATE_BASE       0x000f
 #define NODE_STATE_FLAGS      0xfff0
-#define NODE_STATE_RES        0x0020
+#define NODE_STATE_NET        0x0010    /* If a node is using Cray's
+					 * Network Performance
+					 * Counters but isn't in a
+					 * allocation. */
+#define NODE_STATE_RES        0x0020    /* If a node is in a
+					 * reservation (used primarily
+					 * to note a node isn't idle
+					 * for non-reservation jobs) */
 #define NODE_STATE_UNDRAIN    0x0040	/* Clear DRAIN flag for a node */
 #define NODE_STATE_CLOUD      0x0080	/* node comes from cloud */
 #define NODE_RESUME           0x0100	/* Restore a DRAINED, DRAINING, DOWN

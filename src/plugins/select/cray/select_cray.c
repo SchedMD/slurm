@@ -142,12 +142,14 @@ int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
 struct node_record *node_record_table_ptr __attribute__((weak_import));
 int node_record_count __attribute__((weak_import));
+time_t last_node_update __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 int bg_recover = NOT_FROM_CONTROLLER;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 struct node_record *node_record_table_ptr;
 int node_record_count;
+time_t last_node_update;
 #endif
 
 static blade_info_t *blade_array = NULL;
@@ -155,6 +157,7 @@ static bitstr_t *blades_running_jobs = NULL;
 static bitstr_t *blades_running_npc = NULL;
 static uint32_t blade_cnt = 0;
 static pthread_mutex_t blade_mutex = PTHREAD_MUTEX_INITIALIZER;
+static time_t last_npc_update;
 
 #ifdef HAVE_NATIVE_CRAY
 
@@ -743,6 +746,10 @@ static void _remove_job_from_blades(select_jobinfo_t *jobinfo)
 			bit_not(blades_running_jobs);
 		}
 	}
+
+	if (jobinfo->npc)
+		last_npc_update = time(NULL);
+
 	slurm_mutex_unlock(&blade_mutex);
 }
 
@@ -802,6 +809,9 @@ static void _set_job_running(struct job_record *job_ptr)
 				       node_bitmap);
 		}
 	}
+
+	if (jobinfo->npc)
+		last_npc_update = time(NULL);
 }
 
 /* job_write and blade_mutex must be locked before calling */
@@ -824,6 +834,9 @@ static void _set_job_running_restore(select_jobinfo_t *jobinfo)
 		if (jobinfo->npc)
 			bit_or(blades_running_npc, blade_array[i].node_bitmap);
 	}
+
+	if (jobinfo->npc)
+		last_npc_update = time(NULL);
 }
 
 static void *_job_fini(void *args)
@@ -1804,6 +1817,34 @@ unpack_error:
 
 extern int select_p_select_nodeinfo_set_all(void)
 {
+	int i;
+	static time_t last_set_all = 0;
+
+	/* only set this once when the last_bg_update is newer than
+	   the last time we set things up. */
+	if (last_set_all && (last_npc_update-1 < last_set_all)) {
+		debug3("Node select info for set all hasn't "
+		       "changed since %ld",
+		       last_set_all);
+		return SLURM_NO_CHANGE_IN_DATA;
+	}
+	last_set_all = last_npc_update;
+
+	/* set this here so we know things have changed */
+	last_node_update = time(NULL);
+
+	slurm_mutex_lock(&blade_mutex);
+	/* clear all marks */
+	for (i=0; i<node_record_count; i++) {
+		struct node_record *node_ptr = &(node_record_table_ptr[i]);
+		if (bit_test(blades_running_npc, i))
+			node_ptr->node_state |= NODE_STATE_NET;
+		else
+			node_ptr->node_state &= (~NODE_STATE_NET);
+	}
+
+	slurm_mutex_unlock(&blade_mutex);
+
 	return other_select_nodeinfo_set_all();
 }
 

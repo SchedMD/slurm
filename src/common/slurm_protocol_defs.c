@@ -1506,6 +1506,7 @@ extern char *node_state_string(uint16_t inx)
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool net_flag        = (inx & NODE_STATE_NET);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
@@ -1585,6 +1586,8 @@ extern char *node_state_string(uint16_t inx)
 			return "IDLE~";
 		if (no_resp_flag)
 			return "IDLE*";
+		if (net_flag)
+			return "NETPERF";
 		if (res_flag)
 			return "RESERVED";
 		return "IDLE";
@@ -1628,8 +1631,9 @@ extern char *node_state_string_compact(uint16_t inx)
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
-	bool resume_flag     = (inx & NODE_RESUME);
+	bool net_flag        = (inx & NODE_STATE_NET);
 	bool res_flag        = (inx & NODE_STATE_RES);
+	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
@@ -1708,6 +1712,8 @@ extern char *node_state_string_compact(uint16_t inx)
 			return "IDLE~";
 		if (no_resp_flag)
 			return "IDLE*";
+		if (net_flag)
+			return "NPC";
 		if (res_flag)
 			return "RESV";
 		return "IDLE";
