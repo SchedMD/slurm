@@ -999,6 +999,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 	xfree(node_ptr->os);
 	xfree(node_ptr->part_pptr);
 	xfree(node_ptr->reason);
+	xfree(node_ptr->version);
 	acct_gather_energy_destroy(node_ptr->energy);
 	ext_sensors_destroy(node_ptr->ext_sensors);
 	select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);

@@ -90,7 +90,4 @@ update_header(header_t * header, uint32_t msg_length);
 extern void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg,
 					char *name);
 
-/* Given a Slurm protocol version, return the version of Slurm that uses it */
-extern char *protocol_to_version(uint16_t protocol_version);
-
 #endif /* !_SLURM_PROTOCOL_UTIL_H */

@@ -137,7 +137,7 @@ static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 		packstr(dump_front_end_ptr->deny_users, buffer);
 		packstr(dump_front_end_ptr->name, buffer);
 		pack16(dump_front_end_ptr->node_state, buffer);
-		pack16(dump_front_end_ptr->protocol_version, buffer);
+		packstr(dump_front_end_ptr->version, buffer);
 
 		packstr(dump_front_end_ptr->reason, buffer);
 		pack_time(dump_front_end_ptr->reason_time, buffer);
@@ -421,13 +421,17 @@ extern void purge_front_end_state(void)
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
+		xfree(front_end_ptr->allow_gids);
 		xfree(front_end_ptr->allow_groups);
+		xfree(front_end_ptr->allow_uids);
 		xfree(front_end_ptr->allow_users);
 		xfree(front_end_ptr->comm_name);
+		xfree(front_end_ptr->deny_gids);
 		xfree(front_end_ptr->deny_groups);
 		xfree(front_end_ptr->deny_users);
 		xfree(front_end_ptr->name);
 		xfree(front_end_ptr->reason);
+		xfree(front_end_ptr->version);
 	}
 	xfree(front_end_nodes);
 	front_end_node_cnt = 0;

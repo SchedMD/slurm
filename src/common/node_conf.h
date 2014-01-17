@@ -159,6 +159,7 @@ struct node_record {
 						 * to access contents */
 	uint32_t cpu_load;		/* CPU load * 100 */
 	uint16_t protocol_version;	/* Slurm version number */
+	char *version;			/* Slurm version */
 };
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */

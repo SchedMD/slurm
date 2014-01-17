@@ -242,7 +242,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "NodeAddr=%s NodeHostName=%s Version=%s",
 			 node_ptr->node_addr, node_ptr->node_hostname,
-			 protocol_to_version(node_ptr->protocol_version));
+			 node_ptr->version);
 		xstrcat(out, tmp_line);
 		if (one_liner)
 			xstrcat(out, " ");

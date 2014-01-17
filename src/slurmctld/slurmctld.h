@@ -284,6 +284,7 @@ typedef struct front_end_record {
 	uint32_t reason_uid;   		/* User that set the reason, ignore if
 					 * no reason is set. */
 	time_t slurmd_start_time;	/* Time of slurmd startup */
+	char *version;			/* Slurm version */
 } front_end_record_t;
 
 extern front_end_record_t *front_end_nodes;

@@ -800,7 +800,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		packstr (dump_node_ptr->node_hostname, buffer);
 		packstr (dump_node_ptr->comm_name, buffer);
 		pack16  (dump_node_ptr->node_state, buffer);
-		pack16  (dump_node_ptr->protocol_version, buffer);
+		packstr (dump_node_ptr->version, buffer);
 		/* On a bluegene system always use the regular node
 		* infomation not what is in the config_ptr.
 		*/
@@ -1822,6 +1822,10 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	error_code = SLURM_SUCCESS;
 
 	node_ptr->protocol_version = protocol_version;
+	xfree(node_ptr->version);
+	node_ptr->version = reg_msg->version;
+	reg_msg->version = NULL;
+
 	if (cr_flag == NO_VAL) {
 		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
 		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
@@ -2198,6 +2202,10 @@ extern int validate_nodes_via_front_end(
 		return ESLURM_INVALID_NODE_NAME;
 
 	front_end_ptr->protocol_version = protocol_version;
+	xfree(front_end_ptr->version);
+	front_end_ptr->version = reg_msg->version;
+	reg_msg->version = NULL;
+
 	if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		error("Prolog failed on node %s", reg_msg->node_name);
 		/* Do NOT set the node DOWN here. Unlike non-front-end systems,

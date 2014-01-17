@@ -613,6 +613,9 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	Buf gres_info;
 
 	msg->node_name   = xstrdup (conf->node_name);
+	msg->version     = xstrdup (PACKAGE_VERSION);
+
+
 	msg->cpus	 = conf->cpus;
 	msg->boards	 = conf->boards;
 	msg->sockets	 = conf->sockets;

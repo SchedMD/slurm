@@ -1034,6 +1034,7 @@ typedef struct slurm_node_registration_status_msg {
 	time_t timestamp;
 	uint32_t tmp_disk;
 	uint32_t up_time;	/* seconds since reboot */
+	char *version;
 } slurm_node_registration_status_msg_t;
 
 

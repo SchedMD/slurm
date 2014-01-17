@@ -585,6 +585,7 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->step_id);
 		if (msg->switch_nodeinfo)
 			switch_g_free_node_info(&msg->switch_nodeinfo);
+		xfree(msg->version);
 		xfree(msg);
 	}
 }
@@ -2252,6 +2253,7 @@ extern void slurm_free_front_end_info_members(front_end_info_t * front_end)
 		xfree(front_end->deny_users);
 		xfree(front_end->name);
 		xfree(front_end->reason);
+		xfree(front_end->version);
 	}
 }
 
@@ -2294,6 +2296,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->reason);
 		select_g_select_nodeinfo_free(node->select_nodeinfo);
 		node->select_nodeinfo = NULL;
+		xfree(node->version);
 	}
 }
 
