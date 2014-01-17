@@ -1122,10 +1122,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		int rc;
 		job_env_t job_env;
 
-		if (core_spec_g_set(req->job_core_spec))
-			error("core_spec_g_set(%u): %m", req->job_id);
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
+		if (core_spec_g_set(req->job_core_spec))
+			error("core_spec_g_set(%u): %m", req->job_id);
 
 		memset(&job_env, 0, sizeof(job_env_t));
 
