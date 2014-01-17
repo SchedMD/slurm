@@ -722,6 +722,7 @@ typedef struct launch_tasks_request_msg {
 	uint8_t pty;		/* use pseudo tty */
 	char *acctg_freq;	/* accounting polling intervals */
 	uint32_t cpu_freq;	/* requested cpu frequency */
+	uint16_t job_core_spec;	/* Count of specialized cores */
 
 	/********** START "normal" IO only options **********/
 	/* These options are ignored if user_managed_io is 1 */
@@ -854,6 +855,7 @@ typedef struct batch_job_launch_msg {
 	uint16_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint16_t cpus_per_task;	/* number of CPUs requested per task */
+	uint16_t job_core_spec;	/* Count of specialized cores */
 	char *alias_list;	/* node name/address/hostnamne aliases */
 	char *nodes;		/* list of nodes allocated to job_step */
 	char *script;		/* the actual job script, default NONE */
@@ -989,6 +991,7 @@ typedef struct forward_data_msg {
 /* suspend_msg_t variant for internal slurm daemon communications */
 typedef struct suspend_int_msg {
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
+	uint16_t job_core_spec;	/* Count of specialized cores */
 	uint32_t job_id;        /* slurm job_id */
 	uint8_t  indf_susp;     /* non-zero if being suspended indefinitely */
 	void *   switch_info;	/* opaque data for switch plugin */

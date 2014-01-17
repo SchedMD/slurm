@@ -10332,12 +10332,20 @@ static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
 				  uint16_t protocol_version)
 {
 	xassert ( msg != NULL );
-
-	pack16(msg->op, buffer);
-	pack32(msg->job_id,  buffer);
-	pack8(msg->indf_susp, buffer);
-	switch_g_job_suspend_info_pack(msg->switch_info, buffer,
-				       protocol_version);
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		pack16(msg->job_core_spec, buffer);
+		pack16(msg->op, buffer);
+		pack32(msg->job_id,  buffer);
+		pack8(msg->indf_susp, buffer);
+		switch_g_job_suspend_info_pack(msg->switch_info, buffer,
+					       protocol_version);
+	} else {
+		pack16(msg->op, buffer);
+		pack32(msg->job_id,  buffer);
+		pack8(msg->indf_susp, buffer);
+		switch_g_job_suspend_info_pack(msg->switch_info, buffer,
+					       protocol_version);
+	}
 }
 
 static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
@@ -10349,12 +10357,22 @@ static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
 	msg = xmalloc ( sizeof (suspend_int_msg_t) );
 	*msg_ptr = msg ;
 
-	safe_unpack16(&msg->op,     buffer);
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack8(&msg->indf_susp, buffer);
-	if (switch_g_job_suspend_info_unpack(&msg->switch_info, buffer,
-					     protocol_version))
-		goto unpack_error;
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->job_core_spec, buffer);
+		safe_unpack16(&msg->op,     buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack8(&msg->indf_susp, buffer);
+		if (switch_g_job_suspend_info_unpack(&msg->switch_info, buffer,
+						     protocol_version))
+			goto unpack_error;
+	} else {
+		safe_unpack16(&msg->op,     buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack8(&msg->indf_susp, buffer);
+		if (switch_g_job_suspend_info_unpack(&msg->switch_info, buffer,
+						     protocol_version))
+			goto unpack_error;
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

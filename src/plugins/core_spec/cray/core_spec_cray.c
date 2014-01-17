@@ -94,6 +94,8 @@ const char plugin_name[]       	= "Cray core specialization plugin";
 const char plugin_type[]       	= "core_spec/cray";
 const uint32_t plugin_version   = 100;
 
+static int last_core_count = -1;
+
 extern int init(void)
 {
 	info("%s: init", plugin_type);
@@ -113,6 +115,12 @@ extern int fini(void)
  */
 extern int core_spec_p_set(int core_count)
 {
+	if (core_count == last_core_count) {
+		info("%s: reset %d", plugin_type, core_count);
+		return SLURM_SUCCESS;
+	}
+
 	info("%s: set %d", plugin_type, core_count);
+	last_core_count = core_count;
 	return SLURM_SUCCESS;
 }

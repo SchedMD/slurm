@@ -10158,6 +10158,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create("");
 	sus_ptr = xmalloc(sizeof(suspend_int_msg_t));
+	sus_ptr->job_core_spec = job_ptr->details->core_spec;
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
 	sus_ptr->indf_susp = indf_susp;
@@ -10172,7 +10173,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		hostlist_push_host(agent_args->hostlist,
-						   node_record_table_ptr[i].name);
+				   node_record_table_ptr[i].name);
 		agent_args->node_count++;
 	}
 #endif

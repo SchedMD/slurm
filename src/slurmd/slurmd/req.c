@@ -88,6 +88,7 @@
 #include "src/slurmd/slurmd/reverse_tree_math.h"
 #include "src/slurmd/slurmd/xcpu.h"
 
+#include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/run_script.h"
@@ -865,6 +866,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			      " %m, but continuing anyway.");
 		}
 	}
+	req->job_core_spec = arg.job_core_spec;
 
 	/* If uid is the SlurmUser or root and the credential is bad,
 	 * then do not attempt validating the credential */
@@ -1120,6 +1122,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		int rc;
 		job_env_t job_env;
 
+		if (core_spec_g_set(req->job_core_spec))
+			error("core_spec_g_set(%u): %m", req->job_id);
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
 
@@ -1317,6 +1321,7 @@ _set_batch_job_limits(slurm_msg_t *msg)
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
 		return;
+	req->job_core_spec = arg.job_core_spec;	/* Prevent user reset */
 
 	if (cpu_log) {
 		char *per_job = "";
@@ -1579,6 +1584,8 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		     req->job_id, req->step_id, req->uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
+	if (core_spec_g_set(req->job_core_spec))
+		error("core_spec_g_set(%u): %m", req->job_id);
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
 				  (hostset_t)NULL);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
@@ -3632,10 +3639,14 @@ _rpc_suspend_job(slurm_msg_t *msg)
 		switch_g_job_suspend(req->switch_info, 5);
 
 	/* Release or reclaim resources bound to these tasks (task affinity) */
-	if (req->op == SUSPEND_JOB)
+	if (req->op == SUSPEND_JOB) {
 		(void) task_g_slurmd_suspend_job(req->job_id);
-	else
+		/* core_spec_g_set(0);	Is this needed or desirable? Possible race condition? */
+	} else {
 		(void) task_g_slurmd_resume_job(req->job_id);
+		if (core_spec_g_set(req->job_core_spec))
+			error("core_spec_g_set(%u): %m", req->job_id);
+	}
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
@@ -4681,6 +4692,7 @@ _run_epilog(job_env_t *job_env)
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(job_env->jobid);
+	(void) core_spec_g_set(0);
 	error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
 				     -1, my_env, job_env->uid);
 	xfree(my_epilog);
