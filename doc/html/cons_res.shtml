@@ -90,11 +90,11 @@ in <b>select/cons_res</b> for consistency.</li>
 behaviors are not disrupted. The only changes, users see when using the
 <b>select/cons_res</b> plugin, are that jobs can be co-scheduled on nodes when
 resources permit it.
-The rest of Slurm, such as srun and switches (except srun -s ...), etc. are not
-affected by this plugin. Slurm is, from a user point of view, working the same
+The rest of Slurm, such as srun and its options (except srun -s ...), etc. are not
+effected by this plugin. Slurm is, from a user point of view, working the same
 way as when using the default node selection scheme.</li>
 
-<li>The <i>--exclusive</i> srun switch allows users to request nodes in
+<li>The <i>--exclusive</i> srun option allows users to request nodes in
 exclusive mode even when consumable resources is enabled. see "man srun"
 for details. </li>
 
@@ -122,10 +122,10 @@ Example:
 # srun -N 5 -n 10 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
 
 # squeue
-JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
- 1820  allNodes  sleep   sballe  PD   0:00      5 (Resources)
- 1818  allNodes  sleep   sballe   R   0:17      5 hydra[12-16]
- 1819  allNodes  sleep   sballe   R   0:11      5 hydra[12-16]
+JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
+ 1820  allNodes  sleep sballe PD  0:00      5 (Resources)
+ 1818  allNodes  sleep sballe  R  0:17      5 hydra[12-16]
+ 1819  allNodes  sleep sballe  R  0:11      5 hydra[12-16]
 </pre>
 
 <p>Using select/cons_res plug-in with CR_Socket_Memory (2 sockets/node)</p>
@@ -135,18 +135,18 @@ Example 1:
 # srun -n 1 -w hydra12 --job-mem=2000 sleep 100 &  <-- queued and waiting for resources
 
 # squeue
-JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
- 1890  allNodes  sleep   sballe  PD   0:00      1 (Resources)
- 1889  allNodes  sleep   sballe   R   0:08      5 hydra[12-16]
+JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
+ 1890  allNodes  sleep sballe PD  0:00      1 (Resources)
+ 1889  allNodes  sleep sballe  R  0:08      5 hydra[12-16]
 
 Example 2:
 # srun -N 5 -n 10 --job-mem=10 sleep 100 & <-- running
 # srun -n 1 --job-mem=10 sleep 100 & <-- queued and waiting for resourcessqueue
 
 # squeue
-JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
- 1831  allNodes  sleep   sballe  PD   0:00      1 (Resources)
- 1830  allNodes  sleep   sballe   R   0:07      5 hydra[12-16]
+JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
+ 1831  allNodes  sleep sballe PD  0:00      1 (Resources)
+ 1830  allNodes  sleep sballe  R  0:07      5 hydra[12-16]
 </pre>
 
 <p>Using select/cons_res plug-in with CR_CPU_Memory (4 CPUs/node)</p>
@@ -157,19 +157,19 @@ Example 1:
 # srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
 
 # squeue
-JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
- 1835  allNodes  sleep   sballe  PD   0:00      5 (Resources)
- 1833  allNodes  sleep   sballe   R   0:10      5 hydra[12-16]
- 1834  allNodes  sleep   sballe   R   0:07      5 hydra[12-16]
+JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
+ 1835  allNodes  sleep sballe PD  0:00      5 (Resources)
+ 1833  allNodes  sleep sballe  R  0:10      5 hydra[12-16]
+ 1834  allNodes  sleep sballe  R  0:07      5 hydra[12-16]
 
 Example 2:
 # srun -N 5 -n 20 --job-mem=10 sleep 100 & <-- running
 # srun -n 1 --job-mem=10 sleep 100 &       <-- queued and waiting for resources
 
 # squeue
-JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
- 1837  allNodes  sleep   sballe  PD   0:00      1 (Resources)
- 1836  allNodes  sleep   sballe   R   0:11      5 hydra[12-16]
+JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
+ 1837  allNodes  sleep sballe PD  0:00      1 (Resources)
+ 1836  allNodes  sleep sballe  R  0:11      5 hydra[12-16]
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -226,11 +226,11 @@ have one idle CPU and linux04 has 3 idle CPUs.</p>
 
 <pre>
 # squeue
-JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
-    3       lsf  sleep   root  PD   0:00      3 (Resources)
-    4       lsf  sleep   root  PD   0:00      1 (Resources)
-    5       lsf  sleep   root  PD   0:00      1 (Resources)
-    2       lsf  sleep   root   R   0:14      4 xc14n[13-16]
+JOBID PARTITION   NAME  USER  ST  TIME  NODES NODELIST(REASON)
+    3       lsf  sleep  root  PD  0:00      3 (Resources)
+    4       lsf  sleep  root  PD  0:00      1 (Resources)
+    5       lsf  sleep  root  PD  0:00      1 (Resources)
+    2       lsf  sleep  root   R  0:14      4 xc14n[13-16]
 </pre>
 
 <p>Once Job 2 is finished, Job 3 is scheduled and runs on
@@ -242,10 +242,10 @@ and Job 4 can run concurrently on the cluster.</p>
 
 <pre>
 # squeue
-JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
-    5       lsf  sleep   root  PD   0:00      1 (Resources)
-    3       lsf  sleep   root   R   0:11      3 xc14n[13-15]
-    4       lsf  sleep   root   R   0:11      1 xc14n16
+JOBID PARTITION   NAME  USER  ST  TIME  NODES NODELIST(REASON)
+    5       lsf  sleep  root  PD  0:00      1 (Resources)
+    3       lsf  sleep  root   R  0:11      3 xc14n[13-15]
+    4       lsf  sleep  root   R  0:11      1 xc14n16
 </pre>
 
 <p>Once Job 3 finishes, Job 5 is allocated resources and can run.</p>
@@ -286,11 +286,11 @@ nodes) and Job 4 is scheduled onto one of the remaining idle CPUs on Linux04.</p
 
 <pre>
 # squeue
-JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
-    5       lsf  sleep   root  PD   0:00      1 (Resources)
-    2       lsf  sleep   root   R   0:13      4 linux[01-04]
-    3       lsf  sleep   root   R   0:09      3 linux[01-03]
-    4       lsf  sleep   root   R   0:05      1 linux04
+JOBID PARTITION   NAME  USER  ST  TIME  NODES NODELIST(REASON)
+    5       lsf  sleep  root  PD  0:00      1 (Resources)
+    2       lsf  sleep  root   R  0:13      4 linux[01-04]
+    3       lsf  sleep  root   R  0:09      3 linux[01-03]
+    4       lsf  sleep  root   R  0:05      1 linux04
 
 # sinfo -lNe
 NODELIST     NODES PARTITION       STATE CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
@@ -303,10 +303,10 @@ running as illustrated below:</p>
 
 <pre>
 # squeue
-JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
-   3       lsf   sleep   root   R   1:58      3 linux[01-03]
-   4       lsf   sleep   root   R   1:54      1 linux04
-   5       lsf   sleep   root   R   0:02      3 linux[01-03]
+JOBID PARTITION   NAME  USER  ST  TIME  NODES NODELIST(REASON)
+   3       lsf   sleep  root   R  1:58      3 linux[01-03]
+   4       lsf   sleep  root   R  1:54      1 linux04
+   5       lsf   sleep  root   R  0:02      3 linux[01-03]
 # sinfo -lNe
 NODELIST     NODES PARTITION       STATE CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
 linux[01-03]     3      lsf*   allocated    2   2981        1      1   (null) none
@@ -317,8 +317,8 @@ linux04          1      lsf*        idle    4   3813        1      1   (null) no
 
 <pre>
 # squeue
-JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
-    5       lsf  sleep   root   R   1:52      3 linux[01-03]
+JOBID PARTITION   NAME  USER  ST  TIME  NODES NODELIST(REASON)
+    5       lsf  sleep  root   R  1:52      3 linux[01-03]
 </pre>
 
 <p>Job 3 and Job 4 have finished and Job 5 is still running on nodes linux[01-03].</p>
@@ -331,7 +331,7 @@ overall efficiency of the use of the cluster. The drawback is that users do not
 have the entire node dedicated to their job since they have to share nodes with
 other jobs if they do not use all of the resources on the nodes.</p>
 
-<p>We have added a <i>"--exclusive"</i> switch to srun which allow users
+<p>We have added a <i>"--exclusive"</i> option to srun which allow users
 to specify that they would like their allocated
 nodes in exclusive mode. For more information see "man srun".
 The reason for that is if users have mpi//threaded/openMP
@@ -340,6 +340,6 @@ one mpi process per node.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 August 2013</p>
+<p style="text-align:center;">Last modified 17 January 2014</p>
 
 <!--#include virtual="footer.txt"-->
