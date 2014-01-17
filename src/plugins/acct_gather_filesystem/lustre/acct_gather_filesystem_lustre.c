@@ -37,18 +37,16 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-
+#include <dirent.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <limits.h>
+#include <netinet/in.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <fcntl.h>
 #include <sys/stat.h>
-#include <signal.h>
-#include <dirent.h>
-
 #include <unistd.h>
-#include <getopt.h>
-#include <netinet/in.h>
-
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_acct_gather_filesystem.h"
@@ -122,7 +120,7 @@ static uint32_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Default path to lustre stats */
-const char proc_base_path[] = "/proc/fs/lustre/";
+const char proc_base_path[] = "/proc/fs/lustre";
 
 /**
  *  is lustre fs supported
@@ -144,8 +142,8 @@ static int _check_lustre_fs(void)
 			sprintf(lustre_directory, "%s/llite", proc_base_path);
 			proc_dir = opendir(proc_base_path);
 			if (!proc_dir) {
-				debug2("not able to read %s",
-					lustre_directory);
+				error("%s: not able to read %s %m",
+					  __func__, lustre_directory);
 				rc = SLURM_FAILURE;
 			} else {
 				closedir(proc_dir);
@@ -157,10 +155,19 @@ static int _check_lustre_fs(void)
 	return rc;
 }
 
-/**
- * read counters from all mounted lustre fs
+/* _read_lustre_counters()
+ * Read counters from all mounted lustre fs
+ * from the file stats under the directories:
+ *
+ * /proc/fs/lustre/llite/lustre-xxxx
+ *
+ * From the file stat we use 2 entries:
+ *
+ * read_bytes          17996 samples [bytes] 0 4194304 30994606834
+ * write_bytes         9007 samples [bytes] 2 4194304 31008331389
+ *
  */
-static int _read_lustre_counters(void )
+static int _read_lustre_counters(void)
 {
 	char lustre_dir[PATH_MAX];
 	char path_stats[PATH_MAX];
@@ -174,65 +181,79 @@ static int _read_lustre_counters(void )
 
 	proc_dir = opendir(lustre_dir);
 	if (proc_dir == NULL) {
-		error("Cannot open %s\n", lustre_dir);
+		error("%s: Cannot open %s %m", __func__, lustre_dir);
 		return SLURM_FAILURE;
 	}
 
-	entry = readdir(proc_dir);
+	while ((entry = readdir(proc_dir))) {
+		bool bread;
+		bool bwrote;
 
-	while (entry != NULL) {
+		if (strcmp(entry->d_name, ".") == 0
+			|| strcmp(entry->d_name, "..") == 0)
+			continue;
+
 		snprintf(path_stats, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
-			entry->d_name);
-		debug3("Found file %s\n", path_stats);
+				 entry->d_name);
+		debug3("%s: Found file %s", __func__, path_stats);
 
 		fff = fopen(path_stats, "r");
-		if (fff) {
-			while(1) {
-				if (!fgets(buffer,BUFSIZ,fff))
-					break;
-
-				if (strstr(buffer, "write_bytes")) {
-					sscanf(buffer,
-					       "%*s %"PRIu64" %*s %*s "
-					       "%*d %*d %"PRIu64"",
-					       &lustre_se.lustre_nb_writes,
-					       &lustre_se.lustre_write_bytes);
-					debug3("Lustre Counter "
-					       "%"PRIu64" "
-					       "write_bytes %"PRIu64" "
-					       "writes\n",
-					       lustre_se.lustre_write_bytes,
-					       lustre_se.lustre_nb_writes);
-				}
-
-				if (strstr(buffer, "read_bytes")) {
-					sscanf(buffer,
-					       "%*s %"PRIu64" %*s %*s "
-					       "%*d %*d %"PRIu64"",
-					       &lustre_se.lustre_nb_reads,
-					       &lustre_se.lustre_read_bytes);
-					debug3("Lustre Counter "
-					       "%"PRIu64" "
-					       "read_bytes %"PRIu64" "
-					       "reads\n",
-					       lustre_se.lustre_read_bytes,
-					       lustre_se.lustre_nb_reads);
-				}
-			}
-			fclose(fff);
+		if (fff == NULL) {
+			error("%s: Cannot open %s %m", __func__, path_stats);
+			continue;
 		}
-		entry = readdir(proc_dir);
+
+		bread = bwrote = false;
+		while (fgets(buffer, BUFSIZ, fff)) {
+
+			if (bread && bwrote)
+				break;
+
+			if (strstr(buffer, "write_bytes")) {
+				sscanf(buffer,
+					   "%*s %"PRIu64" %*s %*s "
+					   "%*d %*d %"PRIu64"",
+					   &lustre_se.lustre_nb_writes,
+					   &lustre_se.lustre_write_bytes);
+				debug3("%s "
+					   "%"PRIu64" "
+					   "write_bytes %"PRIu64" "
+					   "writes",
+					   __func__,
+					   lustre_se.lustre_write_bytes,
+					   lustre_se.lustre_nb_writes);
+				bwrote = true;
+			}
+
+			if (strstr(buffer, "read_bytes")) {
+				sscanf(buffer,
+					   "%*s %"PRIu64" %*s %*s "
+					   "%*d %*d %"PRIu64"",
+					   &lustre_se.lustre_nb_reads,
+					   &lustre_se.lustre_read_bytes);
+				debug3("%s "
+					   "%"PRIu64" "
+					   "read_bytes %"PRIu64" "
+					   "reads",
+					   __func__,
+					   lustre_se.lustre_read_bytes,
+					   lustre_se.lustre_nb_reads);
+				bread = true;
+			}
+		}
+		fclose(fff);
+
 		lustre_se.all_lustre_write_bytes +=
 			lustre_se.lustre_write_bytes;
 		lustre_se.all_lustre_read_bytes += lustre_se.lustre_read_bytes;
 		lustre_se.all_lustre_nb_writes += lustre_se.lustre_nb_writes;
 		lustre_se.all_lustre_nb_reads += lustre_se.lustre_nb_reads;
-	}
+
+	} /* while ((entry = readdir(proc_dir)))  */
 	closedir(proc_dir);
 
 	lustre_se.last_update_time = lustre_se.update_time;
 	lustre_se.update_time = time(NULL);
-
 
 	return SLURM_SUCCESS;
 }
@@ -246,34 +267,68 @@ static int _read_lustre_counters(void )
  */
 static int _update_node_filesystem(void)
 {
-	acct_filesystem_data_t *fls;
-	int rc = SLURM_SUCCESS;
+	static acct_filesystem_data_t fls;
+	static acct_filesystem_data_t current;
+	static acct_filesystem_data_t previous;
+	static bool first = true;
+	int cc;
 
 	slurm_mutex_lock(&lustre_lock);
-	rc = _read_lustre_counters();
 
-	fls = xmalloc(sizeof(acct_filesystem_data_t));
-
-	fls->reads = lustre_se.all_lustre_nb_reads;
-	fls->writes = lustre_se.all_lustre_nb_writes;
-	fls->read_size = (double) lustre_se.all_lustre_read_bytes / 1048576;
-	fls->write_size = (double) lustre_se.all_lustre_write_bytes / 1048576;
-	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, fls);
-
-	debug3("Collection of Lustre counters Finished");
-	xfree(fls);
-
-
-	if (debug_flags & DEBUG_FLAG_FILESYSTEM) {
-		info("lustre-thread = %d sec, transmitted %"PRIu64" bytes, "
-		    "received %"PRIu64" bytes",
-		    (int) (lustre_se.update_time - lustre_se.last_update_time),
-		    lustre_se.all_lustre_read_bytes,
-		    lustre_se.all_lustre_write_bytes);
+	cc = _read_lustre_counters();
+	if (cc != SLURM_SUCCESS) {
+		error("%s: Cannot read lustre counters", __func__);
+		slurm_mutex_unlock(&lustre_lock);
+		return SLURM_FAILURE;
 	}
+
+	if (first) {
+		/* First time initialize the counters and return.
+		 */
+		previous.reads = lustre_se.all_lustre_nb_reads;
+		previous.writes = lustre_se.all_lustre_nb_writes;
+		previous.read_size
+			= (double)lustre_se.all_lustre_read_bytes/1048576.0;
+		previous.write_size
+			= (double)lustre_se.all_lustre_write_bytes/1048576.0;
+
+		first = false;
+		memset(&lustre_se, 0, sizeof(lustre_sens_t));
+		slurm_mutex_unlock(&lustre_lock);
+
+		return SLURM_SUCCESS;
+	}
+
+	/* Compute the current values read from all lustre-xxxx
+	 * directories
+	 */
+	current.reads = lustre_se.all_lustre_nb_reads;
+	current.writes = lustre_se.all_lustre_nb_writes;
+	current.read_size = (double)lustre_se.all_lustre_read_bytes/1048576.0;
+	current.write_size = (double)lustre_se.all_lustre_write_bytes/1048576.0;
+
+	/* Now compute the difference between the two snapshots
+	 * and send it to hdf5 log.
+	 */
+	fls.reads = fls.reads + (current.reads - previous.reads);
+	fls.writes = fls.writes + (current.writes - previous.writes);
+	fls.read_size = fls.read_size + (current.read_size - previous.read_size);
+	fls.write_size = fls.write_size + (current.write_size - previous.write_size);
+
+	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, &fls);
+
+	/* Save current as previous and clean up the working
+	 * data structure.
+	 */
+	memcpy(&previous, &current, sizeof(acct_filesystem_data_t));
+	memset(&lustre_se, 0, sizeof(lustre_sens_t));
+
+	info("%s: num reads %lu nums write %lu read %f MB wrote %f MB",
+		 __func__, fls.reads, fls.writes, fls.read_size, fls.write_size);
+
 	slurm_mutex_unlock(&lustre_lock);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static bool _run_in_daemon(void)
@@ -333,5 +388,10 @@ extern void acct_gather_filesystem_p_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt)
 {
 
+	return;
+}
+
+extern void acct_gather_filesystem_p_conf_values(List *data)
+{
 	return;
 }

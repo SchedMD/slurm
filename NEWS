@@ -18,6 +18,11 @@ documents those changes that are of interest to users and admins.
     network traffic accounting plugin.
  -- Correct the documentation to read filesystem instead of Lustre. Update
     the srun help.
+ -- Fix the acct_gather_filesystem_lustre.c to compute the Lustre accounting
+    data correctly accumulating differences between sampling intervals.
+    Fix the data structure mismatch between acct_gather_filesystem_lustre.c
+    and slurm_jobacct_gather.h which caused the hdf5 plugin to log incorrect
+    data.
 
 * Changes in Slurm 2.6.5
 ========================
@@ -64,7 +69,7 @@ documents those changes that are of interest to users and admins.
     on a random memory location (i.e. whatever is on the stack), which can
     result in slurmstepd dying and a completed job not being purged in a
     timely fashion.
- -- Fix slurmstepd race condition when separate threads are reading and 
+ -- Fix slurmstepd race condition when separate threads are reading and
     modifying the job's environment, which can result in the slurmstepd failing
     with an invalid memory reference.
  -- Fix erroneous error messages when running gang scheduling.
@@ -136,7 +141,7 @@ documents those changes that are of interest to users and admins.
  -- Fix sacctmgr modify qos set preempt+/-=.
  -- BLUEGENE - fix issue where node count wasn't set up correctly when srun
     preforms the allocation, regression in 2.6.3.
- -- Add support for dependencies of job array elements (e.g. 
+ -- Add support for dependencies of job array elements (e.g.
     "sbatch --depend=afterok:123_4 ...") or all elements of a job array (e.g.
     "sbatch --depend=afterok:123 ...").
  -- Add support for new options in sbatch qsub wrapper:
