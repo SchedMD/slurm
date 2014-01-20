@@ -84,8 +84,8 @@
 
 struct lustre_data {
 	uint64_t	reads;
-	double		read_size;      // currently in megabytes
 	uint64_t	writes;
+	double		read_size;      // currently in megabytes
 	double		write_size;     // currently in megabytes
 };
 

@@ -167,7 +167,7 @@ static int _check_lustre_fs(void)
  * write_bytes         9007 samples [bytes] 2 4194304 31008331389
  *
  */
-static int _read_lustre_counters(void )
+static int _read_lustre_counters(void)
 {
 	char lustre_dir[PATH_MAX];
 	char path_stats[PATH_MAX];
@@ -248,19 +248,20 @@ static int _read_lustre_counters(void )
 		lustre_se.all_lustre_read_bytes += lustre_se.lustre_read_bytes;
 		lustre_se.all_lustre_nb_writes += lustre_se.lustre_nb_writes;
 		lustre_se.all_lustre_nb_reads += lustre_se.lustre_nb_reads;
-		debug3("%s: all_lustre_write_bytes %lu all_lustre_read_bytes %lu ",
-			   __func__, lustre_se.all_lustre_write_bytes,
-			   lustre_se.all_lustre_read_bytes);
-		debug3("%s: all_lustre_nb_writes %lu all_lustre_nb_reads %lu",
-			   __func__, lustre_se.all_lustre_nb_writes,
-			   lustre_se.all_lustre_nb_reads);
+		debug3("%s: all_lustre_write_bytes %"PRIu64" "
+		       "all_lustre_read_bytes %"PRIu64"",
+		       __func__, lustre_se.all_lustre_write_bytes,
+		       lustre_se.all_lustre_read_bytes);
+		debug3("%s: all_lustre_nb_writes %"PRIu64" "
+		       "all_lustre_nb_reads %"PRIu64"",
+		       __func__, lustre_se.all_lustre_nb_writes,
+		       lustre_se.all_lustre_nb_reads);
 
 	} /* while ((entry = readdir(proc_dir)))  */
 	closedir(proc_dir);
 
 	lustre_se.last_update_time = lustre_se.update_time;
 	lustre_se.update_time = time(NULL);
-
 
 	return SLURM_SUCCESS;
 }
@@ -274,34 +275,68 @@ static int _read_lustre_counters(void )
  */
 static int _update_node_filesystem(void)
 {
-	acct_filesystem_data_t *fls;
-	int rc = SLURM_SUCCESS;
+	static acct_filesystem_data_t fls;
+	static acct_filesystem_data_t current;
+	static acct_filesystem_data_t previous;
+	static bool first = true;
+	int cc;
 
 	slurm_mutex_lock(&lustre_lock);
-	rc = _read_lustre_counters();
 
-	fls = xmalloc(sizeof(acct_filesystem_data_t));
-
-	fls->reads = lustre_se.all_lustre_nb_reads;
-	fls->writes = lustre_se.all_lustre_nb_writes;
-	fls->read_size = (double) lustre_se.all_lustre_read_bytes / 1048576;
-	fls->write_size = (double) lustre_se.all_lustre_write_bytes / 1048576;
-	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, fls);
-
-	debug3("%s: Collection of Lustre counters Finished", __func__);
-	xfree(fls);
-
-
-	if (debug_flags & DEBUG_FLAG_FILESYSTEM) {
-		info("lustre-thread = %d sec, transmitted %"PRIu64" bytes, "
-		    "received %"PRIu64" bytes",
-		    (int) (lustre_se.update_time - lustre_se.last_update_time),
-		    lustre_se.all_lustre_read_bytes,
-		    lustre_se.all_lustre_write_bytes);
+	cc = _read_lustre_counters();
+	if (cc != SLURM_SUCCESS) {
+		error("%s: Cannot read lustre counters", __func__);
+		slurm_mutex_unlock(&lustre_lock);
+		return SLURM_FAILURE;
 	}
+
+	if (first) {
+		/* First time initialize the counters and return.
+		 */
+		previous.reads = lustre_se.all_lustre_nb_reads;
+		previous.writes = lustre_se.all_lustre_nb_writes;
+		previous.read_size
+			= (double)lustre_se.all_lustre_read_bytes/1048576.0;
+		previous.write_size
+			= (double)lustre_se.all_lustre_write_bytes/1048576.0;
+
+		first = false;
+		memset(&lustre_se, 0, sizeof(lustre_sens_t));
+		slurm_mutex_unlock(&lustre_lock);
+
+		return SLURM_SUCCESS;
+	}
+
+	/* Compute the current values read from all lustre-xxxx
+	 * directories
+	 */
+	current.reads = lustre_se.all_lustre_nb_reads;
+	current.writes = lustre_se.all_lustre_nb_writes;
+	current.read_size = (double)lustre_se.all_lustre_read_bytes/1048576.0;
+	current.write_size = (double)lustre_se.all_lustre_write_bytes/1048576.0;
+
+	/* Now compute the difference between the two snapshots
+	 * and send it to hdf5 log.
+	 */
+	fls.reads = fls.reads + (current.reads - previous.reads);
+	fls.writes = fls.writes + (current.writes - previous.writes);
+	fls.read_size = fls.read_size + (current.read_size - previous.read_size);
+	fls.write_size = fls.write_size + (current.write_size - previous.write_size);
+
+	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, &fls);
+
+	/* Save current as previous and clean up the working
+	 * data structure.
+	 */
+	memcpy(&previous, &current, sizeof(acct_filesystem_data_t));
+	memset(&lustre_se, 0, sizeof(lustre_sens_t));
+
+	info("%s: num reads %"PRIu64" nums write %"PRIu64" read %f MB wrote %f MB",
+		 __func__, fls.reads, fls.writes, fls.read_size, fls.write_size);
+
 	slurm_mutex_unlock(&lustre_lock);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static bool _run_in_daemon(void)
