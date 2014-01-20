@@ -323,7 +323,7 @@ static int _update_node_filesystem(void)
 	memcpy(&previous, &current, sizeof(acct_filesystem_data_t));
 	memset(&lustre_se, 0, sizeof(lustre_sens_t));
 
-	info("%s: num reads %lu nums write %lu read %f MB wrote %f MB",
+	info("%s: num reads %"PRIu64" nums write %"PRIu64" read %f MB wrote %f MB",
 		 __func__, fls.reads, fls.writes, fls.read_size, fls.write_size);
 
 	slurm_mutex_unlock(&lustre_lock);
