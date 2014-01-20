@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Add idea of a RESERVED flag for node state so idle resources are marked
     not "idle" when in a reservation.
  -- Added core specialization plugin infrastructure.
+ -- Added new job_submit/trottle plugin to control the rate at which a user
+    can submit jobs.
 
 * Changes in Slurm 14.03.0pre5
 ==============================
