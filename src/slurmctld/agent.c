@@ -686,22 +686,17 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		while ((ret_data_info = list_next(itr))) {
 			state = ret_data_info->err;
 		switch_on_state:
+			if (is_ret_list)
+				node_names = ret_data_info->node_name;
+			else
+				node_names = thread_ptr[i].nodelist;
+
 			switch(state) {
 			case DSH_NO_RESP:
-				if (!is_ret_list) {
-					node_not_resp(thread_ptr[i].nodelist,
-						      thread_ptr[i].
-						      start_time);
-				} else {
-					node_not_resp(ret_data_info->node_name,
-						      thread_ptr[i].start_time);
-				}
+				node_not_resp(node_names,
+					      thread_ptr[i].start_time);
 				break;
 			case DSH_FAILED:
-				if (is_ret_list)
-					node_names = ret_data_info->node_name;
-				else
-					node_names = thread_ptr[i].nodelist;
 #ifdef HAVE_FRONT_END
 				down_msg = "";
 #else
@@ -713,19 +708,12 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				      node_names, down_msg);
 				break;
 			case DSH_DONE:
+				node_did_resp(node_names);
 				if (!is_ret_list)
-					node_did_resp(thread_ptr[i].nodelist);
-				else
-					node_did_resp(ret_data_info->node_name);
 				break;
 			default:
-				if (!is_ret_list) {
-					error("unknown state returned for %s",
-					      thread_ptr[i].nodelist);
-				} else {
-					error("unknown state returned for %s",
-					      ret_data_info->node_name);
-				}
+				error("unknown state returned for %s",
+				      node_names);
 				break;
 			}
 			if (!is_ret_list)
