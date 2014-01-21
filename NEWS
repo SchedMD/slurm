@@ -10,7 +10,6 @@ documents those changes that are of interest to users and admins.
  -- If FastSchedule=0 then do not DOWN a node with low memory or disk size.
  -- Remove vestigial note.
  -- Update sshare.1 man page making it consistent with sacctmgr.1.
- -- Increase the PW_BUF_SIZE so the getgrnam_r() can process large user groups.
  -- Do not reset a job's priority when the slurmctld restarts if previously
     set to some specific value.
  -- sview - Fix regression where the Node tab wasn't able to add/remove columns.

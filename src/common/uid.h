@@ -49,7 +49,7 @@
  * value configured, the value returned is 1024, which can too small.
  * Diito for _SC_GETGR_R_SIZE_MAX. Use 64k byte buffer by default.
  */
-#define PW_BUF_SIZE 524288
+#define PW_BUF_SIZE 65536
 
 /*
  * Return validated uid_t for string in ``name'' which contains
