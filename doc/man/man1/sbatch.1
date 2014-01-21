@@ -882,9 +882,50 @@ that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
 .TP
 \fB\-\-network\fR=<\fItype\fR>
-Specify the communication protocol to be used.
+Specify information pertaining to the switch or network.
 The interpretation of \fItype\fR is system dependent.
-This option is current supported on systems with IBM's Parallel Environment (PE).
+This option is supported when running Slurm on a Cray natively.  It is
+used to request using Network Performace Counters.
+Only one value per request is valid.
+All options are case in\-sensitive.
+In this configuration supported values include:
+.RS
+.TP 6
+\fBsystem\fR
+Use the system\-wide network performance counters. Because only one
+job can use this at a time this option will allocate every node in the
+cluster.  In steps inside the allocation wish to run on less than the
+full system they must specify the node count for each step.
+.TP
+\fBnetwork\fR
+Use the network tiles counters (per blade and per node basis).
+.TP
+\fBprocessor\fR
+Use the processor tiles counters (per blade and per node basis).
+.TP
+.RE
+
+.br
+.br
+In the case of \fBnetwork\fR and \fBprocessor\fR only nodes requested
+will be marked in use for the job allocation.  If the job does not
+fill up the entire blade(s) allocated to the job those blade(s) are not
+able to be used by other jobs, but will appear in the state PerfCnts.
+
+.br
+.br
+In all cases the job allocation request \fBmust specify the
+--exclusive option\fR.  Otherwise the request will be denied.
+
+.br
+.br
+Also with any of these options steps are not allowed to share blades,
+so resources would remain idle inside an allocation if the step
+running on a blade does not take up all the nodes on the blade.
+
+.br
+.br
+The \fBnetwork\fR option is also supported on systems with IBM's Parallel Environment (PE).
 See IBM's LoadLeveler job command keyword documentation about the keyword
 "network" for more information.
 Multiple values may be specified in a comma separated list.
