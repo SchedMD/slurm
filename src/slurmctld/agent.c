@@ -675,6 +675,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		char *down_msg, *node_names;
+		slurm_msg_type_t resp_type = RESPONSE_SLURM_RC;
+
 		if (!thread_ptr[i].ret_list) {
 			state = thread_ptr[i].state;
 			is_ret_list = 0;
@@ -686,15 +688,17 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		while ((ret_data_info = list_next(itr))) {
 			state = ret_data_info->err;
 		switch_on_state:
-			if (is_ret_list)
+			if (is_ret_list) {
 				node_names = ret_data_info->node_name;
-			else
+				resp_type = ret_data_info->type;
+			} else
 				node_names = thread_ptr[i].nodelist;
 
 			switch(state) {
 			case DSH_NO_RESP:
 				node_not_resp(node_names,
-					      thread_ptr[i].start_time);
+					      thread_ptr[i].start_time,
+					      resp_type);
 				break;
 			case DSH_FAILED:
 #ifdef HAVE_FRONT_END
@@ -709,7 +713,6 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				break;
 			case DSH_DONE:
 				node_did_resp(node_names);
-				if (!is_ret_list)
 				break;
 			default:
 				error("unknown state returned for %s",
@@ -994,9 +997,11 @@ static void *_thread_per_group_rpc(void *args)
 					       msg_type);
 				unlock_slurmctld(node_read_lock);
 			}
+
 			if (srun_agent)
 				thread_state = DSH_FAILED;
-			else if (ret_data_info->type == RESPONSE_FORWARD_FAILED)
+			else if (rc || (ret_data_info->type ==
+					RESPONSE_FORWARD_FAILED))
 				/* check if a forward failed */
 				thread_state = DSH_NO_RESP;
 			else {	/* some will fail that don't mean anything went

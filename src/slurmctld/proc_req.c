@@ -2220,6 +2220,10 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, NODE_REGISTER RPC from uid=%d", uid);
 	}
+
+	if (msg->protocol_version != SLURM_PROTOCOL_VERSION)
+		error_code = SLURM_PROTOCOL_VERSION_ERROR;
+
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
 		if (!(slurmctld_conf.debug_flags & DEBUG_FLAG_NO_CONF_HASH) &&

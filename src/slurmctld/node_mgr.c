@@ -2604,7 +2604,7 @@ void node_did_resp (char *name)
  * IN name - name of the node
  * IN msg_time - time message was sent
  */
-void node_not_resp (char *name, time_t msg_time)
+void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 {
 #ifdef HAVE_FRONT_END
 	front_end_record_t *node_ptr;
@@ -2619,6 +2619,19 @@ void node_not_resp (char *name, time_t msg_time)
 		error ("node_not_resp unable to find node %s", name);
 		return;
 	}
+
+	/* If the slurmd on the node responded with something we don't
+	 * want to ever set the node down, so mark that the node
+	 * responded, but for whatever reason there was a
+	 * communication error.  This makes it so we don't mark the
+	 * node down if the slurmd really is there (Wrong protocol
+	 * version or munge issue or whatever) so we don't kill
+	 * any running jobs.  RESPONSE_FORWARD_FAILED means we
+	 * couldn't contact the slurmd.
+	 */
+	if (resp_type != RESPONSE_FORWARD_FAILED)
+		node_ptr->last_response = msg_time - 1;
+
 	if (!IS_NODE_DOWN(node_ptr)) {
 		/* Logged by node_no_resp_msg() on periodic basis */
 		node_ptr->not_responding = true;

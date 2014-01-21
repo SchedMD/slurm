@@ -1461,8 +1461,10 @@ extern void node_did_resp (char *name);
  * node_not_resp - record that the specified node is not responding
  * IN name - name of the node
  * IN msg_time - time message was sent
+ * IN resp_type - what kind of response came back from the node
  */
-extern void node_not_resp (char *name, time_t msg_time);
+extern void node_not_resp (char *name, time_t msg_time,
+			   slurm_msg_type_t resp_type);
 
 /* For every node with the "not_responding" flag set, clear the flag
  * and log that the node is not responding using a hostlist expression */
