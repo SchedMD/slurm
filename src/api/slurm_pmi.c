@@ -153,7 +153,7 @@ static void _set_pmi_time(void)
 	}
 
 	pmi_time = strtol(tmp, &endptr, 10);
-	if ((pmi_time < 0) || (endptr[0] != '\0')) {
+	if ((pmi_time <= 0) || (endptr[0] != '\0')) {
 		error("Invalid PMI_TIME: %s", tmp);
 		pmi_time = DEFAULT_PMI_TIME;
 	}

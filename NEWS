@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     Fix the data structure mismatch between acct_gather_filesystem_lustre.c
     and slurm_jobacct_gather.h which caused the hdf5 plugin to log incorrect
     data.
+ -- Don't allow PMI_TIME to be zero which will cause floating exception.
 
 * Changes in Slurm 2.6.5
 ========================
