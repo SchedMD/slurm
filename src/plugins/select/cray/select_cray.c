@@ -1778,7 +1778,7 @@ extern int select_p_step_start(struct step_record *step_ptr)
 		}
 		bit_or(jobinfo->used_blades, step_jobinfo->blade_map);
 	}
-	return other_step_finish(step_ptr);
+	return other_step_start(step_ptr);
 }
 
 
