@@ -154,8 +154,8 @@ time_t last_node_update;
 #endif
 
 static blade_info_t *blade_array = NULL;
-static bitstr_t *blades_running_jobs = NULL;
-static bitstr_t *blades_running_npc = NULL;
+static bitstr_t *blade_nodes_running_jobs = NULL;
+static bitstr_t *blade_nodes_running_npc = NULL;
 static uint32_t blade_cnt = 0;
 static pthread_mutex_t blade_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t last_npc_update;
@@ -734,17 +734,17 @@ static void _remove_job_from_blades(select_jobinfo_t *jobinfo)
 		}
 
 		if (jobinfo->npc) {
-			bit_not(blades_running_npc);
-			bit_or(blades_running_npc,
+			bit_not(blade_nodes_running_npc);
+			bit_or(blade_nodes_running_npc,
 			       blade_array[i].node_bitmap);
-			bit_not(blades_running_npc);
+			bit_not(blade_nodes_running_npc);
 		}
 
 		if (!blade_array[i].job_cnt) {
-			bit_not(blades_running_jobs);
-			bit_or(blades_running_jobs,
+			bit_not(blade_nodes_running_jobs);
+			bit_or(blade_nodes_running_jobs,
 			       blade_array[i].node_bitmap);
-			bit_not(blades_running_jobs);
+			bit_not(blade_nodes_running_jobs);
 		}
 	}
 
@@ -810,14 +810,14 @@ static void _set_job_running(struct job_record *job_ptr)
 			bit_set(jobinfo->blade_map,
 				nodeinfo->blade_id);
 			if (!blade_array[nodeinfo->blade_id].job_cnt)
-				bit_or(blades_running_jobs,
+				bit_or(blade_nodes_running_jobs,
 				       blade_array[nodeinfo->blade_id].
 				       node_bitmap);
 
 			blade_array[nodeinfo->blade_id].job_cnt++;
 
 			if (jobinfo->npc)
-				bit_or(blades_running_npc,
+				bit_or(blade_nodes_running_npc,
 				       blade_array[nodeinfo->blade_id].
 				       node_bitmap);
 		}
@@ -840,12 +840,12 @@ static void _set_job_running_restore(select_jobinfo_t *jobinfo)
 			continue;
 
 		if (!blade_array[i].job_cnt)
-			bit_or(blades_running_jobs, blade_array[i].node_bitmap);
+			bit_or(blade_nodes_running_jobs, blade_array[i].node_bitmap);
 
 		blade_array[i].job_cnt++;
 
 		if (jobinfo->npc)
-			bit_or(blades_running_npc, blade_array[i].node_bitmap);
+			bit_or(blade_nodes_running_npc, blade_array[i].node_bitmap);
 	}
 
 	if (jobinfo->npc)
@@ -1060,8 +1060,8 @@ extern int fini ( void )
 
 	slurm_mutex_lock(&blade_mutex);
 
-	FREE_NULL_BITMAP(blades_running_jobs);
-	FREE_NULL_BITMAP(blades_running_npc);
+	FREE_NULL_BITMAP(blade_nodes_running_jobs);
+	FREE_NULL_BITMAP(blade_nodes_running_npc);
 
 	for (i=0; i<blade_cnt; i++)
 		_free_blade(&blade_array[i]);
@@ -1400,11 +1400,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	if (!blade_array)
 		blade_array = xmalloc(sizeof(blade_info_t) * node_cnt);
 
-	if (!blades_running_jobs)
-		blades_running_jobs = bit_alloc(node_cnt);
+	if (!blade_nodes_running_jobs)
+		blade_nodes_running_jobs = bit_alloc(node_cnt);
 
-	if (!blades_running_npc)
-		blades_running_npc = bit_alloc(node_cnt);
+	if (!blade_nodes_running_npc)
+		blade_nodes_running_npc = bit_alloc(node_cnt);
 
 	for (i = 0; i < node_cnt; i++) {
 		node_rec = &node_ptr[i];
@@ -1547,24 +1547,24 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	slurm_mutex_lock(&blade_mutex);
 	if (jobinfo->npc == NPC_NONE) {
 		if (mode != SELECT_MODE_TEST_ONLY) {
-			bit_not(blades_running_npc);
-			bit_and(bitmap, blades_running_npc);
-			bit_not(blades_running_npc);
+			bit_not(blade_nodes_running_npc);
+			bit_and(bitmap, blade_nodes_running_npc);
+			bit_not(blade_nodes_running_npc);
 		}
 	} else {
 		/* If looking for network performance counters unmark
 		   all the nodes that are in use since they cannot be used.
 		*/
 		if (mode != SELECT_MODE_TEST_ONLY) {
-			bit_not(blades_running_jobs);
-			bit_and(bitmap, blades_running_jobs);
-			bit_not(blades_running_jobs);
+			bit_not(blade_nodes_running_jobs);
+			bit_and(bitmap, blade_nodes_running_jobs);
+			bit_not(blade_nodes_running_jobs);
 		}
 	}
 
 	/* char *tmp = bitmap2node_name(bitmap); */
-	/* char *tmp2 = bitmap2node_name(blades_running_jobs); */
-	/* char *tmp3 = bitmap2node_name(blades_running_npc); */
+	/* char *tmp2 = bitmap2node_name(blade_nodes_running_jobs); */
+	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
 
 	/* info("trying %u on %s '%s' '%s'", job_ptr->job_id, tmp, tmp2, tmp3); */
 	/* xfree(tmp); */
@@ -1594,8 +1594,8 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 
 	_set_job_running(job_ptr);
 
-	/* char *tmp2 = bitmap2node_name(blades_running_jobs); */
-	/* char *tmp3 = bitmap2node_name(blades_running_npc); */
+	/* char *tmp2 = bitmap2node_name(blade_nodes_running_jobs); */
+	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
 
 	/* info("adding %u '%s' '%s'", job_ptr->job_id, tmp2, tmp3); */
 	/* xfree(tmp2); */
@@ -1656,8 +1656,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	_remove_job_from_blades(jobinfo);
 
 	/* slurm_mutex_lock(&blade_mutex); */
-	/* char *tmp2 = bitmap2node_name(blades_running_jobs); */
-	/* char *tmp3 = bitmap2node_name(blades_running_npc); */
+	/* char *tmp2 = bitmap2node_name(blade_nodes_running_jobs); */
+	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
 
 	/* info("removed %u '%s' '%s'", job_ptr->job_id, tmp2, tmp3); */
 	/* xfree(tmp2); */
@@ -1911,7 +1911,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	/* clear all marks */
 	for (i=0; i<node_record_count; i++) {
 		struct node_record *node_ptr = &(node_record_table_ptr[i]);
-		if (bit_test(blades_running_npc, i))
+		if (bit_test(blade_nodes_running_npc, i))
 			node_ptr->node_state |= NODE_STATE_NET;
 		else
 			node_ptr->node_state &= (~NODE_STATE_NET);
