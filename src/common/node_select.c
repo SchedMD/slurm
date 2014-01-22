@@ -711,11 +711,14 @@ extern int select_g_job_resume(struct job_record *job_ptr, bool indf_susp)
  * OUT step_jobinfo - Fill in the resources to be used if not
  *                    full size of job.
  * IN node_count  - How many nodes we are looking for.
+ * OUT avail_nodes - bitmap of available nodes according to the plugin
+ *                  (not always set).
  * RET map of slurm nodes to be used for step, NULL on failure
  */
 extern bitstr_t *select_g_step_pick_nodes(struct job_record *job_ptr,
 					  dynamic_plugin_data_t *step_jobinfo,
-					  uint32_t node_count)
+					  uint32_t node_count,
+					  bitstr_t **avail_nodes)
 {
 	if (slurm_select_init(0) < 0)
 		return NULL;
@@ -723,7 +726,7 @@ extern bitstr_t *select_g_step_pick_nodes(struct job_record *job_ptr,
 	xassert(step_jobinfo);
 
 	return (*(ops[select_context_default].step_pick_nodes))
-		(job_ptr, step_jobinfo->data, node_count);
+		(job_ptr, step_jobinfo->data, node_count, avail_nodes);
 }
 
 /*

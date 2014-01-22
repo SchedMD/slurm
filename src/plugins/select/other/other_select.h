@@ -244,11 +244,13 @@ extern int other_job_resume(struct job_record *job_ptr, bool indf_susp);
  * OUT step_jobinfo - Fill in the resources to be used if not
  *                    full size of job.
  * IN node_count  - How many nodes we are looking for.
+ * OUT avail_nodes - bitmap of available nodes according to the plugin.
  * RET map of slurm nodes to be used for step, NULL on failure
  */
 extern bitstr_t * other_step_pick_nodes(struct job_record *job_ptr,
 					select_jobinfo_t *jobinfo,
-					uint32_t node_count);
+					uint32_t node_count,
+					bitstr_t **avail_nodes);
 
 extern int other_step_start(struct step_record *step_ptr);
 

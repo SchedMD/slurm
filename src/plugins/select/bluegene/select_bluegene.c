@@ -1814,7 +1814,8 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 
 extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  select_jobinfo_t *step_jobinfo,
-					  uint32_t node_count)
+					  uint32_t node_count,
+					  bitstr_t **avail_nodes)
 {
 	bitstr_t *picked_mps = NULL;
 	bg_record_t *bg_record = NULL;

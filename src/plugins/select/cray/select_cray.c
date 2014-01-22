@@ -1692,8 +1692,9 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 }
 
 extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
-					  select_jobinfo_t *jobinfo,
-					  uint32_t node_count)
+					  select_jobinfo_t *step_jobinfo,
+					  uint32_t node_count,
+					  bitstr_t **avail_nodes)
 {
 	return other_step_pick_nodes(job_ptr, jobinfo, node_count);
 }

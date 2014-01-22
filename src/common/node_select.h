@@ -164,7 +164,8 @@ typedef struct slurm_select_ops {
 						 bool indf_susp);
 	bitstr_t *      (*step_pick_nodes)      (struct job_record *job_ptr,
 						 select_jobinfo_t *step_jobinfo,
-						 uint32_t node_count);
+						 uint32_t node_count,
+						 bitstr_t **avail_nodes);
 	int             (*step_start)           (struct step_record *step_ptr);
 	int             (*step_finish)          (struct step_record *step_ptr);
 	int		(*pack_select_info)	(time_t last_query_time,
@@ -644,8 +645,10 @@ extern int select_g_job_resized(struct job_record *job_ptr,
  * OUT step_jobinfo - Fill in the resources to be used if not
  *                    full size of job.
  * IN node_count  - How many nodes we are looking for.
+ * OUT avail_nodes - bitmap of available nodes according to the plugin
+ *                  (not always set).
  * RET map of slurm nodes to be used for step, NULL if resources not selected
-*
+ *
  * NOTE: Most select plugins return NULL and use common code slurmctld to
  * select resources for a job step. Only on IBM Bluegene systems does the
  * select plugin need to select resources and take system topology into
@@ -653,7 +656,8 @@ extern int select_g_job_resized(struct job_record *job_ptr,
  */
 extern bitstr_t * select_g_step_pick_nodes(struct job_record *job_ptr,
 					   dynamic_plugin_data_t *step_jobinfo,
-					   uint32_t node_count);
+					   uint32_t node_count,
+					   bitstr_t **avail_nodes);
 /*
  * Post pick_nodes operations for the step.
  * IN/OUT step_ptr - step pointer to operate on.
