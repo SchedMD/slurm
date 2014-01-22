@@ -754,6 +754,18 @@ static void _remove_job_from_blades(select_jobinfo_t *jobinfo)
 	slurm_mutex_unlock(&blade_mutex);
 }
 
+static void _remove_step_from_blades(struct step_record *step_ptr)
+{
+	select_jobinfo_t *jobinfo = step_ptr->job_ptr->select_jobinfo->data;
+	select_jobinfo_t *step_jobinfo = step_ptr->select_jobinfo->data;
+
+	if (jobinfo->used_blades) {
+		bit_not(jobinfo->used_blades);
+		bit_or(jobinfo->used_blades, step_jobinfo->blade_map);
+		bit_not(jobinfo->used_blades);
+	}
+}
+
 static void _free_blade(blade_info_t *blade_info)
 {
 	FREE_NULL_BITMAP(blade_info->node_bitmap);
@@ -941,6 +953,8 @@ static void *_step_fini(void *args)
 		other_step_finish(step_ptr);
 
 		jobinfo = step_ptr->select_jobinfo->data;
+
+		_remove_step_from_blades(step_ptr);
 		jobinfo->cleaning = 0;
 
 		/* free resources on the job */
@@ -1700,17 +1714,70 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  uint32_t node_count,
 					  bitstr_t **avail_nodes)
 {
-	return other_step_pick_nodes(job_ptr, jobinfo, node_count);
+	select_jobinfo_t *jobinfo;
+
+	xassert(avail_nodes);
+	xassert(!*avail_nodes);
+
+	jobinfo = job_ptr->select_jobinfo->data;
+	xassert(jobinfo);
+
+	if (jobinfo->used_blades) {
+		int i;
+
+		*avail_nodes = bit_copy(job_ptr->node_bitmap);
+		bit_not(*avail_nodes);
+
+		slurm_mutex_lock(&blade_mutex);
+		for (i=0; i<blade_cnt; i++) {
+			if (!bit_test(jobinfo->used_blades, i))
+				continue;
+
+			bit_or(*avail_nodes, blade_array[i].node_bitmap);
+		}
+		slurm_mutex_unlock(&blade_mutex);
+
+		bit_not(*avail_nodes);
+	}
+
+	return other_step_pick_nodes(job_ptr, jobinfo, node_count, avail_nodes);
 }
 
 extern int select_p_step_start(struct step_record *step_ptr)
 {
+	select_jobinfo_t *jobinfo;
+
 #ifdef HAVE_NATIVE_CRAY
 	if (aeld_running) {
 		_update_app(step_ptr->job_ptr, step_ptr, ALPSC_EV_START);
 	}
 #endif
 
+	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
+	if (jobinfo->npc) {
+		int i;
+		select_jobinfo_t *step_jobinfo = step_ptr->select_jobinfo->data;
+		select_nodeinfo_t *nodeinfo;
+
+		if (!jobinfo->used_blades)
+			jobinfo->used_blades = bit_alloc(blade_cnt);
+
+		if (!step_jobinfo->blade_map)
+			step_jobinfo->blade_map = bit_alloc(blade_cnt);
+
+		for (i=0; i<node_record_count; i++) {
+			if (!bit_test(step_ptr->step_node_bitmap, i))
+				continue;
+
+			nodeinfo = node_record_table_ptr[i].
+				select_nodeinfo->data;
+			if (!bit_test(step_jobinfo->blade_map,
+				      nodeinfo->blade_id))
+				bit_set(step_jobinfo->blade_map,
+					nodeinfo->blade_id);
+		}
+		bit_or(jobinfo->used_blades, step_jobinfo->blade_map);
+	}
 	return other_step_finish(step_ptr);
 }
 
@@ -1753,6 +1820,8 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	return SLURM_SUCCESS;
 #else
 	other_step_finish(step_ptr);
+	_remove_step_from_blades(step_ptr);
+
 	return SLURM_SUCCESS;
 #endif
 }
