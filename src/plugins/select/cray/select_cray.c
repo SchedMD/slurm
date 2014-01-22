@@ -78,7 +78,8 @@ struct select_jobinfo {
 	uint16_t                cleaning;
 	uint16_t		magic;
 	uint8_t                 npc;
-	select_jobinfo_t	*other_jobinfo;
+	select_jobinfo_t       *other_jobinfo;
+	bitstr_t               *used_blades;
 };
 #define JOBINFO_MAGIC 0x86ad
 
@@ -980,10 +981,12 @@ static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 		pack_bit_str(NULL, buffer);
 		pack16(0, buffer);
 		pack8(0, buffer);
+		pack_bit_str(NULL, buffer);
 	} else {
 		pack_bit_str(jobinfo->blade_map, buffer);
 		pack16(jobinfo->cleaning, buffer);
 		pack8(jobinfo->npc, buffer);
+		pack_bit_str(jobinfo->used_blades, buffer);
 	}
 }
 
@@ -999,6 +1002,7 @@ static int _select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 	unpack_bit_str(&jobinfo->blade_map, buffer);
 	safe_unpack16(&jobinfo->cleaning, buffer);
 	safe_unpack8(&jobinfo->npc, buffer);
+	unpack_bit_str(&jobinfo->used_blades, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -1999,6 +2003,7 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
 
 		jobinfo->magic = 0;
 		FREE_NULL_BITMAP(jobinfo->blade_map);
+		FREE_NULL_BITMAP(jobinfo->used_blades);
 		other_select_jobinfo_free(jobinfo->other_jobinfo);
 		xfree(jobinfo);
 	}
