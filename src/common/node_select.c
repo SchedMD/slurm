@@ -260,12 +260,12 @@ extern int slurm_select_init(bool only_default)
 			fatal("Use SelectType=select/cray");
 		}
 #else
-		if (!strcasecmp(type, "select/cray")) {
-			fatal("Requested SelectType=select/cray "
-			      "in slurm.conf, but not running on a native Cray "
-			      "system.  If looking to run on a Cray "
-			      "system natively use --enable-native-cray.");
-		}
+		/* if (!strcasecmp(type, "select/cray")) { */
+		/* 	fatal("Requested SelectType=select/cray " */
+		/* 	      "in slurm.conf, but not running on a native Cray " */
+		/* 	      "system.  If looking to run on a Cray " */
+		/* 	      "system natively use --enable-native-cray."); */
+		/* } */
 #endif
 	}
 
