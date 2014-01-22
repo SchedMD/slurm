@@ -5523,11 +5523,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_USER_NAME,
 				    &job_ptr->user_id);
-#ifdef HAVE_NATIVE_CRAY
+
 	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NETWORK,
 				    job_ptr->network);
-#endif
+
 	if (job_desc->ckpt_dir)
 		detail_ptr->ckpt_dir = xstrdup(job_desc->ckpt_dir);
 	else
@@ -8996,12 +8996,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->network = xstrdup(job_specs->network);
 			info("sched: update_job: setting Network to %s "
 			     "for jobid %u", job_ptr->network, job_ptr->job_id);
-#ifdef HAVE_NATIVE_CRAY
 			select_g_select_jobinfo_set(
 				job_ptr->select_jobinfo,
 				SELECT_JOBDATA_NETWORK,
 				job_ptr->network);
-#endif
 		}
 	}
 

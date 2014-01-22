@@ -251,8 +251,8 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		jobinfo->user_name = uid_to_string(*uid);
 		break;
 	default:
-		debug("set_select_jobinfo: data_type %d invalid",
-		      data_type);
+		debug3("set_select_jobinfo: data_type %d invalid",
+		       data_type);
 	}
 
 	return rc;
