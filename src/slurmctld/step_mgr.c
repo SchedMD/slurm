@@ -1035,6 +1035,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				bit_clear(nodes_avail, i);
 				bit_set(non_selected_nodes, i);
 				non_selected_tasks[i] = avail_tasks;
+			} else if (select_nodes_avail &&
+				   !bit_test(select_nodes_avail, i)) {
+				/* Select does not want you to use this */
+				bit_clear(nodes_avail, i);
 			} else {
 				nodes_picked_cnt++;
 				tasks_picked_cnt += avail_tasks;
@@ -1185,6 +1189,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		xfree(usable_cpu_cnt);
 		FREE_NULL_BITMAP(select_nodes_avail);
 		return nodes_avail;
+	}
+
+	if (select_nodes_avail) {
+		/* The select plugin told us these were the
+		 * only ones we could choose from.  If it
+		 * doesn't fit here then defer request */
+		bit_and(nodes_avail, select_nodes_avail);
+		FREE_NULL_BITMAP(select_nodes_avail);
 	}
 
 	if (step_spec->node_list) {
@@ -1519,19 +1531,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			       step_spec->cpu_count);
 			goto cleanup;
 		}
-	}
-
-	if (select_nodes_avail) {
-		/* The select plugin told us these were the
-		 * only ones we could choose from.  If it
-		 * doesn't fit here then defer request */
-		if (!bit_super_set(nodes_picked, select_nodes_avail)) {
-			*return_code = ESLURM_NODES_BUSY;
-			debug2("select plugin told us the nodes "
-			       "picked weren't all available");
-			goto cleanup;
-		}
-		FREE_NULL_BITMAP(select_nodes_avail);
 	}
 
 	FREE_NULL_BITMAP(nodes_avail);
