@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     data.
  -- Don't allow PMI_TIME to be zero which will cause floating exception.
  -- Fix purging of old reservation errors in database.
+ -- MYSQL - If starting the plugin and the database isn't up attempt to
+    connect in a loop instead of producing a fatal.
 
 * Changes in Slurm 2.6.5
 ========================
