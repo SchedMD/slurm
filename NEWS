@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- Added new job_submit/trottle plugin to control the rate at which a user
     can submit jobs.
  -- CRAY - added network performance counters option.
+ -- Allow scontrol suspend/resume to accept jobid in the format jobid_taskid
+    to suspend/resume array elements.
 
 * Changes in Slurm 14.03.0pre5
 ==============================

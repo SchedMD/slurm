@@ -313,26 +313,35 @@ scontrol_hold(char *op, char *job_id_str)
 extern int
 scontrol_suspend(char *op, char *job_id_str)
 {
-	uint32_t job_id = 0;
-	char *next_str;
+	uint32_t *ids;
+	uint32_t num_ids;
+	int n;
+	int cc;
 
-	if (job_id_str) {
-		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
-		if (next_str[0] != '\0') {
-			fprintf(stderr, "Invalid job id specified\n");
-			exit_code = 1;
-			return SLURM_SUCCESS;
-		}
-	} else {
-		fprintf(stderr, "Invalid job id specified\n");
+	ids = _get_job_ids(job_id_str, &num_ids);
+	if (ids == NULL) {
 		exit_code = 1;
-		return SLURM_SUCCESS;
+		return 0;
 	}
 
-	if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
-		return slurm_suspend(job_id);
-	else
-		return slurm_resume(job_id);
+	cc = SLURM_SUCCESS;
+	for (n = 0; n < num_ids; n++) {
+
+		if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
+			cc = slurm_suspend(ids[n]);
+		else
+			cc = slurm_resume(ids[n]);
+		if (cc != SLURM_SUCCESS) {
+			fprintf(stderr, "%s  array job_id %u\n",
+					slurm_strerror(slurm_get_errno()), ids[n]);
+			exit_code = 1;
+			break;
+		}
+	}
+
+	xfree(ids);
+
+	return cc;
 }
 
 /*
