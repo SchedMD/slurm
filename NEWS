@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
  -- Added new job_submit/trottle plugin to control the rate at which a user
     can submit jobs.
  -- CRAY - added network performance counters option.
+ -- Try to start mysql before starting slurmdbd.
 
 * Changes in Slurm 14.03.0pre5
 ==============================
