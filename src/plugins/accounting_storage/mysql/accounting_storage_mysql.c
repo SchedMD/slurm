@@ -2027,10 +2027,13 @@ extern int init ( void )
 
 	debug2("mysql_connect() called for db %s", mysql_db_name);
 	mysql_conn = create_mysql_conn(0, 0, NULL);
-	if (mysql_db_get_db_connection(mysql_conn, mysql_db_name, mysql_db_info)
-	    != SLURM_SUCCESS)
-		fatal("The database must be up when starting "
-		      "the MYSQL plugin.");
+	while (mysql_db_get_db_connection(
+		       mysql_conn, mysql_db_name, mysql_db_info)
+	       != SLURM_SUCCESS) {
+		error("The database must be up when starting "
+		      "the MYSQL plugin.  Trying agin in 5 seconds.");
+		sleep(5);
+	}
 
 	/* make it so this can be rolled back if failed */
 	mysql_autocommit(mysql_conn->db_conn, 0);
