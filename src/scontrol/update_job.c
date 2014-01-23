@@ -332,10 +332,8 @@ scontrol_suspend(char *op, char *job_id_str)
 		else
 			cc = slurm_resume(ids[n]);
 		if (cc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s  array job_id %u\n",
+			fprintf(stderr, "%s for array job_id %u\n",
 					slurm_strerror(slurm_get_errno()), ids[n]);
-			exit_code = 1;
-			break;
 		}
 	}
 
@@ -372,10 +370,8 @@ scontrol_requeue(int argc, char **argv)
 	for (i = 0; i < num_ids; i++) {
 		rc = slurm_requeue(ids[i], 0);
 		if (rc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s  array job_id %u\n",
+			fprintf(stderr, "%s for array job_id %u\n",
 					slurm_strerror(slurm_get_errno()), ids[i]);
-			exit_code = 1;
-			break;
 		}
 	}
 
@@ -424,10 +420,8 @@ scontrol_requeue_hold(int argc, char **argv)
 	for (i = 0; i < num_ids; i++) {
 		rc = slurm_requeue(ids[i], state_flag);
 		if (rc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s  array job_id %u\n",
+			fprintf(stderr, "%s for array job_id %u\n",
 					slurm_strerror(slurm_get_errno()), ids[i]);
-			exit_code = 1;
-			break;
 		}
 	}
 
