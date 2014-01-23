@@ -137,13 +137,13 @@ static int _check_lustre_fs(void)
 
 		set = true;
 		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
-					&profile);
+					  &profile);
 		if ((profile & ACCT_GATHER_PROFILE_LUSTRE)) {
 			sprintf(lustre_directory, "%s/llite", proc_base_path);
 			proc_dir = opendir(proc_base_path);
 			if (!proc_dir) {
 				error("%s: not able to read %s %m",
-					  __func__, lustre_directory);
+				      __func__, lustre_directory);
 				rc = SLURM_FAILURE;
 			} else {
 				closedir(proc_dir);
@@ -190,11 +190,11 @@ static int _read_lustre_counters(void)
 		bool bwrote;
 
 		if (strcmp(entry->d_name, ".") == 0
-			|| strcmp(entry->d_name, "..") == 0)
+		    || strcmp(entry->d_name, "..") == 0)
 			continue;
 
 		snprintf(path_stats, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
-				 entry->d_name);
+			 entry->d_name);
 		debug3("%s: Found file %s", __func__, path_stats);
 
 		fff = fopen(path_stats, "r");
@@ -211,33 +211,33 @@ static int _read_lustre_counters(void)
 
 			if (strstr(buffer, "write_bytes")) {
 				sscanf(buffer,
-					   "%*s %"PRIu64" %*s %*s "
-					   "%*d %*d %"PRIu64"",
-					   &lustre_se.lustre_nb_writes,
-					   &lustre_se.lustre_write_bytes);
+				       "%*s %"PRIu64" %*s %*s "
+				       "%*d %*d %"PRIu64"",
+				       &lustre_se.lustre_nb_writes,
+				       &lustre_se.lustre_write_bytes);
 				debug3("%s "
-					   "%"PRIu64" "
-					   "write_bytes %"PRIu64" "
-					   "writes",
-					   __func__,
-					   lustre_se.lustre_write_bytes,
-					   lustre_se.lustre_nb_writes);
+				       "%"PRIu64" "
+				       "write_bytes %"PRIu64" "
+				       "writes",
+				       __func__,
+				       lustre_se.lustre_write_bytes,
+				       lustre_se.lustre_nb_writes);
 				bwrote = true;
 			}
 
 			if (strstr(buffer, "read_bytes")) {
 				sscanf(buffer,
-					   "%*s %"PRIu64" %*s %*s "
-					   "%*d %*d %"PRIu64"",
-					   &lustre_se.lustre_nb_reads,
-					   &lustre_se.lustre_read_bytes);
+				       "%*s %"PRIu64" %*s %*s "
+				       "%*d %*d %"PRIu64"",
+				       &lustre_se.lustre_nb_reads,
+				       &lustre_se.lustre_read_bytes);
 				debug3("%s "
-					   "%"PRIu64" "
-					   "read_bytes %"PRIu64" "
-					   "reads",
-					   __func__,
-					   lustre_se.lustre_read_bytes,
-					   lustre_se.lustre_nb_reads);
+				       "%"PRIu64" "
+				       "read_bytes %"PRIu64" "
+				       "reads",
+				       __func__,
+				       lustre_se.lustre_read_bytes,
+				       lustre_se.lustre_nb_reads);
 				bread = true;
 			}
 		}
@@ -320,8 +320,10 @@ static int _update_node_filesystem(void)
 	 */
 	fls.reads = fls.reads + (current.reads - previous.reads);
 	fls.writes = fls.writes + (current.writes - previous.writes);
-	fls.read_size = fls.read_size + (current.read_size - previous.read_size);
-	fls.write_size = fls.write_size + (current.write_size - previous.write_size);
+	fls.read_size = fls.read_size
+		+ (current.read_size - previous.read_size);
+	fls.write_size = fls.write_size
+		+ (current.write_size - previous.write_size);
 
 	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, &fls);
 
@@ -331,8 +333,9 @@ static int _update_node_filesystem(void)
 	memcpy(&previous, &current, sizeof(acct_filesystem_data_t));
 	memset(&lustre_se, 0, sizeof(lustre_sens_t));
 
-	info("%s: num reads %"PRIu64" nums write %"PRIu64" read %f MB wrote %f MB",
-		 __func__, fls.reads, fls.writes, fls.read_size, fls.write_size);
+	info("%s: num reads %"PRIu64" nums write %"PRIu64" "
+	     "read %f MB wrote %f MB",
+	     __func__, fls.reads, fls.writes, fls.read_size, fls.write_size);
 
 	slurm_mutex_unlock(&lustre_lock);
 

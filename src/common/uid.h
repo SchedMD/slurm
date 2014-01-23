@@ -50,7 +50,7 @@
  * value configured, the value returned is 1024, which can too small.
  * Diito for _SC_GETGR_R_SIZE_MAX.
  */
-#define PW_BUF_SIZE 524288
+#define PW_BUF_SIZE 65536
 
 /* Retry getpwuid_r while return code is EINTR so we always get the
  * info.  Return return code of getpwuid_r.
