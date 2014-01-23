@@ -2326,7 +2326,7 @@ exit_jobs:
 		}
 
 		query = xstrdup_printf("delete from \"%s_%s\" "
-				       "where time_submit <= %ld "
+				       "where time_start <= %ld "
 				       "&& time_end != 0",
 				       cluster_name, resv_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",

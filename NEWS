@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
     and slurm_jobacct_gather.h which caused the hdf5 plugin to log incorrect
     data.
  -- Don't allow PMI_TIME to be zero which will cause floating exception.
+ -- Fix purging of old reservation errors in database.
 
 * Changes in Slurm 2.6.5
 ========================
