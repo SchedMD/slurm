@@ -171,7 +171,6 @@ Lead Slurm developers are:
 <li>Stephen Trofinoff (Swiss National Supercomputing Centre)</li>
 <br>
 <li>Garrison Vaughan</li>
-<li>Stephane Vaillant (Observatoire de Paris)</li>
 <br>
 <li>Daniel M. Weeks (Rensselaer Polytechnic Institute)</li>
 <li>Nathan Weeks (Iowa State University)</li>
@@ -187,6 +186,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 23 January 2014</p>
+<p style="text-align:center;">Last modified 18 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
