@@ -234,10 +234,10 @@ extern bool want_nodes_reboot;		/* if set, check for idle nodes */
  *  cg_node_bitmap          Set if node in completing state
  *  idle_node_bitmap        Set if node has no jobs allocated to it
  *  power_node_bitmap       Set for nodes which are powered down
- *  share_node_bitmap       Set if any job allocated resources on that node
- *                          is configured to not share the node with other
- *                          jobs (--exclusive option specified by job or
- *                          Shared=NO configured for the job's partition)
+ *  share_node_bitmap       Set if no jobs allocated exclusive access to
+ *                          resources on that node (cleared if --exclusive
+ *                          option specified by job or Shared=NO configured for
+ *                          the job's partition)
  *  up_node_bitmap          Set if the node's state is not DOWN
 \*****************************************************************************/
 extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,
@@ -480,10 +480,8 @@ struct job_details {
 	uint16_t requeue;		/* controls ability requeue job */
 	char *restart_dir;		/* restart execution from ckpt images
 					 * in this dir */
-	uint16_t shared;		/* 1 if job can share nodes,
-					 * 0 if job cannot share nodes,
-					 * any other value accepts the default
-					 * sharing policy. */
+	uint8_t share_res;		/* set if job can share resources with
+					 * other jobs */
 	char *std_err;			/* pathname of job's stderr file */
 	char *std_in;			/* pathname of job's stdin file */
 	char *std_out;			/* pathname of job's stdout file */
@@ -492,6 +490,7 @@ struct job_details {
 					 * useful when Consumable Resources
 					 * is enabled */
 	uint32_t usable_nodes;		/* node count needed by preemption */
+	uint8_t whole_node;		/* job requested exclusive node use */
 	char *work_dir;			/* pathname of working directory */
 };
 

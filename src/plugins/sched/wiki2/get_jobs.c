@@ -478,13 +478,13 @@ static void	_get_job_comment(struct job_record *job_ptr,
 		if (job_ptr->part_ptr &&
 		    (job_ptr->part_ptr->max_share == 0))  /* Exclusive use */
 			sharing = 0;
-		else if (job_ptr->details && job_ptr->details->shared)
+		else if (job_ptr->details && job_ptr->details->share_res)
 			sharing = 1;
 	} else if (job_ptr->part_ptr) {		/* partition level control */
 		if (job_ptr->part_ptr->max_share & SHARED_FORCE)
 			sharing = 1;		/* Sharing forced */
 		else if ((job_ptr->part_ptr->max_share > 1) &&
-		         (job_ptr->details) && (job_ptr->details->shared))
+		         (job_ptr->details) && (job_ptr->details->share_res))
 			sharing = 1;
 	}
 	if (sharing) {

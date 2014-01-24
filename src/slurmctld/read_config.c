@@ -347,7 +347,7 @@ static int _build_bitmaps(void)
 		if (!IS_JOB_RUNNING(job_ptr) ||
 		    (job_ptr->node_bitmap == NULL)        ||
 		    (job_ptr->details     == NULL)        ||
-		    (job_ptr->details->shared != 0))
+		    (job_ptr->details->share_res != 0))
 			continue;
 		tmp_bits = bit_copy(job_ptr->node_bitmap);
 		bit_not(tmp_bits);
@@ -1773,7 +1773,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		node_ptr->run_job_cnt++; /* NOTE:
 				* This counter moved to comp_job_cnt
 				* by _sync_nodes_to_comp_job() */
-		if ((job_ptr->details) && (job_ptr->details->shared == 0))
+		if ((job_ptr->details) && (job_ptr->details->share_res == 0))
 			node_ptr->no_share_job_cnt++;
 
 		if (IS_NODE_DOWN(node_ptr)              &&

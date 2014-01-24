@@ -346,8 +346,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		char str[100];
 
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
-		orig_shared = job_ptr->details->shared;
-		job_ptr->details->shared = 0;
+		orig_shared = job_ptr->details->share_res;
+		job_ptr->details->share_res = 0;
 		tmp_bitmap = bit_copy(*avail_bitmap);
 
 		if (exc_core_bitmap) {
@@ -366,7 +366,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			preemptee_job_list = NULL;
 		}
 
-		job_ptr->details->shared = orig_shared;
+		job_ptr->details->share_res = orig_shared;
 
 		if (((rc != SLURM_SUCCESS) || (job_ptr->start_time > now)) &&
 		    (orig_shared != 0)) {

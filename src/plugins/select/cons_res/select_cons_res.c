@@ -1419,12 +1419,7 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 	if (max_share & SHARED_FORCE)
 		return NODE_CR_AVAILABLE;
 
-	/* Partition is Shared=NO or Shared=YES */
-	if (job_ptr->details->shared == 0)
-		/* user has requested exclusive nodes */
-		return NODE_CR_RESERVED;
-
-	if ((max_share > 1) && (job_ptr->details->shared == 1))
+	if ((max_share > 1) && (job_ptr->details->share_res == 1))
 		/* part allows sharing, and the user has requested it */
 		return NODE_CR_AVAILABLE;
 
@@ -2023,10 +2018,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		return EINVAL;
 
 
-	if (job_ptr->details->core_spec && job_ptr->details->shared) {
-		info("Setting Shared=0 for job %u with CoreSpec=%u",
+	if (job_ptr->details->core_spec && job_ptr->details->whole_node == 0) {
+		info("Setting Exclusive mode for job %u with CoreSpec=%u",
 		      job_ptr->job_id, job_ptr->details->core_spec);
-		job_ptr->details->shared = 0;
+		job_ptr->details->whole_node = 1;
 	}
 
 	if (!job_ptr->details->mc_ptr)

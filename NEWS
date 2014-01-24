@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - added network performance counters option.
  -- Allow scontrol suspend/resume to accept jobid in the format jobid_taskid
     to suspend/resume array elements.
+ -- In the slurmctld job record, split "shared" variable into "share_res" (share
+    resource) and "whole_node" fields.
 
 * Changes in Slurm 14.03.0pre5
 ==============================
