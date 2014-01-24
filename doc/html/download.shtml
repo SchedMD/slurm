@@ -240,6 +240,17 @@ For more information, see
 <a href="http://ubmod.sourceforge.net/resource-manager-slurm.html">UDMod home page</a> and
 <a href="https://github.com/ubccr/ubmod">source code</a>.</li><br>
 
+<li><b>Slurmmon</b><br>
+Slurmmon is a system for gathering and plotting data about Slurm scheduling and
+job characteristics. It currently simply sends the data to ganglia, but it
+includes some custom reports and a web page for an organized summary.
+It collects all the data from sdiag as well as total counts of running and
+pending jobs in the system and the maximum such values for any single user.
+It can also submit probe jobs to various partitions in order to trend the
+times spent pending in them, which is often a good bellwether of scheduling
+problems.<br>
+<a href="https://github.com/fasrc/slurmmon">Slurmmon code</a></li><br>
+
 <li><b>MSlurm</b><br>
 Such a superstructure for the management of multiple Slurm environments is done
 with MSlurm. Thereby several Slurm clusters - even across multiple Slurm
@@ -253,6 +264,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 8 January 2014</p>
+<p style="text-align:center;">Last modified 24 January 2014</p>
 
 <!--#include virtual="footer.txt"-->
