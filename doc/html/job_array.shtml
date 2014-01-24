@@ -10,8 +10,11 @@ jobs quickly and easily; tens of thousands of jobs can be submitted in under
 one second.
 All jobs must have the same initial options (e.g. size, time limit, etc.),
 however it is possible to change some of these options after the job has begun
-execution using the command<br>
-<i>scontrol update job ...</i></p>
+execution using the command specifying the <i>JobID</i> of the array or individual
+<i>ArrayJobID</i>.<br>
+
+<i>scontrol update job=101 ...</i></p>
+<i>scontrol update job=101_1 ...</i></p>
 
 <p>Job arrays are only supported for batch jobs and the array index values are
 specified using the <i>--array</i> or <i>-a</i> option of the <i>sbatch</i>
@@ -171,33 +174,69 @@ The optional job ID specified with the <i>scontrol show job</i> or
 <i>scontrol show step</i> commands can identify job array elements by
 using specifying two numbers with an underscore between the two:
 "&lt;job_id&gt;_&lt;array_id&gt;".
-In order to modify a job, always use the <i>JobID</i> specification.</p>
+<p>
+In order to modify a job always <i>ArrayJobID</i> specification, arrays can only
+be modified one element at the time. The scontrol command will accept a job
+array element specification for the update job command, but only operate on
+one job (or job array element).
+</p>
 
 <pre>
-$ scontrol show job
-JobId=13 ArrayJobId=13 ArrayTaskId=1 Name=tmp
-...
-JobId=14 ArrayJobId=13 ArrayTaskId=2 Name=tmp
-...
-JobId=15 ArrayJobId=13 ArrayTaskId=3 Name=tmp
-....
+->sbatch --array=1-4 -J Array ./sleepme 86400
+Submitted batch job 21845
 
-$ scontrol update JobId=15 TimeLimit=30
+->squeue
+ JOBID PARTITION     NAME     USER   ST  TIME NODES NODELIST
+ 21845_1    canopo    Array    david  R  0:13  1     dario
+ 21845_2    canopo    Array    david  R  0:13  1     dario
+ 21845_3    canopo    Array    david  R  0:13  1     dario
+ 21845_4    canopo    Array    david  R  0:13  1     dario
+
+->scontrol update job=21845_2 name=arturo
+->squeue
+ JOBID PARTITION     NAME     USER   ST   TIME  NODES NODELIST
+ 21845_1    canopo    Array    david  R   17:03   1    dario
+ 21845_2    canopo   arturo    david  R   17:03   1    dario
+ 21845_3    canopo    Array    david  R   17:03   1    dario
+ 21845_4    canopo    Array    david  R   17:03   1    dario
+
 </pre>
 
-<p>The scontrol command will accept a job array element specification for
-the update job command, but only operate on one job (or job array element).
-The scontrol hold, holdu and release commands will operate on all
-elements of a job array or individual elements as shown below.</p>
+<p>
+The scontrol hold, holdu, release, requeue, requeuehold, suspend and resume commands
+will operate on all elements of a job array or individual elements as shown below.
+</p>
 <pre>
-# Modify a job
-$ scontrol update jobid=13_1 ...
+->scontrol suspend 21845
+->squeue
+ JOBID PARTITION     NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    Array    david  S 25:12  1     dario
+21845_2    canopo   arturo    david  S 25:12  1     dario
+21845_3    canopo    Array    david  S 25:12  1     dario
+21845_4    canopo    Array    david  S 25:12  1     dario
+->scontrol resume 21845
+->squeue
+ JOBID PARTITION     NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    Array    david  R 25:14  1     dario
+21845_2    canopo   arturo    david  R 25:14  1     dario
+21845_3    canopo    Array    david  R 25:14  1     dario
+21845_4    canopo    Array    david  R 25:14  1     dario
 
-# Hold all elements of job array 13
-$ scontrol hold 13
+scontrol suspend 21845_3
+->squeue
+ JOBID PARTITION     NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    Array    david  R 25:14  1     dario
+21845_2    canopo   arturo    david  R 25:14  1     dario
+21845_3    canopo    Array    david  S 25:14  1     dario
+21845_4    canopo    Array    david  R 25:14  1     dario
+scontrol resume 21845_3
+->squeue
+ JOBID PARTITION     NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    Array    david  R 25:14  1     dario
+21845_2    canopo   arturo    david  R 25:14  1     dario
+21845_3    canopo    Array    david  R 25:14  1     dario
+21845_4    canopo    Array    david  R 25:14  1     dario
 
-# Release element 2 of job array 13
-$ scontrol release 13_2
 </pre>
 
 <h2>Other Command Use</h2>
@@ -261,6 +300,6 @@ array data structure is added rather than the current logic that only
 adds a new field to the existing job data structure.
 It is not certain when that work will occur.</p>
 
-<p style="text-align:center;">Last modified 28 October 2013</p>
+<p style="text-align:center;">Last modified 24 January 2014</p>
 
 <!--#include virtual="footer.txt"-->
