@@ -105,6 +105,10 @@ print_license_info(const char *feature, struct license_info_msg *msg)
 			printf("    Total=%d ", msg->lic_array[cc].total);
 		}
 		printf("Used=%d ", msg->lic_array[cc].in_use);
-		printf("Free=%d\n", msg->lic_array[cc].available);
+		printf("Free=%d ", msg->lic_array[cc].available);
+		if (msg->lic_array[cc].cluster)
+			printf("Cluster=yes\n");
+		else
+			printf("Cluster=no\n");
 	}
 }

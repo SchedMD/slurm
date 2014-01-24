@@ -508,14 +508,18 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	switch (req->msg_type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_ASSOCS:
+	case DBD_ADD_CLUS_RES:
 	case DBD_ADD_CLUSTERS:
+	case DBD_ADD_SER_RES:
 	case DBD_ADD_USERS:
 	case DBD_GOT_ACCOUNTS:
 	case DBD_GOT_ASSOCS:
+	case DBD_GOT_CLUS_RES:
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
+	case DBD_GOT_SER_RES:
 	case DBD_GOT_PROBS:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
@@ -550,19 +554,23 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		break;
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
+	case DBD_GET_CLUS_RES:
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_EVENTS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
 	case DBD_GET_RESVS:
+	case DBD_GET_SER_RES:
 	case DBD_GET_TXN:
 	case DBD_GET_USERS:
 	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
+	case DBD_REMOVE_CLUS_RES:
 	case DBD_REMOVE_CLUSTERS:
 	case DBD_REMOVE_QOS:
+	case DBD_REMOVE_SER_RES:
 	case DBD_REMOVE_WCKEYS:
 	case DBD_REMOVE_USERS:
 	case DBD_ARCHIVE_DUMP:
@@ -606,9 +614,11 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		break;
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
+	case DBD_MODIFY_CLUS_RES:
 	case DBD_MODIFY_CLUSTERS:
 	case DBD_MODIFY_JOB:
 	case DBD_MODIFY_QOS:
+	case DBD_MODIFY_SER_RES:
 	case DBD_MODIFY_USERS:
 		slurmdbd_pack_modify_msg(
 			(dbd_modify_msg_t *)req->data, rpc_version,
@@ -685,10 +695,13 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	switch (resp->msg_type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_ASSOCS:
+	case DBD_ADD_CLUS_RES:
 	case DBD_ADD_CLUSTERS:
+	case DBD_ADD_SER_RES:
 	case DBD_ADD_USERS:
 	case DBD_GOT_ACCOUNTS:
 	case DBD_GOT_ASSOCS:
+	case DBD_GOT_CLUS_RES:
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_JOBS:
@@ -697,6 +710,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
 	case DBD_GOT_RESVS:
+	case DBD_GOT_SER_RES:
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
@@ -728,19 +742,23 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 		break;
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
+	case DBD_GET_CLUS_RES:
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_EVENTS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
 	case DBD_GET_RESVS:
+	case DBD_GET_SER_RES:
 	case DBD_GET_TXN:
 	case DBD_GET_USERS:
 	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
+	case DBD_REMOVE_CLUS_RES:
 	case DBD_REMOVE_CLUSTERS:
 	case DBD_REMOVE_QOS:
+	case DBD_REMOVE_SER_RES:
 	case DBD_REMOVE_WCKEYS:
 	case DBD_REMOVE_USERS:
 	case DBD_ARCHIVE_DUMP:
@@ -788,9 +806,11 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 		break;
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
+	case DBD_MODIFY_CLUS_RES:
 	case DBD_MODIFY_CLUSTERS:
 	case DBD_MODIFY_JOB:
 	case DBD_MODIFY_QOS:
+	case DBD_MODIFY_SER_RES:
 	case DBD_MODIFY_USERS:
 		rc = slurmdbd_unpack_modify_msg(
 			(dbd_modify_msg_t **)&resp->data,
@@ -866,8 +886,12 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_ADD_ACCOUNT_COORDS;
 	} else if (!strcasecmp(msg_type, "Add Associations")) {
 		return DBD_ADD_ASSOCS;
+	} else if (!strcasecmp(msg_type, "Add Cluster Resources")) {
+		return DBD_ADD_CLUS_RES;
 	} else if (!strcasecmp(msg_type, "Add Clusters")) {
 		return DBD_ADD_CLUSTERS;
+	} else if (!strcasecmp(msg_type, "Add Server Resources")) {
+		return DBD_ADD_SER_RES;
 	} else if (!strcasecmp(msg_type, "Add Users")) {
 		return DBD_ADD_USERS;
 	} else if (!strcasecmp(msg_type, "Cluster Processors")) {
@@ -880,6 +904,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_ASSOCS;
 	} else if (!strcasecmp(msg_type, "Get Association Usage")) {
 		return DBD_GET_ASSOC_USAGE;
+	} else if (!strcasecmp(msg_type, "Get Cluster Resources")) {
+		return DBD_GET_CLUS_RES;
 	} else if (!strcasecmp(msg_type, "Get Clusters")) {
 		return DBD_GET_CLUSTERS;
 	} else if (!strcasecmp(msg_type, "Get Cluster Usage")) {
@@ -890,6 +916,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_JOBS;
 	} else if (!strcasecmp(msg_type, "Get Problems")) {
 		return DBD_GET_PROBS;
+	} else if (!strcasecmp(msg_type, "Get Server Resources")) {
+		return DBD_GET_SER_RES;
 	} else if (!strcasecmp(msg_type, "Get Users")) {
 		return DBD_GET_USERS;
 	} else if (!strcasecmp(msg_type, "Got Accounts")) {
@@ -898,6 +926,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_ASSOCS;
 	} else if (!strcasecmp(msg_type, "Got Association Usage")) {
 		return DBD_GOT_ASSOC_USAGE;
+	} else if (!strcasecmp(msg_type, "Got Cluster Resources")) {
+		return DBD_GOT_CLUS_RES;
 	} else if (!strcasecmp(msg_type, "Got Clusters")) {
 		return DBD_GOT_CLUSTERS;
 	} else if (!strcasecmp(msg_type, "Got Cluster Usage")) {
@@ -910,6 +940,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_LIST;
 	} else if (!strcasecmp(msg_type, "Got Problems")) {
 		return DBD_GOT_PROBS;
+	} else if (!strcasecmp(msg_type, "Got Server Resources")) {
+		return DBD_GOT_SER_RES;
 	} else if (!strcasecmp(msg_type, "Got Users")) {
 		return DBD_GOT_USERS;
 	} else if (!strcasecmp(msg_type, "Job Complete")) {
@@ -924,12 +956,16 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_MODIFY_ACCOUNTS;
 	} else if (!strcasecmp(msg_type, "Modify Associations")) {
 		return DBD_MODIFY_ASSOCS;
+	} else if (!strcasecmp(msg_type, "Modify Cluster Resources")) {
+		return DBD_MODIFY_CLUS_RES;
 	} else if (!strcasecmp(msg_type, "Modify Clusters")) {
 		return DBD_MODIFY_CLUSTERS;
 	} else if (!strcasecmp(msg_type, "Modify Job")) {
 		return DBD_MODIFY_JOB;
 	} else if (!strcasecmp(msg_type, "Modify QOS")) {
 		return DBD_MODIFY_QOS;
+	} else if (!strcasecmp(msg_type, "Modify Server Resources")) {
+		return DBD_MODIFY_SER_RES;
 	} else if (!strcasecmp(msg_type, "Modify Users")) {
 		return DBD_MODIFY_USERS;
 	} else if (!strcasecmp(msg_type, "Node State")) {
@@ -948,8 +984,12 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_ARCHIVE_LOAD;
 	} else if (!strcasecmp(msg_type, "Remove Associations")) {
 		return DBD_REMOVE_ASSOCS;
+	} else if (!strcasecmp(msg_type, "Remove Cluster Resources")) {
+		return DBD_REMOVE_CLUS_RES;
 	} else if (!strcasecmp(msg_type, "Remove Clusters")) {
 		return DBD_REMOVE_CLUSTERS;
+	} else if (!strcasecmp(msg_type, "Remove Server Resources")) {
+		return DBD_REMOVE_SER_RES;
 	} else if (!strcasecmp(msg_type, "Remove Users")) {
 		return DBD_REMOVE_USERS;
 	} else if (!strcasecmp(msg_type, "Roll Usage")) {
@@ -1046,11 +1086,23 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Add Associations";
 		break;
+	case DBD_ADD_CLUS_RES:
+		if (get_enum) {
+			return "DBD_ADD_CLUS_RES";
+		} else
+			return "Add Cluster Resources";
+		break;
 	case DBD_ADD_CLUSTERS:
 		if (get_enum) {
 			return "DBD_ADD_CLUSTERS";
 		} else
 			return "Add Clusters";
+		break;
+	case DBD_ADD_SER_RES:
+		if (get_enum) {
+			return "DBD_ADD_SER_RES";
+		} else
+			return "Add Server Resources";
 		break;
 	case DBD_ADD_USERS:
 		if (get_enum) {
@@ -1088,6 +1140,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Get Association Usage";
 		break;
+	case DBD_GET_CLUS_RES:
+		if (get_enum) {
+			return "DBD_GET_CLUS_RES";
+		} else
+			return "Get Cluster Resources";
+		break;
 	case DBD_GET_CLUSTERS:
 		if (get_enum) {
 			return "DBD_GET_CLUSTERS";
@@ -1118,6 +1176,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Get Problems";
 		break;
+	case DBD_GET_SER_RES:
+		if (get_enum) {
+			return "DBD_GET_SER_RES";
+		} else
+			return "Get Server Resources";
+		break;
 	case DBD_GET_USERS:
 		if (get_enum) {
 			return "DBD_GET_USERS";
@@ -1141,6 +1205,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GOT_ASSOC_USAGE";
 		} else
 			return "Got Association Usage";
+		break;
+	case DBD_GOT_CLUS_RES:
+		if (get_enum) {
+			return "DBD_GOT_CLUS_RES";
+		} else
+			return "Got Cluster Resources";
 		break;
 	case DBD_GOT_CLUSTERS:
 		if (get_enum) {
@@ -1177,6 +1247,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GOT_PROBS";
 		} else
 			return "Got Problems";
+		break;
+	case DBD_GOT_SER_RES:
+		if (get_enum) {
+			return "DBD_GOT_SER_RES";
+		} else
+			return "Got Server Resources";
 		break;
 	case DBD_GOT_USERS:
 		if (get_enum) {
@@ -1220,6 +1296,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Modify Associations";
 		break;
+	case DBD_MODIFY_CLUS_RES:
+		if (get_enum) {
+			return "DBD_MODIFY_CLUS_RES";
+		} else
+			return "Modify Cluster Resources";
+		break;
 	case DBD_MODIFY_CLUSTERS:
 		if (get_enum) {
 			return "DBD_MODIFY_CLUSTERS";
@@ -1237,6 +1319,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_MODIFY_QOS";
 		} else
 			return "Modify QOS";
+		break;
+	case DBD_MODIFY_SER_RES:
+		if (get_enum) {
+			return "DBD_MODIFY_SER_RES";
+		} else
+			return "Modify Server Resources";
 		break;
 	case DBD_MODIFY_USERS:
 		if (get_enum) {
@@ -1292,11 +1380,23 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Remove Associations";
 		break;
+	case DBD_REMOVE_CLUS_RES:
+		if (get_enum) {
+			return "DBD_REMOVE_CLUS_RES";
+		} else
+			return "Remove Cluster Resources";
+		break;
 	case DBD_REMOVE_CLUSTERS:
 		if (get_enum) {
 			return "DBD_REMOVE_CLUSTERS";
 		} else
 			return "Remove Clusters";
+		break;
+	case DBD_REMOVE_SER_RES:
+		if (get_enum) {
+			return "DBD_REMOVE_SER_RES";
+		} else
+			return "Remove Server Resources";
 		break;
 	case DBD_REMOVE_USERS:
 		if (get_enum) {
@@ -2525,6 +2625,10 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 		case DBD_REMOVE_ASSOCS:
 			my_destroy = slurmdb_destroy_association_cond;
 			break;
+		case DBD_GET_CLUS_RES:
+		case DBD_REMOVE_CLUS_RES:
+			my_destroy = slurmdb_destroy_clus_res_cond;
+			break;
 		case DBD_GET_CLUSTERS:
 		case DBD_REMOVE_CLUSTERS:
 			my_destroy = slurmdb_destroy_cluster_cond;
@@ -2535,6 +2639,10 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 		case DBD_GET_QOS:
 		case DBD_REMOVE_QOS:
 			my_destroy = slurmdb_destroy_qos_cond;
+			break;
+		case DBD_GET_SER_RES:
+		case DBD_REMOVE_SER_RES:
+			my_destroy = slurmdb_destroy_ser_res_cond;
 			break;
 		case DBD_GET_WCKEYS:
 		case DBD_REMOVE_WCKEYS:
@@ -2642,6 +2750,10 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 			destroy_cond = slurmdb_destroy_association_cond;
 			destroy_rec = slurmdb_destroy_association_rec;
 			break;
+		case DBD_MODIFY_CLUS_RES:
+			destroy_cond = slurmdb_destroy_clus_res_cond;
+			destroy_rec = slurmdb_destroy_clus_res_rec;
+			break;
 		case DBD_MODIFY_CLUSTERS:
 			destroy_cond = slurmdb_destroy_cluster_cond;
 			destroy_rec = slurmdb_destroy_cluster_rec;
@@ -2653,6 +2765,10 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 		case DBD_MODIFY_QOS:
 			destroy_cond = slurmdb_destroy_qos_cond;
 			destroy_rec = slurmdb_destroy_qos_rec;
+			break;
+		case DBD_MODIFY_SER_RES:
+			destroy_cond = slurmdb_destroy_ser_res_cond;
+			destroy_rec = slurmdb_destroy_ser_res_rec;
 			break;
 		case DBD_MODIFY_USERS:
 			destroy_cond = slurmdb_destroy_user_cond;
@@ -2907,6 +3023,10 @@ extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
 	case DBD_REMOVE_ASSOCS:
 		my_function = slurmdb_pack_association_cond;
 		break;
+	case DBD_GET_CLUS_RES:
+	case DBD_REMOVE_CLUS_RES:
+		my_function = slurmdb_pack_clus_res_cond;
+		break;
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
 		my_function = slurmdb_pack_cluster_cond;
@@ -2917,6 +3037,10 @@ extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
 	case DBD_GET_QOS:
 	case DBD_REMOVE_QOS:
 		my_function = slurmdb_pack_qos_cond;
+		break;
+	case DBD_GET_SER_RES:
+	case DBD_REMOVE_SER_RES:
+		my_function = slurmdb_pack_ser_res_cond;
 		break;
 	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_WCKEYS:
@@ -2963,6 +3087,10 @@ extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 	case DBD_REMOVE_ASSOCS:
 		my_function = slurmdb_unpack_association_cond;
 		break;
+	case DBD_GET_CLUS_RES:
+	case DBD_REMOVE_CLUS_RES:
+		my_function = slurmdb_unpack_clus_res_cond;
+		break;
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
 		my_function = slurmdb_unpack_cluster_cond;
@@ -2973,6 +3101,10 @@ extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 	case DBD_GET_QOS:
 	case DBD_REMOVE_QOS:
 		my_function = slurmdb_unpack_qos_cond;
+		break;
+	case DBD_GET_SER_RES:
+	case DBD_REMOVE_SER_RES:
+		my_function = slurmdb_unpack_ser_res_cond;
 		break;
 	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_WCKEYS:
@@ -3395,6 +3527,10 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 	case DBD_GOT_PROBS:
 		my_function = slurmdb_pack_association_rec;
 		break;
+	case DBD_ADD_CLUS_RES:
+	case DBD_GOT_CLUS_RES:
+		my_function = slurmdb_pack_clus_res_rec;
+		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
 		my_function = slurmdb_pack_cluster_rec;
@@ -3414,6 +3550,10 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 		break;
 	case DBD_GOT_RESVS:
 		my_function = slurmdb_pack_reservation_rec;
+		break;
+	case DBD_ADD_SER_RES:
+	case DBD_GOT_SER_RES:
+		my_function = slurmdb_pack_ser_res_rec;
 		break;
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
@@ -3485,6 +3625,11 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 		my_function = slurmdb_unpack_association_rec;
 		my_destroy = slurmdb_destroy_association_rec;
 		break;
+	case DBD_ADD_CLUS_RES:
+	case DBD_GOT_CLUS_RES:
+		my_function = slurmdb_unpack_clus_res_rec;
+		my_destroy = slurmdb_destroy_clus_res_rec;
+		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
 		my_function = slurmdb_unpack_cluster_rec;
@@ -3510,6 +3655,11 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	case DBD_GOT_RESVS:
 		my_function = slurmdb_unpack_reservation_rec;
 		my_destroy = slurmdb_destroy_reservation_rec;
+		break;
+	case DBD_ADD_SER_RES:
+	case DBD_GOT_SER_RES:
+		my_function = slurmdb_unpack_ser_res_rec;
+		my_destroy = slurmdb_destroy_ser_res_rec;
 		break;
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
@@ -3593,6 +3743,10 @@ extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 		my_cond = slurmdb_pack_association_cond;
 		my_rec = slurmdb_pack_association_rec;
 		break;
+	case DBD_MODIFY_CLUS_RES:
+		my_cond = slurmdb_pack_clus_res_cond;
+		my_rec = slurmdb_pack_clus_res_rec;
+		break;
 	case DBD_MODIFY_CLUSTERS:
 		my_cond = slurmdb_pack_cluster_cond;
 		my_rec = slurmdb_pack_cluster_rec;
@@ -3604,6 +3758,10 @@ extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 	case DBD_MODIFY_QOS:
 		my_cond = slurmdb_pack_qos_cond;
 		my_rec = slurmdb_pack_qos_rec;
+		break;
+	case DBD_MODIFY_SER_RES:
+		my_cond = slurmdb_pack_ser_res_cond;
+		my_rec = slurmdb_pack_ser_res_rec;
 		break;
 	case DBD_MODIFY_USERS:
 		my_cond = slurmdb_pack_user_cond;
@@ -3638,6 +3796,10 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 		my_cond = slurmdb_unpack_association_cond;
 		my_rec = slurmdb_unpack_association_rec;
 		break;
+	case DBD_MODIFY_CLUS_RES:
+		my_cond = slurmdb_unpack_clus_res_cond;
+		my_rec = slurmdb_unpack_clus_res_rec;
+		break;
 	case DBD_MODIFY_CLUSTERS:
 		my_cond = slurmdb_unpack_cluster_cond;
 		my_rec = slurmdb_unpack_cluster_rec;
@@ -3649,6 +3811,10 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 	case DBD_MODIFY_QOS:
 		my_cond = slurmdb_unpack_qos_cond;
 		my_rec = slurmdb_unpack_qos_rec;
+		break;
+	case DBD_MODIFY_SER_RES:
+		my_cond = slurmdb_unpack_ser_res_cond;
+		my_rec = slurmdb_unpack_ser_res_rec;
 		break;
 	case DBD_MODIFY_USERS:
 		my_cond = slurmdb_unpack_user_cond;

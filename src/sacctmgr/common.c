@@ -222,6 +222,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("ControlPort");
 		field->len = 12;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("Count", object, MAX(command_len, 3))) {
+		field->type = PRINT_COUNT;
+		field->name = xstrdup("Count");
+		field->len = 6;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("CPUCount", object, MAX(command_len, 2))) {
 		field->type = PRINT_CPUS;
 		field->name = xstrdup("CPUCount");
@@ -333,6 +338,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("LFT");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("Manager", object, MAX(command_len, 3))) {
+		field->type = PRINT_MANAGER;
+		field->name = xstrdup("Manager");
+		field->len = 10;
+		field->print_routine = print_fields_str;
 	} else if (!strncasecmp("MaxCPUMinsPerJob", object,
 				MAX(command_len, 7))) {
 		field->type = PRINT_MAXCM;
@@ -431,6 +441,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Partition");
 		field->len = 10;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("Percent", object, MAX(command_len, 7))) {
+		field->type = PRINT_PERCENT;
+		field->name = xstrdup("% Allowed");
+		field->len = 10;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("PluginIDSelect", object,
 				MAX(command_len, 2))) {
 		field->type = PRINT_SELECT;
@@ -478,17 +493,27 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("RPC");
 		field->len = 5;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("Server", object, MAX(command_len, 3))) {
+		field->type = PRINT_SERVER;
+		field->name = xstrdup("Server");
+		field->len = 10;
+		field->print_routine = print_fields_str;
 	} else if (!strncasecmp("Share", object, MAX(command_len, 1))
 		   || !strncasecmp("FairShare", object, MAX(command_len, 2))) {
 		field->type = PRINT_FAIRSHARE;
 		field->name = xstrdup("Share");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("TimeStamp", object, MAX(command_len, 1))) {
+	} else if (!strncasecmp("TimeStamp", object, MAX(command_len, 2))) {
 		field->type = PRINT_TS;
 		field->name = xstrdup("Time");
 		field->len = 19;
 		field->print_routine = print_fields_date;
+	} else if (!strncasecmp("Type", object, MAX(command_len, 2))) {
+		field->type = PRINT_TYPE;
+		field->name = xstrdup("Type");
+		field->len = 8;
+		field->print_routine = print_fields_str;
 	} else if (!strncasecmp("UsageFactor", object, MAX(command_len, 6))) {
 		field->type = PRINT_UF;
 		field->name = xstrdup("UsageFactor");
@@ -926,6 +951,32 @@ extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
 	list_iterator_destroy(itr);
 
 	return qos;
+
+}
+
+extern slurmdb_ser_res_rec_t *sacctmgr_find_ser_res_from_list(
+	List ser_res_list, char *name)
+{
+	ListIterator itr = NULL;
+	slurmdb_ser_res_rec_t *ser_res = NULL;
+	char *working_name = NULL;
+
+	if (!name || !ser_res_list)
+		return NULL;
+
+	if (name[0] == '+' || name[0] == '-')
+		working_name = name+1;
+	else
+		working_name = name;
+
+	itr = list_iterator_create(ser_res_list);
+	while((ser_res = list_next(itr))) {
+		if (!strcasecmp(working_name, ser_res->name))
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	return ser_res;
 
 }
 

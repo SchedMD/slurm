@@ -165,7 +165,17 @@ typedef enum {
 	DBD_GOT_MULT_JOB_START,	/* Get response to DBD_SEND_MULT_JOB_START */
 	DBD_SEND_MULT_MSG,      /* Send multiple message		*/
 	DBD_GOT_MULT_MSG,	/* Get response to DBD_SEND_MULT_MSG    */
-	DBD_MODIFY_JOB		/* Modify existing Job(s)               */
+	DBD_MODIFY_JOB,		/* Modify existing Job(s)               */
+	DBD_ADD_CLUS_RES,      /* Add new cluster resource to the mix  */
+	DBD_GET_CLUS_RES,	/* Get cluster resource information	*/
+	DBD_GOT_CLUS_RES,	/* Got cluster resource information	*/
+	DBD_MODIFY_CLUS_RES,    /* Modify existing cluster resource     */
+	DBD_REMOVE_CLUS_RES,    /* Remove existing cluster resource     */
+	DBD_ADD_SER_RES,        /* Add new system resource to the mix   */
+	DBD_GET_SER_RES,	/* Get cluster resource information	*/
+	DBD_GOT_SER_RES,	/* Got system resource information	*/
+	DBD_MODIFY_SER_RES,     /* Modify existing system resource      */
+	DBD_REMOVE_SER_RES,     /* Remove existing system resource      */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

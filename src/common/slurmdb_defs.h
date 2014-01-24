@@ -59,6 +59,7 @@ extern void slurmdb_destroy_user_defs(void *object);
 extern void slurmdb_destroy_user_rec(void *object);
 extern void slurmdb_destroy_account_rec(void *object);
 extern void slurmdb_destroy_coord_rec(void *object);
+extern void slurmdb_destroy_clus_res_rec(void *object);
 extern void slurmdb_destroy_cluster_accounting_rec(void *object);
 extern void slurmdb_destroy_cluster_rec(void *object);
 extern void slurmdb_destroy_accounting_rec(void *object);
@@ -68,6 +69,7 @@ extern void slurmdb_destroy_job_rec(void *object);
 extern void slurmdb_destroy_qos_rec(void *object);
 extern void slurmdb_destroy_reservation_rec(void *object);
 extern void slurmdb_destroy_step_rec(void *object);
+extern void slurmdb_destroy_ser_res_rec(void *object);
 extern void slurmdb_destroy_txn_rec(void *object);
 extern void slurmdb_destroy_wckey_rec(void *object);
 extern void slurmdb_destroy_archive_rec(void *object);
@@ -77,6 +79,7 @@ extern void slurmdb_destroy_report_cluster_rec(void *object);
 
 extern void slurmdb_destroy_user_cond(void *object);
 extern void slurmdb_destroy_account_cond(void *object);
+extern void slurmdb_destroy_clus_res_cond(void *object);
 extern void slurmdb_destroy_cluster_cond(void *object);
 extern void slurmdb_destroy_association_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
@@ -84,6 +87,7 @@ extern void slurmdb_destroy_job_cond(void *object);
 extern void slurmdb_destroy_job_modify_cond(void *object);
 extern void slurmdb_destroy_qos_cond(void *object);
 extern void slurmdb_destroy_reservation_cond(void *object);
+extern void slurmdb_destroy_ser_res_cond(void *object);
 extern void slurmdb_destroy_txn_cond(void *object);
 extern void slurmdb_destroy_wckey_cond(void *object);
 extern void slurmdb_destroy_archive_cond(void *object);
@@ -101,9 +105,13 @@ extern void slurmdb_destroy_report_cluster_grouping(void *object);
 
 extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
 					 bool free_it);
+extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
+				      bool free_it);
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
+				 bool free_it);
+extern void slurmdb_init_ser_res_rec(slurmdb_ser_res_rec_t *ser_res,
 				 bool free_it);
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey,
 				   bool free_it);
@@ -116,6 +124,8 @@ extern char *slurmdb_qos_str(List qos_list, uint32_t level);
 extern uint32_t str_2_slurmdb_qos(List qos_list, char *level);
 extern char *slurmdb_qos_flags_str(uint32_t flags);
 extern uint32_t str_2_qos_flags(char *flags, int option);
+extern char *slurmdb_ser_res_flags_str(uint32_t flags);
+extern uint32_t str_2_ser_res_flags(char *flags, int option);
 extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level);
 extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level);
 
@@ -150,7 +160,11 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end);
 extern uint32_t slurmdb_parse_purge(char *string);
 extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
 				  bool with_archive);
+extern int slurmdb_addto_clus_res_char_list(List char_list, List clus_res_list,
+				       char *names, int option);
 extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
+				       char *names, int option);
+extern int slurmdb_addto_ser_res_char_list(List char_list, List ser_res_list,
 				       char *names, int option);
 extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 					  char *host, uint16_t port,

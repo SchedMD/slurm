@@ -46,10 +46,16 @@ typedef struct licenses {
 	char *		name;		/* name associated with a license */
 	uint32_t	total;		/* total license configued */
 	uint32_t	used;		/* used licenses */
+	uint32_t        cluster;	/* non-zero if cluster_license */
 } licenses_t;
 
 extern List license_list;
+extern List clus_license_list;
 extern time_t last_license_update;
+
+/* Update cluster licenses on this system based upon database information.
+ * Preserve all previously allocated licenses */
+extern int cluster_license_update(slurmdb_update_object_t *update_obj);
 
 /* Get string of used license information. Caller must xfree return value */
 extern char *get_licenses_used(void);
@@ -60,6 +66,10 @@ extern int license_init(char *licenses);
 /* Update licenses on this system based upon slurm.conf.
  * Preserve all previously allocated licenses */
 extern int license_update(char *licenses);
+
+/* Update cluster licenses on this system based upon accounting database.
+ * Preserve all previously allocated licenses */
+extern int cluster_license_update(slurmdb_update_object_t *update_obj);
 
 /* Free memory associated with licenses on this system */
 extern void license_free(void);

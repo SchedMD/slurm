@@ -559,6 +559,27 @@ extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
 	return rc;
 }
 
+extern int acct_storage_p_add_clus_res(void *db_conn, uint32_t uid,
+				       List clus_res_list)
+{
+	slurmdbd_msg_t req;
+	dbd_list_msg_t get_msg;
+	int rc, resp_code;
+
+	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
+	get_msg.my_list = clus_res_list;
+
+	req.msg_type = DBD_ADD_CLUS_RES;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION,
+					     &req, &resp_code);
+
+	if (resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
+}
+
 extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list)
 {
@@ -613,6 +634,27 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 	get_msg.my_list = qos_list;
 
 	req.msg_type = DBD_ADD_QOS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION,
+					     &req, &resp_code);
+
+	if (resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
+}
+
+extern int acct_storage_p_add_ser_res(void *db_conn, uint32_t uid,
+				      List ser_res_list)
+{
+	slurmdbd_msg_t req;
+	dbd_list_msg_t get_msg;
+	int rc, resp_code;
+
+	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
+	get_msg.my_list = ser_res_list;
+
+	req.msg_type = DBD_ADD_SER_RES;
 	req.data = &get_msg;
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION,
 					     &req, &resp_code);
@@ -729,6 +771,49 @@ extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_ACCOUNTS failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if (msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->return_code);
+			error("%s", msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return ret_list;
+}
+
+extern List acct_storage_p_modify_clus_res(void *db_conn, uint32_t uid,
+					 slurmdb_clus_res_cond_t *clus_res_cond,
+					 slurmdb_clus_res_rec_t *clus_res)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_modify_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	List ret_list = NULL;
+	int rc;
+
+	memset(&get_msg, 0, sizeof(dbd_modify_msg_t));
+	get_msg.cond = clus_res_cond;
+	get_msg.rec = clus_res;
+
+	req.msg_type = DBD_MODIFY_CLUS_RES;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_MODIFY_CLUS_RES failure: %m");
 	else if (resp.msg_type == DBD_RC) {
 		dbd_rc_msg_t *msg = resp.data;
 		if (msg->return_code == SLURM_SUCCESS) {
@@ -929,6 +1014,49 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 	return ret_list;
 }
 
+extern List acct_storage_p_modify_ser_res(void *db_conn, uint32_t uid,
+					 slurmdb_ser_res_cond_t *ser_res_cond,
+					 slurmdb_ser_res_rec_t *ser_res)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_modify_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	List ret_list = NULL;
+	int rc;
+
+	memset(&get_msg, 0, sizeof(dbd_modify_msg_t));
+	get_msg.cond = ser_res_cond;
+	get_msg.rec = ser_res;
+
+	req.msg_type = DBD_MODIFY_SER_RES;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_MODIFY_SER_RES failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if (msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->return_code);
+			error("%s", msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return ret_list;
+}
+
 extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 					 slurmdb_wckey_cond_t *wckey_cond,
 					 slurmdb_wckey_rec_t *wckey)
@@ -981,7 +1109,6 @@ extern int acct_storage_p_modify_reservation(void *db_conn,
 
 	memset(&get_msg, 0, sizeof(dbd_rec_msg_t));
 	get_msg.rec = resv;
-
 	req.msg_type = DBD_MODIFY_RESV;
 	req.data = &get_msg;
 
@@ -1126,6 +1253,50 @@ extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 	return ret_list;
 }
 
+extern List acct_storage_p_remove_clus_res(
+	void *db_conn, uint32_t uid,
+	slurmdb_clus_res_cond_t *clus_res_cond)
+{
+	slurmdbd_msg_t req;
+	dbd_cond_msg_t get_msg;
+	int rc;
+	slurmdbd_msg_t resp;
+	dbd_list_msg_t *got_msg;
+	List ret_list = NULL;
+
+
+	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
+	get_msg.cond = clus_res_cond;
+
+	req.msg_type = DBD_REMOVE_CLUS_RES;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_REMOVE_CLUS_RES failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if (msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->return_code);
+			error("%s", msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return ret_list;
+}
+
 extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 					   slurmdb_account_cond_t *cluster_cond)
 {
@@ -1257,6 +1428,47 @@ extern List acct_storage_p_remove_qos(
 		slurmdbd_free_list_msg(got_msg);
 	}
 
+	return ret_list;
+}
+
+extern List acct_storage_p_remove_ser_res(
+	void *db_conn, uint32_t uid,
+	slurmdb_ser_res_cond_t *ser_res_cond)
+{
+	slurmdbd_msg_t req;
+	dbd_cond_msg_t get_msg;
+	int rc;
+	slurmdbd_msg_t resp;
+	dbd_list_msg_t *got_msg;
+	List ret_list = NULL;
+
+	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
+	get_msg.cond = ser_res_cond;
+
+	req.msg_type = DBD_REMOVE_SER_RES;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_REMOVE_SER_RES failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if (msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->return_code);
+			error("%s", msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
 	return ret_list;
 }
 
@@ -1405,6 +1617,54 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 		slurmdbd_free_list_msg(got_msg);
 	}
 
+
+	return ret_list;
+}
+
+extern List acct_storage_p_get_clus_res(void *db_conn, uid_t uid,
+					slurmdb_clus_res_cond_t *clus_res_cond)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
+	get_msg.cond = clus_res_cond;
+
+	req.msg_type = DBD_GET_CLUS_RES;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_CLUS_RES failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if (msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->return_code);
+			error("%s", msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_CLUS_RES) {
+		error("slurmdbd: response type not DBD_GOT_CLUS_RES: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		/* do this just for this type since it could be called
+		 * multiple times, and if we send back and empty list
+		 * instead of no list we will only call this once.
+		 */
+		if (!got_msg->my_list)
+			ret_list = list_create(NULL);
+		else
+			ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
 
 	return ret_list;
 }
@@ -1649,6 +1909,54 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 		 */
 		if (!got_msg->my_list)
 		        ret_list = list_create(NULL);
+		else
+			ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return ret_list;
+}
+
+extern List acct_storage_p_get_ser_res(void *db_conn, uid_t uid,
+				       slurmdb_ser_res_cond_t *ser_res_cond)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
+	get_msg.cond = ser_res_cond;
+
+	req.msg_type = DBD_GET_SER_RES;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_SER_RES failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if (msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->return_code);
+			error("%s", msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_SER_RES) {
+		error("slurmdbd: response type not DBD_GOT_SER_RES: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		/* do this just for this type since it could be called
+		 * multiple times, and if we send back and empty list
+		 * instead of no list we will only call this once.
+		 */
+		if (!got_msg->my_list)
+			ret_list = list_create(NULL);
 		else
 			ret_list = got_msg->my_list;
 		got_msg->my_list = NULL;

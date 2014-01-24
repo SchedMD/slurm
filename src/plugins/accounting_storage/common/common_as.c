@@ -91,6 +91,39 @@ static void _dump_slurmdb_assoc_records(List assoc_list)
 	list_iterator_destroy(itr);
 }
 
+static void _dump_slurmdb_clus_res_records(List clus_res_list)
+{
+	slurmdb_clus_res_rec_t *clus_res = NULL;
+	ListIterator itr = NULL;
+	itr = list_iterator_create(clus_res_list);
+	while((clus_res = list_next(itr))) {
+		debug("\t\tname=%s", clus_res->res_ptr->name);
+		debug("\t\tcluster=%s", clus_res->cluster);
+		debug("\t\tpercent_allowed=%u", clus_res->percent_allowed);
+		debug("\t\tcount=%u", clus_res->res_ptr->count);
+		debug("\t\ttype=%u", clus_res->res_ptr->type);
+		debug("\t\tmanager=%s", clus_res->res_ptr->manager);
+		debug("\t\tserver=%s", clus_res->res_ptr->server);
+		debug("\t\tdescription=%s", clus_res->res_ptr->description);
+	}
+	list_iterator_destroy(itr);
+}
+static void _dump_slurmdb_ser_res_records(List ser_res_list)
+{
+	slurmdb_ser_res_rec_t *ser_res = NULL;
+	ListIterator itr = NULL;
+	itr = list_iterator_create(ser_res_list);
+	while((ser_res = list_next(itr))) {
+		debug("\t\tname=%s", ser_res->name);
+		debug("\t\tcount=%u", ser_res->count);
+		debug("\t\ttype=%u", ser_res->type);
+		debug("\t\tmanager=%s", ser_res->manager);
+		debug("\t\tserver=%s", ser_res->server);
+		debug("\t\tdescription=%s", ser_res->description);
+	}
+	list_iterator_destroy(itr);
+}
+
 /*
  * addto_update_list - add object updated to list
  * IN/OUT update_list: list of updated objects
@@ -127,6 +160,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		list_prepend(update_object->objects, object);
 		return SLURM_SUCCESS;
 	}
+
 	update_object = xmalloc(sizeof(slurmdb_update_object_t));
 
 	list_append(update_list, update_object);
@@ -235,12 +269,26 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		update_object->objects = list_create(
 			slurmdb_destroy_wckey_rec);
 		break;
+	case SLURMDB_ADD_CLUS_RES:
+	case SLURMDB_MODIFY_CLUS_RES:
+	case SLURMDB_REMOVE_CLUS_RES:
+		xassert(((slurmdb_clus_res_rec_t *)object)->res_ptr->name);
+		update_object->objects = list_create(
+			slurmdb_destroy_clus_res_rec);
+		break;
 	case SLURMDB_ADD_CLUSTER:
 	case SLURMDB_REMOVE_CLUSTER:
 		/* This should only be the name of the cluster, and is
 		   only used in the plugin for rollback purposes.
 		*/
 		update_object->objects = list_create(slurm_destroy_char);
+		break;
+	case SLURMDB_ADD_SER_RES:
+	case SLURMDB_MODIFY_SER_RES:
+	case SLURMDB_REMOVE_SER_RES:
+		xassert(((slurmdb_ser_res_rec_t *)object)->name);
+		update_object->objects = list_create(
+			slurmdb_destroy_ser_res_rec);
 		break;
 	case SLURMDB_UPDATE_NOTSET:
 	default:
@@ -283,10 +331,22 @@ extern void dump_update_list(List update_list)
 			debug3("\tASSOC RECORDS");
 			_dump_slurmdb_assoc_records(object->objects);
 			break;
+		case SLURMDB_ADD_CLUS_RES:
+		case SLURMDB_MODIFY_CLUS_RES:
+		case SLURMDB_REMOVE_CLUS_RES:
+			debug3("\tCLUS_RES RECORDS");
+			_dump_slurmdb_clus_res_records(object->objects);
+			break;
 		case SLURMDB_ADD_QOS:
 		case SLURMDB_MODIFY_QOS:
 		case SLURMDB_REMOVE_QOS:
 			debug3("\tQOS RECORDS");
+			break;
+		case SLURMDB_ADD_SER_RES:
+		case SLURMDB_MODIFY_SER_RES:
+		case SLURMDB_REMOVE_SER_RES:
+			debug3("\tSER_RES RECORDS");
+			_dump_slurmdb_ser_res_records(object->objects);
 			break;
 		case SLURMDB_ADD_WCKEY:
 		case SLURMDB_MODIFY_WCKEY:

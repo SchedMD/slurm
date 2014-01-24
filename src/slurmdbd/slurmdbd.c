@@ -166,8 +166,11 @@ int main(int argc, char *argv[])
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 
 	/* If we are tacking wckey we need to cache
-	   wckeys, if we aren't only cache the users and qos */
-	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_QOS;
+	   wckeys, if we aren't only cache the users, qos,
+	   ser_res and clus_res */
+	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER    |
+				     ASSOC_MGR_CACHE_QOS     |
+				     ASSOC_MGR_CACHE_CLUS_RES;
 	if (slurmdbd_conf->track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 

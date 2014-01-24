@@ -17,6 +17,7 @@
 # Written by Danny Auble <da@llnl.gov>
 # Written by Morris Jette <jette1@llnl.gov>
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
+# Additions by Bill Brophy <bill.brophy@bull.com>
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
@@ -1394,5 +1395,256 @@ proc archive_load { file } {
 		send_user "\nFAILURE:  sacctmgr didn't load archive correctly.\n"
 		incr exit_code 1
 	}
+	return $exit_code
+}
+
+#
+# Use sacctmgr to create a ser_res
+#
+proc add_ser_res {name count manager server desc} {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: Need name of ser_res to add\n"
+		return 1
+	}
+	set command "name=$name"
+
+	if { [string length $count] } {
+		set command "$command count=$count"
+	}
+
+	if { [string length $manager] } {
+		set command "$command manager=$manager"
+	}
+
+	if { [string length $server] } {
+		set command "$command server=$server"
+	}
+
+	if { [string length $manager] } {
+		set command "$command description=$desc"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add ser_res $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting system resources from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "Adding system resource(s)" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding system resource got $matches\n"
+		incr exit_code 1
+	}
+
+	return $exit_code
+}
+
+#
+# Use sacctmgr to create a clus_res
+#
+proc add_clus_res {name allowed} {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+
+
+
+	if { ![string length $name] } {
+		send_user "FAILURE: Need name of clus_res to add\n"
+		return 1
+	}
+	set command "name=$name"
+
+	if { [string length $allowed] } {
+		set command "$command allowed=$allowed"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add clus_res $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting cluster resources from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "Adding cluster resource(s)" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding cluster resource got $matches\n"
+		incr exit_code 1
+	}
+
+	return $exit_code
+}
+
+#
+# Use sacctmgr to remove the test ser_res
+#
+proc remove_ser_res {name} {
+        global access_err sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
+	}
+
+	set my_pid [eval spawn $sacctmgr -i delete ser_res $name]
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "Deleting system resource(s)" {
+			incr matches
+		}
+		-re " Nothing deleted" {
+			incr matches
+			incr nothing
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$nothing == 2} {
+		return $exit_code
+	}
+	if {$access_err != 0} {
+		return 1
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting system resource got $matches\n"
+		incr exit_code 1
+	}
+
+	return $exit_code
+}
+
+
+#
+# Use sacctmgr to remove the test clus_res
+#
+proc remove_clus_res {name} {
+        global access_err sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
+	}
+
+	set my_pid [eval spawn $sacctmgr -i delete clus_res $name]
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "Deleting cluster resource" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$access_err != 0} {
+		return 1
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting cluster resource got $matches\n"
+		incr exit_code 1
+	}
+
 	return $exit_code
 }

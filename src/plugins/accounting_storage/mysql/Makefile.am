@@ -15,6 +15,7 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_jobacct_process.c as_mysql_jobacct_process.h \
 		as_mysql_problems.c as_mysql_problems.h \
 		as_mysql_qos.c as_mysql_qos.h \
+		as_mysql_resource.c as_mysql_resource.h \
 		as_mysql_resv.c as_mysql_resv.h \
 		as_mysql_rollup.c as_mysql_rollup.h \
 		as_mysql_txn.c as_mysql_txn.h \

@@ -123,6 +123,12 @@ extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_add_clus_res(void *db_conn, uint32_t uid,
+				       List clus_res_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list)
 {
@@ -137,6 +143,12 @@ extern int acct_storage_p_add_associations(void *db_conn, uint32_t uid,
 
 extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 				  List qos_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_add_ser_res(void *db_conn, uint32_t uid,
+				      List ser_res_list)
 {
 	return SLURM_SUCCESS;
 }
@@ -167,6 +179,13 @@ extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern List acct_storage_p_modify_clus_res(void *db_conn, uint32_t uid,
+					 slurmdb_clus_res_cond_t *clus_res_cond,
+					 slurmdb_clus_res_rec_t *clus_res)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 					  slurmdb_cluster_cond_t *cluster_q,
 					  slurmdb_cluster_rec_t *cluster)
@@ -191,6 +210,13 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond,
 				      slurmdb_qos_rec_t *qos)
+{
+	return SLURM_SUCCESS;
+}
+
+extern List acct_storage_p_modify_ser_res(void *db_conn, uint32_t uid,
+					  slurmdb_ser_res_cond_t *ser_res_cond,
+					  slurmdb_ser_res_rec_t *ser_res)
 {
 	return SLURM_SUCCESS;
 }
@@ -227,6 +253,12 @@ extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern List acct_storage_p_remove_clus_res(void *db_conn, uint32_t uid,
+					 slurmdb_clus_res_cond_t *clus_res_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 					  slurmdb_account_cond_t *cluster_q)
 {
@@ -241,6 +273,12 @@ extern List acct_storage_p_remove_associations(void *db_conn, uint32_t uid,
 
 extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond)
+{
+	return NULL;
+}
+
+extern List acct_storage_p_remove_ser_res(void *db_conn, uint32_t uid,
+					  slurmdb_ser_res_cond_t *ser_res_cond)
 {
 	return NULL;
 }
@@ -265,6 +303,12 @@ extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
 
 extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 				     slurmdb_account_cond_t *acct_q)
+{
+	return NULL;
+}
+
+extern List acct_storage_p_get_clus_res(void *db_conn, uid_t uid,
+					slurmdb_clus_res_cond_t *clus_res_cond)
 {
 	return NULL;
 }
@@ -300,6 +344,12 @@ extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
 
 extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 				   slurmdb_qos_cond_t *qos_cond)
+{
+	return NULL;
+}
+
+extern List acct_storage_p_get_ser_res(void *db_conn, uid_t uid,
+				       slurmdb_ser_res_cond_t *ser_res_cond)
 {
 	return NULL;
 }

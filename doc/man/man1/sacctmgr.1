@@ -180,6 +180,10 @@ delete should be done to a user, account or cluster entity.  This will
 in\-turn update the underlying associations.
 
 .TP
+\fIclus_res\fP
+Cluster Resources - software resources for the usage on this cluster.
+
+.TP
 \fIcluster\fP
 The \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration
 file, used to differentiate accounts from on different machines.
@@ -208,6 +212,10 @@ the Comment String
 .TP
 \fIqos\fR
 Quality of Service.
+
+.TP
+\fIser_res\fP
+Server Resources - software resources for the system (Server Manager level).
 
 .TP
 \fItransaction\fR
@@ -314,9 +322,6 @@ Resource plugin.
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
-Each job's node allocation is counted separately
-(i.e. if a single node has resources allocated to two jobs, this is counted
-as two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP=<max jobs>
@@ -603,9 +608,6 @@ this association and all associations which are children of this association.
 \fIGrpNodes\fP
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
-Each job's node allocation is counted separately
-(i.e. if a single node has resources allocated to two jobs, this is counted
-as two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -683,6 +685,56 @@ children of this association.
 .TP
 \fIUser\fP
 The name of a user in the association.
+
+
+.SH "SPECIFICATIONS FOR CLUS_RES "
+
+.TP
+\fIAllowed\fP=<percent allowed>
+Percentage of a specific software resource that can be used on this cluster.
+
+\fICluster\fP=<name>
+Name of the cluster on which the server resources are to be available.  If
+no name is designated the resources are evenly distributed between all clusters
+configured on the server.
+
+\fIName\fP=<name>
+The name of a software resource available for use on this cluster.  This must be
+the name of a software resource configured on this system.
+.P
+NOTE:  Clus_res is used to define each software resource configured
+on a system that can be used within the Slurm cluster.
+
+
+.SH "LIST/SHOW CLUS_RES FORMAT OPTIONS"
+
+.TP
+\fICount\fP
+Number of software resources configured on the system.
+
+\fIFlags\fP
+Flags that identify specific attributes of a resource.  At this time no flags
+have been defined.
+
+\fIManager\fP
+Name of the resource manager that controls this resource.
+
+\fIName\fP
+Name of this software resource.
+
+\fIPercent\fP
+Percent of resource Count allowed to be used in this cluster.
+
+\fIServer\fP
+Cluster name where the resource manager is installed.
+
+\fIType\fP
+Type of server resource this record represents.
+.P
+NOTE:  Count represents the total number of resources configured on the
+server being controlled by a resource manager.  The number of resources
+that can be used by this cluster is determined by the Percentage allowed
+for this cluster.
 
 
 .SH "SPECIFICATIONS FOR CLUSTERS"
@@ -1019,9 +1071,6 @@ Maximum number of running jobs in aggregate for this QOS.
 \fIGrpNodes\fP
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this QOS.
-Each job's node allocation is counted separately
-(i.e. if a single node has resources allocated to two jobs, this is counted
-as two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -1153,9 +1202,6 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
-Each job's node allocation is counted separately
-(i.e. if a single node has resources allocated to two jobs, this is counted
-as two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -1258,6 +1304,73 @@ if the usagefactor was .5 every second would only could for half the time.
 Setting this value to 0 will make it so any job running will not add
 time to fairshare or association/qos limits.
 To clear a previously set value use the modify command with a new value of \-1.
+
+
+.SH "SPECIFICATIONS FOR SER_RES"
+
+.TP
+\fICount\fP=<OPT>
+Number of software resources of a specific name configured on the system being
+controlled by a resource manager.
+
+.TP
+\fIFlags\fP=<OPT>
+Flags that identify specific attributes of the system resource.  At this time
+no flags have been defined.
+
+.TP
+\fIManager\fP=<OPT>
+The name of a software resource manager controlling this system resource.
+
+.TP
+\fIName\fP=<OPT>
+The name of a software resource configured on the system being controlled
+ by a resource manager.
+
+.TP
+\fIServer\fP=<OPT>
+The name of the cluster on which the license manager is configured.
+
+.TP
+\fIType\fP=<OPT>
+The type of the resource represented by this record.  Currently the only valid
+type is License.
+.P
+NOTE:  Ser_res is used to define each software resource configured on a system
+available for usage by Slurm clusters.
+
+
+.SH "LIST/SHOW SER_RES FORMAT OPTIONS"
+
+.TP
+\fICount\fP
+The count of a specific software resource configured on the system.
+
+.TP
+\fIDescription\fP
+Description of the system software resource.
+
+.TP
+\fIFlags\fP
+Flags that identify specific attributes associated with the resource.  At
+this time no flags have been defined.
+
+ .TP
+\fIManager\fP
+Name of the resource manager that controls this software resource.
+
+.TP
+\fIName\fP
+Name of this software resource.
+
+ .TP
+\fIServer\fP
+Cluster name where the resource manager is installed.
+
+.TP
+\fIType\fP
+Type of server resource this record represents.
+
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
 
@@ -1507,9 +1620,6 @@ association and all associations which are children of this association.
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
-Each job's node allocation is counted separately
-(i.e. if a single node has resources allocated to two jobs, this is counted
-as two allocated nodes).
 .TP
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
@@ -1586,9 +1696,6 @@ association and all associations which are children of this association.
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
-Each job's node allocation is counted separately
-(i.e. if a single node has resources allocated to two jobs, this is counted
-as two allocated nodes).
 .TP
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or

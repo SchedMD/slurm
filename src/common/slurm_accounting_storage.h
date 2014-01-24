@@ -110,6 +110,14 @@ extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 				       List acct_list);
 
 /*
+ * add clus_res's to accounting system
+ * IN:  clus_res_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_add_clus_res(void *db_conn, uint32_t uid,
+				  List clus_res_list);
+
+/*
  * add clusters to accounting system
  * IN:  cluster_list List of slurmdb_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
@@ -132,6 +140,14 @@ extern int acct_storage_g_add_associations(void *db_conn, uint32_t uid,
  */
 extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 				  List qos_list);
+
+/*
+ * add ser_res's to accounting system
+ * IN:  ser_res_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_add_ser_res(void *db_conn, uint32_t uid,
+				  List ser_res_list);
 
 /*
  * add wckey's to accounting system
@@ -191,6 +207,17 @@ extern List acct_storage_g_modify_associations(
 	slurmdb_association_rec_t *assoc);
 
 /*
+ * modify existing clus_res in the accounting system
+ * IN:  slurmdb_clus_res_cond_t *clus_res_cond
+ * IN:  slurmdb_clus_res_rec_t *clus_res
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_modify_clus_res(void *db_conn, uint32_t uid,
+				      slurmdb_clus_res_cond_t *clus_res_cond,
+				      slurmdb_clus_res_rec_t *clus_res);
+
+
+/*
  * modify existing job in the accounting system
  * IN:  slurmdb_job_modify_cond_t *job_cond
  * IN:  slurmdb_job_rec_t *job
@@ -209,6 +236,16 @@ extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
 extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond,
 				      slurmdb_qos_rec_t *qos);
+
+/*
+ * modify existing ser_res in the accounting system
+ * IN:  slurmdb_ser_res_cond_t *ser_res_cond
+ * IN:  slurmdb_ser_res_rec_t *ser_res
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_modify_ser_res(void *db_conn, uint32_t uid,
+				      slurmdb_ser_res_cond_t *ser_res_cond,
+				      slurmdb_ser_res_rec_t *ser_res);
 
 /*
  * modify existing wckey in the accounting system
@@ -254,6 +291,14 @@ extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
 					   slurmdb_account_cond_t *acct_cond);
 
 /*
+ * remove clus_res from accounting system
+ * IN:  slurmdb_clus_res_cond_t *assoc_clus_res
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_remove_clus_res(
+	void *db_conn, uint32_t uid, slurmdb_clus_res_cond_t *clus_res_cond);
+
+/*
  * remove clusters from accounting system
  * IN:  slurmdb_cluster_cond_t *cluster_cond
  * RET: List containing (char *'s) else NULL on error
@@ -276,6 +321,14 @@ extern List acct_storage_g_remove_associations(
  */
 extern List acct_storage_g_remove_qos(
 	void *db_conn, uint32_t uid, slurmdb_qos_cond_t *qos_cond);
+
+/*
+ * remove ser_res from accounting system
+ * IN:  slurmdb_ser_res_cond_t *assoc_ser_res
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_remove_ser_res(
+	void *db_conn, uint32_t uid, slurmdb_ser_res_cond_t *ser_res_cond);
 
 /*
  * remove wckey from accounting system
@@ -349,6 +402,15 @@ extern List acct_storage_g_get_events(
 
 /*
  * get info from the storage
+ * IN:  slurmdb_clus_res_cond_t *
+ * RET: List of slurmdb_clus_res_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_clus_res(void *db_conn, uint32_t uid,
+				   slurmdb_clus_res_cond_t *clus_res_cond);
+
+/*
+ * get info from the storage
  * IN:  slurmdb_association_cond_t *
  * RET: List of slurmdb_association_rec_t *
  * note List needs to be freed when called
@@ -364,6 +426,15 @@ extern List acct_storage_g_get_problems(
  */
 extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 				   slurmdb_qos_cond_t *qos_cond);
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_ser_res_cond_t *
+ * RET: List of slurmdb_ser_res_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_ser_res(void *db_conn, uint32_t uid,
+				   slurmdb_ser_res_cond_t *ser_res_cond);
 
 /*
  * get info from the storage

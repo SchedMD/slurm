@@ -2396,6 +2396,7 @@ typedef struct slurm_license_info {
 	uint32_t total;      /* total number of available licenses */
 	uint32_t in_use;     /* number of license in use */
 	uint32_t available;  /* number of available license */
+	uint32_t cluster;    /* non-zero if cluster license */
 } slurm_license_info_t;
 
 /* License information array as returned by the controller.

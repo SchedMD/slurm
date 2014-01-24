@@ -35,9 +35,10 @@ HIGHLIGHTS
  -- Add mechanism for job_submit plugin to generate error message for srun,
     salloc or sbatch to stderr.
  -- Support for Postgres database has long since been out of date and
-    problimatic, so it has been removed entirely.  If you would like to
+    problematic, so it has been removed entirely.  If you would like to
     use it the code still exists in <= 2.6, but will not be included in
     this and future versions of the code.
+ -- Added new structures and support for both server and cluster resources.
 
 RPMBUILD CHANGES
 ================
@@ -107,8 +108,8 @@ COMMAND CHANGES (see man pages for details)
     central location.
  -- Added -S/--core-spec option to salloc, sbatch and srun commands to reserve
     specialized cores for system use.
- -- Add --test-only option to sbatch command to validate the script and options.
-    The response includes expected start time and resources to be allocated.
+ -- Added sacctmgr options to create, modify, list & delete ser_res (server
+    resources) and clus_res (cluster resources).
 
 OTHER CHANGES
 =============
@@ -118,6 +119,7 @@ OTHER CHANGES
 API CHANGES
 ===========
  -- Added "state" argument to slurm_requeue function.
+ -- Added sacctmgr options to create, modify, list & delete Resources.
 
 Changed members of the following structs
 ========================================
@@ -190,3 +192,19 @@ Change the following API's
 
 DBD API Changes
 ===============
+
+Added the following struct definitions
+======================================
+ -- struct slurmdb_clus_res_rec_t: new cluster resource record.
+ -- struct slurmdb_res_cond_t : new resource condition.
+ -- struct slurmdb_res_rec_t: new resource record.
+
+Added the following enums and #defines
+========================================
+ -- enum slurmdb_resource_type_t: server resource record "type" definition.
+ -- Added new slurmdb_update_type_t SLURMDB_ADD_RES,
+    SLURMDB_REMOVE_RES, SLURMDB_MODIFY_RES
+
+Added the following API's
+=========================
+ -- Added functions for resource management in the database.

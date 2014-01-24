@@ -55,6 +55,7 @@
 #include "as_mysql_jobacct_process.h"
 #include "as_mysql_problems.h"
 #include "as_mysql_qos.h"
+#include "as_mysql_resource.h"
 #include "as_mysql_resv.h"
 #include "as_mysql_rollup.h"
 #include "as_mysql_txn.h"
@@ -125,6 +126,7 @@ char *assoc_day_table = "assoc_usage_day_table";
 char *assoc_hour_table = "assoc_usage_hour_table";
 char *assoc_month_table = "assoc_usage_month_table";
 char *assoc_table = "assoc_table";
+char *clus_res_table = "clus_res_table";
 char *cluster_day_table = "usage_day_table";
 char *cluster_hour_table = "usage_hour_table";
 char *cluster_month_table = "usage_month_table";
@@ -134,6 +136,7 @@ char *job_table = "job_table";
 char *last_ran_table = "last_ran_table";
 char *qos_table = "qos_table";
 char *resv_table = "resv_table";
+char *ser_res_table = "ser_res_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
@@ -509,6 +512,20 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ NULL, NULL}
 	};
 
+	storage_field_t ser_res_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "id", "int not null auto_increment" },
+		{ "name", "tinytext not null" },
+		{ "description", "text" },
+		{ "manager", "tinytext not null" },
+		{ "server", "tinytext not null" },
+		{ "count", "int default 0" },
+		{ "type", "int default 0"},
+		{ NULL, NULL}
+	};
+
 	storage_field_t txn_table_fields[] = {
 		{ "id", "int not null auto_increment" },
 		{ "timestamp", "int unsigned default 0 not null" },
@@ -664,6 +681,13 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	if (mysql_db_create_table(mysql_conn, acct_table, acct_table_fields,
 				  ", primary key (name(20)))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if (mysql_db_create_table(mysql_conn, ser_res_table,
+				  ser_res_table_fields,
+				  ", primary key (id), "
+				  "unique index (name(20)))")
+	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if (mysql_db_create_table(mysql_conn, qos_table,
@@ -882,6 +906,15 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ NULL, NULL}
 	};
 
+	storage_field_t clus_res_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "id", "int not null" },
+		{ "percent_allowed", "int unsigned default 0" },
+		{ NULL, NULL}
+	};
+
 	storage_field_t cluster_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
@@ -1095,6 +1128,14 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, clus_res_table);
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  clus_res_table_fields,
+				  ", primary key (id))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_day_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
@@ -1242,7 +1283,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	mysql_free_result(result);
 	xstrfmtcat(mysql_conn->pre_commit_query,
 		   "drop table \"%s_%s\", \"%s_%s\", "
-		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", "
+		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
@@ -1250,6 +1291,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		   cluster_name, assoc_day_table,
 		   cluster_name, assoc_hour_table,
 		   cluster_name, assoc_month_table,
+		   cluster_name, clus_res_table,
 		   cluster_name, cluster_day_table,
 		   cluster_name, cluster_hour_table,
 		   cluster_name, cluster_month_table,
@@ -1602,7 +1644,8 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	/* figure out which tables we need to append the cluster name to */
 	if ((table == cluster_table) || (table == acct_coord_table)
 	    || (table == acct_table) || (table == qos_table)
-	    || (table == txn_table) || (table == user_table))
+	    || (table == txn_table) || (table == user_table)
+	    || (table == ser_res_table))
 		cluster_centric = false;
 
 	if (vals[1])
@@ -1674,14 +1717,16 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	/* figure out which tables we need to append the cluster name to */
 	if ((table == cluster_table) || (table == acct_coord_table)
 	    || (table == acct_table) || (table == qos_table)
-	    || (table == txn_table) || (table == user_table))
+	    || (table == txn_table) || (table == user_table)
+	    || (table == ser_res_table))
 		cluster_centric = false;
 
 	/* If we have jobs associated with this we do not want to
 	 * really delete it for accounting purposes.  This is for
 	 * corner cases most of the time this won't matter.
 	 */
-	if (table == acct_coord_table) {
+	if ((table == acct_coord_table) || (table == ser_res_table)
+	    || (table == clus_res_table)) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
@@ -1781,7 +1826,9 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if ((table == acct_coord_table)
 		   || (table == qos_table)
-		   || (table == wckey_table))
+		   || (table == wckey_table)
+		   || (table == clus_res_table)
+		   || (table == ser_res_table))
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the accounting tables
@@ -2261,6 +2308,12 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_add_accts(mysql_conn, uid, acct_list);
 }
 
+extern int acct_storage_p_add_clus_res(mysql_conn_t *mysql_conn, uint32_t uid,
+				       List clus_res_list)
+{
+	return as_mysql_add_clus_res(mysql_conn, uid, clus_res_list);
+}
+
 extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				       List cluster_list)
 {
@@ -2278,6 +2331,12 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				  List qos_list)
 {
 	return as_mysql_add_qos(mysql_conn, uid, qos_list);
+}
+
+extern int acct_storage_p_add_ser_res(mysql_conn_t *mysql_conn, uint32_t uid,
+				      List ser_res_list)
+{
+	return as_mysql_add_ser_res(mysql_conn, uid, ser_res_list);
 }
 
 extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -2304,6 +2363,15 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 					slurmdb_account_rec_t *acct)
 {
 	return as_mysql_modify_accts(mysql_conn, uid, acct_cond, acct);
+}
+
+extern List acct_storage_p_modify_clus_res(mysql_conn_t *mysql_conn,
+					 uint32_t uid,
+					 slurmdb_clus_res_cond_t *clus_res_cond,
+					 slurmdb_clus_res_rec_t *clus_res)
+{
+	return as_mysql_modify_clus_res(mysql_conn, uid, clus_res_cond,
+					clus_res);
 }
 
 extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
@@ -2334,6 +2402,14 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				      slurmdb_qos_rec_t *qos)
 {
 	return as_mysql_modify_qos(mysql_conn, uid, qos_cond, qos);
+}
+
+extern List acct_storage_p_modify_ser_res(mysql_conn_t *mysql_conn,
+					  uint32_t uid,
+					  slurmdb_ser_res_cond_t *ser_res_cond,
+					  slurmdb_ser_res_rec_t *ser_res)
+{
+	return as_mysql_modify_ser_res(mysql_conn, uid, ser_res_cond, ser_res);
 }
 
 extern List acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
@@ -2369,6 +2445,13 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_remove_accts(mysql_conn, uid, acct_cond);
 }
 
+extern List acct_storage_p_remove_clus_res(mysql_conn_t *mysql_conn,
+					 uint32_t uid,
+					 slurmdb_clus_res_cond_t *clus_res_cond)
+{
+	return as_mysql_remove_clus_res(mysql_conn, uid, clus_res_cond);
+}
+
 extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 					   uint32_t uid,
 					   slurmdb_cluster_cond_t *cluster_cond)
@@ -2387,6 +2470,13 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond)
 {
 	return as_mysql_remove_qos(mysql_conn, uid, qos_cond);
+}
+
+extern List acct_storage_p_remove_ser_res(mysql_conn_t *mysql_conn,
+					  uint32_t uid,
+					  slurmdb_ser_res_cond_t *ser_res_cond)
+{
+	return as_mysql_remove_ser_res(mysql_conn, uid, ser_res_cond);
 }
 
 extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
@@ -2412,6 +2502,12 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 				     slurmdb_account_cond_t *acct_cond)
 {
 	return as_mysql_get_accts(mysql_conn, uid, acct_cond);
+}
+
+extern List acct_storage_p_get_clus_res(mysql_conn_t *mysql_conn, uid_t uid,
+					slurmdb_clus_res_cond_t *clus_res_cond)
+{
+	return as_mysql_get_clus_res(mysql_conn, uid, clus_res_cond);
 }
 
 extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
@@ -2469,6 +2565,12 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 				   slurmdb_qos_cond_t *qos_cond)
 {
 	return as_mysql_get_qos(mysql_conn, uid, qos_cond);
+}
+
+extern List acct_storage_p_get_ser_res(mysql_conn_t *mysql_conn, uid_t uid,
+				       slurmdb_ser_res_cond_t *ser_res_cond)
+{
+	return as_mysql_get_ser_res(mysql_conn, uid, ser_res_cond);
 }
 
 extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,

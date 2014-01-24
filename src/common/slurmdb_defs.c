@@ -68,6 +68,14 @@ static void _free_assoc_rec_members(slurmdb_association_rec_t *assoc)
 	}
 }
 
+static void _free_clus_res_rec_members(slurmdb_clus_res_rec_t *clus_res)
+{
+	if (clus_res) {
+		if (clus_res->res_ptr)
+			slurmdb_destroy_ser_res_rec(clus_res->res_ptr);
+	}
+}
+
 static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 {
 	if (cluster) {
@@ -93,6 +101,7 @@ static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
 	}
 }
 
+
 static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 {
 	if (wckey) {
@@ -104,11 +113,47 @@ static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 	}
 }
 
+static void _free_clus_res_cond_members(slurmdb_clus_res_cond_t *clus_res_cond)
+{
+	if (clus_res_cond) {
+		if (clus_res_cond->name_list)
+			list_destroy(clus_res_cond->name_list);
+		if (clus_res_cond->description_list)
+			list_destroy(clus_res_cond->description_list);
+		if (clus_res_cond->format_list)
+			list_destroy(clus_res_cond->format_list);
+		if (clus_res_cond->manager_list)
+			list_destroy(clus_res_cond->manager_list);
+		if (clus_res_cond->server_list)
+			list_destroy(clus_res_cond->server_list);
+		if (clus_res_cond->cluster_list)
+			list_destroy(clus_res_cond->cluster_list);
+	}
+}
+
 static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 {
 	if (cluster_cond) {
 		if (cluster_cond->cluster_list)
 			list_destroy(cluster_cond->cluster_list);
+	}
+}
+
+static void _free_ser_res_cond_members(slurmdb_ser_res_cond_t *ser_res_cond)
+{
+	if (ser_res_cond) {
+		if (ser_res_cond->name_list)
+			list_destroy(ser_res_cond->name_list);
+		if (ser_res_cond->description_list)
+			list_destroy(ser_res_cond->description_list);
+		if (ser_res_cond->format_list)
+			list_destroy(ser_res_cond->format_list);
+		if (ser_res_cond->id_list)
+			list_destroy(ser_res_cond->id_list);
+		if (ser_res_cond->manager_list)
+			list_destroy(ser_res_cond->manager_list);
+		if (ser_res_cond->server_list)
+			list_destroy(ser_res_cond->server_list);
 	}
 }
 
@@ -337,6 +382,11 @@ static uint32_t _str_2_qos_flags(char *flags)
 	return 0;
 }
 
+static uint32_t _str_2_ser_res_flags(char *flags)
+{
+	return 0;
+}
+
 extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
@@ -422,6 +472,18 @@ extern void slurmdb_destroy_cluster_accounting_rec(void *object)
 
 	if (clusteracct_rec) {
 		xfree(clusteracct_rec);
+	}
+}
+
+extern void slurmdb_destroy_clus_res_rec(void *object)
+{
+	slurmdb_clus_res_rec_t *slurmdb_clus_res =
+		(slurmdb_clus_res_rec_t *)object;
+
+	if (slurmdb_clus_res) {
+		_free_clus_res_rec_members(slurmdb_clus_res);
+		xfree(slurmdb_clus_res->cluster);
+		xfree(slurmdb_clus_res);
 	}
 }
 
@@ -524,6 +586,20 @@ extern void slurmdb_destroy_step_rec(void *object)
 		xfree(step->pid_str);
 		xfree(step->stepname);
 		xfree(step);
+	}
+}
+
+extern void slurmdb_destroy_ser_res_rec(void *object)
+{
+	slurmdb_ser_res_rec_t *slurmdb_ser_res =
+		(slurmdb_ser_res_rec_t *)object;
+
+	if (slurmdb_ser_res) {
+		xfree(slurmdb_ser_res->name);
+		xfree(slurmdb_ser_res->description);
+		xfree(slurmdb_ser_res->manager);
+		xfree(slurmdb_ser_res->server);
+		xfree(slurmdb_ser_res);
 	}
 }
 
@@ -630,6 +706,16 @@ extern void slurmdb_destroy_account_cond(void *object)
 		if (slurmdb_account->organization_list)
 			list_destroy(slurmdb_account->organization_list);
 		xfree(slurmdb_account);
+	}
+}
+
+extern void slurmdb_destroy_clus_res_cond(void *object)
+{
+	slurmdb_clus_res_cond_t *slurmdb_clus_res =
+		(slurmdb_clus_res_cond_t *)object;
+	if (slurmdb_clus_res) {
+		_free_clus_res_cond_members(slurmdb_clus_res);
+		xfree(slurmdb_clus_res);
 	}
 }
 
@@ -788,6 +874,16 @@ extern void slurmdb_destroy_qos_cond(void *object)
 		if (slurmdb_qos->name_list)
 			list_destroy(slurmdb_qos->name_list);
 		xfree(slurmdb_qos);
+	}
+}
+
+extern void slurmdb_destroy_ser_res_cond(void *object)
+{
+	slurmdb_ser_res_cond_t *slurmdb_ser_res =
+		(slurmdb_ser_res_cond_t *)object;
+	if (slurmdb_ser_res) {
+		_free_ser_res_cond_members(slurmdb_ser_res);
+		xfree(slurmdb_ser_res);
 	}
 }
 
@@ -1073,6 +1169,20 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
 	/* assoc->usage_raw = 0; */
 }
 
+extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
+				     bool free_it)
+{
+	if (!clus_res)
+		return;
+
+	if (free_it)
+		_free_clus_res_rec_members(clus_res);
+	memset(clus_res, 0, sizeof(slurmdb_clus_res_rec_t));
+	clus_res->res_ptr = NULL;
+	clus_res->cluster = NULL;
+	clus_res->percent_allowed = NO_VAL;
+}
+
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it)
 {
@@ -1123,6 +1233,25 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 	qos->usage_thres = (double)NO_VAL;
 }
 
+extern void slurmdb_init_ser_res_rec(slurmdb_ser_res_rec_t *ser_res,
+				     bool free_it)
+{
+	if (!ser_res)
+		return;
+
+	if (free_it)
+		slurmdb_destroy_ser_res_rec(ser_res);
+	memset(ser_res, 0, sizeof(slurmdb_ser_res_rec_t));
+	ser_res->description = NULL;
+	ser_res->id = NO_VAL;
+	ser_res->name = NULL;
+	ser_res->count = NO_VAL;
+	ser_res->flags = SER_RES_FLAG_NOTSET;
+	ser_res->type = NO_VAL;
+	ser_res->manager = NULL;
+	ser_res->server = NULL;
+}
+
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
 {
 	if (!wckey)
@@ -1134,6 +1263,17 @@ extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
 	wckey->is_def = (uint16_t)NO_VAL;
 }
 
+extern void slurmdb_init_clus_res_cond(slurmdb_clus_res_cond_t *clus_res,
+				      bool free_it)
+{
+	if (!clus_res)
+		return;
+
+	if (free_it)
+		_free_clus_res_cond_members(clus_res);
+	memset(clus_res, 0, sizeof(slurmdb_clus_res_cond_t));
+	clus_res->with_deleted = 0;
+}
 
 extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 				      bool free_it)
@@ -1145,6 +1285,17 @@ extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 		_free_cluster_cond_members(cluster);
 	memset(cluster, 0, sizeof(slurmdb_cluster_cond_t));
 	cluster->flags = NO_VAL;
+}
+
+extern void slurmdb_init_ser_res_cond(slurmdb_ser_res_cond_t *ser_res,
+				      bool free_it)
+{
+	if (!ser_res)
+		return;
+
+	if (free_it)
+		_free_ser_res_cond_members(ser_res);
+	memset(ser_res, 0, sizeof(slurmdb_ser_res_cond_t));
 }
 
 extern char *slurmdb_qos_str(List qos_list, uint32_t level)
@@ -1267,6 +1418,59 @@ extern uint32_t str_2_qos_flags(char *flags, int option)
 
 
 	return qos_flags;
+}
+
+extern char *slurmdb_ser_res_flags_str(uint32_t flags)
+{
+	char *ser_res_flags = NULL;
+
+	if (flags & SER_RES_FLAG_NOTSET)
+		return xstrdup("NotSet");
+
+	if (flags & SER_RES_FLAG_ADD)
+		xstrcat(ser_res_flags, "Add,");
+	if (flags & SER_RES_FLAG_REMOVE)
+		xstrcat(ser_res_flags, "Remove,");
+
+	if (ser_res_flags)
+		ser_res_flags[strlen(ser_res_flags)-1] = '\0';
+
+	return ser_res_flags;
+}
+
+extern uint32_t str_2_ser_res_flags(char *flags, int option)
+{
+	uint32_t ser_res_flags = 0;
+	char *token, *my_flags, *last = NULL;
+
+	if (!flags) {
+		error("We need a server resource flags string to translate");
+		return SER_RES_FLAG_NOTSET;
+	} else if (atoi(flags) == -1) {
+		/* clear them all */
+		ser_res_flags = INFINITE;
+		ser_res_flags &= (~SER_RES_FLAG_NOTSET &
+				  ~SER_RES_FLAG_ADD);
+		return ser_res_flags;
+	}
+
+	my_flags = xstrdup(flags);
+	token = strtok_r(my_flags, ",", &last);
+	while (token) {
+		ser_res_flags |= _str_2_ser_res_flags(token);
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(my_flags);
+
+	if (!ser_res_flags)
+		ser_res_flags = SER_RES_FLAG_NOTSET;
+	else if (option == '+')
+		ser_res_flags |= SER_RES_FLAG_ADD;
+	else if (option == '-')
+		ser_res_flags |= SER_RES_FLAG_REMOVE;
+
+
+	return ser_res_flags;
 }
 
 extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level)

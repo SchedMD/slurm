@@ -56,6 +56,7 @@
 #define ASSOC_MGR_CACHE_QOS 0x0002
 #define ASSOC_MGR_CACHE_USER 0x0004
 #define ASSOC_MGR_CACHE_WCKEY 0x0008
+#define ASSOC_MGR_CACHE_CLUS_RES 0x0010
 #define ASSOC_MGR_CACHE_ALL 0xffff
 
 /* to lock or not */
@@ -65,6 +66,7 @@ typedef struct {
 	lock_level_t qos;
 	lock_level_t user;
 	lock_level_t wckey;
+	lock_level_t clus_res;
 } assoc_mgr_lock_t;
 
 /* Interval lock structure
@@ -80,6 +82,7 @@ typedef enum {
 	QOS_LOCK,
 	USER_LOCK,
 	WCKEY_LOCK,
+	CLUS_RES_LOCK,
 	ASSOC_MGR_ENTITY_COUNT
 } assoc_mgr_lock_datatype_t;
 
@@ -163,6 +166,7 @@ struct assoc_mgr_qos_usage {
 
 
 extern List assoc_mgr_association_list;
+extern List assoc_mgr_clus_res_list;
 extern List assoc_mgr_qos_list;
 extern List assoc_mgr_user_list;
 extern List assoc_mgr_wckey_list;
@@ -314,6 +318,13 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update);
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
 extern int assoc_mgr_update_qos(slurmdb_update_object_t *update);
+
+/*
+ * update cluster resources in cache
+ * IN:  slurmdb_update_object_t *object
+ * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+ */
+extern int assoc_mgr_update_clus_res(slurmdb_update_object_t *update);
 
 /*
  * update users in cache

@@ -1,0 +1,246 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr clear (modify) ser_res values
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Written by Bill Brophy <bill.brophy@bull.com>
+#  Copyright (C) 2012 Bull S. A. S.
+#		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by
+#  the Free Software Foundation version 2 of the License.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+# CODE-OCEC-09-009. All rights reserved.
+#
+############################################################################
+# Purpose: Test of SLURM functionality
+#	   sbatch script that sruns a program that forks a process
+#                 and creates a thread to test scontrol listpids
+#
+#  Bull Test Suite -- Written by Rod Schultz <rod.schultz@bull.com>
+#  Copyright (C) 2012 Bull S. A. S.
+#		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by
+#  the Free Software Foundation version 2 of the License.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+############################################################################
+source ./globals_accounting
+
+set test_id     "test21.31"
+set test_nu     "test21-31"
+set exit_code   0
+set nm		name
+set sr		ser_res
+set sr1		[format "%s%s" $test_nu "ser_res_1"]
+set rs		-1
+set dsc		description
+set dsc1	sr1
+set cnt		count
+set cnt1	80
+set cnt2	50
+set man		manager
+set man1	manager_1
+set man2	manager_2
+set ser		server
+set ser1	server_1
+set ser2	server_2
+set typ		type
+set typ1	license
+set access_err  0
+
+print_header $test_id
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+#if { [string compare [check_accounting_admin_level] "Administrator"] } {
+#	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+#	exit 0
+#}
+
+# verify a clean system license entity and permission to do this work
+remove_ser_res "$sr1"
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+
+#add system license
+spawn $sacctmgr -i add ser_res $nm=$sr1 $dsc=$dsc1 $cnt=$cnt1 $man=$man1 $ser=$ser1 $typ=$typ1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Use sacctmgr list to verify the test server resurce fields
+#
+set matches 0
+set my_pid [spawn $sacctmgr -n -p list ser_res $sr1 format="$nm,$cnt,$man,$ser,$dsc" ]
+expect {
+	-re "No valid entity in list command" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "invalid keyword" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "Unknown condition" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "Unknown field" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "($sr1.$cnt1.$man1.$ser1.$dsc1)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list ser_res not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\n\n ser_res matches is $matches.\n\n"
+	send_user "\nFAILURE:  ser_res field incorrect.\n"
+	send_user "\nFAILURE: sacctmgr list ser_res not responding\n"
+	incr exit_code 1
+}
+
+#modify ser_res
+set matches 0
+set my_pid [eval spawn $sacctmgr -i mod ser_res where $nm=$sr1 set $cnt=$cnt2 $man=$man2 $ser=$ser2]
+expect {
+	-re "No valid entity in list command" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "invalid keyword" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "Unknown condition" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "Nothing modified" {
+		send_user "FAILURE: sacctmgr command unable to modify\n"
+	    	incr exit_code 1
+	}
+	-re "Unknown field" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "Modified server resource ..." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr modify ser_res not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\n\n ser_res matches is $matches.\n\n"
+	send_user "\nFAILURE:  ser_res modify not working.\n"
+	incr exit_code 1
+}
+
+#
+# Use sacctmgr to list the test ser_res modifications
+#
+# Use sacctmgr list to verify the test ser_res fields
+#
+set matches 0
+set my_pid [spawn $sacctmgr -n -p list ser_res $sr1 format="$nm,$cnt,$ser,$man,$dsc" ]
+expect {
+	-re "No valid entity in list command" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "invalid keyword" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "Unknown condition" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "Unknown field" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "($sr1.$cnt2.$ser2.$man2.$dsc1)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list ser_res not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\n\n ser_res matches is $matches.\n\n"
+	send_user "\nFAILURE:  ser_res field incorrect.\n"
+	send_user "\nFAILURE: sacctmgr list ser_res not responding\n"
+	incr exit_code 1
+}
+
+# Next is clean up and the end
+
+incr exit_code [remove_ser_res $sr1]
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code

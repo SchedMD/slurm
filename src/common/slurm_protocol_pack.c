@@ -11738,10 +11738,11 @@ _unpack_license_info_msg(license_info_msg_t **msg,
 			(*msg)->lic_array[i].available
 				= (*msg)->lic_array[i].total - (*msg)->lic_array[i].in_use;
 			xassert((*msg)->lic_array[i].available >= 0);
+			safe_unpack32(&((*msg)->lic_array[i]).cluster, buffer);
 		}
 
 	} else {
-		error("_unpack_partition_info_msg: protocol_version "
+		error("_unpack_license_info_msg: protocol_version "
 		      "%hu not supported", protocol_version);
 		goto unpack_error;
 	}

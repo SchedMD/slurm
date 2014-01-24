@@ -377,7 +377,8 @@ int main(int argc, char *argv[])
 	assoc_init_arg.update_qos_notify = _update_qos;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |
-				     ASSOC_MGR_CACHE_QOS;
+				     ASSOC_MGR_CACHE_QOS   |
+				     ASSOC_MGR_CACHE_CLUS_RES;
 	if (slurmctld_conf.track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
@@ -1314,7 +1315,7 @@ static void _queue_reboot_msg(void)
 			reboot_agent_args->retry = 0;
 			reboot_agent_args->hostlist = hostlist_create("");
 		}
-		hostlist_push_host(reboot_agent_args->hostlist, node_ptr->name);
+		hostlist_push(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;
 		node_ptr->node_state = NODE_STATE_FUTURE |
 				(node_ptr->node_state & NODE_STATE_FLAGS);

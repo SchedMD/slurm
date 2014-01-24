@@ -1774,9 +1774,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		error("Batch completion for job %u sent from wrong node "
 		      "(%s rather than %s), ignored request",
 		      comp_msg->job_id,
-		      comp_msg->node_name, job_ptr->batch_host);
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
+		      comp_msg->node_name, comp_msg->node_name);
 		slurm_send_rc_msg(msg, error_code);
 		return;
 	}
@@ -2232,9 +2230,8 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		    (node_reg_stat_msg->hash_val != NO_VAL) &&
 		    (node_reg_stat_msg->hash_val != slurm_get_hash_val())) {
 			error("Node %s appears to have a different slurm.conf "
-			      "than the slurmctld (the checksum computed by "
-			      "the slurmd deamon differs).  This could cause "
-			      "issues with communication and functionality.  "
+			      "than the slurmctld.  This could cause issues "
+			      "with communication and functionality.  "
 			      "Please review both files and make sure they "
 			      "are the same.  If this is expected ignore, and "
 			      "set DebugFlags=NO_CONF_HASH in your slurm.conf.",
@@ -3842,7 +3839,7 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 
 	job_hold_requeue(job_ptr);
 
-	info("%s: JobID=%u: %s", __func__, req_ptr->job_id, TIME_STR);
+	info("%s: %u: %s", __func__, req_ptr->job_id, TIME_STR);
 
 	/* Functions below provide their own locking
 	 */
@@ -4528,6 +4525,9 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uint16_t type;
+	ListIterator itr = NULL;
+	slurmdb_update_object_t *update_obj;
 	accounting_update_msg_t *update_ptr =
 		(accounting_update_msg_t *) msg->data;
 	DEF_TIMERS;
@@ -4541,8 +4541,23 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, EACCES);
 		return;
 	}
-	if (update_ptr->update_list && list_count(update_ptr->update_list))
+	if (update_ptr->update_list && list_count(update_ptr->update_list)) {
+		itr = list_iterator_create(update_ptr->update_list );
+		while ((update_obj = list_next(itr))) {
+			type = update_obj->type;
+			if ((type == SLURMDB_ADD_CLUS_RES)     ||
+			     (type == SLURMDB_MODIFY_CLUS_RES) ||
+			     (type == SLURMDB_REMOVE_CLUS_RES) ||
+			     (type == SLURMDB_MODIFY_SER_RES)  ||
+			     (type == SLURMDB_ADD_SER_RES)     ||
+			     (type == SLURMDB_REMOVE_SER_RES)) {
+				rc = cluster_license_update(update_obj);
+			}
+		}
+		list_iterator_destroy(itr);
+	} else {
 		rc = assoc_mgr_update(update_ptr->update_list);
+	}
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
