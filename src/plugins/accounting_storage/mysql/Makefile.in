@@ -172,10 +172,11 @@ am__accounting_storage_mysql_la_SOURCES_DIST =  \
 	as_mysql_job.h as_mysql_jobacct_process.c \
 	as_mysql_jobacct_process.h as_mysql_problems.c \
 	as_mysql_problems.h as_mysql_qos.c as_mysql_qos.h \
-	as_mysql_resv.c as_mysql_resv.h as_mysql_rollup.c \
-	as_mysql_rollup.h as_mysql_txn.c as_mysql_txn.h \
-	as_mysql_usage.c as_mysql_usage.h as_mysql_user.c \
-	as_mysql_user.h as_mysql_wckey.c as_mysql_wckey.h
+	as_mysql_resource.c as_mysql_resource.h as_mysql_resv.c \
+	as_mysql_resv.h as_mysql_rollup.c as_mysql_rollup.h \
+	as_mysql_txn.c as_mysql_txn.h as_mysql_usage.c \
+	as_mysql_usage.h as_mysql_user.c as_mysql_user.h \
+	as_mysql_wckey.c as_mysql_wckey.h
 am__objects_1 =  \
 	accounting_storage_mysql_la-accounting_storage_mysql.lo \
 	accounting_storage_mysql_la-as_mysql_acct.lo \
@@ -186,6 +187,7 @@ am__objects_1 =  \
 	accounting_storage_mysql_la-as_mysql_jobacct_process.lo \
 	accounting_storage_mysql_la-as_mysql_problems.lo \
 	accounting_storage_mysql_la-as_mysql_qos.lo \
+	accounting_storage_mysql_la-as_mysql_resource.lo \
 	accounting_storage_mysql_la-as_mysql_resv.lo \
 	accounting_storage_mysql_la-as_mysql_rollup.lo \
 	accounting_storage_mysql_la-as_mysql_txn.lo \
@@ -202,10 +204,11 @@ am__EXTRA_accounting_storage_mysql_la_SOURCES_DIST =  \
 	as_mysql_job.h as_mysql_jobacct_process.c \
 	as_mysql_jobacct_process.h as_mysql_problems.c \
 	as_mysql_problems.h as_mysql_qos.c as_mysql_qos.h \
-	as_mysql_resv.c as_mysql_resv.h as_mysql_rollup.c \
-	as_mysql_rollup.h as_mysql_txn.c as_mysql_txn.h \
-	as_mysql_usage.c as_mysql_usage.h as_mysql_user.c \
-	as_mysql_user.h as_mysql_wckey.c as_mysql_wckey.h
+	as_mysql_resource.c as_mysql_resource.h as_mysql_resv.c \
+	as_mysql_resv.h as_mysql_rollup.c as_mysql_rollup.h \
+	as_mysql_txn.c as_mysql_txn.h as_mysql_usage.c \
+	as_mysql_usage.h as_mysql_user.c as_mysql_user.h \
+	as_mysql_wckey.c as_mysql_wckey.h
 accounting_storage_mysql_la_OBJECTS =  \
 	$(am_accounting_storage_mysql_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -529,6 +532,7 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_jobacct_process.c as_mysql_jobacct_process.h \
 		as_mysql_problems.c as_mysql_problems.h \
 		as_mysql_qos.c as_mysql_qos.h \
+		as_mysql_resource.c as_mysql_resource.h \
 		as_mysql_resv.c as_mysql_resv.h \
 		as_mysql_rollup.c as_mysql_rollup.h \
 		as_mysql_txn.c as_mysql_txn.h \
@@ -635,6 +639,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_jobacct_process.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_problems.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_qos.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_resource.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_resv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_rollup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_txn.Plo@am__quote@
@@ -725,6 +730,13 @@ accounting_storage_mysql_la-as_mysql_qos.lo: as_mysql_qos.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='as_mysql_qos.c' object='accounting_storage_mysql_la-as_mysql_qos.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_mysql_la-as_mysql_qos.lo `test -f 'as_mysql_qos.c' || echo '$(srcdir)/'`as_mysql_qos.c
+
+accounting_storage_mysql_la-as_mysql_resource.lo: as_mysql_resource.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -MT accounting_storage_mysql_la-as_mysql_resource.lo -MD -MP -MF $(DEPDIR)/accounting_storage_mysql_la-as_mysql_resource.Tpo -c -o accounting_storage_mysql_la-as_mysql_resource.lo `test -f 'as_mysql_resource.c' || echo '$(srcdir)/'`as_mysql_resource.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/accounting_storage_mysql_la-as_mysql_resource.Tpo $(DEPDIR)/accounting_storage_mysql_la-as_mysql_resource.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='as_mysql_resource.c' object='accounting_storage_mysql_la-as_mysql_resource.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_mysql_la-as_mysql_resource.lo `test -f 'as_mysql_resource.c' || echo '$(srcdir)/'`as_mysql_resource.c
 
 accounting_storage_mysql_la-as_mysql_resv.lo: as_mysql_resv.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -MT accounting_storage_mysql_la-as_mysql_resv.lo -MD -MP -MF $(DEPDIR)/accounting_storage_mysql_la-as_mysql_resv.Tpo -c -o accounting_storage_mysql_la-as_mysql_resv.lo `test -f 'as_mysql_resv.c' || echo '$(srcdir)/'`as_mysql_resv.c
