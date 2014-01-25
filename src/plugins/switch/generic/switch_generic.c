@@ -714,13 +714,56 @@ int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Allocates network information in resulting_data with xmalloc
+ * String result of format : (nodename,(iface,IP_V{4,6},address)*)
+ */
 extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 				int key, void *resulting_data)
 {
+	int node_id = key;
+	sw_gen_step_info_t *stepinfo = (sw_gen_step_info_t*) switch_job;
+	char *err = NULL;
+	sw_gen_node_t *node_ptr = stepinfo->node_array[node_id];
+	sw_gen_ifa_t *ifa_ptr;
+	int i, s;
+	int bufsize = 1024;
+	char *buf = xmalloc(bufsize);
+	/*bound triplet max len*/
+	int triplet_len_max = IFNAMSIZ + INET6_ADDRSTRLEN + 5 + 5 + 1;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_get_jobinfoe() starting");
-	slurm_seterrno(EINVAL);
+		info("switch_p_get_jobinfo() starting");
+
+	if (!resulting_data) {err="no pointer for resulting_data"; goto error;}
+	*(char**) resulting_data = NULL;
+
+	if (node_id < 0 || node_id >= stepinfo->node_cnt) {
+		err = "node_id out of range";
+		goto error;
+	}
+
+	s = snprintf(buf, bufsize, "(%s", node_ptr->node_name);
+	/* appends in buf triplets (ifname,ipversion,address) */
+	for (i = 0; i < node_ptr->ifa_cnt; i++) {
+		ifa_ptr = node_ptr->ifa_array[i];
+		if (s + triplet_len_max > bufsize) {
+			bufsize *= 2;
+			xrealloc(buf, bufsize);
+		}
+		s += snprintf(buf+s, bufsize-s, ",(%s,%s,%s)",
+			      ifa_ptr->ifa_name, ifa_ptr->ifa_family,
+			      ifa_ptr->ifa_addr);
+	}
+	s += snprintf(buf+s, bufsize-s, ")");
+
+	*(char**)resulting_data = buf; /* return x-alloc'ed data */
+	return SLURM_SUCCESS;
+
+ error:
+	if (debug_flags & DEBUG_FLAG_SWITCH) info(err);
 	return SLURM_ERROR;
+
 }
 
 /*

@@ -39,6 +39,13 @@
 #include "setup.h"
 #include "client.h"
 
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include "slurm/slurm.h"
+#include "src/srun/libsrun/launch.h"
+#include "src/common/switch.h"
+#include "src/common/slurm_protocol_api.h"
+
 #define NODE_ATTR_SIZE_INC 8
 
 /* pending node attribute get request */
@@ -158,11 +165,62 @@ node_attr_get(char *key)
 	return val;
 }
 
+static char *job_attr_get_netinfo(char *key, char *attr) {
+	char *taskid_str, *p;
+	int taskid, nodeid;
+	slurm_step_layout_t *sl;
+	char *netinfo = NULL;
+
+	/* check for switch/generic plugin and information */
+	debug3("switch entering");
+	if (!job_info.switch_job
+		|| strcmp(slurm_get_switch_type(), "switch/generic")!=0) {
+		debug3("job_attr_get() netinfo: no switch/generic info");
+		return NULL;
+	}
+	debug3("switch ok");
+
+	/* parse task id */
+	taskid_str = key + sizeof(JOB_ATTR_NETINFO) - 1;
+	taskid = strtol(taskid_str, &p, 10);
+	if (p == taskid_str || errno == EINVAL || errno == ERANGE) {
+		debug3("job_attr_get() netinfo: needs a task id");
+		return NULL;
+	}
+	debug3("taskid ok");
+
+
+	/* get node on wich the task runs */
+	sl = slurm_job_step_layout_get(job_info.jobid,
+				       job_info.stepid);
+	if (!sl) {
+		debug3("job_attr_get() netinfo: can't get layout");
+		return NULL;
+	}
+	nodeid = slurm_step_layout_host_id(sl, taskid);
+	debug3("node ok");
+
+
+	/* get network information of node in netinfo, xmalloc'ed */
+	switch_g_get_jobinfo(job_info.switch_job, nodeid, &netinfo);
+	if (!netinfo) {
+		debug3("job_attr_get() no switch job info for node %d", nodeid);
+		return NULL;
+	}
+	snprintf(attr, PMI2_MAX_VALLEN, "%s", netinfo);
+	xfree(netinfo);
+
+	debug3("job_attr_get(): task_id_query=%d -> %s", taskid, attr);
+
+	return attr;
+}
+
 /* returned value not dup-ed */
 extern char *
 job_attr_get(char *key)
 {
 	static char attr[PMI2_MAX_VALLEN];
+	job_step_info_response_msg_t *stepmsg = NULL;
 
 	if (!strcmp(key, JOB_ATTR_PROC_MAP)) {
 		return job_info.proc_mapping;
@@ -172,6 +230,29 @@ job_attr_get(char *key)
 		snprintf(attr, PMI2_MAX_VALLEN, "%d", job_info.ntasks);
 		return attr;
 	}
+
+	if (!strcmp(key, JOB_ATTR_RESV_PORTS)) {
+		if (0 != slurm_get_job_steps((time_t) 0, job_info.jobid,
+					     job_info.stepid, &stepmsg,
+					     SHOW_ALL)) {
+			return NULL;
+		}
+		if (stepmsg == NULL || stepmsg->job_step_count != 1) {
+			return NULL;
+		}
+		snprintf(attr, PMI2_MAX_VALLEN, "%s",
+			 stepmsg->job_steps[0].resv_ports);
+		slurm_free_job_step_info_response_msg(stepmsg);
+		return attr;
+	}
+
+	if (strcmp(key, JOB_ATTR_NETINFO) >= 0) { // followed by task_id
+		if ( NULL == job_attr_get_netinfo(key, attr)) {
+			return NULL;
+		}
+		return attr;
+	}
+
 
 	return NULL;
 }

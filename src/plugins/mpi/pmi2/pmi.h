@@ -214,6 +214,8 @@
 
 #define JOB_ATTR_PROC_MAP       "PMI_process_mapping"
 #define JOB_ATTR_UNIV_SIZE      "universeSize"
+#define JOB_ATTR_NETINFO        "PMI_netinfo_of_task_"
+#define JOB_ATTR_RESV_PORTS     "mpi_reserved_ports"
 
 /***********************************************************\
  * Environment variables
