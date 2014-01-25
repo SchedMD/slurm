@@ -39,7 +39,7 @@ documents those changes that are of interest to users and admins.
  -- Added squeue format option of "%X" (core specialization count).
  -- Added core specialization web page (just a start for now).
  -- Added the SLURM_ARRAY_JOB_ID and SLURM_ARRAY_TASK_ID
-    in epilogi slurmctld environment.
+    in epilog slurmctld environment.
  -- Fix bug in job step allocation failing due to memory limit.
  -- Modify the pbsnodes script to reflect its output on a TORQUE system.
  -- Add ability to clear a node's DRAIN flag using scontrol or sview by setting
@@ -52,7 +52,7 @@ documents those changes that are of interest to users and admins.
  -- Add new configuration parameter of AuthInfo to specify port used by
     authentication plugin.
  -- Fixed conditional rpm compiling.
- -- Corrected slurmstepd ident name when loggind to syslog.
+ -- Corrected slurmstepd ident name when logging to syslog.
  -- Fixed sh5util loop when there are no node-step files.
  -- Add SLURM_CLUSTER_NAME to environment variables passed to PrologSlurmctld,
     Prolog, EpilogSlurmctld, and Epilog
