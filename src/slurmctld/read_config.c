@@ -1019,8 +1019,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	reserve_port_config(mpi_params);
 	xfree(mpi_params);
 
-	license_free();
-	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
+	if (license_update(slurmctld_conf.licenses) != SLURM_SUCCESS)
 		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
 
 	/* NOTE: Run restore_node_features before _restore_job_dependencies */
