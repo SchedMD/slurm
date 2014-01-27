@@ -4525,9 +4525,6 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	uint16_t type;
-	ListIterator itr = NULL;
-	slurmdb_update_object_t *update_obj;
 	accounting_update_msg_t *update_ptr =
 		(accounting_update_msg_t *) msg->data;
 	DEF_TIMERS;
@@ -4541,23 +4538,8 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, EACCES);
 		return;
 	}
-	if (update_ptr->update_list && list_count(update_ptr->update_list)) {
-		itr = list_iterator_create(update_ptr->update_list );
-		while ((update_obj = list_next(itr))) {
-			type = update_obj->type;
-			if ((type == SLURMDB_ADD_CLUS_RES)     ||
-			     (type == SLURMDB_MODIFY_CLUS_RES) ||
-			     (type == SLURMDB_REMOVE_CLUS_RES) ||
-			     (type == SLURMDB_MODIFY_SER_RES)  ||
-			     (type == SLURMDB_ADD_SER_RES)     ||
-			     (type == SLURMDB_REMOVE_SER_RES)) {
-				rc = cluster_license_update(update_obj);
-			}
-		}
-		list_iterator_destroy(itr);
-	} else {
+	if (update_ptr->update_list && list_count(update_ptr->update_list))
 		rc = assoc_mgr_update(update_ptr->update_list);
-	}
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
