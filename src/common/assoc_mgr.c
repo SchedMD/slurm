@@ -62,9 +62,13 @@ static char *assoc_mgr_cluster_name = NULL;
 static int setup_children = 0;
 static assoc_mgr_lock_flags_t assoc_mgr_locks;
 
+void (*add_license_notify) (slurmdb_clus_res_rec_t *rec) = NULL;
 void (*remove_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
+void (*remove_license_notify) (slurmdb_clus_res_rec_t *rec) = NULL;
 void (*remove_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
+void (*sync_license_notify) (List clus_res_list) = NULL;
 void (*update_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
+void (*update_license_notify) (slurmdb_clus_res_rec_t *rec) = NULL;
 void (*update_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
 void (*update_resvs) () = NULL;
 
@@ -665,6 +669,14 @@ static int _post_qos_list(List qos_list)
 	return SLURM_SUCCESS;
 }
 
+static int _post_clus_res_list(List clus_res_list)
+{
+	if (sync_license_notify)
+		sync_license_notify(clus_res_list);
+
+	return SLURM_SUCCESS;
+}
+
 static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 {
 	slurmdb_association_cond_t assoc_q;
@@ -729,7 +741,7 @@ static int _get_assoc_mgr_clus_res_list(void *db_conn, int enforce)
 	if (assoc_mgr_clus_res_list)
 		list_destroy(assoc_mgr_clus_res_list);
 	assoc_mgr_clus_res_list =
-	   acct_storage_g_get_clus_res(db_conn, uid, NULL);
+		acct_storage_g_get_clus_res(db_conn, uid, NULL);
 
 	if (!assoc_mgr_clus_res_list) {
 		assoc_mgr_unlock(&locks);
@@ -742,7 +754,7 @@ static int _get_assoc_mgr_clus_res_list(void *db_conn, int enforce)
 		}
 	}
 
-//	_post_clus_res_list(assoc_mgr_clus_res_list);
+	_post_clus_res_list(assoc_mgr_clus_res_list);
 
 	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
@@ -961,7 +973,7 @@ static int _refresh_assoc_mgr_clus_res_list(void *db_conn, int enforce)
 		      "no new list given back keeping cached one.");
 		return SLURM_ERROR;
 	}
-//	_post_clus_res_list(current_clus_res);
+	_post_clus_res_list(current_clus_res);
 
 	assoc_mgr_lock(&locks);
 
@@ -1170,12 +1182,20 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		cache_level = args->cache_level;
 		enforce = args->enforce;
 
+		if (args->add_license_notify)
+			add_license_notify = args->add_license_notify;
 		if (args->remove_assoc_notify)
 			remove_assoc_notify = args->remove_assoc_notify;
+		if (args->remove_license_notify)
+			remove_license_notify = args->remove_license_notify;
 		if (args->remove_qos_notify)
 			remove_qos_notify = args->remove_qos_notify;
+		if (args->sync_license_notify)
+			sync_license_notify = args->sync_license_notify;
 		if (args->update_assoc_notify)
 			update_assoc_notify = args->update_assoc_notify;
+		if (args->update_license_notify)
+			update_license_notify = args->update_license_notify;
 		if (args->update_qos_notify)
 			update_qos_notify = args->update_qos_notify;
 		if (args->update_resvs)
@@ -3313,6 +3333,16 @@ extern int assoc_mgr_update_clus_res(slurmdb_update_object_t *update)
 			}
 
 			list_append(assoc_mgr_clus_res_list, object);
+			switch (object->res_ptr->type) {
+			case SLURMDB_RESOURCE_LICENSE:
+				if (add_license_notify)
+					add_license_notify(object);
+				break;
+			default:
+				error("SLURMDB_ADD_CLUS_RES: unknown type %d",
+				      object->res_ptr->type);
+				break;
+			}
 			object = NULL;
 			break;
 		case SLURMDB_MODIFY_CLUS_RES:
@@ -3323,10 +3353,32 @@ extern int assoc_mgr_update_clus_res(slurmdb_update_object_t *update)
 
 			if (object->percent_allowed != NO_VAL)
 				rec->percent_allowed = object->percent_allowed;
+			switch (rec->res_ptr->type) {
+			case SLURMDB_RESOURCE_LICENSE:
+				if (update_license_notify)
+					update_license_notify(rec);
+				break;
+			default:
+				error("SLURMDB_UPDATE_CLUS_RES: "
+				      "unknown type %d",
+				      rec->res_ptr->type);
+				break;
+			}
 			break;
 		case SLURMDB_REMOVE_CLUS_RES:
 			if (!rec) {
 				//rc = SLURM_ERROR;
+				break;
+			}
+			switch (rec->res_ptr->type) {
+			case SLURMDB_RESOURCE_LICENSE:
+				if (remove_license_notify)
+					remove_license_notify(rec);
+				break;
+			default:
+				error("SLURMDB_REMOVE_CLUS_RES: "
+				      "unknown type %d",
+				      object->res_ptr->type);
 				break;
 			}
 
@@ -4045,6 +4097,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			if (assoc_mgr_clus_res_list)
 				list_destroy(assoc_mgr_clus_res_list);
 			assoc_mgr_clus_res_list = msg->my_list;
+			_post_clus_res_list(assoc_mgr_clus_res_list);
 			debug("Recovered %u clus_res",
 			      list_count(assoc_mgr_clus_res_list));
 			msg->my_list = NULL;
@@ -4136,9 +4189,8 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 			return SLURM_ERROR;
 
 	if (cache_level & ASSOC_MGR_CACHE_CLUS_RES)
-info("invoking _refresh_assoc_mgr_clus_res_list");
 		if (_refresh_assoc_mgr_clus_res_list(db_conn, enforce)
-		    ==SLURM_ERROR)
+		    == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	running_cache = 0;

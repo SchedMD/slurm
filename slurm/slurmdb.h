@@ -112,7 +112,8 @@ typedef enum {
 } slurmdb_report_time_format_t;
 
 typedef enum {
-	SLURMDB_RESOURCE_LICENSE = 1,
+	SLURMDB_RESOURCE_NOTSET,
+	SLURMDB_RESOURCE_LICENSE,
 } slurmdb_resource_type_t;
 
 typedef enum {

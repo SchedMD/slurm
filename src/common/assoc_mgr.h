@@ -93,9 +93,13 @@ typedef struct {
 typedef struct {
  	uint16_t cache_level;
 	uint16_t enforce;
+	void (*add_license_notify) (slurmdb_clus_res_rec_t *rec);
  	void (*remove_assoc_notify) (slurmdb_association_rec_t *rec);
+	void (*remove_license_notify) (slurmdb_clus_res_rec_t *rec);
  	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
+	void (*sync_license_notify) (List clus_res_list);
  	void (*update_assoc_notify) (slurmdb_association_rec_t *rec);
+	void (*update_license_notify) (slurmdb_clus_res_rec_t *rec);
  	void (*update_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*update_resvs) ();
 } assoc_init_args_t;

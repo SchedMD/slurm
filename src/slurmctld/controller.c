@@ -370,11 +370,15 @@ int main(int argc, char *argv[])
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
-	assoc_init_arg.update_resvs = update_assocs_in_resvs;
+	assoc_init_arg.add_license_notify = license_add_remote;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
+	assoc_init_arg.remove_license_notify = license_remove_remote;
 	assoc_init_arg.remove_qos_notify = _remove_qos;
+	assoc_init_arg.sync_license_notify = license_sync_remote;
 	assoc_init_arg.update_assoc_notify = _update_assoc;
+	assoc_init_arg.update_license_notify = license_update_remote;
 	assoc_init_arg.update_qos_notify = _update_qos;
+	assoc_init_arg.update_resvs = update_assocs_in_resvs;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |
 				     ASSOC_MGR_CACHE_QOS   |

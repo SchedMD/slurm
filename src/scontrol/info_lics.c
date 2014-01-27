@@ -40,8 +40,7 @@
 
 #include "scontrol.h"
 
-static void print_license_info(const char *,
-                               struct license_info_msg *);
+static void _print_license_info(const char *, license_info_msg_t *);
 
 /* scontrol_print_licenses()
  *
@@ -50,10 +49,10 @@ static void print_license_info(const char *,
  *
  */
 void
-scontrol_print_licenses(const char *feature)
+scontrol_print_licenses(const char *name)
 {
 	int cc;
-	struct license_info_msg *msg;
+	license_info_msg_t *msg;
 	uint16_t show_flags;
 	static time_t last_update;
 
@@ -73,7 +72,7 @@ scontrol_print_licenses(const char *feature)
 	last_update = time(NULL);
 	/* print the info
 	 */
-	print_license_info(feature, msg);
+	_print_license_info(name, msg);
 
 	/* free at last
 	 */
@@ -82,33 +81,30 @@ scontrol_print_licenses(const char *feature)
 	return;
 }
 
-/* print_license_info()
+/* _print_license_info()
  *
  * Print the license information.
  */
-static void
-print_license_info(const char *feature, struct license_info_msg *msg)
+static void _print_license_info(const char *name, license_info_msg_t *msg)
 {
 	int cc;
 
-	if (msg->num_features == 0) {
-		printf("No licenses configured in SLURM.\n");
+	if (!msg->num_lic) {
+		printf("No licenses configured in Slurm.\n");
 		return;
 	}
 
-	for (cc = 0; cc < msg->num_features; cc++) {
-		if (one_liner) {
-			printf("LicenseName=%s ", msg->lic_array[cc].feature);
-			printf("Total=%d ", msg->lic_array[cc].total);
-		} else {
-			printf("LicenseName=%s\n", msg->lic_array[cc].feature);
-			printf("    Total=%d ", msg->lic_array[cc].total);
-		}
-		printf("Used=%d ", msg->lic_array[cc].in_use);
-		printf("Free=%d ", msg->lic_array[cc].available);
-		if (msg->lic_array[cc].cluster)
-			printf("Cluster=yes\n");
-		else
-			printf("Cluster=no\n");
+	for (cc = 0; cc < msg->num_lic; cc++) {
+		if (name && strcmp(msg->lic_array[cc].name, name))
+			continue;
+		printf("LicenseName=%s%sTotal=%d Used=%u Free=%u Remote=%s\n",
+		       msg->lic_array[cc].name,
+		       one_liner ? " " : "\n    ",
+		       msg->lic_array[cc].total,
+		       msg->lic_array[cc].in_use,
+		       msg->lic_array[cc].available,
+		       msg->lic_array[cc].remote ? "yes" : "no");
+		if (name)
+			break;
 	}
 }

@@ -56,8 +56,7 @@
 #include "src/common/slurm_accounting_storage.h"
 
 List license_list = (List) NULL;
-List clus_license_list = (List) NULL;
-time_t last_license_update;
+time_t last_license_update = 0;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version);
 
@@ -105,34 +104,6 @@ static int _license_find_rec(void *x, void *key)
 	if ((license_entry->name == NULL) || (name == NULL))
 		return 0;
 	if (strcmp(license_entry->name, name))
-		return 0;
-	return 1;
-}
-
-/* Find a slurmdb_ser_res_rec_t record by license name
- *(for use by list_find_first) */
-static int _license_find_sys_rec(void *x, void *key)
-{
-	slurmdb_ser_res_rec_t *license_entry = (slurmdb_ser_res_rec_t *) x;
-	char *name = (char *) key;
-
-	if ((license_entry->name == NULL) || (name == NULL))
-		return 0;
-	if (strcmp(license_entry->name, name))
-		return 0;
-	return 1;
-}
-
-/* Find a slurmdb_clus_res_rec_t record by license name
- *(for use by list_find_first) */
-static int _license_find_clus_rec(void *x, void *key)
-{
-	slurmdb_clus_res_rec_t *license_entry = (slurmdb_clus_res_rec_t *) x;
-	char *name = (char *) key;
-
-	if ((license_entry->res_ptr->name == NULL) || (name == NULL))
-		return 0;
-	if (strcmp(license_entry->res_ptr->name, name))
 		return 0;
 	return 1;
 }
@@ -221,6 +192,21 @@ static char * _build_license_string(List license_list)
 	return licenses;
 }
 
+/* license_mutex should be locked before alling this. */
+static void _add_clus_rec_2_lic_list(slurmdb_clus_res_rec_t *rec, bool sync)
+{
+	licenses_t *license_entry = xmalloc(sizeof(licenses_t));
+	/* Should we concat the server and such here
+	 * with the name? */
+	license_entry->name = xstrdup(rec->res_ptr->name);
+	license_entry->total = ((rec->res_ptr->count *
+				 rec->percent_allowed) / 100);
+	license_entry->remote = sync ? 2 : 1;
+
+	list_push(license_list, license_entry);
+	last_license_update = time(NULL);
+}
+
 /* Get string of used license information. Caller must xfree return value */
 extern char *get_licenses_used(void)
 {
@@ -245,276 +231,6 @@ extern char *get_licenses_used(void)
 	return licenses_used;
 }
 
-/* Merge a cluster license list (built using accounting database information
- * into a license_list, preserving all previously allocated licenses.
-*/
-static List merge_license_lists(List lic_list, List clus_license_list)
-{
-	licenses_t *license, *cluster_license, *new_license;
-	ListIterator itr = NULL;
-	licenses_t *match_lic = NULL;
-	uint16_t temp;
-
-	if (!clus_license_list)
-		return lic_list;
-	if (!license_list)
-		return clus_license_list;
-	/* deal with new & potentially modified cluster licenses */
-	itr = list_iterator_create(clus_license_list);
-	while ((cluster_license = list_next(itr))){
-		match_lic = list_find_first(license_list,
-			_license_find_rec, cluster_license->name);
-
-		if (match_lic == NULL) {		/* new license */
-			new_license = xmalloc(sizeof(licenses_t));
-			new_license->name = xstrdup(cluster_license->name);
-			new_license->total = cluster_license->total;
-			new_license->used = 0;
-			new_license->cluster = 1;
-			list_push(lic_list, new_license);
-		} else if ((match_lic != NULL)
-			   && cluster_license->cluster == 1) {
-			match_lic->total = cluster_license->total;
-		}
-	}
-	list_iterator_destroy(itr);
-
-	/* now deal with deleted cluster licenses */
-	itr = list_iterator_create(license_list);
-	while ((license = (licenses_t *) list_next(itr))) {
-		match_lic = list_find_first(clus_license_list,
-			_license_find_rec, license->name);
-
-		if ((match_lic == NULL) && (license->cluster == 1)) {
-			temp = list_delete_item(itr);
-			if (!temp)
-				return NULL;
-		}
-	}
-	list_iterator_destroy(itr);
-	return lic_list;
-}
-
-/* update clus_license_list & license_list for a modified system license */
-static int _modify_ser_lic(List clus_license_list, List clus_rec_list,
-			    slurmdb_update_object_t *update_obj)
-{
-	ListIterator itr = NULL;
-	slurmdb_ser_res_rec_t *match_sys_rec = NULL;
-	slurmdb_clus_res_rec_t *match_clus_rec = NULL;
-	licenses_t *license;
-	uint16_t rc = SLURM_SUCCESS;
-
-	itr = list_iterator_create(clus_license_list);
-	while ((license = list_next(itr))) {
-		match_sys_rec = list_find_first(update_obj->objects,
-				_license_find_sys_rec, license->name);
-		if (match_sys_rec) {
-			match_clus_rec = list_find_first(clus_rec_list,
-			_license_find_clus_rec, license->name);
-			if (match_clus_rec) {
-				license->total =
-				 ((match_sys_rec->count *
-				   match_clus_rec->percent_allowed) / 100);
-			}
-		}
-	}
-	list_iterator_destroy(itr);
-	return rc;
-}
-
-/* update clus_license_list to add a cluster license */
-static int _add_clus_lic(List clus_license_list,
-			  slurmdb_update_object_t *update_obj)
-{
-	ListIterator itr = NULL;
-	slurmdb_clus_res_rec_t *clus_rec = NULL;
-	licenses_t *match_lic = NULL;
-	licenses_t *new_license;
-	uint16_t rc = SLURM_SUCCESS;
-	char *cluster_name = NULL;
-
-	cluster_name = slurm_get_cluster_name();
-	itr = list_iterator_create(update_obj->objects);
-	while ((clus_rec = list_next(itr))) {
-		if (!strstr(clus_rec->cluster, cluster_name) ||
-		    clus_rec->res_ptr->type != SLURMDB_RESOURCE_LICENSE)
-			continue;
-		match_lic = list_find_first(clus_license_list,
-			_license_find_rec, clus_rec->res_ptr->name);
-
-		if (match_lic == NULL) {
-			new_license = xmalloc(sizeof(licenses_t));
-			new_license->name = xstrdup(clus_rec->res_ptr->name);
-			new_license->total =
-			((clus_rec->res_ptr->count *
-			  clus_rec->percent_allowed) / 100);
-			new_license->used = 0;
-			new_license->cluster = 1;
-			list_push(clus_license_list, new_license);
-			slurmdb_clus_res_rec_t *new_rec =
-					xmalloc(sizeof(slurmdb_clus_res_rec_t));
-			slurmdb_init_clus_res_rec(new_rec, 0);
-			new_rec->res_ptr = xmalloc(sizeof(
-					   slurmdb_ser_res_rec_t));
-			slurmdb_init_ser_res_rec(new_rec->res_ptr, 0);
-			new_rec->res_ptr->description =
-			   xstrdup(clus_rec->res_ptr->description);
-			new_rec->res_ptr->id = clus_rec->res_ptr->id;
-			new_rec->res_ptr->name =
-			   xstrdup(clus_rec->res_ptr->name);
-			new_rec->res_ptr->count = clus_rec->res_ptr->count;
-			new_rec->res_ptr->type = clus_rec->res_ptr->type;
-			new_rec->res_ptr->manager =
-			   xstrdup(clus_rec->res_ptr->manager);
-			new_rec->res_ptr->server =
-			   xstrdup(clus_rec->res_ptr->server);
-			new_rec->cluster = xstrdup(clus_rec->cluster);
-			new_rec->percent_allowed = clus_rec->percent_allowed;
-			list_append(assoc_mgr_clus_res_list, new_rec);
-		} else {
-			error("cluster_resource_list already contains"
-			       " this cluster license %s",
-			       clus_rec->res_ptr->name);
-			rc = SLURM_ERROR;
-			break;
-		}
-	}
-	xfree(cluster_name);
-	list_iterator_destroy(itr);
-	return rc;
-}
-
-/* update clus_license_list for a modified cluster license */
-static int _modify_clus_lic(List clus_license_list,
-			     slurmdb_update_object_t *update_obj)
-{
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	slurmdb_clus_res_rec_t *clus_rec = NULL;
-	slurmdb_clus_res_rec_t *assoc_mgr_rec = NULL;
-	licenses_t *match_lic = NULL;
-	uint16_t rc = SLURM_SUCCESS;
-	char *cluster_name = NULL;
-
-	cluster_name = slurm_get_cluster_name();
-	itr = list_iterator_create(update_obj->objects);
-	itr2 = list_iterator_create(assoc_mgr_clus_res_list);
-	while ((clus_rec = list_next(itr))) {
-		if (!strstr(clus_rec->cluster, cluster_name) ||
-		    clus_rec->res_ptr->type != SLURMDB_RESOURCE_LICENSE)
-			continue;
-		match_lic = list_find_first(clus_license_list,
-			    _license_find_rec, clus_rec->res_ptr->name);
-		if (match_lic) {
-			match_lic->total =
-			((clus_rec->res_ptr->count *
-			  clus_rec->percent_allowed) / 100);
-			while ((assoc_mgr_rec = list_next(itr2))) {
-				if (strstr(clus_rec->res_ptr->name,
-					assoc_mgr_rec->res_ptr->name)) {
-						assoc_mgr_rec->percent_allowed =
-						   clus_rec->percent_allowed;
-					}
-			}
-			list_iterator_reset(itr2);
-		} else {
-			error("cluster_license_list doesn't contain %s",
-			       clus_rec->res_ptr->name);
-			rc = SLURM_ERROR;
-			break;
-		}
-	}
-	xfree(cluster_name);
-	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
-	return rc;
-}
-
-/* update clus_license_list for a removed cluster license */
-static int _remove_clus_lic(List clus_license_list,
-			     slurmdb_update_object_t *update_obj)
-{
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ListIterator itr3 = NULL;
-	slurmdb_clus_res_rec_t *clus_rec = NULL;
-	slurmdb_clus_res_rec_t *assoc_mgr_rec = NULL;
-	licenses_t *license;
-	uint16_t temp;
-	uint16_t rc = SLURM_SUCCESS;
-	char *cluster_name = NULL;
-
-	cluster_name = slurm_get_cluster_name();
-	itr = list_iterator_create(update_obj->objects);
-	itr2 = list_iterator_create(clus_license_list);
-	itr3 = list_iterator_create(assoc_mgr_clus_res_list);
-	while ((clus_rec = list_next(itr))) {
-		if (!strstr(clus_rec->cluster, cluster_name) ||
-		    clus_rec->res_ptr->type != SLURMDB_RESOURCE_LICENSE)
-			continue;
-		while ((license = list_next(itr2))) {
-			if (strstr(clus_rec->res_ptr->name, license->name)) {
-				temp = list_delete_item(itr2);
-				if (!temp) {
-					error("clus_license_list removal"
-					      "problem for %s", license->name);
-					rc = SLURM_ERROR;
-					break;
-				}
-				while ((assoc_mgr_rec = list_next(itr3))) {
-					if (strstr(clus_rec->res_ptr->name,
-						assoc_mgr_rec->res_ptr->name)) {
-						temp = list_delete_item(itr3);
-						if (!temp) {
-							error("assoc_mgr_clus_"
-							"res_list removal"
-							"problem for %s",
-							license->name);
-							rc = SLURM_ERROR;
-							break;
-						}
-					}
-				}
-				list_iterator_reset(itr3);
-			}
-		}
-		list_iterator_reset(itr2);
-	}
-	xfree(cluster_name);
-	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
-	list_iterator_destroy(itr3);
-	return rc;
-}
-
-/* create a list of license_t records from a list of clus_res_rec_t
- * records
- */
-static List _clus_license_init(List clus_rec_list)
-{
-	List clus_license_list = NULL;
-	ListIterator itr = NULL;
-	slurmdb_clus_res_rec_t *clus_rec = NULL;
-	licenses_t *license;
-
-	if (!clus_rec_list) {
-		return NULL;
-	}
-	clus_license_list = list_create(license_free_rec);
-	itr = list_iterator_create(clus_rec_list );
-	while ((clus_rec = list_next(itr))) {
-		license = xmalloc(sizeof(licenses_t));
-		license->name = xstrdup(clus_rec->res_ptr->name);
-		license->total =
-		 ((clus_rec->res_ptr->count * clus_rec->percent_allowed) / 100);
-		license->used = 0;
-		license->cluster = 1;
-		list_push(clus_license_list, license);
-	}
-	list_iterator_destroy(itr);
-	return clus_license_list;
-}
 
 /* Initialize licenses on this system based upon slurm.conf
  * and information in the accounting database/
@@ -533,122 +249,250 @@ extern int license_init(char *licenses)
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
-	if (assoc_mgr_clus_res_list) {
-		clus_license_list = _clus_license_init(assoc_mgr_clus_res_list);
-		license_list = merge_license_lists(license_list,
-			       clus_license_list);
-	}
-
 	_licenses_print("init_license", license_list, 0);
 	slurm_mutex_unlock(&license_mutex);
-
 	return SLURM_SUCCESS;
 }
 
-/* Update the cluster license list for this system.
- * Preserve all previously allocated licenses */
-static List _clus_license_list_update(slurmdb_update_object_t *update_obj)
-{
-	uint16_t type;
-	uint16_t rc = SLURM_SUCCESS;
-
-	if (!clus_license_list) {
-		if (assoc_mgr_clus_res_list)
-			clus_license_list =
-			   _clus_license_init(assoc_mgr_clus_res_list);
-	}
-	type = update_obj->type;
-	switch ( type )
-	{
-		case SLURMDB_MODIFY_SER_RES :
-			rc = _modify_ser_lic(clus_license_list,
-					     assoc_mgr_clus_res_list,
-					     update_obj);
-			break;
-		case SLURMDB_ADD_SER_RES :
-		case SLURMDB_REMOVE_SER_RES :
-			break;
-		case SLURMDB_ADD_CLUS_RES :
-			rc = _add_clus_lic(clus_license_list, update_obj);
-			break;
-		case SLURMDB_MODIFY_CLUS_RES :
-			rc = _modify_clus_lic(clus_license_list, update_obj);
-			break;
-		case SLURMDB_REMOVE_CLUS_RES :
-			rc = _remove_clus_lic(clus_license_list, update_obj);
-			break;
-	}
-	if (rc != SLURM_SUCCESS) {
-		error("problem updating clus_license_list");
-		return NULL;
-	}
-
-	return clus_license_list;
-}
-
 /* Update licenses on this system based upon slurm.conf.
- * Preserve all previously allocated licenses */
+* Preserve all previously allocated licenses */
 extern int license_update(char *licenses)
 {
-	ListIterator iter;
-	licenses_t *license_entry, *match;
-	List new_list;
-	bool valid;
+        ListIterator iter;
+        licenses_t *license_entry, *match;
+        List new_list;
+        bool valid;
 
-	new_list = _build_license_list(licenses, &valid);
-	if (!valid)
-		fatal("Invalid configured licenses: %s", licenses);
+        new_list = _build_license_list(licenses, &valid);
+        if (!valid)
+                fatal("Invalid configured licenses: %s", licenses);
+
+        slurm_mutex_lock(&license_mutex);
+        if (!license_list) {        /* no licenses before now */
+                license_list = new_list;
+                slurm_mutex_unlock(&license_mutex);
+                return SLURM_SUCCESS;
+        }
+
+        iter = list_iterator_create(license_list);
+        while ((license_entry = (licenses_t *) list_next(iter))) {
+		/* Always add the remote ones, since we handle those
+		   else where. */
+		if (license_entry->remote) {
+			list_remove(iter);
+			if (!new_list)
+				new_list = list_create(license_free_rec);
+			list_append(new_list, license_entry);
+			continue;
+		}
+		if (new_list)
+			match = list_find_first(new_list, _license_find_rec,
+						license_entry->name);
+		else
+			match = NULL;
+
+                if (!match) {
+                        info("license %s removed with %u in use",
+                         license_entry->name, license_entry->used);
+                } else {
+                        match->used = license_entry->used;
+                        if (match->used > match->total) {
+                                info("license %s count decreased",
+                                 match->name);
+                        }
+                }
+        }
+        list_iterator_destroy(iter);
+
+        list_destroy(license_list);
+        license_list = new_list;
+        _licenses_print("update_license", license_list, 0);
+        slurm_mutex_unlock(&license_mutex);
+        return SLURM_SUCCESS;
+}
+
+extern void license_add_remote(slurmdb_clus_res_rec_t *rec)
+{
+	licenses_t *license_entry;
+	ListIterator iter;
+
+	xassert(rec);
+	xassert(rec->res_ptr);
+	xassert(rec->res_ptr->type == SLURMDB_RESOURCE_LICENSE);
 
 	slurm_mutex_lock(&license_mutex);
-	if (!license_list) {	/* no licenses before now */
-		license_list = new_list;
-		slurm_mutex_unlock(&license_mutex);
-		return SLURM_SUCCESS;
+	if (!license_list) {
+		/* If last_license_update then init already ran and we
+		 * don't have any licenses defined in the slurm.conf
+		 * so make the license_list.
+		 */
+		xassert(last_license_update);
+		license_list = list_create(license_free_rec);
 	}
 
 	iter = list_iterator_create(license_list);
-	while ((license_entry = (licenses_t *) list_next(iter))) {
-		match = list_find_first(new_list, _license_find_rec,
-			license_entry->name);
-		if (!match) {
-			info("license %s removed with %u in use",
-			     license_entry->name, license_entry->used);
-		} else {
-			match->used = license_entry->used;
-			match->cluster = 0;
-			if (match->used > match->total) {
-				info("license %s count decreased",
-				     match->name);
-			}
+	while ((license_entry = list_next(iter))) {
+		/* Should we look at all licenses not just
+		 * remote ones? */
+		if (!license_entry->remote)
+			continue;
+		if (!strcmp(license_entry->name, rec->res_ptr->name)) {
+			error("license_add_remote: license %s "
+			      "already exists!", rec->res_ptr->name);
+			break;
 		}
 	}
 	list_iterator_destroy(iter);
 
-	list_destroy(license_list);
-	license_list = new_list;
-	_licenses_print("update_license", license_list, 0);
+	if (!license_entry)
+		_add_clus_rec_2_lic_list(rec, 0);
+
 	slurm_mutex_unlock(&license_mutex);
-	return SLURM_SUCCESS;
 }
 
-/* Update cluster licenses on this system based upon accounting database.
- * Preserve all previously allocated licenses */
-extern int cluster_license_update(slurmdb_update_object_t *update_obj)
+extern void license_update_remote(slurmdb_clus_res_rec_t *rec)
 {
-	List clus_license_list;
+	licenses_t *license_entry;
+	ListIterator iter;
+
+	xassert(rec);
+	xassert(rec->res_ptr);
+	xassert(rec->res_ptr->type == SLURMDB_RESOURCE_LICENSE);
 
 	slurm_mutex_lock(&license_mutex);
-	clus_license_list = _clus_license_list_update(update_obj);
+	if (!license_list) {
+		/* If last_license_update then init already ran and we
+		 * don't have any licenses defined in the slurm.conf
+		 * so make the license_list.
+		 */
+		xassert(last_license_update);
+		license_list = list_create(license_free_rec);
+	}
 
-	if (!license_list) {	/* no licenses before now */
-		license_list = clus_license_list;
-	} else {
-		if (clus_license_list)
-			license_list =
-			  merge_license_lists(license_list, clus_license_list);
+	iter = list_iterator_create(license_list);
+	while ((license_entry = list_next(iter))) {
+		/* Should we look at all licenses not just
+		 * remote ones? */
+		if (!license_entry->remote)
+			continue;
+		if (!strcmp(license_entry->name, rec->res_ptr->name)) {
+			license_entry->total =
+				((rec->res_ptr->count *
+				  rec->percent_allowed) / 100);
+			if (license_entry->used >
+			    license_entry->total) {
+				info("license %s count decreased",
+				     license_entry->name);
+			}
+			last_license_update = time(NULL);
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+	if (!license_entry) {
+		debug("license_update_remote: License '%s' not found, adding",
+		      rec->res_ptr->name);
+		_add_clus_rec_2_lic_list(rec, 0);
 	}
 	slurm_mutex_unlock(&license_mutex);
-	return SLURM_SUCCESS;
+}
+
+extern void license_remove_remote(slurmdb_clus_res_rec_t *rec)
+{
+	licenses_t *license_entry;
+	ListIterator iter;
+
+	xassert(rec);
+	xassert(rec->res_ptr);
+	xassert(rec->res_ptr->type == SLURMDB_RESOURCE_LICENSE);
+
+	slurm_mutex_lock(&license_mutex);
+	if (!license_list) {
+		xassert(last_license_update);
+		license_list = list_create(license_free_rec);
+	}
+
+	iter = list_iterator_create(license_list);
+	while ((license_entry = list_next(iter))) {
+		/* Should we look at all licenses not just
+		 * remote ones? */
+		if (!license_entry->remote)
+			continue;
+		if (!strcmp(license_entry->name, rec->res_ptr->name)) {
+			info("license_remove_remote: license %s "
+			     "removed with %u in use",
+			     license_entry->name, license_entry->used);
+			list_delete_item(iter);
+			last_license_update = time(NULL);
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+	if (!license_entry)
+		error("license_remote_remote: License '%s' not found",
+		      rec->res_ptr->name);
+	slurm_mutex_unlock(&license_mutex);
+}
+
+extern void license_sync_remote(List clus_res_list)
+{
+	slurmdb_clus_res_rec_t *rec = NULL;
+	licenses_t *license_entry;
+	ListIterator iter;
+
+	slurm_mutex_lock(&license_mutex);
+	if (clus_res_list && !license_list) {
+		xassert(last_license_update);
+		license_list = list_create(license_free_rec);
+	}
+
+	iter = list_iterator_create(license_list);
+	if (clus_res_list) {
+		ListIterator iter2 = list_iterator_create(clus_res_list);
+		while ((rec = list_next(iter2))) {
+			if (rec->res_ptr->type != SLURMDB_RESOURCE_LICENSE)
+				continue;
+			while ((license_entry = list_next(iter))) {
+				if (!license_entry->remote)
+					continue;
+				if (!strcmp(license_entry->name,
+					    rec->res_ptr->name)) {
+					license_entry->remote = 2;
+					license_entry->total =
+						((rec->res_ptr->count *
+						  rec->percent_allowed) / 100);
+					if (license_entry->used >
+					    license_entry->total) {
+						info("license %s count "
+						     "decreased",
+						     license_entry->name);
+					}
+					last_license_update = time(NULL);
+					break;
+				}
+			}
+			if (!license_entry)
+				_add_clus_rec_2_lic_list(rec, 1);
+			list_iterator_reset(iter);
+		}
+		list_iterator_destroy(iter2);
+	}
+
+	while ((license_entry = list_next(iter))) {
+		if (!license_entry->remote)
+			continue;
+		else if (license_entry->remote == 1) {
+			info("license_remove_remote: license %s "
+			     "removed with %u in use",
+			     license_entry->name, license_entry->used);
+			list_delete_item(iter);
+			last_license_update = time(NULL);
+		} else if (license_entry->remote == 2)
+			license_entry->remote = 1;
+	}
+	list_iterator_destroy(iter);
+
+	slurm_mutex_unlock(&license_mutex);
 }
 
 /* Free memory associated with licenses on this system */
@@ -937,9 +781,7 @@ get_all_license_info(char **buffer_ptr,
 	pack_time(now, buffer);
 
 	slurm_mutex_lock(&license_mutex);
-
 	if (license_list) {
-
 		iter = list_iterator_create(license_list);
 		while ((lic_entry = list_next(iter))) {
 			/* Now encode the license data structure.
@@ -971,7 +813,7 @@ get_all_license_info(char **buffer_ptr,
  *	char *		name;
  *	uint32_t	total;
  *	uint32_t	used;
- *	uint32_t	cluster;
+ *	uint8_t 	remote;
  *
  */
 static void
@@ -981,7 +823,7 @@ _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version)
 		packstr(lic->name, buffer);
 		pack32(lic->total, buffer);
 		pack32(lic->used, buffer);
-		pack32(lic->cluster, buffer);
+		pack8(lic->remote, buffer);
 	} else {
 		error("\
 %s: protocol_version %hu not supported", __func__, protocol_version);

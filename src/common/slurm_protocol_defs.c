@@ -2953,8 +2953,8 @@ slurm_free_license_info_msg(license_info_msg_t *msg)
 	if (msg == NULL)
 		return;
 
-	for (cc = 0; cc < msg->num_features; cc++) {
-		xfree(msg->lic_array[cc].feature);
+	for (cc = 0; cc < msg->num_lic; cc++) {
+		xfree(msg->lic_array[cc].name);
 	}
 	xfree(msg->lic_array);
 	xfree(msg);

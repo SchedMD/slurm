@@ -2392,18 +2392,19 @@ typedef struct trigger_info_msg {
 /* Individual license information
  */
 typedef struct slurm_license_info {
-	char *feature;       /* feature name */
+	char *name;          /* license name */
 	uint32_t total;      /* total number of available licenses */
 	uint32_t in_use;     /* number of license in use */
 	uint32_t available;  /* number of available license */
-	uint32_t cluster;    /* non-zero if cluster license */
+	uint8_t remote;      /* non-zero if remote license (not
+			      * defined in slurm.conf) */
 } slurm_license_info_t;
 
 /* License information array as returned by the controller.
  */
 typedef struct license_info_msg {
 	time_t last_update;
-	uint32_t num_features;
+	uint32_t num_lic;
 	slurm_license_info_t *lic_array;
 } license_info_msg_t;
 

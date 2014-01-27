@@ -11722,23 +11722,24 @@ _unpack_license_info_msg(license_info_msg_t **msg,
 	 */
 	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 
-		safe_unpack32(&((*msg)->num_features), buffer);
+		safe_unpack32(&((*msg)->num_lic), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
 
 		(*msg)->lic_array = xmalloc(sizeof(slurm_license_info_t)
-		                            * (*msg)->num_features);
+		                            * (*msg)->num_lic);
 
 		/* Decode individual license data.
 		 */
-		for (i = 0; i < (*msg)->num_features; i++) {
-
-			safe_unpackstr_xmalloc(&((*msg)->lic_array[i]).feature, &zz, buffer);
+		for (i = 0; i < (*msg)->num_lic; i++) {
+			safe_unpackstr_xmalloc(&((*msg)->lic_array[i]).name,
+					       &zz, buffer);
 			safe_unpack32(&((*msg)->lic_array[i]).total, buffer);
 			safe_unpack32(&((*msg)->lic_array[i]).in_use, buffer);
-			(*msg)->lic_array[i].available
-				= (*msg)->lic_array[i].total - (*msg)->lic_array[i].in_use;
+			(*msg)->lic_array[i].available =
+				(*msg)->lic_array[i].total -
+				(*msg)->lic_array[i].in_use;
 			xassert((*msg)->lic_array[i].available >= 0);
-			safe_unpack32(&((*msg)->lic_array[i]).cluster, buffer);
+			safe_unpack8(&((*msg)->lic_array[i]).remote, buffer);
 		}
 
 	} else {
