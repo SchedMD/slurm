@@ -733,6 +733,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_clus_res_list(void *db_conn, int enforce)
 {
+	slurmdb_clus_res_cond_t clus_res_q;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
@@ -740,8 +741,22 @@ static int _get_assoc_mgr_clus_res_list(void *db_conn, int enforce)
 	assoc_mgr_lock(&locks);
 	if (assoc_mgr_clus_res_list)
 		list_destroy(assoc_mgr_clus_res_list);
+
+	memset(&clus_res_q, 0, sizeof(slurmdb_clus_res_cond_t));
+	if (assoc_mgr_cluster_name) {
+		clus_res_q.cluster_list = list_create(NULL);
+		list_append(clus_res_q.cluster_list, assoc_mgr_cluster_name);
+	} else if ((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
+		error("_get_assoc_mgr_clus_res_list: "
+		      "no cluster name here going to get "
+		      "all associations.");
+	}
+
 	assoc_mgr_clus_res_list =
-		acct_storage_g_get_clus_res(db_conn, uid, NULL);
+		acct_storage_g_get_clus_res(db_conn, uid, &clus_res_q);
+
+	if (clus_res_q.cluster_list)
+		list_destroy(clus_res_q.cluster_list);
 
 	if (!assoc_mgr_clus_res_list) {
 		assoc_mgr_unlock(&locks);
