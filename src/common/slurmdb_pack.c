@@ -839,9 +839,6 @@ extern int slurmdb_unpack_clus_res_rec(void **object, uint16_t rpc_version,
 	slurmdb_clus_res_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_clus_res_rec_t));
 	slurmdb_init_clus_res_rec(object_ptr, 0);
-	object_ptr->res_ptr =
-		xmalloc(sizeof(slurmdb_ser_res_rec_t));
-	slurmdb_init_ser_res_rec(object_ptr->res_ptr, 0);
 
 	*object = object_ptr;
 
