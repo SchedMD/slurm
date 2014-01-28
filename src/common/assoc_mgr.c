@@ -63,16 +63,6 @@ static int setup_children = 0;
 static assoc_mgr_lock_flags_t assoc_mgr_locks;
 static assoc_init_args_t init_setup;
 
-void (*add_license_notify) (slurmdb_clus_res_rec_t *rec) = NULL;
-void (*remove_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
-void (*remove_license_notify) (slurmdb_clus_res_rec_t *rec) = NULL;
-void (*remove_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
-void (*sync_license_notify) (List clus_res_list) = NULL;
-void (*update_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
-void (*update_license_notify) (slurmdb_clus_res_rec_t *rec) = NULL;
-void (*update_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
-void (*update_resvs) () = NULL;
-
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
 
@@ -2749,8 +2739,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 		list_destroy(update_list);
 	}
 
-	if (run_update_resvs && update_resvs)
-		update_resvs();
+	if (run_update_resvs && init_setup.update_resvs)
+		init_setup.update_resvs();
 
 	return rc;
 }
