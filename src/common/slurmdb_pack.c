@@ -825,8 +825,7 @@ extern void slurmdb_pack_clus_res_rec(void *in, uint16_t rpc_version,
 		pack32(NO_VAL, buffer);
 		return;
 	}
-	slurmdb_pack_ser_res_rec(object->res_ptr,
-				 rpc_version, buffer);
+	slurmdb_pack_ser_res_rec(object->res_ptr, rpc_version, buffer);
 	packstr(object->cluster, buffer);
 	pack32(object->percent_allowed, buffer);
 }
@@ -835,21 +834,19 @@ extern int slurmdb_unpack_clus_res_rec(void **object, uint16_t rpc_version,
 				       Buf buffer)
 {
 	uint32_t uint32_tmp;
-
 	slurmdb_clus_res_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_clus_res_rec_t));
-	slurmdb_init_clus_res_rec(object_ptr, 0);
 
 	*object = object_ptr;
 
+	slurmdb_init_clus_res_rec(object_ptr, 0);
 	if (slurmdb_unpack_ser_res_rec(
-		   (void **)&object_ptr->res_ptr,
-		   rpc_version, buffer)
-		== SLURM_ERROR)
+		    &object_ptr->res_ptr, rpc_version, buffer)
+	    == SLURM_ERROR)
 		goto unpack_error;
-	safe_unpackstr_xmalloc(&object_ptr->cluster,
-			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->percent_allowed, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2360,18 +2357,15 @@ extern int slurmdb_unpack_ser_res_rec(void **object, uint16_t rpc_version,
 	*object = object_ptr;
 
 	slurmdb_init_ser_res_rec(object_ptr, 0);
-	safe_unpackstr_xmalloc(&object_ptr->description,
-			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->description, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->id, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->name,
-			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->count, buffer);
 	safe_unpack32(&object_ptr->flags, buffer);
 	safe_unpack32(&object_ptr->type, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->manager,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->server,
-			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->manager, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->server, &uint32_tmp, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
