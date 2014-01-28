@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
     to suspend/resume array elements.
  -- In the slurmctld job record, split "shared" variable into "share_res" (share
     resource) and "whole_node" fields.
+ -- Fix the format of SLURM_STEP_RESV_PORTS. It was generated incorrectly
+    when using the hostlist_push_host function and input surrounded by [].
 
 * Changes in Slurm 14.03.0pre5
 ==============================
