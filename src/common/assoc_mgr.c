@@ -61,6 +61,7 @@ List assoc_mgr_wckey_list = NULL;
 static char *assoc_mgr_cluster_name = NULL;
 static int setup_children = 0;
 static assoc_mgr_lock_flags_t assoc_mgr_locks;
+static assoc_init_args_t init_setup;
 
 void (*add_license_notify) (slurmdb_clus_res_rec_t *rec) = NULL;
 void (*remove_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
@@ -671,8 +672,8 @@ static int _post_qos_list(List qos_list)
 
 static int _post_clus_res_list(List clus_res_list)
 {
-	if (sync_license_notify)
-		sync_license_notify(clus_res_list);
+	if (init_setup.sync_license_notify)
+		init_setup.sync_license_notify(clus_res_list);
 
 	return SLURM_SUCCESS;
 }
@@ -1179,8 +1180,6 @@ static void _wr_wrunlock(lock_datatype_t datatype)
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			  int db_conn_errno)
 {
-	static uint16_t enforce = 0;
-	static uint16_t cache_level = ASSOC_MGR_CACHE_ALL;
 	static uint16_t checked_prio = 0;
 
 	if (!checked_prio) {
@@ -1191,32 +1190,12 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		xfree(prio);
 		checked_prio = 1;
 		memset(&assoc_mgr_locks, 0, sizeof(assoc_mgr_locks));
+		memset(&init_setup, 0, sizeof(assoc_init_args_t));
+		init_setup.cache_level = ASSOC_MGR_CACHE_ALL;
 	}
 
-	if (args) {
-		cache_level = args->cache_level;
-		enforce = args->enforce;
-
-		if (args->add_license_notify)
-			add_license_notify = args->add_license_notify;
-		if (args->remove_assoc_notify)
-			remove_assoc_notify = args->remove_assoc_notify;
-		if (args->remove_license_notify)
-			remove_license_notify = args->remove_license_notify;
-		if (args->remove_qos_notify)
-			remove_qos_notify = args->remove_qos_notify;
-		if (args->sync_license_notify)
-			sync_license_notify = args->sync_license_notify;
-		if (args->update_assoc_notify)
-			update_assoc_notify = args->update_assoc_notify;
-		if (args->update_license_notify)
-			update_license_notify = args->update_license_notify;
-		if (args->update_qos_notify)
-			update_qos_notify = args->update_qos_notify;
-		if (args->update_resvs)
-			update_resvs = args->update_resvs;
-		assoc_mgr_refresh_lists(db_conn, args);
-	}
+	if (args)
+		memcpy(&init_setup, args, sizeof(assoc_init_args_t));
 
 	if (running_cache) {
 		debug4("No need to run assoc_mgr_init, "
@@ -1236,18 +1215,20 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		return SLURM_ERROR;
 
 	/* get qos before association since it is used there */
-	if ((!assoc_mgr_qos_list) && (cache_level & ASSOC_MGR_CACHE_QOS))
-		if (_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
+	if ((!assoc_mgr_qos_list) && (init_setup.cache_level & ASSOC_MGR_CACHE_QOS))
+		if (_get_assoc_mgr_qos_list(db_conn, init_setup.enforce) ==
+		    SLURM_ERROR)
 			return SLURM_ERROR;
 
 	/* get user before association/wckey since it is used there */
-	if ((!assoc_mgr_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
-		if (_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
+	if ((!assoc_mgr_user_list) && (init_setup.cache_level & ASSOC_MGR_CACHE_USER))
+		if (_get_assoc_mgr_user_list(db_conn, init_setup.enforce) ==
+		    SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if ((!assoc_mgr_association_list)
-	    && (cache_level & ASSOC_MGR_CACHE_ASSOC))
-		if (_get_assoc_mgr_association_list(db_conn, enforce)
+	    && (init_setup.cache_level & ASSOC_MGR_CACHE_ASSOC))
+		if (_get_assoc_mgr_association_list(db_conn, init_setup.enforce)
 		    == SLURM_ERROR)
 			return SLURM_ERROR;
 
@@ -1261,13 +1242,14 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		list_iterator_destroy(itr);
 	}
 
-	if ((!assoc_mgr_wckey_list) && (cache_level & ASSOC_MGR_CACHE_WCKEY))
-		if (_get_assoc_mgr_wckey_list(db_conn, enforce) == SLURM_ERROR)
+	if ((!assoc_mgr_wckey_list) && (init_setup.cache_level & ASSOC_MGR_CACHE_WCKEY))
+		if (_get_assoc_mgr_wckey_list(db_conn, init_setup.enforce) ==
+		    SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if ((!assoc_mgr_clus_res_list)
-	    && (cache_level & ASSOC_MGR_CACHE_CLUS_RES))
-		if (_get_assoc_mgr_clus_res_list(db_conn, enforce) ==
+	    && (init_setup.cache_level & ASSOC_MGR_CACHE_CLUS_RES))
+		if (_get_assoc_mgr_clus_res_list(db_conn, init_setup.enforce) ==
 		    SLURM_ERROR)
 			return SLURM_ERROR;
 
@@ -1434,7 +1416,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	   the association list can be made.
 	*/
 	if (!assoc_mgr_association_list)
-		if (assoc_mgr_refresh_lists(db_conn, NULL) == SLURM_ERROR)
+		if (assoc_mgr_refresh_lists(db_conn) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	assoc_mgr_lock(&locks);
@@ -1487,7 +1469,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	   the association list can be made.
 	*/
 	if (!assoc_mgr_association_list)
-		if (assoc_mgr_refresh_lists(db_conn, NULL) == SLURM_ERROR)
+		if (assoc_mgr_refresh_lists(db_conn) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if ((!assoc_mgr_association_list
@@ -2585,7 +2567,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 
 			/* info("now rec has def of %d", rec->def_qos_id); */
 
-			if (update_jobs && update_assoc_notify) {
+			if (update_jobs && init_setup.update_assoc_notify) {
 				/* since there are some deadlock
 				   issues while inside our lock here
 				   we have to process a notify later
@@ -2636,7 +2618,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 							set the shares
 							of surrounding children
 						     */
-			if (remove_assoc_notify) {
+			if (init_setup.remove_assoc_notify) {
 				/* since there are some deadlock
 				   issues while inside our lock here
 				   we have to process a notify later
@@ -2754,7 +2736,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	if (remove_list) {
 		itr = list_iterator_create(remove_list);
 		while ((rec = list_next(itr)))
-			remove_assoc_notify(rec);
+			init_setup.remove_assoc_notify(rec);
 		list_iterator_destroy(itr);
 		list_destroy(remove_list);
 	}
@@ -2762,7 +2744,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	if (update_list) {
 		itr = list_iterator_create(update_list);
 		while ((rec = list_next(itr)))
-			update_assoc_notify(rec);
+			init_setup.update_assoc_notify(rec);
 		list_iterator_destroy(itr);
 		list_destroy(update_list);
 	}
@@ -3193,7 +3175,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			if (!fuzzy_equal(object->usage_thres, NO_VAL))
 				rec->usage_thres = object->usage_thres;
 
-			if (update_jobs && update_qos_notify) {
+			if (update_jobs && init_setup.update_qos_notify) {
 				/* since there are some deadlock
 				   issues while inside our lock here
 				   we have to process a notify later
@@ -3214,7 +3196,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			if (rec->priority == g_qos_max_priority)
 				redo_priority = 2;
 
-			if (remove_qos_notify) {
+			if (init_setup.remove_qos_notify) {
 				/* since there are some deadlock
 				   issues while inside our lock here
 				   we have to process a notify later
@@ -3298,7 +3280,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	if (remove_list) {
 		itr = list_iterator_create(remove_list);
 		while ((rec = list_next(itr)))
-			remove_qos_notify(rec);
+			init_setup.remove_qos_notify(rec);
 		list_iterator_destroy(itr);
 		list_destroy(remove_list);
 	}
@@ -3306,7 +3288,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	if (update_list) {
 		itr = list_iterator_create(update_list);
 		while ((rec = list_next(itr)))
-			update_qos_notify(rec);
+			init_setup.update_qos_notify(rec);
 		list_iterator_destroy(itr);
 		list_destroy(update_list);
 	}
@@ -3350,8 +3332,8 @@ extern int assoc_mgr_update_clus_res(slurmdb_update_object_t *update)
 			list_append(assoc_mgr_clus_res_list, object);
 			switch (object->res_ptr->type) {
 			case SLURMDB_RESOURCE_LICENSE:
-				if (add_license_notify)
-					add_license_notify(object);
+				if (init_setup.add_license_notify)
+					init_setup.add_license_notify(object);
 				break;
 			default:
 				error("SLURMDB_ADD_CLUS_RES: unknown type %d",
@@ -3370,8 +3352,8 @@ extern int assoc_mgr_update_clus_res(slurmdb_update_object_t *update)
 				rec->percent_allowed = object->percent_allowed;
 			switch (rec->res_ptr->type) {
 			case SLURMDB_RESOURCE_LICENSE:
-				if (update_license_notify)
-					update_license_notify(rec);
+				if (init_setup.update_license_notify)
+					init_setup.update_license_notify(rec);
 				break;
 			default:
 				error("SLURMDB_UPDATE_CLUS_RES: "
@@ -3387,8 +3369,8 @@ extern int assoc_mgr_update_clus_res(slurmdb_update_object_t *update)
 			}
 			switch (rec->res_ptr->type) {
 			case SLURMDB_RESOURCE_LICENSE:
-				if (remove_license_notify)
-					remove_license_notify(rec);
+				if (init_setup.remove_license_notify)
+					init_setup.remove_license_notify(rec);
 				break;
 			default:
 				error("SLURMDB_REMOVE_CLUS_RES: "
@@ -3424,7 +3406,7 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	   the association list can be made.
 	*/
 	if (!assoc_mgr_association_list)
-		if (assoc_mgr_refresh_lists(db_conn, NULL) == SLURM_ERROR)
+		if (assoc_mgr_refresh_lists(db_conn) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	assoc_mgr_lock(&locks);
@@ -4171,41 +4153,33 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
+extern int assoc_mgr_refresh_lists(void *db_conn)
 {
-	static uint16_t enforce = 0;
-	static uint16_t cache_level = ASSOC_MGR_CACHE_ALL;
-
-	if (args) {
-		enforce = args->enforce;
-		cache_level = args->cache_level;
-		return SLURM_SUCCESS;
-	}
-
 	/* get qos before association since it is used there */
-	if (cache_level & ASSOC_MGR_CACHE_QOS)
-		if (_refresh_assoc_mgr_qos_list(db_conn, enforce)
-		    == SLURM_ERROR)
+	if (init_setup.cache_level & ASSOC_MGR_CACHE_QOS)
+		if (_refresh_assoc_mgr_qos_list(
+			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	/* get user before association/wckey since it is used there */
-	if (cache_level & ASSOC_MGR_CACHE_USER)
-		if (_refresh_assoc_mgr_user_list(db_conn, enforce)
-		    == SLURM_ERROR)
+	if (init_setup.cache_level & ASSOC_MGR_CACHE_USER)
+		if (_refresh_assoc_mgr_user_list(
+			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if (cache_level & ASSOC_MGR_CACHE_ASSOC) {
-		if (_refresh_assoc_mgr_association_list(db_conn, enforce)
-		    == SLURM_ERROR)
+	if (init_setup.cache_level & ASSOC_MGR_CACHE_ASSOC) {
+		if (_refresh_assoc_mgr_association_list(
+			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 	}
-	if (cache_level & ASSOC_MGR_CACHE_WCKEY)
-		if (_refresh_assoc_wckey_list(db_conn, enforce) == SLURM_ERROR)
+	if (init_setup.cache_level & ASSOC_MGR_CACHE_WCKEY)
+		if (_refresh_assoc_wckey_list(
+			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if (cache_level & ASSOC_MGR_CACHE_CLUS_RES)
-		if (_refresh_assoc_mgr_clus_res_list(db_conn, enforce)
-		    == SLURM_ERROR)
+	if (init_setup.cache_level & ASSOC_MGR_CACHE_CLUS_RES)
+		if (_refresh_assoc_mgr_clus_res_list(
+			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	running_cache = 0;

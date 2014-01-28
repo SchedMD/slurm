@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 			backup = true;
 			run_dbd_backup();
 			if (!shutdown_time)
-				assoc_mgr_refresh_lists(db_conn, NULL);
+				assoc_mgr_refresh_lists(db_conn);
 		} else if (slurmdbd_conf->dbd_host &&
 			   (!strcmp(slurmdbd_conf->dbd_host, node_name) ||
 			    !strcmp(slurmdbd_conf->dbd_host, "localhost"))) {
