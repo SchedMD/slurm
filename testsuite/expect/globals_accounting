@@ -1555,11 +1555,10 @@ proc remove_ser_res {name} {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
-		-re "Deleting system resource(s)" {
+		-re " Deleting system resource" {
 			incr matches
 		}
 		-re " Nothing deleted" {
-			incr matches
 			incr nothing
 			exp_continue
 		}
@@ -1572,14 +1571,14 @@ proc remove_ser_res {name} {
 			wait
 		}
 	}
-	if {$nothing == 2} {
+	if {$matches == 1} {
 		return $exit_code
 	}
 	if {$access_err != 0} {
 		return 1
 	}
-	if {$matches != 1} {
-		send_user "\nFAILURE: sacctmgr had a problem deleting system resource got $matches\n"
+	if {$nothing != 0} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting system resource got $nothing\n"
 		incr exit_code 1
 	}
 

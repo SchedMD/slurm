@@ -40,16 +40,18 @@
 #include "src/sacctmgr/sacctmgr.h"
 
 static bool with_deleted = 0;
+static uint16_t oversubscribed = 1;
+static uint16_t duplicate = 2;
 
-static bool _check_oversubscription (List new_lic_list, List clus_res_list,
-				     uint16_t allocated)
+static int _check_oversubscription (List new_lic_list, List clus_res_list,
+				     uint16_t allocated, bool create)
 {
 ListIterator itr = NULL;
 ListIterator itr1 = NULL;
+uint16_t rc = 0;
 slurmdb_clus_res_rec_t *new_clus_res = NULL;
 slurmdb_clus_res_rec_t *clus_res = NULL;
 uint16_t total_allocated = 0;
-bool oversubscribed = false;
 
 	itr = list_iterator_create(new_lic_list);
 	while ((new_clus_res = list_next(itr))) {
@@ -62,15 +64,23 @@ bool oversubscribed = false;
 			    clus_res->cluster)) {
 				total_allocated += clus_res->percent_allowed;
 			}
+			if (!strcasecmp(new_clus_res->res_ptr->name,
+			    clus_res->res_ptr->name) &&
+			    !strcasecmp(new_clus_res->cluster,
+			    clus_res->cluster)  && create) {
+				list_iterator_destroy(itr1);
+				list_iterator_destroy(itr);
+				return duplicate;
+			}
 		}
 		list_iterator_destroy(itr1);
 		if (total_allocated > 100) {
-			oversubscribed = true;
+			rc = oversubscribed;
 			break;
 		}
 	}
 	list_iterator_destroy(itr);
-	return oversubscribed;
+	return rc;
 }
 
 static int _populate_cluster_name_list(List new_name_list)
@@ -1080,7 +1090,6 @@ extern int sacctmgr_add_clus_res(int argc, char *argv[])
 	char *clus_res_str = NULL;
 	uint16_t cluster_count = 0;
 	uint16_t allocated = 0;
-	bool oversubscribed = false;
 	uint16_t allowed = 0;
 
 	slurmdb_init_clus_res_rec(start_clus_res, 0);
@@ -1116,6 +1125,11 @@ extern int sacctmgr_add_clus_res(int argc, char *argv[])
 			list_destroy(cluster_name_list);
 			return SLURM_SUCCESS;
 		}
+		allocated = start_clus_res->percent_allowed;
+		if (start_clus_res->percent_allowed == NO_VAL) {
+			fprintf(stderr, " Need a valid allowed value.\n");
+			return SLURM_ERROR;
+		}
 	} else {
 		rc = _populate_cluster_name_list(cluster_name_list);
 		if (rc != SLURM_SUCCESS)  {
@@ -1143,7 +1157,7 @@ extern int sacctmgr_add_clus_res(int argc, char *argv[])
 		}
 	}
 		rc = _get_g_clus_res_list ();
-		if ( (rc != SLURM_SUCCESS) || !g_clus_res_list) {
+		if ((rc != SLURM_SUCCESS) || !g_clus_res_list) {
 			fprintf(stderr, " Problem getting cluster resources "
 				"from database.  "
 				"Contact your admin.\n");
@@ -1193,10 +1207,16 @@ extern int sacctmgr_add_clus_res(int argc, char *argv[])
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	oversubscribed = _check_oversubscription(clus_res_list,
-			 g_clus_res_list, allocated);
-	if (oversubscribed) {
+	rc = _check_oversubscription(clus_res_list,
+			 g_clus_res_list, allocated, true);
+	if (rc == oversubscribed) {
 		printf(" Oversubscribed clus_res, creation denied. \n");
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	if (rc == duplicate) {
+		printf(" Cluster resource already exists, use modify to "
+		       "change it. \n");
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -1424,7 +1444,6 @@ extern int sacctmgr_modify_clus_res(int argc, char *argv[])
 	List ret_list = NULL;
 	List clus_res_list = NULL;
 	uint16_t allocated = 0;
-	bool oversubscribed = false;
 
 	slurmdb_init_clus_res_rec(clus_res, 0);
 	for (i=0; i<argc; i++) {
@@ -1490,9 +1509,9 @@ extern int sacctmgr_modify_clus_res(int argc, char *argv[])
 		goto end_it;
 	}
 	allocated = clus_res->percent_allowed;
-	oversubscribed = _check_oversubscription(clus_res_list,
-			 g_clus_res_list, allocated);
-	if (oversubscribed) {
+	rc = _check_oversubscription(clus_res_list,
+			 g_clus_res_list, allocated, false);
+	if (rc == oversubscribed) {
 		printf(" Oversubscribed clus_res, modification denied. \n");
 		rc = SLURM_ERROR;
 		goto end_it;
