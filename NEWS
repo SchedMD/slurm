@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Fix purging of old reservation errors in database.
  -- MYSQL - If starting the plugin and the database isn't up attempt to
     connect in a loop instead of producing a fatal.
+ -- BLUEGENE - If IONodesPerMP changes in bluegene.conf recalculate bitmaps
+    based on ionode count correctly on slurmctld restart.
 
 * Changes in Slurm 2.6.5
 ========================

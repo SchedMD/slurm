@@ -380,6 +380,7 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 			      "came back as '%s'",
 			      bg_record->bg_block_id,
 			      block_info->ionode_str, bg_record->ionode_str);
+			goto cleanup;
 		}
 	}
 
@@ -430,6 +431,16 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 
 	slurm_free_block_info_members(block_info);
 	return bg_record;
+cleanup:
+
+	error("Throwing away state for block %s, it is unrecoverable",
+	      bg_record->bg_block_id);
+	FREE_NULL_BITMAP(mp_bitmap);
+	FREE_NULL_BITMAP(ionode_bitmap);
+	destroy_bg_record(bg_record);
+
+	slurm_free_block_info_members(block_info);
+	return NULL;
 }
 
 static void _local_pack_block_job_info(struct job_record *job_ptr, Buf buffer,
@@ -621,8 +632,7 @@ static int _unpack_block_ext(bg_record_t *bg_record, Buf buffer,
 	uint32_t count = NO_VAL;
 	int i;
 	uint16_t temp16;
-
-	xassert(bg_record);
+	uint32_t temp32;
 
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
@@ -631,22 +641,38 @@ static int _unpack_block_ext(bg_record_t *bg_record, Buf buffer,
 			      "mp_list");
 			goto unpack_error;
 		}
-		bg_record->ba_mp_list = list_create(destroy_ba_mp);
+		if (bg_record)
+			bg_record->ba_mp_list = list_create(destroy_ba_mp);
 		for (i=0; i<count; i++) {
 			if (unpack_ba_mp(&ba_mp, buffer, protocol_version)
 			    == SLURM_ERROR)
 				goto unpack_error;
-			list_append(bg_record->ba_mp_list, ba_mp);
+			if (bg_record)
+				list_append(bg_record->ba_mp_list, ba_mp);
+			else
+				destroy_ba_mp(ba_mp);
 		}
-		safe_unpack32(&bg_record->cpu_cnt, buffer);
+		safe_unpack32(&temp32, buffer);
+		if (bg_record)
+			bg_record->cpu_cnt = temp32;
+
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-			safe_unpack16(&bg_record->geo[i], buffer);
-			safe_unpack16(&bg_record->start[i], buffer);
+			safe_unpack16(&temp16, buffer);
+			if (bg_record)
+				bg_record->geo[i] = temp16;
+			safe_unpack16(&temp16, buffer);
+			if (bg_record)
+				bg_record->start[i] = temp16;
 		}
 		safe_unpack16(&temp16, buffer);
-		bg_record->full_block = temp16;
-		safe_pack32(bg_record->switch_count, buffer);
+		if (bg_record)
+			bg_record->full_block = temp16;
+		safe_unpack32(&temp32, buffer);
+		if (bg_record)
+			bg_record->switch_count = temp32;
 	} else {
+		xassert(bg_record);
+
 		/* packing didn't exist before 2.3, so set things up
 		 * to go forward */
 		if (bg_conf->mp_cnode_cnt > bg_record->cnode_cnt) {
@@ -774,8 +800,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 			    &block_info, buffer, protocol_version))
 				goto unpack_error;
 
-		if (!(bg_record = _translate_info_2_record(&block_info)))
-			continue;
+		bg_record = _translate_info_2_record(&block_info);
 
 		if (_unpack_block_ext(bg_record, buffer, protocol_version)
 		    != SLURM_SUCCESS) {
@@ -783,6 +808,8 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 			goto unpack_error;
 		}
 
+		if (!bg_record)
+			continue;
 		/* This means the block here wasn't able to be
 		   processed correctly, so don't add.
 		*/
