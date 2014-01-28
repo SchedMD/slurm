@@ -2365,10 +2365,10 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_modify_accts(mysql_conn, uid, acct_cond, acct);
 }
 
-extern List acct_storage_p_modify_clus_res(mysql_conn_t *mysql_conn,
-					 uint32_t uid,
-					 slurmdb_clus_res_cond_t *clus_res_cond,
-					 slurmdb_clus_res_rec_t *clus_res)
+extern List acct_storage_p_modify_clus_res(
+	mysql_conn_t *mysql_conn, uint32_t uid,
+	slurmdb_clus_res_cond_t *clus_res_cond,
+	slurmdb_clus_res_rec_t *clus_res)
 {
 	return as_mysql_modify_clus_res(mysql_conn, uid, clus_res_cond,
 					clus_res);
@@ -2445,9 +2445,9 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_remove_accts(mysql_conn, uid, acct_cond);
 }
 
-extern List acct_storage_p_remove_clus_res(mysql_conn_t *mysql_conn,
-					 uint32_t uid,
-					 slurmdb_clus_res_cond_t *clus_res_cond)
+extern List acct_storage_p_remove_clus_res(
+	mysql_conn_t *mysql_conn, uint32_t uid,
+	slurmdb_clus_res_cond_t *clus_res_cond)
 {
 	return as_mysql_remove_clus_res(mysql_conn, uid, clus_res_cond);
 }
