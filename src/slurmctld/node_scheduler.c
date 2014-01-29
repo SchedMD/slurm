@@ -650,15 +650,16 @@ static int _match_feature(char *seek, struct node_set *node_set_ptr)
  *					part=	part=	part=	part=
  *	cons_res	user_request	EXCLUS	NO	YES	FORCE
  *	--------	------------	------	-----	-----	-----
- *	no		default/exclus	whole	whole	whole	share/O
- *	no		share=yes	whole	whole	share/O	share/O
- *	yes		default		whole	share	share/O	share/O
- *	yes		exclusive	whole	whole	whole	share/O
+ *	no		default		whole	whole	whole	whole/O
+ *	no		exclusive	whole	whole	whole	whole/O
+ *	no		share=yes	whole	whole	whole/O	whole/O
+ *	yes		default		whole	share	share	share/O
+ *	yes		exclusive	whole	whole	whole	whole/O
  *	yes		share=yes	whole	share	share/O	share/O
  *
- * whole   = whole node is allocated exclusively to the user
- * share   = nodes may be shared but the resources are not overcommitted
- * share/O = nodes are shared and the resources can be overcommitted
+ * whole  = entire node is allocated to the job
+ * share  = less than entire node may be allocated to the job
+ * -/O    = resources can be over-committed (e.g. gang scheduled)
  *
  * part->max_share:
  *	&SHARED_FORCE 	= FORCE
@@ -666,44 +667,44 @@ static int _match_feature(char *seek, struct node_set *node_set_ptr)
  *	1		= NO
  *	> 1		= YES
  *
- * job_ptr->details->shared:
- *	(uint16_t)NO_VAL	= default
- *	0			= exclusive
- *	1			= share=yes
+ * job_ptr->details->share_res:
+ *	0		= default or share=no
+ *	1		= share=yes
+ *
+ * job_ptr->details->whole_node:
+ *	0		= default
+ *	1		= exclusive
  *
  * Return values:
  *	0 = no sharing
- *	1 = user requested sharing
- *	2 = sharing enforced (either by partition or cons_res)
- * (cons_res plugin needs to distinguish between "enforced" and
- *  "requested" sharing)
+ *	1 = share resources
  */
 static int
-_resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,
+_resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 		       int cons_res_flag)
 {
-	/* no sharing if part=EXCLUSIVE */
-	if (part_max_share == 0)
+	/* no sharing if partition Shared=EXCLUSIVE */
+	if (part_max_share == 0) {
+		job_ptr->details->whole_node = 1;
 		return 0;
+	}
 
-	/* sharing if part=FORCE with count > 1 */
+	/* sharing if partition Shared=FORCE with count > 1 */
 	if ((part_max_share & SHARED_FORCE) &&
 	    ((part_max_share & (~SHARED_FORCE)) > 1))
-		return 2;
+		return 1;
 
 	if (cons_res_flag) {
-		/* sharing unless user requested exclusive */
-		if (user_flag == 0)
+		if (job_ptr->details->share_res != 1)
 			return 0;
-		if (user_flag == 1)
-			return 1;
-		return 2;
+		return 1;
 	} else {
-		/* no sharing if part=NO */
+		job_ptr->details->whole_node = 1;
+		/* no sharing if partition Shared=NO */
 		if (part_max_share == 1)
 			return 0;
 		/* share if the user requested it */
-		if (user_flag == 1)
+		if (job_ptr->details->share_res == 1)
 			return 1;
 	}
 	return 0;
@@ -1066,9 +1067,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		}
 	}
 
-	shared = _resolve_shared_status(job_ptr->details->shared,
-					part_ptr->max_share, cr_enabled);
-	job_ptr->details->shared = shared;
+	shared = _resolve_shared_status(job_ptr, part_ptr->max_share,
+					cr_enabled);
+	job_ptr->details->share_res = shared;
 	if (cr_enabled)
 		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 

@@ -361,7 +361,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	/* If job requested exclusive rights to the node don't do the
 	 * min here since it will make it so we don't allocate the
 	 * entire node. */
-	if (job_ptr->details->ntasks_per_node && job_ptr->details->shared)
+	if (job_ptr->details->ntasks_per_node && job_ptr->details->share_res)
 		num_tasks = MIN(num_tasks, job_ptr->details->ntasks_per_node);
 
 	if (cpus_per_task < 2) {
@@ -875,7 +875,7 @@ static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
 {
 	int resv_cpus;	/* CPUs to be allocated on other nodes */
 
-	if (details_ptr->shared == 0)	/* Use all CPUs on this node */
+	if (details_ptr->whole_node)	/* Use all CPUs on this node */
 		return;
 
 	resv_cpus = MAX((rem_nodes - 1), 0);
@@ -1831,7 +1831,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			continue;
 		/* Make sure we don't say we can use a node exclusively
 		 * that is bigger than our max cpu count. */
-		if (((!job_ptr->details->shared) &&
+		if (((job_ptr->details->whole_node) &&
 		     (job_ptr->details->max_cpus != NO_VAL) &&
 		     (job_ptr->details->max_cpus < cpu_cnt[i])) ||
 		/* OR node has no CPUs */

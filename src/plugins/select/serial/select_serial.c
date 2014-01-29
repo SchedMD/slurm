@@ -1020,7 +1020,7 @@ static uint16_t _get_job_node_share(struct job_record *job_ptr)
 	if (max_share & SHARED_FORCE)
 		return NODE_CR_AVAILABLE;
 
-	if ((max_share > 1) && (job_ptr->details->shared == 1))
+	if ((max_share > 1) && (job_ptr->details->share_res == 1))
 		/* part allows sharing, and the user has requested it */
 		return NODE_CR_AVAILABLE;
 
@@ -1504,10 +1504,11 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 	struct multi_core_data *mc_ptr = NULL;
 
 	if (details_ptr) {
-		if (job_ptr->details->shared == 0) {
+		if (job_ptr->details->share_res == 0) {
 			info("Clearing exclusive flag for job %u",
 			     job_ptr->job_id);
-			job_ptr->details->shared = 1;
+			job_ptr->details->share_res  = 1;
+			job_ptr->details->whole_node = 0;
 		}
 		if ((details_ptr->cpus_per_task > 1) &&
 		    (details_ptr->cpus_per_task != (uint16_t) NO_VAL))

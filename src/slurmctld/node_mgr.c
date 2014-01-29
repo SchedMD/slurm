@@ -2858,7 +2858,7 @@ extern void make_node_alloc(struct node_record *node_ptr,
 
 	(node_ptr->run_job_cnt)++;
 	bit_clear(idle_node_bitmap, inx);
-	if (job_ptr->details && (job_ptr->details->shared == 0)) {
+	if (job_ptr->details && (job_ptr->details->share_res == 0)) {
 		bit_clear(share_node_bitmap, inx);
 		(node_ptr->no_share_job_cnt)++;
 	}
@@ -2898,7 +2898,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 			error("Node %s run_job_cnt underflow in "
 				"make_node_comp", node_ptr->name);
 
-		if (job_ptr->details && (job_ptr->details->shared == 0)) {
+		if (job_ptr->details && (job_ptr->details->share_res == 0)) {
 			if (node_ptr->no_share_job_cnt)
 				(node_ptr->no_share_job_cnt)--;
 			else

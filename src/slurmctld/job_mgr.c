@@ -125,6 +125,7 @@ static int      hash_table_size = 0;
 static int      job_count = 0;		/* job's in the system */
 static uint32_t job_id_sequence = 0;	/* first job_id to assign new job */
 static struct   job_record **job_hash = NULL;
+static int	select_serial = -1;
 static bool     wiki_sched = false;
 static bool     wiki2_sched = false;
 static bool     wiki_sched_test = false;
@@ -1698,8 +1699,10 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->nice, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
 	pack16(detail_ptr->requeue, buffer);
-	pack16(detail_ptr->shared, buffer);
 	pack16(detail_ptr->task_dist, buffer);
+
+	pack8(detail_ptr->share_res, buffer);
+	pack8(detail_ptr->whole_node, buffer);
 
 	packstr(detail_ptr->cpu_bind,     buffer);
 	pack16(detail_ptr->cpu_bind_type, buffer);
@@ -1750,10 +1753,11 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_memory, pn_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
-	uint16_t shared, contiguous, core_spec = 0, nice, ntasks_per_node;
+	uint16_t contiguous, core_spec = 0, nice, ntasks_per_node;
 	uint16_t cpus_per_task, requeue, task_dist;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
+	uint8_t share_res, whole_node;
 	time_t begin_time, submit_time;
 	int i;
 	multi_core_data_t *mc_ptr;
@@ -1779,8 +1783,10 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&nice, buffer);
 		safe_unpack16(&ntasks_per_node, buffer);
 		safe_unpack16(&requeue, buffer);
-		safe_unpack16(&shared, buffer);
 		safe_unpack16(&task_dist, buffer);
+
+		safe_unpack8(&share_res, buffer);
+		safe_unpack8(&whole_node, buffer);
 
 		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
 		safe_unpack16(&cpu_bind_type, buffer);
@@ -1816,6 +1822,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_array(&argv, &argc, buffer);
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
 	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		uint16_t tmp_uint16;
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -1834,7 +1841,17 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&nice, buffer);
 		safe_unpack16(&ntasks_per_node, buffer);
 		safe_unpack16(&requeue, buffer);
-		safe_unpack16(&shared, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16 == 0) {
+			share_res = 0;
+			whole_node = 1;
+		} else if ((tmp_uint16 == 1) || (tmp_uint16 == 2)) {
+			share_res = 1;
+			whole_node = 0;
+		} else {
+			share_res = (uint8_t) NO_VAL;
+			whole_node = 0;
+		}
 		safe_unpack16(&task_dist, buffer);
 
 		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
@@ -1886,7 +1903,17 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&nice, buffer);
 		safe_unpack16(&ntasks_per_node, buffer);
 		safe_unpack16(&requeue, buffer);
-		safe_unpack16(&shared, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16 == 0) {
+			share_res = 0;
+			whole_node = 1;
+		} else if ((tmp_uint16 == 1) || (tmp_uint16 == 2)) {
+			share_res = 1;
+			whole_node = 0;
+		} else {
+			share_res = (uint8_t) NO_VAL;
+			whole_node = 0;
+		}
 		safe_unpack16(&task_dist, buffer);
 
 		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
@@ -2005,9 +2032,10 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->prolog_running = prolog_running;
 	job_ptr->details->req_nodes = req_nodes;
 	job_ptr->details->requeue = requeue;
-	job_ptr->details->shared = shared;
+	job_ptr->details->share_res = share_res;
 	job_ptr->details->submit_time = submit_time;
 	job_ptr->details->task_dist = task_dist;
+	job_ptr->details->whole_node = whole_node;
 	job_ptr->details->work_dir = work_dir;
 	job_ptr->details->ckpt_dir = ckpt_dir;
 	job_ptr->details->restart_dir = restart_dir;
@@ -4318,6 +4346,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			sub_mp_system = 1;
 	}
 #endif
+
+	if (select_serial == -1) {
+		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+			select_serial = 0;
+		else
+			select_serial = 1;
+	}
+
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 
 	*job_pptr = (struct job_record *) NULL;
@@ -5471,7 +5507,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup(job_desc->features);
-	detail_ptr->shared = job_desc->shared;
+	if ((job_desc->shared == 0) && (select_serial == 0)) {
+		detail_ptr->share_res  = 0;
+		detail_ptr->whole_node = 1;
+	} else if (job_desc->shared == 1) {
+		detail_ptr->share_res  = 1;
+		detail_ptr->whole_node = 0;
+	} else {
+		detail_ptr->share_res  = (uint8_t) NO_VAL;
+		detail_ptr->whole_node = 0;
+	}
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
 	if (job_desc->core_spec != (uint16_t) NO_VAL)
@@ -6831,9 +6876,18 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
+	uint16_t shared = 0;
+
+	if (detail_ptr->share_res == 1)
+		shared = 1;
+	else if (detail_ptr->whole_node == 1)
+		shared = 0;
+	else
+		shared = (uint16_t) NO_VAL;
+
 	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (detail_ptr) {
-			pack16(detail_ptr->shared, buffer);
+			pack16(shared, buffer);
 			pack16(detail_ptr->contiguous, buffer);
 			pack16(detail_ptr->core_spec, buffer);
 			pack16(detail_ptr->cpus_per_task, buffer);
@@ -6877,7 +6931,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		}
 	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (detail_ptr) {
-			pack16(detail_ptr->shared, buffer);
+			pack16(shared, buffer);
 			pack16(detail_ptr->contiguous, buffer);
 			pack16(detail_ptr->cpus_per_task, buffer);
 			pack16(detail_ptr->pn_min_cpus, buffer);
@@ -8405,18 +8459,22 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->shared != (uint16_t) NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_DISABLED;
-		else if (authorized
-			 ||       (detail_ptr->shared > job_specs->shared)) {
-			detail_ptr->shared = job_specs->shared;
+		} else if (!authorized) {
+			error("sched: Attempt to change sharing for job %u",
+			      job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		} else {
+			if (job_specs->shared) {
+				detail_ptr->share_res = 1;
+				detail_ptr->whole_node = 0;
+			} else {
+				detail_ptr->share_res = 0;
+			}
 			info("sched: update_job: setting shared to %u for "
 			     "job_id %u",
 			     job_specs->shared, job_specs->job_id);
-		} else {
-			error("sched: Attempt to remove sharing for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -9027,7 +9085,6 @@ fini:
 
 static void _send_job_kill(struct job_record *job_ptr)
 {
-	static int select_serial = -1;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 #ifdef HAVE_FRONT_END
@@ -10214,7 +10271,7 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
 			error("Node %s run_job_cnt underflow",
 				node_ptr->name);
 		}
-		if (job_ptr->details && (job_ptr->details->shared == 0)) {
+		if (job_ptr->details && (job_ptr->details->share_res == 0)) {
 			if (node_ptr->no_share_job_cnt)
 				(node_ptr->no_share_job_cnt)--;
 			else {
@@ -10279,7 +10336,7 @@ static int _resume_job_nodes(struct job_record *job_ptr, bool indf_susp)
 		}
 		node_ptr->run_job_cnt++;
 		if (job_ptr->details &&
-		    (job_ptr->details->shared == 0)) {
+		    (job_ptr->details->share_res == 0)) {
 			node_ptr->no_share_job_cnt++;
 			if (node_ptr->no_share_job_cnt)
 				bit_clear(share_node_bitmap, i);
@@ -11233,7 +11290,12 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->requeue           = details->requeue;
 	job_desc->reservation       = xstrdup(job_ptr->resv_name);
 	job_desc->script            = get_job_script(job_ptr);
-	job_desc->shared            = details->shared;
+	if (details->share_res == 1)
+		job_desc->shared     = 1;
+	else if (details->whole_node)
+		job_desc->shared     = 0;
+	else
+		job_desc->shared     = (uint16_t) NO_VAL;
 	job_desc->spank_job_env_size = job_ptr->spank_job_env_size;
 	job_desc->spank_job_env      = xmalloc(sizeof(char *) *
 					       job_desc->spank_job_env_size);
