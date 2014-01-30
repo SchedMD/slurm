@@ -39,12 +39,16 @@
 #include "setup.h"
 #include "client.h"
 
-#include <arpa/inet.h>
+#include <net/if.h>
+#include <ifaddrs.h>
+#include <netdb.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "slurm/slurm.h"
 #include "src/srun/libsrun/launch.h"
 #include "src/common/switch.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 #define NODE_ATTR_SIZE_INC 8
 
@@ -65,6 +69,7 @@ static char **node_attr = NULL;
 #define KEY_INDEX(i) (i * 2)
 #define VAL_INDEX(i) (i * 2 + 1)
 
+static char *ifconfig(void);
 
 static void inline
 _free_nag_req(nag_req_t *req)
@@ -165,62 +170,43 @@ node_attr_get(char *key)
 	return val;
 }
 
-static char *job_attr_get_netinfo(char *key, char *attr) {
-	char *taskid_str, *p;
-	int taskid, nodeid;
-	slurm_step_layout_t *sl;
-	char *netinfo = NULL;
+/* job_attr_get_netinfo()
+ */
+static char *
+job_attr_get_netinfo(char *key, char *attr)
+{
+	char *taskid_str;
+	char *p;
+	char *netinfo;
+	int taskid;
 
-	/* check for switch/generic plugin and information */
-	debug3("switch entering");
-	if (!job_info.switch_job
-		|| strcmp(slurm_get_switch_type(), "switch/generic")!=0) {
-		debug3("job_attr_get() netinfo: no switch/generic info");
-		return NULL;
-	}
-	debug3("switch ok");
-
-	/* parse task id */
+	/* parse task id
+	 */
 	taskid_str = key + sizeof(JOB_ATTR_NETINFO) - 1;
 	taskid = strtol(taskid_str, &p, 10);
 	if (p == taskid_str || errno == EINVAL || errno == ERANGE) {
-		debug3("job_attr_get() netinfo: needs a task id");
+		error("%s: key %s wrong format, missing taskid", __func__, key);
 		return NULL;
 	}
-	debug3("taskid ok");
+	debug3("%s: taskid %d", __func__, taskid);
 
-
-	/* get node on wich the task runs */
-	sl = slurm_job_step_layout_get(job_info.jobid,
-				       job_info.stepid);
-	if (!sl) {
-		debug3("job_attr_get() netinfo: can't get layout");
-		return NULL;
-	}
-	nodeid = slurm_step_layout_host_id(sl, taskid);
-	debug3("node ok");
-
-
-	/* get network information of node in netinfo, xmalloc'ed */
-	switch_g_get_jobinfo(job_info.switch_job, nodeid, &netinfo);
-	if (!netinfo) {
-		debug3("job_attr_get() no switch job info for node %d", nodeid);
-		return NULL;
-	}
+	/* get network information of node in netinfo, xmalloc'ed
+	 */
+	netinfo = ifconfig();
 	snprintf(attr, PMI2_MAX_VALLEN, "%s", netinfo);
 	xfree(netinfo);
 
-	debug3("job_attr_get(): task_id_query=%d -> %s", taskid, attr);
+	debug3("%s: taskid %d netinfo %s", __func__, taskid, attr);
 
 	return attr;
 }
 
-/* returned value not dup-ed */
+/* job_attr_get()
+ */
 extern char *
 job_attr_get(char *key)
 {
 	static char attr[PMI2_MAX_VALLEN];
-	job_step_info_response_msg_t *stepmsg = NULL;
 
 	if (!strcmp(key, JOB_ATTR_PROC_MAP)) {
 		return job_info.proc_mapping;
@@ -232,27 +218,99 @@ job_attr_get(char *key)
 	}
 
 	if (!strcmp(key, JOB_ATTR_RESV_PORTS)) {
-		if (0 != slurm_get_job_steps((time_t) 0, job_info.jobid,
-					     job_info.stepid, &stepmsg,
-					     SHOW_ALL)) {
+
+		if (! job_info.resv_ports)
 			return NULL;
-		}
-		if (stepmsg == NULL || stepmsg->job_step_count != 1) {
-			return NULL;
-		}
-		snprintf(attr, PMI2_MAX_VALLEN, "%s",
-			 stepmsg->job_steps[0].resv_ports);
-		slurm_free_job_step_info_response_msg(stepmsg);
+
+		debug3("%s: SLURM_STEP_RESV_PORTS %s", __func__, job_info.resv_ports);
+		snprintf(attr, PMI2_MAX_VALLEN, "%s", job_info.resv_ports);
 		return attr;
 	}
 
-	if (strcmp(key, JOB_ATTR_NETINFO) >= 0) { // followed by task_id
-		if ( NULL == job_attr_get_netinfo(key, attr)) {
+	if (strcmp(key, JOB_ATTR_NETINFO) >= 0) {
+		if (job_attr_get_netinfo(key, attr) == NULL) {
 			return NULL;
 		}
 		return attr;
 	}
-
 
 	return NULL;
+}
+
+/* ifconfig()
+ *
+ * Return information about network interfaces.
+ */
+static char *
+ifconfig(void)
+{
+	struct ifaddrs *ifaddr;
+	struct ifaddrs *ifa;
+	int s;
+	int n;
+	char addr[NI_MAXHOST];
+	char hostname[MAXHOSTNAMELEN];
+	char *buf;
+
+	if (getifaddrs(&ifaddr) == -1) {
+		error("%s: getifaddrs failed %m", __func__);
+		return NULL;
+	}
+
+	n = 0;
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+		++n;
+	/* this should be a good guess of the size we need.
+	 */
+	buf = xmalloc((MAXHOSTNAMELEN + n) * 64);
+
+	gethostname(hostname, sizeof(hostname));
+	n = sprintf(buf, "(%s", hostname);
+
+	/* Walk through linked list, maintaining head pointer so we
+	 * can free list later
+	 */
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+
+		if (ifa->ifa_addr == NULL)
+			continue;
+		if (ifa->ifa_flags & IFF_LOOPBACK)
+			continue;
+		if (ifa->ifa_addr->sa_family != AF_INET
+			&& ifa->ifa_addr->sa_family != AF_INET6)
+			continue;
+
+		if (ifa->ifa_addr->sa_family == AF_INET) {
+			s = getnameinfo(ifa->ifa_addr,
+							sizeof(struct sockaddr_in),
+							addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+			if (s != 0) {
+				error("%s: AF_INET getnameinfo() failed: %s",
+					  __func__, gai_strerror(s));
+				continue;
+			}
+			n = n + sprintf(buf + n, ",(%s,%s,%s)",
+							ifa->ifa_name, "IP_V4", addr);
+			continue;
+		}
+		if (ifa->ifa_addr->sa_family == AF_INET6) {
+			s = getnameinfo(ifa->ifa_addr,
+							sizeof(struct sockaddr_in6),
+							addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+			if (s != 0) {
+				error("%s: AF_INET6 getnameinfo() failed: %s",
+					  __func__, gai_strerror(s));
+				continue;
+			}
+			n = n + sprintf(buf + n, ",(%s,%s,%s)",
+							ifa->ifa_name, "IP_V6", addr);
+		}
+	}
+	n = n + sprintf(buf + n, ")");
+
+	debug("%s: ifconfig %s", __func__, buf);
+
+	freeifaddrs(ifaddr);
+
+	return buf;
 }

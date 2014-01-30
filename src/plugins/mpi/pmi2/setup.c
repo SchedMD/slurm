@@ -164,6 +164,15 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 	job_info.MPIR_proctable = NULL;
 	job_info.srun_opt = NULL;
 
+	/* get the SLURM_STEP_RESV_PORTS
+	 */
+	p = getenvp(*env, SLURM_STEP_RESV_PORTS);
+	if (!p) {
+		debug("%s: %s not found in env", __func__, SLURM_STEP_RESV_PORTS);
+	} else {
+		job_info.resv_ports = xstrdup(p);
+		info("%s: SLURM_STEP_RESV_PORTS found %s", __func__, p);
+	}
 	return SLURM_SUCCESS;
 }
 
