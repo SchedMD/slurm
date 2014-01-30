@@ -222,6 +222,12 @@ The login name.
 Workload  Characterization  Key. An arbitrary  string  for  grouping orthogonal accounts.
 
 .SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
+\fBNOTE:\fR The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
+being considered for being allocated resources.
+If starting a job would cause any of its group limit to be exceeded,
+that job will not be considered for scheduling even if that job might preempt
+other jobs which would release sufficient group resources for the pending
+job to be initiated.
 
 .TP
 \fIDefaultQOS\fP=<default qos>
@@ -932,6 +938,12 @@ The \fBsacct\fR command is the exclusive command to display job
 records from the SLURM database.
 
 .SH "SPECIFICATIONS FOR QOS"
+\fBNOTE:\fR The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
+being considered for being allocated resources.
+If starting a job would cause any of its group limit to be exceeded,
+that job will not be considered for scheduling even if that job might preempt
+other jobs which would release sufficient group resources for the pending
+job to be initiated.
 
 .TP
 \fIFlags\fP
