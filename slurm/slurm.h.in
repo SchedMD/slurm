@@ -2512,15 +2512,6 @@ extern int slurm_complete_job PARAMS((uint32_t job_id,
 				      uint32_t job_return_code));
 
 /*
- * slurm_terminate_job - terminates all steps of an existing job by sending
- * 	a REQUEST_TERMINATE_JOB rpc to all slurmd in the the job allocation,
- *      and then calls slurm_complete_job().
- * IN job_id     - the job's id
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- */
-extern int slurm_terminate_job PARAMS((uint32_t job_id));
-
-/*
  * slurm_terminate_job_step - terminates a job step by sending a
  * 	REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step, and then
  *	calls slurm_complete_job_step() after verifying that all

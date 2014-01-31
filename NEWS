@@ -34,6 +34,7 @@ documents those changes that are of interest to users and admins.
     is now delayed rather than aborting with "Requested node configuration is
     not available".
  -- Make sure node limits get assessed if no node count was given in request.
+ -- Removed obsolete slurm_terminate_job() API.
 
 * Changes in Slurm 2.6.5
 ========================
