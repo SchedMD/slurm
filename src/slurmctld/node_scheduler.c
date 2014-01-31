@@ -1521,7 +1521,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if (!acct_policy_job_runnable(job_ptr))
+	if (!acct_policy_job_runnable_pre_select(job_ptr))
 		return ESLURM_ACCOUNTING_POLICY;
 
 	part_ptr = job_ptr->part_ptr;
@@ -1609,6 +1609,17 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 					       req_nodes, test_only,
 					       &preemptee_job_list);
 	}
+
+	if ((error_code == SLURM_SUCCESS) && select_bitmap) {
+		uint32_t node_cnt = bit_set_count(select_bitmap);
+		if (!acct_policy_job_runnable_post_select(
+			    job_ptr, node_cnt, job_ptr->total_cpus,
+			    job_ptr->details->pn_min_memory)) {
+			error_code = ESLURM_ACCOUNTING_POLICY;
+			goto cleanup;
+		}
+	}
+
 	/* set up the cpu_cnt here so we can decrement it as nodes
 	 * free up. total_cpus is set within _get_req_features */
 	job_ptr->cpu_cnt = job_ptr->total_cpus;
@@ -1663,6 +1674,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		}
 		goto cleanup;
 	}
+
 	if (test_only) {	/* set if job not highest priority */
 		slurm_sched_g_job_is_pending();
 		error_code = SLURM_SUCCESS;

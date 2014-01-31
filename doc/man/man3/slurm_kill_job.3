@@ -1,8 +1,11 @@
 .TH "Slurm API" "3" "November 2003" "Morris Jette" "Slurm job signal calls"
 .SH "NAME"
 slurm_kill_job, slurm_kill_job_step,
+.br
 slurm_signal_job, slurm_signal_job_step,
-slurm_terminate_job, slurm_terminate_job_step \- Slurm job signal calls
+.br
+slurm_terminate_job_step
+\- Slurm job signal calls
 .SH "SYNTAX"
 .LP
 #include <slurm/slurm.h>
@@ -45,12 +48,6 @@ int \fBslurm_signal_job_step\fR (
 .br
 );
 .LP
-int \fBslurm_terminate_job\fR (
-.br
-	uint32_t \fIjob_id\fP,
-.br
-);
-.LP
 int \fBslurm_terminate_job_step\fR (
 .br
 	uint32_t \fIjob_id\fP,
@@ -87,14 +84,8 @@ steps of an existing job.
 \fBslurm_signal_job_step\fR Request that the specified signal be sent to
 an existing job step.
 .LP
-\fBslurm_terminate_job\fR Request termination of all steps of an
-existing job by sending a REQUEST_TERMINATE_JOB rpc to all slurmd in
-the the job allocation, and then calls slurm_complete_job().
-\fBslurm_signal_job_step\fR Request that terminates a job step by
-sending a REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step, and
-then calls slurm_complete_job_step() after verifying that all nodes in
-the job step no longer have running tasks from the job step.  (May
-take over 35 seconds to return.)
+\fBslurm_terminate_job_step\fR Request that terminates a job step by
+sending a REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step.
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, \-1 is returned, and Slurm error code is set appropriately.
