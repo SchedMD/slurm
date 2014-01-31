@@ -1152,6 +1152,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				bit_clear(nodes_avail, i);
 				mem_blocked_nodes++;
 				mem_blocked_cpus += (total_cpus - avail_cpus);
+			} else {
+				mem_blocked_cpus += (total_cpus - avail_cpus);
 			}
 		}
 	}
@@ -1405,11 +1407,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				/* Count of nodes already picked for step */
 				int pick_node_cnt = bit_set_count(nodes_avail);
 				pick_node_cnt += nodes_picked_cnt;
-				if (step_spec->max_nodes <= pick_node_cnt) {
+				if ((step_spec->max_nodes <= pick_node_cnt) &&
+				    (mem_blocked_cpus == 0)) {
 					*return_code =
 						ESLURM_TOO_MANY_REQUESTED_CPUS;
-				} else if (step_spec->min_nodes <=
-					   (pick_node_cnt+mem_blocked_nodes)) {
+				} else if ((mem_blocked_cpus > 0) ||
+					   (step_spec->min_nodes <=
+					    (pick_node_cnt+mem_blocked_nodes))){
 					*return_code = ESLURM_NODES_BUSY;
 				} else if (!bit_super_set(job_ptr->node_bitmap,
 							  up_node_bitmap)) {
@@ -1425,10 +1429,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			nodes_picked_cnt = step_spec->min_nodes;
 			nodes_needed = 0;
 		} else if (nodes_needed > 0) {
-			if (step_spec->max_nodes <= nodes_picked_cnt) {
+			if ((step_spec->max_nodes <= nodes_picked_cnt) &&
+			    (mem_blocked_cpus == 0)) {
 				*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
-			} else if (step_spec->min_nodes <=
-				   (nodes_picked_cnt + mem_blocked_nodes)) {
+			} else if ((mem_blocked_cpus > 0) ||
+				   (step_spec->min_nodes <=
+				    (nodes_picked_cnt + mem_blocked_nodes))){
 				*return_code = ESLURM_NODES_BUSY;
 			} else if (!bit_super_set(job_ptr->node_bitmap,
 						  up_node_bitmap)) {

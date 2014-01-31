@@ -28,6 +28,12 @@ documents those changes that are of interest to users and admins.
     connect in a loop instead of producing a fatal.
  -- BLUEGENE - If IONodesPerMP changes in bluegene.conf recalculate bitmaps
     based on ionode count correctly on slurmctld restart.
+ -- Fix step allocation when some CPUs are not available due to memory limits.
+    This happens when one step is active and using memory that blocks the
+    scheduling of another step on a portion of the CPUs needed. The new step
+    is now delayed rather than aborting with "Requested node configuration is
+    not available".
+
 
 * Changes in Slurm 2.6.5
 ========================
