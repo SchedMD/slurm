@@ -515,8 +515,20 @@ This option can also be used when initiating more than one job step within
 an existing resource allocation, where you want separate processors to
 be dedicated to each job step. If sufficient processors are not
 available to initiate the job step, it will be deferred. This can
-be thought of as providing resource management for the job within
-it's allocation. Note that all CPUs allocated to a job are available
+be thought of as providing a mechanism for resource management to the job
+within it's allocation.
+
+The exclusive allocation of CPUs only applies to job steps explicitly invoked
+with the \fB\-\-exclusive\fR option.
+For example, a job might be allocated one node with four CPUs and a remote
+shell invoked on the allocated node. If that shell is not invoked with the
+\fB\-\-exclusive\fR option, then it may create a job step with four tasks
+using the \fB\-\-exclusive\fR option and not conflict with the remote shell's
+resource allocation.
+Use the \fB\-\-exclusive\fR option to invoke every job step to insure distinct
+resources for each step.
+
+Note that all CPUs allocated to a job are available
 to each job step unless the \fB\-\-exclusive\fR option is used plus
 task affinity is configured. Since resource management is provided by
 processor, the \fB\-\-ntasks\fR option must be specified, but the
@@ -1121,6 +1133,7 @@ ignored if \fISchedulerType=sched/wiki\fR or
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
 Request the maximum \fIntasks\fR be invoked on each core.
+This option applies to the job allocation, but not to step allocations.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.  Masks will automatically be generated
@@ -1148,6 +1161,7 @@ allocation as one step in a larger job script.
 .TP
 \fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
 Request the maximum \fIntasks\fR be invoked on each socket.
+This option applies to the job allocation, but not to step allocations.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
 instead of the node level.  Masks will automatically be generated
@@ -1159,10 +1173,16 @@ NOTE: This option is not supported unless
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
-Overcommit resources. Normally, \fBsrun\fR
-will not allocate more than one process per CPU. By specifying
-\fB\-\-overcommit\fR you are explicitly allowing more than one process
-per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
+Overcommit resources.
+When applied to job allocation, only one CPU is allocated to the job per node
+and options used to specify the number of tasks per node, socket, core, etc.
+are ignored.
+When applied to job step allocations (the \fBsrun\fR command when executed
+within an existing job allocation), this option can be used to launch more than
+one task per CPU.
+Normally, \fBsrun\fR will not allocate more than one process per CPU.
+By specifying \fB\-\-overcommit\fR you are explicitly allowing more than one
+process per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
 permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
 defined in the file \fIslurm.h\fR and is not a variable, it is set at
 SLURM build time.
