@@ -964,10 +964,19 @@ will be freed, or you can terminate the job manually using the
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
-Overcommit resources.  Normally, \fBsalloc\fR will allocate one task
-per processor.  By specifying \fB\-\-overcommit\fR you are explicitly
-allowing more than one task per processor.  However no more than
-\fBMAX_TASKS_PER_NODE\fR tasks are permitted to execute per node.
+Overcommit resources.
+When applied to job allocation, only one CPU is allocated to the job per node
+and options used to specify the number of tasks per node, socket, core, etc.
+are ignored.
+When applied to job step allocations (the \fBsrun\fR command when executed
+within an existing job allocation), this option can be used to launch more than
+one task per CPU.
+Normally, \fBsrun\fR will not allocate more than one process per CPU.
+By specifying \fB\-\-overcommit\fR you are explicitly allowing more than one
+process per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
+permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
+defined in the file \fIslurm.h\fR and is not a variable, it is set at
+SLURM build time.
 
 .TP
 \fB\-\-profile\fR=<all|none|[energy[,|task[,|lustre[,|network]]]]>

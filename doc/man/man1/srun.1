@@ -1069,6 +1069,7 @@ ignored if \fISchedulerType=sched/wiki\fR or
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
 Request the maximum \fIntasks\fR be invoked on each core.
+This option applies to the job allocation, but not to step allocations.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.  Masks will automatically be generated
@@ -1096,6 +1097,7 @@ allocation as one step in a larger job script.
 .TP
 \fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
 Request the maximum \fIntasks\fR be invoked on each socket.
+This option applies to the job allocation, but not to step allocations.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
 instead of the node level.  Masks will automatically be generated
@@ -1107,10 +1109,16 @@ NOTE: This option is not supported unless
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
-Overcommit resources. Normally, \fBsrun\fR
-will not allocate more than one process per CPU. By specifying
-\fB\-\-overcommit\fR you are explicitly allowing more than one process
-per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
+Overcommit resources.
+When applied to job allocation, only one CPU is allocated to the job per node
+and options used to specify the number of tasks per node, socket, core, etc.
+are ignored.
+When applied to job step allocations (the \fBsrun\fR command when executed
+within an existing job allocation), this option can be used to launch more than
+one task per CPU.
+Normally, \fBsrun\fR will not allocate more than one process per CPU.
+By specifying \fB\-\-overcommit\fR you are explicitly allowing more than one
+process per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
 permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
 defined in the file \fIslurm.h\fR and is not a variable, it is set at
 SLURM build time.
