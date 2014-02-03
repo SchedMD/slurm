@@ -1496,6 +1496,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	slurm_mutex_unlock(&blade_mutex);
 
+#ifdef HAVE_NATIVE_CRAY
+	/* free memory from rca_get_sysnodes() */
+	free(nl.na_ids);
+#endif
+
 	return other_node_init(node_ptr, node_cnt);
 }
 
