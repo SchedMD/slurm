@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
     not available".
  -- Make sure node limits get assessed if no node count was given in request.
  -- Removed obsolete slurm_terminate_job() API.
+ -- Update documentation about QOS limits
 
 * Changes in Slurm 2.6.5
 ========================
