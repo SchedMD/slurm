@@ -1,0 +1,257 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test that the core spec option in sbatch allocates the correct
+#          number of cores and that tasks spread over multiple nodes
+#          when there is not enough resources on one node.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id    "17.34"
+set file_in    "test$test_id\.in"
+set file_out   "test$test_id\.out"
+set spec_in    "spec_core_script\.in"
+set exit_code  0
+
+#############################################################################
+#
+# Checks that the node uses the correct number of specialized cores
+# and that the number of nodes the job uses is correct.
+#
+# exp_node = 0: job must only use the specified node
+# exp_node = 1: job must use more then specified node
+# exp_node = -1: job must fail because the job execeeds the number or cores
+#
+#############################################################################
+proc core_spec_job {task node core_spec exp_nodes} {
+	global sbatch scontrol spec_in file_out number thread_cnt exit_code
+	global cpu_tot
+	set job_id 0
+	set num_nodes 0
+
+	# Determine the number of tasks that can be run
+	set cpu_used_by_spec [expr $thread_cnt * $core_spec]
+	set task_limit [expr $cpu_tot - $cpu_used_by_spec]
+	set error_chk 0
+	spawn $sbatch -t1 -w$node -S$core_spec -n[expr abs($task_limit + $task)] -o$file_out $spec_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "error" {
+			if {$exp_nodes != -1} {
+				send_user "\nFAILURE: sbatch should not have produced an error\n"
+				set exit_code 1
+			}
+			set error_chk 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$job_id == 0 && $error_chk == 0} {
+		send_user "\nFAILURE: Job was not submitted\n"
+		exit 1
+
+	} elseif {$exp_nodes == -1 && $job_id != 0} {
+		send_user "\nFAILURE: This job should have failed but did not\n"
+		exit 1
+
+	} elseif {$exp_nodes == -1 && $error_chk != 0} {
+		send_user "\nThis error is expected do not worry\n"
+
+	} else {
+		set core_chk 0
+		spawn $scontrol show job $job_id
+		expect {
+			-re "NumNodes=($number)" {
+				set num_nodes $expect_out(1,string)
+				exp_continue
+			}
+			-re "CoreSpec=$core_spec" {
+				set core_chk 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: scontrol is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$core_chk == 0} {
+			send_user "\nFAILURE: Job $job_id does not have the correct number of specialized cores\n"
+			set exit_code 1
+		}
+
+		wait_for_job $job_id DONE
+	}
+
+	if {$exp_nodes == 1} {
+		if {$num_nodes <= 1} {
+			send_user "\nFAILURE: Job $job_id should use more then 1 node\n"
+			set exit_code 1
+		}
+	}
+
+	if {$exp_nodes == 0} {
+		if {$num_nodes != 1} {
+			send_user "\nFAILURE: Job $job_id should use only $node\n"
+			set exit_code 1
+		}
+	}
+}
+
+#############################################################################
+#
+# Tests begin here
+#
+#############################################################################
+
+print_header $test_id
+
+# Remove any vestigial files
+exec $bin_rm -f $file_in $file_out $spec_in
+
+make_bash_script $file_in "
+first=\$($scontrol show hostnames \$SLURM_JOB_NODELIST\ | head -n1)\
+
+$scontrol show node \$first\
+
+"
+make_bash_script $spec_in "sleep 5"
+
+set job_id 0
+spawn $sbatch --exclusive -t1 -N2 -o$file_out $file_in
+expect {
+	-re "Node count specification invalid" {
+		send_user "\nWARNING: can't test srun task distribution\n"
+		exit $exit_code
+	}
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "FAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: output file was not created\n"
+	exit 1
+}
+
+set first_node ""
+set core_cnt   0
+set cpu_tot    1
+set socket_cnt 1
+set thread_cnt 1
+
+spawn $bin_cat $file_out
+expect {
+	-re "NodeName=($alpha_numeric_under)" {
+		set first_node $expect_out(1,string)
+		exp_continue
+	}
+	-re "CoresPerSocket=($number)" {
+		set core_cnt $expect_out(1,string)
+		exp_continue
+	}
+	-re "CPUTot=($number)" {
+		set cpu_tot $expect_out(1,string)
+		exp_continue
+	}
+	-re "Sockets=($number)" {
+		set socket_cnt $expect_out(1,string)
+		exp_continue
+	}
+	-re "ThreadsPerCore=($number)" {
+		set thread_cnt $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: cat is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set $core_cnt [expr $core_cnt * $socket_cnt]
+if {$core_cnt == 0} {
+	send_user "\nFAILURE: sbatch did not find the number of cores\n"
+	exit 1
+}
+if {$core_cnt < 4} {
+	send_user "\nWARNING: core count too low for testing ($core_cnt < 4)\n"
+	exit $exit_code
+}
+
+#
+# Using the core spec within the node limits
+#
+core_spec_job  0 $first_node [expr $core_cnt - 2] 0
+core_spec_job -2 $first_node [expr $core_cnt - 2] 0
+
+#
+# Using core spec with more tasks then the node can handle. This should
+# cause the tasks to spread accross mutliple nodes as needed
+#
+core_spec_job 1 $first_node [expr $core_cnt - 2] 1
+core_spec_job 1 $first_node [expr $core_cnt - 1] 1
+
+#
+# Using core spec with more cores then the specified node has
+#
+core_spec_job 1 $first_node [expr $core_cnt + 5] -1
+core_spec_job 1 $first_node [expr $core_cnt + 7] -1
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_in $file_out $spec_in
+}
+exit $exit_code
