@@ -1013,6 +1013,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 List *preemptee_job_list, bool has_xand,
 		 bitstr_t *exc_core_bitmap)
 {
+	struct node_record *node_ptr;
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, avail_nodes = 0;
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
@@ -1087,6 +1088,23 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		}
 		if (total_nodes > max_nodes) {	/* exceeds node limit */
 			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		}
+		if (job_ptr->details->core_spec) {
+			i = bit_ffs(job_ptr->details->req_node_bitmap);
+			if (i >= 0) {
+				node_ptr = node_record_table_ptr + i;
+				if (slurmctld_conf.fast_schedule) {
+					j = node_ptr->config_ptr->sockets *
+					    node_ptr->config_ptr->cores;
+				} else {
+					j = node_ptr->sockets * node_ptr->cores;
+				}
+			}
+			if ((i >= 0) && (job_ptr->details->core_spec >= j)) {
+				info("_pick_best_nodes: job %u never runnable",
+				     job_ptr->job_id);
+				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+			}
 		}
 
 		/* check the availability of these nodes */
