@@ -5,32 +5,32 @@
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -124,8 +124,8 @@ extern spank_f slurm_spank_exit;
 
 /*  Items which may be obtained from the spank handle using the
  *   spank_get_item () call. The expected list of variable arguments may
- *   be found in the comments below. 
- * 
+ *   be found in the comments below.
+ *
  *  For example, S_JOB_NCPUS takes (uint16_t *), a pointer to uint16_t, so
  *   the get item call would look like:
  *
@@ -225,7 +225,7 @@ typedef int (*spank_opt_cb_f) (int val, const char *optarg, int remote);
 
 struct spank_option {
     char *         name;    /* long option provided by plugin               */
-    char *         arginfo; /* one word description of argument if required */  
+    char *         arginfo; /* one word description of argument if required */
     char *         usage;   /* Usage text                                   */
     int            has_arg; /* Does option require argument?                */
     int            val;     /* value to return using callback               */
@@ -273,7 +273,7 @@ int spank_symbol_supported (const char *symbol);
 
 /*
  *  Determine whether plugin is loaded in "remote" context
- * 
+ *
  *  Returns:
  *  = 1   remote context, i.e. plugin is loaded in /slurmstepd.
  *  = 0   not remote context
@@ -322,23 +322,23 @@ spank_err_t spank_option_getopt (spank_t spank, struct spank_option *opt,
 	char **optarg);
 
 
-/*  Get the value for the current job or task item specified, 
+/*  Get the value for the current job or task item specified,
  *   storing the result in the subsequent pointer argument(s).
  *   Refer to the spank_item_t comments for argument types.
- *   For S_JOB_ARGV, S_JOB_ENV, and S_SLURM_VERSION* items 
+ *   For S_JOB_ARGV, S_JOB_ENV, and S_SLURM_VERSION* items
  *   the result returned to the caller should not be freed or
  *   modified.
- *   
+ *
  *  Returns ESPANK_SUCCESS on success, ESPANK_NOTASK if an S_TASK*
  *   item is requested from outside a task context, ESPANK_BAD_ARG
  *   if invalid args are passed to spank_get_item or spank_get_item
- *   is called from an invalid context, and ESPANK_NOT_REMOTE 
+ *   is called from an invalid context, and ESPANK_NOT_REMOTE
  *   if not called from slurmstepd context or spank_user_local_init.
  */
 spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...);
 
 /*  Place a copy of environment variable "var" from the job's environment
- *   into buffer "buf" of size "len." 
+ *   into buffer "buf" of size "len."
  *
  *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
  *    ESPANK_BAD_ARG      = spank handle invalid or len < 0.
@@ -348,17 +348,17 @@ spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...);
  */
 spank_err_t spank_getenv (spank_t spank, const char *var, char *buf, int len);
 
-/* 
+/*
  *  Set the environment variable "var" to "val" in the environment of
  *   the current job or task in the spank handle. If overwrite != 0 an
- *   existing value for var will be overwritten. 
+ *   existing value for var will be overwritten.
  *
  *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
  *     ESPANK_ENV_EXISTS  = var exists in job env and overwrite == 0.
  *     ESPANK_BAD_ARG     = spank handle invalid or var/val are NULL.
  *     ESPANK_NOT_REMOTE  = not called from slurmstepd.
  */
-spank_err_t spank_setenv (spank_t spank, const char *var, const char *val, 
+spank_err_t spank_setenv (spank_t spank, const char *var, const char *val,
         int overwrite);
 
 /*

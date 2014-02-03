@@ -222,6 +222,12 @@ The login name.
 Workload  Characterization  Key. An arbitrary  string  for  grouping orthogonal accounts.
 
 .SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
+\fBNOTE:\fR The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
+being considered for being allocated resources.
+If starting a job would cause any of its group limit to be exceeded,
+that job will not be considered for scheduling even if that job might preempt
+other jobs which would release sufficient group resources for the pending
+job to be initiated.
 
 .TP
 \fIDefaultQOS\fP=<default qos>
@@ -932,6 +938,12 @@ The \fBsacct\fR command is the exclusive command to display job
 records from the SLURM database.
 
 .SH "SPECIFICATIONS FOR QOS"
+\fBNOTE:\fR The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
+being considered for being allocated resources.
+If starting a job would cause any of its group limit to be exceeded,
+that job will not be considered for scheduling even if that job might preempt
+other jobs which would release sufficient group resources for the pending
+job to be initiated.
 
 .TP
 \fIFlags\fP
@@ -1727,6 +1739,10 @@ cautiously since this is writing your sql into the database.
 
 
 .SH "EXAMPLES"
+\fBNOTE:\fR There is an order to set up accounting associations.
+You must define clusters before you add accounts and you must add accounts
+before you can add users.
+
 .eo
 .br
 > sacctmgr create cluster tux

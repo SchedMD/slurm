@@ -317,7 +317,7 @@ proc inc3_11_7 {} {
 		}
 	}
 
-	# No Cancelling the job now. Let's see if it runs once reservation is deleted
+	# Cancelling the job now. Let's see if it runs once reservation is deleted
 	#
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
@@ -325,7 +325,7 @@ proc inc3_11_7 {} {
 		exit $ret_code
 	}
 
-	sleep 1
+	sleep 3
 	# Show the job
 	spawn $scontrol show job $job_id
 	expect {

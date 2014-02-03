@@ -485,9 +485,11 @@ A tool to report node state information is also under development.</p>
 to as an <i>Association</i>,
 which consists of four elements: cluster, account, user names and
 an optional partition name. Use the <i>sacctmgr</i>
-command to create and manage these records. There is an order to set up
-accounting associations. You must define clusters before you add
-accounts and you must add accounts before you can add users. </p>
+command to create and manage these records.</p>
+
+<p><b>NOTE:</b> There is an order to set up accounting associations.
+You must define clusters before you add accounts and you must add accounts
+before you can add users.</p>
 
 <p>For example, to add a cluster named "snowflake" to the database
 execute this line:</p>

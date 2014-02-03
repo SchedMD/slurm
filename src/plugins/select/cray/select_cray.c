@@ -65,7 +65,6 @@
 
 #ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_sn.h"
-#include <rca_lib.h>
 #endif
 
 /**
@@ -1385,16 +1384,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	struct node_record *node_rec;
 	int i, j;
 	uint64_t blade_id = 0;
-#ifdef HAVE_NATIVE_CRAY
-	int nn, end_nn, last_nn = 0;
-	bool found = 0;
-	rs_node_array_t nl;
 
-	if (rca_get_sysnodes(&nl)) {
-		error("Could not get system node list from RCA: %m");
-		return SLURM_ERROR;
-	}
-#endif
 	slurm_mutex_lock(&blade_mutex);
 
 	if (!blade_array)
@@ -1428,47 +1418,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			nodeinfo->nid = atoll(nid_char);
 		}
 
-#ifdef HAVE_NATIVE_CRAY
-		end_nn = nl.na_len;
-
-	start_again:
-
-		for (nn = last_nn; nn < end_nn; nn++) {
-			if ((uint32_t)RSN_GET_FLD(
-				    nl.na_ids[nn].rs_node_flat, NID)
-			    == nodeinfo->nid) {
-				found = 1;
-				blade_id = RSN_GET_FLD(
-					nl.na_ids[nn].rs_node_flat, X);
-				blade_id <<= 16;
-				blade_id += RSN_GET_FLD(
-					nl.na_ids[nn].rs_node_flat, ROW);
-				blade_id <<= 16;
-				blade_id += RSN_GET_FLD(
-					nl.na_ids[nn].rs_node_flat, CAGE);
-				blade_id <<= 16;
-				blade_id += RSN_GET_FLD(
-					nl.na_ids[nn].rs_node_flat, SLOT);
-				last_nn = nn;
-				break;
-			}
-		}
-
-		if (end_nn != nl.na_len) {
-			/* already looped */
-			fatal("Node %s(%d) isn't found on the system",
-			      node_ptr->name, nodeinfo->nid);
-		} else if (!found) {
-			end_nn = last_nn;
-			last_nn = 0;
-			debug2("starting again looking for %s(%u)",
-			      node_ptr->name, nodeinfo->nid);
-			goto start_again;
-		}
-#else
 		blade_id = nodeinfo->nid % 4; /* simulate 4 blades
 					       * round robin style */
-#endif
+
 		for (j = 0; j < blade_cnt; j++)
 			if (blade_array[j].id == blade_id)
 				break;

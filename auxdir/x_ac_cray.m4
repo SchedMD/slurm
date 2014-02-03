@@ -36,9 +36,9 @@ AC_DEFUN([X_AC_CRAY],
     [cray-emulation],
     AS_HELP_STRING(--enable-alps-cray-emulation,Run SLURM in an emulated Cray mode),
       [ case "$enableval" in
-        yes) ac_have_alps_cray_emulation="yes" ;;
-         no) ac_have_alps_cray_emulation="no"  ;;
-          *) AC_MSG_ERROR([bad value "$enableval" for --enable-alps-cray-emulation])  ;;
+	yes) ac_have_alps_cray_emulation="yes" ;;
+	 no) ac_have_alps_cray_emulation="no"  ;;
+	  *) AC_MSG_ERROR([bad value "$enableval" for --enable-alps-cray-emulation])  ;;
       esac ]
   )
 
@@ -46,9 +46,9 @@ AC_DEFUN([X_AC_CRAY],
     [native-cray],
     AS_HELP_STRING(--enable-native-cray,Run SLURM natively on a Cray without ALPS),
       [ case "$enableval" in
-        yes) ac_have_native_cray="yes" ;;
-         no) ac_have_native_cray="no"  ;;
-          *) AC_MSG_ERROR([bad value "$enableval" for --enable-native-cray])  ;;
+	yes) ac_have_native_cray="yes" ;;
+	 no) ac_have_native_cray="no"  ;;
+	  *) AC_MSG_ERROR([bad value "$enableval" for --enable-native-cray])  ;;
       esac ]
   )
 
@@ -63,9 +63,6 @@ AC_DEFUN([X_AC_CRAY],
   elif test "$ac_have_native_cray" = "yes"; then
     _x_ac_cray_job_dir="job/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"
-    _x_ac_cray_rca_dir="rca/default"
-    _x_ac_cray_krca_dir="krca/default"
-    _x_ac_cray_hss_devel_dir="/opt/cray-hss-devel/default"
 
     _x_ac_cray_dirs="/opt/cray"
 
@@ -98,55 +95,30 @@ AC_DEFUN([X_AC_CRAY],
       CRAY_ALPSC_CN_LDFLAGS="$CRAY_ALPSC_CN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_cn"
       CRAY_ALPSC_SN_LDFLAGS="$CRAY_ALPSC_SN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_sn"
 
-      _test_dir="$d/$_x_ac_cray_rca_dir"
-      test -d "$_test_dir" || continue
-      test -d "$_test_dir/include" || continue
-      test -f "$_test_dir/include/rca_lib.h" || continue
-      test -d "$_test_dir/lib64" || continue
-      test -f "$_test_dir/lib64/librca.so" || continue
-
-      CRAY_RCA_CPPFLAGS="$CRAY_RCA_CPPFLAGS -I$_test_dir/include"
-      CRAY_RCA_LDFLAGS="$CRAY_RCA_LDFLAGS -L$_test_dir/lib64 -lrca"
-
-      _test_dir="$d/$_x_ac_cray_krca_dir"
-      test -d "$_test_dir" || continue
-      test -d "$_test_dir/include" || continue
-      test -f "$_test_dir/include/rca_types.h" || continue
-
-      CRAY_RCA_CPPFLAGS="$CRAY_RCA_CPPFLAGS -I$_test_dir/include"
-
-      _test_dir="$_x_ac_cray_hss_devel_dir"
-      test -d "$_test_dir" || continue
-      test -d "$_test_dir/include" || continue
-      test -f "$_test_dir/include/rsms/rs_event.h" || continue
-
-      CRAY_RCA_CPPFLAGS="$CRAY_RCA_CPPFLAGS -I$_test_dir/include"
 
 
       CRAY_SWITCH_CPPFLAGS="$CRAY_SWITCH_CPPFLAGS $CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
       CRAY_SWITCH_LDFLAGS="$CRAY_SWITCH_LDFLAGS $CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
-      CRAY_SELECT_CPPFLAGS="$CRAY_SELECT_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $CRAY_RCA_CPPFLAGS"
-      CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $CRAY_RCA_LDFLAGS"
+      CRAY_SELECT_CPPFLAGS="$CRAY_SELECT_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
+      CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
       CRAY_TASK_CPPFLAGS="$CRAY_TASK_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS"
       CRAY_TASK_LDFLAGS="$CRAY_TASK_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS"
 
-      CPPFLAGS="$CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $CRAY_RCA_CPPFLAGS $saved_CPPFLAGS"
-      LIBS="$CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $CRAY_RCA_LDFLAGS $saved_LIBS"
+      CPPFLAGS="$CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $saved_CPPFLAGS"
+      LIBS="$CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $saved_LIBS"
 
       AC_LINK_IFELSE(
-        [AC_LANG_PROGRAM(
+	[AC_LANG_PROGRAM(
 	   [[#include <job.h>
-             #include <alpscomm_sn.h>
+	     #include <alpscomm_sn.h>
 	     #include <alpscomm_cn.h>
-	     #include <rca_lib.h>
 	   ]],
 	   [[ job_getjidcnt();
 	      alpsc_release_cookies((char **)0, 0, 0);
 	      alpsc_flush_lustre((char **)0);
-	      rca_unregister();
 	   ]]
 	)],
-        [have_cray_files="yes"],
+	[have_cray_files="yes"],
 	[AC_MSG_ERROR(There is a problem linking to the Cray api.)])
       LIBS="$saved_LIBS"
       CPPFLAGS="$saved_CPPFLAGS"
@@ -181,13 +153,13 @@ AC_DEFUN([X_AC_CRAY],
   if test "$ac_have_alps_cray" = "yes"; then
     # libexpat is always required for the XML-RPC interface
     AC_CHECK_HEADER(expat.h, [],
-                    AC_MSG_ERROR([Cray BASIL requires expat headers/rpm]))
+		    AC_MSG_ERROR([Cray BASIL requires expat headers/rpm]))
     AC_CHECK_LIB(expat, XML_ParserCreate, [],
-                 AC_MSG_ERROR([Cray BASIL requires libexpat.so (i.e. libexpat1-dev)]))
+		 AC_MSG_ERROR([Cray BASIL requires libexpat.so (i.e. libexpat1-dev)]))
 
     if test "$ac_have_real_cray" = "yes"; then
       AC_CHECK_LIB([job], [job_getjid], [],
-              AC_MSG_ERROR([Need cray-job (usually in /opt/cray/job/default)]))
+	      AC_MSG_ERROR([Need cray-job (usually in /opt/cray/job/default)]))
       AC_DEFINE(HAVE_REAL_CRAY, 1, [Define to 1 for running on a real Cray system])
     fi
 

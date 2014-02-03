@@ -1115,7 +1115,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			remove_qos_notify = args->remove_qos_notify;
 		if (args->update_assoc_notify)
 			update_assoc_notify = args->update_assoc_notify;
-		if (args->remove_qos_notify)
+		if (args->update_qos_notify)
 			update_qos_notify = args->update_qos_notify;
 		if (args->update_resvs)
 			update_resvs = args->update_resvs;

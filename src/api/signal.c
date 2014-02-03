@@ -83,7 +83,7 @@ static int _local_send_recv_rc_msgs(const char *nodelist,
 	return rc;
 }
 
-static int _signal_batch_script_step(const resource_allocation_response_msg_t 
+static int _signal_batch_script_step(const resource_allocation_response_msg_t
 				     *allocation, uint16_t signal)
 {
 	slurm_msg_t msg;
@@ -290,44 +290,6 @@ fail:
 	slurm_free_resource_allocation_response_msg(alloc_info);
  	errno = save_errno;
  	return rc ? -1 : 0;
-}
-
-
-/*
- * slurm_terminate_job - terminates all steps of an existing job by sending
- *	a REQUEST_TERMINATE_JOB rpc to all slurmd in the job allocation,
- *      and then calls slurm_complete_job().
- * IN job_id     - the job's id
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- */
-extern int
-slurm_terminate_job (uint32_t job_id)
-{
-	int rc = SLURM_SUCCESS;
-	resource_allocation_response_msg_t *alloc_info = NULL;
-	signal_job_msg_t rpc;
-
-	if (slurm_allocation_lookup_lite(job_id, &alloc_info)) {
-		rc = slurm_get_errno();
-		goto fail1;
-	}
-
-	/* same remote procedure call for each node */
-	rpc.job_id = job_id;
-	rpc.signal = (uint32_t)-1; /* not used by slurmd */
-	rc = _local_send_recv_rc_msgs(alloc_info->node_list,
-				      REQUEST_TERMINATE_JOB, &rpc);
-
-	slurm_free_resource_allocation_response_msg(alloc_info);
-
-	slurm_complete_job(job_id, 0);
-fail1:
-	if (rc) {
-		slurm_seterrno_ret(rc);
-		return SLURM_FAILURE;
-	} else {
-		return SLURM_SUCCESS;
-	}
 }
 
 /*

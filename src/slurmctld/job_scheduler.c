@@ -938,7 +938,7 @@ next_part:			part_ptr = (struct part_record *)
 		}
 
 		if (!acct_policy_job_runnable_state(job_ptr) &&
-		    !acct_policy_job_runnable(job_ptr))
+		    !acct_policy_job_runnable_pre_select(job_ptr))
 			continue;
 
 		if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
@@ -1186,6 +1186,8 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 						    uint16_t protocol_version)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
+	struct passwd pwd, *result;
+	char buffer[PW_BUF_SIZE];
 
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *)
@@ -1195,6 +1197,24 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 	launch_msg_ptr->uid = job_ptr->user_id;
+
+	if (getpwuid_r(launch_msg_ptr->uid, &pwd, buffer, PW_BUF_SIZE, &result)
+	    || !result) {
+#ifdef HAVE_NATIVE_CRAY
+		/* On a Cray this needs to happen before the launch of
+		 * the tasks.  So fail if it doesn't work.  On a
+		 * normal system this isn't a big deal just go on your way.
+		 */
+		error("uid %ld not found on system, aborting job %u",
+		      (long)launch_msg_ptr->uid, job_ptr->job_id);
+		job_ptr->end_time    = time(NULL);
+		job_ptr->time_limit = 0;
+		slurm_free_job_launch_msg(launch_msg_ptr);
+		return NULL;
+#endif
+	} else
+		launch_msg_ptr->user_name = xstrdup(result->pw_name);
+
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
 	launch_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);

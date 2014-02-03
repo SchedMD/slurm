@@ -85,13 +85,21 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 bool update_call);
 
 /*
- * acct_policy_job_runnable - Determine of the specified job can execute
- *	right now or not depending upon accounting policy (e.g. running
- *	job limit for this association). If the association limits prevent
- *	the job from ever running (lowered limits since job submissin),
- *	then cancel the job.
+ * acct_policy_job_runnable_pre_select - Determine of the specified
+ *	job can execute right now or not depending upon accounting
+ *	policy (e.g. running job limit for this association). If the
+ *	association limits prevent the job from ever running (lowered
+ *	limits since job submission), then cancel the job.
  */
-extern bool acct_policy_job_runnable(struct job_record *job_ptr);
+extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr);
+
+/*
+ * acct_policy_job_runnable_post_select - After nodes have been
+ *	selected for the job verify the counts don't exceed aggregated limits.
+ */
+extern bool acct_policy_job_runnable_post_select(
+	struct job_record *job_ptr, uint32_t cpu_cnt,
+	uint32_t node_cnt, uint32_t pn_min_memory);
 
 /*
  * Determine of the specified job can execute right now or is currently
