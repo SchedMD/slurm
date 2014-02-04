@@ -175,20 +175,7 @@ node_attr_get(char *key)
 static char *
 job_attr_get_netinfo(char *key, char *attr)
 {
-	char *taskid_str;
-	char *p;
 	char *netinfo;
-	int taskid;
-
-	/* parse task id
-	 */
-	taskid_str = key + sizeof(JOB_ATTR_NETINFO) - 1;
-	taskid = strtol(taskid_str, &p, 10);
-	if (p == taskid_str || errno == EINVAL || errno == ERANGE) {
-		error("%s: key %s wrong format, missing taskid", __func__, key);
-		return NULL;
-	}
-	debug3("%s: taskid %d", __func__, taskid);
 
 	/* get network information of node in netinfo, xmalloc'ed
 	 */
@@ -196,7 +183,7 @@ job_attr_get_netinfo(char *key, char *attr)
 	snprintf(attr, PMI2_MAX_VALLEN, "%s", netinfo);
 	xfree(netinfo);
 
-	debug3("%s: taskid %d netinfo %s", __func__, taskid, attr);
+	debug3("%s: netinfo %s", __func__, attr);
 
 	return attr;
 }
