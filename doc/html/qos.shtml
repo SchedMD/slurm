@@ -127,43 +127,61 @@ running jobs will be killed.
 </li>
 
 <li><b>MaxCpusPerJob</b>
-The maximum size in cpus any given job can have from this QOS. If this limit
-is reached the job will be denied at submission.
+The maximum size in cpus any given job can have from this QOS. Jobs submitted
+requesting more CPUs than the QOS limit will pend until they conform
+(possibly indefinitely); to allow such jobs to run may require
+changing this limit with sacctmgr. See DenyOnLimits below to deny these jobs at
+submission.
 </li>
 
 <li><b>MaxCPUMinsPerJob</b>
 Maximum number of CPU*minutes any job with this QOS can run. Jobs submitted
-requesting time bigger than the QOS limit will pend possibly indefinitely.
+requesting more CPU Minutes than the QOS limit will pend until they conform
+(possibly indefinitely); to allow such jobs to run may require
+changing this limit with sacctmgr. See DenyOnLimits below to deny these jobs at
+submission.
 </li>
 
 <li><b>MaxNodesPerJob</b>
 The maximum size in nodes any given job can have from this association.
-If this limit is reached the job will be denied at submission.
+Jobs submitted requesting more nodes than the QOS limit will pend
+until they conform (possibly indefinitely); to allow such jobs to run
+may require changing this limit with sacctmgr. See DenyOnLimits below
+to deny these jobs at submission.
 </li>
 
 <li><b>MaxWallDurationPerJob</b>
 The maximum wall clock time any job submitted to this QOS can run for.
-If this limit is reached the job will be denied at submission.
+Jobs submitted requesting time larger than the QOS limit will pend
+until they conform (possibly indefinitely); to allow such jobs to run
+may require changing this limit with sacctmgr. See DenyOnLimits below
+to deny these jobs at submission.
 </li>
 
 <li><b>MaxCpusPerUser</b>
 Maximum number of CPU's any user with this QOS can be allocated.
-If this limit is reached the job will be denied at submission.
+Jobs submitted requesting more CPU's than the QOS limit will pend
+until they conform (possibly indefinitely); to allow such jobs to run
+may require changing this limit with sacctmgr. See DenyOnLimits below
+to deny these jobs at submission.
 </li>
 
 <li><b>MaxJobsPerUser</b>
 Maximum number of jobs a user can run with this QOS.
-If this limit is reached the job will be denied at submission.
 </li>
 
 <li><b>MaxNodesPerUser</b>
 Maximum number of nodes that can be allocated to any user with this QOS.
-If this limit is reached the job will be denied at submission.
+Jobs submitted requesting more nodes than the QOS limit will pend
+until they conform (possibly indefinitely); to allow such jobs to run
+may require changing this limit with sacctmgr. See DenyOnLimits below
+to deny these jobs at submission.
 </li>
 
 <li><b>MaxSubmitJobsPerUser</b>
-Maximum number of jobs with this QOS that can be in the system.
-If this limit is reached the job will be denied at submission.
+Maximum number of jobs (pending or running) any user with this QOS can have.
+As the name implies, if this limit is reached the job will be denied
+at submission until previous jobs complete from this user.
 </li>
 </ul>
 
