@@ -1217,8 +1217,6 @@ extern uint16_t log_string2num(char *name)
 		return (uint16_t) 8;
 	if (!strcasecmp(name, "debug5"))
 		return (uint16_t) 9;
-	if (!strcasecmp(name, "debug2"))
-		return (uint16_t) 6;
 
 	return (uint16_t) NO_VAL;
 }
