@@ -2851,7 +2851,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 		switches_cpu_cnt[i] = bit_set_count(switches_core_bitmap[i]);
 
-		debug2("switch %d looking cores in %d nodes (%d)",
+		debug2("switch %d available cores in %d nodes: %d",
 		       i, switches_node_cnt[i], switches_cpu_cnt[i]);
 	}
 
