@@ -971,6 +971,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	new_job_resrcs_ptr->node_bitmap = tmp_bitmap;
 	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
 						     node_bitmap);
+	new_job_resrcs_ptr->whole_node = to_job_resrcs_ptr->whole_node;
 	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
 			    select_fast_schedule);
 	xfree(to_job_ptr->node_addr);

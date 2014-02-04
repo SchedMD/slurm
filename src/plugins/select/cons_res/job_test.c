@@ -2506,6 +2506,7 @@ alloc_job:
 					    sizeof(uint32_t));
 	job_res->memory_used      = xmalloc(job_res->nhosts *
 					    sizeof(uint32_t));
+	job_res->whole_node       = job_ptr->details->whole_node;
 
 	/* store the hardware data for the selected nodes */
 	error_code = build_job_resources(job_res, node_record_table_ptr,

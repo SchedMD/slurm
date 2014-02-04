@@ -88,6 +88,7 @@
  * sockets_per_node	- Count of sockets on this node, build by
  *			  build_job_resources() and insures consistent
  *			  interpretation of core_bitmap
+ * whole_node		- Job allocated full node (used only by select/cons_res)
  *
  * NOTES:
  * cpu_array_* contains the same information as "cpus", but in a more compact
@@ -124,6 +125,7 @@ struct job_resources {
 	uint32_t	ncpus;
 	uint32_t *	sock_core_rep_count;
 	uint16_t *	sockets_per_node;
+	uint8_t		whole_node;
 };
 
 /*
@@ -288,8 +290,8 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
  * RET 1 on success, 0 otherwise
  */
 extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
-			       bitstr_t **full_core_bitmap,
-			       const uint16_t *bits_per_node);
+				  bitstr_t **full_core_bitmap,
+				  const uint16_t *bits_per_node);
 
 /* Given a job pointer and a global node index, return the index of that
  * node in the job_resrcs_ptr->cpus. Return -1 if invalid */

@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Insure that overlapping reservations do not oversubscribe available
     licenses.
  -- Added core specialization logic to select/cons_res plugin.
+ -- Added whole_node field to job_resources structure and enable gang scheduling
+    for jobs with core specialization.
  -- When using FastSchedule = 1 the nodes with less than configured resources
     are not longer set DOWN, they are set to DRAIN instead.
  -- Modified 'sacctmgr show associations' command to show GrpCPURunMins
