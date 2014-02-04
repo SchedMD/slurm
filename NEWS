@@ -239,6 +239,7 @@ documents those changes that are of interest to users and admins.
  -- Removed obsolete slurm_terminate_job() API.
  -- Update documentation about QOS limits
  -- Retry task exit message from slurmstepd to srun on message timeout.
+ -- Correction to logic reserving all nodes in a specified partition.
 
 * Changes in Slurm 2.6.5
 ========================
