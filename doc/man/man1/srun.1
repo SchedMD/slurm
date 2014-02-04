@@ -1392,9 +1392,29 @@ the default time will be 60 seconds.
 
 .TP
 \fB\-\-slurmd\-debug\fR=<\fIlevel\fR>
-Specify a debug level for slurmd(8). \fIlevel\fR may be an integer
-value between 0 [quiet, only errors are displayed] and 4 [verbose
-operation].  The slurmd debug information is copied onto the stderr of
+Specify a debug level for slurmd(8). The \fIlevel\fR may be specified either
+an integer value between 0 [quiet, only errors are displayed] and 4 [verbose
+operation] or the \fISlurmdDebug\fR tags.
+.RS
+.TP 10
+\fBquiet\fR
+Log nothing
+.TP
+\fBfatal\fR
+Log only fatal errors
+.TP
+\fBerror\fR
+Log only errors
+.TP
+\fBinfo\fR
+Log errors and general informational messages
+.TP
+\fBverbose\fR
+Log errors and verbose informational messages
+.TP
+.RE
+
+The slurmd debug information is copied onto the stderr of
 the job. By default only errors are displayed.
 
 .TP

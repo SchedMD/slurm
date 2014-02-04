@@ -42,6 +42,7 @@
 #endif
 
 #include <string.h>		/* strcpy, strncasecmp */
+#include <ctype.h>      /* isdigit() */
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
@@ -1303,8 +1304,11 @@ static void _set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_DEBUG_SLURMD:
-			opt.slurmd_debug =
-				_get_int(optarg, "slurmd-debug", false);
+			if (isdigit(optarg[0]))
+				opt.slurmd_debug =
+					_get_int(optarg, "slurmd-debug", false);
+			else
+				opt.slurmd_debug = log_string2num(optarg);
 			break;
 		case LONG_OPT_DEBUG_TS:
 			opt.debugger_test    = true;
