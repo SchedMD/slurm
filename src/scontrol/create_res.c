@@ -421,7 +421,6 @@ scontrol_create_res(int argc, char *argv[])
 	resv_desc_msg_t resv_msg;
 	char *new_res_name = NULL;
 	int free_user_str = 0, free_acct_str = 0;
-	int free_node_cnt = 0;
 	int err, ret = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
@@ -529,7 +528,5 @@ SCONTROL_CREATE_RES_CLEANUP:
 		xfree(resv_msg.users);
 	if (free_acct_str)
 		xfree(resv_msg.accounts);
-	if (free_node_cnt)
-		xfree(resv_msg.node_cnt);
 	return ret;
 }
