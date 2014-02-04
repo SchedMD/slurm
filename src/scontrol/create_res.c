@@ -422,7 +422,6 @@ scontrol_create_res(int argc, char *argv[])
 	char *new_res_name = NULL;
 	int free_user_str = 0, free_acct_str = 0;
 	int free_node_cnt = 0;
-	uint32_t node_count = 0;
 	int err, ret = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
