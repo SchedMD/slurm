@@ -36,6 +36,7 @@ documents those changes that are of interest to users and admins.
  -- Make sure node limits get assessed if no node count was given in request.
  -- Removed obsolete slurm_terminate_job() API.
  -- Update documentation about QOS limits
+ -- Retry task exit message from slurmstepd to srun on message timeout.
 
 * Changes in Slurm 2.6.5
 ========================
