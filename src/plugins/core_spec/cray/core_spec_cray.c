@@ -64,6 +64,9 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
+/* Set _DEBUG to 1 for detailed module debugging, 0 otherwise */
+#define _DEBUG 1
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -94,8 +97,6 @@ const char plugin_name[]       	= "Cray core specialization plugin";
 const char plugin_type[]       	= "core_spec/cray";
 const uint32_t plugin_version   = 100;
 
-static int last_core_count = -1;
-
 extern int init(void)
 {
 	info("%s: init", plugin_type);
@@ -109,18 +110,53 @@ extern int fini(void)
 }
 
 /*
- * Set the count of specialized cores
+ * Set the count of specialized cores at job start
  *
  * Return SLURM_SUCCESS on success
  */
 extern int core_spec_p_set(int core_count)
 {
-	if (core_count == last_core_count) {
-		info("%s: reset %d", plugin_type, core_count);
-		return SLURM_SUCCESS;
-	}
+#if _DEBUG
+	info("core_spec_p_set(%d)", core_count);
+#endif
+	return SLURM_SUCCESS;
+}
 
-	info("%s: set %d", plugin_type, core_count);
-	last_core_count = core_count;
+/*
+ * Clear specialized cores at job termination
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_p_clear(int core_count)
+{
+#if _DEBUG
+	info("core_spec_p_clear(%d)", core_count);
+#endif
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Reset specialized cores at job suspend
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_p_suspend(int core_count)
+{
+#if _DEBUG
+	info("core_spec_p_suspend(%d)", core_count);
+#endif
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Reset specialized cores at job resume
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_p_resume(int core_count)
+{
+#if _DEBUG
+	info("core_spec_p_resume(%d)", core_count);
+#endif
 	return SLURM_SUCCESS;
 }

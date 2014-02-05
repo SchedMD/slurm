@@ -64,6 +64,9 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
+/* Set _DEBUG to 1 for detailed module debugging, 0 otherwise */
+#define _DEBUG 1
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -105,11 +108,53 @@ extern int fini(void)
 }
 
 /*
- * Set the count of specialized cores
+ * Set the count of specialized cores at job start
  *
  * Return SLURM_SUCCESS on success
  */
 extern int core_spec_p_set(int core_count)
 {
+#if _DEBUG
+	info("core_spec_p_set(%d)", core_count);
+#endif
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Clear specialized cores at job termination
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_p_clear(int core_count)
+{
+#if _DEBUG
+	info("core_spec_p_clear(%d)", core_count);
+#endif
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Reset specialized cores at job suspend
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_p_suspend(int core_count)
+{
+#if _DEBUG
+	info("core_spec_p_suspend(%d)", core_count);
+#endif
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Reset specialized cores at job resume
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_p_resume(int core_count)
+{
+#if _DEBUG
+	info("core_spec_p_resume(%d)", core_count);
+#endif
 	return SLURM_SUCCESS;
 }

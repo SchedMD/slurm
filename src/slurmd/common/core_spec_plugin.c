@@ -47,7 +47,9 @@
 
 typedef struct core_spec_ops {
 	int	(*core_spec_p_set)	(uint16_t count);
-
+	int	(*core_spec_p_clear)	(uint16_t count);
+	int	(*core_spec_p_suspend)	(uint16_t count);
+	int	(*core_spec_p_resume)	(uint16_t count);
 } core_spec_ops_t;
 
 /*
@@ -55,6 +57,9 @@ typedef struct core_spec_ops {
  */
 static const char *syms[] = {
 	"core_spec_p_set",
+	"core_spec_p_clear",
+	"core_spec_p_suspend",
+	"core_spec_p_resume",
 };
 
 static core_spec_ops_t		*ops = NULL;
@@ -163,7 +168,11 @@ done:
 	return rc;
 }
 
-/* Create a container for the specified job */
+/*
+ * Set the count of specialized cores at job start
+ *
+ * Return SLURM_SUCCESS on success
+ */
 extern int core_spec_g_set(uint16_t count)
 {
 	int i, rc = SLURM_SUCCESS;
@@ -174,6 +183,66 @@ extern int core_spec_g_set(uint16_t count)
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].core_spec_p_set))(count);
+	}
+
+	return rc;
+}
+
+/*
+ * Clear specialized cores at job termination
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_g_clear(uint16_t count)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	if (core_spec_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
+	     i++) {
+		rc = (*(ops[i].core_spec_p_clear))(count);
+	}
+
+	return rc;
+}
+
+/*
+ * Reset specialized cores at job suspend
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_g_suspend(uint16_t count)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	if (core_spec_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
+	     i++) {
+		rc = (*(ops[i].core_spec_p_suspend))(count);
+	}
+
+	return rc;
+}
+
+/*
+ * Reset specialized cores at job resume
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_g_resume(uint16_t count)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	if (core_spec_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
+	     i++) {
+		rc = (*(ops[i].core_spec_p_resume))(count);
 	}
 
 	return rc;

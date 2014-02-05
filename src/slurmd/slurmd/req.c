@@ -3641,11 +3641,12 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	/* Release or reclaim resources bound to these tasks (task affinity) */
 	if (req->op == SUSPEND_JOB) {
 		(void) task_g_slurmd_suspend_job(req->job_id);
-		/* core_spec_g_set(0);	Is this needed or desirable? Possible race condition? */
+		if (core_spec_g_suspend(0))
+			error("core_spec_g_suspend(%u): %m", req->job_id);
 	} else {
 		(void) task_g_slurmd_resume_job(req->job_id);
-		if (core_spec_g_set(req->job_core_spec))
-			error("core_spec_g_set(%u): %m", req->job_id);
+		if (core_spec_g_resume(req->job_core_spec))
+			error("core_spec_g_resume(%u): %m", req->job_id);
 	}
 
 	/*
@@ -4692,7 +4693,8 @@ _run_epilog(job_env_t *job_env)
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(job_env->jobid);
-	(void) core_spec_g_set(0);
+	if (core_spec_g_clear(0))
+		error("core_spec_g_clear(%u): %m", job_env->jobid);
 	error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
 				     -1, my_env, job_env->uid);
 	xfree(my_epilog);
