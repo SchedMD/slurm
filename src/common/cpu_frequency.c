@@ -223,7 +223,7 @@ rwfail:
 void
 cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 {
-	int cpuidx;
+	int cpuidx, cpu_num;
 	bitstr_t *cpus_to_set;
 	bitstr_t *cpu_map;
 	char *cpu_bind;
@@ -259,13 +259,26 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	do {
 		debug3("  cpu_str = %s", cpu_str);
 
-		if (bit_unfmt_hexmask(cpu_map, cpu_str) == -1) {
-			error("cpu_freq_cpuset_validate: invalid cpu mask %s",
-			      cpu_bind);
-			bit_free(cpu_map);
-			bit_free(cpus_to_set);
-			xfree(cpu_bind);
-			return;
+		if ((job->cpu_bind_type & CPU_BIND_MAP) == CPU_BIND_MAP) {
+			cpu_num = atoi(cpu_str);
+			if (cpu_num >= cpu_freq_count) {
+				error("cpu_freq_cpuset_validate: invalid cpu "
+				      "number %d", cpu_num);
+				bit_free(cpu_map);
+				bit_free(cpus_to_set);
+				xfree(cpu_bind);
+				return;
+			}
+			bit_set(cpu_map, (bitoff_t)cpu_num);
+		} else {
+			if (bit_unfmt_hexmask(cpu_map, cpu_str) == -1) {
+				error("cpu_freq_cpuset_validate: invalid cpu "
+				      "mask %s", cpu_bind);
+				bit_free(cpu_map);
+				bit_free(cpus_to_set);
+				xfree(cpu_bind);
+				return;
+			}
 		}
 		bit_or(cpus_to_set, cpu_map);
 	} while ( (cpu_str = strtok_r(NULL, ",", &savestr) ) != NULL);

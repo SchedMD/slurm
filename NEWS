@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
     when using the hostlist_push_host function and input surrounded by [].
  -- Modify the srun --slurmd-debug option to accept debug string tags
     (quiet, fatal, error, info verbose) beside the numerical values.
+ -- Fix the bug where --cpu_bind=map_cpu is interpreted as mask_cpu.
 
 * Changes in Slurm 14.03.0pre5
 ==============================
