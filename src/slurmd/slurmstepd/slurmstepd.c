@@ -145,7 +145,6 @@ main (int argc, char *argv[])
 	}
 
 	_send_ok_to_slurmd(STDOUT_FILENO);
-	(void) core_spec_g_init();
 
 	/* Fancy way of closing stdout that keeps STDOUT_FILENO from being
 	 * allocated to any random file.  The slurmd already opened /dev/null

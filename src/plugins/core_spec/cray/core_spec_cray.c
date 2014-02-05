@@ -114,10 +114,10 @@ extern int fini(void)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_set(int core_count)
+extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_set(%d)", core_count);
+	info("core_spec_p_set(%"PRIu64") to %u", cont_id, core_count);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -127,10 +127,10 @@ extern int core_spec_p_set(int core_count)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_clear(int core_count)
+extern int core_spec_p_clear(uint64_t cont_id)
 {
 #if _DEBUG
-	info("core_spec_p_clear(%d)", core_count);
+	info("core_spec_p_clear(%"PRIu64")", cont_id);
 #endif
 	return SLURM_SUCCESS;
 }

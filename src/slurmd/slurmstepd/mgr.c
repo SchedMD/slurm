@@ -106,6 +106,7 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 
+#include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
@@ -966,7 +967,8 @@ job_manager(stepd_step_rec_t *job)
 	/*
 	 * Preload plugins.
 	 */
-	if ((switch_init() != SLURM_SUCCESS)			||
+	if ((core_spec_g_init()!= SLURM_SUCCESS)		||
+	    (switch_init() != SLURM_SUCCESS)			||
 	    (slurmd_task_init() != SLURM_SUCCESS)		||
 	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
 	    (checkpoint_init(ckpt_type) != SLURM_SUCCESS)	||

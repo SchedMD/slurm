@@ -1124,7 +1124,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
-		if (core_spec_g_set(req->job_core_spec))
+		if (core_spec_g_set(0, req->job_core_spec))
 			error("core_spec_g_set(%u): %m", req->job_id);
 
 		memset(&job_env, 0, sizeof(job_env_t));
@@ -1584,7 +1584,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		     req->job_id, req->step_id, req->uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
-	if (core_spec_g_set(req->job_core_spec))
+	if (core_spec_g_set(0, req->job_core_spec))
 		error("core_spec_g_set(%u): %m", req->job_id);
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
 				  (hostset_t)NULL);

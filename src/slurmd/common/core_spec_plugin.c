@@ -46,8 +46,8 @@
 
 
 typedef struct core_spec_ops {
-	int	(*core_spec_p_set)	(uint16_t count);
-	int	(*core_spec_p_clear)	(uint16_t count);
+	int	(*core_spec_p_set)	(uint64_t cont_id, uint16_t count);
+	int	(*core_spec_p_clear)	(uint64_t cont_id);
 	int	(*core_spec_p_suspend)	(uint64_t cont_id);
 	int	(*core_spec_p_resume)	(uint64_t cont_id);
 } core_spec_ops_t;
@@ -173,7 +173,7 @@ done:
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_set(uint16_t count)
+extern int core_spec_g_set(uint64_t cont_id, uint16_t core_count)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -182,7 +182,7 @@ extern int core_spec_g_set(uint16_t count)
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].core_spec_p_set))(count);
+		rc = (*(ops[i].core_spec_p_set))(cont_id, core_count);
 	}
 
 	return rc;
@@ -193,7 +193,7 @@ extern int core_spec_g_set(uint16_t count)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_clear(uint16_t count)
+extern int core_spec_g_clear(uint64_t cont_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -202,7 +202,7 @@ extern int core_spec_g_clear(uint16_t count)
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].core_spec_p_clear))(count);
+		rc = (*(ops[i].core_spec_p_clear))(cont_id);
 	}
 
 	return rc;
