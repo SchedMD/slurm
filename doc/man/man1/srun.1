@@ -405,14 +405,14 @@ confinement (i.e., TaskPlugin=task/affinity or
 TaskPlugin=task/cgroup with the "ConstrainCores" option) is not
 configured, this parameter is ignored.
 
-\fBNOTE\fR: When the step completes, the frequency of each selected cpu 
-is set to its minimum available scaling frequency, to minimize default 
-energy consumption.  The frequency scaling governor for each selected 
-cpu is then reset to its previous type. If that previous 
-type is not \fIuserspace\fR, the frequency may also be changed, depending 
-on the restored governor type. In general, the frequencies of selected 
-cpus before and after a job step is run are unpredictable. If a 
-particular frequency is desired, it should be explicitly requested 
+\fBNOTE\fR: When the step completes, the frequency of each selected cpu
+is set to its minimum available scaling frequency, to minimize default
+energy consumption.  The frequency scaling governor for each selected
+cpu is then reset to its previous type. If that previous
+type is not \fIuserspace\fR, the frequency may also be changed, depending
+on the restored governor type. In general, the frequencies of selected
+cpus before and after a job step is run are unpredictable. If a
+particular frequency is desired, it should be explicitly requested
 using \fB\-\-cpu\-freq\fR.
 
 .TP

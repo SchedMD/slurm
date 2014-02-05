@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
  -- Modify the srun --slurmd-debug option to accept debug string tags
     (quiet, fatal, error, info verbose) beside the numerical values.
  -- Fix the bug where --cpu_bind=map_cpu is interpreted as mask_cpu.
+ -- Update the documentation egarding the state of cpu frequencies after
+    a step using --cpu-freq completes.
 
 * Changes in Slurm 14.03.0pre5
 ==============================
