@@ -5,7 +5,7 @@
  * Portions Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
  * Licensed under the GPLv2.
  */
-#include "basil_interface.h"
+#include "../basil_interface.h"
 #include "parser_internal.h"
 #include <stdarg.h>
 #include <unistd.h>
