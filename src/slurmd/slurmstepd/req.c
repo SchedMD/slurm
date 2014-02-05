@@ -64,6 +64,7 @@
 #include "src/common/checkpoint.h"
 #include "src/common/timers.h"
 
+#include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/mgr.h"
@@ -1187,6 +1188,8 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		}
 		suspended = true;
 	}
+	if (core_spec_g_suspend(job->cont_id))
+		error("core_spec_g_suspend: %m");
 	/* reset the cpu frequencies if cpu_freq option used */
 	if (job->cpu_freq != NO_VAL)
 		cpu_freq_reset(job);
@@ -1239,6 +1242,8 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
+		if (core_spec_g_resume(job->cont_id))
+			error("core_spec_g_resume: %m");
 		if (proctrack_g_signal(job->cont_id, SIGCONT) < 0) {
 			verbose("Error resuming %u.%u: %m",
 				job->jobid, job->stepid);

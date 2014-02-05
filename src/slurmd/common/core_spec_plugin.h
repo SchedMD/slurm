@@ -75,13 +75,13 @@ extern int core_spec_g_clear(uint16_t count);
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_suspend(uint16_t count);
+extern int core_spec_g_suspend(uint64_t cont_id);
 
 /*
  * Reset specialized cores at job resume
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_resume(uint16_t count);
+extern int core_spec_g_resume(uint64_t cont_id);
 
 #endif /* _CORE_SPEC_PLUGIN_H_ */

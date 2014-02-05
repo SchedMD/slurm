@@ -59,6 +59,7 @@
 #include "src/common/plugstack.h"
 #include "src/common/node_select.h"
 
+#include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
@@ -144,6 +145,7 @@ main (int argc, char *argv[])
 	}
 
 	_send_ok_to_slurmd(STDOUT_FILENO);
+	(void) core_spec_g_init();
 
 	/* Fancy way of closing stdout that keeps STDOUT_FILENO from being
 	 * allocated to any random file.  The slurmd already opened /dev/null
@@ -164,6 +166,7 @@ main (int argc, char *argv[])
 ending:
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
+	(void) core_spec_g_fini();
 	_step_cleanup(job, msg, rc);
 
 	fini_setproctitle();

@@ -3641,12 +3641,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	/* Release or reclaim resources bound to these tasks (task affinity) */
 	if (req->op == SUSPEND_JOB) {
 		(void) task_g_slurmd_suspend_job(req->job_id);
-		if (core_spec_g_suspend(0))
-			error("core_spec_g_suspend(%u): %m", req->job_id);
 	} else {
 		(void) task_g_slurmd_resume_job(req->job_id);
-		if (core_spec_g_resume(req->job_core_spec))
-			error("core_spec_g_resume(%u): %m", req->job_id);
 	}
 
 	/*
