@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.7
 ========================
+ -- Added support for selecting AMD GPU by setting GPU_DEVICE_ORDINAL env var.
 
 * Changes in Slurm 2.6.6
 ========================

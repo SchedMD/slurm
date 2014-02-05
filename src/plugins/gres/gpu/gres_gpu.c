@@ -249,6 +249,8 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 	if (dev_list) {
 		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
 				    dev_list);
+		env_array_overwrite(job_env_ptr,"GPU_DEVICE_ORDINAL",
+				    dev_list);
 		xfree(dev_list);
 	}
 }
@@ -291,6 +293,8 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 
 	if (dev_list) {
 		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
+				    dev_list);
+		env_array_overwrite(job_env_ptr,"GPU_DEVICE_ORDINAL",
 				    dev_list);
 		xfree(dev_list);
 	}
