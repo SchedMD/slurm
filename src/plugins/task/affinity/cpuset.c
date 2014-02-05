@@ -64,7 +64,7 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 
 	if (mkdir(path, 0700) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	if (chown(path, uid, gid))
 		error("chown(%s): %m", path);
@@ -85,31 +85,31 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 			if (fd < 0) {
 				cpuset_prefix = "";
 				error("open(%s): %m", file_path);
-				return -1;
+				return SLURM_ERROR;
 			}
 		} else {
 			error("open(%s): %m", file_path);
-			return -1;
+			return SLURM_ERROR;
 		}
 	}
 	rc = read(fd, mstr, sizeof(mstr));
 	close(fd);
 	if (rc < 1) {
 		error("read(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	snprintf(file_path, sizeof(file_path), "%s/%scpus",
 		 path, cpuset_prefix);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	rc = write(fd, mstr, rc);
 	close(fd);
 	if (rc < 1) {
 		error("write(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	/* Copy "mems" contents from parent directory, if it exists.
@@ -119,26 +119,26 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	rc = read(fd, mstr, sizeof(mstr));
 	close(fd);
 	if (rc < 1) {
 		error("read(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	snprintf(file_path, sizeof(file_path), "%s/%smems",
 		 path, cpuset_prefix);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	rc = write(fd, mstr, rc);
 	close(fd);
 	if (rc < 1) {
 		error("write(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	/* Delete cpuset once its tasks complete.
@@ -147,19 +147,19 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	rc = write(fd, "1", 2);
 	close(fd);
 	if (rc < 1) {
 		error("write(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	/* Only now can we add tasks.
 	 * We can't add self, so add tasks after exec. */
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
@@ -171,7 +171,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 
 	if (mkdir(path, 0700) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	/* Set "cpus" per user request */
@@ -181,13 +181,13 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	rc = write(fd, mstr, strlen(mstr)+1);
 	close(fd);
 	if (rc < 1) {
 		error("write(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	/* copy "mems" contents from parent directory, if it exists.
@@ -202,20 +202,20 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 		close(fd);
 		if (rc < 1) {
 			error("read(%s): %m", file_path);
-			return -1;
+			return SLURM_ERROR;
 		}
 		snprintf(file_path, sizeof(file_path), "%s/%smems",
 			 path, cpuset_prefix);
 		fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 		if (fd < 0) {
 			error("open(%s): %m", file_path);
-			return -1;
+			return SLURM_ERROR;
 		}
 		rc = write(fd, mstr, rc);
 		close(fd);
 		if (rc < 1) {
 			error("write(%s): %m", file_path);
-			return -1;
+			return SLURM_ERROR;
 		}
 	}
 
@@ -225,7 +225,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	rc = write(fd, "1", 2);
 	close(fd);
@@ -235,17 +235,17 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	snprintf(mstr, sizeof(mstr), "%d", pid);
 	rc = write(fd, mstr, strlen(mstr)+1);
 	close(fd);
 	if (rc < 1) {
 		error("write(%s, %s): %m", file_path, mstr);
-		return -1;
+		return SLURM_ERROR;
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
@@ -259,13 +259,13 @@ int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	rc = read(fd, mstr, sizeof(mstr));
 	close(fd);
 	if (rc < 1) {
 		error("read(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	str_to_cpuset(mask, mstr);
 
@@ -273,18 +273,18 @@ int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
 	fd = open(file_path, O_CREAT | O_RDONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 	rc = read(fd, mstr, sizeof(mstr));
 	close(fd);
 	if (rc < 1) {
 		error("read(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	/* FIXME: verify that pid is in mstr */
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 #ifdef HAVE_NUMA
@@ -310,7 +310,7 @@ int	slurm_set_memset(char *path, nodemask_t *new_mask)
 	fd = open(file_path, O_CREAT | O_RDWR, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	mstr[0] = '\0';
@@ -329,8 +329,8 @@ int	slurm_set_memset(char *path, nodemask_t *new_mask)
 	close(fd);
 	if (rc <= i) {
 		error("write(%s): %m", file_path);
-		return -1;
+		return SLURM_ERROR;
 	}
-	return 0;
+	return SLURM_SUCCESS;
 }
 #endif

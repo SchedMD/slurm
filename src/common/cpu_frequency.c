@@ -436,7 +436,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 		case CPU_FREQ_LOW :
 			/* get the value from scale min freq */
 			snprintf(path, sizeof(path),
-				 PATH_TO_CPU 
+				 PATH_TO_CPU
 				 "cpu%u/cpufreq/scaling_min_freq", cpuidx);
 			if ( ( fp = fopen(path, "r") ) == NULL ) {
 				error("cpu_freq_cgroup_valid: Could not open "
@@ -497,7 +497,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 	} else {
 		/* find legal value close to requested value */
 		snprintf(path, sizeof(path),
-			 PATH_TO_CPU 
+			 PATH_TO_CPU
 			 "cpu%u/cpufreq/scaling_available_frequencies", cpuidx);
 		if ( ( fp = fopen(path, "r") ) == NULL )
 			return;
@@ -514,7 +514,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 					/* ascending order */
 					if ((cpu_freq > freq_list[j-1]) &&
 					    (cpu_freq < freq_list[j])) {
-						cpufreq[cpuidx].frequency_to_set = 
+						cpufreq[cpuidx].frequency_to_set =
 							freq_list[j];
 						break;
 					}
@@ -522,7 +522,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 					/* descending order */
 					if ((cpu_freq > freq_list[j]) &&
 					    (cpu_freq < freq_list[j-1])) {
-						cpufreq[cpuidx].frequency_to_set = 
+						cpufreq[cpuidx].frequency_to_set =
 							freq_list[j];
 						break;
 					}
@@ -547,7 +547,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
  *
  * returns -1 on error, 0 otherwise
  */
-int 
+int
 cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq)
 {
 	char *end;

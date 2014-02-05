@@ -322,9 +322,13 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 #endif
 
 	rc = slurm_build_cpuset(CPUSET_DIR, path, job->uid, job->gid);
+	if (rc != SLURM_SUCCESS) {
+		error("%s: slurm_build_cpuset() failed", __func__);
+		return SLURM_ERROR;
+	}
 
 	/* if cpuset was built ok, check for cpu frequency setting */
-	if ( !(rc) && (job->cpu_freq != NO_VAL))
+	if (job->cpu_freq != NO_VAL)
 		cpu_freq_cpuset_validate(job);
 
 	return rc;
