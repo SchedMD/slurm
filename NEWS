@@ -1,10 +1,6 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in Slurm 2.6.7
-========================
- -- Added support for selecting AMD GPU by setting GPU_DEVICE_ORDINAL env var.
-
 * Changes in Slurm 2.6.6
 ========================
  -- sched/backfill - Fix bug that could result in failing to reserve resources
@@ -42,6 +38,7 @@ documents those changes that are of interest to users and admins.
  -- Update documentation about QOS limits
  -- Retry task exit message from slurmstepd to srun on message timeout.
  -- Correction to logic reserving all nodes in a specified partition.
+ -- Added support for selecting AMD GPU by setting GPU_DEVICE_ORDINAL env var.
 
 * Changes in Slurm 2.6.5
 ========================
