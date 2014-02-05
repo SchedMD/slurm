@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include "src/common/log.h"
 
@@ -71,5 +72,24 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 				"time from %s: %s began=%s.%3.3d",
 				from, tv_str, p, (int)(tv1->tv_usec / 1000));
 		}
+	}
+}
+
+/* block_daemon()
+ *
+ * This function allows to block any daemon
+ * in a specific function. Once the daemon
+ * is block gdb can be attached and by resetting
+ * the block variable restored to normal operation.
+ */
+extern void
+block_daemon(void)
+{
+	int block;
+
+	block = 1;
+	while (block == 1) {
+		info("%s: attachme, attachme...", __func__);
+		sleep(2);
 	}
 }
