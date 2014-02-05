@@ -574,11 +574,6 @@ slurm_complete_job(slurm_t self, uint32_t job_id, uint32_t job_rc=0)
 		job_id, job_rc
 
 int
-slurm_terminate_job(slurm_t self, uint32_t job_id)
-	C_ARGS:
-		job_id
-
-int
 slurm_terminate_job_step(slurm_t self, uint32_t job_id, uint32_t step_id)
 	C_ARGS:
 		job_id, step_id

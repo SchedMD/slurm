@@ -1,5 +1,5 @@
 #!/usr/bin/perl -T
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Slurm qw(:constant);
 use POSIX qw(:signal_h);
 
@@ -24,7 +24,7 @@ ok($resp, "submit batch job") or diag ("submit_batch_job: " . $slurm->strerror()
 $jobid = $resp->{job_id} if $resp;
 
 
-# 3 - 5
+# 3 - 4
 SKIP: {
     skip "no job", 4 unless $jobid;
 
@@ -34,10 +34,6 @@ SKIP: {
     $rc = $slurm->terminate_job_step($jobid, 0);
     ok($rc == SLURM_SUCCESS || $slurm->get_errno() == ESLURM_ALREADY_DONE, "termite job step")
 	or diag("terminate_job_step: " . $slurm->strerror());
-
-    $rc = $slurm->terminate_job($jobid);
-    ok($rc == SLURM_SUCCESS || $slurm->get_errno() == ESLURM_ALREADY_DONE, "terminate job")
-	or diag("terminate_job: " . $slurm->strerror());
 }
 
 $slurm->kill_job($jobid, SIGKILL) if $jobid;
