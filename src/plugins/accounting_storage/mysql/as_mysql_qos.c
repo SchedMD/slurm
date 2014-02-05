@@ -935,6 +935,8 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
+		xfree(assoc_char);
+		xfree(name_char);
 		list_destroy(ret_list);
 		return NULL;
 	}

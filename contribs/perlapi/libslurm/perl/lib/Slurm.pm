@@ -578,18 +578,6 @@ Note the completion of a job and all of its steps.
     
 =back
 
-=head3 $rc = $slurm->terminate_job($job_id);
-
-Terminates all steps of an existing job by sending a REQUEST_TERMINATE_JOB rpc to all slurmd in the the job allocation, and then calls slurm_complete_job().
-
-=over 2
-    
-=item * IN $job_id: the job's id.
-    
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
-    
-=back
-    
 =head3 $rc = $slurm->terminate_job_step($job_id, $step_id);
 
 Terminates a job step by sending a REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step, and then calls slurm_complete_job_step() after verifying that all nodes in the job step no longer have running tasks from the job step.  (May take over 35 seconds to return.)
