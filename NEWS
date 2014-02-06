@@ -42,6 +42,10 @@ documents those changes that are of interest to users and admins.
  -- Fix the bug where --cpu_bind=map_cpu is interpreted as mask_cpu.
  -- Update the documentation egarding the state of cpu frequencies after
     a step using --cpu-freq completes.
+ -- CRAY - Fix issue when a job is requeued and nhc is still running as it is
+    being scheduled to run again.  This would erase the previous job info
+    that was still needed to clean up the nodes from the previous job run.
+    (Bug 526).
 
 * Changes in Slurm 14.03.0pre5
 ==============================
