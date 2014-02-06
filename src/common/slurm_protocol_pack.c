@@ -7832,6 +7832,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack32(msg->job_step_id, buffer);
 		pack32(msg->ntasks, buffer);
 		pack32(msg->uid, buffer);
+		packstr(msg->partition, buffer);
 		packstr(msg->user_name, buffer);
 		pack32(msg->gid, buffer);
 		pack32(msg->job_mem_lim, buffer);
@@ -8078,6 +8079,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->job_step_id, buffer);
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack32(&msg->uid, buffer);
+		safe_unpackstr_xmalloc(&msg->partition, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->user_name, &uint32_tmp, buffer);
 		safe_unpack32(&msg->gid, buffer);
 		safe_unpack32(&msg->job_mem_lim, buffer);

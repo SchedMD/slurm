@@ -505,6 +505,7 @@ extern int launch_p_step_launch(
 	launch_params.remote_output_filename =fname_remote_string(job->ofname);
 	launch_params.remote_input_filename = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename = fname_remote_string(job->efname);
+	launch_params.partition = job->partition;
 	launch_params.profile = opt.profile;
 	launch_params.task_prolog = opt.task_prolog;
 	launch_params.task_epilog = opt.task_epilog;

@@ -1129,6 +1129,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 		job_env.jobid = req->job_id;
 		job_env.node_list = req->complete_nodelist;
+		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;

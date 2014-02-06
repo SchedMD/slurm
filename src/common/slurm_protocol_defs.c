@@ -784,6 +784,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 
 	xfree(msg->ckpt_dir);
 	xfree(msg->restart_dir);
+	xfree(msg->partition);
 
 	if (msg->switch_job)
 		switch_g_free_jobinfo(msg->switch_job);

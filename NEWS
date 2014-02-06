@@ -47,6 +47,7 @@ documents those changes that are of interest to users and admins.
     that was still needed to clean up the nodes from the previous job run.
     (Bug 526).
  -- Set SLURM_JOB_PARTITION environment variable set for all job allocations.
+ -- Set SLURM_JOB_PARTITION environment variable for Prolog program.
 
 * Changes in Slurm 14.03.0pre5
 ==============================

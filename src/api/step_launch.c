@@ -262,6 +262,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.multi_prog	= params->multi_prog ? 1 : 0;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.task_dist	= params->task_dist;
+	launch.partition	= params->partition;
 	launch.pty              = params->pty;
 	launch.ckpt_dir         = params->ckpt_dir;
 	launch.restart_dir      = params->restart_dir;
@@ -438,6 +439,7 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	launch.multi_prog	= params->multi_prog ? 1 : 0;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.task_dist	= params->task_dist;
+	launch.partition	= params->partition;
 	launch.pty              = params->pty;
 	launch.ckpt_dir         = params->ckpt_dir;
 	launch.restart_dir      = params->restart_dir;
