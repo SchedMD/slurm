@@ -65,7 +65,7 @@
 #include "src/common/slurm_xlator.h"
 
 /* Set _DEBUG to 1 for detailed module debugging, 0 otherwise */
-#define _DEBUG 1
+#define _DEBUG 0
 
 /*
  * These variables are required by the generic plugin interface.  If they
