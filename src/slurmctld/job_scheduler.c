@@ -163,10 +163,25 @@ static void _job_queue_rec_del(void *x)
 static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 {
 	bool job_indepen = false;
+	uint16_t cleaning = 0;
 
 	xassert(job_ptr->magic == JOB_MAGIC);
 	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 		return false;
+
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning) {
+		/* Job's been requeued and the
+		 * previous run hasn't finished yet */
+		job_ptr->state_reason = WAIT_CLEANING;
+		xfree(job_ptr->state_desc);
+		debug3("sched: JobId=%u. State=PENDING. "
+		       "Reason=Cleaning.",
+		       job_ptr->job_id);
+		return false;
+	}
 
 #ifdef HAVE_FRONT_END
 	/* At least one front-end node up at this point */

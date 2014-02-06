@@ -1046,6 +1046,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "BlockMaxError";
 	case WAIT_BLOCK_D_ACTION:
 		return "BlockFreeAction";
+	case WAIT_CLEANING:
+		return "Cleaning";
 	default:
 		return "?";
 	}

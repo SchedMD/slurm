@@ -332,6 +332,8 @@ enum job_state_reason {
 				 * in error state to allow more jobs. */
 	WAIT_BLOCK_D_ACTION,    /* BLUEGENE Block is being freed,
 				 * can't allow more jobs. */
+	WAIT_CLEANING,          /* If a job is requeued and it is
+				 * still cleaning up from the last run. */
 };
 
 enum job_acct_types {
