@@ -97,6 +97,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li>Plugin Interface Details</li>
 <ul>
 <li><a href="authplugins.html">Authentication Plugin Programmer Guide</a></li>
+<li><a href="core_spec_plugins.html">Core Specialization Plugin Programmer Guide</a></li>
 <li><a href="crypto_plugins.html">Cryptographic Plugin Programmer Guide</a></li>
 <li><a href="ext_sensorsplugins.html">External Sensors Plugin Programmer Guide</a></li>
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather Plugin Programmer Guide</a></li>
@@ -122,6 +123,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 1 November 2013</p>
+<p style="text-align:center;">Last modified 6 February 2014</p>
 
 <!--#include virtual="footer.txt"-->

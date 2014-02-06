@@ -18,6 +18,7 @@ generated_html = \
 	cons_res_share.html \
 	contributor.html \
 	core_spec.html \
+	core_spec_plugins.html \
 	cpu_management.html \
 	cray.html \
 	crypto_plugins.html \
