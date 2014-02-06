@@ -1850,17 +1850,17 @@ static void _launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
 	prolog_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
 	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-														job_ptr->spank_job_env);
+						  job_ptr->spank_job_env);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;
 	agent_arg_ptr->node_count = 1;
   #ifdef HAVE_FRONT_END
-      xassert(job_ptr->front_end_ptr);
-      xassert(job_ptr->front_end_ptr->name);
-      agent_arg_ptr->hostlist = hostlist_create(job_ptr->front_end_ptr->name);
+	xassert(job_ptr->front_end_ptr);
+	xassert(job_ptr->front_end_ptr->name);
+	agent_arg_ptr->hostlist = hostlist_create(job_ptr->front_end_ptr->name);
   #else
-      agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
+	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
   #endif
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
 	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
