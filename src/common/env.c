@@ -750,8 +750,8 @@ int setup_env(env_t *env, bool preserve_env)
 	}
 
 	if (env->partition
-	    && setenvf(&env->env, "SLURM_PARTITION", "%s", env->partition)) {
-		error("Unable to set SLURM_PARTITION environment var.");
+	    && setenvf(&env->env, "SLURM_JOB_PARTITION", "%s", env->partition)) {
+		error("Unable to set SLURM_JOB_PARTITION environment var.");
 		rc = SLURM_FAILURE;
 	}
 
@@ -978,7 +978,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 				alloc->node_list);
 	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
 				alloc->alias_list);
-	env_array_overwrite_fmt(dest, "SLURM_PARTITION", "%s",
+	env_array_overwrite_fmt(dest, "SLURM_JOB_PARTITION", "%s",
 				alloc->partition);
 
 	set_distribution(desc->task_dist, &dist, &lllp_dist);
@@ -1138,7 +1138,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 					batch->array_task_id);
 	}
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
-	env_array_overwrite_fmt(dest, "SLURM_PARTITION", "%s", batch->partition);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_PARTITION", "%s", batch->partition);
 	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
 				batch->alias_list);
 

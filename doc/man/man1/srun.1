@@ -2184,6 +2184,10 @@ is used to create a new job allocation. Not set when srun is used only to
 create a job step (i.e. within an existing job allocation).
 
 .TP
+\fBSLURM_JOB_PARTITION\fR
+Name of the partition in which the job is running.
+
+.TP
 \fBSLURM_LAUNCH_NODE_IPADDR\fR
 IP address of the node from which the task launch was
 initiated (where the srun command ran from)
@@ -2221,9 +2225,6 @@ List of nodes allocated to the job
 .TP
 \fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Total number of processes in the current job
-.TP
-\fBSLURM_PARTITION\fR
-Name of the partition in which the job is running.
 .TP
 \fBSLURM_PRIO_PROCESS\fR
 The scheduling priority (nice value) at the time of job submission.
