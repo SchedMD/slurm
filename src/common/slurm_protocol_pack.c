@@ -8726,8 +8726,10 @@ _pack_prolog_launch_msg(
 	pack32(msg->job_id, buffer);
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
+
 	packstr(msg->alias_list, buffer);
 	packstr(msg->nodes, buffer);
+	packstr(msg->partition, buffer);
 	packstr(msg->std_err, buffer);
 	packstr(msg->std_out, buffer);
 	packstr(msg->work_dir, buffer);
@@ -8752,6 +8754,7 @@ _unpack_prolog_launch_msg(
 
 	safe_unpackstr_xmalloc(&launch_msg_ptr->alias_list, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->partition, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->std_err, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->std_out, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp, buffer);

@@ -832,6 +832,7 @@ typedef struct prolog_launch_msg {
 	uint32_t gid;
 	char *alias_list;		/* node name/address/hostnamne aliases */
 	char *nodes;			/* list of nodes allocated to job_step */
+	char *partition;		/* partition the job is running in */
 	char *std_err;			/* pathname of stderr */
 	char *std_out;			/* pathname of stdout */
 	char *work_dir;			/* full pathname of working directory */

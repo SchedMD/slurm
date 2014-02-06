@@ -131,9 +131,10 @@ typedef struct {
 typedef struct {
 	uint32_t jobid;
 	char *node_list;
+	char *partition;
+	char *resv_id;
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
-	char *resv_id;
 	uid_t uid;
 	char *user_name;
 } job_env_t;
@@ -1431,6 +1432,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 	job_env.jobid = req->job_id;
 	job_env.node_list = req->nodes;
+	job_env.partition = req->partition;
 	job_env.spank_job_env = req->spank_job_env;
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.uid = req->uid;
@@ -1523,6 +1525,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 
 		job_env.jobid = req->job_id;
 		job_env.node_list = req->nodes;
+		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
@@ -4438,6 +4441,9 @@ _build_env(job_env_t *job_env)
 	setenvf(&env, "SLURM_UID",   "%u", job_env->uid);
 	if (job_env->node_list)
 		setenvf(&env, "SLURM_NODELIST", "%s", job_env->node_list);
+
+	if (job_env->partition)
+		setenvf(&env, "SLURM_JOB_PARTITION", "%s", job_env->partition);
 
 	if (job_env->resv_id) {
 #if defined(HAVE_BG)
