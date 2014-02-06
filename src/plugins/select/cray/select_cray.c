@@ -1592,7 +1592,6 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 
-#ifdef HAVE_NATIVE_CRAY
 
 	if (slurmctld_conf.select_type_param & CR_NHC_NO) {
 		debug3("NHC_No set, not running NHC after allocations");
@@ -1603,20 +1602,6 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	jobinfo->cleaning = 1;
 
 	_spawn_cleanup_thread(job_ptr, _job_fini);
-#else
-	other_job_fini(job_ptr);
-	_remove_job_from_blades(jobinfo);
-
-	/* slurm_mutex_lock(&blade_mutex); */
-	/* char *tmp2 = bitmap2node_name(blade_nodes_running_jobs); */
-	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
-
-	/* info("removed %u '%s' '%s'", job_ptr->job_id, tmp2, tmp3); */
-	/* xfree(tmp2); */
-	/* xfree(tmp3); */
-	/* slurm_mutex_unlock(&blade_mutex); */
-
-#endif
 
 	return SLURM_SUCCESS;
 }
@@ -1736,12 +1721,13 @@ extern int select_p_step_start(struct step_record *step_ptr)
 
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
-#ifdef HAVE_NATIVE_CRAY
 	select_jobinfo_t *jobinfo = step_ptr->select_jobinfo->data;
 
+#ifdef HAVE_NATIVE_CRAY
 	if (aeld_running) {
 		_update_app(step_ptr->job_ptr, step_ptr, ALPSC_EV_END);
 	}
+#endif
 
 	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
 		debug3("NHC_No_Steps set not running NHC on steps.");
@@ -1770,12 +1756,6 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	_spawn_cleanup_thread(step_ptr, _step_fini);
 
 	return SLURM_SUCCESS;
-#else
-	other_step_finish(step_ptr);
-	_remove_step_from_blades(step_ptr);
-
-	return SLURM_SUCCESS;
-#endif
 }
 
 extern int select_p_pack_select_info(time_t last_query_time,
