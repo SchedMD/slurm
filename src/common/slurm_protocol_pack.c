@@ -7788,6 +7788,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->cpus_per_task, buffer);
 		pack16(msg->task_dist, buffer);
 		pack16(msg->node_cpus, buffer);
+		pack16(msg->job_core_spec, buffer);
 
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
 		for (i = 0; i < msg->nnodes; i++) {
@@ -8033,6 +8034,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->cpus_per_task, buffer);
 		safe_unpack16(&msg->task_dist, buffer);
 		safe_unpack16(&msg->node_cpus, buffer);
+		safe_unpack16(&msg->job_core_spec, buffer);
 
 		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;
@@ -9628,6 +9630,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		pack16(msg->cpu_bind_type,  buffer);
 		pack16(msg->cpus_per_task,  buffer);
 		pack16(msg->restart_cnt,    buffer);
+		pack16(msg->job_core_spec,  buffer);
 
 		pack32(msg->num_cpu_groups, buffer);
 		if (msg->num_cpu_groups) {
@@ -9807,6 +9810,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 		safe_unpack16(&launch_msg_ptr->cpu_bind_type,  buffer);
 		safe_unpack16(&launch_msg_ptr->cpus_per_task,  buffer);
 		safe_unpack16(&launch_msg_ptr->restart_cnt,    buffer);
+		safe_unpack16(&launch_msg_ptr->job_core_spec,  buffer);
 
 		safe_unpack32(&launch_msg_ptr->num_cpu_groups, buffer);
 		if (launch_msg_ptr->num_cpu_groups) {
@@ -9819,7 +9823,6 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 			if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
 				goto unpack_error;
 		}
-
 
 		safe_unpackstr_xmalloc(&launch_msg_ptr->alias_list,
 				       &uint32_tmp, buffer);

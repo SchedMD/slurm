@@ -231,6 +231,7 @@ typedef struct {
 					  * NOT FREE, IT IS JUST A
 					  * POINTER. */
 	mpmd_set_t     *mpmd_set;	/* MPMD specifications for Cray */
+	uint16_t	job_core_spec;	/* count of specialized cores */
 } stepd_step_rec_t;
 
 

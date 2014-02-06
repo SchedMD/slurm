@@ -88,7 +88,6 @@
 #include "src/slurmd/slurmd/reverse_tree_math.h"
 #include "src/slurmd/slurmd/xcpu.h"
 
-#include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/run_script.h"
@@ -1124,8 +1123,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
-		if (core_spec_g_set(0, req->job_core_spec))
-			error("core_spec_g_set(%u): %m", req->job_id);
 
 		memset(&job_env, 0, sizeof(job_env_t));
 
@@ -1584,8 +1581,6 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		     req->job_id, req->step_id, req->uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
-	if (core_spec_g_set(0, req->job_core_spec))
-		error("core_spec_g_set(%u): %m", req->job_id);
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
 				  (hostset_t)NULL);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
@@ -4689,8 +4684,6 @@ _run_epilog(job_env_t *job_env)
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(job_env->jobid);
-	if (core_spec_g_clear(0))
-		error("core_spec_g_clear(%u): %m", job_env->jobid);
 	error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
 				     -1, my_env, job_env->uid);
 	xfree(my_epilog);

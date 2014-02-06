@@ -427,6 +427,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 	job->nodeid  = nodeid;
 	job->debug   = msg->slurmd_debug;
 	job->cpus    = msg->node_cpus;
+	job->job_core_spec = msg->job_core_spec;
 
 	/* This needs to happen before acct_gather_profile_startpoll
 	   and only really looks at the profile in the job.
@@ -504,6 +505,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->stepid  = msg->step_id;
 	job->array_job_id  = msg->array_job_id;
 	job->array_task_id = msg->array_task_id;
+	job->job_core_spec = msg->job_core_spec;
 
 	job->batch   = true;
 	/* This needs to happen before acct_gather_profile_startpoll
@@ -547,6 +549,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	if (msg->cpus_per_node)
 		job->cpus    = msg->cpus_per_node[0];
+
 	format_core_allocs(msg->cred, conf->node_name, conf->cpus,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);

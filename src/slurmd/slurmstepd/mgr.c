@@ -1177,6 +1177,9 @@ fail1:
 		_send_step_complete_msgs(job);
 	}
 
+	if (core_spec_g_clear(job->cont_id))
+		error("core_spec_g_clear: %m");
+
 	xfree(ckpt_type);
 	return(rc);
 }
@@ -1617,6 +1620,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 //	jobacct_gather_set_proctrack_container_id(job->cont_id);
 	if (container_g_add_cont(job->jobid, job->cont_id) != SLURM_SUCCESS)
 		error("container_g_add_cont(%u): %m", job->jobid);
+	if (core_spec_g_set(job->cont_id, job->job_core_spec))
+		error("core_spec_g_set: %m");
 
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
