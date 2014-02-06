@@ -874,6 +874,7 @@ typedef struct batch_job_launch_msg {
 	slurm_cred_t *cred;
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t overcommit;	/* if resources being over subscribed */
+	char    *partition;	/* partition used to run job */
 	uint32_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
 				  * default=0 (no limit) */

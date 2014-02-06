@@ -2795,22 +2795,45 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 {
 	xassert(msg != NULL);
 
-	pack32(msg->error_code, buffer);
-	pack32(msg->job_id, buffer);
-	pack32(msg->pn_min_memory, buffer);
-	packstr(msg->alias_list, buffer);
-	packstr(msg->node_list, buffer);
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		pack32(msg->error_code, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->pn_min_memory, buffer);
+		packstr(msg->alias_list, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->partition, buffer);
 
-	pack32(msg->num_cpu_groups, buffer);
-	if (msg->num_cpu_groups) {
-		pack16_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
-		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+		pack32(msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups) {
+			pack16_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
+			pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+		}
+
+		pack32(msg->node_cnt, buffer);
+
+		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
+					     protocol_version);
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		pack32(msg->error_code, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->pn_min_memory, buffer);
+		packstr(msg->alias_list, buffer);
+		packstr(msg->node_list, buffer);
+
+		pack32(msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups) {
+			pack16_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
+			pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+		}
+
+		pack32(msg->node_cnt, buffer);
+
+		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
+					     protocol_version);
+	} else {
+		error("_pack_resource_allocation_response_msg: "
+		      "protocol_version %hu not supported", protocol_version);
 	}
-
-	pack32(msg->node_cnt, buffer);
-
-	select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
-				     protocol_version);
 }
 
 static int
@@ -2827,7 +2850,37 @@ _unpack_resource_allocation_response_msg(
 	*msg = tmp_ptr;
 
 	/* load the data values */
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		safe_unpack32(&tmp_ptr->error_code, buffer);
+		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->pn_min_memory, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->alias_list, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->partition, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
+		if (tmp_ptr->num_cpu_groups > 0) {
+			safe_unpack16_array(&tmp_ptr->cpus_per_node,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+		} else {
+			tmp_ptr->cpus_per_node = NULL;
+			tmp_ptr->cpu_count_reps = NULL;
+		}
+
+		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->error_code, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->pn_min_memory, buffer);
@@ -9615,6 +9668,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
 		pack32(msg->uid, buffer);
+		packstr(msg->partition, buffer);
 		packstr(msg->user_name, buffer);
 		pack32(msg->gid, buffer);
 		pack32(msg->ntasks, buffer);
@@ -9793,6 +9847,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->step_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->partition,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->user_name,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);

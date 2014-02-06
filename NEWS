@@ -46,6 +46,7 @@ documents those changes that are of interest to users and admins.
     being scheduled to run again.  This would erase the previous job info
     that was still needed to clean up the nodes from the previous job run.
     (Bug 526).
+ -- Add SLURM_PARTITION to environment variables set for all job allocations.
 
 * Changes in Slurm 14.03.0pre5
 ==============================

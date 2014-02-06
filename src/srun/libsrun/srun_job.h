@@ -97,6 +97,7 @@ typedef struct srun_job {
 
 	char *alias_list;	/* node name/address/hostname aliases */
 	char *nodelist;		/* nodelist in string form */
+	char *partition;	/* name of partition running job */
 
 	fname_t *ifname;
 	fname_t *ofname;

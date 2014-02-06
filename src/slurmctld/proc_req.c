@@ -966,6 +966,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		alloc_msg.job_id         = job_ptr->job_id;
 		alloc_msg.node_cnt       = job_ptr->node_cnt;
 		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
+		alloc_msg.partition      = xstrdup(job_ptr->partition);
 		alloc_msg.alias_list     = xstrdup(job_ptr->alias_list);
 		alloc_msg.select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
@@ -2427,11 +2428,12 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 			}
 			job_info_resp_msg.num_cpu_groups = j + 1;
 		}
+		job_info_resp_msg.alias_list     = xstrdup(job_ptr->alias_list);
 		job_info_resp_msg.error_code     = error_code;
 		job_info_resp_msg.job_id         = job_info_msg->job_id;
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
-		job_info_resp_msg.alias_list     = xstrdup(job_ptr->alias_list);
+		job_info_resp_msg.partition      = xstrdup(job_ptr->partition);
 		job_info_resp_msg.select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_read_lock);
@@ -4121,6 +4123,7 @@ static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->uid = uid;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->alias_list);
+	launch_msg_ptr->partition = xstrdup(job_ptr->partition);
 	launch_msg_ptr->restart_cnt = job_ptr->restart_cnt;
 	if (job_ptr->details) {
 		launch_msg_ptr->pn_min_memory = job_ptr->details->

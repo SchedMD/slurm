@@ -474,6 +474,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->user_name);
 		xfree(msg->alias_list);
 		xfree(msg->nodes);
+		xfree(msg->partition);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
@@ -2035,9 +2036,10 @@ extern void slurm_free_resource_allocation_response_msg (
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
 		xfree(msg->alias_list);
-		xfree(msg->node_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
+		xfree(msg->node_list);
+		xfree(msg->partition);
 		xfree(msg);
 	}
 }

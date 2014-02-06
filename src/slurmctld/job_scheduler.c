@@ -1234,6 +1234,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
 	launch_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	launch_msg_ptr->partition = xstrdup(job_ptr->partition);
 	launch_msg_ptr->overcommit = job_ptr->details->overcommit;
 	launch_msg_ptr->open_mode  = job_ptr->details->open_mode;
 	launch_msg_ptr->acctg_freq = xstrdup(job_ptr->details->acctg_freq);

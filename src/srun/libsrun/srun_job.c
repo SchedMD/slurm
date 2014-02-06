@@ -94,6 +94,7 @@ typedef struct allocation_info {
 	uint32_t                nnodes;
 	char                   *nodelist;
 	uint32_t                num_cpu_groups;
+	char                   *partition;
 	dynamic_plugin_data_t  *select_jobinfo;
 	uint32_t                stepid;
 } allocation_info_t;
@@ -366,6 +367,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->num_cpu_groups = resp->num_cpu_groups;
 	ai->cpus_per_node  = resp->cpus_per_node;
 	ai->cpu_count_reps = resp->cpu_count_reps;
+	ai->partition = resp->partition;
 
 /* 	info("looking for %d nodes out of %s with a must list of %s", */
 /* 	     ai->nnodes, ai->nodelist, opt.nodelist); */
@@ -391,6 +393,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->alias_list     = resp->alias_list;
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
+	i->partition      = resp->partition;
 	i->jobid          = resp->job_id;
 	i->stepid         = NO_VAL;
 	i->num_cpu_groups = resp->num_cpu_groups;
@@ -767,6 +770,7 @@ _job_create_structure(allocation_info_t *ainfo)
 
  	job->alias_list = xstrdup(ainfo->alias_list);
  	job->nodelist = xstrdup(ainfo->nodelist);
+ 	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
