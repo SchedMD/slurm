@@ -335,7 +335,10 @@ fini:
 		     nhc_info->jobid, nhc_info->apid, nhc_info->nodelist);
 
 	/* simulate sleeping */
-	sleep(2);
+	sleep(1);
+	if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("_run_nhc jobid %u and apid %"PRIu64" completed",
+		     nhc_info->jobid, nhc_info->apid);
 	return 0;
 #endif
 }
