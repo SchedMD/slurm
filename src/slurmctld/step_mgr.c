@@ -224,6 +224,8 @@ static void _internal_step_complete(
 #ifndef HAVE_NATIVE_CRAY
 		/* On a native cray this is ran after the NHC is
 		   called which could take up to 3 minutes.
+
+		   IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!!
 		*/
 		post_job_step(step_ptr);
 #endif
