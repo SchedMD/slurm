@@ -78,6 +78,8 @@ typedef struct env_options {
 	char *ckpt_dir;		/* --ckpt-dir=                 */
 	uint16_t restart_cnt;	/* count of job restarts	*/
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
+	uint32_t uid;		/* user ID */
+	char *user_name;	/* user name */
 } env_t;
 
 

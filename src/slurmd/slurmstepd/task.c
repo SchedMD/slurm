@@ -365,6 +365,8 @@ exec_task(stepd_step_rec_t *job, int i)
 	job->envtp->distribution = -1;
 	job->envtp->ckpt_dir = xstrdup(job->ckpt_dir);
 	job->envtp->batch_flag = job->batch;
+	job->envtp->uid = job->uid;
+	job->envtp->user_name = xstrdup(job->user_name);
 
 	/* Modify copy of job's environment. Do not alter in place or
 	 * concurrent searches of the environment can generate invalid memory
