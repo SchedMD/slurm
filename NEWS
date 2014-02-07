@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
  -- Retry task exit message from slurmstepd to srun on message timeout.
  -- Correction to logic reserving all nodes in a specified partition.
  -- Added support for selecting AMD GPU by setting GPU_DEVICE_ORDINAL env var.
+ -- Properly enforce GrpSubmit limit for job arrays.
 
 * Changes in Slurm 2.6.5
 ========================

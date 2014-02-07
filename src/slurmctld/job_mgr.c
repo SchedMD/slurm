@@ -3014,6 +3014,7 @@ static void _create_job_array(struct job_record *job_ptr,
 			break;
 		job_ptr_new->array_job_id  = job_ptr->job_id;
 		job_ptr_new->array_task_id = i;
+		acct_policy_add_job_submit(job_ptr);
 	}
 }
 
