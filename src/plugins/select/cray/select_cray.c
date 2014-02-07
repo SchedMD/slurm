@@ -187,8 +187,9 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	int rc = other_select_fini();
 	destroy_config();
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
