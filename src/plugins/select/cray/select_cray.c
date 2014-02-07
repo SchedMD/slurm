@@ -1071,7 +1071,7 @@ extern int fini ( void )
 
 	slurm_mutex_unlock(&blade_mutex);
 
-	return SLURM_SUCCESS;
+	return other_select_fini();
 }
 
 /*
