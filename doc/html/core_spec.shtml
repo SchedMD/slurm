@@ -57,8 +57,13 @@ job allocation request options, especially --cores-per-socket.</p>
 <h2>System Configuration</h2>
 <p>Core Specialization is only supported if <i>SelectType</i> is configured
 as either <i>select/cons_res</i> or <i>select/cray</i>. A job's core
-specialization option will be silently cleared on other configurations.</p>
+specialization option will be silently cleared on other configurations.
+In addition, each compute node's core count must be configured or the CPUs
+count must be configured to the node's core count.
+If the core count is not configured and the CPUs value is configured to the
+count of hyperthreads, then hyperthreads rather than cores will be reserved for
+system use.</p>
 
-<p style="text-align:center;">Last modified 8 November 2013</p>
+<p style="text-align:center;">Last modified 7 February 2014</p>
 
 <!--#include virtual="footer.txt"-->
