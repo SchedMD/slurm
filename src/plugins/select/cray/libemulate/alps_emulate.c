@@ -512,6 +512,7 @@ extern long basil_reserve(const char *user, const char *batch_id,
 	usleep(5000);
 #endif
 
+	free_nodespec(ns_head);
 	job_id = atol(batch_id);
 	for (i = 0; i < MAX_RESV_CNT; i++) {
 		int my_resv_id;
