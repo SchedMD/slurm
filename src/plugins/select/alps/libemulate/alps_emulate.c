@@ -276,6 +276,15 @@ extern void free_nodespec(struct nodespec *head)
 	}
 }
 
+
+static void _rsvn_free_param_accel(struct basil_accel_param *a)
+{
+	if (a) {
+		_rsvn_free_param_accel(a->next);
+		xfree(a);
+	}
+}
+
 /*
  *	Routines to interact with SDB database (uses prepared statements)
  */
@@ -513,6 +522,7 @@ extern long basil_reserve(const char *user, const char *batch_id,
 #endif
 
 	free_nodespec(ns_head);
+	_rsvn_free_param_accel(accel_head);
 	job_id = atol(batch_id);
 	for (i = 0; i < MAX_RESV_CNT; i++) {
 		int my_resv_id;
