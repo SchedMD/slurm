@@ -41,6 +41,7 @@ documents those changes that are of interest to users and admins.
  -- Added support for selecting AMD GPU by setting GPU_DEVICE_ORDINAL env var.
  -- Properly enforce GrpSubmit limit for job arrays.
  -- CRAY - fix issue with using CR_ONE_TASK_PER_CORE
+ -- CRAY - fix memory leak when using accelerators
 
 * Changes in Slurm 2.6.5
 ========================

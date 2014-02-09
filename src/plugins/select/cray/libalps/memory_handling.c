@@ -40,6 +40,14 @@ static void _free_basil_label(struct basil_label *l)
 	}
 }
 
+static void _free_basil_accel(struct basil_node_accelerator *a)
+{
+	if (a) {
+		_free_basil_accel(a->next);
+		xfree(a->allocation);
+		xfree(a);
+	}
+}
 static void _free_basil_segment(struct basil_segment *s)
 {
 	if (s) {
@@ -55,6 +63,7 @@ static void _free_basil_node(struct basil_node *n)
 {
 	if (n) {
 		_free_basil_node(n->next);
+		_free_basil_accel(n->accel_head);
 		_free_basil_segment(n->seg_head);
 		xfree(n);
 	}
