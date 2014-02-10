@@ -115,13 +115,14 @@ extern uid_t *get_group_members(char *group_name)
 	while (1) {
 		res = getgrnam_r(group_name, &grp, grp_buffer, buflen,
 				 &grp_result);
-		if ((res != 0) && (errno == ERANGE)) {
-			buflen *= 2;
-			xrealloc(grp_buffer, buflen);
-			continue;
-		}
-		if ((res != 0) || (grp_result == NULL)) {
-			error("Could not find configured group %s", group_name);
+		if (res != 0) {
+			if (errno == ERANGE) {
+				buflen *= 2;
+				xrealloc(grp_buffer, buflen);
+				continue;
+			}
+			error("%s: Could not find configured group %s",
+			      __func__, group_name);
 			xfree(grp_buffer);
 			return NULL;
 		}
@@ -135,13 +136,14 @@ extern uid_t *get_group_members(char *group_name)
 	setgrent_r(&fp);
 	while (1) {
 		res = getgrent_r(&grp, grp_buffer, buflen, &fp);
-		if ((res != 0) && (errno == ERANGE)) {
-			buflen *= 2;
-			xrealloc(grp_buffer, buflen);
-			continue;
-		}
-		if (res != 0)
+		if (res != 0) {
+			if (errno == ERANGE) {
+				buflen *= 2;
+				xrealloc(grp_buffer, buflen);
+				continue;
+			}
 			break;
+		}
 		grp_result = &grp;
 #elif defined (__APPLE__) || defined (__CYGWIN__)
 	setgrent();
@@ -152,13 +154,14 @@ extern uid_t *get_group_members(char *group_name)
 	setgrent();
 	while (1) {
 		res = getgrent_r(&grp, grp_buffer, buflen, &grp_result);
-		if ((res != 0) && (errno == ERANGE)) {
-			buflen *= 2;
-			xrealloc(grp_buffer, buflen);
-			continue;
-		}
-		if ((res != 0) || (grp_result == NULL))
+		if (res != 0) {
+			if (errno == ERANGE) {
+				buflen *= 2;
+				xrealloc(grp_buffer, buflen);
+				continue;
+			}
 			break;
+		}
 #endif
 	        if (grp_result->gr_gid == my_gid) {
 			if (strcmp(grp_result->gr_name, group_name)) {
@@ -177,7 +180,7 @@ extern uid_t *get_group_members(char *group_name)
 					continue;
 				if (j+1 >= uid_cnt) {
 					uid_cnt += 100;
-					xrealloc(group_uids, 
+					xrealloc(group_uids,
 						 (sizeof(uid_t) * uid_cnt));
 				}
 				group_uids[j++] = my_uid;
@@ -230,7 +233,7 @@ extern void clear_group_cache(void)
 	pthread_mutex_unlock(&group_cache_mutex);
 }
 
-/* Get a record from our group/uid cache. 
+/* Get a record from our group/uid cache.
  * Return NULL if not found. */
 static uid_t *_get_group_cache(char *group_name)
 {
