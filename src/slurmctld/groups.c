@@ -61,6 +61,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "slurm/slurm_errno.h"
+
 #define _DEBUG 0
 
 static void   _cache_del_func(void *x);
@@ -113,6 +115,7 @@ extern uid_t *get_group_members(char *group_name)
 	/* We need to check for !grp_result, since it appears some
 	 * versions of this function do not return an error on failure. */
 	while (1) {
+		slurm_seterrno(0);
 		res = getgrnam_r(group_name, &grp, grp_buffer, buflen,
 				 &grp_result);
 		if (res != 0) {
@@ -135,6 +138,7 @@ extern uid_t *get_group_members(char *group_name)
 #ifdef HAVE_AIX
 	setgrent_r(&fp);
 	while (1) {
+		slurm_seterrno(0);
 		res = getgrent_r(&grp, grp_buffer, buflen, &fp);
 		if (res != 0) {
 			if (errno == ERANGE) {
@@ -153,6 +157,7 @@ extern uid_t *get_group_members(char *group_name)
 #else
 	setgrent();
 	while (1) {
+		slurm_seterrno(0);
 		res = getgrent_r(&grp, grp_buffer, buflen, &grp_result);
 		if (res != 0) {
 			if (errno == ERANGE) {
