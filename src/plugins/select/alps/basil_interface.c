@@ -726,7 +726,6 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	char *user, batch_id[16];
 	struct basil_accel_param* bap;
 	uint16_t nppcu = 0;
-//	uint16_t hwthreads_per_core = 1;
 
 	if (!job_ptr->job_resrcs || job_ptr->job_resrcs->nhosts == 0)
 		return SLURM_SUCCESS;
@@ -776,8 +775,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	for (i = first_bit; i <= last_bit; i++) {
 		struct node_record *node_ptr = node_record_table_ptr + i;
 		uint32_t node_cpus, node_mem;
+		uint16_t threads = 1;
 		uint32_t basil_node_id;
-		/* uint32_t node_tasks; */
 
 		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
 			continue;
@@ -798,11 +797,15 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 		if (slurmctld_conf.fast_schedule) {
 			node_cpus = node_ptr->config_ptr->cpus;
+			threads = node_ptr->config_ptr->threads;
 			node_mem  = node_ptr->config_ptr->real_memory;
 		} else {
 			node_cpus = node_ptr->cpus;
+			threads = node_ptr->threads;
 			node_mem  = node_ptr->real_memory;
 		}
+
+		node_cpus = adjust_cpus_nppcu(nppcu, threads, node_cpus);
 
 		/* On a reservation we can only run one job per node
 		   on a cray so allocate all the cpuss on each node
