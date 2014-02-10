@@ -129,11 +129,17 @@
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
  * "configure --enable-memory-leak-debug" then execute
- * $ valgrind --tool=memcheck --leak-check=yes --num-callers=8 \
- *   --leak-resolution=med ./slurmctld -Dc >valg.ctld.out 2>&1
+ *
+ * $ valgrind --tool=memcheck --leak-check=yes --num-callers=40 \
+ *   --leak-resolution=high ./slurmctld -Dc >valg.ctld.out 2>&1
  *
  * Then exercise the slurmctld functionality before executing
  * > scontrol shutdown
+ *
+ * Note that --enable-memory-leak-debug will cause the daemon to
+ * unload the shared objects at exit thus preventing valgrind
+ * to display the stack where the eventual leaks may be.
+ * It is always best to test with and without --enable-memory-leak-debug.
  *
  * The OpenSSL code produces a bunch of errors related to use of
  *    non-initialized memory use.
