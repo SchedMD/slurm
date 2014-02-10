@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 14.03.0pre7
+==============================
+
 * Changes in Slurm 14.03.0pre6
 ==============================
  -- Modify slurmstepd to log messages according to the LogTimeFormat
