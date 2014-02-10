@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.0pre7
 ==============================
+ -- Handle the case in which errno is not reset to 0 after calling
+    getgrent_r(), which causes the controller to core dump.
 
 * Changes in Slurm 14.03.0pre6
 ==============================
