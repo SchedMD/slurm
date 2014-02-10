@@ -1831,28 +1831,6 @@ The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.
 .RS
 .TP
-\fBdefault_queue_depth=#\fR
-The default number of jobs to attempt scheduling (i.e. the queue depth) when a
-running job completes or other routine actions occur. The full queue will be
-tested on a less frequent basis. The default value is 100.
-See the \fBpartition_job_depth\fR option to limit depth by partition.
-In the case of large clusters (more than 1000 nodes), configuring a relatively
-small value may be desirable.
-Specifying a large value (say 1000 or higher) can be expected to result in
-poor system responsiveness since this scheduling logic will not release
-locks for other events to occur.
-It would be better to let the backfill scheduler process a larger number of jobs
-(see \fBmax_job_bf\fR, \fBbf_continue\fR  and other options here for more
-information).
-.TP
-\fBdefer\fR
-Setting this option will avoid attempting to schedule each job
-individually at job submit time, but defer it until a later time when
-scheduling multiple jobs simultaneously may be possible.
-This option may improve system responsiveness when large numbers of jobs
-(many hundreds) are submitted at the same time, but it will delay the
-initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
-.TP
 \fBbf_continue\fR
 The backfill scheduler periodically releases locks in order to permit other
 operations to proceed rather than blocking all activity for what could be an
@@ -1905,6 +1883,28 @@ In order limit the amount of data managed by the backfill scheduler,
 if the value of \fBbf_window\fR is increased, then it is generally advisable
 to also increase \fBbf_resolution\fR.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+.TP
+\fBdefault_queue_depth=#\fR
+The default number of jobs to attempt scheduling (i.e. the queue depth) when a
+running job completes or other routine actions occur. The full queue will be
+tested on a less frequent basis. The default value is 100.
+See the \fBpartition_job_depth\fR option to limit depth by partition.
+In the case of large clusters (more than 1000 nodes), configuring a relatively
+small value may be desirable.
+Specifying a large value (say 1000 or higher) can be expected to result in
+poor system responsiveness since this scheduling logic will not release
+locks for other events to occur.
+It would be better to let the backfill scheduler process a larger number of jobs
+(see \fBmax_job_bf\fR, \fBbf_continue\fR  and other options here for more
+information).
+.TP
+\fBdefer\fR
+Setting this option will avoid attempting to schedule each job
+individually at job submit time, but defer it until a later time when
+scheduling multiple jobs simultaneously may be possible.
+This option may improve system responsiveness when large numbers of jobs
+(many hundreds) are submitted at the same time, but it will delay the
+initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
 .TP
 \fBmax_job_bf=#\fR
 The maximum number of jobs to attempt backfill scheduling for
