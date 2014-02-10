@@ -708,12 +708,14 @@ extern int schedule(uint32_t job_limit)
 {
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
-	int error_code, failed_part_cnt = 0, job_cnt = 0, i;
+	int error_code, failed_part_cnt = 0, job_cnt = 0, i, j, part_cnt;
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr, **failed_parts = NULL;
 	bitstr_t *save_avail_node_bitmap;
+	struct part_record **sched_part_ptr = NULL;
+	int *sched_part_jobs = NULL;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
@@ -727,6 +729,7 @@ extern int schedule(uint32_t job_limit)
 	static bool fifo_sched = false;
 	static int sched_timeout = 0;
 	static int def_job_limit = 100;
+	static int max_jobs_per_part = 0;
 	time_t now = time(NULL), sched_start;
 
 	DEF_TIMERS;
@@ -764,6 +767,18 @@ extern int schedule(uint32_t job_limit)
 				      "default_queue_depth value of %d", i);
 			} else {
 				def_job_limit = i;
+			}
+		}
+
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "partition_job_depth="))) {
+		/*                                 01234567890123456789 */
+			i = atoi(tmp_ptr + 20);
+			if (i < 0) {
+				error("ignoring SchedulerParameters: "
+				      "partition_job_depth value of %d", i);
+			} else {
+				max_jobs_per_part = i;
 			}
 		}
 		xfree(sched_params);
@@ -819,9 +834,23 @@ extern int schedule(uint32_t job_limit)
 	}
 #endif
 
-	failed_parts = xmalloc(sizeof(struct part_record *) *
-			       list_count(part_list));
+	part_cnt = list_count(part_list);
+	failed_parts = xmalloc(sizeof(struct part_record *) * part_cnt);
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
+
+	if (max_jobs_per_part) {
+		ListIterator part_iterator;
+		sched_part_ptr  = xmalloc(sizeof(struct part_record *) *
+					  part_cnt);
+		sched_part_jobs = xmalloc(sizeof(int) * part_cnt);
+		part_iterator = list_iterator_create(part_list);
+		i = 0;
+		while ((part_ptr = (struct part_record *)
+				   list_next(part_iterator))) {
+			sched_part_ptr[i++] = part_ptr;
+		}
+		list_iterator_destroy(part_iterator);
+	}
 
 	debug("sched: Running job scheduler");
 	/*
@@ -892,6 +921,20 @@ next_part:			part_ptr = (struct part_record *)
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
 			break;
+		}
+
+		if (max_jobs_per_part) {
+			bool skip_job = false;
+			for (j = 0; j < part_cnt; j++) {
+				if (sched_part_ptr[j] != job_ptr->part_ptr)
+					continue;
+				if (sched_part_jobs[j]++ >=
+				    max_jobs_per_part)
+					skip_job = true;
+				break;
+			}
+			if (skip_job)
+				continue;
 		}
 		if (job_depth++ > job_limit) {
 			debug3("sched: already tested %u jobs, breaking out",
@@ -1127,6 +1170,8 @@ next_part:			part_ptr = (struct part_record *)
 	} else {
 		FREE_NULL_LIST(job_queue);
 	}
+	xfree(sched_part_ptr);
+	xfree(sched_part_jobs);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("schedule");
 

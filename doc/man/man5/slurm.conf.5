@@ -1835,6 +1835,7 @@ Multiple options may be comma separated.
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
 running job completes or other routine actions occur. The full queue will be
 tested on a less frequent basis. The default value is 100.
+See the \fBpartition_job_depth\fR option to limit depth by partition.
 In the case of large clusters (more than 1000 nodes), configuring a relatively
 small value may be desirable.
 Specifying a large value (say 1000 or higher) can be expected to result in
@@ -1876,6 +1877,7 @@ limit. This can be especially helpful for systems with large numbers of
 partitions and jobs.
 The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+Also see the \fBpartition_job_depth\fR option.
 .TP
 \fBbf_max_job_user=#\fR
 The maximum number of jobs per user to attempt backfill scheduling for,
@@ -1923,6 +1925,16 @@ after this number of job dependencies have been tested. The default value is
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 300 seconds.
+.TP
+\fBpartition_job_depth=#\fR
+The default number of jobs to attempt scheduling (i.e. the queue depth)
+from each partition/queue in Slurm's main scheduling logic.
+The functionality is similar to that provided by the \fBbf_max_job_part\fR
+option for the backfill scheduling logic.
+The default value is 0 (no limit).
+Job's excluded from attempted scheduling based upon partition will not be
+counted against the \fBdefault_queue_depth\fR limit.
+Also see the \fBbf_max_job_part\fR option.
 .RE
 
 .TP

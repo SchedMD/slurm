@@ -56,6 +56,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added SchedulingParameters paramter of "CR_LLN" and partition parameter of
     "LLN=yes|no" to enable loadbased scheduling.
  -- In "SchedulerParameters", change default max_job_bf value from 50 to 100.
+ -- Added "SchedulerParameters" option of "partition_job_depth" to limit
+    scheduling logic depth by partition.
  -- Added "JobAcctGatherParams" configuration parameter. Value of "NoShare"
     disables accounting for shared memory.
  -- Added FairShareDampeningFactor configuration parameter to offer a greater
