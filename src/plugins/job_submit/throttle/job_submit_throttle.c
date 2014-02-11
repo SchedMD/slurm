@@ -159,6 +159,17 @@ static void _reset_counters(void)
 	}
 }
 
+extern int init(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
+{
+	xfree(thru_put_array);
+	return SLURM_SUCCESS;
+}
+
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
