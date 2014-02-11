@@ -1573,13 +1573,17 @@ exits with a non\-zero exit code.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fIhost1,host2,...\fR or \fIfilename\fR>
-Request a specific list of hosts. The job will contain \fIat least\fR
-these hosts. The list may be specified as a comma\-separated list of
-hosts, a range of hosts (host[1\-5,7,...] for example), or a filename.
-The host list will be assumed to be a filename if it contains a "/"
-character. If you specify a max node count (\-N1\-2) if there are more
-than 2 hosts in the file only the first 2 nodes will be used in the
-request list.
+Request a specific list of hosts.
+Unless constrained by the maximum node count, the job will contain
+\fIall\fR of these hosts.
+The list may be specified as a comma\-separated list of hosts, a range of hosts
+(host[1\-5,7,...] for example), or a filename.
+The host list will be assumed to be a filename if it contains a "/" character.
+If you specify a maximum node count and the host list contains more nodes, the
+extra node names will be silently ignored.
+If you specify a minimum node or processor count larger than can be satisfied
+by the supplied host list, additional resources will be allocated on other
+nodes as needed.
 Rather than repeating a host name multiple times, an asterisk and
 a repitition count may be appended to a host name. For example
 "host1,host1" and "host1*2" are equivalent.

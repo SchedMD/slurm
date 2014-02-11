@@ -1359,9 +1359,18 @@ errors will be displayed.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fInode name list\fR>
-Request a specific list of node names.  The list may be specified as a
-comma\-separated list of node names, or a range of node names
-(e.g. mynode[1\-5,7,...]).  Duplicate node names in the list will be ignored.
+Request a specific list of hosts.
+Unless constrained by the maximum node count, the job will contain
+\fIall\fR of these hosts.
+The list may be specified as a comma\-separated list of hosts, a range of hosts
+(host[1\-5,7,...] for example), or a filename.
+The host list will be assumed to be a filename if it contains a "/" character.
+If you specify a maximum node count and the host list contains more nodes, the
+extra node names will be silently ignored.
+If you specify a minimum node or processor count larger than can be satisfied
+by the supplied host list, additional resources will be allocated on other
+nodes as needed.
+Duplicate node names in the list will be ignored.
 The order of the node names in the list is not important; the node names
 will be sorted by SLURM.
 
