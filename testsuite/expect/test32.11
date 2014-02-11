@@ -138,18 +138,26 @@ if {[wait_for_file $file_out] == 0} {
 }
 if {$verbose != 1} {
 	send_user "\nFAILURE: Failed to honor verbose option ($verbose != 1)\n"
-	exit 1
+	set exit_code 1
 }
 if {$file_cnt != $node_cnt} {
 	send_user "\nFAILURE: Failed to gather files from all allocated nodes ($file_cnt != $node_cnt)\n"
-	exit 1
+	set exit_code 1
 }
 if {$rm_cnt != $node_cnt} {
 	send_user "\nFAILURE: Failed to remove gathered files from all allocated nodes ($rm_cnt != $node_cnt)\n"
-	exit 1
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
+} elseif {[test_launch_poe]} {
+	send_user "\nWARNING: Sporatic failures with POE are expected. Please retest.\n"
+#	POE BUG: If the application exits immediately then pmdv12 hangs until
+#	slurm kills it with a timeout, thus the sleep below is required:
+#	F S   UID   PID  PPID  C PRI  NI ADDR SZ WCHAN TTY   TIME CMD
+#	4 R  1001 17141 17137 99  80   0 - 33410 ?    ?  00:00:02 pmdv12
+#	0 Z  1001 17152 17141  0  80   0 -     0 exit ?  00:00:00 test1.33.exit.b <defunct>
 }
+exit $exit_code
