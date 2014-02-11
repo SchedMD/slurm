@@ -30,7 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id       "32.4"
+set test_id       "32.11"
 set job_id        0
 set hostname      ""
 set file_in       "test${test_id}.in"

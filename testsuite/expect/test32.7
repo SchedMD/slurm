@@ -70,7 +70,7 @@ set env(PATH) $slurm_dir/bin:$env(PATH)
 make_bash_script $file_in "
 env | grep SLURM_NNODES
 $bin_rm -f ${sgather_out}\*
-$srun $bin_rm $sgather_tmp
+$srun $bin_rm -f $sgather_tmp
 $sgather $sgather_tmp $sgather_out
 echo GatherExitPart1=\$?
 $sgather -f $sgather_tmp $sgather_out
@@ -113,6 +113,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		eof {
+			send_user "\nNo worries about failing to open files, these are expected\n"
 			wait
 		}
 	}
