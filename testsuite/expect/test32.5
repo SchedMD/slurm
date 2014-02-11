@@ -70,8 +70,7 @@ set env(PATH) $slurm_dir/bin:$env(PATH)
 make_bash_script $file_in "
 env | grep SLURM_NNODES
 $bin_rm -f ${sgather_out}\*
-$srun $bin_rm -f $sgather_tmp
-$srun $bin_cp $sgather $sgather_tmp
+$srun $bin_cp -f $sgather $sgather_tmp
 $sgather -k $sgather_tmp $sgather_out
 sum $sgather ${sgather_out}\*
 $bin_rm ${sgather_out}\*
