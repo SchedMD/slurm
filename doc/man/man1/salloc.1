@@ -812,20 +812,13 @@ job can use this at a time this option will allocate every node in the
 cluster.  In steps inside the allocation wish to run on less than the
 full system they must specify the node count for each step.
 .TP
-\fBnetwork\fR
-Use the network tiles counters (per blade and per node basis).
-.TP
-\fBprocessor\fR
-Use the processor tiles counters (per blade and per node basis).
-.TP
-.RE
-
-.br
-.br
-In the case of \fBnetwork\fR and \fBprocessor\fR only nodes requested
+\fBblade\fR
+Use the blade network performance counters. Only nodes requested
 will be marked in use for the job allocation.  If the job does not
 fill up the entire blade(s) allocated to the job those blade(s) are not
 able to be used by other jobs, but will appear in the state PerfCnts.
+.TP
+.RE
 
 .br
 .br

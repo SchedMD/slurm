@@ -112,8 +112,7 @@ typedef struct {
 typedef enum {
 	NPC_NONE, // Don't use network performance counters.
 	NPC_SYS, // Use the system-wide network performance counters.
-	NPC_NET, // Use the network tiles counters
-	NPC_PROC, // Use the processor tiles counters
+	NPC_BLADE, // NPC on a blade
 } npc_type_t;
 
 #define NODEINFO_MAGIC 0x85ad
@@ -1933,11 +1932,8 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 			jobinfo->npc = NPC_NONE;
 		else if (!strcmp(in_char, "system"))
 			jobinfo->npc = NPC_SYS;
-		else if (!strcmp(in_char, "network"))
-			jobinfo->npc = NPC_NET;
-		else if (!strcmp(in_char, "processor"))
-			jobinfo->npc = NPC_PROC;
-
+		else if (!strcmp(in_char, "blade"))
+			jobinfo->npc = NPC_BLADE;
 		break;
 	default:
 		rc = other_select_jobinfo_set(jobinfo, data_type, data);
@@ -1954,6 +1950,7 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 //	uint64_t *uint64 = (uint64_t *) data;
+	char **in_char = (char **) data;
 	select_jobinfo_t **select_jobinfo = (select_jobinfo_t **) data;
 
 	if (jobinfo == NULL) {
@@ -1971,6 +1968,23 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_CLEANING:
 		*uint16 = jobinfo->cleaning;
+		break;
+	case SELECT_JOBDATA_NETWORK:
+		xassert(in_char);
+		switch (jobinfo->npc) {
+		case NPC_NONE:
+			*in_char = "none";
+			break;
+		case NPC_SYS:
+			*in_char = "system";
+			break;
+		case NPC_BLADE:
+			*in_char = "blade";
+			break;
+		default:
+			*in_char = "unknown";
+			break;
+		}
 		break;
 	default:
 		rc = other_select_jobinfo_get(jobinfo, data_type, data);
