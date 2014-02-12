@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.0pre7
 ==============================
+ -- Fixed typos in srun_cr man page.
 
 * Changes in Slurm 14.03.0pre6
 ==============================

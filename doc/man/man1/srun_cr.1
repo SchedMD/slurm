@@ -32,10 +32,10 @@ from \fBsrun\fR.
 
 The step launch logic of SLURM is augmented to check if \fBsrun\fR is running
 under \fBsrun_cr\fR.
-If true, the environment variable \fBSURN_SRUN_CR_SOCKET\fR should be present,
+If true, the environment variable \fBSLURM_SRUN_CR_SOCKET\fR should be present,
 the value of which is the address of a Unix domain socket created and listened
 to be \fBsrun_cr\fR.
-After launching the tasks, \fBsrun\fR tires to connect to the socket and sends
+After launching the tasks, \fBsrun\fR tries to connect to the socket and sends
 the job ID, step ID and the nodes allocated to the step to \fBsrun_cr\fR.
 
 Upon checkpoint, \fRsrun_cr\fR checks to see if the tasks have been launched.
