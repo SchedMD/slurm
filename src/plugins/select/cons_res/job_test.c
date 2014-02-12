@@ -639,7 +639,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 {
 	uint16_t cpus;
 	uint32_t avail_mem, req_mem, gres_cores, gres_cpus, cpus_per_core;
-	int core_start_bit, core_end_bit, cpu_alloc_size;
+	int core_start_bit, core_end_bit, cpu_alloc_size, i;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
 
@@ -693,10 +693,12 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 			/* memory is per-cpu */
 			while ((cpus > 0) && ((req_mem * cpus) > avail_mem))
 				cpus -= cpu_alloc_size;
-			if ((cpus < job_ptr->details->ntasks_per_node) ||
-			    ((job_ptr->details->cpus_per_task > 1) &&
-			     (cpus < job_ptr->details->cpus_per_task)))
+			if (cpus < job_ptr->details->ntasks_per_node)
 				cpus = 0;
+			else if (job_ptr->details->cpus_per_task > 1) {
+				i = cpus % job_ptr->details->cpus_per_task;
+				cpus -= i;
+			}
 			/* FIXME: Need to recheck min_cores, etc. here */
 		} else {
 			/* memory is per node */
