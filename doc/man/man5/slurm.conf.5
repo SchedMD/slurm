@@ -323,6 +323,9 @@ The default value is 0 to disable caching group data.
 The system\-initiated checkpoint method to be used for user jobs.
 The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR
 to take effect.
+\fBNOTE\fR\ there must not be any running and/or pending jobs
+in the cluster when the plugin is both enabled or disabled. Since the format
+of the job state file changes all jobs will be lost upon slurmctld restart.
 Supported values presently include:
 .RS
 .TP 18
@@ -344,6 +347,7 @@ OpenMPI (version 1.3 or higher)
 .TP
 \fBcheckpoint/poe\fR
 for use with IBM POE (Parallel Operating Environment) only
+.TP
 .RE
 
 .TP
@@ -1815,7 +1819,7 @@ advisable to prevent job starvation.
 In order limit the amount of data managed by the backfill scheduler,
 if the value of \fBbf_window\fR is increased, then it is generally advisable
 to also increase \fBbf_resolution\fR.
-if 
+if
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBmax_job_bf=#\fR
