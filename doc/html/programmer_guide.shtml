@@ -160,6 +160,19 @@ job state information.<br>
 Creating your own branch will make it easier to keep it synchronized
 with our work.</p>
 
+<h2>Adding New Modules</h2>
+<p>Add the new file name to the Makefile.am file in the appropriate directory.
+Then execute autogen.sh (at the top level of the Slurm source directory).
+Note that a relatively current version of auotmake is required.
+The autogen.sh program will build Makefile.in files from the Makefile.am files.
+If any new files need to be installed, update the slurm.spec file to identify
+the RPM in which the new files should be placed</p>
+
+<p>If new directories need to be added, add to the configure.ac file the path
+to the Makefile to be built in the new directory. In summary:<br>
+<u>autogen.sh</u> translates <u>.am</u> files into <u>.in</u> files<br>
+<u>configure</u> tranlates <u>.in</u> files, adding paths and version numbers.</p>
+
 <h2>Compiling</h2>
 <p>Sending the standard output of "make" to a file makes it easier to see any
 warning or error messages:<br>
@@ -180,7 +193,7 @@ are very limited in scope.</p>
 
 <p>We also have a set of Expect SLURM tests available under the <b>testsuite/expect</b>
 directory.  These tests are executed after SLURM has been installed
-and the daemons initiated. About 320 test scripts exercise all SLURM commands
+and the daemons initiated. About 400 test scripts exercise all SLURM commands
 and options including stress tests.  The file <b>testsuite/expect/globals</b>
 contains default paths and procedures for all of the individual tests.  At
 the very least, you will need to set the <i>slurm_dir</i> variable to the correct
@@ -262,6 +275,6 @@ host1> slurmd -N foo21
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 April 2012</p>
+<p style="text-align:center;">Last modified 12 February 2014</p>
 
 <!--#include virtual="footer.txt"-->
