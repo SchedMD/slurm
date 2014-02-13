@@ -343,9 +343,16 @@ static bool _is_valid_path (char *path, char *msg)
 	/*
 	 *  Allocate temporary space for walking the list of dirs:
 	 */
-	int pathlen = strlen (path);
-	char *buf = xmalloc (pathlen + 2);
-	char *p, *entry;
+	int pathlen;
+	char *buf, *p, *entry;
+
+	if (path == NULL) {
+		error ("is_valid_path: path is NULL!");
+		goto out_false;
+	}
+
+	pathlen = strlen (path);
+	buf = xmalloc (pathlen + 2);
 
 	if (strlcpy (buf, path, pathlen + 1) > pathlen + 1) {
 		error ("is_valid_path: Failed to copy path!");
