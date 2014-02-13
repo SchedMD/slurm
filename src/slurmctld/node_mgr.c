@@ -1798,11 +1798,12 @@ extern int update_node_record_acct_gather_data(
  *	if not set state to down, in any case update last_response
  * IN reg_msg - node registration message
  * IN protocol_version - Version of Slurm on this node
+ * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
-			       uint16_t protocol_version)
+			       uint16_t protocol_version, bool *newly_up)
 {
 	int error_code, i, node_inx;
 	struct config_record *config_ptr;
@@ -1811,12 +1812,14 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	uint16_t node_flags;
 	time_t now = time(NULL);
 	bool gang_flag = false;
+	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
 
 	node_ptr = find_node_record (reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
 	node_inx = node_ptr - node_record_table_ptr;
+	orig_node_avail = bit_test(avail_node_bitmap, node_inx);
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = SLURM_SUCCESS;
@@ -2112,6 +2115,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	node_ptr->last_response = now;
 
+	*newly_up = (!orig_node_avail && bit_test(avail_node_bitmap, node_inx));
+
 	return error_code;
 }
 
@@ -2172,12 +2177,13 @@ static front_end_record_t * _front_end_reg(
  *	nodes will not register with this configuration
  * IN reg_msg - node registration message
  * IN protocol_version - Version of Slurm on this node
+ * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, SLURM error code otherwise
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg,
-		uint16_t protocol_version)
+		uint16_t protocol_version, bool *newly_up)
 {
 	int error_code = 0, i, j, rc;
 	bool update_node_state = false;
@@ -2205,6 +2211,7 @@ extern int validate_nodes_via_front_end(
 	xfree(front_end_ptr->version);
 	front_end_ptr->version = reg_msg->version;
 	reg_msg->version = NULL;
+	*newly_up = false;
 
 	if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		error("Prolog failed on node %s", reg_msg->node_name);
@@ -2357,6 +2364,7 @@ extern int validate_nodes_via_front_end(
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (IS_NODE_UNKNOWN(node_ptr)) {
 				update_node_state = true;
+				*newly_up = true;
 				if (node_ptr->run_job_cnt) {
 					node_ptr->node_state =
 						NODE_STATE_ALLOCATED |
@@ -2383,6 +2391,7 @@ extern int validate_nodes_via_front_end(
 				     (strncmp(node_ptr->reason,
 					      "Not responding", 14) == 0)))) {
 				update_node_state = true;
+				*newly_up = true;
 				if (node_ptr->run_job_cnt) {
 					node_ptr->node_state =
 						NODE_STATE_ALLOCATED |

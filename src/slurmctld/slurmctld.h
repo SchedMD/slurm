@@ -1974,11 +1974,12 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
  *	if not set state to down, in any case update last_response
  * IN reg_msg - node registration message
  * IN protocol_version - Version of Slurm on this node
+ * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
-			       uint16_t protocol_version);
+			       uint16_t protocol_version, bool *newly_up);
 
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
@@ -1986,12 +1987,13 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
  *	nodes will not register with this configuration
  * IN reg_msg - node registration message
  * IN protocol_version - Version of Slurm on this node
+ * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, SLURM error code otherwise
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg,
-		uint16_t protocol_version);
+		uint16_t protocol_version, bool *newly_up);
 
 /*
  * validate_slurm_user - validate that the uid is authorized to see

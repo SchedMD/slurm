@@ -2207,6 +2207,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	/* init */
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
+	bool newly_up = false;
 	slurm_node_registration_status_msg_t *node_reg_stat_msg =
 		(slurm_node_registration_status_msg_t *) msg->data;
 	/* Locks: Read config, write job, write node */
@@ -2242,14 +2243,24 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		lock_slurmctld(job_write_lock);
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
 		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
-							msg->protocol_version);
+							  msg->protocol_version,
+							  &newly_up);
 #else
 		validate_jobs_on_node(node_reg_stat_msg);
 		error_code = validate_node_specs(node_reg_stat_msg,
-						 msg->protocol_version);
+						 msg->protocol_version,
+						 &newly_up);
 #endif
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_node_registration");
+		if (newly_up) {
+			static time_t last_schedule = (time_t) 0;
+			time_t now = time(NULL);
+			if (difftime(now, last_schedule) > 5) {
+				last_schedule = now;
+				schedule(0);	/* has its own locks */
+			}
+		}
 	}
 
 	/* return result */
