@@ -41,6 +41,13 @@
 #include "src/common/env.h"
 #include "src/common/proc_args.h"
 
+
+typedef struct job_ids {
+	uint32_t job_id;
+	uint32_t array_job_id;
+	uint32_t array_task_id;
+} job_ids_t;
+
 static int _parse_checkpoint_args(int argc, char **argv,
 				  uint16_t *max_wait, char **image_dir);
 static int _parse_restart_args(int argc, char **argv,
@@ -48,7 +55,7 @@ static int _parse_restart_args(int argc, char **argv,
 static void _update_job_size(uint32_t job_id);
 static int _parse_requeue_flags(char *, uint32_t *state_flags);
 static job_info_msg_t *_get_job_info(const char *jobid, uint32_t *task_id);
-static uint32_t *_get_job_ids(const char *jobid, uint32_t *num_ids);
+static job_ids_t *_get_job_ids(const char *jobid,  uint32_t *num_ids);
 
 /*
  * scontrol_checkpoint - perform some checkpoint/resume operation
@@ -312,9 +319,9 @@ scontrol_hold(char *op, char *job_id_str)
 extern int
 scontrol_suspend(char *op, char *job_id_str)
 {
-	uint32_t *ids;
+	job_ids_t *ids;
 	uint32_t num_ids;
-	int n;
+	int i;
 	int cc;
 
 	ids = _get_job_ids(job_id_str, &num_ids);
@@ -324,14 +331,23 @@ scontrol_suspend(char *op, char *job_id_str)
 	}
 
 	cc = SLURM_SUCCESS;
-	for (n = 0; n < num_ids; n++) {
+	for (i = 0; i < num_ids; i++) {
 		if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
-			cc = slurm_suspend(ids[n]);
+			cc = slurm_suspend(ids[i].job_id);
 		else
-			cc = slurm_resume(ids[n]);
+			cc = slurm_resume(ids[i].job_id);
 		if (cc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s for job_id %u\n",
-				slurm_strerror(slurm_get_errno()), ids[n]);
+			if (ids[i].array_task_id != NO_VAL) {
+				fprintf(stderr, "%s for job %u_%u (%u)\n",
+					slurm_strerror(slurm_get_errno()),
+					ids[i].array_job_id,
+					ids[i].array_task_id,
+					ids[i].job_id);
+			} else {
+				fprintf(stderr, "%s for job %u\n",
+					slurm_strerror(slurm_get_errno()),
+					ids[i].job_id);
+			}
 		}
 	}
 
@@ -351,7 +367,7 @@ scontrol_requeue(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i;
-	uint32_t *ids;
+	job_ids_t *ids;
 	uint32_t num_ids;
 
 	if (! argv[0]) {
@@ -366,10 +382,19 @@ scontrol_requeue(int argc, char **argv)
 	}
 
 	for (i = 0; i < num_ids; i++) {
-		rc = slurm_requeue(ids[i], 0);
+		rc = slurm_requeue(ids[i].job_id, 0);
 		if (rc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s for job_id %u\n",
-				slurm_strerror(slurm_get_errno()), ids[i]);
+			if (ids[i].array_task_id != NO_VAL) {
+				fprintf(stderr, "%s for job %u_%u (%u)\n",
+					slurm_strerror(slurm_get_errno()),
+					ids[i].array_job_id,
+					ids[i].array_task_id,
+					ids[i].job_id);
+			} else {
+				fprintf(stderr, "%s for job %u\n",
+					slurm_strerror(slurm_get_errno()),
+					ids[i].job_id);
+			}
 		}
 	}
 
@@ -384,7 +409,7 @@ scontrol_requeue_hold(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	int i;
 	uint32_t state_flag;
-	uint32_t *ids;
+	job_ids_t *ids;
 	uint32_t num_ids;
 	char *job_id_str;
 
@@ -416,10 +441,19 @@ scontrol_requeue_hold(int argc, char **argv)
 	 * JOB_SPECIAL_EXIT or HELD state.
 	 */
 	for (i = 0; i < num_ids; i++) {
-		rc = slurm_requeue(ids[i], state_flag);
+		rc = slurm_requeue(ids[i].job_id, state_flag);
 		if (rc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s for job_id %u\n",
-				slurm_strerror(slurm_get_errno()), ids[i]);
+			if (ids[i].array_task_id != NO_VAL) {
+				fprintf(stderr, "%s for job %u_%u (%u)\n",
+					slurm_strerror(slurm_get_errno()),
+					ids[i].array_job_id,
+					ids[i].array_task_id,
+					ids[i].job_id);
+			} else {
+				fprintf(stderr, "%s for job %u\n",
+					slurm_strerror(slurm_get_errno()),
+					ids[i].job_id);
+			}
 		}
 	}
 
@@ -1082,11 +1116,11 @@ _get_job_info(const char *jobid, uint32_t *task_id)
 
 /* _get_job_ids()
  */
-static uint32_t *
+static job_ids_t *
 _get_job_ids(const char *jobid, uint32_t *num_ids)
 {
 	job_info_msg_t *job_info;
-	uint32_t *job_ids;
+	job_ids_t *job_ids;
 	uint32_t task_id;
 	int i;
 	int cc;
@@ -1097,13 +1131,18 @@ _get_job_ids(const char *jobid, uint32_t *num_ids)
 		return NULL;
 
 	if (task_id != NO_VAL) {
-		job_ids = xmalloc(sizeof(uint32_t));
+		job_ids = xmalloc(sizeof(job_ids_t));
 		*num_ids = 1;
 
 		/* Search for the job_id of the specified task. */
 		for (cc = 0; cc < job_info->record_count; cc++) {
 			if (task_id == job_info->job_array[cc].array_task_id) {
-				job_ids[0] = job_info->job_array[cc].job_id;
+				job_ids[0].array_job_id =
+					job_info->job_array[cc].array_job_id;
+				job_ids[0].array_task_id =
+					job_info->job_array[cc].array_task_id;
+				job_ids[0].job_id =
+					job_info->job_array[cc].job_id;
 				break;
 			}
 		}
@@ -1113,22 +1152,28 @@ _get_job_ids(const char *jobid, uint32_t *num_ids)
 	}
 
 	if (job_info->record_count == 1) {
-		job_ids = xmalloc(sizeof(uint32_t));
+		job_ids = xmalloc(sizeof(job_ids_t));
 		*num_ids = 1;
-		job_ids[0] = job_info->job_array[0].job_id;
+		job_ids[0].array_job_id = job_info->job_array[0].array_job_id;
+		job_ids[0].array_task_id = job_info->job_array[0].array_task_id;
+		job_ids[0].job_id = job_info->job_array[0].job_id;
 		slurm_free_job_info_msg(job_info);
 
 		return job_ids;
 	}
 
 	*num_ids = job_info->record_count;
-	job_ids = xmalloc((*num_ids) * sizeof(uint32_t));
+	job_ids = xmalloc((*num_ids) * sizeof(job_ids_t));
 	/* First save the pending jobs
 	 */
 	i = 0;
 	for (cc = 0; cc < job_info->record_count; cc++) {
 		if (job_info->job_array[cc].job_state == JOB_PENDING) {
-			job_ids[i] = job_info->job_array[cc].job_id;
+			job_ids[i].array_job_id =
+				job_info->job_array[cc].array_job_id;
+			job_ids[i].array_task_id =
+				job_info->job_array[cc].array_task_id;
+			job_ids[i].job_id = job_info->job_array[cc].job_id;
 			++i;
 		}
 	}
@@ -1136,7 +1181,11 @@ _get_job_ids(const char *jobid, uint32_t *num_ids)
 	 */
 	for (cc = 0; cc < job_info->record_count; cc++) {
 		if (job_info->job_array[cc].job_state != JOB_PENDING) {
-			job_ids[i] = job_info->job_array[cc].job_id;
+			job_ids[i].array_job_id =
+				job_info->job_array[cc].array_job_id;
+			job_ids[i].array_task_id =
+				job_info->job_array[cc].array_task_id;
+			job_ids[i].job_id = job_info->job_array[cc].job_id;
 			++i;
 		}
 	}
