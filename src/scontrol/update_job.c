@@ -47,7 +47,6 @@ static int _parse_restart_args(int argc, char **argv,
 			       uint16_t *stick, char **image_dir);
 static void _update_job_size(uint32_t job_id);
 static int _parse_requeue_flags(char *, uint32_t *state_flags);
-static inline bool _is_array_task_id(const char *jobid);
 static job_info_msg_t *_get_job_info(const char *jobid, uint32_t *task_id);
 static uint32_t *_get_job_ids(const char *jobid, uint32_t *num_ids);
 
@@ -326,14 +325,13 @@ scontrol_suspend(char *op, char *job_id_str)
 
 	cc = SLURM_SUCCESS;
 	for (n = 0; n < num_ids; n++) {
-
 		if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
 			cc = slurm_suspend(ids[n]);
 		else
 			cc = slurm_resume(ids[n]);
 		if (cc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s for array job_id %u\n",
-					slurm_strerror(slurm_get_errno()), ids[n]);
+			fprintf(stderr, "%s for job_id %u\n",
+				slurm_strerror(slurm_get_errno()), ids[n]);
 		}
 	}
 
@@ -370,8 +368,8 @@ scontrol_requeue(int argc, char **argv)
 	for (i = 0; i < num_ids; i++) {
 		rc = slurm_requeue(ids[i], 0);
 		if (rc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s for array job_id %u\n",
-					slurm_strerror(slurm_get_errno()), ids[i]);
+			fprintf(stderr, "%s for job_id %u\n",
+				slurm_strerror(slurm_get_errno()), ids[i]);
 		}
 	}
 
@@ -420,8 +418,8 @@ scontrol_requeue_hold(int argc, char **argv)
 	for (i = 0; i < num_ids; i++) {
 		rc = slurm_requeue(ids[i], state_flag);
 		if (rc != SLURM_SUCCESS) {
-			fprintf(stderr, "%s for array job_id %u\n",
-					slurm_strerror(slurm_get_errno()), ids[i]);
+			fprintf(stderr, "%s for job_id %u\n",
+				slurm_strerror(slurm_get_errno()), ids[i]);
 		}
 	}
 
@@ -1036,27 +1034,6 @@ _parse_requeue_flags(char *s, uint32_t *state)
 	return -1;
 }
 
-/* is_job_array()
- * Detect the _ jobid separator.
- */
-static inline bool
-_is_array_task_id(const char *jobid)
-{
-	int cc;
-
-	cc = 0;
-	while (*jobid) {
-		if (*jobid == '_')
-			++cc;
-		++jobid;
-	}
-
-	if (cc == 1)
-		return true;
-
-	return false;
-}
-
 /* _get_job_info()
  */
 static job_info_msg_t *
@@ -1076,7 +1053,6 @@ _get_job_info(const char *jobid, uint32_t *task_id)
 
 	taskid = strchr(buf, '_');
 	if (taskid) {
-
 		*taskid = 0;
 		++taskid;
 
@@ -1085,6 +1061,8 @@ _get_job_info(const char *jobid, uint32_t *task_id)
 			fprintf(stderr, "Invalid task_id specified\n");
 			return NULL;
 		}
+	} else {
+		*task_id = NO_VAL;
 	}
 
 	job_id = (uint32_t)strtol(buf, &next_str, 10);
@@ -1118,14 +1096,11 @@ _get_job_ids(const char *jobid, uint32_t *num_ids)
 	if (job_info == NULL)
 		return NULL;
 
-	if (_is_array_task_id(jobid)) {
-
+	if (task_id != NO_VAL) {
 		job_ids = xmalloc(sizeof(uint32_t));
 		*num_ids = 1;
 
-		/* Search for the job_id of the specified
-		 * task.
-		 */
+		/* Search for the job_id of the specified task. */
 		for (cc = 0; cc < job_info->record_count; cc++) {
 			if (task_id == job_info->job_array[cc].array_task_id) {
 				job_ids[0] = job_info->job_array[cc].job_id;
@@ -1138,10 +1113,6 @@ _get_job_ids(const char *jobid, uint32_t *num_ids)
 	}
 
 	if (job_info->record_count == 1) {
-		/* No task elements beside the
-		 * job itself so it cannot be
-		 * a job array.
-		 */
 		job_ids = xmalloc(sizeof(uint32_t));
 		*num_ids = 1;
 		job_ids[0] = job_info->job_array[0].job_id;
