@@ -7,6 +7,11 @@ documents those changes that are of interest to users and admins.
  -- Run job scheduling logic immediately when nodes enter service.
  -- Added sbatch '--parsable' option to output only the job id number and the
     cluster name separated by a semicolon. Errors will still be displayed.
+ -- Added failure management infrastructure: new command "smd", new "smd_ns.h"
+    header file, new "libsmdns.so" library, and new "slurmctld/nonstop" plugin.
+    These permit selected users to drain bad nodes, replace failed nodes using
+    a hot-spare pool of resources, extend job time limits in response to
+    failures, and register for notification of failure events.
 
 * Changes in Slurm 14.03.0pre6
 ==============================

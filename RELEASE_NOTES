@@ -25,6 +25,11 @@ SLURM will result in loss of state information.
 
 HIGHLIGHTS
 ==========
+ -- Added failure management infrastructure: new command "smd", new "smd_ns.h"
+    header file, new "libsmdns.so" library, and new "slurmctld/nonstop" plugin.
+    These permit selected users to drain bad nodes, replace failed nodes using
+    a hot-spare pool of resources, extend job time limits in response to
+    failures, and register for notification of failure events.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
     DenyAccounts and DenyQOS to provide greater control over use.
  -- Added the ability to perform load based scheduling. Allocating resources to
