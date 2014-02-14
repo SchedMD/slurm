@@ -18,7 +18,7 @@ node failure</li>
 
 <p>The general mode of operation is to
 <ol>
-<li>Start the job step using the <b>srun_cr</b> command as described 
+<li>Start the job step using the <b>srun_cr</b> command as described
 below.</li>
 <li>Create a checkpoint of <b>srun_cr</b> using BLCR's <b>cr_checkpoint</b>
 command and cancel the job. <b>srun_cr</b> will automatically checkpoint
@@ -31,8 +31,13 @@ The job will be restarted using a newly allocated jobid.</li>
 create checkpoints for both interactive and batch steps, but <b>only
 batch jobs can be restarted.</b></p>
 
-<p><b>NOTE:</b> BLCR operation has been verified with MVAPICH2. 
+<p><b>NOTE:</b> BLCR operation has been verified with MVAPICH2.
 Some other MPI implementations should also work.</p>
+
+<p><b>NOTE:</b> There must not be any running and/or pending jobs in the
+cluster when the plugin is both enabled or disabled. Since the format
+of the job state file changes all jobs will be lost  upon  slurmctld  restart.
+</p>
 
 <h2>User Commands</h2>
 
@@ -181,11 +186,11 @@ same set of nodes from which it was previously checkpointed.</li>
 
 <p>The following SLURM configuration parameter has been added:</p>
 <ul>
-<li><b>JobCheckpointDir</b> 
-Specifies the default directory for storing or reading job checkpoint 
-information. The data stored here is only a few thousand bytes per job 
+<li><b>JobCheckpointDir</b>
+Specifies the default directory for storing or reading job checkpoint
+information. The data stored here is only a few thousand bytes per job
 and includes information needed to resubmit the job request, not job's
-memory image. The directory must be readable and writable by 
+memory image. The directory must be readable and writable by
 <b>SlurmUser</b>, but not writable by regular users. The job memory images
 may be in a different location as specified by <b>--checkpoint-dir</b>
 option at job submit time or scontrol's <b>ImageDir</b> option.
