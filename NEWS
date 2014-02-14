@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
  -- Added sbatch '--parsable' option to output only the job id number and the
     cluster name separated by a semicolon. Errors will still be displayed.
  -- Added failure management "slurmctld/nonstop" plugin.
+ -- Remove the SLURM_PMI_KVS_NO_DUP_KEYS functionality from PMI support,
+    the PMI protocol does not accept duplicate keys. If there already
+    is an entry with the same key, the old value is replaced.
 
 * Changes in Slurm 14.03.0pre6
 ==============================

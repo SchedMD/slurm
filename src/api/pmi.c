@@ -149,7 +149,6 @@ int pmi_size;
 int pmi_spawned;
 int pmi_rank;
 int pmi_debug;
-static int pmi_kvs_no_dup_keys = 0;
 
 static pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -195,12 +194,6 @@ int PMI_Init( int *spawned )
 		pmi_debug = 0;
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_Init\n");
-
-	env = getenv("SLURM_PMI_KVS_NO_DUP_KEYS");
-	if (env)
-		pmi_kvs_no_dup_keys = 1;
-	else
-		pmi_kvs_no_dup_keys = 0;
 
 	if (spawned == NULL)
 		return PMI_ERR_INVALID_ARG;
@@ -1121,10 +1114,6 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 	for (i=0; i<kvs_rec_cnt; i++) {
 		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
 			continue;
-		if (pmi_kvs_no_dup_keys) {
-			j = kvs_recs[i].kvs_cnt;
-			goto no_dup;
-		}
 		/* search for duplicate key */
 		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
 			if (strncmp(kvs_recs[i].kvs_keys[j], key,
@@ -1147,7 +1136,7 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 			}
 			goto fini;
 		}
-no_dup:
+
 		/* create new key */
 		kvs_recs[i].kvs_cnt++;
 		kvs_recs[i].kvs_key_states = realloc(kvs_recs[i].kvs_key_states,
@@ -1753,7 +1742,7 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 	if  (pmi_debug)
 		fprintf(stderr, "In: PMI_Args_to_keyval \n");
 
-	if ((keyvalp == NULL) || (size == NULL) || 
+	if ((keyvalp == NULL) || (size == NULL) ||
 	    (argcp == NULL) || (argvp == NULL))
 		return PMI_ERR_INVALID_ARG;
 
