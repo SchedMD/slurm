@@ -447,28 +447,29 @@ AC_CONFIG_FILES([Makefile
 		 src/sacct/Makefile
 		 src/sacctmgr/Makefile
 		 src/sreport/Makefile
-		 src/sstat/Makefile
-		 src/sshare/Makefile
 		 src/salloc/Makefile
 		 src/sbatch/Makefile
+		 src/sbcast/Makefile
 		 src/sattach/Makefile
+		 src/scancel/Makefile
+		 src/scontrol/Makefile
 		 src/sdiag/Makefile
-		 src/sprio/Makefile
-		 src/srun/Makefile
-		 src/srun/libsrun/Makefile
-		 src/srun_cr/Makefile
+		 src/sinfo/Makefile
+		 src/slurmctld/Makefile
 		 src/slurmd/Makefile
 		 src/slurmd/common/Makefile
 		 src/slurmd/slurmd/Makefile
 		 src/slurmd/slurmstepd/Makefile
 		 src/slurmdbd/Makefile
-		 src/slurmctld/Makefile
-		 src/sbcast/Makefile
-		 src/scontrol/Makefile
-		 src/scancel/Makefile
-		 src/squeue/Makefile
-		 src/sinfo/Makefile
 		 src/smap/Makefile
+		 src/smd/Makefile
+		 src/sprio/Makefile
+		 src/squeue/Makefile
+		 src/srun/Makefile
+		 src/srun/libsrun/Makefile
+		 src/srun_cr/Makefile
+		 src/sshare/Makefile
+		 src/sstat/Makefile
 		 src/strigger/Makefile
 		 src/sview/Makefile
 		 src/plugins/Makefile
@@ -585,6 +586,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/serial/Makefile
 		 src/plugins/slurmctld/Makefile
 		 src/plugins/slurmctld/dynalloc/Makefile
+		 src/plugins/slurmctld/nonstop/Makefile
 		 src/plugins/slurmd/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/cray/Makefile

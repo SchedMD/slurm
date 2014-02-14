@@ -456,6 +456,13 @@ EXTRA_DIST = \
 	test28.5                        \
 	test28.6                        \
 	test28.7			\
+	test29.1                        \
+	test29.2                        \
+	test29.3                        \
+	test29.4                        \
+	test29.5                        \
+	test29.6                        \
+	test29.7			\
 	test30.1			\
 	test31.1			\
 	test32.1			\

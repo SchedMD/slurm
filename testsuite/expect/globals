@@ -45,7 +45,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo smap squeue sreport srun sstat strigger
+global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo
+global smap smd squeue sreport srun sstat strigger
 
 ################################################################
 #
@@ -95,6 +96,7 @@ cset sgather     "${slurm_dir}/bin/sgather"
 cset sh5util     "${slurm_dir}/bin/sh5util"
 cset sinfo       "${slurm_dir}/bin/sinfo"
 cset smap        "${slurm_dir}/bin/smap"
+cset smd         "${slurm_dir}/bin/smd"
 cset sprio       "${slurm_dir}/bin/sprio"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
@@ -2772,4 +2774,41 @@ proc get_fs_damping_factor { } {
 	log_user 1
 
 	return $damp
+}
+
+################################################################
+#
+# Proc: slurmctld_plug_stack_nonstop
+#
+# Purpose: Use scontrol to determine that the
+# 	   SlurmctldPlugstack is set to nonstop.
+#
+# Returns: 1 if the value is set to nonstop.
+#
+################################################################
+
+proc slurmctld_plug_stack_nonstop { } {
+	global scontrol alpha_numeric_comma
+
+	log_user 0
+	set nonstop_enforce 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "SlurmctldPlugstack *= ($alpha_numeric_comma)" {
+			if {[string first $expect_out(1,string) "nonstop"] != -1} {
+				set nonstop_enforce 1
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $nonstop_enforce
 }

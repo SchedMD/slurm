@@ -1,0 +1,114 @@
+.TH SMD "1" "February 2014" "smd 14.03" "Slurm components"
+
+.SH "NAME"
+smd \- Used to manage failures in a resource allocation.
+
+.SH "SYNOPSIS"
+\fBsmd\fR	[\fIOPTIONS\fR...] [\fIjob_id\fR]
+
+.SH "DESCRIPTION"
+.LP
+Slurm command used to manage failures in a resource allocation.
+
+.SH "OPTIONS"
+.TP
+\fB\-c\fR, \fB\-\-show-config\fR
+Shows the configuration of smd.
+.TP
+\fB\-d\fR, \fB\-\-drain-node\fR \fInode_name\fR
+Drains the hosts of the job (Note: Must include reason \fB\-R\fR).
+.TP
+\fB\-D\fR, \fB\-\-drop_node\fR \fInode_name\fR
+Drops the failed or failing host.
+.TP
+\fB\-e\fR, \fB\-\-extend-time\fR
+Extends the runtime of the job.
+.TP
+\fB\-f\fR, \fB\-\-faulty-nodes\fR \fInode_name\fR
+Gets the hosts that are failed or failing hosts.
+.TP
+\fB\-j\fR, \fB\-\-job_info\fR
+Gets the information of the specified job id.
+.TP
+\fB\-r\fR, \fB\-\-replace-node\fR \fInode_name\fR
+Replaces the drained host with a new one.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Prints detailed event logging. Multiple \fB\-v\fR's will further
+increase the verbosity of logging. By default only errors will display.
+
+.SH "EXAMPLES"
+See configuration smd.
+.nf
+	> smd \-c
+        System Configuration:
+        ConfigurationFile: /etc/nonstop.conf
+        ControllerAddress: localhost
+        LibraryDebug: 0
+        ControllerPort: 9114
+        ReadTimeout: 10000
+        WriteTimeout: 10000
+        HotSpareCount: "debug:0"
+        MaxSpareNodeCount: 10
+        TimeLimitDelay: 600
+        TimeLimitDrop: 0
+        TimeLimitExtend: 2
+        UserDrainAllow: "alan,brenda"
+        UserDrainDeny: "none"
+.fi
+
+.PP
+Replace a failed node in a job allocation and extend its time limit.
+.nf
+       $ salloc \-N4 \-\-no\-kill bash
+       salloc: Granted job allocation 67
+       $ squeue
+       JOBID PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
+          67     debug  bash jette   R  0:48      4 tux[0\-3]
+       salloc: error: Node failure on tux2
+       $ smd \-f $SLURM_JOBID
+       Job 67 has 1 failed or failing hosts:
+         node tux2 cpu_count 1 state FAILED
+       $ smd \-r tux2 $SLURM_JOBID
+       Job 67 got node tux2 replaced with node tux4
+       $ squeue
+       JOBID PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
+          67     debug  bash jette   R  0:48      4 tux[0\-1,3\-4]
+       $ smd \-e 2 $SLURM_JOBID
+       Job 67 run time increased by 2min successfully
+.fi
+
+.PP
+Identify a failing node in a job allocation, drop it from the job allocation,
+and extend the job time limit.
+.nf
+       $ salloc \-N4 \-\-no\-kill bash
+       salloc: Granted job allocation 70
+       $ squeue
+       JOBID PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
+          69     debug  bash jette   R  0:48      4 tux[0\-3]
+       $ smd \-d tux3 \-R "Application X hangs" $SLURM_JOBID
+       Job 69 node tux2 is being drained
+       $ smd \-f
+       Job 69 has 1 failed or failing hosts:
+         node tux2 cpu_count 1 state FAILING
+       $ smd \-D tux2 $SLURM_JOBID
+       Job 69 node tux2 dropped successfully
+       $ squeue
+       JOBID PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
+          69     debug  bash jette   R  0:48      4 tux[0\-1,3]
+       $ smd \-e 2 $SLURM_JOBID
+       Job 67 run time increased by 2min successfully
+.fi
+
+.SH "COPYING"
+Copyright (C) 2013-2014 SchedMD LLC. All rights reserved.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+nonstop.conf(5)

@@ -1,0 +1,75 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          validate smd show config command
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+# All rights reserved
+############################################################################
+source ./globals
+
+set test_id    "29.2"
+set exit_code  0
+
+print_header $test_id
+
+if {![slurmctld_plug_stack_nonstop]} {
+	send_user "\nWARNING: This test is only compatible when SlurmctldPlugstack includes nonstop.\n"
+	exit $exit_code
+}
+
+#
+# Test the smd show config command
+#
+set match 0
+spawn $smd -c
+expect {
+	-re "System Configuration:" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: smd is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Use verbose on the -c option
+#
+set match 0
+spawn $smd -c -v
+expect {
+	-re "Reading configuration" {
+		incr match
+		exp_continue
+	}
+	-re "System Configuration:" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: smd is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	send_user "\nFAILURE: smd show config failed\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

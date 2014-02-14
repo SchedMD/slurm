@@ -32,6 +32,7 @@ pkginclude_HEADERS =		\
 	slurm/slurm.h 		\
 	slurm/slurmdb.h 	\
 	slurm/slurm_errno.h	\
+	slurm/smd_ns.h		\
 	slurm/spank.h
 
 MAINTAINERCLEANFILES = 					\

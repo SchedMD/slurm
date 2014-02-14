@@ -431,6 +431,7 @@ man1_MANS = \
 	sinfo.1   \
 	slurm.1 \
 	smap.1 \
+	smd.1 \
 	sprio.1 \
 	sh5util.1 \
 	squeue.1 \
@@ -455,6 +456,7 @@ EXTRA_DIST = $(man1_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@	sdiag.html \
 @HAVE_MAN2HTML_TRUE@	sinfo.html \
 @HAVE_MAN2HTML_TRUE@	smap.html \
+@HAVE_MAN2HTML_TRUE@	smd.html \
 @HAVE_MAN2HTML_TRUE@	sprio.html \
 @HAVE_MAN2HTML_TRUE@	sh5util.html \
 @HAVE_MAN2HTML_TRUE@	squeue.html \

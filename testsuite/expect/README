@@ -663,8 +663,15 @@ test28.6   Validates that when a job array is submitted to multiple
 test28.7   Confirms job array dependencies.
 
 
-test29.#   Reserved.
-====================
+test29.#   Testing of smd command and option.
+=============================================
+test29.1   Validate smd usage command.
+test29.2   Validate smd show -c (config command).
+test29.3   Validate smd -f (--faulty-nodes) command.
+test29.4   Validate smd -d (--drain-node), and -R (--reason) set.
+test29.5   Validate smd -r (--replace-node) option.
+test29.7   Validates that the smd -j (--job-info) display.
+test29.8   Validate that the MaxSpareNodeCount is enforced
 
 
 test30.#   Test of RPM builds.

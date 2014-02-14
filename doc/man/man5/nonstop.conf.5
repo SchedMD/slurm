@@ -1,0 +1,147 @@
+.TH "nonstop.conf" "5" "February 2014" "nonstop.conf 14.03" "Slurm configuration file"
+.SH "NAME"
+nonstop.conf \- Slurm configuration file for fault-tolerant computing.
+
+.SH "DESCRIPTION"
+\fBnonstop.conf\fP is an ASCII file which describes the configuration
+used for fault-tolerant computing with Slurm using the optional
+slurmctld/nonstop plugin.
+This plugin provides a means for users to notify Slurm of nodes it believes
+are suspect, replace the job's failing or failed nodes, and extend a job's
+in response to failures.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
+same directory as the \fBslurm.conf\fP file.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+Changes to the configuration file take effect upon restart of
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+The configuration parameters available include:
+
+.TP
+\fBBackupAddr\fR
+Communications address used for the slurmctld daemon.
+This can either be a hostname or IP address.
+This value would typically be identical to the value of \fBBackupAddr\fR
+in the slurm.conf file.
+
+.TP
+\fBControlAddr\fR
+Communications address used for the slurmctld daemon.
+This can either be a hostname or IP address.
+This value would typically be identical to the value of \fBControlAddr\fR
+in the slurm.conf file.
+
+.TP
+\fBDebug\fR
+A number indicating the level of additional logging desired for the plugin.
+The default value is zero, which generates no additional logging.
+
+.TP
+\fBHotSpareCount\fR
+This identifies how many nodes in each partition should be maintained as
+spare resources.
+When a job fails, this pool of resources will be depleted and then replenished
+when possible using idle resources.
+The value should be a comma delimited list of
+partition and node count pairs separated by a colon.
+
+.TP
+\fBMaxSpareNodeCount\fR
+This identifies the maximum number of nodes any single job may replace through
+the job's entire lifetime.
+This could prevent a single job from causing all of the nodes in a cluster to
+fail.
+By default, there is no maximum node count.
+
+.TP
+\fBPort\fR
+Port used for communications.
+The default value is 6820.
+
+.TP
+\fBTimeLimitDelay\fR
+If a job requires replacement resources and none are immediately available,
+then permit a job to extend its time limit by the length of time required to
+secure replacement resources up to the number of minutes specified by
+\fBTimeLimitDelay\fR.
+This option will only take effect if no hot spare resouces are available at
+the time replacement resources are requested.
+This time limit extention is in addition to the value calculated using the
+\fBTimeLimitExtend\fR.
+The default value is zero (no time limit extension).
+The value may not exceed 65533 seconds.
+
+.TP
+\fBTimeLimitDrop\fR
+Specifies the number of minutes that a job can extend it's time limit for
+each failed or failing node removed from the job's allocation.
+The default value is zero (no time limit extension).
+The value may not exceed 65533 seconds.
+
+.TP
+\fBTimeLimitExtend\fR
+Specifies the number of minutes that a job can extend it's time limit for
+each replaced node.
+The default value is zero (no time limit extension).
+The value may not exceed 65533 seconds.
+
+.TP
+\fBUserDrainAllow\fR
+This identifies a comma delimited list of user names or user IDs of users who
+are authorized to drain nodes they believe are failing.
+Specify a value of "ALL" to permit any user to drain nodes.
+By default, no users may drain nodes using this interface.
+
+.TP
+\fBUserDrainDeny\fR
+This identifies a comma delimited list of user names or user IDs of users who
+are NOT authorized to drain nodes they believe are failing.
+Specifying a value for \fBUserDrainDeny\fR implicitly allows all other users
+to drain nodes (sets the value of UserDrainAllow to "ALL").
+
+.SH "EXAMPLE"
+.LP
+#
+.br
+# Sample nonstop.conf file
+.br
+# Date: 12 Feb 2013
+.br
+#
+.br
+ControlAddr=12.34.56.78
+.br
+BackupAddr=12.34.56.79
+.br
+Port=1234
+.br
+#
+.br
+HotSpareCount=batch:6,interactive:0
+.br
+MaxSpareNodesCount=4
+.br
+TimeLimitDelay=30
+.br
+TimeLimitExtend=20
+.br
+TimeLimitExtend=10
+.br
+UserDrainAllow=adam,brenda
+
+.SH "COPYING"
+Copyright (C) 2013-2014 SchedMD LLC. All rights reserved.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

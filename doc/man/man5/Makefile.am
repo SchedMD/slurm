@@ -7,6 +7,7 @@ man5_MANS = \
 	cray.conf.5 \
 	ext_sensors.conf.5 \
 	gres.conf.5 \
+	nonstop.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
 	topology.conf.5 \
@@ -23,6 +24,7 @@ html_DATA = \
 	cray.conf.html \
 	ext_sensors.conf.html \
 	gres.conf.html \
+	nonstop.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \
 	topology.conf.html \

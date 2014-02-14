@@ -1,0 +1,202 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          validate smd -r (--replace-node) option.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+# All rights reserved
+############################################################################
+source ./globals
+
+set test_id     "29.5"
+set file_in     "test$test_id.script"
+set node_name   ""
+set job_id      0
+set exit_code   0
+
+# this test is for the nonstop --replace-node test
+
+print_header $test_id
+
+if {![slurmctld_plug_stack_nonstop]} {
+	send_user "\nWARNING: This test is only compatible when SlurmctldPlugstack includes nonstop.\n"
+	exit $exit_code
+}
+if {![test_super_user]} {
+	send_user "\nWARNING: This test is only suitable for a super user (to restore down nodes).\n"
+	exit $exit_code
+}
+
+proc get_node {job_id} {
+	global scontrol squeue alpha_numeric_nodelist alpha_numeric_under exit_code
+
+	set node_list ""
+	spawn $squeue -j $job_id --noheader -o NodeList=%N
+	expect {
+		-re "NodeList=($alpha_numeric_nodelist)" {
+			set node_list $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set node_name ""
+	spawn $scontrol show hostnames $node_list
+	expect {
+		-re "($alpha_numeric_under)" {
+			set node_name $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $node_name
+}
+
+proc reset_state {node} {
+
+	global scontrol exit_code
+
+	spawn $scontrol update NodeName=$node State=RESUME
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+make_bash_script $file_in "$bin_sleep 100"
+
+#
+# Submit batch script to test
+#
+set job_id 0
+spawn $sbatch -N2 --no-kill --output=/dev/null $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	set exit_code 1
+}
+
+#
+# Wait for job to start
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+        send_user "\nFAILURE: waiting for job to start\n"
+        cancel_job $job_id
+        exit 1
+}
+set node_name [get_node $job_id]
+
+#
+# replace a node that has not failed
+#
+set sub_match 0
+spawn $smd -r $node_name $job_id
+expect {
+	-re "The specified node has not failed" {
+		send_user "\nThis error is expected.\n"
+		set sub_match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: smd is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$sub_match != 1} {
+	send_user "\nFAILURE: there are nodes that are drained when there should not be\n"
+	set exit_code 1
+}
+
+#
+# Drain the node so we can replace it
+#
+set sub_match 0
+spawn $smd -d $node_name $job_id -R test
+expect {
+	-re "Job $job_id node $node_name is being drained" {
+		set sub_match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: smd is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$sub_match != 1} {
+	send_user "\nFAILURE: smd did not drain node\n"
+	set exit_code 1
+}
+
+#
+# replace the drained node
+#
+set sub_match 0
+spawn $smd -r $node_name $job_id
+expect {
+	-re "Job $job_id got node $node_name replaced" {
+		set sub_match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: smd is not reponding\n"
+		set exit_code 0
+	}
+	eof {
+		wait
+	}
+
+}
+if {$sub_match != 1} {
+	send_user "\nFAILURE: smd did not replace the node\n"
+	set exit_code
+}
+
+cancel_job $job_id
+
+reset_state $node_name
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

@@ -1,3 +1,3 @@
 # Makefile for slurmctld plugins
 
-SUBDIRS = dynalloc
+SUBDIRS = dynalloc nonstop
