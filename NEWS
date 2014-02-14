@@ -230,6 +230,7 @@ documents those changes that are of interest to users and admins.
     any checkpoint plugin.
  -- Fix issue where if using munge and munge wasn't running and a slurmd
     needed to forward a message the slurmd would core dump.
+ -- Update srun.1 man page documenting the PMI2 support.
 
 * Changes in Slurm 2.6.6
 ========================
