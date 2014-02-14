@@ -391,13 +391,8 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ALLOC_NODE, "Alloc Node : Sid",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-#ifdef HAVE_AIX
 	{G_TYPE_STRING, SORTID_NETWORK, "Network",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-#else
-	{G_TYPE_STRING, SORTID_NETWORK, NULL,
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-#endif
 	{G_TYPE_STRING, SORTID_COMMAND, "Command",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COMMENT, "Comment",
@@ -1665,11 +1660,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_NAME),
 				   job_ptr->name);
 
-	if (cluster_flags & CLUSTER_FLAG_AIX)
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_job,
-							 SORTID_NETWORK),
-					   job_ptr->network);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_NETWORK),
+				   job_ptr->network);
 
 	if (job_ptr->nice > 0)
 		sprintf(tmp_char, "%u", job_ptr->nice - NICE_OFFSET);
@@ -2224,10 +2218,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	xfree(tmp_uname);
 
-	if (cluster_flags & CLUSTER_FLAG_AIX) {
-		gtk_tree_store_set(treestore, &sview_job_info_ptr->iter_ptr,
-				   SORTID_NETWORK, job_ptr->network, -1);
-	}
+	gtk_tree_store_set(treestore, &sview_job_info_ptr->iter_ptr,
+			   SORTID_NETWORK, job_ptr->network, -1);
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		char tmp_block[40], tmp_conn[40], tmp_geo[40], tmp_rotate[40];
@@ -4426,20 +4418,6 @@ extern void cluster_change_job(void)
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
-		if (cluster_flags & CLUSTER_FLAG_AIX) {
-			switch(display_data->id) {
-			case SORTID_NETWORK:
-				display_data->name = "Network";
-				break;
-			}
-
-		} else {
-			switch(display_data->id) {
-			case SORTID_NETWORK:
-				display_data->name = NULL;
-				break;
-			}
-		}
 
 		if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
 			switch(display_data->id) {
