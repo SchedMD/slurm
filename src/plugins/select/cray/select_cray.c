@@ -1746,6 +1746,8 @@ extern int select_p_step_start(struct step_record *step_ptr)
 		select_jobinfo_t *step_jobinfo = step_ptr->select_jobinfo->data;
 		select_nodeinfo_t *nodeinfo;
 
+		step_jobinfo->npc = jobinfo->npc;
+
 		if (!jobinfo->used_blades)
 			jobinfo->used_blades = bit_alloc(blade_cnt);
 
