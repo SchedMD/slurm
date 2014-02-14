@@ -118,6 +118,7 @@ typedef struct sbatch_options {
 	uint16_t warn_time;	/* --signal=flags:<int>@<time>	*/
 
 	bool hold;		/* --hold, -H			*/
+	bool parsable;		/* --parsable			*/
 	bool no_kill;		/* --no-kill, -k		*/
 	int requeue;		/* --requeue and --no-requeue	*/
 	uint8_t open_mode;	/* --open-mode			*/

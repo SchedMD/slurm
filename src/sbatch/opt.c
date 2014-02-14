@@ -177,6 +177,7 @@
 #define LONG_OPT_PROFILE         0x154
 #define LONG_OPT_IGNORE_PBS      0x155
 #define LONG_OPT_TEST_ONLY       0x156
+#define LONG_OPT_PARSABLE        0x157
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -354,6 +355,7 @@ static void _opt_default()
 	opt.tmpdisk	    = -1;
 
 	opt.hold	    = false;
+	opt.parsable	    = false;
 	opt.constraints	    = NULL;
 	opt.gres	    = NULL;
 	opt.contiguous	    = false;
@@ -719,6 +721,7 @@ static struct option long_options[] = {
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
+	{"parsable",      optional_argument, 0, LONG_OPT_PARSABLE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 	{"qos",		  required_argument, 0, LONG_OPT_QOS},
@@ -1654,6 +1657,9 @@ static void _set_options(int argc, char **argv)
                         break;
 		case LONG_OPT_TEST_ONLY:
 			opt.test_only = true;
+			break;
+		case LONG_OPT_PARSABLE:
+			opt.parsable = true;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2896,7 +2902,7 @@ static void _usage(void)
 {
  	printf(
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
-"              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
+"              [-c ncpus] [-r n] [-p partition] [--hold] [--parsable] [-t minutes]\n"
 "              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
 "              [--input file] [--output file] [--error file]\n"
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
@@ -2975,6 +2981,8 @@ static void _help(void)
 "  -o, --output=out            file for batch script's standard output\n"
 "  -O, --overcommit            overcommit resources\n"
 "  -p, --partition=partition   partition requested\n"
+"      --parsable              outputs only the jobid and cluster name (if present),\n"
+"                              separated by semicolon, only on successful submission.\n"
 "      --profile=value         enable acct_gather_profile for detailed data\n"
 "                              value is all or none or any combination of\n"
 "                              energy, lustre, network or task\n"

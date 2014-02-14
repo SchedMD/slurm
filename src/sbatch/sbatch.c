@@ -200,10 +200,17 @@ int main(int argc, char *argv[])
 		sleep (++retries);
         }
 
-	printf("Submitted batch job %u", resp->job_id);
-	if (working_cluster_rec)
-		printf(" on cluster %s", working_cluster_rec->name);
-	printf("\n");
+	if (!opt.parsable){
+		printf("Submitted batch job %u", resp->job_id);
+		if (working_cluster_rec)
+			printf(" on cluster %s", working_cluster_rec->name);
+		printf("\n");
+	} else {
+		printf("%u", resp->job_id);
+		if (working_cluster_rec)
+			printf(";%s", working_cluster_rec->name);
+		printf("\n");
+	}
 
 	xfree(desc.script);
 	slurm_free_submit_response_response_msg(resp);

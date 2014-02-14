@@ -61,6 +61,7 @@ Lead Slurm developers are:
 <br>
 <li>Yuri D'Elia (Center for Biomedicine, EURAC Research, Italy)</li>
 <li>Francois Diakhate (CEA, France)</li>
+<li>Daniele Didomizio (EURAC Research, Italy)</li>
 <li>Joseph Donaghy (Lawrence Livermore National Laboratory)</li>
 <li>Chris Dunlap (Lawrence Livermore National Laboratory)</li>
 <br>
@@ -190,6 +191,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 5 February 2014</p>
+<p style="text-align:center;">Last modified 14 February 2014</p>
 
 <!--#include virtual="footer.txt"-->
