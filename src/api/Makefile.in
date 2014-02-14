@@ -83,7 +83,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-noinst_PROGRAMS = libslurm.o$(EXEEXT) libsmdns.o$(EXEEXT)
+noinst_PROGRAMS = libslurm.o$(EXEEXT)
 subdir = src/api
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/auxdir/depcomp
@@ -192,21 +192,12 @@ am__objects_1 = allocate.lo allocate_msg.lo block_info.lo cancel.lo \
 	update_config.lo license_info.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
-libsmdns_la_LIBADD =
-am_libsmdns_la_OBJECTS = global_defaults.lo smd_ns.lo
-libsmdns_la_OBJECTS = $(am_libsmdns_la_OBJECTS)
-libsmdns_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libsmdns_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(noinst_PROGRAMS)
 am_libslurm_o_OBJECTS =
 libslurm_o_OBJECTS = $(am_libslurm_o_OBJECTS)
 libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libeio.o \
 	$(top_builddir)/src/common/libspank.o \
 	$(top_builddir)/src/common/libcommon.o
-am_libsmdns_o_OBJECTS =
-libsmdns_o_OBJECTS = $(am_libsmdns_o_OBJECTS)
-libsmdns_o_DEPENDENCIES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -242,11 +233,9 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libsmdns_la_SOURCES) \
-	$(libslurm_o_SOURCES) $(libsmdns_o_SOURCES)
+	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
 DIST_SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libsmdns_la_SOURCES) \
-	$(libslurm_o_SOURCES) $(libsmdns_o_SOURCES)
+	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -564,13 +553,13 @@ rev = $(SLURM_API_REVISION)
 libpmi_current = 0
 libpmi_age = 0
 libpmi_rev = 0
-lib_LTLIBRARIES = libslurm.la libsmdns.la libpmi.la
+lib_LTLIBRARIES = libslurm.la libpmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.  For instance, this takes care
 # of libpmi.la's dependency on libslurm.la, as long as you use "make"
 # and NOT "make libpmi.la".
-BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la libsmdns.la
+BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols used by the process, libcommon, libeio, etc.
@@ -635,14 +624,6 @@ libslurm_la_LDFLAGS = \
         -version-info $(current):$(rev):$(age) \
         $(OTHER_FLAGS) $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
-libsmdns_la_SOURCES = global_defaults.c smd_ns.c
-#libsmdns_la_LIBADD = $(top_builddir)/src/api/libslurm.la
-libsmdns_la_LDFLAGS = \
-	$(LIB_LDFLAGS) \
-	-version-info $(current):$(rev):$(age) \
-	$(OTHER_FLAGS)
-
-
 #
 # The libpmi_la_LIBADD specification below causes libpmi.la to relink
 # when running "make install", but removing it prevents essential slurm
@@ -662,8 +643,6 @@ libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libspank.o	\
 	$(top_builddir)/src/common/libcommon.o
 
-libsmdns_o_SOURCES = 
-libsmdns_o_LDADD = 
 CLEANFILES = \
 	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
 
@@ -761,9 +740,6 @@ libslurm.la: $(libslurm_la_OBJECTS) $(libslurm_la_DEPENDENCIES) $(EXTRA_libslurm
 libslurmhelper.la: $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_DEPENDENCIES) $(EXTRA_libslurmhelper_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_LIBADD) $(LIBS)
 
-libsmdns.la: $(libsmdns_la_OBJECTS) $(libsmdns_la_DEPENDENCIES) $(EXTRA_libsmdns_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libsmdns_la_LINK) -rpath $(libdir) $(libsmdns_la_OBJECTS) $(libsmdns_la_LIBADD) $(LIBS)
-
 clean-noinstPROGRAMS:
 	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
 	echo " rm -f" $$list; \
@@ -787,7 +763,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/complete.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end_info.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_defaults.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init_msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_step_info.Plo@am__quote@
@@ -802,7 +777,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_get_statistics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_hostlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_pmi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/smd_ns.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_io.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@
@@ -1054,8 +1028,6 @@ uninstall-am: uninstall-libLTLIBRARIES
 
 libslurm.o$(EXEEXT): $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 	$(LINK) $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
-libsmdns.o$(EXEEXT): $(libsmdns_la_OBJECTS)
-	$(LINK) $(libsmdns_la_OBJECTS)
 
 force:
 $(libslurm_o_LDADD) $(convenience_libs) $(slurmapi_add) : force
@@ -1076,12 +1048,6 @@ $(PMI_VERSION_SCRIPT) :
 	 echo "   PMI_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(PMI_VERSION_SCRIPT)
-
-global_defaults.c : $(top_builddir)/config.h Makefile
-	@( echo "/* This file autogenerated by src/common/Makefile */"; \
-	   echo \
-	   "char *default_slurm_config_file = \"$(sysconfdir)/slurm.conf\";"; \
-	 ) > global_defaults.c
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
