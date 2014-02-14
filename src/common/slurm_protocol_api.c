@@ -2931,6 +2931,12 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 	if (auth_cred == NULL) {
 		error("authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+
+		/* Make sure we wait so we get all the other messages
+		 * that may of been forwarded.
+		 */
+		forward_wait(msg);
+
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
