@@ -122,14 +122,12 @@ typedef enum {
  * format i.e. state_safe() */
 #define CRAY_STATE_VERSION      "VER001"
 
-#define GET_BLADE_SLOT(_X) \
-	(int16_t)(_X & 0x000000000000ffff)
-#define GET_BLADE_CAGE(_X) \
-	(int16_t)((_X & 0x00000000ffff0000) >> 16)
-#define GET_BLADE_ROW(_X) \
-	(int16_t)((_X & 0x0000ffff00000000) >> 32)
 #define GET_BLADE_X(_X) \
-	(int16_t)((_X & 0xffff000000000000) >> 48)
+	(int16_t)((_X & 0x0000ffff00000000) >> 32)
+#define GET_BLADE_Y(_X) \
+	(int16_t)((_X & 0x00000000ffff0000) >> 16)
+#define GET_BLADE_Z(_X) \
+	(int16_t)(_X & 0x000000000000ffff)
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -1250,15 +1248,14 @@ extern int select_p_state_restore(char *dir_name)
 			//blade_array[i].job_cnt = blade_info.job_cnt;
 			if (!bit_equal(blade_array[i].node_bitmap,
 				       blade_info.node_bitmap))
-				error("Blade %"PRIu64"(%d %d %d %d) "
+				error("Blade %"PRIu64"(%d %d %d) "
 				      "has changed it's nodes!  "
 				      "Unexpected results could "
 				      "happen if jobs are running!",
 				      blade_info.id,
 				      GET_BLADE_X(blade_info.id),
-				      GET_BLADE_ROW(blade_info.id),
-				      GET_BLADE_CAGE(blade_info.id),
-				      GET_BLADE_SLOT(blade_info.id));
+				      GET_BLADE_Y(blade_info.id),
+				      GET_BLADE_Z(blade_info.id));
 		} else {
 			int j;
 			for (j=0; j<blade_cnt; j++) {
@@ -1269,7 +1266,7 @@ extern int select_p_state_restore(char *dir_name)
 						       node_bitmap,
 						       blade_info.node_bitmap))
 						error("Blade %"PRIu64"(%d "
-						      "%d %d %d) "
+						      "%d %d) "
 						      "has changed it's "
 						      "nodes!  "
 						      "Unexpected results "
@@ -1279,24 +1276,21 @@ extern int select_p_state_restore(char *dir_name)
 						      blade_info.id,
 						      GET_BLADE_X(
 							      blade_info.id),
-						      GET_BLADE_ROW(
+						      GET_BLADE_Y(
 							      blade_info.id),
-						      GET_BLADE_CAGE(
-							      blade_info.id),
-						      GET_BLADE_SLOT(
+						      GET_BLADE_Z(
 							      blade_info.id));
 					break;
 				}
 			}
-			error("Blade %"PRIu64"(%d %d %d %d) "
+			error("Blade %"PRIu64"(%d %d %d) "
 			      "is no longer at location %d, but at %d!  "
 			      "Unexpected results could "
 			      "happen if jobs are running!",
 			      blade_info.id,
 			      GET_BLADE_X(blade_info.id),
-			      GET_BLADE_ROW(blade_info.id),
-			      GET_BLADE_CAGE(blade_info.id),
-			      GET_BLADE_SLOT(blade_info.id),
+			      GET_BLADE_Y(blade_info.id),
+			      GET_BLADE_Z(blade_info.id),
 			      i, j);
 		}
 		_free_blade(&blade_info);
@@ -1387,6 +1381,28 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	int i, j;
 	uint64_t blade_id = 0;
 
+#ifdef HAVE_NATIVE_CRAY
+	int nn, end_nn, last_nn = 0;
+	bool found = 0;
+	alpsc_topology_t *topology = NULL;
+	size_t num_nodes;
+	char *err_msg = NULL;
+
+	if (alpsc_get_topology(&err_msg, &topology, &num_nodes)) {
+		if (err_msg) {
+			error("(%s: %d: %s) Could not get system "
+			      "topology info: %s",
+			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
+			free(err_msg);
+		} else {
+			error("(%s: %d: %s) Could not get system "
+			      "topology info: No error message present.",
+			      THIS_FILE, __LINE__, __FUNCTION__);
+		}
+		return SLURM_ERROR;
+	}
+#endif
+
 	slurm_mutex_lock(&blade_mutex);
 
 	if (!blade_array)
@@ -1420,9 +1436,38 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			nodeinfo->nid = atoll(nid_char);
 		}
 
+#ifdef HAVE_NATIVE_CRAY
+		end_nn = num_nodes;
+
+	start_again:
+
+		for (nn = last_nn; nn < end_nn; nn++) {
+			if (topology[nn].nid == nodeinfo->nid) {
+				found = 1;
+				blade_id = topology[nn].x;
+				blade_id <<= 16;
+				blade_id += topology[nn].y;
+				blade_id <<= 16;
+				blade_id += topology[nn].z;
+				last_nn = nn;
+				break;
+			}
+		}
+		if (end_nn != num_nodes) {
+			/* already looped */
+			fatal("Node %s(%d) isn't found on the system",
+			      node_ptr->name, nodeinfo->nid);
+		} else if (!found) {
+			end_nn = last_nn;
+			last_nn = 0;
+			debug2("starting again looking for %s(%u)",
+			       node_ptr->name, nodeinfo->nid);
+			goto start_again;
+		}
+#else
 		blade_id = nodeinfo->nid % 4; /* simulate 4 blades
 					       * round robin style */
-
+#endif
 		for (j = 0; j < blade_cnt; j++)
 			if (blade_array[j].id == blade_id)
 				break;
@@ -1437,16 +1482,19 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		bit_set(blade_array[j].node_bitmap, i);
 		blade_array[j].id = blade_id;
 
-		debug2("got %s(%u) blade %u %"PRIu64" %"PRIu64" %d %d %d %d",
+		debug2("got %s(%u) blade %u %"PRIu64" %"PRIu64" %d %d %d",
 		       node_rec->name, nodeinfo->nid, nodeinfo->blade_id,
 		       blade_id, blade_array[nodeinfo->blade_id].id,
 		       GET_BLADE_X(blade_array[nodeinfo->blade_id].id),
-		       GET_BLADE_ROW(blade_array[nodeinfo->blade_id].id),
-		       GET_BLADE_CAGE(blade_array[nodeinfo->blade_id].id),
-		       GET_BLADE_SLOT(blade_array[nodeinfo->blade_id].id));
+		       GET_BLADE_Y(blade_array[nodeinfo->blade_id].id),
+		       GET_BLADE_Z(blade_array[nodeinfo->blade_id].id));
 	}
 	/* give back the memory */
 	xrealloc(blade_array, sizeof(blade_info_t) * blade_cnt);
+
+#ifdef HAVE_NATIVE_CRAY
+	free(topology);
+#endif
 
 	slurm_mutex_unlock(&blade_mutex);
 
