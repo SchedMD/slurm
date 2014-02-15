@@ -740,6 +740,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/cgroup.*
 %{_mandir}/man5/cray.*
 %{_mandir}/man5/gres.*
+%{_mandir}/man5/nonstop.*
 %{_mandir}/man5/slurm.*
 %{_mandir}/man5/topology.*
 %{_mandir}/man5/wiki.*
@@ -908,6 +909,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/select_serial.so
+%{_libdir}/slurm/slurmctld_nonstop.so
 %{_libdir}/slurm/switch_generic.so
 %{_libdir}/slurm/switch_none.so
 %{_libdir}/slurm/task_none.so
