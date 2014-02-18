@@ -635,7 +635,7 @@ extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid)
 		error("slurmctld/nonstop: User %s(%u) attempted to drain node. "
 		      "Permission denied", user_name, cmd_uid);
 		xfree(user_name);
-		xstrfmtcat(resp, "%s EPERM", ns_version);
+		xstrfmtcat(resp, "%s EPERM", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	sep1 = cmd_ptr + 12;
@@ -643,7 +643,7 @@ extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid)
 		node_names = xstrdup(sep1 + 1);
 		sep2 = strchr(node_names, '\"');
 		if (!sep2) {
-			xstrfmtcat(resp, "%s ECMD", ns_version);
+			xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		sep2[0] = '\0';
@@ -651,7 +651,7 @@ extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid)
 		node_names = xstrdup(sep1);
 		sep2 = strchr(node_names, ':');
 		if (!sep2) {
-			xstrfmtcat(resp, "%s ECMD", ns_version);
+			xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		sep2[0] = '\0';
@@ -659,7 +659,7 @@ extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid)
 
 	sep1 = strstr(cmd_ptr + 12, "REASON:");
 	if (!sep1) {
-		xstrfmtcat(resp, "%s ECMD", ns_version);
+		xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	sep1 += 7;
@@ -667,7 +667,7 @@ extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid)
 		reason = xstrdup(sep1 + 1);
 		sep2 = strchr(reason, '\"');
 		if (!sep2) {
-			xstrfmtcat(resp, "%s ECMD", ns_version);
+			xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		sep2[0] = '\0';
@@ -675,7 +675,7 @@ extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid)
 		reason = xstrdup(sep1);
 		sep2 = strchr(reason, ':');
 		if (!sep2) {
-			xstrfmtcat(resp, "%s ECMD", ns_version);
+			xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		sep2[0] = '\0';
@@ -689,11 +689,12 @@ extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid)
 	rc = update_node(&update_node_msg);
 	if (rc) {
 		/* Log it but send back only the error with the version.
-		 * xstrfmtcat(resp, "%s EUPDNODE %s", ns_version, slurm_strerror(rc));
+		 * xstrfmtcat(resp, "%s EUPDNODE %s", SLURM_VERSION_STRING,
+		 * slurm_strerror(rc));
 		 */
-		xstrfmtcat(resp, "%s EUPDNODE", ns_version);
+		xstrfmtcat(resp, "%s EUPDNODE", SLURM_VERSION_STRING);
 	} else {
-		xstrfmtcat(resp, "%s ENOERROR", ns_version);
+		xstrfmtcat(resp, "%s ENOERROR", SLURM_VERSION_STRING);
 	}
 
 fini:	xfree(node_names);
@@ -724,7 +725,7 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid)
 	job_id = atoi(sep1);
 	sep1 = strstr(sep1, "STATE_FLAGS:");
 	if (!sep1) {
-		xstrfmtcat(resp, "%s ECMD", ns_version);
+		xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	state_flags = atoi(sep1 + 12);
@@ -732,7 +733,7 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid)
 	pthread_mutex_lock(&job_fail_mutex);
 	job_ptr = find_job_record(job_id);
 	if (!job_ptr) {
-		xstrfmtcat(resp, "%s EJOBID", ns_version);
+		xstrfmtcat(resp, "%s EJOBID", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
@@ -742,11 +743,11 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid)
 		info("slurmctld/nonstop: Security violation, User ID %u "
 		     "attempting to get information about job ID %u",
 		     cmd_uid, job_ptr->job_id);
-		xstrfmtcat(resp, "%s EPERM", ns_version);
+		xstrfmtcat(resp, "%s EPERM", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
-	xstrfmtcat(resp, "%s ENOERROR ", ns_version);
+	xstrfmtcat(resp, "%s ENOERROR ", SLURM_VERSION_STRING);
 	if ((state_flags & FAILING_NODES) && job_ptr->node_bitmap) {
 		i_first = bit_ffs(job_ptr->node_bitmap);
 		if (i_first == -1)
@@ -775,9 +776,9 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid)
 			for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
 				/* Format: nodename number_of_cpus state */
 				xstrfmtcat(resp, "%s %u %u ",
-						   job_fail_ptr->fail_node_names[i],
-						   job_fail_ptr->fail_node_cpus[i],
-						   FAILED_NODES);
+					   job_fail_ptr->fail_node_names[i],
+					   job_fail_ptr->fail_node_cpus[i],
+					   FAILED_NODES);
 			}
 		}
 	}
@@ -806,7 +807,7 @@ static void _kill_job(uint32_t job_id, uid_t cmd_uid)
  * RET - Response string, must be freed by the user
  */
 extern char *register_callback(char *cmd_ptr, uid_t cmd_uid,
-							   slurm_addr_t cli_addr)
+			       slurm_addr_t cli_addr)
 {
 	job_failures_t *job_fail_ptr;
 	struct job_record *job_ptr;
@@ -821,14 +822,14 @@ extern char *register_callback(char *cmd_ptr, uid_t cmd_uid,
 		port_id = atoi(sep1 + 5);
 	pthread_mutex_lock(&job_fail_mutex);
 	if ((sep1 == NULL) || (port_id <= 0)) {
-		xstrfmtcat(resp, "%s EPORT", ns_version);
+		xstrfmtcat(resp, "%s EPORT", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	job_fail_ptr = list_find_first(job_fail_list, _job_fail_find, &job_id);
 	if (!job_fail_ptr || !_valid_job_ptr(job_fail_ptr)) {
 		job_ptr = find_job_record(job_id);
 		if (!job_ptr) {
-			xstrfmtcat(resp, "%s EJOBID", ns_version);
+			xstrfmtcat(resp, "%s EJOBID", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		if (!job_fail_ptr) {
@@ -844,12 +845,12 @@ extern char *register_callback(char *cmd_ptr, uid_t cmd_uid,
 	}
 
 	if (job_ptr->user_id != job_fail_ptr->user_id) {
-		xstrfmtcat(resp, "%s EUID", ns_version);
+		xstrfmtcat(resp, "%s EUID", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	job_fail_ptr->callback_addr = cli_addr;
 	job_fail_ptr->callback_port = port_id;
-	xstrfmtcat(resp, "%s ENOERROR", ns_version);
+	xstrfmtcat(resp, "%s ENOERROR", SLURM_VERSION_STRING);
 
 fini:	pthread_mutex_unlock(&job_fail_mutex);
 	debug("%s: replying to library: %s", __func__, resp);
@@ -862,7 +863,7 @@ fini:	pthread_mutex_unlock(&job_fail_mutex);
  * the same feature(s).
  * Return value must be xfreed. */
 static char *_job_node_features(struct job_record *job_ptr,
-								struct node_record *node_ptr)
+				struct node_record *node_ptr)
 {
 	struct features_record *node_feat_ptr;
 	struct feature_record  *job_feat_ptr;
@@ -922,7 +923,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid)
 
 	sep1 = strstr(cmd_ptr + 15, "NODE:");
 	if (!sep1) {
-		xstrfmtcat(resp, "%s ECMD", ns_version);
+		xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	node_name = sep1 + 5;
@@ -932,7 +933,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid)
 	if (!job_fail_ptr || !_valid_job_ptr(job_fail_ptr)) {
 		job_ptr = find_job_record(job_id);
 		if (!job_ptr) {
-			xstrfmtcat(resp, "%s EJOBID", ns_version);
+			xstrfmtcat(resp, "%s EJOBID", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		if (!job_fail_ptr) {
@@ -953,11 +954,11 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid)
 		info("slurmctld/nonstop: Security violation, User ID %u "
 		     "attempting to modify job ID %u",
 		     cmd_uid, job_ptr->job_id);
-		xstrfmtcat(resp, "%s EPERM", ns_version);
+		xstrfmtcat(resp, "%s EPERM", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	if (!IS_JOB_RUNNING(job_ptr)) {
-		xstrfmtcat(resp, "%s EJOBNOTRUNRROR", ns_version);
+		xstrfmtcat(resp, "%s EJOBNOTRUNRROR", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
@@ -971,7 +972,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid)
 	if (failed_inx == -1) {
 		node_ptr = find_node_record(node_name);
 		if (!node_ptr) {
-			xstrfmtcat(resp, "%s ENOHOST", ns_version);
+			xstrfmtcat(resp, "%s ENOHOST", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		if (IS_NODE_FAIL(node_ptr)) {
@@ -983,12 +984,12 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid)
 	}
 
 	if ((failed_inx == -1) && (node_ptr == NULL)) {
-		xstrfmtcat(resp, "%s ENODENOTFAIL", ns_version);
+		xstrfmtcat(resp, "%s ENODENOTFAIL", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
 	if (cpu_cnt == 0) {
-		xstrfmtcat(resp, "%s NODENOTINJOB", ns_version);
+		xstrfmtcat(resp, "%s NODENOTINJOB", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
@@ -1066,7 +1067,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid)
 
 	/* Work complete */
 	xstrfmtcat(resp, "%s ENOERROR NewNodeList %s NewNodeCount %u",
-		   ns_version, job_ptr->nodes, job_ptr->node_cnt);
+		   SLURM_VERSION_STRING, job_ptr->nodes, job_ptr->node_cnt);
 	if (job_ptr->job_resrcs) {
 		char *sep = "";
 		xstrfmtcat(resp, " NewCpusPerNode ");
@@ -1117,7 +1118,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid)
 
 	sep1 = strstr(cmd_ptr + 19, "NODE:");
 	if (!sep1) {
-		xstrfmtcat(resp, "%s ECMD", ns_version);
+		xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	node_name = sep1 + 5;
@@ -1127,7 +1128,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid)
 	if (!job_fail_ptr || !_valid_job_ptr(job_fail_ptr)) {
 		job_ptr = find_job_record(job_id);
 		if (!job_ptr) {
-			xstrfmtcat(resp, "%s EJOBID", ns_version);
+			xstrfmtcat(resp, "%s EJOBID", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		if (!job_fail_ptr) {
@@ -1148,11 +1149,11 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid)
 		info("slurmctld/nonstop: Security violation, User ID %u "
 		     "attempting to modify job ID %u",
 		     cmd_uid, job_ptr->job_id);
-		xstrfmtcat(resp, "%s EPERM", ns_version);
+		xstrfmtcat(resp, "%s EPERM", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	if (!IS_JOB_RUNNING(job_ptr)) {
-		xstrfmtcat(resp, "%s EJOBNOTRUN", ns_version);
+		xstrfmtcat(resp, "%s EJOBNOTRUN", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
@@ -1166,7 +1167,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid)
 	if (failed_inx == -1) {
 		node_ptr = find_node_record(node_name);
 		if (!node_ptr) {
-			xstrfmtcat(resp, "%s ENOHOST", ns_version);
+			xstrfmtcat(resp, "%s ENOHOST", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		if (IS_NODE_FAIL(node_ptr)) {
@@ -1198,14 +1199,16 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid)
 			xfree(job_fail_ptr->pending_node_name);
 		} else if (IS_JOB_PENDING(new_job_ptr)) {
 			xstrfmtcat(resp,
-				   "%s EREPLACELATER %"PRIu64"", ns_version,
+				   "%s EREPLACELATER %"PRIu64"",
+				   SLURM_VERSION_STRING,
 				   (uint64_t) new_job_ptr->start_time);
 			goto fini;
 		}
 	}
 	if (job_fail_ptr->pending_node_name) {
 		if (strcmp(job_fail_ptr->pending_node_name, node_name)) {
-			xstrfmtcat(resp, "%s EREPLACEPENDING %s", ns_version,
+			xstrfmtcat(resp, "%s EREPLACEPENDING %s",
+				   SLURM_VERSION_STRING,
 				   job_fail_ptr->pending_node_name);
 			goto fini;
 		}
@@ -1214,18 +1217,18 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid)
 
 	if ((max_spare_node_count != 0) &&
 	    (job_fail_ptr->replace_node_cnt >= max_spare_node_count)) {
-		xstrfmtcat(resp, "%s EMAXSPARECOUNT %u", ns_version,
+		xstrfmtcat(resp, "%s EMAXSPARECOUNT %u", SLURM_VERSION_STRING,
 			   max_spare_node_count);
 		goto fini;
 	}
 
 	if ((failed_inx == -1) && (node_ptr == NULL)) {
-		xstrfmtcat(resp, "%s ENODENOTFAIL", ns_version);
+		xstrfmtcat(resp, "%s ENODENOTFAIL", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
 	if (cpu_cnt == 0) {
-		xstrfmtcat(resp, "%s ENODENOCPU", ns_version);
+		xstrfmtcat(resp, "%s ENODENOCPU", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
@@ -1341,7 +1344,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid)
 			     "from job %u in %ld seconds)",
 			     job_ptr->job_id, new_job_ptr->job_id, delay);
 			xstrfmtcat(resp, "%s EREPLACELATER %"PRIu64"",
-				   ns_version, (uint64_t) will_run_time);
+				   SLURM_VERSION_STRING, (uint64_t) will_run_time);
 			job_fail_ptr->pending_job_id = new_job_ptr->job_id;
 			xfree(job_fail_ptr->pending_node_name);
 			job_fail_ptr->pending_node_name = xstrdup(node_name);
@@ -1354,7 +1357,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid)
 			}
 		} else {
 			xstrfmtcat(resp, "%s ENODEREPLACEFAIL %s",
-				   ns_version, slurm_strerror(rc));
+				   SLURM_VERSION_STRING, slurm_strerror(rc));
 		}
 		goto fini;
 	}
@@ -1387,7 +1390,8 @@ merge:	new_node_name = strdup(new_job_ptr->nodes);
 		info("slurmctld/nonstop: can not shrink job %u: %s",
 		     new_job_ptr->job_id, slurm_strerror(rc));
 		_kill_job(new_job_ptr->job_id, cmd_uid);
-		xstrfmtcat(resp, "%s ENODEREPLACEFAIL %s:", ns_version,
+		xstrfmtcat(resp, "%s ENODEREPLACEFAIL %s:",
+			   SLURM_VERSION_STRING,
 			   slurm_strerror(rc));
 		pthread_mutex_lock(&job_fail_mutex);	/* Resume lock */
 		goto fini;
@@ -1403,7 +1407,8 @@ merge:	new_node_name = strdup(new_job_ptr->nodes);
 	if (rc) {
 		info("slurmctld/nonstop: can not grow job %u: %s",
 		     job_id, slurm_strerror(rc));
-		xstrfmtcat(resp, "%s ENODEREPLACEFAIL %s:", ns_version,
+		xstrfmtcat(resp, "%s ENODEREPLACEFAIL %s:",
+			   SLURM_VERSION_STRING,
 			   slurm_strerror(rc));
 		goto fini;
 	}
@@ -1444,7 +1449,7 @@ merge:	new_node_name = strdup(new_job_ptr->nodes);
 
 	/* Work complete */
 	xstrfmtcat(resp, "%s ENOERROR ReplacementNode %s NewNodeList %s "
-		   "NewNodeCount %u",  ns_version,
+		   "NewNodeCount %u",  SLURM_VERSION_STRING,
 		   new_node_name, job_ptr->nodes, job_ptr->node_cnt);
 	if (job_ptr->job_resrcs) {
 		char *sep = "";
@@ -1481,7 +1486,7 @@ extern char *show_config(char *cmd_ptr, uid_t cmd_uid)
 {
 	char *resp = NULL;
 
-	xstrfmtcat(resp, "%s ENOERROR ", ns_version);
+	xstrfmtcat(resp, "%s ENOERROR ", SLURM_VERSION_STRING);
 
 	if (nonstop_backup_addr)
 		xstrfmtcat(resp, "BackupAddr \"%s\" ", nonstop_backup_addr);
@@ -1538,7 +1543,7 @@ extern char *show_job(char *cmd_ptr, uid_t cmd_uid)
 	if (!job_fail_ptr || !_valid_job_ptr(job_fail_ptr)) {
 		job_ptr = find_job_record(job_id);
 		if (!job_ptr) {
-			xstrfmtcat(resp, "%s EJOBID", ns_version);
+			xstrfmtcat(resp, "%s EJOBID", SLURM_VERSION_STRING);
 			goto fini;
 		}
 		job_fail_ptr = xmalloc(sizeof(job_failures_t));
@@ -1551,11 +1556,11 @@ extern char *show_job(char *cmd_ptr, uid_t cmd_uid)
 
 	if ((cmd_uid != 0) && (cmd_uid != getuid()) &&
 	    (cmd_uid != job_fail_ptr->job_ptr->user_id)) {
-		xstrfmtcat(resp, "%s EPERM", ns_version);
+		xstrfmtcat(resp, "%s EPERM", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
-	xstrfmtcat(resp, "%s ENOERROR ", ns_version);
+	xstrfmtcat(resp, "%s ENOERROR ", SLURM_VERSION_STRING);
 
 	job_ptr = job_fail_ptr->job_ptr;
 	i_first = bit_ffs(job_ptr->node_bitmap);
@@ -1627,7 +1632,7 @@ extern char *time_incr(char *cmd_ptr, uid_t cmd_uid)
 	pthread_mutex_lock(&job_fail_mutex);
 	sep1 = strstr(cmd_ptr + 16, "MINUTES:");
 	if (!sep1) {
-		xstrfmtcat(resp, "%s ECMD", ns_version);
+		xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	sep1 += 8;
@@ -1636,9 +1641,10 @@ extern char *time_incr(char *cmd_ptr, uid_t cmd_uid)
 	job_fail_ptr = list_find_first(job_fail_list, _job_fail_find, &job_id);
 	if (!job_fail_ptr || !_valid_job_ptr(job_fail_ptr)) {
 		if (find_job_record(job_id)) {
-			xstrfmtcat(resp, "%s ENOINCREASETIMELIMIT", ns_version);
+			xstrfmtcat(resp, "%s ENOINCREASETIMELIMIT",
+				   SLURM_VERSION_STRING);
 		} else
-			xstrfmtcat(resp, "%s EJOBID", ns_version);
+			xstrfmtcat(resp, "%s EJOBID", SLURM_VERSION_STRING);
 		goto fini;
 	}
 	if (minutes == 0) {
@@ -1649,9 +1655,10 @@ extern char *time_incr(char *cmd_ptr, uid_t cmd_uid)
 	} else {
 		/* Log it but send back only the error number.
 		 * xstrfmtcat(resp, "%s ETIMEOVERLIMIT %u  %u",
-		 * ns_version, minutes, job_fail_ptr->time_extend_avail);
+		 * SLURM_VERSION_STRING, minutes,
+		 * job_fail_ptr->time_extend_avail);
 		 */
-		xstrfmtcat(resp, "%s ETIMEOVERLIMIT", ns_version);
+		xstrfmtcat(resp, "%s ETIMEOVERLIMIT", SLURM_VERSION_STRING);
 		goto fini;
 	}
 
@@ -1664,10 +1671,11 @@ extern char *time_incr(char *cmd_ptr, uid_t cmd_uid)
 		rc = update_job(&job_specs, cmd_uid);
 	}
 	if (rc) {
-		xstrfmtcat(resp, "%s EJOBUPDATE %s", ns_version, slurm_strerror(rc));
+		xstrfmtcat(resp, "%s EJOBUPDATE %s", SLURM_VERSION_STRING,
+			   slurm_strerror(rc));
 		job_fail_ptr->time_extend_avail += minutes;
 	} else {
-		xstrfmtcat(resp, "%s ENOERROR", ns_version);
+		xstrfmtcat(resp, "%s ENOERROR", SLURM_VERSION_STRING);
 	}
 
 fini:	job_fail_update_time = time(NULL);
@@ -1706,9 +1714,9 @@ static void _send_event_callbacks(void)
 			callback_addr.sin_port =
 				htons(job_fail_ptr->callback_port);
 			callback_flags = job_fail_ptr->callback_flags;
-			debug("\
-%s: job_id %d flags 0x%x", __func__,
-				  job_fail_ptr->job_id, job_fail_ptr->callback_flags);
+			debug("%s: job_id %d flags 0x%x", __func__,
+			      job_fail_ptr->job_id,
+			      job_fail_ptr->callback_flags);
 			job_fail_ptr->callback_flags = 0;
 			callback_jobid = job_fail_ptr->job_id;
 			/* Release locks for I/O, which could be slow */

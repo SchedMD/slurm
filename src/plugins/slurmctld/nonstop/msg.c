@@ -271,7 +271,7 @@ static void _proc_msg(slurm_fd_t new_fd, char *msg, slurm_addr_t cli_addr)
 		unlock_slurmctld(job_write_lock);
 	} else {
 		info("slurmctld/nonstop: Invalid command: %s", cmd_ptr);
-		xstrfmtcat(resp, "%s ECMD", ns_version);
+		xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
 	}
 
  send_resp:
