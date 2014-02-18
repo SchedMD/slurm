@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Remove the SLURM_PMI_KVS_NO_DUP_KEYS functionality from PMI support,
     the PMI protocol does not accept duplicate keys. If there already
     is an entry with the same key, the old value is replaced.
+ -- Prevent jobs being killed when a checkpoint plugin is enabled or disabled.
 
 * Changes in Slurm 14.03.0pre6
 ==============================

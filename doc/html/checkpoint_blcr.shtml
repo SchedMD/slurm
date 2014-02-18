@@ -34,11 +34,6 @@ batch jobs can be restarted.</b></p>
 <p><b>NOTE:</b> BLCR operation has been verified with MVAPICH2.
 Some other MPI implementations should also work.</p>
 
-<p><b>NOTE:</b> There must not be any running and/or pending jobs in the
-cluster when the plugin is both enabled or disabled. Since the format
-of the job state file changes all jobs will be lost  upon  slurmctld  restart.
-</p>
-
 <h2>User Commands</h2>
 
 <p>The following documents SLURM changes specific to BLCR support.

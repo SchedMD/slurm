@@ -132,13 +132,35 @@ extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
 			       uint16_t protocol_version)
 {
+	uint32_t size;
+
+	size = 0;
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		pack16(CHECK_NONE, buffer);
+		pack32(size, buffer);
+	}
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 				 uint16_t protocol_version)
 {
+	uint16_t id;
+	uint32_t x;
+	uint32_t size;
+
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		safe_unpack16(&id, buffer);
+		safe_unpack32(&size, buffer);
+		if (id != CHECK_NONE) {
+			x = get_buf_offset(buffer);
+			set_buf_offset(buffer, x + size);
+		}
+	}
 	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 extern check_jobinfo_t slurm_ckpt_copy_job(check_jobinfo_t jobinfo)

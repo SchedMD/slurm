@@ -60,6 +60,17 @@ enum check_opts {
 	CHECK_REQUEUE		/* CHECK_VACATTE + CHECK_RESTART */
 };
 
+/* Identification number for each checkpoint
+ * plugin used to encode and decode job information.
+ */
+enum checkpoint_plugin {
+	CHECK_NONE,
+	CHECK_AIX,
+	CHECK_BLCR,
+	CHECK_OMPI,
+	CHECK_POE
+};
+
 /* opaque data structures - no peeking! */
 #ifndef __check_jobinfo_t_defined
 #  define __check_jobinfo_t_defined
