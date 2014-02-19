@@ -196,6 +196,12 @@ int PMI_Init( int *spawned )
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_Init\n");
 
+	/* In MPI implementations, there will be no duplicate
+	 * keys put into the KVS usually. Hence the checking
+	 * for duplicate keys can be skipped. That's the motivation
+	 * of the environment SLURM_PMI_KVS_NO_DUP_KEYS: for MPI to
+	 * tell PMI that there will be no duplicate keys at all.
+	 */
 	env = getenv("SLURM_PMI_KVS_NO_DUP_KEYS");
 	if (env)
 		pmi_kvs_no_dup_keys = 1;
@@ -1753,7 +1759,7 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 	if  (pmi_debug)
 		fprintf(stderr, "In: PMI_Args_to_keyval \n");
 
-	if ((keyvalp == NULL) || (size == NULL) || 
+	if ((keyvalp == NULL) || (size == NULL) ||
 	    (argcp == NULL) || (argvp == NULL))
 		return PMI_ERR_INVALID_ARG;
 

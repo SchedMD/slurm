@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     cluster name separated by a semicolon. Errors will still be displayed.
  -- Added failure management "slurmctld/nonstop" plugin.
  -- Prevent jobs being killed when a checkpoint plugin is enabled or disabled.
+ -- Update the documentation about SLURM_PMI_KVS_NO_DUP_KEYS environment
+    variable.
 
 * Changes in Slurm 14.03.0pre6
 ==============================

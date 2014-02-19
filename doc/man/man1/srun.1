@@ -2040,7 +2040,9 @@ Same as \fB\-O, \-\-overcommit\fR
 Same as \fB\-p, \-\-partition\fR
 .TP
 \fBSLURM_PMI_KVS_NO_DUP_KEYS\fR
-If set, then PMI key\-pairs will contain no duplicate keys.
+If set, then PMI key\-pairs will contain no duplicate keys. MPI can use
+this variable to inform the PMI library that it will not use duplicate
+keys so PMI can skip the check for duplicate keys.
 This is the case for MPICH2 and reduces overhead in testing for duplicates
 for improved performance
 .TP
