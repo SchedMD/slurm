@@ -12,7 +12,7 @@ documents those changes that are of interest to users and admins.
     needed to forward a message the slurmd would core dump.
  -- Update srun.1 man page documenting the PMI2 support.
  -- Fix slurmctld core dump when a jobs gets its qos updated but there
-    is not corresponding association.
+    is not a corresponding association.
 
 * Changes in Slurm 2.6.6
 ========================
