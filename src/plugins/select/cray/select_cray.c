@@ -313,10 +313,10 @@ static int _run_nhc(nhc_info_t *nhc_info)
 		      "status %u:%u took: %s",
 		      nhc_info->jobid, nhc_info->apid, WEXITSTATUS(status),
 		      WTERMSIG(status), TIME_STR);
-	} else if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	} else if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("_run_nhc jobid %u and apid %"PRIu64" completed took: %s",
 		     nhc_info->jobid, nhc_info->apid, TIME_STR);
-
+	}
 fini:
 	xfree(apid_char);
 	xfree(exit_char);
@@ -333,9 +333,11 @@ fini:
 
 	/* simulate sleeping */
 	sleep(1);
-	if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("_run_nhc jobid %u and apid %"PRIu64" completed",
 		     nhc_info->jobid, nhc_info->apid);
+	}
+
 	return 0;
 #endif
 }
@@ -1131,9 +1133,10 @@ extern int select_p_state_save(char *dir_name)
 		fsync(log_fd);
 		close(log_fd);
 	}
-	if (error_code)
+
+	if (error_code) {
 		(void) unlink(new_file);
-	else {			/* file shuffle */
+	} else {			/* file shuffle */
 		(void) unlink(old_file);
 		if (link(reg_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",

@@ -49,13 +49,14 @@ void extract_attributes(const XML_Char **attr_list, char **reqv, int reqc)
 	const XML_Char **attr, *val = NULL;
 
 	while (--reqc >= 0) {
-		for (attr = attr_list, val = NULL; *attr; attr += 2)
+		for (attr = attr_list, val = NULL; *attr; attr += 2) {
 			if (strcmp(reqv[reqc], *attr) == 0) {
 				if (val != NULL)
 					fatal("multiple '%s' occurrences",
 					      *attr);
 				val = attr[1];
 			}
+		}
 		if (val == NULL)
 			fatal("unspecified '%s' attribute", reqv[reqc]);
 		reqv[reqc] = (XML_Char *)val;
@@ -116,10 +117,10 @@ void eh_resp_data(struct ud *ud, const XML_Char **attrs)
 		extract_attributes(attrs, attr_err, ARRAY_SIZE(attr_err));
 
 		for (ud->error = BE_INTERNAL;
-		     ud->error < BE_UNKNOWN; ud->error++)
+		     ud->error < BE_UNKNOWN; ud->error++) {
 			if (strcmp(attr_err[0], be_names[ud->error]) == 0)
 				break;
-
+		}
 		snprintf(ud->bp->msg, sizeof(ud->bp->msg), "%s ALPS %s error: ",
 			 attr_err[1], be_names[ud->error]);
 
@@ -175,18 +176,18 @@ void eh_node(struct ud *ud, const XML_Char **attrs)
 
 	strncpy(node.name, attribs[1], sizeof(node.name));
 
-	for (node.arch = BNA_X2; node.arch < BNA_MAX; node.arch++)
+	for (node.arch = BNA_X2; node.arch < BNA_MAX; node.arch++) {
 		if (strcmp(attribs[2], nam_arch[node.arch]) == 0)
 			break;
-
-	for (node.role = BNR_INTER; node.role < BNR_MAX; node.role++)
+	}
+	for (node.role = BNR_INTER; node.role < BNR_MAX; node.role++) {
 		if (strcmp(attribs[3], nam_noderole[node.role]) == 0)
 			break;
-
-	for (node.state = BNS_UP; node.state < BNS_MAX; node.state++)
+	}
+	for (node.state = BNS_UP; node.state < BNS_MAX; node.state++) {
 		if (strcmp(attribs[4], nam_nodestate[node.state]) == 0)
 			break;
-
+	}
 	ud->current_node.available = node.arch == BNA_XT &&
 				     node.role == BNR_BATCH &&
 				     node.state == BNS_UP;
@@ -317,10 +318,10 @@ void eh_mem(struct ud *ud, const XML_Char **attrs)
 
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 
-	for (memory.type = BMT_OS; memory.type < BMT_MAX; memory.type++)
+	for (memory.type = BMT_OS; memory.type < BMT_MAX; memory.type++) {
 		if (strcmp(attribs[0], nam_memtype[memory.type]) == 0)
 			break;
-
+	}
 	if (atou32(attribs[1], &memory.page_size_kb) < 0 ||
 	    memory.page_size_kb < 1)
 		fatal("illegal page_size_kb = %s", attribs[1]);
@@ -389,13 +390,14 @@ void eh_label(struct ud *ud, const XML_Char **attrs)
 
 	strncpy(label.name, attribs[0], sizeof(label.name));
 
-	for (label.type = BLT_HARD; label.type < BLT_MAX; label.type++)
+	for (label.type = BLT_HARD; label.type < BLT_MAX; label.type++) {
 		if (strcmp(attribs[1], nam_labeltype[label.type]) == 0)
 			break;
-
-	for (label.disp = BLD_ATTRACT; label.disp < BLD_MAX; label.disp++)
+	}
+	for (label.disp = BLD_ATTRACT; label.disp < BLD_MAX; label.disp++) {
 		if (strcmp(attribs[2], nam_ldisp[label.disp]) == 0)
 			break;
+	}
 
 	if (ud->ud_inventory) {
 		struct basil_label *new = xmalloc(sizeof(*new));
@@ -559,24 +561,28 @@ static void _start_handler(void *user_data,
 	enum basil_element tag;
 
 	for (tag = BT_MESSAGE; tag < BT_MAX; tag++) {
-		if ( table[tag].tag )
-		if (strcmp(table[tag].tag, el) == 0) {
-			/* since BM_inventory is returned for Arrays
-			   if the method is switch we need to "switch"
-			   it up here.
-			*/
-			if (ud->bp->method == BM_switch) {
-				if (!strcmp(table[tag].tag, "ReservationArray"))
-					tag = BT_SWITCHRESARRAY;
-				else if (!strcmp(table[tag].tag, "Reservation"))
-					tag = BT_SWITCHRES;
-				else if (!strcmp(table[tag].tag,
-						"ApplicationArray"))
-					tag = BT_SWITCHAPPARRAY;
-				else if (!strcmp(table[tag].tag,	"Application"))
-					tag = BT_SWITCHAPP;
+		if (table[tag].tag) {
+			if (strcmp(table[tag].tag, el) == 0) {
+				/* since BM_inventory is returned for Arrays
+				   if the method is switch we need to "switch"
+				   it up here.
+				*/
+				if (ud->bp->method == BM_switch) {
+					if (!strcmp(table[tag].tag,
+						    "ReservationArray"))
+						tag = BT_SWITCHRESARRAY;
+					else if (!strcmp(table[tag].tag,
+							 "Reservation"))
+						tag = BT_SWITCHRES;
+					else if (!strcmp(table[tag].tag,
+							 "ApplicationArray"))
+						tag = BT_SWITCHAPPARRAY;
+					else if (!strcmp(table[tag].tag,
+							 "Application"))
+						tag = BT_SWITCHAPP;
+				}
+				break;
 			}
-			break;
 		}
 	}
 	if (table[tag].tag == NULL)
@@ -588,13 +594,12 @@ static void _start_handler(void *user_data,
 
 	if (method != BM_none && method != ud->bp->method)
 		fatal("Unexpected '%s' start tag within %u response, "
-		      "expected %u",
-		      el, method, ud->bp->method);
+		      "expected %u", el, method, ud->bp->method);
 
 	if (tag != BT_MESSAGE) {
 		if (ud->depth != table[tag].depth)
 			fatal("Tag '%s' appeared at depth %d instead of %d",
-					el, ud->depth, table[tag].depth);
+			      el, ud->depth, table[tag].depth);
 		if (ud->counter[tag] && table[tag].uniq)
 			fatal("Multiple occurrences of %s in document", el);
 	}
@@ -621,29 +626,31 @@ static void _end_handler(void *user_data, const XML_Char *el)
 
 	--ud->depth;
 
-	for (end_tag = BT_MESSAGE; end_tag < BT_MAX; end_tag++)
-		if ( table[end_tag].tag )
-		if (strcmp(table[end_tag].tag, el) == 0) {
-			/* since BM_inventory is returned for Arrays
-			   if the method is switch we need to "switch"
-			   it up here.
-			*/
-			if (ud->bp->method == BM_switch) {
-				if (!strcmp(table[end_tag].tag,
-					   "ReservationArray"))
-					end_tag = BT_SWITCHRESARRAY;
-				else if (!strcmp(table[end_tag].tag,
-						"Reservation"))
-					end_tag = BT_SWITCHRES;
-				else if (!strcmp(table[end_tag].tag,
-						"ApplicationArray"))
-					end_tag = BT_SWITCHAPPARRAY;
-				else if (!strcmp(table[end_tag].tag,
-						"Application"))
-					end_tag = BT_SWITCHAPP;
+	for (end_tag = BT_MESSAGE; end_tag < BT_MAX; end_tag++) {
+		if (table[end_tag].tag) {
+			if (strcmp(table[end_tag].tag, el) == 0) {
+				/* since BM_inventory is returned for Arrays
+				   if the method is switch we need to "switch"
+				   it up here.
+				*/
+				if (ud->bp->method == BM_switch) {
+					if (!strcmp(table[end_tag].tag,
+						    "ReservationArray"))
+						end_tag = BT_SWITCHRESARRAY;
+					else if (!strcmp(table[end_tag].tag,
+							 "Reservation"))
+						end_tag = BT_SWITCHRES;
+					else if (!strcmp(table[end_tag].tag,
+							 "ApplicationArray"))
+						end_tag = BT_SWITCHAPPARRAY;
+					else if (!strcmp(table[end_tag].tag,
+							 "Application"))
+						end_tag = BT_SWITCHAPP;
+				}
+				break;
 			}
-			break;
 		}
+	}
 	if (table[end_tag].tag == NULL) {
 		fatal("Unknown end tag '%s'", el);
 	} else if (end_tag != ud->stack[ud->depth]) {
