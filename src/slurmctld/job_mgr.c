@@ -359,8 +359,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	   with the association.  If not just fill in the qos and
 	   continue. */
 
-	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-		xassert(assoc_ptr);
 	xassert(qos_rec);
 
 	if (!qos_rec->name && !qos_rec->id) {
@@ -503,7 +501,7 @@ int dump_all_job_state(void)
 		int pos = 0, nwrite, amount, rc;
 		char *data;
 
-		fd_set_close_on_exec(log_fd); 
+		fd_set_close_on_exec(log_fd);
 		nwrite = get_buf_offset(buffer);
 		data = (char *)get_buf_data(buffer);
 		high_buffer_size = MAX(nwrite, high_buffer_size);
@@ -5937,7 +5935,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	} else {
 		/* Job ID not found. It could reference a job array. */
 		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = (struct job_record *) 
+		while ((job_ptr = (struct job_record *)
 				  list_next(job_iterator))) {
 			if ((job_ptr->job_id != job_id) &&
 			    ((job_ptr->array_task_id == (uint16_t) NO_VAL) ||
