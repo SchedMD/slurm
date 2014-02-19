@@ -41,25 +41,31 @@
  * Drain nodes which a user believes are bad
  * cmd_ptr IN - Input format "DRAIN:NODES:name:REASON:string"
  * cmd_uid IN - User issuing the RPC
+ * protocol_version IN - Communication protocol version number
  * RET - Response string, must be freed by the user
  */
-extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid);
+extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid,
+			      uint32_t protocol_version);
 
 /*
  * Remove a job's failed or failing node from its allocation
  * cmd_ptr IN - Input format "DROP_NODE:JOBID:#:NODE:name"
  * cmd_uid IN - User issuing the RPC
+ * protocol_version IN - Communication protocol version number
  * RET - Response string, must be freed by the user
  */
-extern char *drop_node(char *cmd_ptr, uid_t cmd_uid);
+extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
+		       uint32_t protocol_version);
 
 /*
  * Identify a job's failed and failing nodes
  * cmd_ptr IN - Input format "GET_FAIL_NODES:JOBID:#:STATE_FLAGS:#"
  * cmd_uid IN - User issuing the RPC
+ * protocol_version IN - Communication protocol version number
  * RET - Response string, must be freed by the user
  */
-extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid);
+extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
+			uint32_t protocol_version);
 
 extern void job_begin_callback(struct job_record *job_ptr);
 extern void job_fini_callback(struct job_record *job_ptr);
@@ -71,18 +77,22 @@ extern void node_fail_callback(struct job_record *job_ptr,
  * cmd_ptr IN - Input format "CALLBACK:JOBID:#:PORT:#"
  * cmd_uid IN - User issuing the RPC
  * cli_addr IN - Client communication address (host for response)
+ * protocol_version IN - Communication protocol version number
  * RET - Response string, must be freed by the user
  */
 extern char *register_callback(char *cmd_ptr, uid_t cmd_uid,
-			       slurm_addr_t cli_addr);
+			       slurm_addr_t cli_addr,
+			       uint32_t protocol_version);
 
 /*
  * Replace a job's failed or failing node
  * cmd_ptr IN - Input format "REPLACE_NODE:JOBID:#:NODE:name"
  * cmd_uid IN - User issuing the RPC
+ * protocol_version IN - Communication protocol version number
  * RET - Response string, must be freed by the user
  */
-extern char *replace_node(char *cmd_ptr, uid_t cmd_uid);
+extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
+			  uint32_t protocol_version);
 
 /*
  * Restore all nonstop plugin state information
@@ -98,17 +108,20 @@ extern int save_nonstop_state(void);
  * Report nonstop plugin global state/configuration information
  * cmd_ptr IN - Input format "SHOW_CONFIG
  * cmd_uid IN - User issuing the RPC
+ * protocol_version IN - Communication protocol version number
  * RET - Response string, must be freed by the user
  */
-extern char *show_config(char *cmd_ptr, uid_t cmd_uid);
+extern char *show_config(char *cmd_ptr, uid_t cmd_uid,
+			 uint32_t protocol_version);
 
 /*
  * Report nonstop plugin state information for a particular job
  * cmd_ptr IN - Input format "SHOW_JOB:JOBID:#
  * cmd_uid IN - User issuing the RPC
+ * protocol_version IN - Communication protocol version number
  * RET - Response string, must be freed by the user
  */
-extern char *show_job(char *cmd_ptr, uid_t cmd_uid);
+extern char *show_job(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version);
 
 /* Spawn thread to periodically save nonstop plugin state to disk */
 extern int spawn_state_thread(void);
@@ -120,8 +133,9 @@ extern void term_state_thread(void);
  * Reset a job's time limit
  * cmd_ptr IN - Input format "TIME_INCR:JOBID:#:MINUTES:#
  * cmd_uid IN - User issuing the RPC
+ * protocol_version IN - Communication protocol version number
  * RET - Response string, must be freed by the user
  */
-extern char *time_incr(char *cmd_ptr, uid_t cmd_uid);
+extern char *time_incr(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version);
 
 #endif	/* _HAVE_NONSTOP_DO_WORK_H */
