@@ -234,6 +234,8 @@
 #define SLURM_STEP_RESV_PORTS   "SLURM_STEP_RESV_PORTS"
 /* old PMIv1 envs */
 #define PMI2_PMI_DEBUGGED_ENV   "PMI_DEBUG"
+#define PMI2_KVS_NO_DUP_KEYS_ENV "SLURM_PMI_KVS_NO_DUP_KEYS"
+
 
 extern int handle_pmi1_cmd(int fd, int lrank);
 extern int handle_pmi2_cmd(int fd, int lrank);

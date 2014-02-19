@@ -58,6 +58,8 @@ static int min_time_kvs_put = 1000000;
 static int max_time_kvs_put = 0;
 static int tot_time_kvs_put = 0;
 
+static int pmi_kvs_no_dup_keys = 0;
+
 struct barrier_resp {
 	uint16_t port;
 	char *hostname;
@@ -313,8 +315,8 @@ struct kvs_comm **_kvs_comm_dup(void)
 		rc_kvs[i]->kvs_values =
 				xmalloc(sizeof(char *) * rc_kvs[i]->kvs_cnt);
 		if (kvs_comm_ptr[i]->kvs_key_sent == NULL) {
-			kvs_comm_ptr[i]->kvs_key_sent =
-				xmalloc(sizeof(uint16_t) *
+			kvs_comm_ptr[i]->kvs_key_sent = 
+				xmalloc(sizeof(uint16_t) * 
 				kvs_comm_ptr[i]->kvs_cnt);
 		}
 		cnt = 0;
@@ -352,6 +354,8 @@ static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 	int i, j;
 
 	for (i=0; i<kvs_new->kvs_cnt; i++) {
+		if (pmi_kvs_no_dup_keys)
+			goto no_dup;
 		for (j=0; j<kvs_orig->kvs_cnt; j++) {
 			if (strcmp(kvs_new->kvs_keys[i], kvs_orig->kvs_keys[j]))
 				continue;
@@ -364,6 +368,7 @@ static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 		}
 		if (j < kvs_orig->kvs_cnt)
 			continue;	/* already recorded, update */
+no_dup:
 		/* append it */
 		kvs_orig->kvs_cnt++;
 		xrealloc(kvs_orig->kvs_keys,
@@ -378,7 +383,7 @@ static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 	}
 	if (kvs_orig->kvs_key_sent) {
 		xrealloc(kvs_orig->kvs_key_sent,
-			 (sizeof(uint16_t) * kvs_orig->kvs_cnt));
+			 (sizeof(uint16_t) * kvs_orig->kvs_cnt)); 
 	}
 }
 
@@ -410,8 +415,17 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 {
 	int i, usec_timer;
 	struct kvs_comm *kvs_ptr;
+	static int pmi_kvs_no_dup_keys_set = 0;
 	DEF_TIMERS;
 
+	if (pmi_kvs_no_dup_keys_set == 0) {
+		char *env = getenv("SLURM_PMI_KVS_NO_DUP_KEYS");
+		if (env) 
+			pmi_kvs_no_dup_keys = 1;
+		else 
+			pmi_kvs_no_dup_keys = 0;
+		pmi_kvs_no_dup_keys_set = 1;
+	}
 	/* Merge new data with old.
 	 * NOTE: We just move pointers rather than copy data where
 	 * possible for improved performance */

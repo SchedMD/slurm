@@ -66,6 +66,8 @@ static char *temp_kvs_buf = NULL;
 static int temp_kvs_cnt = 0;
 static int temp_kvs_size = 0;
 
+static int no_dup_keys = 0;
+
 #define TASKS_PER_BUCKET 8
 #define TEMP_KVS_SIZE_INC 2048
 
@@ -232,6 +234,9 @@ kvs_init(void)
 
 	kvs_hash = xmalloc(hash_size * sizeof(kvs_bucket_t));
 
+	if (getenv(PMI2_KVS_NO_DUP_KEYS_ENV))
+		no_dup_keys = 1;
+
 	return SLURM_SUCCESS;
 }
 
@@ -272,16 +277,17 @@ kvs_put(char *key, char *val)
 
 	bucket = &kvs_hash[HASH(key)];
 
-	for (i = 0; i < bucket->count; i ++) {
-		if (! strcmp(key, bucket->pairs[KEY_INDEX(i)])) {
-			/* replace the k-v pair */
-			xfree(bucket->pairs[VAL_INDEX(i)]);
-			bucket->pairs[VAL_INDEX(i)] = xstrdup(val);
-			debug("mpi/pmi2: put kvs %s=%s", key, val);
-			return SLURM_SUCCESS;
+	if (! no_dup_keys) {
+		for (i = 0; i < bucket->count; i ++) {
+			if (! strcmp(key, bucket->pairs[KEY_INDEX(i)])) {
+				/* replace the k-v pair */
+				xfree(bucket->pairs[VAL_INDEX(i)]);
+				bucket->pairs[VAL_INDEX(i)] = xstrdup(val);
+				debug("mpi/pmi2: put kvs %s=%s", key, val);
+				return SLURM_SUCCESS;
+			}
 		}
 	}
-
 	if (bucket->count * 2 >= bucket->size) {
 		bucket->size += (TASKS_PER_BUCKET * 2);
 		xrealloc(bucket->pairs, bucket->size * sizeof(char *));
