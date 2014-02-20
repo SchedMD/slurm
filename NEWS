@@ -237,6 +237,8 @@ documents those changes that are of interest to users and admins.
  -- Fix issue where if using munge and munge wasn't running and a slurmd
     needed to forward a message the slurmd would core dump.
  -- Update srun.1 man page documenting the PMI2 support.
+ -- Fix slurmctld core dump when a jobs gets its qos updated but there
+    is not a corresponding association.
 
 * Changes in Slurm 2.6.6
 ========================

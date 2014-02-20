@@ -371,8 +371,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	   with the association.  If not just fill in the qos and
 	   continue. */
 
-	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-		xassert(assoc_ptr);
 	xassert(qos_rec);
 
 	if (!qos_rec->name && !qos_rec->id) {
