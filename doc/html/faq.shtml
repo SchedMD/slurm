@@ -168,7 +168,9 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
 <li><a href="#reboot">Why is a compute node down with the reason set to
 "Node unexpectedly rebooted"?</a></li>
-<li><a href="#reqspec">How to requeue a job which has exited with a specific exit code.</a></li>
+<li><a href="#reqspec">How can a job which has exited with a specific exit code
+   be requeued?</a></li>
+<li><a href="#user_account">Can a user's account be changed in the database?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1852,18 +1854,16 @@ If you which to prevent this condition from setting the node into a DOWN state
 then configure ReturnToService to 2. See the slurm.conf man page for details.
 Otherwise use the scontrol or sview to manually return the node to service.</p>
 
-<p><a name="reqspec"><b>57.How to requeue a job which has exited with a specific exit code.
-</b></a>
-<p>
+<p><a name="reqspec"><b>57.How can a job which has exited with a specific exit
+  code be requeued?</b></a></br>
 Slurm supports requeue in hold with a <b>SPECIAL_EXIT</b> state using the
-command:
-<p>
-<b>scontrol requeuehold State=SpecialExit job_id</b>.
-</p>
-See man scontrol(1).
-This is useful when users want to requeue and flag a job which has exited with a
-specific error case.
-</p>
+command:</p>
+
+<pre>scontrol requeuehold State=SpecialExit job_id</pre>
+
+<p>This is useful when users want to requeue and flag a job which has exited
+with a specific error case. See man scontrol(1) for more details.</p>
+
 <pre>
 $->scontrol requeuehold State=SpecialExit 10
 $->squeue
@@ -1871,7 +1871,7 @@ $->squeue
     10      mira    zoppo    david SE       0:00      1 (JobHeldUser)
 </pre>
 <p>
-The job can be later released and ran again.
+The job can be later released and run again.
 </p>
 <p>
 The requeueing of jobs which exit with a specific exit code can be
@@ -1894,10 +1894,9 @@ echo "going out with 0"
 exit 0
 </pre>
 <p>
-
 This is an example of an EpilogSlurmctld that checks the job exit value
 looking at the <b>SLURM_JOB_EXIT2</b> environment variable and requeues a job if
-it exited with value 8. The SLURM_JOB_EXIT2 has the format exit:sig, the first
+it exited with value 8. The SLURM_JOB_EXIT2 has the format "exit:sig", the first
 number is the exit code, typically as set by the exit() function.
 The second number of the signal that caused the process to terminate if
 it was terminated by a signal.
@@ -1930,10 +1929,19 @@ the first run, then when it gets requeued in hold with SpecialExit state
 we touch the file /tmp/myfile, then release the job which will finish
 in COMPLETE state.
 </p>
-</p>
+
+<p><a name="reqspec"><b>58. Can a user's account be changed in the database?</b></a></br>
+A user's account can not be changed directly. A new association needs to be
+created for the user with the new account. Then the association with the old
+account can be deleted.</p>
+<pre>
+# Assume user "adam" is initially in account "physics"
+sacctmgr create user name=adam cluster=tux account=physics
+sacctmgr delete user name=adam cluster=tux account=chemistry
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 November 2013</p>
+<p style="text-align:center;">Last modified 20 February 2014</p>
 
 <!--#include virtual="footer.txt"-->
