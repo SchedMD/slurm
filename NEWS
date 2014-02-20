@@ -233,12 +233,15 @@ documents those changes that are of interest to users and admins.
     constrained on some nodes by the mem-per-cpu option.
  -- Correct the slurm.conf man pages and checkpoint_blcr.html page
     describing that jobs must be drained from cluster before deploying
-    any checkpoint plugin.
+    any checkpoint plugin. Corrected in version 14.03.
  -- Fix issue where if using munge and munge wasn't running and a slurmd
-    needed to forward a message the slurmd would core dump.
+    needed to forward a message, the slurmd would core dump.
  -- Update srun.1 man page documenting the PMI2 support.
- -- Fix slurmctld core dump when a jobs gets its qos updated but there
+ -- Fix slurmctld core dump when a jobs gets its QOS updated but there
     is not a corresponding association.
+ -- If a job requires specific nodes and can not run due to those nodes being
+    busy, the main scheduling loop will block those specific nodes rather than
+    the entire queue/partition.
 
 * Changes in Slurm 2.6.6
 ========================
