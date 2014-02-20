@@ -2499,7 +2499,8 @@ alloc_job:
 	job_res->ncpus            = MAX(job_res->ncpus,
 					details_ptr->min_cpus);
 	job_res->ncpus            = MAX(job_res->ncpus,
-					details_ptr->pn_min_cpus);
+					(job_res->nhosts *
+					 details_ptr->pn_min_cpus));
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;
 	job_res->cpus_used        = xmalloc(job_res->nhosts *
