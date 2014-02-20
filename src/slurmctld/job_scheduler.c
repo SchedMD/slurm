@@ -1008,6 +1008,21 @@ next_part:			part_ptr = (struct part_record *)
 			 * scheduler is configured. */
 			if (!backfill_sched)
 				fail_by_part = false;
+#else
+			if (job_ptr->details &&
+			    job_ptr->details->req_node_bitmap &&
+			    (bit_set_count(job_ptr->details->
+					   req_node_bitmap)>=
+			     job_ptr->details->min_nodes)) {
+				fail_by_part = false;
+				/* Do not schedule more jobs on nodes required
+				 * by this job, but don't block the entirecd srcccccc
+				 * queue/partition. */
+				bit_not(job_ptr->details->req_node_bitmap);
+				bit_and(avail_node_bitmap,
+					job_ptr->details->req_node_bitmap);
+				bit_not(job_ptr->details->req_node_bitmap);
+			}
 #endif
 			if (fail_by_part) {
 		 		/* do not schedule more jobs in this partition
