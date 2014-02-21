@@ -635,9 +635,6 @@ static void _show_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "Associations",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Clus_Res", MAX(command_len, 5)) ==
-		   0) {
-		error_code = sacctmgr_list_clus_res((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Clusters",
 				MAX(command_len, 5)) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
@@ -666,9 +663,9 @@ static void _show_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Association\", \"Clus_Res\", "
+		fprintf(stderr, "\"Account\", \"Association\", "
 			"\"Cluster\", \"Configuration\",\n\"Event\", "
-			"\"Problem\", \"QOS\", \"Ser_Res\", \"Transaction\", "
+			"\"Problem\", \"QOS\", \"Resource\", \"Transaction\", "
 			"\"User\", or \"WCKey\"\n");
 	}
 

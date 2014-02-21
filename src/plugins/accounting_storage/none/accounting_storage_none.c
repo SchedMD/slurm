@@ -288,12 +288,6 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 	return NULL;
 }
 
-extern List acct_storage_p_get_clus_res(void *db_conn, uid_t uid,
-					slurmdb_clus_res_cond_t *clus_res_cond)
-{
-	return NULL;
-}
-
 extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 					slurmdb_account_cond_t *cluster_q)
 {
@@ -329,8 +323,8 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 	return NULL;
 }
 
-extern List acct_storage_p_get_ser_res(void *db_conn, uid_t uid,
-				       slurmdb_ser_res_cond_t *ser_res_cond)
+extern List acct_storage_p_get_res(void *db_conn, uid_t uid,
+				   slurmdb_res_cond_t *res_cond)
 {
 	return NULL;
 }

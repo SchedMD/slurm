@@ -87,7 +87,7 @@ extern char *job_table;
 extern char *last_ran_table;
 extern char *qos_table;
 extern char *resv_table;
-extern char *ser_res_table;
+extern char *res_table;
 extern char *step_table;
 extern char *txn_table;
 extern char *user_table;

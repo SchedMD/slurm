@@ -190,6 +190,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Admin");
 		field->len = 9;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("Allowed", object, MAX(command_len, 2))) {
+		field->type = PRINT_ALLOWED;
+		field->name = xstrdup("% Allowed");
+		field->len = 10;
+		field->print_routine = print_fields_uint16;
 	} else if (!strncasecmp("Classification", object,
 				MAX(command_len, 3))) {
 		field->type = PRINT_CPUS;
@@ -227,6 +232,16 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Count");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("CountAllowed", object, MAX(command_len, 6))) {
+		field->type = PRINT_CALLOWED;
+		field->name = xstrdup("# Allowed");
+		field->len = 10;
+		field->print_routine = print_fields_uint32;
+	} else if (!strncasecmp("CountUsed", object, MAX(command_len, 6))) {
+		field->type = PRINT_CALLOWED;
+		field->name = xstrdup("# Used");
+		field->len = 10;
+		field->print_routine = print_fields_uint32;
 	} else if (!strncasecmp("CPUCount", object, MAX(command_len, 2))) {
 		field->type = PRINT_CPUS;
 		field->name = xstrdup("CPUCount");
@@ -441,11 +456,6 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Partition");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Percent", object, MAX(command_len, 7))) {
-		field->type = PRINT_PERCENT;
-		field->name = xstrdup("% Allowed");
-		field->len = 10;
-		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("PluginIDSelect", object,
 				MAX(command_len, 2))) {
 		field->type = PRINT_SELECT;
@@ -525,6 +535,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("UsageThres");
 		field->len = 10;
 		field->print_routine = print_fields_double;
+	} else if (!strncasecmp("Used", object, MAX(command_len, 7))) {
+		field->type = PRINT_USED;
+		field->name = xstrdup("% Used");
+		field->len = 10;
+		field->print_routine = print_fields_uint16;
 	} else if (!strncasecmp("User", object, MAX(command_len, 1))) {
 		field->type = PRINT_USER;
 		field->name = xstrdup("User");
@@ -954,30 +969,24 @@ extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
 
 }
 
-extern slurmdb_ser_res_rec_t *sacctmgr_find_ser_res_from_list(
-	List ser_res_list, char *name)
+extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
+	List res_list, char *name, char *server)
 {
 	ListIterator itr = NULL;
-	slurmdb_ser_res_rec_t *ser_res = NULL;
-	char *working_name = NULL;
+	slurmdb_res_rec_t *res = NULL;
 
-	if (!name || !ser_res_list)
+	if (!name || !res_list)
 		return NULL;
 
-	if (name[0] == '+' || name[0] == '-')
-		working_name = name+1;
-	else
-		working_name = name;
-
-	itr = list_iterator_create(ser_res_list);
-	while((ser_res = list_next(itr))) {
-		if (!strcasecmp(working_name, ser_res->name))
+	itr = list_iterator_create(res_list);
+	while ((res = list_next(itr))) {
+		if (!strcasecmp(server, res->server)
+		    && !strcasecmp(name, res->name))
 			break;
 	}
 	list_iterator_destroy(itr);
 
-	return ser_res;
-
+	return res;
 }
 
 extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(

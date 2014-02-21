@@ -57,15 +57,15 @@ extern int slurmdb_res_add(void *db_conn, uint32_t uid, List res_list)
 }
 
 /*
- * get clus_res info from the storage
- * IN:  slurmdb_clus_res_cond_t *
- * RET: List of slurmdb_clus_res_rec_t *
+ * get res info from the storage
+ * IN:  slurmdb_res_cond_t *
+ * RET: List of slurmdb_res_rec_t *
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_clus_res_get(void *db_conn,
-				slurmdb_clus_res_cond_t *clus_res_cond)
+extern List slurmdb_res_get(void *db_conn,
+			    slurmdb_res_cond_t *res_cond)
 {
-	return acct_storage_g_get_clus_res(db_conn, getuid(), clus_res_cond);
+	return acct_storage_g_get_res(db_conn, getuid(), res_cond);
 }
 
 /*

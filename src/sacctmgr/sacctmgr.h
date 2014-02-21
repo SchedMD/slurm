@@ -183,9 +183,10 @@ typedef enum {
 	PRINT_TYPE,
 	PRINT_MANAGER,
 	PRINT_SERVER,
-	PRINT_PERCENT,
-
-
+	PRINT_CALLOWED,
+	PRINT_ALLOWED,
+	PRINT_CUSED,
+	PRINT_USED,
 } sacctmgr_print_t;
 
 
@@ -200,9 +201,8 @@ extern int with_assoc_flag;/* show acct/user associations flag */
 extern int readonly_flag; /* make it so you can only run list commands */
 extern void *db_conn;
 extern uint32_t my_uid;
-extern List g_clus_res_list;
 extern List g_qos_list;
-extern List g_ser_res_list;
+extern List g_res_list;
 
 extern bool tree_display;
 
@@ -222,22 +222,20 @@ extern void sacctmgr_print_association_rec(slurmdb_association_rec_t *assoc,
 extern int sacctmgr_add_association(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);
 extern int sacctmgr_add_account(int argc, char *argv[]);
-extern int sacctmgr_add_clus_res(int argc, char *argv[]);
 extern int sacctmgr_add_cluster(int argc, char *argv[]);
 extern int sacctmgr_add_coord(int argc, char *argv[]);
 extern int sacctmgr_add_qos(int argc, char *argv[]);
-extern int sacctmgr_add_ser_res(int argc, char *argv[]);
+extern int sacctmgr_add_res(int argc, char *argv[]);
 
 extern int sacctmgr_list_association(int argc, char *argv[]);
 extern int sacctmgr_list_user(int argc, char *argv[]);
 extern int sacctmgr_list_account(int argc, char *argv[]);
-extern int sacctmgr_list_clus_res(int argc, char *argv[]);
 extern int sacctmgr_list_cluster(int argc, char *argv[]);
 extern int sacctmgr_list_config(bool have_db_conn);
 extern int sacctmgr_list_event(int argc, char *argv[]);
 extern int sacctmgr_list_problem(int argc, char *argv[]);
 extern int sacctmgr_list_qos(int argc, char *argv[]);
-extern int sacctmgr_list_ser_res(int argc, char *argv[]);
+extern int sacctmgr_list_res(int argc, char *argv[]);
 extern int sacctmgr_list_wckey(int argc, char *argv[]);
 
 extern int sacctmgr_modify_association(int argc, char *argv[]);
@@ -251,11 +249,10 @@ extern int sacctmgr_modify_res(int argc, char *argv[]);
 extern int sacctmgr_delete_association(int argc, char *argv[]);
 extern int sacctmgr_delete_user(int argc, char *argv[]);
 extern int sacctmgr_delete_account(int argc, char *argv[]);
-extern int sacctmgr_delete_clus_res(int argc, char *argv[], char *cluster_name);
 extern int sacctmgr_delete_cluster(int argc, char *argv[]);
 extern int sacctmgr_delete_coord(int argc, char *argv[]);
 extern int sacctmgr_delete_qos(int argc, char *argv[]);
-extern int sacctmgr_delete_ser_res(int argc, char *argv[]);
+extern int sacctmgr_delete_res(int argc, char *argv[]);
 
 extern int sacctmgr_dump_cluster(int argc, char *argv[]);
 
@@ -307,8 +304,8 @@ extern slurmdb_association_rec_t *sacctmgr_find_association_from_list(
 	char *cluster, char *partition);
 extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
 	List assoc_list, char *account, char *cluster);
-extern slurmdb_ser_res_rec_t *sacctmgr_find_ser_res_from_list(
-	List ser_res_list, char *name);
+extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
+	List res_list, char *name, char *server);
 extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
 	List qos_list, char *name);
 extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(

@@ -1513,54 +1513,6 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_clus_res(void *db_conn, uid_t uid,
-					slurmdb_clus_res_cond_t *clus_res_cond)
-{
-	slurmdbd_msg_t req, resp;
-	dbd_cond_msg_t get_msg;
-	dbd_list_msg_t *got_msg;
-	int rc;
-	List ret_list = NULL;
-
-	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
-	get_msg.cond = clus_res_cond;
-
-	req.msg_type = DBD_GET_CLUS_RES;
-	req.data = &get_msg;
-	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
-
-	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_CLUS_RES failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
-			info("%s", msg->comment);
-			ret_list = list_create(NULL);
-		} else {
-			slurm_seterrno(msg->return_code);
-			error("%s", msg->comment);
-		}
-		slurmdbd_free_rc_msg(msg);
-	} else if (resp.msg_type != DBD_GOT_CLUS_RES) {
-		error("slurmdbd: response type not DBD_GOT_CLUS_RES: %u",
-		      resp.msg_type);
-	} else {
-		got_msg = (dbd_list_msg_t *) resp.data;
-		/* do this just for this type since it could be called
-		 * multiple times, and if we send back and empty list
-		 * instead of no list we will only call this once.
-		 */
-		if (!got_msg->my_list)
-			ret_list = list_create(NULL);
-		else
-			ret_list = got_msg->my_list;
-		got_msg->my_list = NULL;
-		slurmdbd_free_list_msg(got_msg);
-	}
-
-	return ret_list;
-}
-
 extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 					slurmdb_account_cond_t *cluster_cond)
 {
@@ -1810,8 +1762,8 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_ser_res(void *db_conn, uid_t uid,
-				       slurmdb_ser_res_cond_t *ser_res_cond)
+extern List acct_storage_p_get_res(void *db_conn, uid_t uid,
+				       slurmdb_res_cond_t *res_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1820,14 +1772,14 @@ extern List acct_storage_p_get_ser_res(void *db_conn, uid_t uid,
 	List ret_list = NULL;
 
 	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
-	get_msg.cond = ser_res_cond;
+	get_msg.cond = res_cond;
 
-	req.msg_type = DBD_GET_SER_RES;
+	req.msg_type = DBD_GET_RES;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_SER_RES failure: %m");
+		error("slurmdbd: DBD_GET_RES failure: %m");
 	else if (resp.msg_type == DBD_RC) {
 		dbd_rc_msg_t *msg = resp.data;
 		if (msg->return_code == SLURM_SUCCESS) {
@@ -1838,8 +1790,8 @@ extern List acct_storage_p_get_ser_res(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		}
 		slurmdbd_free_rc_msg(msg);
-	} else if (resp.msg_type != DBD_GOT_SER_RES) {
-		error("slurmdbd: response type not DBD_GOT_SER_RES: %u",
+	} else if (resp.msg_type != DBD_GOT_RES) {
+		error("slurmdbd: response type not DBD_GOT_RES: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;

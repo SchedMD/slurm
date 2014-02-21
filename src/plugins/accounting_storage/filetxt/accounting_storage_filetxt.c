@@ -498,6 +498,12 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 	return NULL;
 }
 
+extern List acct_storage_p_get_res(void *db_conn, uid_t uid,
+				   slurmdb_res_cond_t *res_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 				      slurmdb_wckey_cond_t *wckey_cond)
 {

@@ -80,8 +80,6 @@ static int   _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _get_clus_res(slurmdbd_conn_t *slurmdbd_conn,
-			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_config(slurmdbd_conn_t *slurmdbd_conn,
@@ -94,7 +92,7 @@ static int   _get_probs(slurmdbd_conn_t *slurmdbd_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_qos(slurmdbd_conn_t *slurmdbd_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _get_ser_res(slurmdbd_conn_t *slurmdbd_conn,
+static int   _get_res(slurmdbd_conn_t *slurmdbd_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_txn(slurmdbd_conn_t *slurmdbd_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
@@ -271,10 +269,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _get_usage(msg_type, slurmdbd_conn,
 					in_buffer, out_buffer, uid);
 			break;
-		case DBD_GET_CLUS_RES:
-			rc = _get_clus_res(slurmdbd_conn,
-					   in_buffer, out_buffer, uid);
-			break;
 		case DBD_GET_CLUSTERS:
 			rc = _get_clusters(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
@@ -299,8 +293,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _get_qos(slurmdbd_conn,
 				      in_buffer, out_buffer, uid);
 			break;
-		case DBD_GET_SER_RES:
-			rc = _get_ser_res(slurmdbd_conn,
+		case DBD_GET_RES:
+			rc = _get_res(slurmdbd_conn,
 					  in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_TXN:
@@ -1183,50 +1177,6 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_clus_res(slurmdbd_conn_t *slurmdbd_conn,
-			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
-{
-	dbd_cond_msg_t *get_msg = NULL;
-	dbd_list_msg_t list_msg;
-	char *comment = NULL;
-	int rc = SLURM_SUCCESS;
-
-	debug2("DBD_GET_CLUS_RES: called");
-	if (slurmdbd_unpack_cond_msg(&get_msg, slurmdbd_conn->rpc_version,
-				     DBD_GET_CLUS_RES, in_buffer) !=
-	    SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_GET_CLUS_RES message";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      SLURM_ERROR, comment,
-					      DBD_GET_CLUS_RES);
-		return SLURM_ERROR;
-	}
-
-	list_msg.my_list = acct_storage_g_get_clus_res(
-		slurmdbd_conn->db_conn, *uid, get_msg->cond);
-	if (!errno) {
-		if (!list_msg.my_list)
-			list_msg.my_list = list_create(NULL);
-		*out_buffer = init_buf(1024);
-		pack16((uint16_t) DBD_GOT_CLUS_RES, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
-				       DBD_GOT_CLUS_RES,
-				       *out_buffer);
-	} else {
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      errno, slurm_strerror(errno),
-					      DBD_GET_CLUS_RES);
-		rc = SLURM_ERROR;
-	}
-
-	slurmdbd_free_cond_msg(get_msg, DBD_GET_CLUS_RES);
-
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
-	return rc;
-}
-
 static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -1522,7 +1472,7 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_ser_res(slurmdbd_conn_t *slurmdbd_conn,
+static int _get_res(slurmdbd_conn_t *slurmdbd_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = NULL;
@@ -1530,36 +1480,36 @@ static int _get_ser_res(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_SER_RES: called");
+	debug2("DBD_GET_RES: called");
 	if (slurmdbd_unpack_cond_msg(&get_msg, slurmdbd_conn->rpc_version,
-				     DBD_GET_SER_RES, in_buffer) !=
+				     DBD_GET_RES, in_buffer) !=
 	    SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_GET_SER_RES message";
+		comment = "Failed to unpack DBD_GET_RES message";
 		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR, comment,
-					      DBD_GET_SER_RES);
+					      DBD_GET_RES);
 		return SLURM_ERROR;
 	}
-	list_msg.my_list = acct_storage_g_get_ser_res(
+	list_msg.my_list = acct_storage_g_get_res(
 		slurmdbd_conn->db_conn, *uid, get_msg->cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
-		pack16((uint16_t) DBD_GOT_SER_RES, *out_buffer);
+		pack16((uint16_t) DBD_GOT_RES, *out_buffer);
 		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
-				       DBD_GOT_SER_RES,
+				       DBD_GOT_RES,
 				       *out_buffer);
 	} else {
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      errno, slurm_strerror(errno),
-					      DBD_GET_SER_RES);
+					      DBD_GET_RES);
 		rc = SLURM_ERROR;
 	}
 
-	slurmdbd_free_cond_msg(get_msg, DBD_GET_SER_RES);
+	slurmdbd_free_cond_msg(get_msg, DBD_GET_RES);
 
 	if (list_msg.my_list)
 		list_destroy(list_msg.my_list);
