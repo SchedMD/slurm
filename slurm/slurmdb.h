@@ -511,7 +511,6 @@ typedef struct {
 	uint32_t plugin_id_select; /* id of the select plugin */
 	slurmdb_association_rec_t *root_assoc; /* root association for
 						* cluster */
-	List res_list; /* list of slurmdb_res_rec_t's for this cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */
 } slurmdb_cluster_rec_t;
 
