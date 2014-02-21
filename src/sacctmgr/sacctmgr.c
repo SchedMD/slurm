@@ -877,10 +877,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithSubAccounts, WithDeleted, WOLimits,        \n\
                             WOPInfo, and WOPLimits                         \n\
                                                                            \n\
-       list clus_res      - Clusters=, Format=, Manager=, Names=, and Server=\n\
-       modify clus_res    - Allowed=, Clusters=, and Names=                \n\
-       delete clus_res    - Clusters= and Names=                           \n\
-                                                                           \n\
        list cluster       - Classification=, DefaultQOS=, Flags=, Format=, \n\
                             Names=, RPC=, and WOLimits                     \n\
        add cluster        - DefaultQOS=, Fairshare=, GrpCPUs=, GrpJobs=,   \n\
@@ -926,13 +922,15 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             and PreemptMode=                               \n\
        delete qos         - Descriptions=, ID=, Names=, and PreemptMode=   \n\
                                                                            \n\
-       list ser_res       - Format=, Manager=, Names=, and Server=         \n\
-       modify ser_res     - Count=, Flags=, Manager=, Names=, Server=,     \n\
-                            and TYPE=                                      \n\
-       delete ser_res     - Names=                                         \n\
+       list resource      - Clusters=, Format=, Manager=, Names=,          \n\
+                            and Servers=                                   \n\
        add resource       - Clusters=, Count=, Descriptions=, Flags=,      \n\
                             Manager=, Names=, PercentAllowed=, Server=,    \n\
                             and Type=                                      \n\
+       modify resource    - (set options) Count=, Flags=, Manager=,        \n\
+                            PercentAllowed=,                               \n\
+                            (where options) Clusters=, Names=, Servers=,   \n\
+       delete resource    - Clusters=, Names=                              \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
                             Format=, ID=, Start=, User=, and WithAssoc     \n\
@@ -983,9 +981,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             ParentID, ParentName, Partition, RawQOS, RGT,  \n\
                             User                                           \n\
                                                                            \n\
-       Clus_Res           - Allowed, Clusters, Count, Flags, Manager,      \n\
-                            Names, Server, and Type                        \n\
-                                                                           \n\
        Cluster            - Classification, Cluster, ClusterNodes,         \n\
                             ControlHost, ControlPort, CpuCount, DefaultQOS,\n\
                             Fairshare, Flags, GrpCPUMins, GrpCPUs, GrpJobs,\n\
@@ -1006,7 +1001,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Preempt, PreemptMode, Priority, UsageFactor,   \n\
                             UsageThreshold                                 \n\
                                                                            \n\
-       Ser_Res            - Count, Flags, Manager, Names, Server, and Type \n\
+       Resource           - Cluster, Count, CountAllowed, CountUsed,       \n\
+                            Description, Flags, Manager, Name,             \n\
+                            PercentAllowed, PercentUsed, Server, and Type  \n\
                                                                            \n\
        Transactions       - Action, Actor, Info, TimeStamp, Where          \n\
                                                                            \n\
