@@ -51,6 +51,9 @@
 
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 
+static void _free_res_cond_members(slurmdb_res_cond_t *res_cond);
+static void _free_res_rec_members(slurmdb_res_rec_t *res);
+
 static void _free_assoc_rec_members(slurmdb_association_rec_t *assoc)
 {
 	if (assoc) {
@@ -71,8 +74,7 @@ static void _free_assoc_rec_members(slurmdb_association_rec_t *assoc)
 static void _free_clus_res_rec_members(slurmdb_clus_res_rec_t *clus_res)
 {
 	if (clus_res) {
-		if (clus_res->res_ptr)
-			slurmdb_destroy_ser_res_rec(clus_res->res_ptr);
+		xfree(clus_res->cluster);
 	}
 }
 
@@ -101,7 +103,6 @@ static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
 	}
 }
 
-
 static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 {
 	if (wckey) {
@@ -113,24 +114,6 @@ static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 	}
 }
 
-static void _free_clus_res_cond_members(slurmdb_clus_res_cond_t *clus_res_cond)
-{
-	if (clus_res_cond) {
-		if (clus_res_cond->name_list)
-			list_destroy(clus_res_cond->name_list);
-		if (clus_res_cond->description_list)
-			list_destroy(clus_res_cond->description_list);
-		if (clus_res_cond->format_list)
-			list_destroy(clus_res_cond->format_list);
-		if (clus_res_cond->manager_list)
-			list_destroy(clus_res_cond->manager_list);
-		if (clus_res_cond->server_list)
-			list_destroy(clus_res_cond->server_list);
-		if (clus_res_cond->cluster_list)
-			list_destroy(clus_res_cond->cluster_list);
-	}
-}
-
 static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 {
 	if (cluster_cond) {
@@ -139,23 +122,32 @@ static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 	}
 }
 
-static void _free_ser_res_cond_members(slurmdb_ser_res_cond_t *ser_res_cond)
+static void _free_res_cond_members(slurmdb_res_cond_t *res_cond)
 {
-	if (ser_res_cond) {
-		if (ser_res_cond->name_list)
-			list_destroy(ser_res_cond->name_list);
-		if (ser_res_cond->description_list)
-			list_destroy(ser_res_cond->description_list);
-		if (ser_res_cond->format_list)
-			list_destroy(ser_res_cond->format_list);
-		if (ser_res_cond->id_list)
-			list_destroy(ser_res_cond->id_list);
-		if (ser_res_cond->manager_list)
-			list_destroy(ser_res_cond->manager_list);
-		if (ser_res_cond->server_list)
-			list_destroy(ser_res_cond->server_list);
+	if (res_cond) {
+		FREE_NULL_LIST(res_cond->cluster_list);
+		FREE_NULL_LIST(res_cond->description_list);
+		FREE_NULL_LIST(res_cond->id_list);
+		FREE_NULL_LIST(res_cond->manager_list);
+		FREE_NULL_LIST(res_cond->name_list);
+		FREE_NULL_LIST(res_cond->percent_list);
+		FREE_NULL_LIST(res_cond->server_list);
+		FREE_NULL_LIST(res_cond->type_list);
 	}
 }
+
+static void _free_res_rec_members(slurmdb_res_rec_t *res)
+{
+	if (res) {
+		FREE_NULL_LIST(res->clus_res_list);
+		slurmdb_destroy_clus_res_rec(res->clus_res_rec);
+		xfree(res->description);
+		xfree(res->manager);
+		xfree(res->name);
+		xfree(res->server);
+	}
+}
+
 
 /*
  * Comparator used for sorting immediate children of acct_hierarchical_recs
@@ -307,7 +299,7 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 	}
 
 	if ((plugin_id_select = select_get_plugin_id_pos(
-			cluster_rec->plugin_id_select)) == SLURM_ERROR) {
+		     cluster_rec->plugin_id_select)) == SLURM_ERROR) {
 		error("Cluster '%s' has an unknown select plugin_id %u",
 		      cluster_rec->name,
 		      cluster_rec->plugin_id_select);
@@ -382,7 +374,7 @@ static uint32_t _str_2_qos_flags(char *flags)
 	return 0;
 }
 
-static uint32_t _str_2_ser_res_flags(char *flags)
+static uint32_t _str_2_res_flags(char *flags)
 {
 	return 0;
 }
@@ -482,7 +474,6 @@ extern void slurmdb_destroy_clus_res_rec(void *object)
 
 	if (slurmdb_clus_res) {
 		_free_clus_res_rec_members(slurmdb_clus_res);
-		xfree(slurmdb_clus_res->cluster);
 		xfree(slurmdb_clus_res);
 	}
 }
@@ -589,17 +580,14 @@ extern void slurmdb_destroy_step_rec(void *object)
 	}
 }
 
-extern void slurmdb_destroy_ser_res_rec(void *object)
+extern void slurmdb_destroy_res_rec(void *object)
 {
-	slurmdb_ser_res_rec_t *slurmdb_ser_res =
-		(slurmdb_ser_res_rec_t *)object;
+	slurmdb_res_rec_t *slurmdb_res =
+		(slurmdb_res_rec_t *)object;
 
-	if (slurmdb_ser_res) {
-		xfree(slurmdb_ser_res->name);
-		xfree(slurmdb_ser_res->description);
-		xfree(slurmdb_ser_res->manager);
-		xfree(slurmdb_ser_res->server);
-		xfree(slurmdb_ser_res);
+	if (slurmdb_res) {
+		_free_res_rec_members(slurmdb_res);
+		xfree(slurmdb_res);
 	}
 }
 
@@ -706,16 +694,6 @@ extern void slurmdb_destroy_account_cond(void *object)
 		if (slurmdb_account->organization_list)
 			list_destroy(slurmdb_account->organization_list);
 		xfree(slurmdb_account);
-	}
-}
-
-extern void slurmdb_destroy_clus_res_cond(void *object)
-{
-	slurmdb_clus_res_cond_t *slurmdb_clus_res =
-		(slurmdb_clus_res_cond_t *)object;
-	if (slurmdb_clus_res) {
-		_free_clus_res_cond_members(slurmdb_clus_res);
-		xfree(slurmdb_clus_res);
 	}
 }
 
@@ -877,13 +855,13 @@ extern void slurmdb_destroy_qos_cond(void *object)
 	}
 }
 
-extern void slurmdb_destroy_ser_res_cond(void *object)
+extern void slurmdb_destroy_res_cond(void *object)
 {
-	slurmdb_ser_res_cond_t *slurmdb_ser_res =
-		(slurmdb_ser_res_cond_t *)object;
-	if (slurmdb_ser_res) {
-		_free_ser_res_cond_members(slurmdb_ser_res);
-		xfree(slurmdb_ser_res);
+	slurmdb_res_cond_t *slurmdb_res =
+		(slurmdb_res_cond_t *)object;
+	if (slurmdb_res) {
+		_free_res_cond_members(slurmdb_res);
+		xfree(slurmdb_res);
 	}
 }
 
@@ -1170,7 +1148,7 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
 }
 
 extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
-				     bool free_it)
+				      bool free_it)
 {
 	if (!clus_res)
 		return;
@@ -1178,9 +1156,7 @@ extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
 	if (free_it)
 		_free_clus_res_rec_members(clus_res);
 	memset(clus_res, 0, sizeof(slurmdb_clus_res_rec_t));
-	clus_res->res_ptr = NULL;
-	clus_res->cluster = NULL;
-	clus_res->percent_allowed = NO_VAL;
+	clus_res->percent_allowed = (uint16_t)NO_VAL;
 }
 
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
@@ -1233,23 +1209,20 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 	qos->usage_thres = (double)NO_VAL;
 }
 
-extern void slurmdb_init_ser_res_rec(slurmdb_ser_res_rec_t *ser_res,
-				     bool free_it)
+extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
+				 bool free_it)
 {
-	if (!ser_res)
+	if (!res)
 		return;
 
 	if (free_it)
-		slurmdb_destroy_ser_res_rec(ser_res);
-	memset(ser_res, 0, sizeof(slurmdb_ser_res_rec_t));
-	ser_res->description = NULL;
-	ser_res->id = NO_VAL;
-	ser_res->name = NULL;
-	ser_res->count = NO_VAL;
-	ser_res->flags = SER_RES_FLAG_NOTSET;
-	ser_res->type = NO_VAL;
-	ser_res->manager = NULL;
-	ser_res->server = NULL;
+		_free_res_rec_members(res);
+	memset(res, 0, sizeof(slurmdb_res_rec_t));
+	res->count = NO_VAL;
+	res->flags = SLURMDB_RES_FLAG_NOTSET;
+	res->id = NO_VAL;
+	res->percent_used = (uint16_t)NO_VAL;
+	res->type = SLURMDB_RESOURCE_NOTSET;
 }
 
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
@@ -1261,18 +1234,6 @@ extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
 		_free_wckey_rec_members(wckey);
 	memset(wckey, 0, sizeof(slurmdb_wckey_rec_t));
 	wckey->is_def = (uint16_t)NO_VAL;
-}
-
-extern void slurmdb_init_clus_res_cond(slurmdb_clus_res_cond_t *clus_res,
-				      bool free_it)
-{
-	if (!clus_res)
-		return;
-
-	if (free_it)
-		_free_clus_res_cond_members(clus_res);
-	memset(clus_res, 0, sizeof(slurmdb_clus_res_cond_t));
-	clus_res->with_deleted = 0;
 }
 
 extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
@@ -1287,15 +1248,16 @@ extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 	cluster->flags = NO_VAL;
 }
 
-extern void slurmdb_init_ser_res_cond(slurmdb_ser_res_cond_t *ser_res,
-				      bool free_it)
+extern void slurmdb_init_res_cond(slurmdb_res_cond_t *res,
+				  bool free_it)
 {
-	if (!ser_res)
+	if (!res)
 		return;
 
 	if (free_it)
-		_free_ser_res_cond_members(ser_res);
-	memset(ser_res, 0, sizeof(slurmdb_ser_res_cond_t));
+		_free_res_cond_members(res);
+	memset(res, 0, sizeof(slurmdb_res_cond_t));
+	res->flags = SLURMDB_RES_FLAG_NOTSET;
 }
 
 extern char *slurmdb_qos_str(List qos_list, uint32_t level)
@@ -1397,7 +1359,7 @@ extern uint32_t str_2_qos_flags(char *flags, int option)
 		/* clear them all */
 		qos_flags = INFINITE;
 		qos_flags &= (~QOS_FLAG_NOTSET &
-			       ~QOS_FLAG_ADD);
+			      ~QOS_FLAG_ADD);
 		return qos_flags;
 	}
 
@@ -1420,57 +1382,73 @@ extern uint32_t str_2_qos_flags(char *flags, int option)
 	return qos_flags;
 }
 
-extern char *slurmdb_ser_res_flags_str(uint32_t flags)
+extern char *slurmdb_res_flags_str(uint32_t flags)
 {
-	char *ser_res_flags = NULL;
+	char *res_flags = NULL;
 
-	if (flags & SER_RES_FLAG_NOTSET)
+	if (flags & SLURMDB_RES_FLAG_NOTSET)
 		return xstrdup("NotSet");
 
-	if (flags & SER_RES_FLAG_ADD)
-		xstrcat(ser_res_flags, "Add,");
-	if (flags & SER_RES_FLAG_REMOVE)
-		xstrcat(ser_res_flags, "Remove,");
+	if (flags & SLURMDB_RES_FLAG_ADD)
+		xstrcat(res_flags, "Add,");
+	if (flags & SLURMDB_RES_FLAG_REMOVE)
+		xstrcat(res_flags, "Remove,");
 
-	if (ser_res_flags)
-		ser_res_flags[strlen(ser_res_flags)-1] = '\0';
+	if (res_flags)
+		res_flags[strlen(res_flags)-1] = '\0';
 
-	return ser_res_flags;
+	return res_flags;
 }
 
-extern uint32_t str_2_ser_res_flags(char *flags, int option)
+extern uint32_t str_2_res_flags(char *flags, int option)
 {
-	uint32_t ser_res_flags = 0;
+	uint32_t res_flags = 0;
 	char *token, *my_flags, *last = NULL;
 
 	if (!flags) {
 		error("We need a server resource flags string to translate");
-		return SER_RES_FLAG_NOTSET;
+		return SLURMDB_RES_FLAG_NOTSET;
 	} else if (atoi(flags) == -1) {
 		/* clear them all */
-		ser_res_flags = INFINITE;
-		ser_res_flags &= (~SER_RES_FLAG_NOTSET &
-				  ~SER_RES_FLAG_ADD);
-		return ser_res_flags;
+		res_flags = INFINITE;
+		res_flags &= (SLURMDB_RES_FLAG_NOTSET &
+			      ~SLURMDB_RES_FLAG_ADD);
+		return res_flags;
 	}
 
 	my_flags = xstrdup(flags);
 	token = strtok_r(my_flags, ",", &last);
 	while (token) {
-		ser_res_flags |= _str_2_ser_res_flags(token);
+		res_flags |= _str_2_res_flags(token);
 		token = strtok_r(NULL, ",", &last);
 	}
 	xfree(my_flags);
 
-	if (!ser_res_flags)
-		ser_res_flags = SER_RES_FLAG_NOTSET;
+	if (!res_flags)
+		res_flags = SLURMDB_RES_FLAG_NOTSET;
 	else if (option == '+')
-		ser_res_flags |= SER_RES_FLAG_ADD;
+		res_flags |= SLURMDB_RES_FLAG_ADD;
 	else if (option == '-')
-		ser_res_flags |= SER_RES_FLAG_REMOVE;
+		res_flags |= SLURMDB_RES_FLAG_REMOVE;
 
 
-	return ser_res_flags;
+	return res_flags;
+}
+
+extern char *slurmdb_res_type_str(slurmdb_resource_type_t type)
+{
+	switch (type) {
+	case SLURMDB_RESOURCE_NOTSET:
+		return "Not Set";
+		break;
+	case SLURMDB_RESOURCE_LICENSE:
+		return "License";
+		break;
+	default:
+		return "Unknown";
+		break;
+	}
+	return "Unknown";
 }
 
 extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level)
@@ -1504,7 +1482,7 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
 	} else if (!strncasecmp(level, "Operator", 1)) {
 		return SLURMDB_ADMIN_OPERATOR;
 	} else if (!strncasecmp(level, "SuperUser", 1)
-		  || !strncasecmp(level, "Admin", 1)) {
+		   || !strncasecmp(level, "Admin", 1)) {
 		return SLURMDB_ADMIN_SUPER_USER;
 	} else {
 		return SLURMDB_ADMIN_NOTSET;
@@ -1589,19 +1567,19 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 			arch_rec->sort_name = assoc->acct;
 
 		if (last_parent && assoc->parent_id == last_parent->assoc->id
-		   && !strcmp(assoc->cluster, last_parent->assoc->cluster)) {
+		    && !strcmp(assoc->cluster, last_parent->assoc->cluster)) {
 			par_arch_rec = last_parent;
 		} else if (last_acct_parent
-			  && (assoc->parent_id == last_acct_parent->assoc->id)
-			  && !strcmp(assoc->cluster,
-				     last_acct_parent->assoc->cluster)) {
+			   && (assoc->parent_id == last_acct_parent->assoc->id)
+			   && !strcmp(assoc->cluster,
+				      last_acct_parent->assoc->cluster)) {
 			par_arch_rec = last_acct_parent;
 		} else {
 			list_iterator_reset(itr2);
 			while((par_arch_rec = list_next(itr2))) {
 				if (assoc->parent_id == par_arch_rec->assoc->id
-				   && !strcmp(assoc->cluster,
-					      par_arch_rec->assoc->cluster)) {
+				    && !strcmp(assoc->cluster,
+					       par_arch_rec->assoc->cluster)) {
 					if (assoc->user)
 						last_parent = par_arch_rec;
 					else
@@ -1725,7 +1703,7 @@ extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos)
 	int i = 0;
 
 	if (!qos_list || !list_count(qos_list)
-	   || !valid_qos || (bit_ffs(valid_qos) == -1))
+	    || !valid_qos || (bit_ffs(valid_qos) == -1))
 		return xstrdup("");
 
 	temp_list = list_create(NULL);
@@ -1762,7 +1740,7 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 	int option = 0;
 
 	if (!qos_list || !list_count(qos_list)
-	   || !num_qos_list || !list_count(num_qos_list))
+	    || !num_qos_list || !list_count(num_qos_list))
 		return xstrdup("");
 
 	temp_list = list_create(slurm_destroy_char);
@@ -2242,7 +2220,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 				if ((i-start) > 0) {
 					int tmp_option = option;
 					if (names[start] == '+'
-					   || names[start] == '-') {
+					    || names[start] == '-') {
 						tmp_option = names[start];
 						start++;
 					}
