@@ -404,6 +404,7 @@ static void _opt_default()
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.core_spec = 0;
+	opt.core_spec_set = false;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
 	opt.time_min = NO_VAL;
@@ -1128,6 +1129,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'S':
 			opt.core_spec = _get_int(optarg, "core_spec", true);
+			opt.core_spec_set = true;
 			break;
 		case (int)'t':
 			xfree(opt.time_limit_str);

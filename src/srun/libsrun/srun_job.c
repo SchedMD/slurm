@@ -516,6 +516,13 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			if (!opt.ntasks_set)
 				opt.ntasks = opt.min_nodes;
 		}
+		if (opt.core_spec_set) {
+			/* NOTE: Silently ignore specialized core count set
+			 * with SLURM_CORE_SPEC environment variable */
+			error("Ignoring --core-spec value for a job step "
+			      "within an existing job. Set specialized cores "
+			      "at job allocation time.");
+		}
 		if (opt.alloc_nodelist == NULL)
 			opt.alloc_nodelist = xstrdup(resp->node_list);
 		if (opt.exclusive)

@@ -237,6 +237,7 @@ typedef struct srun_options {
 	int wait4switch;	/* Maximum time to wait for minimum switches */
 	bool user_managed_io;   /* 0 for "normal" IO, 1 for "user manged" IO */
 	int core_spec;		/* --core-spec=n,      -S n	*/
+	bool core_spec_set;	/* true if core_spec explicitly set */
 } opt_t;
 
 extern opt_t opt;

@@ -9,11 +9,15 @@ directly use the specialized cores.</p>
 
 <h2>Command Options</h2>
 <p>All job allocation commands (<i>salloc</i>, <i>sbatch</i> and <i>srun</i>)
-accept the <i>-S</i> or <i>--core-spec</i> option with a core count value argument
-(e.g. "-S 1" or "--core-spec=2"). The count identifies the number of cores
-to be reserved for system overhead on each allocated compute node.
+accept the <i>-S</i> or <i>--core-spec</i> option with a core count value
+argument (e.g. "-S 1" or "--core-spec=2").
+The count identifies the number of cores to be reserved for system overhead on
+each allocated compute node.
 Each job's core specialization count can be viewed using the <i>scontrol</i>,
 <i>sview</i> or <i>squeue</i> command.
+Specification of a core specialization count for a job step is ignored
+(i.e. for the <i>srun</i> command within a job allocation created using the
+<i>salloc</i> or <i>sbatch</i> command).
 Use the <i>squeue</i> command with the "%X" format option to see the count
 (it is not reported in the default output format).
 The <i>scontrol</i> and <i>sview</i> commands can also be used to modify
@@ -64,6 +68,6 @@ If the core count is not configured and the CPUs value is configured to the
 count of hyperthreads, then hyperthreads rather than cores will be reserved for
 system use.</p>
 
-<p style="text-align:center;">Last modified 7 February 2014</p>
+<p style="text-align:center;">Last modified 21 February 2014</p>
 
 <!--#include virtual="footer.txt"-->
