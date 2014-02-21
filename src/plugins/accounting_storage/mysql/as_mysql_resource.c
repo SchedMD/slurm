@@ -761,6 +761,7 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	int query_clusters;
 	bool res_added = 0;
+	bool have_clusters = 0;
 	int last_res = -1;
 
 	if (!res_cond) {
@@ -805,7 +806,9 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			return NULL;
 		}
 		xfree(query);
-	}
+	} else
+		have_clusters = 1;
+
 	xfree(extra);
 
 	name_char = NULL;
@@ -835,7 +838,7 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(clus_char, "%sres_id='%s'",
 				   clus_char ? " || " : "", row[0]);
 		}
-		if (row[3] && row[3][0]) {
+		if (have_clusters && row[3] && row[3][0]) {
 			slurmdb_res_rec_t *res_rec =
 				xmalloc(sizeof(slurmdb_res_rec_t));
 			slurmdb_init_res_rec(res_rec, 0);
@@ -908,6 +911,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	int query_clusters;
 	bool send_update = 0;
 	bool res_added = 0;
+	bool have_clusters = 0;
 	int last_res = -1;
 
 	if (!res_cond || !res) {
@@ -963,13 +967,25 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if ((query_clusters || send_update) && !mysql_num_rows(result)) {
+	if (!mysql_num_rows(result)) {
 		xfree(query);
 		mysql_free_result(result);
+		result = NULL;
 		/* since no clusters are there no reason to send
 		   updates */
 		query_clusters = 0;
 		send_update = 0;
+	} else
+		have_clusters = 1;
+
+	if (!query_clusters && !vals) {
+		xfree(clus_vals);
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		error("Nothing to change");
+		return NULL;
+	}
+
+	if (!result) {
 		query = xstrdup_printf("select id, name, server "
 				       "from %s as t1 %s;",
 				       res_table, extra);
@@ -983,13 +999,6 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(query);
 			return NULL;
 		}
-	}
-
-	if (!query_clusters && !vals) {
-		xfree(clus_vals);
-		errno = SLURM_NO_CHANGE_IN_DATA;
-		error("Nothing to change");
-		return NULL;
 	}
 
 	xfree(extra);
@@ -1022,7 +1031,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(clus_char, "%sres_id='%s'",
 				   clus_char ? " || " : "", row[0]);
 		}
-		if (row[3] && row[3][0]) {
+		if (have_clusters && row[3] && row[3][0]) {
 			slurmdb_res_rec_t *res_rec =
 				xmalloc(sizeof(slurmdb_res_rec_t));
 			slurmdb_init_res_rec(res_rec, 0);
