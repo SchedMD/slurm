@@ -1040,6 +1040,10 @@ typedef struct slurm_node_registration_status_msg {
 	char *version;
 } slurm_node_registration_status_msg_t;
 
+typedef struct requeue_msg {
+	uint32_t job_id;       /* slurm job_id */
+	uint32_t state;        /* JobExitRequeue | Hold */
+} requeue_msg_t;
 
 /*****************************************************************************\
  *      ACCOUNTING PUSHS
