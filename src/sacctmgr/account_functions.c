@@ -465,46 +465,13 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		}
 		list_iterator_destroy(itr_c);
 		list_destroy(tmp_list);
-	} else {
-		List temp_list = NULL;
-		slurmdb_cluster_cond_t cluster_cond;
+	} else if (sacctmgr_validate_cluster_list(cluster_list)
+		   != SLURM_SUCCESS) {
+		slurmdb_destroy_association_rec(start_assoc);
+		slurmdb_destroy_account_rec(start_acct);
+		list_destroy(local_account_list);
 
-		slurmdb_init_cluster_cond(&cluster_cond, 0);
-		cluster_cond.cluster_list = cluster_list;
-
-		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
-							&cluster_cond);
-
-		itr_c = list_iterator_create(cluster_list);
-		itr = list_iterator_create(temp_list);
-		while((cluster = list_next(itr_c))) {
-			slurmdb_cluster_rec_t *cluster_rec = NULL;
-
-			list_iterator_reset(itr);
-			while((cluster_rec = list_next(itr))) {
-				if (!strcasecmp(cluster_rec->name, cluster))
-					break;
-			}
-			if (!cluster_rec) {
-				exit_code=1;
-				fprintf(stderr, " This cluster '%s' "
-					"doesn't exist.\n"
-					"        Contact your admin "
-					"to add it to accounting.\n",
-					cluster);
-				list_delete_item(itr_c);
-			}
-		}
-		list_iterator_destroy(itr);
-		list_iterator_destroy(itr_c);
-		list_destroy(temp_list);
-
-		if (!list_count(cluster_list)) {
-			slurmdb_destroy_association_rec(start_assoc);
-			slurmdb_destroy_account_rec(start_acct);
-			list_destroy(local_account_list);
-			return SLURM_ERROR;
-		}
+		return SLURM_ERROR;
 	}
 
 

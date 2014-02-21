@@ -1636,3 +1636,52 @@ extern List sacctmgr_process_format_list(List format_list)
 
 	return print_fields_list;
 }
+
+extern int sacctmgr_validate_cluster_list(List cluster_list)
+{
+	List temp_list = NULL;
+	char *cluster = NULL;
+	int rc = SLURM_SUCCESS;
+	ListIterator itr = NULL, itr_c = NULL;
+
+	if (cluster_list) {
+		slurmdb_cluster_cond_t cluster_cond;
+		slurmdb_init_cluster_cond(&cluster_cond, 0);
+		cluster_cond.cluster_list = cluster_list;
+
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
+							&cluster_cond);
+	} else
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
+							NULL);
+
+
+	itr_c = list_iterator_create(cluster_list);
+	itr = list_iterator_create(temp_list);
+	while ((cluster = list_next(itr_c))) {
+		slurmdb_cluster_rec_t *cluster_rec = NULL;
+
+		list_iterator_reset(itr);
+		while ((cluster_rec = list_next(itr))) {
+			if (!strcasecmp(cluster_rec->name, cluster))
+				break;
+		}
+		if (!cluster_rec) {
+			exit_code=1;
+			fprintf(stderr, " This cluster '%s' "
+				"doesn't exist.\n"
+				"        Contact your admin "
+				"to add it to accounting.\n",
+				cluster);
+			list_delete_item(itr_c);
+		}
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr_c);
+	list_destroy(temp_list);
+
+	if (!list_count(cluster_list))
+		rc = SLURM_ERROR;
+
+	return rc;
+}

@@ -289,6 +289,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
 extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond);
 extern int sort_coord_list(void *, void *);
 extern List sacctmgr_process_format_list(List format_list);
+extern int sacctmgr_validate_cluster_list(List cluster_list);
 
 /* you need to free the objects returned from these functions */
 extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(
