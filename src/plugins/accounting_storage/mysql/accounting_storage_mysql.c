@@ -2360,15 +2360,6 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_modify_accts(mysql_conn, uid, acct_cond, acct);
 }
 
-extern List acct_storage_p_modify_clus_res(
-	mysql_conn_t *mysql_conn, uint32_t uid,
-	slurmdb_clus_res_cond_t *clus_res_cond,
-	slurmdb_clus_res_rec_t *clus_res)
-{
-	return as_mysql_modify_clus_res(mysql_conn, uid, clus_res_cond,
-					clus_res);
-}
-
 extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 					   uint32_t uid,
 					   slurmdb_cluster_cond_t *cluster_cond,
@@ -2399,12 +2390,12 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_modify_qos(mysql_conn, uid, qos_cond, qos);
 }
 
-extern List acct_storage_p_modify_ser_res(mysql_conn_t *mysql_conn,
+extern List acct_storage_p_modify_res(mysql_conn_t *mysql_conn,
 					  uint32_t uid,
-					  slurmdb_ser_res_cond_t *ser_res_cond,
-					  slurmdb_ser_res_rec_t *ser_res)
+					  slurmdb_res_cond_t *res_cond,
+					  slurmdb_res_rec_t *res)
 {
-	return as_mysql_modify_ser_res(mysql_conn, uid, ser_res_cond, ser_res);
+	return as_mysql_modify_res(mysql_conn, uid, res_cond, res);
 }
 
 extern List acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,

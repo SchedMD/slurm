@@ -98,9 +98,6 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_accts)       (void *db_conn, uint32_t uid,
 				    slurmdb_account_cond_t *acct_cond,
 				    slurmdb_account_rec_t *acct);
-	List (*modify_clus_res)    (void *db_conn, uint32_t uid,
-				    slurmdb_clus_res_cond_t *clus_res_cond,
-				    slurmdb_clus_res_rec_t *clus_res);
 	List (*modify_clusters)    (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond,
 				    slurmdb_cluster_rec_t *cluster);
@@ -113,9 +110,9 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_qos)         (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond,
 				    slurmdb_qos_rec_t *qos);
-	List (*modify_ser_res)    (void *db_conn, uint32_t uid,
-				    slurmdb_ser_res_cond_t *ser_res_cond,
-				    slurmdb_ser_res_rec_t *ser_res);
+	List (*modify_res)         (void *db_conn, uint32_t uid,
+				    slurmdb_res_cond_t *res_cond,
+				    slurmdb_res_rec_t *res);
 	List (*modify_wckeys)      (void *db_conn, uint32_t uid,
 				    slurmdb_wckey_cond_t *wckey_cond,
 				    slurmdb_wckey_rec_t *wckey);
@@ -225,12 +222,11 @@ static const char *syms[] = {
 	"acct_storage_p_add_reservation",
 	"acct_storage_p_modify_users",
 	"acct_storage_p_modify_accts",
-	"acct_storage_p_modify_clus_res",
 	"acct_storage_p_modify_clusters",
 	"acct_storage_p_modify_associations",
 	"acct_storage_p_modify_job",
 	"acct_storage_p_modify_qos",
-	"acct_storage_p_modify_ser_res",
+	"acct_storage_p_modify_res",
 	"acct_storage_p_modify_wckeys",
 	"acct_storage_p_modify_reservation",
 	"acct_storage_p_remove_users",
@@ -449,15 +445,6 @@ extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
 	return (*(ops.modify_accts))(db_conn, uid, acct_cond, acct);
 }
 
-extern List acct_storage_g_modify_clus_res(void *db_conn, uint32_t uid,
-					 slurmdb_clus_res_cond_t *clus_res_cond,
-					 slurmdb_clus_res_rec_t *clus_res)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return NULL;
-	return (*(ops.modify_clus_res))(db_conn, uid, clus_res_cond, clus_res);
-}
-
 extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
 					   slurmdb_cluster_cond_t *cluster_cond,
 					   slurmdb_cluster_rec_t *cluster)
@@ -496,13 +483,13 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 	return (*(ops.modify_qos))(db_conn, uid, qos_cond, qos);
 }
 
-extern List acct_storage_g_modify_ser_res(void *db_conn, uint32_t uid,
-					  slurmdb_ser_res_cond_t *ser_res_cond,
-					  slurmdb_ser_res_rec_t *ser_res)
+extern List acct_storage_g_modify_res(void *db_conn, uint32_t uid,
+				      slurmdb_res_cond_t *res_cond,
+				      slurmdb_res_rec_t *res)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(ops.modify_ser_res))(db_conn, uid, ser_res_cond, ser_res);
+	return (*(ops.modify_res))(db_conn, uid, res_cond, res);
 }
 
 extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,

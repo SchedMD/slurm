@@ -376,6 +376,13 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern List acct_storage_p_modify_res(void *db_conn, uint32_t uid,
+				      slurmdb_res_cond_t *ser_res_cond,
+				      slurmdb_res_rec_t *ser_res)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 				      slurmdb_wckey_cond_t *wckey_cond,
 				      slurmdb_wckey_rec_t *wckey)

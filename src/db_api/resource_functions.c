@@ -69,18 +69,17 @@ extern List slurmdb_clus_res_get(void *db_conn,
 }
 
 /*
- * modify existing clus_res in the accounting system
- * IN:  slurmdb_clus_res_cond_t *clus_res_cond
- * IN:  slurmdb_clus_res_rec_t *clus_res
+ * modify existing res in the accounting system
+ * IN:  slurmdb_res_cond_t *res_cond
+ * IN:  slurmdb_res_rec_t *res
  * RET: List containing (char *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_clus_res_modify(void *db_conn,
-			       slurmdb_clus_res_cond_t *clus_res_cond,
-			       slurmdb_clus_res_rec_t *clus_res)
+extern List slurmdb_res_modify(void *db_conn,
+			       slurmdb_res_cond_t *res_cond,
+			       slurmdb_res_rec_t *res)
 {
-	return acct_storage_g_modify_clus_res(db_conn, getuid(),
-					clus_res_cond, clus_res);
+	return acct_storage_g_modify_res(db_conn, getuid(), res_cond, res);
 }
 
 /*

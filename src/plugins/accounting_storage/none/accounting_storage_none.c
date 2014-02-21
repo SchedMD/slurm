@@ -173,13 +173,6 @@ extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_modify_clus_res(void *db_conn, uint32_t uid,
-					 slurmdb_clus_res_cond_t *clus_res_cond,
-					 slurmdb_clus_res_rec_t *clus_res)
-{
-	return SLURM_SUCCESS;
-}
-
 extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 					  slurmdb_cluster_cond_t *cluster_q,
 					  slurmdb_cluster_rec_t *cluster)
@@ -208,9 +201,9 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_modify_ser_res(void *db_conn, uint32_t uid,
-					  slurmdb_ser_res_cond_t *ser_res_cond,
-					  slurmdb_ser_res_rec_t *ser_res)
+extern List acct_storage_p_modify_res(void *db_conn, uint32_t uid,
+				      slurmdb_res_cond_t *res_cond,
+				      slurmdb_res_rec_t *res)
 {
 	return SLURM_SUCCESS;
 }

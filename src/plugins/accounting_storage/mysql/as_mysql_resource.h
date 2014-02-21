@@ -44,19 +44,15 @@
 extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List res_list);
 
-extern List as_mysql_modify_clus_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_clus_res_cond_t *clus_res_cond,
-				     slurmdb_clus_res_rec_t *clus_res);
+extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
+				slurmdb_res_cond_t *res_cond,
+				slurmdb_res_rec_t *res);
 
 extern List as_mysql_remove_clus_res(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_clus_res_cond_t *clus_res_cond);
 
 extern List as_mysql_get_clus_res(mysql_conn_t *mysql_conn, uid_t uid,
 				  slurmdb_clus_res_cond_t *clus_res_cond);
-
-extern List as_mysql_modify_ser_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				    slurmdb_ser_res_cond_t *ser_res_cond,
-				    slurmdb_ser_res_rec_t *ser_res);
 
 extern List as_mysql_remove_ser_res(mysql_conn_t *mysql_conn, uint32_t uid,
 				    slurmdb_ser_res_cond_t *ser_res_cond);

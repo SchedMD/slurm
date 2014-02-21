@@ -946,60 +946,61 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_modify_ser_res(int argc, char *argv[])
+extern int sacctmgr_modify_res(int argc, char *argv[])
 
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_ser_res_cond_t *ser_res_cond =
-		xmalloc(sizeof(slurmdb_ser_res_cond_t));
-	slurmdb_ser_res_rec_t *ser_res =
-		xmalloc(sizeof(slurmdb_ser_res_rec_t));
+	slurmdb_res_cond_t *res_cond =
+		xmalloc(sizeof(slurmdb_res_cond_t));
+	slurmdb_res_rec_t *res =
+		xmalloc(sizeof(slurmdb_res_rec_t));
 	int i=0;
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
-	slurmdb_init_ser_res_rec(ser_res, 0);
+
+	slurmdb_init_res_cond(res_cond, 0);
+	slurmdb_init_res_rec(res, 0);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
+		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
-			cond_set += _set_ser_res_cond(&i, argc, argv,
-						      ser_res_cond, NULL);
+			cond_set += _set_res_cond(&i, argc, argv,
+						  res_cond, NULL);
 
-		} else if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
+		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
-			rec_set += _set_ser_res_rec(&i, argc, argv, NULL,
-						    ser_res);
+			rec_set += _set_res_rec(&i, argc, argv,
+						NULL, NULL, res);
 		} else {
-			cond_set += _set_ser_res_cond(&i, argc, argv,
-						      ser_res_cond, NULL);
+			cond_set += _set_res_cond(&i, argc, argv,
+						  res_cond, NULL);
 		}
 	}
 
 	if (exit_code) {
-		slurmdb_destroy_ser_res_cond(ser_res_cond);
-		slurmdb_destroy_ser_res_rec(ser_res);
+		slurmdb_destroy_res_cond(res_cond);
+		slurmdb_destroy_res_rec(res);
 		return SLURM_ERROR;
 	} else if (!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
-		slurmdb_destroy_ser_res_cond(ser_res_cond);
-		slurmdb_destroy_ser_res_rec(ser_res);
+		slurmdb_destroy_res_cond(res_cond);
+		slurmdb_destroy_res_rec(res);
 		return SLURM_ERROR;
 	} else if (!cond_set) {
 		if (!commit_check("You didn't set any conditions with "
 				  "'WHERE'.\n"
 				  "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			slurmdb_destroy_ser_res_cond(ser_res_cond);
-			slurmdb_destroy_ser_res_rec(ser_res);
+			slurmdb_destroy_res_cond(res_cond);
+			slurmdb_destroy_res_rec(res);
 			return SLURM_SUCCESS;
 		}
 	}
 
 	notice_thread_init();
-	ret_list = acct_storage_g_modify_ser_res(db_conn, my_uid,
-						 ser_res_cond, ser_res);
+	ret_list = acct_storage_g_modify_res(db_conn, my_uid, res_cond, res);
 	notice_thread_fini();
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
@@ -1028,10 +1029,11 @@ extern int sacctmgr_modify_ser_res(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	}
-	if (ret_list && list_count(ret_list))
-		list_destroy(ret_list);
-	slurmdb_destroy_ser_res_cond(ser_res_cond);
-	slurmdb_destroy_ser_res_rec(ser_res);
+
+	FREE_NULL_LIST(ret_list);
+
+	slurmdb_destroy_res_cond(res_cond);
+	slurmdb_destroy_res_rec(res);
 	return rc;
 }
 

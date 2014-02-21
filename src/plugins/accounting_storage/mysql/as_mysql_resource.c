@@ -873,25 +873,27 @@ empty:
 	return clus_res_list;
 }
 
-extern List as_mysql_modify_clus_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_clus_res_cond_t *clus_res_cond,
-				     slurmdb_clus_res_rec_t *clus_res)
+extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
+				slurmdb_res_cond_t *res_cond,
+				slurmdb_res_rec_t *res)
 {
-	List clus_res_list = NULL;
 	List ret_list = NULL;
-	ListIterator itr = NULL;
-	ListIterator itr1 = NULL;
-	int rc = SLURM_SUCCESS;
-	slurmdb_clus_res_rec_t *object = NULL;
-	char *vals = NULL;
+	char *vals = NULL, *clus_vals = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
-	char *cluster_name = NULL;
-	char *cond_char = NULL;
-	char *name = NULL;
-	int added = 0;
+	char *user_name = NULL, *tmp = NULL;
+	char *name_char = NULL, *clus_char = NULL;
+	char *query = NULL;
+	char *extra = NULL;
+	char *clus_extra = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	int rc = SLURM_SUCCESS;
+	int query_clusters;
+	bool send_update = 0;
+	bool res_added = 0;
+	int last_res = -1;
 
-	if (!clus_res_cond || !clus_res) {
+	if (!res_cond || !res) {
 		error("we need something to change");
 		return NULL;
 	}
@@ -900,161 +902,177 @@ extern List as_mysql_modify_clus_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	/* force to only do non-deleted cluster resources */
-	clus_res_cond->with_deleted = 0;
-	clus_res_list = as_mysql_get_clus_res(mysql_conn, uid,
-					      clus_res_cond);
-	if (clus_res_list
-	    && list_count(clus_res_list)) {
-		ret_list = list_create(slurm_destroy_char);
-		itr = list_iterator_create(clus_res_list);
-		while ((object = list_next(itr))) {
-			name= xstrdup(object->res_ptr->name);
-			list_append(ret_list, name);
-			if (object->res_ptr->id) {
-				xstrfmtcat(cond_char, " (id=%u)",
-					   object->res_ptr->id);
-			}
-			if (clus_res->percent_allowed) {
-				xstrfmtcat(vals, ", percent_allowed=%u",
-					   clus_res->percent_allowed);
-				object->percent_allowed =
-					clus_res->percent_allowed;
-			}
-			user_name = uid_to_string((uid_t) uid);
-			itr1 = list_iterator_create(
-				clus_res_cond->cluster_list);
-			while ((cluster_name = list_next(itr1))) {
-				object->cluster = xstrdup(cluster_name);
-				rc = modify_common(mysql_conn,
-						   DBD_MODIFY_CLUS_RES,
-						   now, user_name, clus_res_table,
-						   cond_char, vals, cluster_name);
-				if (rc == SLURM_ERROR) {
-					error("Couldn't modify cluster "
-					      "resource");
-					list_destroy(clus_res_list);
-					clus_res_list = NULL;
-					list_destroy(ret_list);
-					ret_list = NULL;
-					goto end_it;
-				} else {
-					if (addto_update_list(
-						    mysql_conn->update_list,
-						    SLURMDB_MODIFY_CLUS_RES,
-						    object) == SLURM_SUCCESS){
-						list_remove(itr);
-						added++;
-					}
-				}
-			}
-			list_iterator_destroy(itr1);
-		}
-		list_iterator_destroy(itr);
-		if (!added) {
-			reset_mysql_conn(mysql_conn);
-			if (ret_list) {
-				list_destroy(ret_list);
-				ret_list = NULL;
-			}
-		}
-		list_destroy(clus_res_list);
-		clus_res_list = NULL;
+	_setup_res_limits(res, NULL, &tmp, &vals, 0, &send_update);
 
-	} else {
+	xfree(tmp);
+
+	/* overloaded for easibility */
+	if (res->percent_used != (uint16_t)NO_VAL) {
+		xstrfmtcat(clus_vals, ", percent_allowed=%u",
+			   res->percent_used);
+		send_update = 1;
+	}
+
+	if (!vals && !clus_vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
 	}
 
-end_it:
+	/* force to only do non-deleted resources */
+	res_cond->with_deleted = 0;
+	_setup_res_cond(res_cond, &extra);
+	query_clusters = _setup_clus_res_cond(res_cond, &clus_extra);
+	if (query_clusters || send_update)
+		query = xstrdup_printf("select id, name, server, cluster "
+				       "from %s as t1 left outer join "
+				       "%s as t2 on (res_id = id) %s && %s;",
+				       res_table, clus_res_table,
+				       extra, clus_extra);
+	else
+		query = xstrdup_printf("select id, name, server "
+				       "from %s as t1 %s;",
+				       res_table, extra);
+	xfree(clus_extra);
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(extra);
+		xfree(vals);
+		xfree(clus_extra);
+		xfree(clus_vals);
+		xfree(query);
+		return NULL;
+	}
+
+	if ((query_clusters || send_update) && !mysql_num_rows(result)) {
+		xfree(query);
+		mysql_free_result(result);
+		/* since no clusters are there no reason to send
+		   updates */
+		query_clusters = 0;
+		send_update = 0;
+		query = xstrdup_printf("select id, name, server "
+				       "from %s as t1 %s;",
+				       res_table, extra);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(extra);
+			xfree(vals);
+			xfree(clus_extra);
+			xfree(clus_vals);
+			xfree(query);
+			return NULL;
+		}
+	}
+
+	if (!query_clusters && !vals) {
+		xfree(clus_vals);
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		error("Nothing to change");
+		return NULL;
+	}
+
+	xfree(extra);
+	xfree(clus_extra);
+
+	name_char = NULL;
+	ret_list = list_create(slurm_destroy_char);
+	while ((row = mysql_fetch_row(result))) {
+		char *name = NULL;
+		int curr_res = atoi(row[0]);
+
+		if (last_res != curr_res) {
+			res_added = 0;
+			last_res = curr_res;
+		}
+
+		if (query_clusters) {
+			xstrfmtcat(clus_char,
+				   "%s(res_id='%s' && cluster='%s')",
+				   clus_char ? " || " : "", row[0], row[3]);
+		} else {
+			if (!res_added) {
+				name = xstrdup_printf("%s@%s", row[1], row[2]);
+				list_append(ret_list, name);
+				res_added = 1;
+				name = NULL;
+			}
+			xstrfmtcat(name_char, "%sid='%s'",
+				   name_char ? " || " : "", row[0]);
+			xstrfmtcat(clus_char, "%sres_id='%s'",
+				   clus_char ? " || " : "", row[0]);
+		}
+		if (row[3] && row[3][0]) {
+			slurmdb_res_rec_t *res_rec =
+				xmalloc(sizeof(slurmdb_res_rec_t));
+			slurmdb_init_res_rec(res_rec, 0);
+			res_rec->count = res->count;
+			res_rec->flags = res->flags;
+			res_rec->id = curr_res;
+			res_rec->type = res->type;
+
+			res_rec->clus_res_rec =
+				xmalloc(sizeof(slurmdb_clus_res_rec_t));
+			res_rec->clus_res_rec->cluster = xstrdup(row[3]);
+			res_rec->clus_res_rec->percent_allowed =
+				res->percent_used;
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_MODIFY_RES, res_rec)
+			    != SLURM_SUCCESS)
+				slurmdb_destroy_res_rec(res_rec);
+
+			name = xstrdup_printf("Cluster - %s\t- %s@%s",
+					      row[3], row[1], row[2]);
+		} else if (!res_added)
+			name = xstrdup_printf("%s@%s", row[1], row[2]);
+
+		if (name)
+			list_append(ret_list, name);
+	}
+	mysql_free_result(result);
+
+	if (!list_count(ret_list)) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
+		xfree(query);
+		xfree(vals);
+		xfree(name_char);
+		xfree(clus_char);
+
+		return ret_list;
+	}
+	xfree(query);
+
+	user_name = uid_to_string((uid_t) uid);
+	if (query_clusters) {
+		modify_common(mysql_conn, DBD_MODIFY_CLUS_RES,
+			      now, user_name, clus_res_table,
+			      clus_char, clus_vals, NULL);
+	} else {
+		if (clus_char && clus_vals) {
+			modify_common(mysql_conn, DBD_MODIFY_CLUS_RES,
+				      now, user_name, clus_res_table,
+				      clus_char, clus_vals, NULL);
+		}
+		modify_common(mysql_conn, DBD_MODIFY_RES,
+			      now, user_name, res_table,
+			      name_char, vals, NULL);
+	}
+
 	xfree(vals);
-	xfree(cond_char);
+	xfree(clus_vals);
+	xfree(clus_char);
+	xfree(name_char);
 	xfree(user_name);
-	return ret_list;
-}
 
-extern List as_mysql_remove_clus_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_clus_res_cond_t *clus_res_cond)
-{
-	List clus_res_list = NULL;
-	List ret_list = NULL;
-	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
-	slurmdb_clus_res_rec_t *object = NULL;
-	time_t now = time(NULL);
-	char *user_name = NULL;
-	char *cond_char = NULL;
-	char *name = NULL;
-	int added = 0;
-
-	if (!clus_res_cond || (!clus_res_cond->name_list)) {
-		error("we need something to change");
-		return NULL;
+	if (rc == SLURM_ERROR) {
+		error("Couldn't modify Server Resource");
+		FREE_NULL_LIST(ret_list);
+		errno = SLURM_ERROR;
 	}
 
-	if (check_connection(mysql_conn) != SLURM_SUCCESS)
-		return NULL;
-
-	/* force to only do non-deleted cluster resources */
-	clus_res_cond->with_deleted = 0;
-	clus_res_list = as_mysql_get_clus_res(mysql_conn, uid,
-					      clus_res_cond);
-	if (clus_res_list
-	    && list_count(clus_res_list)) {
-		ret_list = list_create(slurm_destroy_char);
-		itr = list_iterator_create(clus_res_list);
-		while ((object = list_next(itr))) {
-			name = xstrdup(object->res_ptr->name);
-			list_append(ret_list, name);
-			if (object->res_ptr->id) {
-				xstrfmtcat(cond_char, " (id=%u)",
-					   object->res_ptr->id);
-			}
-			user_name = uid_to_string((uid_t) uid);
-			rc = remove_common(mysql_conn,
-					   DBD_REMOVE_CLUS_RES,
-					   now, user_name, clus_res_table,
-					   cond_char, NULL, object->cluster,
-					   NULL, NULL);
-			if (rc == SLURM_ERROR) {
-				error("Couldn't remove cluster "
-				      "resource");
-				list_destroy(clus_res_list);
-				clus_res_list = NULL;
-				list_destroy(ret_list);
-				ret_list = NULL;
-				goto end_it;
-			} else {
-				if (addto_update_list(
-					    mysql_conn->update_list,
-					    SLURMDB_REMOVE_CLUS_RES,
-					    object) == SLURM_SUCCESS) {
-					list_remove(itr);
-					added++;
-				}
-			}
-			xfree(cond_char);
-		}
-		list_iterator_destroy(itr);
-		if (!added) {
-			reset_mysql_conn(mysql_conn);
-			if (ret_list) {
-				list_destroy(ret_list);
-				ret_list = NULL;
-			}
-		}
-		list_destroy(clus_res_list);
-		clus_res_list = NULL;
-
-	} else {
-		errno = SLURM_NO_CHANGE_IN_DATA;
-		error("Nothing to change");
-		return NULL;
-	}
-
-end_it:
-	xfree(cond_char);
-	xfree(user_name);
 	return ret_list;
 }

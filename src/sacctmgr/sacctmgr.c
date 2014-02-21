@@ -652,10 +652,10 @@ static void _show_it (int argc, char *argv[])
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Ser_Res", MAX(command_len, 1)) == 0) {
-		error_code = sacctmgr_list_ser_res((argc - 1), &argv[1]);
-	} else if (!strncasecmp (argv[0], "Transactions", MAX(command_len, 1))
-		   || !strncasecmp (argv[0], "Txn", MAX(command_len, 1))) {
+	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 1))) {
+		error_code = sacctmgr_list_res((argc - 1), &argv[1]);
+	} else if (!strncasecmp(argv[0], "Transactions", MAX(command_len, 1))
+		   || !strncasecmp(argv[0], "Txn", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
@@ -705,27 +705,23 @@ static void _modify_it (int argc, char *argv[])
 	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 1)) == 0
 	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Clus_Res", MAX(command_len, 5)) ==
-		   0) {
-		error_code = sacctmgr_modify_clus_res((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Clusters",
 				MAX(command_len, 5)) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Job", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_job((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "QOSs", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Ser_Res", MAX(command_len, 1)) == 0) {
-		error_code = sacctmgr_modify_ser_res((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
+	} else if (strncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_modify_res((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
 	} else {
 	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Clus_Res\", \"Cluster\", "
-			"\"Job\", \"QOS\", \"Ser_Res\" or \"User\"\n");
+		fprintf(stderr, "\"Account\", \"Cluster\", "
+			"\"Job\", \"QOS\", \"Resource\" or \"User\"\n");
 	}
 
 	if (error_code != SLURM_SUCCESS) {

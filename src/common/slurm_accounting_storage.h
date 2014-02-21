@@ -199,17 +199,6 @@ extern List acct_storage_g_modify_associations(
 	slurmdb_association_rec_t *assoc);
 
 /*
- * modify existing clus_res in the accounting system
- * IN:  slurmdb_clus_res_cond_t *clus_res_cond
- * IN:  slurmdb_clus_res_rec_t *clus_res
- * RET: List containing (char *'s) else NULL on error
- */
-extern List acct_storage_g_modify_clus_res(void *db_conn, uint32_t uid,
-				      slurmdb_clus_res_cond_t *clus_res_cond,
-				      slurmdb_clus_res_rec_t *clus_res);
-
-
-/*
  * modify existing job in the accounting system
  * IN:  slurmdb_job_modify_cond_t *job_cond
  * IN:  slurmdb_job_rec_t *job
@@ -230,14 +219,14 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_rec_t *qos);
 
 /*
- * modify existing ser_res in the accounting system
- * IN:  slurmdb_ser_res_cond_t *ser_res_cond
- * IN:  slurmdb_ser_res_rec_t *ser_res
+ * modify existing res in the accounting system
+ * IN:  slurmdb_res_cond_t *res_cond
+ * IN:  slurmdb_res_rec_t *res
  * RET: List containing (char *'s) else NULL on error
  */
-extern List acct_storage_g_modify_ser_res(void *db_conn, uint32_t uid,
-				      slurmdb_ser_res_cond_t *ser_res_cond,
-				      slurmdb_ser_res_rec_t *ser_res);
+extern List acct_storage_g_modify_res(void *db_conn, uint32_t uid,
+					   slurmdb_res_cond_t *res_cond,
+					   slurmdb_res_rec_t *res);
 
 /*
  * modify existing wckey in the accounting system
