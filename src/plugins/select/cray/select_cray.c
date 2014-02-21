@@ -1300,6 +1300,8 @@ extern int select_p_state_restore(char *dir_name)
 	}
 	slurm_mutex_unlock(&blade_mutex);
 
+	free_buf(buffer);
+
 	return other_state_restore(dir_name);
 
 unpack_error:
