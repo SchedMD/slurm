@@ -57,9 +57,8 @@ int rollback_flag;       /* immediate execute=1, else = 0 */
 int with_assoc_flag = 0;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
-List g_clus_res_list = NULL;
 List g_qos_list = NULL;
-List g_ser_res_list = NULL;
+List g_res_list = NULL;
 bool tree_display = 0;
 
 static void	_add_it (int argc, char *argv[]);
@@ -243,12 +242,10 @@ main (int argc, char *argv[])
 		exit_code = local_exit_code;
 	acct_storage_g_close_connection(&db_conn);
 	slurm_acct_storage_fini();
-	if (g_clus_res_list)
-		list_destroy(g_clus_res_list);
 	if (g_qos_list)
 		list_destroy(g_qos_list);
-	if (g_ser_res_list)
-		list_destroy(g_ser_res_list);
+	if (g_res_list)
+		list_destroy(g_res_list);
 	exit(exit_code);
 }
 
@@ -535,18 +532,14 @@ static void _add_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to add */
-	if (strncasecmp (argv[0], "Account", MAX(command_len, 1)) == 0
-	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
+	if (!strncasecmp(argv[0], "Account", MAX(command_len, 1))
+	    || !strncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Clus_Res", MAX(command_len, 5)) ==
-		   0) {
-		error_code = sacctmgr_add_clus_res((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", MAX(command_len, 5)) == 0) {
+	} else if (!strncasecmp(argv[0], "Cluster", MAX(command_len, 2))) {
 		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Coordinator",
-				MAX(command_len, 2)) == 0) {
+	} else if (!strncasecmp(argv[0], "Coordinator", MAX(command_len, 2))) {
 		error_code = sacctmgr_add_coord((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
+	} else if (!strncasecmp(argv[0], "QOS", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_qos((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_res((argc - 1), &argv[1]);
@@ -629,34 +622,34 @@ static void _show_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to list */
-	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 2)) == 0
-	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
+	if (strncasecmp(argv[0], "Accounts", MAX(command_len, 2)) == 0
+	    || !strncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Associations",
+	} else if (strncasecmp(argv[0], "Associations",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Clusters",
-				MAX(command_len, 5)) == 0) {
+	} else if (strncasecmp(argv[0], "Clusters",
+				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Configuration",
+	} else if (strncasecmp(argv[0], "Configuration",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_config(true);
-	} else if (strncasecmp (argv[0], "Events",
+	} else if (strncasecmp(argv[0], "Events",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_event((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Problems",
+	} else if (strncasecmp(argv[0], "Problems",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
+	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_res((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Transactions", MAX(command_len, 1))
 		   || !strncasecmp(argv[0], "Txn", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
+	} else if (strncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "WCKeys", MAX(command_len, 1)) == 0) {
+	} else if (strncasecmp(argv[0], "WCKeys", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_wckey((argc - 1), &argv[1]);
 	} else {
 	helpme:
@@ -699,14 +692,15 @@ static void _modify_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to modify */
-	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 1)) == 0
-	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
+	if (strncasecmp(argv[0], "Accounts", MAX(command_len, 1)) == 0
+	    || !strncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "Clusters",
 				MAX(command_len, 5)) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Job", MAX(command_len, 1)) == 0) {
+	} else if (strncasecmp(argv[0], "Job", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_job((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "QOSs", MAX(command_len, 1)) == 0) {
+	} else if (strncasecmp(argv[0], "QOSs", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_res((argc - 1), &argv[1]);
@@ -750,16 +744,16 @@ static void _delete_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to delete */
-	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 1)) == 0
-	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
+	if (strncasecmp(argv[0], "Accounts", MAX(command_len, 1)) == 0
+	    || !strncasecmp(argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Clusters",
-				MAX(command_len, 5)) == 0) {
+	} else if (strncasecmp(argv[0], "Clusters",
+				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Coordinators",
+	} else if (strncasecmp(argv[0], "Coordinators",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_coord((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 2)) == 0) {
+	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_delete_res((argc - 1), &argv[1]);
