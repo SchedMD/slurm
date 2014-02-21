@@ -580,6 +580,7 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 	bitstr_t *tmp_qos_bitstr;
 
 	if (!qos) {
+		FREE_NULL_BITMAP(*qos_bits);
 		*qos_bits = NULL;
 		return;
 	}
