@@ -313,7 +313,6 @@ enum job_state_reason {
 	WAIT_NODE_NOT_AVAIL,	/* required node is DOWN or DRAINED */
 	WAIT_HELD_USER,		/* job is held by user */
 	WAIT_FRONT_END,		/* Front end nodes are DOWN */
-	WAIT_PROLOG,		/* Prolog is running */
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */
 	FAIL_DOWN_NODE,		/* some node in the allocation failed */
 	FAIL_BAD_CONSTRAINTS,	/* constraints can not be satisfied */
@@ -334,6 +333,7 @@ enum job_state_reason {
 				 * can't allow more jobs. */
 	WAIT_CLEANING,          /* If a job is requeued and it is
 				 * still cleaning up from the last run. */
+	WAIT_PROLOG,		/* Prolog is running */
 };
 
 enum job_acct_types {
