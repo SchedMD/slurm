@@ -63,10 +63,10 @@ extern int license_init(char *licenses);
  * Preserve all previously allocated licenses */
 extern int license_update(char *licenses);
 
-extern void license_add_remote(slurmdb_clus_res_rec_t *rec);
-extern void license_update_remote(slurmdb_clus_res_rec_t *rec);
-extern void license_remove_remote(slurmdb_clus_res_rec_t *rec);
-extern void license_sync_remote(List clus_res_list);
+extern void license_add_remote(slurmdb_res_rec_t *rec);
+extern void license_update_remote(slurmdb_res_rec_t *rec);
+extern void license_remove_remote(slurmdb_res_rec_t *rec);
+extern void license_sync_remote(List res_list);
 
 /* Free memory associated with licenses on this system */
 extern void license_free(void);
