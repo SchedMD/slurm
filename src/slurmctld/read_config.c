@@ -542,6 +542,7 @@ extern void accounts_list_build(char *accounts, char ***accounts_array)
 	int array_len = 0, array_used = 0;
 
 	if (!accounts) {
+		accounts_list_free(accounts_array);
 		*accounts_array = NULL;
 		return;
 	}
