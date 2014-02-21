@@ -58,13 +58,11 @@ static int   _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 				 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _add_clus_res(slurmdbd_conn_t *slurmdbd_conn,
-			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_qos(slurmdbd_conn_t *slurmdbd_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _add_ser_res(slurmdbd_conn_t *slurmdbd_conn,
+static int   _add_res(slurmdbd_conn_t *slurmdbd_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_users(slurmdbd_conn_t *slurmdbd_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
@@ -224,10 +222,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _add_assocs(slurmdbd_conn,
 					 in_buffer, out_buffer, uid);
 			break;
-		case DBD_ADD_CLUS_RES:
-			rc = _add_clus_res(slurmdbd_conn,
-					   in_buffer, out_buffer, uid);
-			break;
 		case DBD_ADD_CLUSTERS:
 			rc = _add_clusters(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
@@ -236,8 +230,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _add_qos(slurmdbd_conn,
 				      in_buffer, out_buffer, uid);
 			break;
-		case DBD_ADD_SER_RES:
-			rc = _add_ser_res(slurmdbd_conn,
+		case DBD_ADD_RES:
+			rc = _add_res(slurmdbd_conn,
 					  in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_USERS:
@@ -713,44 +707,6 @@ end_it:
 	return rc;
 }
 
-static int _add_clus_res(slurmdbd_conn_t *slurmdbd_conn,
-			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
-{
-	int rc = SLURM_SUCCESS;
-	dbd_list_msg_t *get_msg = NULL;
-	char *comment = NULL;
-
-	debug2("DBD_ADD_CLUS_RES: called");
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
-		comment = "Your user doesn't have privilege to preform this "
-			  "action";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
-	if (slurmdbd_unpack_list_msg(&get_msg, slurmdbd_conn->rpc_version,
-				     DBD_ADD_CLUS_RES, in_buffer) !=
-	    SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_ADD_CLUS_RES message";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-	rc = acct_storage_g_add_clus_res(slurmdbd_conn->db_conn, *uid,
-					 get_msg->my_list);
-	if (rc != SLURM_SUCCESS)
-		comment = "Failed to add cluster resource.";
-
-end_it:
-	slurmdbd_free_list_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-				      rc, comment, DBD_ADD_CLUS_RES);
-	return rc;
-}
-
 static int _add_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -827,14 +783,14 @@ end_it:
 	return rc;
 }
 
-static int _add_ser_res(slurmdbd_conn_t *slurmdbd_conn,
+static int _add_res(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = NULL;
 	char *comment = NULL;
 
-	debug2("DBD_ADD_SER_RES: called");
+	debug2("DBD_ADD_RES: called");
 	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
 	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	    < SLURMDB_ADMIN_SUPER_USER) {
@@ -846,15 +802,15 @@ static int _add_ser_res(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	if (slurmdbd_unpack_list_msg(&get_msg, slurmdbd_conn->rpc_version,
-				     DBD_ADD_SER_RES, in_buffer) !=
+				     DBD_ADD_RES, in_buffer) !=
 	    SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_ADD_SER_RES message";
+		comment = "Failed to unpack DBD_ADD_RES message";
 		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
-	rc = acct_storage_g_add_ser_res(slurmdbd_conn->db_conn, *uid,
+	rc = acct_storage_g_add_res(slurmdbd_conn->db_conn, *uid,
 					 get_msg->my_list);
 	if (rc != SLURM_SUCCESS)
 		comment = "Failed to add system resource.";
@@ -862,7 +818,7 @@ static int _add_ser_res(slurmdbd_conn_t *slurmdbd_conn,
 end_it:
 	slurmdbd_free_list_msg(get_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-				      rc, comment, DBD_ADD_SER_RES);
+				      rc, comment, DBD_ADD_RES);
 	return rc;
 }
 
