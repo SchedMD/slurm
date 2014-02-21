@@ -108,8 +108,7 @@ COMMAND CHANGES (see man pages for details)
     central location.
  -- Added -S/--core-spec option to salloc, sbatch and srun commands to reserve
     specialized cores for system use.
- -- Added sacctmgr options to create, modify, list & delete ser_res (server
-    resources) and clus_res (cluster resources).
+ -- Added sacctmgr options to create, modify, list & delete Resources.
 
 OTHER CHANGES
 =============
@@ -190,8 +189,13 @@ Change the following API's
  -- Add task pointer to the task_post_term() function in task plugins. The
     terminating task's PID is available in task->pid.
 
+
+
 DBD API Changes
 ===============
+
+Changed members of the following structs
+========================================
 
 Added the following struct definitions
 ======================================
@@ -204,6 +208,9 @@ Added the following enums and #defines
  -- enum slurmdb_resource_type_t: server resource record "type" definition.
  -- Added new slurmdb_update_type_t SLURMDB_ADD_RES,
     SLURMDB_REMOVE_RES, SLURMDB_MODIFY_RES
+ -- Added new flags for Resources SLURMDB_RES_FLAG_BASE,
+    SLURMDB_RES_FLAG_NOTSET, SLURMDB_RES_FLAG_ADD, SLURMDB_RES_FLAG_REMOVE
+ -- Added new flags for QOS QOS_FLAG_BASE
 
 Added the following API's
 =========================
