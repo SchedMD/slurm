@@ -53,20 +53,20 @@
 #include "slurm/slurm_errno.h"
 
 #define ASSOC_MGR_CACHE_ASSOC 0x0001
-#define ASSOC_MGR_CACHE_QOS 0x0002
-#define ASSOC_MGR_CACHE_USER 0x0004
+#define ASSOC_MGR_CACHE_QOS   0x0002
+#define ASSOC_MGR_CACHE_USER  0x0004
 #define ASSOC_MGR_CACHE_WCKEY 0x0008
-#define ASSOC_MGR_CACHE_CLUS_RES 0x0010
-#define ASSOC_MGR_CACHE_ALL 0xffff
+#define ASSOC_MGR_CACHE_RES   0x0010
+#define ASSOC_MGR_CACHE_ALL   0xffff
 
 /* to lock or not */
 typedef struct {
 	lock_level_t assoc;
 	lock_level_t file;
 	lock_level_t qos;
+	lock_level_t res;
 	lock_level_t user;
 	lock_level_t wckey;
-	lock_level_t clus_res;
 } assoc_mgr_lock_t;
 
 /* Interval lock structure
@@ -80,9 +80,9 @@ typedef enum {
 	ASSOC_LOCK,
 	FILE_LOCK,
 	QOS_LOCK,
+	RES_LOCK,
 	USER_LOCK,
 	WCKEY_LOCK,
-	CLUS_RES_LOCK,
 	ASSOC_MGR_ENTITY_COUNT
 } assoc_mgr_lock_datatype_t;
 
@@ -93,13 +93,13 @@ typedef struct {
 typedef struct {
  	uint16_t cache_level;
 	uint16_t enforce;
-	void (*add_license_notify) (slurmdb_clus_res_rec_t *rec);
+	void (*add_license_notify) (slurmdb_res_rec_t *rec);
  	void (*remove_assoc_notify) (slurmdb_association_rec_t *rec);
-	void (*remove_license_notify) (slurmdb_clus_res_rec_t *rec);
+	void (*remove_license_notify) (slurmdb_res_rec_t *rec);
  	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*sync_license_notify) (List clus_res_list);
  	void (*update_assoc_notify) (slurmdb_association_rec_t *rec);
-	void (*update_license_notify) (slurmdb_clus_res_rec_t *rec);
+	void (*update_license_notify) (slurmdb_res_rec_t *rec);
  	void (*update_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*update_resvs) ();
 } assoc_init_args_t;
@@ -170,7 +170,7 @@ struct assoc_mgr_qos_usage {
 
 
 extern List assoc_mgr_association_list;
-extern List assoc_mgr_clus_res_list;
+extern List assoc_mgr_res_list;
 extern List assoc_mgr_qos_list;
 extern List assoc_mgr_user_list;
 extern List assoc_mgr_wckey_list;
@@ -328,7 +328,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update);
  * IN:  slurmdb_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_clus_res(slurmdb_update_object_t *update);
+extern int assoc_mgr_update_res(slurmdb_update_object_t *update);
 
 /*
  * update users in cache

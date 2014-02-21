@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |
 				     ASSOC_MGR_CACHE_QOS   |
-				     ASSOC_MGR_CACHE_CLUS_RES;
+				     ASSOC_MGR_CACHE_RES;
 	if (slurmctld_conf.track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
