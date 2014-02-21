@@ -548,17 +548,17 @@ static void _add_it (int argc, char *argv[])
 		error_code = sacctmgr_add_coord((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_add_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Ser_Res", MAX(command_len, 1)) == 0) {
-		error_code = sacctmgr_add_ser_res((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "User", MAX(command_len, 1)) == 0) {
+	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 1))) {
+		error_code = sacctmgr_add_res((argc - 1), &argv[1]);
+	} else if (!strncasecmp(argv[0], "User", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
 	} else {
 	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in add command\n");
 		fprintf(stderr, "Input line must include, ");
-		fprintf(stderr, "\"Account\", \"Clus_Res\",\"Cluster\", ");
-		fprintf(stderr, "\"Coordinator\",\"QOS\",\"Ser_Res\", ");
+		fprintf(stderr, "\"Account\", \"Cluster\", ");
+		fprintf(stderr, "\"Coordinator\", \"QOS\", \"Resource\", ");
 		fprintf(stderr, "or \"User\"\n");
 	}
 
@@ -850,9 +850,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
-  <ENTITY> may be \"account\", \"association\", \"clus_res\", \"cluster\", \n\
+  <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
                   \"configuration\", \"coordinator\", \"event\", \"job\",  \n\
-                  \"problem\", \"qos\", \"ser_res\", \"transaction\",      \n\
+                  \"problem\", \"qos\", \"resource\", \"transaction\",     \n\
                    \"user\" or \"wckey\"                                   \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
@@ -886,7 +886,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WOPInfo, and WOPLimits                         \n\
                                                                            \n\
        list clus_res      - Clusters=, Format=, Manager=, Names=, and Server=\n\
-       add clus_res       - Allowed=, Clusters=, and Names=                \n\
        modify clus_res    - Allowed=, Clusters=, and Names=                \n\
        delete clus_res    - Clusters= and Names=                           \n\
                                                                            \n\
@@ -936,11 +935,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete qos         - Descriptions=, ID=, Names=, and PreemptMode=   \n\
                                                                            \n\
        list ser_res       - Format=, Manager=, Names=, and Server=         \n\
-       add ser_res        - Count=, Descriptions=, Flags=, Manager=,       \n\
-                            Names=, Server=, and  Type=                    \n\
        modify ser_res     - Count=, Flags=, Manager=, Names=, Server=,     \n\
                             and TYPE=                                      \n\
        delete ser_res     - Names=                                         \n\
+       add resource       - Clusters=, Count=, Descriptions=, Flags=,      \n\
+                            Manager=, Names=, PercentAllowed=, Server=,    \n\
+                            and Type=                                      \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
                             Format=, ID=, Start=, User=, and WithAssoc     \n\

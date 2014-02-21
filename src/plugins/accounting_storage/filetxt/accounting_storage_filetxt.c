@@ -316,6 +316,12 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_add_res(void *db_conn, uint32_t uid,
+				  List res_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
 				  List wckey_list)
 {

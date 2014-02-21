@@ -47,14 +47,13 @@
 #include "src/common/slurm_accounting_storage.h"
 
 /*
- * add clus_res's to accounting system
- * IN:  clus_res_list List of char *
+ * add res's to accounting system
+ * IN:  res_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_clus_res_add(void *db_conn, uint32_t uid,
-				List clus_res_list)
+extern int slurmdb_res_add(void *db_conn, uint32_t uid, List res_list)
 {
-	return acct_storage_g_add_clus_res(db_conn, getuid(), clus_res_list);
+	return acct_storage_g_add_res(db_conn, getuid(), res_list);
 }
 
 /*
@@ -96,17 +95,6 @@ extern List slurmdb_clus_res_remove(void *db_conn,
 	return acct_storage_g_remove_clus_res(db_conn, getuid(), clus_res_cond);
 }
 
-/*
- * add ser_res's to accounting system
- * IN:  ser_res_list List of char *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int slurmdb_ser_res_add(void *db_conn, uint32_t uid, List ser_res_list)
-{
-	return acct_storage_g_add_ser_res(db_conn, getuid(), ser_res_list);
-}
-
-/*
  * get ser_res info from the storage
  * IN:  slurmdb_ser_res_cond_t *
  * RET: List of slurmdb_ser_res_rec_t *

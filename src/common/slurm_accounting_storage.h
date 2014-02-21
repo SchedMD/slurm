@@ -110,14 +110,6 @@ extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 				       List acct_list);
 
 /*
- * add clus_res's to accounting system
- * IN:  clus_res_list List of char *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int acct_storage_g_add_clus_res(void *db_conn, uint32_t uid,
-				  List clus_res_list);
-
-/*
  * add clusters to accounting system
  * IN:  cluster_list List of slurmdb_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
@@ -142,12 +134,12 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 				  List qos_list);
 
 /*
- * add ser_res's to accounting system
- * IN:  ser_res_list List of char *
+ * add res's to accounting system
+ * IN:  res_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_ser_res(void *db_conn, uint32_t uid,
-				  List ser_res_list);
+extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,
+				       List res_list);
 
 /*
  * add wckey's to accounting system

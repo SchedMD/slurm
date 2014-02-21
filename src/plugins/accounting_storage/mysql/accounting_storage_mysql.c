@@ -2309,12 +2309,6 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_add_accts(mysql_conn, uid, acct_list);
 }
 
-extern int acct_storage_p_add_clus_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				       List clus_res_list)
-{
-	return as_mysql_add_clus_res(mysql_conn, uid, clus_res_list);
-}
-
 extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				       List cluster_list)
 {
@@ -2334,10 +2328,10 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_add_qos(mysql_conn, uid, qos_list);
 }
 
-extern int acct_storage_p_add_ser_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				      List ser_res_list)
+extern int acct_storage_p_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
+				  List res_list)
 {
-	return as_mysql_add_ser_res(mysql_conn, uid, ser_res_list);
+	return as_mysql_add_res(mysql_conn, uid, res_list);
 }
 
 extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,

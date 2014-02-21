@@ -576,164 +576,225 @@ static int _check_cluster_name (List name_list)
 		return SLURM_ERROR;
 }
 
-extern int sacctmgr_add_ser_res(int argc, char *argv[])
+extern int sacctmgr_add_res(int argc, char *argv[])
 
 {
 	int rc = SLURM_SUCCESS;
 	int i=0, limit_set=0;
 	ListIterator itr = NULL;
-	slurmdb_ser_res_rec_t *ser_res = NULL;
-	slurmdb_ser_res_rec_t *start_ser_res =
-		xmalloc(sizeof(slurmdb_ser_res_rec_t));
+	ListIterator clus_itr = NULL;
+	slurmdb_res_rec_t *res = NULL;
+	slurmdb_res_rec_t *found_res = NULL;
+	slurmdb_res_rec_t *start_res = xmalloc(sizeof(slurmdb_res_rec_t));
+	List cluster_list = list_create(slurm_destroy_char);
 	List name_list = list_create(slurm_destroy_char);
 	char *name = NULL;
-	List ser_res_list = NULL;
-	char *ser_res_str = NULL;
-	slurmdb_ser_res_cond_t *object_ptr =
-		xmalloc(sizeof(slurmdb_ser_res_cond_t));
+	List res_list = NULL;
+	char *res_str = NULL;
 
-	slurmdb_init_ser_res_cond(object_ptr, 0);
-
-	slurmdb_init_ser_res_rec(start_ser_res, 0);
+	slurmdb_init_res_rec(start_res, 0);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
+		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 
-		limit_set +=
-			_set_ser_res_rec(&i, argc, argv, name_list,
-					 start_ser_res);
+		limit_set += _set_res_rec(&i, argc, argv, name_list,
+					  cluster_list, start_res);
 	}
 
 	if (exit_code) {
-		list_destroy(name_list);
-		slurmdb_destroy_ser_res_cond(object_ptr);
-		slurmdb_destroy_ser_res_rec(start_ser_res);
+		FREE_NULL_LIST(name_list);
+		FREE_NULL_LIST(cluster_list);
+		slurmdb_destroy_res_rec(start_res);
 		return SLURM_ERROR;
 	} else if (!list_count(name_list)) {
-		list_destroy(name_list);
-		slurmdb_destroy_ser_res_cond(object_ptr);
-		slurmdb_destroy_ser_res_rec(start_ser_res);
+		FREE_NULL_LIST(name_list);
+		FREE_NULL_LIST(cluster_list);
+		slurmdb_destroy_res_rec(start_res);
 		exit_code=1;
-		fprintf(stderr, " Need name of system resource to add.\n");
+		fprintf(stderr, " Need name of resource to add.\n");
 		return SLURM_SUCCESS;
-	} else if (start_ser_res->count == NO_VAL) {
-		list_destroy(name_list);
-		slurmdb_destroy_ser_res_cond(object_ptr);
-		slurmdb_destroy_ser_res_rec(start_ser_res);
-		exit_code=1;
-		fprintf(stderr, " Need to designate a resource count.\n");
-		return SLURM_SUCCESS;
-	} else if (start_ser_res->type == NO_VAL) {
-		list_destroy(name_list);
-		slurmdb_destroy_ser_res_cond(object_ptr);
-		slurmdb_destroy_ser_res_rec(start_ser_res);
-		exit_code=1;
-		fprintf(stderr, " Need to designate a resource type.\n");
-		return SLURM_SUCCESS;
-	} else {
-		switch (start_ser_res->type) {
-		case SLURMDB_RESOURCE_LICENSE :
-			break;
-		default:
-			list_destroy(name_list);
-			slurmdb_destroy_ser_res_cond(object_ptr);
-			slurmdb_destroy_ser_res_rec(start_ser_res);
-			exit_code=1;
-			fprintf(stderr, "Need to designate a resource type.\n");
-			return SLURM_SUCCESS;
-		}
 	}
 
-	if (!g_ser_res_list) {
-		g_ser_res_list =
-			acct_storage_g_get_ser_res(db_conn, my_uid, NULL);
-		if (!g_ser_res_list) {
+	if (!start_res->server) {
+		/* assign some server name */
+		start_res->server = xstrdup("slurmdb");
+	}
+
+	if (!g_res_list) {
+		slurmdb_res_cond_t res_cond;
+		slurmdb_init_res_cond(&res_cond, 0);
+		res_cond.with_clusters = 1;
+		g_res_list = acct_storage_g_get_res(db_conn, my_uid, &res_cond);
+		if (!g_res_list) {
 			exit_code=1;
 			fprintf(stderr, " Problem getting system resources "
 				"from database.  "
 				"Contact your admin.\n");
-			list_destroy(name_list);
-			slurmdb_destroy_ser_res_cond(object_ptr);
-			slurmdb_destroy_ser_res_rec(start_ser_res);
+			FREE_NULL_LIST(name_list);
+			FREE_NULL_LIST(cluster_list);
+			slurmdb_destroy_res_rec(start_res);
 			return SLURM_ERROR;
 		}
 	}
 
-	ser_res_list = list_create(slurmdb_destroy_ser_res_rec);
+	res_list = list_create(slurmdb_destroy_res_rec);
 
 	itr = list_iterator_create(name_list);
+	if (cluster_list)
+		clus_itr = list_iterator_create(cluster_list);
 	while ((name = list_next(itr))) {
-		ser_res = NULL;
-		if (!sacctmgr_find_ser_res_from_list(g_ser_res_list, name)) {
-			ser_res =
-				xmalloc(sizeof(slurmdb_ser_res_rec_t));
-			slurmdb_init_ser_res_rec(ser_res, 0);
-			ser_res->name = xstrdup(name);
-			if (start_ser_res->description)
-				ser_res->description =
-					xstrdup(start_ser_res->description);
-			else
-				ser_res->description = xstrdup(name);
-			if (start_ser_res->manager)
-				ser_res->manager =
-					xstrdup(start_ser_res->manager);
-			else
-				ser_res->manager = "NULL";
-			if (start_ser_res->server)
-				ser_res->server =
-					xstrdup(start_ser_res->server);
-			else
-				ser_res->server = "NULL";
+		bool added = 0;
+		found_res = sacctmgr_find_res_from_list(
+			g_res_list, name, start_res->server);
+		if (!found_res) {
+			if (start_res->type == SLURMDB_RESOURCE_NOTSET) {
+				exit_code=1;
+				fprintf(stderr,
+					" Need to designate a resource "
+					"type to initially add '%s'.\n", name);
+				break;
 
-			ser_res->count = start_ser_res->count;
-			ser_res->flags = start_ser_res->flags;
-			ser_res->type = start_ser_res->type;
+			} else if (start_res->count == NO_VAL) {
+				exit_code=1;
+				fprintf(stderr,
+					" Need to designate a resource "
+					"count to initially add '%s'.\n", name);
+				break;
+			}
+			added = 1;
+			res = xmalloc(sizeof(slurmdb_res_rec_t));
+			slurmdb_init_res_rec(res, 0);
+			res->name = xstrdup(name);
+			res->description =
+				xstrdup(start_res->description ?
+					start_res->description : name);
+			res->manager = xstrdup(start_res->manager);
+			res->server = xstrdup(start_res->server);
+			res->count = start_res->count;
+			res->flags = start_res->flags;
+			res->type = start_res->type;
 
-			xstrfmtcat(ser_res_str, "  %s\n", name);
-			list_append(ser_res_list, ser_res);
+			xstrfmtcat(res_str, "  %s@%s\n",
+				   res->name, res->server);
+			list_append(res_list, res);
 		}
+
+		if (cluster_list && list_count(cluster_list)) {
+			ListIterator found_itr = NULL;
+			slurmdb_clus_res_rec_t *clus_res;
+			char *cluster;
+
+			if (found_res) {
+				found_itr = list_iterator_create(
+					found_res->clus_res_list);
+				res = xmalloc(sizeof(slurmdb_res_rec_t));
+				slurmdb_init_res_rec(res, 0);
+				res->id = found_res->id;
+				res->type = found_res->type;
+			}
+
+			res->clus_res_list = list_create(
+				slurmdb_destroy_clus_res_rec);
+
+			while ((cluster = list_next(clus_itr))) {
+				clus_res = NULL;
+				if (found_res) {
+					while ((clus_res =
+						list_next(found_itr))) {
+						if (!strcmp(clus_res->cluster,
+							    cluster))
+							break;
+					}
+					list_iterator_reset(found_itr);
+				}
+
+				if (!clus_res) {
+					if (!added) {
+						added = 1;
+						xstrfmtcat(res_str,
+							   "  %s@%s\n", name,
+							   res->server);
+						list_append(res_list, res);
+					}
+
+					clus_res = xmalloc(
+						sizeof(slurmdb_clus_res_rec_t));
+					list_append(res->clus_res_list,
+						    clus_res);
+					clus_res->cluster = xstrdup(cluster);
+					clus_res->percent_allowed =
+						start_res->percent_used;
+					xstrfmtcat(res_str,
+						   "   Cluster - %s %u%%\n",
+						   cluster,
+						   clus_res->percent_allowed);
+					/* FIXME: make sure we don't
+					   overcommit */
+				}
+			}
+
+			if (found_res)
+				list_iterator_destroy(found_itr);
+
+			if (!added)
+				slurmdb_destroy_res_rec(res);
+
+			list_iterator_reset(clus_itr);
+		}
+
 	}
+
+	if (cluster_list)
+		list_iterator_destroy(clus_itr);
+
 	list_iterator_destroy(itr);
-	list_destroy(name_list);
 
-	if (g_ser_res_list) {
-		list_destroy(g_ser_res_list);
-		g_ser_res_list = NULL;
+	FREE_NULL_LIST(name_list);
+	FREE_NULL_LIST(cluster_list);
+
+	if (exit_code) {
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
-	if (!list_count(ser_res_list)) {
+	if (!list_count(res_list)) {
 		printf(" Nothing new added.\n");
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
-	if (ser_res_str) {
+	if (res_str) {
 		char *tmp_str;
-		switch (ser_res->type) {
+		switch (res->type) {
 		case SLURMDB_RESOURCE_LICENSE:
 			tmp_str = "License";
 			break;
 		default:
 			tmp_str = "Unknown";
 		}
-		printf(" Adding system resource(s)\n%s", ser_res_str);
+		printf(" Adding Resource(s)\n%s", res_str);
 		printf(" Settings\n");
-		printf("  Description    = %s\n", ser_res->description);
-		printf("  Manager        = %s\n", ser_res->manager);
-		printf("  Server         = %s\n", ser_res->server);
-		printf("  Count          = %u\n", ser_res->count);
+		if (res->name)
+			printf("  Name           = %s\n", res->name);
+		if (res->server)
+			printf("  Server         = %s\n", res->server);
+		if (res->description)
+			printf("  Description    = %s\n", res->description);
+		if (res->manager)
+			printf("  Manager        = %s\n", res->manager);
+		if (res->count != NO_VAL)
+			printf("  Count          = %u\n", res->count);
 		printf("  Type           = %s\n", tmp_str);
 
-		xfree(ser_res_str);
+		xfree(res_str);
 	}
 
-	if (list_count(ser_res_list)) {
+	if (list_count(res_list)) {
 		notice_thread_init();
-		rc = acct_storage_g_add_ser_res(db_conn, my_uid,
-						ser_res_list);
+		rc = acct_storage_g_add_res(db_conn, my_uid, res_list);
 		notice_thread_fini();
 	} else
 		goto end_it;
@@ -752,12 +813,11 @@ extern int sacctmgr_add_ser_res(int argc, char *argv[])
 	}
 
 end_it:
-	slurmdb_destroy_ser_res_cond(object_ptr);
-	slurmdb_destroy_ser_res_rec(start_ser_res);
+	FREE_NULL_LIST(res_list);
+	slurmdb_destroy_res_rec(start_res);
 	return rc;
 }
 
-extern int sacctmgr_list_ser_res(int argc, char *argv[])
 
 {
 	int rc = SLURM_SUCCESS;

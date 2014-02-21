@@ -123,12 +123,6 @@ extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clus_res(void *db_conn, uint32_t uid,
-				       List clus_res_list)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list)
 {
@@ -147,8 +141,8 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_ser_res(void *db_conn, uint32_t uid,
-				      List ser_res_list)
+extern int acct_storage_p_add_res(void *db_conn, uint32_t uid,
+				  List res_list)
 {
 	return SLURM_SUCCESS;
 }

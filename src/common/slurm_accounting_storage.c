@@ -80,16 +80,14 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_user_cond_t *user_cond);
 	int  (*add_accts)          (void *db_conn, uint32_t uid,
 				    List acct_list);
-	int  (*add_clus_res)       (void *db_conn, uint32_t uid,
-				    List clus_res_list);
 	int  (*add_clusters)       (void *db_conn, uint32_t uid,
 				    List cluster_list);
 	int  (*add_associations)   (void *db_conn, uint32_t uid,
 				    List association_list);
 	int  (*add_qos)            (void *db_conn, uint32_t uid,
 				    List qos_list);
-	int  (*add_ser_res)        (void *db_conn, uint32_t uid,
-				    List ser_res_list);
+	int  (*add_res)            (void *db_conn, uint32_t uid,
+				    List res_list);
 	int  (*add_wckeys)         (void *db_conn, uint32_t uid,
 				    List wckey_list);
 	int  (*add_reservation)    (void *db_conn,
@@ -219,11 +217,10 @@ static const char *syms[] = {
 	"acct_storage_p_add_users",
 	"acct_storage_p_add_coord",
 	"acct_storage_p_add_accts",
-	"acct_storage_p_add_clus_res",
 	"acct_storage_p_add_clusters",
 	"acct_storage_p_add_associations",
 	"acct_storage_p_add_qos",
-	"acct_storage_p_add_ser_res",
+	"acct_storage_p_add_res",
 	"acct_storage_p_add_wckeys",
 	"acct_storage_p_add_reservation",
 	"acct_storage_p_modify_users",
@@ -387,14 +384,6 @@ extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 	return (*(ops.add_accts))(db_conn, uid, acct_list);
 }
 
-extern int acct_storage_g_add_clus_res(void *db_conn, uint32_t uid,
-				       List clus_res_list)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return SLURM_ERROR;
-	return (*(ops.add_clus_res))(db_conn, uid, clus_res_list);
-}
-
 extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list)
 {
@@ -419,12 +408,12 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 	return (*(ops.add_qos))(db_conn, uid, qos_list);
 }
 
-extern int acct_storage_g_add_ser_res(void *db_conn, uint32_t uid,
-				      List ser_res_list)
+extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,
+				  List res_list)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(ops.add_ser_res))(db_conn, uid, ser_res_list);
+	return (*(ops.add_res))(db_conn, uid, res_list);
 }
 extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 				     List wckey_list)

@@ -559,27 +559,6 @@ extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_add_clus_res(void *db_conn, uint32_t uid,
-				       List clus_res_list)
-{
-	slurmdbd_msg_t req;
-	dbd_list_msg_t get_msg;
-	int rc, resp_code;
-
-	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
-	get_msg.my_list = clus_res_list;
-
-	req.msg_type = DBD_ADD_CLUS_RES;
-	req.data = &get_msg;
-	rc = slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION,
-					     &req, &resp_code);
-
-	if (resp_code != SLURM_SUCCESS)
-		rc = resp_code;
-
-	return rc;
-}
-
 extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list)
 {
@@ -644,17 +623,17 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_add_ser_res(void *db_conn, uint32_t uid,
-				      List ser_res_list)
+extern int acct_storage_p_add_res(void *db_conn, uint32_t uid,
+				      List res_list)
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
 	int rc, resp_code;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
-	get_msg.my_list = ser_res_list;
+	get_msg.my_list = res_list;
 
-	req.msg_type = DBD_ADD_SER_RES;
+	req.msg_type = DBD_ADD_RES;
 	req.data = &get_msg;
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION,
 					     &req, &resp_code);

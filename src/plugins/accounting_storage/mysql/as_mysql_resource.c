@@ -359,310 +359,228 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 	return rc;
 }
 
-extern List as_mysql_remove_ser_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				    slurmdb_ser_res_cond_t *ser_res_cond)
+static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
+		    char *user_name, int *added, ListIterator itr_in)
 {
-	List ser_res_list = NULL;
-	List ret_list = NULL;
-	ListIterator itr = NULL;
-	slurmdb_ser_res_rec_t *object = NULL;
-	char *cond_char = NULL;
-	char *user_name = NULL;
-	int rc = SLURM_SUCCESS;
-	int added = 0;
+	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
+		*tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *name = NULL;
-
-	if (!ser_res_cond || (!ser_res_cond->name_list)) {
-		error("we need something to change");
-		return NULL;
-	}
-
-	if (check_connection(mysql_conn) != SLURM_SUCCESS)
-		return NULL;
-	/* force to only do non-deleted server resources */
-	ser_res_cond->with_deleted = 0;
-	ser_res_list = as_mysql_get_ser_res(mysql_conn, uid,
-					    ser_res_cond);
-	if (ser_res_list
-	    && list_count(ser_res_list)) {
-		ret_list = list_create(slurm_destroy_char);
-		itr = list_iterator_create(ser_res_list);
-		while ((object = list_next(itr))) {
-			name = xstrdup(object->name);
-			list_append(ret_list, name);
-			if (object->id) {
-				xstrfmtcat(cond_char, " (id=%u)",
-					   object->id);
-			}
-			user_name = uid_to_string((uid_t) uid);
-			rc = remove_common(mysql_conn, DBD_REMOVE_SER_RES,
-					   now, user_name, ser_res_table,
-					   cond_char, NULL,
-					   mysql_conn->cluster_name,
-					   NULL, NULL);
-			if (rc == SLURM_ERROR) {
-				error("Couldn't remove server resource");
-				list_destroy(ser_res_list);
-				ser_res_list = NULL;
-				list_destroy(ret_list);
-				ret_list = NULL;
-				goto end_it;
-			} else {
-				if (addto_update_list(mysql_conn->update_list,
-						      SLURMDB_REMOVE_SER_RES,
-						      object) == SLURM_SUCCESS) {
-					list_remove(itr);
-					added++;
-
-				}
-			}
-		}
-		list_iterator_destroy(itr);
-		if (!added) {
-			reset_mysql_conn(mysql_conn);
-			if (ret_list) {
-				list_destroy(ret_list);
-				ret_list = NULL;
-			}
-		}
-		list_destroy(ser_res_list);
-		ser_res_list = NULL;
-
-	} else {
-		errno = SLURM_NO_CHANGE_IN_DATA;
-		error("Nothing to change");
-		return NULL;
-	}
-
-end_it:
-	xfree(cond_char);
-	xfree(user_name);
-	return ret_list;
-}
-
-extern List as_mysql_modify_ser_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				    slurmdb_ser_res_cond_t *ser_res_cond,
-				    slurmdb_ser_res_rec_t *ser_res)
-{
-	List ser_res_list = NULL;
-	List ret_list = NULL;
-	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
-	slurmdb_ser_res_rec_t *object = NULL;
-	char *vals = NULL;
-	time_t now = time(NULL);
-	char *user_name = NULL;
-	char *cond_char = NULL;
-	char *name = NULL;
-	int added = 0;
-
-	if (!ser_res_cond || !ser_res) {
-		error("we need something to change");
-		return NULL;
-	}
-
-	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
-		return NULL;
-	}
-
-	/* force to only do non-deleted server resources */
-	ser_res_cond->with_deleted = 0;
-	ser_res_list = as_mysql_get_ser_res(mysql_conn, uid,
-					    ser_res_cond);
-	if (ser_res_list
-	    && list_count(ser_res_list)) {
-		ret_list = list_create(slurm_destroy_char);
-		itr = list_iterator_create(ser_res_list);
-		while ((object = list_next(itr))) {
-			slurmdb_ser_res_rec_t *ser_res_rec =
-				xmalloc(sizeof(slurmdb_ser_res_rec_t));
-			slurmdb_init_ser_res_rec(ser_res_rec, 0);
-			name = xstrdup(object->name);
-			list_append(ret_list, name);
-			if (object->id) {
-				xstrfmtcat(cond_char, " (id=%u)",
-					   object->id);
-			}
-			if (ser_res->name) {
-				xstrfmtcat(vals, ", name='%s'", ser_res->name);
-				ser_res_rec->name = xstrdup(ser_res->name);
-			} else {
-				ser_res_rec->name = xstrdup(object->name);
-			}
-			if (ser_res->description) {
-				xstrfmtcat(vals, ", description='%s'",
-					   ser_res->description);
-				ser_res_rec->description =
-					xstrdup(ser_res->description);
-			} else {
-				ser_res_rec->description =
-					xstrdup(object->description);
-			}
-			if (ser_res->manager) {
-				xstrfmtcat(vals, ", manager='%s'",
-					   ser_res->manager);
-				ser_res_rec->manager =
-					xstrdup(ser_res->manager);
-			} else {
-				ser_res_rec->manager = xstrdup(object->manager);
-			}
-			if (ser_res->server) {
-				xstrfmtcat(vals, ", server='%s'",
-					   ser_res->server);
-				ser_res_rec->server = xstrdup(ser_res->server);
-			} else {
-				ser_res_rec->server = xstrdup(object->server);
-			}
-			if (ser_res->count != NO_VAL) {
-				xstrfmtcat(vals, ", count=%u", ser_res->count);
-				ser_res_rec->count = ser_res->count;
-			} else {
-				ser_res_rec->count = object->count;
-			}
-			if (ser_res->type != NO_VAL) {
-				xstrfmtcat(vals, ", type=%u", ser_res->type);
-				ser_res_rec->type = ser_res->type;
-			} else {
-				ser_res_rec->type = object->type;
-			}
-			user_name = uid_to_string((uid_t) uid);
-			rc = modify_common(mysql_conn, DBD_MODIFY_SER_RES,
-					   now, user_name, ser_res_table,
-					   cond_char, vals,
-					   mysql_conn->cluster_name);
-			if (rc == SLURM_ERROR) {
-				error("Couldn't modify server resource");
-				list_destroy(ser_res_list);
-				ser_res_list = NULL;
-				list_destroy(ret_list);
-				ret_list = NULL;
-				goto end_it;
-			} else {
-				if (addto_update_list(mysql_conn->update_list,
-						      SLURMDB_MODIFY_SER_RES,
-						      ser_res_rec) == SLURM_SUCCESS){
-					added++;
-				}
-			}
-		}
-		list_iterator_destroy(itr);
-		if (!added) {
-			reset_mysql_conn(mysql_conn);
-			if (ret_list) {
-				list_destroy(ret_list);
-				ret_list = NULL;
-			}
-		}
-		list_destroy(ser_res_list);
-		ser_res_list = NULL;
-
-	} else {
-		errno = SLURM_NO_CHANGE_IN_DATA;
-		error("Nothing to change");
-		return NULL;
-	}
-
-end_it:
-	xfree(vals);
-	xfree(cond_char);
-	xfree(user_name);
-	return ret_list;
-}
-
-extern int as_mysql_add_clus_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				 List clus_res_list)
-{
-	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
-	slurmdb_clus_res_rec_t *object = NULL;
-	char *cols = NULL, *vals = NULL, *extra = NULL,
-		*query = NULL, *tmp_extra = NULL;
-	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
-	int added = 0;
-	List ser_res_list = NULL;
+	int rc = SLURM_SUCCESS;
 
-	if (check_connection(mysql_conn) != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
-	ser_res_list = list_create(slurmdb_destroy_ser_res_rec);
-	user_name = uid_to_string((uid_t) uid);
-	itr = list_iterator_create(clus_res_list);
+	if (!object->name || !object->name[0]) {
+		error("We need a resource name to add.");
+		return SLURM_ERROR;
+	}
+	if (!object->server || !object->server[0]) {
+		error("We need a resource server to add.");
+		return SLURM_ERROR;
+	}
+
+	xstrcat(cols, "creation_time, mod_time, name, server");
+	xstrfmtcat(vals, "%ld, %ld, '%s', '%s'", now, now,
+		   object->name, object->server);
+	xstrfmtcat(extra, ", mod_time=%ld", now);
+
+	_setup_res_limits(object, &cols, &vals, &extra, 1, NULL);
+
+	xstrfmtcat(query,
+		   "insert into %s (%s) values (%s) "
+		   "on duplicate key update deleted=0, "
+		   "id=LAST_INSERT_ID(id)%s;",
+		   res_table, cols, vals, extra);
+
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	object->id = mysql_db_insert_ret_id(mysql_conn, query);
+	xfree(query);
+	if (!object->id) {
+		error("Couldn't add server resource %s", object->name);
+		(*added) = 0;
+		xfree(cols);
+		xfree(extra);
+		xfree(vals);
+		return SLURM_ERROR;
+	}
+
+	affect_rows = last_affected_rows(mysql_conn);
+
+	if (!affect_rows) {
+		xfree(cols);
+		xfree(extra);
+		xfree(vals);
+		return SLURM_SUCCESS;
+	}
+
+	/* we always have a ', ' as the first 2 chars */
+	tmp_extra = slurm_add_slash_to_quotes(extra+2);
+
+	xstrfmtcat(query,
+		   "insert into %s "
+		   "(timestamp, action, name, actor, info) "
+		   "values (%ld, %u, '%u', '%s', '%s');",
+		   txn_table,
+		   now, DBD_ADD_RES, object->id, user_name,
+		   tmp_extra);
+
+	xfree(tmp_extra);
+	xfree(cols);
+	xfree(extra);
+	xfree(vals);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	if (rc != SLURM_SUCCESS)
+		error("Couldn't add txn");
+	else
+		(*added)++;
+
+	return rc;
+}
+
+static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
+			 char *user_name, int *added)
+{
+	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
+		*tmp_extra = NULL, *name = NULL;
+	time_t now = time(NULL);
+	int rc = SLURM_SUCCESS;
+	slurmdb_clus_res_rec_t *object;
+	ListIterator itr;
+
+	if (res->id == NO_VAL) {
+		error("We need a server resource name to add to.");
+		return SLURM_ERROR;
+	} else if (!res->clus_res_list || !list_count(res->clus_res_list)) {
+		error("No clusters given to add to %s@%s",
+		      res->name, res->server);
+		return SLURM_ERROR;
+	}
+	xstrcat(cols, "creation_time, mod_time, "
+		"res_id, cluster, percent_allowed");
+	xstrfmtcat(vals, "%ld, %ld, '%u'", now, now, res->id);
+
+	itr = list_iterator_create(res->clus_res_list);
 	while ((object = list_next(itr))) {
-		if(!object->cluster){
-			object->cluster = xstrdup(mysql_conn->cluster_name);
-		}
-		xstrcat(cols, "creation_time, mod_time, id, percent_allowed");
-		xstrfmtcat(vals, "%ld, %ld, %u, %u", now, now,
-			   object->res_ptr->id,
-			   object->percent_allowed);
-		xstrfmtcat(extra, ", mod_time=%ld", now);
+		xfree(extra);
+		xstrfmtcat(extra, ", mod_time=%ld, percent_allowed=%u",
+			   now, object->percent_allowed);
 		xstrfmtcat(query,
-			   "insert into %s_%s (%s) values (%s) "
-			   "on duplicate key update deleted=0, "
-			   "percent_allowed=%u, mod_time=%ld;",
-			   object->cluster, clus_res_table, cols, vals,
-			   object->percent_allowed, now);
+			   "insert into %s (%s) values (%s, '%s', %u) "
+			   "on duplicate key update deleted=0%s;",
+			   clus_res_table, cols, vals,
+			   object->cluster, object->percent_allowed, extra);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn, query);
-		info("rc from add cluster resource query is %u", rc);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
-			error("Couldn't add cluster resource %s",
-			      object->res_ptr->name);
+			error("Couldn't add cluster %s to resource %s@%s",
+			      object->cluster, res->name, res->server);
+			(*added) = 0;
 			xfree(extra);
-			xfree(cols);
-			xfree(vals);
-			added=0;
-			break;
-		}
-
-		affect_rows = last_affected_rows(mysql_conn);
-
-		if (!affect_rows) {
-			debug2("nothing changed %d", affect_rows);
-			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			continue;
 		}
 
-		xfree(cols);
-		xfree(vals);
-
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = slurm_add_slash_to_quotes(extra+2);
+		name = xstrdup_printf("%u@%s", res->id, object->cluster);
+
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%ld, %u, '%s', '%s', '%s');",
-			   txn_table, now, DBD_ADD_CLUS_RES,
-			   object->res_ptr->name, user_name, tmp_extra);
+			   txn_table,
+			   now, DBD_ADD_RES, name, user_name, tmp_extra);
+		xfree(name);
 		xfree(tmp_extra);
 		xfree(extra);
-		debug4("%d(%s:%d) query\n%s",
+		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
-		if (rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS)
 			error("Couldn't add txn");
-		} else {
+		else {
+			slurmdb_res_rec_t *res_rec =
+				xmalloc(sizeof(slurmdb_res_rec_t));
+			slurmdb_init_res_rec(res_rec, 0);
+
+			res_rec->count = res->count;
+			res_rec->id = res->id;
+			res_rec->name = xstrdup(res->name);
+			res_rec->server = xstrdup(res->server);
+			res_rec->type = res->type;
+
+			res_rec->clus_res_rec =
+				xmalloc(sizeof(slurmdb_clus_res_rec_t));
+			res_rec->clus_res_rec->cluster =
+				xstrdup(object->cluster);
+			res_rec->clus_res_rec->percent_allowed =
+				object->percent_allowed;
+
 			if (addto_update_list(mysql_conn->update_list,
-					      SLURMDB_ADD_CLUS_RES,
-					      object) ==  SLURM_SUCCESS) {
-				list_remove(itr);
-				added++;
-			}
+					      SLURMDB_ADD_RES,
+					      res_rec) != SLURM_SUCCESS)
+				slurmdb_destroy_res_rec(res_rec);
+			else
+				(*added)++;
 		}
 	}
+	xfree(cols);
+	xfree(vals);
 
+	return rc;
+}
+
+extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
+			    List res_list)
+{
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	slurmdb_res_rec_t *object = NULL;
+	char *user_name = NULL;
+	int added = 0;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
+	user_name = uid_to_string((uid_t) uid);
+	itr = list_iterator_create(res_list);
+	while ((object = list_next(itr))) {
+		if (object->id == NO_VAL) {
+			if (!object->name || !object->name[0]) {
+				error("We need a server resource name to add.");
+				rc = SLURM_ERROR;
+				continue;
+			}
+			if ((rc = _add_res(mysql_conn, object,
+					   user_name, &added, itr))
+			    != SLURM_SUCCESS)
+				break;
+		} else {
+			if (_fill_in_res_rec(mysql_conn, object) !=
+			    SLURM_SUCCESS) {
+				rc = SLURM_ERROR;
+				error("Unknown id %u", object->id);
+				continue;
+			}
+		}
+
+		if (object->clus_res_list
+		    && list_count(object->clus_res_list)) {
+			if ((rc = _add_clus_res(mysql_conn, object,
+						user_name, &added))
+			    != SLURM_SUCCESS)
+				break;
+		}
+	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
-	list_destroy(ser_res_list);
+
 	if (!added)
 		reset_mysql_conn(mysql_conn);
 
