@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 14.03
-29 August 2013
+21 February 2014
 
 
 IMPORTANT NOTE:
@@ -25,13 +25,15 @@ SLURM will result in loss of state information.
 
 HIGHLIGHTS
 ==========
+ -- Added support for native Slurm operation on Cray systems (without ALPS).
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
     DenyAccounts and DenyQOS to provide greater control over use.
  -- Added the ability to perform load based scheduling. Allocating resources to
     jobs on the nodes with the largest number if idle CPUs.
+ -- Added support for reserving cores on a compute node for system services
+    (core specialization)
  -- Add mechanism for job_submit plugin to generate error message for srun,
-    salloc or sbatch to stderr. New argument added to job_submit function in
-    the plugin.
+    salloc or sbatch to stderr.
  -- Support for Postgres database has long since been out of date and
     problimatic, so it has been removed entirely.  If you would like to
     use it the code still exists in <= 2.6, but will not be included in
@@ -47,9 +49,19 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- Added AuthInfo configuration parameter to specify port used by
+    authentication plugin.
  -- Added CoreSpecPlugin configuration parameter and core specialization plugin
     infrastructure.
- -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
+ -- Added JobAcctGatherParams configuration parameter.
+ -- Added JobContainerType configuration parameter and plugin infrastructure.
+ -- Added FairShareDampeningFactor configuration parameter to offer a greater
+    priority range based upon utilization.
+ -- Added LogTimeFormat configuration parameter to control format of the
+    timestamp in log files.
+ -- Added PrologFlags configuration parameter to control when the Prolog is run.
+ -- Added SlurmdPlugstack configuration parameter for generic slurmd daemon
+    plugin mechanism.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
     DenyAccounts and DenyQOS to provide greater control over use.
  -- SelectType: select/cray has been renamed select/alps.
@@ -58,16 +70,10 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- In "SchedulerParameters", change default max_job_bf value from 50 to 100.
  -- Added "SchedulerParameters" option of "partition_job_depth" to limit
     scheduling logic depth by partition.
- -- Added "JobAcctGatherParams" configuration parameter. Value of "NoShare"
-    disables accounting for shared memory.
- -- Added FairShareDampeningFactor configuration parameter to offer a greater
-    priority range based upon utilization.
  -- Change MaxArraySize from 16-bit to 32-bit field.
  -- Added fields to "scontrol show job" output: boards_per_node,
     sockets_per_board, ntasks_per_node, ntasks_per_board, ntasks_per_socket,
     ntasks_per_core, and nice.
- -- Added new configuration parameter of AuthInfo to specify port used by
-    authentication plugin.
  -- gres.conf - Add "NodeName" specification so that a single gres.conf file
     can be used for a heterogeneous cluster.
 
@@ -89,7 +95,7 @@ COMMAND CHANGES (see man pages for details)
     (%o and %Z respectively).
  -- Add stdin/out/err to sview job output.
  -- Added a new option to the scontrol command to view licenses that are configured
-    in use and avalable. 'scontrol show licenses'.
+    in use and available. 'scontrol show licenses'.
  -- Permit jobs in finished state to be requeued.
  -- Added a new option to scontrol to put a requeued job on hold. A requeued
     job can be put in a new special state called SPECIAL_EXIT indicating
@@ -111,42 +117,71 @@ OTHER CHANGES
 
 API CHANGES
 ===========
+ -- Added "state" argument to slurm_requeue function.
 
 Changed members of the following structs
 ========================================
- -- partition_info, added: allow_accounts, allow_qos, deny_accounts,
-    deny_groups and deny_qos.
  -- Struct job_info / slurm_job_info_t: Changed exc_node_inx, node_inx, and
-    req_node_inx from type int to type int32_t
- -- Struct job_info / slurm_job_info_t: Changed array_task_id from type
+    req_node_inx from type int to type int32_t; Changed array_task_id from type
     uint16_t to type uint32_t
- -- job_step_info_t: Changed node_inx from type int to type int32_t
+ -- job_step_info_t: Changed node_inx from type int to type int32_t; Changed
+    array_task_id from type uint16_t to type uint32_t; Changed node_inx from
+    int to int32_t
  -- Struct partition_info / partition_info_t: Changed node_inx from type int
     to type int32_t
  -- block_job_info_t: Changed cnode_inx from type int to type int32_t
  -- block_info_t: Changed ionode_inx and mp_inx from type int to type int32_t
  -- Struct reserve_info / reserve_info_t: Changed node_inx from type int to
     type int32_t
-
+ -- Struct slurm_ctl_conf / slurm_ctl_conf_t: Changed max_array_sz from uint16_t
+    to uint32_t.
 
 Added the following struct definitions
 ======================================
- -- struct job_info / slurm_job_info_t: Added std_err, std_in and std_out.
+ -- Struct job_info / slurm_job_info_t: Added std_err, std_in and std_out.
  -- Struct job_info / slurm_job_info_t: Added core_spec
- -- struct job_descriptorjob_desc_msg_t: Added core_spec
+ -- struct job_descriptor / job_desc_msg_t: Added core_spec, warn_flags
+ -- Struct partition_info / partition_info_t: Added allow_accounts, allow_qos,
+    deny_accounts, deny_groups and deny_qos.
+ -- struct slurm_step_launch_params_t: Added partition (for Prolog environment
+    variable)
+ -- Struct resource_allocation_response_msg: Added partition (for Prolog
+    environment variable)
+ -- Struct slurm_ctl_conf / slurm_ctl_conf_t: Added acct_gather_conf, authinfo.
+    core_spec_plugin, ext_sensors_conf, fs_dampening_factor,
+    job_acct_gather_params, job_container_plugin, log_fmt, prolog_flags and
+    slurmd_plugstack.
+ -- Added license data structures: slurm_license_info and license_info_msg.
 
 Changed the following enums and #defines
 ========================================
  -- Add new job_state of JOB_BOOT_FAIL for job terminations due to failure to
     boot it's allocated nodes or BlueGene block.
+ -- Added set of job state change flags: JOB_REQUEUE, JOB_REQUEUE_HOLD,
+    JOB_SPECIAL_EXIT.
+ -- Added new job_state_reason values: WAIT_BLOCK_MAX_ERR, WAIT_BLOCK_D_ACTION,
+    WAIT_CLEANING and WAIT_PROLOG.
+ -- Added new select_jobdata_type values: SELECT_JOBDATA_CLEANING and
+    SELECT_JOBDATA_NETWORK.
+ -- Added new node state values: NODE_STATE_NET, NODE_STATE_RES and
+    NODE_STATE_UNDRAIN.
+ -- Added new flags for SelectTypeParameters: CR_OTHER_CONS_RES, CR_NHC_STEP_NO,
+    CR_LLN, and CR_NHC_NO.
+ -- Added new PriorityFlags value of PRIORITY_FLAGS_DEPTH_OBLIVIOUS
+ -- Added new partition flags: PART_FLAG_LLN and PART_FLAG_LLN_CLR
+ -- Added DebugFlags: DEBUG_FLAG_JOB_CONT and DEBUG_FLAG_TASK
+ -- Removed DebugFlags: DEBUG_FLAG_THREADID
+ -- Added PrologFlag: PROLOG_FLAG_ALLOC
+ -- Added LogTimeFormat options: LOG_FMT_ISO8601_MS, LOG_FMT_ISO8601,
+    LOG_FMT_RFC5424_MS, LOG_FMT_RFC5424, LOG_FMT_CLOCK, LOG_FMT_SHORT and
+    LOG_FMT_THREAD_ID
 
 Added the following API's
 =========================
-
--- API for retrieving license information.
-
-extern int slurm_load_licenses PARAMS((license_info_msg_t **));
-extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
+ -- Added functions for retrieving license information: slurm_load_licenses and
+    slurm_free_license_info_msg.
+ -- Added functions to get specific job information: slurm_get_job_stderr,
+    slurm_get_job_stdin and slurm_get_job_stdout.
 
 Change the following API's
 ===========================

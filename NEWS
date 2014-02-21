@@ -84,7 +84,7 @@ documents those changes that are of interest to users and admins.
  -- mpirun-mic - Major re-write of the command wrapper for Xeon Phi use.
  -- Add new configuration parameter of AuthInfo to specify port used by
     authentication plugin.
- -- Fixed conditional rpm compiling.
+ -- Fixed conditional RPM compiling.
  -- Corrected slurmstepd ident name when logging to syslog.
  -- Fixed sh5util loop when there are no node-step files.
  -- Add SLURM_CLUSTER_NAME to environment variables passed to PrologSlurmctld,
