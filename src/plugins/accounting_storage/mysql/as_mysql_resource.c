@@ -758,119 +758,146 @@ empty:
 		if (row[SER_RES_REQ_DESC] && row[SER_RES_REQ_DESC][0])
 			ser_res->description = xstrdup(row[SER_RES_REQ_DESC]);
 
+extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
+				slurmdb_res_cond_t *res_cond)
+{
+	List ret_list = NULL;
+	char *name_char = NULL, *clus_char = NULL;
+	char *user_name = NULL;
+	char *query = NULL, *extra = NULL, *clus_extra = NULL;
+	time_t now = time(NULL);
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	int query_clusters;
+	bool res_added = 0;
+	int last_res = -1;
 		ser_res->id = slurm_atoul(row[SER_RES_REQ_ID]);
 
-		if (row[SER_RES_REQ_NAME] && row[SER_RES_REQ_NAME][0])
-			ser_res->name = xstrdup(row[SER_RES_REQ_NAME]);
+	if (!res_cond) {
+		error("we need something to remove");
+		return NULL;
+	}
 
-		if (row[SER_RES_REQ_MANAGER] && row[SER_RES_REQ_MANAGER][0])
-			ser_res->manager = xstrdup(row[SER_RES_REQ_MANAGER]);
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
 
-		if (row[SER_RES_REQ_SERVER] && row[SER_RES_REQ_SERVER][0])
-			ser_res->server = xstrdup(row[SER_RES_REQ_SERVER]);
+	/* force to only do non-deleted server resources */
+	res_cond->with_deleted = 0;
 
-		if (row[SER_RES_REQ_COUNT])
-			ser_res->count =
-				slurm_atoul(row[SER_RES_REQ_COUNT]);
-		if (row[SER_RES_REQ_TYPE])
-			ser_res->type =
-				slurm_atoul(row[SER_RES_REQ_TYPE]);
+	_setup_res_cond(res_cond, &extra);
+	query_clusters = _setup_clus_res_cond(res_cond, &clus_extra);
 
-		list_append(ser_res_list, ser_res);
+	query = xstrdup_printf("select id, name, server, cluster "
+			       "from %s as t1 left outer join "
+			       "%s as t2 on (res_id = id) %s && %s;",
+			       res_table, clus_res_table, extra, clus_extra);
+	xfree(clus_extra);
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+	xfree(query);
+
+	if (!mysql_num_rows(result)) {
+		mysql_free_result(result);
+		query_clusters = 0;
+		query = xstrdup_printf("select id, name, server "
+				       "from %s as t1 %s;",
+				       res_table, extra);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			xfree(extra);
+			return NULL;
+		}
+		xfree(query);
+	}
+	xfree(extra);
+
+	name_char = NULL;
+	ret_list = list_create(slurm_destroy_char);
+	while ((row = mysql_fetch_row(result))) {
+		char *name = NULL;
+		int curr_res = atoi(row[0]);
+
+		if (last_res != curr_res) {
+			res_added = 0;
+			last_res = curr_res;
+		}
+
+		if (query_clusters) {
+			xstrfmtcat(clus_char,
+				   "%s(res_id='%s' && cluster='%s')",
+				   clus_char ? " || " : "", row[0], row[3]);
+		} else {
+			if (!res_added) {
+				name = xstrdup_printf("%s@%s", row[1], row[2]);
+				list_append(ret_list, name);
+				res_added = 1;
+				name = NULL;
+			}
+			xstrfmtcat(name_char, "%sid='%s'",
+				   name_char ? " || " : "", row[0]);
+			xstrfmtcat(clus_char, "%sres_id='%s'",
+				   clus_char ? " || " : "", row[0]);
+		}
+		if (row[3] && row[3][0]) {
+			slurmdb_res_rec_t *res_rec =
+				xmalloc(sizeof(slurmdb_res_rec_t));
+			slurmdb_init_res_rec(res_rec, 0);
+			res_rec->id = curr_res;
+			res_rec->clus_res_rec =
+				xmalloc(sizeof(slurmdb_clus_res_rec_t));
+			res_rec->clus_res_rec->cluster = xstrdup(row[3]);
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_REMOVE_RES, res_rec)
+			    != SLURM_SUCCESS)
+				slurmdb_destroy_res_rec(res_rec);
+
+			name = xstrdup_printf("Cluster - %s\t- %s@%s",
+					      row[3], row[1], row[2]);
+		} else if (!res_added)
+			name = xstrdup_printf("%s@%s", row[1], row[2]);
+
+		if (name)
+			list_append(ret_list, name);
 	}
 	mysql_free_result(result);
 
-	xfree(tmp);
-	xfree(extra);
-	if (ser_res_list
-	    && list_count(ser_res_list)) {
-		if (clus_res_cond->with_deleted)
-			xstrcat(extra, " where (deleted=0 || deleted=1)");
-		else
-			xstrcat(extra, " where deleted=0");
-		i=0;
-		xstrfmtcat(tmp, "%s", clus_res_req_inx[i]);
-		for(i=1; i<CLUS_RES_REQ_NUMBER; i++) {
-			xstrfmtcat(tmp, ", %s", clus_res_req_inx[i]);
-		}
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(ser_res_list );
-		while ((ser_res = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id='%u'", ser_res->id);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-		clus_res_list = list_create(slurmdb_destroy_clus_res_rec);
-		itr1 = list_iterator_create(clus_res_cond->cluster_list);
-		while ((cluster_name = list_next(itr1))) {
-			query = xstrdup_printf("select %s from %s_%s%s",
-					       tmp, cluster_name, clus_res_table, extra);
-
-			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, THIS_FILE, __LINE__, query);
-			if (!(result = mysql_db_query_ret(
-				      mysql_conn, query, 0))) {
-				xfree(query);
-				if (created_clus_res_cond)
-					slurmdb_destroy_clus_res_cond(
-						clus_res_cond);
-				list_destroy(clus_res_list);
-				return NULL;
-			}
-			xfree(query);
-
-			while ((row = mysql_fetch_row(result))) {
-				slurmdb_clus_res_rec_t *clus_res =
-					xmalloc(sizeof(slurmdb_clus_res_rec_t));
-				slurmdb_init_clus_res_rec(clus_res, 0);
-				if (row[CLUS_RES_REQ_ALLOWED] &&
-				    row[CLUS_RES_REQ_ALLOWED][0])
-					clus_res->percent_allowed =
-						slurm_atoul(row[
-								    CLUS_RES_REQ_ALLOWED]);
-				record_id = slurm_atoul(row[CLUS_RES_REQ_ID]);
-				itr = list_iterator_create(ser_res_list );
-				while ((ser_res = list_next(itr))) {
-					if (record_id != ser_res->id)
-						continue;
-					clus_res->res_ptr =
-						xmalloc(sizeof(
-								slurmdb_ser_res_rec_t));
-					slurmdb_init_ser_res_rec(
-						clus_res->res_ptr, 0);
-					clus_res->res_ptr->description =
-						xstrdup(ser_res->description);
-					clus_res->res_ptr->id = ser_res->id;
-					clus_res->res_ptr->name =
-						xstrdup(ser_res->name);
-					clus_res->res_ptr->count =
-						ser_res->count;
-					clus_res->res_ptr->type =
-						ser_res->type;
-					clus_res->res_ptr->manager =
-						xstrdup(ser_res->manager);
-					clus_res->res_ptr->server =
-						xstrdup(ser_res->server);
-					clus_res->cluster =
-						xstrdup(cluster_name);
-					list_append(clus_res_list, clus_res);
-				}
-				list_iterator_destroy(itr);
-			}
-			mysql_free_result(result);
-		}
-		xfree(tmp);
-		xfree(extra);
-		list_iterator_destroy(itr1);
+	if (!list_count(ret_list)) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
+		xfree(query);
+		xfree(name_char);
+		xfree(clus_extra);
+		return ret_list;
 	}
-	if (created_clus_res_cond)
-		slurmdb_destroy_clus_res_cond(clus_res_cond);
-	list_destroy(ser_res_list);
-	return clus_res_list;
+
+	xfree(query);
+
+	user_name = uid_to_string((uid_t) uid);
+	if (query_clusters) {
+		remove_common(mysql_conn, DBD_REMOVE_CLUS_RES,
+			      now, user_name, clus_res_table,
+			      clus_char, NULL, NULL, NULL, NULL);
+	} else {
+		remove_common(mysql_conn, DBD_REMOVE_CLUS_RES,
+			      now, user_name, clus_res_table,
+			      clus_char, NULL, NULL, NULL, NULL);
+		remove_common(mysql_conn, DBD_REMOVE_RES,
+			      now, user_name, res_table,
+			      name_char, NULL, NULL, NULL, NULL);
+	}
+
+	xfree(clus_char);
+	xfree(name_char);
+	xfree(user_name);
+
+	return ret_list;
 }
 
 extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,

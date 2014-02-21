@@ -2431,13 +2431,6 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_remove_accts(mysql_conn, uid, acct_cond);
 }
 
-extern List acct_storage_p_remove_clus_res(
-	mysql_conn_t *mysql_conn, uint32_t uid,
-	slurmdb_clus_res_cond_t *clus_res_cond)
-{
-	return as_mysql_remove_clus_res(mysql_conn, uid, clus_res_cond);
-}
-
 extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 					   uint32_t uid,
 					   slurmdb_cluster_cond_t *cluster_cond)
@@ -2458,11 +2451,11 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_remove_qos(mysql_conn, uid, qos_cond);
 }
 
-extern List acct_storage_p_remove_ser_res(mysql_conn_t *mysql_conn,
+extern List acct_storage_p_remove_res(mysql_conn_t *mysql_conn,
 					  uint32_t uid,
-					  slurmdb_ser_res_cond_t *ser_res_cond)
+					  slurmdb_res_cond_t *res_cond)
 {
-	return as_mysql_remove_ser_res(mysql_conn, uid, ser_res_cond);
+	return as_mysql_remove_res(mysql_conn, uid, res_cond);
 }
 
 extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,

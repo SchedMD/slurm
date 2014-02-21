@@ -433,6 +433,12 @@ extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 	return NULL;
 }
 
+extern List acct_storage_p_remove_res(void *db_conn, uint32_t uid,
+				      slurmdb_res_cond_t *res_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_remove_wckeys(void *db_conn, uint32_t uid,
 				      slurmdb_wckey_cond_t *wckey_cond)
 {

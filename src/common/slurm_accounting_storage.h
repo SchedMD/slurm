@@ -272,14 +272,6 @@ extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
 					   slurmdb_account_cond_t *acct_cond);
 
 /*
- * remove clus_res from accounting system
- * IN:  slurmdb_clus_res_cond_t *assoc_clus_res
- * RET: List containing (char *'s) else NULL on error
- */
-extern List acct_storage_g_remove_clus_res(
-	void *db_conn, uint32_t uid, slurmdb_clus_res_cond_t *clus_res_cond);
-
-/*
  * remove clusters from accounting system
  * IN:  slurmdb_cluster_cond_t *cluster_cond
  * RET: List containing (char *'s) else NULL on error
@@ -304,12 +296,12 @@ extern List acct_storage_g_remove_qos(
 	void *db_conn, uint32_t uid, slurmdb_qos_cond_t *qos_cond);
 
 /*
- * remove ser_res from accounting system
- * IN:  slurmdb_ser_res_cond_t *assoc_ser_res
+ * remove res from accounting system
+ * IN:  slurmdb_res_cond_t *res_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern List acct_storage_g_remove_ser_res(
-	void *db_conn, uint32_t uid, slurmdb_ser_res_cond_t *ser_res_cond);
+extern List acct_storage_g_remove_res(
+	void *db_conn, uint32_t uid, slurmdb_res_cond_t *res_cond);
 
 /*
  * remove wckey from accounting system

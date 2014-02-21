@@ -240,12 +240,6 @@ extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_remove_clus_res(void *db_conn, uint32_t uid,
-					 slurmdb_clus_res_cond_t *clus_res_cond)
-{
-	return NULL;
-}
-
 extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 					  slurmdb_account_cond_t *cluster_q)
 {
@@ -264,8 +258,8 @@ extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 	return NULL;
 }
 
-extern List acct_storage_p_remove_ser_res(void *db_conn, uint32_t uid,
-					  slurmdb_ser_res_cond_t *ser_res_cond)
+extern List acct_storage_p_remove_res(void *db_conn, uint32_t uid,
+				      slurmdb_res_cond_t *res_cond)
 {
 	return NULL;
 }

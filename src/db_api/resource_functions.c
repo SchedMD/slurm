@@ -83,51 +83,13 @@ extern List slurmdb_res_modify(void *db_conn,
 }
 
 /*
- * remove clus_res from accounting system
- * IN:  slurmdb_clus_res_cond_t *clus_res
+ * remove res from accounting system
+ * IN:  slurmdb_res_cond_t *res
  * RET: List containing (char *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_clus_res_remove(void *db_conn,
-				slurmdb_clus_res_cond_t *clus_res_cond)
+extern List slurmdb_res_remove(void *db_conn,
+			       slurmdb_res_cond_t *res_cond)
 {
-	return acct_storage_g_remove_clus_res(db_conn, getuid(), clus_res_cond);
-}
-
- * get ser_res info from the storage
- * IN:  slurmdb_ser_res_cond_t *
- * RET: List of slurmdb_ser_res_rec_t *
- * note List needs to be freed with slurm_list_destroy() when called
- */
-extern List slurmdb_ser_res_get(void *db_conn,
-				slurmdb_ser_res_cond_t *ser_res_cond)
-{
-	return acct_storage_g_get_ser_res(db_conn, getuid(), ser_res_cond);
-}
-
-/*
- * modify existing ser_res in the accounting system
- * IN:  slurmdb_ser_res_cond_t *ser_res_cond
- * IN:  slurmdb_ser_res_rec_t *ser_res
- * RET: List containing (char *'s) else NULL on error
- * note List needs to be freed with slurm_list_destroy() when called
- */
-extern List slurmdb_ser_res_modify(void *db_conn,
-			       slurmdb_ser_res_cond_t *ser_res_cond,
-			       slurmdb_ser_res_rec_t *ser_res)
-{
-	return acct_storage_g_modify_ser_res(db_conn, getuid(),
-					ser_res_cond, ser_res);
-}
-
-/*
- * remove ser_res from accounting system
- * IN:  slurmdb_ser_res_cond_t *ser_res
- * RET: List containing (char *'s) else NULL on error
- * note List needs to be freed with slurm_list_destroy() when called
- */
-extern List slurmdb_ser_res_remove(void *db_conn,
-				slurmdb_ser_res_cond_t *ser_res_cond)
-{
-	return acct_storage_g_remove_ser_res(db_conn, getuid(), ser_res_cond);
+	return acct_storage_g_remove_res(db_conn, getuid(), res_cond);
 }

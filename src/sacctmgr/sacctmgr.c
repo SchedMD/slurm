@@ -756,10 +756,6 @@ static void _delete_it (int argc, char *argv[])
 	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 1)) == 0
 	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Clus_Res", MAX(command_len, 5)) ==
-		   0) {
-		error_code = sacctmgr_delete_clus_res((argc - 1), &argv[1],
-			     NULL);
 	} else if (strncasecmp (argv[0], "Clusters",
 				MAX(command_len, 5)) == 0) {
 		error_code = sacctmgr_delete_cluster((argc - 1), &argv[1]);
@@ -768,17 +764,17 @@ static void _delete_it (int argc, char *argv[])
 		error_code = sacctmgr_delete_coord((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Ser_Res", MAX(command_len, 1)) == 0) {
-		error_code = sacctmgr_delete_ser_res((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
+	} else if (strncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_delete_res((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
 	} else {
 	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Clus_Res\",\"Cluster\", ");
-		fprintf(stderr, "\"Coordinator\",\"QOS\", \"Ser_Res\", or ");
+		fprintf(stderr, "\"Account\", \"Cluster\", ");
+		fprintf(stderr, "\"Coordinator\",\"QOS\", \"Resource\", or ");
 		fprintf(stderr, "\"User\"\n");
 	}
 

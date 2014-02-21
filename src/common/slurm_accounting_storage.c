@@ -125,16 +125,14 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_user_cond_t *user_cond);
 	List (*remove_accts)       (void *db_conn, uint32_t uid,
 				    slurmdb_account_cond_t *acct_cond);
-	List (*remove_clus_res)    (void *db_conn, uint32_t uid,
-				    slurmdb_clus_res_cond_t *clus_res_cond);
 	List (*remove_clusters)    (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond);
 	List (*remove_associations)(void *db_conn, uint32_t uid,
 				    slurmdb_association_cond_t *assoc_cond);
 	List (*remove_qos)         (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond);
-	List (*remove_ser_res)     (void *db_conn, uint32_t uid,
-				    slurmdb_ser_res_cond_t *ser_res_cond);
+	List (*remove_res)         (void *db_conn, uint32_t uid,
+				    slurmdb_res_cond_t *res_cond);
 	List (*remove_wckeys)      (void *db_conn, uint32_t uid,
 				    slurmdb_wckey_cond_t *wckey_cond);
 	int  (*remove_reservation) (void *db_conn,
@@ -232,11 +230,10 @@ static const char *syms[] = {
 	"acct_storage_p_remove_users",
 	"acct_storage_p_remove_coord",
 	"acct_storage_p_remove_accts",
-	"acct_storage_p_remove_clus_res",
 	"acct_storage_p_remove_clusters",
 	"acct_storage_p_remove_associations",
 	"acct_storage_p_remove_qos",
-	"acct_storage_p_remove_ser_res",
+	"acct_storage_p_remove_res",
 	"acct_storage_p_remove_wckeys",
 	"acct_storage_p_remove_reservation",
 	"acct_storage_p_get_users",
@@ -534,14 +531,6 @@ extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
 	return (*(ops.remove_accts))(db_conn, uid, acct_cond);
 }
 
-extern List acct_storage_g_remove_clus_res(void *db_conn, uint32_t uid,
-					 slurmdb_clus_res_cond_t *clus_res_cond)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return NULL;
-	return (*(ops.remove_clus_res))(db_conn, uid, clus_res_cond);
-}
-
 extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid,
 					   slurmdb_cluster_cond_t *cluster_cond)
 {
@@ -567,12 +556,12 @@ extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 	return (*(ops.remove_qos))(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_remove_ser_res(void *db_conn, uint32_t uid,
-					  slurmdb_ser_res_cond_t *ser_res_cond)
+extern List acct_storage_g_remove_res(void *db_conn, uint32_t uid,
+				      slurmdb_res_cond_t *res_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(ops.remove_ser_res))(db_conn, uid, ser_res_cond);
+	return (*(ops.remove_res))(db_conn, uid, res_cond);
 }
 
 extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
