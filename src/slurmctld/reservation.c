@@ -3109,7 +3109,10 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		bit_and(node_bitmap, avail_node_bitmap);
 	}
 
-	*resv_bitmap = NULL;
+	/* If *resv_bitmap exists we probably don't need to delete it,
+	   when it gets created off of node_bitmap it will be the
+	   same, but just to be safe we do. */
+	FREE_NULL_BITMAP(*resv_bitmap);
 	if (rc == SLURM_SUCCESS)
 		*resv_bitmap = _pick_idle_nodes(node_bitmap,
 						resv_desc_ptr, core_bitmap);
@@ -3120,7 +3123,11 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		return rc;
 	}
 
+	/* Same thing as the *resv_bitmap, might as well keep them in
+	   sync */
+	xfree(resv_desc_ptr->node_list);
 	resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
+
 	return SLURM_SUCCESS;
 }
 
