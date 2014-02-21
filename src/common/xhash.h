@@ -38,6 +38,7 @@
 #define __XHASH_EJ2ORE_INC__
 
 #include <stdint.h>
+#include <pthread.h>
 
 /** Opaque definition of the hash table */
 struct xhash_st;
@@ -139,21 +140,25 @@ struct list_ {
 
 #define LIST_NUM_ENTS(L) ((L)->num_ents)
 
-extern struct list_ *list_make(const char *);
+/* Double link list implementation is
+ * part of the hash library.
+ */
+extern struct list_ *list_make_(const char *);
 extern int  list_insert_(struct list_ *,
-						 struct list_ *,
-						 struct list_ *);
+			 struct list_ *,
+			 struct list_ *);
 extern int list_push_(struct list_ *,
-					  struct list_ *);
-extern int list_enque(struct list_ *,
-					  struct list_ *);
-extern struct list_ * list_rm(struct list_ *,
-							  struct list_ *);
+		      struct list_ *);
+extern int list_enque_(struct list_ *,
+		       struct list_ *);
+extern struct list_ *list_rm_(struct list_ *,
+			      struct list_ *);
 struct list_ *list_pop_(struct list_ *);
-extern struct list_ *list_deque(struct list_ *);
-extern void list_free(struct list_ *, void (*f)(void *));
+extern struct list_ *list_deque_(struct list_ *);
+extern void list_free_(struct list_ *, void (*f)(void *));
 
-
+/* Hash table interface.
+ */
 extern struct hash_tab *hash_make(uint32_t);
 extern int hash_install(struct hash_tab *, const char *, void *);
 extern void *hash_lookup(struct hash_tab *, const char *);

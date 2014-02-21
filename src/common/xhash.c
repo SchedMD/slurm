@@ -34,10 +34,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/xhash.h"
 #include "src/common/xmalloc.h"
 #include "src/common/uthash/uthash.h"
 #include "src/common/xstring.h"
+#include "src/common/xhash.h"
 
 #if 0
 /* undefine default allocators */
@@ -172,6 +172,9 @@ void xhash_free(xhash_t* table)
 
 static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static int _hash_install(struct hash_tab *, const char *, void *);
+static struct hash_entry *_hash_lookup(struct hash_tab *, const char *);
+static void _rehash(struct hash_tab *, int);
 static int _find_closest_prime(int);
 static int _is_prime(int);
 static int _pjw_hash(const char *, uint32_t);
@@ -216,7 +219,6 @@ hash_make(uint32_t size)
 	t->num_ents = 0;
 	t->size = cc;
 	t->lists = xmalloc(cc * sizeof(struct list_ *));
-	t->size = cc;
 
 	return t;
 }
@@ -227,36 +229,12 @@ int
 hash_install(struct hash_tab *t, const char *key, void *data)
 {
 	int cc;
-	struct hash_entry *e;
-
-	if (t == NULL
-		|| key == NULL)
-		return -1;
-
-	/* FIXME rehash the table if
-	 * t->num >= 0.9 * t->size
-	 */
 
 	slurm_mutex_lock(&hash_mutex);
-
-	if (hash_lookup(t, key)) {
-		slurm_mutex_unlock(&hash_mutex);
-		return -1;
-	}
-
-	e = xmalloc(1 * sizeof(struct hash_entry));
-	e->key = xstrdup(key);
-	e->data = data;
-
-	cc = _pjw_hash(key, t->size);
-	if (t->lists[cc] == NULL)
-		t->lists[cc] = list_make("");
-	list_push_(t->lists[cc], (struct list_ *)e);
-	t->num_ents++;
-
+	cc = _hash_install(t, key, data);
 	slurm_mutex_unlock(&hash_mutex);
 
-	return 0;
+	return cc;
 }
 
 /* hash_lookup()
@@ -265,23 +243,15 @@ void *
 hash_lookup(struct hash_tab *t, const char *key)
 {
 	struct hash_entry *e;
-	int cc;
 
-	if (t == NULL
-		|| key == NULL)
-		return NULL;
-
-	cc = _pjw_hash(key, t->size);
-	if (t->lists[cc] == NULL)
-		return NULL;
-
-	for (e = (struct hash_entry *)t->lists[cc]->forw;
-		 e!= (void *)t->lists[cc];
-		 e = e->forw) {
-		if (strcmp(e->key, key) == 0)
-			return e->data;
+	slurm_mutex_lock(&hash_mutex);
+	e = _hash_lookup(t, key);
+	if (e) {
+		slurm_mutex_unlock(&hash_mutex);
+		return e->data;
 	}
 
+	slurm_mutex_unlock(&hash_mutex);
 	return NULL;
 }
 
@@ -295,27 +265,33 @@ hash_remove(struct hash_tab *t, const char *key)
 	void *v;
 
 	if (t == NULL
-		|| key == NULL)
+	    || key == NULL)
 		return NULL;
+
+	slurm_mutex_lock(&hash_mutex);
 
 	cc = _pjw_hash(key, t->size);
-	if (t->lists[cc] == NULL)
+	if (t->lists[cc] == NULL) {
+		slurm_mutex_unlock(&hash_mutex);
 		return NULL;
+	}
 
 	for (e = (struct hash_entry *)t->lists[cc]->forw;
-		 e!= (void *)t->lists[cc];
-		 e = e->forw) {
+	     e!= (void *)t->lists[cc];
+	     e = e->forw) {
 
 		if (strcmp(e->key, key) == 0) {
-			list_rm(t->lists[cc], (struct list_ *)e);
+			list_rm_(t->lists[cc], (struct list_ *)e);
 			t->num_ents--;
 			v = e->data;
 			xfree(e->key);
 			xfree(e);
+			slurm_mutex_unlock(&hash_mutex);
 			return v;
 		}
 	}
 
+	slurm_mutex_unlock(&hash_mutex);
 	return NULL;
 }
 
@@ -323,7 +299,7 @@ hash_remove(struct hash_tab *t, const char *key)
  */
 void
 hash_free(struct hash_tab *t,
-		  void (*f)(char *key, void *data))
+	  void (*f)(char *key, void *data))
 {
 	int cc;
 	struct hash_entry *e;
@@ -331,22 +307,66 @@ hash_free(struct hash_tab *t,
 	if (t == NULL)
 		return;
 
+	slurm_mutex_lock(&hash_mutex);
 	for (cc = 0; cc < t->size; cc++) {
 
 		if (t->lists[cc] == NULL)
 			continue;
 
 		while ((e = (struct hash_entry *)list_pop_(t->lists[cc]))) {
-			if (f)
+			if (f) {
 				(*f)(e->key, e->data);
-			xfree(e->key);
-			xfree(e);
-			xfree(t->lists[cc]->name);
-			xfree(t->lists[cc]);
+			} else {
+				xfree(e->key);
+				xfree(e);
+			}
 		}
-		list_free(t->lists[cc], NULL);
+		list_free_(t->lists[cc], NULL);
 	}
+	xfree(t->lists);
+	xfree(t);
+
+	slurm_mutex_unlock(&hash_mutex);
 }
+
+/* _rehash()
+ */
+static void
+_rehash(struct hash_tab *t,
+       int size)
+{
+    struct list_ **list;
+    int cc;
+    struct hash_tab t2;
+
+    memset(&t2, 0, sizeof(t2));
+
+    cc = _find_closest_prime(size);
+    t2.size = cc;
+
+    list = xmalloc(cc * sizeof(struct list_ *));
+    t2.lists = list;
+
+    for (cc = 0; cc < t->size; cc++) {
+        struct hash_entry *e;
+
+        if (t->lists[cc] == NULL)
+            continue;
+
+        while ((e = (struct hash_entry *)list_pop_(t->lists[cc]))) {
+		_hash_install(&t2, e->key, e->data);
+		xfree(e->key);
+		xfree(e);
+        }
+        list_free_(t->lists[cc], NULL);
+    }
+
+    xfree(t->lists);
+    t->lists = list;
+    t->size = t2.size;
+    t->num_ents  = t2.num_ents;
+
+} /* rehash() */
 
 /* _find_closest_prime()
  */
@@ -406,11 +426,70 @@ _pjw_hash(const char *x, uint32_t size)
 			h = (h ^ (g >> 24)) ^ g;
 	}
 
-  return h % size;
+	return h % size;
 }
 
+/* _hash_install()
+ */
+static int
+_hash_install(struct hash_tab *t, const char *key, void *data)
+{
+	int cc;
+	struct hash_entry *e;
+
+	if (t == NULL
+	    || key == NULL)
+		return -1;
+
+	/* FIXME rehash the table if
+	 * t->num >= 0.9 * t->size
+	 */
+	if (t->num_ents >= 0.9 * t->size)
+		_rehash(t, 3 * t->size);
+
+	if ((e = hash_lookup(t, key)) == NULL) {
+		e = xmalloc(1 * sizeof(struct hash_entry));
+		e->key = xstrdup(key);
+	}
+	e->data = data;
+
+	cc = _pjw_hash(key, t->size);
+	if (t->lists[cc] == NULL)
+		t->lists[cc] = list_make_("");
+	list_push_(t->lists[cc], (struct list_ *)e);
+	t->num_ents++;
+
+	return 0;
+}
+
+/* _hash_lookup()
+ */
+static struct hash_entry *
+_hash_lookup(struct hash_tab *t, const char *key)
+{
+	struct hash_entry *e;
+	int cc;
+
+	if (t == NULL
+	    || key == NULL)
+		return NULL;
+
+	cc = _pjw_hash(key, t->size);
+	if (t->lists[cc] == NULL)
+		return NULL;
+
+	for (e = (struct hash_entry *)t->lists[cc]->forw;
+	     e!= (void *)t->lists[cc];
+	     e = e->forw) {
+		if (strcmp(e->key, key) == 0)
+			return e;
+	}
+
+	return NULL;
+}
 
 /* Simple double linked list.
+ *
  * The idea is very simple we have 2 insertion methods
  * enqueue which adds at the end of the queue and push
  * which adds at the front. Then we simply pick the first
@@ -428,13 +507,15 @@ _pjw_hash(const char *x, uint32_t size)
  *
  * H->4->3->2->1
  *
- * you retrieve elements as 4,3, etc
+ * you retrieve the elements as 4,3, etc
  *
+ * The trailing underscore in the function name avoid
+ * naming conflict with other list implementation.
  *
  */
 
 struct list_ *
-list_make(const char *name)
+list_make_(const char *name)
 {
 	struct list_ *list;
 
@@ -445,9 +526,9 @@ list_make(const char *name)
 
 	return list;
 
-} /* list_make() */
+}
 
-/* listinisert()
+/* list_inisert_()
  *
  * Using cartesian coordinates the head h is at
  * zero and elemets are pushed along x axes.
@@ -464,8 +545,8 @@ list_make(const char *name)
  */
 int
 list_insert_(struct list_ *h,
-			 struct list_ *e,
-			 struct list_ *e2)
+	     struct list_ *e,
+	     struct list_ *e2)
 {
 	/*	before: h->e
 	 */
@@ -482,10 +563,10 @@ list_insert_(struct list_ *h,
 
 	return h->num_ents;
 
-} /* list_insert() */
+}
 
 /*
- * list_enqueue()
+ * list_enqueue_()
  *
  * Enqueue a new element at the end
  * of the list.
@@ -495,8 +576,8 @@ list_insert_(struct list_ *h,
  *
  */
 int
-list_enque(struct list_ *h,
-		   struct list_ *e2)
+list_enque_(struct list_ *h,
+	    struct list_ *e2)
 {
 	/* before: h->e
 	 */
@@ -506,10 +587,10 @@ list_enque(struct list_ *h,
 	return 0;
 }
 
-/* list_deque()
+/* list_deque_()
  */
 struct list_ *
-list_deque(struct list_ *h)
+list_deque_(struct list_ *h)
 {
 	struct list_   *e;
 
@@ -519,7 +600,7 @@ list_deque(struct list_ *h)
 	/* before: h->e->e2
 	 */
 
-	e = list_rm(h, h->forw);
+	e = list_rm_(h, h->forw);
 
 	/* after: h->e2
 	 */
@@ -528,7 +609,7 @@ list_deque(struct list_ *h)
 }
 
 /*
- * list_push()
+ * list_push_()
  *
  * Push e at the front of the list
  *
@@ -537,7 +618,7 @@ list_deque(struct list_ *h)
  */
 int
 list_push_(struct list_ *h,
-		   struct list_ *e2)
+	   struct list_ *e2)
 {
 	/* before: h->e
 	 */
@@ -549,23 +630,23 @@ list_push_(struct list_ *h,
 	return 0;
 }
 
-/* list_pop()
+/* list_pop_()
  */
 struct list_ *
 list_pop_(struct list_ *h)
 {
 	struct list_ *e;
 
-	e = list_deque(h);
+	e = list_deque_(h);
 
 	return e;
 }
 
-/* list_rm()
+/* list_pop()
  */
 struct list_ *
-list_rm(struct list_ *h,
-		struct list_ *e)
+list_rm_(struct list_ *h,
+	 struct list_ *e)
 {
 	if (h->num_ents == 0)
 		return NULL;
@@ -576,14 +657,14 @@ list_rm(struct list_ *h,
 
 	return e;
 
-} /* listrm() */
+}
 
 
-/* list_free()
+/* list_free_()
  */
 void
-list_free(struct list_ *list,
-		  void (*f)(void *))
+list_free_(struct list_ *list,
+	   void (*f)(void *))
 {
 	struct list_ *l;
 
