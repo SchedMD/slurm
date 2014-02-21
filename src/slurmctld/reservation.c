@@ -2180,6 +2180,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 							    partition);
 				node_bitmap = bit_copy(part_ptr->node_bitmap);
 				xfree(resv_ptr->node_list);
+				xfree(resv_desc_ptr->node_list);
 				resv_ptr->node_list = xstrdup(part_ptr->nodes);
 			} else {
 				node_bitmap = bit_alloc(node_record_count);
