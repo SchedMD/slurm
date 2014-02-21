@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     busy, the main scheduling loop will block those specific nodes rather than
     the entire queue/partition.
  -- Fix minor memory leak when updating a job's name.
+ -- Fix minor memory leak when updating a reservation on a partition using "ALL"
+    nodes.
 
 * Changes in Slurm 2.6.6
 ========================
