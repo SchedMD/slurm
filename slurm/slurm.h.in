@@ -2655,14 +2655,6 @@ extern int slurm_complete_job PARAMS((uint32_t job_id,
  */
 extern int slurm_terminate_job_step PARAMS((uint32_t job_id, uint32_t step_id));
 
-/*
- * slurm_complete_prolog - note the completion of a prolog
- * IN job_id - the job's id
- * IN prolog_return_code - prolog exit code
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- */
-extern int slurm_complete_prolog PARAMS((uint32_t job_id, uint32_t prolog_return_code));
-
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS
 \*****************************************************************************/
