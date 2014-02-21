@@ -1399,16 +1399,16 @@ proc archive_load { file } {
 }
 
 #
-# Use sacctmgr to create a ser_res
+# Use sacctmgr to create a res
 #
-proc add_ser_res {name count manager server desc} {
+proc add_res {name count manager server desc} {
         global sacctmgr timeout
 
 	set exit_code 0
 	set matches 0
 
 	if { ![string length $name] } {
-		send_user "FAILURE: Need name of ser_res to add\n"
+		send_user "FAILURE: Need name of res to add\n"
 		return 1
 	}
 	set command "name=$name"
@@ -1429,7 +1429,7 @@ proc add_ser_res {name count manager server desc} {
 		set command "$command description=$desc"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i add ser_res $command]
+	set my_pid [eval spawn $sacctmgr -i add res $command]
 	expect {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -1523,9 +1523,9 @@ proc add_clus_res {name allowed} {
 }
 
 #
-# Use sacctmgr to remove the test ser_res
+# Use sacctmgr to remove the test res
 #
-proc remove_ser_res {name} {
+proc remove_res {name} {
         global access_err sacctmgr timeout
 
 	set exit_code 0
@@ -1537,7 +1537,7 @@ proc remove_ser_res {name} {
 		return 1
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete ser_res $name]
+	set my_pid [eval spawn $sacctmgr -i delete res $name]
 	expect {
 		-re "privilege to perform this action" {
 			set access_err 1
@@ -1576,10 +1576,6 @@ proc remove_ser_res {name} {
 	}
 	if {$access_err != 0} {
 		return 1
-	}
-	if {$nothing != 0} {
-		send_user "\nFAILURE: sacctmgr had a problem deleting system resource got $nothing\n"
-		incr exit_code 1
 	}
 
 	return $exit_code

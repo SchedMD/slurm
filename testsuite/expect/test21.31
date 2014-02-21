@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          sacctmgr clear (modify) ser_res values
+#          sacctmgr clear (modify) resource values
 #
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -46,11 +46,10 @@
 source ./globals_accounting
 
 set test_id     "test21.31"
-set test_nu     "test21-31"
 set exit_code   0
 set nm		name
-set sr		ser_res
-set sr1		[format "%s%s" $test_nu "ser_res_1"]
+set sr		res
+set sr1		[format "%s%s" $test_id "res_1"]
 set rs		-1
 set dsc		description
 set dsc1	sr1
@@ -85,14 +84,14 @@ if { [test_account_storage] == 0 } {
 #}
 
 # verify a clean system license entity and permission to do this work
-remove_ser_res "$sr1"
+remove_res "$sr1"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
 
 #add system license
-spawn $sacctmgr -i add ser_res $nm=$sr1 $dsc=$dsc1 $cnt=$cnt1 $man=$man1 $ser=$ser1 $typ=$typ1
+spawn $sacctmgr -i add res $nm=$sr1 $dsc=$dsc1 $cnt=$cnt1 $man=$man1 $ser=$ser1 $typ=$typ1
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
@@ -106,7 +105,7 @@ expect {
 # Use sacctmgr list to verify the test server resurce fields
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list ser_res $sr1 format="$nm,$cnt,$man,$ser,$dsc" ]
+set my_pid [spawn $sacctmgr -n -p list res $sr1 format="$nm,$cnt,$man,$ser,$dsc" ]
 expect {
 	-re "No valid entity in list command" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -129,7 +128,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list ser_res not responding\n"
+		send_user "\nFAILURE: sacctmgr list res not responding\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -139,15 +138,15 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\n\n ser_res matches is $matches.\n\n"
-	send_user "\nFAILURE:  ser_res field incorrect.\n"
-	send_user "\nFAILURE: sacctmgr list ser_res not responding\n"
+	send_user "\n\n res matches is $matches.\n\n"
+	send_user "\nFAILURE:  res field incorrect.\n"
+	send_user "\nFAILURE: sacctmgr list res not responding\n"
 	incr exit_code 1
 }
 
-#modify ser_res
+#modify res
 set matches 0
-set my_pid [eval spawn $sacctmgr -i mod ser_res where $nm=$sr1 set $cnt=$cnt2 $man=$man2 $ser=$ser2]
+set my_pid [eval spawn $sacctmgr -i mod res where $nm=$sr1 set $cnt=$cnt2 $man=$man2 $ser=$ser2]
 expect {
 	-re "No valid entity in list command" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -174,7 +173,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr modify ser_res not responding\n"
+		send_user "\nFAILURE: sacctmgr modify res not responding\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -184,18 +183,18 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\n\n ser_res matches is $matches.\n\n"
-	send_user "\nFAILURE:  ser_res modify not working.\n"
+	send_user "\n\n res matches is $matches.\n\n"
+	send_user "\nFAILURE:  res modify not working.\n"
 	incr exit_code 1
 }
 
 #
-# Use sacctmgr to list the test ser_res modifications
+# Use sacctmgr to list the test res modifications
 #
-# Use sacctmgr list to verify the test ser_res fields
+# Use sacctmgr list to verify the test res fields
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list ser_res $sr1 format="$nm,$cnt,$ser,$man,$dsc" ]
+set my_pid [spawn $sacctmgr -n -p list res $sr1 format="$nm,$cnt,$ser,$man,$dsc" ]
 expect {
 	-re "No valid entity in list command" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -213,12 +212,12 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($sr1.$cnt2.$ser2.$man2.$dsc1)" {
+	-re "($sr1.$cnt2.$ser1.$man2.$dsc1)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list ser_res not responding\n"
+		send_user "\nFAILURE: sacctmgr list res not responding\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -228,15 +227,15 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\n\n ser_res matches is $matches.\n\n"
-	send_user "\nFAILURE:  ser_res field incorrect.\n"
-	send_user "\nFAILURE: sacctmgr list ser_res not responding\n"
+	send_user "\n\n Resource matches is $matches.\n\n"
+	send_user "\nFAILURE:  Resource field incorrect.\n"
+	send_user "\nFAILURE: sacctmgr list res not responding\n"
 	incr exit_code 1
 }
 
 # Next is clean up and the end
 
-incr exit_code [remove_ser_res $sr1]
+incr exit_code [remove_res $sr1]
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
