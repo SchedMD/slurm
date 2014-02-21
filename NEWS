@@ -245,6 +245,7 @@ documents those changes that are of interest to users and admins.
  -- If a job requires specific nodes and can not run due to those nodes being
     busy, the main scheduling loop will block those specific nodes rather than
     the entire queue/partition.
+ -- Fix minor memory leak when updating a job's name.
 
 * Changes in Slurm 2.6.6
 ========================

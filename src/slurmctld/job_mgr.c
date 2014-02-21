@@ -8588,6 +8588,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 			goto fini;
 		} else {
+			xfree(job_ptr->name);
 			job_ptr->name = job_specs->name;
 			job_specs->name = NULL;
 
