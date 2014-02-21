@@ -136,7 +136,7 @@ char *job_table = "job_table";
 char *last_ran_table = "last_ran_table";
 char *qos_table = "qos_table";
 char *resv_table = "resv_table";
-char *ser_res_table = "ser_res_table";
+char *res_table = "res_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
@@ -478,6 +478,16 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ NULL, NULL}
 	};
 
+	storage_field_t clus_res_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "cluster", "tinytext not null" },
+		{ "res_id", "int not null" },
+		{ "percent_allowed", "int unsigned default 0" },
+		{ NULL, NULL}
+	};
+
 	storage_field_t qos_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
@@ -512,17 +522,18 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ NULL, NULL}
 	};
 
-	storage_field_t ser_res_table_fields[] = {
+	storage_field_t res_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "id", "int not null auto_increment" },
 		{ "name", "tinytext not null" },
-		{ "description", "text" },
+		{ "description", "text default null" },
 		{ "manager", "tinytext not null" },
 		{ "server", "tinytext not null" },
-		{ "count", "int default 0" },
-		{ "type", "int default 0"},
+		{ "count", "int unsigned default 0" },
+		{ "type", "int unsigned default 0"},
+		{ "flags", "int unsigned default 0"},
 		{ NULL, NULL}
 	};
 
@@ -683,12 +694,20 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 				  ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	if (mysql_db_create_table(mysql_conn, ser_res_table,
-				  ser_res_table_fields,
+	if (mysql_db_create_table(mysql_conn, res_table,
+				  res_table_fields,
 				  ", primary key (id), "
-				  "unique index (name(20)))")
+				  "unique index (name(20), server(20), type))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
+
+	if (mysql_db_create_table(mysql_conn, clus_res_table,
+				  clus_res_table_fields,
+				  ", primary key (res_id, cluster(20)), "
+				  "unique index (res_id, cluster(20)))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
 
 	if (mysql_db_create_table(mysql_conn, qos_table,
 				  qos_table_fields,
@@ -906,15 +925,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ NULL, NULL}
 	};
 
-	storage_field_t clus_res_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0" },
-		{ "id", "int not null" },
-		{ "percent_allowed", "int unsigned default 0" },
-		{ NULL, NULL}
-	};
-
 	storage_field_t cluster_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
@@ -1128,14 +1138,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
-		 cluster_name, clus_res_table);
-	if (mysql_db_create_table(mysql_conn, table_name,
-				  clus_res_table_fields,
-				  ", primary key (id))")
-	    == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_day_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
@@ -1286,12 +1288,11 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
-		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
+		   "\"%s_%s\", \"%s_%s\", \"%s_%s\";",
 		   cluster_name, assoc_table,
 		   cluster_name, assoc_day_table,
 		   cluster_name, assoc_hour_table,
 		   cluster_name, assoc_month_table,
-		   cluster_name, clus_res_table,
 		   cluster_name, cluster_day_table,
 		   cluster_name, cluster_hour_table,
 		   cluster_name, cluster_month_table,
@@ -1645,7 +1646,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	if ((table == cluster_table) || (table == acct_coord_table)
 	    || (table == acct_table) || (table == qos_table)
 	    || (table == txn_table) || (table == user_table)
-	    || (table == ser_res_table))
+	    || (table == res_table) || (table == clus_res_table))
 		cluster_centric = false;
 
 	if (vals[1])
@@ -1718,14 +1719,14 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if ((table == cluster_table) || (table == acct_coord_table)
 	    || (table == acct_table) || (table == qos_table)
 	    || (table == txn_table) || (table == user_table)
-	    || (table == ser_res_table))
+	    || (table == res_table) || (table == clus_res_table))
 		cluster_centric = false;
 
 	/* If we have jobs associated with this we do not want to
 	 * really delete it for accounting purposes.  This is for
 	 * corner cases most of the time this won't matter.
 	 */
-	if ((table == acct_coord_table) || (table == ser_res_table)
+	if ((table == acct_coord_table) || (table == res_table)
 	    || (table == clus_res_table)) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
@@ -1828,7 +1829,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		   || (table == qos_table)
 		   || (table == wckey_table)
 		   || (table == clus_res_table)
-		   || (table == ser_res_table))
+		   || (table == res_table))
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the accounting tables
