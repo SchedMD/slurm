@@ -69,6 +69,7 @@ enum {
 	SORTID_UPDATED,
 	SORTID_USED_CPUS,
 	SORTID_USED_MEMORY,
+	SORTID_VERSION,
 	SORTID_WEIGHT,
 	SORTID_CNT
 };
@@ -150,6 +151,8 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CURRENT_WATTS, "Current Watts", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_VERSION, "Version", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -197,6 +200,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char tmp_current_watts[50];
 	char tmp_base_watts[50];
 	char tmp_consumed_energy[50];
+	char tmp_version[50];
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
@@ -401,6 +405,17 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   find_col_name(display_data_node,
 						 SORTID_CURRENT_WATTS),
 				   tmp_current_watts);
+
+	if (node_ptr->version == NULL) {
+		snprintf(tmp_version, sizeof(tmp_version), "N/A");
+	} else {
+		snprintf(tmp_version, sizeof(tmp_version), "%s",
+			 node_ptr->version);
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_VERSION),
+				   tmp_version);
 	return;
 }
 
@@ -414,6 +429,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	char tmp_mem[20], tmp_used_memory[20];
 	char tmp_used_cpus[20], tmp_cpu_load[20];
 	char tmp_current_watts[50], tmp_base_watts[50], tmp_consumed_energy[50];
+	char tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper;
 
 
@@ -495,6 +511,12 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	convert_num_unit((float)node_ptr->tmp_disk, tmp_disk, sizeof(tmp_disk),
 			 UNIT_MEGA);
 
+	if (node_ptr->version == NULL) {
+		snprintf(tmp_version, sizeof(tmp_version), "N/A");
+	} else {
+		snprintf(tmp_version, sizeof(tmp_version), "%s",
+			 node_ptr->version);
+	}
 
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
@@ -528,6 +550,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_THREADS,   node_ptr->threads,
 			   SORTID_USED_CPUS, tmp_used_cpus,
 			   SORTID_USED_MEMORY, tmp_used_memory,
+			   SORTID_VERSION,   tmp_version,
 			   SORTID_WEIGHT,    node_ptr->weight,
 			   SORTID_UPDATED,   1,
 			  -1);

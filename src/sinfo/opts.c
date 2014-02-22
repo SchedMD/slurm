@@ -702,6 +702,12 @@ _parse_format( char* format )
 					      field_size,
 					      right_justify,
 					      suffix );
+		} else if (field[0] == 'v') {
+			params.match_flags.version_flag = true;
+			format_add_version( params.format_list,
+					    field_size,
+					    right_justify,
+					    suffix);
 		} else if (field[0] == 'w') {
 			params.match_flags.weight_flag = true;
 			format_add_weight( params.format_list,

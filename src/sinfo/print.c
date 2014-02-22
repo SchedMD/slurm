@@ -1204,6 +1204,27 @@ int _print_max_cpus_per_node(sinfo_data_t * sinfo_data, int width,
 	} else {
 		_print_str("MAX_CPUS_PER_NODE", width, right_justify, true);
 	}
-
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
+}
+
+int _print_version(sinfo_data_t * sinfo_data, int width,
+		   bool right_justify, char *suffix)
+{
+	if (sinfo_data) {
+		if (sinfo_data->version == NULL) {
+			_print_str("N/A", width, right_justify, true);
+		} else {
+			_print_str(sinfo_data->version, width,
+				   right_justify, true);
+		}
+	} else {
+		_print_str("VERSION", width, right_justify, true);
+	}
+	if (suffix) {
+		printf ("%s", suffix);
+	}
+	return SLURM_SUCCESS;
+
 }

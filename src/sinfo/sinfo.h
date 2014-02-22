@@ -103,6 +103,7 @@ typedef struct {
 
 	uint32_t max_cpus_per_node;
 
+	char *version;
 	char *features;
 	char *gres;
 	char *reason;
@@ -151,6 +152,7 @@ struct sinfo_match_flags {
 	bool reason_user_flag;
 	bool cpu_load_flag;
 	bool max_cpus_per_node_flag;
+	bool version_flag;
 };
 
 /* Input parameters */

@@ -73,6 +73,7 @@ enum {
 	SORTID_SLURMD_START_TIME,
 	SORTID_STATE,
 	SORTID_UPDATED,
+	SORTID_VERSION,
 	SORTID_CNT
 };
 
@@ -109,6 +110,8 @@ static display_data_t display_data_front_end[] = {
 	{G_TYPE_STRING, SORTID_DENY_GROUPS, "Deny Groups", FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_STRING, SORTID_DENY_USERS, "Deny Users", FALSE, EDIT_NONE,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_VERSION, "Version", FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
@@ -220,6 +223,10 @@ static void _layout_front_end_record(GtkTreeView *treeview,
 						 SORTID_DENY_USERS),
 				   front_end_ptr->deny_users);
 
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_VERSION),
+				   front_end_ptr->version);
 }
 
 static void _update_front_end_record(
@@ -250,6 +257,7 @@ static void _update_front_end_record(
 				sview_front_end_info_ptr->slurmd_start_time,
 			   SORTID_STATE,   sview_front_end_info_ptr->state,
 			   SORTID_UPDATED,    1,
+			   SORTID_VERSION, front_end_ptr->version,
 			   -1);
 
 	return;

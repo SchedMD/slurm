@@ -471,7 +471,7 @@ static int _build_sinfo_data(List sinfo_list,
 	if (params.filtering) {
 		for (j = 0; j < node_msg->record_count; j++) {
 			node_ptr = &(node_msg->node_array[j]);
-		        if (node_ptr->name && _filter_out(node_ptr))
+			if (node_ptr->name && _filter_out(node_ptr))
 				xfree(node_ptr->name);
 		}
 	}
@@ -484,42 +484,42 @@ static int _build_sinfo_data(List sinfo_list,
 		    _strcmp(part_ptr->name, params.partition))
 			continue;
 
-                if (node_msg->record_count == 1) { /* node_name_single */
-                        int pos = -1;
-                        uint16_t subgrp_size = 0;
-                        hostlist_t hl;
+		if (node_msg->record_count == 1) { /* node_name_single */
+			int pos = -1;
+			uint16_t subgrp_size = 0;
+			hostlist_t hl;
 
-                        node_ptr = &(node_msg->node_array[0]);
-                        if ((node_ptr->name == NULL) ||
+			node_ptr = &(node_msg->node_array[0]);
+			if ((node_ptr->name == NULL) ||
 			    (part_ptr->nodes == NULL))
-                                continue;
-                        hl = hostlist_create(part_ptr->nodes);
-                        pos = hostlist_find(hl, node_msg->node_array[0].name);
-                        hostlist_destroy(hl);
-                        if (pos < 0)
-                                continue;
-                        if (select_g_select_nodeinfo_get(
-                                   node_ptr->select_nodeinfo,
-                                   SELECT_NODEDATA_SUBGRP_SIZE,
-                                   0,
-                                   &subgrp_size) == SLURM_SUCCESS
-                            && subgrp_size) {
-                                _handle_subgrps(sinfo_list,
-                                                (uint16_t) j,
-                                                part_ptr,
-                                                node_ptr,
-                                                node_msg->
-                                                node_scaling);
-                        } else {
-                                _insert_node_ptr(sinfo_list,
-                                                 (uint16_t) j,
-                                                 part_ptr,
-                                                 node_ptr,
-                                                 node_msg->
-                                                 node_scaling);
-                        }
-                        continue;
-                }
+				continue;
+			hl = hostlist_create(part_ptr->nodes);
+			pos = hostlist_find(hl, node_msg->node_array[0].name);
+			hostlist_destroy(hl);
+			if (pos < 0)
+				continue;
+			if (select_g_select_nodeinfo_get(
+				   node_ptr->select_nodeinfo,
+				   SELECT_NODEDATA_SUBGRP_SIZE,
+				   0,
+				   &subgrp_size) == SLURM_SUCCESS
+			    && subgrp_size) {
+				_handle_subgrps(sinfo_list,
+						(uint16_t) j,
+						part_ptr,
+						node_ptr,
+						node_msg->
+						node_scaling);
+			} else {
+				_insert_node_ptr(sinfo_list,
+						 (uint16_t) j,
+						 part_ptr,
+						 node_ptr,
+						 node_msg->
+						 node_scaling);
+			}
+			continue;
+		}
 
 		/* Process each partition using a separate thread */
 		build_struct_ptr = xmalloc(sizeof(build_part_info_t));
@@ -745,6 +745,9 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	if (params.match_flags.cpu_load_flag &&
 	    (node_ptr->cpu_load        != sinfo_ptr->min_cpu_load))
 		return false;
+	if (params.match_flags.version_flag &&
+	    (node_ptr->version     != sinfo_ptr->version))
+		return false;
 
 
 	return true;
@@ -849,6 +852,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->max_cpu_load = node_ptr->cpu_load;
 		sinfo_ptr->max_cpus_per_node = sinfo_ptr->part_info->
 					       max_cpus_per_node;
+		sinfo_ptr->version    = node_ptr->version;
 	} else if (hostlist_find(sinfo_ptr->nodes, node_ptr->name) != -1) {
 		/* we already have this node in this record,
 		 * just return, don't duplicate */
