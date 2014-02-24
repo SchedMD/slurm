@@ -396,8 +396,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Can only change one at a time"                       },
 	{ ESLURM_BAD_NAME,
 	  "Unacceptable name given. (No '.' in name allowed)"   },
-	{ ESLURM_OVER_USAGE,
-	  "Request would go over available amount of usage"     },
+	{ ESLURM_OVER_ALLOCATE,
+	  "You can not allocate more than 100% of a resource"     },
 
 	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,

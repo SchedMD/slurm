@@ -520,7 +520,7 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 	while ((object = list_next(itr))) {
 		res->percent_used += object->percent_allowed;
 		if (res->percent_used > 100) {
-			rc = ESLURM_OVER_USAGE;
+			rc = ESLURM_OVER_ALLOCATE;
 			debug3("Adding a new cluster with %u%% allowed to "
 			       "resource %s@%s would put the usage at %u%%, "
 			       "(which is over 100%%).  Please redo your math "
@@ -1132,7 +1132,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 				xfree(name_char);
 				xfree(clus_char);
 				FREE_NULL_LIST(ret_list);
-				errno = ESLURM_OVER_USAGE;
+				errno = ESLURM_OVER_ALLOCATE;
 
 				return NULL;
 			}
