@@ -1,10 +1,9 @@
-# Purpose: Test of SLURM functionality
-#		to be called from test21.30
-#		Tests if the GrpCpus limit is enforced
-#
-#
 ############################################################################
-# Copyright (C) 2012 SchedMD LLC
+# Purpose: Test of SLURM functionality
+#          to be called from test21.30
+#          Tests if the MaxWall limit is enforced
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
@@ -26,27 +25,25 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-proc inc21_30_2 {} {
+proc inc21_30_14 { } {
+	global salloc srun acct bin_sleep number maxwall_num exit_code
 
-#test GrpCpus
+	send_user "\nStarting MaxWall test\n"
+	set job_id 0
 
-	global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number exit_code
-	global grcpu_num
-
-	set job_id1 0
-	set job_id2 0
-
-	send_user "\nStarting GrpCPUs limit test\n\n"
-	set jobmatch 0
-	spawn $salloc --account=$acct -n$grcpu_num $srun $bin_sleep 5
+	spawn $salloc --account=$acct -N1 -t$maxwall_num $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
-			set job_id1 $expect_out(1,string)
-			send_user "\njob $job_id1 has been submitted\n"
-			incr jobmatch
+			set job_id $expect_out(1,string)
+			send_user "\nJob $job_id has been submitted\n"
+		}
+		-re "Pending job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			send_user "\nFAILURE: job $job_id should not be waiting for resources\n"
+			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not reponding\n"
+			send_user "\nFAILURE: salloc is not responding\n"
 			set exit_code 1
 		}
 		eof {
@@ -54,15 +51,22 @@ proc inc21_30_2 {} {
 		}
 	}
 
-	spawn $salloc --account=$acct -n1 $srun $bin_sleep 5
+	# Cancel job
+        cancel_job $job_id
+
+	spawn $salloc --account=$acct -N1 -t[expr $maxwall_num + 1] $srun $bin_sleep 10
 	expect {
-		-re "job ($number)" {
-			set job_id2 $expect_out(1,string)
-			send_user "\njob $job_id2 is waiting for resources. This is expected\n"
-			incr jobmatch
+		-re "Pending job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			send_user "\nJob $job_id is waiting for resources. This is expected\n"
+		}
+		-re "Granted job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			send_user "\nFAILURE: job $job_id should be pending for resources, but is not\n"
+			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not reponding\n"
+			send_user "\nFAILURE: salloc is not responding\n"
 			set exit_code 1
 		}
 		eof {
@@ -70,15 +74,6 @@ proc inc21_30_2 {} {
 		}
 	}
 
-	if {$jobmatch==0} {
-		send_user "\nFAILURE: jobs were not submitted\n"
-		set exit_code 1
-	}
-
-	# Checks the state of the job
-	check_state $job_id2
-
-	# Cancels remaining jobs
-	cancel_job $job_id1
-	cancel_job $job_id2
+	# Cancel job
+	cancel_job $job_id
 }

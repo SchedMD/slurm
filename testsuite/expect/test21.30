@@ -38,6 +38,14 @@ source ./inc21.30.5
 source ./inc21.30.6
 source ./inc21.30.7
 source ./inc21.30.8
+source ./inc21.30.9
+source ./inc21.30.10
+source ./inc21.30.11
+source ./inc21.30.12
+source ./inc21.30.13
+source ./inc21.30.14
+source ./inc21.30.15
+source ./inc21.30.16
 
 set test_id	"21.30"
 set exit_code	0
@@ -49,18 +57,38 @@ set grn         GrpNodes
 set grn_num     2
 set grcpu       GrpCpus
 set grcpu_num   10
+set grpcpumin   GrpCPUMins
+set grpcpumin_num  1
+# Set grpcpurunmin_num to multiple of CPUs per core to work with most configurations
+# Also make sure that it is at least 4 so we can add and subtract from it
+set grpcpurunmin GrpCPURunMins
+set grpcpurunmin_num 40
 set grjobs      GrpJobs
 set grjobs_num  2
+set grpmem      GrpMem
+set grpmem_num  100
 set grsub       GrpSubmit
 set grsub_num   2
+set grpwall     GrpWall
+set grpwall_num 1
 set maxcpu      MaxCpus
 set maxcpu_num  10
+# Set maxcpumin_num to multiple of CPUs per core to work with most configurations
+set maxcpumin   MaxCPUMins
+set maxcpumin_num 2
+set maxwall     MaxWall
+set maxwall_num 2
+set maxcpuspu   MaxCPUSPerUser
+set maxcpuspu_num 2
 set maxnodes    MaxNodes
 set maxnode_num 10
+set maxnodespu  MaxNodesPerUser
+set maxnodespu_num 2
 set maxjobs     MaxJobs
 set maxjobs_num 2
 set maxjobsub   MaxSubmitJobs
 set maxjobsub_num 2
+set time_spacing 10
 
 print_header $test_id
 
@@ -92,12 +120,12 @@ proc check_state { job } {
 }
 
 # modifies the QoS
-proc mod_qos { node cpu job sub mcpu mnode mjobs mjobsub } {
+proc mod_qos { node cpu job sub mcpu mnode mjobs mjobsub gcpumin gcpurunmin gmem gwall mcpumin mwall mcpupu mnodespu} {
 
-	global sacctmgr exit_code qosname qostest grn grcpu grjobs grsub maxcpu maxnodes maxjobs maxjobsub
+	global sacctmgr exit_code qosname qostest grn grcpu grjobs grsub maxcpu maxnodes maxjobs maxjobsub grpcpumin grpcpurunmin grpmem grpwall maxcpumin maxwall maxcpumin maxwall maxcpuspu maxnodespu
 
 	set change_cnt 0
-	spawn $sacctmgr -i modify qos where $qosname=$qostest set $grn=$node $grcpu=$cpu $grjobs=$job $grsub=$sub $maxcpu=$mcpu $maxnodes=$mnode $maxjobs=$mjobs $maxjobsub=$mjobsub
+	spawn $sacctmgr -i modify qos where $qosname=$qostest set $grn=$node $grcpu=$cpu $grjobs=$job $grsub=$sub $maxcpu=$mcpu $maxnodes=$mnode $maxjobs=$mjobs $maxjobsub=$mjobsub $grpcpumin=$gcpumin $grpcpurunmin=$gcpurunmin $grpmem=$gmem $grpwall=$gwall $maxcpumin=$mcpumin $maxwall=$mwall $maxcpuspu=$mcpupu $maxnodespu=$mnodespu
 	expect {
 		-re "Modified qos" {
 			incr change_cnt
@@ -179,7 +207,43 @@ if { [test_limits_enforced] == 0 } {
 	exit 0
 }
 
-#gets user
+# Remove any vesitgial accounts or qos
+spawn $sacctmgr -i delete qos $qostest
+expect {
+	-re "Deleting QOS(s)" {
+		exp_continue
+	}
+	-re "Error" {
+		send_user "\nFAILURE: QOS was not deleted\n"
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+	}
+	eof {
+		wait
+	}
+}
+
+# Delete account
+spawn $sacctmgr -i  delete account $acct
+expect {
+	-re "Deleting accounts" {
+		exp_continue
+	}
+	-re "Error" {
+		send_user "\nFAILURE: account was not deleted\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Gets user
 spawn $bin_id -u -n
 expect {
 	-re "($alpha_numeric_under)" {
@@ -208,16 +272,11 @@ expect {
 	}
 }
 
-#add account with qos
+# Add account with qos
 set acctmatch 0
 spawn $sacctmgr -i add account $acct qos=$qostest
 expect {
 	-re "Adding Account" {
-		incr acctmatch
-		exp_continue
-	}
-	-re "Nothing new added" {
-		send_user "\nWARNING: vestigial account $acct found\n"
 		incr acctmatch
 		exp_continue
 	}
@@ -235,7 +294,7 @@ if {$acctmatch != 1} {
 	exit 1
 }
 
-#add user to account
+# Add user to account
 spawn $sacctmgr -i create user name=$user_name account=$acct
 expect {
 	timeout {
@@ -246,28 +305,27 @@ expect {
 	}
 }
 
+mod_qos $grn_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 
-mod_qos $grn_num -1 -1 -1 -1 -1 -1 -1
-
-sleep 1
-#test GrpNode limit
+sleep $time_spacing
+# Test GrpNode limit
 inc21_30_1
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1
+mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 
-sleep 1
-#test GrpCpus
+sleep $time_spacing
+# Test GrpCpus
 inc21_30_2
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 -1 $grjobs_num -1 -1 -1 -1 -1
+mod_qos -1 -1 $grjobs_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 
-sleep 1
+sleep $time_spacing
 # test GrpJob limits
 inc21_30_3
 if {$exit_code != 0} {
@@ -275,9 +333,9 @@ if {$exit_code != 0} {
 }
 
 
-mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1
+mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 
-sleep 1
+sleep $time_spacing
 # test GrpSubmit
 inc21_30_4
 if {$exit_code != 0} {
@@ -285,39 +343,120 @@ if {$exit_code != 0} {
 }
 
 
-mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1
+mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 
-sleep 1
-#test MaxCpus limits
+sleep $time_spacing
+# Test MaxCpus limits
 inc21_30_5
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 $maxnode_num -1 -1
+mod_qos -1 -1 -1 -1 -1 $maxnode_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 
-sleep 1
-#test MaxNode limit
+sleep $time_spacing
+# Test MaxNode limit
 inc21_30_6
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 $maxjobs_num -1
+mod_qos -1 -1 -1 -1 -1 -1 $maxjobs_num -1 -1 -1 -1 -1 -1 -1 -1 -1
 
-sleep 1
-#test MaxJobs limit
+sleep $time_spacing
+# Test MaxJobs limit
 inc21_30_7
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 -1 $maxjobsub_num
+mod_qos -1 -1 -1 -1 -1 -1 -1 $maxjobsub_num -1 -1 -1 -1 -1 -1 -1 -1
 
-sleep 1
-#test MaxJobsSubmits limit
+sleep $time_spacing
+# Test MaxJobsSubmits limit
 inc21_30_8
 if {$exit_code != 0} {
+	endit
+}
+
+#
+# NOTE: This test for Group CPU Mins does not always run properly
+# due to a timing issue caused by a decay timer from the limit once it
+# has been reached. The decay also effects other QOS timed limits so
+# other parts of this test may not work properly if the group cpu
+# run mins test is used.
+#
+if {0} {
+	mod_qos -1 -1 -1 -1 -1 -1 -1 -1 $grpcpumin_num -1 -1 -1 -1 -1 -1 -1
+
+	sleep $time_spacing
+	# Test GroupCPUMins
+	inc21_30_9
+	if {$exit_code != 0 } {
+		endit
+	}
+}
+
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpcpurunmin_num -1 -1 -1 -1 -1 -1
+
+sleep $time_spacing
+# Test GroupCPURunMins
+inc21_30_10
+if {$exit_code != 0 } {
+	endit
+}
+
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpmem_num -1 -1 -1 -1 -1
+
+sleep $time_spacing
+# Test Group Memory
+inc21_30_11
+if {$exit_code != 0 } {
+	endit
+}
+
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1  $grpwall_num -1 -1 -1 -1
+
+sleep $time_spacing
+# Test Group wall
+inc21_30_12
+if {$exit_code != 0 } {
+	endit
+}
+
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxcpumin_num -1 -1 -1
+
+sleep $time_spacing
+# Test Max Cpu Mins
+inc21_30_13
+if {$exit_code != 0 } {
+	endit
+}
+
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxwall_num -1 -1
+
+sleep $time_spacing
+# Test Max Wall
+inc21_30_14
+if {$exit_code != 0 } {
+	endit
+}
+
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxcpuspu_num -1
+
+sleep $time_spacing
+# Test Max CPUs Per User
+inc21_30_15
+if {$exit_code != 0 } {
+	endit
+}
+
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxnodespu_num
+
+sleep $time_spacing
+# Test MaxNodesPerUser
+inc21_30_16
+if {$exit_code != 0 } {
 	endit
 }
 
