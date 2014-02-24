@@ -180,10 +180,6 @@ delete should be done to a user, account or cluster entity.  This will
 in\-turn update the underlying associations.
 
 .TP
-\fIclus_res\fP
-Cluster Resources - software resources for the usage on this cluster.
-
-.TP
 \fIcluster\fP
 The \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration
 file, used to differentiate accounts from on different machines.
@@ -214,8 +210,8 @@ the Comment String
 Quality of Service.
 
 .TP
-\fIser_res\fP
-Server Resources - software resources for the system (Server Manager level).
+\fIResource\fP
+Resources - software resources for the system.
 
 .TP
 \fItransaction\fR
@@ -685,57 +681,6 @@ children of this association.
 .TP
 \fIUser\fP
 The name of a user in the association.
-
-
-.SH "SPECIFICATIONS FOR CLUS_RES "
-
-.TP
-\fIAllowed\fP=<percent allowed>
-Percentage of a specific software resource that can be used on this cluster.
-
-\fICluster\fP=<name>
-Name of the cluster on which the server resources are to be available.  If
-no name is designated the resources are evenly distributed between all clusters
-configured on the server.
-
-\fIName\fP=<name>
-The name of a software resource available for use on this cluster.  This must be
-the name of a software resource configured on this system.
-.P
-NOTE:  Clus_res is used to define each software resource configured
-on a system that can be used within the Slurm cluster.
-
-
-.SH "LIST/SHOW CLUS_RES FORMAT OPTIONS"
-
-.TP
-\fICount\fP
-Number of software resources configured on the system.
-
-\fIFlags\fP
-Flags that identify specific attributes of a resource.  At this time no flags
-have been defined.
-
-\fIManager\fP
-Name of the resource manager that controls this resource.
-
-\fIName\fP
-Name of this software resource.
-
-\fIPercent\fP
-Percent of resource Count allowed to be used in this cluster.
-
-\fIServer\fP
-Cluster name where the resource manager is installed.
-
-\fIType\fP
-Type of server resource this record represents.
-.P
-NOTE:  Count represents the total number of resources configured on the
-server being controlled by a resource manager.  The number of resources
-that can be used by this cluster is determined by the Percentage allowed
-for this cluster.
-
 
 .SH "SPECIFICATIONS FOR CLUSTERS"
 
@@ -1306,12 +1251,21 @@ time to fairshare or association/qos limits.
 To clear a previously set value use the modify command with a new value of \-1.
 
 
-.SH "SPECIFICATIONS FOR SER_RES"
+.SH "SPECIFICATIONS FOR RESOURCE"
+
+\fIClusters\fP=<name list>
+Comma separated list of cluster names on which specified resources are to be
+available.  If no names are designated the all clusters already
+allowed to use this resource will be altered.
 
 .TP
 \fICount\fP=<OPT>
 Number of software resources of a specific name configured on the system being
 controlled by a resource manager.
+
+.TP
+\fIDescription=\fP
+A brief description of the resource.
 
 .TP
 \fIFlags\fP=<OPT>
@@ -1323,32 +1277,50 @@ no flags have been defined.
 The name of a software resource manager controlling this system resource.
 
 .TP
-\fIName\fP=<OPT>
-The name of a software resource configured on the system being controlled
- by a resource manager.
+\fINames\fP=<OPT>
+Comma separated list of the name of a resource configured on the
+system being controlled by a resource manager.  If this resource is
+seen on the slurmctld it's name will be name@server to distinguish it
+from local resources defined in a slurm.conf.
+
+.TP
+\fIPercentAllowed\fP=<percent allowed>
+Percentage of a specific resource that can be used on specified cluster.
 
 .TP
 \fIServer\fP=<OPT>
-The name of the cluster on which the license manager is configured.
+The name of the server serving up the resource.  Default is 'slurmdb'.
 
 .TP
 \fIType\fP=<OPT>
 The type of the resource represented by this record.  Currently the only valid
 type is License.
 .P
-NOTE:  Ser_res is used to define each software resource configured on a system
+NOTE:  Resource is used to define each resource configured on a system
 available for usage by Slurm clusters.
 
 
-.SH "LIST/SHOW SER_RES FORMAT OPTIONS"
+.SH "LIST/SHOW RESOURCE FORMAT OPTIONS"
+
+.TP
+\fICluster\fP
+Name of cluster resource is given to.
 
 .TP
 \fICount\fP
-The count of a specific software resource configured on the system.
+The count of a specific resource configured on the system globally.
+
+.TP
+\fICountAllowed\fP
+The count of a specific resource configured on the system to a cluster.
+
+.TP
+\fICountUsed\fP
+The used count of a specific resource configured on the system globally.
 
 .TP
 \fIDescription\fP
-Description of the system software resource.
+Description of the resource.
 
 .TP
 \fIFlags\fP
@@ -1357,19 +1329,27 @@ this time no flags have been defined.
 
  .TP
 \fIManager\fP
-Name of the resource manager that controls this software resource.
+Name of the resource manager that controls this resource.
 
 .TP
 \fIName\fP
-Name of this software resource.
+Name of this resource.
+
+.TP
+\fIPercentAllowed\fP
+The percent of a specific resource given to a cluster.
+
+.TP
+\fIPercentUsed\fP
+The used percentage of a specific resource globally.
 
  .TP
 \fIServer\fP
-Cluster name where the resource manager is installed.
+Server serving up the resource.
 
 .TP
 \fIType\fP
-Type of server resource this record represents.
+Type of resource this record represents.
 
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
