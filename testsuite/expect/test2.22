@@ -1,0 +1,183 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol requeuehold requeues job to held pending state.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id            "2.22"
+set script             "test$test_id.bash"
+set job_id             0
+set exit_code          0
+
+print_header $test_id
+
+# Remove any vestigial scripts
+exec $bin_rm -f $script
+
+make_bash_script $script "$bin_sleep 20"
+
+proc check_hold { job } {
+
+	global scontrol exit_code
+
+	set hold 0
+	spawn $scontrol show job $job
+	expect {
+		-re "Priority=0" {
+			set hold 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $hold != 1 } {
+		send_user "\nFAILURE scontrol did not hold job after it was requeued\n"
+		set exit_code 1
+	}
+}
+
+proc check_release { job } {
+
+	global scontrol number exit_code
+
+	set priority 0
+	spawn $scontrol show job $job
+	expect {
+		-re "Priority=($number)" {
+			set priority $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $priority == 0 } {
+		send_user "\nFAILURE: priority was not set to a non zero value after it was released\n"
+		set exit_code 1
+	}
+}
+
+proc check_state { job } {
+
+	global scontrol exit_code
+
+	set job_state 0
+	spawn $scontrol show job $job
+	expect {
+		-re "JobState=PENDING" {
+			set job_state 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 0
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$job_state != 1} {
+		send_user "\nFAILURE: Job $job state was not PENDING after it was requeued\n"
+		set exit_code 1
+	}
+}
+
+spawn $sbatch -N1 -t1 -o /dev/null -e /dev/null $script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+wait_for_job $job_id DONE
+
+spawn $scontrol requeuehold $job_id
+expect {
+	timeout {
+		send_user "\nFAILURE scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Check if the job is in hold
+check_hold $job_id
+
+# Check that the job state is pending after released
+check_state $job_id
+
+spawn $scontrol release $job_id
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+check_release $job_id
+
+cancel_job $job_id
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm $script
+}
+
+exit $exit_code
