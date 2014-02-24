@@ -979,7 +979,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
-	int query_clusters;
+	int query_clusters = 0;
 	bool send_update = 0;
 	bool res_added = 0;
 	bool have_clusters = 0;
@@ -1004,6 +1004,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(clus_vals, ", percent_allowed=%u",
 			   res->percent_used);
 		send_update = 1;
+		query_clusters++;
 	}
 
 	if (!vals && !clus_vals) {
@@ -1015,7 +1016,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* force to only do non-deleted resources */
 	res_cond->with_deleted = 0;
 	_setup_res_cond(res_cond, &extra);
-	query_clusters = _setup_clus_res_cond(res_cond, &clus_extra);
+	query_clusters += _setup_clus_res_cond(res_cond, &clus_extra);
 	if (query_clusters || send_update)
 		query = xstrdup_printf("select id, name, server, cluster "
 				       "from %s as t1 left outer join "
