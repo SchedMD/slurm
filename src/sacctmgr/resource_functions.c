@@ -39,6 +39,95 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 
+static void _print_overcommit(slurmdb_res_rec_t *res,
+			      slurmdb_res_cond_t *res_cond)
+{
+	List res_list = NULL, cluster_list = NULL;
+	ListIterator itr, clus_itr = NULL, found_clus_itr = NULL;
+	slurmdb_res_rec_t *found_res;
+	slurmdb_clus_res_rec_t *clus_res;
+	char *cluster;
+
+	if (res->percent_used == (uint16_t)NO_VAL)
+		return;
+
+	/* Don't use the global g_res_list since we are going to
+	 * change the contents of this one.
+	 */
+	res_cond->with_clusters = 1;
+
+	if (res_cond->cluster_list) {
+		cluster_list = res_cond->cluster_list;
+		res_cond->cluster_list = NULL;
+	}
+
+	res_list = acct_storage_g_get_res(db_conn, my_uid, res_cond);
+	if (!res_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem getting system resources "
+			"from database.  Contact your admin.\n");
+		return;
+	}
+
+	itr = list_iterator_create(res_list);
+	while ((found_res = list_next(itr))) {
+		int total = 0, percent_allowed;
+		fprintf(stderr, "  %s@%s\n",
+			found_res->name, found_res->server);
+		if (cluster_list)
+			clus_itr = list_iterator_create(cluster_list);
+		if (found_res->clus_res_list) {
+			found_clus_itr = list_iterator_create(
+				found_res->clus_res_list);
+			while ((clus_res = list_next(found_clus_itr))) {
+				cluster = NULL;
+				if (clus_itr) {
+					while ((cluster = list_next(clus_itr)))
+						if (!strcmp(cluster,
+							    clus_res->cluster))
+						    break;
+					list_iterator_reset(clus_itr);
+				} else /* This means we didn't specify
+					  any clusters (All clusters
+					  are overwritten with the
+					  requested percentage) so
+					  just put something there to
+					  get the correct percent_allowed.
+				       */
+					cluster = "nothing";
+
+				percent_allowed = cluster ? res->percent_used :
+					clus_res->percent_allowed;
+				total += percent_allowed;
+
+				fprintf(stderr,
+					"   Cluster - %s\t %u%%\n",
+					clus_res->cluster,
+					percent_allowed);
+			}
+		} else if (clus_itr) {
+			while ((cluster = list_next(clus_itr))) {
+				total += res->percent_used;
+
+				fprintf(stderr,
+					"   Cluster - %s\t %u%%\n",
+					clus_res->cluster, res->percent_used);
+			}
+		}
+		if (clus_itr)
+			list_iterator_destroy(clus_itr);
+		if (found_clus_itr)
+			list_iterator_destroy(found_clus_itr);
+		fprintf(stderr, "   total\t\t%u%%\n", total);
+	}
+	list_iterator_destroy(itr);
+
+	if (cluster_list) {
+		res_cond->cluster_list = cluster_list;
+		cluster_list = NULL;
+	}
+}
+
 static int _set_res_cond(int *start, int argc, char *argv[],
 			     slurmdb_res_cond_t *res_cond,
 			     List format_list)
@@ -93,13 +182,21 @@ static int _set_res_cond(int *start, int argc, char *argv[],
 				res_cond->cluster_list =
 					list_create(slurm_destroy_char);
 			}
-			if (slurm_addto_char_list(res_cond->cluster_list,
-						  argv[i]+end))
+
+			slurm_addto_char_list(res_cond->cluster_list,
+					      argv[i]+end);
+			if (sacctmgr_validate_cluster_list(
+				    res_cond->cluster_list) != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr,
+					" Need a valid cluster name to "
+					"add a cluster resource.\n");
+			} else
 				set = 1;
 		} else if (!strncasecmp(argv[i], "Descriptions",
-					 MAX(command_len, 1))) {
-			if (!res_cond->description_list) {
-				res_cond->description_list =
+				MAX(command_len, 1))) {
+		if (!res_cond->description_list) {
+			res_cond->description_list =
 					list_create(slurm_destroy_char);
 			}
 			if (slurm_addto_char_list(
@@ -466,7 +563,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 	while ((name = list_next(itr))) {
 		bool added = 0;
 		found_res = sacctmgr_find_res_from_list(
-			g_res_list, name, start_res->server);
+			g_res_list, NO_VAL, name, start_res->server);
 		if (!found_res) {
 			if (start_res->type == SLURMDB_RESOURCE_NOTSET) {
 				exit_code=1;
@@ -504,6 +601,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 			ListIterator found_itr = NULL;
 			slurmdb_clus_res_rec_t *clus_res;
 			char *cluster;
+			uint16_t start_used = 0;
 
 			if (found_res) {
 				found_itr = list_iterator_create(
@@ -512,6 +610,8 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 				slurmdb_init_res_rec(res, 0);
 				res->id = found_res->id;
 				res->type = found_res->type;
+				start_used = res->percent_used =
+					found_res->percent_used;
 			}
 
 			res->clus_res_list = list_create(
@@ -537,7 +637,27 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 							   res->server);
 						list_append(res_list, res);
 					}
-
+					/* make sure we don't overcommit */
+					res->percent_used +=
+						start_res->percent_used;
+					if (res->percent_used > 100) {
+						exit_code=1;
+						fprintf(stderr,
+							" Adding this %d "
+							"clusters to resource "
+							"%s@%s at %u%% each "
+							", with %u%% already "
+							"used,  would go over "
+							"100%%.  Please redo "
+							"your math and "
+							"resubmit.\n",
+							list_count(
+								cluster_list),
+							res->name, res->server,
+							start_res->percent_used,
+							start_used);
+						break;
+					}
 					clus_res = xmalloc(
 						sizeof(slurmdb_clus_res_rec_t));
 					list_append(res->clus_res_list,
@@ -546,13 +666,15 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 					clus_res->percent_allowed =
 						start_res->percent_used;
 					xstrfmtcat(res_str,
-						   "   Cluster - %s %u%%\n",
+						   "   Cluster - %s\t%u%%\n",
 						   cluster,
 						   clus_res->percent_allowed);
 					/* FIXME: make sure we don't
 					   overcommit */
 				}
 			}
+			if (res->percent_used > 100)
+				break;
 
 			if (found_res)
 				list_iterator_destroy(found_itr);
@@ -562,7 +684,6 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 
 			list_iterator_reset(clus_itr);
 		}
-
 	}
 
 	if (cluster_list)
@@ -784,6 +905,13 @@ extern int sacctmgr_modify_res(int argc, char *argv[])
 	} else if (ret_list) {
 		printf(" Nothing modified\n");
 		rc = SLURM_ERROR;
+	} else if (errno == ESLURM_OVER_ALLOCATE) {
+		exit_code=1;
+		rc = SLURM_ERROR;
+		fprintf(stderr,
+			" If change was accepted it would look like this...\n");
+		_print_overcommit(res, res_cond);
+
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
@@ -794,7 +922,7 @@ extern int sacctmgr_modify_res(int argc, char *argv[])
 	if (set) {
 		if (commit_check("Would you like to commit changes?")){
 			acct_storage_g_commit(db_conn, 1);
-		}else {
+		} else {
 			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);
 		}
