@@ -305,7 +305,7 @@ extern slurmdb_association_rec_t *sacctmgr_find_association_from_list(
 extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
 	List assoc_list, char *account, char *cluster);
 extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
-	List res_list, char *name, char *server);
+	List res_list, uint32_t id, char *name, char *server);
 extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
 	List qos_list, char *name);
 extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(

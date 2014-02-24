@@ -970,18 +970,20 @@ extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
 }
 
 extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
-	List res_list, char *name, char *server)
+	List res_list, uint32_t id, char *name, char *server)
 {
 	ListIterator itr = NULL;
 	slurmdb_res_rec_t *res = NULL;
 
-	if (!name || !res_list)
+	if ((id == NO_VAL) && (!name || !res_list))
 		return NULL;
 
 	itr = list_iterator_create(res_list);
 	while ((res = list_next(itr))) {
-		if (!strcasecmp(server, res->server)
-		    && !strcasecmp(name, res->name))
+		if ((id == res->id)
+		    || (name && server
+			&& !strcasecmp(server, res->server)
+			&& !strcasecmp(name, res->name)))
 			break;
 	}
 	list_iterator_destroy(itr);
