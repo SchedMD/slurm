@@ -40,9 +40,10 @@ gang scheduling:
 </P>
 <UL>
 <LI>
-<B>SelectType</B>: The SLURM gang scheduler supports nodes
-allocated by the <I>select/linear</I> plugin and socket/core/CPU resources
-allocated by the <I>select/cons_res</I> plugin.
+<B>SelectType</B>: The SLURM gang scheduler supports
+nodes allocated by the <I>select/linear</I> plugin,
+socket/core/CPU resources allocated by the <I>select/cons_res</I> plugin or
+<I>select/cray</I> for Cray systems without ALPS.
 </LI>
 <LI>
 <B>SelectTypeParameter</B>: Since resources will be getting overallocated
@@ -499,6 +500,6 @@ Note that <I>CR_Core_Memory</I> supports CPU binding, while
 <I>CR_CPU_Memory</I> does not.
 </P>
 
-<p style="text-align:center;">Last modified 3 January 2014</p>
+<p style="text-align:center;">Last modified 24 February 2014</p>
 
 <!--#include virtual="footer.txt"-->
