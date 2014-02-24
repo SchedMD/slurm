@@ -97,7 +97,7 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 		xstrfmtcat(*extra, ", cpus=%u", resv->cpus);
 	}
 
-	if (resv->flags != (uint16_t)NO_VAL) {
+	if (resv->flags != NO_VAL) {
 		xstrcat(*cols, ", flags");
 		xstrfmtcat(*vals, ", %u", resv->flags);
 		xstrfmtcat(*extra, ", flags=%u", resv->flags);
@@ -385,7 +385,7 @@ try_again:
 	else
 		resv->cpus = slurm_atoul(row[RESV_CPU]);
 
-	if (resv->flags != (uint16_t)NO_VAL)
+	if (resv->flags != NO_VAL)
 		set = 1;
 	else
 		resv->flags = slurm_atoul(row[RESV_FLAGS]);

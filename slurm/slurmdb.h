@@ -706,7 +706,7 @@ typedef struct {
 	char *cluster; /* cluster reservation is for */
 	uint32_t cpus; /* how many cpus are in reservation */
 	uint64_t down_secs; /* number of cpu seconds down */
-	uint16_t flags; /* flags for reservation. */
+	uint32_t flags; /* flags for reservation. */
 	uint32_t id;   /* id of reservation. */
 	char *name; /* name of reservation */
 	char *nodes; /* list of nodes in reservation */

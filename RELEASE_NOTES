@@ -136,6 +136,10 @@ Changed members of the following structs
     type int32_t
  -- Struct slurm_ctl_conf / slurm_ctl_conf_t: Changed max_array_sz from uint16_t
     to uint32_t.
+ -- Struct reserve_info / reserve_info_t: Changed flags from uint16_t to
+    uint32_t.
+ -- Struct resv_desc_msg / resv_desc_msg_t: Changed flags from uint16_t to
+    uint32_t.
 
 Added the following struct definitions
 ======================================

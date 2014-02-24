@@ -2251,36 +2251,69 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t rpc_version,
 {
 	slurmdb_reservation_rec_t *object = (slurmdb_reservation_rec_t *)in;
 
-	if (!object) {
-		pack64(0, buffer);
-		packnull(buffer);
-		packnull(buffer);
-		pack32((uint32_t)NO_VAL, buffer);
-		pack64(0, buffer);
-		pack16((uint16_t)NO_VAL, buffer);
-		pack32(0, buffer);
-		packnull(buffer);
-		packnull(buffer);
-		packnull(buffer);
-		pack_time(0, buffer);
-		pack_time(0, buffer);
-		pack_time(0, buffer);
-		return;
-	}
+	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		if (!object) {
+			pack64(0, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32((uint32_t)NO_VAL, buffer);
+			pack64(0, buffer);
+			pack32((uint32_t)NO_VAL, buffer);
+			pack32(0, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+			return;
+		}
 
-	pack64(object->alloc_secs, buffer);
-	packstr(object->assocs, buffer);
-	packstr(object->cluster, buffer);
-	pack32(object->cpus, buffer);
-	pack64(object->down_secs, buffer);
-	pack16(object->flags, buffer);
-	pack32(object->id, buffer);
-	packstr(object->name, buffer);
-	packstr(object->nodes, buffer);
-	packstr(object->node_inx, buffer);
-	pack_time(object->time_end, buffer);
-	pack_time(object->time_start, buffer);
-	pack_time(object->time_start_prev, buffer);
+		pack64(object->alloc_secs, buffer);
+		packstr(object->assocs, buffer);
+		packstr(object->cluster, buffer);
+		pack32(object->cpus, buffer);
+		pack64(object->down_secs, buffer);
+		pack32(object->flags, buffer);
+		pack32(object->id, buffer);
+		packstr(object->name, buffer);
+		packstr(object->nodes, buffer);
+		packstr(object->node_inx, buffer);
+		pack_time(object->time_end, buffer);
+		pack_time(object->time_start, buffer);
+		pack_time(object->time_start_prev, buffer);
+	} else {
+		if (!object) {
+			pack64(0, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32((uint32_t)NO_VAL, buffer);
+			pack64(0, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			pack32(0, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+			return;
+		}
+
+		pack64(object->alloc_secs, buffer);
+		packstr(object->assocs, buffer);
+		packstr(object->cluster, buffer);
+		pack32(object->cpus, buffer);
+		pack64(object->down_secs, buffer);
+		pack16((uint16_t)object->flags, buffer);
+		pack32(object->id, buffer);
+		packstr(object->name, buffer);
+		packstr(object->nodes, buffer);
+		packstr(object->node_inx, buffer);
+		pack_time(object->time_end, buffer);
+		pack_time(object->time_start, buffer);
+		pack_time(object->time_start_prev, buffer);
+	}
 }
 
 extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,
@@ -2292,19 +2325,43 @@ extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	safe_unpack64(&object_ptr->alloc_secs, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
-	safe_unpack32(&object_ptr->cpus, buffer);
-	safe_unpack64(&object_ptr->down_secs, buffer);
-	safe_unpack16(&object_ptr->flags, buffer);
-	safe_unpack32(&object_ptr->id, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->node_inx, &uint32_tmp, buffer);
-	safe_unpack_time(&object_ptr->time_end, buffer);
-	safe_unpack_time(&object_ptr->time_start, buffer);
-	safe_unpack_time(&object_ptr->time_start_prev, buffer);
+	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		safe_unpack64(&object_ptr->alloc_secs, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&object_ptr->cpus, buffer);
+		safe_unpack64(&object_ptr->down_secs, buffer);
+		safe_unpack32(&object_ptr->flags, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->node_inx, &uint32_tmp,
+				       buffer);
+		safe_unpack_time(&object_ptr->time_end, buffer);
+		safe_unpack_time(&object_ptr->time_start, buffer);
+		safe_unpack_time(&object_ptr->time_start_prev, buffer);
+	} else {
+		uint16_t flags;
+		safe_unpack64(&object_ptr->alloc_secs, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&object_ptr->cpus, buffer);
+		safe_unpack64(&object_ptr->down_secs, buffer);
+		safe_unpack16(&flags, buffer);
+		object_ptr->flags = flags;
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->node_inx, &uint32_tmp,
+				       buffer);
+		safe_unpack_time(&object_ptr->time_end, buffer);
+		safe_unpack_time(&object_ptr->time_start, buffer);
+		safe_unpack_time(&object_ptr->time_start_prev, buffer);
+	}
 
 	return SLURM_SUCCESS;
 

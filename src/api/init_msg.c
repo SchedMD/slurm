@@ -145,7 +145,7 @@ void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
 	memset(resv_msg, 0, sizeof(resv_desc_msg_t));
 	resv_msg->duration	= NO_VAL;
 	resv_msg->end_time	= (time_t) NO_VAL;
-	resv_msg->flags		= (uint16_t) NO_VAL;
+	resv_msg->flags		= NO_VAL;
 	resv_msg->start_time	= (time_t) NO_VAL;
 }
 

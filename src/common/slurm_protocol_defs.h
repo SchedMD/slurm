@@ -1286,7 +1286,7 @@ extern char *trigger_res_type(uint16_t res_type);
 extern char *trigger_type(uint32_t trig_type);
 
 /* user needs to xfree after */
-extern char *reservation_flags_string(uint16_t flags);
+extern char *reservation_flags_string(uint32_t flags);
 
 /* Return ctime like string without the newline.
  * Not thread safe */

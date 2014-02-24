@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
  -- select/cons_res bug fix for range of node counts with --cpus-per-task
     option (e.g. "srun -N2-3 -c2 hostname" would allocate 2 CPUs on the first
     node and 0 CPUs on the second node).
+ -- Change reservation flags field from 16 to 32-bits.
 
 * Changes in Slurm 14.03.0pre6
 ==============================
