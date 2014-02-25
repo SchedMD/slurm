@@ -613,7 +613,6 @@ struct job_record {
 	uint32_t resv_id;		/* reservation ID */
 	char *resv_name;		/* reservation name */
 	struct slurmctld_resv *resv_ptr;/* reservation structure pointer */
-	uint16_t resv_flags;		/* see RESERVE_FLAG_* in slurm.h */
 	uint32_t requid;	    	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */

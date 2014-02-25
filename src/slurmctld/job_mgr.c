@@ -824,7 +824,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->mail_type, buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
 	pack16(dump_job_ptr->restart_cnt, buffer);
-	pack16(dump_job_ptr->resv_flags, buffer);
 	pack16(dump_job_ptr->wait_all_nodes, buffer);
 	pack16(dump_job_ptr->warn_flags, buffer);
 	pack16(dump_job_ptr->warn_signal, buffer);
@@ -920,7 +919,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
-	uint16_t restart_cnt, resv_flags, ckpt_interval;
+	uint16_t restart_cnt, ckpt_interval;
 	uint16_t wait_all_nodes, warn_flags = 0, warn_signal, warn_time;
 	uint16_t limit_set_max_cpus = 0, limit_set_max_nodes = 0;
 	uint16_t limit_set_min_cpus = 0, limit_set_min_nodes = 0;
@@ -1003,7 +1002,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&mail_type, buffer);
 		safe_unpack16(&state_reason, buffer);
 		safe_unpack16(&restart_cnt, buffer);
-		safe_unpack16(&resv_flags, buffer);
 		safe_unpack16(&wait_all_nodes, buffer);
 		safe_unpack16(&warn_flags, buffer);
 		safe_unpack16(&warn_signal, buffer);
@@ -1167,7 +1165,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&mail_type, buffer);
 		safe_unpack16(&state_reason, buffer);
 		safe_unpack16(&restart_cnt, buffer);
-		safe_unpack16(&resv_flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);	/* Was resv_flags */
 		safe_unpack16(&wait_all_nodes, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
@@ -1325,7 +1323,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&mail_type, buffer);
 		safe_unpack16(&state_reason, buffer);
 		safe_unpack16(&restart_cnt, buffer);
-		safe_unpack16(&resv_flags, buffer);
+		safe_unpack16(&uint16_tmp, buffer);	/* Was resv_flags */
 		safe_unpack16(&wait_all_nodes, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
@@ -1534,7 +1532,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->resv_id      = resv_id;
 	job_ptr->resv_name    = resv_name;
 	resv_name             = NULL;	/* reused, nothing left to free */
-	job_ptr->resv_flags   = resv_flags;
 	job_ptr->select_jobinfo = select_jobinfo;
 	job_ptr->job_resrcs   = job_resources;
 	job_ptr->spank_job_env = spank_job_env;

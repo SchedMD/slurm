@@ -2897,7 +2897,7 @@ extern int load_all_resv_state(int recover)
 /*
  * Determine if a job request can use the specified reservations
  *
- * IN/OUT job_ptr - job to validate, set its resv_id and resv_flags
+ * IN/OUT job_ptr - job to validate, set its resv_id
  * RET SLURM_SUCCESS or error code (not found or access denied)
  */
 extern int validate_job_resv(struct job_record *job_ptr)
@@ -2910,7 +2910,6 @@ extern int validate_job_resv(struct job_record *job_ptr)
 	if ((job_ptr->resv_name == NULL) || (job_ptr->resv_name[0] == '\0')) {
 		xfree(job_ptr->resv_name);
 		job_ptr->resv_id    = 0;
-		job_ptr->resv_flags = 0;
 		job_ptr->resv_ptr   = NULL;
 		return SLURM_SUCCESS;
 	}
@@ -2929,7 +2928,6 @@ extern int validate_job_resv(struct job_record *job_ptr)
 	rc = _valid_job_access_resv(job_ptr, resv_ptr);
 	if (rc == SLURM_SUCCESS) {
 		job_ptr->resv_id    = resv_ptr->resv_id;
-		job_ptr->resv_flags = resv_ptr->flags;
 		job_ptr->resv_ptr   = resv_ptr;
 		_validate_node_choice(resv_ptr);
 	}
