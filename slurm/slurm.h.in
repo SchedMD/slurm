@@ -1882,22 +1882,32 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
  * Resource reservation data structures.
  * Create, show, modify and delete functions are required
  */
-#define RESERVE_FLAG_MAINT	0x0001	/* Set MAINT flag */
-#define RESERVE_FLAG_NO_MAINT	0x0002	/* Clear MAINT flag */
-#define RESERVE_FLAG_DAILY	0x0004	/* Set DAILY flag */
-#define RESERVE_FLAG_NO_DAILY	0x0008	/* Clear DAILY flag */
-#define RESERVE_FLAG_WEEKLY	0x0010	/* Set WEEKLY flag */
-#define RESERVE_FLAG_NO_WEEKLY	0x0020	/* Clear WEEKLY flag */
-#define RESERVE_FLAG_IGN_JOBS	0x0040	/* Ignore running jobs */
-#define RESERVE_FLAG_NO_IGN_JOB	0x0080	/* Clear ignore running jobs */
-#define RESERVE_FLAG_LIC_ONLY	0x0100	/* Reserve licenses only, any nodes */
-#define RESERVE_FLAG_NO_LIC_ONLY 0x0200	/* Clear reserve licenses only flag */
-#define RESERVE_FLAG_STATIC     0x0400 /* Static node allocation */
-#define RESERVE_FLAG_NO_STATIC  0x0800 /* Clear static node allocation */
-#define RESERVE_FLAG_PART_NODES 0x1000	/* Use Partition Nodes only */
-#define RESERVE_FLAG_NO_PART_NODES 0x2000 /* Clear Partition Nodes only */
-#define RESERVE_FLAG_OVERLAP	0x4000	/* Permit to overlap others */
-#define RESERVE_FLAG_SPEC_NODES	0x8000	/* Contains specific nodes */
+#define RESERVE_FLAG_MAINT		0x00000001	/* Set MAINT flag */
+#define RESERVE_FLAG_NO_MAINT		0x00000002	/* Clear MAINT flag */
+#define RESERVE_FLAG_DAILY		0x00000004	/* Set DAILY flag */
+#define RESERVE_FLAG_NO_DAILY		0x00000008	/* Clear DAILY flag */
+#define RESERVE_FLAG_WEEKLY		0x00000010	/* Set WEEKLY flag */
+#define RESERVE_FLAG_NO_WEEKLY		0x00000020	/* Clear WEEKLY flag */
+#define RESERVE_FLAG_IGN_JOBS		0x00000040	/* Ignore running jobs */
+#define RESERVE_FLAG_NO_IGN_JOB		0x00000080	/* Clear ignore running
+							 * jobs flag */
+#define RESERVE_FLAG_LIC_ONLY		0x00000100	/* Reserve licenses
+							 * only */
+#define RESERVE_FLAG_NO_LIC_ONLY	0x00000200	/* Clear reserve
+							 * licenses only flag */
+#define RESERVE_FLAG_STATIC     	0x00000400	/* Static node allocation */
+#define RESERVE_FLAG_NO_STATIC  	0x00000800	/* Clear static node
+							 * allocation */
+#define RESERVE_FLAG_PART_NODES		0x00001000	/* Use partition nodes
+							 * only */
+#define RESERVE_FLAG_NO_PART_NODES	0x00002000	/* Clear partition
+							 * nodes only flag */
+#define RESERVE_FLAG_OVERLAP		0x00004000	/* Permit to overlap
+							 * others */
+#define RESERVE_FLAG_SPEC_NODES		0x00008000	/* Contains specific
+							 * nodes */
+#define RESERVE_FLAG_FIRST_CORES	0x00010000	/* Use only first cores
+							 * on each node */
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */

@@ -151,6 +151,10 @@ static uint32_t _parse_flags(const char *flagstr, const char *msg)
 				outflags |= RESERVE_FLAG_NO_PART_NODES;
 			else
 				outflags |= RESERVE_FLAG_PART_NODES;
+		} else if (!strncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
+			   !flip) {
+			curr += taglen;
+			outflags |= RESERVE_FLAG_FIRST_CORES;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
 			return 0xffffffff;

@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "December 2012" "scontrol 2.5" "Slurm components"
+.TH SCONTROL "1" "February 2014" "scontrol 14.03" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1268,6 +1268,8 @@ Flags\-=DAILY (NOTE: this shortcut is not supported for all flags).
 Currently supported flags include:
 .RS
 .TP 12
+\fFIRST_CORES\fR
+Use the lowest numbered cores on a node only.
 \fILICENSE_ONLY\fR
 This is a reservation for licenses only and not compute nodes.
 If this flag is set, a job using this reservation may use the associated
@@ -1587,7 +1589,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2013 SchedMD LLC.
+Copyright (C) 2010-2014 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

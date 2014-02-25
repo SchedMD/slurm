@@ -1500,6 +1500,11 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_PART_NODES");
 	}
+	if (flags & RESERVE_FLAG_FIRST_CORES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "FIRST_CORES");
+	}
 	return flag_str;
 }
 

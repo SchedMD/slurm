@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     option (e.g. "srun -N2-3 -c2 hostname" would allocate 2 CPUs on the first
     node and 0 CPUs on the second node).
  -- Change reservation flags field from 16 to 32-bits.
+ -- Add reservation flag value of "FIRST_CORES".
  -- Added the idea of Resources to the database.  Framework for handling
     license servers outside of Slurm.
  -- When starting the slurmctld only send past job/node state information to

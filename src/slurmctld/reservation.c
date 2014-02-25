@@ -2,6 +2,7 @@
  *  reservation.c - resource reservation management
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2012-2014 SchedMD LLC
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1686,7 +1687,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_WEEKLY   |
 					RESERVE_FLAG_LIC_ONLY |
 					RESERVE_FLAG_STATIC   |
-					RESERVE_FLAG_PART_NODES;
+					RESERVE_FLAG_PART_NODES |
+					RESERVE_FLAG_FIRST_CORES;
 	}
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
