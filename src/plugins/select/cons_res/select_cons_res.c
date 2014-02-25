@@ -2801,7 +2801,6 @@ bitstr_t *_pick_first_cores(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			bit_clear(tmpcore, coff + jnx);
 		}
 		bit_set(sp_avail_bitmap, inx);
-		node_offset++;
 		if (core_cnt[++node_offset] == 0)
 			break;
 	}
