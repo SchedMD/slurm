@@ -2006,6 +2006,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		}
 	} else {
 		if (IS_NODE_UNKNOWN(node_ptr) || IS_NODE_FUTURE(node_ptr)) {
+			bool unknown = 0;
+
+			if (IS_NODE_UNKNOWN(node_ptr))
+				unknown = 1;
+
 			debug("validate_node_specs: node %s registered with "
 			      "%u jobs",
 			      reg_msg->node_name,reg_msg->job_count);
@@ -2022,7 +2027,10 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				node_ptr->last_idle = now;
 			}
 			last_node_update = now;
-			if (!IS_NODE_DRAIN(node_ptr)
+
+			/* don't send this on a slurmctld unless needed */
+			if (unknown && slurmctld_init_db
+			    && !IS_NODE_DRAIN(node_ptr)
 			    && !IS_NODE_FAIL(node_ptr)) {
 				/* reason information is handled in
 				   clusteracct_storage_g_node_up()

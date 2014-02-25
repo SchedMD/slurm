@@ -218,6 +218,7 @@ extern int   association_based_accounting;
 extern uint32_t   cluster_cpus;
 extern int   with_slurmdbd;
 extern bool  load_2_4_state;
+extern bool  slurmctld_init_db;
 
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h

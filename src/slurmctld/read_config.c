@@ -91,6 +91,8 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/trigger_mgr.h"
 
+bool slurmctld_init_db = 1;
+
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
@@ -2009,4 +2011,149 @@ You have to restart slurmctld.", __func__);
 	xfree(ranged);
 
 	return cc;
+}
+
+extern int dump_config_state_lite(void)
+{
+	static int high_buffer_size = (1024 * 1024);
+	int error_code = 0, log_fd;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	Buf buffer = init_buf(high_buffer_size);
+
+	DEF_TIMERS;
+
+	START_TIMER;
+	/* write header: version, time */
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	packstr(slurmctld_conf.accounting_storage_type, buffer);
+
+	/* write the buffer to file */
+	reg_file = xstrdup_printf("%s/last_config_lite",
+				  slurmctld_conf.state_save_location);
+	old_file = xstrdup_printf("%s.old", reg_file);
+	new_file = xstrdup_printf("%s.new", reg_file);
+
+	log_fd = creat(new_file, 0600);
+	if (log_fd < 0) {
+		error("Can't save state, create file %s error %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		if (link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+
+	free_buf(buffer);
+
+	END_TIMER2("dump_config_state_lite");
+	return error_code;
+
+}
+
+extern int load_config_state_lite(void)
+{
+	int data_allocated, data_read = 0;
+	uint32_t data_size = 0, uint32_tmp = 0;
+	uint16_t ver = 0;
+	int state_fd;
+	char *data = NULL, *state_file;
+	Buf buffer;
+	time_t buf_time;
+	char *last_accounting_storage_type = NULL;
+
+	/* Always ignore .old file */
+	state_file = xstrdup_printf("%s/last_config_lite",
+				    slurmctld_conf.state_save_location);
+
+	//info("looking at the %s file", state_file);
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		debug2("No last_config_lite file (%s) to recover", state_file);
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m",
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+
+	buffer = create_buf(data, data_size);
+
+	safe_unpack16(&ver, buffer);
+	debug3("Version in last_conf_lite header is %u", ver);
+	if (ver > SLURM_PROTOCOL_VERSION) {
+		error("***********************************************");
+		error("Can not recover last_conf_lite, incompatible version, "
+		      "got %u <= %u", ver, SLURM_PROTOCOL_VERSION);
+		error("***********************************************");
+		free_buf(buffer);
+		return EFAULT;
+	}
+
+	safe_unpack_time(&buf_time, buffer);
+	safe_unpackstr_xmalloc(&last_accounting_storage_type,
+			       &uint32_tmp, buffer);
+
+	xassert(slurmctld_conf.accounting_storage_type);
+
+	if (last_accounting_storage_type
+	    && !strcmp(last_accounting_storage_type,
+		       slurmctld_conf.accounting_storage_type))
+		slurmctld_init_db = 0;
+	xfree(last_accounting_storage_type);
+
+	free_buf(buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	if (buffer)
+		free_buf(buffer);
+
+	return SLURM_ERROR;
 }

@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
  -- Change reservation flags field from 16 to 32-bits.
  -- Added the idea of Resources to the database.  Framework for handling
     license servers outside of Slurm.
+ -- When starting the slurmctld only send past job/node state information to
+    accounting if running for the first time (should speed up startup
+    dramatically on systems with lots of nodes or lots of jobs).
 
 * Changes in Slurm 14.03.0pre6
 ==============================

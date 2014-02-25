@@ -64,4 +64,7 @@ extern void accounts_list_free(char ***accounts_array);
  */
 extern int read_slurm_conf(int recover, bool reconfig);
 
+extern int dump_config_state_lite(void);
+extern int load_config_state_lite(void);
+
 #endif /* !_HAVE_READ_CONFIG_H */

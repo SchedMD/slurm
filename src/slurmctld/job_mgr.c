@@ -1607,8 +1607,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (!job_ptr->db_index) {
 			debug("starting job %u in accounting",
 			      job_ptr->job_id);
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-			if (IS_JOB_SUSPENDED(job_ptr)) {
+			if (!with_slurmdbd)
+				jobacct_storage_g_job_start(
+					acct_db_conn, job_ptr);
+			if (slurmctld_init_db
+			    && IS_JOB_SUSPENDED(job_ptr)) {
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
 			}
@@ -1616,7 +1619,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		/* make sure we have this job completed in the
 		 * database */
 		if (IS_JOB_FINISHED(job_ptr)) {
-			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
+			if (slurmctld_init_db)
+				jobacct_storage_g_job_complete(
+					acct_db_conn, job_ptr);
 			job_finished = 1;
 		}
 	}
