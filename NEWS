@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
  -- Fix minor memory leak when adding a reservation with a nodelist and core
     count.
  -- Update sacct man page description of job states.
+ -- BGQ - Fix minor memory leak when selecting blocks that can't immediately be
+    placed.
 
 * Changes in Slurm 2.6.6
 ========================

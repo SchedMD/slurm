@@ -805,7 +805,8 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 				goto try_again;
 		}
 
-		main_mps = list_create(NULL);
+		if (!main_mps)
+			main_mps = list_create(NULL);
 		for (i=0; i<ba_main_geo_system->total_size; i++) {
 			if (!bit_test(success_bitmap, i))
 				continue;
