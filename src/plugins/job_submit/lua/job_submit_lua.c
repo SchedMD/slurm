@@ -560,6 +560,8 @@ static int _set_job_req_field (lua_State *L)
 		job_desc->nice = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "ntasks_per_node")) {
 		job_desc->ntasks_per_node = luaL_checknumber(L, 3);
+	} else if (!strcmp(name, "ntasks_per_socket")) {
+		job_desc->ntasks_per_socket = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "num_tasks")) {
 		job_desc->num_tasks = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "partition")) {
