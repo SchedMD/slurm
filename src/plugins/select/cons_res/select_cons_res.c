@@ -2590,8 +2590,8 @@ bitstr_t *_make_core_bitmap_filtered(bitstr_t *node_map, int filter)
 
 /* Once here, if core_cnt is NULL, avail_bitmap has nodes not used by any job or
  * reservation */
-bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
-			  uint32_t *core_cnt, bitstr_t **core_bitmap)
+bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
+			   uint32_t *core_cnt, bitstr_t **core_bitmap)
 {
 	bitstr_t *sp_avail_bitmap;
 	char str[300];
@@ -2752,6 +2752,69 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	return sp_avail_bitmap;
 }
 
+bitstr_t *_pick_first_cores(bitstr_t *avail_bitmap, uint32_t node_cnt,
+			    uint32_t *core_cnt, bitstr_t **core_bitmap)
+{
+	bitstr_t *sp_avail_bitmap;
+	bitstr_t *tmpcore;
+	int inx, jnx, first_node, last_node;
+	int node_offset = 0;
+	int coff, coff2, local_cores;
+
+	if (!core_cnt || (core_cnt[0] == 0))
+		return NULL;
+
+	sp_avail_bitmap = bit_alloc(bit_size(avail_bitmap));
+
+	/* if not NULL = Cores used by other core based reservations
+	 * overlapping in time with this one */
+	if (*core_bitmap == NULL)
+		*core_bitmap = _make_core_bitmap_filtered(avail_bitmap, 0);
+	tmpcore = bit_copy(*core_bitmap);
+	bit_not(tmpcore); /* tmpcore contains now current free cores */
+	bit_and(*core_bitmap, tmpcore);	/* clear core_bitmap */
+
+	first_node = bit_ffs(avail_bitmap);
+	if (first_node >= 0)
+		last_node  = bit_fls(avail_bitmap);
+	else
+		last_node = first_node - 1;
+	for (inx = first_node; inx <= last_node; inx++) {
+		coff = cr_get_coremap_offset(inx);
+		coff2 = cr_get_coremap_offset(inx + 1);
+		local_cores = coff2 - coff;
+
+		bit_clear(avail_bitmap, inx);
+		if (local_cores < core_cnt[node_offset])
+			local_cores = -1;
+		else
+			local_cores = core_cnt[node_offset];
+		for (jnx = 0; jnx < local_cores; jnx++) {
+			if (!bit_test(tmpcore, coff + jnx))
+				break;
+			bit_set(*core_bitmap, coff + jnx);
+		}
+		if (jnx < core_cnt[node_offset])
+			continue;
+		local_cores = coff2 - coff;
+		for (jnx = core_cnt[node_offset]; jnx < local_cores; jnx++) {
+			bit_clear(tmpcore, coff + jnx);
+		}
+		bit_set(sp_avail_bitmap, inx);
+		node_offset++;
+		if (core_cnt[++node_offset] == 0)
+			break;
+	}
+
+	FREE_NULL_BITMAP(tmpcore);
+	if (core_cnt[node_offset]) {
+		info("reservation request can not be satisfied");
+		FREE_NULL_BITMAP(sp_avail_bitmap);
+	}
+
+	return sp_avail_bitmap;
+}
+
 static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node)
 {
 	int coff;
@@ -2807,10 +2870,15 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	xassert(avail_bitmap);
 
-	/* When reservation includes a nodelist we use sequential_pick code */
+	if ((flags & RESERVE_FLAG_FIRST_CORES) && core_cnt) {
+		return _pick_first_cores(avail_bitmap, node_cnt, core_cnt,
+					 core_bitmap);
+	}
+
+	/* When reservation includes a nodelist we use _sequential_pick code */
 	if (!switch_record_cnt || !switch_record_table || !node_cnt)  {
-		return sequential_pick(avail_bitmap, node_cnt, core_cnt,
-				       core_bitmap);
+		return _sequential_pick(avail_bitmap, node_cnt, core_cnt,
+					core_bitmap);
 	}
 
 	/* Use topology state information */

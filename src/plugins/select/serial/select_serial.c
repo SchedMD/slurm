@@ -2152,6 +2152,11 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	xassert(avail_bitmap);
 
+	if (flags & RESERVE_FLAG_FIRST_CORES) {
+		debug("select/serial: Reservation flag FIRST_CORES not "
+		      "supported, ignored");
+	}
+
 	if (core_cnt) {
 		for (i = 0; core_cnt[i]; i++)
 			rem_cores += core_cnt[i];
