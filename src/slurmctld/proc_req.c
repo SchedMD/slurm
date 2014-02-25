@@ -989,6 +989,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		xfree(alloc_msg.cpu_count_reps);
 		xfree(alloc_msg.cpus_per_node);
 		xfree(alloc_msg.node_list);
+		xfree(alloc_msg.partition);
 		select_g_select_jobinfo_free(alloc_msg.select_jobinfo);
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
@@ -2459,6 +2460,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		xfree(job_info_resp_msg.cpu_count_reps);
 		xfree(job_info_resp_msg.cpus_per_node);
 		xfree(job_info_resp_msg.node_list);
+		xfree(job_info_resp_msg.partition);
 	}
 }
 
