@@ -257,6 +257,7 @@ documents those changes that are of interest to users and admins.
     nodes.
  -- Fix minor memory leak when adding a reservation with a nodelist and core
     count.
+ -- Update sacct man page description of job states.
 
 * Changes in Slurm 2.6.6
 ========================
