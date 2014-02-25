@@ -3382,7 +3382,7 @@ extern int select_p_reconfigure(void)
 }
 
 extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				    bitstr_t **core_bitmap)
+				    uint32_t *core_cnt, bitstr_t **core_bitmap)
 {
 #ifdef HAVE_BG
 	/* Reserve a block of appropriate geometry by issuing a fake job
