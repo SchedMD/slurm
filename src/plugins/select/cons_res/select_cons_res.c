@@ -173,7 +173,7 @@ uint32_t *cr_node_cores_offset;
 const char plugin_name[] = "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_id      = 101;
-const uint32_t plugin_version = 100;
+const uint32_t plugin_version = 110;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
 uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
@@ -2778,15 +2778,16 @@ static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node)
  *	request. "best" is defined as either single set of consecutive nodes
  *	satisfying the request and leaving the minimum number of unused nodes
  *	OR the fewest number of consecutive node sets
- * IN avail_bitmap - nodes available for the reservation
+ * IN/OUT avail_bitmap - nodes available for the reservation
  * IN node_cnt - count of required nodes
- * IN core_bitmap - cores which can not be used for this reservation
- * OUT avail_bitmap - nodes allocated for the reservation
- * OUT core_bitmap - cores which allocated to this reservation
+ * IN core_cnt - count of required cores per node
+ * IN/OUT core_bitmap - cores which can not be used for this reservation
+ * IN flags - reservation request flags
  * RET - nodes selected for use by the reservation
  */
 extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t *core_cnt, bitstr_t **core_bitmap)
+				     uint32_t *core_cnt, bitstr_t **core_bitmap,
+				     uint32_t flags)
 {
 	bitstr_t **switches_bitmap;		/* nodes on this switch */
 	bitstr_t **switches_core_bitmap;	/* cores on this switch */

@@ -383,8 +383,21 @@ extern int other_pack_select_info(time_t last_query_time, uint16_t show_flags,
 /* Note reconfiguration or change in partition configuration */
 extern int other_reconfigure(void);
 
+/*
+ * other_resv_test - Identify the nodes which "best" satisfy a reservation
+ *	request. "best" is defined as either single set of consecutive nodes
+ *	satisfying the request and leaving the minimum number of unused nodes
+ *	OR the fewest number of consecutive node sets
+ * IN avail_bitmap - nodes available for the reservation
+ * IN node_cnt - count of required nodes
+ * IN core_cnt - count of required cores per node
+ * IN core_bitmap - cores to be excluded for this reservation
+ * IN flags - reservation request flags
+ * RET - nodes selected for use by the reservation
+ */
 extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				  uint32_t *core_cnt, bitstr_t **core_bitmap);
+				  uint32_t *core_cnt, bitstr_t **core_bitmap,
+				  uint32_t flags);
 
 extern void other_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
 extern void other_ba_fini(void);

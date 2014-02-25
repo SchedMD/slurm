@@ -226,7 +226,8 @@ typedef struct slurm_select_ops {
 	bitstr_t *      (*resv_test)            (bitstr_t *avail_bitmap,
 						 uint32_t node_cnt,
 						 uint32_t *core_cnt,
-						 bitstr_t **core_bitmap);
+						 bitstr_t **core_bitmap,
+						 uint32_t flags);
 	void            (*ba_init)              (node_info_msg_t *node_info_ptr,
 						 bool sanity_check);
 	void            (*ba_fini)              (void);
@@ -679,15 +680,16 @@ extern int select_g_step_finish(struct step_record *step_ptr);
  *	request. "best" is defined as either single set of consecutive nodes
  *	satisfying the request and leaving the minimum number of unused nodes
  *	OR the fewest number of consecutive node sets
- * IN avail_bitmap - nodes available for the reservation
+ * IN/OUT avail_bitmap - nodes available for the reservation
  * IN node_cnt - count of required nodes
- * IN core_cnt - count of required cores
- * IN core_bitmap - cores to exclude for this reservation
+ * IN core_cnt - count of required cores per node
+ * IN/OUT core_bitmap - cores which can not be used for this reservation
+ * IN flags - reservation request flags
  * RET - nodes selected for use by the reservation
  */
 extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t *core_cnt,
-				     bitstr_t **core_bitmap);
+				     uint32_t *core_cnt, bitstr_t **core_bitmap,
+				     uint32_t flags);
 
 /*****************************\
  * GET INFORMATION FUNCTIONS *

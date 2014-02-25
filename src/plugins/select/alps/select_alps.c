@@ -153,7 +153,7 @@ static int select_cray_dim_size[3] = {-1};
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/cray";
 uint32_t plugin_id		= 104;
-const uint32_t plugin_version	= 100;
+const uint32_t plugin_version	= 110;
 
 static bool _zero_size_job ( struct job_record *job_ptr )
 {
@@ -877,9 +877,11 @@ extern int select_p_reconfigure(void)
 }
 
 extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t *core_cnt, bitstr_t **core_bitmap)
+				     uint32_t *core_cnt, bitstr_t **core_bitmap,
+				     uint32_t flags)
 {
-	return other_resv_test(avail_bitmap, node_cnt, core_cnt, core_bitmap);
+	return other_resv_test(avail_bitmap, node_cnt, core_cnt, core_bitmap,
+			       flags);
 }
 
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

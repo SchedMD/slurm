@@ -114,7 +114,7 @@ uint32_t *cr_node_cores_offset;
 const char plugin_name[] = "Serial Job Resource Selection plugin";
 const char plugin_type[] = "select/serial";
 const uint32_t plugin_id      = 106;
-const uint32_t plugin_version = 100;
+const uint32_t plugin_version = 110;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
 uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
@@ -2132,24 +2132,31 @@ extern int select_p_reconfigure(void)
  *	request. "best" is defined as either single set of consecutive nodes
  *	satisfying the request and leaving the minimum number of unused nodes
  *	OR the fewest number of consecutive node sets
- * IN avail_bitmap - nodes available for the reservation
+ * IN/OUT avail_bitmap - nodes available for the reservation
  * IN node_cnt - count of required nodes
- * IN core_bitmap - cores which can not be used for this reservation
- * OUT avail_bitmap - nodes allocated for the reservation
- * OUT core_bitmap - cores which allocated to this reservation
+ * IN core_cnt - count of required cores per node
+ * IN/OUT core_bitmap - cores which can not be used for this reservation
+ * IN flags - reservation request flags
  * RET - nodes selected for use by the reservation
  */
 extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t core_cnt, bitstr_t **core_bitmap)
+				     uint32_t *core_cnt, bitstr_t **core_bitmap,
+				     uint32_t flags)
 {
 	int i, j;
 	int core_inx = 0, node_cores;
 	int rem_nodes = node_cnt;
-	int rem_cores = core_cnt;
+	int rem_cores = 0;
 	bitstr_t *new_bitmap;
 	bool enforce_node_cnt = (node_cnt != 0);
 
 	xassert(avail_bitmap);
+
+	if (core_cnt) {
+		for (i = 0; core_cnt[i]; i++)
+			rem_cores += core_cnt[i];
+	}
+
 	new_bitmap = bit_copy(avail_bitmap);
 	if (*core_bitmap == NULL)
 		*core_bitmap = bit_alloc(select_core_cnt);

@@ -5,7 +5,7 @@
 <h2>Overview</h2>
 <p>This document describes SLURM resource selection plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-node selection plugins. This is version 100 of the API.</p>
+node selection plugins. This is version 110 of the API.</p>
 
 <p>SLURM node selection plugins are SLURM plugins that implement the SLURM node selection
 API described herein. They are intended to provide a mechanism for both selecting
@@ -648,21 +648,26 @@ the plugin should return SLURM_ERROR.</p>
 <h3>Advanced Reservation Functions</h3>
 
 <p class="commandline">bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap,
-uint32_t node_cnt)</p>
+uint32_t node_cnt, uint32_t *core_cnt, bitstr_t **core_bitmap, uint32_t flags)</p>
 <p style="margin-left:.2in"><b>Description</b>: Identify the nodes which best
 satisfy a reservation request taking system topology into consideration if
 applicable.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> avail_bitmap</span>&nbsp; &nbsp;&nbsp;(input)
+<span class="commandline"> avail_bitmap</span>&nbsp; &nbsp;&nbsp;(input/output)
 a bitmap of the nodes which are available for use in creating the reservation.<br>
 <span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input)
-number of nodes required to satisfy the reservation request.</p>
+number of nodes required to satisfy the reservation request.<br>
+<span class="commandline"> core_cnt</span>&nbsp; &nbsp;&nbsp;(input)
+number of cores per node required to satisfy the reservation request.<br>
+<span class="commandline"> core_bitmap</span>&nbsp; &nbsp;&nbsp;(input/output)
+a bitmap of the cores which are available for use in creating the reservation.<br>
+<span class="commandline"> flags</span>&nbsp; &nbsp;&nbsp;(input)
+flags associated with the reservation request.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A bitmap of the nodes which should
 be used for the advanced reservation or NULL if the selected nodes can not
 be used for an advanced reservation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
-
 
 <h3>Get Information Functions</h3>
 
@@ -744,6 +749,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 18 July 2012</p>
+<p style="text-align:center;">Last modified 24 February 2014</p>
 
 <!--#include virtual="footer.txt"-->

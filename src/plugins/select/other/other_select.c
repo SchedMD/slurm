@@ -753,16 +753,20 @@ extern int other_reconfigure (void)
  *	OR the fewest number of consecutive node sets
  * IN avail_bitmap - nodes available for the reservation
  * IN node_cnt - count of required nodes
+ * IN core_cnt - count of required cores per node
+ * IN core_bitmap - cores to be excluded for this reservation
+ * IN flags - reservation request flags
  * RET - nodes selected for use by the reservation
  */
 extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				  uint32_t *core_cnt, bitstr_t **core_bitmap)
+				  uint32_t *core_cnt, bitstr_t **core_bitmap,
+				  uint32_t flags)
 {
 	if (other_select_init() < 0)
 		return NULL;
 
 	return (*(ops.resv_test))(avail_bitmap, node_cnt, core_cnt,
-				  core_bitmap);
+				  core_bitmap, flags);
 }
 
 extern void other_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

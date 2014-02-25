@@ -172,7 +172,7 @@ volatile sig_atomic_t aeld_running = 0;	// 0 if the aeld thread has exited
 pthread_mutex_t aeld_mutex = PTHREAD_MUTEX_INITIALIZER;	// Mutex for the above
 
 #define AELD_SESSION_INTERVAL	60	// aeld session retry interval (s)
-#define AELD_EVENT_INTERVAL	100	// aeld event sending interval (ms)
+#define AELD_EVENT_INTERVAL	110	// aeld event sending interval (ms)
 
 /* Static functions used for aeld communication */
 static void _handle_aeld_error(const char *funcname, char *errmsg, int rv,
@@ -2249,9 +2249,11 @@ extern int select_p_reconfigure(void)
 }
 
 extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t *core_cnt, bitstr_t **core_bitmap)
+				     uint32_t *core_cnt, bitstr_t **core_bitmap,
+				     uint32_t flags)
 {
-	return other_resv_test(avail_bitmap, node_cnt, core_cnt, core_bitmap);
+	return other_resv_test(avail_bitmap, node_cnt, core_cnt, core_bitmap,
+			       flags);
 }
 
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
