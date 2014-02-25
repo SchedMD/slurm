@@ -260,6 +260,7 @@ documents those changes that are of interest to users and admins.
  -- Update sacct man page description of job states.
  -- BGQ - Fix minor memory leak when selecting blocks that can't immediately be
     placed.
+ -- Fixed minor memory leak in backfill scheduler.
 
 * Changes in Slurm 2.6.6
 ========================
