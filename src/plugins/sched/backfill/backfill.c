@@ -689,6 +689,7 @@ static int _attempt_backfill(void)
 					     "jobs", job_test_count);
 				}
 				rc = 1;
+				xfree(job_queue_rec);
 				break;
 			}
 			/* Reset backfill scheduling timers, resume testing */
@@ -701,8 +702,10 @@ static int _attempt_backfill(void)
 		/* With bf_continue configured, the original job could have
 		 * been cancelled and purged. Validate pointer here. */
 		if ((job_ptr->magic  != JOB_MAGIC) ||
-		    (job_ptr->job_id != job_queue_rec->job_id))
+		    (job_ptr->job_id != job_queue_rec->job_id)) {
+			xfree(job_queue_rec);
 			continue;
+		}
 		orig_time_limit = job_ptr->time_limit;
 		part_ptr = job_queue_rec->part_ptr;
 		job_test_count++;
