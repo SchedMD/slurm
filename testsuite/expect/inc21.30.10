@@ -43,7 +43,7 @@ proc inc21_30_10 { } {
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: Job should be pending, but is not.\n"
+			send_user "\nFAILURE: Job should be running, but is not.\n"
 			set exit_code 1
 		}
 		timeout {
