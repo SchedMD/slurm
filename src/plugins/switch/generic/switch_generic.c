@@ -40,11 +40,11 @@
 #  include "config.h"
 #endif
 
-#if !defined(__FreeBSD_)
+#if !defined(__FreeBSD__)
 #include <net/if.h>
 #endif
-#include <arpa/inet.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <ifaddrs.h>
@@ -733,6 +733,7 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 	int i, s;
 	int bufsize = 1024;
 	char *buf = xmalloc(bufsize);
+
 #if defined(__FreeBSD__)
 #define IFNAMSIZ 16
 #endif
