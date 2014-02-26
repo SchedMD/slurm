@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- When starting the slurmctld only send past job/node state information to
     accounting if running for the first time (should speed up startup
     dramatically on systems with lots of nodes or lots of jobs).
+ -- Compile and run on FreeBSD 8.4.
 
 * Changes in Slurm 14.03.0pre6
 ==============================
