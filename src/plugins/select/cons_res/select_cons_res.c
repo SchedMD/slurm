@@ -1038,7 +1038,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 						to_job_resrcs_ptr,
 						to_node_offset);
 			if (from_node_used) {
-				/* Adust cpu count for shared CPUs */
+				/* Adjust CPU count for shared CPUs */
 				int from_core_cnt, to_core_cnt, new_core_cnt;
 				from_core_cnt = count_job_resources_node(
 							from_job_resrcs_ptr,
