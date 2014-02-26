@@ -916,8 +916,10 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	if (!(row = mysql_fetch_row(result))) {
 		error("Couldn't get the dimensions of cluster '%s'.",
 		      (char *)list_peek(job_cond->cluster_list));
+		mysql_free_result(result);
 		return NULL;
 	}
+	mysql_free_result(result);
 
 	/* On a Cray System when dealing with hostlists as we are here
 	   this always needs to be 1.
