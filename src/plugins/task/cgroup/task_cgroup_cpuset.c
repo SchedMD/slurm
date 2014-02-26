@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#if !defined(__FreeBSD__)
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -1366,3 +1367,4 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 #endif
 
 }
+#endif

@@ -746,7 +746,7 @@ _read_config(void)
 {
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
-	uint16_t tmp16 = 0;
+	int cc;
 
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
@@ -915,10 +915,10 @@ _read_config(void)
 		      xstrdup(cf->job_acct_gather_freq));
 
 	conf->acct_freq_task = (uint16_t)NO_VAL;
-	tmp16 = acct_gather_parse_freq(PROFILE_TASK,
-				       conf->job_acct_gather_freq);
-	if (tmp16 != -1)
-		conf->acct_freq_task = tmp16;
+	cc = acct_gather_parse_freq(PROFILE_TASK,
+				    conf->job_acct_gather_freq);
+	if (cc != -1)
+		conf->acct_freq_task = cc;
 
 	_free_and_set(&conf->acct_gather_energy_type,
 		      xstrdup(cf->acct_gather_energy_type));

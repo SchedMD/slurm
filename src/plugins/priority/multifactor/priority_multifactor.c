@@ -1741,7 +1741,18 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 
 			ratio_l = (assoc->usage->usage_norm /
 			      assoc->usage->shares_norm) / ratio_s;
+#if defined(__FreeBSD__)
+			if (!ratio_p || !ratio_l
+			    || log(ratio_p) * log(ratio_l) >= 0) {
+				k = 1;
+			} else {
+				k = 1 / (1 + pow(f * log(ratio_p), 2));
+			}
 
+			assoc->usage->usage_efctv =
+				ratio_p * pow(ratio_l, k) *
+				assoc->usage->shares_norm;
+#else
 			if (!ratio_p || !ratio_l
 			    || logl(ratio_p) * logl(ratio_l) >= 0) {
 				k = 1;
@@ -1750,8 +1761,9 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 			}
 
 			assoc->usage->usage_efctv =
-				ratio_p * powl(ratio_l, k) *
+				ratio_p * pow(ratio_l, k) *
 				assoc->usage->shares_norm;
+#endif
 
 			if (priority_debug) {
 				info("Effective usage for %s %s off %s "

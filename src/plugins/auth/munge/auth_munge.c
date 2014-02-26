@@ -219,9 +219,9 @@ slurm_auth_create( void *argv[], char *socket )
 	 *  Temporarily block SIGALARM to avoid misleading
 	 *    "Munged communication error" from libmunge if we
 	 *    happen to time out the connection in this secion of
-	 *    code.
+	 *    code. FreeBSD needs this cast.
 	 */
-	ohandler = xsignal(SIGALRM, SIG_BLOCK);
+	ohandler = xsignal(SIGALRM, (SigFunc *)SIG_BLOCK);
 
     again:
 	e = munge_encode(&cred->m_str, ctx, cred->buf, cred->len);
@@ -651,4 +651,3 @@ _print_cred(munge_ctx_t ctx)
 	_print_cred_info(mi);
 	cred_info_destroy(mi);
 }
-

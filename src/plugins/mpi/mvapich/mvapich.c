@@ -1654,7 +1654,7 @@ static int mvapich_accept_new (mvapich_state_t *st)
 
 		if (st->nconnected == 0 && st->protocol_phase == 0) {
 			mvapich_debug ("first task connected");
-			do_timings (st, NULL);
+			do_timings (st, "Start");
 			/*
 			 *  Officially start timeout timer now.
 			 */
@@ -2252,6 +2252,3 @@ void mvapich_thr_exit(mvapich_state_t *st)
 
 	pthread_exit(NULL);
 }
-
-
-

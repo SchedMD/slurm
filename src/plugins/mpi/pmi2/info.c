@@ -38,8 +38,13 @@
 #include "pmi.h"
 #include "setup.h"
 #include "client.h"
-
+#if !defined(__FreeBSD__)
 #include <net/if.h>
+#endif
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <ifaddrs.h>
 #include <netdb.h>
 #include <stdlib.h>
@@ -261,8 +266,10 @@ ifconfig(void)
 
 		if (ifa->ifa_addr == NULL)
 			continue;
+#if !defined(__FreeBSD__)
 		if (ifa->ifa_flags & IFF_LOOPBACK)
 			continue;
+#endif
 		if (ifa->ifa_addr->sa_family != AF_INET
 			&& ifa->ifa_addr->sa_family != AF_INET6)
 			continue;

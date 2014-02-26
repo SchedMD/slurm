@@ -35,7 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
+#if !defined(__FreeBSD__)
 #if     HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -1892,4 +1892,5 @@ static void _free_alpsc_pe_info(alpsc_peInfo_t alpsc_pe_info)
 	}
 	return;
 }
+#endif
 #endif

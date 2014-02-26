@@ -755,8 +755,12 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 						xrfc5424timecat(buf, false);
 						break;
 					case LOG_FMT_CLOCK:
-						/* "%M" => "usec"                    */
+						/* "%M" => "usec" */
+#if defined(__FreeBSD__)
+						snprintf(tmp, sizeof(tmp), "%d", clock());
+#else
 						snprintf(tmp, sizeof(tmp), "%ld", clock());
+#endif
 						xstrcat(buf, tmp);
 						break;
 					case LOG_FMT_SHORT: /* "%M" => "Mon DD hh:mm:ss"         */
@@ -1378,4 +1382,3 @@ dump_cleanup_list(void)
 	}
 	slurm_mutex_unlock(&fatal_lock);
 }
-

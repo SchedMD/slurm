@@ -159,7 +159,10 @@ extern uid_t *get_group_members(char *group_name)
 	while (1) {
 		slurm_seterrno(0);
 		res = getgrent_r(&grp, grp_buffer, buflen, &grp_result);
-		if (res != 0) {
+		if (res != 0 || grp_result == NULL) {
+			/* FreeBSD returns 0 and sets the grp_result to NULL
+			 * unlike linux which returns ENOENT.
+			 */
 			if (errno == ERANGE) {
 				buflen *= 2;
 				xrealloc(grp_buffer, buflen);
@@ -208,6 +211,11 @@ extern uid_t *get_group_members(char *group_name)
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
 #endif
 #endif
+		/* At eof FreeBSD returns 0 unlike Linux
+		 * which returns ENOENT.
+		 */
+		if (pwd_result == NULL)
+			break;
  		if (pwd_result->pw_gid != my_gid)
 			continue;
 		if (j+1 >= uid_cnt) {

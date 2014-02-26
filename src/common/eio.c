@@ -40,6 +40,8 @@
 #endif
 
 #include <sys/poll.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
 

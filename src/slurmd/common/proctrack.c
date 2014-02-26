@@ -45,6 +45,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <signal.h>
 #ifdef HAVE_LINUX_SCHED_H
 #  include <linux/sched.h>
 #endif

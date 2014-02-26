@@ -78,6 +78,14 @@
 #  define __list_datatypes_defined
 typedef struct list * List;
 
+/* FreeBSD does not define __compar_fn_t
+ * and rightfully so!
+ */
+#ifndef __COMPAR_FN_T
+# define __COMPAR_FN_T
+typedef int (*__compar_fn_t) (__const void *, __const void *);
+#endif
+
 /*
  *  List opaque data type.
  */

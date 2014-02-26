@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/common/setproctitle.c - argv manipulation 
+ * src/slurmd/common/setproctitle.c - argv manipulation
  * $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -7,56 +7,56 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
 /*
- * Based on src/backend/utils/misc/pg_status.c from 
+ * Based on src/backend/utils/misc/pg_status.c from
  * PostgreSQL Database Management System
- * 
+ *
  * Portions Copyright (c) 1996-2001, The PostgreSQL Global Development Group
- * 
+ *
  * Portions Copyright (c) 1994, The Regents of the University of California
- * 
+ *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose, without fee, and without a written agreement
  * is hereby granted, provided that the above copyright notice and this
  * paragraph and the following two paragraphs appear in all copies.
- * 
+ *
  * IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
  * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING
  * LOST PROFITS, ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS
  * DOCUMENTATION, EVEN IF THE UNIVERSITY OF CALIFORNIA HAS BEEN ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  * THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
  * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
@@ -92,6 +92,9 @@
 #endif
 #if defined(__FreeBSD__)
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 #endif
 #ifndef HAVE_SETPROCTITLE
 #include <stdlib.h>
@@ -135,7 +138,7 @@
 #define PS_USE_CLOBBER_ARGV		4
 
 #ifndef SETPROCTITLE_STRATEGY
-# define SETPROCTITLE_STRATEGY	PS_USE_NONE 
+# define SETPROCTITLE_STRATEGY	PS_USE_NONE
 #endif
 
 #ifndef SETPROCTITLE_PS_PADDING
@@ -231,7 +234,7 @@ setproctitle(const char *fmt, ...)
 #if SETPROCTITLE_STRATEGY == PS_USE_CLOBBER_ARGV
 	/* pad unused memory */
 	used = strlen(ps_buffer);
-	memset(ps_buffer + used, SETPROCTITLE_PS_PADDING, 
+	memset(ps_buffer + used, SETPROCTITLE_PS_PADDING,
 	    ps_buffer_size - used);
 #endif   /* PS_USE_CLOBBER_ARGV */
 
@@ -342,4 +345,3 @@ void fini_setproctitle(void)
 	environ = new_environ;
 #endif /* PS_USE_CLOBBER_ARGV */
 }
-

@@ -55,7 +55,14 @@
 #endif
 
 #define GPL_LICENSED 1
+
+#if defined(__FreeBSD__)
+/* FIXME in the Makefile.am
+ */
+#include </usr/local/include/munge.h>
+#else
 #include <munge.h>
+#endif
 
 #include <unistd.h>
 #include <sys/types.h>

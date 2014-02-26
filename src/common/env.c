@@ -48,6 +48,7 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>

@@ -88,6 +88,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -260,7 +261,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 		if (job->details->std_err)
 			j->std_err = xstrdup(job->details->std_err);
 	}
-		
+
 #ifdef HAVE_BG
 	j->connect_type = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
 						   SELECT_PRINT_CONNECTION);

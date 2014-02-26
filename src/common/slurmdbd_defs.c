@@ -57,6 +57,7 @@
 #include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
 

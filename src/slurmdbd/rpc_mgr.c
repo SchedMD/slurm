@@ -45,6 +45,8 @@
 #include <signal.h>
 #include <sys/poll.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"

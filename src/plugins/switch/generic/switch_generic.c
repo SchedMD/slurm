@@ -40,10 +40,15 @@
 #  include "config.h"
 #endif
 
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-#include <netinet/in.h>
+#if !defined(__FreeBSD_)
 #include <net/if.h>
+#endif
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <ifaddrs.h>
+#include <netdb.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -728,6 +733,9 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 	int i, s;
 	int bufsize = 1024;
 	char *buf = xmalloc(bufsize);
+#if defined(__FreeBSD__)
+#define IFNAMSIZ 16
+#endif
 	int triplet_len_max = IFNAMSIZ + INET6_ADDRSTRLEN + 5 + 5 + 1;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
@@ -830,8 +838,10 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 		for (if_rec = if_array; if_rec; if_rec = if_rec->ifa_next) {
 			if (!if_rec->ifa_addr->sa_data)
 				continue;
+#if !defined(__FreeBSD__)
 	   		if (if_rec->ifa_flags & IFF_LOOPBACK)
 				continue;
+#endif
 			if (if_rec->ifa_addr->sa_family == AF_INET) {
 				addr_ptr = &((struct sockaddr_in *)
 						if_rec->ifa_addr)->sin_addr;
