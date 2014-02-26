@@ -2,8 +2,6 @@
 # Purpose: Test of SLURM functionality
 #          to be called from test21.30
 #          Tests if the GrpSubmits limit is enforced
-#
-#
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -27,9 +25,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
+# Test GrpSubmit
 proc inc21_30_4 {} {
-
-# test GrpSubmit
 
 	global salloc srun acct bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grsub_num
 
@@ -69,14 +66,15 @@ proc inc21_30_4 {} {
 		}
 	}
 
-	if {$jobmatch == 0} {
-		send_user "\nFAILURE: jobs were not submitted\n"
+	set target_jobs [expr $check_num + 1]
+	if {$jobmatch != $target_jobs} {
+		send_user "\nFAILURE: Not all jobs were not submitted ($jobmatch != $target_jobs)\n"
 		set exit_code 1
 	}
 
 	for {set inx 0} {$inx <= $check_num} {incr inx} {
 		if [info exists job_id($inx)] {
-			# cancels the jobs
+			# Cancels the jobs
 			cancel_job $job_id($inx)
 		}
 	}

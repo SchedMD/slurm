@@ -305,156 +305,168 @@ expect {
 	}
 }
 
-mod_qos $grn_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test GrpNode limit
+# 
+mod_qos $grn_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_1
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test GrpCpus
+# 
+mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_2
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 -1 $grjobs_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # test GrpJob limits
+# 
+mod_qos -1 -1 $grjobs_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_3
 if {$exit_code != 0} {
 	endit
 }
 
-
-mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # test GrpSubmit
+# 
+mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_4
 if {$exit_code != 0} {
 	endit
 }
 
-
-mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test MaxCpus limits
+# 
+mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_5
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 $maxnode_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test MaxNode limit
+# 
+mod_qos -1 -1 -1 -1 -1 $maxnode_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_6
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 $maxjobs_num -1 -1 -1 -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test MaxJobs limit
+# 
+mod_qos -1 -1 -1 -1 -1 -1 $maxjobs_num -1 -1 -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_7
 if {$exit_code != 0} {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 -1 $maxjobsub_num -1 -1 -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test MaxJobsSubmits limit
+# 
+mod_qos -1 -1 -1 -1 -1 -1 -1 $maxjobsub_num -1 -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_8
 if {$exit_code != 0} {
 	endit
 }
 
+# 
+# Test GroupCPUMins
 #
 # NOTE: This test for Group CPU Mins does not always run properly
 # due to a timing issue caused by a decay timer from the limit once it
 # has been reached. The decay also effects other QOS timed limits so
 # other parts of this test may not work properly if the group cpu
 # run mins test is used.
-#
+# 
 if {0} {
 	mod_qos -1 -1 -1 -1 -1 -1 -1 -1 $grpcpumin_num -1 -1 -1 -1 -1 -1 -1
-
 	sleep $time_spacing
-	# Test GroupCPUMins
 	inc21_30_9
 	if {$exit_code != 0 } {
 		endit
 	}
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpcpurunmin_num -1 -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test GroupCPURunMins
+# 
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpcpurunmin_num -1 -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_10
 if {$exit_code != 0 } {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpmem_num -1 -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test Group Memory
+# 
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpmem_num -1 -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_11
 if {$exit_code != 0 } {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1  $grpwall_num -1 -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test Group wall
+# 
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1  $grpwall_num -1 -1 -1 -1
+sleep $time_spacing
 inc21_30_12
 if {$exit_code != 0 } {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxcpumin_num -1 -1 -1
-
-sleep $time_spacing
+# 
 # Test Max Cpu Mins
+# 
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxcpumin_num -1 -1 -1
+sleep $time_spacing
 inc21_30_13
 if {$exit_code != 0 } {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxwall_num -1 -1
-
-sleep $time_spacing
+# 
 # Test Max Wall
+# 
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxwall_num -1 -1
+sleep $time_spacing
 inc21_30_14
 if {$exit_code != 0 } {
 	endit
 }
 
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxcpuspu_num -1
-
-sleep $time_spacing
+# 
 # Test Max CPUs Per User
+# 
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxcpuspu_num -1
+sleep $time_spacing
 inc21_30_15
 if {$exit_code != 0 } {
 	endit
 }
-
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxnodespu_num
-
-sleep $time_spacing
+# 
 # Test MaxNodesPerUser
+# 
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxnodespu_num
+sleep $time_spacing
 inc21_30_16
 if {$exit_code != 0 } {
 	endit

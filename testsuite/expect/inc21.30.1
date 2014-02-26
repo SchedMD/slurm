@@ -25,9 +25,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
+# Test GrpNode limit
 proc inc21_30_1 {} {
-
-#test GrpNode limit
 
 	global srun salloc acct bin_sleep number grn_num
 	global exit_code
@@ -40,6 +39,11 @@ proc inc21_30_1 {} {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
 			send_user "\njob $job_id1 has been submitted\n"
+		}
+		-re "Pending job allocation ($number)" {
+			send_user "\nFAILURE: Job should be running, but is not.\n"
+			set job_id1 $expect_out(1,string)
+			set exit_code 1
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not reponding\n"
@@ -57,12 +61,12 @@ proc inc21_30_1 {} {
 
 	spawn $salloc -N1 --account=$acct --exclusive $srun $bin_sleep 10
 	expect {
-		-re "job ($number) queued and waiting for resources" {
+		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
 			send_user "\nJob $job_id2 is waiting for resources. This is expected.\n"
 		}
 		-re "Granted job allocation ($number)" {
-			send_user "\nFAILURE: This should have pended but did not\n"
+			send_user "\nFAILURE: This should be pended but is not\n"
 			set exit_code 1
 		}
 		timeout {
@@ -81,7 +85,7 @@ proc inc21_30_1 {} {
 		check_state $job_id2
 	}
 
-	# cancels remaining jobs
+	# Cancels remaining jobs
 	cancel_job $job_id1
 	cancel_job $job_id2
 }

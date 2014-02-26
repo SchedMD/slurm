@@ -2,8 +2,6 @@
 # Purpose: Test of SLURM functionality
 #          to be called from test21.30
 #          Tests if the MaxNodes limit is enforced
-#
-#
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -27,9 +25,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
+# Test MaxNode limit
 proc inc21_30_6 {} {
-
-#test MaxNode limit
 
 	global salloc acct number srun job_id1 bin_sleep maxnode_num
 
@@ -44,7 +41,7 @@ proc inc21_30_6 {} {
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: This should have ran but did not\n"
+			send_user "\nFAILURE: This should have run but did not\n"
 			set exit_code 1
 		}
 		timeout {
@@ -56,7 +53,7 @@ proc inc21_30_6 {} {
 		}
 	}
 
-	# cancels remaining jobs
+	# Cancels remaining jobs
 	cancel_job $job_id1
 
 	spawn $salloc --account=$acct -N[expr $maxnode_num + 1] --exclusive -t1 $srun $bin_sleep 2
@@ -78,6 +75,6 @@ proc inc21_30_6 {} {
 		}
 	}
 
-	# cancels remaining jobs
+	# Cancels remaining jobs
 	cancel_job $job_id1
 }
