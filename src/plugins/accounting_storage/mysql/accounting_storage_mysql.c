@@ -768,7 +768,9 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			xfree(query);
 		}
 
-		/* We need to have the last character in a preempt to
+		/* This was introduced in 2.6.7, once 2 versions of Slurm go
+		 * by we can remove this.
+		 * We need to have the last character in a preempt to
 		 * be ','.  In older versions of Slurm this was not the case. */
 		query = xstrdup_printf(
 			"update %s set "
@@ -1113,6 +1115,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	char table_name[200];
+	char *query = NULL;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_table);
@@ -1124,7 +1127,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	/* We need to have the last character in a preempt to
+	/* This was introduced in 2.6.7, once 2 versions of Slurm go
+	 * by we can remove this.
+	 * We need to have the last character in a preempt to
 	 * be ','.  In older versions of Slurm this was not the case. */
 	query = xstrdup_printf(
 		"update %s set qos=if(qos='', '', concat(qos, ',')) "
