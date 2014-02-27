@@ -695,7 +695,8 @@ _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 		return 1;
 
 	if (cons_res_flag) {
-		if (job_ptr->details->share_res == 0)
+		if ((job_ptr->details->share_res  != 1) ||    /* 0 or NO_VAL */
+		    (job_ptr->details->whole_node == 1))
 			return 0;
 		return 1;
 	} else {

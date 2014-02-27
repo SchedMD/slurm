@@ -5520,8 +5520,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
-	if (job_desc->core_spec != (uint16_t) NO_VAL)
+	if (job_desc->core_spec != (uint16_t) NO_VAL) {
 		detail_ptr->core_spec = job_desc->core_spec;
+		if (job_desc->core_spec)
+			detail_ptr->whole_node = 1;
+	}
 	if (job_desc->task_dist != (uint16_t) NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
