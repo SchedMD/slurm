@@ -91,10 +91,12 @@
 #define MIN_PORT	20000
 #define MAX_PORT	30000
 #define ATTEMPTS	2
+#define PORT_CNT	(MAX_PORT - MIN_PORT + 1)
+#define SWITCH_BUF_SIZE (PORT_CNT + 128)
 
 #ifdef HAVE_NATIVE_CRAY
-static int port_cnt = MAX_PORT - MIN_PORT + 1;
-static uint32_t port_resv[MAX_PORT - MIN_PORT + 1];
+#define SWITCH_CRAY_STATE_VERSION "CRAY_SW_VER1"
+static uint8_t port_resv[PORT_CNT];
 static uint32_t last_alloc_port = MAX_PORT - MIN_PORT;
 #endif
 
@@ -219,6 +221,13 @@ int init(void)
 {
 	verbose("%s loaded.", plugin_name);
 	debug_flags = slurm_get_debug_flags();
+#ifdef HAVE_NATIVE_CRAY
+	if (MAX_PORT < MIN_PORT) {
+		error("(%s: %d: %s) MAX_PORT: %d < MIN_PORT: %d",
+		      THIS_FILE, __LINE__, __FUNCTION__, MAX_PORT, MIN_PORT);
+		return SLURM_ERROR;
+	}
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -232,21 +241,191 @@ extern int switch_p_reconfig(void)
 	return SLURM_SUCCESS;
 }
 
+#ifdef HAVE_NATIVE_CRAY
+static void _state_read_buf(Buf buffer)
+{
+	char *ver_str = NULL;
+	uint32_t ver_str_len;
+	uint16_t protocol_version = (uint16_t) NO_VAL;
+	uint32_t min_port, max_port;
+	int i;
+
+	/* Validate state version */
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	debug3("Version string in job_state header is %s", ver_str);
+	if (ver_str) {
+		if (!strcmp(ver_str, SWITCH_CRAY_STATE_VERSION))
+			protocol_version = SLURM_PROTOCOL_VERSION;
+	}
+	if (protocol_version == (uint16_t) NO_VAL) {
+		error("*******************************************************");
+		error("Can not recover switch/cray state, incompatible version");
+		error("*******************************************************");
+		xfree(ver_str);
+		return;
+	}
+	xfree(ver_str);
+
+	safe_unpack32(&min_port, buffer);
+	safe_unpack32(&max_port, buffer);
+	if ((min_port != MIN_PORT) || (max_port != MAX_PORT)) {
+		error("*******************************************************");
+		error("Can not recover switch/cray state");
+		error("Changed MIN_PORT (%u != %u) and/or MAX_PORT (%u != %u)",
+		      min_port, MIN_PORT, max_port, MAX_PORT);
+		error("*******************************************************");
+		return;
+	}
+	safe_unpack32(&last_alloc_port, buffer);
+	for (i = 0; i < PORT_CNT; i++) {
+		safe_unpack8(&port_resv[i], buffer);
+	}
+	return;
+
+unpack_error:
+	error("(%s: %d: %s) unpack error", THIS_FILE, __LINE__, __FUNCTION__);
+	return;
+}
+
+static void _state_write_buf(Buf buffer)
+{
+	int i;
+
+	packstr(SWITCH_CRAY_STATE_VERSION, buffer);
+	pack32((uint32_t) MIN_PORT, buffer);
+	pack32((uint32_t) MAX_PORT, buffer);
+	pack32(last_alloc_port, buffer);
+	for (i = 0; i < PORT_CNT; i++)
+		pack8(port_resv[i], buffer);
+}
+#endif
 /*
  * switch functions for global state save/restore
  */
 int switch_p_libstate_save(char *dir_name)
 {
+#ifdef HAVE_NATIVE_CRAY
+	Buf buffer;
+	char *file_name;
+	int ret = SLURM_SUCCESS;
+	int state_fd;
+
+	xassert(dir_name != NULL);
+
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		info("(%s: %d: %s) save to %s",
+		     THIS_FILE, __LINE__, __FUNCTION__, dir_name);
+	}
+
+	buffer = init_buf(SWITCH_BUF_SIZE);
+	_state_write_buf(buffer);
+	file_name = xstrdup(dir_name);
+	xstrcat(file_name, "/switch_cray_state");
+	(void) unlink(file_name);
+	state_fd = creat(file_name, 0600);
+	if (state_fd < 0) {
+		error("Can't save state, error creating file %s %m",
+		      file_name);
+		ret = SLURM_ERROR;
+	} else {
+		char  *buf = get_buf_data(buffer);
+		size_t len = get_buf_offset(buffer);
+		while (1) {
+			int wrote = write(state_fd, buf, len);
+			if ((wrote < 0) && (errno == EINTR))
+				continue;
+			if (wrote == 0)
+				break;
+			if (wrote < 0) {
+				error("Can't save switch state: %m");
+				ret = SLURM_ERROR;
+				break;
+			}
+			buf += wrote;
+			len -= wrote;
+		}
+		close(state_fd);
+	}
+	xfree(file_name);
+
+	if (buffer)
+		free_buf(buffer);
+
+	return ret;
+#else
 	return SLURM_SUCCESS;
+#endif
 }
 
 int switch_p_libstate_restore(char *dir_name, bool recover)
 {
+#ifdef HAVE_NATIVE_CRAY
+	char *data = NULL, *file_name;
+	Buf buffer = NULL;
+	int error_code = SLURM_SUCCESS;
+	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
+
+	xassert(dir_name != NULL);
+
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		info("(%s: %d: %s) restore from %s, recover %d",
+		     THIS_FILE, __LINE__, __FUNCTION__, dir_name,
+		     (int) recover);
+	}
+
+	memset(port_resv, 0, PORT_CNT * sizeof(port_resv[0]));
+	if (!recover)		/* clean start, no recovery */
+		return SLURM_SUCCESS;
+
+	file_name = xstrdup(dir_name);
+	xstrcat(file_name, "/switch_cray_state");
+	state_fd = open (file_name, O_RDONLY);
+	if (state_fd >= 0) {
+		data_allocated = SWITCH_BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read (state_fd, &data[data_size],
+					  SWITCH_BUF_SIZE);
+			if ((data_read < 0) && (errno == EINTR))
+				continue;
+			if (data_read < 0) {
+				error ("Read error on %s, %m", file_name);
+				error_code = SLURM_ERROR;
+				break;
+			} else if (data_read == 0)
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close (state_fd);
+		(void) unlink(file_name);	/* One chance to recover */
+		xfree(file_name);
+	} else {
+		error("No %s file for switch/cray state recovery", file_name);
+		error("Starting switch/cray with clean state");
+		xfree(file_name);
+		return SLURM_SUCCESS;
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		buffer = create_buf (data, data_size);
+		data = NULL;	/* now in buffer, don't xfree() */
+		_state_read_buf(buffer);
+	}
+
+	if (buffer)
+		free_buf(buffer);
+	xfree(data);
+#endif
 	return SLURM_SUCCESS;
 }
 
 int switch_p_libstate_clear(void)
 {
+#ifdef HAVE_NATIVE_CRAY
+	memset(port_resv, 0, PORT_CNT * sizeof(port_resv[0]));
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -1444,12 +1623,7 @@ extern int switch_p_slurmctld_init(void)
 	 *  Each job step will be allocated one port from amongst this set of
 	 *  reservations for use by Cray's PMI for control tree communications.
 	 */
-	if (MAX_PORT < MIN_PORT) {
-		error("(%s: %d: %s) MAX_PORT: %d < MIN_PORT: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, MAX_PORT, MIN_PORT);
-		return SLURM_ERROR;
-	}
-	memset(port_resv, 0, (MAX_PORT - MIN_PORT + 1) * sizeof(port_resv[0]));
+	memset(port_resv, 0, PORT_CNT * sizeof(port_resv[0]));
 #endif
 	return SLURM_SUCCESS;
 }
@@ -1803,9 +1977,9 @@ static int _assign_port(uint32_t *real_port)
 
 	/*
 	 * Ports is an index into the reserved port table.
-	 * The ports range from 0 up to port_cnt.
+	 * The ports range from 0 up to PORT_CNT.
 	 */
-	port = ++last_alloc_port % port_cnt;
+	port = ++last_alloc_port % PORT_CNT;
 
 	/*
 	 * Find an unreserved port to assign.
@@ -1813,13 +1987,13 @@ static int _assign_port(uint32_t *real_port)
 	 * number of times
 	 */
 	while (port_resv[port] == 1) {
-		tmp = ++port % port_cnt;
+		tmp = ++port % PORT_CNT;
 		port = tmp;
 		attempts++;
-		if ((attempts / port_cnt) >= ATTEMPTS) {
+		if ((attempts / PORT_CNT) >= ATTEMPTS) {
 			error("(%s: %d: %s) No free ports among %d ports. "
 			      " Went through entire port list %d times",
-			      THIS_FILE, __LINE__, __FUNCTION__, port_cnt,
+			      THIS_FILE, __LINE__, __FUNCTION__, PORT_CNT,
 			      ATTEMPTS);
 			return -1;
 		}
