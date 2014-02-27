@@ -107,10 +107,6 @@ features, etc.).
 A job can contain multiple job steps executing sequentially or in parallel on
 independent or shared nodes within the job's node allocation.</p>
 
-<p><span class="commandline"><b>smap</b></span> reports state information for
-jobs, partitions, and nodes managed by SLURM, but graphically displays the
-information to reflect network topology.</p>
-
 <p><span class="commandline"><b>strigger</b></span> is used to set, get or
 view event triggers. Event triggers include things such as nodes going down
 or jobs approaching their time limit.</p>
