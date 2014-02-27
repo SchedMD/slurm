@@ -380,7 +380,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 	if (qos->preempt_list && list_count(qos->preempt_list)) {
 		char *preempt_val = NULL;
 		char *tmp_char = NULL, *last_preempt = NULL;
-		char *tick = "";
+		bool adding_straight = 0;
 		ListIterator preempt_itr =
 			list_iterator_create(qos->preempt_list);
 
@@ -389,7 +389,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		while ((tmp_char = list_next(preempt_itr))) {
 			if (tmp_char[0] == '-') {
 				preempt_val = xstrdup_printf(
-					"replace(%s, ',%s', '')",
+					"replace(%s, ',%s,', ',')",
 					last_preempt ? last_preempt : "preempt",
 					tmp_char+1);
 				xfree(last_preempt);
@@ -397,7 +397,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 				preempt_val = NULL;
 			} else if (tmp_char[0] == '+') {
 				preempt_val = xstrdup_printf(
-					"concat(replace(%s, ',%s', ''), ',%s')",
+					"replace(concat(replace(%s, "
+					"',%s,', ''), ',%s,'), ',,', ',')",
 					last_preempt ? last_preempt : "preempt",
 					tmp_char+1, tmp_char+1);
 				if (added_preempt)
@@ -411,7 +412,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 				if (added_preempt)
 					xstrfmtcat(*added_preempt, ",%s",
 						   tmp_char);
-				tick = "\'";
+				adding_straight = 1;
 			} else
 				xstrcat(preempt_val, "");
 		}
@@ -420,8 +421,14 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			preempt_val = last_preempt;
 			last_preempt = NULL;
 		}
-		xstrfmtcat(*vals, ", %s%s%s", tick, preempt_val, tick);
-		xstrfmtcat(*extra, ", preempt=%s%s%s", tick, preempt_val, tick);
+		if (adding_straight) {
+			xstrfmtcat(*vals, ", \'%s,\'", preempt_val);
+			xstrfmtcat(*extra, ", preempt=\'%s,\'", preempt_val);
+		} else {
+			xstrfmtcat(*vals, ", %s", preempt_val);
+			xstrfmtcat(*extra, ", preempt=if(%s=',', '', %s)",
+				   preempt_val, preempt_val);
+		}
 		xfree(preempt_val);
 	}
 
@@ -902,9 +909,9 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		else
 			xstrfmtcat(assoc_char, " || id_qos='%s'", row[0]);
 		xstrfmtcat(extra,
-			   ", qos=replace(qos, ',%s', '')"
-			   ", delta_qos=replace(delta_qos, ',+%s', '')"
-			   ", delta_qos=replace(delta_qos, ',-%s', '')",
+			   ", qos=replace(qos, ',%s,', '')"
+			   ", delta_qos=replace(delta_qos, ',+%s,', '')"
+			   ", delta_qos=replace(delta_qos, ',-%s,', '')",
 			   row[0], row[0], row[0]);
 
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
@@ -1004,7 +1011,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"max_nodes_per_user",
 		"max_submit_jobs_per_user",
 		"max_wall_duration_per_job",
-		"preempt",
+		"substr(preempt, 1, length(preempt) - 1)",
 		"preempt_mode",
 		"priority",
 		"usage_factor",

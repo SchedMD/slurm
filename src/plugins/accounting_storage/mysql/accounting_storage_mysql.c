@@ -590,7 +590,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"end if; "
 		"if @qos = '' then set @s = CONCAT("
 		"@s, '@qos := qos, "
-		"@delta_qos := CONCAT(delta_qos, @delta_qos), '); "
+		"@delta_qos := REPLACE(CONCAT(delta_qos, @delta_qos), "
+		"\\\',,\\\', \\\',\\\'), '); "
 		"end if; "
 		"set @s = concat(@s, '@my_acct := parent_acct from \"', "
 		"cluster, '_', my_table, '\" where "
@@ -730,6 +731,19 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			xstrfmtcat(default_qos_str, ",%d", qos_id);
 			xfree(query);
 		}
+
+		/* We need to have the last character in a preempt to
+		 * be ','.  In older versions of Slurm this was not the case. */
+		query = xstrdup_printf(
+			"update %s set "
+			"preempt=if(preempt='', '', concat(preempt, ',')) "
+			"where preempt not like '%%,';",
+			qos_table);
+		debug4("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
+			error("Couldn't update qos_table!");
+		xfree(query);
 
 		if (_set_qos_cnt(mysql_conn) != SLURM_SUCCESS)
 			return SLURM_ERROR;
@@ -1121,6 +1135,29 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "partition(20)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
+
+	/* We need to have the last character in a preempt to
+	 * be ','.  In older versions of Slurm this was not the case. */
+	query = xstrdup_printf(
+		"update %s set qos=if(qos='', '', concat(qos, ',')) "
+		"where qos not like '%%,';",
+		table_name);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
+		error("Couldn't update %s!", table_name);
+	xfree(query);
+
+	query = xstrdup_printf(
+		"update %s set delta_qos=if(delta_qos='', '', "
+		"concat(delta_qos, ',')) "
+		"where delta_qos not like '%%,';",
+		table_name);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
+		error("Couldn't update %s!", table_name);
+	xfree(query);
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_day_table);
@@ -1631,15 +1668,15 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		list_iterator_destroy(qos_itr);
 		if (qos_val) {
 			xstrfmtcat(*cols, ", %s", qos_type);
-			xstrfmtcat(*vals, ", '%s'", qos_val);
-			xstrfmtcat(*extra, ", %s='%s'", qos_type, qos_val);
+			xstrfmtcat(*vals, ", '%s,'", qos_val);
+			xstrfmtcat(*extra, ", %s='%s,'", qos_type, qos_val);
 			xfree(qos_val);
 		}
 	} else if ((qos_level == QOS_LEVEL_SET) && default_qos_str) {
 		/* Add default qos to the account */
 		xstrcat(*cols, ", qos");
-		xstrfmtcat(*vals, ", '%s'", default_qos_str);
-		xstrfmtcat(*extra, ", qos='%s'", default_qos_str);
+		xstrfmtcat(*vals, ", '%s,'", default_qos_str);
+		xstrfmtcat(*extra, ", qos='%s,'", default_qos_str);
 		if (!assoc->qos_list)
 			assoc->qos_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(assoc->qos_list, default_qos_str);

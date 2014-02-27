@@ -192,6 +192,11 @@ extern int slurm_addto_char_list(List char_list, char *names)
 			else if ((names[i] == '\"') || (names[i] == '\''))
 				names[i] = '`';
 			else if (names[i] == ',') {
+				/* If there is a comma at the end just
+				   ignore it */
+				if (!names[i+1])
+					break;
+
 				name = xmalloc((i-start+1));
 				memcpy(name, names+start, (i-start));
 				//info("got %s %d", name, i-start);

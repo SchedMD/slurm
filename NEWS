@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
     placed.
  -- Fixed minor memory leak in backfill scheduler.
  -- MYSQL - Fixed memory leak when querying clusters.
+ -- MYSQL - Fix when updating QOS on an association.
 
 * Changes in Slurm 2.6.6
 ========================

@@ -1630,6 +1630,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			ListIterator new_qos_itr =
 				list_iterator_create(assoc->qos_list);
 			char *new_qos = NULL, *tmp_qos = NULL;
+			bool adding_straight = 0;
 
 			mod_assoc->qos_list = list_create(slurm_destroy_char);
 
@@ -1653,37 +1654,45 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				if (new_qos[0] == '-') {
 					xstrfmtcat(vals,
 						   ", qos=if (qos='', '', "
-						   "replace(qos, ',%s', ''))"
+						   "replace(replace("
+						   "qos, ',%s,', ','), "
+						   "',,', ','))"
 						   ", delta_qos=if (qos='', "
-						   "concat(replace(replace("
-						   "delta_qos, ',+%s', ''), "
-						   "',-%s', ''), ',%s'), '')",
+						   "replace(concat(replace("
+						   "replace("
+						   "delta_qos, ',+%s,', ','), "
+						   "',-%s,', ','), "
+						   "',%s,'), ',,', ','), '')",
 						   new_qos+1, new_qos+1,
 						   new_qos+1, new_qos);
 				} else if (new_qos[0] == '+') {
 					xstrfmtcat(vals,
 						   ", qos=if (qos='', '', "
-						   "concat_ws(',', "
-						   "replace(qos, ',%s', ''), "
-						   "'%s')), delta_qos=if ("
-						   "qos='', concat("
+						   "replace(concat("
+						   "replace(qos, ',%s,', ','), "
+						   "',%s,'), ',,', ',')), "
+						   "delta_qos=if ("
+						   "qos='', replace(concat("
 						   "replace(replace("
-						   "delta_qos, ',+%s', ''), "
-						   "',-%s', ''), ',%s'), '')",
+						   "delta_qos, ',+%s,', ','), "
+						   "',-%s,', ','), "
+						   "',%s,'), ',,', ','), '')",
 						   new_qos+1, new_qos+1,
 						   new_qos+1, new_qos+1,
 						   new_qos);
-				} else if (new_qos[0])
+				} else if (new_qos[0]) {
 					xstrfmtcat(tmp_qos, ",%s", new_qos);
-				else
+					adding_straight = 1;
+				} else
 					xstrcat(tmp_qos, "");
 
 			}
 			list_iterator_destroy(new_qos_itr);
 
-			if (!set_qos_vals && tmp_qos)
-				xstrfmtcat(vals, ", qos='%s', delta_qos=''",
-					   tmp_qos);
+			if (!set_qos_vals && tmp_qos) {
+				xstrfmtcat(vals, ", qos='%s%s', delta_qos=''",
+					   tmp_qos, adding_straight ? "," : "");
+			}
 			xfree(tmp_qos);
 
 			set_qos_vals=1;
