@@ -194,8 +194,10 @@ extern int proctrack_p_plugin_create(stepd_step_rec_t *job)
  * (once) at this time. */
 int proctrack_p_plugin_add(stepd_step_rec_t *job, pid_t pid)
 {
-	if (job_attachpid(pid, job->cont_id) == (jid_t) -1)
+	if (job_attachpid(pid, job->cont_id) == (jid_t) -1) {
 		error("Failed to attach pid %d to job container: %m", pid);
+		return SLURM_ERROR;
+	}
 
 	_end_container_thread();
 
