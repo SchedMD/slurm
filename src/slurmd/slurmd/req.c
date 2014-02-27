@@ -170,9 +170,9 @@ static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
-static int  _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
-			char **spank_job_env, uint32_t spank_job_env_size,
-			char *node_list);
+static int  _run_prolog(uint32_t jobid, uint32_t step_id, uid_t uid,
+			char *resv_id, char **spank_job_env,
+			uint32_t spank_job_env_size, char *node_list);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 			char **spank_job_env, uint32_t spank_job_env_size,
 			char *node_list);
@@ -1072,7 +1072,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
 		int rc;
-		rc =  _run_prolog(req->job_id, req->uid, NULL,
+		rc =  _run_prolog(req->job_id, req->job_step_id, req->uid, NULL,
 				  req->spank_job_env, req->spank_job_env_size,
 				  req->complete_nodelist);
 		if (rc) {
@@ -1405,7 +1405,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 							  SELECT_PRINT_RESV_ID);
 #endif
-		rc = _run_prolog(req->job_id, req->uid, resv_id,
+		rc = _run_prolog(req->job_id, req->step_id, req->uid, resv_id,
 				 req->spank_job_env, req->spank_job_env_size,
 				 req->nodes);
 		xfree(resv_id);
@@ -4359,14 +4359,17 @@ static int _run_job_script(const char *name, const char *path,
 #ifdef HAVE_BG
 /* a slow prolog is expected on bluegene systems */
 static int
-_run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
+_run_prolog(uint32_t jobid, uint32_t step_id, uid_t uid, char *resv_id,
 	    char **spank_job_env, uint32_t spank_job_env_size,
 	    char *node_list)
 {
 	int rc;
 	char *my_prolog;
-	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
-				   spank_job_env_size, node_list);
+	char **my_env;
+
+	my_env = _build_env(jobid, uid, resv_id, spank_job_env,
+			    spank_job_env_size, node_list);
+	setenvf(&my_env, "SLURM_STEP_ID", "%u", step_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
@@ -4417,14 +4420,12 @@ static void *_prolog_timer(void *x)
 }
 
 static int
-_run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
+_run_prolog(uint32_t jobid, uint32_t step_id, uid_t uid, char *resv_id,
 	    char **spank_job_env, uint32_t spank_job_env_size,
 	    char *node_list)
 {
 	int rc, diff_time;
 	char *my_prolog;
-	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
-				   spank_job_env_size, node_list);
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
 	pthread_t       timer_id;
@@ -4433,6 +4434,11 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 	timer_struct_t  timer_struct;
 	bool prolog_fini = false;
+	char **my_env;
+
+	my_env = _build_env(jobid, uid, resv_id, spank_job_env,
+			    spank_job_env_size, node_list);
+	setenvf(&my_env, "SLURM_STEP_ID", "%u", step_id);
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
