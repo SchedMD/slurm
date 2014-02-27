@@ -130,6 +130,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t jobid;
+	uint32_t step_id;
 	char *node_list;
 	char *partition;
 	char *resv_id;
@@ -1452,6 +1453,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	memset(&job_env, 0, sizeof(job_env_t));
 
 	job_env.jobid = req->job_id;
+	job_env.step_id = 0;	/* not available */
 	job_env.node_list = req->nodes;
 	job_env.partition = req->partition;
 	job_env.spank_job_env = req->spank_job_env;
@@ -1543,7 +1545,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		memset(&job_env, 0, sizeof(job_env_t));
 
 		job_env.jobid = req->job_id;
-		job_env.step_id = req->step_id
+		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
@@ -4593,9 +4595,8 @@ _run_prolog(job_env_t *job_env)
 	char *my_prolog;
 	char **my_env;
 
-	my_env = _build_env(jobid, uid, resv_id, spank_job_env,
-			    spank_job_env_size, node_list);
-	setenvf(&my_env, "SLURM_STEP_ID", "%u", step_id);
+	my_env = _build_env(job_enf);
+	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
@@ -4661,9 +4662,8 @@ _run_prolog(job_env_t *job_env)
 	bool prolog_fini = false;
 	char **my_env;
 
-	my_env = _build_env(jobid, uid, resv_id, spank_job_env,
-			    spank_job_env_size, node_list);
-	setenvf(&my_env, "SLURM_STEP_ID", "%u", step_id);
+	my_env = _build_env(job_env);
+	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
