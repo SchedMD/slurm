@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     accounting if running for the first time (should speed up startup
     dramatically on systems with lots of nodes or lots of jobs).
  -- Compile and run on FreeBSD 8.4.
+ -- Make job array expressions more flexible to accept multiple step counts in
+    the expression (e.g. "--array=1-10:2,50-60:5,123").
 
 * Changes in Slurm 14.03.0pre6
 ==============================

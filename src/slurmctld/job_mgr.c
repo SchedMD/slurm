@@ -4773,13 +4773,50 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 	return SLURM_SUCCESS;
 }
 
+/* For each token in a comma delimited job array expression set the matching
+ * bitmap entry */
+static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
+{
+	char *end_ptr = NULL;
+	int i, first, last, step = 1;
+
+	first = strtol(tok, &end_ptr, 10);
+	if (end_ptr[0] == '-') {
+		last = strtol(end_ptr + 1, &end_ptr, 10);
+		if (end_ptr[0] == ':') {
+			step = strtol(end_ptr + 1, &end_ptr, 10);
+			if (end_ptr[0] != '\0')
+				return false;
+			if (step <= 0)
+				return false;
+		} else if (end_ptr[0] != '\0') {
+			return false;
+		}
+		if (last < first)
+			return false;
+	} else if (end_ptr[0] != '\0') {
+		return false;
+	} else {
+		last = first;
+	}
+
+	if (last >= max)
+		return false;
+
+	for (i = first; i <= last; i += step) {
+		bit_set(array_bitmap, i);
+	}
+
+	return true;
+}
+
+/* Translate a job array expression into the equivalent bitmap */
 static bool _valid_array_inx(job_desc_msg_t *job_desc)
 {
 	slurm_ctl_conf_t *conf;
-	char *array_str = NULL, *end_ptr = NULL, *sep;
-	uint32_t array_id, max_array_size, step = 1;
 	bool valid = true;
-	hostset_t hs;
+	uint32_t max_array_size;
+	char *tmp, *tok, *last = NULL;
 
 	FREE_NULL_BITMAP(job_desc->array_bitmap);
 	if (!job_desc->array_inx || !job_desc->array_inx[0])
@@ -4797,64 +4834,17 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 
 	/* We have a job array request */
 	job_desc->immediate = 0;	/* Disable immediate option */
-	sep = strchr(job_desc->array_inx, (int) ':');
-	if (sep) {
-		step = strtol(sep+1, &end_ptr, 10);
-		if ((sep[1] == '\0') || (end_ptr[0] != '\0') ||
-		    (step == 0) || (step >= max_array_size))
-			return false;
-		sep[0] = '\0';
-		xstrfmtcat(array_str, "[%s]", job_desc->array_inx);
-		sep[0] = ':';
-	} else {
-		xstrfmtcat(array_str, "[%s]", job_desc->array_inx);
-	}
-	hs = hostset_create(array_str);
-	xfree(array_str);
-	if (!hs) {
-		verbose("Invalid job array string (%s)", array_str);
-		return false;
-	}
-	array_str = hostset_shift(hs);
-	if (!array_str) {
-		hostset_destroy(hs);
-		verbose("Invalid job array string (%s)", array_str);
-		return false;
-	}
-
 	job_desc->array_bitmap = bit_alloc(max_array_size);
-	while (array_str) {
-		array_id = strtol(array_str, &end_ptr, 10);
-		if ((array_str[0] == '\0') || (end_ptr[0] != '\0') ||
-		    (array_id < 0) || (array_id >= max_array_size)) {
-			valid = false;
-			verbose("Invalid job array element value (%d)",
-				array_id);
-		}
-		free(array_str);
-		if (!valid)
-			break;
-		bit_set(job_desc->array_bitmap, array_id);
-		array_str = hostset_shift(hs);
-	}
-	hostset_destroy(hs);
-	if (valid && (bit_set_count(job_desc->array_bitmap) == 0)) {
-		valid = false;
-		verbose("Job array has no elements");
-	}
 
-	if (valid && (step > 1)) {
-		int i, j = 0;
-		i = bit_ffs(job_desc->array_bitmap);
-		for ( ; i < max_array_size; i++) {
-			if (!bit_test(job_desc->array_bitmap, i))
-				continue;
-			if (j % step != 0)
-				bit_clear(job_desc->array_bitmap, i);
-			j++;
-		}
+	tmp = xstrdup(job_desc->array_inx);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok && valid) {
+		valid = _parse_array_tok(tok, job_desc->array_bitmap,
+					 max_array_size);
+		tok = strtok_r(NULL, ",", &last);
 	}
-
+	xfree(tmp);
+	
 	return valid;
 }
 
