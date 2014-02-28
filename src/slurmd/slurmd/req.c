@@ -4595,7 +4595,7 @@ _run_prolog(job_env_t *job_env)
 	char *my_prolog;
 	char **my_env;
 
-	my_env = _build_env(job_enf);
+	my_env = _build_env(job_env);
 	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
