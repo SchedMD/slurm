@@ -946,10 +946,24 @@ static void *_step_fini(void *args)
 	xfree(nhc_info.nodelist);
 
 	lock_slurmctld(job_write_lock);
-	if (!step_ptr->job_ptr || !step_ptr->step_node_bitmap) {
-		error("For some reason we don't have a step_node_bitmap or "
-		      "a step_ptr for %"PRIu64".  This should never happen.",
+	if (!step_ptr->job_ptr) {
+		error("For some reason we don't have a job_ptr for "
+		      "APID %"PRIu64".  This should never happen.",
 		      nhc_info.apid);
+	} else if (!step_ptr->step_node_bitmap) {
+		error("For some reason we don't have a step_node_bitmap "
+		      "for APID %"PRIu64".  "
+		      "If this is at startup and the step's nodes changed "
+		      "this is expected.  Otherwise this should never happen.",
+		      nhc_info.apid);
+
+		/* This should be the only cleanup needed */
+		jobinfo = step_ptr->select_jobinfo->data;
+
+		_remove_step_from_blades(step_ptr);
+		jobinfo->cleaning = 0;
+
+		delete_step_record(step_ptr->job_ptr, step_ptr->step_id);
 	} else {
 		other_step_finish(step_ptr);
 
