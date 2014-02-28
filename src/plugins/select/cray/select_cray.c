@@ -1654,7 +1654,11 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 	}
 
-	jobinfo->cleaning = 1;
+	if (jobinfo->cleaning == 1)
+		debug("Cleaning flag already set for job %u, "
+		      "running nhc anyway", job_ptr->job_id);
+	else
+		jobinfo->cleaning = 1;
 
 	_spawn_cleanup_thread(job_ptr, _job_fini);
 
@@ -1809,7 +1813,12 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	/* 	return SLURM_SUCCESS; */
 	/* } */
 
-	jobinfo->cleaning = 1;
+	if (jobinfo->cleaning == 1)
+		debug("Cleaning flag already set for job step %u.%u, "
+		      "running nhc anyway",
+		      step_ptr->step_id, step_ptr->job_ptr->job_id);
+	else
+		jobinfo->cleaning = 1;
 	_spawn_cleanup_thread(step_ptr, _step_fini);
 
 	return SLURM_SUCCESS;
