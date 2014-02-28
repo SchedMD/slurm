@@ -222,11 +222,8 @@ static void _internal_step_complete(
 
 		select_g_step_finish(step_ptr);
 #ifndef HAVE_NATIVE_CRAY
-		/* On a native cray this is ran after the NHC is
-		   called which could take up to 3 minutes.
-
-		   IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!!
-		*/
+		/* On native Cray, post_job_step is called after NHC completes.
+		 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
 		post_job_step(step_ptr);
 #endif
 	}
@@ -252,10 +249,8 @@ extern void delete_step_records (struct job_record *job_ptr)
 		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 					    SELECT_JOBDATA_CLEANING,
 					    &cleaning);
-		if (cleaning)
-			continue;      /* Step hasn't finished yet it
-					* will be removed when it
-					* does complete. */
+		if (cleaning)	/* Step hasn't finished cleanup yet. */
+			continue;
 
 		_internal_step_complete(job_ptr, step_ptr, true);
 		list_remove (step_iterator);
@@ -620,6 +615,8 @@ static void _wake_pending_steps(struct job_record *job_ptr)
 		     (step_ptr->time_last_active <= max_age))) {
 			srun_step_signal(step_ptr, 0);
 			list_remove (step_iterator);
+			/* Step never started, no need to check
+			 * SELECT_JOBDATA_CLEANING. */
 			_free_step_rec(step_ptr);
 			start_count++;
 		}
@@ -3813,11 +3810,10 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 			      "from uid %d", uid);
 			return ESLURM_USER_ID_MISSING;
 		}
-		/* need to create step (using some other launch mech
-		   that didn't use srun to launch).  Don't use
-		   _create_step_record though since we don't want to
-		   push it on the job's step_list.
-		*/
+		/* Need to create a temporary step record (using some other
+		 * launch mechanism that didn't use srun to launch).  Don't use
+		 * _create_step_record though since we don't want to push it on
+		 * the job's step_list. */
 		if (req->step_id == NO_VAL) {
 			step_ptr = xmalloc(sizeof(struct step_record));
 			step_ptr->job_ptr    = job_ptr;
@@ -3897,9 +3893,12 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 
 			jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
-			if (new_step)
+			if (new_step) {
+				/* This was a temporary step record, never
+				 * linked to the job, so there is no need to
+				 * check SELECT_JOBDATA_CLEANING. */
 				_free_step_rec(step_ptr);
-
+			}
 			mod_cnt++;
 			info("Updating step %u.%u jobacct info",
 			     req->job_id, req->step_id);
