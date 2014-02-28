@@ -948,7 +948,7 @@ static void *_step_fini(void *args)
 	lock_slurmctld(job_write_lock);
 	if (!step_ptr->job_ptr || !step_ptr->step_node_bitmap) {
 		error("For some reason we don't have a step_node_bitmap or "
-		      "a job_ptr for %"PRIu64".  This should never happen.",
+		      "a step_ptr for %"PRIu64".  This should never happen.",
 		      nhc_info.apid);
 	} else {
 		other_step_finish(step_ptr);
