@@ -120,6 +120,14 @@ AC_DEFUN([X_AC_CRAY],
 	)],
 	[have_cray_files="yes"],
 	[AC_MSG_ERROR(There is a problem linking to the Cray api.)])
+
+      # See if we have 5.2UP01 alpscomm functions
+      AC_SEARCH_LIBS([alpsc_get_topology],
+	[alpscomm_sn],
+	[AC_DEFINE(HAVE_NATIVE_CRAY_GA, 1,
+	[Define to 1 if alpscomm functions new to CLE 5.2UP01 are defined])])
+
+
       LIBS="$saved_LIBS"
       CPPFLAGS="$saved_CPPFLAGS"
 

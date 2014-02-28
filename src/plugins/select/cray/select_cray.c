@@ -1400,7 +1400,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	int i, j;
 	uint64_t blade_id = 0;
 
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_NATIVE_CRAY_GA
 	int nn, end_nn, last_nn = 0;
 	bool found = 0;
 	alpsc_topology_t *topology = NULL;
@@ -1455,7 +1455,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			nodeinfo->nid = atoll(nid_char);
 		}
 
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_NATIVE_CRAY_GA
 		end_nn = num_nodes;
 
 	start_again:
@@ -1511,7 +1511,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	/* give back the memory */
 	xrealloc(blade_array, sizeof(blade_info_t) * blade_cnt);
 
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_NATIVE_CRAY_GA
 	free(topology);
 #endif
 
