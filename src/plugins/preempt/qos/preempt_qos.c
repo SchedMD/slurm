@@ -153,9 +153,12 @@ static uint32_t _gen_job_prio(struct job_record *job_ptr)
 	uint32_t job_prio;
 	slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
 
-	if (qos_ptr)
-		job_prio = (qos_ptr->priority & 0xffff) << 16;
-	else
+	if (qos_ptr) {
+		if (qos_ptr->priority > 0xffff)
+			job_prio = 0xffff << 16;
+		else
+			job_prio = (qos_ptr->priority & 0xffff) << 16;
+	} else
 		job_prio = 0;
 
 	if (job_ptr->node_cnt >= 0xffff)
