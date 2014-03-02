@@ -128,6 +128,7 @@ static int backfill_window = BACKFILL_WINDOW;
 static int max_backfill_job_cnt = 50;
 static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
+static int max_backfill_jobs_start = 0;
 static bool backfill_continue = false;
 
 /*********************** local functions *********************/
@@ -456,6 +457,13 @@ static void _load_config(void)
 		      max_backfill_job_per_part);
 	}
 
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_start=")))
+		max_backfill_jobs_start = atoi(tmp_ptr + 17);
+	if (max_backfill_jobs_start < 0) {
+		fatal("Invalid backfill scheduler bf_max_job_start: %d",
+		      max_backfill_jobs_start);
+	}
+
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_user=")))
 		max_backfill_job_per_user = atoi(tmp_ptr + 16);
 	if (max_backfill_job_per_user < 0) {
@@ -592,6 +600,7 @@ static int _attempt_backfill(void)
 	uint16_t *njobs = NULL;
 	bool already_counted;
 	uint32_t reject_array_job_id = 0;
+	uint32_t job_start_cnt = 0;
 	time_t config_update = slurmctld_conf.last_update;
 	time_t part_update = last_part_update;
 
@@ -1018,6 +1027,9 @@ static int _attempt_backfill(void)
 				if (save_time_limit != job_ptr->time_limit)
 					jobacct_storage_g_job_start(acct_db_conn,
 								    job_ptr);
+				if (max_backfill_jobs_start &&
+				    (++job_start_cnt >= max_backfill_jobs_start))
+					break;
 				continue;
 			}
 		} else

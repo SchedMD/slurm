@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
  -- MYSQL - Fix when updating QOS on an association.
  -- NRT - Fix to supply correct error messages to poe/pmd when a launch fails.
  -- Add SLURM_STEP_ID to Prolog environment.
+ -- Add support for SchedulerParameters value of bf_max_job_start that limits
+    the total number of jobs that can be started in a single iteration of the
+    backfill scheduler.
 
 * Changes in Slurm 2.6.6
 ========================
