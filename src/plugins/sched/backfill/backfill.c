@@ -779,7 +779,7 @@ static int _attempt_backfill(void)
 					       "Total #users now %u",
 					       job_ptr->user_id, nuser);
 			} else {
-				if (njobs[j] > max_backfill_job_per_user) {
+				if (njobs[j] >= max_backfill_job_per_user) {
 					/* skip job */
 					if (debug_flags & DEBUG_FLAG_BACKFILL)
 						debug("backfill: have already "
