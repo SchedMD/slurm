@@ -1863,6 +1863,17 @@ of the backfill scheduler.
 The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
+\fBbf_max_job_test=#\fR
+The maximum number of jobs to attempt backfill scheduling for
+(i.e. the queue depth).
+Higher values result in more overhead and less responsiveness.
+Until an attempt is made to backfill schedule a job, its expected
+initiation time value will not be set.
+The default value is 100.
+In the case of large clusters, configuring a relatively small value may be
+desirable.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+.TP
 \fBbf_max_job_user=#\fR
 The maximum number of jobs per user to attempt backfill scheduling for,
 not counting jobs which cannot be started due to an association resource
@@ -1911,17 +1922,6 @@ scheduling multiple jobs simultaneously may be possible.
 This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
 initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
-.TP
-\fBmax_job_bf=#\fR
-The maximum number of jobs to attempt backfill scheduling for
-(i.e. the queue depth).
-Higher values result in more overhead and less responsiveness.
-Until an attempt is made to backfill schedule a job, its expected
-initiation time value will not be set.
-The default value is 100.
-In the case of large clusters, configuring a relatively small value may be
-desirable.
-This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBmax_depend_depth=#\fR
 Maximum number of jobs to test for a circular job dependency. Stop testing

@@ -110,7 +110,7 @@ jobs every time some job completes or another routine action occurs. (NOTE:
 the default value of <b>default_queue_depth</b> should be fine in most
 cases).</li>
 <li>The <i>sched/backfill</i> plugin has relatively high overhead if used with
-large numbers of job. Configuring <b>max_job_bf</b> to a modest size (say 100
+large numbers of job. Configuring <b>bf_max_job_test</b> to a modest size (say 100
 jobs or less) and <b>bf_interval</b> to 30 seconds or more will limit the
 overhead of backfill scheduling (NOTE: the default values are fine for both
 of these parameters). Other backfill options available for tuning backfill 

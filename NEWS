@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
  -- Make job array expressions more flexible to accept multiple step counts in
     the expression (e.g. "--array=1-10:2,50-60:5,123").
  -- switch/cray - add state save/restore logic tracking allocated ports.
+ -- SchedulerParameters - Replace max_job_bf with bf_max_job_start (both will
+    work for now).
 
 * Changes in Slurm 14.03.0pre6
 ==============================
