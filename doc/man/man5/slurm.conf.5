@@ -1857,6 +1857,12 @@ The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBpartition_job_depth\fR option.
 .TP
+\fBbf_max_job_start=#\fR
+The maximum number of jobs which can be initiated in a single iteration
+of the backfill scheduler.
+The default value is 0, which means no limit.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+.TP
 \fBbf_max_job_user=#\fR
 The maximum number of jobs per user to attempt backfill scheduling for,
 not counting jobs which cannot be started due to an association resource
