@@ -132,6 +132,10 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	return preemptee_job_list;
 }
 
+/* Generate the job's priority. It is partly based upon the partition priority
+ * and partly based upon the job size. We want to put smaller jobs at the top
+ * of the preemption queue and use a sort algorithm to minimize the number of
+ * job's preempted. */
 static uint32_t _gen_job_prio(struct job_record *job_ptr)
 {
 	uint32_t job_prio;

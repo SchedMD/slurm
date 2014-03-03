@@ -148,13 +148,28 @@ static bool _qos_preemptable(struct job_record *preemptee,
 
 }
 
+/* Generate the job's priority. It is partly based upon the QOS priority
+ * and partly based upon the job size. We want to put smaller jobs at the top
+ * of the preemption queue and use a sort algorithm to minimize the number of
+ * job's preempted. */
 static uint32_t _gen_job_prio(struct job_record *job_ptr)
 {
 	uint32_t job_prio = 0;
 	slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
 
-	if (qos_ptr)
-		job_prio = qos_ptr->priority;
+	if (qos_ptr) {
+		/* QOS priority is 32-bits, but only use 16-bits so we can
+		 * preempt smaller jobs rather than larger jobs. */
+		if (qos_ptr->priority >= 0xffff)
+			job_prio = 0xffff << 16;
+		else
+			job_prio = qos_ptr->priority << 16;
+	}
+
+	if (job_ptr->node_cnt >= 0xffff)
+		job_prio += 0xffff;
+	else
+		job_prio += job_ptr->node_cnt;
 
 	return job_prio;
 }
