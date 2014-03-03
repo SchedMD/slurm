@@ -1637,6 +1637,7 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_EXPORT:
 			xfree(opt.export_env);
 			opt.export_env = xstrdup(optarg);
+			setenv("SLURM_EXPORT_ENV", opt.export_env, 0);
 			break;
 		case LONG_OPT_EXPORT_FILE:
 			xfree(opt.export_file);

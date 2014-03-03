@@ -180,6 +180,7 @@ typedef struct srun_options {
 	char *task_prolog;	/* --task-prolog=		*/
 	char *licenses;		/* --licenses, -L		*/
 	bool preserve_env;	/* --preserve-env		*/
+	char *export_env;	/* --export			*/
 
 	/* constraint options */
 	int32_t pn_min_cpus;	/* --mincpus=n			*/

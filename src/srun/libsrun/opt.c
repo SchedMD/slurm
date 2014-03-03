@@ -123,6 +123,7 @@
 #define OPT_CPU_FREQ    0x19
 #define OPT_CORE_SPEC   0x1a
 #define OPT_PROFILE     0x20
+#define OPT_EXPORT	0x21
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -193,6 +194,7 @@
 #define LONG_OPT_CPU_FREQ        0x155
 #define LONG_OPT_LAUNCH_CMD      0x156
 #define LONG_OPT_PROFILE         0x157
+#define LONG_OPT_EXPORT          0x158
 
 extern char **environ;
 
@@ -443,6 +445,7 @@ static void _opt_default()
 	opt.overcommit = false;
 	opt.shared = (uint16_t)NO_VAL;
 	opt.exclusive = false;
+	opt.export_env = NULL;
 	opt.no_kill = false;
 	opt.kill_bad_exit = NO_VAL;
 
@@ -562,6 +565,7 @@ env_vars_t env_vars[] = {
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
 {"SLURM_EPILOG",        OPT_STRING,     &opt.epilog,        NULL             },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
+{"SLURM_EXPORT_ENV",    OPT_STRING,     &opt.export_env,    NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
 {"SLURM_GRES",          OPT_STRING,     &opt.gres,          NULL             },
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
@@ -709,6 +713,13 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_EXCLUSIVE:
 		opt.exclusive = true;
 		opt.shared = 0;
+		break;
+
+	case OPT_EXPORT:
+		if (val)
+			opt.export_env = xstrdup(val);
+		else
+			opt.export_env = NULL;
 		break;
 
 	case OPT_RESV_PORTS:
@@ -868,6 +879,7 @@ static void _set_options(const int argc, char **argv)
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
+		{"export",           required_argument, 0, LONG_OPT_EXPORT},
 		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
 		{"gres",             required_argument, 0, LONG_OPT_GRES},
@@ -1179,6 +1191,10 @@ static void _set_options(const int argc, char **argv)
 			opt.exclusive = true;
                         opt.shared = 0;
                         break;
+		case LONG_OPT_EXPORT:
+			xfree(opt.export_env);
+			opt.export_env = xstrdup(optarg);
+			break;
                 case LONG_OPT_CPU_BIND:
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
@@ -2634,6 +2650,7 @@ static void _help(void)
 "  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
 "                              sub-block allocations can not be allocated\n"
 "                              with the geometry option\n"
+"      --export=NONE           do not pass environment variables to launcher\n"
 #endif
 "  -R, --no-rotate             disable geometry rotation\n"
 "      --reboot                reboot block before starting job\n"

@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
     preempt_strict_order.
  -- Make memory types in acct_gather uint64_t to handle systems with more than
     4TB of memory on them.
+ -- BGQ - --export=NONE option for srun to make it so only the SLURM_JOB_ID
+    and SLURM_STEP_ID env vars are set.
 
 * Changes in Slurm 14.03.0pre6
 ==============================
