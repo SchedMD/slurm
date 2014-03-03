@@ -74,6 +74,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added "SchedulerParameters" option of "bf_max_job_start".
  -- In "SchedulerParameters", replace "max_job_bf" with "bf_max_job_test"
     (both will work for now).
+ -- Add "SchedulerParameters" options of "preempt_reorder_count" and
+    "preempt_strict_order".
  -- Change MaxArraySize from 16-bit to 32-bit field.
  -- Added fields to "scontrol show job" output: boards_per_node,
     sockets_per_board, ntasks_per_node, ntasks_per_board, ntasks_per_socket,

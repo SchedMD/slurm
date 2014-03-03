@@ -180,7 +180,7 @@ This list is sorted by either:
 </P>
 <ol>
 <li>QOS priority or</li>
-<li>partition priority and job size (to favor preempting smaller jobs</li>
+<li>Partition priority and job size (to favor preempting smaller jobs</li>
 </ol>
 <P>
 The select plugin will determine if the pending job can start without preempting
@@ -205,6 +205,9 @@ The process of simulating the preemption of each job in the priority ordered
 list will then be repeated for the final decision of which jobs to preempt.
 This two stage process may preempt jobs which are not strictly in preemption
 priority order, but fewer jobs will be preempted than otherwise required.
+See the SchedulerParameters configuration parameter options of
+<I>preempt_reorder_count</I> and <I>preempt_strict_order</I> for preemption
+tuning parameters.
 </P>
 <P>
 When enabled, the gang scheduling logic (which is also supports job

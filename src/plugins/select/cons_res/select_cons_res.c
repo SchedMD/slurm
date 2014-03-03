@@ -186,9 +186,8 @@ struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
 static bool select_state_initializing = true;
 static int select_node_cnt = 0;
-static bool job_preemption_enabled = false;
-static bool job_preemption_killing = false;
-static bool job_preemption_tested  = false;
+static int preempt_reorder_cnt = 1;
+static bool preempt_strict_order = false;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
@@ -1897,6 +1896,7 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
  */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
+	char *sched_params, *tmp_ptr;
 	int i, tot_core;
 
 	info("cons_res: select_p_node_init");
@@ -1912,6 +1912,18 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		error("select_p_node_init: node_cnt < 0");
 		return SLURM_ERROR;
 	}
+
+	sched_params = slurm_get_sched_params();
+	if (sched_params && strstr(sched_params, "preempt_strict_order"))
+		preempt_strict_order = true;
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "preempt_reorder_count=")))
+		preempt_reorder_cnt = atoi(tmp_ptr + 22);
+	if (preempt_reorder_cnt < 0) {
+		fatal("Invalid SchedulerParameters preempt_reorder_count: %d",
+		      preempt_reorder_cnt);
+	}
+	xfree(sched_params);
 
 	/* initial global core data structures */
 	select_state_initializing = true;
@@ -2533,10 +2545,6 @@ extern int select_p_reconfigure(void)
 	info("cons_res: select_p_reconfigure");
 	select_debug_flags = slurm_get_debug_flags();
 
-	/* Rebuild the global data structures */
-	job_preemption_enabled = false;
-	job_preemption_killing = false;
-	job_preemption_tested  = false;
 	rc = select_p_node_init(node_record_table_ptr, node_record_count);
 	if (rc != SLURM_SUCCESS)
 		return rc;
