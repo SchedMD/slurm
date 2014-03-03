@@ -174,6 +174,39 @@ pending job and rely upon the gang scheduling logic to perform job suspend
 and resume as described below.
 </P>
 <P>
+The select plugin is passed an ordered list of preemptable jobs to consider for
+each pending job which is a candidate to start.
+This list is sorted by either:
+</P>
+<ol>
+<li>QOS priority or</li>
+<li>partition priority and job size (to favor preempting smaller jobs</li>
+</ol>
+<P>
+The select plugin will determine if the pending job can start without preempting
+any jobs and if so, starts the job using available resources.
+Otherwise, the select plugin will simulate the preemption of each job in the
+priority ordered list and test if the job can be started after each preemption.
+Once the job can be started, the higher priority jobs in the preemption queue
+will not be considered, but the jobs to be preempted in the original list may
+be sub-optimal.
+For example, to start an 8 node job, the ordered preemption candidates may be
+2 node, 4 node and 8 node.
+Preempting all three jobs would allow the pending job to start, but by reording
+the preemption candidates it is possible to start the pending job after
+preempting only one job.
+To address this issue, the preemption candidates are re-ordered with the final
+job requiring preemption placed first in the list and all of the other jobs
+to be preempted ordered by the number of nodes in their allocation which overlap
+the resources selected for the pending job.
+In the example above, the 8 node job would be moved to the first position in
+the list.
+The process of simulating the preemption of each job in the priority ordered
+list will then be repeated for the final decision of which jobs to preempt.
+This two stage process may preempt jobs which are not strictly in preemption
+priority order, but fewer jobs will be preempted than otherwise required.
+</P>
+<P>
 When enabled, the gang scheduling logic (which is also supports job
 preemption) keeps track of the resources allocated to all jobs.
 For each partition an "active bitmap" is maintained that tracks all
@@ -374,6 +407,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 24 February 2014</p>
+<p style="text-align:center;">Last modified 3 March 2014</p>
 
 <!--#include virtual="footer.txt"-->
