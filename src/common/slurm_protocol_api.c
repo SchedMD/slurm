@@ -4031,21 +4031,21 @@ extern int nodelist_find(const char *nodelist, const char *name)
 	return id;
 }
 
-extern void convert_num_unit2(float num, char *buf, int buf_size, int orig_type,
-			      int divisor, bool exact)
+extern void convert_num_unit2(double num, char *buf, int buf_size,
+			      int orig_type, int divisor, bool exact)
 {
 	char *unit = "\0KMGTP?";
-	int i;
+	uint64_t i;
 
-	if ((int)num == 0) {
-			snprintf(buf, buf_size, "%d", (int)num);
-			return;
+	if ((int64_t)num == 0) {
+		snprintf(buf, buf_size, "0");
+		return;
 	} else if (exact) {
-		i = (int)num % (divisor / 2);
+		i = (uint64_t)num % (divisor / 2);
 
 		if (i > 0) {
-			snprintf(buf, buf_size, "%d%c",
-				 (int)num, unit[orig_type]);
+			snprintf(buf, buf_size, "%"PRIu64"%c",
+				 (uint64_t)num, unit[orig_type]);
 			return;
 		}
 	}
@@ -4057,18 +4057,18 @@ extern void convert_num_unit2(float num, char *buf, int buf_size, int orig_type,
 
 	if (orig_type < UNIT_NONE || orig_type > UNIT_PETA)
 		orig_type = UNIT_UNKNOWN;
-	i = (int)num;
+	i = (uint64_t)num;
 	/* Here we are checking to see if these numbers are the same,
 	 * meaning the float has not floating point.  If we do have
 	 * floating point print as a float.
 	*/
-	if ((float)i == num)
-		snprintf(buf, buf_size, "%d%c", i, unit[orig_type]);
+	if ((double)i == num)
+		snprintf(buf, buf_size, "%"PRIu64"%c", i, unit[orig_type]);
 	else
 		snprintf(buf, buf_size, "%.2f%c", num, unit[orig_type]);
 }
 
-extern void convert_num_unit(float num, char *buf, int buf_size, int orig_type)
+extern void convert_num_unit(double num, char *buf, int buf_size, int orig_type)
 {
 	convert_num_unit2(num, buf, buf_size, orig_type, 1024, true);
 }
