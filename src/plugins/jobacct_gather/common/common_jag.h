@@ -51,10 +51,10 @@ typedef struct jag_prec {	/* process record */
 	int     pages;  /* pages */
 	pid_t	pid;
 	pid_t	ppid;
-	int	rss;	/* rss */
+	uint64_t rss;	/* rss */
 	int     ssec;   /* system cpu time */
 	int     usec;   /* user cpu time */
-	int	vsize;	/* virtual size */
+	uint64_t vsize;	/* virtual size */
 } jag_prec_t;
 
 typedef struct jag_callbacks {

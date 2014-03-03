@@ -831,17 +831,17 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int = job->stats.pages_max;
+					tmp_uint64 = job->stats.pages_max;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.pages_max;
+				tmp_uint64 = step->stats.pages_max;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			if (tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
+			if (tmp_uint64 != (uint64_t)NO_VAL)
+				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
 
@@ -897,17 +897,17 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int = job->stats.rss_max;
+					tmp_uint64 = job->stats.rss_max;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.rss_max;
+				tmp_uint64 = step->stats.rss_max;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			if (tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
+			if (tmp_uint64 != (uint64_t)NO_VAL)
+				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
 
@@ -962,18 +962,18 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int = job->stats.vsize_max;
+					tmp_uint64 = job->stats.vsize_max;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.vsize_max;
+				tmp_uint64 = step->stats.vsize_max;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint64 = (uint64_t)NO_VAL;
 				break;
 			}
-			if (tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
+			if (tmp_uint64 != (uint64_t)NO_VAL)
+				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
 

@@ -324,15 +324,15 @@ typedef struct {
 	uint32_t disk_write_max_nodeid; /* contains  node number max was on */
 	uint32_t disk_write_max_taskid;/* contains task number max was on */
 	double pages_ave;
-	uint32_t pages_max;
+	uint64_t pages_max;
 	uint32_t pages_max_nodeid; /* contains which node number it was on */
 	uint32_t pages_max_taskid; /* contains which task number it was on */
 	double rss_ave;
-	uint32_t rss_max;
+	uint64_t rss_max;
 	uint32_t rss_max_nodeid; /* contains which node number it was on */
 	uint32_t rss_max_taskid; /* contains which task number it was on */
 	double vsize_ave;
-	uint32_t vsize_max;
+	uint64_t vsize_max;
 	uint32_t vsize_max_nodeid; /* contains which node number it was on */
 	uint32_t vsize_max_taskid; /* contains which task number it was on */
 } slurmdb_stats_t;

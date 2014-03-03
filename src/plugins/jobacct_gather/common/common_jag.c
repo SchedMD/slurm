@@ -255,7 +255,7 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 	prec->pages = majflt;
 	prec->usec  = utime;
 	prec->ssec  = stime;
-	prec->vsize = vsize / 1024;	      /* convert from bytes to KB */
+	prec->vsize = vsize / 1024; /* convert from bytes to KB */
 	prec->rss   = rss * my_pagesize;/* convert from pages to KB */
 	prec->last_cpu = last_cpu;
 	return 1;
@@ -546,7 +546,7 @@ extern void jag_common_init(long in_hertz)
 		}
 	}
 
-	my_pagesize = getpagesize()/1024;
+	my_pagesize = getpagesize() / 1024;
 }
 
 extern void jag_common_fini(void)
@@ -569,10 +569,10 @@ extern void print_jag_prec(jag_prec_t *prec)
 	info("disk read\t%f", prec->disk_read);
 	info("disk_write\t%f", prec->disk_write);
 	info("pages\t%d", prec->pages);
-	info("rss  \t%d", prec->rss);
+	info("rss  \t%"PRIu64"", prec->rss);
 	info("ssec \t%d", prec->ssec);
 	info("usec \t%d", prec->usec);
-	info("vsize\t%d", prec->vsize);
+	info("vsize\t%"PRIu64"", prec->vsize);
 }
 
 extern void jag_common_poll_data(
@@ -581,7 +581,7 @@ extern void jag_common_poll_data(
 {
 	/* Update the data */
 	List prec_list = NULL;
-	uint32_t total_job_mem = 0, total_job_vsize = 0;
+	uint64_t total_job_mem = 0, total_job_vsize = 0;
 	ListIterator itr;
 	ListIterator itr2;
 	jag_prec_t *prec = NULL;
@@ -653,7 +653,8 @@ extern void jag_common_poll_data(
 					MAX(jobacct->min_cpu, cpu_calc);
 				jobacct->last_total_cputime = jobacct->tot_cpu;
 				jobacct->tot_cpu = cpu_calc;
-				debug2("%d mem size %u %u time %u(%u+%u)",
+				debug2("%d mem size %"PRIu64" %"PRIu64" "
+				       "time %u(%u+%u)",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
@@ -666,7 +667,8 @@ extern void jag_common_poll_data(
 				jobacct->act_cpufreq =
 					_update_weighted_freq(jobacct, sbuf);
 				debug2("Task average frequency = %u "
-				       "pid %d mem size %u %u time %u(%u+%u)",
+				       "pid %d mem size %"PRIu64" %"PRIu64" "
+				       "time %u(%u+%u)",
 				       jobacct->act_cpufreq,
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,

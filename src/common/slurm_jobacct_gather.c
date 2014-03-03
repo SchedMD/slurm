@@ -115,8 +115,8 @@ static bool plugin_polling = true;
 
 static uint32_t jobacct_job_id     = 0;
 static uint32_t jobacct_step_id    = 0;
-static uint32_t jobacct_mem_limit  = 0;
-static uint32_t jobacct_vmem_limit = 0;
+static uint64_t jobacct_mem_limit  = 0;
+static uint64_t jobacct_vmem_limit = 0;
 
 /* _acct_kill_step() issue RPC to kill a slurm job step */
 static void _acct_kill_step(void)
@@ -542,17 +542,18 @@ extern int jobacct_gather_set_mem_limit(uint32_t job_id, uint32_t step_id,
 }
 
 extern void jobacct_gather_handle_mem_limit(
-	uint32_t total_job_mem, uint32_t total_job_vsize)
+	uint64_t total_job_mem, uint64_t total_job_vsize)
 {
 	if (!plugin_polling)
 		return;
 
 	if (jobacct_mem_limit) {
 		if (jobacct_step_id == NO_VAL) {
-			debug("Job %u memory used:%u limit:%u KB",
+			debug("Job %u memory used:%"PRIu64" limit:%"PRIu64" KB",
 			      jobacct_job_id, total_job_mem, jobacct_mem_limit);
 		} else {
-			debug("Step %u.%u memory used:%u limit:%u KB",
+			debug("Step %u.%u memory used:%"PRIu64" "
+			      "limit:%"PRIu64" KB",
 			      jobacct_job_id, jobacct_step_id,
 			      total_job_mem, jobacct_mem_limit);
 		}
@@ -560,11 +561,13 @@ extern void jobacct_gather_handle_mem_limit(
 	if (jobacct_job_id && jobacct_mem_limit &&
 	    (total_job_mem > jobacct_mem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded memory limit (%u > %u), being "
+			error("Job %u exceeded memory limit "
+			      "(%"PRIu64" > %"PRIu64"), being "
 			      "killed", jobacct_job_id, total_job_mem,
 			      jobacct_mem_limit);
 		} else {
-			error("Step %u.%u exceeded memory limit (%u > %u), "
+			error("Step %u.%u exceeded memory limit "
+			      "(%"PRIu64" > %"PRIu64"), "
 			      "being killed", jobacct_job_id, jobacct_step_id,
 			      total_job_mem, jobacct_mem_limit);
 		}
@@ -573,11 +576,13 @@ extern void jobacct_gather_handle_mem_limit(
 		   (total_job_vsize > jobacct_vmem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
 			error("Job %u exceeded virtual memory limit "
-			      "(%u > %u), being killed", jobacct_job_id,
+			      "(%"PRIu64" > %"PRIu64"), being killed",
+			      jobacct_job_id,
 			      total_job_vsize, jobacct_vmem_limit);
 		} else {
 			error("Step %u.%u exceeded virtual memory limit "
-			      "(%u > %u), being killed", jobacct_job_id,
+			      "(%"PRIu64" > %"PRIu64"), being killed",
+			      jobacct_job_id,
 			      jobacct_step_id, total_job_vsize,
 			      jobacct_vmem_limit);
 		}
@@ -646,6 +651,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	int *fd = (int *)data;
 	struct rusage *rusage = (struct rusage *)data;
 	uint32_t *uint32 = (uint32_t *) data;
+	uint64_t *uint64 = (uint64_t *) data;
 	double *dub = (double *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
@@ -750,31 +756,31 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		jobacct->sys_cpu_usec = rusage->ru_stime.tv_usec;
 		break;
 	case JOBACCT_DATA_MAX_RSS:
-		jobacct->max_rss = *uint32;
+		jobacct->max_rss = *uint64;
 		break;
 	case JOBACCT_DATA_MAX_RSS_ID:
 		jobacct->max_rss_id = *jobacct_id;
 		break;
 	case JOBACCT_DATA_TOT_RSS:
-		jobacct->tot_rss = *uint32;
+		jobacct->tot_rss = *uint64;
 		break;
 	case JOBACCT_DATA_MAX_VSIZE:
-		jobacct->max_vsize = *uint32;
+		jobacct->max_vsize = *uint64;
 		break;
 	case JOBACCT_DATA_MAX_VSIZE_ID:
 		jobacct->max_vsize_id = *jobacct_id;
 		break;
 	case JOBACCT_DATA_TOT_VSIZE:
-		jobacct->tot_vsize = *uint32;
+		jobacct->tot_vsize = *uint64;
 		break;
 	case JOBACCT_DATA_MAX_PAGES:
-		jobacct->max_pages = *uint32;
+		jobacct->max_pages = *uint64;
 		break;
 	case JOBACCT_DATA_MAX_PAGES_ID:
 		jobacct->max_pages_id = *jobacct_id;
 		break;
 	case JOBACCT_DATA_TOT_PAGES:
-		jobacct->tot_pages = *uint32;
+		jobacct->tot_pages = *uint64;
 		break;
 	case JOBACCT_DATA_MIN_CPU:
 		jobacct->min_cpu = *uint32;
@@ -825,6 +831,7 @@ extern int jobacctinfo_getinfo(
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
 	uint32_t *uint32 = (uint32_t *) data;
+	uint64_t *uint64 = (uint64_t *) data;
 	double *dub = (double *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct rusage *rusage = (struct rusage *)data;
@@ -931,31 +938,31 @@ extern int jobacctinfo_getinfo(
 		rusage->ru_stime.tv_usec = jobacct->sys_cpu_usec;
 		break;
 	case JOBACCT_DATA_MAX_RSS:
-		*uint32 = jobacct->max_rss;
+		*uint64 = jobacct->max_rss;
 		break;
 	case JOBACCT_DATA_MAX_RSS_ID:
 		*jobacct_id = jobacct->max_rss_id;
 		break;
 	case JOBACCT_DATA_TOT_RSS:
-		*uint32 = jobacct->tot_rss;
+		*uint64 = jobacct->tot_rss;
 		break;
 	case JOBACCT_DATA_MAX_VSIZE:
-		*uint32 = jobacct->max_vsize;
+		*uint64 = jobacct->max_vsize;
 		break;
 	case JOBACCT_DATA_MAX_VSIZE_ID:
 		*jobacct_id = jobacct->max_vsize_id;
 		break;
 	case JOBACCT_DATA_TOT_VSIZE:
-		*uint32 = jobacct->tot_vsize;
+		*uint64 = jobacct->tot_vsize;
 		break;
 	case JOBACCT_DATA_MAX_PAGES:
-		*uint32 = jobacct->max_pages;
+		*uint64 = jobacct->max_pages;
 		break;
 	case JOBACCT_DATA_MAX_PAGES_ID:
 		*jobacct_id = jobacct->max_pages_id;
 		break;
 	case JOBACCT_DATA_TOT_PAGES:
-		*uint32 = jobacct->tot_pages;
+		*uint64 = jobacct->tot_pages;
 		break;
 	case JOBACCT_DATA_MIN_CPU:
 		*uint32 = jobacct->min_cpu;
@@ -1027,7 +1034,9 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 		}
 		pack8((uint8_t) 1, buffer);
 		if (!jobacct) {
-			for (i = 0; i < 14; i++)
+			for (i = 0; i < 6; i++)
+				pack64(0, buffer);
+			for (i = 0; i < 8; i++)
 				pack32((uint32_t) 0, buffer);
 			for (i = 0; i < 4; i++)
 				packdouble((double) 0, buffer);
@@ -1040,12 +1049,12 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
 		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->max_vsize, buffer);
-		pack32((uint32_t)jobacct->tot_vsize, buffer);
-		pack32((uint32_t)jobacct->max_rss, buffer);
-		pack32((uint32_t)jobacct->tot_rss, buffer);
-		pack32((uint32_t)jobacct->max_pages, buffer);
-		pack32((uint32_t)jobacct->tot_pages, buffer);
+		pack64(jobacct->max_vsize, buffer);
+		pack64(jobacct->tot_vsize, buffer);
+		pack64(jobacct->max_rss, buffer);
+		pack64(jobacct->tot_rss, buffer);
+		pack64(jobacct->max_pages, buffer);
+		pack64(jobacct->tot_pages, buffer);
 		pack32((uint32_t)jobacct->min_cpu, buffer);
 		pack32((uint32_t)jobacct->tot_cpu, buffer);
 		pack32((uint32_t)jobacct->act_cpufreq, buffer);
@@ -1179,12 +1188,12 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		(*jobacct)->sys_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->sys_cpu_usec = uint32_tmp;
-		safe_unpack32(&(*jobacct)->max_vsize, buffer);
-		safe_unpack32(&(*jobacct)->tot_vsize, buffer);
-		safe_unpack32(&(*jobacct)->max_rss, buffer);
-		safe_unpack32(&(*jobacct)->tot_rss, buffer);
-		safe_unpack32(&(*jobacct)->max_pages, buffer);
-		safe_unpack32(&(*jobacct)->tot_pages, buffer);
+		safe_unpack64(&(*jobacct)->max_vsize, buffer);
+		safe_unpack64(&(*jobacct)->tot_vsize, buffer);
+		safe_unpack64(&(*jobacct)->max_rss, buffer);
+		safe_unpack64(&(*jobacct)->tot_rss, buffer);
+		safe_unpack64(&(*jobacct)->max_pages, buffer);
+		safe_unpack64(&(*jobacct)->tot_pages, buffer);
 		safe_unpack32(&(*jobacct)->min_cpu, buffer);
 		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
 		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
@@ -1226,12 +1235,12 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		(*jobacct)->sys_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->sys_cpu_usec = uint32_tmp;
-		safe_unpack32(&(*jobacct)->max_vsize, buffer);
-		safe_unpack32(&(*jobacct)->tot_vsize, buffer);
-		safe_unpack32(&(*jobacct)->max_rss, buffer);
-		safe_unpack32(&(*jobacct)->tot_rss, buffer);
-		safe_unpack32(&(*jobacct)->max_pages, buffer);
-		safe_unpack32(&(*jobacct)->tot_pages, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->max_vsize, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->tot_vsize, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->max_rss, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->tot_rss, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->max_pages, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->tot_pages, buffer);
 		safe_unpack32(&(*jobacct)->min_cpu, buffer);
 		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
 		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
@@ -1273,12 +1282,12 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		(*jobacct)->sys_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->sys_cpu_usec = uint32_tmp;
-		safe_unpack32(&(*jobacct)->max_vsize, buffer);
-		safe_unpack32(&(*jobacct)->tot_vsize, buffer);
-		safe_unpack32(&(*jobacct)->max_rss, buffer);
-		safe_unpack32(&(*jobacct)->tot_rss, buffer);
-		safe_unpack32(&(*jobacct)->max_pages, buffer);
-		safe_unpack32(&(*jobacct)->tot_pages, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->max_vsize, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->tot_vsize, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->max_rss, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->tot_rss, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->max_pages, buffer);
+		safe_unpack32((uint32_t *)&(*jobacct)->tot_pages, buffer);
 		safe_unpack32(&(*jobacct)->min_cpu, buffer);
 		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
 		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);

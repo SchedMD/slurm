@@ -101,17 +101,17 @@ struct jobacctinfo {
 	uint32_t sys_cpu_usec;
 	uint32_t user_cpu_sec;
 	uint32_t user_cpu_usec;
-	uint32_t max_vsize; /* max size of virtual memory */
+	uint64_t max_vsize; /* max size of virtual memory */
 	jobacct_id_t max_vsize_id; /* contains which task number it was on */
-	uint32_t tot_vsize; /* total virtual memory
+	uint64_t tot_vsize; /* total virtual memory
 			       (used to figure out ave later) */
-	uint32_t max_rss; /* max Resident Set Size */
+	uint64_t max_rss; /* max Resident Set Size */
 	jobacct_id_t max_rss_id; /* contains which task it was on */
-	uint32_t tot_rss; /* total rss
+	uint64_t tot_rss; /* total rss
 			     (used to figure out ave later) */
-	uint32_t max_pages; /* max pages */
+	uint64_t max_pages; /* max pages */
 	jobacct_id_t max_pages_id; /* contains which task it was on */
-	uint32_t tot_pages; /* total pages
+	uint64_t tot_pages; /* total pages
 			     (used to figure out ave later) */
 	uint32_t min_cpu; /* min cpu time */
 	jobacct_id_t min_cpu_id; /* contains which task it was on */
@@ -155,7 +155,7 @@ extern int jobacct_gather_set_proctrack_container_id(uint64_t id);
 extern int jobacct_gather_set_mem_limit(uint32_t job_id, uint32_t step_id,
 					uint32_t mem_limit);
 extern void jobacct_gather_handle_mem_limit(
-	uint32_t total_job_mem, uint32_t total_job_vsize);
+	uint64_t total_job_mem, uint64_t total_job_vsize);
 
 extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id);
 extern void jobacctinfo_destroy(void *object);

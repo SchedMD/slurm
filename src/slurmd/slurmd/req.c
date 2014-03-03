@@ -1950,7 +1950,7 @@ _enforce_job_mem_limit(void)
 	step_loc_t *stepd;
 	int fd, i, job_inx, job_cnt;
 	uint16_t vsize_factor;
-	uint32_t step_rss, step_vsize;
+	uint64_t step_rss, step_vsize;
 	job_step_id_msg_t acct_req;
 	job_step_stat_t *resp = NULL;
 	struct job_mem_info {
@@ -2042,7 +2042,7 @@ _enforce_job_mem_limit(void)
 					    stepd->stepd_info->
 					    protocol_version);
 #if _LIMIT_INFO
-			info("Step:%u.%u RSS:%u KB VSIZE:%u KB",
+			info("Step:%u.%u RSS:%"PRIu64" KB VSIZE:%"PRIu64" KB",
 			     stepd->jobid, stepd->stepid,
 			     step_rss, step_vsize);
 #endif
