@@ -651,17 +651,17 @@ uint32_t slurm_get_priority_weight_fairshare(void)
  */
 uint16_t slurm_get_fs_dampening_factor(void)
 {
-        uint16_t factor = 1;
-        slurm_ctl_conf_t *conf;
+	uint16_t factor = 1;
+	slurm_ctl_conf_t *conf;
 
-        if (slurmdbd_conf) {
-        } else {
-                conf = slurm_conf_lock();
-                factor = conf->fs_dampening_factor;
-                slurm_conf_unlock();
-        }
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		factor = conf->fs_dampening_factor;
+		slurm_conf_unlock();
+	}
 
-        return factor;
+	return factor;
 }
 
 /* slurm_get_priority_weight_job_size
@@ -3051,32 +3051,41 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 	Buf      buffer;
 	int      rc;
 	void *   auth_cred;
+	time_t   start_time = time(NULL);
 
 	/*
 	 * Initialize header with Auth credential and message type.
+	 * We get the credential now rather than later so the work can
+	 * can be done in parallel with waiting for message to forward,
+	 * but we may need to generate the credential again later if we
+	 * wait too long for the incoming message.
 	 */
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY)
 		auth_cred = g_slurm_auth_create(NULL, 2, _global_auth_key());
 	else
 		auth_cred = g_slurm_auth_create(NULL, 2, _get_auth_info());
 
-	if (auth_cred == NULL) {
-		error("authentication: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
-
-		/* Make sure we wait so we get all the other messages
-		 * that may of been forwarded.
-		 */
-		forward_wait(msg);
-
-		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-	}
-
 	if (msg->forward.init != FORWARD_INIT) {
 		forward_init(&msg->forward, NULL);
 		msg->ret_list = NULL;
 	}
 	forward_wait(msg);
+
+	if (difftime(time(NULL), start_time) >= 60) {
+		(void) g_slurm_auth_destroy(auth_cred);
+		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
+			auth_cred = g_slurm_auth_create(NULL, 2,
+							_global_auth_key());
+		} else {
+			auth_cred = g_slurm_auth_create(NULL, 2,
+							_get_auth_info());
+		}
+	}
+	if (auth_cred == NULL) {
+		error("authentication: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+	}
 
 	init_header(&header, msg, msg->flags);
 
@@ -3489,7 +3498,7 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
  *	slurm_return_code message back to the client that made the request
  * IN request_msg	- slurm_msg the request msg
  * IN rc		- the return_code to send back to the client
- * IN err_msg           - message for user
+ * IN err_msg   	- message for user
  */
 int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 {
