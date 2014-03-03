@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
     backfill scheduler.
  -- Don't print negative number when dealing with large memory sizes with
     sacct.
+ -- Fix sinfo output so that host in state allocated and mixed will not be
+    merged together.
 
 * Changes in Slurm 2.6.6
 ========================
