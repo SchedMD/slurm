@@ -1527,6 +1527,7 @@ top:	orig_map = bit_copy(save_bitmap);
 			 select_node_usage, exc_core_bitmap);
 
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
+		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
 		future_part = _dup_part_data(select_part_record);
 		if (future_part == NULL) {
@@ -1565,20 +1566,34 @@ top:	orig_map = bit_copy(save_bitmap);
 					 future_part, future_usage,
 					 exc_core_bitmap);
 			tmp_job_ptr->details->usable_nodes = 0;
-			/*
-			 * If successful, set the last job's usable count to a
-			 * large value so that it will be first after sorting.
-			 * usable_nodes count set to zero above to eliminate
-			 * values previously set to 9999.
-			 * Note: usable_count is only used for sorting purposes
-			 */
-			if (rc == SLURM_SUCCESS) {
-				tmp_job_ptr->details->usable_nodes = 9999;
+			if (rc != SLURM_SUCCESS)
+				continue;
+
+			if ((pass_count++ > preempt_reorder_cnt) ||
+			    (preemptee_cand_cnt <= pass_count))
+				break;
+
+			/* Reorder preemption candidates to minimize number
+			 * of preempted jobs and their priorities. */
+			if (preempt_strict_order) {
+				/* Move last preempted job to top of preemption
+				 * candidate list, preserving order of other
+				 * jobs. */
+				tmp_job_ptr = (struct job_record *)
+					      list_remove(job_iterator);
+				list_prepend(preemptee_candidates, tmp_job_ptr);
+			} else {
+				/* Set the last job's usable count to a large
+				 * value and re-sort preempted jobs. usable_nodes
+				 * count set to zero above to eliminate values
+				 * previously set to 99999. Note: usable_count
+				 * is only used for sorting purposes. */
+				tmp_job_ptr->details->usable_nodes = 99999;
 				list_iterator_reset(job_iterator);
 				while ((tmp_job_ptr = (struct job_record *)
 					list_next(job_iterator))) {
 					if (tmp_job_ptr->details->usable_nodes
-					    == 9999)
+					    == 99999)
 						break;
 					tmp_job_ptr->details->usable_nodes =
 						bit_overlap(bitmap,
@@ -1589,15 +1604,12 @@ top:	orig_map = bit_copy(save_bitmap);
 					list_next(job_iterator))) {
 					tmp_job_ptr->details->usable_nodes = 0;
 				}
-				if (pass_count++ ||
-				    (list_count(preemptee_candidates) == 1))
-					break;
 				list_sort(preemptee_candidates,
 					  (ListCmpF)_sort_usable_nodes_dec);
-				FREE_NULL_BITMAP(orig_map);
-				list_iterator_destroy(job_iterator);
-				goto top;
 			}
+			FREE_NULL_BITMAP(orig_map);
+			list_iterator_destroy(job_iterator);
+			goto top;
 		}
 		list_iterator_destroy(job_iterator);
 
@@ -1617,7 +1629,8 @@ top:	orig_map = bit_copy(save_bitmap);
 				    (mode != PREEMPT_MODE_CHECKPOINT) &&
 				    (mode != PREEMPT_MODE_CANCEL))
 					continue;
-				if (tmp_job_ptr->details->usable_nodes == 0)
+				if (bit_overlap(bitmap,
+						tmp_job_ptr->node_bitmap) == 0)
 					continue;
 				list_append(*preemptee_job_list,
 					    tmp_job_ptr);
