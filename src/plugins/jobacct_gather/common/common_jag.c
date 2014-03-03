@@ -404,7 +404,7 @@ static void _handle_stats(List prec_list, char *proc_stat_file,
 			fclose(io_fp);
 		}
 		if (callbacks->prec_extra)
-			(*(callbacks->prec_extra))(prec, my_pagesize);
+			(*(callbacks->prec_extra))(prec);
 	} else
 		xfree(prec);
 	fclose(stat_fp);

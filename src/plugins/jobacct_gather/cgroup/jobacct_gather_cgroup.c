@@ -102,7 +102,7 @@ const uint32_t plugin_version = 200;
 /* Other useful declarations */
 static slurm_cgroup_conf_t slurm_cgroup_conf;
 
-static void _prec_extra(jag_prec_t *prec, int pagesize)
+static void _prec_extra(jag_prec_t *prec)
 {
 	int utime, stime, total_rss, total_pgpgin;
 	char *cpu_time, *memory_stat, *ptr;
@@ -165,7 +165,7 @@ static void _prec_extra(jag_prec_t *prec, int pagesize)
 	/* prec->disk_read = (double)tot_read / (double)1048576; */
 	/* prec->disk_write = (double)tot_write / (double)1048576; */
 
-	/* info("after %d %d", total_rss, pagesize); */
+	/* info("after %d %d", total_rss); */
 	/* print_jag_prec(prec); */
 	//END_TIMER;
 	//info("took %s", TIME_STR);

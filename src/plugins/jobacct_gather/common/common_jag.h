@@ -58,7 +58,7 @@ typedef struct jag_prec {	/* process record */
 } jag_prec_t;
 
 typedef struct jag_callbacks {
-	void (*prec_extra) (jag_prec_t *prec, int pagesize);
+	void (*prec_extra) (jag_prec_t *prec);
 	List (*get_precs) (List task_list, bool pgid_plugin, uint64_t cont_id,
 			   struct jag_callbacks *callbacks);
 	void (*get_offspring_data) (List prec_list,
