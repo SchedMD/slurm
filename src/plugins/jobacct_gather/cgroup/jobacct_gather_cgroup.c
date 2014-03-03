@@ -104,7 +104,7 @@ static slurm_cgroup_conf_t slurm_cgroup_conf;
 
 static void _prec_extra(jag_prec_t *prec)
 {
-	int utime, stime, total_rss, total_pgpgin;
+	unsigned long utime, stime, total_rss, total_pgpgin;
 	char *cpu_time, *memory_stat, *ptr;
 	size_t cpu_time_size, memory_stat_size;
 
@@ -115,7 +115,7 @@ static void _prec_extra(jag_prec_t *prec)
 	/* print_jag_prec(prec); */
 	xcgroup_get_param(&task_cpuacct_cg, "cpuacct.stat",
 			  &cpu_time, &cpu_time_size);
-	sscanf(cpu_time, "%*s %d %*s %d", &utime, &stime);
+	sscanf(cpu_time, "%*s %lu %*s %lu", &utime, &stime);
 	prec->usec = utime;
 	prec->ssec = stime;
 	xcgroup_get_param(&task_memory_cg, "memory.stat",
@@ -126,13 +126,13 @@ static void _prec_extra(jag_prec_t *prec)
 	   accurate on what the user is actually using.
 	*/
 	ptr = strstr(memory_stat, "total_rss");
-	sscanf(ptr, "total_rss %u", &total_rss);
+	sscanf(ptr, "total_rss %lu", &total_rss);
 	prec->rss = total_rss / 1024; /* convert from bytes to KB */
 
 	/* total_pgmajfault is what is reported in proc, so we use
 	 * the same thing here. */
 	if ((ptr = strstr(memory_stat, "total_pgmajfault"))) {
-		sscanf(ptr, "total_pgmajfault %u", &total_pgpgin);
+		sscanf(ptr, "total_pgmajfault %lu", &total_pgpgin);
 		prec->pages = total_pgpgin;
 	}
 
