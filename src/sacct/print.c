@@ -962,18 +962,18 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int = job->stats.vsize_max;
+					tmp_uint32 = job->stats.vsize_max;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.vsize_max;
+				tmp_uint32 = step->stats.vsize_max;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
-			if (tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
+			if (tmp_uint32 != NO_VAL)
+				convert_num_unit((float)tmp_uint32,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
 
