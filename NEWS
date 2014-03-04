@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
  -- Fix sinfo output so that host in state allocated and mixed will not be
     merged together.
  -- GRES: Avoid crash if GRES configurations is inconstent.
+ -- Make S_SLURM_RESTART_COUNT item available to SPANK.
 
 * Changes in Slurm 2.6.6
 ========================

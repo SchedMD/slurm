@@ -2133,6 +2133,13 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		else
 			*p2uint32 = 0;
 		break;
+	case S_SLURM_RESTART_COUNT:
+		p2uint32 = va_arg(vargs, uint32_t *);
+		if (slurmd_job)
+			*p2uint32 = slurmd_job->restart_cnt;
+		else
+			*p2uint32 = 0;
+		break;
 	case S_SLURM_VERSION:
 		p2vers = va_arg(vargs, char  **);
 		*p2vers = SLURM_VERSION_STRING;
