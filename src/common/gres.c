@@ -3155,7 +3155,11 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	} else if (job_gres_ptr->gres_bit_alloc &&
 		   job_gres_ptr->gres_bit_alloc[node_offset] &&
 		   node_gres_ptr->topo_gres_cnt_alloc) {
-		for (i = 0; i < node_gres_ptr->gres_cnt_config; i++) {
+		/* Avoid crash if configuration inconsistent */
+		len = MIN(node_gres_ptr->gres_cnt_config,
+			  bit_size(job_gres_ptr->
+				   gres_bit_alloc[node_offset]));
+		for (i = 0; i < len; i++) {
 			if (bit_test(job_gres_ptr->
 				     gres_bit_alloc[node_offset], i) &&
 			    node_gres_ptr->topo_gres_cnt_alloc[i])
