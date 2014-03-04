@@ -401,7 +401,6 @@ generated_html = \
 	gres.html \
 	gres_design.html \
 	gres_plugins.html \
-	help.html \
 	hdf5_profile_user_guide.html \
 	high_throughput.html \
 	ibm.html \
