@@ -255,9 +255,12 @@ static void _state_time_string(char **extra, uint32_t state,
 					   "t1.time_eligible and "
 					   "t1.time_start) || "
 					   "(t1.time_eligible "
-					   "between %d and %d)))",
+					   "between %d and %d)) || "
+					   "(!t1.time_start && (%d between "
+					   "t1.time_eligible and "
+					   "t1.time_end)))",
 					   start, start,
-					   end);
+					   end, start);
 			}
 		} else if (end) {
 			xstrfmtcat(*extra, "(t1.time_eligible && "
