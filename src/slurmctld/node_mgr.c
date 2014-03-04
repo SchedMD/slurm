@@ -2828,7 +2828,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
 	kill_agent_args->retry = 0;
-	kill_agent_args->hostlist = hostlist_create("");
+	kill_agent_args->hostlist = hostlist_create(NULL);
 	if (msg_type == REQUEST_SHUTDOWN) {
  		shutdown_req = xmalloc(sizeof(shutdown_msg_t));
 		shutdown_req->options = 0;

@@ -1124,9 +1124,9 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 
 	sinfo_ptr->part_info = part_ptr;
 	sinfo_ptr->part_inx = part_inx;
-	sinfo_ptr->nodes     = hostlist_create("");
-	sinfo_ptr->node_addr = hostlist_create("");
-	sinfo_ptr->hostnames = hostlist_create("");
+	sinfo_ptr->nodes     = hostlist_create(NULL);
+	sinfo_ptr->node_addr = hostlist_create(NULL);
+	sinfo_ptr->hostnames = hostlist_create(NULL);
 
 	if (node_ptr)
 		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);

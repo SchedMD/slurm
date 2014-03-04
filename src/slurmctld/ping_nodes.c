@@ -143,12 +143,12 @@ void ping_nodes (void)
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
 	ping_agent_args->retry = 0;
-	ping_agent_args->hostlist = hostlist_create("");
+	ping_agent_args->hostlist = hostlist_create(NULL);
 
 	reg_agent_args = xmalloc (sizeof (agent_arg_t));
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
-	reg_agent_args->hostlist = hostlist_create("");
+	reg_agent_args->hostlist = hostlist_create(NULL);
 
 	/*
 	 * If there are a large number of down nodes, the node ping
@@ -356,7 +356,7 @@ extern void run_health_check(void)
 	check_agent_args = xmalloc (sizeof (agent_arg_t));
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
 	check_agent_args->retry = 0;
-	check_agent_args->hostlist = hostlist_create("");
+	check_agent_args->hostlist = hostlist_create(NULL);
 #ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
@@ -437,7 +437,7 @@ extern void update_nodes_acct_gather_data(void)
 	agent_args = xmalloc (sizeof (agent_arg_t));
 	agent_args->msg_type = REQUEST_ACCT_GATHER_UPDATE;
 	agent_args->retry = 0;
-	agent_args->hostlist = hostlist_create("");
+	agent_args->hostlist = hostlist_create(NULL);
 
 #ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;

@@ -1620,7 +1620,7 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 		return NULL;
 	}
 	sview_part_sub_ptr->part_ptr = part_ptr;
-	sview_part_sub_ptr->hl = hostlist_create("");
+	sview_part_sub_ptr->hl = hostlist_create(NULL);
 	sview_part_sub_ptr->node_ptr_list = list_create(NULL);
 
 	_update_sview_part_sub(sview_part_sub_ptr, node_ptr, node_scaling);

@@ -9102,7 +9102,7 @@ static void _send_job_kill(struct job_record *job_ptr)
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 0;	/* re_kill_job() resends as needed */
-	agent_args->hostlist = hostlist_create("");
+	agent_args->hostlist = hostlist_create(NULL);
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update    = time(NULL);
 	kill_job->job_id    = job_ptr->job_id;
@@ -9692,7 +9692,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_UPDATE_JOB_TIME;
 	agent_args->retry = 1;
-	agent_args->hostlist = hostlist_create("");
+	agent_args->hostlist = hostlist_create(NULL);
 	job_time_msg_ptr = xmalloc(sizeof(job_time_msg_t));
 	job_time_msg_ptr->job_id          = job_ptr->job_id;
 	job_time_msg_ptr->expiration_time = job_ptr->end_time;
@@ -10137,7 +10137,7 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SIGNAL_JOB;
 	agent_args->retry = 1;
-	agent_args->hostlist = hostlist_create("");
+	agent_args->hostlist = hostlist_create(NULL);
 	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
 	signal_job_msg->signal = signal;
@@ -10206,7 +10206,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 				 * sched/wiki or sched/wiki2 can
 				 * quickly induce huge backlog
 				 * of agent.c RPCs */
-	agent_args->hostlist = hostlist_create("");
+	agent_args->hostlist = hostlist_create(NULL);
 	sus_ptr = xmalloc(sizeof(suspend_int_msg_t));
 	sus_ptr->job_core_spec = job_ptr->details->core_spec;
 	sus_ptr->job_id = job_ptr->job_id;

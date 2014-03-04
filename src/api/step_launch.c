@@ -729,7 +729,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 
 	pthread_mutex_lock(&sls->lock);
 
-	hl = hostlist_create("");
+	hl = hostlist_create(NULL);
 	for (node_id = 0;
 	     node_id < ctx->step_resp->step_layout->node_cnt;
 	     node_id++) {
@@ -1659,7 +1659,7 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 {
 	int i;
 	char tmp_str[10], *task_list = NULL;
-	hostlist_t hl = hostlist_create("");
+	hostlist_t hl = hostlist_create(NULL);
 
 	for (i=0; i<msg->tasks_to_launch[nodeid]; i++) {
 		sprintf(tmp_str, "%u", msg->global_task_ids[nodeid][i]);

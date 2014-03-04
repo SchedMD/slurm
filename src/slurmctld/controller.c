@@ -1323,7 +1323,7 @@ static void _queue_reboot_msg(void)
 			reboot_agent_args = xmalloc(sizeof(agent_arg_t));
 			reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
 			reboot_agent_args->retry = 0;
-			reboot_agent_args->hostlist = hostlist_create("");
+			reboot_agent_args->hostlist = hostlist_create(NULL);
 		}
 		hostlist_push(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;

@@ -212,8 +212,8 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	char *node_buf;
 
 	all_nodes  = hostlist_create(job_ptr->nodes);
-	comp_nodes = hostlist_create("");
-	down_nodes = hostlist_create("");
+	comp_nodes = hostlist_create(NULL);
+	down_nodes = hostlist_create(NULL);
 
 	for (i=0; i<node_info_msg->record_count; i++) {
 		node_info = &(node_info_msg->node_array[i]);

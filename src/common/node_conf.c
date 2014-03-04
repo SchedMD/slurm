@@ -502,7 +502,7 @@ char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort)
 		return xstrdup("");
 
 	last  = bit_fls(bitmap);
-	hl = hostlist_create("");
+	hl = hostlist_create(NULL);
 	for (i = first; i <= last; i++) {
 		if (bit_test(bitmap, i) == 0)
 			continue;

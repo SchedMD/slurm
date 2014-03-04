@@ -530,7 +530,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = msg_type;
 	agent_args->retry    = 1;
-	agent_args->hostlist = hostlist_create("");
+	agent_args->hostlist = hostlist_create(NULL);
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
 	kill_tasks_msg->job_step_id = step_ptr->step_id;
@@ -3101,7 +3101,7 @@ static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 		uint32_t range_first, uint32_t range_last)
 {
 	int i, node_inx = -1;
-	hostlist_t hl = hostlist_create("");
+	hostlist_t hl = hostlist_create(NULL);
 
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
@@ -3704,7 +3704,7 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
 	agent_args->retry = 1;
-	agent_args->hostlist = hostlist_create("");
+	agent_args->hostlist = hostlist_create(NULL);
 	kill_step = xmalloc(sizeof(kill_job_msg_t));
 	kill_step->job_id    = job_ptr->job_id;
 	kill_step->step_id   = step_ptr->step_id;
