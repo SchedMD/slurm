@@ -309,10 +309,19 @@ extern int launch_p_setup_srun_opt(char **rest)
 			}
 			xfree(tmp);
 		}
-		if (opt.export_env && !strcasecmp(opt.export_env, "NONE"))
-			/* represents the difference between --env-all
-			 * and --exp-env */
-			command_pos += 2;
+
+		if (opt.export_env) {
+			if (!strcasecmp(opt.export_env, "NONE")) {
+				/* represents the difference between --env-all
+				 * and --exp-env */
+				command_pos += 2;
+			} else {
+				error("--export= only accepts NONE as "
+				      "an option, ignoring '%s'.",
+				      opt.export_env);
+				xfree(opt.export_env);
+			}
+		}
 
 		opt.argc += command_pos;
 	}

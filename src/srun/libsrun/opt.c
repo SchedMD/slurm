@@ -716,10 +716,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_EXPORT:
-		if (val)
-			opt.export_env = xstrdup(val);
-		else
-			opt.export_env = NULL;
+		xfree(opt.export_env);
+		opt.export_env = xstrdup(val);
 		break;
 
 	case OPT_RESV_PORTS:
@@ -2479,7 +2477,7 @@ static void _usage(void)
 #ifdef HAVE_BG_L_P
 "            [--geometry=XxYxZ] "
 #else
-"            [--geometry=AxXxYxZ] "
+"            [--export=NONE] [--geometry=AxXxYxZ] "
 #endif
 "[--conn-type=type] [--no-rotate] [--reboot]\n"
 #ifdef HAVE_BGL
@@ -2644,18 +2642,18 @@ static void _help(void)
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */
 "Blue Gene related options:\n"
+"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
+"                              if not set, then tries to fit TORUS else MESH\n"
 #ifdef HAVE_BG_L_P
 "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
 #else
+"      --export=NONE           do not pass environment variables to launcher\n"
 "  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
 "                              sub-block allocations can not be allocated\n"
 "                              with the geometry option\n"
-"      --export=NONE           do not pass environment variables to launcher\n"
 #endif
 "  -R, --no-rotate             disable geometry rotation\n"
 "      --reboot                reboot block before starting job\n"
-"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-"                              if not set, then tries to fit TORUS else MESH\n"
 #ifndef HAVE_BGL
 "                              If wanting to run in HTC mode (only for 1\n"
 "                              midplane and below).  You can use HTC_S for\n"

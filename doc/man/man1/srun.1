@@ -1646,6 +1646,11 @@ each dimension (i.e. M,T,T,T will give you a torus connection is all
 dimensions expect the first).
 
 .TP
+\fB\-\-export\fR=\fINONE\fR
+When running on a BGQ only export the minimal set of environment
+variables needed to start a job, nothing else.
+
+.TP
 \fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR> | <\fIAxXxYxZ\fR>
 Specify the geometry requirements for the job. On BlueGene/L and BlueGene/P
 systems there are three numbers giving dimensions in the X, Y and Z directions,
