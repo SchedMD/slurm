@@ -73,6 +73,8 @@
 #include "src/common/slurm_xlator.h"
 
 #define MUNGE_ERRNO_OFFSET	1000
+#define RETRY_COUNT		3
+#define RETRY_USEC		10000
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -177,7 +179,7 @@ int init ( void )
 slurm_auth_credential_t *
 slurm_auth_create( void *argv[], char *socket )
 {
-	int retry = 2;
+	int retry = RETRY_COUNT;
 	slurm_auth_credential_t *cred = NULL;
 	munge_err_t e = EMUNGE_SUCCESS;
 	munge_ctx_t ctx = munge_ctx_create();
@@ -229,9 +231,7 @@ slurm_auth_create( void *argv[], char *socket )
 		if ((e == EMUNGE_SOCKET) && retry--) {
 			error ("Munge encode failed: %s (retrying ...)",
 				munge_ctx_strerror(ctx));
-#ifdef MULTIPLE_SLURMD
-			sleep(1);
-#endif
+			usleep(RETRY_USEC);	/* Likely munged too busy */
 			goto again;
 		}
 
@@ -492,7 +492,7 @@ slurm_auth_errstr( int slurm_errno )
 static int
 _decode_cred(slurm_auth_credential_t *c, char *socket)
 {
-	int retry = 2;
+	int retry = RETRY_COUNT;
 	munge_err_t e;
 	munge_ctx_t ctx;
 
@@ -526,7 +526,7 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 		if ((e == EMUNGE_SOCKET) && retry--) {
 			error ("Munge decode failed: %s (retrying ...)",
 				munge_ctx_strerror(ctx));
-			usleep(10000);	/* Likely munged too busy */
+			usleep(RETRY_USEC);	/* Likely munged too busy */
 			goto again;
 		}
 #ifdef MULTIPLE_SLURMD

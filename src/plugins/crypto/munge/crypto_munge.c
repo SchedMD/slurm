@@ -65,6 +65,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define RETRY_COUNT		3
+#define RETRY_USEC		10000
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -199,7 +202,7 @@ extern int
 crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 	    unsigned int *sig_size_p)
 {
-	int retry = 2;
+	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
 
@@ -207,9 +210,7 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 	err = munge_encode(&cred, (munge_ctx_t) key, buffer, buf_size);
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
-#ifdef MULTIPLE_SLURMD
-			sleep(1);
-#endif
+			usleep(RETRY_USEC);	/* Likely munged too busy */
 			goto again;
 		}
 		return err;
@@ -225,7 +226,7 @@ extern int
 crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		   char *signature, unsigned int sig_size)
 {
-	int retry = 2;
+	int retry = RETRY_COUNT;
 	uid_t uid;
 	gid_t gid;
 	void *buf_out = NULL;
@@ -242,9 +243,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		if ((err == EMUNGE_SOCKET) && retry--) {
 			error ("Munge decode failed: %s (retrying ...)",
 				munge_ctx_strerror((munge_ctx_t) key));
-#ifdef MULTIPLE_SLURMD
-			sleep(1);
-#endif
+			usleep(RETRY_USEC);	/* Likely munged too busy */
 			goto again;
 		}
 
