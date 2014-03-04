@@ -65,8 +65,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define RETRY_COUNT		3
-#define RETRY_USEC		10000
+#define RETRY_COUNT		10
+#define RETRY_USEC		100000
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -205,14 +205,26 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
+	munge_ctx_t ctx = (munge_ctx_t) key;
+
+#ifdef SLURM_MUNGE_TTL
+	/* Default munge credential lifetime is 5 minutes. Lower values can
+	 * improve performance of munged (less records to test for replay).
+	 * The value of SLURM_MUNGE_TTL should be in seconds. */
+	(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, SLURM_MUNGE_TTL);
+#endif
 
     again:
-	err = munge_encode(&cred, (munge_ctx_t) key, buffer, buf_size);
+	err = munge_encode(&cred, ctx, buffer, buf_size);
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
+			debug("Munge encode failed: %s (retrying ...)",
+			      munge_ctx_strerror(ctx));
 			usleep(RETRY_USEC);	/* Likely munged too busy */
 			goto again;
 		}
+		if (err == EMUNGE_SOCKET)  /* Also see MUNGE_OPT_TTL above */
+			error("If munged is up, restart with --num-threads=10");
 		return err;
 	}
 
@@ -233,19 +245,21 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 	int   buf_out_size;
 	int   rc = 0;
 	munge_err_t err;
+	munge_ctx_t ctx = (munge_ctx_t) key;
 
     again:
-	err = munge_decode(signature, (munge_ctx_t) key,
-			   &buf_out, &buf_out_size,
+	err = munge_decode(signature, ctx, &buf_out, &buf_out_size,
 			   &uid, &gid);
 
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
-			error ("Munge decode failed: %s (retrying ...)",
-				munge_ctx_strerror((munge_ctx_t) key));
+			debug("Munge decode failed: %s (retrying ...)",
+			      munge_ctx_strerror(ctx));
 			usleep(RETRY_USEC);	/* Likely munged too busy */
 			goto again;
 		}
+		if (err == EMUNGE_SOCKET)
+			error("If munged is up, restart with --num-threads=10");
 
 #ifdef MULTIPLE_SLURMD
 		if (err != EMUNGE_CRED_REPLAYED) {

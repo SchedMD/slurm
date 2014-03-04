@@ -73,8 +73,8 @@
 #include "src/common/slurm_xlator.h"
 
 #define MUNGE_ERRNO_OFFSET	1000
-#define RETRY_COUNT		3
-#define RETRY_USEC		10000
+#define RETRY_COUNT		10
+#define RETRY_USEC		100000
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -181,7 +181,7 @@ slurm_auth_create( void *argv[], char *socket )
 {
 	int retry = RETRY_COUNT;
 	slurm_auth_credential_t *cred = NULL;
-	munge_err_t e = EMUNGE_SUCCESS;
+	munge_err_t err = EMUNGE_SUCCESS;
 	munge_ctx_t ctx = munge_ctx_create();
 	SigFunc *ohandler;
 
@@ -208,6 +208,13 @@ slurm_auth_create( void *argv[], char *socket )
 		return NULL;
 	}
 
+#ifdef SLURM_MUNGE_TTL
+	/* Default munge credential lifetime is 5 minutes. Lower values can
+	 * improve performance of munged (less records to test for replay).
+	 * The value of SLURM_MUNGE_TTL should be in seconds. */
+	(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, SLURM_MUNGE_TTL);
+#endif
+
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;
 	cred->m_str    = NULL;
@@ -226,19 +233,20 @@ slurm_auth_create( void *argv[], char *socket )
 	ohandler = xsignal(SIGALRM, (SigFunc *)SIG_BLOCK);
 
     again:
-	e = munge_encode(&cred->m_str, ctx, cred->buf, cred->len);
-	if (e != EMUNGE_SUCCESS) {
-		if ((e == EMUNGE_SOCKET) && retry--) {
-			error ("Munge encode failed: %s (retrying ...)",
-				munge_ctx_strerror(ctx));
+	err = munge_encode(&cred->m_str, ctx, cred->buf, cred->len);
+	if (err != EMUNGE_SUCCESS) {
+		if ((err == EMUNGE_SOCKET) && retry--) {
+			debug("Munge encode failed: %s (retrying ...)",
+			      munge_ctx_strerror(ctx));
 			usleep(RETRY_USEC);	/* Likely munged too busy */
 			goto again;
 		}
-
+		if (err == EMUNGE_SOCKET)
+			error("If munged is up, restart with --num-threads=10");
 		error("Munge encode failed: %s", munge_ctx_strerror(ctx));
 		xfree( cred );
 		cred = NULL;
-		plugin_errno = e + MUNGE_ERRNO_OFFSET;
+		plugin_errno = err + MUNGE_ERRNO_OFFSET;
 	} else if ((bad_cred_test > 0) && cred->m_str) {
 		int i = ((int) time(NULL)) % strlen(cred->m_str);
 		cred->m_str[i]++;	/* random position in credential */
@@ -493,7 +501,7 @@ static int
 _decode_cred(slurm_auth_credential_t *c, char *socket)
 {
 	int retry = RETRY_COUNT;
-	munge_err_t e;
+	munge_err_t err;
 	munge_ctx_t ctx;
 
 	if (c == NULL)
@@ -517,24 +525,26 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 
     again:
 	c->buf = NULL;
-	e = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid, &c->gid);
-	if (e != EMUNGE_SUCCESS) {
+	err = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid, &c->gid);
+	if (err != EMUNGE_SUCCESS) {
 		if (c->buf) {
 			free(c->buf);
 			c->buf = NULL;
 		}
-		if ((e == EMUNGE_SOCKET) && retry--) {
-			error ("Munge decode failed: %s (retrying ...)",
-				munge_ctx_strerror(ctx));
+		if ((err == EMUNGE_SOCKET) && retry--) {
+			debug("Munge decode failed: %s (retrying ...)",
+			      munge_ctx_strerror(ctx));
 			usleep(RETRY_USEC);	/* Likely munged too busy */
 			goto again;
 		}
+		if (err == EMUNGE_SOCKET)
+			error("If munged is up, restart with --num-threads=10");
 #ifdef MULTIPLE_SLURMD
 		/* In multple slurmd mode this will happen all the
 		 * time since we are authenticating with the same
 		 * munged.
 		 */
-		if (e != EMUNGE_CRED_REPLAYED) {
+		if (err != EMUNGE_CRED_REPLAYED) {
 #endif
 			/*
 			 *  Print any valid credential data
@@ -542,15 +552,15 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 			error ("Munge decode failed: %s",
 			       munge_ctx_strerror(ctx));
 			_print_cred(ctx);
-			if (e == EMUNGE_CRED_REWOUND)
+			if (err == EMUNGE_CRED_REWOUND)
 				error("Check for out of sync clocks");
-			c->cr_errno = e + MUNGE_ERRNO_OFFSET;
+			c->cr_errno = err + MUNGE_ERRNO_OFFSET;
 #ifdef MULTIPLE_SLURMD
 		} else {
 			debug2("We had a replayed cred, "
 			       "but this is expected in multiple "
 			       "slurmd mode.");
-			e = 0;
+			err = 0;
 		}
 #endif
 		goto done;
@@ -560,7 +570,7 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 
      done:
 	munge_ctx_destroy(ctx);
-	return e ? SLURM_ERROR : SLURM_SUCCESS;
+	return err ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
 
