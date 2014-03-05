@@ -1988,6 +1988,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_SWITCH	0x00020000	/* SwitchType plugin */
 #define DEBUG_FLAG_ENERGY	0x00040000	/* AcctGatherEnergy plugin */
 #define DEBUG_FLAG_EXT_SENSORS	0x00080000	/* ExtSensorsType plugin */
+#define DEBUG_FLAG_LICENSE	0x00100000	/* AcctGatherProfile plugin */
 #define DEBUG_FLAG_PROFILE	0x00200000	/* AcctGatherProfile plugin */
 #define DEBUG_FLAG_INFINIBAND	0x00400000	/* AcctGatherInfiniband plugin */
 #define DEBUG_FLAG_FILESYSTEM 	0x00800000      /* AcctGatherFilesystem plugin */

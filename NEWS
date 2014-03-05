@@ -34,6 +34,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - --export=NONE option for srun to make it so only the SLURM_JOB_ID
     and SLURM_STEP_ID env vars are set.
  -- Munge plugins - Add sleep between retries if can't connect to socket.
+ -- Added DebugFlags value of "License".
 
 * Changes in Slurm 14.03.0pre6
 ==============================

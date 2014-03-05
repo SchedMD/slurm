@@ -68,6 +68,8 @@ static inline void _licenses_print(char *header, List licenses, int job_id)
 
 	if (licenses == NULL)
 		return;
+	if ((slurmctld_conf.debug_flags & DEBUG_FLAG_LICENSE) == 0)
+		return;
 
 	iter = list_iterator_create(licenses);
   	while ((license_entry = (licenses_t *) list_next(iter))) {

@@ -4076,6 +4076,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "JobContainer");
 	}
+	if (debug_flags & DEBUG_FLAG_LICENSE) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "License");
+	}
 	if (debug_flags & DEBUG_FLAG_NO_CONF_HASH) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4178,6 +4183,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_FILESYSTEM;
 		else if (strcasecmp(tok, "JobContainer") == 0)
 			rc |= DEBUG_FLAG_JOB_CONT;
+		else if (strcasecmp(tok, "License") == 0)
+			rc |= DEBUG_FLAG_LICENSE;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
 			rc |= DEBUG_FLAG_NO_CONF_HASH;
 		else if (strcasecmp(tok, "NoRealTime") == 0)
