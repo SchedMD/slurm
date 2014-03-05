@@ -466,7 +466,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 {
 	/* set the jobid for totalview */
 	totalview_jobid = NULL;
-	xstrfmtcat(totalview_jobid, "%u", job->ctx_params.job_id);
+	xstrfmtcat(totalview_jobid, "%u", job->jobid);
 
 	return launch_common_create_job_step(job, use_all_cpus,
 					     signal_function,
@@ -552,7 +552,7 @@ extern int launch_p_step_launch(
 		callbacks.task_finish = _task_finish;
 	}
 
-	mpir_init(job->ctx_params.task_count);
+	mpir_init(job->ntasks);
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	launch_start_time = time(NULL);
@@ -585,11 +585,12 @@ extern int launch_p_step_launch(
 		/* Only set up MPIR structures if the step launched
 		 * correctly. */
 		if (opt.multi_prog)
-			mpir_set_multi_name(job->ctx_params.task_count,
+			mpir_set_multi_name(job->ntasks,
 					    launch_params.argv[0]);
 		else
 			mpir_set_executable_names(launch_params.argv[0]);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
+
 		if (opt.debugger_test)
 			mpir_dump_proctable();
 		else

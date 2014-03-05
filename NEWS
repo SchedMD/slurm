@@ -41,6 +41,8 @@ documents those changes that are of interest to users and admins.
  -- Munge plugins - Add sleep between retries if can't connect to socket.
  -- Fix the database query to return all pending jobs in a given time interval.
  -- switch/nrt - Correct logic to get dynamic window count.
+ -- Remove need to use job->ctx_params in the launch plugin, just to simplify
+    code.
 
 * Changes in Slurm 2.6.6
 ========================
