@@ -4860,7 +4860,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->ckpt_dir, "ckpt_dir", 1024)		||
 	    _test_strlen(job_desc->comment, "comment", 1024)		||
 	    _test_strlen(job_desc->cpu_bind, "cpu_bind", 1024)		||
-	    _test_strlen(job_desc->dependency, "dependency", 1024)	||
+	    _test_strlen(job_desc->dependency, "dependency", 1024*128)	||
 	    _test_strlen(job_desc->exc_nodes, "exc_nodes", 1024*64)	||
 	    _test_strlen(job_desc->features, "features", 1024)		||
 	    _test_strlen(job_desc->gres, "gres", 1024)			||
