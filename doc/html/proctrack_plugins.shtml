@@ -79,10 +79,10 @@ Successful API calls are not required to reset errno to a known value.</p>
 <p>The following functions must appear. Functions which are not implemented should
 be stubbed.</p>
 
-<p class="commandline">int proctrack_p_plugin_create (stepd_step_rec_t *job);</p>
+<p class="commandline">int proctrack_p_create (stepd_step_rec_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: Create a container.
 The caller should insure that be valid
-<span class="commandline">proctrack_p_plugin_destroy()</span> is called.
+<span class="commandline">proctrack_p_destroy()</span> is called.
 This function must put the container ID directory in the job structure's
 variable <i>cont_id</i>.</p>
 <p style="margin-left:.2in"><b>Argument</b>:
@@ -92,7 +92,7 @@ Pointer to a slurmd job structure.</p>
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int proctrack_p_plugin_add (stepd_step_rec_t *job, pid_t pid);</p>
+<p class="commandline">int proctrack_p_add (stepd_step_rec_t *job, pid_t pid);</p>
 <p style="margin-left:.2in"><b>Description</b>: Add a specific process ID
 to a given job step's container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -104,7 +104,7 @@ The ID of the process to add to this job's container.</p>
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int proctrack_p_plugin_signal (uint64_t id, int signal);</p>
+<p class="commandline">int proctrack_p_signal (uint64_t id, int signal);</p>
 <p style="margin-left:.2in"><b>Description</b>: Signal all processes in a given
 job step container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -120,7 +120,7 @@ its errno to an appropriate value to indicate the reason for failure.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p class="commandline">int proctrack_p_plugin_destroy (uint64_t id);</p>
+<p class="commandline">int proctrack_p_destroy (uint64_t id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Destroy or otherwise
 invalidate a job step container.
 This does not imply the container is empty, just that it is no longer
@@ -132,7 +132,7 @@ Job step container's ID.</p>
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">uint64_t proctrack_p_plugin_find (pid_t pid);</p>
+<p class="commandline">uint64_t proctrack_p_find (pid_t pid);</p>
 <p style="margin-left:.2in"><b>Description</b>:
 Given a process ID, return its job step container ID.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -141,7 +141,7 @@ A process ID.</p>
 <p style="margin-left:.2in"><b>Returns</b>: The job step container ID
 with this process or zero if none is found.</p>
 
-<p class="commandline">uint32_t proctrack_p_plugin_get_pids (uint64_t cont_id, pid_t **pids, int *npids);</p>
+<p class="commandline">uint32_t proctrack_p_get_pids (uint64_t cont_id, pid_t **pids, int *npids);</p>
 <p style="margin-left:.2in"><b>Description</b>:
 Given a process container ID, fill in all the process IDs in the container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -162,6 +162,6 @@ mechanism outlined for Slurm plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 July 2013</p>
+<p style="text-align:center;">Last modified 6 March 2014</p>
 
 <!--#include virtual="footer.txt"-->
