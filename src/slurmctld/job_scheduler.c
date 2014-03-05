@@ -1077,7 +1077,7 @@ next_part:			part_ptr = (struct part_record *)
 			     job_ptr->details->min_nodes)) {
 				fail_by_part = false;
 				/* Do not schedule more jobs on nodes required
-				 * by this job, but don't block the entirecd srcccccc
+				 * by this job, but don't block the entire
 				 * queue/partition. */
 				bit_not(job_ptr->details->req_node_bitmap);
 				bit_and(avail_node_bitmap,
