@@ -76,6 +76,8 @@ if {[test_launch_poe]} {
 } else {
 	set node_name_env SLURMD_NODENAME
 }
+
+set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N3-3 --contiguous --immediate -t1 $srun -l $bin_printenv $node_name_env]
 expect {
 	-re "Granted job allocation ($number)" {
