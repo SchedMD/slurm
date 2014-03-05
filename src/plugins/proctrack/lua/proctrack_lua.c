@@ -320,7 +320,7 @@ static int lua_job_table_create (stepd_step_rec_t *job)
 	return (0);
 }
 
-int proctrack_p_plugin_create (stepd_step_rec_t *job)
+int proctrack_p_create (stepd_step_rec_t *job)
 {
 	int rc = SLURM_ERROR;
 	double id;
@@ -337,7 +337,7 @@ int proctrack_p_plugin_create (stepd_step_rec_t *job)
 
 	lua_job_table_create (job);
 	if (lua_pcall (L, 1, 1, 0) != 0) {
-		error ("proctrack/lua: %s: proctrack_p_plugin_create: %s",
+		error ("proctrack/lua: %s: proctrack_p_create: %s",
 		       lua_script_path, lua_tostring (L, -1));
 		goto out;
 	}
@@ -347,7 +347,7 @@ int proctrack_p_plugin_create (stepd_step_rec_t *job)
 	 */
 	if (lua_isnil (L, -1)) {
 		error ("proctrack/lua: "
-		       "proctrack_p_plugin_create did not return id");
+		       "proctrack_p_create did not return id");
 		lua_pop (L, -1);
 		goto out;
 	}
@@ -363,7 +363,7 @@ out:
 	return rc;
 }
 
-int proctrack_p_plugin_add (stepd_step_rec_t *job, pid_t pid)
+int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)
 {
 	int rc = SLURM_ERROR;
 
@@ -379,7 +379,7 @@ int proctrack_p_plugin_add (stepd_step_rec_t *job, pid_t pid)
 
 	if (lua_pcall (L, 3, 1, 0) != 0) {
 		error ("running lua function "
-		       "'proctrack_p_plugin_add': %s",
+		       "'proctrack_p_add': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -391,7 +391,7 @@ out:
 	return (rc);
 }
 
-int proctrack_p_plugin_signal (uint64_t id, int sig)
+int proctrack_p_signal (uint64_t id, int sig)
 {
 	int rc = SLURM_ERROR;
 
@@ -406,7 +406,7 @@ int proctrack_p_plugin_signal (uint64_t id, int sig)
 
 	if (lua_pcall (L, 2, 1, 0) != 0) {
 		error ("running lua function "
-		       "'proctrack_p_plugin_signal': %s",
+		       "'proctrack_p_signal': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -418,7 +418,7 @@ out:
 	return (rc);
 }
 
-int proctrack_p_plugin_destroy (uint64_t id)
+int proctrack_p_destroy (uint64_t id)
 {
 	int rc = SLURM_ERROR;
 
@@ -432,7 +432,7 @@ int proctrack_p_plugin_destroy (uint64_t id)
 
 	if (lua_pcall (L, 1, 1, 0) != 0) {
 		error ("running lua function "
-		       "'proctrack_p_plugin_destroy': %s",
+		       "'proctrack_p_destroy': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -445,7 +445,7 @@ out:
 	return (rc);
 }
 
-uint64_t proctrack_p_plugin_find (pid_t pid)
+uint64_t proctrack_p_find (pid_t pid)
 {
 	uint64_t id = (uint64_t) SLURM_ERROR;
 
@@ -458,7 +458,7 @@ uint64_t proctrack_p_plugin_find (pid_t pid)
 	lua_pushnumber (L, pid);
 
 	if (lua_pcall (L, 1, 1, 0) != 0) {
-		error ("running lua function 'proctrack_p_plugin_find': %s",
+		error ("running lua function 'proctrack_p_find': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -471,7 +471,7 @@ out:
 	return (id);
 }
 
-bool proctrack_p_plugin_has_pid (uint64_t id, pid_t pid)
+bool proctrack_p_has_pid (uint64_t id, pid_t pid)
 {
 	int rc = 0;
 
@@ -486,7 +486,7 @@ bool proctrack_p_plugin_has_pid (uint64_t id, pid_t pid)
 
 	if (lua_pcall (L, 2, 1, 0) != 0) {
 		error ("running lua function "
-		       "'proctrack_p_plugin_has_pid': %s",
+		       "'proctrack_p_has_pid': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -499,7 +499,7 @@ out:
 	return (rc == 1);
 }
 
-int proctrack_p_plugin_wait (uint64_t id)
+int proctrack_p_wait (uint64_t id)
 {
 	int rc = SLURM_ERROR;
 
@@ -512,7 +512,7 @@ int proctrack_p_plugin_wait (uint64_t id)
 	lua_pushnumber (L, id);
 
 	if (lua_pcall (L, 1, 1, 0) != 0) {
-		error ("running lua function 'proctrack_p_plugin_wait': %s",
+		error ("running lua function 'proctrack_p_wait': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -524,7 +524,7 @@ out:
 	return (rc);
 }
 
-int proctrack_p_plugin_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
+int proctrack_p_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
 {
 	int rc = SLURM_ERROR;
 	int i = 0;

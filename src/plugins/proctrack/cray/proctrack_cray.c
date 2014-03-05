@@ -137,7 +137,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_plugin_create(stepd_step_rec_t *job)
+extern int proctrack_p_create(stepd_step_rec_t *job)
 {
 	pthread_attr_t attr;
 
@@ -178,11 +178,11 @@ extern int proctrack_p_plugin_create(stepd_step_rec_t *job)
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
 
-		debug("proctrack_p_plugin_create: created jid "
+		debug("proctrack_p_create: created jid "
 		      "0x%08lx thread 0x%08lx",
 		      job->cont_id, threadid);
 	} else
-		error("proctrack_p_plugin_create: already have a cont_id");
+		error("proctrack_p_create: already have a cont_id");
 
 	return SLURM_SUCCESS;
 }
@@ -192,7 +192,7 @@ extern int proctrack_p_plugin_create(stepd_step_rec_t *job)
  * was created and all of it's spawned tasks are placed into the container
  * when forked, all we need to do is remove the slurmstepd from the container
  * (once) at this time. */
-int proctrack_p_plugin_add(stepd_step_rec_t *job, pid_t pid)
+int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 {
 	if (job_attachpid(pid, job->cont_id) == (jid_t) -1) {
 		error("Failed to attach pid %d to job container: %m", pid);
@@ -204,7 +204,7 @@ int proctrack_p_plugin_add(stepd_step_rec_t *job, pid_t pid)
 	return SLURM_SUCCESS;
 }
 
-int proctrack_p_plugin_signal(uint64_t id, int sig)
+int proctrack_p_signal(uint64_t id, int sig)
 {
 	if (!threadid) {
 		if ((job_killjid((jid_t) id, sig) < 0)
@@ -219,7 +219,7 @@ int proctrack_p_plugin_signal(uint64_t id, int sig)
 	return (SLURM_SUCCESS);
 }
 
-int proctrack_p_plugin_destroy(uint64_t id)
+int proctrack_p_destroy(uint64_t id)
 {
 	int status;
 
@@ -234,7 +234,7 @@ int proctrack_p_plugin_destroy(uint64_t id)
 	return SLURM_SUCCESS;
 }
 
-uint64_t proctrack_p_plugin_find(pid_t pid)
+uint64_t proctrack_p_find(pid_t pid)
 {
 	jid_t jid;
 
@@ -244,7 +244,7 @@ uint64_t proctrack_p_plugin_find(pid_t pid)
 	return ((uint64_t) jid);
 }
 
-bool proctrack_p_plugin_has_pid (uint64_t cont_id, pid_t pid)
+bool proctrack_p_has_pid (uint64_t cont_id, pid_t pid)
 {
 	jid_t jid;
 
@@ -256,7 +256,7 @@ bool proctrack_p_plugin_has_pid (uint64_t cont_id, pid_t pid)
 	return true;
 }
 
-int proctrack_p_plugin_wait(uint64_t id)
+int proctrack_p_wait(uint64_t id)
 {
 	int status;
 
@@ -266,7 +266,7 @@ int proctrack_p_plugin_wait(uint64_t id)
 	return SLURM_SUCCESS;
 }
 
-int proctrack_p_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
+int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	int pidcnt, bufsize;
 	pid_t *p;

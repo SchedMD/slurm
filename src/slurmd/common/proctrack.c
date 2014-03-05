@@ -84,14 +84,14 @@ typedef struct slurm_proctrack_ops {
  * Must be synchronized with slurm_proctrack_ops_t above.
  */
 static const char *syms[] = {
-	"proctrack_p_plugin_create",
-	"proctrack_p_plugin_add",
-	"proctrack_p_plugin_signal",
-	"proctrack_p_plugin_destroy",
-	"proctrack_p_plugin_find",
-	"proctrack_p_plugin_has_pid",
-	"proctrack_p_plugin_wait",
-	"proctrack_p_plugin_get_pids"
+	"proctrack_p_create",
+	"proctrack_p_add",
+	"proctrack_p_signal",
+	"proctrack_p_destroy",
+	"proctrack_p_find",
+	"proctrack_p_has_pid",
+	"proctrack_p_wait",
+	"proctrack_p_get_pids"
 };
 
 static slurm_proctrack_ops_t ops;

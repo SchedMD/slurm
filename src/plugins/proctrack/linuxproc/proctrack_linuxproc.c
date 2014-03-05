@@ -113,33 +113,33 @@ extern int fini ( void )
 /*
  * Uses slurmd job-step manager's pid as the unique container id.
  */
-extern int proctrack_p_plugin_create ( stepd_step_rec_t *job )
+extern int proctrack_p_create ( stepd_step_rec_t *job )
 {
 	job->cont_id = (uint64_t)job->jmgr_pid;
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_plugin_add ( stepd_step_rec_t *job, pid_t pid )
+extern int proctrack_p_add ( stepd_step_rec_t *job, pid_t pid )
 {
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_plugin_signal ( uint64_t id, int signal )
+extern int proctrack_p_signal ( uint64_t id, int signal )
 {
 	return kill_proc_tree((pid_t)id, signal);
 }
 
-extern int proctrack_p_plugin_destroy ( uint64_t id )
+extern int proctrack_p_destroy ( uint64_t id )
 {
 	return SLURM_SUCCESS;
 }
 
-extern uint64_t proctrack_p_plugin_find(pid_t pid)
+extern uint64_t proctrack_p_find(pid_t pid)
 {
 	return (uint64_t) find_ancestor(pid, "slurmstepd");
 }
 
-extern bool proctrack_p_plugin_has_pid(uint64_t cont_id, pid_t pid)
+extern bool proctrack_p_has_pid(uint64_t cont_id, pid_t pid)
 {
 	uint64_t cont;
 
@@ -151,7 +151,7 @@ extern bool proctrack_p_plugin_has_pid(uint64_t cont_id, pid_t pid)
 }
 
 extern int
-proctrack_p_plugin_wait(uint64_t cont_id)
+proctrack_p_wait(uint64_t cont_id)
 {
 	int delay = 1;
 
@@ -161,8 +161,8 @@ proctrack_p_plugin_wait(uint64_t cont_id)
 	}
 
 	/* Spin until the container is successfully destroyed */
-	while (proctrack_p_plugin_destroy(cont_id) != SLURM_SUCCESS) {
-		proctrack_p_plugin_signal(cont_id, SIGKILL);
+	while (proctrack_p_destroy(cont_id) != SLURM_SUCCESS) {
+		proctrack_p_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;
@@ -175,7 +175,7 @@ proctrack_p_plugin_wait(uint64_t cont_id)
 }
 
 extern int
-proctrack_p_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
+proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	return proctrack_linuxproc_get_pids((pid_t)cont_id, pids, npids);
 }

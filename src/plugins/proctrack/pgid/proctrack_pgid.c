@@ -113,7 +113,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_plugin_create ( stepd_step_rec_t *job )
+extern int proctrack_p_create ( stepd_step_rec_t *job )
 {
 	return SLURM_SUCCESS;
 }
@@ -121,13 +121,13 @@ extern int proctrack_p_plugin_create ( stepd_step_rec_t *job )
 /*
  * Uses job step process group id.
  */
-extern int proctrack_p_plugin_add ( stepd_step_rec_t *job, pid_t pid )
+extern int proctrack_p_add ( stepd_step_rec_t *job, pid_t pid )
 {
 	job->cont_id = (uint64_t)job->pgid;
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_plugin_signal  ( uint64_t id, int signal )
+extern int proctrack_p_signal  ( uint64_t id, int signal )
 {
 	pid_t pid = (pid_t) id;
 
@@ -142,12 +142,12 @@ extern int proctrack_p_plugin_signal  ( uint64_t id, int signal )
 	return SLURM_ERROR;
 }
 
-extern int proctrack_p_plugin_destroy ( uint64_t id )
+extern int proctrack_p_destroy ( uint64_t id )
 {
 	return SLURM_SUCCESS;
 }
 
-extern uint64_t proctrack_p_plugin_find(pid_t pid)
+extern uint64_t proctrack_p_find(pid_t pid)
 {
 	pid_t rc = getpgid(pid);
 
@@ -157,7 +157,7 @@ extern uint64_t proctrack_p_plugin_find(pid_t pid)
 		return (uint64_t) rc;
 }
 
-extern bool proctrack_p_plugin_has_pid(uint64_t cont_id, pid_t pid)
+extern bool proctrack_p_has_pid(uint64_t cont_id, pid_t pid)
 {
 	pid_t pgid = getpgid(pid);
 
@@ -168,7 +168,7 @@ extern bool proctrack_p_plugin_has_pid(uint64_t cont_id, pid_t pid)
 }
 
 extern int
-proctrack_p_plugin_wait(uint64_t cont_id)
+proctrack_p_wait(uint64_t cont_id)
 {
 	pid_t pgid = (pid_t)cont_id;
 	int delay = 1;
@@ -180,7 +180,7 @@ proctrack_p_plugin_wait(uint64_t cont_id)
 
 	/* Spin until the process group is gone. */
 	while (killpg(pgid, 0) == 0) {
-		proctrack_p_plugin_signal(cont_id, SIGKILL);
+		proctrack_p_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;
@@ -193,7 +193,7 @@ proctrack_p_plugin_wait(uint64_t cont_id)
 }
 
 extern int
-proctrack_p_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
+proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	DIR *dir;
 	struct dirent *de;
