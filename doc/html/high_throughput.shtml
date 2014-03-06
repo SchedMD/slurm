@@ -49,7 +49,7 @@ site with a very large cluster
 
 <p>By default the Munge daemon runs with two threads, but a higher thread count
 can improve its throughput. We suggest startint the Munge daemon with ten
-threads for high throughput support (e.g. <i>"slurmd --num-threads 10"</i>).</p>
+threads for high throughput support (e.g. <i>"munged --num-threads 10"</i>).</p>
 
 <h2>User limits</h2>
 
@@ -164,6 +164,6 @@ not appear to add any measurable overhead.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 March 2014</p>
+<p style="text-align:center;">Last modified 7 March 2014</p>
 
 <!--#include virtual="footer.txt"-->
