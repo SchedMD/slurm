@@ -2315,7 +2315,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		}
 		if (status_array) {
 			free(status_array);
-			status_array = NUll;
+			status_array = NULL;
 		}
 
 	}
