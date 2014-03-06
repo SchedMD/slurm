@@ -2269,8 +2269,9 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				    (!dynamic_window_err) &&
 				    (window_ptr->window_id < min_window_id)) {
 					error("switch/nrt: Dynamic window "
-					      "configuration error, "
+					      "configuration error for %s, "
 					      "window_id=%u < min_window_id:%d",
+					      adapter_status.adapter_name,
 					      window_ptr->window_id,
 					      min_window_id);
 					dynamic_window_err = true;
