@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
  -- Make S_SLURM_RESTART_COUNT item available to SPANK.
  -- Munge plugins - Add sleep between retries if can't connect to socket.
  -- Fix the database query to return all pending jobs in a given time interval.
+ -- switch/nrt - Correct logic to get dynamic window count.
 
 * Changes in Slurm 2.6.6
 ========================
