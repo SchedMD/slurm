@@ -2313,9 +2313,12 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			}
 			xfree(adapter_info.window_list);
 		}
+		if (status_array) {
+			free(status_array);
+			status_array = NUll;
+		}
+
 	}
-	if (status_array)
-		free(status_array);
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		_print_nodeinfo(n);
 		info("_get_adapters: complete: %d", rc);

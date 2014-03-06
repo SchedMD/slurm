@@ -43,6 +43,7 @@ documents those changes that are of interest to users and admins.
  -- switch/nrt - Correct logic to get dynamic window count.
  -- Remove need to use job->ctx_params in the launch plugin, just to simplify
     code.
+ -- NRT - Fix possible memory leak if using multiple adapters.
 
 * Changes in Slurm 2.6.6
 ========================
