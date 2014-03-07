@@ -9,7 +9,7 @@
 #
 #  DESCRIPTION:
 #    Add support for the "--enable-debug", "--enable-memory-leak-debug",
-#    "--disable-partial-attach", "--enable-front-end" and 
+#    "--disable-partial-attach", "--enable-front-end", "--enable-developer" and
 #    "--enable-simulator" configure script options.
 #
 #    options.
@@ -34,14 +34,34 @@ AC_DEFUN([X_AC_DEBUG], [
     ]
   )
   if test "$x_ac_debug" = yes; then
-    test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -Werror -fno-strict-aliasing"
-    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -fno-strict-aliasing"
+    # you will most likely get a -O2 in you compile line, but the last option
+    # is the only one that is looked at.
+    test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O0 -fno-strict-aliasing"
+    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O0 -fno-strict-aliasing"
   else
     AC_DEFINE([NDEBUG], [1],
       [Define to 1 if you are building a production release.]
     )
   fi
-  AC_MSG_RESULT([${x_ac_debug=no}])
+  AC_MSG_RESULT([${x_ac_developer=no}])
+
+  AC_MSG_CHECKING([whether or not developer options are enabled])
+  AC_ARG_ENABLE(
+    [developer],
+    AS_HELP_STRING(--enable-developer,enable developer options (-Werror)),
+    [ case "$enableval" in
+        yes) x_ac_developer=yes ;;
+         no) x_ac_developer=no ;;
+          *) AC_MSG_RESULT([doh!])
+             AC_MSG_ERROR([bad value "$enableval" for --enable-developer]) ;;
+      esac
+    ]
+  )
+  if test "$x_ac_developer" = yes; then
+     test "$GCC" = yes && CFLAGS="$CFLAGS -Werror"
+     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
+  fi
+  AC_MSG_RESULT([${x_ac_developer=no}])
 
   AC_MSG_CHECKING([whether memory leak debugging is enabled])
   AC_ARG_ENABLE(
