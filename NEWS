@@ -45,6 +45,7 @@ documents those changes that are of interest to users and admins.
     code.
  -- NRT - Fix possible memory leak if using multiple adapters.
  -- NRT - Fix issue where there are more than NRT_MAXADAPTERS on a system.
+ -- NRT - Increase Max number of adapters from 8 -> 9
 
 * Changes in Slurm 2.6.6
 ========================
