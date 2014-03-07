@@ -44,6 +44,7 @@ documents those changes that are of interest to users and admins.
  -- Remove need to use job->ctx_params in the launch plugin, just to simplify
     code.
  -- NRT - Fix possible memory leak if using multiple adapters.
+ -- NRT - Fix issue where there are more than NRT_MAXADAPTERS on a system.
 
 * Changes in Slurm 2.6.6
 ========================
