@@ -301,6 +301,7 @@ documents those changes that are of interest to users and admins.
  -- NRT - Fix issue where we are launching hosts out of numerical order,
     this would cause pmd's to hang.
  -- NRT - Change xmalloc's to malloc just to be safe.
+ -- NRT - Sanity check to make sure a jobinfo is there before packing.
 
 * Changes in Slurm 2.6.6
 ========================
