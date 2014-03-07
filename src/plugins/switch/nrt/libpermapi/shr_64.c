@@ -169,6 +169,9 @@ static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 	if (rc != SLURM_SUCCESS)
 		goto unpack_error;
 
+	ctx->job_id	= ctx->step_req->job_id;
+	ctx->user_id	= ctx->step_req->user_id;
+
 	safe_unpack32(&tmp_32, buffer);
 	ctx->launch_state = step_launch_state_create(ctx);
 	ctx->launch_state->slurmctld_socket_fd = tmp_32;
@@ -238,6 +241,8 @@ static srun_job_t * _unpack_srun_job_rec(Buf buffer)
 				       &tmp_32, buffer);
 		host_ptr++;
 	}
+
+	slurm_step_ctx_params_t_init(&job_data->ctx_params);
 
 	return job_data;
 
