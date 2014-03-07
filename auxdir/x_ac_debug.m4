@@ -43,7 +43,7 @@ AC_DEFUN([X_AC_DEBUG], [
       [Define to 1 if you are building a production release.]
     )
   fi
-  AC_MSG_RESULT([${x_ac_developer=no}])
+  AC_MSG_RESULT([${x_ac_debug=no}])
 
   AC_MSG_CHECKING([whether or not developer options are enabled])
   AC_ARG_ENABLE(
