@@ -982,12 +982,15 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		return -1;
 	}
 
-	hostlist_sort(hl);
+	/* Can't sort the list here because the ordering matters when
+	 * launching tasks.
+	 */
+	//hostlist_sort(hl);
 	xfree(job->nodelist);
 	job->nodelist = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
 
-	hostlist_sort(total_hl);
+	//hostlist_sort(total_hl);
 	total_node_list = hostlist_ranged_string_xmalloc(total_hl);
 	node_cnt = hostlist_count(total_hl);
 
