@@ -105,7 +105,7 @@ its job size factor will be.  A job that requests all the nodes on the machine
 will get a job size factor of 1.0.  When the <i>PriorityFavorSmall</i> Boolean
 is YES, the single node job will receive the 1.0 job size factor.</P>
 
-<p>The <i>PriorityFlags</i> value of <i>SMALL_RELAIVE_TO_TIME</i> alters this
+<p>The <i>PriorityFlags</i> value of <i>SMALL_RELATIVE_TO_TIME</i> alters this
 behavior as follows. The job size in CPUs is divided by the time limit in
 minutes. The result is divided by the total number of CPUs in the system.
 Thus a full-system job with a time limit of one will receive a job size factor

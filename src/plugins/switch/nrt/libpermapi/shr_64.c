@@ -169,6 +169,9 @@ static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 	if (rc != SLURM_SUCCESS)
 		goto unpack_error;
 
+	ctx->job_id	= ctx->step_req->job_id;
+	ctx->user_id	= ctx->step_req->user_id;
+
 	safe_unpack32(&tmp_32, buffer);
 	ctx->launch_state = step_launch_state_create(ctx);
 	ctx->launch_state->slurmctld_socket_fd = tmp_32;
@@ -238,6 +241,8 @@ static srun_job_t * _unpack_srun_job_rec(Buf buffer)
 				       &tmp_32, buffer);
 		host_ptr++;
 	}
+
+	slurm_step_ctx_params_t_init(&job_data->ctx_params);
 
 	return job_data;
 
@@ -984,12 +989,15 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		return -1;
 	}
 
-	hostlist_sort(hl);
+	/* Can't sort the list here because the ordering matters when
+	 * launching tasks.
+	 */
+	//hostlist_sort(hl);
 	xfree(job->nodelist);
 	job->nodelist = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
 
-	hostlist_sort(total_hl);
+	//hostlist_sort(total_hl);
 	total_node_list = hostlist_ranged_string_xmalloc(total_hl);
 	node_cnt = hostlist_count(total_hl);
 
@@ -1118,7 +1126,7 @@ extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 
 	debug("got pe_rm_free_event called");
 	if (job_event) {
-		xfree(*job_event);
+		free(*job_event);
 	}
 	return 0;
 }
@@ -1200,10 +1208,11 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 	debug("got pe_rm_get_event called %d %p %p",
 	      rm_timeout, job_event, *job_event);
 
-	ret_event = xmalloc(sizeof(job_event_t));
+	ret_event = malloc(sizeof(job_event_t));
+	memset(ret_event, 0, sizeof(job_event_t));
 	*job_event = ret_event;
 	ret_event->event = JOB_STATE_EVENT;
-	state = xmalloc(sizeof(int));
+	state = malloc(sizeof(int));
 	*state = JOB_STATE_RUNNING;
 	ret_event->event_data = (void *)state;
 
@@ -1242,7 +1251,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 			      char ** error_msg)
 {
-	job_info_t *ret_info = xmalloc(sizeof(job_info_t));
+	job_info_t *ret_info = malloc(sizeof(job_info_t));
 	int i, j;
 	slurm_step_layout_t *step_layout;
 	hostlist_t hl;
@@ -1253,9 +1262,11 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	nrt_tableinfo_t *tables, *table_ptr;
 	nrt_job_key_t job_key;
 	job_step_create_response_msg_t *resp;
-	int network_id_cnt = 0;
+	int network_id_cnt = 0, size = 0;
 	nrt_network_id_t *network_id_list;
 	char value[32];
+
+	memset(ret_info, 0, sizeof(job_info_t));
 
 	if (pm_type == PM_PMD) {
 		debug("pe_rm_get_job_info called");
@@ -1280,7 +1291,8 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	}
 
 	*job_info = ret_info;
-	ret_info->job_name = xstrdup(opt.job_name);
+	if (opt.job_name)
+		ret_info->job_name = strdup(opt.job_name);
 	ret_info->rm_id = NULL;
 	ret_info->procs = job->ntasks;
 	ret_info->max_instances = 0;
@@ -1320,10 +1332,16 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 
 	slurm_jobinfo_ctx_get(
 		resp->switch_job, NRT_JOBINFO_TABLESPERTASK, &table_cnt);
-	ret_info->protocol = xmalloc(sizeof(char *)*(table_cnt+1));
-	ret_info->mode = xmalloc(sizeof(char *)*(table_cnt+1));
-	ret_info->devicename = xmalloc(sizeof(char *)*(table_cnt+1));
-	ret_info->instance = xmalloc(sizeof(int)*(table_cnt+2));
+	size = sizeof(char *)*(table_cnt+1);
+	ret_info->protocol = malloc(size);
+	memset(ret_info->protocol, 0, size);
+	ret_info->mode = malloc(size);
+	memset(ret_info->mode, 0, size);
+	ret_info->devicename = malloc(size);
+	memset(ret_info->devicename, 0, size);
+	size = sizeof(char *)*(table_cnt+2);
+	ret_info->instance = malloc(size);
+	memset(ret_info->instance, 0, size);
 
 	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_TABLEINFO, &tables);
 	debug2("got count of %d", table_cnt);
@@ -1339,9 +1357,14 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 				table_ptr->network_id;
 		}
 /* FIXME: Format of these data structure contents not well defined */
-		ret_info->protocol[i] = xstrdup(table_ptr->protocol_name);
-		ret_info->mode[i] = xstrdup(mode);
-		ret_info->devicename[i] = xstrdup(table_ptr->adapter_name);
+		if (table_ptr->protocol_name)
+			ret_info->protocol[i] =
+				strdup(table_ptr->protocol_name);
+		if (mode)
+			ret_info->mode[i] = strdup(mode);
+		if (table_ptr->adapter_name)
+			ret_info->devicename[i] =
+				strdup(table_ptr->adapter_name);
 		ret_info->instance[i] = table_ptr->instance;
 		ret_info->max_instances = MAX(ret_info->max_instances,
 					      ret_info->instance[i]);
@@ -1356,8 +1379,10 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 
 	step_layout = launch_common_get_slurm_step_layout(job);
 
-	ret_info->hosts = xmalloc(sizeof(host_usage_t)
-				  * (ret_info->host_count+1));
+	size = sizeof(host_usage_t) * (ret_info->host_count+1);
+	ret_info->hosts = malloc(size);
+	memset(ret_info->hosts, 0, size);
+
 	host_ptr = ret_info->hosts;
 	i=0;
 	hl = hostlist_create(step_layout->node_list);
@@ -1365,10 +1390,12 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		slurm_addr_t addr;
 		host_ptr->host_name = host;
 		slurm_conf_get_addr(host, &addr);
-		host_ptr->host_address = xstrdup(inet_ntoa(addr.sin_addr));
+		host_ptr->host_address = strdup(inet_ntoa(addr.sin_addr));
 		host_ptr->task_count = step_layout->tasks[i];
-		host_ptr->task_ids =
-			xmalloc(sizeof(int) * host_ptr->task_count);
+		size = sizeof(int) * host_ptr->task_count;
+		host_ptr->task_ids = malloc(size);
+		memset(host_ptr->task_ids, 0, size);
+
 		/* Task ids are already set up in the layout, so just
 		   use them.
 		*/

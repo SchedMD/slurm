@@ -321,7 +321,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 					  SELECT_NODEDATA_SUBCNT,
 					  NODE_STATE_ALLOCATED,
 					  &alloc_cpus);
-		if (node->node_state == NODE_STATE_ALLOCATED
+		if (IS_NODE_ALLOCATED(node)
 		    && alloc_cpus < node->cpus)
 			node->node_state = NODE_STATE_MIXED;
 	}

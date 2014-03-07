@@ -2120,7 +2120,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 	nrt_adapter_info_t adapter_info;
 	nrt_status_t *status_array = NULL;
 	nrt_window_id_t window_count;
-	int min_window_id = 0;
+	int min_window_id = 0, total_adapters = 0;
 	slurm_nrt_adapter_t *adapter_ptr;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
@@ -2163,6 +2163,12 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			rc = SLURM_ERROR;
 			continue;
 		}
+
+		/* Get the total adapter count here and print afterwards. */
+		total_adapters += num_adapter_names;
+		if (total_adapters > NRT_MAXADAPTERS)
+			continue;
+
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
 			for (j = 0; j < num_adapter_names; j++) {
 				info("nrt_cmd_wrap(adapter_names, %s, %s) "
@@ -2235,6 +2241,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				xmalloc(sizeof(slurm_nrt_window_t) *
 					window_count);
 			n->adapter_count++;
+
 			for (k = 0; k < window_count; k++) {
 				slurm_nrt_window_t *window_ptr;
 				window_ptr = adapter_ptr->window_list + k;
@@ -2321,9 +2328,20 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			}
 			xfree(adapter_info.window_list);
 		}
+		if (status_array) {
+			free(status_array);
+			status_array = NULL;
+		}
+
 	}
-	if (status_array)
-		free(status_array);
+
+	if (total_adapters > NRT_MAXADAPTERS) {
+		fatal("switch/nrt: More adapters found (%u) on "
+		      "node than supported (%u). "
+		      "Increase NRT_MAXADAPTERS and rebuild slurm",
+		      total_adapters, NRT_MAXADAPTERS);
+	}
+
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		_print_nodeinfo(n);
 		info("_get_adapters: complete: %d", rc);

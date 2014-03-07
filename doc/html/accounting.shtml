@@ -233,8 +233,10 @@ their <i>association</i> is not in the database. This option will
 prevent users from accessing invalid accounts.
 </li>
 <li>limits - This will enforce limits set to associations and if a qos
-  is used and has limits those as well.  By setting
-  this option, the 'associations' option is automatically set.
+  is used and has limits those as well. By setting this option, the
+  'associations' option is automatically set.  If a qos is used the
+  limits will be enforced, but 'qos' described below is still needed
+  if you want to enforce access to the qos.
 </li>
 <li>nojobs - This will make it so no job information is stored in
   accounting.  By setting this 'nosteps' is also set.
