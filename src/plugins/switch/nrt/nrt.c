@@ -1137,7 +1137,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 	assert(tableinfo);
 	assert(hostname);
 
-	debug("in _allocate_windows_all");
+	debug2("in _allocate_windows_all");
 	node = _find_node(nrt_state, hostname);
 	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
@@ -1331,8 +1331,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 
 	/* find the adapter */
 	for (i = 0; i < node->adapter_count; i++) {
-		debug("adapter %s at index %d",
-		      node->adapter_list[i].adapter_name, i);
+		debug2("adapter %s at index %d",
+		       node->adapter_list[i].adapter_name, i);
 		if (adapter_name) {
 			if (!strcasecmp(node->adapter_list[i].adapter_name,
 					adapter_name)) {
@@ -3176,7 +3176,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		info("Allocating windows: adapter_name:%s adapter_type:%s",
 		     adapter_name, _adapter_type_str(adapter_type));
 	} else {
-		debug("Allocating windows");
+		debug3("Allocating windows");
 	}
 
 	if (jp->tables_per_task) {
