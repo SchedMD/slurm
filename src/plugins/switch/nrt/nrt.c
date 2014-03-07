@@ -120,8 +120,10 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 /*
  * Definitions local to this module
  */
+#define NRT_NULL_MAGIC  	0xDEAFDEAF
 #define NRT_NODEINFO_MAGIC	0xc00cc00a
 #define NRT_JOBINFO_MAGIC	0xc00cc00b
+
 #define NRT_LIBSTATE_MAGIC	0xc00cc00c
 #define NRT_HOSTLEN		20
 #define NRT_NODECOUNT		128
@@ -633,6 +635,13 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 
 	xassert(!hostlist_is_empty(hl));
 	xassert(jp);
+
+	if (jp->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) job->switch_job was NULL",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return SLURM_ERROR;
+	}
+
 	xassert(jp->magic == NRT_JOBINFO_MAGIC);
 
 	if ((jp == NULL) || (hostlist_is_empty(hl)))
@@ -1795,6 +1804,13 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	nrt_adapter_t adapter_type;
 
 	assert(j);
+
+	if (j->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) job->switch_job was NULL",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return;
+	}
+
 	assert(j->magic == NRT_JOBINFO_MAGIC);
 
 	info("--Begin Jobinfo--");
@@ -2827,6 +2843,13 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 
 	xassert(!hostlist_is_empty(hl));
 	xassert(jp);
+
+	if (jp->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) job->switch_job was NULL",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return SLURM_ERROR;
+	}
+
 	xassert(jp->magic == NRT_JOBINFO_MAGIC);
 
 	if ((jp == NULL) || (hostlist_is_empty(hl)))
@@ -2994,7 +3017,15 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	int def_adapter_count = 0;
 	int def_adapter_inx   = -1;
 
+
 	assert(jp);
+
+	if (jp->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) job->switch_job was NULL",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return SLURM_ERROR;
+	}
+
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
 	assert(tasks_per_node);
 
@@ -3296,9 +3327,19 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 {
 	int i;
 
-	assert(j);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
-	assert(buf);
+	xassert(buf);
+
+	xassert(j);
+	/*
+	 * There is nothing to pack, so pack in magic telling unpack not to
+	 * attempt to unpack anything.
+	 */
+	if (j->magic == NRT_NULL_MAGIC) {
+		pack32(NRT_NULL_MAGIC, buf);
+		return SLURM_SUCCESS;
+	}
+
+	xassert(j->magic == NRT_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("nrt_pack_jobinfo:");
@@ -3448,10 +3489,16 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	int i;
 
 	assert(j);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
 	assert(buf);
 
 	safe_unpack32(&j->magic, buf);
+
+	if (j->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) Nothing to unpack.",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return SLURM_SUCCESS;
+	}
+
 	assert(j->magic == NRT_JOBINFO_MAGIC);
 	safe_unpack32(&j->job_key, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
@@ -3497,6 +3544,13 @@ nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
 	int base_size = 0, table_size;
 
 	assert(job);
+
+	if (job->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) job->switch_job was NULL",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return NULL;
+	}
+
 	assert(job->magic == NRT_JOBINFO_MAGIC);
 
 	if (nrt_alloc_jobinfo(&new)) {
@@ -3578,6 +3632,13 @@ nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
 	int *job_key = (int *) data;
 
 	assert(jp);
+
+	if (jp->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) job->switch_job was NULL",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return SLURM_SUCCESS;
+	}
+
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
 
 	switch (key) {
@@ -3767,6 +3828,13 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 	nrt_table_info_t table_info;
 
 	assert(jp);
+
+	if (jp->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) job->switch_job was NULL",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return SLURM_ERROR;
+	}
+
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -4046,6 +4114,13 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 	int rc = SLURM_SUCCESS;
 
 	assert(jp);
+
+	if (jp->magic == NRT_NULL_MAGIC) {
+		debug2("(%s: %d: %s) job->switch_job was NULL",
+		       THIS_FILE, __LINE__, __FUNCTION__);
+		return SLURM_ERROR;
+	}
+
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
