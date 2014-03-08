@@ -2157,8 +2157,10 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 		for (i=0; i<gres_context_cnt; i++) {
 			rc2 = _job_state_validate(tok, &job_gres_data,
 						  &gres_context[i]);
-			if ((rc2 != SLURM_SUCCESS) || (job_gres_data == NULL))
+			if (rc2 != SLURM_SUCCESS)
 				continue;
+			if (job_gres_data == NULL)    /* Name match, count=0 */
+				break;
 			if (*gres_list == NULL)
 				*gres_list = list_create(_gres_job_list_delete);
 			gres_ptr = xmalloc(sizeof(gres_state_t));
