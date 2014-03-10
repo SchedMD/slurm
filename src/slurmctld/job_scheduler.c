@@ -1568,12 +1568,30 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	bool failure = false, depends = false, expands = false;
  	List job_queue = NULL;
  	bool run_now;
-	int count = 0;
+	int count = 0, results = 0;
 	struct job_record *qjob_ptr, *djob_ptr;
+	time_t now = time(NULL);
+	/* For performance reasons with job arrays, we cache dependency
+	 * results and re-use them whenever possible */
+	static uint32_t cache_job_id = 0;
+	static struct job_record *cache_job_ptr = NULL;
+	static int cache_results;
+	static time_t cache_time = 0;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL))
 		return 0;
+
+	if ((job_ptr->array_task_id != NO_VAL) &&
+	    (cache_time == now) &&
+	    (cache_job_ptr->magic == JOB_MAGIC) &&
+	    (cache_job_ptr->job_id == cache_job_id) &&
+	    (cache_job_ptr->array_job_id == job_ptr->array_job_id) &&
+	    (cache_job_ptr->details) &&
+	    (!strcmp(cache_job_ptr->details->orig_dependency,
+		     job_ptr->details->orig_dependency))) {
+		return cache_results;
+	}
 
 	count = list_count(job_ptr->details->depend_list);
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
@@ -1680,10 +1698,18 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		xfree(job_ptr->details->dependency);
 
 	if (failure)
-		return 2;
-	if (depends)
-		return 1;
-	return 0;
+		results = 2;
+	else if (depends)
+		results = 1;
+
+	if (job_ptr->array_task_id != NO_VAL) {
+		cache_job_id = job_ptr->job_id;
+		cache_job_ptr = job_ptr;
+		cache_results = results;
+		cache_time = now;
+	}
+
+	return results;
 }
 
 /*

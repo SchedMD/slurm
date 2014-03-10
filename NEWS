@@ -38,6 +38,7 @@ documents those changes that are of interest to users and admins.
  -- Added --enable-developer which will give you -Werror when compiling.
  -- Fix for job request with GRES count of zero.
  -- Fix a potential memory leak in hostlist.
+ -- Job array dependency logic: Cache results for major performance improvement.
 
 * Changes in Slurm 14.03.0pre6
 ==============================
