@@ -163,7 +163,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 sig_atomic_t *destroy_job)
 {
 	int i, rc;
-	unsigned long my_sleep  = 0;
+	unsigned long step_wait = 0, my_sleep = 0;
 	time_t begin_time;
 
 	if (!job) {
@@ -275,7 +275,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	begin_time = time(NULL);
 
 	for (i=0; (!(*destroy_job)); i++) {
-		bool blocking_step_create = false;
+		bool blocking_step_create = true;
 		if (opt.no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
@@ -284,10 +284,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 				&job->ctx_params);
 		} else {
 			/* Wait 60 to 70 seconds for response */
-			my_sleep = (getpid() % 10) * 1000 + 60000;
+			step_wait = (getpid() % 10) * 1000 + 60000;
 			job->step_ctx = slurm_step_ctx_create_timeout(
-						&job->ctx_params, my_sleep);
-			blocking_step_create = true;
+						&job->ctx_params, step_wait);
 		}
 		if (job->step_ctx != NULL) {
 			if (i > 0)
@@ -308,6 +307,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			error ("Unable to create job step: %m");
 			return SLURM_ERROR;
 		}
+		if (rc == ESLURM_DISABLED)	/* job suspended */
+			blocking_step_create = false;
 
 		if (i == 0) {
 			if (rc == ESLURM_PROLOG_RUNNING) {
