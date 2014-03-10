@@ -1897,7 +1897,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	if (error_code) {
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
-		if (error_code == ESLURM_PROLOG_RUNNING) {
+		if ((error_code == ESLURM_PROLOG_RUNNING) ||
+		    (error_code == ESLURM_DISABLED)) {	/* job suspended */
 			debug("_slurm_rpc_job_step_create for job %u: %s",
 			      req_step_msg->job_id, slurm_strerror(error_code));
 		} else {
