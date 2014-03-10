@@ -1942,6 +1942,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 error:
 	err = errno = EINVAL;
 	hostlist_destroy(new);
+	xfree(ranges);
 	free(orig);
 	seterrno_ret(err, NULL);
 }
