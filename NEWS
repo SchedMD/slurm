@@ -305,6 +305,7 @@ documents those changes that are of interest to users and admins.
     this would cause pmd's to hang.
  -- NRT - Change xmalloc's to malloc just to be safe.
  -- NRT - Sanity check to make sure a jobinfo is there before packing.
+ -- Add missing options to the print of TaskPluginParam.
 
 * Changes in Slurm 2.6.6
 ========================

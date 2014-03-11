@@ -139,6 +139,8 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 		strcat(str, "map_ldom,");
 	if (cpu_bind_type & CPU_BIND_LDMASK)
 		strcat(str, "mask_ldom,");
+	if (cpu_bind_type & CPU_BIND_CPUSETS)
+		strcat(str, "cpusets,");
 
 	if (*str) {
 		str[strlen(str)-1] = '\0';	/* remove trailing ',' */
