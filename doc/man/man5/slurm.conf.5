@@ -2406,11 +2406,11 @@ The default value is "task/none".
 \fBTaskPluginParam\fR
 Optional parameters for the task plugin.
 Multiple options should be comma separated
-If \fBNone\fR, \fBSockets\fR, \fBCores\fR, \fBThreads\fR,
+If \fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR, \fBThreads\fR,
 and/or \fBVerbose\fR are specified, they will override
 the \fB\-\-cpu_bind\fR option specified by the user
 in the \fBsrun\fR command.
-\fBNone\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR are mutually
+\fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR are mutually
 exclusive and since they decrease scheduling flexibility are not generally
 recommended (select no more than one of them).
 \fBCpusets\fR and \fBSched\fR
@@ -2418,6 +2418,10 @@ are mutually exclusive (select only one of them).
 
 .RS
 .TP 10
+\fBBoards\fR
+Always bind to boards.
+Overrides user options or automatic binding.
+.TP
 \fBCores\fR
 Always bind to cores.
 Overrides user options or automatic binding.
