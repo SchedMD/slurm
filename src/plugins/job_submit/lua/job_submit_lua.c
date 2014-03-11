@@ -103,7 +103,7 @@ const uint32_t min_plug_version = 100;
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/job_submit.lua";
 static lua_State *L = NULL;
-static char *user_msg;
+static char *user_msg = NULL;
 
 /*
  *  Mutex for protecting multi-threaded access to this plugin.
