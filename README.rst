@@ -1,7 +1,7 @@
-SLURM:  the Simple Linux Utility for Resource Management
+Slurm Workload Manager
 --------------------------------------------------------
 
-This is SLURM, the Simple Linux Utility for Resource Management. SLURM
+This is the Slurm Workload Manager. Slurm
 is an open-source cluster resource management and job scheduling system
 that strives to be simple, scalable, portable, fault-tolerant, and
 interconnect agnostic. SLURM currently has been tested only under Linux.
@@ -14,12 +14,12 @@ monitoring work (normally a parallel job) on the set of allocated
 nodes. Finally, it arbitrates conflicting requests for resources by
 managing a queue of pending work.
 
-SLURM is provided "as is" and with no warranty. This software is
+Slurm is provided "as is" and with no warranty. This software is
 distributed under the GNU General Public License, please see the files
 COPYING, DISCLAIMER, and LICENSE.OpenSSL for details.
 
 This README presents an introduction to compiling, installing, and
-using SLURM.
+using Slurm.
 
 
 SOURCE DISTRIBUTION HIERARCHY
@@ -27,51 +27,51 @@ SOURCE DISTRIBUTION HIERARCHY
 
 The top-level distribution directory contains this README as well as
 other high-level documentation files, and the scripts used to configure
-and build SLURM (see INSTALL). Subdirectories contain the source-code
-for SLURM as well as a DejaGNU test suite and further documentation. A
-quick description of the subdirectories of the SLURM distribution follows:
+and build Slurm (see INSTALL). Subdirectories contain the source-code
+for Slurm as well as a DejaGNU test suite and further documentation. A
+quick description of the subdirectories of the Slurm distribution follows:
 
-  src/        [ SLURM source ]
-     SLURM source code is further organized into self explanatory 
+  src/        [ Slurm source ]
+     Slurm source code is further organized into self explanatory
      subdirectories such as src/api, src/slurmctld, etc.
 
-  doc/        [ SLURM documentation ]
+  doc/        [ Slurm documentation ]
      The documentation directory contains some latex, html, and ascii
-     text papers, READMEs, and guides. Manual pages for the SLURM
+     text papers, READMEs, and guides. Manual pages for the Slurm
      commands and configuration files are also under the doc/ directory.
 
-  etc/        [ SLURM configuration ] 
+  etc/        [ Slurm configuration ]
      The etc/ directory contains a sample config file, as well as
-     some scripts useful for running SLURM.
+     some scripts useful for running Slurm.
 
-  slurm/      [ SLURM include files ]
+  slurm/      [ Slurm include files ]
      This directory contains installed include files, such as slurm.h
-     and slurm_errno.h, needed for compiling against the SLURM API.
+     and slurm_errno.h, needed for compiling against the Slurm API.
 
-  testsuite/  [ SLURM test suite ]
-     The testsuite directory contains the framework for a set of 
-     DejaGNU and "make check" type tests for SLURM components.
+  testsuite/  [ Slurm test suite ]
+     The testsuite directory contains the framework for a set of
+     DejaGNU and "make check" type tests for Slurm components.
      There is also an extensive collection of Expect scripts.
 
   auxdir/     [ autotools directory ]
      Directory for autotools scripts and files used to configure and
-     build SLURM
-  
-  contribs/   [ helpful tools outside of SLURM proper ]
+     build Slurm
+
+  contribs/   [ helpful tools outside of Slurm proper ]
      Directory for anything that is outside of slurm proper such as a
-     different api or such.  To have this build you need to do a 
+     different api or such.  To have this build you need to do a
      make contrib/install-contrib.
 
 COMPILING AND INSTALLING THE DISTRIBUTION
 -----------------------------------------
 
-Please see the instructions at 
+Please see the instructions at
   http://slurm.schedmd.com/quickstart_admin.html
-Extensive documentation is available from our home page at 
+Extensive documentation is available from our home page at
   http://slurm.schedmd.com/slurm.html
 
 PROBLEMS
 --------
 
-If you experience problems compiling, installing, or running SLURM, see
+If you experience problems compiling, installing, or running Slurm, see
    http://slurm.schedmd.com/help.html

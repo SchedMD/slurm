@@ -1,19 +1,19 @@
-                         SLURM LICENSE AGREEMENT
+			 SLURM LICENSE AGREEMENT
 
-All SLURM code and documentation is available under the GNU General Public 
-License. Some tools in the "contribs" directory have other licenses. See 
-the documentation for individual contributed tools for details. 
+All Slurm code and documentation is available under the GNU General Public
+License. Some tools in the "contribs" directory have other licenses. See
+the documentation for individual contributed tools for details.
 
-In addition, as a special exception, the copyright holders give permission 
-to link the code of portions of this program with the OpenSSL library under 
-certain conditions as described in each individual source file, and distribute 
-linked combinations including the two. You must obey the GNU General Public 
-License in all respects for all of the code used other than OpenSSL. If you 
+In addition, as a special exception, the copyright holders give permission
+to link the code of portions of this program with the OpenSSL library under
+certain conditions as described in each individual source file, and distribute
+linked combinations including the two. You must obey the GNU General Public
+License in all respects for all of the code used other than OpenSSL. If you
 modify file(s) with this exception, you may extend this exception to your
-version of the file(s), but you are not obligated to do so. If you do not 
-wish to do so, delete this exception statement from your version. If you 
-delete this exception statement from all source files in the program, then 
-also delete it here.  
+version of the file(s), but you are not obligated to do so. If you do not
+wish to do so, delete this exception statement from your version. If you
+delete this exception statement from all source files in the program, then
+also delete it here.
 
 NO WARRANTY: Because the program is licensed free of charge, there is no
 warranty for the program. See section 11 below for full details.
@@ -30,19 +30,19 @@ DE-AC52-07NA27344.
 
 Disclaimer
 
-This work was sponsored by an agency of the United States government. 
-Neither the United States Government nor Lawrence Livermore National 
-Security, LLC, nor any of their employees, makes any warranty, express 
-or implied, or assumes any liability or responsibility for the accuracy, 
-completeness, or usefulness of any information, apparatus, product, or 
+This work was sponsored by an agency of the United States government.
+Neither the United States Government nor Lawrence Livermore National
+Security, LLC, nor any of their employees, makes any warranty, express
+or implied, or assumes any liability or responsibility for the accuracy,
+completeness, or usefulness of any information, apparatus, product, or
 process disclosed, or represents that its use would not infringe privately
-owned rights. References herein to any specific commercial products, process, 
+owned rights. References herein to any specific commercial products, process,
 or services by trade names, trademark, manufacturer or otherwise does not
 necessarily constitute or imply its endorsement, recommendation, or
 favoring by the United States Government or the Lawrence Livermore National
-Security, LLC. The views and opinions of authors expressed herein do not 
-necessarily state or reflect those of the United States government or 
-Lawrence Livermore National Security, LLC, and shall not be used for 
+Security, LLC. The views and opinions of authors expressed herein do not
+necessarily state or reflect those of the United States government or
+Lawrence Livermore National Security, LLC, and shall not be used for
 advertising or product endorsement purposes.
 
 =============================================================================
