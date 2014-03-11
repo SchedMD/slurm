@@ -39,6 +39,9 @@ documents those changes that are of interest to users and admins.
  -- Fix for job request with GRES count of zero.
  -- Fix a potential memory leak in hostlist.
  -- Job array dependency logic: Cache results for major performance improvement.
+ -- Add a new environment variable PMI2_CONNECT_TO_SERVER. If set in the MPI application
+    environment the PMI2 library will connect the the PMI2 server (slurmstepd) instead
+    of using the provided PMI_FD socket.
 
 * Changes in Slurm 14.03.0pre6
 ==============================

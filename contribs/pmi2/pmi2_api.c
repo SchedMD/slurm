@@ -41,6 +41,12 @@ static int PMI2_fd = -1;
 static int PMI2_size = 1;
 static int PMI2_rank = 0;
 
+/* By default the pmi2 library connects back on a socket
+ * provided by the pmi2 server. However that socket can be closed
+ * for example by a shell running fork()/exec() in between.
+ * In that case the library must connect back to the pmi2 server.
+ */
+static int _connect_to_stepd(int);
 
 /* XXX DJG the "const"s on both of these functions and the Keyvalpair
  * struct are wrong in the isCopy==TRUE case! */
@@ -210,6 +216,10 @@ int PMI2_Init(int *spawned, int *size, int *rank, int *appnum)
 
 		PMI2_initialized = SINGLETON_INIT_BUT_NO_PM;
 		goto fn_exit;
+    }
+
+    if (getenv("PMI2_CONNECT_TO_SERVER")) {
+	PMI2_fd = _connect_to_stepd(PMI2_fd);
     }
 
     /* do initial PMI1 init */
@@ -1933,4 +1943,68 @@ static void dump_PMI2_Command(PMI2_Command *cmd)
 
     for (i = 0; i < cmd->nPairs; ++i)
         dump_PMI2_Keyvalpair(cmd->pairs[i]);
+}
+
+/* _connect_to_stepd()
+ *
+ * If the user requests PMI2_CONNECT_TO_SERVER do
+ * connect over the PMI2_SUN_PATH unix socket.
+ */
+static int
+_connect_to_stepd(int s)
+{
+    struct sockaddr_un addr;
+    int cc;
+    char *usock;
+    char *p;
+    int myrank;
+    int n;
+
+    usock = getenv("PMI2_SUN_PATH");
+    if (usock == NULL)
+	return -1;
+
+    cc = socket(PF_UNIX, SOCK_STREAM, 0);
+    if (cc < 0) {
+	perror("socket()");
+	return -1;
+    }
+
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+
+    addr.sun_family = AF_UNIX;
+    sprintf(addr.sun_path, usock);
+
+    if (connect(cc, (struct sockaddr *)&addr,
+		sizeof(struct sockaddr_un)) != 0) {
+	perror("connect()");
+	close(cc);
+	return -1;
+    }
+
+    /* The very first thing we have to tell the pmi
+     * server is our rank, so he can associate our
+     * file descriptor with our rank.
+     */
+    p = getenv("PMI_RANK");
+    if (p == NULL) {
+	fprintf(stderr, "%s: failed to get PMI_RANK from env\n", __func__);
+	close(cc);
+	return -1;
+    }
+
+    myrank = atoi(p);
+    n = write(cc, &myrank, sizeof(int));
+    if (n != sizeof(int)) {
+	perror("write()");
+	close(cc);
+	return -1;
+    }
+
+    /* close() all socket and return
+     * the new.
+     */
+    close(s);
+
+    return cc;
 }
