@@ -127,7 +127,7 @@ int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 	/* Set the path to the stepd socket for the pmi
 	 * library to connect to.
 	 */
-	env_array_overwrite_fmt(env, "PMI2_SUN_PATH", sun_path);
+	env_array_overwrite_fmt(env, "PMI2_SUN_PATH", "%s", sun_path);
 
 	/* close unused sockets in task */
 	close(tree_sock);
