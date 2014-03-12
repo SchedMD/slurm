@@ -309,10 +309,14 @@
 #define	_xrfc5424timecat	slurm_xrfc5424timecat
 #define	_xstrfmtcat		slurm_xstrfmtcat
 #define	_xmemcat		slurm_xmemcat
-#define	_xstrsubstitute		slurm_xstrsubstitute
 #define	xstrdup			slurm_xstrdup
 #define	xstrdup_printf		slurm_xstrdup_printf
 #define	xbasename		slurm_xbasename
+#define	_xstrsubstitute		slurm_xstrsubstitute
+#define	xstrstrip		slurm_xstrstrip
+#define	xshort_hostname		slurm_xshort_hostname
+#define xstring_is_whitespace   slurm_xstring_is_whitespace
+#define	xstrtolower		slurm_xstrtolower
 
 /* slurm_protocol_defs.[ch] functions */
 #define preempt_mode_string	slurm_preempt_mode_string

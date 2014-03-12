@@ -92,7 +92,7 @@ strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
 strong_alias(xstrstrip,         slurm_xstrstrip);
 strong_alias(xshort_hostname,   slurm_xshort_hostname);
 strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
-strong_alias(xstrtolower, slurm_xstrtolower);
+strong_alias(xstrtolower,       slurm_xstrtolower);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
