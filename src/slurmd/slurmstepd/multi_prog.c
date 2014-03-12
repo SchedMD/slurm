@@ -4,7 +4,7 @@
  *  NOTE: This code could be moved into the API if desired. That would mean the
  *  logic would be executed once per job instead of once per task. This would
  *  require substantial modifications to the srun, slurmd, slurmstepd, and
- *  communications logic; so we'll stick with the simple solution for now. 
+ *  communications logic; so we'll stick with the simple solution for now.
  *****************************************************************************
  *  Produced at National University of Defense Technology (China)
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>
@@ -22,15 +22,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -60,7 +60,7 @@
 #define _DEBUG   0
 
 /*
- * Test if the specified rank is included in the supplied task range 
+ * Test if the specified rank is included in the supplied task range
  * IN rank    - this task's rank
  * IN spec    - a line from the configuration file
  * OUT offset - the task's offset within rank range of the configuration file
@@ -75,13 +75,13 @@ _in_range(int rank, char* spec, int *offset)
 	int high_num, low_num, passed = 0;
 
 	xassert(offset);
-	
+
 	if (spec[0] == '*' && spec[1] == '\0') {
 		*offset = rank;
 		return 1;
 	}
 
-	for (range = strtok (spec, ","); range != NULL; 
+	for (range = strtok (spec, ","); range != NULL;
 			range = strtok (NULL, ",")) {
 		p = range;
 		while (*p != '\0' && isdigit (*p))
@@ -176,21 +176,21 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 		}
 		line_num ++;
 		if (strlen (line) >= (BUF_SIZE - 1)) {
-			error ("Line %d of configuration file too long", 
+			error ("Line %d of configuration file too long",
 				line_num);
 			goto fail;
 		}
-		
+
 		p = line;
 		while (*p != '\0' && isspace (*p)) /* remove leading spaces */
 			p ++;
-		
+
 		if (*p == '#') /* only whole-line comments handled */
 			continue;
 
 		if (*p == '\0') /* blank line ignored */
 			continue;
-		
+
 		rank_spec = p;
 
 		while (*p != '\0' && !isspace (*p))
@@ -209,7 +209,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 			p++;
 
 		args_spec = p;
-		while (*args_spec != '\0') { 
+		while (*args_spec != '\0') {
 			/* Only simple quote and escape supported */
 			prog_argv[prog_argc ++] = args_spec;
 			if ((prog_argc + 1) >= MAX_ARGC) {
@@ -219,14 +219,14 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 		CONT:	while (*args_spec != '\0' && *args_spec != '\\'
 			&&     *args_spec != '%'
 			&&     *args_spec != '\'' && !isspace (*args_spec)) {
-			        args_spec ++;
-		        }
+				args_spec ++;
+			}
 			if (*args_spec == '\0') {
 				/* the last argument */
 				break;
 
 			} else if (*args_spec == '%') {
-				_sub_expression(args_spec, task_rank, 
+				_sub_expression(args_spec, task_rank,
 					task_offset);
 				args_spec ++;
 				goto CONT;
@@ -239,9 +239,9 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 					*s ++ = *p;
 				} while (*p ++ != '\0');
 				goto CONT;
-				
+
 			} else if (*args_spec == '\'') {
-				/* single quote, 
+				/* single quote,
 				 * preserve all characters quoted. */
 				p = args_spec + 1;
 				while (*p != '\0' && *p != '\'') {
@@ -251,7 +251,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 				if (*p == '\0') {
 					/* closing quote not found */
 					error("Program arguments specification"
-						" format invalid: %s.", 
+						" format invalid: %s.",
 						prog_argv[prog_argc -1]);
 					goto fail;
 				}
@@ -261,11 +261,11 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 					*s ++ = *p;
 				} while (*p ++ != '\0');
 				goto CONT;
-				
+
 			} else {
 				/* space */
 				*args_spec ++ = '\0';
-				while (*args_spec != '\0' 
+				while (*args_spec != '\0'
 				&& isspace (*args_spec))
 					args_spec ++;
 			}
@@ -401,7 +401,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 				      job->msg->complete_nodelist);
 			}
 			for (j = 0; one_rank[j] && !isdigit(one_rank[j]); j++)
-				;	
+				;
 			node_id2nid[i++] = strtol(one_rank + j, &end_ptr, 10);
 			free(one_rank);
 		}
