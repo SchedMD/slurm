@@ -93,6 +93,9 @@ strong_alias(xstrstrip,         slurm_xstrstrip);
 strong_alias(xshort_hostname,   slurm_xshort_hostname);
 strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
 strong_alias(xstrtolower,       slurm_xstrtolower);
+strong_alias(xstrchr,           slurm_xstrchr);
+strong_alias(xstrcmp,           slurm_xstrcmp);
+strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
@@ -551,6 +554,34 @@ char *xstrtolower(char *str)
 		}
 	}
 	return str;
+}
+
+/* safe strchr */
+char *xstrchr(const char *s1, int c)
+{
+	return s1 ? strchr(s1, c) : NULL;
+}
+
+/* safe strcmp */
+int xstrcmp(const char *s1, const char *s2)
+{
+	if (!s1 && !s2)
+		return 0;
+	else if ((s1 && !s2) || (!s1 && s2))
+		return 1;
+	else
+		return strcmp(s1, s2);
+}
+
+/* safe strcasecmp */
+int xstrcasecmp(const char *s1, const char *s2)
+{
+	if (!s1 && !s2)
+		return 0;
+	else if ((s1 && !s2) || (!s1 && s2))
+		return 1;
+	else
+		return strcasecmp(s1, s2);
 }
 
 /*

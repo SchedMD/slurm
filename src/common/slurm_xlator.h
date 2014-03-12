@@ -317,6 +317,10 @@
 #define	xshort_hostname		slurm_xshort_hostname
 #define xstring_is_whitespace   slurm_xstring_is_whitespace
 #define	xstrtolower		slurm_xstrtolower
+#define xstrchr			slurm_xstrchr
+#define xstrcmp			slurm_xstrcmp
+#define xstrcasecmp		slurm_xstrcasecmp
+
 
 /* slurm_protocol_defs.[ch] functions */
 #define preempt_mode_string	slurm_preempt_mode_string

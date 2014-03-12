@@ -175,4 +175,19 @@ bool xstring_is_whitespace(const char *str);
  */
 char *xstrtolower(char *str);
 
+/*
+ * safe strchr (handles NULL values)
+ */
+char *xstrchr(const char *s1, int c);
+
+/*
+ * safe strcmp (handles NULL values)
+ */
+int xstrcmp(const char *s1, const char *s2);
+
+/*
+ * safe strcasecmp (handles NULL values)
+ */
+int xstrcasecmp(const char *s1, const char *s2);
+
 #endif /* !_XSTRING_H */
