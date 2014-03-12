@@ -228,7 +228,7 @@ of a cluster for proper operation, its underlying authentication mechanism
 do have this requirement.</p>
 
 <h3>MPI support</h3>
-<p>SLURM supports many different SLURM implementations.
+<p>SLURM supports many different MPI implementations.
 For more information, see <a href="quickstart.html#mpi">MPI</a>.
 
 <h3>Scheduler support</h3>
