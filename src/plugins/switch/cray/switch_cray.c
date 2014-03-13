@@ -255,7 +255,7 @@ static void _state_read_buf(Buf buffer)
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, SWITCH_CRAY_STATE_VERSION))
-			safe_unpack(&protocol_version, buffer)
+			safe_unpack16(&protocol_version, buffer);
 	}
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("*******************************************************");
