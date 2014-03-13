@@ -440,6 +440,10 @@ _parse_state( char* str, uint16_t* states )
 	xstrcat(state_names, job_state_string(JOB_COMPLETING));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_RESIZING));
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_SPECIAL_EXIT));
 	error ("Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	return SLURM_ERROR;

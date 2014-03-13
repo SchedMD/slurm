@@ -1633,6 +1633,10 @@ static int _filter_job(job_info_t * job)
 			    ((*state_id == JOB_COMPLETING) &&
 			     (*state_id & job->job_state)) ||
 			    ((*state_id == JOB_CONFIGURING) &&
+			     (*state_id & job->job_state)) ||
+			    ((*state_id == JOB_RESIZING) &&
+			     (*state_id & job->job_state))||
+			    ((*state_id == JOB_SPECIAL_EXIT) &&
 			     (*state_id & job->job_state))) {
 				filter = 0;
 				break;

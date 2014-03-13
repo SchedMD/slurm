@@ -1333,6 +1333,8 @@ extern int job_state_num(const char *state_name)
 		return JOB_CONFIGURING;
 	if (_job_name_test(JOB_RESIZING, state_name))
 		return JOB_RESIZING;
+	if (_job_name_test(JOB_SPECIAL_EXIT, state_name))
+		return JOB_SPECIAL_EXIT;
 
 	return -1;
 }
