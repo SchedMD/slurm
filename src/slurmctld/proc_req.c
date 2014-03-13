@@ -2229,7 +2229,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	if (msg->protocol_version != SLURM_PROTOCOL_VERSION)
 		info("Node %s appears to have a different version "
 		     "of Slurm than ours.  Please update at your earliest "
-		     "convenence.", node_reg_stat_msg->node_name);
+		     "convenience.", node_reg_stat_msg->node_name);
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
