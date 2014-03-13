@@ -3584,6 +3584,15 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	agent_args->msg_type	= REQUEST_SIGNAL_TASKS;
 	agent_args->retry	= 1;
 	agent_args->node_count  = 1;
+#ifdef HAVE_FRONT_END
+	if (job_ptr->front_end_ptr)
+		agent_args->protocol_version =
+			job_ptr->front_end_ptr->protocol_version;
+#else
+	struct node_record *node_ptr;
+	if ((node_ptr = find_node_record(job_ptr->batch_host)))
+		agent_args->protocol_version = node_ptr->protocol_version;
+#endif
 	agent_args->hostlist	= hostlist_create(job_ptr->batch_host);
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = job_ptr->job_id;
@@ -9126,16 +9135,21 @@ static void _send_job_kill(struct job_record *job_ptr)
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
 	    (front_end_ptr = job_ptr->front_end_ptr)) {
+		agent_args->protocol_version = front_end_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 		agent_args->node_count++;
 	}
 #else
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap_cg, i))
 			continue;
+		if (agent_args->protocol_version > node_ptr->protocol_version)
+			agent_args->protocol_version =
+				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
@@ -9472,8 +9486,14 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
 	agent_info->retry	= 0;
 	agent_info->hostlist	= hostlist_create(node_name);
 #ifdef HAVE_FRONT_END
+	if (job_ptr->front_end_ptr)
+		agent_info->protocol_version =
+			job_ptr->front_end_ptr->protocol_version;
 	debug("Aborting job %u on front end node %s", job_id, node_name);
 #else
+	struct node_record *node_ptr;
+	if ((node_ptr = find_node_record(node_name)))
+		agent_info->protocol_version = node_ptr->protocol_version;
 
 	debug("Aborting job %u on node %s", job_id, node_name);
 #endif
@@ -9516,10 +9536,14 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_info->retry	= 0;
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
+	if (job_ptr->front_end_ptr)
+		agent_info->protocol_version =
+			job_ptr->front_end_ptr->protocol_version;
 	agent_info->hostlist	= hostlist_create(job_ptr->batch_host);
 	debug("Killing job %u on front end node %s", job_id,
 	      job_ptr->batch_host);
 #else
+	agent_info->protocol_version = node_ptr->protocol_version;
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
 	debug("Killing job %u on node %s", job_id, node_ptr->name);
 #endif
@@ -9704,12 +9728,20 @@ _xmit_new_end_time(struct job_record *job_ptr)
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
+	if (job_ptr->front_end_ptr)
+		agent_args->protocol_version =
+			job_ptr->front_end_ptr->protocol_version;
 	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count  = 1;
 #else
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+		if (agent_args->protocol_version >
+		    node_record_table_ptr[i].protocol_version)
+			agent_args->protocol_version =
+				node_record_table_ptr[i].protocol_version;
 		hostlist_push_host(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
@@ -10149,12 +10181,20 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
+	if (job_ptr->front_end_ptr)
+		agent_args->protocol_version =
+			job_ptr->front_end_ptr->protocol_version;
 	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count = 1;
 #else
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+		if (agent_args->protocol_version >
+		    node_record_table_ptr[i].protocol_version)
+			agent_args->protocol_version =
+				node_record_table_ptr[i].protocol_version;
 		hostlist_push_host(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
@@ -10221,12 +10261,20 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
+	if (job_ptr->front_end_ptr)
+		agent_args->protocol_version =
+			job_ptr->front_end_ptr->protocol_version;
 	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count = 1;
 #else
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+		if (agent_args->protocol_version >
+		    node_record_table_ptr[i].protocol_version)
+			agent_args->protocol_version =
+				node_record_table_ptr[i].protocol_version;
 		hostlist_push_host(agent_args->hostlist,
 				   node_record_table_ptr[i].name);
 		agent_args->node_count++;

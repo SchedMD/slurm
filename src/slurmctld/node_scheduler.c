@@ -508,6 +508,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
 	    (front_end_ptr = job_ptr->front_end_ptr)) {
+		agent_args->protocol_version = front_end_ptr->protocol_version;
 		if (IS_NODE_DOWN(front_end_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			front_end_ptr->job_cnt_comp = 0;
@@ -560,6 +561,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 #else
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap_cg, i))
@@ -583,6 +585,9 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);
 
+		if (agent_args->protocol_version > node_ptr->protocol_version)
+			agent_args->protocol_version =
+				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
@@ -1860,8 +1865,13 @@ static void _launch_prolog(struct job_record *job_ptr)
   #ifdef HAVE_FRONT_END
 	xassert(job_ptr->front_end_ptr);
 	xassert(job_ptr->front_end_ptr->name);
+	agent_arg_ptr->protocol_version =
+		job_ptr->front_end_ptr->protocol_version;
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->front_end_ptr->name);
   #else
+	struct node_record *node_ptr;
+	if ((node_ptr = find_node_record(job_ptr->batch_host)))
+		agent_arg_ptr->protocol_version = node_ptr->protocol_version;
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
   #endif
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
@@ -2657,6 +2667,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
 	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
+		agent_args->protocol_version = front_end_ptr->protocol_version;
 		if (IS_NODE_DOWN(front_end_ptr)) {
 			for (i = 0, node_ptr = node_record_table_ptr;
 			     i < node_record_count; i++, node_ptr++) {
@@ -2707,7 +2718,12 @@ extern void re_kill_job(struct job_record *job_ptr)
 			}
 		} else if (!IS_NODE_NO_RESPOND(node_ptr)) {
 			(void)hostlist_push_host(kill_hostlist, node_ptr->name);
-			hostlist_push_host(agent_args->hostlist, node_ptr->name);
+			if (agent_args->protocol_version >
+			    node_ptr->protocol_version)
+				agent_args->protocol_version =
+					node_ptr->protocol_version;
+			hostlist_push_host(agent_args->hostlist,
+					   node_ptr->name);
 			agent_args->node_count++;
 		}
 	}

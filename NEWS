@@ -45,6 +45,7 @@ documents those changes that are of interest to users and admins.
  -- Modify squeue to support filter on job states Special_Exit and Resizing.
  -- Defer purging job record until after EpilogSlurmctld completes.
  -- Add -j option for jobid to sbcast.
+ -- Fix handling RPCs from a 14.03 slurmctld to a 2.6 slurmd
 
 * Changes in Slurm 14.03.0pre6
 ==============================

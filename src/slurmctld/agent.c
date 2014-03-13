@@ -139,6 +139,7 @@ typedef struct agent_info {
 	bool get_reply;			/* flag if reply expected */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void **msg_args_pptr;		/* RPC data to be used */
+	uint16_t protocol_version;	/* if set, use this version */
 } agent_info_t;
 
 typedef struct task_info {
@@ -151,6 +152,7 @@ typedef struct task_info {
 	bool get_reply;			/* flag if reply expected */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void *msg_args_ptr;		/* ptr to RPC data to be used */
+	uint16_t protocol_version;	/* if set, use this version */
 } task_info_t;
 
 typedef struct queued_request {
@@ -394,6 +396,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->thread_struct  = thread_ptr;
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
+	agent_info_ptr->protocol_version = agent_arg_ptr->protocol_version;
 
 	if ((agent_arg_ptr->msg_type != REQUEST_JOB_NOTIFY)	&&
 	    (agent_arg_ptr->msg_type != REQUEST_REBOOT_NODES)	&&
@@ -476,6 +479,7 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
 	task_info_ptr->get_reply         = agent_info_ptr->get_reply;
 	task_info_ptr->msg_type          = agent_info_ptr->msg_type;
 	task_info_ptr->msg_args_ptr      = *agent_info_ptr->msg_args_pptr;
+	task_info_ptr->protocol_version  = agent_info_ptr->protocol_version;
 
 	return task_info_ptr;
 }
@@ -835,6 +839,10 @@ static void *_thread_per_group_rpc(void *args)
 
 	/* send request message */
 	slurm_msg_t_init(&msg);
+
+	if (task_ptr->protocol_version)
+		msg.protocol_version = task_ptr->protocol_version;
+
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 #if 0

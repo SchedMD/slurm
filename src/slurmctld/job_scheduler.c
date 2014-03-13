@@ -1376,6 +1376,7 @@ extern void launch_job(struct job_record *job_ptr)
 		return;
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
+	agent_arg_ptr->protocol_version = protocol_version;
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
 	xassert(job_ptr->batch_host);

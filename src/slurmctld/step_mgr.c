@@ -538,14 +538,22 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 
 #ifdef HAVE_FRONT_END
 	xassert(step_ptr->job_ptr->batch_host);
+	if (step_ptr->job_ptr->front_end_ptr)
+		agent_args->protocol_version =
+			step_ptr->job_ptr->front_end_ptr->protocol_version;
 	hostlist_push_host(agent_args->hostlist, step_ptr->job_ptr->batch_host);
 	agent_args->node_count = 1;
 #else
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
+		if (agent_args->protocol_version >
+		    node_record_table_ptr[i].protocol_version)
+			agent_args->protocol_version =
+				node_record_table_ptr[i].protocol_version;
 		hostlist_push_host(agent_args->hostlist,
-			      node_record_table_ptr[i].name);
+				   node_record_table_ptr[i].name);
 		agent_args->node_count++;
 	}
 #endif
@@ -583,10 +591,16 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 #ifdef HAVE_FRONT_END
 	xassert(step_ptr->job_ptr->batch_host);
 	agent_args->node_count++;
+	if (step_ptr->job_ptr->front_end_ptr)
+		agent_args->protocol_version =
+			step_ptr->job_ptr->front_end_ptr->protocol_version;
 	agent_args->hostlist = hostlist_create(step_ptr->job_ptr->batch_host);
 	if (!agent_args->hostlist)
 		fatal("Invalid batch_host: %s", step_ptr->job_ptr->batch_host);
 #else
+	struct node_record *node_ptr;
+	if ((node_ptr = find_node_record(node_name)))
+		agent_args->protocol_version = node_ptr->protocol_version;
 	agent_args->node_count++;
 	agent_args->hostlist = hostlist_create(node_name);
 	if (!agent_args->hostlist)
@@ -3718,12 +3732,20 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
+	if (job_ptr->front_end_ptr)
+		agent_args->protocol_version =
+			job_ptr->front_end_ptr->protocol_version;
 	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count++;
 #else
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
+		if (agent_args->protocol_version >
+		    node_record_table_ptr[i].protocol_version)
+			agent_args->protocol_version =
+				node_record_table_ptr[i].protocol_version;
 		hostlist_push_host(agent_args->hostlist,
 			node_record_table_ptr[i].name);
 		agent_args->node_count++;

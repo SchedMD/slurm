@@ -57,8 +57,7 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 /* Change FRONT_END_STATE_VERSION value when changing the state save format */
-#define FRONT_END_STATE_VERSION        "VER001"
-#define FRONT_END_13_13_STATE_VERSION  "VER001"	/* SLURM version 14.03 */
+#define FRONT_END_STATE_VERSION        "PROTOCOL_VERSION"
 #define FRONT_END_2_6_STATE_VERSION    "VER001"	/* SLURM version 2.6 */
 #define FRONT_END_2_5_STATE_VERSION    "VER001"	/* SLURM version 2.5 */
 
@@ -80,6 +79,7 @@ static void _dump_front_end_state(front_end_record_t *front_end_ptr,
 	packstr  (front_end_ptr->reason, buffer);
 	pack_time(front_end_ptr->reason_time, buffer);
 	pack32   (front_end_ptr->reason_uid, buffer);
+	pack16   (front_end_ptr->protocol_version, buffer);
 }
 
 
@@ -695,6 +695,7 @@ extern int dump_all_front_end_state(void)
 	START_TIMER;
 	/* write header: version, time */
 	packstr(FRONT_END_STATE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
 	/* write node records to buffer */
@@ -826,8 +827,9 @@ extern int load_all_front_end_state(bool state_only)
 	debug3("Version string in front_end_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, FRONT_END_STATE_VERSION)) {
-			protocol_version = SLURM_PROTOCOL_VERSION;
-		}
+			safe_unpack16(&protocol_version, buffer);
+		} else
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
 	}
 
 	if (protocol_version == (uint16_t) NO_VAL) {
@@ -843,8 +845,16 @@ extern int load_all_front_end_state(bool state_only)
 	safe_unpack_time(&time_stamp, buffer);
 
 	while (remaining_buf (buffer) > 0) {
-		uint16_t base_state;
-		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		uint16_t base_state, obj_protocol_version = (uint16_t)NO_VAL;;
+		if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+			safe_unpack16 (&node_state,  buffer);
+			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+			safe_unpack_time (&reason_time, buffer);
+			safe_unpack32 (&reason_uid,  buffer);
+			safe_unpack16 (&obj_protocol_version, buffer);
+			base_state = node_state & NODE_STATE_BASE;
+		} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpack16 (&node_state,  buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
@@ -896,6 +906,15 @@ extern int load_all_front_end_state(bool state_only)
 			front_end_ptr->reason_time	= reason_time;
 			front_end_ptr->reason_uid	= reason_uid;
 			front_end_ptr->last_response	= (time_t) 0;
+		}
+
+		if (front_end_ptr) {
+			if (obj_protocol_version != (uint16_t)NO_VAL)
+				front_end_ptr->protocol_version =
+					obj_protocol_version;
+			else
+				front_end_ptr->protocol_version =
+					protocol_version;
 		}
 
 		xfree(node_name);

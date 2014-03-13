@@ -84,10 +84,8 @@ int check_header_version(header_t * header)
 		}
 	} else if (header->version != check_version) {
 		switch (header->msg_type) {
-		case REQUEST_JOB_STEP_CREATE:
 		case REQUEST_LAUNCH_TASKS:
 		case REQUEST_RUN_JOB_STEP:
-		case RESPONSE_JOB_STEP_CREATE:
 		case RESPONSE_LAUNCH_TASKS:
 		case RESPONSE_RUN_JOB_STEP:
 			/* Disable job step creation/launch between major

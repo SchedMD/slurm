@@ -2227,7 +2227,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	}
 
 	if (msg->protocol_version != SLURM_PROTOCOL_VERSION)
-		error_code = SLURM_PROTOCOL_VERSION_ERROR;
+		info("Node %s appears to have a different version "
+		     "of Slurm than ours.  Please update at your earliest "
+		     "convenence.", node_reg_stat_msg->node_name);
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
@@ -4213,6 +4215,15 @@ static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
 	xassert(job_ptr->batch_host);
+#ifdef HAVE_FRONT_END
+	if (job_ptr->front_end_ptr)
+		agent_arg_ptr->protocol_version =
+			job_ptr->front_end_ptr->protocol_version;
+#else
+	if ((node_ptr = find_node_record(job_ptr->batch_host)))
+		agent_arg_ptr->protocol_version = node_ptr->protocol_version;
+#endif
+
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
 	if (!agent_arg_ptr->hostlist)
 		fatal("Invalid batch host: %s", job_ptr->batch_host);

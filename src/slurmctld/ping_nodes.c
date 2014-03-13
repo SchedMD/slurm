@@ -143,11 +143,13 @@ void ping_nodes (void)
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
 	ping_agent_args->retry = 0;
+	ping_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	ping_agent_args->hostlist = hostlist_create(NULL);
 
 	reg_agent_args = xmalloc (sizeof (agent_arg_t));
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
+	reg_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	reg_agent_args->hostlist = hostlist_create(NULL);
 
 	/*
@@ -218,6 +220,10 @@ void ping_nodes (void)
 		 * can generate a flood of incoming RPCs. */
 		if (IS_NODE_UNKNOWN(front_end_ptr) || restart_flag ||
 		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
+			if (reg_agent_args->protocol_version >
+			    front_end_ptr->protocol_version)
+				reg_agent_args->protocol_version =
+					front_end_ptr->protocol_version;
 			hostlist_push_host(reg_agent_args->hostlist,
 				      front_end_ptr->name);
 			reg_agent_args->node_count++;
@@ -234,7 +240,12 @@ void ping_nodes (void)
 		    IS_NODE_DOWN(front_end_ptr))
 			continue;
 
-		hostlist_push_host(ping_agent_args->hostlist, front_end_ptr->name);
+		if (ping_agent_args->protocol_version >
+		    front_end_ptr->protocol_version)
+			ping_agent_args->protocol_version =
+				front_end_ptr->protocol_version;
+		hostlist_push_host(ping_agent_args->hostlist,
+				   front_end_ptr->name);
 		ping_agent_args->node_count++;
 	}
 #else
@@ -283,8 +294,12 @@ void ping_nodes (void)
 		 * can generate a flood of incoming RPCs. */
 		if (IS_NODE_UNKNOWN(node_ptr) || restart_flag ||
 		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
+			if (reg_agent_args->protocol_version >
+			    node_ptr->protocol_version)
+				reg_agent_args->protocol_version =
+					node_ptr->protocol_version;
 			hostlist_push_host(reg_agent_args->hostlist,
-				      node_ptr->name);
+					   node_ptr->name);
 			reg_agent_args->node_count++;
 			continue;
 		}
@@ -298,6 +313,10 @@ void ping_nodes (void)
 		if (IS_NODE_NO_RESPOND(node_ptr) && IS_NODE_DOWN(node_ptr))
 			continue;
 
+		if (ping_agent_args->protocol_version >
+		    node_ptr->protocol_version)
+			ping_agent_args->protocol_version =
+				node_ptr->protocol_version;
 		hostlist_push_host(ping_agent_args->hostlist, node_ptr->name);
 		ping_agent_args->node_count++;
 	}
