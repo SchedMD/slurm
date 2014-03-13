@@ -21,49 +21,39 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-# CODE-OCEC-09-009. All rights reserved.
-#
-############################################################################
-# Purpose: Test of SLURM functionality
-#	   sbatch script that sruns a program that forks a process
-#                 and creates a thread to test scontrol listpids
-#
-#  Bull Test Suite -- Written by Rod Schultz <rod.schultz@bull.com>
-#  Copyright (C) 2012 Bull S. A. S.
-#		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
-#  This program is free software; you can redistribute it and/or modify it
-#  under the terms of the GNU General Public License as published by
-#  the Free Software Foundation version 2 of the License.
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#  See the GNU General Public License for more details.
-#  You should have received a copy of the GNU General Public License along
-#  with this program; if not, write to the Free Software Foundation, Inc.,
-#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-#
 ############################################################################
 source ./globals_accounting
 
 set test_id     "test21.31"
 set exit_code   0
+set tc2		slurm_test-cluster-2
 set nm		name
 set sr		res
 set sr1		[format "%s%s" $test_id "res_1"]
+set sr2		[format "%s%s" $test_id "res_2"]
+set sr3		[format "%s%s" $test_id "res_3"]
 set rs		-1
 set dsc		description
 set dsc1	sr1
+set dsc2	"sr2&sr3"
 set cnt		count
 set cnt1	80
-set cnt2	50
+set cnt1a	50
+set cnt2	100
 set man		manager
 set man1	manager_1
 set man2	manager_2
 set ser		server
 set ser1	server_1
 set ser2	server_2
+set clu		clusters
 set typ		type
 set typ1	license
+set typ2	license
+set all		percentallowed
+set all1	50
+set ect1	40
+set ect1a	25
 set access_err  0
 
 print_header $test_id
@@ -83,15 +73,31 @@ if { [test_account_storage] == 0 } {
 #	exit 0
 #}
 
-# verify a clean system license entity and permission to do this work
-remove_res "$sr1"
+# verify a clean system and permission to do this work
+remove_cluster "$tc2"
+remove_res "$sr1,rs3,rsr3"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
 
-#add system license
-spawn $sacctmgr -i add res $nm=$sr1 $dsc=$dsc1 $cnt=$cnt1 $man=$man1 $ser=$ser1 $typ=$typ1
+#
+#add cluster
+#
+incr exit_code [add_cluster "$tc2" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	exit $exit_code
+}
+
+#
+# get name of this cluster
+#
+set cluster [get_cluster_name]
+
+#
+#add a global resource designating multiple clusters
+#
+set my_pid [spawn $sacctmgr -i add res $nm=$sr1 $dsc=$dsc1 $cnt=$cnt1 $man=$man1 $ser=$ser1 $typ=$typ1 $clu=$cluster,$tc2 $all=$all1]
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
@@ -102,22 +108,23 @@ expect {
 	}
 }
 
-# Use sacctmgr list to verify the test server resurce fields
+#
+# Use sacctmgr list to verify the test global resource fields
 #
 set matches 0
 set my_pid [spawn $sacctmgr -n -p list res $sr1 format="$nm,$cnt,$man,$ser,$dsc" ]
 expect {
 	-re "No valid entity in list command" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		incr exit_code 1
 	}
 	-re "invalid keyword" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		incr exit_code 1
 	}
 	-re "Unknown condition" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		incr exit_code 1
 	}
 	-re "Unknown field" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -144,9 +151,41 @@ if {$matches != 1} {
 	incr exit_code 1
 }
 
-#modify res
+#
+# use scontrol show lic to verify the cluster license was created
+#
 set matches 0
-set my_pid [eval spawn $sacctmgr -i mod res where $nm=$sr1 set $cnt=$cnt2 $man=$man2 $ser=$ser2]
+set my_pid [eval spawn $scontrol show lic]
+expect {
+	-re "LicenseName=($sr1@$ser1)" {
+		incr matches
+		exp_continue
+	}
+	-re "Total=($alpha_numeric_under)" {
+		if {[string compare $expect_out(1,string) $ect1] == 0} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 2} {
+	send_user "\n\n lic matches is $matches.\n\n"
+	send_user "\nFAILURE:  lic show not working.\n"
+	incr exit_code 1
+}
+
+#
+#modify res
+#
+set matches 0
+set my_pid [eval spawn $sacctmgr -i mod res where $nm=$sr1 set $cnt=$cnt1a]
 expect {
 	-re "No valid entity in list command" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -168,7 +207,7 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "Modified server resource ..." {
+	-re " Modified server resource ..." {
 		incr matches
 		exp_continue
 	}
@@ -194,11 +233,11 @@ if {$matches != 1} {
 # Use sacctmgr list to verify the test res fields
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list res $sr1 format="$nm,$cnt,$ser,$man,$dsc" ]
+set my_pid [spawn $sacctmgr -n -p list res $sr1 format="$nm,$cnt,$man,$ser,$dsc" ]
 expect {
 	-re "No valid entity in list command" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		incr exit_code 1
 	}
 	-re "invalid keyword" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -212,7 +251,7 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($sr1.$cnt2.$ser1.$man2.$dsc1)" {
+	-re "($sr1.$cnt1a.$man1.$ser1.$dsc1)" {
 		incr matches
 		exp_continue
 	}
@@ -233,9 +272,130 @@ if {$matches != 1} {
 	incr exit_code 1
 }
 
+#
+# use scontrol to verify the modified cluster license
+#
+set matches 0
+set my_pid [eval spawn $scontrol show lic $sr1@$ser1]
+expect {
+	-re "LicenseName=($sr1@$ser1)" {
+		incr matches
+		exp_continue
+	}
+	-re "Total=($alpha_numeric_under)" {
+		if {[string compare $expect_out(1,string) $ect1a] == 0} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 2} {
+	send_user "\n\n lic matches is $matches.\n\n"
+	send_user "\nFAILURE:  scontrol show lic not working.\n"
+	incr exit_code 1
+}
+
+#
+# remove resource
+#
+incr exit_code [remove_res $sr1]
+
+#
+# use scontrol to verify cluster license was removed
+#
+set matches 0
+set my_pid [eval spawn $scontrol show lic]
+expect {
+	-re "LicenseName=($sr1@$ser1)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 0} {
+	send_user "\n\n lic matches is $matches.\n\n"
+	send_user "\nFAILURE:  scontrol show lic not working.\n"
+	incr exit_code 1
+}
+
+#
+#add multiple global resources in a single call
+#
+spawn $sacctmgr -i add res $nm="$sr2,$sr3" $dsc=$dsc2 $cnt=$cnt2 $man=$man2 $ser=$ser2 $typ=$typ2
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Use sacctmgr list to verify both global resources were added
+#
+set matches 0
+set my_pid [spawn $sacctmgr -n -p list res format="$nm,$cnt,$ser,$man,$dsc" ]
+expect {
+	-re "No valid entity in list command" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		incr exit_code 1
+	}
+	-re "invalid keyword" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		incr exit_code 1
+	}
+	-re "Unknown condition" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		incr exit_code 1
+	}
+	-re "Unknown field" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		incr exit_code 1
+	}
+	-re "($sr2.$cnt2.$ser2.$man2.$dsc2)" {
+		incr matches
+		exp_continue
+	}
+	-re "($sr3.$cnt2.$ser2.$man2.$dsc2)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list res not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	send_user "\n\n Resource matches is $matches.\n\n"
+	send_user "\nFAILURE:  Resource field incorrect.\n"
+	send_user "\nFAILURE: sacctmgr list res not responding\n"
+	incr exit_code 1
+}
+
 # Next is clean up and the end
 
-incr exit_code [remove_res $sr1]
+incr exit_code [remove_res $sr2,$sr3]
+incr exit_code [remove_cluster $tc2]
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
