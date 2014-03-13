@@ -131,9 +131,9 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 #define NRT_MAX_ADAPTERS (NRT_MAX_ADAPTERS_PER_TYPE * NRT_MAX_ADAPTER_TYPES)
 #define NRT_MAX_PROTO_CNT	20
 
-/* Change NRT_STATE_VERSION value when changing the state save format. The
- *"NRT" prefix distinguishes this from other possible switch state files */
-#define NRT_STATE_VERSION      "NRT001"
+/* Use slurm protocol version as a global version number.
+ */
+#define NRT_STATE_VERSION      "PROTOCOL_VERSION"
 
 pthread_mutex_t		global_lock = PTHREAD_MUTEX_INITIALIZER;
 extern bool		nrt_need_state_save;
@@ -1026,7 +1026,7 @@ _add_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 	}
 	if (free_block == NULL) {
 		xrealloc(adapter->block_list,
-			 sizeof(slurm_nrt_block_t) * 
+			 sizeof(slurm_nrt_block_t) *
 				 (adapter->block_count + 8));
 		free_block = adapter->block_list + adapter->block_count;
 		adapter->block_count += 8;
@@ -1874,9 +1874,9 @@ _print_load_table(nrt_cmd_load_table_t *load_table)
 	info("  job_name: %s", table_info->job_name);
 	info("  protocol_name: %s", table_info->protocol_name);
 	info("  use_bulk_transfer: %hu", (int)table_info->use_bulk_transfer);
-	info("  bulk_transfer_resources: %u", 
+	info("  bulk_transfer_resources: %u",
 	     table_info->bulk_transfer_resources);
-	info("  immed_send_slots_per_win: %u", 
+	info("  immed_send_slots_per_win: %u",
 	     table_info->immed_send_slots_per_win);
 	info("  num_cau_indexes: %u", table_info->num_cau_indexes);
 	if (table_info->is_user_space)
@@ -2087,7 +2087,7 @@ static int _get_my_id(void)
 /* Load the minimum usable window ID on a given adapater.
  *
  * NOTES: Bill LePera, IBM: Out of 256 windows on each HFI device, the first
- * 4 are reserved for the HFI device driver's use. Next are the dynamic windows 
+ * 4 are reserved for the HFI device driver's use. Next are the dynamic windows
  * (default 32), followed by the windows available to be scheduled by PNSD
  * and the job schedulers. This is why the output of nrt_status shows the
  * first window number reported as 36. */
@@ -4127,6 +4127,7 @@ _pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer, uint16_t protocol_version)
 
 	offset = get_buf_offset(buffer);
 	packstr(NRT_STATE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack32(lp->magic, buffer);
 	pack32(lp->node_count, buffer);
 	for (i = 0; i < lp->node_count; i++)
@@ -4171,7 +4172,7 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, NRT_STATE_VERSION))
-			protocol_version = SLURM_PROTOCOL_VERSION;
+			safe_unpack16(&protocol_version, buffer);
 	}
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("******************************************************");

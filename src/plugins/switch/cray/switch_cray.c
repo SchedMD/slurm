@@ -95,7 +95,7 @@
 #define SWITCH_BUF_SIZE (PORT_CNT + 128)
 
 #ifdef HAVE_NATIVE_CRAY
-#define SWITCH_CRAY_STATE_VERSION "CRAY_SW_VER1"
+#define SWITCH_CRAY_STATE_VERSION "PROTOCOL_VERSION"
 static uint8_t port_resv[PORT_CNT];
 static uint32_t last_alloc_port = MAX_PORT - MIN_PORT;
 #endif
@@ -255,7 +255,7 @@ static void _state_read_buf(Buf buffer)
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, SWITCH_CRAY_STATE_VERSION))
-			protocol_version = SLURM_PROTOCOL_VERSION;
+			safe_unpack(&protocol_version, buffer)
 	}
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("*******************************************************");
@@ -292,6 +292,7 @@ static void _state_write_buf(Buf buffer)
 	int i;
 
 	packstr(SWITCH_CRAY_STATE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack32((uint32_t) MIN_PORT, buffer);
 	pack32((uint32_t) MAX_PORT, buffer);
 	pack32(last_alloc_port, buffer);

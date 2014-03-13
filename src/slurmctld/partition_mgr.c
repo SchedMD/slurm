@@ -72,7 +72,7 @@
 
 
 /* Change PART_STATE_VERSION value when changing the state save format */
-#define PART_STATE_VERSION        "VER004"
+#define PART_STATE_VERSION        "PROTOCOL_VERSION"
 #define PART_14_03_STATE_VERSION  "VER004"	/* SLURM version 14.03 */
 #define PART_2_6_STATE_VERSION    "VER004"	/* SLURM version 2.6 */
 #define PART_2_5_STATE_VERSION    "VER003"	/* SLURM version 2.5 */
@@ -333,6 +333,7 @@ int dump_all_part_state(void)
 	START_TIMER;
 	/* write header: time */
 	packstr(PART_STATE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
 	/* write partition records to buffer */
@@ -539,7 +540,7 @@ int load_all_part_state(void)
 	debug3("Version string in part_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, PART_STATE_VERSION)) {
-			protocol_version = SLURM_PROTOCOL_VERSION;
+			safe_unpack16(&protocol_version, buffer);
 		} else if (!strcmp(ver_str, PART_2_5_STATE_VERSION)) {
 			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 		}

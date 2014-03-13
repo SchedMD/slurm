@@ -119,8 +119,9 @@ typedef enum {
 #define MAX_PTHREAD_RETRIES  1
 
 /* Change CRAY_STATE_VERSION value when changing the state save
- * format i.e. state_safe() */
-#define CRAY_STATE_VERSION      "VER001"
+ * format i.e. state_safe()
+ */
+#define CRAY_STATE_VERSION "PROTOCOL_VERSION"
 
 #define GET_BLADE_X(_X) \
 	(int16_t)((_X & 0x0000ffff00000000) >> 32)
@@ -1104,6 +1105,7 @@ extern int select_p_state_save(char *dir_name)
 	START_TIMER;
 	/* write header: time */
 	packstr(CRAY_STATE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 
 	slurm_mutex_lock(&blade_mutex);
 
@@ -1230,7 +1232,7 @@ extern int select_p_state_restore(char *dir_name)
 	debug3("Version string in blade_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, CRAY_STATE_VERSION)) {
-			protocol_version = SLURM_PROTOCOL_VERSION;
+			safe_unpack16(&protocol_version, buffer);
 		}
 	}
 

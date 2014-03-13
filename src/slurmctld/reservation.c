@@ -92,7 +92,7 @@
 /* Change RESV_STATE_VERSION value when changing the state save format
  * Add logic to permit reading of the previous version's state in order
  * to avoid losing reservations between releases major SLURM updates. */
-#define RESV_STATE_VERSION          "VER004"
+#define RESV_STATE_VERSION          "PROTOCOL_VERSION"
 #define RESV_14_03_STATE_VERSION    "VER004"	/* SLURM version 14.03 */
 #define RESV_2_6_STATE_VERSION      "VER004"	/* SLURM version 2.6 */
 #define RESV_2_5_STATE_VERSION      "VER004"	/* SLURM version 2.5 */
@@ -1544,7 +1544,7 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 		if (!bit_overlap(resv_ptr->node_bitmap, node_bitmap))
 			continue;	/* no overlap */
 		if (!resv_ptr->full_nodes)
-			continue;	
+			continue;
 
 		for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
 			s_time1 = start_time;
@@ -1843,8 +1843,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					goto bad_parse;
 				}
 #if _DEBUG
-				info("Requesting %d cores for node_list %d", 
-				     resv_desc_ptr->core_cnt[nodeinx], 
+				info("Requesting %d cores for node_list %d",
+				     resv_desc_ptr->core_cnt[nodeinx],
 				     nodeinx);
 #endif
 				nodeinx++;
@@ -1852,7 +1852,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = _select_nodes(resv_desc_ptr, &part_ptr,
 					   &node_bitmap, &core_bitmap);
 			if (rc != SLURM_SUCCESS)
-				goto bad_parse; 
+				goto bad_parse;
 		}
 	} else if (((resv_desc_ptr->node_cnt == NULL) ||
 		    (resv_desc_ptr->node_cnt[0] == 0)) &&
@@ -2487,6 +2487,7 @@ extern int dump_all_resv_state(void)
 
 	/* write header: time */
 	packstr(RESV_STATE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack32(top_suffix, buffer);
 
@@ -2852,7 +2853,7 @@ extern int load_all_resv_state(int recover)
 	debug3("Version string in resv_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, RESV_STATE_VERSION))
-			protocol_version = SLURM_PROTOCOL_VERSION;
+			safe_unpack16(&protocol_version, buffer);
 		else if (!strcmp(ver_str, RESV_2_6_STATE_VERSION))
 			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
 		else if (!strcmp(ver_str, RESV_2_5_STATE_VERSION))

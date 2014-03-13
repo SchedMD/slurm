@@ -105,7 +105,7 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION       "VER015"
+#define JOB_STATE_VERSION       "PROTOCOL_VERSION"
 #define JOB_14_03_STATE_VERSION "VER015"	/* SLURM version 14.03 */
 #define JOB_2_6_STATE_VERSION   "VER014"	/* SLURM version 2.6 */
 #define JOB_2_5_STATE_VERSION   "VER013"	/* SLURM version 2.5 */
@@ -451,6 +451,7 @@ int dump_all_job_state(void)
 	START_TIMER;
 	/* write header: version, time */
 	packstr(JOB_STATE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(now, buffer);
 
 	if (slurmctld_conf.min_job_age > 0)
@@ -643,7 +644,7 @@ extern int load_all_job_state(void)
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, JOB_STATE_VERSION))
-			protocol_version = SLURM_PROTOCOL_VERSION;
+			safe_unpack16(&protocol_version, buffer);
 		else if (!strcmp(ver_str, JOB_2_6_STATE_VERSION))
 			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
 		else if (!strcmp(ver_str, JOB_2_5_STATE_VERSION))
@@ -4844,7 +4845,7 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp);
-	
+
 	return valid;
 }
 

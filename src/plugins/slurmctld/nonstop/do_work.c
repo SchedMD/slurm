@@ -78,8 +78,9 @@
 #define NONSTOP_EVENT_PERIOD	10
 #define NONSTOP_SAVE_PERIOD	60
 
-/* Change NONSTOP_STATE_VERSION value when changing the state save format */
-#define NONSTOP_STATE_VERSION      "VER001"
+/* Change NONSTOP_STATE_VERSION value when changing the state save format
+ */
+#define NONSTOP_STATE_VERSION      "PROTOCOL_VERSION"
 
 #define FAILURE_MAGIC 0x1234beef
 
@@ -296,6 +297,7 @@ extern int save_nonstop_state(void)
 
 	/* write header: version, time */
 	packstr(NONSTOP_STATE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(now, buffer);
 
 	/* write individual job records */
@@ -422,7 +424,7 @@ extern int restore_nonstop_state(void)
 	debug3("Version string in slurmctld/nonstop header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, NONSTOP_STATE_VERSION))
-			protocol_version = SLURM_PROTOCOL_VERSION;
+			safe_unpack16(&protocol_version, buffer);
 	}
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("*************************************************************");
