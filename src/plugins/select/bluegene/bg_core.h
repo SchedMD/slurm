@@ -55,8 +55,6 @@
  * format i.e. pack_block()
  */
 #define BLOCK_STATE_VERSION      "PROTOCOL_VERSION"
-#define BLOCK_2_2_STATE_VERSION  "VER004" /*Slurm 2.2's version*/
-#define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
 
 /* Global variables */
 /* extern bg_config_t *bg_conf; */

@@ -696,7 +696,8 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	if (ver_str) {
 		if (!strcmp(ver_str, BLOCK_STATE_VERSION)) {
 			safe_unpack16(&protocol_version, buffer);
-		}
+		} else
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
 	}
 
 	if (protocol_version == (uint16_t)NO_VAL) {
@@ -1333,7 +1334,7 @@ extern int select_p_state_save(char *dir_name)
 	START_TIMER;
 	/* write header: time */
 	packstr(BLOCK_STATE_VERSION, buffer);
-	pack16(&SLURM_PROTOCOL_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	block_offset = get_buf_offset(buffer);
 	pack32(blocks_packed, buffer);
 

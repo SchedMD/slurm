@@ -73,7 +73,6 @@
 
 /* Change PART_STATE_VERSION value when changing the state save format */
 #define PART_STATE_VERSION        "PROTOCOL_VERSION"
-#define PART_14_03_STATE_VERSION  "VER004"	/* SLURM version 14.03 */
 #define PART_2_6_STATE_VERSION    "VER004"	/* SLURM version 2.6 */
 #define PART_2_5_STATE_VERSION    "VER003"	/* SLURM version 2.5 */
 
@@ -541,6 +540,8 @@ int load_all_part_state(void)
 	if (ver_str) {
 		if (!strcmp(ver_str, PART_STATE_VERSION)) {
 			safe_unpack16(&protocol_version, buffer);
+		} else if (!strcmp(ver_str, PART_2_6_STATE_VERSION)) {
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, PART_2_5_STATE_VERSION)) {
 			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 		}

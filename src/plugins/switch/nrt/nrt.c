@@ -4173,6 +4173,8 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	if (ver_str) {
 		if (!strcmp(ver_str, NRT_STATE_VERSION))
 			safe_unpack16(&protocol_version, buffer);
+		else
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
 	}
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("******************************************************");
