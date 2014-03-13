@@ -244,27 +244,19 @@ extern int switch_p_reconfig(void)
 #ifdef HAVE_NATIVE_CRAY
 static void _state_read_buf(Buf buffer)
 {
-	char *ver_str = NULL;
-	uint32_t ver_str_len;
 	uint16_t protocol_version = (uint16_t) NO_VAL;
 	uint32_t min_port, max_port;
 	int i;
 
 	/* Validate state version */
-	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-	debug3("Version string in job_state header is %s", ver_str);
-	if (ver_str) {
-		if (!strcmp(ver_str, SWITCH_CRAY_STATE_VERSION))
-			safe_unpack16(&protocol_version, buffer);
-	}
+	safe_unpack16(&protocol_version, buffer);
+	debug3("Version in switch_cray header is %s", protocol_version);
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("*******************************************************");
 		error("Can not recover switch/cray state, incompatible version");
 		error("*******************************************************");
-		xfree(ver_str);
 		return;
 	}
-	xfree(ver_str);
 
 	safe_unpack32(&min_port, buffer);
 	safe_unpack32(&max_port, buffer);
@@ -291,7 +283,6 @@ static void _state_write_buf(Buf buffer)
 {
 	int i;
 
-	packstr(SWITCH_CRAY_STATE_VERSION, buffer);
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack32((uint32_t) MIN_PORT, buffer);
 	pack32((uint32_t) MAX_PORT, buffer);

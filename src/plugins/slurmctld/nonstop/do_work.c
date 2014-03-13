@@ -78,10 +78,6 @@
 #define NONSTOP_EVENT_PERIOD	10
 #define NONSTOP_SAVE_PERIOD	60
 
-/* Change NONSTOP_STATE_VERSION value when changing the state save format
- */
-#define NONSTOP_STATE_VERSION      "PROTOCOL_VERSION"
-
 #define FAILURE_MAGIC 0x1234beef
 
 /* Record of job's node failures */
@@ -296,7 +292,6 @@ extern int save_nonstop_state(void)
 	int log_fd;
 
 	/* write header: version, time */
-	packstr(NONSTOP_STATE_VERSION, buffer);
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(now, buffer);
 
@@ -374,8 +369,8 @@ extern int save_nonstop_state(void)
  */
 extern int restore_nonstop_state(void)
 {
-	char *dir_path, *state_file, *ver_str = NULL;
-	uint32_t ver_str_len, data_allocated, data_size = 0, data_read;
+	char *dir_path, *state_file;
+	uint32_t data_allocated, data_size = 0, data_read;
 	uint32_t job_cnt = 0;
 	char *data;
 	uint16_t protocol_version = (uint16_t) NO_VAL;
@@ -420,21 +415,16 @@ extern int restore_nonstop_state(void)
 
 	/* Validate state version */
 	buffer = create_buf(data, data_size);
-	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-	debug3("Version string in slurmctld/nonstop header is %s", ver_str);
-	if (ver_str) {
-		if (!strcmp(ver_str, NONSTOP_STATE_VERSION))
-			safe_unpack16(&protocol_version, buffer);
-	}
+	safe_unpack16(&protocol_version, buffer);
+	debug3("Version in slurmctld/nonstop header is %u", protocol_version);
+
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("*************************************************************");
 		error("Can not recover slurmctld/nonstop state, incompatible version");
 		error("*************************************************************");
-		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
 	}
-	xfree(ver_str);
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32(&job_cnt, buffer);
 	pthread_mutex_lock(&job_fail_mutex);

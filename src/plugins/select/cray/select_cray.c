@@ -118,11 +118,6 @@ typedef enum {
 #define NODEINFO_MAGIC 0x85ad
 #define MAX_PTHREAD_RETRIES  1
 
-/* Change CRAY_STATE_VERSION value when changing the state save
- * format i.e. state_safe()
- */
-#define CRAY_STATE_VERSION "PROTOCOL_VERSION"
-
 #define GET_BLADE_X(_X) \
 	(int16_t)((_X & 0x0000ffff00000000) >> 32)
 #define GET_BLADE_Y(_X) \
@@ -1104,7 +1099,6 @@ extern int select_p_state_save(char *dir_name)
 	debug("cray: select_p_state_save");
 	START_TIMER;
 	/* write header: time */
-	packstr(CRAY_STATE_VERSION, buffer);
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 
 	slurm_mutex_lock(&blade_mutex);
@@ -1181,8 +1175,6 @@ extern int select_p_state_restore(char *dir_name)
 	char *data = NULL;
 	int data_size = 0;
 	int data_allocated, data_read = 0;
-	char *ver_str = NULL;
-	uint32_t ver_str_len;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 	uint32_t record_count;
 
@@ -1228,24 +1220,17 @@ extern int select_p_state_restore(char *dir_name)
 	xfree(state_file);
 
 	buffer = create_buf(data, data_size);
-	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-	debug3("Version string in blade_state header is %s", ver_str);
-	if (ver_str) {
-		if (!strcmp(ver_str, CRAY_STATE_VERSION)) {
-			safe_unpack16(&protocol_version, buffer);
-		}
-	}
+	safe_unpack16(&protocol_version, buffer);
+	debug3("Version in blade_state header is %u", protocol_version);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
 		error("***********************************************");
 		error("Can not recover blade state, "
 		      "data version incompatible");
 		error("***********************************************");
-		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
 	}
-	xfree(ver_str);
 
 	slurm_mutex_lock(&blade_mutex);
 
