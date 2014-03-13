@@ -6080,6 +6080,9 @@ static int _list_find_job_old(void *job_entry, void *key)
 		return 0;       /* Job still completing */
 	}
 
+	if (job_ptr->epilog_running)
+		return 0;       /* EpilogSlurmctld still running */
+
 	if (slurmctld_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
 
@@ -6107,6 +6110,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	*/
 	if (with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
 	return 1;		/* Purge the job */
 }
 

@@ -2239,6 +2239,7 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 	slurm_attr_init(&thread_attr_epilog);
 	pthread_attr_setdetachstate(&thread_attr_epilog,
 				    PTHREAD_CREATE_DETACHED);
+	job_ptr->epilog_running = true;
 	while (1) {
 		rc = pthread_create(&thread_id_epilog,
 				    &thread_attr_epilog,
@@ -2251,6 +2252,7 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 			continue;
 		error("pthread_create: %m");
 		slurm_attr_destroy(&thread_attr_epilog);
+		job_ptr->epilog_running = false;
 		return errno;
 	}
 }
@@ -2348,6 +2350,10 @@ static char **_build_env(struct job_record *job_ptr)
 
 static void *_run_epilog(void *arg)
 {
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	struct job_record *job_ptr;
 	epilog_arg_t *epilog_arg = (epilog_arg_t *) arg;
 	pid_t cpid;
 	int i, status, wait_rc;
@@ -2393,7 +2399,12 @@ static void *_run_epilog(void *arg)
 		       epilog_arg->job_id);
 	}
 
- fini:	xfree(epilog_arg->epilog_slurmctld);
+ fini:	lock_slurmctld(job_read_lock);
+	job_ptr = find_job_record(epilog_arg->job_id);
+	if (job_ptr)
+		job_ptr->epilog_running = false;
+	unlock_slurmctld(job_read_lock);
+	xfree(epilog_arg->epilog_slurmctld);
 	for (i=0; epilog_arg->my_env[i]; i++)
 		xfree(epilog_arg->my_env[i]);
 	xfree(epilog_arg->my_env);

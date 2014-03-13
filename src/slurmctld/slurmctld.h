@@ -537,6 +537,7 @@ struct job_record {
 					 * change the priority any further. */
 	time_t end_time;		/* time of termination,
 					 * actual or expected */
+	bool epilog_running;		/* true of EpilogSlurmctld is running */
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
