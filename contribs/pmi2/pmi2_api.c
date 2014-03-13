@@ -1973,7 +1973,7 @@ _connect_to_stepd(int s)
     memset(&addr, 0, sizeof(struct sockaddr_un));
 
     addr.sun_family = AF_UNIX;
-    sprintf(addr.sun_path, usock);
+    sprintf(addr.sun_path, "%s", usock);
 
     if (connect(cc, (struct sockaddr *)&addr,
 		sizeof(struct sockaddr_un)) != 0) {
