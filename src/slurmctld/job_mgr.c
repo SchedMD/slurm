@@ -110,7 +110,7 @@
 #define JOB_2_6_STATE_VERSION   "VER014"	/* SLURM version 2.6 */
 #define JOB_2_5_STATE_VERSION   "VER013"	/* SLURM version 2.5 */
 
-#define JOB_CKPT_VERSION      "JOB_CKPT_002"
+#define JOB_CKPT_VERSION      "PROTOCOL_VERSION"
 #define JOB_2_2_CKPT_VERSION  "JOB_CKPT_002"	/* SLURM version 2.2 */
 #define JOB_2_1_CKPT_VERSION  "JOB_CKPT_001"	/* SLURM version 2.1 */
 
@@ -743,7 +743,7 @@ extern int load_last_job_id( void )
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str) {
 		if (!strcmp(ver_str, JOB_STATE_VERSION))
-			protocol_version = SLURM_PROTOCOL_VERSION;
+			safe_unpack16(&protocol_version, buffer);
 		else if (!strcmp(ver_str, JOB_2_6_STATE_VERSION))
 			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
 		else if (!strcmp(ver_str, JOB_2_5_STATE_VERSION))
@@ -11180,6 +11180,7 @@ static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
 
 	/* save version string */
 	packstr(JOB_CKPT_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 
 	/* save checkpoint image directory */
 	packstr(image_dir, buffer);
@@ -11473,9 +11474,10 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd
 	safe_unpackstr_xmalloc(&ver_str, &tmp_uint32, buffer);
 	debug3("Version string in job_ckpt header is %s", ver_str);
 	if (ver_str) {
-		if (!strcmp(ver_str, JOB_CKPT_VERSION)) {
-			ckpt_version = SLURM_PROTOCOL_VERSION;
-		}
+		if (!strcmp(ver_str, JOB_CKPT_VERSION))
+			safe_unpack16(&ckpt_version, buffer);
+		else
+			ckpt_version = SLURM_2_6_PROTOCOL_VERSION;
 	}
 
 	if (ckpt_version == (uint16_t)NO_VAL) {
