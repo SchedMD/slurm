@@ -250,7 +250,7 @@ static void _state_read_buf(Buf buffer)
 
 	/* Validate state version */
 	safe_unpack16(&protocol_version, buffer);
-	debug3("Version in switch_cray header is %s", protocol_version);
+	debug3("Version in switch_cray header is %u", protocol_version);
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("*******************************************************");
 		error("Can not recover switch/cray state, incompatible version");
