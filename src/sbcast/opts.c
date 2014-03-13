@@ -227,7 +227,7 @@ static void _print_options( void )
 
 static void _usage( void )
 {
-	printf("Usage: sbcast [-CfFpvV] SOURCE DEST\n");
+	printf("Usage: sbcast [-CfFjpvV] SOURCE DEST\n");
 }
 
 static void _help( void )
