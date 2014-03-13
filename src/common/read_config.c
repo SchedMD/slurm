@@ -3103,14 +3103,22 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
 		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
 	else if (conf->msg_timeout > 100) {
-		info("WARNING: MessageTimeout is too high for effective "
-			"fault-tolerance");
+		if (getuid() == 0) {
+			info("WARNING: MessageTimeout is too high for "
+				"effective fault-tolerance");
+		} else {
+			debug("WARNING: MessageTimeout is too high for "
+				"effective fault-tolerance");
+		}
 	}
 
 	if (!s_p_get_uint16(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;
 	else if (conf->min_job_age < 2) {
-		info("WARNING: MinJobAge must be at least 2");
+		if (getuid() == 0)
+			info("WARNING: MinJobAge must be at least 2");
+		else
+			debug("WARNING: MinJobAge must be at least 2");
 		conf->min_job_age = 2;
 	}
 
