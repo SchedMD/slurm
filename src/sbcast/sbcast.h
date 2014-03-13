@@ -53,6 +53,7 @@ struct sbcast_parameters {
 	bool compress;
 	int  fanout;
 	bool force;
+	uint32_t jobid;
 	bool preserve;
 	int  timeout;
 	int  verbose;

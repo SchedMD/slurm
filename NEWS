@@ -44,6 +44,7 @@ documents those changes that are of interest to users and admins.
     (slurmstepd) instead of using the provided PMI_FD socket.
  -- Modify squeue to support filter on job states Special_Exit and Resizing.
  -- Defer purging job record until after EpilogSlurmctld completes.
+ -- Add -j option for jobid to sbcast.
 
 * Changes in Slurm 14.03.0pre6
 ==============================

@@ -83,6 +83,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"compress",  no_argument,       0, 'C'},
 		{"fanout",    required_argument, 0, 'F'},
 		{"force",     no_argument,       0, 'f'},
+		{"jobid",     required_argument, 0, 'j'},
 		{"preserve",  no_argument,       0, 'p'},
 		{"size",      required_argument, 0, 's'},
 		{"timeout",   required_argument, 0, 't'},
@@ -99,6 +100,9 @@ extern void parse_command_line(int argc, char *argv[])
 		params.fanout = atoi(env_val);
 	if (getenv("SBCAST_FORCE"))
 		params.force = true;
+
+	params.jobid = NO_VAL;
+
 	if (getenv("SBCAST_PRESERVE"))
 		params.preserve = true;
 	if ( ( env_val = getenv("SBCAST_SIZE") ) )
@@ -107,7 +111,7 @@ extern void parse_command_line(int argc, char *argv[])
 		params.timeout = (atoi(env_val) * 1000);
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "CfF:ps:t:vV",
+	while((opt_char = getopt_long(argc, argv, "CfF:j:ps:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -124,6 +128,8 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int)'F':
 			params.fanout = atoi(optarg);
 			break;
+		case (int)'j':
+			params.jobid = atol(optarg);
 		case (int)'p':
 			params.preserve = true;
 			break;
@@ -153,6 +159,16 @@ extern void parse_command_line(int argc, char *argv[])
 			(argc - optind));
 		fprintf(stderr, "Try \"sbcast --help\" for more information\n");
 		exit(1);
+	}
+
+	if (params.jobid == NO_VAL) {
+		if (!(env_val = getenv("SLURM_JOB_ID"))) {
+			error("Need a job id to run this command.  "
+			      "Run from within a Slurm job or use the "
+			      "--jobid option.");
+			exit(1);
+		}
+		params.jobid = (uint32_t) atol(env_val);
 	}
 
 	params.src_fname = xstrdup(argv[optind]);
@@ -199,6 +215,7 @@ static void _print_options( void )
 	info("compress   = %s", params.compress ? "true" : "false");
 	info("force      = %s", params.force ? "true" : "false");
 	info("fanout     = %d", params.fanout);
+	info("jobid      = %u", params.jobid);
 	info("preserve   = %s", params.preserve ? "true" : "false");
 	info("timeout    = %d", params.timeout);
 	info("verbose    = %d", params.verbose);
@@ -220,6 +237,7 @@ Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -C, --compress      compress the file being transmitted\n\
   -f, --force         replace destination file as required\n\
   -F, --fanout=num    specify message fanout\n\
+  -j, --jobid=num     specify jobid, unneeded if ran inside allocation\n\
   -p, --preserve      preserve modes and times of source file\n\
   -s, --size=num      block size in bytes (rounded off)\n\
   -t, --timeout=secs  specify message timeout (seconds)\n\

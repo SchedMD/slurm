@@ -126,20 +126,13 @@ int main(int argc, char *argv[])
 /* get details about this slurm job: jobid and allocated node */
 static void _get_job_info(void)
 {
-	char *jobid_str;
-	uint32_t jobid;
+	xassert(params.jobid != NO_VAL);
 
-	jobid_str = getenv("SLURM_JOB_ID");
-	if (!jobid_str) {
-		error("Command only valid from within SLURM job");
-		exit(1);
-	}
-	jobid = (uint32_t) atol(jobid_str);
-	verbose("jobid      = %u", jobid);
+	verbose("jobid      = %u", params.jobid);
 
-	if (slurm_sbcast_lookup(jobid, &sbcast_cred) != SLURM_SUCCESS) {
-		error("SLURM jobid %u lookup error: %s",
-		      jobid, slurm_strerror(slurm_get_errno()));
+	if (slurm_sbcast_lookup(params.jobid, &sbcast_cred) != SLURM_SUCCESS) {
+		error("Slurm jobid %u lookup error: %s",
+		      params.jobid, slurm_strerror(slurm_get_errno()));
 		exit(1);
 	}
 
