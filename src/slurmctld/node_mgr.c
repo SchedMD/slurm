@@ -428,7 +428,6 @@ extern int load_all_node_state ( bool state_only )
 			       node_name);
 		} else if (state_only) {
 			uint16_t orig_flags;
-			node_cnt++;
 			if (IS_NODE_CLOUD(node_ptr)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWER_SAVE) ||
@@ -512,7 +511,6 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->gres_list	= gres_list;
 			gres_list		= NULL;	/* Nothing to free */
 		} else {
-			node_cnt++;
 			if ((!power_save_mode) &&
 			    ((node_state & NODE_STATE_POWER_SAVE) ||
  			     (node_state & NODE_STATE_POWER_UP))) {
@@ -562,6 +560,7 @@ extern int load_all_node_state ( bool state_only )
 		}
 
 		if (node_ptr) {
+			node_cnt++;
 			if (obj_protocol_version != (uint16_t)NO_VAL)
 				node_ptr->protocol_version =
 					obj_protocol_version;

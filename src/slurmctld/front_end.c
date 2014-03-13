@@ -875,7 +875,6 @@ extern int load_all_front_end_state(bool state_only)
 			uint16_t orig_flags;
 			orig_flags = front_end_ptr->node_state &
 				     NODE_STATE_FLAGS;
-			node_cnt++;
 			if (IS_NODE_UNKNOWN(front_end_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					orig_flags &= (~NODE_STATE_COMPLETING);
@@ -898,7 +897,6 @@ extern int load_all_front_end_state(bool state_only)
 				front_end_ptr->reason_uid = reason_uid;
 			}
 		} else {
-			node_cnt++;
 			front_end_ptr->node_state = node_state;
 			xfree(front_end_ptr->reason);
 			front_end_ptr->reason	= reason;
@@ -909,6 +907,7 @@ extern int load_all_front_end_state(bool state_only)
 		}
 
 		if (front_end_ptr) {
+			node_cnt++;
 			if (obj_protocol_version != (uint16_t)NO_VAL)
 				front_end_ptr->protocol_version =
 					obj_protocol_version;
