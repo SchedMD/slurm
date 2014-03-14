@@ -2060,14 +2060,6 @@ static bool _opt_verify(void)
 					hostlist_ranged_string_xmalloc(hl);
 			}
 		}
-		if ((opt.ntasks_per_node != NO_VAL) &&
-		    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))&&
-		    (opt.ntasks != (opt.min_nodes * opt.ntasks_per_node))) {
-			error("task count inconsistent with node count and "
-			      "ntasks-per_node (%d != %d x %d).",
-			      opt.ntasks, opt.min_nodes, opt.ntasks_per_node);
-			opt.ntasks = opt.min_nodes * opt.ntasks_per_node;
-		}
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
 
 	if (hl)
