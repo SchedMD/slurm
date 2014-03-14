@@ -546,6 +546,24 @@ extern void trigger_reconfig(void)
 {
 	slurm_mutex_lock(&trigger_mutex);
 	trigger_node_reconfig = true;
+	if (trigger_down_front_end_bitmap)
+		trigger_down_front_end_bitmap = bit_realloc(
+			trigger_down_front_end_bitmap, node_record_count);
+	if (trigger_up_front_end_bitmap)
+		trigger_up_front_end_bitmap = bit_realloc(
+			trigger_up_front_end_bitmap, node_record_count);
+	if (trigger_down_nodes_bitmap)
+		trigger_down_nodes_bitmap = bit_realloc(
+			trigger_down_nodes_bitmap, node_record_count);
+	if (trigger_drained_nodes_bitmap)
+		trigger_drained_nodes_bitmap = bit_realloc(
+			trigger_drained_nodes_bitmap, node_record_count);
+	if (trigger_fail_nodes_bitmap)
+		trigger_fail_nodes_bitmap = bit_realloc(
+			trigger_fail_nodes_bitmap, node_record_count);
+	if (trigger_up_nodes_bitmap)
+		trigger_up_nodes_bitmap = bit_realloc(
+			trigger_up_nodes_bitmap, node_record_count);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 extern void trigger_primary_ctld_fail(void)

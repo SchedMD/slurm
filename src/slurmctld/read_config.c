@@ -782,7 +782,9 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	if ((error_code = _init_all_slurm_conf())) {
 		node_record_table_ptr = old_node_table_ptr;
+		node_record_count = old_node_record_count;
 		part_list = old_part_list;
+		default_part_name = old_def_part_name;
 		return error_code;
 	}
 
