@@ -313,6 +313,9 @@ documents those changes that are of interest to users and admins.
  -- NRT - Change xmalloc's to malloc just to be safe.
  -- NRT - Sanity check to make sure a jobinfo is there before packing.
  -- Add missing options to the print of TaskPluginParam.
+ -- Fix a couple of issues with scontrol reconfig and adding nodes to
+    slurm.conf.  Rebooting daemons after adding nodes to the slurm.conf
+    is highly recommended.
 
 * Changes in Slurm 2.6.6
 ========================
