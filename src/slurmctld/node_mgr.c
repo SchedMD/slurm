@@ -224,8 +224,8 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->real_memory, buffer);
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
-	pack16  (dump_node_ptr->protocol_version, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
+	pack16  (dump_node_ptr->protocol_version, buffer);
 	(void) gres_plugin_node_state_pack(dump_node_ptr->gres_list, buffer,
 					   dump_node_ptr->name);
 }
