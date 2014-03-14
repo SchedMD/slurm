@@ -7491,7 +7491,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
 		safe_unpack16(&uint16, buffer);
-		if (uint16)
+		if (uint16 != (uint16_t)NO_VAL)
 			job_desc_ptr->acctg_freq = xstrdup_printf("%u", uint16);
 		safe_unpack32(&job_desc_ptr->num_tasks,  buffer);
 		safe_unpack16(&job_desc_ptr->ckpt_interval, buffer);
@@ -8461,7 +8461,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack8(&msg->open_mode, buffer);
 		safe_unpack8(&msg->pty, buffer);
 		safe_unpack16(&uint16, buffer);
-		if (uint16)
+		if (uint16 != (uint16_t)NO_VAL)
 			msg->acctg_freq = xstrdup_printf("%u", uint16);
 		safe_unpack32(&msg->cpu_freq, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
