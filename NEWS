@@ -1,7 +1,7 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in Slurm 14.03.0pre7
+* Changes in Slurm 14.03.0rc1
 ==============================
  -- Fixed typos in srun_cr man page.
  -- Run job scheduling logic immediately when nodes enter service.
@@ -261,6 +261,9 @@ documents those changes that are of interest to users and admins.
  -- Proctrack/pgid - Add support for proctrack_p_plugin_get_pids() function.
  -- Sched/backfill - Change default max_job_bf parameter from 50 to 100.
  -- Added -I|--item-extract option to sh5util to extract data item from series.
+
+* Changes in Slurm 2.6.8
+========================
 
 * Changes in Slurm 2.6.7
 ========================
