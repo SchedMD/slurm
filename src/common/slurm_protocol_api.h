@@ -181,12 +181,6 @@ char *slurm_get_mpi_params(void);
  */
 extern uint16_t slurm_get_msg_timeout(void);
 
-/* slurm_api_set_conf_file
- *      set slurm configuration file to a non-default value
- * pathname IN - pathname of slurm configuration file to be used
- */
-extern void slurm_api_set_conf_file(char *pathname);
-
 /* slurm_api_set_default_config
  *	called by the send_controller_msg function to insure that at least
  *	the compiled in default slurm_protocol_config object is initialized
