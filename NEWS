@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.0rc2
 ==============================
+ -- job_submit/lua: Fix invalid memory reference if script returns error message
+    for user.
 
 * Changes in Slurm 14.03.0rc1
 ==============================
