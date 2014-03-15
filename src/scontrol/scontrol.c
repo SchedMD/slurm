@@ -1802,6 +1802,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      reconfigure              re-read configuration files.                 \n\
      release <jobid_list>     permit specified job to start (see hold)     \n\
      requeue <job_id>         re-queue a batch job                         \n\
+     requeuehold <job_id>     re-queue and hold a batch                    \n\
      resume <jobid_list>      resume previously suspended job (see suspend)\n\
      setdebug <level>         set slurmctld debug level                    \n\
      setdebugflags [+|-]<flag>  add or remove slurmctld DebugFlags         \n\
