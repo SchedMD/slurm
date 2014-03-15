@@ -883,7 +883,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 {
 	FILE *f;
 	char *leftover = NULL;
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 	int line_number;
 	int merged_lines;
 	int inc_rc;
@@ -896,9 +896,17 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 	}
 
 	_keyvalue_regex_init();
-	if (stat(filename, &stat_buf) < 0) {
-		info("s_p_parse_file: unable to status file \"%s\"", filename);
-		return SLURM_ERROR;
+	for (i = 0; ; i++) {
+		if (i == 1) {	/* Long once, on first retry */
+			error("s_p_parse_file: unable to status file \"%s\"",
+			      filename);
+		}
+		if (i >= 60)	/* Give up after 60 seconds */
+			return SLURM_ERROR;
+		if (i > 0)
+			sleep(1);
+		if (stat(filename, &stat_buf) >= 0)
+			break;
 	}
 	if (stat_buf.st_size == 0) {
 		info("s_p_parse_file: file \"%s\" is empty", filename);

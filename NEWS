@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- job_submit/lua: Fix invalid memory reference if script returns error message
     for user.
+ -- Add logic to sleep and retry if slurm.conf can't be read.
 
 * Changes in Slurm 14.03.0rc1
 ==============================
