@@ -1689,7 +1689,7 @@ static void _set_pbs_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	char *sep;
-	char *pbs_opt_string = "+a:A:c:C:e:hIj:k:l:m:M:N:o:p:q:r:S:u:v:VW:z";
+	char *pbs_opt_string = "+a:A:c:C:e:hIj::J:k:l:m:M:N:o:p:q:r:S:t:u:v:VW:z";
 
 	struct option pbs_long_options[] = {
 		{"start_time", required_argument, 0, 'a'},
@@ -1700,6 +1700,7 @@ static void _set_pbs_options(int argc, char **argv)
 		{"hold", no_argument, 0, 'h'},
 		{"interactive", no_argument, 0, 'I'},
 		{"join", optional_argument, 0, 'j'},
+		{"job_array", required_argument, 0, 'J'},
 		{"keep", required_argument, 0, 'k'},
 		{"resource_list", required_argument, 0, 'l'},
 		{"mail_options", required_argument, 0, 'm'},
@@ -1710,6 +1711,7 @@ static void _set_pbs_options(int argc, char **argv)
 		{"destination", required_argument, 0, 'q'},
 		{"rerunable", required_argument, 0, 'r'},
 		{"script_path", required_argument, 0, 'S'},
+		{"array", required_argument, 0, 't'},
 		{"running_user", required_argument, 0, 'u'},
 		{"variable_list", required_argument, 0, 'v'},
 		{"all_env", no_argument, 0, 'V'},
@@ -1747,6 +1749,12 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'I':
 			break;
 		case 'j':
+			break;
+		case 'J':
+		case 't':
+			/* PBS Pro uses -J. Torque uses -t. */
+			xfree(opt.array_inx);
+			opt.array_inx = xstrdup(optarg);
 			break;
 		case 'k':
 			break;

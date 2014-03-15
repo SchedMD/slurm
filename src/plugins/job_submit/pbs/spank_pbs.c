@@ -61,6 +61,13 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 		spank_setenv(sp, "PBS_ENVIRONMENT", "PBS_INTERACTIVE", 1);
 #endif
 
+	if (spank_getenv(sp, "SLURM_ARRAY_JOB_ID", val, sizeof(val)) ==
+	    ESPANK_SUCCESS)
+		spank_setenv(sp, "PBS_ARRAY_ID", val, 1);
+	if (spank_getenv(sp, "SLURM_ARRAY_TASK_ID", val, sizeof(val)) ==
+	    ESPANK_SUCCESS)
+		spank_setenv(sp, "PBS_ARRAY_INDEX", val, 1);
+
 	if (getcwd(val, sizeof(val)))
 		spank_setenv(sp, "PBS_JOBDIR", val, 1);
 

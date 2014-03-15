@@ -52,6 +52,7 @@ use English;
 
 my ($start_time,
     $account,
+    $array,
     $err_path,
     $interactive,
     $hold,
@@ -79,6 +80,7 @@ GetOptions('a=s'      => \$start_time,
 	   'I'        => \$interactive,
 	   'j:s'      => sub { warn "option -j is the default, " .
 				    "stdout/stderr go into the same file\n" },
+	   'J=s'      => \$array,
 	   'l=s'      => \$resource_list,
 	   'm=s'      => \$mail_options,
 	   'M=s'      => \$mail_user_list,
@@ -88,6 +90,7 @@ GetOptions('a=s'      => \$start_time,
 	   'q=s'      => \$destination,
 	   'S=s'      => sub { warn "option -S is ignored, " .
 				    "specify shell via #!<shell> in the job script\n" },
+	   't=s'      => \$array,
 	   'v=s'      => \$variable_list,
 	   'V'        => sub { warn "option -V is not necessary, " .
 				    "since the current environment " .
@@ -243,6 +246,7 @@ if($res_opts{walltime}) {
 }
 
 $command .= " --account='$group_list'" if $group_list;
+$command .= " --array='$array'" if $array;
 $command .= " --constraint='$res_opts{proc}'" if $res_opts{proc};
 $command .= " --dependency=$depend"   if $depend;
 $command .= " --tmp=$res_opts{file}"  if $res_opts{file};
