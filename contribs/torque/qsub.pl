@@ -539,6 +539,10 @@ Specify a new path to receive the standard error output for the job.
 
 Interactive execution.
 
+=item B<-J job_array>
+
+Job array index values. The -J and -t options are equivalent.
+
 =item B<-l resource_list>
 
 Specify an additional list of resources to request for the job.
@@ -566,6 +570,10 @@ Specify the priority under which the job should run.
 =item B<-p priority>
 
 Specify the priority under which the job should run.
+
+=item B<-t job_array>
+
+Job array index values. The -J and -t options are equivalent.
 
 =item B<-v> [variable_list]
 
