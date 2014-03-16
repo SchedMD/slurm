@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     reservation, but can not due to busy resources, then do not block all jobs
     in that partition from being scheduled, but only the jobs in that
     reservation.
+ -- Export "SLURM*" environment variables from sbatch even if --export=NONE.
 
 * Changes in Slurm 14.03.0rc1
 ==============================

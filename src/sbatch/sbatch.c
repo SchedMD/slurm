@@ -485,6 +485,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		env_array_merge(&desc->environment, (const char **)environ);
 	} else if (!strcasecmp(opt.export_env, "NONE")) {
 		desc->environment = env_array_create();
+		env_array_merge_slurm(&desc->environment,
+				      (const char **)environ);
 		opt.get_user_env_time = 0;
 	} else {
 		_env_merge_filter(desc);
