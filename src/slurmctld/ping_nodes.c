@@ -126,7 +126,7 @@ void ping_nodes (void)
 					 * limit the number to avoid huge
 					 * communication delays */
 	int i;
-	time_t now, still_live_time, node_dead_time;
+	time_t now, still_live_time, node_dead_time, old_cpu_load_time;
 	static time_t last_ping_time = (time_t) 0;
 	hostlist_t down_hostlist = NULL;
 	char *host_str = NULL;
@@ -169,6 +169,7 @@ void ping_nodes (void)
 				 slurmctld_conf.slurmd_timeout;
 	}
 	still_live_time = now - (slurmctld_conf.slurmd_timeout / 3);
+	old_cpu_load_time = now - (slurmctld_conf.slurmd_timeout;
 	last_ping_time  = now;
 
 	if (max_reg_threads == 0) {
@@ -305,7 +306,8 @@ void ping_nodes (void)
 		}
 
 		if ((!IS_NODE_NO_RESPOND(node_ptr)) &&
-		    (node_ptr->last_response >= still_live_time))
+		    (node_ptr->last_response >= still_live_time) &&
+		    (node_ptr->cpu_load_time >= old_cpu_load_time))
 			continue;
 
 		/* Do not keep pinging down nodes since this can induce

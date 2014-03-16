@@ -158,6 +158,7 @@ struct node_record {
 						 * use select_g_get_nodeinfo()
 						 * to access contents */
 	uint32_t cpu_load;		/* CPU load * 100 */
+	time_t cpu_load_time;		/* Time when cpu_load last set */
 	uint16_t protocol_version;	/* Slurm version number */
 	char *version;			/* Slurm version */
 };

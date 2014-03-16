@@ -2003,6 +2003,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	if (node_ptr->cpu_load != reg_msg->cpu_load) {
 		node_ptr->cpu_load = reg_msg->cpu_load;
+		node_ptr->cpu_load_time = now;
 		last_node_update = now;
 	}
 
@@ -3240,8 +3241,10 @@ extern void reset_node_load(char *node_name, uint32_t cpu_load)
 
 	node_ptr = find_node_record(node_name);
 	if (node_ptr) {
+		time_t now = time(NULL);
 		node_ptr->cpu_load = cpu_load;
-		last_node_update = time(NULL);
+		node_ptr->cpu_load_time = now;
+		last_node_update = now;
 	} else
 		error("is_node_resp unable to find node %s", node_name);
 #endif
