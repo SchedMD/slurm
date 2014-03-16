@@ -83,6 +83,7 @@
 #include "src/slurmctld/srun_comm.h"
 
 #define _DEBUG 0
+#define MAX_FAILED_RESV 10
 #define MAX_RETRIES 10
 
 typedef struct epilog_arg {
@@ -708,11 +709,13 @@ extern int schedule(uint32_t job_limit)
 {
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
-	int error_code, failed_part_cnt = 0, job_cnt = 0, i, j, part_cnt;
+	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
+	int error_code, i, j, part_cnt;
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr, **failed_parts = NULL;
+	struct slurmctld_resv **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	struct part_record **sched_part_ptr = NULL;
 	int *sched_part_jobs = NULL;
@@ -836,6 +839,7 @@ extern int schedule(uint32_t job_limit)
 
 	part_cnt = list_count(part_list);
 	failed_parts = xmalloc(sizeof(struct part_record *) * part_cnt);
+	failed_resv = xmalloc(sizeof(struct slurmctld_resv*) * MAX_FAILED_RESV);
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
 	if (max_jobs_per_part) {
@@ -944,9 +948,27 @@ next_part:			part_ptr = (struct part_record *)
 
 		slurmctld_diag_stats.schedule_cycle_depth++;
 
-		if ((job_ptr->resv_name == NULL) &&
-		    _failed_partition(job_ptr->part_ptr, failed_parts,
-				      failed_part_cnt)) {
+		if (job_ptr->resv_name) {
+			bool found_resv = false;
+			for (i = 0; i < failed_resv_cnt; i++) {
+				if (failed_resv[i] == job_ptr->resv_ptr) {
+					found_resv = true;
+					break;
+				}
+			}
+			if (found_resv) {
+				if (job_ptr->state_reason == WAIT_NO_REASON) {
+					job_ptr->state_reason = WAIT_PRIORITY;
+					xfree(job_ptr->state_desc);
+				}
+				debug3("sched: JobId=%u. State=PENDING. "
+				       "Reason=Priority. Priority=%u. Resv=%s.",
+				       job_ptr->job_id, job_ptr->priority,
+				       job_ptr->resv_name);
+				continue;
+			}
+		} else if (_failed_partition(job_ptr->part_ptr, failed_parts,
+					     failed_part_cnt)) {
 			if (job_ptr->state_reason == WAIT_NO_REASON) {
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
@@ -1085,6 +1107,18 @@ next_part:			part_ptr = (struct part_record *)
 				bit_not(job_ptr->details->req_node_bitmap);
 			}
 #endif
+
+			if (fail_by_part && job_ptr->resv_name) {
+		 		/* do not schedule more jobs in this
+				 * reservation, but other jobs in this partition
+				 * can be scheduled. */
+				fail_by_part = false;
+				if (failed_resv_cnt < MAX_FAILED_RESV) {
+					failed_resv[failed_resv_cnt++] =
+						job_ptr->resv_ptr;
+				}
+			}
+
 			if (fail_by_part) {
 		 		/* do not schedule more jobs in this partition
 				 * or on nodes in this partition */
@@ -1177,6 +1211,7 @@ next_part:			part_ptr = (struct part_record *)
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
 	xfree(failed_parts);
+	xfree(failed_resv);
 	if (fifo_sched) {
 		if (job_iterator)
 			list_iterator_destroy(job_iterator);

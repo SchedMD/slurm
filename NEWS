@@ -7,6 +7,10 @@ documents those changes that are of interest to users and admins.
     for user.
  -- Add logic to sleep and retry if slurm.conf can't be read.
  -- Reset a node's CpuLoad value at least once each SlurmdTimeout seconds.
+ -- Scheduler enhancements for reservations: When a job needs to run in
+    reservation, but can not due to busy resources, then do not block all jobs
+    in that partition from being scheduled, but only the jobs in that
+    reservation.
 
 * Changes in Slurm 14.03.0rc1
 ==============================
