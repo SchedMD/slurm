@@ -126,7 +126,7 @@ void ping_nodes (void)
 					 * limit the number to avoid huge
 					 * communication delays */
 	int i;
-	time_t now, still_live_time, node_dead_time, old_cpu_load_time;
+	time_t now = time(NULL), still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
 	hostlist_t down_hostlist = NULL;
 	char *host_str = NULL;
@@ -136,9 +136,8 @@ void ping_nodes (void)
 	front_end_record_t *front_end_ptr = NULL;
 #else
 	struct node_record *node_ptr = NULL;
+	time_t old_cpu_load_time = now - slurmctld_conf.slurmd_timeout;
 #endif
-
-	now = time (NULL);
 
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
@@ -169,7 +168,6 @@ void ping_nodes (void)
 				 slurmctld_conf.slurmd_timeout;
 	}
 	still_live_time = now - (slurmctld_conf.slurmd_timeout / 3);
-	old_cpu_load_time = now - (slurmctld_conf.slurmd_timeout;
 	last_ping_time  = now;
 
 	if (max_reg_threads == 0) {
