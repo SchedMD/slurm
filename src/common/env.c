@@ -267,7 +267,7 @@ setenvfs(const char *fmt, ...)
 	if (size >= MAX_ENV_STRLEN) {
 		if ((loc = strchr(bufcpy, '=')))
 			loc[0] = '\0';
-		error("env var %s too long", bufcpy);
+		error("environment variable %s is too long", bufcpy);
 		xfree(bufcpy);
 		rc = ENOMEM;
 	} else {
@@ -296,7 +296,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	} else {
 		int size = strlen(name) + strlen(value) + 2;
 		if (size >= MAX_ENV_STRLEN) {
-			error("env var %s too long", name);
+			error("environment variable %s is too long", name);
 			rc = ENOMEM;
 		} else {
 			/* XXX Space is allocated on the heap and will never
