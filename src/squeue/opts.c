@@ -1211,9 +1211,11 @@ _build_user_list( char* str )
 static void _usage(void)
 {
 	printf("\
-Usage: squeue [-i seconds] [-n name] [-o format] [-p partitions]\n\
-              [-R reservation] [-S fields] [--start] [-t states]\n\
-              [-u user_name] [--usage] [-w nodes] [-ahjlsv]\n");
+Usage: squeue [-A account] [--clusters names] [-i seconds] [--job jobid]\n\
+              [-n name] [-o format] [-p partitions] [--qos qos]\n\
+              [--reservation reservation] [--sort fields] [--start]\n\
+              [--step step_id] [-t states] [-u user_name] [--usage]\n\
+              [-w nodes] [-ahjlrsv]\n");
 }
 
 static void _help(void)
@@ -1239,6 +1241,7 @@ Usage: squeue [OPTIONS]\n\
   -q, --qos=qos(s)                comma separated list of qos's\n\
 				  to view, default is all qos's\n\
   -R, --reservation=name          reservation to view, default is all\n\
+  -r, --array                     display one job array element per line\n\
   -s, --step=step(s)              comma separated list of job steps\n\
 				  to view, default is all\n\
   -S, --sort=fields               comma separated list of fields to sort on\n\
