@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Add support for Torque/PBS job array options and environment variables.
  -- CRAY/ALPS - Add support for CLE52
+ -- Fix issue where jobs still pending after a reservation would remain
+    in waiting reason ReqNodeNotAvail.
 
 * Changes in Slurm 2.6.7
 ========================
