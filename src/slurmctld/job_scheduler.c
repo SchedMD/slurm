@@ -170,8 +170,10 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 
 #ifdef HAVE_FRONT_END
 	/* At least one front-end node up at this point */
-	if (job_ptr->state_reason == WAIT_FRONT_END)
+	if (job_ptr->state_reason == WAIT_FRONT_END) {
 		job_ptr->state_reason = WAIT_NO_REASON;
+		last_job_update = time(NULL);
+	}
 #endif
 
 	job_indepen = job_independent(job_ptr, 0);
@@ -182,6 +184,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 		    (job_ptr->state_reason != WAIT_HELD_USER)) {
 			job_ptr->state_reason = WAIT_HELD;
 			xfree(job_ptr->state_desc);
+			last_job_update = time(NULL);
 		}
 		debug3("sched: JobId=%u. State=%s. Reason=%s. Priority=%u.",
 		       job_ptr->job_id,
@@ -531,6 +534,7 @@ next_part:		part_ptr = (struct part_record *)
 						     &job_ptr->assoc_ptr)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
 				job_ptr->assoc_id = assoc_rec.id;
+				last_job_update = now;
 			} else {
 				continue;
 			}
@@ -546,17 +550,21 @@ next_part:		part_ptr = (struct part_record *)
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_QOS;
+				last_job_update = now;
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_NO_REASON;
+				last_job_update = now;
 			}
 		}
 
 		if ((job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
 		    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
-		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT))
+		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
 			job_ptr->state_reason = WAIT_NO_REASON;
+			last_job_update = now;
+		}
 
 		if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
 		    job_ptr->details && job_ptr->details->req_node_bitmap &&
@@ -574,6 +582,7 @@ next_part:		part_ptr = (struct part_record *)
 		if (license_job_test(job_ptr, now) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
+			last_job_update = now;
 			continue;
 		}
 
@@ -832,6 +841,7 @@ extern int schedule(uint32_t job_limit)
 				break;
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
+				last_job_update = now;
 				continue;
 			}
 			if (!_job_runnable_test1(job_ptr, false))
@@ -865,6 +875,7 @@ next_part:			part_ptr = (struct part_record *)
 			xfree(job_queue_rec);
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
+				last_job_update = now;
 				continue;
 			}
 			if (!IS_JOB_PENDING(job_ptr))
@@ -914,6 +925,7 @@ next_part:			part_ptr = (struct part_record *)
 						    &job_ptr->assoc_ptr)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
 				job_ptr->assoc_id = assoc_rec.id;
+				last_job_update = now;
 			} else {
 				continue;
 			}
@@ -929,10 +941,12 @@ next_part:			part_ptr = (struct part_record *)
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_QOS;
+				last_job_update = now;
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_NO_REASON;
+				last_job_update = now;
 			}
 		}
 
@@ -956,6 +970,7 @@ next_part:			part_ptr = (struct part_record *)
 			/* Too many nodes DRAIN, DOWN, or
 			 * reserved for jobs in higher priority partition */
 			job_ptr->state_reason = WAIT_RESOURCES;
+			last_job_update = now;
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u. Partition=%s.",
 			       job_ptr->job_id,
@@ -968,6 +983,7 @@ next_part:			part_ptr = (struct part_record *)
 		if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
+			last_job_update = now;
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u.",
 			       job_ptr->job_id,
@@ -986,7 +1002,7 @@ next_part:			part_ptr = (struct part_record *)
 			 * very rare. */
 			info("sched: JobId=%u has invalid account",
 			     job_ptr->job_id);
-			last_job_update = time(NULL);
+			last_job_update = now;
 			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
 			continue;
