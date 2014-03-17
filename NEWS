@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
     protocol version to be SLURM_2_5_PROTOCOL_VERSION which is the minimum
     supported version.
  -- Update the scancel man page documenting the -s option.
+ -- Update sacctmgr man page documenting how to modify account's QOS.
 
 * Changes in Slurm 14.03.0rc1
 ==============================
