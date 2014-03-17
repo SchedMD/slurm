@@ -86,6 +86,8 @@ strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 strong_alias(env_unset_environment,	slurm_env_unset_environment);
 
 #define ENV_BUFSIZE (256 * 1024)
+#define MAX_ENV_STRLEN (32 * 4096)	/* Needed for CPU_BIND and MEM_BIND on
+					 * SGI systems with huge CPU counts */
 
 static int _setup_particulars(uint32_t cluster_flags,
 			       char ***dest,
@@ -250,17 +252,28 @@ int
 setenvfs(const char *fmt, ...)
 {
 	va_list ap;
-	char *buf, *bufcpy;
-	int rc;
+	char *buf, *bufcpy, *loc;
+	int rc, size;
 
 	buf = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
 	vsnprintf(buf, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
 
+	size = strlen(buf);
 	bufcpy = xstrdup(buf);
 	xfree(buf);
-	rc = putenv(bufcpy);
+
+	if (size >= MAX_ENV_STRLEN) {
+		if ((loc = strchr(bufcpy, '=')))
+			loc[0] = '\0';
+		error("env var %s too long", bufcpy);
+		xfree(bufcpy);
+		rc = ENOMEM;
+	} else {
+		rc = putenv(bufcpy);
+	}
+
 	return rc;
 }
 
@@ -282,15 +295,20 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 			rc = 1;
 	} else {
 		int size = strlen(name) + strlen(value) + 2;
-		/* XXX Space is allocated on the heap and will never
-		 * be reclaimed.
-		 * Also you can not use xmalloc here since some of the
-		 * external api's like perl will crap out when they
-		 * try to free it.
-		 */
-		str = malloc(size);
-		snprintf(str, size, "%s=%s", name, value);
-		rc = putenv(str);
+		if (size >= MAX_ENV_STRLEN) {
+			error("env var %s too long", name);
+			rc = ENOMEM;
+		} else {
+			/* XXX Space is allocated on the heap and will never
+			 * be reclaimed.
+			 * Also you can not use xmalloc here since some of the
+			 * external api's like perl will crap out when they
+			 * try to free it.
+			 */
+			str = malloc(size);
+			snprintf(str, size, "%s=%s", name, value);
+			rc = putenv(str);
+		}
 	}
 	xfree(value);
 	return rc;
