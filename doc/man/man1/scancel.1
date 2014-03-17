@@ -78,7 +78,11 @@ Restrict the scancel operation to jobs with this reservation name.
 .TP
 \fB\-s\fR, \fB\-\-signal\fR=\fIsignal_name\fR
 The name or number of the signal to send.  If no signal is specified,
-the specified job or step will be terminated.
+the specified job or step will be terminated. \fBNote\fR. If this option
+is used the signal is sent directly to the slurmd where the job is
+running bypassing the slurmctld thus the job state will not change even
+if the signal is delivered to it. Use the \fIscontrol\fR command if
+you want the job state change be known to slurmctld.
 
 .TP
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
