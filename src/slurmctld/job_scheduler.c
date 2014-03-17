@@ -172,6 +172,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 	/* At least one front-end node up at this point */
 	if (job_ptr->state_reason == WAIT_FRONT_END) {
 		job_ptr->state_reason = WAIT_NO_REASON;
+		xfree(job_ptr->state_desc);
 		last_job_update = time(NULL);
 	}
 #endif
@@ -533,6 +534,7 @@ next_part:		part_ptr = (struct part_record *)
 						     (slurmdb_association_rec_t **)
 						     &job_ptr->assoc_ptr)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
+				xfree(job_ptr->state_desc);
 				job_ptr->assoc_id = assoc_rec.id;
 				last_job_update = now;
 			} else {
@@ -563,6 +565,7 @@ next_part:		part_ptr = (struct part_record *)
 		    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
 		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
 			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
 			last_job_update = now;
 		}
 
@@ -841,6 +844,7 @@ extern int schedule(uint32_t job_limit)
 				break;
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
+				xfree(job_ptr->state_desc);
 				last_job_update = now;
 				continue;
 			}
@@ -875,6 +879,7 @@ next_part:			part_ptr = (struct part_record *)
 			xfree(job_queue_rec);
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
+				xfree(job_ptr->state_desc);
 				last_job_update = now;
 				continue;
 			}
@@ -926,6 +931,7 @@ next_part:			part_ptr = (struct part_record *)
 						    (slurmdb_association_rec_t **)
 						    &job_ptr->assoc_ptr)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
+				xfree(job_ptr->state_desc);
 				job_ptr->assoc_id = assoc_rec.id;
 				last_job_update = now;
 			} else {
@@ -972,6 +978,7 @@ next_part:			part_ptr = (struct part_record *)
 			/* Too many nodes DRAIN, DOWN, or
 			 * reserved for jobs in higher priority partition */
 			job_ptr->state_reason = WAIT_RESOURCES;
+			xfree(job_ptr->state_desc);
 			last_job_update = now;
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u. Partition=%s.",

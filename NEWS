@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Fix issue where jobs still pending after a reservation would remain
     in waiting reason ReqNodeNotAvail.
  -- Update last_job_update when a job's state_reason was modified.
+ -- Free job_ptr->state_desc where ever state_reason is set.
 
 * Changes in Slurm 2.6.7
 ========================
