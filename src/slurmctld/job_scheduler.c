@@ -540,8 +540,8 @@ next_part:		part_ptr = (struct part_record *)
 			}
 		}
 		if (job_ptr->qos_id) {
-			slurmdb_association_rec_t *assoc_ptr;
-			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+			slurmdb_association_rec_t *assoc_ptr =
+				(slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
 				      job_ptr->qos_id) &&
@@ -904,9 +904,11 @@ next_part:			part_ptr = (struct part_record *)
 				last_job_update = now;
 			}
 			debug3("sched: JobId=%u. State=PENDING. "
-			       "Reason=Priority. Priority=%u. Partition=%s.",
-			       job_ptr->job_id, job_ptr->priority,
-			       job_ptr->partition);
+			       "Reason=%s(Priority), Priority=%u, "
+			       "Partition=%s.",
+			       job_ptr->job_id,
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority, job_ptr->partition);
 			continue;
 		}
 
