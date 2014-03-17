@@ -329,10 +329,14 @@ extern int load_all_node_state ( bool state_only )
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in node_state header is %s", ver_str);
 	if (ver_str) {
+		/* 2.5 and 2.6 share the same NODE_2_6_STATE_VERSION
+		 * so we send the lowest supported protocol version
+		 * to slurmds.
+		 */
 		if (!strcmp(ver_str, NODE_STATE_VERSION))
 			safe_unpack16(&protocol_version, buffer);
 		else if (!strcmp(ver_str, NODE_2_6_STATE_VERSION))
-			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
+			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 		else if (!strcmp(ver_str, NODE_2_5_STATE_VERSION))
 			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 	}

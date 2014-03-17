@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
     in that partition from being scheduled, but only the jobs in that
     reservation.
  -- Export "SLURM*" environment variables from sbatch even if --export=NONE.
+ -- When recovering node state if the Slurm version is 2.6 or 2.5 set the
+    protocol version to be SLURM_2_5_PROTOCOL_VERSION which is the minimum
+    supported version.
 
 * Changes in Slurm 14.03.0rc1
 ==============================
