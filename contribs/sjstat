@@ -138,7 +138,7 @@ sub do_sinfo
 #
 #	Get the partition and node info.
 #
-	my $options = "\"%9P %6m %.4c %.22F %f\"";
+       my $options = "\"%9P %7m %.4c %.22F %f\"";
 
 	my $ct = 0;
 	my @sin = `sinfo -e -o $options`;
@@ -185,13 +185,13 @@ sub do_sinfo
 		if ($verbose) {
 			my $p = $s_part[$i];
 			$p =~ s/\*//;
-			printf("%-9s  %6dMb %5s %6s %7s %6s %6s %10s  %-s\n",
+                       printf("%-9s  %7dMb %5s %6s %7s %6s %6s %10s  %-s\n",
 				$s_part[$i], $s_mem[$i], $s_cpu[$i],
 				$s_total[$i], $s_usable[$i], 
 				$s_idle[$i], $MaxNodes{$p},
 				$MaxTime{$p}, $s_feat[$i]);
 		} else {
-			printf("%-9s %6dMb %5s %6s %6s %6s  %-s\n",
+                       printf("%-9s %7dMb %5s %6s %6s %6s  %-s\n",
 				$s_part[$i], $s_mem[$i], $s_cpu[$i],
 				$s_total[$i], $s_usable[$i],
 				$s_idle[$i], $s_feat[$i]);
