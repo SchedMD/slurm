@@ -46,7 +46,7 @@ if {[test_front_end] != 0} {
 	exit $exit_code
 } elseif {[test_super_user] == 0} {
 	send_user "\nWARNING: This test must be done from a super-user\n"
-	exit 1
+	exit 0
 }
 
 #
