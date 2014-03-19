@@ -64,6 +64,8 @@ documents those changes that are of interest to users and admins.
  -- Fix a couple of issues with scontrol reconfig and adding nodes to
     slurm.conf.  Rebooting daemons after adding nodes to the slurm.conf
     is highly recommended.
+ -- Fixed sacct.1 and srun.1 manual pages which contains a hyphen where
+    a minus sign for options was intended.
 
 * Changes in Slurm 2.6.6
 ========================
