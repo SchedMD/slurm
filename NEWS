@@ -284,6 +284,16 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Add support for Torque/PBS job array options and environment variables.
  -- CRAY/ALPS - Add support for CLE52
+ -- Fix issue where jobs still pending after a reservation would remain
+    in waiting reason ReqNodeNotAvail.
+ -- Update last_job_update when a job's state_reason was modified.
+ -- Free job_ptr->state_desc where ever state_reason is set.
+ -- Fixed sacct.1 and srun.1 manual pages which contains a hyphen where
+    a minus sign for options was intended.
+ -- sinfo - Make sure if partition name is long and the default the last char
+    doesn't get chopped off.
+ -- task/affinity - Protect against zero divide when simulating more hardware
+    than you really have.
 
 * Changes in Slurm 2.6.7
 ========================

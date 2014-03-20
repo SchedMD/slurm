@@ -360,6 +360,8 @@ static void _set_part_field_size(List sinfo_list)
 		if (!current->part_info || !current->part_info->name)
 			continue;
 		this_width = strlen(current->part_info->name);
+		if (current->part_info->flags & PART_FLAG_DEFAULT)
+			this_width++;
 		max_width = MAX(max_width, this_width);
 	}
 	list_iterator_destroy(i);
