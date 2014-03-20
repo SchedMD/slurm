@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- Update the scancel man page documenting the -s option.
  -- Update sacctmgr man page documenting how to modify account's QOS.
  -- Fix for sjstat which currently does not print >1TB memory values correctly.
+ -- Change xmalloc()/xfree() to malloc()/free() in hostlist.c for better
+    performance.
 
 * Changes in Slurm 14.03.0rc1
 ==============================

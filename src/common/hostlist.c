@@ -1835,10 +1835,10 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 		*q++ = '\0';
 		if (strrchr(tmp_prefix, '[') != NULL)
 			return -1;	/* third range is illegal */
-		prefix_range = xmalloc(sizeof(struct _range) * MAX_RANGES);
+		prefix_range = malloc(sizeof(struct _range) * MAX_RANGES);
 		nr = _parse_range_list(p, prefix_range, MAX_RANGES, dims);
 		if (nr < 0) {
-			xfree(prefix_range);
+			free(prefix_range);
 			return -1;	/* bad numeric expression */
 		}
 		pre_range = prefix_range;
@@ -1847,7 +1847,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 			if (prefix_cnt > MAX_PREFIX_CNT) {
 				/* Prevent overflow of memory with user input
 				 * of something like "a[0-999999999].b[0-9]" */
-				xfree(prefix_range);
+				free(prefix_range);
 				return -1;
 			}
 			for (j = pre_range->lo; j <= pre_range->hi; j++) {
@@ -1864,7 +1864,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 			}
 			pre_range++;
 		}
-		xfree(prefix_range);
+		free(prefix_range);
 		return 0;
 	}
 
@@ -1898,7 +1898,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 		return NULL;
 	}
 
-	ranges = xmalloc(sizeof(struct _range) * MAX_RANGES);
+	ranges = malloc(sizeof(struct _range) * MAX_RANGES);
 	while ((tok = _next_tok(sep, &str)) != NULL) {
 		strncpy(cur_tok, tok, 1024);
 		if ((p = strrchr(tok, '[')) != NULL) {
@@ -1934,7 +1934,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 		} else
 			hostlist_push_host_dims(new, cur_tok, dims);
 	}
-	xfree(ranges);
+	free(ranges);
 
 	free(orig);
 	return new;
@@ -1942,7 +1942,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 error:
 	err = errno = EINVAL;
 	hostlist_destroy(new);
-	xfree(ranges);
+	free(ranges);
 	free(orig);
 	seterrno_ret(err, NULL);
 }
