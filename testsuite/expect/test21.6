@@ -31,6 +31,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
+source ./globals_accounting
 
 set test_id     "21.6"
 set exit_code   0
@@ -38,10 +39,12 @@ set amatches    0
 set lmatches    0
 set dmatches    0
 set not_support 0
+set acct_check  0
 set nam		Name
 set fs		Fairshare
 set gc		GrpCPUs
 set gj		GrpJobs
+set gm          GrpMemory
 set gs		GrpSubmitJobs
 set gn		GrpNodes
 set mm		MaxCPUMins
@@ -50,6 +53,7 @@ set mj		MaxJobs
 set ms		MaxSubmitJobs
 set mn		MaxNodes
 set mw		MaxWall
+set dqos        QOS
 set tc1		slurm_test-cluster-1
 set tc2		slurm_test-cluster-2
 set tc3		slurm_test-cluster-3
@@ -57,6 +61,7 @@ set fs1		2500
 set gc1		50
 set gj1		100
 set gs1		500
+set gm1         200
 set gn1		300
 set mc1		100
 set mm1		100000
@@ -64,6 +69,7 @@ set mj1		500
 set ms1		500
 set mn1		300
 set mw1		01:00:00
+set dqos1       "test$test_id\_qos"
 
 set access_err  0
 set timeout	30
@@ -144,12 +150,69 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1,$tc2,$tc3]
 	}
 
 #
+# Delete vestigial QOSs
+#
+set dmatches 0
+spawn $sacctmgr -i delete qos $dqos1
+expect {
+	-re "Deleting QOS" {
+		incr dmatches
+		exp_continue
+	}
+	-re "Nothing deleted" {
+		incr dmatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$dmatches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
+	set exit_code 1
+}
+
+#
+# Create tmp QOS
+#
+set qos_set 0
+spawn $sacctmgr -i add qos $dqos1
+expect {
+	-re "Adding QOS" {
+		set qos_set 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$qos_set != 1} {
+	send_user "\nFAILURE QOS $dqos was not created\n"
+	set exit_code 1
+}
+
+#
+# NOTE: GrpWall, GrpCPUMins, and GrpCPURunMins are not add to test
+# because they are not valid for root associations of a cluster.
+#
+
+#
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr add cluster name=$tc1,$tc2,$tc3 fairshare=$fs1 \
-GrpCPUs=$gc1 GrpJobs=$gj1 GrpNodes=$gn1 GrpSubmitJobs=$gs1 MaxCPUs=$mc1 MaxCPUMins=$mm1 \
-MaxJobs=$mj1 MaxSubmitJobs=$ms1 MaxNodes=$mn1 MaxWall=$mw1]
-
+set sadd_pid [spawn $sacctmgr add cluster name=$tc1,$tc2,$tc3 \
+fairshare=$fs1 GrpCPUs=$gc1 GrpJobs=$gj1 GrpNodes=$gn1 GrpSubmitJobs=$gs1 \
+MaxCPUs=$mc1 MaxCPUMins=$mm1 MaxJobs=$mj1 MaxSubmitJobs=$ms1 MaxNodes=$mn1 \
+MaxWall=$mw1 GrpMem=$gm1 DefaultQOS=$dqos1 QosLevel=$dqos1]
 expect {
 	-re "privilege to preform this action" {
 		set access_err 1
@@ -187,6 +250,10 @@ expect {
 		incr amatches
 		exp_continue
 	}
+	-re "$gm *= $gm1" {
+		incr amatches
+		exp_continue
+	}
 	-re "$gn *= $gn1" {
 		incr amatches
 		exp_continue
@@ -219,6 +286,10 @@ expect {
 		incr amatches
 		exp_continue
 	}
+	-re "$dqos *= $dqos1" {
+		incr amatches
+		exp_continue
+	}
 	-re "Would you like to commit changes\\\? \\\(You have 30 seconds to decide\\\)" {
 		incr amatches
 		exp_continue
@@ -241,10 +312,20 @@ if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
-if {$amatches != 18} {
+if {$amatches != 20} {
 	send_user "\nFAILURE:  sacctmgr had a problem adding clusters got $amatches\n"
 	set exit_code 1
 }
+
+# Check Cluster 1
+check_assoc_limit 1 cluster $tc1 $fs1 "" $gc1 "" $gj1 $gn1 $gs1 "" $mc1 $mm1 $mj1 $ms1 $mn1 $mw1 $gm1 $dqos1
+
+# Check Cluster 2
+check_assoc_limit 1 cluster $tc2 $fs1 "" $gc1 "" $gj1 $gn1 $gs1 "" $mc1 $mm1 $mj1 $ms1 $mn1 $mw1 $gm1 $dqos1
+
+# Check Cluster 3
+check_assoc_limit 1 cluster $tc3 $fs1 "" $gc1 "" $gj1 $gn1 $gs1 "" $mc1 $mm1 $mj1 $ms1 $mn1 $mw1 $gm1 $dqos1
+
 if { ![check_acct_associations] } {
 	send_user "\nFAILURE:  Our associations don't line up\n"
 	set exit_code 1
@@ -253,6 +334,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to delete the test cluster
 #
+set dmatches 0
 set sadel_pid [spawn $sacctmgr delete cluster $tc1,$tc2,$tc3]
 expect {
 	-re "Deleting clusters" {
@@ -286,6 +368,31 @@ if {$dmatches != 4} {
 	send_user "\nFAILURE: sacctmgr had a problem deleting cluster\n"
 	set exit_code 1
 }
+#
+# Remove tmp QOS
+#
+set dmatches 0
+spawn $sacctmgr -i delete qos $dqos1
+expect {
+	-re "Deleting QOS" {
+		incr dmatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$dmatches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
+	set exit_code 1
+}
+
 if { ![check_acct_associations] } {
 	send_user "\nFAILURE:  Our associations don't line up\n"
 	set exit_code 1

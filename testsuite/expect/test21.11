@@ -44,22 +44,47 @@ set dcmatches   0
 set not_support 0
 set nam		Name
 set fs		Fairshare
-set mc		MaxCPUMins
+set mc          MaxCPUs
+set mcm		MaxCPUMins
 set mj		MaxJobs
+set msj         MaxSubmitJobs
 set mn		MaxNodes
 set mw		MaxWall
+set gcm         GrpCPUMins
+set gc          GrpCPU
+set gcrm        GrpCPURunMins
+set gj		GrpJobs
+set gmem        GrpMemory
+set gsj 	GrpSubmitJobs
+set gn		GrpNodes
+set gw		GrpWall
+
+
 set tc1		slurm_test-cluster-1
 set tc2		slurm_test-cluster-2
 set fs1		2500
-set mc1		1000000
+set mc1         100
+set mcm1	1000000
 set mj1		50
+set msj1        60
 set mn1		300
 set mw1		01:00:00
+set gcm1        100
+set gc1         50
+set gcrm1       150
+set gj1         100
+set gmem1       60
+set gsj1        500
+set gn1         100
+set gw1         00:45:00
+
+
+
 set ta1		slurm_test-account.1
 set ta2		slurm_test-account.2
 set ds1		"Test Account A1"
 set or1		"Account Org A1"
-set qs1		normal
+set dqos1        "test$test_id\_qos"
 set access_err  0
 set timeout 60
 print_header $test_id
@@ -123,9 +148,37 @@ if { ![check_acct_associations] } {
 }
 
 #
+# Create tmp QOS
+#
+set qos_set 0
+spawn $sacctmgr -i add qos $dqos1
+expect {
+	-re "Adding QOS" {
+		set qos_set 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$qos_set != 1} {
+	send_user "\nFAILURE QOS $dqos1 was not created\n"
+	set exit_code 1
+}
+
+
+#
 # Use sacctmgr to add an account
 #
-set sadel_pid [spawn $sacctmgr -i add account cluster=$tc1 description="$ds1" fairshare=$fs1 MaxCPUs=$mc1 MaxJobs=$mj1 MaxNodes=$mn1 MaxWall=$mw1 name=$ta1,$ta2 organization="$or1" QoSLevel=$qs1]
+set sadel_pid [spawn $sacctmgr -i add account cluster=$tc1 description="$ds1" \
+fairshare=$fs1 MaxCPUs=$mc1 MaxJobs=$mj1 MaxSubmitJobs=$msj1 MaxCPUMins=$mcm1 \
+MaxNodes=$mn1 MaxWall=$mw1 GrpCPUMins=$gcm1 GrpCPUs=$gc1 GrpCPURunMins=$gcrm1 \
+GrpJobs=$gj1 GrpMemory=$gmem1 GrpSubmitJobs=$gsj1 GrpNodes=$gn1 GrpWall=$gw1 \
+name=$ta1,$ta2 organization="$or1" DefaultQos=$dqos1 QosLevel=$dqos1]
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -185,6 +238,10 @@ if {$almatches != 2} {
 	send_user "\n Need 2 matches and got $almatches instead.\n"
 	set exit_code 1
 }
+# Check that the Association was set correctly
+check_assoc_limit 2 account $ta1 $fs1 $gcm1 $gc1 $gcrm1 $gj1 $gn1 $gsj1 $gw1 $mc1 $mcm1 $mj1 $msj1 $mn1 $mw1 $gmem1 $dqos1
+
+check_assoc_limit 2 account $ta2 $fs1 $gcm1 $gc1 $gcrm1 $gj1 $gn1 $gsj1 $gw1 $mc1 $mcm1 $mj1 $msj1 $mn1 $mw1 $gmem1 $dqos1
 
 if { ![check_acct_associations] } {
 	send_user "\nFAILURE:  Our associations don't line up\n"
@@ -245,9 +302,34 @@ if {$dcmatches != 1} {
 }
 
 #
+# Delete Qos
+#
+set dmatches 0
+set sadel_pid [spawn $sacctmgr -i delete qos $dqos1]
+expect {
+	-re "Deleting QOS" {
+		incr dmatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$dmatches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting QOS got $dmatches\n"
+	set exit_code 1
+}
+
+#
 # Use sacctmgr to list the test associations
 #
-set as2_list_pid [spawn $sacctmgr list association luster=$tc1 ]
+set as2_list_pid [spawn $sacctmgr list association cluster=$tc1 ]
 expect {
 	-re "$tc1 *$ta1" {
 		exp_continue
