@@ -669,6 +669,8 @@ static void _blot_mask_sockets(const uint32_t maxtasks, const uint32_t task,
  		return;
 
 	blot = bit_size(avail_map) / hw_sockets;
+	if (blot <= 0)
+		blot = 1;
 	size = bit_size(masks[task]);
 	for (i = 0; i < size; i++) {
 		if (bit_test(masks[task], i)) {

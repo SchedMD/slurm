@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     a minus sign for options was intended.
  -- sinfo - Make sure if partition name is long and the default the last char
     doesn't get chopped off.
+ -- task/affinity - Protect against zero divide when simulating more hardware
+    than you really have.
 
 * Changes in Slurm 2.6.7
 ========================
