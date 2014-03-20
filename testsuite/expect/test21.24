@@ -191,19 +191,24 @@ set mn5		570
 set mw5		350
 set mt5		05:50:00
 set gm6		6600
-set gc6		60
-set gj6		610
-set gs6		620
-set gn6		630
-set gw6		1440
-set gt6		1-00:00:00
-set mc6		640
-set mm6		660000
-set mj6		650
-set ms6		660
-set mn6		670
-set mw6		2880
-set mt6		2-00:00:00
+array set clus_req {
+	fairshare 6789
+	grpcpus	  60
+	grpjob	  610
+	grpsubmit 620
+	grpnodes  630
+	maxcpus   640
+	maxcpumin 660000
+	maxjobs   650
+	maxsubmit 660
+	maxnodes  670
+	maxwall   2880
+}
+# I couldn't figure out how to make a variable in an array to = the value of
+# another variable.  If you figure this out just move this into the above
+# array definition.
+set clus_req(qos) $qs2
+
 set timeout     60
 set access_err  0
 
@@ -245,9 +250,9 @@ if { $exit_code } {
 	exit $exit_code
 }
 
+#
 #add cluster
-#name QOS Fairshare GrpCPUs GrpMem GrpJobs GrpNodes GrpSubmitJobs MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob
-incr exit_code [add_cluster "$tc3" "$qs2" "$fs6" "$gc6" "" "$gj6" "$gn6" "$gs6" "$mm6" "$mc6" "$mj6" "$mn6" "$ms6" "$mw6"]
+incr exit_code [add_cluster2 $tc3 [array get clus_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
@@ -364,7 +369,7 @@ while {[gets $tfile line] != -1} {
 	if {![string compare $line "No such file or directory"]} {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		incr exit_code 1
-	} elseif {![string compare $line "$clu - $tc3:$fs=$fs6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$mp=$mm6:$mu=$mc6:$mj=$mj6:$mnj=$mn6:$ms=$ms6:$md=$mw6:$qs='$qs2'"]} {
+	} elseif {![string compare $line "$clu - $tc3:$fs=$clus_req(fairshare):$gc=$clus_req(grpcpus):$gj=$clus_req(grpjob):$gn=$clus_req(grpnodes):$gs=$clus_req(grpsubmit):$mp=$clus_req(maxcpumin):$mu=$clus_req(maxcpus):$mj=$clus_req(maxjobs):$mnj=$clus_req(maxnodes):$ms=$clus_req(maxsubmit):$md=$clus_req(maxwall):$qs='$clus_req(qos)'"]} {
 		send_user "match 1\n"
 		incr matches
 	} elseif {![string compare $line "$par - $roo"]} {

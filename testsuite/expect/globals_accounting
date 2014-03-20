@@ -174,6 +174,110 @@ maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
 }
 
 #
+# Use sacctmgr to create a cluster
+#
+proc add_cluster2 { name clus_req_in } {
+	global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	array set clus_req $clus_req_in
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
+	}
+
+	set command "$name"
+
+	foreach option [array names clus_req] {
+		# send_user "looking for option $option\n"
+		# switch -- $option \
+		#     fairshare {
+		# 	    set command "$command fairshare=$clus_req($option)"
+		#     } grpcpu {
+		# 	    set command "$command GrpCPUs=$clus_req($option)"
+		#     } grpmem {
+		# 	    set command "$command GrpMem=$clus_req($option)"
+		#     } grpjob {
+		# 	    set command "$command GrpJobs=$clus_req($option)"
+		#     } grpnode {
+		# 	    set command "$command GrpNodes=$clus_req($option)"
+		#     } grpsubmit {
+		# 	    set command "$command GrpSubmitJobs=$clus_req($option)"
+		#     } maxcpumin {
+		# 	    set command "$command MaxCPUMins=$clus_req($option)"
+		#     } maxcpu {
+		# 	    set command "$command MaxCPUs=$clus_req($option)"
+		#     } maxjob {
+		# 	    set command "$command MaxJobs=$clus_req($option)"
+		#     } maxnode {
+		# 	    set command "$command MaxNodes=$clus_req($option)"
+		#     } maxsubmit {
+		# 	    set command "$command MaxSubmitJobs=$clus_req($option)"
+		#     } maxwall {
+		# 	    set command "$command MaxWall=$clus_req($option)"
+		#     } qos {
+		# 	    if { ![string compare $clus_req($option) " "] } {
+		# 		    set $clus_req($option) ""
+		# 	    }
+		# 	    set command "$command qoslevel='$clus_req($option)'"
+		#     } default {
+		# 	    send_user "$option is not a valid option for a cluster_request\n"
+		#     }
+		if { ![string compare $option "qos"] } {
+			if { ![string compare $clus_req($option) " "] } {
+				set $clus_req($option) "''"
+			}
+		}
+		set command "$command $option=$clus_req($option)"
+	}
+	set my_pid [eval spawn $sacctmgr -i add cluster $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Adding Cluster" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding clusters
+	got $matches\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+
+	return $exit_code
+}
+
+#
 # Use sacctmgr to remove the test cluster
 #
 proc remove_cluster {name} {
