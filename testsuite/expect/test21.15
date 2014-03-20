@@ -110,7 +110,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -119,7 +119,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -129,7 +129,7 @@ if { $exit_code } {
 
 #add users
 # account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
-incr exit_code [add_user "$tc1,$tc2,$tc3" "$ta1,$ta2,$ta3" "$tu1" "" "$alo" "$ta2" "" "" "" "$fs1" "" "" "" "" "" "" "" "" "$mcm1" "" "$mj1" "$mn1" "" "$mw1" "" "" ]
+incr exit_code [add_user "$tc1,$tc2,$tc3" "$ta1,$ta2,$ta3" "$tu1" "" "$alo" "$ta2" "" "" "" "$fs1" "" "" "" "" "" "" "" "" "$mcm1" "" "$mj1" "$mn1" "" "$mw1" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -180,7 +180,7 @@ if { $exit_code } {
 #
 # Add user with all limits set
 #
-incr exit_code [add_user "$tc1" "$ta1" "$tu2" "" "$alo" "" "" "" "" "$fs1" "$gcm1" "$gcrm1" "$gc1" "$gj1" "$gmem1" "$gn1" "$gsj1" "$gw1" "$mcm1" "$mc1" "$mj1" "$mn1" "$msj1" "$mw1" "$dqos1" "$dqos1"]
+incr exit_code [add_user "$tc1" "$ta1" "$tu2" "" "$alo" "" "" "" "" "$fs1" "$gcm1" "$gcrm1" "$gc1" "$gj1" "$gmem1" "$gn1" "$gsj1" "$gw1" "$mcm1" "$mc1" "$mj1" "$mn1" "$msj1" "$mw1" "$dqos1"]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2"
 	remove_acct "" "$ta1,$ta2,$ta3,$ta4"

@@ -61,7 +61,7 @@ proc _test_limits { } {
 	set maxwall 10
 	set exit_code 0
 
-	incr exit_code [mod_acct "" "" "$ta" "" "" "" "" "" "" "" "" "" "" "" "" $maxjob $maxnode $maxsubmit $maxwall "" "" ""]
+	incr exit_code [mod_acct "" "" "$ta" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $maxjob $maxnode $maxsubmit $maxwall "" "" ""]
 	if { $exit_code } {
 		return $exit_code
 	}

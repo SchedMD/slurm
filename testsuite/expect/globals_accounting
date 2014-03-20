@@ -47,7 +47,7 @@ set timeout 60
 # Use sacctmgr to create a cluster
 #
 proc add_cluster {name qos fairshare grpcpu grpmem grpjob grpnode grpsubmit \
-maxcpumin maxcpu maxjob maxnode maxsubmit maxwall defaultqos qoslevel} {
+maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -251,7 +251,7 @@ proc remove_cluster {name} {
 #
 # Use sacctmgr to add an user
 #
-proc add_acct { cluster parent name desc org qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall defaultqos qoslevel} {
+proc add_acct { cluster parent name desc org qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -480,7 +480,7 @@ proc remove_acct { cluster name } {
 #
 # Use sacctmgr to modify an account
 #
-proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall parent desc org defaultqos qoslevel} {
+proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall parent desc org } {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -605,16 +605,6 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpuru
 		set assoc_stuff 1
 	}
 
-	if { [string length $defaultqos] } {
-		set scommand "$scommand DefaultQos=$defaultqos"
-		set assoc_stuff 1
-	}
-
-	if { [string length $qoslevel] } {
-		set scommand "$scommand QosLevel=$qoslevel"
-		set assoc_stuff 1
-	}
-
 	if { [string length $qos] } {
 		if { ![string compare $qos " "] } {
 			set qos ""
@@ -678,7 +668,7 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpuru
 #
 # Use sacctmgr to add an user
 #
-proc add_user { cluster account name part admin dacct dwckey wckey qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall defaultqos qoslevel} {
+proc add_user { cluster account name part admin dacct dwckey wckey qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall defaultqos} {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -942,7 +932,7 @@ proc remove_user { cluster acct user } {
 #
 # Use sacctmgr to modify an user
 #
-proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey defaultqos qoslevel} {
+proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey defaultqos} {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -994,6 +984,11 @@ proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare gr
 	if { [string length $dacct] } {
 		set scommand "$scommand defaultaccount='$dacct'"
 		set acct_stuff 1
+	}
+
+	if { [string length $defaultqos] } {
+		set command "$command DefaultQos=$defaultqos"
+		set assoc_stuff 1
 	}
 
 	if { [string length $dwckey] } {

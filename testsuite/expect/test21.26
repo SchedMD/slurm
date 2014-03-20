@@ -68,7 +68,7 @@ proc end_test { } {
 	incr exit_code [remove_acct "" "$ta1,$ta2"]
 	incr exit_code [remove_qos "$qos1"]
 	if { [string length $qos_val] } {
-		incr exit_code [mod_acct "$tc1" "" "root" "" "" "$qos_val" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+		incr exit_code [mod_acct "$tc1" "" "root" "" "" "$qos_val" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 	}
 	return $exit_code
 }
@@ -112,7 +112,7 @@ if { !$match } {
 }
 
 #now set default for cluster to ""
-incr exit_code [mod_acct "$tc1" "" "root" "" "" " " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "root" "" "" " " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_qos "$qos1"
 	exit $exit_code
@@ -127,21 +127,21 @@ if { $exit_code } {
 }
 #====Done Add QoS===========Begin Add First Account========
 #add default account
-incr exit_code [add_acct "$tc1" "" "$ta1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$tc1" "" "$ta1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
 }
 #====Done Add First Account====Begin Add Second Account====
 #add account
-incr exit_code [add_acct "$tc1" "$ta1" "$ta2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$tc1" "$ta1" "$ta2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
 }
 #=====Done Add Second Account========Begin Add User=========
 #add user
-incr exit_code [add_user "$tc1" "$ta1,$ta2" "$tu1" "" "" "$ta1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_user "$tc1" "$ta1,$ta2" "$tu1" "" "" "$ta1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -199,7 +199,7 @@ if {$matches != 6} {
 
 #======Begin Modification to Add $qos1 to $ta1=======
 #modify test1 account to add test QoS
-incr exit_code [mod_acct "$tc1" "" "$ta1" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta1" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -254,7 +254,7 @@ if {$matches != 6} {
 
 #======Begin Modification to Subtract $qos1 from $account2=======
 #modify test2 account to remove test QoS
-incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -310,7 +310,7 @@ if {$matches != 6} {
 
 #======Begin Modification to Subtract $qos1 from $ta1=======
 #modify test1 account to remove test QoS
-incr exit_code [mod_acct "$tc1" "" "$ta1" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta1" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -365,7 +365,7 @@ if {$matches != 6} {
 
 #=====Begin Modification to Add $qos1 from $ta2=======
 #modify test2 account to add test QoS
-incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -421,7 +421,7 @@ if {$matches != 6} {
 
 #=======Begin Modification to Add $qos1 from $account2=======
 #modify root account to add test QoS
-incr exit_code [mod_acct "$tc1" "" "root" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "root" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -477,7 +477,7 @@ if {$matches != 6} {
 
 #======Begin Modification to Add $qos1 from $account2=======
 #modify test2 account to remove test QoS
-incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code

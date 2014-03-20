@@ -91,7 +91,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
      	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -100,7 +100,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -109,7 +109,7 @@ if { $exit_code } {
 }
 
 #add users
-incr exit_code [add_user "$tc1,$tc2,$tc3" "$ta1,$ta2,$ta3" "$tu1,$tu2,$tu3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_user "$tc1,$tc2,$tc3" "$ta1,$ta2,$ta3" "$tu1,$tu2,$tu3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -120,7 +120,7 @@ if { $exit_code } {
 # First test change the AdminLevel and DefaultAccount of a user
 # cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
 
-incr exit_code [mod_user $tc1,$tc2,$tc3 "" $tu1 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $alo $ta2 "" "" ""]
+incr exit_code [mod_user $tc1,$tc2,$tc3 "" $tu1 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $alo $ta2 "" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -161,7 +161,7 @@ if {$matches != 3} {
 # Next, test change the limits of one user
 # cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
 
-incr exit_code [mod_user "$tc1,$tc2,$tc3" "" "$tu2" "" "" "" "" "" $fs2 "" "" "" "" "" "" "" "" $mc2 "" $mj2 $mn2 "" $mw2 "" "" "" "" ""]
+incr exit_code [mod_user "$tc1,$tc2,$tc3" "" "$tu2" "" "" "" "" "" $fs2 "" "" "" "" "" "" "" "" $mc2 "" $mj2 $mn2 "" $mw2 "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
