@@ -720,7 +720,27 @@ _process_command (int argc, char *argv[])
 		}
 		detail_flag = 2;
 	}
-	else if (strncasecmp (tag, "exit", MAX(tag_len, 1)) == 0) {
+	else if ((strncasecmp (tag, "errnumstr", MAX(tag_len, 2)) == 0) ||
+		 (strncasecmp (tag, "errnostr", MAX(tag_len, 2)) == 0)) {
+		if (argc != 2) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "one arguments required for keyword:%s\n",
+				 tag);
+		} else {
+			char *end_ptr;
+			int err = strtol(argv[1], &end_ptr, 10);
+			if (end_ptr[0] == '\0') {
+				printf("%s\n", slurm_strerror(err));
+			} else {
+				exit_code = 1;
+				fprintf (stderr,
+					 "numeric arguments required for keyword:%s\n",
+					 tag);
+			}
+		}
+	}
+	else if (strncasecmp (tag, "exit", MAX(tag_len, 2)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1779,6 +1799,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      delete <SPECIFICATIONS>  delete the specified partition or reservation\n\
 			      On Dynamic layout Bluegene systems you can also\n\
 			      delete blocks.                               \n\
+     errnumstr <ERRNO>        Given a Slurm error number, return a         \n\
+                              descriptive string.                          \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
      hold <jobid_list>        prevent specified job from starting (see release)\n\

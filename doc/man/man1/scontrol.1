@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "February 2014" "scontrol 14.03" "Slurm components"
+.TH SCONTROL "1" "March 2014" "scontrol 14.03" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -163,6 +163,10 @@ srun man pages for more information.
 The \fBdetails\fP option is currently only supported for the \fIshow job\fP
 command. To also list the batch script for batch jobs, in addition to the
 details, use the \fBscript\fP option described below instead of this option.
+
+.TP
+\fBerrnumstr\fP \fIERRNO\fP
+Given a Slurm error number, return a descriptive string.
 
 .TP
 \fBexit\fP

@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Change xmalloc()/xfree() to malloc()/free() in hostlist.c for better
     performance.
  -- Update squeue.1 man page describing the SPECIAL_EXIT state.
+ -- Added scontrol option of errnumstr to return error message given a slurm
+    error number.
 
 * Changes in Slurm 14.03.0rc1
 ==============================
