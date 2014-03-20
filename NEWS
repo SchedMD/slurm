@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- Fix for sjstat which currently does not print >1TB memory values correctly.
  -- Change xmalloc()/xfree() to malloc()/free() in hostlist.c for better
     performance.
+ -- Update squeue.1 man page describing the SPECIAL_EXIT state.
 
 * Changes in Slurm 14.03.0rc1
 ==============================
