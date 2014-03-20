@@ -29,7 +29,7 @@ proc inc21_30_11 { } {
 
 	global salloc srun acct bin_sleep grpmem_num number exit_code
 
-	send_user "\nStarting GrpMem test\n"
+	send_user "\nStarting GrpMem test (Within: inc21.30.11)\n\n"
 	set job_id1 0
 	set job_id2 0
 
@@ -37,15 +37,15 @@ proc inc21_30_11 { } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 has been submitted\n"
+			send_user "\nJob $job_id1 has been submitted (Within: inc21.30.11)\n"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: Job should have run but did not.\n"
+			send_user "\nFAILURE: Job should have run but did not. (Within: inc21.30.11)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.11)\n"
 			set exit_code 1
 		}
 		eof {
@@ -57,14 +57,14 @@ proc inc21_30_11 { } {
 	expect  {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is expected.\n"
+			send_user "\nJob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.11)\n"
 		}
 		-re "Granted job allocation ($number)" {
-			send_user "\nFAILURE: Job should have pended, but did not.\n"
+			send_user "\nFAILURE: Job should have pended, but did not. (Within: inc21.30.11)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.11)\n"
 			set exit_code 1
 		}
 		eof {

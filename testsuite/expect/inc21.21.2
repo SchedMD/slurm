@@ -30,22 +30,24 @@ proc inc21_21_2 {maxnode} {
 
 	global number bin_id ta srun exit_code
 
+	send_user "\nTest MaxNodes overage (Within: inc21.21.2)\n"
+
 #
 # Spawn a job testing maxnode+1
 #
 	spawn $srun -N[expr $maxnode + 1] --account=$ta $bin_id
 	expect {
 		-re "Job violates accounting policy" {
-			send_user "\nThis error is expected, not a problem\n"
+			send_user "\nThis error is expected, not a problem (Within: inc21.21.2)\n"
 			exp_continue
 		}
 		-re "launching ($number)" {
-			send_user "\nFAILURE: job should not have run.\n"
+			send_user "\nFAILURE: job should not have run. (Within: inc21.21.2)\n"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			send_user "\nFAILURE: srun not responding (Within: inc21.21.2)\n"
 			set exit_code 1
 		}
 		eof {

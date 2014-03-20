@@ -32,15 +32,14 @@
 proc inc3_11_5 {} {
 	global user_name exit_code res_name
 
-
 	# TEST 5
 	# Test node reservation conflict
 	#
-	send_user "\n+++++ STARTING TEST 5 +++++\n"
+	send_user "\n+++++ STARTING TEST 5 (Within: inc3.11.5) +++++\n"
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.5)\033\[m\n"
 		exit $ret_code
 	}
 
@@ -49,11 +48,11 @@ proc inc3_11_5 {} {
 	# Test for node reservation conflict
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 user=$user_name" 1]
 	if {$ret_code == 0} {
-		send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have\033\[m\n"
+		send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have (Within: inc3.11.5)\033\[m\n"
 		delete_res $res_name
 		exit 1
 	} else {
-		send_user "\033\[32mExpected error.  You can turn that frown upside-down.\033\[m\n"
+		send_user "\033\[32mExpected error.  You can turn that frown upside-down.(Within: inc3.11.5)\033\[m\n"
 	}
 
 	# Delete the reservation

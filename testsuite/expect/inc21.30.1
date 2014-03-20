@@ -31,22 +31,22 @@ proc inc21_30_1 {} {
 	global srun salloc acct bin_sleep number grn_num
 	global exit_code
 
-	send_user "\nStarting GrpNode limit test\n\n"
+	send_user "\nStarting GrpNode limit test (Within: inc21.30.1)\n\n"
 	set job_id1  0
 	set job_id2  0
 	spawn $salloc -N$grn_num --account=$acct --exclusive $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\njob $job_id1 has been submitted\n"
+			send_user "\njob $job_id1 has been submitted. (Within: inc21.30.1)\n"
 		}
 		-re "Pending job allocation ($number)" {
-			send_user "\nFAILURE: Job should be running, but is not.\n"
+			send_user "\nFAILURE: Job should be running, but is not. (Within: inc21.30.1)\n"
 			set job_id1 $expect_out(1,string)
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not reponding\n"
+			send_user "\nFAILURE: salloc is not reponding. (Within: inc21.30.1)\n"
 			set exit_code 1
 		}
 		eof {
@@ -54,7 +54,7 @@ proc inc21_30_1 {} {
 		}
 	}
 	if {$job_id1 == 0} {
-		send_user "\nFAILURE: jobs were not submitted\n"
+		send_user "\nFAILURE: jobs were not submitted. (Within: inc21.30.1)\n"
 		set exit_code 1
 		return
 	}
@@ -63,14 +63,14 @@ proc inc21_30_1 {} {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is expected.\n"
+			send_user "\nJob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.1)\n"
 		}
 		-re "Granted job allocation ($number)" {
-			send_user "\nFAILURE: This should be pended but is not\n"
+			send_user "\nFAILURE: This should be pended but is not. (Within: inc21.30.1)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not reponding\n"
+			send_user "\nFAILURE: salloc is not reponding. (Within: inc21.30.1)\n"
 			set exit_code 1
 		}
 		eof {
@@ -78,7 +78,7 @@ proc inc21_30_1 {} {
 		}
 	}
 	if {$job_id2 == 0} {
-		send_user "\nFAILURE: jobs were not submitted\n"
+		send_user "\nFAILURE: jobs were not submitted. (Within: inc21.30.1)\n"
 		set exit_code 1
 	} else {
 		# checks the state of the job
@@ -88,4 +88,6 @@ proc inc21_30_1 {} {
 	# Cancels remaining jobs
 	cancel_job $job_id1
 	cancel_job $job_id2
+
+	set exit_code 0
 }

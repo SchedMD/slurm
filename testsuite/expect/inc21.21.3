@@ -31,6 +31,8 @@ proc inc21_21_3 {maxwall } {
 
 	global number bin_id ta srun exit_code
 
+	send_user "\nTest MaxWall (Within: inc21.21.3)\n"
+
 	#
 	# Spawn a job testing maxwall
 	#
@@ -42,7 +44,7 @@ proc inc21_21_3 {maxwall } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			send_user "\nFAILURE: srun not responding (Within: inc21.21.3)\n"
 			set exit_code 1
 		}
 		eof {
@@ -51,7 +53,7 @@ proc inc21_21_3 {maxwall } {
 	}
 
 	if { $matches != 1 } {
-		send_user "\nFAILURE: job dion't launch with correct limit\n"
+		send_user "\nFAILURE: job dion't launch with correct limit (Within: inc21.21.3)\n"
 		set exit_code 1
 		return $exit_code
 	}

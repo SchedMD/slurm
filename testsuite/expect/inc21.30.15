@@ -28,7 +28,7 @@
 proc inc21_30_15 { } {
 	global salloc srun exit_code bin_sleep number maxcpuspu_num acct
 
-	send_user "\nStarting MaxCPUsPerUser test\n"
+	send_user "\nStarting MaxCPUsPerUser test (Within: inc21.30.15)\n"
 
 	set job_id1 0
 	set job_id2 0
@@ -37,15 +37,15 @@ proc inc21_30_15 { } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 has been submitted\n"
+			send_user "\nJob $job_id1 has been submitted (Within: inc21.30.15)\n"
 		}
 		-re "job ($number) queued and waiting for resources" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: Job $job_id1 show not be waiting for resources, but is not\n"
+			send_user "\nFAILURE: Job $job_id1 show not be waiting for resources, but is not (Within: inc21.30.15)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding\n"
+			send_user "\nFAILURE: salloc is not responding (Within: 21.30.15)\n"
 			set exit_code 1
 		}
 		eof {
@@ -54,7 +54,7 @@ proc inc21_30_15 { } {
 	}
 
 	if { $job_id1 == 0 } {
-		send_user "\nFAILUIRE: Job was not submitted\n"
+		send_user "\nFAILUIRE: Job was not submitted (Within: inc21.30.15)\n"
 		set exit_code 1
 	}
 
@@ -62,15 +62,15 @@ proc inc21_30_15 { } {
 	expect {
 		-re "job ($number) queued and waiting for resources" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resource. This is expected do not worry\n"
+			send_user "\nJob $job_id2 is waiting for resource. This is expected do not worry (Within: inc21.30.15)\n"
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id2$expect_out(1,string)
-			send_user "\nFAILURE: Job $job_id2 should be pending for resources, but is not\n"
+			send_user "\nFAILURE: Job $job_id2 should be pending for resources, but is not (Within: 21.30.15)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding\n"
+			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.15)\n"
 			set exit_code 1
 		}
 		eof {
@@ -79,7 +79,7 @@ proc inc21_30_15 { } {
 	}
 
 	if { $job_id2 == 0 } {
-		send_user "\nFAILURE: Job was not submitted\n"
+		send_user "\nFAILURE: Job was not submitted (Within: inc21.30.15)\n"
 		set exit_code 1
 	}
 

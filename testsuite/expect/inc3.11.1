@@ -36,15 +36,15 @@ proc inc3_11_1 {} {
 	global cons_res_actived def_node_name
 
 	set num_nodes [available_nodes $def_partition]
-	
+
 	# First setting core_res_num greater than cores per node (assuming symmetric nodes)
 	set core_res_num [ expr ($cluster_cpus / $num_nodes) + 1 ]
-	
+
 	# TEST 1
 	# Make a list of lists with a series of parameters to test.  All the tests
 	# in goodtests should pass, all those in badtests should fail.
 	#
-	send_user "\n+++++ STARTING TEST 1 +++++\n"
+	send_user "\n+++++ STARTING TEST 1 (Within: inc3.11.1) +++++\n"
 	set badtests "
 	{}
 	{Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
@@ -71,16 +71,16 @@ proc inc3_11_1 {} {
 	foreach test $badtests {
 		set ret_code [create_res $test 1]
 		if {$ret_code == 0} {
-			send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have (Within: inc3.11.1)\033\[m\n"
 			delete_res $res_name
 			exit 1
 		} else {
-			send_user "\033\[32mExpected error.  You can turn that frown upside-down.\033\[m\n"
+			send_user "\033\[32mExpected error.  You can turn that frown upside-down. (Within: inc3.11.1)\033\[m\n"
 		}
 	}
 
 	if {[test_super_user] == 0} {
-		send_user "\n\033\[34mWARNING: can not test more unless SlurmUser or root\033\[m\n"
+		send_user "\n\033\[34mWARNING: can not test more unless SlurmUser or root (Within: inc3.11.1)\033\[m\n"
 		exit $exit_code
 	}
 
@@ -103,17 +103,17 @@ proc inc3_11_1 {} {
 	foreach test $goodtests {
 		set ret_code [create_res $test 0]
 		if {$ret_code != 0} {
-			send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.1)\033\[m\n"
 			exit $ret_code
 		} else {
-			send_user "\033\[32mReservation created as expected.\033\[m\n"
+			send_user "\033\[32mReservation created as expected. (Within: inc3.11.1)\033\[m\n"
 		}
 		set ret_code [delete_res $res_name]
 		if {$ret_code != 0} {
-			send_user "\n\033\[31mFAILURE: Unable to delete a reservation\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Unable to delete a reservation (Within: inc3.11.1)\033\[m\n"
 			exit $ret_code
 		} else {
-			send_user "\033\[32mReservation deleted as expected.\033\[m\n"
+			send_user "\033\[32mReservation deleted as expected. (Within: inc3.11.1)\033\[m\n"
 		}
 	}
 }

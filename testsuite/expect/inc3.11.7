@@ -1,7 +1,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          to be called from test3.11
-#	   Several cases for core based reservations 
+#	   Several cases for core based reservations
 #          Pluging select/cons_res needed
 #
 ############################################################################
@@ -37,12 +37,12 @@ proc inc3_11_7 {} {
 	global cluster_cpus cores_per_node def_partition
 	global res_name res_thread_cnt
 
-	send_user "\n+++++ STARTING TEST 7 +++++\n"
+	send_user "\n+++++ STARTING TEST 7 (Within: inc3.11.7) +++++\n"
 
 	# Make a reservation, just to get node size infomation
 	set ret_code [create_res "StartTime=now Duration=1 NodeCnt=1 User=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within inc3.11.7)\033\[m\n"
 		exit $ret_code
 	}
 	# Delete the reservation
@@ -57,7 +57,7 @@ proc inc3_11_7 {} {
 	set core_res_num   [ expr ($cores_per_node / 2) ]
 	set ret_code [create_res "StartTime=now Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.7)\033\[m\n"
 		exit $ret_code
 	}
 	set core_res_num   [ expr ($cores_per_node / 2) ]
@@ -78,7 +78,7 @@ proc inc3_11_7 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: sbatch not responding (Within: inc3.11.7)\033\[m\n"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -87,7 +87,7 @@ proc inc3_11_7 {} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
 		exit 1
 	}
 
@@ -95,17 +95,17 @@ proc inc3_11_7 {} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		-re "JobState=PENDING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 		}
 		eof {
@@ -113,7 +113,7 @@ proc inc3_11_7 {} {
 		}
 	}
 
-	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
+	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
 
 	cancel_job $job_id
 
@@ -127,7 +127,7 @@ proc inc3_11_7 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: sbatch not responding (Within: inc3.11.7)\033\[m\n"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -136,7 +136,7 @@ proc inc3_11_7 {} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
 		exit 1
 	}
 
@@ -145,17 +145,17 @@ proc inc3_11_7 {} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		-re "JobState=PENDING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 		}
 		eof {
@@ -163,7 +163,7 @@ proc inc3_11_7 {} {
 		}
 	}
 
-	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
+	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
 
 	cancel_job $job_id
 
@@ -177,7 +177,7 @@ proc inc3_11_7 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: sbatch not responding (Within: inc3.11.7)\033\[m\n"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -186,7 +186,7 @@ proc inc3_11_7 {} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
 		exit 1
 	}
 
@@ -195,17 +195,17 @@ proc inc3_11_7 {} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		-re "JobState=PENDING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 		}
 		eof {
@@ -213,7 +213,7 @@ proc inc3_11_7 {} {
 		}
 	}
 
-	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
+	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
 
 	cancel_job $job_id
 
@@ -226,7 +226,7 @@ proc inc3_11_7 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: sbatch not responding (Within: inc3.11.7)\033\[m\n"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -235,7 +235,7 @@ proc inc3_11_7 {} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
 		exit 1
 	}
 
@@ -244,21 +244,21 @@ proc inc3_11_7 {} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		-re "JobState=PENDING" {
-			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected\033\[m\n"
+			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected (Within: inc3.11.7)\033\[m\n"
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is RUNNING but it should not\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id is RUNNING but it should not (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 		}
 		eof {
@@ -277,7 +277,7 @@ proc inc3_11_7 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: sbatch not responding (Within: inc3.11.7)\033\[m\n"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -286,7 +286,7 @@ proc inc3_11_7 {} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.7)\033\[m\n"
 		exit 1
 	}
 
@@ -295,21 +295,21 @@ proc inc3_11_7 {} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		-re "JobState=PENDING" {
-			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected\033\[m\n"
+			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected (Within: inc3.11.7)\033\[m\n"
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is RUNNING but it should not\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id is RUNNING but it should not (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 		}
 		eof {
@@ -330,21 +330,21 @@ proc inc3_11_7 {} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		-re "JobState=PENDING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING but it should not\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING but it should not (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
-			send_user "\n\033\[32mSUCCESS: Job $job_id is RUNNING as expected\033\[m\n"
+			send_user "\n\033\[32mSUCCESS: Job $job_id is RUNNING as expected (Within: inc3.11.7)\033\[m\n"
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
 			set exit_code 1
 		}
 		eof {

@@ -37,11 +37,11 @@ proc inc3_11_3 {} {
 
 	# TEST 3
 
-	send_user "\n+++++ STARTING TEST 3 +++++\n"
+	send_user "\n+++++ STARTING TEST 3 (Within: inc3.11.3) +++++\n"
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within: inc3.11.3)\033\[m\n"
 		exit $ret_code
 	}
 
@@ -57,7 +57,7 @@ proc inc3_11_3 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: sbatch not responding. (Within: inc3.11.3)\033\[m\n"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -66,7 +66,7 @@ proc inc3_11_3 {} {
 		}
 	}
 	if {$job_id == 0} {
-		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		send_user "\n\033\[31mFAILURE: batch submit failure (Within: inc3.11.3)\033\[m\n"
 		exit 1
 	}
 
@@ -78,18 +78,18 @@ proc inc3_11_3 {} {
 			if {$tmp_res_name != $res_name} {
 				send_user "\n\033\[31mFAILURE: problem submitting a job to a "
 				send_user "reservation.  Job $job_id is running on "
-				send_user "reservation $tmp_res_name, not $res_name\033\[m\n"
+				send_user "reservation $tmp_res_name, not $res_name (Within: inc3.11.3)\033\[m\n"
 				set exit_code 1
 				exp_continue
 			}
 		}
 		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.3)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.3)\033\[m\n"
 			set exit_code 1
 		}
 		eof {
@@ -97,19 +97,19 @@ proc inc3_11_3 {} {
 		}
 	}
 
-	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
+	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.3)\033\[m\n"
 
 	# Cancel the job
 	spawn $scancel -v $job_id
 	expect {
 		-re "Invalid job_id" {
 			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
-			send_user "to the reservation.  Job $job_id not found\033\[m\n"
+			send_user "to the reservation.  Job $job_id not found (Within: inc3.11.3)\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
 		timeout {
-			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
+			send_user "\n\033\[31mFAILURE: scancel not responding Within: inc3.11.3)\033\[m\n"
 			set exit_code 1
 		}
 		eof {

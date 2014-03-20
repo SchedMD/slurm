@@ -29,7 +29,7 @@ proc inc21_30_10 { } {
 
 	global salloc srun acct bin_sleep grpcpurunmin_num number exit_code
 
-	send_user "\nStarting GrpCpuRunMins test\n"
+	send_user "\nStarting GrpCpuRunMins test (Within: inc21.30.10)\n\n"
 	set job_id1 0
 	set job_id2 0
 	set target_time [expr $grpcpurunmin_num / 4]
@@ -39,15 +39,15 @@ proc inc21_30_10 { } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 has been submitted\n"
+			send_user "\nJob $job_id1 has been submitted. (Within: inc21.30.10)\n"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: Job should be running, but is not.\n"
+			send_user "\nFAILURE: Job should be running, but is not. (Within: inc21.30.10)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.10)\n"
 			set exit_code 1
 		}
 		eof {
@@ -59,14 +59,14 @@ proc inc21_30_10 { } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is expected.\n"
+			send_user "\nJob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.10)\n"
 		}
 		-re "Granted job allocation ($number)" {
-			send_user "\nFAILURE: Job should be pending, but is not.\n"
+			send_user "\nFAILURE: Job should be pending, but is not. (Within: inc21.30.10)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.10)\n"
 			set exit_code 1
 		}
 		eof {

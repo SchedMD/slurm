@@ -44,7 +44,7 @@ proc inc22_1_4 {} {
 
 
 	#Test for job 1
-	send_user "\nSearch for job1 on cluster $cluster\n"
+	send_user "\nSearch for job1 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
 	spawn $sacct -p -C $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=node,jobname,jobid
 	expect {
@@ -53,20 +53,20 @@ proc inc22_1_4 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding\n"
+			send_user "\nFAILURE: sacct not responding (Within: inc21.1.4)\n"
 			set exit_code 1
 		}
 		eof {
 			wait
 		}
 		if {$usermatch !=1} {
-			send_user"\nFAILURE: sacct did not work\n"
+			send_user"\nFAILURE: sacct did not work (Within: inc21.1.4)\n"
 			set exit_code 1
 		}
 	}
 
 	# Test for job2
-	send_user "\nSearch for job2 on cluster $cluster\n"
+	send_user "\nSearch for job2 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
 	spawn $sacct -p -C $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=node,jobname,jobid
 	expect {
@@ -75,20 +75,20 @@ proc inc22_1_4 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding\n"
+			send_user "\nFAILURE: sacct not responding (Within: inc21.1.4)\n"
 			set exit_code 1
 		}
 		eof {
 			wait
 		}
 		if {$usermatch !=1} {
-			send_user"\nFAILURE: sacct did not work\n"
+			send_user"\nFAILURE: sacct did not work (Within: inc21.1.4)\n"
 			set exit_code 1
 		}
 	}
 
 	# Test for job3
-	send_user "\nSearch for job3 on cluster $cluster\n"
+	send_user "\nSearch for job3 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
 	spawn $sacct -p -C $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=node,jobname,jobid
 	expect {
@@ -97,14 +97,14 @@ proc inc22_1_4 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "sacct not responding"
+			send_user "sacct not responding (Within: inc21.1.4)"
 			exit_code 1
 		}
 		eof {
 			wait
 		}
 		if {$usermatch !=1} {
-			send_user "\nFAILURE: sacct did not work\n"
+			send_user "\nFAILURE: sacct did not work (Within: inc21.1.4)\n"
 			set exit_code 1
 		}
 	}

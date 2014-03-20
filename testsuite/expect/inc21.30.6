@@ -30,22 +30,22 @@ proc inc21_30_6 {} {
 
 	global salloc acct number srun job_id1 bin_sleep maxnode_num
 
-	send_user "\nStarting MaxNode limit test\n\n"
+	send_user "\nStarting MaxNode limit test (Within: inc21.30.6)\n\n"
 	set job_id1 0
 
 	spawn $salloc --account=$acct -N$maxnode_num --exclusive -t1 $srun $bin_sleep 2
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\njob $job_id1 has been submitted\n"
+			send_user "\njob $job_id1 has been submitted (Within: inc21.30.6)\n"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nFAILURE: This should have run but did not\n"
+			send_user "\nFAILURE: This should have run but did not. (Within: inc21.30.6)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.6)\n"
 			set exit_code 1
 		}
 		eof {
@@ -60,14 +60,14 @@ proc inc21_30_6 {} {
 	expect {
 		-re "job ($number) queued and waiting for resources" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nJob $job_id1 is waiting for resources. This is expected.\n"
+			send_user "\nJob $job_id1 is waiting for resources. This is expected. (Within: inc21.30.6)\n"
 		}
 		-re "Granted job allocation ($number)" {
-			send_user "\nFAILURE: This should have pended but did not\n"
+			send_user "\nFAILURE: This should have pended but did not. (Within: inc21.30.6)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc not responding\n"
+			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.6)\n"
 			set exit_code 1
 		}
 		eof {

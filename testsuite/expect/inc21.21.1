@@ -30,6 +30,8 @@ proc inc21_21_1 { maxnode } {
 
 	global number bin_id ta srun exit_code
 
+	send_user "\nTest MaxNode (Within: inc21.21.1)\n"
+
 #
 # Spawn a job testing maxnode
 #
@@ -41,7 +43,7 @@ proc inc21_21_1 { maxnode } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			send_user "\nFAILURE: srun not responding (Within: inc21.21.1)\n"
 			set exit_code 1
 		}
 		eof {
@@ -50,7 +52,7 @@ proc inc21_21_1 { maxnode } {
 	}
 
 	if { $matches != 1 } {
-		send_user "\nFAILURE: job dion't launch with correct limit\n"
+		send_user "\nFAILURE: job dion't launch with correct limit (Within: inc21.21.1)\n"
 		set exit_code 1
 		return $exit_code
 	}

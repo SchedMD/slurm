@@ -27,12 +27,12 @@ source ./globals
 source ./globals_accounting
 
 proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
-	
-	global sacct 
+
+	global sacct
 	global exit_code
 
 	set idmatch 0
-	send_user "\nSearch for job ID $job_id_1 having name $job_name_1\n"
+	send_user "\nSearch for job ID $job_id_1 having name $job_name_1 (Within: inc12.3.1)\n"
 	send_user "\nJob id1 number: $job_id_1\n"
 	spawn $sacct -A '$test_acct' --name=$job_name_1 -p -o jobid
 	expect {
@@ -45,7 +45,7 @@ proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct not responding\n"
+			send_user "\nFAILURE: sacct not responding (Within: inc12.3.1)\n"
 			set exit_code 1
 		}
 		eof {
@@ -54,12 +54,12 @@ proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
 
 	}
 	if {$idmatch != 1} {
-		send_user "\nFAILURE: sacct could not match job id to job name\n"
+		send_user "\nFAILURE: sacct could not match job id to job name (Within: inc12.3.1)\n"
 		set exit_code 1
 	}
 
 	set idmatch 0
-	send_user "\nSearch for job ID $job_id_2 having name $job_name_2\n"
+	send_user "\nSearch for job ID $job_id_2 having name $job_name_2 (Within: inc12.3.1)\n"
 	spawn $sacct -A '$test_acct' --name=$job_name_2 -p -o jobid
 	expect {
 		-re "$job_id_1" {
@@ -79,7 +79,7 @@ proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
 		}
 	}
 	if {$idmatch != 1} {
-		send_user "\nFAILURE: sacct could not match job id to job name\n"
+		send_user "\nFAILURE: sacct could not match job id to job name (Within: 12.3.1)\n"
 		set exit_code 1
 	}
 }

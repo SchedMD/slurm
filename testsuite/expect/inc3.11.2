@@ -32,13 +32,12 @@
 proc inc3_11_2 {} {
 	global def_node user_name def_partition exit_code res_name
 
-
 	# TEST 2
 
-	send_user "\n+++++ STARTING TEST 2 +++++\n"
+	send_user "\n+++++ STARTING TEST 2 (Within inc3.11.2) +++++\n"
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation  (Within inc3.11.2)\033\[m\n"
 		exit $ret_code
 	}
 
@@ -60,18 +59,18 @@ proc inc3_11_2 {} {
 	foreach test $goodupdates {
 		set ret_code [update_res $res_name $test 0]
 		if {$ret_code != 0} {
-			send_user "\n\033\[31mFAILURE: Unable to update a valid reservation\033\[m\n"
+			send_user "\n\033\[31mFAILURE: Unable to update a valid reservation  (Within inc3.11.2)\033\[m\n"
 			set exit_code 1
 			break
 		} else {
-			send_user "\n\033\[32mReservation was updated as expected\033\[m\n"
+			send_user "\n\033\[32mReservation was updated as expected (Within: inc3.11.2)\033\[m\n"
 		}
 
 	}
 
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		send_user "\n\033\[31mFAILURE: Unable to delete a reservation\033\[m\n"
+		send_user "\n\033\[31mFAILURE: Unable to delete a reservation (Within: inc3.11.2)\033\[m\n"
 		exit $ret_code
 	}
 }

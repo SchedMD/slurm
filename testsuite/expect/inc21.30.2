@@ -33,22 +33,22 @@ proc inc21_30_2 {} {
 	set job_id1 0
 	set job_id2 0
 
-	send_user "\nStarting GrpCPUs limit test\n\n"
+	send_user "\nStarting GrpCPUs limit test (Within: inc21.30.2)\n\n"
 	set jobmatch 0
 	spawn $salloc --account=$acct -n$grcpu_num $srun $bin_sleep 5
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\njob $job_id1 has been submitted\n"
+			send_user "\njob $job_id1 has been submitted. (Within: inc21.30.2)\n"
 			incr jobmatch
 		}
 		-re "Pending job allocation ($number)" {
-			send_user "\nFAILURE: Job should be running, but is not.\n"
+			send_user "\nFAILURE: Job should be running, but is not. (Within: inc21.30.2)\n"
 			set job_id1 $expect_out(1,string)
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not reponding\n"
+			send_user "\nFAILURE: salloc is not reponding. (Within: inc21.30.2)\n"
 			set exit_code 1
 		}
 		eof {
@@ -59,17 +59,17 @@ proc inc21_30_2 {} {
 	spawn $salloc --account=$acct -n1 $srun $bin_sleep 5
 	expect {
 		-re "Granted job allocation ($number)" {
-			send_user "\nFAILURE: Job should be pending, but is not.\n"
+			send_user "\nFAILURE: Job should be pending, but is not. (Within: inc21.30.2)\n"
 			set job_id2 $expect_out(1,string)
 			set exit_code 1
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			send_user "\njob $job_id2 is waiting for resources. This is expected\n"
+			send_user "\njob $job_id2 is waiting for resources. This is expected. (Within: inc21.30.2)\n"
 			incr jobmatch
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not reponding\n"
+			send_user "\nFAILURE: salloc is not reponding (Within: inc21.30.2)\n"
 			set exit_code 1
 		}
 		eof {
@@ -77,7 +77,7 @@ proc inc21_30_2 {} {
 		}
 	}
 	if {$jobmatch != 2} {
-		send_user "\nFAILURE: jobs were not submitted\n"
+		send_user "\nFAILURE: jobs were not submitted. (Within: inc21.30.2)\n"
 		set exit_code 1
 	}
 

@@ -29,7 +29,7 @@ proc inc21_30_16 { } {
 
 	global salloc srun acct number bin_sleep maxnodespu_num exit_code
 
-	send_user "\nStarting MaxNodesPerUser test\n"
+	send_user "\nStarting MaxNodesPerUser test (Within: inc21.30.16)\n"
 
 	set job_id 0
 
@@ -37,14 +37,14 @@ proc inc21_30_16 { } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nJob $job_id was submitted\n"
+			send_user "\nJob $job_id was submitted (Within: inc21.30.16)\n"
 		}
 		-re "error" {
-			send_user "\nFAILURE: Job allocation should not have failed\n"
+			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.16)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding\n"
+			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.16)\n"
 			set exit_code 1
 		}
 		eof {
@@ -53,7 +53,7 @@ proc inc21_30_16 { } {
 	}
 
 	if { $job_id == 0 } {
-		send_user "\nFAILURE: Job was not submitted\n"
+		send_user "\nFAILURE: Job was not submitted (Within: inc21.30.16)\n"
 		set exit_code 1
 	} else {
 		# Cancel job
@@ -64,14 +64,14 @@ proc inc21_30_16 { } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send_user "\nThis error is expected. Do not worry\n"
+			send_user "\nThis error is expected. Do not worry (Within: inc21.30.16)\n"
 		}
 		-re "Granted job allocation" {
-			send_user "\nFAILURE: salloc should not have granted an allocation\n"
+			send_user "\nFAILURE: salloc should not have granted an allocation (Within: inc21.30.16)\n"
 			set exit_code 1
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not responding\n"
+			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.16)\n"
 			set exit_code 1
 		}
 		eof {
@@ -80,7 +80,7 @@ proc inc21_30_16 { } {
 	}
 
 	if { $job_id == 0 } {
-		send_user "\nFAILURE: Job was not submitted\n"
+		send_user "\nFAILURE: Job was not submitted (Within: inc21.30.16)\n"
 		set exit_code 1
 	} else {
 		# Cancel job

@@ -76,7 +76,7 @@ proc inc22_1_2 {} {
 	set my_pid [eval spawn $sreport cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.2)\n"
 		    	incr exit_code 1
 		}
 		-re "$cluster.$idle.$down.$alloc.$resv.$reported." {
@@ -84,7 +84,7 @@ proc inc22_1_2 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc22.1.2)\n"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -94,8 +94,8 @@ proc inc22_1_2 {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 9 $matches.\n"
-		send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$reported.\n"
+		send_user "\nFAILURE:  sreport didn't give good info 9 $matches. (Within: inc21.1.2)\n"
+		send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$reported. (Within inc21.1.2)\n"
 		incr exit_code 1
 	}
 
@@ -112,7 +112,7 @@ proc inc22_1_2 {} {
 	set my_pid [eval spawn $sreport cluster AccountUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc21.1.2)\n"
 			incr exit_code 1
 		}
 		-re "$cluster.root..$alloc." {
@@ -128,7 +128,7 @@ proc inc22_1_2 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc21.1.2)\n"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -138,7 +138,7 @@ proc inc22_1_2 {} {
 	}
 
 	if {$matches != 3} {
-		send_user "\nFAILURE:  sreport didn't give good info 11.\n"
+		send_user "\nFAILURE:  sreport didn't give good info 11. (Within: inc21.1.2)\n"
 		incr exit_code 1
 	}
 
@@ -155,7 +155,7 @@ proc inc22_1_2 {} {
 	set my_pid [eval spawn $sreport cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc21.1.2)\n"
 			incr exit_code 1
 		}
 		-re "$cluster.$user1.$wckey1.$alloc." {
@@ -163,7 +163,7 @@ proc inc22_1_2 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc21.1.2)\n"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -173,7 +173,7 @@ proc inc22_1_2 {} {
 	}
 
 	if {$wc_key_track == 1 && $matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 12.\n"
+		send_user "\nFAILURE:  sreport didn't give good info 12. (Within: inc21.1.2)\n"
 		incr exit_code 1
 	}
 
@@ -190,7 +190,7 @@ proc inc22_1_2 {} {
 	set my_pid [eval spawn $sreport cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc21.1.2)\n"
 			incr exit_code 1
 		}
 		-re "$cluster.$wckey1..$alloc." {
@@ -202,7 +202,7 @@ proc inc22_1_2 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc21.1.2)\n"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -212,7 +212,7 @@ proc inc22_1_2 {} {
 	}
 
 	if {$wc_key_track == 1 && $matches != 2} {
-		send_user "\nFAILURE:  sreport didn't give good info 13.\n"
+		send_user "\nFAILURE:  sreport didn't give good info 13. (Within: inc21.1.2)\n"
 		incr exit_code 1
 	}
 
@@ -229,7 +229,7 @@ proc inc22_1_2 {} {
 	set my_pid [eval spawn $sreport user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc21.1.2)\n"
 			incr exit_code 1
 		}
 		-re "$cluster.$account1.$user1.$alloc." {
@@ -237,7 +237,7 @@ proc inc22_1_2 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc21.1.2)\n"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -247,7 +247,7 @@ proc inc22_1_2 {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 14.\n"
+		send_user "\nFAILURE:  sreport didn't give good info 14. (Within: inc21.1.2)\n"
 		incr exit_code 1
 	}
 
@@ -264,7 +264,7 @@ proc inc22_1_2 {} {
 	set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc21.1.2)\n"
 			incr exit_code 1
 		}
 		-re "$cluster.$account1.0.$alloc_sec.0." {
@@ -272,7 +272,7 @@ proc inc22_1_2 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc21.1.2)\n"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -282,7 +282,7 @@ proc inc22_1_2 {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 15 $matches.\n"
+		send_user "\nFAILURE:  sreport didn't give good info 15 $matches. (Within: inc21.1.2)\n"
 		incr exit_code 1
 	}
 
@@ -299,7 +299,7 @@ proc inc22_1_2 {} {
 	set my_pid [eval spawn $sreport job sizesbywckey grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
 	expect {
 		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc21.1.2)\n"
 			incr exit_code 1
 		}
 		-re "$cluster.$wckey1.0.$wckey_alloc_sec.0." {
@@ -307,7 +307,7 @@ proc inc22_1_2 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			send_user "\nFAILURE: sacctmgr archive load not responding (Within: inc21.1.2)\n"
 			slow_kill $my_pid
 			incr exit_code 1
 		}
@@ -317,7 +317,7 @@ proc inc22_1_2 {} {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sreport didn't give good info 16 $matches.\n"
+		send_user "\nFAILURE:  sreport didn't give good info 16 $matches. (Within: inc21.1.2)\n"
 		incr exit_code 1
 	}
 

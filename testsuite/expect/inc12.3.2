@@ -28,25 +28,25 @@ source ./globals
 source ./globals_accounting
 
 proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1_node_0 job_1_node_2 job_2_node_0 job_2_node_1} {
-	
+
 	global alpha_numeric_under sacct
 	global exit_code
 
-	send_user "\nSearch for jobs $job_id_1 and $job_id_3 on node: $job_1_node_0\n"
+	send_user "\nSearch for jobs $job_id_1 and $job_id_3 on node: $job_1_node_0 (Within: inc12.3.2)\n"
 	set job_1_match 0
 	set job_2_match 0
 	spawn $sacct -A '$test_acct' -N$job_1_node_0 -p -o jobid,jobname
 	expect {
 		-re "$job_id_1" {
 			incr job_1_match
-		 	exp_continue 
+			exp_continue
 		}
 		-re "$job_id_2" {
 			incr job_2_match
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct did not respond\n"
+			send_user "\nFAILURE: sacct did not respond (Within: inc12.3.2)\n"
 			set exit_code 1
 		}
 		eof {
@@ -54,30 +54,30 @@ proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1
 		}
 	}
 	if {$job_1_match != 1} {
-		send_user "\nFAILURE:sacct was unable to find the job $job_id_1 on node $job_1_node_0 ($job_1_match != 1)\n"
+		send_user "\nFAILURE:sacct was unable to find the job $job_id_1 on node $job_1_node_0 ($job_1_match != 1) (Within: inc12.3.2)\n"
 		set exit_code 1
 	}
 	if {$job_2_match != 0} {
-		send_user "\nFAILURE:sacct was found job $job_id_2 on node $job_1_node_0 ($job_2_match != 0)\n"
+		send_user "\nFAILURE:sacct was found job $job_id_2 on node $job_1_node_0 ($job_2_match != 0) (Within: inc12.3.2)\n"
 		set exit_code 1
 	}
 
 
-	send_user "\nSearch for jobs $job_id_1 and $job_id_2 on node: $job_1_node_2\n"
+	send_user "\nSearch for jobs $job_id_1 and $job_id_2 on node: $job_1_node_2 (Within: inc12.3.2))\n"
 	set job_1_match 0
 	set job_2_match 0
 	spawn $sacct -A '$test_acct' -N$job_1_node_2 -p -o jobid,jobname
 	expect {
 		-re "$job_id_1" {
 			incr job_1_match
-		 	exp_continue 
+			exp_continue
 		}
 		-re "$job_id_2" {
 			incr job_2_match
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct did not respond\n"
+			send_user "\nFAILURE: sacct did not respond (Within: inc12.3.2)\n"
 			set exit_code 1
 		}
 		eof {
@@ -85,26 +85,26 @@ proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1
 		}
 	}
 	if {$job_1_match != 1} {
-		send_user "\nFAILURE:sacct was unable to find the job $job_id_1 on node $job_1_node_2 ($job_1_match != 1)\n"
+		send_user "\nFAILURE:sacct was unable to find the job $job_id_1 on node $job_1_node_2 ($job_1_match != 1) (Within: inc12.3.2)\n"
 		set exit_code 1
 	}
 
 
-	send_user "\nSearch for jobs $job_id_1 and $job_id_2 on node: $job_2_node_0\n"
+	send_user "\nSearch for jobs $job_id_1 and $job_id_2 on node: $job_2_node_0 (Within: inc12.3.2)\n"
 	set job_1_match 0
 	set job_2_match 0
 	spawn $sacct -A '$test_acct' -N$job_2_node_0 -p -o jobid,jobname
 	expect {
 		-re "$job_id_1" {
 			incr job_1_match
-		 	exp_continue 
+		 	exp_continue
 		}
 		-re "$job_id_2" {
 			incr job_2_match
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct did not respond\n"
+			send_user "\nFAILURE: sacct did not respond (Within: inc12.3.2)\n"
 			set exit_code 1
 		}
 		eof {
@@ -112,26 +112,26 @@ proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1
 		}
 	}
 	if {$job_2_match != 1} {
-		send_user "\nFAILURE:sacct was unable to find the job $job_id_2 on node $job_2_node_0 ($job_2_match != 1)\n"
+		send_user "\nFAILURE:sacct was unable to find the job $job_id_2 on node $job_2_node_0 ($job_2_match != 1) (Within: inc12.3.2)\n"
 		set exit_code 1
 	}
 
 
-	send_user "\nSearch for jobs $job_id_2 and $job_id_3 on node: $job_2_node_1\n"
+	send_user "\nSearch for jobs $job_id_2 and $job_id_3 on node: $job_2_node_1 (Within: inc12.3.2)\n"
 	set job_1_match 0
 	set job_2_match 0
 	spawn $sacct -A '$test_acct' -N$job_2_node_1 -p -o jobid,jobname
 	expect {
 		-re "$job_id_1" {
 			incr job_1_match
-		 	exp_continue 
+		 	exp_continue
 		}
 		-re "$job_id_2" {
 			incr job_2_match
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacct did not respond\n"
+			send_user "\nFAILURE: sacct did not respond (Within: inc12.3.2)\n"
 			set exit_code 1
 		}
 		eof {
@@ -139,8 +139,7 @@ proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1
 		}
 	}
 	if {$job_2_match != 1} {
-		send_user "\nFAILURE: sacct was unable to find the job $job_id_2 on node $job_2_node_1 ($job_2_match != 1)\n"
+		send_user "\nFAILURE: sacct was unable to find the job $job_id_2 on node $job_2_node_1 ($job_2_match != 1) (Within: inc12.3.2)\n"
 		set exit_code 1
 	}
 }
-
