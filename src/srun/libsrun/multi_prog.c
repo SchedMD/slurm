@@ -309,8 +309,8 @@ mpir_dump_proctable(void)
 }
 
 static int
-_update_task_mask(int low_num, int high_num, int ntasks, bitstr_t *task_mask,
-		  bool ignore_duplicates)
+_update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
+		  bitstr_t *task_mask, bool ignore_duplicates)
 {
 	int i;
 
@@ -322,9 +322,17 @@ _update_task_mask(int low_num, int high_num, int ntasks, bitstr_t *task_mask,
 		error("Invalid task id, %d < 0", low_num);
 		return -1;
 	}
-	if (high_num >= ntasks) {
-		error("Invalid task id, %d >= ntasks", high_num);
-		return -1;
+	if (high_num >= *ntasks) {
+		static bool i_set_ntasks = false;
+		if (*ntasks_set && !i_set_ntasks) {
+			error("Invalid task id, %d >= ntasks", high_num);
+			return -1;
+		} else {
+			*ntasks = high_num + 1;
+			*ntasks_set = true;
+			i_set_ntasks = true;
+			task_mask = bit_realloc(task_mask, *ntasks);
+		}
 	}
 	for (i=low_num; i<=high_num; i++) {
 		if (bit_test(task_mask, i)) {
@@ -339,17 +347,20 @@ _update_task_mask(int low_num, int high_num, int ntasks, bitstr_t *task_mask,
 }
 
 static int
-_validate_ranks(char *ranks, int ntasks, bitstr_t *task_mask)
+_validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, bitstr_t *task_mask)
 {
+	static bool has_asterisk = false;
 	char *range = NULL, *p = NULL;
 	char *ptrptr = NULL, *upper = NULL;
 	int low_num, high_num;
 
 	if (ranks[0] == '*' && ranks[1] == '\0') {
 		low_num = 0;
-		high_num = ntasks - 1;
-		return _update_task_mask(low_num, high_num, ntasks, task_mask,
-					 true);
+		high_num = *ntasks - 1;
+		*ntasks_set = true;	/* do not allow to change later */
+		has_asterisk = true;	/* must be last MPMD spec line */
+		return _update_task_mask(low_num, high_num, ntasks, ntasks_set,
+					 task_mask, true);
 	}
 
 	for (range = strtok_r(ranks, ",", &ptrptr); range != NULL;
@@ -358,7 +369,11 @@ _validate_ranks(char *ranks, int ntasks, bitstr_t *task_mask)
 		while (*p != '\0' && isdigit (*p))
 			p ++;
 
-		if (*p == '\0') { /* single rank */
+		if (has_asterisk) {
+			error("Task range specification with asterisk must "
+			      "be last");
+			return -1;
+		} else if (*p == '\0') { /* single rank */
 			low_num  = atoi(range);
 			high_num = low_num;
 		} else if (*p == '-') { /* lower-upper */
@@ -377,8 +392,8 @@ _validate_ranks(char *ranks, int ntasks, bitstr_t *task_mask)
 			return -1;
 		}
 
-		if (_update_task_mask(low_num, high_num, ntasks, task_mask,
-				      false))
+		if (_update_task_mask(low_num, high_num, ntasks, ntasks_set,
+				      task_mask, false))
 			return -1;
 	}
 	return 0;
@@ -387,11 +402,13 @@ _validate_ranks(char *ranks, int ntasks, bitstr_t *task_mask)
 /*
  * Verify that we have a valid executable program specified for each task
  *	when the --multi-prog option is used.
- *
- * Return 0 on success, -1 otherwise
+ * IN config_name - MPMD configuration file name
+ * IN/OUT ntasks - number of tasks to launch
+ * IN/OUT ntasks_set - true if task count explicitly set by user
+ * RET 0 on success, -1 otherwise
  */
 extern int
-verify_multi_name(char *config_fname, int ntasks)
+verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set)
 {
 	FILE *config_fd;
 	char line[256];
@@ -399,8 +416,8 @@ verify_multi_name(char *config_fname, int ntasks)
 	int line_num = 0, i, rc = 0;
 	bitstr_t *task_mask;
 
-	if (ntasks <= 0) {
-		error("Invalid task count %d", ntasks);
+	if (*ntasks <= 0) {
+		error("Invalid task count %d", *ntasks);
 		return -1;
 	}
 
@@ -410,7 +427,7 @@ verify_multi_name(char *config_fname, int ntasks)
 		return -1;
 	}
 
-	task_mask = bit_alloc(ntasks);
+	task_mask = bit_alloc(*ntasks);
 	while (fgets(line, sizeof(line), config_fd)) {
 		line_num ++;
 		if (strlen (line) >= (sizeof(line) - 1)) {
@@ -437,7 +454,7 @@ verify_multi_name(char *config_fname, int ntasks)
 			rc = -1;
 			goto fini;
 		}
-		if (_validate_ranks(ranks, ntasks, task_mask)) {
+		if (_validate_ranks(ranks, ntasks, ntasks_set, task_mask)) {
 			error("Line %d of configuration file %s invalid",
 				line_num, config_fname);
 			rc = -1;
@@ -445,7 +462,7 @@ verify_multi_name(char *config_fname, int ntasks)
 		}
 	}
 
-	for (i=0; i<ntasks; i++) {
+	for (i = 0; i < *ntasks; i++) {
 		if (!bit_test(task_mask, i)) {
 			error("Configuration file %s invalid, "
 				"no record for task id %d",
