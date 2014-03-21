@@ -33,7 +33,7 @@ proc inc21_30_12 { } {
 	set job_id2 0
 	set timeout 120
 
-	spawn $salloc --account=$acct -N2 -t2 $srun $bin_sleep [expr $grpwall_num * 60]
+	spawn $salloc --account=$acct -N2 -t$grpwall_num $srun $bin_sleep [expr $grpwall_num * 60]
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
