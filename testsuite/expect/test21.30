@@ -426,7 +426,7 @@ if {$exit_code != 0 } {
 #
 # Test Group wall
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1  $grpwall_num -1 -1 -1 -1
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpwall_num -1 -1 -1 -1
 sleep $time_spacing
 inc21_30_12
 if {$exit_code != 0 } {
