@@ -3107,11 +3107,9 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	}
 	hostlist_iterator_reset(hi);
 
-	if (nnodes < 2) {
-		/* Without more than one node, high-speed network access is
-		 * unnecesary */
-		jp->tables_per_task = 0;
-	} else if (adapter_type == NRT_IPONLY) {
+	/* Even for 1 node jobs the network needs to be set up. */
+
+	if (adapter_type == NRT_IPONLY) {
 		/* If tables_per_task != 0 for adapter_type == NRT_IPONLY
 		 * then the device's window count in NRT is incremented.
 		 * When we later read the adapter information, the adapter
