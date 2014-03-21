@@ -3147,7 +3147,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	protocol_table = _get_protocol_table(protocol);
 	if ((protocol_table == NULL) ||
 	    (protocol_table->protocol_table_cnt <= 0)) {
-		info("switch/nrt: invalid protcol specification (%s)",
+		info("switch/nrt: invalid protocol specification (%s)",
 		     protocol);
 		xfree(protocol_table);
 		hostlist_iterator_destroy(hi);
