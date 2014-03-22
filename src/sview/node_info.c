@@ -191,6 +191,7 @@ static display_data_t options_data_node[] = {
 };
 
 static display_data_t *local_display_data = NULL;
+static GtkTreeModel *last_model = NULL;
 
 static void _layout_node_record(GtkTreeView *treeview,
 				sview_node_info_t *sview_node_info_ptr,
@@ -572,8 +573,7 @@ static void _append_node_record(sview_node_info_t *sview_node_info,
 static void _update_info_node(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	static GtkTreeModel *last_model = NULL;
-	char *name;
+	char *name = NULL;
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info = NULL;
 
@@ -581,9 +581,8 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
-
 		/* This means the tree_store changed (added new column
-		   or something). */
+		 * or something). */
 		if (last_model != model)
 			sview_node_info->iter_set = false;
 
@@ -1326,6 +1325,7 @@ extern GtkListStore *create_model_node(int type)
 	char *upper = NULL, *lower = NULL;
 	int i=0;
 
+	last_model = NULL;	/* Reformat display */
 	switch(type) {
 	case SORTID_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING,

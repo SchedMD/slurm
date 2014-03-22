@@ -479,8 +479,8 @@ struct signv {
 };
 
 static display_data_t *local_display_data = NULL;
-
 static char *got_edit_signal = NULL;
+static GtkTreeModel *last_model = NULL;
 
 static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 			      GtkTreeModel *model,
@@ -2649,7 +2649,6 @@ static void _update_info_job(List info_list,
 			     GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	static GtkTreeModel *last_model = NULL;
 	int jobid = 0;
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
@@ -3158,6 +3157,7 @@ extern GtkListStore *create_model_job(int type)
 	GtkListStore *model = NULL;
 	GtkTreeIter iter;
 
+	last_model = NULL;	/* Reformat display */
 	switch(type) {
 	case SORTID_ACTION:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);

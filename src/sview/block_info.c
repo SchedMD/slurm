@@ -189,6 +189,7 @@ static display_data_t options_data_block[] = {
 };
 
 static display_data_t *local_display_data = NULL;
+static GtkTreeModel *last_model = NULL;
 
 static void _admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 static void _append_block_record(sview_block_info_t *block_ptr,
@@ -454,7 +455,6 @@ static void _update_info_block(List block_list,
 	ListIterator itr;
 	sview_block_info_t *block_ptr = NULL;
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	static GtkTreeModel *last_model = NULL;
 	char *name = NULL;
 
 	if (!block_list) {
@@ -949,6 +949,8 @@ extern GtkListStore *create_model_block(int type)
 {
 	GtkListStore *model = NULL;
 	GtkTreeIter iter;
+
+	last_model = NULL;	/* Reformat display */
 	switch(type) {
 	case SORTID_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING,

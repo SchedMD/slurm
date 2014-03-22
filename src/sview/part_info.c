@@ -307,6 +307,7 @@ static display_data_t options_data_part[] = {
 static display_data_t *local_display_data = NULL;
 static char *got_edit_signal = NULL;
 static char *got_features_edit_signal = NULL;
+static GtkTreeModel *last_model = NULL;
 
 static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore, GtkTreeIter *iter,
@@ -1457,7 +1458,6 @@ static void _update_info_part(List info_list,
 			      GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	static GtkTreeModel *last_model = NULL;
 	char *name = NULL;
 	ListIterator itr = NULL;
 	sview_part_info_t *sview_part_info = NULL;
@@ -2098,6 +2098,7 @@ static GtkListStore *_create_model_part2(int type)
 	GtkListStore *model = NULL;
 	GtkTreeIter iter;
 
+	last_model = NULL;	/* Reformat display */
 	switch (type) {
 	case SORTID_DEFAULT:
 	case SORTID_HIDDEN:
@@ -2182,6 +2183,7 @@ extern GtkListStore *create_model_part(int type)
 	char *upper = NULL, *lower = NULL;
 	int i = 0;
 
+	last_model = NULL;	/* Reformat display */
 	switch (type) {
 	case SORTID_DEFAULT:
 	case SORTID_HIDDEN:

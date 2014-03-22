@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     error number.
  -- If srun invoked with the --multi-prog option, but no task count, then use
     the task count provided in the MPMD configuration file.
+ -- Prevent sview abort on some systems when adding or removing columns to the
+    display for nodes, jobs, partitions, etc.
 
 * Changes in Slurm 14.03.0rc1
 ==============================

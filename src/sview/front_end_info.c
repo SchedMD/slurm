@@ -134,8 +134,8 @@ static display_data_t options_data_front_end[] = {
 
 
 static display_data_t *local_display_data = NULL;
-
 static char *got_edit_signal = NULL;
+static GtkTreeModel *last_model = NULL;
 
 static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 			     char *node_list);
@@ -277,7 +277,6 @@ static void _append_front_end_record(
 static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	static GtkTreeModel *last_model = NULL;
 	char *name;
 	ListIterator itr = NULL;
 	sview_front_end_info_t *sview_front_end_info = NULL;
@@ -565,6 +564,7 @@ extern GtkListStore *create_model_front_end(int type)
 	GtkTreeIter iter;
 	int i = 0;
 
+	last_model = NULL;	/* Reformat display */
 	switch(type) {
 	case SORTID_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING,

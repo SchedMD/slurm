@@ -180,8 +180,8 @@ static display_data_t options_data_resv[] = {
 
 
 static display_data_t *local_display_data = NULL;
-
 static char *got_edit_signal = NULL;
+static GtkTreeModel *last_model = NULL;
 
 static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 static void _process_each_resv(GtkTreeModel *model, GtkTreePath *path,
@@ -677,7 +677,6 @@ static void _update_info_resv(List info_list,
 			      GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	static GtkTreeModel *last_model = NULL;
 	char *name = NULL;
 	ListIterator itr = NULL;
 	sview_resv_info_t *sview_resv_info = NULL;
@@ -993,6 +992,7 @@ extern GtkListStore *create_model_resv(int type)
 	GtkListStore *model = NULL;
 	GtkTreeIter iter;
 
+	last_model = NULL;	/* Reformat display */
 	switch(type) {
 	case SORTID_ACTION:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
