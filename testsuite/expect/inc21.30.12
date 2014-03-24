@@ -35,7 +35,7 @@ proc inc21_30_12 { } {
 
 	# Since wall is a decayed variable lets reset it to make sure the test
 	# gets exactly what we would expect.
-	reset_account_usage "" $acct
+	reset_qos_usage "" $qostest
 
 	spawn $salloc --account=$acct -N2 -t$grpwall_num $srun $bin_sleep [expr $grpwall_num * 60]
 	expect {
@@ -58,7 +58,8 @@ proc inc21_30_12 { } {
 		}
 	}
 
-	reset_account_usage "" $acct
+
+	reset_qos_usage "" $qostest
 
 	spawn $salloc --account=$acct -N2 -t2 $srun $bin_sleep [expr $grpwall_num * 2]
 	expect {

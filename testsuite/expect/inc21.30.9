@@ -34,7 +34,6 @@ proc inc21_30_9 { } {
 	if  { [test_enforce_safe_set] == 0 } {
 		send_user "\nWARNING: This test can't be run without AccountingStorageEnforce having \"safe\" in it\n"
 		return
-
 	}
 
 	set job_id1 0
@@ -44,7 +43,7 @@ proc inc21_30_9 { } {
 	set timelimit [expr $grpcpumin_num / $task_cnt]
 	# Since GrpCpuMins is a decayed variable lets reset it to make sure
 	# the test gets exactly what we would expect.
-	reset_account_usage "" $acct
+	reset_qos_usage "" $qostest
 
 	spawn $salloc --account=$acct --qos=$qostest -n$task_cnt -t$timelimit $srun $bin_sleep 1
 	expect {
@@ -67,7 +66,7 @@ proc inc21_30_9 { } {
 	}
 	cancel_job $job_id1
 
-	reset_account_usage "" $acct
+	reset_qos_usage "" $qostest
 
 	spawn $salloc --account=$acct --qos=$qostest -n$task_cnt -t[expr $timelimit + 1] $srun $bin_sleep 1
 	expect {
