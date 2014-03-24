@@ -1511,6 +1511,10 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	char *srun_debug = NULL, *tmp_char = NULL;
 	char *myargv[3] = { "poe", NULL, NULL };
 	int debug_level = log_opts.logfile_level;
+
+	if (geteuid() == 0)
+		error("POE will not run as user root");
+
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
