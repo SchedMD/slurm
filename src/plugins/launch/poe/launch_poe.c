@@ -398,7 +398,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	} else {
 		protocol = _get_cmd_protocol(opt.argv[1]);
 	}
-	debug("cmd:%s protcol:%s", opt.argv[1], protocol);
+	debug("cmd:%s protocol:%s", opt.argv[1], protocol);
 
 	if (opt.multi_prog) {
 		int fd, k;
@@ -529,6 +529,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			} else if ((!strncasecmp(token, "lapi", 4)) ||
 				   (!strncasecmp(token, "mpi",  3)) ||
 				   (!strncasecmp(token, "pami", 4)) ||
+				   (!strncasecmp(token, "shmem",5)) ||
 				   (!strncasecmp(token, "upc",  3))) {
 				if (!protocol_set) {
 					protocol_set = true;
@@ -591,7 +592,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		else
 			setenv("MP_MSG_API", protocol, 0);
 	} else {
-		if (!strcmp(protocol, "multi")) {
+		if (strcmp(protocol, "multi")) {
 			setenv("MP_MSG_API", protocol, 0);
 			if (opt.launch_cmd)
 				xstrfmtcat(poe_cmd_line,
