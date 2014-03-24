@@ -1413,13 +1413,13 @@ extern bool acct_policy_job_runnable_post_select(
 				debug2("Job %u being held, "
 				       "the job is at or exceeds QOS %s's "
 				       "group max cpu minutes of %"PRIu64" "
-				       "with usage %"PRIu64" and running "
-				       "cpu minutes %"PRIu64" "
-				       "(%u cpus requested)",
+				       "of which %"PRIu64" are still available "
+				       "but request is for %"PRIu64" cpu "
+				       "minutes (%u cpus)",
 				       job_ptr->job_id,
 				       qos_ptr->name,
 				       qos_ptr->grp_cpu_mins,
-				       usage_mins,
+				       qos_ptr->grp_cpu_mins - usage_mins,
 				       job_cpu_time_limit + cpu_run_mins,
 				       cpu_cnt);
 
@@ -1761,13 +1761,16 @@ extern bool acct_policy_job_runnable_post_select(
 				job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 				debug2("job %u being held, "
 				       "assoc %u is at or exceeds "
-				       "group max cpu minutes limit %"PRIu64" "
-				       "with usage %"PRIu64" and currently "
-				       "running cpu minutes "
-				       "%"PRIu64" for account %s",
+				       "group max cpu minutes of %"PRIu64" "
+				       "of which %"PRIu64" are still available "
+				       "but request is for %"PRIu64" cpu "
+				       "minutes (%u cpus)"
+				       "for account %s",
 				       job_ptr->job_id, assoc_ptr->id,
 				       assoc_ptr->grp_cpu_mins,
-				       usage_mins, cpu_run_mins,
+				       assoc_ptr->grp_cpu_mins - usage_mins,
+				       job_cpu_time_limit + cpu_run_mins,
+				       cpu_cnt,
 				       assoc_ptr->acct);
 				rc = false;
 				goto end_it;
