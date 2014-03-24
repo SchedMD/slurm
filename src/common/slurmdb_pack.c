@@ -8087,6 +8087,7 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 	case SLURMDB_ADD_QOS:
 	case SLURMDB_MODIFY_QOS:
 	case SLURMDB_REMOVE_QOS:
+	case SLURMDB_REMOVE_QOS_USAGE:
 		my_function = slurmdb_pack_qos_rec;
 		break;
 	case SLURMDB_ADD_WCKEY:
@@ -8157,6 +8158,7 @@ extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 	case SLURMDB_ADD_QOS:
 	case SLURMDB_MODIFY_QOS:
 	case SLURMDB_REMOVE_QOS:
+	case SLURMDB_REMOVE_QOS_USAGE:
 		my_function = slurmdb_unpack_qos_rec;
 		my_destroy = slurmdb_destroy_qos_rec;
 		break;

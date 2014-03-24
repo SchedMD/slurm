@@ -217,7 +217,7 @@ Added the following enums and #defines
 ========================================
  -- enum slurmdb_resource_type_t: server resource record "type" definition.
  -- Added new slurmdb_update_type_t SLURMDB_ADD_RES,
-    SLURMDB_REMOVE_RES, SLURMDB_MODIFY_RES
+    SLURMDB_REMOVE_RES, SLURMDB_MODIFY_RES, SLURMDB_REMOVE_QOS_USAGE
  -- Added new flags for Resources SLURMDB_RES_FLAG_BASE,
     SLURMDB_RES_FLAG_NOTSET, SLURMDB_RES_FLAG_ADD, SLURMDB_RES_FLAG_REMOVE
  -- Added new flags for QOS QOS_FLAG_BASE

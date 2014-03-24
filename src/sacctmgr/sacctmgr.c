@@ -908,6 +908,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             MaxCPUsPerUser=, MaxJobs=, MaxNodes=,          \n\
                             MaxNodesPerUser=, MaxSubmitJobs=, MaxWall=,    \n\
                             Names=, Preempt=, PreemptMode=, Priority=,     \n\
+                            RawUsage= (with admin privileges only),        \n\
                             UsageFactor=, and UsageThreshold=              \n\
                             (where options) Descriptions=, ID=, Names=     \n\
                             and PreemptMode=                               \n\

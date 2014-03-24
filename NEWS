@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     display for nodes, jobs, partitions, etc.
  -- Add job array hash table for improved performance.
  -- Make AccountingStorageEnforce=all not include nojobs or nosteps.
+ -- Added sacctmgr mod qos set RawUsage=0
 
 * Changes in Slurm 14.03.0rc1
 ==============================

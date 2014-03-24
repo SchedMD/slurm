@@ -751,6 +751,104 @@ end_it:
 	return rc;
 }
 
+extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
+{
+	List update_list = NULL;
+	List cluster_list;
+	List local_qos_list = NULL;
+	List local_cluster_list = NULL;
+	ListIterator itr = NULL, itr2 = NULL;
+	char *qos_name = NULL, *cluster_name = NULL;
+	slurmdb_qos_rec_t* rec = NULL;
+	slurmdb_cluster_rec_t* cluster_rec = NULL;
+	slurmdb_update_object_t* update_obj = NULL;
+	slurmdb_cluster_cond_t cluster_cond;
+	int rc = SLURM_SUCCESS;
+	bool free_cluster_name = 0;
+
+	cluster_list = qos_cond->description_list;
+	qos_cond->description_list = NULL;
+
+	if (!cluster_list)
+		cluster_list = list_create(slurm_destroy_char);
+
+	if (!list_count(cluster_list)) {
+		char *temp = slurm_get_cluster_name();
+		if (temp) {
+			printf("No cluster specified, resetting "
+			       "on local cluster %s\n", temp);
+			list_append(cluster_list, temp);
+		}
+		if (!list_count(cluster_list)) {
+			error("A cluster name is required to remove usage");
+			return SLURM_ERROR;
+		}
+	}
+
+	if (!commit_check("Would you like to reset usage?")) {
+		printf(" Changes Discarded\n");
+		return rc;
+	}
+
+	local_qos_list = acct_storage_g_get_qos(db_conn, my_uid, qos_cond);
+
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
+	cluster_cond.cluster_list = cluster_list;
+	local_cluster_list = acct_storage_g_get_clusters(
+		db_conn, my_uid, &cluster_cond);
+
+	itr = list_iterator_create(cluster_list);
+	itr2 = list_iterator_create(qos_cond->name_list);
+	while ((cluster_name = list_next(itr))) {
+		cluster_rec = sacctmgr_find_cluster_from_list(
+			local_cluster_list, cluster_name);
+		if (!cluster_rec) {
+			error("Failed to find cluster %s in database",
+			      cluster_name);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+
+		update_list = list_create(slurmdb_destroy_update_object);
+		update_obj = xmalloc(sizeof(slurmdb_update_object_t));
+		update_obj->type = SLURMDB_REMOVE_QOS_USAGE;
+		update_obj->objects = list_create(NULL);
+
+		while ((qos_name = list_next(itr2))) {
+			rec = sacctmgr_find_qos_from_list(
+				local_qos_list, qos_name);
+			if (!rec) {
+				error("Failed to find QOS %s", qos_name);
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			list_append(update_obj->objects, rec);
+		}
+		list_iterator_reset(itr2);
+
+		if (list_count(update_obj->objects)) {
+			list_append(update_list, update_obj);
+			rc = slurmdb_send_accounting_update(
+				update_list, cluster_name,
+				cluster_rec->control_host,
+				cluster_rec->control_port,
+				cluster_rec->rpc_version);
+		}
+		FREE_NULL_LIST(update_list);
+	}
+end_it:
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
+
+	FREE_NULL_LIST(update_list);
+	FREE_NULL_LIST(local_qos_list);
+
+	if (free_cluster_name)
+		xfree(cluster_name);
+
+	return rc;
+}
+
 extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(
 	char *account, char *cluster)
 {

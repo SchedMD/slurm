@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/assoc_mgr.h"
 
 static uint16_t _parse_preempt_modes(char *names)
 {
@@ -154,6 +155,18 @@ static int _set_cond(int *start, int argc, char *argv[],
 					list_create(slurm_destroy_char);
 			}
 			if (slurm_addto_char_list(qos_cond->name_list,
+						 argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "Clusters",
+					MAX(command_len, 1))) {
+			/* This is only used to remove usage, overload
+			   the description.
+			*/
+			if (!qos_cond->description_list) {
+				qos_cond->description_list =
+					list_create(slurm_destroy_char);
+			}
+			if (slurm_addto_char_list(qos_cond->description_list,
 						 argv[i]+end))
 				set = 1;
 		} else if (!strncasecmp (argv[i], "Descriptions",
@@ -464,6 +477,17 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &qos->priority,
 			    "Priority") == SLURM_SUCCESS)
 				set = 1;
+		} else if (!strncasecmp (argv[i], "RawUsage",
+					 MAX(command_len, 7))) {
+			uint32_t usage;
+			if (!qos)
+				continue;
+			qos->usage = xmalloc(sizeof(assoc_mgr_qos_usage_t));
+			if (get_uint(argv[i]+end, &usage,
+				     "RawUsage") == SLURM_SUCCESS) {
+				qos->usage->usage_raw = usage;
+				set = 1;
+			}
 		} else if (!strncasecmp (argv[i], "UsageFactor",
 					 MAX(command_len, 6))) {
 			if (!qos)
@@ -1006,6 +1030,19 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 			slurmdb_destroy_qos_rec(qos);
 			return SLURM_SUCCESS;
 		}
+	}
+
+	// Special case:  reset raw usage only
+	if (qos->usage) {
+		rc = SLURM_ERROR;
+		if (qos->usage->usage_raw == 0.0)
+			rc = sacctmgr_remove_qos_usage(qos_cond);
+		else
+			error("Raw usage can only be set to 0 (zero)");
+
+		slurmdb_destroy_qos_cond(qos_cond);
+		slurmdb_destroy_qos_rec(qos);
+		return rc;
 	}
 
 	notice_thread_init();

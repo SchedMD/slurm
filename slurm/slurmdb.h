@@ -138,6 +138,7 @@ typedef enum {
 	SLURMDB_ADD_RES,
 	SLURMDB_REMOVE_RES,
 	SLURMDB_MODIFY_RES,
+	SLURMDB_REMOVE_QOS_USAGE,
 } slurmdb_update_type_t;
 
 /* Define QOS flags */

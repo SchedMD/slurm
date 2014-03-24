@@ -2350,6 +2350,7 @@ extern int assoc_mgr_update(List update_list)
 		case SLURMDB_ADD_QOS:
 		case SLURMDB_MODIFY_QOS:
 		case SLURMDB_REMOVE_QOS:
+		case SLURMDB_REMOVE_QOS_USAGE:
 			rc = assoc_mgr_update_qos(object);
 			break;
 		case SLURMDB_ADD_WCKEY:
@@ -3272,6 +3273,13 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			list_iterator_destroy(assoc_itr);
 
 			break;
+		case SLURMDB_REMOVE_QOS_USAGE:
+			if (!rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+			assoc_mgr_remove_qos_usage(rec);
+			break;
 		default:
 			break;
 		}
@@ -3608,6 +3616,17 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_association_rec_t *assoc)
  *	The assoc is an account, so reset all children
  */
 	_reset_children_usages(sav_assoc->usage->children_list);
+}
+
+extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos)
+{
+	xassert(qos);
+	xassert(qos->usage);
+
+	info("Resetting usage for QOS %s", qos->name);
+
+	qos->usage->usage_raw = 0;
+	qos->usage->grp_used_wall = 0;
 }
 
 extern int dump_assoc_mgr_state(char *state_save_location)
