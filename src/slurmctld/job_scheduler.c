@@ -1758,7 +1758,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			if ((sep_ptr2 == NULL) ||
 			    (job_id == 0) || (job_id == job_ptr->job_id) ||
 			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') &&
-			     (sep_ptr2[0] != ':'))) {
+			     (sep_ptr2[0] != ':')  && (sep_ptr2[0] != '_'))) {
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
