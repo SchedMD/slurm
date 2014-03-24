@@ -58,7 +58,7 @@ set grn_num     2
 set grcpu       GrpCpus
 set grcpu_num   10
 set grpcpumin   GrpCPUMins
-set grpcpumin_num  1
+set grpcpumin_num  4
 # Set grpcpurunmin_num to multiple of CPUs per core to work with most configurations
 # Also make sure that it is at least 4 so we can add and subtract from it
 set grpcpurunmin GrpCPURunMins
@@ -388,19 +388,11 @@ if {$exit_code != 0} {
 #
 # Test GroupCPUMins
 #
-# NOTE: This test for Group CPU Mins does not always run properly
-# due to a timing issue caused by a decay timer from the limit once it
-# has been reached. The decay also effects other QOS timed limits so
-# other parts of this test may not work properly if the group cpu
-# run mins test is used.
-#
-if {0} {
-	mod_qos -1 -1 -1 -1 -1 -1 -1 -1 $grpcpumin_num -1 -1 -1 -1 -1 -1 -1
-	sleep $time_spacing
-	inc21_30_9
-	if {$exit_code != 0 } {
-		endit
-	}
+mod_qos -1 -1 -1 -1 -1 -1 -1 -1 $grpcpumin_num -1 -1 -1 -1 -1 -1 -1
+sleep $time_spacing
+inc21_30_9
+if {$exit_code != 0 } {
+	endit
 }
 
 #
