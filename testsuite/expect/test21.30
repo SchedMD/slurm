@@ -88,7 +88,7 @@ set maxjobs     MaxJobs
 set maxjobs_num 2
 set maxjobsub   MaxSubmitJobs
 set maxjobsub_num 2
-set time_spacing 5
+set time_spacing 1
 
 print_header $test_id
 
