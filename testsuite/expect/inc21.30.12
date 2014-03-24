@@ -26,7 +26,7 @@
 ############################################################################
 
 proc inc21_30_12 { } {
-	global salloc srun acct bin_sleep grpwall_num number exit_code
+	global salloc srun acct bin_sleep grpwall_num number exit_code qostest
 
 	send_user "\nStarting Grpwall test (Within: inc21.30.12)\n\n"
 	set job_id1 0
@@ -37,12 +37,11 @@ proc inc21_30_12 { } {
 	# gets exactly what we would expect.
 	reset_qos_usage "" $qostest
 
-	spawn $salloc --account=$acct -N2 -t$grpwall_num $srun $bin_sleep [expr $grpwall_num * 60]
+	spawn $salloc --account=$acct --qos=$qostest -N2 -t$grpwall_num $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
 			send_user "\nJob $job_id1 has been submitted. (Within: inc21.30.12)\n"
-			exp_continue
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -58,10 +57,12 @@ proc inc21_30_12 { } {
 		}
 	}
 
+	# Cancel job
+	cancel_job $job_id1
 
 	reset_qos_usage "" $qostest
 
-	spawn $salloc --account=$acct -N2 -t2 $srun $bin_sleep [expr $grpwall_num * 2]
+	spawn $salloc --account=$acct --qos=$qostest -N2 -t2 $srun $bin_sleep 10
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
@@ -81,7 +82,6 @@ proc inc21_30_12 { } {
 		}
 	}
 
-	# Cancel jobs
-	cancel_job $job_id1
+	# Cancel job
 	cancel_job $job_id2
 }
