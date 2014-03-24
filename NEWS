@@ -28,6 +28,7 @@ documents those changes that are of interest to users and admins.
  -- Prevent sview abort on some systems when adding or removing columns to the
     display for nodes, jobs, partitions, etc.
  -- Add job array hash table for improved performance.
+ -- Make AccountingStorageEnforce=all not include nojobs or nosteps.
 
 * Changes in Slurm 14.03.0rc1
 ==============================

@@ -3180,6 +3180,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				|= ACCOUNTING_ENFORCE_QOS;
 		}
 
+		if (slurm_strcasestr(temp_str, "all")) {
+			conf->accounting_storage_enforce = 0xffff;
+			conf->track_wckey = true;
+			/* If all is used, nojobs and nosteps aren't
+			   part of it.  They must be requested as well.
+			*/
+			conf->accounting_storage_enforce
+				&= (~ACCOUNTING_ENFORCE_NO_JOBS);
+			conf->accounting_storage_enforce
+				&= (~ACCOUNTING_ENFORCE_NO_STEPS);
+		}
+
+		/* Everything that "all" doesn't mean should be put here */
 		if (slurm_strcasestr(temp_str, "nojobs")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_NO_JOBS;
@@ -3190,11 +3203,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (slurm_strcasestr(temp_str, "nosteps")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_NO_STEPS;
-		}
-
-		if (slurm_strcasestr(temp_str, "all")) {
-			conf->accounting_storage_enforce = 0xffff;
-			conf->track_wckey = true;
 		}
 
 		xfree(temp_str);
