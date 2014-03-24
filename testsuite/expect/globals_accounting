@@ -1865,3 +1865,35 @@ proc check_assoc_limit { assoc type name fs gcm gc gcrm gj gn gsj gw mc mcm mj m
 	log_user 1
 
 }
+
+################################################################
+#
+# Proc: reset_account_usage
+#
+# Purpose: check that the association limits are correct
+#
+# Returns: 1 if association limits are correct, 0 otherwise
+#
+################################################################
+proc reset_account_usage { cluster acct } {
+	global sacctmgr exit_code
+
+	if { ![string compare $cluster ""] } {
+		set cluster [get_cluster_name]
+	}
+
+	spawn $sacctmgr -i mod account $acct cluster=$cluster set RawUsage=0
+	expect {
+		-re "error:" {
+			send_user "\nFAILURE something went wrong with sacctmgr command\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE sacctmgr not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
