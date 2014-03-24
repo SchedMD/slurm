@@ -553,6 +553,8 @@ struct job_record {
 	uint32_t group_id;		/* group submitted under */
 	uint32_t job_id;		/* job ID */
 	struct job_record *job_next;	/* next entry with same hash index */
+	struct job_record *job_array_next_j; /* job array linked list by job_id */
+	struct job_record *job_array_next_t; /* job array linked list by task_id */
 	job_resources_t *job_resrcs;	/* details of allocated cores */
 	uint16_t job_state;		/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on

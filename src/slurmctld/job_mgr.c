@@ -103,6 +103,8 @@
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
+#define JOB_ARRAY_HASH_INX(_job_id, _task_id) \
+	((_job_id + _task_id) % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
 #define JOB_STATE_VERSION       "PROTOCOL_VERSION"
@@ -125,6 +127,8 @@ static int      hash_table_size = 0;
 static int      job_count = 0;		/* job's in the system */
 static uint32_t job_id_sequence = 0;	/* first job_id to assign new job */
 static struct   job_record **job_hash = NULL;
+static struct   job_record **job_array_hash_j = NULL;
+static struct   job_record **job_array_hash_t = NULL;
 static int	select_serial = -1;
 static bool     wiki_sched = false;
 static bool     wiki2_sched = false;
@@ -132,6 +136,7 @@ static bool     wiki_sched_test = false;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
+static void _add_job_array_hash(struct job_record *job_ptr);
 static int  _checkpoint_job_record (struct job_record *job_ptr,
 				    char *image_dir);
 static int  _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest);
@@ -966,7 +971,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			}
 			job_ptr->job_id = job_id;
+			job_ptr->array_job_id = array_job_id;
+			job_ptr->array_task_id = array_task_id;
 			_add_job_hash(job_ptr);
+			_add_job_array_hash(job_ptr);
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -1129,7 +1137,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			}
 			job_ptr->job_id = job_id;
+			job_ptr->array_job_id = array_job_id;
+			job_ptr->array_task_id = array_task_id;
 			_add_job_hash(job_ptr);
+			_add_job_array_hash(job_ptr);
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -1288,7 +1299,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			}
 			job_ptr->job_id = job_id;
+			job_ptr->array_job_id = array_job_id;
+			job_ptr->array_task_id = array_task_id;
 			_add_job_hash(job_ptr);
+			_add_job_array_hash(job_ptr);
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -1459,8 +1473,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	alloc_node             = NULL;	/* reused, nothing left to free */
 	job_ptr->alloc_resp_port = alloc_resp_port;
 	job_ptr->alloc_sid    = alloc_sid;
-	job_ptr->array_job_id = array_job_id;
-	job_ptr->array_task_id = array_task_id;
 	job_ptr->assoc_id     = assoc_id;
 	job_ptr->batch_flag   = batch_flag;
 	xfree(job_ptr->batch_host);
@@ -2082,38 +2094,70 @@ void _add_job_hash(struct job_record *job_ptr)
 	job_hash[inx] = job_ptr;
 }
 
+/* _add_job_array_hash - add a job hash entry for given job record,
+ *	array_job_id and array_task_id must already be set
+ * IN job_ptr - pointer to job record
+ * Globals: hash table updated
+ */
+void _add_job_array_hash(struct job_record *job_ptr)
+{
+	int inx;
+
+	if (job_ptr->array_task_id == NO_VAL)
+		return;	/* Not a job array */
+
+	inx = JOB_HASH_INX(job_ptr->array_job_id);
+	job_ptr->job_array_next_j = job_array_hash_j[inx];
+	job_array_hash_j[inx] = job_ptr;
+
+	inx = JOB_ARRAY_HASH_INX(job_ptr->array_job_id,job_ptr->array_task_id);
+	job_ptr->job_array_next_t = job_array_hash_t[inx];
+	job_array_hash_t[inx] = job_ptr;
+}
+
 /*
  * find_job_array_rec - return a pointer to the job record with the given
  *	array_job_id/array_task_id
  * IN job_id - requested job's id
- * IN array_task_id - requested job's task id (NO_VAL if none specified)
+ * IN array_task_id - requested job's task id,
+ *		      NO_VAL if none specified (i.e. not a job array )
+ *		      INFINITE return any task for specified job id
  * RET pointer to the job's record, NULL on error
  */
 extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 					     uint32_t array_task_id)
 {
-	ListIterator job_iterator;
 	struct job_record *job_ptr, *match_job_ptr = NULL;
+	int inx;
 
 	if (array_task_id == NO_VAL)
 		return find_job_record(array_job_id);
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->array_job_id != array_job_id)
-			continue;
-
-		if (array_task_id == INFINITE) {
-			match_job_ptr = job_ptr;
-			if (!IS_JOB_FINISHED(job_ptr))
-				break;
-		} else if (job_ptr->array_task_id == array_task_id) {
-			match_job_ptr = job_ptr;
-			break;
+	if (array_task_id == INFINITE) {	/* find by job ID */
+		inx = JOB_HASH_INX(array_job_id);
+		job_ptr = job_array_hash_j[inx];
+		while (job_ptr) {
+			if (job_ptr->array_job_id == array_job_id) {
+				match_job_ptr = job_ptr;
+				if (!IS_JOB_FINISHED(job_ptr)) {
+					return job_ptr;
+				}
+			}
+			job_ptr = job_ptr->job_array_next_j;
 		}
+		return match_job_ptr;
+	} else {		/* Find specific task ID */
+		inx = JOB_ARRAY_HASH_INX(array_job_id, array_task_id);
+		job_ptr = job_array_hash_t[inx];
+		while (job_ptr) {
+			if ((job_ptr->array_job_id == array_job_id) &&
+			    (job_ptr->array_task_id == array_task_id)) {
+				return job_ptr;
+			}
+			job_ptr = job_ptr->job_array_next_t;
+		}
+		return NULL;	/* None found */
 	}
-	list_iterator_destroy(job_iterator);
-	return match_job_ptr;
 }
 
 /*
@@ -2927,6 +2971,10 @@ extern void rehash_jobs(void)
 		hash_table_size = slurmctld_conf.max_job_cnt;
 		job_hash = (struct job_record **)
 			xmalloc(hash_table_size * sizeof(struct job_record *));
+		job_array_hash_j = (struct job_record **)
+			xmalloc(hash_table_size * sizeof(struct job_record *));
+		job_array_hash_t = (struct job_record **)
+			xmalloc(hash_table_size * sizeof(struct job_record *));
 	} else if (hash_table_size < (slurmctld_conf.max_job_cnt / 2)) {
 		/* If the MaxJobCount grows by too much, the hash table will
 		 * be ineffective without rebuilding. We don't presently bother
@@ -3116,6 +3164,7 @@ static void _create_job_array(struct job_record *job_ptr,
 	}
 	job_ptr->array_job_id  = job_ptr->job_id;
 	job_ptr->array_task_id = i_first;
+	_add_job_array_hash(job_ptr);
 
 	i_last = bit_fls(job_specs->array_bitmap);
 	for (i = (i_first + 1); i <= i_last; i++) {
@@ -3126,6 +3175,7 @@ static void _create_job_array(struct job_record *job_ptr,
 			break;
 		job_ptr_new->array_job_id  = job_ptr->job_id;
 		job_ptr_new->array_task_id = i;
+		_add_job_array_hash(job_ptr_new);
 		acct_policy_add_job_submit(job_ptr);
 	}
 }
@@ -5992,7 +6042,7 @@ static void _list_delete_job(void *job_entry)
 	xassert (job_ptr->magic == JOB_MAGIC);
 	job_ptr->magic = 0;	/* make sure we don't delete record twice */
 
-	/* Remove the record from the hash table */
+	/* Remove the record from job hash table */
 	job_pptr = &job_hash[JOB_HASH_INX(job_ptr->job_id)];
 	while ((job_pptr != NULL) &&
 	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
@@ -6003,6 +6053,33 @@ static void _list_delete_job(void *job_entry)
 		return;	/* Fix CLANG false positive error */
 	}
 	*job_pptr = job_ptr->job_next;
+
+	/* Remove the record from job array hash tables, if applicable */
+	if (job_ptr->array_task_id == NO_VAL)
+		return;
+
+	job_pptr = &job_array_hash_j[JOB_HASH_INX(job_ptr->array_job_id)];
+	while ((job_pptr != NULL) &&
+	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
+		job_pptr = &job_ptr->job_array_next_j;
+	}
+	if (job_pptr == NULL) {
+		fatal("job array hash error");
+		return;	/* Fix CLANG false positive error */
+	}
+	*job_pptr = job_ptr->job_array_next_j;
+
+	job_pptr = &job_array_hash_t[JOB_ARRAY_HASH_INX(job_ptr->array_job_id,
+							job_ptr->array_task_id)];
+	while ((job_pptr != NULL) &&
+	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
+		job_pptr = &job_ptr->job_array_next_t;
+	}
+	if (job_pptr == NULL) {
+		fatal("job array, task ID hash error");
+		return;	/* Fix CLANG false positive error */
+	}
+	*job_pptr = job_ptr->job_array_next_t;
 
 /*
  * NOTE: Anything you free here also needs to be allocated memory copied
@@ -9941,6 +10018,8 @@ void job_fini (void)
 		job_list = NULL;
 	}
 	xfree(job_hash);
+	xfree(job_array_hash_j);
+	xfree(job_array_hash_t);
 }
 
 /* log the completion of the specified job */
