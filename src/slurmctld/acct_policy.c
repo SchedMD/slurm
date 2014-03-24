@@ -1414,12 +1414,15 @@ extern bool acct_policy_job_runnable_post_select(
 				       "the job is at or exceeds QOS %s's "
 				       "group max cpu minutes of %"PRIu64" "
 				       "with usage %"PRIu64" and running "
-				       " cpu minutes %"PRIu64"",
+				       "cpu minutes %"PRIu64" "
+				       "(%u cpus requested)",
 				       job_ptr->job_id,
 				       qos_ptr->name,
 				       qos_ptr->grp_cpu_mins,
 				       usage_mins,
-				       cpu_run_mins);
+				       job_cpu_time_limit + cpu_run_mins,
+				       cpu_cnt);
+
 				rc = false;
 				goto end_it;
 			}
