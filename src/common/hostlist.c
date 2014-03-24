@@ -503,7 +503,7 @@ static void _error(char *file, int line, char *msg, ...)
  */
 static char * _next_tok(char *sep, char **str)
 {
-	char *tok;
+	char *tok, *parse, *open_bracket, *close_bracket;
 
 	/* push str past any leading separators */
 	while ((**str != '\0') && (strchr(sep, **str) != NULL))
@@ -514,32 +514,25 @@ static char * _next_tok(char *sep, char **str)
 
 	/* assign token ptr */
 	tok = *str;
+	parse = tok;
 
-	/* push str past token and leave pointing to first separator */
-	while ((**str != '\0') && (strchr(sep, **str) == NULL))
-		(*str)++;
-
-	/* if _single_ opening bracket exists b/w tok and str,
-	 * push str past first closing bracket */
-	if ((memchr(tok, '[', *str - tok) != NULL) &&
-	    (memchr(tok, ']', *str - tok) == NULL)) {
-		char *q = strchr(*str, ']');
-
-		if (q && (memchr(*str, '[', q - *str) == NULL))
-			*str = ++q;
-
-		/* push str past token and leave pointing to next separator */
+	while (1) {
+		/* push str past token and leave pointing to first separator */
 		while ((**str != '\0') && (strchr(sep, **str) == NULL))
 			(*str)++;
 
-		/* if _second_ opening bracket exists b/w tok and str,
-		 * push str past second closing bracket */
-		if ((**str != '\0') && q &&
-		    (memchr(tok, '[', *str - q) != NULL) &&
-		    (memchr(tok, ']', *str - q) == NULL)) {
-			q = strchr(*str, ']');
-			if (q && (memchr(*str, '[', q - *str) == NULL))
-				*str = q + 1;
+		/* push str past pairs of brackets */
+bracket: 	open_bracket = strchr(parse, '[');
+		if ((open_bracket == NULL) || (open_bracket > *str))
+			break;
+		close_bracket = strchr(parse, ']');
+		if ((close_bracket == NULL) || (close_bracket < open_bracket))
+			break;
+		if (close_bracket < *str) {
+			parse = close_bracket + 1;
+			goto bracket;
+		} else {
+			*str = close_bracket;
 		}
 	}
 
