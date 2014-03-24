@@ -1399,7 +1399,7 @@ extern bool acct_policy_job_runnable_post_select(
 				rc = false;
 				goto end_it;
 			} else if (safe_limits
-				   && ((job_cpu_time_limit + cpu_run_mins) >=
+				   && ((job_cpu_time_limit + cpu_run_mins) >
 				       (qos_ptr->grp_cpu_mins - usage_mins))) {
 				/*
 				 * If we're using safe limits start
@@ -1744,7 +1744,7 @@ extern bool acct_policy_job_runnable_post_select(
 				rc = false;
 				goto end_it;
 			} else if (safe_limits
-				   && ((job_cpu_time_limit + cpu_run_mins) >=
+				   && ((job_cpu_time_limit + cpu_run_mins) >
 				       (assoc_ptr->grp_cpu_mins
 					- usage_mins))) {
 				/*
