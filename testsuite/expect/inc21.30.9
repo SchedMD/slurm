@@ -32,14 +32,18 @@ proc inc21_30_9 { } {
 	send_user "\nStarting GrpCpuMins test (Within: inc21.30.9) \n\n"
 	set job_id1 0
 	set job_id2 0
+	set task_cnt 2
 	set timeout [expr $grpcpumin_num * 120]
+	set timelimit [expr $grpcpumin_num / $task_cnt]
+	# Since GrpCpuMins is a decayed variable lets reset it to make sure
+	# the test gets exactly what we would expect.
+	reset_account_usage "" $acct
 
-	spawn $salloc --account=$acct --qos=$qostest -n2 --time=$grpcpumin_num $srun $bin_sleep [expr $grpcpumin_num * 60]
+	spawn $salloc --account=$acct --qos=$qostest -n$task_cnt -t$timelimit $srun $bin_sleep 1
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
 			send_user "\nJob $job_id1 has been submitted. (Within: inc21.30.9)\n"
-			exp_continue
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -54,8 +58,11 @@ proc inc21_30_9 { } {
 			wait
 		}
 	}
+	cancel_job $job_id1
 
-	spawn $salloc --account=$acct --qos=$qostest -n2 -t2 $srun $bin_sleep 120
+	reset_account_usage "" $acct
+
+	spawn $salloc --account=$acct --qos=$qostest -n$task_cnt -t[expr $timelimit + 1] $srun $bin_sleep 1
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
@@ -75,7 +82,5 @@ proc inc21_30_9 { } {
 		}
 	}
 
-	# Cancel jobs
-	cancel_job $job_id1
 	cancel_job $job_id2
 }
