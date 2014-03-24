@@ -15,8 +15,8 @@
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
 # --with cray        %_with_cray        1    build for a Cray system without ALPS
 # --with cray_alps   %_with_cray_alps   1    build for a Cray system with ALPS
-# --with debug       %_with_debug       1    enable extra debugging within SLURM
-# --with lua         %_with_lua         1    build SLURM lua bindings (proctrack only for now)
+# --with debug       %_with_debug       1    enable extra debugging within Slurm
+# --with lua         %_with_lua         1    build Slurm lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
 # --with mysql       %_with_mysql       1    require mysql support
 # --with openssl     %_with_openssl     1    require openssl RPM to be installed
@@ -96,7 +96,7 @@ Name:    see META file
 Version: see META file
 Release: see META file
 
-Summary: Simple Linux Utility for Resource Management
+Summary: Slurm Workload Manager
 
 License: GPL
 Group: System Environment/Base
@@ -173,7 +173,7 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 %endif
 
 %description
-SLURM is an open source, fault-tolerant, and highly
+Slurm is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
 containing up to 65,536 nodes. Components include machine status,
 partition management, job management, scheduling and accounting modules
@@ -234,37 +234,37 @@ partition management, job management, scheduling and accounting modules
 %define _php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php5)
 
 %package perlapi
-Summary: Perl API to SLURM
+Summary: Perl API to Slurm
 Group: Development/System
 Requires: slurm
 %description perlapi
-Perl API package for SLURM.  This package includes the perl API to provide a
-helpful interface to SLURM through Perl
+Perl API package for Slurm.  This package includes the perl API to provide a
+helpful interface to Slurm through Perl
 
 %package devel
-Summary: Development package for SLURM
+Summary: Development package for Slurm
 Group: Development/System
 Requires: slurm
 %description devel
-Development package for SLURM.  This package includes the header files
-and static libraries for the SLURM API
+Development package for Slurm.  This package includes the header files
+and static libraries for the Slurm API
 
 %if %{slurm_with auth_none}
 %package auth-none
-Summary: SLURM auth NULL implementation (no authentication)
+Summary: Slurm auth NULL implementation (no authentication)
 Group: System Environment/Base
 Requires: slurm
 %description auth-none
-SLURM NULL authentication module
+Slurm NULL authentication module
 %endif
 
 %if %{slurm_with authd}
 %package auth-authd
-Summary: SLURM auth implementation using Brent Chun's authd
+Summary: Slurm auth implementation using Brent Chun's authd
 Group: System Environment/Base
 Requires: slurm authd
 %description auth-authd
-SLURM authentication module for Brent Chun's authd. Used to
+Slurm authentication module for Brent Chun's authd. Used to
 authenticate user originating an RPC
 %endif
 
@@ -272,61 +272,61 @@ authenticate user originating an RPC
 # package.  auth-munge and crypto-munge
 %if %{slurm_with munge}
 %package munge
-Summary: SLURM authentication and crypto implementation using Munge
+Summary: Slurm authentication and crypto implementation using Munge
 Group: System Environment/Base
 Requires: slurm munge
 BuildRequires: munge-devel munge-libs
 Obsoletes: slurm-auth-munge
 %description munge
-SLURM authentication and crypto implementation using Munge. Used to
+Slurm authentication and crypto implementation using Munge. Used to
 authenticate user originating an RPC, digitally sign and/or encrypt messages
 %endif
 
 %if %{slurm_with bluegene}
 %package bluegene
-Summary: SLURM interfaces to IBM Blue Gene system
+Summary: Slurm interfaces to IBM Blue Gene system
 Group: System Environment/Base
 Requires: slurm
 %description bluegene
-SLURM plugin interfaces to IBM Blue Gene system
+Slurm plugin interfaces to IBM Blue Gene system
 %endif
 
 %package slurmdbd
-Summary: SLURM database daemon
+Summary: Slurm database daemon
 Group: System Environment/Base
 Requires: slurm-plugins slurm-sql
 %description slurmdbd
-SLURM database daemon. Used to accept and process database RPCs and upload
+Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
 
 %package sql
-Summary: SLURM SQL support
+Summary: Slurm SQL support
 Group: System Environment/Base
 %description sql
-SLURM SQL support. Contains interfaces to MySQL.
+Slurm SQL support. Contains interfaces to MySQL.
 
 %package plugins
-Summary: SLURM plugins (loadable shared objects)
+Summary: Slurm plugins (loadable shared objects)
 Group: System Environment/Base
 %description plugins
-SLURM plugins (loadable shared objects) supporting a wide variety of
+Slurm plugins (loadable shared objects) supporting a wide variety of
 architectures and behaviors. These basically provide the building blocks
 with which Slurm can be configured. Note that some system specific plugins
 are in other packages
 
 %package torque
-Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM
+Summary: Torque/PBS wrappers for transitition from Torque/PBS to Slurm
 Group: Development/System
 Requires: slurm-perlapi
 %description torque
-Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM
+Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
 
 %package sjobexit
-Summary: SLURM job exit code management tools
+Summary: Slurm job exit code management tools
 Group: Development/System
 Requires: slurm-perlapi
 %description sjobexit
-SLURM job exit code management tools. Enables users to alter job exit code
+Slurm job exit code management tools. Enables users to alter job exit code
 information for completed jobs
 
 %package slurmdb-direct
@@ -338,80 +338,80 @@ Wrappers to write directly to the slurmdb
 
 %if %{slurm_with aix}
 %package aix
-Summary: SLURM interfaces to IBM AIX
+Summary: Slurm interfaces to IBM AIX
 Group: System Environment/Base
 Requires: slurm
 BuildRequires: proctrack >= 3
 Obsoletes: slurm-aix-federation
 %description aix
-SLURM interfaces for IBM AIX systems
+Slurm interfaces for IBM AIX systems
 %endif
 
 %if %{slurm_with percs}
 %package percs
-Summary: SLURM plugins to run on an IBM PERCS system
+Summary: Slurm plugins to run on an IBM PERCS system
 Group: System Environment/Base
 Requires: slurm nrt
 BuildRequires: nrt
 %description percs
-SLURM plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
+Slurm plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
 %endif
 
 
 %if %{slurm_with sgijob}
 %package proctrack-sgi-job
-Summary: SLURM process tracking plugin for SGI job containers
+Summary: Slurm process tracking plugin for SGI job containers
 Group: System Environment/Base
 Requires: slurm
 BuildRequires: job
 %description proctrack-sgi-job
-SLURM process tracking plugin for SGI job containers
+Slurm process tracking plugin for SGI job containers
 (See http://oss.sgi.com/projects/pagg)
 %endif
 
 %if %{slurm_with lua}
 %package lua
-Summary: SLURM lua bindings
+Summary: Slurm lua bindings
 Group: System Environment/Base
 Requires: slurm lua
 BuildRequires: lua-devel
 %description lua
-SLURM lua bindings
-Includes the SLURM proctrack/lua and job_submit/lua plugin
+Slurm lua bindings
+Includes the Slurm proctrack/lua and job_submit/lua plugin
 %endif
 
 %package sjstat
-Summary: Perl tool to print SLURM job state information
+Summary: Perl tool to print Slurm job state information
 Group: Development/System
 Requires: slurm
 %description sjstat
-Perl tool to print SLURM job state information. The output is designed to give
+Perl tool to print Slurm job state information. The output is designed to give
 information on the resource usage and availablilty, as well as information
 about jobs that are currently active on the machine. This output is built
-using the SLURM utilities, sinfo, squeue and scontrol, the man pages for these
+using the Slurm utilities, sinfo, squeue and scontrol, the man pages for these
 utilites will provide more information and greater depth of understanding
 
 %if %{slurm_with pam}
 %package pam_slurm
-Summary: PAM module for restricting access to compute nodes via SLURM
+Summary: PAM module for restricting access to compute nodes via Slurm
 Group: System Environment/Base
 Requires: slurm slurm-devel
 BuildRequires: pam-devel
 Obsoletes: pam_slurm
 %description pam_slurm
-This module restricts access to compute nodes in a cluster where the Simple
-Linux Utility for Resource Managment (SLURM) is in use.  Access is granted
-to root, any user with an SLURM-launched job currently running on the node,
-or any user who has allocated resources on the node according to the SLURM
+This module restricts access to compute nodes in a cluster where Slurm is in
+use.  Access is granted to root, any user with an Slurm-launched job currently
+running on the node, or any user who has allocated resources on the node
+according to the Slurm
 %endif
 
 %if %{slurm_with blcr}
 %package blcr
-Summary: Allows SLURM to use Berkeley Lab Checkpoint/Restart
+Summary: Allows Slurm to use Berkeley Lab Checkpoint/Restart
 Group: System Environment/Base
 Requires: slurm
 %description blcr
-Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
+Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 %endif
 
 #############################################################################
