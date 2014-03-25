@@ -74,21 +74,21 @@ if {$matches != 4} {
 # test double bracket hostnames
 #
 set matches 0
-spawn $scontrol show hostnames rack\[0-1\]_blade\[0-1\]
+spawn $scontrol show hostnames rack\[0-1\]_blade\[2,3\]
 expect {
-	-re "rack0_blade0" {
+	-re "rack0_blade2" {
 		incr matches
 		exp_continue
 	}
-	-re "rack0_blade1" {
+	-re "rack0_blade3" {
 		incr matches
 		exp_continue
 	}
-	-re "rack1_blade0" {
+	-re "rack1_blade2" {
 		incr matches
 		exp_continue
 	}
-	-re "rack1_blade1" {
+	-re "rack1_blade3" {
 		incr matches
 		exp_continue
 	}
@@ -102,6 +102,57 @@ expect {
 }
 if {$matches != 4} {
 	send_user "\nFAILURE: show hostnames failure ($matches != 4)\n"
+	set exit_code 1
+}
+
+#
+# test triple bracket hostnames
+#
+set matches 0
+spawn $scontrol show hostnames row\[0,1\]_rack\[2-3\]_blade\[4,5\]
+expect {
+	-re "row0_rack2_blade4" {
+		incr matches
+		exp_continue
+	}
+	-re "row0_rack2_blade5" {
+		incr matches
+		exp_continue
+	}
+	-re "row1_rack2_blade4" {
+		incr matches
+		exp_continue
+	}
+	-re "row1_rack2_blade5" {
+		incr matches
+		exp_continue
+	}
+	-re "row0_rack3_blade4" {
+		incr matches
+		exp_continue
+	}
+	-re "row0_rack3_blade5" {
+		incr matches
+		exp_continue
+	}
+	-re "row1_rack3_blade4" {
+		incr matches
+		exp_continue
+	}
+	-re "row1_rack3_blade5" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 8} {
+	send_user "\nFAILURE: show hostnames failure ($matches != 8)\n"
 	set exit_code 1
 }
 
