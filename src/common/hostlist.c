@@ -69,6 +69,7 @@
 #include <unistd.h>
 #include <slurm/slurmdb.h>
 
+#include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -77,7 +78,6 @@
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
-#include "src/common/bitstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -1814,7 +1814,7 @@ static int
 _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 		 int n, int dims)
 {
-	int i, k, nr;
+	int i, k, nr, rc = 0, rc1;
 	char *p, *q;
 	char new_prefix[1024], tmp_prefix[1024];
 
@@ -1824,10 +1824,11 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 		struct _range *prefix_range;
 		struct _range *saved_range = range, *pre_range;
 		unsigned long j, prefix_cnt = 0;
+		bool recurse = false;
 		*p++ = '\0';
 		*q++ = '\0';
 		if (strrchr(tmp_prefix, '[') != NULL)
-			return -1;	/* third range is illegal */
+			recurse = true;
 		prefix_range = malloc(sizeof(struct _range) * MAX_RANGES);
 		nr = _parse_range_list(p, prefix_range, MAX_RANGES, dims);
 		if (nr < 0) {
@@ -1847,18 +1848,26 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 				snprintf(new_prefix, sizeof(new_prefix),
 					 "%s%0*lu%s", tmp_prefix,
 					 pre_range->width, j, q);
-				range = saved_range;
-				for (k = 0; k < n; k++) {
-					hostlist_push_hr(hl, new_prefix,
-							 range->lo, range->hi,
-							 range->width);
-					range++;
+				if (recurse) {
+					rc1 = _push_range_list(hl, new_prefix,
+							       saved_range,
+							       n, dims);
+					rc = MAX(rc, rc1);
+				} else {
+					range = saved_range;
+					for (k = 0; k < n; k++) {
+						hostlist_push_hr(hl, new_prefix,
+								 range->lo,
+								 range->hi,
+								 range->width);
+						range++;
+					}
 				}
 			}
 			pre_range++;
 		}
 		free(prefix_range);
-		return 0;
+		return rc;
 	}
 
 	for (k = 0; k < n; k++) {
