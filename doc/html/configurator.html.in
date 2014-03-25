@@ -62,37 +62,15 @@ function get_radio_value(form)
   }
 }
 
-// When choosing SelectTypeParameters make sure the select_type
-// matches the parameter being checked
-function set_select_type(form)
-{
-  if (form.name == "cons_res_params") {
-    document.config.select_type[0].click()		// cons_res
-  } else if (form.name == "linear_params") {
-    document.config.select_type[1].click()		// linear
-  } else if (form.name == "bluegene_params") {
-    document.config.select_type[2].click()		// bluegene
-  } else if (form.name == "cray_params") {
-    document.config.select_type[3].click()		// cray
-  } else if (form.name == "select_params") {
-    document.config.select_type[4].click()		// select
-  }
-}
-
 // When generating SelectTypeParameters return the parameters that
 // correspond to the checked select_type
 function get_select_type_params()
 {
-  if (document.config.select_type[0].checked) {		// cons_res
+  if ((document.config.select_type[2].checked) ||	// cons_res or
+      (document.config.select_type[3].checked)) {	// cray
     return get_radio_field_skipfirst("SelectTypeParameters",
     					document.config.cons_res_params)
-  } else if (document.config.select_type[1].checked) {	// linear
-    return "#SelectTypeParameters="
-  } else if (document.config.select_type[2].checked) {	// bluegene
-    return "#SelectTypeParameters="
-  } else if (document.config.select_type[3].checked) {	// cray
-    return "#SelectTypeParameters="
-  } else if (document.config.select_type[4].checked) {	// select
+  } else {
     return "#SelectTypeParameters="
   }
 }
@@ -519,7 +497,10 @@ Select one value for <B>ReturnToService</B>:<BR>
 <input type="radio" name="return_to_service" value="0">
 <B>0</B>: When explicitly restored to service by an administrator.<BR>
 <input type="radio" name="return_to_service" value="1" checked>
-<B>1</B>: Automatically, when slurmd daemon registers with valid configuration<BR>
+<B>1</B>:Upon registration with a valid configuration only if it was set DOWN
+due to being non-responsive.<BR>
+<input type="radio" name="return_to_service" value="2">
+<B>2</B>:Upon registration with a valid configuration.<BR>
 <P>
 
 <H2>Scheduling</H2>
@@ -542,19 +523,21 @@ communications port (used by Wiki and Wiki2 only)
 Define what node configuration (sockets, cores, memory, etc.) should be used.
 Using values defined in the configuration file will provide faster scheduling.<BR>
 Select one value for <B>FastSchedule</B>:<BR>
-<input type="radio" name="fast_schedule" value="1" checked>
-<B>1</B>: Use node configuration values defined in configuration file<BR>
 <input type="radio" name="fast_schedule" value="0">
 <B>0</B>: Use node configuration values actually found on each node
 (if configured with with gang scheduling or allocation of individual
 processors to jobs rather than only whole node allocations, the processor
 count on the node should match the configured value to avoid having extra
-processors left idle)
+processors left idle)<BR>
+<input type="radio" name="fast_schedule" value="1" checked>
+<B>1</B>: Use node configuration values defined in configuration file.
+Mark node DOWN if registers with fewer resources<BR>
 <P>
 
 <H2>Interconnect</H2>
 Define the node interconnect used.<BR>
 Select one value for <B>SwitchType</B>:<BR>
+<input type="radio" name="switch_type" value="cray"> <B>Cray</B>: Cray proprietary interconnect<BR>
 <input type="radio" name="switch_type" value="none" checked> <B>None</B>: No special
 handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 <input type="radio" name="switch_type" value="nrt"> <B>NRT</B>: IBM Network Resource Table<BR>
@@ -586,6 +569,7 @@ extension, recommended for AIX systems<BR>
 <input type="radio" name="proctrack_type" value="cgroup"> <B>Cgroup</B>:  Use
 Linux <i>cgroups</i> to create a job container and track processes.
 Build a <i>cgroup.conf</i> file as well<BR>
+<input type="radio" name="proctrack_type" value="cray"> <B>Cray</B>: Cray proprietary process tracking<BR>
 <input type="radio" name="proctrack_type" value="pgid" checked> <B>Pgid</B>: Use Unix
 Process Group ID, processes changing their process group ID can escape from SLURM
 control<BR>
@@ -602,58 +586,51 @@ Aggregates (PAGG) kernel module</A>, recommended where available<BR>
 <H2>Resource Selection</H2>
 Define resource (node) selection algorithm to be used.<BR>
 Select one value for <B>SelectType</B>:<BR>
+<input type="radio" name="select_type" value="alps">
+<B>Alps</B>: Cray systems running ALPS only<BR>
+<input type="radio" name="select_type" value="bluegene">
+<B>BlueGene</B>: For IBM Blue Gene systems only<BR>
 <input type="radio" name="select_type" value="cons_res">
 <B>Cons_res</B>: Allocate individual processors and memory<BR>
+<input type="radio" name="select_type" value="cray">
+<B>Cray</B>: Cray systems running native Slurm without ALPS<BR>
+<input type="radio" name="select_type" value="linear" checked>
+<B>Linear</B>: Node-base
+resource allocation, does not manage individual processor allocation<BR>
+<input type="radio" name="select_type" value="serial">
+<B>Serial</B>: Execute single CPU jobs only<BR>
 <DL>
-<DL>
-<DT><B>SelectTypeParameters</B> (As used by <I>SelectType=Cons_res</I> only):
+<DT><B>SelectTypeParameters</B> (As used by <I>SelectType=cons_res or cray</I> only):
     <DD> Note: The -E extension for sockets, cores, and threads
 	are ignored within the node allocation mechanism
 	when CR_CPU or CR_CPU_MEMORY is selected.
 	They are considered to compute the total number of
 	tasks when -n is not specified
     <DD> Note: CR_MEMORY assumes MaxShare value of one of higher
-<DT> <input type="radio" name="cons_res_params" value="CR_CPU" checked
-	    onClick="javascript:set_select_type(this, 'cons_res')">
+<DT> <input type="radio" name="cons_res_params" value="CR_CPU" checked>
     <B>CR_CPU</B>: (default)
     CPUs as consumable resources.
     <DD> No notion of sockets, cores, or threads.
     On a multi-core system, cores will be considered CPUs.
     On a multi-core/hyperthread system, threads will be considered CPUs.
     On a single-core systems CPUs are CPUs. ;-)
-<DT> <input type="radio" name="cons_res_params" value="CR_Socket"
-	    onClick="javascript:set_select_type(this)">
+<DT> <input type="radio" name="cons_res_params" value="CR_Socket">
     <B>CR_Socket</B>: Sockets as a consumable resource.
-<DT> <input type="radio" name="cons_res_params" value="CR_Core"
-	    onClick="javascript:set_select_type(this)">
+<DT> <input type="radio" name="cons_res_params" value="CR_Core">
     <B>CR_Core</B>: Cores as a consumable resource.
-<DT> <input type="radio" name="cons_res_params" value="CR_Memory"
-	    onClick="javascript:set_select_type(this)">
+<DT> <input type="radio" name="cons_res_params" value="CR_Memory">
     <B>CR_Memory</B>: Memory as a consumable resource.
     <DD> Note: CR_Memory assumes MaxShare value of one of higher
-<DT> <input type="radio" name="cons_res_params" value="CR_CPU_Memory"
-	    onClick="javascript:set_select_type(this)">
+<DT> <input type="radio" name="cons_res_params" value="CR_CPU_Memory">
     <B>CR_CPU_Memory</B>:
     CPU and Memory as consumable resources.
-<DT> <input type="radio" name="cons_res_params" value="CR_Socket_Memory"
-	    onClick="javascript:set_select_type(this)">
+<DT> <input type="radio" name="cons_res_params" value="CR_Socket_Memory">
     <B>CR_Socket_Memory</B>:
     Socket and Memory as consumable resources.
-<DT> <input type="radio" name="cons_res_params" value="CR_Core_Memory"
-	    onClick="javascript:set_select_type(this)">
+<DT> <input type="radio" name="cons_res_params" value="CR_Core_Memory">
     <B>CR_Core_Memory</B>:
     Core and Memory as consumable resources.
 </DL>
-</DL>
-<input type="radio" name="select_type" value="bluegene">
-<B>BlueGene</B>: For IBM Blue Gene systems only<BR>
-<input type="radio" name="select_type" value="cray">
-<B>Cray</B>: Cray systems running ALPS only<BR>
-<input type="radio" name="select_type" value="linear" checked>
-<B>Linear</B>: Node-base
-resource allocation, does not manage individual processor allocation<BR>
-<input type="radio" name="select_type" value="serial">
-<B>Serial</B>: Supports single CPU job allocations only<BR>
 <P>
 
 <H2>Task Launch</H2>
@@ -661,6 +638,8 @@ Define a task launch plugin. This may be used to
 provide resource management within a node (e.g. pinning
 tasks to specific processors).
 Select one value for <B>TaskPlugin</B>:<BR>
+<input type="radio" name="task_plugin" value="cray"> <B>Cray</B>: Cray proprietary
+task launch<BR>
 <input type="radio" name="task_plugin" value="none" checked> <B>None</B>: No task launch actions<BR>
 <input type="radio" name="task_plugin" value="affinity"> <B>Affinity</B>:
 CPU affinity support
@@ -859,5 +838,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 10 September 2013</P>
+Last modified 25 March 2014</P>
 </BODY>
