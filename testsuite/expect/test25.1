@@ -474,7 +474,7 @@ proc sprio_args { soption sargs jobid} {
 ############# sprio format options
 	if { $soption == "--format" || $soption == "-o" } {
 
-		spawn $sprio $soption "%.7i %.8u %.10y %.10Y %.10a %.10A %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
+		spawn $sprio $soption "%.15i %.8u %.10y %.10Y %.10a %.10A %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
 		expect {
 			-re "SLURM accounting storage is disabled" {
 				set not_support 1
