@@ -1517,8 +1517,10 @@ int init ( void )
 	char *temp = NULL;
 
 	/* This means we aren't running from the controller so skip setup. */
-	if (cluster_cpus == NO_VAL)
+	if (cluster_cpus == NO_VAL) {
+		damp_factor = (long double)slurm_get_fs_dampening_factor();
 		return SLURM_SUCCESS;
+	}
 
 	_internal_setup();
 
