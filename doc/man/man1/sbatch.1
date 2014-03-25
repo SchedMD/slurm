@@ -897,7 +897,7 @@ In this configuration supported values include:
 \fBsystem\fR
 Use the system\-wide network performance counters. Because only one
 job can use this at a time this option will allocate every node in the
-cluster.  In steps inside the allocation wish to run on less than the
+cluster.  If steps inside the allocation wish to run on less than the
 full system they must specify the node count for each step.
 .TP
 \fBblade\fR
@@ -1244,7 +1244,7 @@ performance will likely suffer due to competition for resources within a node.
 
 .TP
 \fB\-S\fR, \fB\-\-core\-spec\fR=<\fInum\fR>
-Count of specialized cores per nodereserved by the job for system operations
+Count of specialized cores per node reserved by the job for system operations
 and not used by the application. The application will not use these cores,
 but will be charged for their allocation. Default value is zero.
 
