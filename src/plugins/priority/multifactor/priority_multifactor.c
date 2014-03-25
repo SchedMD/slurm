@@ -140,7 +140,7 @@ static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_decay = 0, reconfig = 0,
 	calc_fairshare = 1, priority_debug = 0;
 static bool favor_small; /* favor small jobs over large */
-static uint16_t damp_factor;  /* weight for age factor */
+static uint16_t damp_factor = 1;  /* weight for age factor */
 static uint32_t max_age; /* time when not to add any more
 			  * priority to a job if reached */
 static uint16_t enforce;     /* AccountingStorageEnforce */
