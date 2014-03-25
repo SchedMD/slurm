@@ -3196,8 +3196,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 			continue;
 		}
 
-		if ((node_ptr->node_state & NODE_STATE_COMPLETING) ||
-		    (node_ptr->node_state == NODE_STATE_ALLOCATED)) {
+		if (IS_NODE_COMPLETING(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
 			if (slurmctld_conf.fast_schedule)
 				nodeinfo->alloc_cpus =
 					node_ptr->config_ptr->cpus;
