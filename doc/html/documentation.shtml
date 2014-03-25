@@ -24,7 +24,8 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li>Specific Systems</li>
 <ul>
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
-<li><a href="cray.html">Cray User and Administrator Guide</a></li>
+<li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
+<li><a href="cray_alps.html">Cray User and Administrator Guide with ALPS</a></li>
 <li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
 <li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 </ul>
@@ -73,7 +74,8 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li>Specific Systems</li>
 <ul>
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
-<li><a href="cray.html">Cray User and Administrator Guide</a></li>
+<li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
+<li><a href="cray_alps.html">Cray User and Administrator Guide with ALPS</a></li>
 <li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
 <li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 <li><a href="sun_const.html">Sun Constellation Aministrator Guide</a></li>

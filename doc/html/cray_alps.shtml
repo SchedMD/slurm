@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>SLURM User and Administrator Guide for Cray Systems</h1>
+<h1>Slurm User and Administrator Guide for Cray Systems using Alps</h1>
 
 <ul>
 <li><a href="#user_guide">User Guide</a></li>
@@ -12,7 +12,11 @@
 
 <h2><a name="user_guide">User Guide</a></h2>
 
-<p>This document describes the unique features of SLURM on Cray computers.
+<p><b>If you have a Cray XC you might want to
+  consider running <a href='cray.html'>Slurm Natively</a>.</b>
+</p>
+<p>This document describes the unique features of SLURM on Cray
+computers on top of ALPS.
 You should be familiar with the SLURM's mode of operation on Linux clusters
 before studying the differences in Cray system operation described in this
 document.</p>
@@ -428,11 +432,14 @@ parameter in ALPS' <i>nodehealth.conf</i> file.</p>
 
 <p>You need to specify the appropriate resource selection plugin (the
 <i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration file).
-Configure <i>SelectType</i> to <i>select/cray</i> The <i>select/cray</i>
+Configure <i>SelectType</i> to <i>select/alps</i> The <i>select/alps</i>
 plugin provides an interface to ALPS plus issues calls to the
 <i>select/linear</i>, which selects resources for jobs using a best-fit
 algorithm to allocate whole nodes to jobs (rather than individual sockets,
-cores or threads).</p>
+cores or threads).
+<b>In versions of Slurm before 14.03 use <i>select/cray</i>.  In 14.03
+the plugin name was changed to <i>select/alps</i> to allow
+for <a href='cray.shtml'>Native Slurm</a> on a Cray.</b></p>
 
 <p>Note that the system topology is based upon information gathered from
 the ALPS database and is based upon the ALPS_NIDORDER configuration in
@@ -459,7 +466,7 @@ TopologyPlugin=topology/none
 # Scheduling
 SchedulerType=sched/backfill
 
-# Node selection: use the special-purpose "select/cray" plugin.
+# Node selection: use the special-purpose "select/alps" plugin.
 # Internally this uses select/linear, i.e. nodes are always allocated
 # in units of nodes (other allocation is currently not possible, since
 # ALPS does not yet allow to run more than 1 executable on the same
@@ -468,7 +475,7 @@ SchedulerType=sched/backfill
 # Add CR_memory as parameter to support --mem/--mem-per-cpu.
 # GPU memory allocation supported as generic resource.
 # NOTE: No gres/gpu_mem plugin is required, only generic SLURM GRES logic.
-SelectType=select/cray
+SelectType=select/alps
 SelectTypeParameters=CR_Memory
 GresTypes=gpu_mem
 

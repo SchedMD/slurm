@@ -24,10 +24,15 @@ added in version 2.1.</li>
 BlueGene/Q systems has been thoroughly tested. See
 <a href="bluegene.html">Blue Gene User and Administrator Guide</a>
 for more information.</li>
+<li><b>Cray XC</b>&#151;Operates as a workload manager natively on a
+  Cray system.  See
+<li><a href="cray.html">Cray User and Administrator Guide with Native
+Slurm</a> for more information.</li>
 <li><b>Cray XT and XE</b>&#151;Operates as a scheduler on top of Cray's
 ALPS/BASIL software. Supported added in Slurm version 2.3. Note that Cray's
 ALPS/BASIL software necessitates some changes in Slurm behavior. See
-<a href="cray.html">Cray User and Administrator Guide</a> for more information.</li>
+<li><a href="cray_alps.html">Cray User and Administrator Guide with
+ALPS</a> for more information.</li>
 <li><b>Ethernet</b>&#151;Ethernet requires no special support from Slurm and has
 been thoroughly tested.</li>
 <li><b>IBM Infiniband/Torrent</b>&#151;Slurm supports IBM's NRT (Network

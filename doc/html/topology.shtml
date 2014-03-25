@@ -36,7 +36,7 @@ SLURM's native best-fit algorithm is thus able to achieve a high degree
 of locality for jobs.
 For more information, see SLURM's documentation for
 <a href="sun_const.html">Sun Constellation</a> and
-<a href="cray.html">Cray</a> systems.</p>
+<a href="cray_alps.html">Cray XT and XE</a> systems.</p>
 
 <h2>Hierarchical Networks</h2>
 

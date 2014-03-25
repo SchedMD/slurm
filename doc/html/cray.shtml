@@ -1,0 +1,142 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Slurm User and Administrator Guide for Cray Systems Natively</h1>
+
+<ul>
+<li><a href="#user_guide">User Guide</a></li>
+<li><a href="#features">Cray Specific Features</a></li>
+<li><a href="#admin_guide">Administrator Guide</a></li>
+<li><a href="#setup">Cray System Setup</a></li>
+<li><a href="http://www.cray.com">Cray</a></li>
+</ul>
+
+<HR SIZE=4>
+
+<h2><a name="user_guide">User Guide</a></h2>
+
+<p>This document describes the unique features of Slurm on Cray
+  computers natively, or without the use of Cray's Application Level
+  Placement Scheduler (ALPS).  You should be familiar with the Slurm's
+  mode of operation on Linux clusters before studying the differences
+  in Cray system operation described in this document.  When running
+  Slurm in native mode a Cray system will function very similar to a
+  Linux cluster.
+</p>
+
+<p>Since version 14.03, Slurm is designed to operate as a workload
+  manager on Cray XC systems (Cascade) without the use of ALPS.  This
+  allows for many functionalities previously not available, such as...
+<ul>
+<li>Ability to run multiple jobs per node.</li>
+<li>Ability to status running jobs with sstat</li>
+<li>Full accounting support for job steps</li>
+<li>Ability to run multiple jobs/steps in background from the same
+  session</li>
+</ul>
+</p>
+
+<h2><a name="features">Cray Specific Features</a></h2>
+<ul>
+<li>Network Performance Counters</li>
+<p>
+  To access Cray's Network Performance Counters (NPC) you can use
+  the <i>--network</i> option in sbatch/salloc/srun to request them.
+  There are 2 different types of counters, system and blade.
+<p>
+  For the system option (--network=system) only one job can use system at
+  a time.  This option will allocate every node in the cluster.  If
+  steps inside the allocation wish to run on less than the full system
+  they must specify the node count for each step.
+</p>
+<p>
+  For the blade option (--network=blade) Only nodes requested
+  will be marked in use for the job allocation.  If the job does not
+  fill up the entire blade(s) allocated to the job those blade(s) are not
+  able to be used by other jobs, but will appear in the state PerfCnts.
+</p>
+<li>Core Specialization</li>
+<p>
+  Ability to reserve a number of cores allocated to the job for system
+  operations and not used by the application. The application will not
+  use these cores, but will be charged for their allocation.
+</p>
+</ul>
+<h2><a name="admin_guide">Admin Guide</a></h2>
+<p>
+  Many new plugins were added to utilize the Cray system without
+  ALPS.  These should be set up in your slurm.conf outside of your
+  normal configuration.
+<ul>
+<li>CoreSpec</li>
+<p>
+  To use set <b><i>CoreSpecPlugin=core_spec/cray</i></b>.  This plugin
+  is still under development.
+</p>
+
+<li>JobSubmit</li>
+<p>
+  To use set <b><i>JobSubmitPlugins=job_submit/cray</i></b>.  This plugin
+  is still under development.
+</p>
+<li>Proctrack</li>
+<p>
+  To use set <b><i>ProctrackType=proctrack/cray</i></b>.
+</p>
+<li>Select</li>
+<p>
+  To use set <b><i>SelectType=select/cray</i></b>.  This plugin is
+  a layered plugin.  Which means it enhances a lower layer select
+  plugin.  By default it is layered on top of the <i>select/linear</i>
+  plugin.  It can also be layered on top of the <i>select/cons_res</i> plugin
+  by using the <b><i>SelectTypeParameters=other_cons_res</i></b>,
+  doing this will allow you to run multiple jobs on a Cray node just
+  like on a normal Linux cluster.
+</p>
+<li>Switch</li>
+<p>
+  To use set <b><i>SwitchType=switch/cray</i></b>.
+</p>
+<li>Task</li>
+<p>
+  To use set <b><i>TaskPlugin=cray</i></b>.
+  It is advised to use this in conjunction with other task plugins
+  such as the <i>task/cgroup</i> plugin.  This can be done in this
+  manner, <b><i>TaskPlugin=cgroup,cray</i></b>, you can also
+  use the <i>task/affinity</i> plugin if wanted with <i>task/cray</i>
+  or the combination of all three depending on how you want your
+  system configured (i.e <b><i>TaskPlugin=cgroup,affinity,cray</i></b>).  The
+  plugins are used in the order they are defined in the comma
+  separated list.
+</p>
+</ul>
+
+<h2><a name="setup">Cray system Setup</a></h2>
+<p>
+  Some services on the system need to be set up to run correctly with
+  Slurm.  Below is how to restart the service and the nodes they run
+  on.  It is probably a good idea to set this up to happen automatically.
+<ul>
+  <li>boot node</li>
+  <ul>
+    <li>WLM_DETECT_ACTIVE=SLURM /etc/init.d/aeld restart</li>
+  </ul>
+  <li>sdb node</li>
+  <ul>
+    <li>WLM_DETECT_ACTIVE=SLURM /etc/init.d/ncmd restart</li>
+    <lI>WLM_DETECT_ACTIVE=SLURM /etc/init.d/apptermd restart</li>
+  </ul>
+<p>
+  As with linux clusters you will need to start a slurmd on each of your
+  compute nodes.  If you choose to use munge authentication, advised,
+  you will also need munge installed and a munged running on each of
+  your compute nodes as well.  See the <a href="quickstart_admin.html">
+  quick start guide</a> for more info.  Outside of the differences
+  listed in this file it can be used to set up your Cray system to run
+  Slurm natively.
+</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 25 March 2014</p>
+
+<!--#include virtual="footer.txt"-->
