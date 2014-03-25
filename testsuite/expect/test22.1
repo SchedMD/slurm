@@ -161,14 +161,14 @@ remove_user "" "" $users
 remove_acct "" $accounts
 remove_cluster "$cluster"
 #add cluster
-incr exit_code [add_cluster "$cluster" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster "$cluster" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
  	remove_cluster "$cluster"
 	exit $exit_code
 }
 
 #add accounts
-incr exit_code [add_acct "$cluster" "" "$account1,$account2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
+incr exit_code [add_acct "$cluster" "" "$account1,$account2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_acct "" "$account1,$account2"
 	remove_cluster "$cluster"
@@ -176,7 +176,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$cluster" "$account2" "$account3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
+incr exit_code [add_acct "$cluster" "$account2" "$account3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_acct "" $accounts
 	remove_cluster "$cluster"
@@ -184,7 +184,7 @@ if { $exit_code } {
 }
 
 #add users
-incr exit_code [add_user "$cluster" $accounts $users "" "" "" $wckey1 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
+incr exit_code [add_user "$cluster" $accounts $users "" "" "" $wckey1 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" $users
 	remove_acct "" $accounts
