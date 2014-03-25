@@ -325,7 +325,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 					    SELECT_JOBDATA_CLEANING,
 					    &cleaning);
-		if (!cleaning)	/* Step clean-up already in progress. */
+		if (cleaning)	/* Step clean-up in progress. */
 			break;
 		list_remove(step_iterator);
 		_free_step_rec(step_ptr);
