@@ -126,9 +126,10 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	bg_record_t *bg_record = (bg_record_t *) data;
 	uint32_t new_size;
 
-	xassert(jobinfo);
-
-	if (jobinfo->magic != JOBINFO_MAGIC) {
+	if (!jobinfo) {
+		error("set_select_jobinfo: jobinfo is NULL");
+		return SLURM_ERROR;
+	} else if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("set_select_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
 	}
