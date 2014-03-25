@@ -308,31 +308,24 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
 	int error_code;
-	uint16_t cleaning = 0;
 
 	xassert(job_ptr);
 	error_code = ENOENT;
 	if (!job_ptr->step_list)
 		return error_code;
 
-	last_job_update = time(NULL);
 	step_iterator = list_iterator_create (job_ptr->step_list);
+	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if (step_ptr->step_id != step_id)
-			continue;
-
-		error_code = 0;
-		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-					    SELECT_JOBDATA_CLEANING,
-					    &cleaning);
-		if (!cleaning)	/* Step clean-up already in progress. */
+		if (step_ptr->step_id == step_id) {
+			list_remove (step_iterator);
+			_free_step_rec(step_ptr);
+			error_code = 0;
 			break;
-		list_remove(step_iterator);
-		_free_step_rec(step_ptr);
-		break;
+		}
 	}
-	list_iterator_destroy(step_iterator);
 
+	list_iterator_destroy (step_iterator);
 	return error_code;
 }
 
