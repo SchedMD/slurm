@@ -6055,31 +6055,34 @@ static void _list_delete_job(void *job_entry)
 	*job_pptr = job_ptr->job_next;
 
 	/* Remove the record from job array hash tables, if applicable */
-	if (job_ptr->array_task_id == NO_VAL)
-		return;
+	if (job_ptr->array_task_id != NO_VAL) {
+		job_pptr = &job_array_hash_j[
+			JOB_HASH_INX(job_ptr->array_job_id)];
+		while ((job_pptr != NULL) &&
+		       ((job_ptr = *job_pptr) !=
+			(struct job_record *) job_entry)) {
+			job_pptr = &job_ptr->job_array_next_j;
+		}
+		if (job_pptr == NULL) {
+			fatal("job array hash error");
+			return;	/* Fix CLANG false positive error */
+		}
+		*job_pptr = job_ptr->job_array_next_j;
 
-	job_pptr = &job_array_hash_j[JOB_HASH_INX(job_ptr->array_job_id)];
-	while ((job_pptr != NULL) &&
-	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
-		job_pptr = &job_ptr->job_array_next_j;
+		job_pptr = &job_array_hash_t[
+			JOB_ARRAY_HASH_INX(job_ptr->array_job_id,
+					   job_ptr->array_task_id)];
+		while ((job_pptr != NULL) &&
+		       ((job_ptr = *job_pptr) !=
+			(struct job_record *) job_entry)) {
+			job_pptr = &job_ptr->job_array_next_t;
+		}
+		if (job_pptr == NULL) {
+			fatal("job array, task ID hash error");
+			return;	/* Fix CLANG false positive error */
+		}
+		*job_pptr = job_ptr->job_array_next_t;
 	}
-	if (job_pptr == NULL) {
-		fatal("job array hash error");
-		return;	/* Fix CLANG false positive error */
-	}
-	*job_pptr = job_ptr->job_array_next_j;
-
-	job_pptr = &job_array_hash_t[JOB_ARRAY_HASH_INX(job_ptr->array_job_id,
-							job_ptr->array_task_id)];
-	while ((job_pptr != NULL) &&
-	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
-		job_pptr = &job_ptr->job_array_next_t;
-	}
-	if (job_pptr == NULL) {
-		fatal("job array, task ID hash error");
-		return;	/* Fix CLANG false positive error */
-	}
-	*job_pptr = job_ptr->job_array_next_t;
 
 /*
  * NOTE: Anything you free here also needs to be allocated memory copied
