@@ -922,7 +922,6 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 		return NULL;
 	}
-	mysql_free_result(result);
 
 	/* On a Cray System when dealing with hostlists as we are here
 	   this always needs to be 1.
@@ -931,6 +930,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		dims = 1;
 	else
 		dims = atoi(row[0]);
+
+	mysql_free_result(result);
 
 	temp_hl = hostlist_create_dims(job_cond->used_nodes, dims);
 	if (hostlist_count(temp_hl) <= 0) {

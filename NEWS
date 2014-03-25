@@ -311,6 +311,7 @@ documents those changes that are of interest to users and admins.
  -- NRT - Fix issue with 1 node jobs.  It turns out the network does need to
     be setup for 1 node jobs.
  -- Fix recovery of job dependency on task of job array when slurmctld restarts.
+ -- mysql - Fix invalid memory reference.
 
 * Changes in Slurm 2.6.7
 ========================
