@@ -616,6 +616,38 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 	return rc;
 }
 
+static void _check_user_has_default_assoc(char *user_name, List assoc_list)
+{
+	ListIterator itr = list_iterator_create(assoc_list);
+	slurmdb_association_rec_t *assoc;
+	bool def_found = 0;
+	char *last_cluster = NULL;
+
+	while ((assoc = list_next(itr))) {
+		if (last_cluster && strcmp(last_cluster, assoc->cluster)) {
+			if (!def_found) {
+				printf(" User %s on cluster %s no "
+				       "longer has a default account.\n",
+				       user_name, last_cluster);
+			}
+			def_found = 0;
+		}
+
+		last_cluster = assoc->cluster;
+
+		if (assoc->is_def)
+			def_found = 1;
+	}
+	list_iterator_destroy(itr);
+
+	if (!def_found)
+		printf(" User %s on cluster %s no "
+		       "longer has a default account.\n",
+		       user_name, last_cluster);
+	return;
+}
+
+
 extern int sacctmgr_add_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -1984,8 +2016,12 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 			if (user_list) {
 				itr = list_iterator_create(user_list);
 				while ((user = list_next(itr))) {
-					if (user->assoc_list)
+					if (user->assoc_list) {
+						_check_user_has_default_assoc(
+							user->name,
+							user->assoc_list);
 						continue;
+					}
 					if (!del_user_list) {
 						del_user_list = list_create(
 							slurm_destroy_char);
