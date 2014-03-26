@@ -18,6 +18,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="sinfo.html">sinfo</a></td><td>view information about SLURM nodes and partitions.</td></tr>
 <tr><td><a href="slurm.html">slurm</a></td><td>SLURM system overview.</td></tr>
 <tr><td><a href="smap.html">smap</a></td><td>graphically view information about SLURM jobs, partitions, and set configurations parameters.</td></tr>
+<tr><td><a href="smd.html">smd</a></td><td>failure management support tool.</td></tr>
 <tr><td><a href="sprio.html">sprio</a></td><td>view the factors that comprise a job's scheduling priority</td></tr>
 <tr><td><a href="sh5util.html">sh5util</a></td><td>merge utility for acct_gather_profile plugin.</td></tr>
 <tr><td><a href="squeue.html">squeue</a></td><td>view information about jobs located in the SLURM scheduling queue.</td></tr>
@@ -47,6 +48,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </table>
 
 
-<p style="text-align:center;">Last modified 14 February 2014</p>
+<p style="text-align:center;">Last modified 26 March 2014</p>
 
 <!--#include virtual="footer.txt"-->
