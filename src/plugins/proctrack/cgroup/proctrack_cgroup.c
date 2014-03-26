@@ -118,6 +118,7 @@ static char jobstep_cgroup_path[PATH_MAX];
 static xcgroup_ns_t freezer_ns;
 
 static bool slurm_freezer_init = false;
+static xcgroup_t freezer_cg;
 static xcgroup_t slurm_freezer_cg;
 static xcgroup_t user_freezer_cg;
 static xcgroup_t job_freezer_cg;
@@ -138,6 +139,14 @@ int _slurm_cgroup_init(void)
 		return SLURM_ERROR;
 	}
 
+	/* initialize the root freezer cg */
+	if (xcgroup_create(&freezer_ns, &freezer_cg, "", 0, 0)
+	    != XCGROUP_SUCCESS) {
+		error("proctrack/cgroup unable to create root freezer xcgroup");
+		xcgroup_ns_destroy(&freezer_ns);
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -145,7 +154,7 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 {
 	/* we do it here as we do not have access to the conf structure */
 	/* in libslurm (src/common/xcgroup.c) */
-	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
+	char *pre = (char *)xstrdup(slurm_cgroup_conf.cgroup_prepend);
 #ifdef MULTIPLE_SLURMD
 	if ( conf->node_name != NULL )
 		xstrsubstitute(pre,"%n", conf->node_name);
@@ -155,15 +164,24 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 	}
 #endif
 
-	/* create slurm cgroup in the freezer ns (it could already exist) */
 	if (xcgroup_create(&freezer_ns, &slurm_freezer_cg, pre,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		return SLURM_ERROR;
 	}
-	if (xcgroup_instanciate(&slurm_freezer_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&slurm_freezer_cg);
-		return SLURM_ERROR;
-	}
+
+	/*
+	 * While creating the cgroup hierarchy of the step, lock the root
+	 * cgroup directory. The same lock is hold during removal of the
+	 * hierarchies of other jobs/steps. This helps to  avoid the race
+	 * condition with concurrent creation/removal of the intermediate
+	 * shared directories that could result in the failure of the
+	 * hierarchy setup
+	 */
+	xcgroup_lock(&freezer_cg);
+
+	/* create slurm cgroup in the freezer ns (it could already exist) */
+	if (xcgroup_instanciate(&slurm_freezer_cg) != XCGROUP_SUCCESS)
+		goto bail;
 
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
@@ -172,8 +190,7 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 			error("unable to build uid %u cgroup relative "
 			      "path : %m", uid);
 			xfree(pre);
-			xcgroup_destroy(&slurm_freezer_cg);
-			return SLURM_ERROR;
+			goto bail;
 		}
 	}
 	xfree(pre);
@@ -184,8 +201,7 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 			      user_cgroup_path, job->jobid) >= PATH_MAX) {
 			error("unable to build job %u cgroup relative "
 			      "path : %m", job->jobid);
-			xcgroup_destroy(&slurm_freezer_cg);
-			return SLURM_ERROR;
+			goto bail;
 		}
 	}
 
@@ -198,8 +214,7 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 				error("proctrack/cgroup unable to build job step"
 				      " %u.batch freezer cg relative path: %m",
 				      job->jobid);
-				xcgroup_destroy(&slurm_freezer_cg);
-				return SLURM_ERROR;
+				goto bail;
 			}
 		} else {
 			if (snprintf(jobstep_cgroup_path, PATH_MAX, "%s/step_%u",
@@ -207,8 +222,7 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 				error("proctrack/cgroup unable to build job step"
 				      " %u.%u freezer cg relative path: %m",
 				      job->jobid, job->stepid);
-				xcgroup_destroy(&slurm_freezer_cg);
-				return SLURM_ERROR;
+				goto bail;
 			}
 		}
 	}
@@ -218,7 +232,7 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 			    user_cgroup_path,
 			    getuid(), getgid()) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&slurm_freezer_cg);
-		return SLURM_ERROR;
+		goto bail;
 	}
 
 	/* create job cgroup in the freezer ns (it could already exist) */
@@ -227,7 +241,7 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 			    getuid(), getgid()) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&slurm_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
-		return SLURM_ERROR;
+		goto bail;
 	}
 
 	/* create step cgroup in the freezer ns (it should not exists) */
@@ -237,40 +251,41 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 		xcgroup_destroy(&slurm_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
 		xcgroup_destroy(&job_freezer_cg);
-		return SLURM_ERROR;
+		goto bail;
 	}
 
-	xcgroup_lock(&slurm_freezer_cg);
 	if ((xcgroup_instanciate(&user_freezer_cg) != XCGROUP_SUCCESS) ||
 	    (xcgroup_instanciate(&job_freezer_cg)  != XCGROUP_SUCCESS) ||
 	    (xcgroup_instanciate(&step_freezer_cg) != XCGROUP_SUCCESS)) {
-		xcgroup_unlock(&slurm_freezer_cg);
-		xcgroup_destroy(&slurm_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
 		xcgroup_destroy(&job_freezer_cg);
 		xcgroup_destroy(&step_freezer_cg);
-		return SLURM_ERROR;
+		goto bail;
 	}
-	xcgroup_unlock(&slurm_freezer_cg);
-	slurm_freezer_init = true;
 
-	/* inhibit release agent for the step cgroup thus letting 
-	 * slurmstepd being able to add new pids to the container 
+	/* inhibit release agent for the step cgroup thus letting
+	 * slurmstepd being able to add new pids to the container
 	 * when the job ends (TaskEpilog,...) */
 	xcgroup_set_param(&step_freezer_cg,"notify_on_release","0");
+	slurm_freezer_init = true;
 
+	xcgroup_unlock(&freezer_cg);
 	return SLURM_SUCCESS;
+
+bail:
+	xcgroup_destroy(&slurm_freezer_cg);
+	xcgroup_unlock(&freezer_cg);
+	xcgroup_destroy(&freezer_cg);
+	return SLURM_ERROR;
 }
 
 int _slurm_cgroup_destroy(void)
 {
-	if (slurm_freezer_init)
-		xcgroup_lock(&slurm_freezer_cg);
+	xcgroup_lock(&freezer_cg);
 
 	if (jobstep_cgroup_path[0] != '\0') {
-		if ( xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS ) {
-			if (slurm_freezer_init)
-				xcgroup_unlock(&slurm_freezer_cg);
+		if (xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS) {
+			xcgroup_unlock(&freezer_cg);
 			return SLURM_ERROR;
 		}
 		xcgroup_destroy(&step_freezer_cg);
@@ -287,10 +302,11 @@ int _slurm_cgroup_destroy(void)
 	}
 
 	if (slurm_freezer_init) {
-		xcgroup_unlock(&slurm_freezer_cg);
 		xcgroup_destroy(&slurm_freezer_cg);
 	}
 
+	xcgroup_unlock(&freezer_cg);
+	xcgroup_destroy(&freezer_cg);
 	xcgroup_ns_destroy(&freezer_ns);
 
 	return SLURM_SUCCESS;
