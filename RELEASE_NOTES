@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 14.03
-21 February 2014
+26 February 2014
 
 
 IMPORTANT NOTE:
@@ -39,6 +39,8 @@ HIGHLIGHTS
     use it the code still exists in <= 2.6, but will not be included in
     this and future versions of the code.
  -- Added new structures and support for both server and cluster resources.
+ -- Significant performance improvements, especially with respect to job
+    array support.
 
 RPMBUILD CHANGES
 ================
