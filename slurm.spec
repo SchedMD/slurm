@@ -511,7 +511,7 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_partition.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.la
 %if %{?with_pam_dir}0
-rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.a
 rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.la
 %endif
 rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.a
