@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in Slurm 14.03.0rc2
-==============================
+* Changes in Slurm 14.03.0
+==========================
  -- job_submit/lua: Fix invalid memory reference if script returns error message
     for user.
  -- Add logic to sleep and retry if slurm.conf can't be read.
