@@ -276,16 +276,16 @@ Execute the program "/usr/sbin/primary_slurmctld_failure" whenever the
 primary slurmctld fails.
 
 .nf
-	> cat /usr/sbin/primary_slurmctld_failure
-	#!/bin/bash
-	# Submit trigger for next primary slurmctld failure event
-	strigger \-\-set \-\-primary_slurmctld_failure \\
-	         \-\-program=/usr/sbin/primary_slurmctld_failure
-	# Notify the administrator of the failure using by e\-mail
-	/bin/mail slurm_admin@site.com \-s Primary_SLURMCTLD_FAILURE
+> cat /usr/sbin/primary_slurmctld_failure
+#!/bin/bash
+# Submit trigger for next primary slurmctld failure event
+strigger \-\-set \-\-primary_slurmctld_failure \\
+         \-\-program=/usr/sbin/primary_slurmctld_failure
+# Notify the administrator of the failure using by e\-mail
+/bin/mail slurm_admin@site.com \-s Primary_SLURMCTLD_FAILURE
 
-	> strigger \-\-set \-\-primary_slurmctld_failure \\
-	           \-\-program=/usr/sbin/primary_slurmctld_failure
+> strigger \-\-set \-\-primary_slurmctld_failure \\
+           \-\-program=/usr/sbin/primary_slurmctld_failure
 .fi
 
 .PP
@@ -295,16 +295,16 @@ the node names which have entered the down state (passed as an
 argument to the script by SLURM).
 
 .nf
-	> cat /usr/sbin/slurm_admin_notify
-	#!/bin/bash
-	# Submit trigger for next event
-	strigger \-\-set \-\-node \-\-down \\
-	         \-\-program=/usr/sbin/slurm_admin_notify
-	# Notify administrator using by e\-mail
-	/bin/mail slurm_admin@site.com \-s NodesDown:$*
+> cat /usr/sbin/slurm_admin_notify
+#!/bin/bash
+# Submit trigger for next event
+strigger \-\-set \-\-node \-\-down \\
+         \-\-program=/usr/sbin/slurm_admin_notify
+# Notify administrator using by e\-mail
+/bin/mail slurm_admin@site.com \-s NodesDown:$*
 
-	> strigger \-\-set \-\-node \-\-down \\
-	           \-\-program=/usr/sbin/slurm_admin_notify
+> strigger \-\-set \-\-node \-\-down \\
+           \-\-program=/usr/sbin/slurm_admin_notify
 .fi
 
 .PP
@@ -313,8 +313,8 @@ any node in the cluster remains in the idle state for at least
 600 seconds.
 
 .nf
-	> strigger \-\-set \-\-node \-\-idle \-\-offset=600 \\
-	           \-\-program=/usr/sbin/slurm_suspend_node
+> strigger \-\-set \-\-node \-\-idle \-\-offset=600 \\
+           \-\-program=/usr/sbin/slurm_suspend_node
 .fi
 
 .PP
@@ -322,8 +322,8 @@ Execute the program "/home/joe/clean_up" when job 1234 is within
 10 minutes of reaching its time limit.
 
 .nf
-	> strigger \-\-set \-\-jobid=1234 \-\-time \-\-offset=-600 \\
-	           \-\-program=/home/joe/clean_up
+> strigger \-\-set \-\-jobid=1234 \-\-time \-\-offset=-600 \\
+           \-\-program=/home/joe/clean_up
 .fi
 
 .PP
@@ -331,32 +331,32 @@ Execute the program "/home/joe/node_died" when any node allocated to
 job 1234 enters the DOWN state.
 
 .nf
-	> strigger \-\-set \-\-jobid=1234 \-\-down \\
-	           \-\-program=/home/joe/node_died
+> strigger \-\-set \-\-jobid=1234 \-\-down \\
+           \-\-program=/home/joe/node_died
 .fi
 
 .PP
 Show all triggers associated with job 1235.
 
 .nf
-	> strigger \-\-get \-\-jobid=1235
-	TRIG_ID RES_TYPE RES_ID TYPE OFFSET USER PROGRAM
-	    123      job   1235 time   \-600  joe /home/bob/clean_up
-	    125      job   1235 down      0  joe /home/bob/node_died
+> strigger \-\-get \-\-jobid=1235
+TRIG_ID RES_TYPE RES_ID TYPE OFFSET USER PROGRAM
+    123      job   1235 time   \-600  joe /home/bob/clean_up
+    125      job   1235 down      0  joe /home/bob/node_died
 .fi
 
 .PP
 Delete event trigger 125.
 
 .fp
-	> strigger \-\-clear \-\-id=125
+> strigger \-\-clear \-\-id=125
 .fi
 
 .PP
 Execute /home/joe/job_fini upon completion of job 1237.
 
 .fp
-	> strigger \-\-set \-\-jobid=1237 \-\-fini \-\-program=/home/joe/job_fini
+> strigger \-\-set \-\-jobid=1237 \-\-fini \-\-program=/home/joe/job_fini
 .fi
 
 .SH "COPYING"
