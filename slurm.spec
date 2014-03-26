@@ -1051,7 +1051,10 @@ if [ "$1" = 0 ]; then
 	/sbin/ldconfig %{_libdir}
     fi
 fi
+%if %{?insserv_cleanup}0
 %insserv_cleanup
+%endif
+
 #############################################################################
 
 
