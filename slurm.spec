@@ -73,20 +73,9 @@
 %slurm_with_opt aix
 %endif
 
-# Build with sgijob plugin and mysql (for slurmdbd) on CHAOS systems
-%if %{?chaos}0
-%slurm_with_opt mysql
-%slurm_with_opt lua
-%slurm_with_opt partial_attach
-%else
 %slurm_without_opt sgijob
 %slurm_without_opt lua
 %slurm_without_opt partial-attach
-%endif
-
-%if %{?chaos}0 && 0%{?chaos} < 5
-%slurm_with_opt sgijob
-%endif
 
 %if %{slurm_with cray_alps}
 %slurm_with_opt sgijob
@@ -122,12 +111,6 @@ BuildRequires:	SUNWgnu-automake-110
 BuildRequires:	SUNWlibtool
 BuildRequires:	SUNWgcc
 BuildRequires:	SUNWgnome-common-devel
-%endif
-
-%if %{?chaos}0
-BuildRequires: gtk2-devel >= 2.7.1
-BuildRequires: ncurses-devel
-BuildRequires: pkgconfig
 %endif
 
 # not sure if this is always an actual rpm or not so leaving the requirement out
