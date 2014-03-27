@@ -404,10 +404,13 @@ def run_regression(htab):
         logger.error('Error failed opening globals.local %s' % (e))
         return -1
 
+    # create entries in globals.local
     z = 'set slurm_dir %s' % (htab['prefix'])
     w = 'set  mpicc /usr/local/openmpi/bin/mpicc'
+    u = 'set build_dir %s' % (htab['buildir'])
     print >> f, z
     print >> f, w
+    print >> f, u
     f.close()
 
     # Write regression output into logfile
