@@ -44,7 +44,7 @@ completion time of running jobs, reasonably accurate time limits are important
 for backfill scheduling to work well.</P>
 
 <P>Slurm's backfill scheduler takes into consideration every running job.
-It then considers pending jobs in priority order, determining when and where 
+It then considers pending jobs in priority order, determining when and where
 each will start, taking into consideration the possibility of
 <a href="preempt.html">job preemption</a>,
 <a href="gang_scheduling.html">gang scheduling</a>,
