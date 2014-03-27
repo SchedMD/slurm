@@ -65,7 +65,7 @@
 
 static int *initialized = NULL;
 static int *finalized = NULL;
-static eio_handle_t *pmi2_handle;
+
 static pthread_t pmi2_agent_tid = 0;
 
 static bool _tree_listen_readable(eio_obj_t *obj);
@@ -86,7 +86,6 @@ handle_read:    &_task_read,
 
 
 static int _handle_pmi1_init(int fd, int lrank);
-static int _handle_accept_rank(int);
 
 /*********************************************************************/
 
@@ -165,6 +164,7 @@ _tree_listen_read(eio_obj_t *obj, List objs)
 	struct sockaddr addr;
 	struct sockaddr_in *sin;
 	socklen_t size = sizeof(addr);
+	char buf[INET_ADDRSTRLEN];
 
 	debug2("mpi/pmi2: _tree_listen_read");
 
@@ -188,16 +188,16 @@ _tree_listen_read(eio_obj_t *obj, List objs)
 			return 0;
 		}
 
-		sin = (struct sockaddr_in *)&addr;
-		debug2("%s: accepted tree connection: ip %s sd %d",
-		       __func__, inet_ntoa(sin->sin_addr), sd);
-
-		if (in_stepd()) {
-			_handle_accept_rank(sd);
-		} else {
-			_handle_tree_request(sd);
-			close(sd);
+		if (! in_stepd()) {
+			sin = (struct sockaddr_in *) &addr;
+			inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
+			debug3("mpi/pmi2: accepted tree connection: ip=%s sd=%d",
+			       buf, sd);
 		}
+
+		/* read command from socket and handle it */
+		_handle_tree_request(sd);
+		close(sd);
 	}
 	return 0;
 }
@@ -235,8 +235,6 @@ _task_read(eio_obj_t *obj, List objs)
 
 	lrank = (int)(long)(obj->arg);
 	rc = _handle_task_request(obj->fd, lrank);
-	if (rc != SLURM_SUCCESS)
-		obj->shutdown = true;
 
 	return rc;
 }
@@ -299,6 +297,7 @@ send_response:
 static void *
 _agent(void * unused)
 {
+	eio_handle_t *pmi2_handle;
 	eio_obj_t *tree_listen_obj, *task_obj;
 	int i;
 
@@ -370,38 +369,4 @@ extern void
 task_finalize(int lrank)
 {
 	finalized[lrank] = 1;
-}
-
-
-/* _handle_accept_rank()
- *
- * Handle connect requests from ranks. This happens
- * when the pmi2 library does not uses the PMI_FD
- * socket but decides to connect to the server by itself.
- */
-static int
-_handle_accept_rank(int fd)
-{
-	eio_obj_t *obj;
-	int cc;
-	int myrank;
-
-	debug2("%s: going to read() client rank", __func__);
-	/* called run accept() now wait for the
-	 * client to send us his rank.
-	 */
-	cc = read(fd, &myrank, sizeof(int));
-	if (cc != sizeof(uint32_t)) {
-		close(fd);
-		xfree(myrank);
-		return -1;
-
-	}
-
-	debug2("%s: got client rank %d on fd %d", __func__, myrank, fd);
-
-	obj = eio_obj_create(fd, &task_ops, (void *)((long)myrank));
-	eio_new_initial_obj(pmi2_handle, obj);
-
-	return 0;
 }
