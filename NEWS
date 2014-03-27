@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 14.03.1
 ==========================
  -- Add support for job std_in, std_out and std_err fields in Perl API.
+ -- Add "Scheduling Configuration Guide" web page.
 
 * Changes in Slurm 14.03.0
 ==========================

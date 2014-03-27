@@ -53,6 +53,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </ul>
 <li>SLURM Scheduling</li>
 <ul>
+<li><a href="sched_config.html">Scheduling Configuration Guide</a></li>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
 <li><a href="core_spec.html">Core Specializatoin</a></li>
 <li><a href="dynalloc.html">Dynamic Resources Allocation (dynalloc)</a></li>
@@ -127,6 +128,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 26 March 2014</p>
+<p style="text-align:center;">Last modified 27 March 2014</p>
 
 <!--#include virtual="footer.txt"-->

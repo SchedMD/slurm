@@ -78,6 +78,7 @@ generated_html = \
 	resource_limits.html \
 	rosetta.html \
 	rpc.html \
+	sched_config.html \
 	schedplugins.html \
 	select_design.html \
 	selectplugins.html \

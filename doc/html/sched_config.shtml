@@ -1,0 +1,100 @@
+<!--#include virtual="header.txt"-->
+
+<H1>Scheduling Configuration Guide</H1>
+
+<H2>Overview</H2>
+
+<P>Slurm is designed to perform a quick and simple scheduling attempt at
+frequent intervals (e.g. at the time of each job submission or completion).
+A more comprehensive scheduling attempt is made less frequently, typically
+by the backfill scheduling plugin.</P>
+
+<H2>Scheduling Configuration</H2>
+
+<P>The <B>SchedulerType</B> configuration parameter specifies the scheduler
+plugin to use.
+Options are sched/backfill, which performs backfill scheduling, and
+sched/builtin, which attempts to schedule jobs in a string priority order within
+each partition/queue.</P>
+
+<P>There is also a <B>SchedulingParameters</B> configuration parameter which
+can specify a wide range of parameters as described below.
+This first set of parameters applies to all scheduling configurations.</P>
+<UL>
+<LI><B>default_queue_depth=#</B> - Specifies the number of jobs to consider for
+scheduling on each event that may result in a job being scheduled.
+Default value is 100 jobs. Since this happens frequently, a relatively
+small number is generally best.</LI>
+<LI><B>defer</B> - Do not attempt to schedule jobs individually at submit time.
+Can be useful for high-throughput computing.</LI>
+<LI><B>max_switch_wait=#</B> - Specifies the maximum time a job can wait for
+desired number of leaf switches. Default value is 300 seconds.</LI>
+</UL>
+
+<H2>Backfill Scheduling</H2>
+
+<P>Backfill scheduling plugin is loaded by default.
+Without backfill scheduling, each partition is scheduled strictly in priority
+order, which typically results in significantly lower system utilization and
+responsiveness than otherwise possible.
+Backfill scheduling will start lower priority jobs if doing so does not delay
+the expected start time of <B>any</B> higher priority jobs.
+Since the expected start time of pending jobs depends upon the expected
+completion time of running jobs, reasonably accurate time limits are important
+for backfill scheduling to work well.</P>
+
+<P>Slurm's backfill scheduler takes into consideration every running job.
+It then considers pending jobs in priority order, determining when and where 
+each will start, taking into consideration the possibility of
+<a href="preempt.html">job preemption</a>,
+<a href="gang_scheduling.html">gang scheduling</a>,
+<a href="gres.html">generic resource (GRES) requirements</a>,
+memory requirements, etc.
+If the job under consideration can start immediately without impacting the
+expected start time of any higher priority job, then it does so.
+Otherwise the resources required by the job will be reserved during the job's
+expected execution time.</P>
+
+<P>Backfill scheduling is difficult without reasonable time limit estimates
+for jobs, but some configuration parameters that can help.</P>
+<UL>
+<LI><B>DefaultTime</B> - Default job time limit (specify value by partition)</LI>
+<LI><B>MaxTime</B> - Maximum job time limit (specify value by partition)</LI>
+<LI><B>OverTimeLimit</B> - Amount by which a job can exceed its time limit
+before it is killed. A system-wide configuration parameter.</LI>
+</UL>
+
+<P>Backfill scheduling is a time consuming operation.
+Locks are released briefly every two seconds so that other options can be
+processed, for example to process new job submission requests.
+Backfill scheduling can optionally continue execution after the lock release
+and ignore newly submitted jobs (<B>SchedulingParameters=bf_continue</B>).
+Doing so will permit consideration of more jobs, but may result in the delayed
+scheduling of newly submitted jobs.
+A list of <B>SchedulingParameters</B> configuration parameters related to
+backfill scheduling follows.</P>
+<UL>
+<LI><B>bf_continue</B> - If set, then continue backfill scheduling after
+periodically releasing locks for other operations.</LI>
+<LI><B>bf_interval=#</B> - Interval between backfill scheduling attempts.
+Default value is 30 seconds.</LI>
+<LI><B>bf_max_job_part=#</B> - Maximum number of jobs to initiate per partition
+in each backfill cycle. Default value is 0 (no limit).</LI>
+<LI><B>bf_max_job_start=#</B> - Maximum number of jobs to initiate
+in each backfill cycle. Default value is 0 (no limit).</LI>
+<LI><B>bf_max_job_test=#</B> - Maximum number of jobs consider for backfill
+scheduling in each backfill cycle. Default value is 100 jobs.</LI>
+<LI><B>bf_max_job_user=#</B> - Maximum number of jobs to initiate per user
+in each backfill cycle. Default value is 0 (no limit).</LI>
+<LI><B>bf_resolution=#</B> - Time resolution of backfill scheduling.
+Default value is 60 seconds.
+Larger values are appropriate if job time limits are imprecise and/or
+small delays in starting pending jobs in order to achieve higher system
+utilization is desired.</LI>
+<LI><B>bf_window=#</B> - How long into the future to look when determining
+when and where jobs can start. Default value is one day.</LI>
+</UL>
+
+<p style="text-align:center;">Last modified 27 March 2014</p>
+
+<!--#include virtual="footer.txt"-->
