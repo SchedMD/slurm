@@ -49,6 +49,14 @@ an authentication plugin by the SLURM code itself, but provides a mechanism
 for the application to manage Kerberos V credentials.</li>
 </ul><br>
 
+<li><b>Checkpoint/Restart</b></li><br>
+<ul>
+<li><a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
+<b> BLCR (Berkeley Lab Checkpoint/Restart)</a></b>
+<li><a href="http://dmtcp.sourceforge.net//">
+<b>DMTCP (Distributed MultiThreaded CheckPointing)</a></b>
+</ul><br>
+
 <li><b>Databases</b> can be used to store accounting information.
 See our <a href="accounting.html">Accounting</a> web page for more information.</li>
 <ul>
@@ -112,7 +120,7 @@ https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interac
 The <b>topology.conf</b> file for an Infiniband switch can be automatically
 generated using the <b>ib2slurm</b> tool found here:
 <a href="https://github.com/fintler/ib2slurm">https://github.com/fintler/ib2slurm</a>.
-</ul>
+</ul><br>
 
 <li><b>I/O Watchdog</b><br>
 A facility for monitoring user applications, most notably parallel jobs,
@@ -172,7 +180,7 @@ Moab Cluster Suite</a></li>
 <li><b>Command wrappers</b><br>
 There is a wrapper for Maui/Moab's showq command at
 <a href="https://github.com/pedmon/slurm_showq">
-https://github.com/pedmon/slurm_showq</a>.
+https://github.com/pedmon/slurm_showq</a>.<br><br>
 
 <li><b>Scripting interfaces</b>
 <ul>
@@ -264,6 +272,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 24 January 2014</p>
+<p style="text-align:center;">Last modified 26 March 2014</p>
 
 <!--#include virtual="footer.txt"-->
