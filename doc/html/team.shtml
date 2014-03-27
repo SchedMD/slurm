@@ -47,6 +47,7 @@ Lead Slurm developers are:
 <li>Janne Blomqvist (Aalto University, Finland)</li>
 <li>David Bremer (Lawrence Livermore National Laboratory)</li>
 <li>Jon Bringhurst (Los Alamos National Laboratory)</li>
+<li>Franco Broi (ION)</li>
 <li>Bill Brophy (Bull)</li>
 <li>John Brunelle (Harvard University FAS Research Computing)</li>
 <br>
@@ -192,6 +193,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 14 February 2014</p>
+<p style="text-align:center;">Last modified 27 March 2014</p>
 
 <!--#include virtual="footer.txt"-->

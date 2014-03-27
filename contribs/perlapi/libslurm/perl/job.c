@@ -123,6 +123,12 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	STORE_FIELD(hv, job_info, shared, uint16_t);
 	STORE_FIELD(hv, job_info, show_flags, uint16_t);
 	STORE_FIELD(hv, job_info, start_time, time_t);
+	if(job_info->std_in)
+		STORE_FIELD(hv, job_info, std_in, charp);
+	if(job_info->std_out)
+		STORE_FIELD(hv, job_info, std_out, charp);
+	if(job_info->std_err)
+		STORE_FIELD(hv, job_info, std_err, charp);
 	if(job_info->state_desc)
 		STORE_FIELD(hv, job_info, state_desc, charp);
 	STORE_FIELD(hv, job_info, state_reason, uint16_t);
@@ -248,6 +254,9 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, start_time, time_t, TRUE);
 	FETCH_FIELD(hv, job_info, state_desc, charp, FALSE);
 	FETCH_FIELD(hv, job_info, state_reason, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, std_in, charp, FALSE);
+	FETCH_FIELD(hv, job_info, std_out, charp, FALSE);
+	FETCH_FIELD(hv, job_info, std_err, charp, FALSE);
 	FETCH_FIELD(hv, job_info, submit_time, time_t, TRUE);
 	FETCH_FIELD(hv, job_info, suspend_time, time_t, TRUE);
 	FETCH_FIELD(hv, job_info, time_limit, uint32_t, TRUE);
