@@ -276,7 +276,16 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 
 	xassert(jobinfo);
 
-	if (jobinfo->magic != JOBINFO_MAGIC) {
+	if (!jobinfo) {
+		if (data_type == SELECT_JOBDATA_CLEANING) {
+			debug2("get_select_jobinfo: jobinfo is NULL");
+			*uint16 = 0;
+		} else {
+			error("get_select_jobinfo: jobinfo is NULL");
+			rc = SLURM_ERROR;
+		}
+		return rc;
+	} else if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("get_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
 	}
