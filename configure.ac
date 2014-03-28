@@ -437,6 +437,7 @@ AC_CONFIG_FILES([Makefile
 		 doc/html/Makefile
 		 doc/html/configurator.html
 		 doc/html/configurator.easy.html
+		 etc/cgroup.release_common.example
 		 etc/init.d.slurm
 		 etc/init.d.slurmdbd
 		 src/Makefile

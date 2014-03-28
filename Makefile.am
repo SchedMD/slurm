@@ -11,7 +11,7 @@ EXTRA_DIST =			\
 	etc/init.d.slurm.in	\
 	etc/init.d.slurmdbd.in	\
 	etc/cgroup.conf.example \
-	etc/cgroup.release_common.example \
+	etc/cgroup.release_common.example.in \
 	etc/cgroup_allowed_devices_file.conf.example \
 	autogen.sh		\
 	slurm.spec		\

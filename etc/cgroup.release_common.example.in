@@ -127,7 +127,7 @@ then
 		cpus=$(cat ${uidcg}/job_*/cpuset.cpus 2>/dev/null)
 		if [[ -n ${cpus} ]]
 		then
-		    cpus=$(scontrol show hostnames $(echo ${cpus} | tr ' ' ','))
+		    cpus=$(@bindir@/scontrol show hostnames $(echo ${cpus} | tr ' ' ','))
 		    cpus=$(echo ${cpus} | tr ' ' ',')
 		    echo ${cpus} > ${uidcg}/cpuset.cpus
 		else
