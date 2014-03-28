@@ -70,6 +70,7 @@
  * just do it here.
  */
 typedef hwloc_cpuset_t hwloc_bitmap_t;
+typedef hwloc_const_cpuset_t hwloc_const_bitmap_t;
 
 static inline hwloc_bitmap_t hwloc_bitmap_alloc(void)
 {

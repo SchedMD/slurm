@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 ==========================
  -- Add support for job std_in, std_out and std_err fields in Perl API.
  -- Add "Scheduling Configuration Guide" web page.
+ -- BGQ - fix check for jobinfo when it is NULL
+ -- Do not check cleaning on "pending" steps.
+ -- task/cgroup plugin - Fix for building on older hwloc (v1.0.2).
 
 * Changes in Slurm 14.03.0
 ==========================
@@ -76,9 +79,6 @@ documents those changes that are of interest to users and admins.
  -- Fix for job request with GRES count of zero.
  -- Fix a potential memory leak in hostlist.
  -- Job array dependency logic: Cache results for major performance improvement.
- -- Add a new environment variable PMI2_CONNECT_TO_SERVER. If set in the MPI
-    application environment the PMI2 library will connect the the PMI2 server
-    (slurmstepd) instead of using the provided PMI_FD socket.
  -- Modify squeue to support filter on job states Special_Exit and Resizing.
  -- Defer purging job record until after EpilogSlurmctld completes.
  -- Add -j option for jobid to sbcast.

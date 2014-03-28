@@ -41,12 +41,6 @@ static int PMI2_fd = -1;
 static int PMI2_size = 1;
 static int PMI2_rank = 0;
 
-/* By default the pmi2 library connects back on a socket
- * provided by the pmi2 server. However that socket can be closed
- * for example by a shell running fork()/exec() in between.
- * In that case the library must connect back to the pmi2 server.
- */
-static int _connect_to_stepd(int);
 
 /* XXX DJG the "const"s on both of these functions and the Keyvalpair
  * struct are wrong in the isCopy==TRUE case! */
@@ -216,10 +210,6 @@ int PMI2_Init(int *spawned, int *size, int *rank, int *appnum)
 
 		PMI2_initialized = SINGLETON_INIT_BUT_NO_PM;
 		goto fn_exit;
-    }
-
-    if (getenv("PMI2_CONNECT_TO_SERVER")) {
-	PMI2_fd = _connect_to_stepd(PMI2_fd);
     }
 
     /* do initial PMI1 init */
@@ -1945,7 +1935,10 @@ static void dump_PMI2_Command(PMI2_Command *cmd)
         dump_PMI2_Keyvalpair(cmd->pairs[i]);
 }
 
-/* _connect_to_stepd()
+#if 0
+/*  Currently disabled
+ *
+ *_connect_to_stepd()
  *
  * If the user requests PMI2_CONNECT_TO_SERVER do
  * connect over the PMI2_SUN_PATH unix socket.
@@ -2008,3 +2001,4 @@ _connect_to_stepd(int s)
 
     return cc;
 }
+#endif

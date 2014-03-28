@@ -105,7 +105,6 @@ extern pmi2_tree_info_t tree_info;
 extern char tree_sock_addr[];
 extern int  tree_sock;
 extern int *task_socks;
-extern char sun_path[];
 #define STEPD_PMI_SOCK(lrank) task_socks[lrank * 2]
 #define TASK_PMI_SOCK(lrank) task_socks[lrank * 2 + 1]
 

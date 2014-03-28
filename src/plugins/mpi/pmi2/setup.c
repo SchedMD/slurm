@@ -47,7 +47,6 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <sys/param.h>
 #include <poll.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -80,7 +79,6 @@ int *task_socks;
 char tree_sock_addr[128];
 pmi2_job_info_t job_info;
 pmi2_tree_info_t tree_info;
-char sun_path[PATH_MAX];
 
 extern bool
 in_stepd(void)
@@ -276,9 +274,6 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	snprintf(sa.sun_path, sizeof(sa.sun_path), PMI2_SOCK_ADDR_FMT,
 		 job->jobid, job->stepid);
 	unlink(sa.sun_path);    /* remove possible old socket */
-
-	memset(sun_path, 0, sizeof(sun_path));
-	strncpy(sun_path, sa.sun_path, sizeof(sun_path) - 1);
 
 	if (bind(tree_sock, (struct sockaddr *)&sa, SUN_LEN(&sa)) < 0) {
 		error("mpi/pmi2: failed to bind tree socket: %m");

@@ -3,7 +3,7 @@
 <h1><a name="top">SLURM Checkpoint/Restart with BLCR</a></h1>
 
 <h2>Overview</h2>
-<p>SLURM version 2.0 has been integrated with
+<p>SLURM is integrated with
 <a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
 Berkeley Lab Checkpoint/Restart (BLCR)</a> in order to provide automatic
 job checkpoint/restart support.
