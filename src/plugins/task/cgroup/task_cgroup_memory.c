@@ -101,8 +101,8 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	constrain_ram_space = slurm_cgroup_conf->constrain_ram_space;
 	constrain_swap_space = slurm_cgroup_conf->constrain_swap_space;
 
-	/* 
-	 * as the swap space threshold will be configured with a 
+	/*
+	 * as the swap space threshold will be configured with a
 	 * mem+swp parameter value, if RAM space is not monitored,
 	 * set allowed RAM space to 100% of the job requested memory.
 	 * It will help to construct the mem+swp value that will be
@@ -135,7 +135,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	       slurm_cgroup_conf->max_swap_percent,
 	       (unsigned long) (max_swap/(1024*1024)),
 	       (unsigned) slurm_cgroup_conf->min_ram_space);
-	
+
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
          *  or it would be destroyed if the application use
@@ -172,13 +172,13 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	 * If it fails, it is due to the fact that it is still in use by an
 	 * other running step.
 	 * After that, try to remove the user memcg. If it fails, it is due
-	 * to jobs that are still running for the same user on the node or 
+	 * to jobs that are still running for the same user on the node or
 	 * because of tasks attached directly to the user cg by an other
 	 * component (PAM). The user memcg was created with the
-	 * notify_on_release=1 flag (default) so it will be removed 
+	 * notify_on_release=1 flag (default) so it will be removed
 	 * automatically after that.
 	 * For now, do not try to detect if only externally attached tasks
-	 * are present to see if they can be be moved to an orhpan memcg. 
+	 * are present to see if they can be be moved to an orhpan memcg.
 	 * That could be done in the future, if it is necessary.
 	 */
 	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
@@ -217,7 +217,7 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
  */
 static uint64_t mem_limit_in_bytes (uint64_t mem)
 {
-	/* 
+	/*
 	 *  If mem == 0 then assume there was no SLURM limit imposed
 	 *   on the amount of memory for job or step. Use the total
 	 *   amount of available RAM instead.
@@ -265,7 +265,7 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	if (xcgroup_create (ns, cg, path, uid, gid) != XCGROUP_SUCCESS)
 		return -1;
 
-	cg->notify = notify; 
+	cg->notify = notify;
 
 	if (xcgroup_instanciate (cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy (cg);
@@ -275,7 +275,7 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	xcgroup_set_param (cg, "memory.use_hierarchy","1");
 
 	/* when RAM space has not to be constrained and we are here, it
-	 * means that only Swap space has to be constrained. Thus set 
+	 * means that only Swap space has to be constrained. Thus set
 	 * RAM space limit to the mem+swap limit too */
 	if ( ! constrain_ram_space )
 		mlb = mls;
