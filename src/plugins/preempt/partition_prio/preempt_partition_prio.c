@@ -109,7 +109,8 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		if (!IS_JOB_RUNNING(job_p) && !IS_JOB_SUSPENDED(job_p))
 			continue;
 		if ((job_p->part_ptr == NULL) ||
-		    (job_p->part_ptr->priority >= job_ptr->part_ptr->priority))
+		    (job_p->part_ptr->priority >= job_ptr->part_ptr->priority)||
+		    (job_p->part_ptr->preempt_mode == PREEMPT_MODE_OFF))
 			continue;
 		if ((job_p->node_bitmap == NULL) ||
 		    (bit_overlap(job_p->node_bitmap,
