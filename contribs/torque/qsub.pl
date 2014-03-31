@@ -54,6 +54,7 @@ my ($start_time,
     $account,
     $array,
     $err_path,
+    $export_env,
     $interactive,
     $hold,
     $resource_list,
@@ -92,9 +93,7 @@ GetOptions('a=s'      => \$start_time,
 				    "specify shell via #!<shell> in the job script\n" },
 	   't=s'      => \$array,
 	   'v=s'      => \$variable_list,
-	   'V'        => sub { warn "option -V is not necessary, " .
-				    "since the current environment " .
-				    "is exported by default\n" },
+	   'V'        => \$export_env,
 	   'W=s'      => \@additional_attributes,
 	   'help|?'   => \$help,
 	   'man'      => \$man,
@@ -183,17 +182,6 @@ if ($resource_list) {
 	}
 }
 
-if($variable_list) {
-	$variable_list =~ s/\'/\"/g;
-	my @parts = $variable_list =~ m/(?:(?<=")[^"]*(?=(?:\s*"\s*,|\s*"\s*$)))|(?<=,)(?:[^",]*(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]+(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]*(?=(?:\s*,)))/g;
-	foreach my $part (@parts) {
-		my ($key, $value) = $part =~ /(.*)=(.*)/;
-		if ($key && $value) {
-			$ENV{$key} = $value;
-		}
-	}
-}
-
 my $command;
 
 if($interactive) {
@@ -243,6 +231,35 @@ if($res_opts{walltime}) {
 	$command .= " -t$res_opts{cput}";
 } elsif($res_opts{pcput}) {
 	$command .= " -t$res_opts{pcput}";
+}
+
+if ($variable_list) {
+	my $separator = "";
+	if ($export_env) {
+		$command .= " --export=";
+	} else {
+		$command .= " --export=none";
+		$separator = ",";
+	}
+
+print "variable_list:$variable_list:\n";
+#	The logic below ignores quoted commas, but the quotes must be escaped
+#	to be forwarded from the shell to Perl. For example: 
+#	qsub -v foo=\"b,ar\" tmp
+	$variable_list =~ s/\'/\"/g;
+	my @parts = $variable_list =~ m/(?:(?<=")[^"]*(?=(?:\s*"\s*,|\s*"\s*$)))|(?<=,)(?:[^",]*(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]+(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]*(?=(?:\s*,)))/g;
+	foreach my $part (@parts) {
+		my ($key, $value) = $part =~ /(.*)=(.*)/;
+		if ($key && $value) {
+			$command .= "$separator";
+			$command .= "$key=$value";
+			$separator = ",";
+		} elsif ($ENV{$part}) {
+			$command .= "$separator";
+			$command .= "$part=$ENV{$part}";
+			$separator = ",";
+		}
+	}
 }
 
 $command .= " --account='$group_list'" if $group_list;
@@ -493,7 +510,7 @@ __END__
 
 =head1 NAME
 
-B<qsub> - submit a batch job in a familiar pbs format
+B<qsub> - submit a batch job in a familiar PBS format
 
 =head1 SYNOPSIS
 
@@ -508,6 +525,7 @@ qsub  [-a start_time]
       [-p priority]
       [-q destination]
       [-v variable_list]
+      [-V]
       [-W additional_attributes]
       [-h]
       [script]
@@ -574,14 +592,16 @@ Job array index values. The -J and -t options are equivalent.
 
 =item B<-v> [variable_list]
 
-Exporting single variables via -v is generally not required, since the entire
-login environment is exported by the default. However this option can be used
-to add newly defined environment variables to specific jobs.
+Export only the specified environment variables. This option can also be used
+with the -V option to add newly defined environment variables to the existing
+environment. The variable_list is a comma delimited list of existing environment
+variable names and/or newly defined environment variables using a name=value
+format.
 
 =item B<-V>
 
-The -V option to export the current environment is not required since it is
-done by default.
+The -V option to exports the current environment, which is the default mode of
+options unless the -v option is used.
 
 =item B<-?> | B<--help>
 
