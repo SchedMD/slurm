@@ -149,7 +149,10 @@ int pmi_size;
 int pmi_spawned;
 int pmi_rank;
 int pmi_debug;
-static int pmi_kvs_no_dup_keys = 0;
+/* By default PMI protocol does not allow
+ * for duplicate keys.
+ */
+static int pmi_kvs_no_dup_keys = 1;
 
 static pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -198,14 +201,13 @@ int PMI_Init( int *spawned )
 
 	/* In MPI implementations, there will be no duplicate
 	 * keys put into the KVS usually. Hence the checking
-	 * for duplicate keys can be skipped. That's the motivation
-	 * of the environment SLURM_PMI_KVS_NO_DUP_KEYS: for MPI to
-	 * tell PMI that there will be no duplicate keys at all.
+	 * for duplicate keys can be skipped. However if the
+	 * user wants to have duplicate keys he must set
+	 * this env variable. If a duplicate key is found
+	 * the previous value will be discarded.
 	 */
-	env = getenv("SLURM_PMI_KVS_NO_DUP_KEYS");
+	env = getenv("SLURM_PMI_KVS_DUP_KEYS");
 	if (env)
-		pmi_kvs_no_dup_keys = 1;
-	else
 		pmi_kvs_no_dup_keys = 0;
 
 	if (spawned == NULL)
