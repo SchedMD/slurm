@@ -168,7 +168,7 @@ extern void acct_gather_energy_destroy(acct_gather_energy_t *energy)
 extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
 				    uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!energy) {
 			int i;
 			for (i=0; i<5; i++)
@@ -183,18 +183,6 @@ extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
 		pack32(energy->current_watts, buffer);
 		pack32(energy->previous_consumed_energy, buffer);
 		pack_time(energy->poll_time, buffer);
-	} else {
-		if (!energy) {
-			int i;
-			for (i=0; i<4; i++)
-				pack32(0, buffer);
-			return;
-		}
-
-		pack32(energy->base_consumed_energy, buffer);
-		pack32(energy->base_watts, buffer);
-		pack32(energy->consumed_energy, buffer);
-		pack32(energy->current_watts, buffer);
 	}
 }
 
@@ -204,18 +192,13 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 	acct_gather_energy_t *energy_ptr = acct_gather_energy_alloc();
 	*energy = energy_ptr;
 
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&energy_ptr->base_consumed_energy, buffer);
 		safe_unpack32(&energy_ptr->base_watts, buffer);
 		safe_unpack32(&energy_ptr->consumed_energy, buffer);
 		safe_unpack32(&energy_ptr->current_watts, buffer);
 		safe_unpack32(&energy_ptr->previous_consumed_energy, buffer);
 		safe_unpack_time(&energy_ptr->poll_time, buffer);
-	} else {
-		safe_unpack32(&energy_ptr->base_consumed_energy, buffer);
-		safe_unpack32(&energy_ptr->base_watts, buffer);
-		safe_unpack32(&energy_ptr->consumed_energy, buffer);
-		safe_unpack32(&energy_ptr->current_watts, buffer);
 	}
 
 	return SLURM_SUCCESS;

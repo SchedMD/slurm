@@ -716,36 +716,6 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 					  protocol_version);
 			_write_jobacct_id(*fd, &jobacct->max_disk_write_id,
 					  protocol_version);
-		} else {
-			safe_write(*fd, &jobacct->user_cpu_sec,
-				   sizeof(uint32_t));
-			safe_write(*fd, &jobacct->user_cpu_usec,
-				   sizeof(uint32_t));
-			safe_write(*fd, &jobacct->sys_cpu_sec,
-				   sizeof(uint32_t));
-			safe_write(*fd, &jobacct->sys_cpu_usec,
-				   sizeof(uint32_t));
-			safe_write(*fd, &jobacct->max_vsize, sizeof(uint32_t));
-			safe_write(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
-			safe_write(*fd, &jobacct->max_rss, sizeof(uint32_t));
-			safe_write(*fd, &jobacct->tot_rss, sizeof(uint32_t));
-			safe_write(*fd, &jobacct->max_pages, sizeof(uint32_t));
-			safe_write(*fd, &jobacct->tot_pages, sizeof(uint32_t));
-			safe_write(*fd, &jobacct->min_cpu, sizeof(uint32_t));
-			safe_write(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
-			safe_write(*fd, &jobacct->act_cpufreq,
-				   sizeof(uint32_t));
-			safe_write(*fd, &jobacct->energy.consumed_energy,
-				   sizeof(uint32_t));
-
-			_write_jobacct_id(*fd, &jobacct->max_vsize_id,
-					  protocol_version);
-			_write_jobacct_id(*fd, &jobacct->max_rss_id,
-					  protocol_version);
-			_write_jobacct_id(*fd, &jobacct->max_pages_id,
-					  protocol_version);
-			_write_jobacct_id(*fd, &jobacct->min_cpu_id,
-					  protocol_version);
 		}
 
 		break;
@@ -898,34 +868,6 @@ extern int jobacctinfo_getinfo(
 			_read_jobacct_id(*fd, &jobacct->max_disk_read_id,
 					 protocol_version);
 			_read_jobacct_id(*fd, &jobacct->max_disk_write_id,
-					 protocol_version);
-		} else {
-			safe_read(*fd, &jobacct->user_cpu_sec,
-				  sizeof(uint32_t));
-			safe_read(*fd, &jobacct->user_cpu_usec,
-				  sizeof(uint32_t));
-			safe_read(*fd, &jobacct->sys_cpu_sec, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->sys_cpu_usec,
-				  sizeof(uint32_t));
-			safe_read(*fd, &jobacct->max_vsize, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->max_rss, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->tot_rss, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->max_pages, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->tot_pages, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->min_cpu, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->act_cpufreq, sizeof(uint32_t));
-			safe_read(*fd, &jobacct->energy.consumed_energy,
-				  sizeof(uint32_t));
-
-			_read_jobacct_id(*fd, &jobacct->max_vsize_id,
-					 protocol_version);
-			_read_jobacct_id(*fd, &jobacct->max_rss_id,
-					 protocol_version);
-			_read_jobacct_id(*fd, &jobacct->max_pages_id,
-					 protocol_version);
-			_read_jobacct_id(*fd, &jobacct->min_cpu_id,
 					 protocol_version);
 		}
 
@@ -1114,36 +1056,6 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			buffer);
 		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
 			buffer);
-	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		if (no_pack)
-			return;
-		if (!jobacct) {
-			for (i = 0; i < 14; i++)
-				pack32((uint32_t) 0, buffer);
-			for (i = 0; i < 4; i++)
-				_pack_jobacct_id(NULL, rpc_version, buffer);
-			return;
-		}
-
-		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
-		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->max_vsize, buffer);
-		pack32((uint32_t)jobacct->tot_vsize, buffer);
-		pack32((uint32_t)jobacct->max_rss, buffer);
-		pack32((uint32_t)jobacct->tot_rss, buffer);
-		pack32((uint32_t)jobacct->max_pages, buffer);
-		pack32((uint32_t)jobacct->tot_pages, buffer);
-		pack32((uint32_t)jobacct->min_cpu, buffer);
-		pack32((uint32_t)jobacct->tot_cpu, buffer);
-		pack32((uint32_t)jobacct->act_cpufreq, buffer);
-		pack32((uint32_t)jobacct->energy.consumed_energy, buffer);
-
-		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
 	} else {
 		info("jobacctinfo_pack version %u not supported", rpc_version);
 		return;
@@ -1268,42 +1180,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			goto unpack_error;
 		if (_unpack_jobacct_id(&(*jobacct)->max_disk_write_id,
 			rpc_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		if (no_pack)
-			return SLURM_SUCCESS;
-		if (alloc)
-			*jobacct = xmalloc(sizeof(struct jobacctinfo));
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_sec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_usec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_sec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_usec = uint32_tmp;
-		safe_unpack32((uint32_t *)&(*jobacct)->max_vsize, buffer);
-		safe_unpack32((uint32_t *)&(*jobacct)->tot_vsize, buffer);
-		safe_unpack32((uint32_t *)&(*jobacct)->max_rss, buffer);
-		safe_unpack32((uint32_t *)&(*jobacct)->tot_rss, buffer);
-		safe_unpack32((uint32_t *)&(*jobacct)->max_pages, buffer);
-		safe_unpack32((uint32_t *)&(*jobacct)->tot_pages, buffer);
-		safe_unpack32(&(*jobacct)->min_cpu, buffer);
-		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
-		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
-		safe_unpack32(&(*jobacct)->energy.consumed_energy, buffer);
-
-		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
 		info("jobacctinfo_unpack version %u not supported",

@@ -59,7 +59,6 @@
 /* Change FRONT_END_STATE_VERSION value when changing the state save format */
 #define FRONT_END_STATE_VERSION        "PROTOCOL_VERSION"
 #define FRONT_END_2_6_STATE_VERSION    "VER001"	/* SLURM version 2.6 */
-#define FRONT_END_2_5_STATE_VERSION    "VER001"	/* SLURM version 2.5 */
 
 front_end_record_t *front_end_nodes = NULL;
 uint16_t front_end_node_cnt = 0;
@@ -150,16 +149,6 @@ static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 		pack_time(dump_front_end_ptr->boot_time, buffer);
 		packstr(dump_front_end_ptr->deny_groups, buffer);
 		packstr(dump_front_end_ptr->deny_users, buffer);
-		packstr(dump_front_end_ptr->name, buffer);
-		pack16(dump_front_end_ptr->node_state, buffer);
-
-		packstr(dump_front_end_ptr->reason, buffer);
-		pack_time(dump_front_end_ptr->reason_time, buffer);
-		pack32(dump_front_end_ptr->reason_uid, buffer);
-
-		pack_time(dump_front_end_ptr->slurmd_start_time, buffer);
-	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		pack_time(dump_front_end_ptr->boot_time, buffer);
 		packstr(dump_front_end_ptr->name, buffer);
 		pack16(dump_front_end_ptr->node_state, buffer);
 
@@ -641,7 +630,7 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 	buffer = init_buf(BUF_SIZE * 2);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack_time(now, buffer);
@@ -854,7 +843,7 @@ extern int load_all_front_end_state(bool state_only)
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack16 (&obj_protocol_version, buffer);
 			base_state = node_state & NODE_STATE_BASE;
-		} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpack16 (&node_state,  buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);

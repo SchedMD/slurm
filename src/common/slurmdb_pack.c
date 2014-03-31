@@ -134,82 +134,12 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		pack32(stats->disk_read_max_taskid, buffer);
 		pack32(stats->disk_write_max_nodeid, buffer);
 		pack32(stats->disk_write_max_taskid, buffer);
-	} else if (rpc_version >= SLURMDBD_2_5_VERSION) {
-		if (!stats) {
-			for (i=0; i<4; i++)
-				pack32((uint32_t) 0, buffer);
-
-			for (i=0; i<6; i++)
-				packdouble(0, buffer);
-
-			for (i=0; i<4; i++) {
-				pack32(0, buffer);
-				pack16(0, buffer);
-			}
-			return;
-		}
-
-		pack32((uint32_t)stats->vsize_max, buffer);
-		pack32((uint32_t)stats->rss_max, buffer);
-		pack32((uint32_t)stats->pages_max, buffer);
-		pack32(stats->cpu_min, buffer);
-
-		packdouble(stats->vsize_ave, buffer);
-		packdouble(stats->rss_ave, buffer);
-		packdouble(stats->pages_ave, buffer);
-		packdouble(stats->cpu_ave, buffer);
-		packdouble(stats->act_cpufreq, buffer);
-		packdouble(stats->consumed_energy, buffer);
-
-		pack32(stats->vsize_max_nodeid, buffer);
-		pack16((uint16_t)stats->vsize_max_taskid, buffer);
-		pack32(stats->rss_max_nodeid, buffer);
-		pack16((uint16_t)stats->rss_max_taskid, buffer);
-		pack32(stats->pages_max_nodeid, buffer);
-		pack16((uint16_t)stats->pages_max_taskid, buffer);
-		pack32(stats->cpu_min_nodeid, buffer);
-		pack16((uint16_t)stats->cpu_min_taskid, buffer);
-	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
-		if (!stats) {
-			for(i=0; i<4; i++)
-				pack32((uint32_t) 0, buffer);
-
-			for(i=0; i<4; i++)
-				packdouble(0, buffer);
-
-			for(i=0; i<4; i++) {
-				pack32(0, buffer);
-				pack16(0, buffer);
-			}
-			return;
-		}
-
-		pack32((uint32_t)stats->vsize_max, buffer);
-		pack32((uint32_t)stats->rss_max, buffer);
-		pack32((uint32_t)stats->pages_max, buffer);
-		pack32(stats->cpu_min, buffer);
-
-		packdouble(stats->vsize_ave, buffer);
-		packdouble(stats->rss_ave, buffer);
-		packdouble(stats->pages_ave, buffer);
-		packdouble(stats->cpu_ave, buffer);
-
-		pack32(stats->vsize_max_nodeid, buffer);
-		pack16((uint16_t)stats->vsize_max_taskid, buffer);
-		pack32(stats->rss_max_nodeid, buffer);
-		pack16((uint16_t)stats->rss_max_taskid, buffer);
-		pack32(stats->pages_max_nodeid, buffer);
-		pack16((uint16_t)stats->pages_max_taskid, buffer);
-		pack32(stats->cpu_min_nodeid, buffer);
-		pack16((uint16_t)stats->cpu_min_taskid, buffer);
 	}
 }
 
 static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 				 uint16_t rpc_version, Buf buffer)
 {
-	uint16_t tmp_uint16;
-
 	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack64(&stats->vsize_max, buffer);
 		safe_unpack64(&stats->rss_max, buffer);
@@ -268,54 +198,6 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpack32(&stats->disk_read_max_taskid, buffer);
 		safe_unpack32(&stats->disk_write_max_nodeid, buffer);
 		safe_unpack32(&stats->disk_write_max_taskid, buffer);
-	} else if (rpc_version >= SLURMDBD_2_5_VERSION) {
-		safe_unpack32((uint32_t *)&stats->vsize_max, buffer);
-		safe_unpack32((uint32_t *)&stats->rss_max, buffer);
-		safe_unpack32((uint32_t *)&stats->pages_max, buffer);
-		safe_unpack32(&stats->cpu_min, buffer);
-
-		safe_unpackdouble(&stats->vsize_ave, buffer);
-		safe_unpackdouble(&stats->rss_ave, buffer);
-		safe_unpackdouble(&stats->pages_ave, buffer);
-		safe_unpackdouble(&stats->cpu_ave, buffer);
-		safe_unpackdouble(&stats->act_cpufreq, buffer);
-		safe_unpackdouble(&stats->consumed_energy, buffer);
-
-		safe_unpack32(&stats->vsize_max_nodeid, buffer);
-		safe_unpack16(&tmp_uint16, buffer);
-		stats->vsize_max_taskid = tmp_uint16;
-		safe_unpack32(&stats->rss_max_nodeid, buffer);
-		safe_unpack16(&tmp_uint16, buffer);
-		stats->rss_max_taskid = tmp_uint16;
-		safe_unpack32(&stats->pages_max_nodeid, buffer);
-		safe_unpack16(&tmp_uint16, buffer);
-		stats->pages_max_taskid = tmp_uint16;
-		safe_unpack32(&stats->cpu_min_nodeid, buffer);
-		safe_unpack16(&tmp_uint16, buffer);
-		stats->cpu_min_taskid = tmp_uint16;
-	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
-		safe_unpack32((uint32_t *)&stats->vsize_max, buffer);
-		safe_unpack32((uint32_t *)&stats->rss_max, buffer);
-		safe_unpack32((uint32_t *)&stats->pages_max, buffer);
-		safe_unpack32(&stats->cpu_min, buffer);
-
-		safe_unpackdouble(&stats->vsize_ave, buffer);
-		safe_unpackdouble(&stats->rss_ave, buffer);
-		safe_unpackdouble(&stats->pages_ave, buffer);
-		safe_unpackdouble(&stats->cpu_ave, buffer);
-
-		safe_unpack32(&stats->vsize_max_nodeid, buffer);
-		safe_unpack16(&tmp_uint16, buffer);
-		stats->vsize_max_taskid = tmp_uint16;
-		safe_unpack32(&stats->rss_max_nodeid, buffer);
-		safe_unpack16(&tmp_uint16, buffer);
-		stats->rss_max_taskid = tmp_uint16;
-		safe_unpack32(&stats->pages_max_nodeid, buffer);
-		safe_unpack16(&tmp_uint16, buffer);
-		stats->pages_max_taskid = tmp_uint16;
-		safe_unpack32(&stats->cpu_min_nodeid, buffer);
-		safe_unpack16(&tmp_uint16, buffer);
-		stats->cpu_min_taskid = tmp_uint16;
 	}
 
 	return SLURM_SUCCESS;
@@ -335,7 +217,7 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t rpc_version, Buf buffer)
 	slurmdb_association_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack16(0, buffer);
 			pack32(NO_VAL, buffer);
@@ -399,68 +281,6 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t rpc_version, Buf buffer)
 			list_iterator_destroy(itr);
 		}
 		count = NO_VAL;
-	} else if (rpc_version >= 4) {
-		if (!object) {
-			pack16(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			packnull(buffer);
-			packnull(buffer);
-			packnull(buffer);
-			pack32(0, buffer);
-			pack32(NO_VAL, buffer);
-			return;
-		}
-
-		pack16(object->admin_level, buffer);
-
-		if (object->assoc_list)
-			count = list_count(object->assoc_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->assoc_list);
-			while((assoc = list_next(itr))) {
-				slurmdb_pack_association_rec(assoc, rpc_version,
-							     buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->coord_accts)
-			count = list_count(object->coord_accts);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->coord_accts);
-			while((coord = list_next(itr))) {
-				slurmdb_pack_coord_rec(coord,
-						       rpc_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		packstr(object->default_acct, buffer);
-		packstr(object->default_wckey, buffer);
-		packstr(object->name, buffer);
-
-		pack32(object->uid, buffer);
-
-		if (object->wckey_list)
-			count = list_count(object->wckey_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->wckey_list);
-			while((wckey = list_next(itr))) {
-				slurmdb_pack_wckey_rec(wckey, rpc_version,
-						       buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
 	}
 }
 
@@ -477,7 +297,7 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
@@ -496,8 +316,8 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t rpc_version,
 			object_ptr->coord_accts =
 				list_create(slurmdb_destroy_coord_rec);
 			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_coord_rec((void *)&coord,
-							     rpc_version, buffer)
+				if (slurmdb_unpack_coord_rec(
+					    (void *)&coord, rpc_version, buffer)
 				    == SLURM_ERROR)
 					goto unpack_error;
 				list_append(object_ptr->coord_accts, coord);
@@ -510,51 +330,6 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->old_name,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&object_ptr->uid, buffer);
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->wckey_list =
-				list_create(slurmdb_destroy_wckey_rec);
-			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_wckey_rec(
-					    (void *)&wckey, rpc_version, buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(object_ptr->wckey_list, wckey);
-			}
-		}
-
-	} else if (rpc_version >= 4) {
-		safe_unpack16(&object_ptr->admin_level, buffer);
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->assoc_list =
-				list_create(slurmdb_destroy_association_rec);
-			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_association_rec(
-					    (void *)&assoc, rpc_version, buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(object_ptr->assoc_list, assoc);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->coord_accts =
-				list_create(slurmdb_destroy_coord_rec);
-			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_coord_rec((void *)&coord,
-							     rpc_version, buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(object_ptr->coord_accts, coord);
-			}
-		}
-		safe_unpackstr_xmalloc(&object_ptr->default_acct, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&object_ptr->default_wckey, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
@@ -583,7 +358,7 @@ extern void slurmdb_pack_used_limits(void *in, uint16_t rpc_version, Buf buffer)
 {
 	slurmdb_used_limits_t *object = (slurmdb_used_limits_t *)in;
 
-	if (rpc_version >= 9) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack64(0, buffer);
 			pack32(0, buffer);
@@ -600,30 +375,6 @@ extern void slurmdb_pack_used_limits(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->nodes, buffer);
 		pack32(object->submit_jobs, buffer);
 		pack32(object->uid, buffer);
-	} else if (rpc_version >= 8) {
-		if (!object) {
-			pack64(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			return;
-		}
-
-		pack64(object->cpu_run_mins, buffer);
-		pack32(object->jobs, buffer);
-		pack32(object->submit_jobs, buffer);
-		pack32(object->uid, buffer);
-	} else if (rpc_version >= 6) {
-		if (!object) {
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			return;
-		}
-
-		pack32(object->jobs, buffer);
-		pack32(object->submit_jobs, buffer);
-		pack32(object->uid, buffer);
 	}
 }
 
@@ -635,23 +386,15 @@ extern int slurmdb_unpack_used_limits(void **object,
 
 	*object = (void *)object_ptr;
 
-	if (rpc_version >= 9) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
 		safe_unpack32(&object_ptr->cpus, buffer);
 		safe_unpack32(&object_ptr->jobs, buffer);
 		safe_unpack32(&object_ptr->nodes, buffer);
 		safe_unpack32(&object_ptr->submit_jobs, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
-	} else if (rpc_version >= 8) {
-		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->jobs, buffer);
-		safe_unpack32(&object_ptr->submit_jobs, buffer);
-		safe_unpack32(&object_ptr->uid, buffer);
-	} else if (rpc_version >= 6) {
-		safe_unpack32(&object_ptr->jobs, buffer);
-		safe_unpack32(&object_ptr->submit_jobs, buffer);
-		safe_unpack32(&object_ptr->uid, buffer);
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -668,7 +411,7 @@ extern void slurmdb_pack_account_rec(void *in, uint16_t rpc_version, Buf buffer)
 	slurmdb_account_rec_t *object = (slurmdb_account_rec_t *)in;
 	slurmdb_association_rec_t *assoc = NULL;
 
-	if (rpc_version >= 3) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -725,7 +468,7 @@ extern int slurmdb_unpack_account_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 3) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->assoc_list =
@@ -743,8 +486,8 @@ extern int slurmdb_unpack_account_rec(void **object, uint16_t rpc_version,
 			object_ptr->coordinators =
 				list_create(slurmdb_destroy_coord_rec);
 			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_coord_rec((void *)&coord,
-							     rpc_version, buffer)
+				if (slurmdb_unpack_coord_rec(
+					    (void *)&coord, rpc_version, buffer)
 				    == SLURM_ERROR)
 					goto unpack_error;
 				list_append(object_ptr->coordinators, coord);
@@ -825,7 +568,7 @@ extern void slurmdb_pack_cluster_accounting_rec(void *in, uint16_t rpc_version,
 		pack64(object->pdown_secs, buffer);
 		pack_time(object->period_start, buffer);
 		pack64(object->resv_secs, buffer);
-	} else {
+	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		if (!object) {
 			pack64(0, buffer);
 			pack32(0, buffer);
@@ -868,7 +611,7 @@ extern int slurmdb_unpack_cluster_accounting_rec(void **object,
 		safe_unpack64(&object_ptr->pdown_secs, buffer);
 		safe_unpack_time(&object_ptr->period_start, buffer);
 		safe_unpack64(&object_ptr->resv_secs, buffer);
-	} else {
+	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		safe_unpack64(&object_ptr->alloc_secs, buffer);
 		safe_unpack32(&object_ptr->cpu_count, buffer);
 		safe_unpack64(&object_ptr->down_secs, buffer);
@@ -929,7 +672,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 	uint32_t count = NO_VAL;
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
@@ -981,50 +724,6 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 					     rpc_version, buffer);
 
 		pack16(object->rpc_version, buffer);
-	} else if (rpc_version >= 5) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			packnull(buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			packnull(buffer);
-			packnull(buffer);
-
-			slurmdb_pack_association_rec(NULL, rpc_version, buffer);
-
-			pack16(0, buffer);
-			return;
-		}
-
-		if (object->accounting_list)
-			count = list_count(object->accounting_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->accounting_list);
-			while((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_cluster_accounting_rec(
-					slurmdb_info, rpc_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->classification, buffer);
-		packstr(object->control_host, buffer);
-		pack32(object->control_port, buffer);
-		pack32(object->cpu_count, buffer);
-
-		packstr(object->name, buffer);
-		packstr(object->nodes, buffer);
-
-		slurmdb_pack_association_rec(object->root_assoc,
-					     rpc_version, buffer);
-
-		pack16(object->rpc_version, buffer);
 	}
 }
 
@@ -1041,7 +740,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 	*object = object_ptr;
 
 	slurmdb_init_cluster_rec(object_ptr, 0);
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->accounting_list = list_create(
@@ -1068,37 +767,6 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
 
 		safe_unpack32(&object_ptr->plugin_id_select, buffer);
-
-		if (slurmdb_unpack_association_rec(
-			    (void **)&object_ptr->root_assoc,
-			    rpc_version, buffer)
-		    == SLURM_ERROR)
-			goto unpack_error;
-
-		safe_unpack16(&object_ptr->rpc_version, buffer);
-	} else if (rpc_version >= 5) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->accounting_list = list_create(
-				slurmdb_destroy_cluster_accounting_rec);
-			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_cluster_accounting_rec(
-					    (void *)&slurmdb_info,
-					    rpc_version, buffer) == SLURM_ERROR)
-					goto unpack_error;
-				list_append(object_ptr->accounting_list,
-					    slurmdb_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->classification, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->control_host,
-				       &uint32_tmp, buffer);
-		safe_unpack32(&object_ptr->control_port, buffer);
-		safe_unpack32(&object_ptr->cpu_count, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
 
 		if (slurmdb_unpack_association_rec(
 			    (void **)&object_ptr->root_assoc,
@@ -1135,7 +803,7 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t rpc_version,
 		pack64(object->consumed_energy, buffer);
 		pack32(object->id, buffer);
 		pack_time(object->period_start, buffer);
-	} else {
+	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		if (!object) {
 			pack64(0, buffer);
 			pack32(0, buffer);
@@ -1162,7 +830,7 @@ extern int slurmdb_unpack_accounting_rec(void **object, uint16_t rpc_version,
 		safe_unpack64(&object_ptr->consumed_energy, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack_time(&object_ptr->period_start, buffer);
-	} else {
+	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		safe_unpack64(&object_ptr->alloc_secs, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack_time(&object_ptr->period_start, buffer);
@@ -1185,7 +853,7 @@ extern void slurmdb_pack_association_rec(void *in, uint16_t rpc_version,
 	char *tmp_info = NULL;
 	slurmdb_association_rec_t *object = (slurmdb_association_rec_t *)in;
 
-	if (rpc_version >= 10) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
@@ -1298,218 +966,6 @@ extern void slurmdb_pack_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->uid, buffer);
 
 		packstr(object->user, buffer);
-	} else if (rpc_version >= 8) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			packnull(buffer);
-			packnull(buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(0, buffer);
-			pack16(0, buffer);
-			pack32(0, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-			pack32(0, buffer);
-			packnull(buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			packnull(buffer);
-			return;
-		}
-
-		if (object->accounting_list)
-			count = list_count(object->accounting_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->accounting_list);
-			while((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_accounting_rec(slurmdb_info,
-							    rpc_version,
-							    buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		packstr(object->acct, buffer);
-		packstr(object->cluster, buffer);
-
-		pack32(object->def_qos_id, buffer);
-
-		/* this used to be named fairshare to not have to redo
-		   the order of things just to be in alpha order we
-		   just renamed it and called it good */
-		pack32(object->shares_raw, buffer);
-
-		pack64(object->grp_cpu_mins, buffer);
-		pack64(object->grp_cpu_run_mins, buffer);
-		pack32(object->grp_cpus, buffer);
-		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_nodes, buffer);
-		pack32(object->grp_submit_jobs, buffer);
-		pack32(object->grp_wall, buffer);
-
-		pack32(object->id, buffer);
-		pack16(object->is_def, buffer);
-		pack32(object->lft, buffer);
-
-		pack64(object->max_cpu_mins_pj, buffer);
-		pack64(object->max_cpu_run_mins, buffer);
-		pack32(object->max_cpus_pj, buffer);
-		pack32(object->max_jobs, buffer);
-		pack32(object->max_nodes_pj, buffer);
-		pack32(object->max_submit_jobs, buffer);
-		pack32(object->max_wall_pj, buffer);
-
-		packstr(object->parent_acct, buffer);
-		pack32(object->parent_id, buffer);
-		packstr(object->partition, buffer);
-
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->qos_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack32(object->rgt, buffer);
-		pack32(object->uid, buffer);
-
-		packstr(object->user, buffer);
-	} else if (rpc_version >= 4) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			packnull(buffer);
-			packnull(buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-			pack32(0, buffer);
-			packnull(buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			packnull(buffer);
-			return;
-		}
-
-		if (object->accounting_list)
-			count = list_count(object->accounting_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->accounting_list);
-			while((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_accounting_rec(slurmdb_info,
-							    rpc_version,
-							    buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		packstr(object->acct, buffer);
-		packstr(object->cluster, buffer);
-
-		/* this used to be named fairshare to not have to redo
-		   the order of things just to be in alpha order we
-		   just renamed it and called it good */
-		pack32(object->shares_raw, buffer);
-
-		pack64(object->grp_cpu_mins, buffer);
-		pack32(object->grp_cpus, buffer);
-		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_nodes, buffer);
-		pack32(object->grp_submit_jobs, buffer);
-		pack32(object->grp_wall, buffer);
-
-		pack32(object->id, buffer);
-		pack32(object->lft, buffer);
-
-		pack64(object->max_cpu_mins_pj, buffer);
-		pack32(object->max_cpus_pj, buffer);
-		pack32(object->max_jobs, buffer);
-		pack32(object->max_nodes_pj, buffer);
-		pack32(object->max_submit_jobs, buffer);
-		pack32(object->max_wall_pj, buffer);
-
-		packstr(object->parent_acct, buffer);
-		pack32(object->parent_id, buffer);
-		packstr(object->partition, buffer);
-
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->qos_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack32(object->rgt, buffer);
-		pack32(object->uid, buffer);
-
-		packstr(object->user, buffer);
 	}
 }
 
@@ -1528,7 +984,7 @@ extern int slurmdb_unpack_association_rec(void **object, uint16_t rpc_version,
 
 	slurmdb_init_association_rec(object_ptr, 0);
 
-	if (rpc_version >= 10) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->accounting_list =
@@ -1567,133 +1023,6 @@ extern int slurmdb_unpack_association_rec(void **object, uint16_t rpc_version,
 
 		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
 		safe_unpack64(&object_ptr->max_cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
-		safe_unpack32(&object_ptr->max_jobs, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
-		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
-		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp,
-				       buffer);
-		safe_unpack32(&object_ptr->parent_id, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp,
-				       buffer);
-
-		safe_unpack32(&count, buffer);
-		/* This needs to look for zero to tell if something
-		   has changed */
-		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->qos_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&object_ptr->rgt, buffer);
-		safe_unpack32(&object_ptr->uid, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
-	} else if (rpc_version >= 8) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->accounting_list =
-				list_create(slurmdb_destroy_accounting_rec);
-			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_accounting_rec(
-					    (void **)&slurmdb_info,
-					    rpc_version,
-					    buffer) == SLURM_ERROR)
-					goto unpack_error;
-				list_append(object_ptr->accounting_list,
-					    slurmdb_info);
-			}
-		}
-
-		safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
-				       buffer);
-
-		safe_unpack32(&object_ptr->def_qos_id, buffer);
-
-		safe_unpack32(&object_ptr->shares_raw, buffer);
-
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack64(&object_ptr->grp_cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->grp_cpus, buffer);
-		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_nodes, buffer);
-		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_wall, buffer);
-
-		safe_unpack32(&object_ptr->id, buffer);
-		safe_unpack16(&object_ptr->is_def, buffer);
-		safe_unpack32(&object_ptr->lft, buffer);
-
-		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
-		safe_unpack64(&object_ptr->max_cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
-		safe_unpack32(&object_ptr->max_jobs, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
-		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
-		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp,
-				       buffer);
-		safe_unpack32(&object_ptr->parent_id, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp,
-				       buffer);
-
-		safe_unpack32(&count, buffer);
-		/* This needs to look for zero to tell if something
-		   has changed */
-		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->qos_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&object_ptr->rgt, buffer);
-		safe_unpack32(&object_ptr->uid, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
-	} else if (rpc_version >= 4) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->accounting_list =
-				list_create(slurmdb_destroy_accounting_rec);
-			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_accounting_rec(
-					    (void **)&slurmdb_info,
-					    rpc_version,
-					    buffer) == SLURM_ERROR)
-					goto unpack_error;
-				list_append(object_ptr->accounting_list,
-					    slurmdb_info);
-			}
-		}
-
-		safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
-				       buffer);
-
-		safe_unpack32(&object_ptr->shares_raw, buffer);
-
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack32(&object_ptr->grp_cpus, buffer);
-		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_nodes, buffer);
-		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_wall, buffer);
-
-		safe_unpack32(&object_ptr->id, buffer);
-		safe_unpack32(&object_ptr->lft, buffer);
-
-		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
 		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
@@ -1796,7 +1125,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
 
-	if (rpc_version >= 10) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			packnull(buffer);
 			pack32(0, buffer);
@@ -1883,237 +1212,6 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		packdouble(object->usage_factor, buffer);
 		packdouble(object->usage_thres, buffer);
-	} else if (rpc_version >= 9) {
-		if (!object) {
-			packnull(buffer);
-			pack32(0, buffer);
-
-			pack32(QOS_FLAG_NOTSET, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack64(NO_VAL, buffer);
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-
-			pack_bit_str(NULL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-			pack32(0, buffer);
-
-			packdouble((double)NO_VAL, buffer);
-			packdouble((double)NO_VAL, buffer);
-			return;
-		}
-		packstr(object->description, buffer);
-		pack32(object->id, buffer);
-
-		pack32(object->flags, buffer);
-
-		pack32(object->grace_time, buffer);
-		pack64(object->grp_cpu_mins, buffer);
-		pack64(object->grp_cpu_run_mins, buffer);
-		pack32(object->grp_cpus, buffer);
-		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_nodes, buffer);
-		pack32(object->grp_submit_jobs, buffer);
-		pack32(object->grp_wall, buffer);
-
-		pack64(object->max_cpu_mins_pj, buffer);
-		pack64(object->max_cpu_run_mins_pu, buffer);
-		pack32(object->max_cpus_pj, buffer);
-		pack32(object->max_cpus_pu, buffer);
-		pack32(object->max_jobs_pu, buffer);
-		pack32(object->max_nodes_pj, buffer);
-		pack32(object->max_nodes_pu, buffer);
-		pack32(object->max_submit_jobs_pu, buffer);
-		pack32(object->max_wall_pj, buffer);
-
-		packstr(object->name, buffer);
-
-		pack_bit_str(object->preempt_bitstr, buffer);
-
-		if (object->preempt_list)
-			count = list_count(object->preempt_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->preempt_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->preempt_mode, buffer);
-		pack32(object->priority, buffer);
-
-		packdouble(object->usage_factor, buffer);
-		packdouble(object->usage_thres, buffer);
-	} else if (rpc_version >= 8) {
-		if (!object) {
-			packnull(buffer);
-			pack32(0, buffer);
-
-			pack32(QOS_FLAG_NOTSET, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-
-			pack_bit_str(NULL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-			pack32(0, buffer);
-
-			packdouble((double)NO_VAL, buffer);
-			packdouble((double)NO_VAL, buffer);
-			return;
-		}
-		packstr(object->description, buffer);
-		pack32(object->id, buffer);
-
-		pack32(object->flags, buffer);
-
-		pack64(object->grp_cpu_mins, buffer);
-		pack64(object->grp_cpu_run_mins, buffer);
-		pack32(object->grp_cpus, buffer);
-		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_nodes, buffer);
-		pack32(object->grp_submit_jobs, buffer);
-		pack32(object->grp_wall, buffer);
-
-		pack64(object->max_cpu_mins_pj, buffer);
-		pack64(object->max_cpu_run_mins_pu, buffer);
-		pack32(object->max_cpus_pj, buffer);
-		pack32(object->max_jobs_pu, buffer);
-		pack32(object->max_nodes_pj, buffer);
-		pack32(object->max_submit_jobs_pu, buffer);
-		pack32(object->max_wall_pj, buffer);
-
-		packstr(object->name, buffer);
-
-		pack_bit_str(object->preempt_bitstr, buffer);
-
-		if (object->preempt_list)
-			count = list_count(object->preempt_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->preempt_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->preempt_mode, buffer);
-		pack32(object->priority, buffer);
-
-		packdouble(object->usage_factor, buffer);
-		packdouble(object->usage_thres, buffer);
-	} else if (rpc_version >= 6) {
-		if (!object) {
-			packnull(buffer);
-			pack32(0, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack64(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-
-			pack_bit_str(NULL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(0, buffer);
-
-			packdouble(NO_VAL, buffer);
-			return;
-		}
-		packstr(object->description, buffer);
-		pack32(object->id, buffer);
-
-		pack64(object->grp_cpu_mins, buffer);
-		pack32(object->grp_cpus, buffer);
-		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_nodes, buffer);
-		pack32(object->grp_submit_jobs, buffer);
-		pack32(object->grp_wall, buffer);
-
-		pack64(object->max_cpu_mins_pj, buffer);
-		pack32(object->max_cpus_pj, buffer);
-		pack32(object->max_jobs_pu, buffer);
-		pack32(object->max_nodes_pj, buffer);
-		pack32(object->max_submit_jobs_pu, buffer);
-		pack32(object->max_wall_pj, buffer);
-
-		packstr(object->name, buffer);
-
-		pack_bit_str(object->preempt_bitstr, buffer);
-
-		if (object->preempt_list)
-			count = list_count(object->preempt_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->preempt_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack32(object->priority, buffer);
-
-		packdouble(object->usage_factor, buffer);
 	}
 }
 
@@ -2130,7 +1228,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 
 	slurmdb_init_qos_rec(object_ptr, 0);
 
-	if (rpc_version >= 10) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->description,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
@@ -2178,137 +1276,6 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 
 		safe_unpackdouble(&object_ptr->usage_factor, buffer);
 		safe_unpackdouble(&object_ptr->usage_thres, buffer);
-	} else if (rpc_version >= 9) {
-		safe_unpackstr_xmalloc(&object_ptr->description,
-				       &uint32_tmp, buffer);
-		safe_unpack32(&object_ptr->id, buffer);
-
-		safe_unpack32(&object_ptr->flags, buffer);
-
-		safe_unpack32(&object_ptr->grace_time, buffer);
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack64(&object_ptr->grp_cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->grp_cpus, buffer);
-		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_nodes, buffer);
-		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_wall, buffer);
-
-		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
-		safe_unpack64(&object_ptr->max_cpu_run_mins_pu, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
-		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
-		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-
-		unpack_bit_str(&object_ptr->preempt_bitstr, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->preempt_list =
-				list_create(slurm_destroy_char);
-			for (i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->preempt_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->preempt_mode, buffer);
-		safe_unpack32(&object_ptr->priority, buffer);
-
-		safe_unpackdouble(&object_ptr->usage_factor, buffer);
-		safe_unpackdouble(&object_ptr->usage_thres, buffer);
-	} else if (rpc_version >= 8) {
-		safe_unpackstr_xmalloc(&object_ptr->description,
-				       &uint32_tmp, buffer);
-		safe_unpack32(&object_ptr->id, buffer);
-
-		safe_unpack32(&object_ptr->flags, buffer);
-
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack64(&object_ptr->grp_cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->grp_cpus, buffer);
-		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_nodes, buffer);
-		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_wall, buffer);
-
-		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
-		safe_unpack64(&object_ptr->max_cpu_run_mins_pu, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
-		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
-		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-
-		unpack_bit_str(&object_ptr->preempt_bitstr, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->preempt_list =
-				list_create(slurm_destroy_char);
-			for (i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->preempt_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->preempt_mode, buffer);
-		safe_unpack32(&object_ptr->priority, buffer);
-
-		safe_unpackdouble(&object_ptr->usage_factor, buffer);
-		safe_unpackdouble(&object_ptr->usage_thres, buffer);
-	} else if (rpc_version >= 6) {
-		safe_unpackstr_xmalloc(&object_ptr->description,
-				       &uint32_tmp, buffer);
-		safe_unpack32(&object_ptr->id, buffer);
-
-		object_ptr->flags = QOS_FLAG_NOTSET;
-
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack32(&object_ptr->grp_cpus, buffer);
-		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_nodes, buffer);
-		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_wall, buffer);
-
-		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
-		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
-		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-
-		unpack_bit_str(&object_ptr->preempt_bitstr, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->preempt_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->preempt_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&object_ptr->priority, buffer);
-
-		safe_unpackdouble(&object_ptr->usage_factor, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -2355,7 +1322,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t rpc_version,
 		pack_time(object->time_end, buffer);
 		pack_time(object->time_start, buffer);
 		pack_time(object->time_start_prev, buffer);
-	} else {
+	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		if (!object) {
 			pack64(0, buffer);
 			packnull(buffer);
@@ -2415,7 +1382,7 @@ extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,
 		safe_unpack_time(&object_ptr->time_end, buffer);
 		safe_unpack_time(&object_ptr->time_start, buffer);
 		safe_unpack_time(&object_ptr->time_start_prev, buffer);
-	} else {
+	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		uint16_t flags;
 		safe_unpack64(&object_ptr->alloc_secs, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp,
@@ -2555,7 +1522,7 @@ extern void slurmdb_pack_txn_rec(void *in, uint16_t rpc_version, Buf buffer)
 {
 	slurmdb_txn_rec_t *object = (slurmdb_txn_rec_t *)in;
 
-	if (rpc_version >= 3) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			packnull(buffer);
 			pack16(0, buffer);
@@ -2581,13 +1548,14 @@ extern void slurmdb_pack_txn_rec(void *in, uint16_t rpc_version, Buf buffer)
 	}
 }
 
-extern int slurmdb_unpack_txn_rec(void **object, uint16_t rpc_version, Buf buffer)
+extern int slurmdb_unpack_txn_rec(
+	void **object, uint16_t rpc_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	slurmdb_txn_rec_t *object_ptr = xmalloc(sizeof(slurmdb_txn_rec_t));
 
 	*object = object_ptr;
-	if (rpc_version >= 3) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->accts,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&object_ptr->action, buffer);
@@ -2620,7 +1588,7 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t rpc_version, Buf buffer)
 	uint32_t count = NO_VAL;
 	slurmdb_wckey_rec_t *object = (slurmdb_wckey_rec_t *)in;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 
@@ -2662,46 +1630,6 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->uid, buffer);
 
 		packstr(object->user, buffer);
-	} else {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-			return;
-		}
-
-		if (object->accounting_list)
-			count = list_count(object->accounting_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->accounting_list);
-			while((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_accounting_rec(
-					slurmdb_info, rpc_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		packstr(object->cluster, buffer);
-
-		pack32(object->id, buffer);
-
-		packstr(object->name, buffer);
-
-		pack32(object->uid, buffer);
-
-		packstr(object->user, buffer);
 	}
 }
 
@@ -2717,7 +1645,7 @@ extern int slurmdb_unpack_wckey_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->accounting_list =
@@ -2745,33 +1673,8 @@ extern int slurmdb_unpack_wckey_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->uid, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
-	} else {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->accounting_list =
-				list_create(slurmdb_destroy_accounting_rec);
-			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_accounting_rec(
-					    (void **)&slurmdb_info,
-					    rpc_version,
-					    buffer) == SLURM_ERROR)
-					goto unpack_error;
-				list_append(object_ptr->accounting_list,
-					    slurmdb_info);
-			}
-		}
-
-		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
-				       buffer);
-
-		safe_unpack32(&object_ptr->id, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-
-		safe_unpack32(&object_ptr->uid, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2822,7 +1725,7 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 	slurmdb_user_cond_t *object = (slurmdb_user_cond_t *)in;
 	uint32_t count = NO_VAL;
 
-	if (rpc_version >= 4) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack16(0, buffer);
 			slurmdb_pack_association_cond(
@@ -2887,7 +1790,7 @@ extern int slurmdb_unpack_user_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 4) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
 
 		if (slurmdb_unpack_association_cond(
@@ -2950,7 +1853,7 @@ extern void slurmdb_pack_account_cond(void *in, uint16_t rpc_version,
 	slurmdb_account_cond_t *object = (slurmdb_account_cond_t *)in;
 	uint32_t count = NO_VAL;
 
-	if (rpc_version >= 3) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			slurmdb_pack_association_cond(NULL, rpc_version,
 						      buffer);
@@ -3011,7 +1914,7 @@ extern int slurmdb_unpack_account_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 3) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (slurmdb_unpack_association_cond(
 			    (void **)&object_ptr->assoc_cond,
 			    rpc_version, buffer) == SLURM_ERROR)
@@ -3060,7 +1963,7 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t rpc_version,
 	slurmdb_cluster_cond_t *object = (slurmdb_cluster_cond_t *)in;
 	uint32_t count = NO_VAL;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack16(0, buffer);
 			pack32(NO_VAL, buffer);
@@ -3126,38 +2029,6 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t rpc_version,
 
 		pack16(object->with_usage, buffer);
 		pack16(object->with_deleted, buffer);
-	} else if (rpc_version >= 5) {
-		if (!object) {
-			pack16(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		pack16(object->classification, buffer);
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->cluster_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack_time(object->usage_end, buffer);
-		pack_time(object->usage_start, buffer);
-
-		pack16(object->with_usage, buffer);
-		pack16(object->with_deleted, buffer);
 	}
 }
 
@@ -3174,7 +2045,7 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t rpc_version,
 	*object = object_ptr;
 
 	slurmdb_init_cluster_cond(object_ptr, 0);
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpack32(&count, buffer);
 		if (count && count != NO_VAL) {
@@ -3218,24 +2089,8 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t rpc_version,
 
 		safe_unpack16(&object_ptr->with_usage, buffer);
 		safe_unpack16(&object_ptr->with_deleted, buffer);
-	} else if (rpc_version >= 5) {
-		safe_unpack16(&object_ptr->classification, buffer);
-		safe_unpack32(&count, buffer);
-		if (count && count != NO_VAL) {
-			object_ptr->cluster_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->cluster_list, tmp_info);
-			}
-		}
-		safe_unpack_time(&object_ptr->usage_end, buffer);
-		safe_unpack_time(&object_ptr->usage_start, buffer);
-
-		safe_unpack16(&object_ptr->with_usage, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3253,7 +2108,7 @@ extern void slurmdb_pack_association_cond(void *in, uint16_t rpc_version,
 	ListIterator itr = NULL;
 	slurmdb_association_cond_t *object = (slurmdb_association_cond_t *)in;
 
-	if (rpc_version >= 10) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -3626,674 +2481,6 @@ extern void slurmdb_pack_association_cond(void *in, uint16_t rpc_version,
 		pack16(object->with_sub_accts, buffer);
 		pack16(object->without_parent_info, buffer);
 		pack16(object->without_parent_limits, buffer);
-	} else if (rpc_version >= 8) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		if (object->acct_list)
-			count = list_count(object->acct_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->acct_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->cluster_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->def_qos_id_list)
-			count = list_count(object->def_qos_id_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->def_qos_id_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->fairshare_list)
-			count = list_count(object->fairshare_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->fairshare_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_cpu_mins_list)
-			count = list_count(object->grp_cpu_mins_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_cpu_mins_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_cpu_run_mins_list)
-			count = list_count(object->grp_cpu_run_mins_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(
-				object->grp_cpu_run_mins_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_cpus_list)
-			count = list_count(object->grp_cpus_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_cpus_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_jobs_list)
-			count = list_count(object->grp_jobs_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_jobs_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_nodes_list)
-			count = list_count(object->grp_nodes_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_nodes_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_submit_jobs_list)
-			count = list_count(object->grp_submit_jobs_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(
-				object->grp_submit_jobs_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_wall_list)
-			count = list_count(object->grp_wall_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_wall_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->id_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-		count = NO_VAL;
-
-		if (object->max_cpu_mins_pj_list)
-			count = list_count(object->max_cpu_mins_pj_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(
-				object->max_cpu_mins_pj_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->max_cpu_run_mins_list)
-			count = list_count(object->max_cpu_run_mins_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(
-				object->max_cpu_run_mins_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->max_cpus_pj_list)
-			count = list_count(object->max_cpus_pj_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->max_cpus_pj_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_jobs_list)
-			count = list_count(object->max_jobs_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->max_jobs_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_nodes_pj_list)
-			count = list_count(object->max_nodes_pj_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->max_nodes_pj_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_submit_jobs_list)
-			count = list_count(object->max_submit_jobs_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(
-				object->max_submit_jobs_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_wall_pj_list)
-			count = list_count(object->max_wall_pj_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->max_wall_pj_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->only_defs, buffer);
-
-		if (object->partition_list)
-			count = list_count(object->partition_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->partition_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->parent_acct_list)
-			count = list_count(object->parent_acct_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->parent_acct_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->qos_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack_time(object->usage_end, buffer);
-		pack_time(object->usage_start, buffer);
-
-		if (object->user_list)
-			count = list_count(object->user_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->user_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->with_usage, buffer);
-		pack16(object->with_deleted, buffer);
-		pack16(object->with_raw_qos, buffer);
-		pack16(object->with_sub_accts, buffer);
-		pack16(object->without_parent_info, buffer);
-		pack16(object->without_parent_limits, buffer);
-	} else if (rpc_version >= 5) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		if (object->acct_list)
-			count = list_count(object->acct_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->acct_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->cluster_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->fairshare_list)
-			count = list_count(object->fairshare_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->fairshare_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_cpu_mins_list)
-			count = list_count(object->grp_cpu_mins_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_cpu_mins_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_cpus_list)
-			count = list_count(object->grp_cpus_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_cpus_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_jobs_list)
-			count = list_count(object->grp_jobs_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_jobs_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_nodes_list)
-			count = list_count(object->grp_nodes_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_nodes_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_submit_jobs_list)
-			count = list_count(object->grp_submit_jobs_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(
-				object->grp_submit_jobs_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->grp_wall_list)
-			count = list_count(object->grp_wall_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_wall_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->id_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-		count = NO_VAL;
-
-		if (object->max_cpu_mins_pj_list)
-			count = list_count(object->max_cpu_mins_pj_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(
-				object->max_cpu_mins_pj_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_cpus_pj_list)
-			count = list_count(object->max_cpus_pj_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->max_cpus_pj_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_jobs_list)
-			count = list_count(object->max_jobs_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->max_jobs_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_nodes_pj_list)
-			count = list_count(object->max_nodes_pj_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->max_nodes_pj_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_submit_jobs_list)
-			count = list_count(object->max_submit_jobs_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(
-				object->max_submit_jobs_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		if (object->max_wall_pj_list)
-			count = list_count(object->max_wall_pj_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->max_wall_pj_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->partition_list)
-			count = list_count(object->partition_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->partition_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->parent_acct_list)
-			count = list_count(object->parent_acct_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->parent_acct_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-
-		pack32(count, buffer);
-
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->qos_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack_time(object->usage_end, buffer);
-		pack_time(object->usage_start, buffer);
-
-		if (object->user_list)
-			count = list_count(object->user_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->user_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->with_usage, buffer);
-		pack16(object->with_deleted, buffer);
-		pack16(object->with_raw_qos, buffer);
-		pack16(object->with_sub_accts, buffer);
-		pack16(object->without_parent_info, buffer);
-		pack16(object->without_parent_limits, buffer);
 	}
 }
 
@@ -4308,7 +2495,7 @@ extern int slurmdb_unpack_association_cond(void **object,
 	char *tmp_info = NULL;
 	*object = object_ptr;
 
-	if (rpc_version >= 10) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->acct_list =
@@ -4588,508 +2775,6 @@ extern int slurmdb_unpack_association_cond(void **object,
 		safe_unpack16(&object_ptr->with_sub_accts, buffer);
 		safe_unpack16(&object_ptr->without_parent_info, buffer);
 		safe_unpack16(&object_ptr->without_parent_limits, buffer);
-	} else if (rpc_version >= 8) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->acct_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->acct_list, tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->cluster_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->cluster_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->def_qos_id_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->def_qos_id_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->fairshare_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->fairshare_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_cpu_mins_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_cpu_mins_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_cpu_run_mins_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_cpu_run_mins_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_cpus_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_cpus_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_jobs_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_jobs_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_nodes_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_nodes_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_submit_jobs_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_submit_jobs_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_wall_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_wall_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->id_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_cpu_mins_pj_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_cpu_mins_pj_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_cpu_run_mins_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_cpu_run_mins_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_cpus_pj_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_cpus_pj_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_jobs_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_jobs_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_nodes_pj_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_nodes_pj_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_submit_jobs_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_submit_jobs_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_wall_pj_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_wall_pj_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->only_defs, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->partition_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->partition_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->parent_acct_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->parent_acct_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->qos_list, tmp_info);
-			}
-		}
-
-		safe_unpack_time(&object_ptr->usage_end, buffer);
-		safe_unpack_time(&object_ptr->usage_start, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->user_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->user_list, tmp_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->with_usage, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
-		safe_unpack16(&object_ptr->with_raw_qos, buffer);
-		safe_unpack16(&object_ptr->with_sub_accts, buffer);
-		safe_unpack16(&object_ptr->without_parent_info, buffer);
-		safe_unpack16(&object_ptr->without_parent_limits, buffer);
-	} else if (rpc_version >= 5) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->acct_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->acct_list, tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->cluster_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->cluster_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->fairshare_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->fairshare_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_cpu_mins_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_cpu_mins_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_cpus_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_cpus_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_jobs_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_jobs_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_nodes_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_nodes_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_submit_jobs_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_submit_jobs_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->grp_wall_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->grp_wall_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->id_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_cpu_mins_pj_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_cpu_mins_pj_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_cpus_pj_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_cpus_pj_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_jobs_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_jobs_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_nodes_pj_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_nodes_pj_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_submit_jobs_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_submit_jobs_list,
-					    tmp_info);
-			}
-		}
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->max_wall_pj_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->max_wall_pj_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->partition_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->partition_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->parent_acct_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->parent_acct_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->qos_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->qos_list, tmp_info);
-			}
-		}
-
-		safe_unpack_time(&object_ptr->usage_end, buffer);
-		safe_unpack_time(&object_ptr->usage_start, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->user_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->user_list, tmp_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->with_usage, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
-		safe_unpack16(&object_ptr->with_raw_qos, buffer);
-		safe_unpack16(&object_ptr->with_sub_accts, buffer);
-		safe_unpack16(&object_ptr->without_parent_info, buffer);
-		safe_unpack16(&object_ptr->without_parent_limits, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -5280,7 +2965,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 	ListIterator itr = NULL;
 	slurmdb_job_cond_t *object = (slurmdb_job_cond_t *)in;
 
-	if (rpc_version >= 10) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);	/* count(acct_list) */
 			pack32(NO_VAL, buffer);	/* count(associd_list) */
@@ -5497,386 +3182,6 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 		pack16(object->without_steps, buffer);
 		pack16(object->without_usage_truncation, buffer);
-	} else if (rpc_version >= 8) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack16(0, buffer);
-			pack32(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-			packnull(buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		if (object->acct_list)
-			count = list_count(object->acct_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->acct_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->associd_list)
-			count = list_count(object->associd_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->associd_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-		count = NO_VAL;
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->cluster_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack32(object->cpus_max, buffer);
-		pack32(object->cpus_min, buffer);
-		pack16(object->duplicates, buffer);
-		pack32((uint32_t)object->exitcode, buffer);
-
-		if (object->groupid_list)
-			count = list_count(object->groupid_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->groupid_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack32(object->nodes_max, buffer);
-		pack32(object->nodes_min, buffer);
-		if (object->partition_list)
-			count = list_count(object->partition_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->partition_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->qos_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->resv_list)
-			count = list_count(object->resv_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->resv_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->resvid_list)
-			count = list_count(object->resvid_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->resvid_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->step_list)
-			count = list_count(object->step_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->step_list);
-			while((job = list_next(itr))) {
-				slurmdb_pack_selected_step(job, rpc_version,
-							   buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->state_list)
-			count = list_count(object->state_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->state_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack32(object->timelimit_max, buffer);
-		pack32(object->timelimit_min, buffer);
-		pack_time(object->usage_end, buffer);
-		pack_time(object->usage_start, buffer);
-
-		packstr(object->used_nodes, buffer);
-
-		if (object->userid_list)
-			count = list_count(object->userid_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->userid_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->wckey_list)
-			count = list_count(object->wckey_list);
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->wckey_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->without_steps, buffer);
-		pack16(object->without_usage_truncation, buffer);
-	} else if (rpc_version >= 6) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack16(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-			packnull(buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		if (object->acct_list)
-			count = list_count(object->acct_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->acct_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->associd_list)
-			count = list_count(object->associd_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->associd_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-		count = NO_VAL;
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->cluster_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack32(object->cpus_max, buffer);
-		pack32(object->cpus_min, buffer);
-		pack16(object->duplicates, buffer);
-
-		if (object->groupid_list)
-			count = list_count(object->groupid_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->groupid_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-		count = NO_VAL;
-
-		pack32(object->nodes_max, buffer);
-		pack32(object->nodes_min, buffer);
-		if (object->partition_list)
-			count = list_count(object->partition_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->partition_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->resv_list)
-			count = list_count(object->resv_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->resv_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->resvid_list)
-			count = list_count(object->resvid_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->resvid_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->step_list)
-			count = list_count(object->step_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->step_list);
-			while((job = list_next(itr))) {
-				slurmdb_pack_selected_step(job, rpc_version,
-							   buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->state_list)
-			count = list_count(object->state_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->state_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack_time(object->usage_end, buffer);
-		pack_time(object->usage_start, buffer);
-
-		packstr(object->used_nodes, buffer);
-
-		if (object->userid_list)
-			count = list_count(object->userid_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->userid_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->wckey_list)
-			count = list_count(object->wckey_list);
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->wckey_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->without_steps, buffer);
-		pack16(object->without_usage_truncation, buffer);
 	}
 }
 
@@ -5892,7 +3197,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 10) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->acct_list = list_create(slurm_destroy_char);
@@ -6058,302 +3363,6 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t rpc_version,
 
 		safe_unpack16(&object_ptr->without_steps, buffer);
 		safe_unpack16(&object_ptr->without_usage_truncation, buffer);
-	} else if (rpc_version >= 8) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->acct_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->acct_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->associd_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->associd_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->cluster_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->cluster_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&object_ptr->cpus_max, buffer);
-		safe_unpack32(&object_ptr->cpus_min, buffer);
-		safe_unpack16(&object_ptr->duplicates, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		object_ptr->exitcode = (int32_t)uint32_tmp;
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->groupid_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->groupid_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&object_ptr->nodes_max, buffer);
-		safe_unpack32(&object_ptr->nodes_min, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->partition_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->partition_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->qos_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->qos_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->resv_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->resv_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->resvid_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->resvid_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->step_list =
-				list_create(slurmdb_destroy_selected_step);
-			for(i=0; i<count; i++) {
-				slurmdb_unpack_selected_step(
-					&job, rpc_version, buffer);
-				list_append(object_ptr->step_list, job);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->state_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->state_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&object_ptr->timelimit_max, buffer);
-		safe_unpack32(&object_ptr->timelimit_min, buffer);
-		safe_unpack_time(&object_ptr->usage_end, buffer);
-		safe_unpack_time(&object_ptr->usage_start, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->used_nodes,
-				       &uint32_tmp, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->userid_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->userid_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->wckey_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->wckey_list, tmp_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->without_steps, buffer);
-		safe_unpack16(&object_ptr->without_usage_truncation, buffer);
-	} else if (rpc_version >= 6) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->acct_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->acct_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->associd_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->associd_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->cluster_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->cluster_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&object_ptr->cpus_max, buffer);
-		safe_unpack32(&object_ptr->cpus_min, buffer);
-		safe_unpack16(&object_ptr->duplicates, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->groupid_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->groupid_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&object_ptr->nodes_max, buffer);
-		safe_unpack32(&object_ptr->nodes_min, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->partition_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->partition_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->resv_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->resv_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->resvid_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->resvid_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->step_list =
-				list_create(slurmdb_destroy_selected_step);
-			for(i=0; i<count; i++) {
-				if (slurmdb_unpack_selected_step(
-					    &job, rpc_version, buffer)
-				    == SLURM_ERROR)
-					goto unpack_error;
-				list_append(object_ptr->step_list, job);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->state_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->state_list, tmp_info);
-			}
-		}
-
-		safe_unpack_time(&object_ptr->usage_end, buffer);
-		safe_unpack_time(&object_ptr->usage_start, buffer);
-
-		safe_unpackstr_xmalloc(&object_ptr->used_nodes,
-				       &uint32_tmp, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->userid_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->userid_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->wckey_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->wckey_list, tmp_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->without_steps, buffer);
-		safe_unpack16(&object_ptr->without_usage_truncation, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -6369,7 +3378,7 @@ extern void slurmdb_pack_job_modify_cond(void *in, uint16_t rpc_version,
 {
 	slurmdb_job_modify_cond_t *cond = (slurmdb_job_modify_cond_t *)in;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!cond) {
 			packnull(buffer);
 			pack32(NO_VAL, buffer);
@@ -6389,7 +3398,7 @@ extern int slurmdb_unpack_job_modify_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&object_ptr->job_id, buffer);
@@ -6409,7 +3418,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 	slurmdb_step_rec_t *step = NULL;
 	uint32_t count = 0;
 
-	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		packstr(job->account, buffer);
 		pack32(job->alloc_cpus, buffer);
 		pack32(job->alloc_nodes, buffer);
@@ -6466,62 +3475,6 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack32(job->user_cpu_usec, buffer);
 		packstr(job->wckey, buffer); /* added for rpc_version 4 */
 		pack32(job->wckeyid, buffer); /* added for rpc_version 4 */
-	} else {
-		packstr(job->account, buffer);
-		pack32(job->alloc_cpus, buffer);
-		pack32(job->alloc_nodes, buffer);
-		pack32(job->associd, buffer);
-		packstr(job->blockid, buffer);
-		packstr(job->cluster, buffer);
-		pack32((uint32_t)job->derived_ec, buffer);
-		packstr(job->derived_es, buffer);
-		pack32(job->elapsed, buffer);
-		pack_time(job->eligible, buffer);
-		pack_time(job->end, buffer);
-		pack32((uint32_t)job->exitcode, buffer);
-		/* the first_step_ptr
-		   is set up on the client side so does
-		   not need to be packed */
-		pack32(job->gid, buffer);
-		pack32(job->jobid, buffer);
-		packstr(job->jobname, buffer);
-		pack32(job->lft, buffer);
-		packstr(job->nodes, buffer);
-		packstr(job->partition, buffer);
-		pack32(job->priority, buffer);
-		pack32(job->qosid, buffer);
-		pack32(job->req_cpus, buffer);
-		pack32(job->requid, buffer);
-		pack32(job->resvid, buffer);
-		pack32(job->show_full, buffer);
-		pack_time(job->start, buffer);
-		pack16((uint16_t)job->state, buffer);
-		_pack_slurmdb_stats(&job->stats, rpc_version, buffer);
-		if (job->steps)
-			count = list_count(job->steps);
-		pack32(count, buffer);
-		if (count) {
-			itr = list_iterator_create(job->steps);
-			while((step = list_next(itr))) {
-				slurmdb_pack_step_rec(step, rpc_version,
-						      buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		pack_time(job->submit, buffer);
-		pack32(job->suspended, buffer);
-		pack32(job->sys_cpu_sec, buffer);
-		pack32(job->sys_cpu_usec, buffer);
-		pack32(job->timelimit, buffer);
-		pack32(job->tot_cpu_sec, buffer);
-		pack32(job->tot_cpu_usec, buffer);
-		pack16(job->track_steps, buffer);
-		pack32(job->uid, buffer);
-		packstr(job->user, buffer);
-		pack32(job->user_cpu_sec, buffer);
-		pack32(job->user_cpu_usec, buffer);
-		packstr(job->wckey, buffer); /* added for rpc_version 4 */
-		pack32(job->wckeyid, buffer); /* added for rpc_version 4 */
 	}
 }
 
@@ -6536,7 +3489,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 
 	*job = job_ptr;
 
-	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->alloc_cpus, buffer);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
@@ -6600,69 +3553,6 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->wckeyid, buffer);
-	} else {
-		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->alloc_cpus, buffer);
-		safe_unpack32(&job_ptr->alloc_nodes, buffer);
-		safe_unpack32(&job_ptr->associd, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		job_ptr->derived_ec = (int32_t)uint32_tmp;
-		safe_unpackstr_xmalloc(&job_ptr->derived_es, &uint32_tmp,
-				       buffer);
-		safe_unpack32(&job_ptr->elapsed, buffer);
-		safe_unpack_time(&job_ptr->eligible, buffer);
-		safe_unpack_time(&job_ptr->end, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		job_ptr->exitcode = (int32_t)uint32_tmp;
-		safe_unpack32(&job_ptr->gid, buffer);
-		safe_unpack32(&job_ptr->jobid, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->lft, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp,
-				       buffer);
-		safe_unpack32(&job_ptr->priority, buffer);
-		safe_unpack32(&job_ptr->qosid, buffer);
-		safe_unpack32(&job_ptr->req_cpus, buffer);
-		safe_unpack32(&job_ptr->requid, buffer);
-		safe_unpack32(&job_ptr->resvid, buffer);
-		safe_unpack32(&job_ptr->show_full, buffer);
-		safe_unpack_time(&job_ptr->start, buffer);
-		safe_unpack16(&uint16_tmp, buffer);
-		job_ptr->state = uint16_tmp;
-		if (_unpack_slurmdb_stats(&job_ptr->stats, rpc_version, buffer)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack32(&count, buffer);
-		job_ptr->steps = list_create(slurmdb_destroy_step_rec);
-		for(i=0; i<count; i++) {
-			if (slurmdb_unpack_step_rec(&step, rpc_version, buffer)
-			    == SLURM_ERROR)
-				goto unpack_error;
-
-			step->job_ptr = job_ptr;
-			if (!job_ptr->first_step_ptr)
-				job_ptr->first_step_ptr = step;
-			list_append(job_ptr->steps, step);
-		}
-
-		safe_unpack_time(&job_ptr->submit, buffer);
-		safe_unpack32(&job_ptr->suspended, buffer);
-		safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
-		safe_unpack32(&job_ptr->timelimit, buffer);
-		safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
-		safe_unpack16(&job_ptr->track_steps, buffer);
-		safe_unpack32(&job_ptr->uid, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
-		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->wckeyid, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -6680,7 +3570,7 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t rpc_version, Buf buffer)
 	ListIterator itr = NULL;
 	slurmdb_qos_cond_t *object = (slurmdb_qos_cond_t *)in;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -6731,55 +3621,6 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 		pack16(object->preempt_mode, buffer);
 		pack16(object->with_deleted, buffer);
-	} else {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		if (object->description_list)
-			count = list_count(object->description_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->description_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->id_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->name_list)
-			count = list_count(object->name_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->name_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->with_deleted, buffer);
 	}
 }
 
@@ -6794,7 +3635,7 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->description_list =
@@ -6828,40 +3669,6 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t rpc_version,
 		}
 
 		safe_unpack16(&object_ptr->preempt_mode, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
-	} else {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->description_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->description_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->id_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->name_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->name_list, tmp_info);
-			}
-		}
-
 		safe_unpack16(&object_ptr->with_deleted, buffer);
 	}
 
@@ -7022,7 +3829,7 @@ unpack_error:
 extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 				  uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_2_5_VERSION) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		pack32(step->elapsed, buffer);
 		pack_time(step->end, buffer);
 		pack32((uint32_t)step->exitcode, buffer);
@@ -7033,30 +3840,6 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		packstr(step->nodes, buffer);
 		pack32(step->ntasks, buffer);
 		pack32(step->req_cpufreq, buffer);
-		pack32(step->requid, buffer);
-		_pack_slurmdb_stats(&step->stats, rpc_version, buffer);
-		pack_time(step->start, buffer);
-		pack16(step->state, buffer);
-		pack32(step->stepid, buffer);	/* job's step number */
-		packstr(step->stepname, buffer);
-		pack32(step->suspended, buffer);
-		pack32(step->sys_cpu_sec, buffer);
-		pack32(step->sys_cpu_usec, buffer);
-		pack16(step->task_dist, buffer);
-		pack32(step->tot_cpu_sec, buffer);
-		pack32(step->tot_cpu_usec, buffer);
-		pack32(step->user_cpu_sec, buffer);
-		pack32(step->user_cpu_usec, buffer);
-	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
-		pack32(step->elapsed, buffer);
-		pack_time(step->end, buffer);
-		pack32((uint32_t)step->exitcode, buffer);
-		/* the job_ptr is set up on the client side so does
-		   not need to be packed */
-		pack32(step->ncpus, buffer);
-		pack32(step->nnodes, buffer);
-		packstr(step->nodes, buffer);
-		pack32(step->ntasks, buffer);
 		pack32(step->requid, buffer);
 		_pack_slurmdb_stats(&step->stats, rpc_version, buffer);
 		pack_time(step->start, buffer);
@@ -7083,7 +3866,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 
 	*step = step_ptr;
 
-	if (rpc_version >= SLURMDBD_2_5_VERSION) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&step_ptr->elapsed, buffer);
 		safe_unpack_time(&step_ptr->end, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -7093,33 +3876,6 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->ntasks, buffer);
 		safe_unpack32(&step_ptr->req_cpufreq, buffer);
-		safe_unpack32(&step_ptr->requid, buffer);
-		if (_unpack_slurmdb_stats(&step_ptr->stats, rpc_version, buffer)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-		safe_unpack_time(&step_ptr->start, buffer);
-		safe_unpack16(&uint16_tmp, buffer);
-		step_ptr->state = uint16_tmp;
-		safe_unpack32(&step_ptr->stepid, buffer);
-		safe_unpackstr_xmalloc(&step_ptr->stepname,
-				       &uint32_tmp, buffer);
-		safe_unpack32(&step_ptr->suspended, buffer);
-		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
-		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
-		safe_unpack16(&step_ptr->task_dist, buffer);
-		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
-		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
-		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
-		safe_unpack32(&step_ptr->user_cpu_usec, buffer);
-	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
-		safe_unpack32(&step_ptr->elapsed, buffer);
-		safe_unpack_time(&step_ptr->end, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		step_ptr->exitcode = (int32_t)uint32_tmp;
-		safe_unpack32(&step_ptr->ncpus, buffer);
-		safe_unpack32(&step_ptr->nnodes, buffer);
-		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
-		safe_unpack32(&step_ptr->ntasks, buffer);
 		safe_unpack32(&step_ptr->requid, buffer);
 		if (_unpack_slurmdb_stats(&step_ptr->stats, rpc_version, buffer)
 		    != SLURM_SUCCESS)
@@ -7410,7 +4166,7 @@ extern void slurmdb_pack_txn_cond(void *in, uint16_t rpc_version, Buf buffer)
 	ListIterator itr = NULL;
 	slurmdb_txn_cond_t *object = (slurmdb_txn_cond_t *)in;
 
-	if (rpc_version >= 5) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -7544,7 +4300,7 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t rpc_version,
 	char *tmp_info = NULL;
 
 	*object = object_ptr;
-	if (rpc_version >= 5) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->acct_list =
@@ -7654,7 +4410,7 @@ extern void slurmdb_pack_wckey_cond(void *in, uint16_t rpc_version, Buf buffer)
 	ListIterator itr = NULL;
 	slurmdb_wckey_cond_t *object = (slurmdb_wckey_cond_t *)in;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -7730,78 +4486,6 @@ extern void slurmdb_pack_wckey_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 		pack16(object->with_usage, buffer);
 		pack16(object->with_deleted, buffer);
-	} else if (rpc_version >= 5) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->cluster_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->id_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-		count = NO_VAL;
-
-		if (object->name_list)
-			count = list_count(object->name_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->name_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack_time(object->usage_end, buffer);
-		pack_time(object->usage_start, buffer);
-
-		if (object->user_list)
-			count = list_count(object->user_list);
-
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(object->user_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		pack16(object->with_usage, buffer);
-		pack16(object->with_deleted, buffer);
 	}
 }
 
@@ -7817,7 +4501,7 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->cluster_list =
@@ -7869,57 +4553,8 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t rpc_version,
 
 		safe_unpack16(&object_ptr->with_usage, buffer);
 		safe_unpack16(&object_ptr->with_deleted, buffer);
-	} else if (rpc_version >= 5) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->cluster_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->cluster_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->id_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->id_list, tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->name_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->name_list, tmp_info);
-			}
-		}
-
-		safe_unpack_time(&object_ptr->usage_end, buffer);
-		safe_unpack_time(&object_ptr->usage_start, buffer);
-
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->user_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-						       buffer);
-				list_append(object_ptr->user_list, tmp_info);
-			}
-		}
-
-		safe_unpack16(&object_ptr->with_usage, buffer);
-		safe_unpack16(&object_ptr->with_deleted, buffer);
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -7933,7 +4568,7 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t rpc_version,
 {
 	slurmdb_archive_cond_t *object = (slurmdb_archive_cond_t *)in;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		if (!object) {
 			packnull(buffer);
 			packnull(buffer);
@@ -7952,37 +4587,6 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t rpc_version,
 		pack32(object->purge_job, buffer);
 		pack32(object->purge_step, buffer);
 		pack32(object->purge_suspend, buffer);
-	} else {
-		if (!object) {
-			packnull(buffer);
-			pack16((uint16_t)0, buffer);
-			pack16((uint16_t)0, buffer);
-			packnull(buffer);
-			pack16((uint16_t)0, buffer);
-			pack16((uint16_t)0, buffer);
-			slurmdb_pack_job_cond(NULL, rpc_version, buffer);
-			pack16((uint16_t)NO_VAL, buffer);
-			pack16((uint16_t)NO_VAL, buffer);
-			pack16((uint16_t)NO_VAL, buffer);
-			pack16((uint16_t)NO_VAL, buffer);
-			return;
-		}
-
-		packstr(object->archive_dir, buffer);
-		pack16((uint16_t)SLURMDB_PURGE_ARCHIVE_SET(
-			       object->purge_event) ? 1 : 0, buffer);
-		pack16((uint16_t)SLURMDB_PURGE_ARCHIVE_SET(
-			       object->purge_job) ? 1 : 0, buffer);
-		packstr(object->archive_script, buffer);
-		pack16((uint16_t)SLURMDB_PURGE_ARCHIVE_SET(
-			       object->purge_step) ? 1 : 0, buffer);
-		pack16((uint16_t)SLURMDB_PURGE_ARCHIVE_SET(
-			       object->purge_suspend) ? 1 : 0, buffer);
-		slurmdb_pack_job_cond(object->job_cond, rpc_version, buffer);
-		pack16((uint16_t)object->purge_event, buffer);
-		pack16((uint16_t)object->purge_job, buffer);
-		pack16((uint16_t)object->purge_step, buffer);
-		pack16((uint16_t)object->purge_suspend, buffer);
 	}
 }
 
@@ -7995,7 +4599,7 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= 8) {
+	if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->archive_dir,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->archive_script,
@@ -8007,50 +4611,6 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->purge_job, buffer);
 		safe_unpack32(&object_ptr->purge_step, buffer);
 		safe_unpack32(&object_ptr->purge_suspend, buffer);
-	} else {
-		uint16_t a_events = 0, a_jobs = 0, a_steps = 0, a_suspend = 0;
-		uint16_t tmp16;
-		safe_unpackstr_xmalloc(&object_ptr->archive_dir,
-				       &uint32_tmp, buffer);
-		safe_unpack16(&a_events, buffer);
-		safe_unpack16(&a_jobs, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->archive_script,
-				       &uint32_tmp, buffer);
-		safe_unpack16(&a_steps, buffer);
-		safe_unpack16(&a_suspend, buffer);
-		if (slurmdb_unpack_job_cond((void *)&object_ptr->job_cond,
-					    rpc_version, buffer) == SLURM_ERROR)
-			goto unpack_error;
-		safe_unpack16(&tmp16, buffer);
-		object_ptr->purge_event = tmp16;
-		if (tmp16 != (uint16_t)NO_VAL) {
-			object_ptr->purge_event |= SLURMDB_PURGE_MONTHS;
-			if (a_events)
-				object_ptr->purge_event |=
-					SLURMDB_PURGE_ARCHIVE;
-		}
-		safe_unpack16(&tmp16, buffer);
-		object_ptr->purge_job = tmp16;
-		if (tmp16 != (uint16_t)NO_VAL) {
-			object_ptr->purge_job |= SLURMDB_PURGE_MONTHS;
-			if (a_jobs)
-				object_ptr->purge_job |= SLURMDB_PURGE_ARCHIVE;
-		}
-		safe_unpack16(&tmp16, buffer);
-		object_ptr->purge_step = tmp16;
-		if (tmp16 != (uint16_t)NO_VAL) {
-			object_ptr->purge_step |= SLURMDB_PURGE_MONTHS;
-			if (a_steps)
-				object_ptr->purge_step |= SLURMDB_PURGE_ARCHIVE;
-		}
-		safe_unpack16(&tmp16, buffer);
-		object_ptr->purge_suspend = tmp16;
-		if (tmp16 != (uint16_t)NO_VAL) {
-			object_ptr->purge_suspend |= SLURMDB_PURGE_MONTHS;
-			if (a_suspend)
-				object_ptr->purge_suspend |=
-					SLURMDB_PURGE_ARCHIVE;
-		}
 	}
 
 	return SLURM_SUCCESS;

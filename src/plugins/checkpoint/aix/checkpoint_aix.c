@@ -343,7 +343,7 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
 		set_buf_offset(buffer, x);
 		pack32(z - y, buffer);
 		set_buf_offset(buffer, z);
-	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		pack16(check_ptr->disabled, buffer);
 		pack16(check_ptr->node_cnt, buffer);
 		pack16(check_ptr->reply_cnt, buffer);
@@ -383,7 +383,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 					       &uint32_tmp, buffer);
 			safe_unpack_time(&check_ptr->time_stamp, buffer);
 		}
-	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack16(&check_ptr->disabled, buffer);
 		safe_unpack16(&check_ptr->node_cnt, buffer);
 		safe_unpack16(&check_ptr->reply_cnt, buffer);

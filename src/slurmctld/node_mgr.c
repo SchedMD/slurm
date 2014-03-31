@@ -87,7 +87,6 @@
 /* Change NODE_STATE_VERSION value when changing the state save format */
 #define NODE_STATE_VERSION        "PROTOCOL_VERSION"
 #define NODE_2_6_STATE_VERSION    "VER006"	/* SLURM version 2.6 */
-#define NODE_2_5_STATE_VERSION    "VER006"	/* SLURM version 2.5 */
 
 /* Global variables */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
@@ -329,16 +328,10 @@ extern int load_all_node_state ( bool state_only )
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in node_state header is %s", ver_str);
 	if (ver_str) {
-		/* 2.5 and 2.6 share the same NODE_2_6_STATE_VERSION
-		 * so we send the lowest supported protocol version
-		 * to slurmds.
-		 */
 		if (!strcmp(ver_str, NODE_STATE_VERSION))
 			safe_unpack16(&protocol_version, buffer);
 		else if (!strcmp(ver_str, NODE_2_6_STATE_VERSION))
-			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
-		else if (!strcmp(ver_str, NODE_2_5_STATE_VERSION))
-			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
 	}
 
 	if (protocol_version == (uint16_t)NO_VAL) {
@@ -379,7 +372,7 @@ extern int load_all_node_state ( bool state_only )
 				    protocol_version) != SLURM_SUCCESS)
 				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
-		} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_hostname,
@@ -676,7 +669,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE*16);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
@@ -765,7 +758,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
@@ -936,58 +929,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
 		ext_sensors_data_pack(dump_node_ptr->ext_sensors, buffer,
-					protocol_version);
-	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		packstr (dump_node_ptr->name, buffer);
-		packstr (dump_node_ptr->node_hostname, buffer);
-		packstr (dump_node_ptr->comm_name, buffer);
-		pack16  (dump_node_ptr->node_state, buffer);
-		/* On a bluegene system always use the regular node
-		 * infomation not what is in the config_ptr.
-		 */
-#ifndef HAVE_BG
-		if (slurmctld_conf.fast_schedule) {
-			/* Only data from config_record used for scheduling */
-			pack16(dump_node_ptr->config_ptr->cpus, buffer);
-			pack16(dump_node_ptr->config_ptr->boards, buffer);
-			pack16(dump_node_ptr->config_ptr->sockets, buffer);
-			pack16(dump_node_ptr->config_ptr->cores, buffer);
-			pack16(dump_node_ptr->config_ptr->threads, buffer);
-			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
-			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
-		} else {
-#endif
-			/* Individual node data used for scheduling */
-			pack16(dump_node_ptr->cpus, buffer);
-			pack16(dump_node_ptr->boards, buffer);
-			pack16(dump_node_ptr->sockets, buffer);
-			pack16(dump_node_ptr->cores, buffer);
-			pack16(dump_node_ptr->threads, buffer);
-			pack32(dump_node_ptr->real_memory, buffer);
-			pack32(dump_node_ptr->tmp_disk, buffer);
-#ifndef HAVE_BG
-		}
-#endif
-		pack32(dump_node_ptr->cpu_load, buffer);
-		pack32(dump_node_ptr->config_ptr->weight, buffer);
-		pack32(dump_node_ptr->reason_uid, buffer);
-
-		pack_time(dump_node_ptr->boot_time, buffer);
-		pack_time(dump_node_ptr->reason_time, buffer);
-		pack_time(dump_node_ptr->slurmd_start_time, buffer);
-
-		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
-					      buffer, protocol_version);
-
-		packstr(dump_node_ptr->arch, buffer);
-		packstr(dump_node_ptr->features, buffer);
-		if (dump_node_ptr->gres)
-			packstr(dump_node_ptr->gres, buffer);
-		else
-			packstr(dump_node_ptr->config_ptr->gres, buffer);
-		packstr(dump_node_ptr->os, buffer);
-		packstr(dump_node_ptr->reason, buffer);
-		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
 	} else {
 		error("_pack_node: protocol_version "

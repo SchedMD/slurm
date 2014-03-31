@@ -2224,11 +2224,9 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(nodeinfo->alloc_cpus, buffer);
 		pack32(nodeinfo->alloc_memory, buffer);
-	} else {
-		pack16(nodeinfo->alloc_cpus, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -2243,11 +2241,9 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
 		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
-	} else {
-		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
 	}
 
 	return SLURM_SUCCESS;

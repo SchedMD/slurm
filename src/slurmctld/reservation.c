@@ -94,7 +94,6 @@
  * to avoid losing reservations between releases major SLURM updates. */
 #define RESV_STATE_VERSION          "PROTOCOL_VERSION"
 #define RESV_2_6_STATE_VERSION      "VER004"	/* SLURM version 2.6 */
-#define RESV_2_5_STATE_VERSION      "VER004"	/* SLURM version 2.5 */
 
 typedef struct resv_thread_args {
 	char *script;
@@ -1328,7 +1327,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		} else {
 			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 		}
-	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		uint16_t flags;
 		packstr(resv_ptr->accounts,	buffer);
 		pack32(resv_ptr->cpu_cnt,	buffer);
@@ -1429,7 +1428,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
-	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		uint16_t flags;
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
@@ -2855,8 +2854,6 @@ extern int load_all_resv_state(int recover)
 			safe_unpack16(&protocol_version, buffer);
 		else if (!strcmp(ver_str, RESV_2_6_STATE_VERSION))
 			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
-		else if (!strcmp(ver_str, RESV_2_5_STATE_VERSION))
-			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 	}
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("************************************************************");

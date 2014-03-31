@@ -815,7 +815,7 @@ extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version)
 	int dim;
 
 	xassert(ba_mp);
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
 			_pack_ba_switch(&ba_mp->axis_switch[dim], buffer,
 					protocol_version);
@@ -856,7 +856,7 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 
 	*ba_mp_pptr = ba_mp;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
 			if (_unpack_ba_switch(&ba_mp->axis_switch[dim], buffer,
 					      protocol_version)

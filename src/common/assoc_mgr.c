@@ -4135,11 +4135,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_mgr_state header is %u", ver);
-	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURMDBD_VERSION_MIN) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURMDBD_MIN_VERSION) {
 		error("***********************************************");
 		error("Can not recover assoc_mgr state, incompatible version, "
 		      "got %u need > %u <= %u", ver,
-		      SLURMDBD_VERSION_MIN, SLURM_PROTOCOL_VERSION);
+		      SLURMDBD_MIN_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		assoc_mgr_unlock(&locks);

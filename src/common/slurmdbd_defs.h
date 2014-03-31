@@ -74,10 +74,14 @@
  * The slurmdbd should be at least as current as any Slurm cluster
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURM_VERSION).
+ *
+ * NOTE: These values must be Moved to
+ * src/plugins/accounting_storage/mysql/as_mysql_archive.c when we are
+ * done here with them since we have to support old version of archive
+ * files since they don't update once they are created.
  */
 #define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
-#define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
-#define SLURMDBD_VERSION_MIN   11
+#define SLURMDBD_MIN_VERSION   SLURMDBD_2_6_VERSION
 
 /* SLURM DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */

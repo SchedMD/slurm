@@ -46,6 +46,8 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/env.h"
 
+#define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
+
 typedef struct {
 	char *cluster_nodes;
 	char *cpu_count;
@@ -672,7 +674,7 @@ static void _pack_local_step(local_step_t *object,
 		packstr(object->task_dist, buffer);
 		packstr(object->user_sec, buffer);
 		packstr(object->user_usec, buffer);
-	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
+	} else {
 		packstr(object->ave_cpu, buffer);
 		packstr(object->ave_pages, buffer);
 		packstr(object->ave_rss, buffer);
@@ -803,7 +805,7 @@ static int _unpack_local_step(local_step_t *object,
 		unpackstr_ptr(&object->task_dist, &tmp32, buffer);
 		unpackstr_ptr(&object->user_sec, &tmp32, buffer);
 		unpackstr_ptr(&object->user_usec, &tmp32, buffer);
-	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
+	} else {
 		unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
 		unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
 		unpackstr_ptr(&object->ave_rss, &tmp32, buffer);
@@ -2452,11 +2454,16 @@ extern int as_mysql_jobacct_process_archive_load(
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_mgr_state header is %u", ver);
-	if (ver <= SLURM_PROTOCOL_VERSION || ver < SLURMDBD_VERSION_MIN) {
+	/* Don't verify the lower limit as we should be keeping all
+	   older versions around here just to support super old
+	   archive files since they don't get regenerated all the
+	   time.
+	*/
+	if (ver > SLURM_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover archive file, incompatible version, "
-		      "got %u need > %u <= %u", ver,
-		      SLURMDBD_VERSION_MIN, SLURM_PROTOCOL_VERSION);
+		      "got %u need <= %u", ver,
+		      SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		return EFAULT;

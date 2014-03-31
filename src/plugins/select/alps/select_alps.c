@@ -488,7 +488,7 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer, uint16_t protocol_version)
 {
 	int rc = SLURM_ERROR;
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		rc = other_select_nodeinfo_pack(nodeinfo->other_nodeinfo,
 						buffer, protocol_version);
 	}
@@ -505,7 +505,7 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo_pptr,
 	*nodeinfo_pptr = nodeinfo;
 
 	nodeinfo->magic = NODEINFO_MAGIC;
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		rc = other_select_nodeinfo_unpack(&nodeinfo->other_nodeinfo,
 						  buffer, protocol_version);
 	}
@@ -678,7 +678,7 @@ extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 {
 	int rc = SLURM_ERROR;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!jobinfo) {
 			pack8(0, buffer);
 			pack32(0, buffer);
@@ -706,7 +706,7 @@ extern int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 	*jobinfo_pptr = jobinfo;
 
 	jobinfo->magic = JOBINFO_MAGIC;
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack8(&jobinfo->confirmed, buffer);
 		safe_unpack32(&jobinfo->reservation_id, buffer);
 		safe_unpack64(&jobinfo->confirm_cookie, buffer);

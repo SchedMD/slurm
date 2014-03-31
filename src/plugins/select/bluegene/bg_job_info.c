@@ -522,7 +522,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packnull(buffer); //units_avail
 			packnull(buffer); //units_used
 		}
-	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		if (jobinfo) {
 			if (jobinfo->dim_cnt)
 				dims = jobinfo->dim_cnt;
@@ -656,7 +656,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 			bit_unfmt(jobinfo->units_used, bit_char);
 			xfree(bit_char);
 		}
-	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack16(&jobinfo->dim_cnt, buffer);
 
 		xassert(jobinfo->dim_cnt);

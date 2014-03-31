@@ -484,7 +484,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 	struct job_record *job_ptr;
 	ListIterator itr;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 		packstr(bg_record->blrtsimage, buffer);
 		pack_bit_fmt(bg_record->mp_bitmap, buffer);
@@ -554,7 +554,7 @@ static void _pack_block_ext(bg_record_t *bg_record, Buf buffer,
 
 	xassert(bg_record);
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (bg_record->ba_mp_list)
 			count = list_count(bg_record->ba_mp_list);
 		pack32(count, buffer);
@@ -588,7 +588,7 @@ static int _unpack_block_ext(bg_record_t *bg_record, Buf buffer,
 	uint16_t temp16;
 	uint32_t temp32;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count == NO_VAL) {
 			error("_unpack_block_ext: bg_record record has no "
@@ -2164,7 +2164,7 @@ extern int select_p_pack_select_info(time_t last_query_time,
 		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
-		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			if (bg_lists->main) {
 				/* Lock job read before block to avoid
 				 * deadlock job lock is needed because

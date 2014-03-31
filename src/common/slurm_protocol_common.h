@@ -69,12 +69,21 @@
  * changes so the slurmdbd can talk all versions for update messages.
  * In slurm_protocol_util.c check_header_version(), and init_header()
  * need to be updated also when changes are added */
-#define SLURM_PROTOCOL_VERSION ((SLURM_API_MAJOR << 8) | SLURM_API_AGE)
+/* NOTE: The API version can not be the same as the Slurm version.  The
+ *       version in the code is referenced as a uint16_t which if 1403 was the
+ *       api it would go over the limit.  So keep is a relatively
+ *       small number.
+*/
+#define SLURM_14_11_PROTOCOL_VERSION ((28 << 8) | 0)
 #define SLURM_14_03_PROTOCOL_VERSION ((27 << 8) | 0)
 #define SLURM_2_6_PROTOCOL_VERSION ((26 << 8) | 0)
-#define SLURM_2_5_PROTOCOL_VERSION ((25 << 8) | 0)
+
+#define SLURM_PROTOCOL_VERSION SLURM_14_11_PROTOCOL_VERSION
+#define SLURM_MIN_PROTOCOL_VERSION SLURM_2_6_PROTOCOL_VERSION
+
 #if 0
-/* SLURM version 14.03 code removed support for protocol versions before 2.5 */
+/* SLURM version 14.11 code removed support for protocol versions before 2.5 */
+#define SLURM_2_5_PROTOCOL_VERSION ((25 << 8) | 0)
 #define SLURM_2_4_PROTOCOL_VERSION ((24 << 8) | 0)
 #define SLURM_2_3_PROTOCOL_VERSION ((23 << 8) | 0)
 #define SLURM_2_2_PROTOCOL_VERSION ((22 << 8) | 0)

@@ -1827,13 +1827,13 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		goto end_it;
 	}
-	if ((init_msg->version < SLURMDBD_VERSION_MIN) ||
+	if ((init_msg->version < SLURMDBD_MIN_VERSION) ||
 	    (init_msg->version > SLURM_PROTOCOL_VERSION)) {
 		comment = "Incompatible RPC version";
 		error("Incompatible RPC version received "
 		      "(%u not between %d and %d)",
 		      init_msg->version,
-		      SLURMDBD_VERSION_MIN, SLURM_PROTOCOL_VERSION);
+		      SLURMDBD_MIN_VERSION, SLURM_PROTOCOL_VERSION);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto end_it;
 	}
