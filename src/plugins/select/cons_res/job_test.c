@@ -2277,9 +2277,20 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 
 	/* remove existing allocations (jobs) from higher-priority partitions
 	 * from avail_cores */
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: cr_job_test: looking for higher-priority or "
+		     "PREEMPT_MODE_OFF part's to remove from avail_cores");
+	}
+
 	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->part_ptr->priority <= jp_ptr->part_ptr->priority)
+		if ((p_ptr->part_ptr->priority <= jp_ptr->part_ptr->priority) &&
+		    (p_ptr->part_ptr->preempt_mode != PREEMPT_MODE_OFF)) {
+			if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+				info("cons_res: cr_job_test: continuing on "
+				     "part: %s  ", p_ptr->part_ptr->name);
+			}
 			continue;
+		}
 		if (!p_ptr->row)
 			continue;
 		for (i = 0; i < p_ptr->num_rows; i++) {

@@ -318,6 +318,8 @@ documents those changes that are of interest to users and admins.
  -- Fix recovery of job dependency on task of job array when slurmctld restarts.
  -- mysql - Fix invalid memory reference.
  -- Lock the /cgroup/freezer subsystem when creating files for tracking processes.
+ -- Fix preempt/partition_prio to avoid preempting jobs in partitions with
+    PreemptMode=OFF
 
 * Changes in Slurm 2.6.7
 ========================
