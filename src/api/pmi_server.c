@@ -58,7 +58,10 @@ static int min_time_kvs_put = 1000000;
 static int max_time_kvs_put = 0;
 static int tot_time_kvs_put = 0;
 
-static int pmi_kvs_no_dup_keys = 0;
+/* By default there are no duplicate keys
+ * allowed by the PMI protocol.
+ */
+static int pmi_kvs_no_dup_keys = 1;
 
 struct barrier_resp {
 	uint16_t port;
@@ -315,8 +318,8 @@ struct kvs_comm **_kvs_comm_dup(void)
 		rc_kvs[i]->kvs_values =
 				xmalloc(sizeof(char *) * rc_kvs[i]->kvs_cnt);
 		if (kvs_comm_ptr[i]->kvs_key_sent == NULL) {
-			kvs_comm_ptr[i]->kvs_key_sent = 
-				xmalloc(sizeof(uint16_t) * 
+			kvs_comm_ptr[i]->kvs_key_sent =
+				xmalloc(sizeof(uint16_t) *
 				kvs_comm_ptr[i]->kvs_cnt);
 		}
 		cnt = 0;
@@ -383,7 +386,7 @@ no_dup:
 	}
 	if (kvs_orig->kvs_key_sent) {
 		xrealloc(kvs_orig->kvs_key_sent,
-			 (sizeof(uint16_t) * kvs_orig->kvs_cnt)); 
+			 (sizeof(uint16_t) * kvs_orig->kvs_cnt));
 	}
 }
 
@@ -419,10 +422,15 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 	DEF_TIMERS;
 
 	if (pmi_kvs_no_dup_keys_set == 0) {
-		char *env = getenv("SLURM_PMI_KVS_NO_DUP_KEYS");
-		if (env) 
-			pmi_kvs_no_dup_keys = 1;
-		else 
+		/* In MPI implementations, there will be no duplicate
+		 * keys put into the KVS usually. Hence the checking
+		 * for duplicate keys can be skipped. However if the
+		 * user wants to have duplicate keys he must set
+		 * this env variable. If a duplicate key is found
+		 * the previous value will be discarded.
+		 */
+		char *env = getenv("SLURM_PMI_KVS_DUP_KEYS");
+		if (env)
 			pmi_kvs_no_dup_keys = 0;
 		pmi_kvs_no_dup_keys_set = 1;
 	}

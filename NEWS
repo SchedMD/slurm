@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
  -- BGQ - fix check for jobinfo when it is NULL
  -- Do not check cleaning on "pending" steps.
  -- task/cgroup plugin - Fix for building on older hwloc (v1.0.2).
+ -- In the PMI implementation by default don't check for duplicate keys.
+    Set the SLURM_PMI_KVS_DUP_KEYS if you want the code to check for
+    duplicate keys.
 
 * Changes in Slurm 14.03.0
 ==========================
