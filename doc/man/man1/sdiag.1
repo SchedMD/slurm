@@ -181,10 +181,12 @@ some action.
 The fourth block reports the RPCs issued by message type.
 You will need to look up those RPC codes in the Slurm source code by looking
 them up in the file src/common/slurm_protocol_defs.h.
-The number of time each RPC is issued is reported along with the total
-time consumed by all of those RPCs in microseconds.
-The fifth block reports the RPCs issued by user ID along with the total
-number of RPCs they have issued and their total time in microseconds.
+The report includes the number of times each RPC is invoked, the total time
+consumed by all of those RPCs plus the average time consumed by each RPC in
+microseconds.
+The fifth block reports the RPCs issued by user ID, the total number of RPCs
+they have issued, the total time consumed by all of those RPCs plus the average
+time consumed by each RPC in microseconds.
 
 .SH "OPTIONS"
 .LP
@@ -198,8 +200,20 @@ Get and report information. This is the default mode of operation.
 Print description of options and exit.
 
 .TP
+\fB\-i\fR, \fB\-\-sort\-by\-id\fR
+Sort Remote Procedure Call (RPC) data by message type ID and user ID.
+
+.TP
 \fB\-r\fR, \fB\-\-reset\fR
 Reset counters. Only used by user SlurmUser or root.
+
+.TP
+\fB\-t\fR, \fB\-\-sort\-by\-time\fR
+Sort Remote Procedure Call (RPC) data by total run time.
+
+.TP
+\fB\-T\fR, \fB\-\-sort\-by\-time2\fR
+Sort Remote Procedure Call (RPC) data by average run time.
 
 .TP
 \fB\-\-usage\fR
@@ -212,7 +226,7 @@ Print current version number and exit.
 .SH "COPYING"
 Copyright (C) 2010-2011 Barcelona Supercomputing Center.
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2014 SchedMD LLC.
 .LP
 SLURM is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free

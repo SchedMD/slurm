@@ -47,16 +47,22 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 /********************
  * Global Variables *
  ********************/
 int sdiag_param = STAT_COMMAND_GET;
+bool sort_by_id    = false;
+bool sort_by_time  = false;
+bool sort_by_time2 = false;
 
 stats_info_response_msg_t *buf;
+uint32_t *rpc_type_ave_time = NULL, *rpc_user_ave_time = NULL;
 
-static int _print_stats(void);
+static int  _print_stats(void);
+static void _sort_rpc(void);
 
 stats_info_request_msg_t req;
 
@@ -80,9 +86,10 @@ int main(int argc, char *argv[])
 		req.command_id = STAT_COMMAND_GET;
 		rc = slurm_get_statistics(&buf,
 					  (stats_info_request_msg_t *)&req);
-		if (rc == SLURM_SUCCESS)
+		if (rc == SLURM_SUCCESS) {
+			_sort_rpc();
 			rc = _print_stats();
-		else
+		} else
 			slurm_perror("slurm_get_statistics");
 	}
 
@@ -159,23 +166,202 @@ static int _print_stats(void)
 		       buf->bf_queue_len_sum / buf->bf_cycle_counter);
 	}
 
+	printf("\nRemote Procedure Call statistics:\n");
 	for (i = 0; i < buf->rpc_type_size; i++) {
-		if (i == 0)
-			printf("\n");
-		printf("\tRPC type:%u count:%u total_time:%"PRIu64"\n",
+		printf("\ttype:%-4u count:%-6u "
+		       "ave_time:%-6u total_time:%"PRIu64"\n",
 		       buf->rpc_type_id[i], buf->rpc_type_cnt[i],
-		       buf->rpc_type_time[i]);
+		       rpc_type_ave_time[i], buf->rpc_type_time[i]);
 	}
 
 	for (i = 0; i < buf->rpc_user_size; i++) {
 		if (i == 0)
 			printf("\n");
-		printf("\tRPC user:%s:(%u) count:%u total_time:%"PRIu64"\n",
+		printf("\tuser:%10s:(%8u) count:%-6u "
+		       "ave_time:%-6u total_time:%"PRIu64"\n",
 		       uid_to_string((uid_t)buf->rpc_user_id[i]),
 		       buf->rpc_user_id[i], buf->rpc_user_cnt[i],
-		       buf->rpc_user_time[i]);
+		       rpc_user_ave_time[i], buf->rpc_user_time[i]);
 	}
 
 	return 0;
 }
 
+static void _sort_rpc(void)
+{
+	int i, j;
+	uint16_t type_id;
+	uint32_t type_ave, type_cnt, user_ave, user_cnt, user_id;
+	uint64_t type_time, user_time;
+
+	rpc_type_ave_time = xmalloc(sizeof(uint32_t) * buf->rpc_type_size);
+	rpc_user_ave_time = xmalloc(sizeof(uint32_t) * buf->rpc_user_size);
+
+	if (sort_by_id) {
+		for (i = 0; i < buf->rpc_type_size; i++) {
+			for (j = i+1; j < buf->rpc_type_size; j++) {
+				if (buf->rpc_type_id[i] <= buf->rpc_type_id[j])
+					continue;
+				type_id   = buf->rpc_type_id[i];
+				type_cnt  = buf->rpc_type_cnt[i];
+				type_time = buf->rpc_type_time[i];
+				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
+				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
+				buf->rpc_type_time[i] = buf->rpc_type_time[j];
+				buf->rpc_type_id[j]   = type_id;
+				buf->rpc_type_cnt[j]  = type_cnt;
+				buf->rpc_type_time[j] = type_time;
+			}
+			if (buf->rpc_type_cnt[i]) {
+				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
+						       buf->rpc_type_cnt[i];
+			}
+		}
+		for (i = 0; i < buf->rpc_user_size; i++) {
+			for (j = i+1; j < buf->rpc_user_size; j++) {
+				if (buf->rpc_user_id[i] <= buf->rpc_user_id[j])
+					continue;
+				user_id   = buf->rpc_user_id[i];
+				user_cnt  = buf->rpc_user_cnt[i];
+				user_time = buf->rpc_user_time[i];
+				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
+				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
+				buf->rpc_user_time[i] = buf->rpc_user_time[j];
+				buf->rpc_user_id[j]   = user_id;
+				buf->rpc_user_cnt[j]  = user_cnt;
+				buf->rpc_user_time[j] = user_time;
+			}
+			if (buf->rpc_user_cnt[i]) {
+				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
+						       buf->rpc_user_cnt[i];
+			}
+		}
+	} else if (sort_by_time) {
+		for (i = 0; i < buf->rpc_type_size; i++) {
+			for (j = i+1; j < buf->rpc_type_size; j++) {
+				if (buf->rpc_type_time[i] >= buf->rpc_type_time[j])
+					continue;
+				type_id   = buf->rpc_type_id[i];
+				type_cnt  = buf->rpc_type_cnt[i];
+				type_time = buf->rpc_type_time[i];
+				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
+				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
+				buf->rpc_type_time[i] = buf->rpc_type_time[j];
+				buf->rpc_type_id[j]   = type_id;
+				buf->rpc_type_cnt[j]  = type_cnt;
+				buf->rpc_type_time[j] = type_time;
+			}
+			if (buf->rpc_type_cnt[i]) {
+				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
+						       buf->rpc_type_cnt[i];
+			}
+		}
+		for (i = 0; i < buf->rpc_user_size; i++) {
+			for (j = i+1; j < buf->rpc_user_size; j++) {
+				if (buf->rpc_user_time[i] >= buf->rpc_user_time[j])
+					continue;
+				user_id   = buf->rpc_user_id[i];
+				user_cnt  = buf->rpc_user_cnt[i];
+				user_time = buf->rpc_user_time[i];
+				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
+				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
+				buf->rpc_user_time[i] = buf->rpc_user_time[j];
+				buf->rpc_user_id[j]   = user_id;
+				buf->rpc_user_cnt[j]  = user_cnt;
+				buf->rpc_user_time[j] = user_time;
+			}
+			if (buf->rpc_user_cnt[i]) {
+				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
+						       buf->rpc_user_cnt[i];
+			}
+		}
+	} else if (sort_by_time2) {
+		for (i = 0; i < buf->rpc_type_size; i++) {
+			if (buf->rpc_type_cnt[i]) {
+				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
+						       buf->rpc_type_cnt[i];
+			}
+		}
+		for (i = 0; i < buf->rpc_type_size; i++) {
+			for (j = i+1; j < buf->rpc_type_size; j++) {
+				if (rpc_type_ave_time[i] >= rpc_type_ave_time[j])
+					continue;
+				type_ave  = rpc_type_ave_time[i];
+				type_id   = buf->rpc_type_id[i];
+				type_cnt  = buf->rpc_type_cnt[i];
+				type_time = buf->rpc_type_time[i];
+				rpc_type_ave_time[i]  = rpc_type_ave_time[j];
+				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
+				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
+				buf->rpc_type_time[i] = buf->rpc_type_time[j];
+				rpc_type_ave_time[j]  = type_ave;
+				buf->rpc_type_id[j]   = type_id;
+				buf->rpc_type_cnt[j]  = type_cnt;
+				buf->rpc_type_time[j] = type_time;
+			}
+		}
+		for (i = 0; i < buf->rpc_user_size; i++) {
+			if (buf->rpc_user_cnt[i]) {
+				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
+						       buf->rpc_user_cnt[i];
+			}
+		}
+		for (i = 0; i < buf->rpc_user_size; i++) {
+			for (j = i+1; j < buf->rpc_user_size; j++) {
+				if (rpc_user_ave_time[i] >= rpc_user_ave_time[j])
+					continue;
+				user_ave  = rpc_user_ave_time[i];
+				user_id   = buf->rpc_user_id[i];
+				user_cnt  = buf->rpc_user_cnt[i];
+				user_time = buf->rpc_user_time[i];
+				rpc_user_ave_time[i]  = rpc_user_ave_time[j];
+				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
+				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
+				buf->rpc_user_time[i] = buf->rpc_user_time[j];
+				rpc_user_ave_time[j]  = user_ave;
+				buf->rpc_user_id[j]   = user_id;
+				buf->rpc_user_cnt[j]  = user_cnt;
+				buf->rpc_user_time[j] = user_time;
+			}
+		}
+	} else { /* sort by count */
+		for (i = 0; i < buf->rpc_type_size; i++) {
+			for (j = i+1; j < buf->rpc_type_size; j++) {
+				if (buf->rpc_type_cnt[i] >= buf->rpc_type_cnt[j])
+					continue;
+				type_id   = buf->rpc_type_id[i];
+				type_cnt  = buf->rpc_type_cnt[i];
+				type_time = buf->rpc_type_time[i];
+				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
+				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
+				buf->rpc_type_time[i] = buf->rpc_type_time[j];
+				buf->rpc_type_id[j]   = type_id;
+				buf->rpc_type_cnt[j]  = type_cnt;
+				buf->rpc_type_time[j] = type_time;
+			}
+			if (buf->rpc_type_cnt[i]) {
+				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
+						       buf->rpc_type_cnt[i];
+			}
+		}
+		for (i = 0; i < buf->rpc_user_size; i++) {
+			for (j = i+1; j < buf->rpc_user_size; j++) {
+				if (buf->rpc_user_cnt[i] >= buf->rpc_user_cnt[j])
+					continue;
+				user_id   = buf->rpc_user_id[i];
+				user_cnt  = buf->rpc_user_cnt[i];
+				user_time = buf->rpc_user_time[i];
+				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
+				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
+				buf->rpc_user_time[i] = buf->rpc_user_time[j];
+				buf->rpc_user_id[j]   = user_id;
+				buf->rpc_user_cnt[j]  = user_cnt;
+				buf->rpc_user_time[j] = user_time;
+			}
+			if (buf->rpc_user_cnt[i]) {
+				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
+						       buf->rpc_user_cnt[i];
+			}
+		}
+	}
+}
