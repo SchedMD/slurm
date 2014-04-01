@@ -42,8 +42,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_NATIVE_CRAY
-
 #include <stdint.h>
 
 #include "src/common/bitstring.h"
@@ -51,13 +49,20 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+#ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_cn.h"
 #include "alpscomm_sn.h"
+#endif
 
 /**********************************************************
  * Constants
  **********************************************************/
-// Legacy ALPS spool directory (can be redefined at compile time)
+/* This allows for a BUILD time definition of LEGACY_SPOOL_DIR on the compile
+ * line.
+ * LEGACY_SPOOL_DIR can be customized to wherever the builder desires.
+ * This customization could be important because the default is a hard-coded
+ * path that does not vary regardless of where Slurm is installed.
+ */
 #ifndef LEGACY_SPOOL_DIR
 #define LEGACY_SPOOL_DIR	"/var/spool/alps/"
 #endif
@@ -104,28 +109,21 @@
  **********************************************************/
 // Opaque Cray jobinfo structure
 typedef struct slurm_cray_jobinfo {
-	// Magic value
 	uint32_t magic;
-
-	// Number of cookies sent to configure the HSN
-	uint32_t num_cookies;
-	
-	// Array of cookies
-	char **cookies;
-	
-	// Array of cookie IDs
+	uint32_t num_cookies;	/* The number of cookies sent to configure the
+	                           HSN */
+	/* Double pointer to an array of cookie strings.
+	 * cookie values here as NULL-terminated strings.
+	 * There are num_cookies elements in the array.
+	 * The caller is responsible for free()ing
+	 * the array contents and the array itself.  */
+	char     **cookies;
+	/* The array itself must be free()d when this struct is destroyed. */
 	uint32_t *cookie_ids;
-
-	// Port for PMI communications
-	uint32_t port;
-
-	// Slurm job id
-	uint32_t jobid;
-
-	// Slurm step id
-	uint32_t stepid;
-	
-	// Cray Application ID (Slurm hash)
+	uint32_t port;/* Port for PMI Communications */
+	uint32_t       jobid;  /* Current SLURM job id */
+	uint32_t       stepid; /* Current step id */
+	/* Cray Application ID; A unique combination of the job id and step id*/
 	uint64_t apid;
 } slurm_cray_jobinfo_t;
 
@@ -147,11 +145,13 @@ extern uint32_t debug_flags;
 /**********************************************************
  * Function declarations
  **********************************************************/
+
+#ifdef HAVE_NATIVE_CRAY
 // Implemented in ports.c
 extern int assign_port(uint32_t *ret_port);
 extern int release_port(uint32_t real_port);
 
-// Implemented in pe_info.c 
+// Implemented in pe_info.c
 extern int build_alpsc_pe_info(stepd_step_rec_t *job,
 			       slurm_cray_jobinfo_t *sw_job,
 			       alpsc_peInfo_t *alpsc_pe_info);
@@ -170,13 +170,14 @@ extern int list_str_to_array(char *list, int *cnt, int32_t **numbers);
 extern void alpsc_debug(const char *file, int line, const char *func,
 			int rc, int expected_rc, const char *alpsc_func,
 			char *err_msg);
-extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 extern int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid);
 extern int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job);
 extern void recursive_rmdir(const char *dirnm);
+#endif /* HAVE_NATIVE_CRAY */
+extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 
 /**********************************************************
- * Macros 
+ * Macros
  **********************************************************/
 #define ALPSC_CN_DEBUG(f) alpsc_debug(THIS_FILE, __LINE__, __FUNCTION__, \
 					rc, 1, f, err_msg);
@@ -188,7 +189,5 @@ extern void recursive_rmdir(const char *dirnm);
 				    __FUNCTION__, ##__VA_ARGS__);
 #define CRAY_INFO(fmt, ...) info("(%s: %d: %s) "fmt, THIS_FILE, __LINE__, \
 				 __FUNCTION__, ##__VA_ARGS__);
-
-#endif /* HAVE_NATIVE_CRAY */
 
 #endif /* SWITCH_CRAY_H */

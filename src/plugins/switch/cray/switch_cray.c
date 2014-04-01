@@ -62,43 +62,14 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/pack.h"
 #include "src/common/gres.h"
+#include "switch_cray.h"
 
 #ifdef HAVE_NATIVE_CRAY
 #include <job.h> /* Cray's job module component */
-#include "switch_cray.h"
 #endif
 
-
-/* This allows for a BUILD time definition of LEGACY_SPOOL_DIR on the compile
- * line.
- * LEGACY_SPOOL_DIR can be customized to wherever the builder desires.
- * This customization could be important because the default is a hard-coded
- * path that does not vary regardless of where Slurm is installed.
- */
-#ifndef LEGACY_SPOOL_DIR
-#define LEGACY_SPOOL_DIR "/var/spool/alps/"
-#endif
-
-/*
- * CRAY_JOBINFO_MAGIC: The switch_jobinfo was not NULL.  The packed data
- *                     is good and can be safely unpacked.
- * CRAY_NULL_JOBINFO_MAGIC: The switch_jobinfo was NULL.  No data was packed.
- *                          Do not attempt to unpack any data.
- */
-#define CRAY_JOBINFO_MAGIC	0xCAFECAFE
-#define CRAY_NULL_JOBINFO_MAGIC	0xDEAFDEAF
-#define MIN_PORT	20000
-#define MAX_PORT	30000
-#define ATTEMPTS	2
-#define PORT_CNT	(MAX_PORT - MIN_PORT + 1)
 #define SWITCH_BUF_SIZE (PORT_CNT + 128)
-
-#ifdef HAVE_NATIVE_CRAY
 #define SWITCH_CRAY_STATE_VERSION "PROTOCOL_VERSION"
-bitstr_t *port_resv = NULL;
-uint32_t last_alloc_port = 0;
-pthread_mutex_t port_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 uint32_t debug_flags = 0;
 
@@ -132,80 +103,6 @@ uint32_t debug_flags = 0;
 const char plugin_name[] = "switch CRAY plugin";
 const char plugin_type[] = "switch/cray";
 const uint32_t plugin_version = 100;
-
-/* opaque data structures - no peeking! */
-typedef struct slurm_cray_jobinfo {
-	uint32_t magic;
-	uint32_t num_cookies;	/* The number of cookies sent to configure the
-	                           HSN */
-	/* Double pointer to an array of cookie strings.
-	 * cookie values here as NULL-terminated strings.
-	 * There are num_cookies elements in the array.
-	 * The caller is responsible for free()ing
-	 * the array contents and the array itself.  */
-	char     **cookies;
-	/* The array itself must be free()d when this struct is destroyed. */
-	uint32_t *cookie_ids;
-	uint32_t port;/* Port for PMI Communications */
-	uint32_t       jobid;  /* Current SLURM job id */
-	uint32_t       stepid; /* Current step id */
-	/* Cray Application ID; A unique combination of the job id and step id*/
-	uint64_t apid;
-} slurm_cray_jobinfo_t;
-
-static void _print_jobinfo(slurm_cray_jobinfo_t *job);
-#ifdef HAVE_NATIVE_CRAY
-static int _get_cpu_total(void);
-static void _free_alpsc_pe_info(alpsc_peInfo_t alpsc_pe_info);
-
-static void _print_alpsc_pe_info(alpsc_peInfo_t alps_info)
-{
-	int i;
-	info("*************************alpsc_peInfo Start"
-	     "*************************");
-	info("totalPEs: %d\nfirstPeHere: %d\npesHere: %d\npeDepth: %d\n",
-	     alps_info.totalPEs, alps_info.firstPeHere, alps_info.pesHere,
-	     alps_info.peDepth);
-	for (i = 0; i < alps_info.totalPEs; i++) {
-		info("Task: %d\tNode: %d", i, alps_info.peNidArray[i]);
-	}
-	info("*************************alpsc_peInfo Stop"
-	     "*************************");
-}
-#endif
-
-static void _print_jobinfo(slurm_cray_jobinfo_t *job)
-{
-	int i;
-
-	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		error("(%s: %d: %s) job pointer was NULL", THIS_FILE, __LINE__,
-		      __FUNCTION__);
-		return;
-	}
-
-	xassert(job->magic == CRAY_JOBINFO_MAGIC);
-
-	info("Program: %s", slurm_prog_name);
-	info("Address of slurm_cray_jobinfo_t structure: %p", job);
-	info("--Begin Jobinfo--");
-	info("  Magic: %" PRIx32, job->magic);
-	info("  Job ID: %" PRIu32, job->jobid);
-	info("  Step ID: %" PRIu32, job->stepid);
-	info("  APID: %" PRIu64, job->apid);
-	info("  PMI Port: %" PRIu32, job->port);
-	info("  num_cookies: %" PRIu32, job->num_cookies);
-	info("  --- cookies ---");
-	for (i = 0; i < job->num_cookies; i++) {
-		info("  cookies[%d]: %s", i, job->cookies[i]);
-	}
-	info("  --- cookie_ids ---");
-	for (i = 0; i < job->num_cookies; i++) {
-		info("  cookie_ids[%d]: %" PRIu32, i, job->cookie_ids[i]);
-	}
-	info("  ------");
-	info("--END Jobinfo--");
-}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -463,7 +360,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("(%s: %d: %s) switch_jobinfo_t contents",
 		     THIS_FILE, __LINE__, __FUNCTION__);
-		_print_jobinfo(new);
+		print_jobinfo(new);
 	}
 
 	return SLURM_SUCCESS;
@@ -669,7 +566,7 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("(%s: %d: %s) switch_jobinfo_t contents",
 		     THIS_FILE, __LINE__, __FUNCTION__);
-		_print_jobinfo(job);
+		print_jobinfo(job);
 	}
 
 	pack32(job->magic, buffer);
@@ -734,7 +631,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("(%s:%d: %s) switch_jobinfo_t contents:",
 		     THIS_FILE, __LINE__, __FUNCTION__);
-		_print_jobinfo(job);
+		print_jobinfo(job);
 	}
 
 	return SLURM_SUCCESS;
@@ -918,135 +815,25 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 */
 
 	if (job->ntasks > 1) {
-		/*
-		 * Get the number of CPUs.
-		 */
-		total_cpus = _get_cpu_total();
-		if (total_cpus <= 0) {
-			error("(%s: %d: %s) total_cpus <=0: %d",
-			      THIS_FILE, __LINE__, __FUNCTION__, total_cpus);
-			return SLURM_ERROR;
+		cpu_scaling = get_cpu_scaling(job);
+		if (cpu_scaling == -1) {
+		    return SLURM_ERROR;
 		}
 
-		/*
-		 * Use /proc/meminfo to get the total amount of memory on the
-		 * node
-		 */
-		f = fopen("/proc/meminfo", "r");
-		if (!f) {
-			error("(%s: %d: %s) Failed to open /proc/meminfo: %m",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-			return SLURM_ERROR;
-		}
-
-		while (!feof(f)) {
-			lsz = getline(&lin, &sz, f);
-			if (lsz > 0) {
-				sscanf(lin, "%s %d", meminfo_str,
-				       &meminfo_value);
-				if (!strcmp(meminfo_str, "MemTotal:")) {
-					total_mem = meminfo_value;
-					break;
-				}
-			}
-		}
-		free(lin);
-		TEMP_FAILURE_RETRY(fclose(f));
-
-		if (total_mem == 0) {
-			error("(%s: %d: %s) Scanning /proc/meminfo results in"
-			      " MemTotal=0",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-			return SLURM_ERROR;
-		}
-
-		/* If the submission didn't come from srun (API style)
-		 * perhaps they didn't fill in things correctly.
-		 */
-		if (!job->cpus_per_task)
-			job->cpus_per_task = 1;
-		/*
-		 * Scaling
-		 * For the CPUS round the scaling to the nearest integer.
-		 * If the scaling is greater than 100 percent, then scale it to
-		 * 100%.
-		 * If the scaling is zero, then return an error.
-		 */
-		num_app_cpus = job->node_tasks * job->cpus_per_task;
-		if (num_app_cpus <= 0) {
-			error("(%s: %d: %s) num_app_cpus <=0: %d",
-			      THIS_FILE, __LINE__, __FUNCTION__, num_app_cpus);
-			return SLURM_ERROR;
-		}
-
-		cpu_scaling = (((double) num_app_cpus / (double) total_cpus) *
-			       (double) 100) + 0.5;
-		if (cpu_scaling > 100) {
-			error("(%s: %d: %s) Cpu scaling out of bounds: %d."
-			      " Reducing to 100%%",
-			      THIS_FILE, __LINE__, __FUNCTION__, cpu_scaling);
-			cpu_scaling = 100;
-		}
-		if (cpu_scaling <= 0) {
-			error("(%s: %d: %s) Cpu scaling out of bounds: %d."
-			      " Increasing to 1%%",
-			      THIS_FILE, __LINE__, __FUNCTION__, cpu_scaling);
-			cpu_scaling = 1;
-		}
-
-		/*
-		 * Scale total_mem, which is in kilobytes, to megabytes because
-		 * app_mem is in megabytes.
-		 * Round to the nearest integer.
-		 * If the memory request is greater than 100 percent, then scale
-		 * it to 100%.
-		 * If the memory request is zero, then return an error.
-		 *
-		 * Note: Because this has caused some confusion in the past,
-		 * The MEM_PER_CPU flag is used to indicate that job->step_mem
-		 * is the amount of memory per CPU, not total.  However, this
-		 * flag is read and cleared in slurmd prior to passing this
-		 * value to slurmstepd.
-		 * The value comes to slurmstepd already properly scaled.
-		 * Thus, this function does not need to check the MEM_PER_CPU
-		 * flag.
-		 */
-		mem_scaling = ((((double) job->step_mem /
-				 ((double) total_mem / 1024)) * (double) 100))
-			+ 0.5;
-		if (mem_scaling > 100) {
-			info("(%s: %d: %s) Memory scaling out of bounds: %d. "
-			     "Reducing to 100%%.",
-			     THIS_FILE, __LINE__, __FUNCTION__, mem_scaling);
-			mem_scaling = 100;
-		}
-
-		if (mem_scaling <= 0) {
-			error("(%s: %d: %s) Memory scaling out of bounds: %d. "
-			      " Increasing to 1%%",
-			      THIS_FILE, __LINE__, __FUNCTION__, mem_scaling);
-			mem_scaling = 1;
+		mem_scaling = get_mem_scaling(job);
+		if (mem_scaling == -1) {
+		    return SLURM_ERROR;
 		}
 
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
-			info("(%s:%d: %s) --Network Scaling Start--",
-			     THIS_FILE, __LINE__, __FUNCTION__);
-			info("(%s:%d: %s) --CPU Scaling: %d--",
-			     THIS_FILE, __LINE__, __FUNCTION__, cpu_scaling);
-
-			info("(%s:%d: %s) --Memory Scaling: %d--",
-			     THIS_FILE, __LINE__, __FUNCTION__, mem_scaling);
-			info("(%s:%d: %s) --Network Scaling End--",
-			     THIS_FILE, __LINE__, __FUNCTION__);
-
-			info("(%s:%d: %s) --PAGG Job Container ID: %"PRIx64"--",
-			     THIS_FILE, __LINE__, __FUNCTION__, job->cont_id);
+			CRAY_INFO("--Network Scaling Start--");
+			CRAY_INFO("--CPU Scaling: %d--", cpu_scaling);
+			CRAY_INFO("--Memory Scaling: %d--", mem_scaling);
+			CRAY_INFO("--Network Scaling End--");
+			CRAY_INFO("--PAGG Job Container ID: %"PRIx64"--",
+				  job->cont_id);
 		}
 
-		rc = alpsc_configure_nic(&err_msg, 0, cpu_scaling, mem_scaling,
-					 job->cont_id, sw_job->num_cookies,
-					 (const char **) sw_job->cookies,
-					 &num_ptags, &ptags, ntt_desc_ptr);
 		/*
 		 * We don't use the ptags because Cray's LLI acquires them
 		 * itself, so they can be immediately discarded.
@@ -1487,132 +1274,4 @@ extern int switch_p_slurmd_step_init(void)
 	return SLURM_SUCCESS;
 }
 
-#ifdef HAVE_NATIVE_CRAY
-
-/*
- * Function: get_cpu_total
- * Description:
- *  Get the total number of online cpus on the node.
- *
- * RETURNS
- *  Returns the number of online cpus on the node.  On error, it returns -1.
- *
- * TODO:
- * 	Danny suggests using xcgroup_get_param to read the CPU values instead of
- * 	this function.  Look at the way task/cgroup/task_cgroup_cpuset.c or
- * 	jobacct_gather/cgroup/jobacct_gather_cgroup.c does it.
- */
-static int _get_cpu_total(void)
-{
-	FILE *f = NULL;
-	char * token = NULL, *token1 = NULL, *token2 = NULL, *lin = NULL;
-	char *saveptr = NULL, *saveptr1 = NULL, *endptr = NULL;
-	int total = 0;
-	ssize_t lsz;
-	size_t sz;
-	long int number1, number2;
-
-	f = fopen("/sys/devices/system/cpu/online", "r");
-
-	if (!f) {
-		error("(%s: %d: %s) Failed to open file"
-		      " /sys/devices/system/cpu/online: %m",
-		      THIS_FILE, __LINE__, __FUNCTION__);
-		return -1;
-	}
-
-	while (!feof(f)) {
-		lsz = getline(&lin, &sz, f);
-		if (lsz > 0) {
-			token = strtok_r(lin, ",", &saveptr);
-			while (token) {
-				// Check for ranged sub-list
-				token1 = strtok_r(token, "-", &saveptr1);
-				if (token1) {
-					number1 = strtol(token1, &endptr, 10);
-					if ((number1 == LONG_MIN) ||
-					    (number1 == LONG_MAX)) {
-						error("(%s: %d: %s) Error: %m",
-						      THIS_FILE, __LINE__,
-						      __FUNCTION__);
-						free(lin);
-						TEMP_FAILURE_RETRY(fclose(f));
-						return -1;
-					} else if (endptr == token1) {
-						error("(%s: %d: %s) Error:"
-						      " Not a number: %s\n",
-						      THIS_FILE, __LINE__,
-						      __FUNCTION__, endptr);
-						free(lin);
-						TEMP_FAILURE_RETRY(fclose(f));
-						return -1;
-					}
-
-					token2 = strtok_r(NULL, "-", &saveptr1);
-					if (token2) {
-						number2 = strtol(token2,
-								 &endptr, 10);
-						if ((number2 == LONG_MIN) ||
-						    (number2 == LONG_MAX)) {
-							error("(%s: %d: %s)"
-							      " Error: %m",
-							      THIS_FILE,
-							      __LINE__,
-							      __FUNCTION__);
-							free(lin);
-							TEMP_FAILURE_RETRY(
-								fclose(f));
-							return -1;
-						} else if (endptr == token2) {
-							error("(%s: %d: %s)"
-							      " Error: Not a"
-							      " number: '%s'\n",
-							      THIS_FILE,
-							      __LINE__,
-							      __FUNCTION__,
-							      endptr);
-							free(lin);
-							TEMP_FAILURE_RETRY(
-								fclose(f));
-							return -1;
-						}
-
-						total += number2 - number1 + 1;
-					} else {
-						total += 1;
-					}
-				}
-				token = strtok_r(NULL, ",", &saveptr);
-			}
-		}
-	}
-	free(lin);
-	TEMP_FAILURE_RETRY(fclose(f));
-	return total;
-}
-
-/*
- * Function: _free_alpsc_pe_info
- * Description:
- * 	Frees any allocated members of alpsc_pe_info.
- * Parameters:
- * IN	alpsc_pe_info:  alpsc_peInfo_t structure needing to be freed
- *
- * Returns
- * 	Void.
- */
-static void _free_alpsc_pe_info(alpsc_peInfo_t alpsc_pe_info)
-{
-	if (alpsc_pe_info.peNidArray) {
-		xfree(alpsc_pe_info.peNidArray);
-	}
-	if (alpsc_pe_info.peCmdMapArray) {
-		xfree(alpsc_pe_info.peCmdMapArray);
-	}
-	if (alpsc_pe_info.nodeCpuArray) {
-		xfree(alpsc_pe_info.nodeCpuArray);
-	}
-	return;
-}
-#endif
 #endif

@@ -284,6 +284,8 @@ fileDel: st = unlink(dirnm);
 	}
 }
 
+#endif /* HAVE_NATIVE_CRAY */
+
 void print_jobinfo(slurm_cray_jobinfo_t *job)
 {
 	int i;
@@ -295,7 +297,10 @@ void print_jobinfo(slurm_cray_jobinfo_t *job)
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
 
-	info("Jobinfo magic %"PRIx32, job->magic);
+	info("Program: %s", slurm_prog_name);
+	info("Address of slurm_cray_jobinfo_t structure: %p", job);
+	info("--Begin Jobinfo--");
+	info("  Magic: %" PRIx32, job->magic);
 	info("  Job ID: %" PRIu32, job->jobid);
 	info("  Step ID: %" PRIu32, job->stepid);
 	info("  APID: %" PRIu64, job->apid);
@@ -309,7 +314,6 @@ void print_jobinfo(slurm_cray_jobinfo_t *job)
 	for (i = 0; i < job->num_cookies; i++) {
 		info("  cookie_ids[%d]: %" PRIu32, i, job->cookie_ids[i]);
 	}
+	info("  ------");
 	info("--END Jobinfo--");
 }
-
-#endif /* HAVE_NATIVE_CRAY */
