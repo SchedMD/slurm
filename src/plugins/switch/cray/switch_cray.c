@@ -44,12 +44,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <dirent.h>
 #include <inttypes.h>
 #include <fcntl.h>
 #include "limits.h"
@@ -114,8 +111,7 @@ int init(void)
 	debug_flags = slurm_get_debug_flags();
 #ifdef HAVE_NATIVE_CRAY
 	if (MAX_PORT < MIN_PORT) {
-		error("(%s: %d: %s) MAX_PORT: %d < MIN_PORT: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, MAX_PORT, MIN_PORT);
+		CRAY_ERR("MAX_PORT: %d < MIN_PORT: %d", MAX_PORT, MIN_PORT);
 		return SLURM_ERROR;
 	}
 #endif
@@ -184,7 +180,7 @@ static void _state_read_buf(Buf buffer)
 	return;
 
 unpack_error:
-	error("(%s: %d: %s) unpack error", THIS_FILE, __LINE__, __FUNCTION__);
+	CRAY_ERR("unpack error");
 	return;
 }
 
@@ -215,10 +211,8 @@ int switch_p_libstate_save(char *dir_name)
 
 	xassert(dir_name != NULL);
 
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		info("(%s: %d: %s) save to %s",
-		     THIS_FILE, __LINE__, __FUNCTION__, dir_name);
-	}
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		CRAY_INFO("save to %s", dir_name);
 
 	buffer = init_buf(SWITCH_BUF_SIZE);
 	_state_write_buf(buffer);
@@ -227,7 +221,7 @@ int switch_p_libstate_save(char *dir_name)
 	(void) unlink(file_name);
 	state_fd = creat(file_name, 0600);
 	if (state_fd < 0) {
-		error("Can't save state, error creating file %s %m",
+		CRAY_ERR("Can't save state, error creating file %s %m",
 		      file_name);
 		ret = SLURM_ERROR;
 	} else {
@@ -240,7 +234,7 @@ int switch_p_libstate_save(char *dir_name)
 			if (wrote == 0)
 				break;
 			if (wrote < 0) {
-				error("Can't save switch state: %m");
+				CRAY_ERR("Can't save switch state: %m");
 				ret = SLURM_ERROR;
 				break;
 			}
@@ -271,9 +265,8 @@ int switch_p_libstate_restore(char *dir_name, bool recover)
 	xassert(dir_name != NULL);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		info("(%s: %d: %s) restore from %s, recover %d",
-		     THIS_FILE, __LINE__, __FUNCTION__, dir_name,
-		     (int) recover);
+		CRAY_INFO("restore from %s, recover %d",
+			  dir_name,  (int) recover);
 	}
 
 	if (!recover)		/* clean start, no recovery */
@@ -291,7 +284,7 @@ int switch_p_libstate_restore(char *dir_name, bool recover)
 			if ((data_read < 0) && (errno == EINTR))
 				continue;
 			if (data_read < 0) {
-				error ("Read error on %s, %m", file_name);
+				CRAY_ERR("Read error on %s, %m", file_name);
 				error_code = SLURM_ERROR;
 				break;
 			} else if (data_read == 0)
@@ -304,8 +297,9 @@ int switch_p_libstate_restore(char *dir_name, bool recover)
 		(void) unlink(file_name);	/* One chance to recover */
 		xfree(file_name);
 	} else {
-		error("No %s file for switch/cray state recovery", file_name);
-		error("Starting switch/cray with clean state");
+		CRAY_ERR("No %s file for switch/cray state recovery",
+			 file_name);
+		CRAY_ERR("Starting switch/cray with clean state");
 		xfree(file_name);
 		return SLURM_SUCCESS;
 	}
@@ -378,8 +372,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		debug2("(%s: %d: %s) switch_job was NULL", THIS_FILE, __LINE__,
-		       __FUNCTION__);
+		CRAY_DEBUG("switch_job was NULL");
 		return SLURM_SUCCESS;
 	}
 
@@ -388,15 +381,13 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	rc = list_str_to_array(step_layout->node_list, &cnt, &nodes);
 
 	if (rc < 0) {
-		error("(%s: %d: %s) list_str_to_array failed",
-		      THIS_FILE, __LINE__, __FUNCTION__);
+		CRAY_ERR("list_str_to_array failed");
 		return SLURM_ERROR;
 	}
 	if (step_layout->node_cnt != cnt) {
-		error("(%s: %d: %s) list_str_to_array returned count %"
-		      PRIu32 "does not match expected count %d",
-		      THIS_FILE, __LINE__,
-		      __FUNCTION__, cnt, step_layout->node_cnt);
+		CRAY_ERR("list_str_to_array returned count %"
+			 PRIu32 "does not match expected count %d",
+			 cnt, step_layout->node_cnt);
 	}
 
 	/*
@@ -427,7 +418,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	/*
 	 * Cookie ID safety check: The cookie_ids should be positive numbers.
 	 */
-	for (i=0; i<num_cookies; i++) {
+	for (i = 0; i < num_cookies; i++) {
 		if (cookie_ids[i] < 0) {
 			CRAY_ERR("alpsc_lease_cookies returned a cookie ID "
 				 "number %d with a negative value: %d",
@@ -459,8 +450,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	 */
 	rc = assign_port(&port);
 	if (rc < 0) {
-		info("(%s: %d: %s) assign_port failed",
-		     THIS_FILE, __LINE__, __FUNCTION__);
+		CRAY_INFO("assign_port failed");
 		return SLURM_ERROR;
 	}
 
@@ -485,13 +475,12 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	int i;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		debug2("(%s: %d: %s) switch_job was NULL", THIS_FILE, __LINE__,
-		       __FUNCTION__);
+		CRAY_DEBUG("switch_job was NULL");
 		return;
 	}
 
 	if (job->magic != CRAY_JOBINFO_MAGIC) {
-		error("job is not a switch/cray slurm_cray_jobinfo_t");
+		CRAY_ERR("job is not a switch/cray slurm_cray_jobinfo_t");
 		return;
 	}
 
@@ -544,8 +533,7 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		info("(%s: %d: %s) switch_jobinfo_t contents",
-		     THIS_FILE, __LINE__, __FUNCTION__);
+		CRAY_INFO("switch_jobinfo_t contents:");
 		print_jobinfo(job);
 	}
 
@@ -565,8 +553,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	slurm_cray_jobinfo_t *job;
 
 	if (!switch_job) {
-		debug2("(%s: %d: %s) switch_job was NULL", THIS_FILE, __LINE__,
-		       __FUNCTION__);
+		CRAY_DEBUG("switch_job was NULL");
 		return SLURM_SUCCESS;
 	}
 
@@ -577,8 +564,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	safe_unpack32(&job->magic, buffer);
 
 	if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
-		debug2("(%s: %d: %s) Nothing to unpack.",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		CRAY_DEBUG("Nothing to unpack");
 		return SLURM_SUCCESS;
 	}
 
@@ -586,18 +572,16 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	safe_unpack32(&(job->num_cookies), buffer);
 	safe_unpackstr_array(&(job->cookies), &num_cookies, buffer);
 	if (num_cookies != job->num_cookies) {
-		error("(%s: %d: %s) Wrong number of cookies received."
-		      " Expected: %" PRIu32 "Received: %" PRIu32,
-		      THIS_FILE, __LINE__, __FUNCTION__,
-		      job->num_cookies, num_cookies);
+		CRAY_ERR("Wrong number of cookies received."
+			 " Expected: %" PRIu32 "Received: %" PRIu32,
+			 job->num_cookies, num_cookies);
 		goto unpack_error;
 	}
 	safe_unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
 	if (num_cookies != job->num_cookies) {
-		error("(%s: %d: %s) Wrong number of cookie IDs received."
-		      " Expected: %" PRIu32 "Received: %" PRIu32,
-		      THIS_FILE, __LINE__, __FUNCTION__,
-		      job->num_cookies, num_cookies);
+		CRAY_ERR("Wrong number of cookie IDs received."
+			 " Expected: %" PRIu32 "Received: %" PRIu32,
+			 job->num_cookies, num_cookies);
 		goto unpack_error;
 	}
 	safe_unpack32(&job->port, buffer);
@@ -609,17 +593,14 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 #endif
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		info("(%s:%d: %s) switch_jobinfo_t contents:",
-		     THIS_FILE, __LINE__, __FUNCTION__);
+		CRAY_INFO("switch_jobinfo_t contents:");
 		print_jobinfo(job);
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	error("(%s:%d: %s) Unpacking error", THIS_FILE, __LINE__,
-	      __FUNCTION__);
-
+	CRAY_ERR("Unpacking error");
 	if (job->num_cookies) {
 		// Free the cookie_ids
 		if (job->cookie_ids)
@@ -700,10 +681,9 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	xassert(sw_job->magic == CRAY_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		info("(%s:%d: %s) Job ID (in JOB): %" PRIu32
+		CRAY_INFO("Job ID (in JOB): %" PRIu32
 		     "Job ID (in Switch jobinfo): %" PRIu32,
-		     THIS_FILE, __LINE__, __FUNCTION__, job->jobid,
-		     sw_job->jobid);
+		     job->jobid, sw_job->jobid);
 	}
 
 	rc = alpsc_attach_cncu_container(&err_msg, sw_job->jobid, job->cont_id);
@@ -831,8 +811,6 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 	/*
 	 * Query the generic resources to see if the GPU should be allocated
-	 * TODO: Determine whether the proxy should be enabled or disabled by
-	 * reading the user's environment variable.
 	 */
 
 	rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
@@ -950,6 +928,7 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 	/*
 	 * Clean-up
 	 *
+	 * 0. Reset GPU proxy
 	 * 1. Flush Lustre caches
 	 * 2. Flush virtual memory
 	 * 3. Compact memory
@@ -1089,8 +1068,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	 */
 	rc = release_port(job->port);
 	if (rc != 0) {
-		error("(%s: %d: %s) Releasing port %" PRIu32 " failed.",
-		      THIS_FILE, __LINE__, __FUNCTION__, job->port);
+		CRAY_ERR("Releasing port %" PRIu32 " failed.", job->port);
 		// return SLURM_ERROR;
 	}
 
