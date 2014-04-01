@@ -149,10 +149,10 @@ static void _state_read_buf(Buf buffer)
 	/* Validate state version */
 	safe_unpack16(&protocol_version, buffer);
 	debug3("Version in switch_cray header is %u", protocol_version);
-	if (protocol_version == (uint16_t) NO_VAL) {
-		error("*******************************************************");
-		error("Can not recover switch/cray state, incompatible version");
-		error("*******************************************************");
+	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
+		error("******************************************************");
+		error("Can't recover switch/cray state, incompatible version");
+		error("******************************************************");
 		return;
 	}
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
@@ -173,11 +173,11 @@ static void _state_read_buf(Buf buffer)
 		}
 	}
 	if ((min_port != MIN_PORT) || (max_port != MAX_PORT)) {
-		error("*******************************************************");
+		error("******************************************************");
 		error("Can not recover switch/cray state");
 		error("Changed MIN_PORT (%u != %u) and/or MAX_PORT (%u != %u)",
 		      min_port, MIN_PORT, max_port, MAX_PORT);
-		error("*******************************************************");
+		error("******************************************************");
 		return;
 	}
 
@@ -358,8 +358,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 	*switch_job = (switch_jobinfo_t *) new;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		info("(%s: %d: %s) switch_jobinfo_t contents",
-		     THIS_FILE, __LINE__, __FUNCTION__);
+		CRAY_INFO("switch_jobinfo_t contents");
 		print_jobinfo(new);
 	}
 
@@ -421,37 +420,20 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				 ALPSC_INFINITE_LEASE, nodes,
 				 step_layout->node_cnt, num_cookies,
 				 &cookies, &cookie_ids);
+	ALPSC_SN_DEBUG("alpsc_lease_cookies");
+	xfree(nodes);
 	if (rc != 0) {
-		if (err_msg) {
-			error("(%s: %d: %s) alpsc_lease_cookies failed: %s",
-			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
-		} else {
-			error("(%s: %d: %s) alpsc_lease_cookies failed:"
-			      " No error message present.",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-		}
-		xfree(nodes);
 		return SLURM_ERROR;
 	}
-	if (err_msg) {
-		info("(%s: %d: %s) alpsc_lease_cookies: %s",
-		     THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-		free(err_msg);
-	}
-
-	xfree(nodes);
-
 
 	/*
 	 * Cookie ID safety check: The cookie_ids should be positive numbers.
 	 */
 	for (i=0; i<num_cookies; i++) {
 		if (cookie_ids[i] < 0) {
-			error("(%s: %d: %s) alpsc_lease_cookies returned a "
-			      "cookie ID number %d with a negative value: %d",
-			      THIS_FILE, __LINE__, __FUNCTION__, i,
-			      cookie_ids[i]);
+			CRAY_ERR("alpsc_lease_cookies returned a cookie ID "
+				 "number %d with a negative value: %d",
+				 i, cookie_ids[i]);
 			return SLURM_ERROR;
 		}
 	}
@@ -700,36 +682,19 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 #ifdef HAVE_NATIVE_CRAY
 	slurm_cray_jobinfo_t *sw_job = (slurm_cray_jobinfo_t *) job->switch_job;
-	int rc, num_ptags, cmd_index, num_app_cpus, i, j, cnt = 0;
+	int rc, num_ptags, cmd_index = 0;
 	int mem_scaling, cpu_scaling;
-	int total_cpus = 0;
-	uint32_t total_mem = 0;
 	int *ptags = NULL;
-	char *err_msg = NULL, *apid_dir = NULL;
+	char *err_msg = NULL;
 	alpsc_peInfo_t alpsc_pe_info = {-1, -1, -1, -1, NULL, NULL, NULL};
-	FILE *f = NULL;
-	size_t sz = 0;
-	ssize_t lsz;
-	char *lin = NULL;
-	char meminfo_str[1024];
-	int meminfo_value, gpu_enable = 0;
-	uint32_t task;
-	int32_t *task_to_nodes_map = NULL;
-	int32_t *nodes = NULL;
-	int32_t first_pe_here;
 	gni_ntt_descriptor_t *ntt_desc_ptr = NULL;
 	int gpu_cnt = 0;
-	char *buff = NULL;
-	size_t size;
-
-	// Dummy variables to satisfy alpsc_write_placement_file
 	int control_nid = 0, num_branches = 0;
 	struct sockaddr_in control_soc;
 	alpsc_branchInfo_t alpsc_branch_info;
 
 	if (!sw_job || (sw_job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		CRAY_DEBUG("job->switch_job was NULL");
 		return SLURM_SUCCESS;
 	}
 
@@ -744,55 +709,17 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	}
 
 	rc = alpsc_attach_cncu_container(&err_msg, sw_job->jobid, job->cont_id);
-
+	ALPSC_CN_DEBUG("alpsc_attach_cncu_container");
 	if (rc != 1) {
-		if (err_msg) {
-			error("(%s: %d: %s) alpsc_attach_cncu_container failed:"
-			      " %s",
-			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
-		} else {
-			error("(%s: %d: %s) alpsc_attach_cncu_container failed:"
-			      " No error message present.",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-		}
-		return SLURM_ERROR;
-	}
-	if (err_msg) {
-		info("(%s: %d: %s) alpsc_attach_cncu_container: %s", THIS_FILE,
-		     __LINE__, __FUNCTION__, err_msg);
-		free(err_msg);
-	}
-
-	/*
-	 * Create APID directory
-	 * Make its owner be the user who launched the application and under
-	 * which the application will run.
-	 */
-	apid_dir = xstrdup_printf(LEGACY_SPOOL_DIR "%" PRIu64, sw_job->apid);
-	if (NULL == apid_dir) {
-		error("(%s: %d: %s) xstrdup_printf failed", THIS_FILE, __LINE__,
-		      __FUNCTION__);
 		return SLURM_ERROR;
 	}
 
-	rc = mkdir(apid_dir, 0700);
-	if (rc) {
-		xfree(apid_dir);
-		error("(%s: %d: %s) mkdir failed to make directory %s: %m",
-		      THIS_FILE, __LINE__, __FUNCTION__, apid_dir);
-		return SLURM_ERROR;
+	// Create the apid directory
+	rc = create_apid_dir(sw_job->apid, job->uid, job->gid);
+	if (rc != SLURM_SUCCESS) {
+		return rc;
 	}
 
-	rc = chown(apid_dir, job->uid, job->gid);
-	if (rc) {
-		free(apid_dir);
-		error("(%s: %d: %s) chown failed: %m", THIS_FILE, __LINE__,
-		      __FUNCTION__);
-		return SLURM_ERROR;
-	}
-
-	xfree(apid_dir);
 	/*
 	 * Not defined yet -- This one may be skipped because we may not need to
 	 * find the PAGG JOB container based on the APID.  It is part of the
@@ -817,12 +744,12 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	if (job->ntasks > 1) {
 		cpu_scaling = get_cpu_scaling(job);
 		if (cpu_scaling == -1) {
-		    return SLURM_ERROR;
+			return SLURM_ERROR;
 		}
 
 		mem_scaling = get_mem_scaling(job);
 		if (mem_scaling == -1) {
-		    return SLURM_ERROR;
+			return SLURM_ERROR;
 		}
 
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -834,28 +761,14 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 				  job->cont_id);
 		}
 
+		ALPSC_CN_DEBUG("alpsc_configure_nic");
 		/*
 		 * We don't use the ptags because Cray's LLI acquires them
 		 * itself, so they can be immediately discarded.
 		 */
 		free(ptags);
 		if (rc != 1) {
-			if (err_msg) {
-				error("(%s: %d: %s) alpsc_configure_nic failed:"
-				      " %s", THIS_FILE,
-				      __LINE__, __FUNCTION__, err_msg);
-				free(err_msg);
-			} else {
-				error("(%s: %d: %s) alpsc_configure_nic failed:"
-				      " No error message present.",
-				      THIS_FILE, __LINE__, __FUNCTION__);
-			}
 			return SLURM_ERROR;
-		}
-		if (err_msg) {
-			info("(%s: %d: %s) alpsc_configure_nic: %s",
-			     THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
 		}
 	}
 
@@ -976,26 +889,20 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 {
 #ifdef HAVE_NATIVE_CRAY
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) jobinfo;
+	int rc;
+	char *path_name = NULL;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		error("(%s: %d: %s) jobinfo pointer was NULL",
-		      THIS_FILE, __LINE__, __FUNCTION__);
+		CRAY_ERR("jobinfo pointer was NULL");
 		return SLURM_SUCCESS;
 	}
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
-	int rc;
-	char *path_name = NULL;
 
 	/*
 	 * Remove the APID directory LEGACY_SPOOL_DIR/<APID>
 	 */
 	path_name = xstrdup_printf(LEGACY_SPOOL_DIR "%" PRIu64, job->apid);
-	if (NULL == path_name) {
-		error("(%s: %d: %s) xstrdup_printf failed", THIS_FILE, __LINE__,
-		      __FUNCTION__);
-		return SLURM_ERROR;
-	}
 
 	// Stolen from ALPS
 	recursive_rmdir(path_name);
@@ -1007,23 +914,13 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 	 */
 	path_name = xstrdup_printf(LEGACY_SPOOL_DIR "places%" PRIu64,
 				   job->apid);
-	if (NULL == path_name) {
-		error("(%s: %d: %s) xstrdup_printf failed", THIS_FILE, __LINE__,
-		      __FUNCTION__);
-		return SLURM_ERROR;
-	}
 	rc = remove(path_name);
 	if (rc) {
-		error("(%s: %d: %s) remove %s failed: %m", THIS_FILE, __LINE__,
-		      __FUNCTION__, path_name);
+		CRAY_ERR("remove %s failed: %m", path_name);
+		xfree(path_name);
 		return SLURM_ERROR;
 	}
 	xfree(path_name);
-
-	/*
-	 * TODO:
-	 * Set the proxy back to the default state.
-	 */
 #endif
 	return SLURM_SUCCESS;
 }
@@ -1035,20 +932,19 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 	char *err_msg = NULL;
 	uid_t pgid = job->jmgr_pid;
 
-	if (NULL == job->switch_job) {
-		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+	if (!job->switch_job) {
+		CRAY_DEBUG("job->switch_job was NULL");
 	}
 
 	/*
 	 *  Kill all processes in the job's session
 	 */
 	if (pgid) {
-		debug2("Sending SIGKILL to pgid %lu", (unsigned long) pgid);
+		CRAY_DEBUG("Sending SIGKILL to pgid %lu", (unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		info("Job %u.%u: Bad pid value %lu", job->jobid, job->stepid,
-		     (unsigned long) pgid);
+		CRAY_INFO("Job %u.%u: Bad pid value %lu",
+			  job->jobid, job->stepid, (unsigned long) pgid);
 	/*
 	 * Clean-up
 	 *
@@ -1066,22 +962,9 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 
 	// Flush Lustre Cache
 	rc = alpsc_flush_lustre(&err_msg);
+	ALPSC_CN_DEBUG("alpsc_flush_lustre");
 	if (rc != 1) {
-		if (err_msg) {
-			error("(%s: %d: %s) alpsc_flush_lustre failed: %s",
-			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
-		} else {
-			error("(%s: %d: %s) alpsc_flush_lustre failed:"
-			      " No error message present.",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-		}
 		return SLURM_ERROR;
-	}
-	if (err_msg) {
-		info("(%s: %d: %s) alpsc_flush_lustre: %s", THIS_FILE, __LINE__,
-		     __FUNCTION__, err_msg);
-		free(err_msg);
 	}
 
 	// Flush virtual memory
@@ -1090,11 +973,9 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 		rc = WEXITSTATUS(rc);
 	}
 	if (rc) {
-		error("(%s: %d: %s) Flushing virtual memory failed."
-		      " Return code: %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, rc);
+		CRAY_ERR("Flushing virtual memory failed. Return code: %d",
+			 rc);
 	}
-	// do_drop_caches();
 
 #endif
 	return SLURM_SUCCESS;
@@ -1183,38 +1064,22 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	int rc = 0;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		debug2("(%s: %d: %s) switch_job was NULL", THIS_FILE, __LINE__,
+		CRAY_DEBUG("switch_job was NULL");
 		       __FUNCTION__);
 		return SLURM_SUCCESS;
 	}
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		info("(%s:%d: %s) switch_p_job_step_complete", THIS_FILE,
-		     __LINE__, __FUNCTION__);
+		CRAY_INFO("switch_p_job_step_complete");
 	}
 
 	/* Release the cookies */
 	rc = alpsc_release_cookies(&err_msg, (int32_t *) job->cookie_ids,
 				   (int32_t) job->num_cookies);
-
+	ALPSC_SN_DEBUG("alpsc_release_cookies");
 	if (rc != 0) {
-
-		if (err_msg) {
-			error("(%s: %d: %s) alpsc_release_cookies failed: %s",
-			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
-		} else {
-			error("(%s: %d: %s) alpsc_release_cookies failed:"
-			      " No error message present.",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-		}
 		return SLURM_ERROR;
 
-	}
-	if (err_msg) {
-		info("(%s: %d: %s) alpsc_release_cookies: %s",
-		     THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-		free(err_msg);
 	}
 
 	/*
