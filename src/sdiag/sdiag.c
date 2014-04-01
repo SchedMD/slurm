@@ -46,6 +46,7 @@
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 
 /********************
@@ -55,7 +56,7 @@ int sdiag_param = STAT_COMMAND_GET;
 
 stats_info_response_msg_t *buf;
 
-static int _print_sched_info(void);
+static int _print_stats(void);
 
 stats_info_request_msg_t req;
 
@@ -80,7 +81,7 @@ int main(int argc, char *argv[])
 		rc = slurm_get_statistics(&buf,
 					  (stats_info_request_msg_t *)&req);
 		if (rc == SLURM_SUCCESS)
-			rc = _print_sched_info();
+			rc = _print_stats();
 		else
 			slurm_perror("slurm_get_statistics");
 	}
@@ -88,8 +89,10 @@ int main(int argc, char *argv[])
 	exit(rc);
 }
 
-static int _print_sched_info(void)
+static int _print_stats(void)
 {
+	int i;
+
 	if (!buf) {
 		printf("No data available. Probably slurmctld is not working\n");
 		return -1;
@@ -155,6 +158,24 @@ static int _print_sched_info(void)
 		printf("\tQueue length mean: %u\n",
 		       buf->bf_queue_len_sum / buf->bf_cycle_counter);
 	}
+
+	for (i = 0; i < buf->rpc_type_size; i++) {
+		if (i == 0)
+			printf("\n");
+		printf("\tRPC type:%u count:%u total_time:%"PRIu64"\n",
+		       buf->rpc_type_id[i], buf->rpc_type_cnt[i],
+		       buf->rpc_type_time[i]);
+	}
+
+	for (i = 0; i < buf->rpc_user_size; i++) {
+		if (i == 0)
+			printf("\n");
+		printf("\tRPC user:%s:(%u) count:%u total_time:%"PRIu64"\n",
+		       uid_to_string((uid_t)buf->rpc_user_id[i]),
+		       buf->rpc_user_id[i], buf->rpc_user_cnt[i],
+		       buf->rpc_user_time[i]);
+	}
+
 	return 0;
 }
 

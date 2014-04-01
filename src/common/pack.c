@@ -394,6 +394,35 @@ int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
+/* Given a *uint64_t, it will pack an array of size_val */
+void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	pack32(size_val, buffer);
+
+	for (i = 0; i < size_val; i++) {
+		pack64(*(valp + i), buffer);
+	}
+}
+
+/* Given a int ptr, it will unpack an array of size_val
+ */
+int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	if (unpack32(size_val, buffer))
+		return SLURM_ERROR;
+
+	*valp = xmalloc((*size_val) * sizeof(uint64_t));
+	for (i = 0; i < *size_val; i++) {
+		if (unpack64((*valp) + i, buffer))
+			return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
 /*
  * Given a 16-bit integer in host byte order, convert to network byte order,
  * store in buffer and adjust buffer counters.

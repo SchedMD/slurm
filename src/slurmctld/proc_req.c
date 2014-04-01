@@ -213,7 +213,7 @@ void slurmctld_req (slurm_msg_t * msg)
 	START_TIMER;
 	slurm_mutex_lock(&rpc_mutex);
 	if (rpc_type_size == 0) {
-		rpc_type_size = 100;
+		rpc_type_size = 100;  /* Capture info for first 100 RPC types */
 		rpc_type_id   = xmalloc(sizeof(uint16_t) * rpc_type_size);
 		rpc_type_cnt  = xmalloc(sizeof(uint32_t) * rpc_type_size);
 		rpc_type_time = xmalloc(sizeof(uint64_t) * rpc_type_size);
@@ -227,7 +227,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	}
 	if (rpc_user_size == 0) {
-		rpc_user_size = 100;
+		rpc_user_size = 200;  /* Capture info for first 200 RPC users */
 		rpc_user_id   = xmalloc(sizeof(uint32_t) * rpc_user_size);
 		rpc_user_cnt  = xmalloc(sizeof(uint32_t) * rpc_user_size);
 		rpc_user_time = xmalloc(sizeof(uint64_t) * rpc_user_size);
@@ -527,11 +527,11 @@ void slurmctld_req (slurm_msg_t * msg)
 	END_TIMER;
 	slurm_mutex_lock(&rpc_mutex);
 	if (rpc_type_index >= 0) {
-		rpc_type_cnt[i]++;
+		rpc_type_cnt[rpc_type_index]++;
 		rpc_type_time[rpc_type_index] += DELTA_TIMER;
 	}
 	if (rpc_user_index >= 0) {
-		rpc_user_cnt[i]++;
+		rpc_user_cnt[rpc_user_index]++;
 		rpc_user_time[rpc_user_index] += DELTA_TIMER;
 	}
 	slurm_mutex_unlock(&rpc_mutex);
@@ -4799,9 +4799,15 @@ static void _clear_rpc_stats(void)
 static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 			    uint16_t protocol_version)
 {
-	int i;
+	uint32_t i;
+	Buf buffer;
+
+	if (protocol_version < SLURM_14_11_PROTOCOL_VERSION)
+		return;
 
 	slurm_mutex_lock(&rpc_mutex);
+	buffer = create_buf(*buffer_ptr, *buffer_size);
+	set_buf_offset(buffer, *buffer_size);
 	for (i = 0; i < rpc_type_size; i++) {
 		if (rpc_type_id[i]) {
 			info("rpc_type:%u count:%u time:%"PRIu64"",
@@ -4809,6 +4815,10 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 		} else
 			break;
 	}
+	pack32(i, buffer);
+	pack16_array(rpc_type_id,   i, buffer);
+	pack32_array(rpc_type_cnt,  i, buffer);
+	pack64_array(rpc_type_time, i, buffer);
 
 	for (i = 0; i < rpc_user_size; i++) {
 		if (rpc_user_id[i] || (i == 0)) {
@@ -4817,7 +4827,14 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 		} else
 			break;
 	}
+	pack32(i, buffer);
+	pack32_array(rpc_user_id,   i, buffer);
+	pack32_array(rpc_user_cnt,  i, buffer);
+	pack64_array(rpc_user_time, i, buffer);
 	slurm_mutex_unlock(&rpc_mutex);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
 }
 
 /* _slurm_rpc_dump_stats - process RPC for statistics information */
