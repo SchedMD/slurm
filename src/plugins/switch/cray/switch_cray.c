@@ -580,7 +580,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	/*
 	 * Get a unique port for PMI communications
 	 */
-	rc = _assign_port(&port);
+	rc = assign_port(&port);
 	if (rc < 0) {
 		info("(%s: %d: %s) assign_port failed",
 		     THIS_FILE, __LINE__, __FUNCTION__);
@@ -1434,7 +1434,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	 * Release the reserved PMI port
 	 * If this fails, do not exit with an error.
 	 */
-	rc = _release_port(job->port);
+	rc = release_port(job->port);
 	if (rc != 0) {
 		error("(%s: %d: %s) Releasing port %" PRIu32 " failed.",
 		      THIS_FILE, __LINE__, __FUNCTION__, job->port);
@@ -1589,102 +1589,6 @@ static int _get_cpu_total(void)
 	free(lin);
 	TEMP_FAILURE_RETRY(fclose(f));
 	return total;
-}
-
-/*
- * Function: assign_port
- * Description:
- *  Looks for and assigns the next free port.   This port is used by Cray's
- *  PMI for its communications to manage its control tree.
- *
- *  To avoid port conflicts, this function selects a large range of
- *  ports within the middle of the port range where it assumes no
- *  ports are used.  No special precautions are taken to handle a
- *  selected port already in use by some other non-SLURM component
- *  on the node.
- *
- *  If there are no free ports, then it loops through the entire table
- *  ATTEMPTS number of times before declaring a failure.
- *
- * Returns:
- *  0 on success and -1 on failure.
- */
-static int _assign_port(uint32_t *real_port)
-{
-	int port, tmp, attempts = 0;
-
-	if (!real_port) {
-		error("(%s: %d: %s) real_port address was NULL.",
-		      THIS_FILE, __LINE__, __FUNCTION__);
-		return -1;
-	}
-
-	/*
-	 * Ports is an index into the reserved port table.
-	 * The ports range from 0 up to PORT_CNT.
-	 */
-	port = ++last_alloc_port % PORT_CNT;
-
-	/*
-	 * Find an unreserved port to assign.
-	 * Abandon the attempt if we've been through the available ports ATTEMPT
-	 * number of times
-	 */
-	while (port_resv[port] == 1) {
-		tmp = ++port % PORT_CNT;
-		port = tmp;
-		attempts++;
-		if ((attempts / PORT_CNT) >= ATTEMPTS) {
-			error("(%s: %d: %s) No free ports among %d ports. "
-			      " Went through entire port list %d times",
-			      THIS_FILE, __LINE__, __FUNCTION__, PORT_CNT,
-			      ATTEMPTS);
-			return -1;
-		}
-	}
-
-	port_resv[port] = 1;
-	last_alloc_port = port;
-
-	/*
-	 * The port index must be scaled up by the MIN_PORT.
-	 */
-	*real_port = (port + MIN_PORT);
-	return 0;
-}
-
-/*
- * Function: release_port
- * Description:
- *  Release the port.
- *
- * Returns:
- *  0 on success and -1 on failure.
- */
-static int _release_port(uint32_t real_port)
-{
-
-	uint32_t port;
-
-	if ((real_port < MIN_PORT) || (real_port >= MAX_PORT)) {
-		error("(%s: %d: %s) Port %" PRIu32
-		      "outside of valid range %" PRIu32
-		      ": %" PRIu32, THIS_FILE, __LINE__,
-		      __FUNCTION__, real_port, MIN_PORT, MAX_PORT);
-		return -1;
-	}
-
-	port = real_port - MIN_PORT;
-
-	if (port_resv[port]) {
-		port_resv[port] = 0;
-	} else {
-		error("(%s: %d: %s) Attempting to release port %d,"
-		      " but it was not reserved.",
-		      THIS_FILE, __LINE__, __FUNCTION__, real_port);
-		return -1;
-	}
-	return 0;
 }
 
 /*
