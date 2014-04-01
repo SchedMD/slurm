@@ -190,14 +190,12 @@ unpack_error:
 
 static void _state_write_buf(Buf buffer)
 {
-	int i;
-
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack32(MIN_PORT, buffer);
+	pack32(MAX_PORT, buffer);
 
 	pthread_mutex_lock(&port_mutex);
 
-	pack32(&min_port, buffer);
-	pack32(&max_port, buffer);
 	pack32(last_alloc_port, buffer);
 	pack_bit_str(port_resv, buffer);
 
@@ -607,7 +605,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	/* If the libstate save/restore failed, at least make sure that we
 	 * do not re-allocate ports assigned to job steps that we recover. */
 	if ((job->port >= MIN_PORT) && (job->port <= MAX_PORT))
-		bit_set(resv_port, job->port - MIN_PORT);
+		bit_set(port_resv, job->port - MIN_PORT);
 #endif
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -932,7 +930,7 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 int switch_p_job_postfini(stepd_step_rec_t *job)
 {
 #ifdef HAVE_NATIVE_CRAY
-	int rc;
+	int rc, gpu_cnt = 0;
 	char *err_msg = NULL;
 	uid_t pgid = job->jmgr_pid;
 
@@ -1069,7 +1067,6 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_DEBUG("switch_job was NULL");
-		       __FUNCTION__);
 		return SLURM_SUCCESS;
 	}
 
