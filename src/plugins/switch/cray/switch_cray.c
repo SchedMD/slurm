@@ -491,7 +491,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
 
-	rc = _list_str_to_array(step_layout->node_list, &cnt, &nodes);
+	rc = list_str_to_array(step_layout->node_list, &cnt, &nodes);
 
 	if (rc < 0) {
 		error("(%s: %d: %s) list_str_to_array failed",
@@ -1211,7 +1211,7 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 	}
 
 	// Stolen from ALPS
-	_recursive_rmdir(path_name);
+	recursive_rmdir(path_name);
 	xfree(path_name);
 
 	/*
