@@ -92,6 +92,16 @@
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 
+static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int rpc_type_size = 0;	/* Size of rpc_type_* arrays */
+static uint16_t *rpc_type_id = NULL;
+static uint32_t *rpc_type_cnt = NULL;
+static uint64_t *rpc_type_time = NULL;
+static int rpc_user_size = 0;	/* Size of rpc_user_* arrays */
+static uint32_t *rpc_user_id = NULL;
+static uint32_t *rpc_user_cnt = NULL;
+static uint64_t *rpc_user_time = NULL;
+
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
@@ -123,9 +133,12 @@ inline static void  _slurm_rpc_dump_front_end(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs_user(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_job_single(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_licenses(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_node_single(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_stats(slurm_msg_t * msg);
 inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_get_shares(slurm_msg_t *msg);
@@ -171,9 +184,6 @@ inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
-inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
-inline static void  _slurm_rpc_dump_stats(slurm_msg_t * msg);
-inline static void  _slurm_rpc_dump_licenses(slurm_msg_t * msg);
 
 inline static void  _update_cred_key(void);
 
@@ -188,13 +198,49 @@ extern int prolog_complete(uint32_t job_id, bool requeue,
  */
 void slurmctld_req (slurm_msg_t * msg)
 {
+	DEF_TIMERS;
+	int i, rpc_type_index = -1, rpc_user_index = -1;
+	uint32_t rpc_uid;
+
 	/* Just to validate the cred */
-	(void) g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	if (g_slurm_auth_errno(msg->auth_cred) != SLURM_SUCCESS) {
 		error("Bad authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(msg->auth_cred)));
 		return;
 	}
+
+	START_TIMER;
+	slurm_mutex_lock(&rpc_mutex);
+	if (rpc_type_size == 0) {
+		rpc_type_size = 100;
+		rpc_type_id   = xmalloc(sizeof(uint16_t) * rpc_type_size);
+		rpc_type_cnt  = xmalloc(sizeof(uint32_t) * rpc_type_size);
+		rpc_type_time = xmalloc(sizeof(uint64_t) * rpc_type_size);
+	}
+	for (i = 0; i < rpc_type_size; i++) {
+		if (rpc_type_id[i] == 0)
+			rpc_type_id[i] = msg->msg_type;
+		else if (rpc_type_id[i] != msg->msg_type)
+			continue;
+		rpc_type_index = i;
+		break;
+	}
+	if (rpc_user_size == 0) {
+		rpc_user_size = 100;
+		rpc_user_id   = xmalloc(sizeof(uint32_t) * rpc_user_size);
+		rpc_user_cnt  = xmalloc(sizeof(uint32_t) * rpc_user_size);
+		rpc_user_time = xmalloc(sizeof(uint64_t) * rpc_user_size);
+	}
+	for (i = 0; i < rpc_user_size; i++) {
+		if ((rpc_user_id[i] == 0) && (i != 0))
+			rpc_user_id[i] = rpc_uid;
+		else if (rpc_user_id[i] != rpc_uid)
+			continue;
+		rpc_user_index = i;
+		break;
+	}
+	slurm_mutex_unlock(&rpc_mutex);
 
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
@@ -468,15 +514,27 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_dump_stats(msg);
 		slurm_free_stats_info_request_msg(msg->data);
 		break;
-	 case REQUEST_LICENSE_INFO:
-		 _slurm_rpc_dump_licenses(msg);
-		 slurm_free_license_info_request_msg(msg->data);
+	case REQUEST_LICENSE_INFO:
+		_slurm_rpc_dump_licenses(msg);
+		slurm_free_license_info_request_msg(msg->data);
 		break;
 	default:
-		error("invalid RPC msg_type=%d", msg->msg_type);
+		error("invalid RPC msg_type=%u", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
 		break;
 	}
+
+	END_TIMER;
+	slurm_mutex_lock(&rpc_mutex);
+	if (rpc_type_index >= 0) {
+		rpc_type_cnt[i]++;
+		rpc_type_time[rpc_type_index] += DELTA_TIMER;
+	}
+	if (rpc_user_index >= 0) {
+		rpc_user_cnt[i]++;
+		rpc_user_time[rpc_user_index] += DELTA_TIMER;
+	}
+	slurm_mutex_unlock(&rpc_mutex);
 }
 
 /* These functions prevent certain RPCs from keeping the slurmctld write locks
@@ -4722,6 +4780,45 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 	slurm_free_spank_env_responce_msg(spank_resp_msg);
 }
 
+static void _clear_rpc_stats(void)
+{
+	int i;
+
+	slurm_mutex_lock(&rpc_mutex);
+	for (i = 0; i < rpc_type_size; i++) {
+		rpc_type_cnt[i] = 0;
+		rpc_type_time[i] = 0;
+	}
+	for (i = 0; i < rpc_user_size; i++) {
+		rpc_user_cnt[i] = 0;
+		rpc_user_time[i] = 0;
+	}
+	slurm_mutex_unlock(&rpc_mutex);
+}
+
+static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
+			    uint16_t protocol_version)
+{
+	int i;
+
+	slurm_mutex_lock(&rpc_mutex);
+	for (i = 0; i < rpc_type_size; i++) {
+		if (rpc_type_id[i]) {
+			info("rpc_type:%u count:%u time:%"PRIu64"",
+			     rpc_type_id[i], rpc_type_cnt[i], rpc_type_time[i]);
+		} else
+			break;
+	}
+
+	for (i = 0; i < rpc_user_size; i++) {
+		if (rpc_user_id[i] || (i == 0)) {
+			info("rpc_user:%u count:%u time:%"PRIu64"",
+			     rpc_user_id[i], rpc_user_cnt[i], rpc_user_time[i]);
+		} else
+			break;
+	}
+	slurm_mutex_unlock(&rpc_mutex);
+}
 
 /* _slurm_rpc_dump_stats - process RPC for statistics information */
 inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
@@ -4736,13 +4833,13 @@ inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 
 	if ((request_msg->command_id == STAT_COMMAND_RESET) &&
 	    !validate_slurm_user(uid)) {
-		error("Security violation, MESSAGE_REALTIME_STATS reset "
+		error("Security violation: REQUEST_STATS_INFO reset "
 		      "from uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
 	}
 
-	debug2("Processing RPC: MESSAGE_REALTIME_STATS (command: %u)",
+	debug2("Processing RPC: REQUEST_STATS_INFO (command: %u)",
 	       request_msg->command_id);
 
 	slurm_msg_t_init(&response_msg);
@@ -4752,11 +4849,14 @@ inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 
 	if (request_msg->command_id == STAT_COMMAND_RESET) {
 		reset_stats(1);
+		_clear_rpc_stats();
 		pack_all_stat(0, &dump, &dump_size, msg->protocol_version);
+		_pack_rpc_stats(0, &dump, &dump_size, msg->protocol_version);
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
 	} else {
 		pack_all_stat(1, &dump, &dump_size, msg->protocol_version);
+		_pack_rpc_stats(1, &dump, &dump_size, msg->protocol_version);
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
 	}
