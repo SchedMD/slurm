@@ -1115,28 +1115,9 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 	rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
 				GRES_STEP_DATA_COUNT, &gpu_cnt);
-	info("gres_cnt: %d %u", rc, gpu_cnt);
-	if (gpu_cnt > 0) {
-		rc = alpsc_pre_launch_GPU_mps(&err_msg, gpu_enable);
-		if (rc != 1) {
-			if (err_msg) {
-				error("(%s: %d: %s) alpsc_prelaunch_GPU_mps"
-				      " failed: %s", THIS_FILE,
-				      __LINE__, __FUNCTION__, err_msg);
-				free(err_msg);
-			} else {
-				error("(%s: %d: %s) alpsc_prelaunch_GPU_mps"
-				      " failed: No error message present.",
-				      THIS_FILE, __LINE__, __FUNCTION__);
-			}
-			return SLURM_ERROR;
-		}
-		if (err_msg) {
-			info("(%s: %d: %s) alpsc_prelaunch_GPU_mps: %s",
-			     THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
-		}
-	}
+	CRAY_INFO("gres_cnt: %d %u", rc, gpu_cnt);
+	if (gpu_cnt > 0)
+		setup_gpu(job);
 
 	/*
 	 * Set the Job's APID
@@ -1268,6 +1249,13 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 	 * 2. Flush virtual memory
 	 * 3. Compact memory
 	 */
+
+	// Set the proxy back to the default state.
+	rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
+				GRES_STEP_DATA_COUNT, &gpu_cnt);
+	if (gpu_cnt > 0) {
+		reset_gpu(job);
+	}
 
 	// Flush Lustre Cache
 	rc = alpsc_flush_lustre(&err_msg);
@@ -1469,31 +1457,6 @@ extern int switch_p_slurmctld_init(void)
 
 extern int switch_p_slurmd_init(void)
 {
-#ifdef HAVE_NATIVE_CRAY
-	int rc = 0;
-	char *err_msg = NULL;
-
-	// Establish GPU's default state
-	rc = alpsc_establish_GPU_mps_def_state(&err_msg);
-	if (rc != 1) {
-		if (err_msg) {
-			error("(%s: %d: %s) alpsc_establish_GPU_mps_def_state"
-			      " failed: %s",
-			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
-		} else {
-			error("(%s: %d: %s) alpsc_establish_GPU_mps_def_state"
-			      " failed: No error message present.",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-		}
-		return SLURM_ERROR;
-	}
-	if (err_msg) {
-		info("(%s: %d: %s) alpsc_establish_GPU_mps_def_state: %s",
-		     THIS_FILE,	__LINE__, __FUNCTION__, err_msg);
-		free(err_msg);
-	}
-#endif
 	return SLURM_SUCCESS;
 }
 

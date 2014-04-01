@@ -161,8 +161,9 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 switch_cray_la_LIBADD =
-am_switch_cray_la_OBJECTS = switch_cray_la-pe_info.lo \
-	switch_cray_la-switch_cray.lo switch_cray_la-util.lo
+am_switch_cray_la_OBJECTS = switch_cray_la-gpu.lo \
+	switch_cray_la-pe_info.lo switch_cray_la-switch_cray.lo \
+	switch_cray_la-util.lo
 switch_cray_la_OBJECTS = $(am_switch_cray_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -475,6 +476,7 @@ pkglib_LTLIBRARIES = switch_cray.la
 
 # Cray switch plugin.
 switch_cray_la_SOURCES = \
+	gpu.c \
 	pe_info.c \
 	switch_cray.c \
 	switch_cray.h \
@@ -569,6 +571,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_cray_la-gpu.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_cray_la-pe_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_cray_la-switch_cray.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_cray_la-util.Plo@am__quote@
@@ -593,6 +596,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+switch_cray_la-gpu.lo: gpu.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(switch_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT switch_cray_la-gpu.lo -MD -MP -MF $(DEPDIR)/switch_cray_la-gpu.Tpo -c -o switch_cray_la-gpu.lo `test -f 'gpu.c' || echo '$(srcdir)/'`gpu.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/switch_cray_la-gpu.Tpo $(DEPDIR)/switch_cray_la-gpu.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu.c' object='switch_cray_la-gpu.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(switch_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o switch_cray_la-gpu.lo `test -f 'gpu.c' || echo '$(srcdir)/'`gpu.c
 
 switch_cray_la-pe_info.lo: pe_info.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(switch_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT switch_cray_la-pe_info.lo -MD -MP -MF $(DEPDIR)/switch_cray_la-pe_info.Tpo -c -o switch_cray_la-pe_info.lo `test -f 'pe_info.c' || echo '$(srcdir)/'`pe_info.c

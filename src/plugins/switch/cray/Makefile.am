@@ -8,6 +8,7 @@ pkglib_LTLIBRARIES = switch_cray.la
 
 # Cray switch plugin.
 switch_cray_la_SOURCES = \
+	gpu.c \
 	pe_info.c \
 	switch_cray.c \
 	switch_cray.h \
