@@ -55,8 +55,7 @@ int sdiag_param = STAT_COMMAND_GET;
 
 stats_info_response_msg_t *buf;
 
-static int _get_info(void);
-static int _print_info(void);
+static int _print_sched_info(void);
 
 stats_info_request_msg_t req;
 
@@ -76,29 +75,20 @@ int main(int argc, char *argv[])
 			printf("Reset scheduling statistics\n");
 		else
 			slurm_perror("slurm_reset_statistics");
-		exit(rc);
 	} else {
-		rc = _get_info();
+		req.command_id = STAT_COMMAND_GET;
+		rc = slurm_get_statistics(&buf,
+					  (stats_info_request_msg_t *)&req);
 		if (rc == SLURM_SUCCESS)
-			rc = _print_info();
+			rc = _print_sched_info();
+		else
+			slurm_perror("slurm_get_statistics");
 	}
 
 	exit(rc);
 }
 
-static int _get_info(void)
-{
-	int rc;
-
-	req.command_id = STAT_COMMAND_GET;
-	rc = slurm_get_statistics(&buf, (stats_info_request_msg_t *)&req);
-	if (rc != SLURM_SUCCESS)
-		slurm_perror("slurm_get_statistics");
-
-	return rc;
-}
-
-static int _print_info(void)
+static int _print_sched_info(void)
 {
 	if (!buf) {
 		printf("No data available. Probably slurmctld is not working\n");
