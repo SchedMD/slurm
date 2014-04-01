@@ -65,6 +65,7 @@
 
 #ifdef HAVE_NATIVE_CRAY
 #include <job.h> /* Cray's job module component */
+#include "switch_cray.h"
 #include "alpscomm_cn.h"
 #include "alpscomm_sn.h"
 #endif
@@ -100,7 +101,7 @@ static uint8_t port_resv[PORT_CNT];
 static uint32_t last_alloc_port = MAX_PORT - MIN_PORT;
 #endif
 
-static uint32_t debug_flags = 0;
+uint32_t debug_flags = 0;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -155,10 +156,6 @@ typedef struct slurm_cray_jobinfo {
 
 static void _print_jobinfo(slurm_cray_jobinfo_t *job);
 #ifdef HAVE_NATIVE_CRAY
-static int _list_str_to_array(char *list, int *cnt, int32_t **numbers);
-static void _recursive_rmdir(const char *dirnm);
-static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
-			 uint32_t **host_to_task_map, int32_t *first_pe);
 static int _get_cpu_total(void);
 static int _assign_port(uint32_t *ret_port);
 static int _release_port(uint32_t real_port);
@@ -1466,186 +1463,6 @@ extern int switch_p_slurmd_step_init(void)
 }
 
 #ifdef HAVE_NATIVE_CRAY
-
-/*
- * Function: get_first_pe
- * Description:
- * Returns the first (i.e. lowest) PE on the node.
- *
- * IN:
- * nodeid -- Index of the node in the host_to_task_map
- * task_count -- Number of tasks on the node
- * host_to_task_map -- 2D array mapping the host to its tasks
- *
- * OUT:
- * first_pe -- The first (i.e. lowest) PE on the node
- *
- * RETURN
- * 0 on success and -1 on error
- */
-static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
-			 uint32_t **host_to_task_map, int32_t *first_pe)
-{
-
-	int i, ret = 0;
-
-	if (task_count == 0) {
-		error("(%s: %d: %s) task_count == 0", THIS_FILE, __LINE__,
-		      __FUNCTION__);
-		return -1;
-	}
-	if (!host_to_task_map) {
-		error("(%s: %d: %s) host_to_task_map == NULL",
-		      THIS_FILE, __LINE__, __FUNCTION__);
-		return -1;
-	}
-	*first_pe = host_to_task_map[nodeid][0];
-	for (i = 0; i < task_count; i++) {
-		if (host_to_task_map[nodeid][i] < *first_pe) {
-			*first_pe = host_to_task_map[nodeid][i];
-		}
-	}
-	return ret;
-}
-
-/*
- * Function: _list_str_to_array
- * Description:
- * 	Convert the list string into an array of integers.
- *
- * IN list     -- The list string
- * OUT cnt     -- The number of numbers in the list string
- * OUT numbers -- Array of integers;  Caller is responsible to xfree()
- *                this.
- *
- * N.B. Caller is responsible to xfree() numbers.
- *
- * RETURNS
- * Returns 0 on success and -1 on failure.
- */
-
-static int _list_str_to_array(char *list, int *cnt, int32_t **numbers)
-{
-
-	int32_t *item_ptr = NULL;
-	hostlist_t hl;
-	int i, ret = 0;
-	char *str, *cptr = NULL;
-
-	/*
-	 * Create a hostlist
-	 */
-	if (!(hl = hostlist_create(list))) {
-		error("hostlist_create error on %s", list);
-		return -1;
-	}
-
-	*cnt = hostlist_count(hl);
-
-	if (!*cnt) {
-		*numbers = NULL;
-		return 0;
-	}
-
-	/*
-	 * Create an integer array of item_ptr in the same order as in the list.
-	 */
-	i = 0;
-	item_ptr = *numbers = xmalloc((*cnt) * sizeof(int32_t));
-	while ((str = hostlist_shift(hl))) {
-		if (!(cptr = strpbrk(str, "0123456789"))) {
-			error("(%s: %d: %s) Error: Node was not recognizable:"
-			      " %s",
-			      THIS_FILE, __LINE__, __FUNCTION__, str);
-			free(str);
-			xfree(item_ptr);
-			*numbers = NULL;
-			hostlist_destroy(hl);
-			return -1;
-		}
-		item_ptr[i] = atoll(cptr);
-		i++;
-		free(str);
-	}
-
-	// Clean up
-	hostlist_destroy(hl);
-
-	return ret;
-}
-
-/*
- * Recursive directory delete
- *
- * Call with a directory name and this function will delete
- * all files and directories rooted in this name. Finally
- * the named directory will be deleted.
- * If called with a file name, only that file will be deleted.
- *
- * Stolen from the ALPS code base.  I may need to write my own.
- */
-static void _recursive_rmdir(const char *dirnm)
-{
-	int st;
-	size_t dirnm_len, fnm_len, name_len;
-	char *fnm = 0;
-	DIR *dirp;
-	struct dirent *dir;
-	struct stat st_buf;
-
-	/* Don't do anything if there is no directory name */
-	if (!dirnm) {
-		return;
-	}
-	dirp = opendir(dirnm);
-	if (!dirp) {
-		if (errno == ENOTDIR)
-			goto fileDel;
-		error("Error opening directory %s", dirnm);
-		return;
-	}
-
-	dirnm_len = strlen(dirnm);
-	if (dirnm_len == 0)
-		return;
-	while ((dir = readdir(dirp))) {
-		name_len = strlen(dir->d_name);
-		if (name_len == 1 && dir->d_name[0] == '.')
-			continue;
-		if (name_len == 2 && strcmp(dir->d_name, "..") == 0)
-			continue;
-		fnm_len = dirnm_len + name_len + 2;
-		free(fnm);
-		fnm = malloc(fnm_len);
-		snprintf(fnm, fnm_len, "%s/%s", dirnm, dir->d_name);
-		st = stat(fnm, &st_buf);
-		if (st < 0) {
-			error("stat of %s", fnm);
-			continue;
-		}
-		if (st_buf.st_mode & S_IFDIR) {
-			_recursive_rmdir(fnm);
-		} else {
-
-			st = unlink(fnm);
-			if (st < 0 && errno == EISDIR)
-				st = rmdir(fnm);
-			if (st < 0 && errno != ENOENT) {
-				error("(%s: %d: %s) Error removing %s",
-				      THIS_FILE, __LINE__, __FUNCTION__, fnm);
-			}
-		}
-	}
-	free(fnm);
-	closedir(dirp);
-fileDel: st = unlink(dirnm);
-	if (st < 0 && errno == EISDIR)
-		st = rmdir(dirnm);
-	if (st < 0 && errno != ENOENT) {
-		error("(%s: %d: %s) Error removing %s", THIS_FILE, __LINE__,
-		      __FUNCTION__, dirnm);
-	}
-}
 
 /*
  * Function: get_cpu_total
