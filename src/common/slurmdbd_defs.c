@@ -2342,35 +2342,15 @@ static void _load_dbd_state(void)
 			if (buffer == NULL)
 				break;
 			if (rpc_version != SLURM_PROTOCOL_VERSION) {
+				/* unpack and repack with new
+				 * PROTOCOL_VERSION just so we keep
+				 * things up to date.
+				 */
 				slurmdbd_msg_t msg;
 				int rc;
 				set_buf_offset(buffer, 0);
-				if (rpc_version == 0) {
-					/* This should only happen for
-					   pre 2.2.0.rc4 and 2.1
-					   machines so no real need to
-					   keep it add more to it.
-					*/
-					rc = unpack_slurmdbd_msg(
-						&msg, SLURM_PROTOCOL_VERSION,
-						buffer);
-
-					if ((rc == SLURM_SUCCESS)
-					    && !remaining_buf(buffer))
-						goto got_it;
-
-					/* If the current version
-					   failed lets try the last
-					   version.
-					*/
-					set_buf_offset(buffer, 0);
-					rc = unpack_slurmdbd_msg(
-						&msg, SLURMDBD_MIN_VERSION,
-						buffer);
-				} else
-					rc = unpack_slurmdbd_msg(
-						&msg, rpc_version, buffer);
-			got_it:
+				rc = unpack_slurmdbd_msg(
+					&msg, rpc_version, buffer);
 				free_buf(buffer);
 				if (rc == SLURM_SUCCESS)
 					buffer = pack_slurmdbd_msg(
