@@ -66,8 +66,6 @@
 #ifdef HAVE_NATIVE_CRAY
 #include <job.h> /* Cray's job module component */
 #include "switch_cray.h"
-#include "alpscomm_cn.h"
-#include "alpscomm_sn.h"
 #endif
 
 
@@ -97,8 +95,9 @@
 
 #ifdef HAVE_NATIVE_CRAY
 #define SWITCH_CRAY_STATE_VERSION "PROTOCOL_VERSION"
-static uint8_t port_resv[PORT_CNT];
-static uint32_t last_alloc_port = MAX_PORT - MIN_PORT;
+bitstr_t *port_resv = NULL;
+uint32_t last_alloc_port = 0;
+pthread_mutex_t port_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 uint32_t debug_flags = 0;
@@ -157,8 +156,6 @@ typedef struct slurm_cray_jobinfo {
 static void _print_jobinfo(slurm_cray_jobinfo_t *job);
 #ifdef HAVE_NATIVE_CRAY
 static int _get_cpu_total(void);
-static int _assign_port(uint32_t *ret_port);
-static int _release_port(uint32_t real_port);
 static void _free_alpsc_pe_info(alpsc_peInfo_t alpsc_pe_info);
 
 static void _print_alpsc_pe_info(alpsc_peInfo_t alps_info)
@@ -230,6 +227,13 @@ int init(void)
 
 int fini(void)
 {
+
+#ifdef HAVE_NATIVE_CRAY
+	pthread_mutex_lock(&port_mutex);
+	FREE_NULL_BITMAP(port_resv);
+	pthread_mutex_unlock(&port_mutex);
+#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -254,9 +258,23 @@ static void _state_read_buf(Buf buffer)
 		error("*******************************************************");
 		return;
 	}
-
-	safe_unpack32(&min_port, buffer);
-	safe_unpack32(&max_port, buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack32(&min_port, buffer);
+		safe_unpack32(&max_port, buffer);
+		safe_unpack32(&last_alloc_port, buffer);
+		unpack_bit_str(&port_resv, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint8_t port_set = 0;
+		safe_unpack32(&min_port, buffer);
+		safe_unpack32(&max_port, buffer);
+		safe_unpack32(&last_alloc_port, buffer);
+		port_resv = bit_alloc(PORT_CNT);
+		for (i = 0; i < PORT_CNT; i++) {
+			safe_unpack8(&port_set, buffer);
+			if (port_set)
+				bit_set(port_resv, i);
+		}
+	}
 	if ((min_port != MIN_PORT) || (max_port != MAX_PORT)) {
 		error("*******************************************************");
 		error("Can not recover switch/cray state");
@@ -265,10 +283,7 @@ static void _state_read_buf(Buf buffer)
 		error("*******************************************************");
 		return;
 	}
-	safe_unpack32(&last_alloc_port, buffer);
-	for (i = 0; i < PORT_CNT; i++) {
-		safe_unpack8(&port_resv[i], buffer);
-	}
+
 	return;
 
 unpack_error:
@@ -281,11 +296,15 @@ static void _state_write_buf(Buf buffer)
 	int i;
 
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
-	pack32((uint32_t) MIN_PORT, buffer);
-	pack32((uint32_t) MAX_PORT, buffer);
+
+	pthread_mutex_lock(&port_mutex);
+
+	pack32(&min_port, buffer);
+	pack32(&max_port, buffer);
 	pack32(last_alloc_port, buffer);
-	for (i = 0; i < PORT_CNT; i++)
-		pack8(port_resv[i], buffer);
+	pack_bit_str(port_resv, buffer);
+
+	pthread_mutex_unlock(&port_mutex);
 }
 #endif
 /*
@@ -362,7 +381,6 @@ int switch_p_libstate_restore(char *dir_name, bool recover)
 		     (int) recover);
 	}
 
-	memset(port_resv, 0, PORT_CNT * sizeof(port_resv[0]));
 	if (!recover)		/* clean start, no recovery */
 		return SLURM_SUCCESS;
 
@@ -413,7 +431,12 @@ int switch_p_libstate_restore(char *dir_name, bool recover)
 int switch_p_libstate_clear(void)
 {
 #ifdef HAVE_NATIVE_CRAY
-	memset(port_resv, 0, PORT_CNT * sizeof(port_resv[0]));
+	pthread_mutex_lock(&port_mutex);
+
+	bit_nclear(port_resv, 0, PORT_CNT - 1);
+	last_alloc_port = 0;
+
+	pthread_mutex_unlock(&port_mutex);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -705,7 +728,7 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	/* If the libstate save/restore failed, at least make sure that we
 	 * do not re-allocate ports assigned to job steps that we recover. */
 	if ((job->port >= MIN_PORT) && (job->port <= MAX_PORT))
-		port_resv[job->port - MIN_PORT] = 1;
+		bit_set(resv_port, job->port - MIN_PORT);
 #endif
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -1447,7 +1470,9 @@ extern int switch_p_slurmctld_init(void)
 	 *  Each job step will be allocated one port from amongst this set of
 	 *  reservations for use by Cray's PMI for control tree communications.
 	 */
-	memset(port_resv, 0, PORT_CNT * sizeof(port_resv[0]));
+	pthread_mutex_lock(&port_mutex);
+	port_resv = bit_alloc(PORT_CNT);
+	pthread_mutex_unlock(&port_mutex);
 #endif
 	return SLURM_SUCCESS;
 }

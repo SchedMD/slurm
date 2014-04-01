@@ -10,6 +10,7 @@ pkglib_LTLIBRARIES = switch_cray.la
 switch_cray_la_SOURCES = \
 	gpu.c \
 	pe_info.c \
+	ports.c \
 	switch_cray.c \
 	switch_cray.h \
 	util.c
