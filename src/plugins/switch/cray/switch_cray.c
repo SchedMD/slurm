@@ -761,6 +761,10 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 				  job->cont_id);
 		}
 
+		rc = alpsc_configure_nic(&err_msg, 0, cpu_scaling, mem_scaling,
+					 job->cont_id, sw_job->num_cookies,
+					 (const char **) sw_job->cookies,
+					 &num_ptags, &ptags, ntt_desc_ptr);
 		ALPSC_CN_DEBUG("alpsc_configure_nic");
 		/*
 		 * We don't use the ptags because Cray's LLI acquires them
