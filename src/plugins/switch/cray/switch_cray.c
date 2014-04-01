@@ -827,6 +827,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	}
 
 	rc = alpsc_attach_cncu_container(&err_msg, sw_job->jobid, job->cont_id);
+
 	if (rc != 1) {
 		if (err_msg) {
 			error("(%s: %d: %s) alpsc_attach_cncu_container failed:"
@@ -1055,123 +1056,18 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	//alpsc_config_gpcd();
 
 	/*
-	 * The following section will fill in the alpsc_peInfo structure which
-	 * is the key argument to the alpsc_write_placement_file() call.
+	 * Fill in the alpsc_pe_info structure
 	 */
-	alpsc_pe_info.totalPEs = job->ntasks;
-	alpsc_pe_info.pesHere = job->node_tasks;
-	alpsc_pe_info.peDepth = job->cpus_per_task;
+	rc = build_alpsc_pe_info(job, sw_job, &alpsc_pe_info);
+	if (rc != SLURM_SUCCESS)
+		return rc;
 
 	/*
-	 * Fill in alpsc_pe_info.firstPeHere
-	 */
-	rc = _get_first_pe(job->nodeid, job->node_tasks,
-			   job->msg->global_task_ids,
-			   &first_pe_here);
-	if (rc < 0) {
-		error("(%s: %d: %s) get_first_pe failed", THIS_FILE, __LINE__,
-		      __FUNCTION__);
-		return SLURM_ERROR;
-	}
-	alpsc_pe_info.firstPeHere = first_pe_here;
-
-	/*
-	 * Fill in alpsc_pe_info.peNidArray
-	 *
-	 * The peNidArray maps tasks to nodes.
-	 * Basically, reverse the tids variable which maps nodes to tasks.
-	 */
-	rc = _list_str_to_array(job->msg->complete_nodelist, &cnt, &nodes);
-	if (rc < 0) {
-		error("(%s: %d: %s) list_str_to_array failed",
-		      THIS_FILE, __LINE__, __FUNCTION__);
-		return SLURM_ERROR;
-	}
-	if (cnt == 0) {
-		error("(%s: %d: %s) list_str_to_array returned a node count of"
-		      " zero.",
-		      THIS_FILE, __LINE__, __FUNCTION__);
-		return SLURM_ERROR;
-	}
-	if (job->msg->nnodes != cnt) {
-		error("(%s: %d: %s) list_str_to_array returned count %"
-		      PRIu32 "does not match expected count %d",
-		      THIS_FILE, __LINE__, __FUNCTION__, cnt,
-		      job->msg->nnodes);
-	}
-
-	task_to_nodes_map = xmalloc(job->msg->ntasks * sizeof(int32_t));
-
-	for (i = 0; i < job->msg->nnodes; i++) {
-		for (j = 0; j < job->msg->tasks_to_launch[i]; j++) {
-			task = job->msg->global_task_ids[i][j];
-			task_to_nodes_map[task] = nodes[i];
-			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("(%s:%d: %s) peNidArray:\tTask: %d\tNode:"
-				     " %d", THIS_FILE,
-				     __LINE__, __FUNCTION__, task, nodes[i]);
-			}
-		}
-	}
-	alpsc_pe_info.peNidArray = task_to_nodes_map;
-	xfree(nodes);
-
-	/*
-	 * Fill in alpsc_pe_info.peCmdMapArray
-	 *
-	 * If the job is an SPMD job, then the command index (cmd_index) is 0.
-	 * Otherwise, if the job is an MPMD job, then the command index
-	 * (cmd_index) is equal to the number of executables in the job minus 1.
-	 *
-	 * TODO: Add MPMD support once SchedMD provides the needed MPMD data.
+	 * Set the cmd_index
 	 */
 
-	if (!job->multi_prog) {
-		/* SPMD Launch */
+	if (!job->multi_prog)
 		cmd_index = 0;
-
-		size = alpsc_pe_info.totalPEs * sizeof(int);
-		alpsc_pe_info.peCmdMapArray = xmalloc(size);
-		memset(alpsc_pe_info.peCmdMapArray, 0, size);
-	} else {
-		/* MPMD Launch */
-
-		// Deferred support
-		/*
-		  ap.cmdIndex = ;
-		  ap.peCmdMapArray = ;
-		  ap.firstPeHere = ;
-
-		  ap.pesHere = pesHere; // These need to be MPMD specific.
-		*/
-
-		error("(%s: %d: %s) MPMD Applications are not currently "
-		      "supported.",
-		      THIS_FILE, __LINE__, __FUNCTION__);
-		goto error_free_alpsc_pe_info_t;
-	}
-
-	/*
-	 * Fill in alpsc_pe_info.nodeCpuArray
-	 * I don't know how to get this information from SLURM.
-	 * Cray's PMI does not need the information.
-	 * It may be used by debuggers like ATP or lgdb.  If so, then it will
-	 * have to be filled in when support for them is added.
-	 * Currently, it's all zeros.
-	 */
-	size = job->msg->nnodes * sizeof(int);
-	alpsc_pe_info.nodeCpuArray = xmalloc(size);
-	memset(alpsc_pe_info.nodeCpuArray, 0, size);
-	if (job->msg->nnodes && !alpsc_pe_info.nodeCpuArray) {
-		free(alpsc_pe_info.peCmdMapArray);
-		error("(%s: %d: %s) failed to calloc nodeCpuArray.", THIS_FILE,
-		      __LINE__, __FUNCTION__);
-		goto error_free_alpsc_pe_info_t;
-	}
-
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		_print_alpsc_pe_info(alpsc_pe_info);
-	}
 
 	/*
 	 * Some of the input parameters for alpsc_write_placement_file do not
@@ -1194,70 +1090,22 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 					&alpsc_pe_info, control_nid,
 					control_soc, num_branches,
 					&alpsc_branch_info);
-	if (rc != 1) {
-		if (err_msg) {
-			error("(%s: %d: %s) alpsc_write_placement_file failed:"
-			      " %s",
-			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
-		} else {
-			error("(%s: %d: %s) alpsc_write_placement_file failed:"
-			      " No error message present.",
-			      THIS_FILE, __LINE__, __FUNCTION__);
-		}
-		goto error_free_alpsc_pe_info_t;
-	}
-	if (err_msg) {
-		info("(%s: %d: %s) alpsc_write_placement_file: %s",
-		     THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-		free(err_msg);
-	}
 
+	ALPSC_CN_DEBUG("alpsc_write_placement_file");
+	if (rc != 1) {
+		free_alpsc_pe_info(&alpsc_pe_info);
+		return SLURM_ERROR;
+	}
 
 	/* Clean up alpsc_pe_info*/
-	_free_alpsc_pe_info(alpsc_pe_info);
+	free_alpsc_pe_info(&alpsc_pe_info);
 
 	/*
-	 * Write the CRAY_NUM_COOKIES and CRAY_COOKIES variables out, too.
+	 * Write some environment variables used by LLI and PMI
 	 */
-	rc = env_array_overwrite_fmt(&job->env, "CRAY_NUM_COOKIES", "%" PRIu32,
-				     sw_job->num_cookies);
-	if (rc == 0) {
-		info("Failed to set env variable CRAY_NUM_COOKIES");
-		return SLURM_ERROR;
-	}
-
-	/*
-	 * Create the CRAY_COOKIES environment variable in the application's
-	 * environment.
-	 * Create one string containing a comma separated list of cookies.
-	 */
-	for (i = 0; i < sw_job->num_cookies; i++) {
-		if (i > 0) {
-			xstrfmtcat(buff, ",%s", sw_job->cookies[i]);
-		} else
-			xstrcat(buff, sw_job->cookies[i]);
-	}
-
-	rc = env_array_overwrite(&job->env, "CRAY_COOKIES", buff);
-	if (rc == 0) {
-		info("Failed to set env variable CRAY_COOKIES = %s", buff);
-		xfree(buff);
-		return SLURM_ERROR;
-	}
-	xfree(buff);
-
-	/*
-	 * Write the PMI_CONTROL_PORT
-	 * Cray's PMI uses this is the port to communicate its control tree
-	 * information.
-	 */
-	rc = env_array_overwrite_fmt(&job->env, "PMI_CONTROL_PORT", "%" PRIu32,
-				     sw_job->port);
-	if (rc == 0) {
-		info("Failed to set env variable PMI_CONTROL_PORT");
-		return SLURM_ERROR;
-	}
+	rc = set_job_env(job, sw_job);
+	if (rc != SLURM_SUCCESS)
+		return rc;
 
 	/*
 	 * Query the generic resources to see if the GPU should be allocated
@@ -1294,15 +1142,8 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * Set the Job's APID
 	 */
 	job_setapid(getpid(), sw_job->apid);
-
-	return SLURM_SUCCESS;
-
-error_free_alpsc_pe_info_t:
-	_free_alpsc_pe_info(alpsc_pe_info);
-	return SLURM_ERROR;
-#else
-	return SLURM_SUCCESS;
 #endif
+	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_suspend_test(switch_jobinfo_t *jobinfo)
