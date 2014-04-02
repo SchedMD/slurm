@@ -1177,6 +1177,33 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 	return mode_num;
 }
 
+/* Convert RPC message type number to equivalent string */
+extern char *rpc_num2string(uint16_t inx)
+{
+	switch (inx) {
+	case REQUEST_NODE_REGISTRATION_STATUS:
+	case MESSAGE_NODE_REGISTRATION_STATUS:
+		return "Register";
+	case REQUEST_RECONFIGURE:
+	case RESPONSE_RECONFIGURE:
+		return "Reconfigure";
+	case REQUEST_SHUTDOWN:
+	case REQUEST_SHUTDOWN_IMMEDIATE:
+		return "Shutdown";
+	case REQUEST_PING:
+		return "Ping";
+	case REQUEST_CONTROL:
+		return "Control";
+	case REQUEST_SET_DEBUG_LEVEL:
+		return "SetDebugLevel";
+	case REQUEST_HEALTH_CHECK:
+		return "HealthCheck";
+/* NATHAN: WORK DOWN FROM HERE USING THE VALUES IN slurm_protocol_defs.h */
+	default:
+		return "Unknown";
+	}
+}
+
 /* Convert log level number to equivalent string */
 extern char *log_num2string(uint16_t inx)
 {

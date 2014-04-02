@@ -171,18 +171,20 @@ static int _print_stats(void)
 		       buf->bf_queue_len_sum / buf->bf_cycle_counter);
 	}
 
-	printf("\nRemote Procedure Call statistics:\n");
+	printf("\nRemote Procedure Call statistics by message type\n");
 	for (i = 0; i < buf->rpc_type_size; i++) {
-		printf("\ttype:%-4u count:%-6u "
+		printf("\t%-16s(%5u) count:%-6u "
 		       "ave_time:%-6u total_time:%"PRIu64"\n",
+		       rpc_num2string(buf->rpc_type_id[i]),
 		       buf->rpc_type_id[i], buf->rpc_type_cnt[i],
 		       rpc_type_ave_time[i], buf->rpc_type_time[i]);
 	}
 
+	printf("\nRemote Procedure Call statistics by user\n");
 	for (i = 0; i < buf->rpc_user_size; i++) {
 		if (i == 0)
 			printf("\n");
-		printf("\tuser:%10s:(%8u) count:%-6u "
+		printf("\t%-10s(%8u) count:%-6u "
 		       "ave_time:%-6u total_time:%"PRIu64"\n",
 		       uid_to_string((uid_t)buf->rpc_user_id[i]),
 		       buf->rpc_user_id[i], buf->rpc_user_cnt[i],
