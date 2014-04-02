@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- In the PMI implementation by default don't check for duplicate keys.
     Set the SLURM_PMI_KVS_DUP_KEYS if you want the code to check for
     duplicate keys.
+ -- Add job submission time to squeue.
 
 * Changes in Slurm 14.03.0
 ==========================
@@ -334,6 +335,11 @@ documents those changes that are of interest to users and admins.
  -- Fix preempt/partition_prio to avoid preempting jobs in partitions with
     PreemptMode=OFF
  -- launch/poe - Implicitly set --network in job step create request as needed.
+<<<<<<< HEAD
+=======
+ -- Permit multiple batch job submissions to be made for each run of the
+    scheduler logic if the job submissions occur at the nearly same time.
+>>>>>>> slurm-14.03
 
 * Changes in Slurm 2.6.7
 ========================

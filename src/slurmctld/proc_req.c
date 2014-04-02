@@ -2956,6 +2956,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	static time_t config_update = 0;
 	static bool defer_sched = false;
 	static int active_rpc_cnt = 0;
+	static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static int sched_cnt = 0;
+	int sched_now_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	uint32_t step_id = 0;
@@ -3003,6 +3006,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
+		START_TIMER;	/* Restart after we have locks */
 		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
 			job_ptr = find_job_record(job_desc_msg->job_id);
 			if (job_ptr && IS_JOB_FINISHED(job_ptr)) {
@@ -3014,7 +3018,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 						ESLURM_DUPLICATE_JOB_ID);
 					unlock_slurmctld(job_write_lock);
 					_throttle_fini(&active_rpc_cnt);
-					return;
+					goto fini;
 				}
 				job_ptr = NULL;	/* OK to re-use job id */
 			}
@@ -3033,7 +3037,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
 				unlock_slurmctld(job_write_lock);
 				_throttle_fini(&active_rpc_cnt);
-				return;
+				goto fini;
 			}
 #endif
 
@@ -3046,14 +3050,14 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 				unlock_slurmctld(job_write_lock);
 				_throttle_fini(&active_rpc_cnt);
-				return;
+				goto fini;
 			}
 			if (job_ptr->details &&
 			    job_ptr->details->prolog_running) {
 				slurm_send_rc_msg(msg, EAGAIN);
 				unlock_slurmctld(job_write_lock);
 				_throttle_fini(&active_rpc_cnt);
-				return;
+				goto fini;
 			}
 
 			error_code = _launch_batch_step(job_desc_msg, uid,
@@ -3082,7 +3086,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 						    &response_msg);
 				schedule_job_save();
 			}
-			return;
+			goto fini;
 		}
 
 		/* Create new job allocation */
@@ -3123,20 +3127,32 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		/* We need to use schedule() to initiate a batch job in order
-		 * to run the various prologs, boot the node, etc.
-		 * We also run schedule() even if this job could not start,
-		 * say due to a higher priority job, since the locks are
-		 * released above and we might start some other job here.
-		 *
-		 * In defer mode, avoid triggering the scheduler logic
-		 * for every submit batch job request.
-		 */
-		if (!defer_sched)
-			(void) schedule(schedule_cnt); /* has own locks */
+
+		/* In defer mode, avoid triggering the scheduler logic
+		 * for every submit batch job request. */
+		if (!defer_sched) {
+			slurm_mutex_lock(&sched_cnt_mutex);
+			sched_cnt += schedule_cnt;
+			slurm_mutex_unlock(&sched_cnt_mutex);
+		}
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	}
+
+fini:	/* We need to use schedule() to initiate a batch job in order to run
+	 * the various prologs, boot the node, etc. We also run schedule()
+	 * even if this job could not start, say due to a higher priority job,
+	 * since the locks are released above and we might start some other
+	 * job here. We do not run schedule() on each batch submission to
+	 * limit its overhead on large numbers of job submissions */
+	slurm_mutex_lock(&sched_cnt_mutex);
+	if ((active_rpc_cnt == 0) || (sched_cnt > 32)) {
+		sched_now_cnt = sched_cnt;
+		sched_cnt = 0;
+	}
+	slurm_mutex_unlock(&sched_cnt_mutex);
+	if (sched_now_cnt)
+		(void) schedule(sched_now_cnt); /* has own locks */
 	xfree(err_msg);
 }
 
