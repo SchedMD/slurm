@@ -737,8 +737,8 @@ extern int schedule(uint32_t job_limit)
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 	char tmp_char[256];
-	static bool backfill_sched = false;
 #endif
+	static bool backfill_sched = false;
 	static time_t sched_update = 0;
 	static bool wiki_sched = false;
 	static bool fifo_sched = false;
@@ -754,11 +754,11 @@ extern int schedule(uint32_t job_limit)
 		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
 		char *prio_type = slurm_get_priority_type();
-#ifdef HAVE_BG
+
 		/* On BlueGene, do FIFO only with sched/backfill */
 		if (strcmp(sched_type, "sched/backfill") == 0)
 			backfill_sched = true;
-#endif
+
 		if ((strcmp(sched_type, "sched/builtin") == 0) &&
 		    (strcmp(prio_type, "priority/basic") == 0) &&
 		    _all_partition_priorities_same())
@@ -800,9 +800,14 @@ extern int schedule(uint32_t job_limit)
 
 		sched_timeout = slurm_get_msg_timeout() / 2;
 		sched_timeout = MAX(sched_timeout, 1);
-		sched_timeout = MIN(sched_timeout, 10);
+		sched_timeout = MIN(sched_timeout, 4);
 		sched_update = slurmctld_conf.last_update;
 	}
+	/* Rather than periodicallly going to bottom of queue, let the
+	 * backfill scheduler do so since it can periodically relinquish
+	 * locks rather than blocking all RPCs. */
+	if ((job_limit == INFINITE) && backfill_sched)
+		job_limit = def_job_limit;
 	if (job_limit == 0)
 		job_limit = def_job_limit;
 
