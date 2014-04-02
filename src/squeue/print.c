@@ -680,6 +680,18 @@ long job_time_used(job_info_t * job_ptr)
 	return (long) (difftime(end_time, job_ptr->start_time));
 }
 
+int _print_job_time_submit(job_info_t * job, int width, bool right,
+                          char* suffix)
+{
+        if (job == NULL)        /* Print the Header instead */
+                _print_str("SUBMIT_TIME", width, right, true);
+        else
+                _print_time(job->submit_time, 0, width, right);
+        if (suffix)
+                printf("%s", suffix);
+        return SLURM_SUCCESS;
+}
+
 int _print_job_time_start(job_info_t * job, int width, bool right,
 			  char* suffix)
 {

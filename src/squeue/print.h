@@ -129,6 +129,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	                        _print_job_time_limit)
 #define job_format_add_time_used(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_time_used)
+#define job_format_add_time_submit(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_time_submit)
 #define job_format_add_time_start(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_time_start)
 #define job_format_add_time_end(list,wid,right,suffix) \
@@ -239,6 +241,8 @@ int _print_job_time_left(job_info_t * job, int width, bool right_justify,
 int _print_job_time_limit(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_time_used(job_info_t * job, int width, bool right_justify,
+			char* suffix);
+int _print_job_time_submit(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_time_start(job_info_t * job, int width, bool right_justify,
 			char* suffix);
