@@ -325,6 +325,8 @@ documents those changes that are of interest to users and admins.
  -- Fix preempt/partition_prio to avoid preempting jobs in partitions with
     PreemptMode=OFF
  -- launch/poe - Implicitly set --network in job step create request as needed.
+ -- Permit multiple batch job submissions to be made for each run of the
+    scheduler logic if the job submissions occur at the nearly same time.
 
 * Changes in Slurm 2.6.7
 ========================
