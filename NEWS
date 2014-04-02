@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- In the PMI implementation by default don't check for duplicate keys.
     Set the SLURM_PMI_KVS_DUP_KEYS if you want the code to check for
     duplicate keys.
+ -- Add job submission time to squeue.
 
 * Changes in Slurm 14.03.0
 ==========================
