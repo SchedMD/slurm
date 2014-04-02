@@ -4809,10 +4809,7 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 	buffer = create_buf(*buffer_ptr, *buffer_size);
 	set_buf_offset(buffer, *buffer_size);
 	for (i = 0; i < rpc_type_size; i++) {
-		if (rpc_type_id[i]) {
-			info("rpc_type:%u count:%u time:%"PRIu64"",
-			     rpc_type_id[i], rpc_type_cnt[i], rpc_type_time[i]);
-		} else
+		if (rpc_type_id[i] == 0)
 			break;
 	}
 	pack32(i, buffer);
@@ -4820,11 +4817,8 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 	pack32_array(rpc_type_cnt,  i, buffer);
 	pack64_array(rpc_type_time, i, buffer);
 
-	for (i = 0; i < rpc_user_size; i++) {
-		if (rpc_user_id[i] || (i == 0)) {
-			info("rpc_user:%u count:%u time:%"PRIu64"",
-			     rpc_user_id[i], rpc_user_cnt[i], rpc_user_time[i]);
-		} else
+	for (i = 1; i < rpc_user_size; i++) {
+		if (rpc_user_id[i] == 0)
 			break;
 	}
 	pack32(i, buffer);
