@@ -551,7 +551,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 		return;
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("DEBUG: _build_row_bitmaps (before):");
 		_dump_part(p_ptr);
 	}
@@ -609,7 +609,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 		}
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < num_jobs; i++) {
 			char cstr[64], nstr[64];
 			if (tmpjobs[i]->core_bitmap) {
@@ -652,7 +652,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 		 * Thus, we'll restore the original layout here */
 		debug3("cons_res: build_row_bitmap: dangling job found");
 
-		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: _build_row_bitmaps (post-algorithm):");
 			_dump_part(p_ptr);
 		}
@@ -676,7 +676,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 		}
 	}
 
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("DEBUG: _build_row_bitmaps (after):");
 		_dump_part(p_ptr);
 	}
@@ -745,7 +745,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	debug3("select/serial: _add_job_to_res: job %u act %d ",
 	       job_ptr->job_id, action);
 
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 
 	i_first = bit_ffs(job->node_bitmap);
@@ -835,7 +835,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				select_node_usage[i].node_state +=
 					job->node_req;
 		}
-		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("select/serial: _add_job_to_res (after):");
 			_dump_part(p_ptr);
 		}
@@ -877,7 +877,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 
 	debug3("select/serial: _rm_job_from_res: job %u action %d",
 	       job_ptr->job_id, action);
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 
 	i_first = bit_ffs(job->node_bitmap);
@@ -1601,7 +1601,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	if (!debug_check) {
 		debug_check = true;
-		if (slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND)
+		if (slurm_get_debug_flags() & DEBUG_FLAG_SELECT_TYPE)
 			debug_cpu_bind = true;
 	}
 
@@ -1621,7 +1621,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	job_node_share = _get_job_node_share(job_ptr);
 
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("select/serial: select_p_job_test: job %u node_share %u "
 		     "mode %d avail_n %u",
 		     job_ptr->job_id, job_node_share, mode,
@@ -1639,7 +1639,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	} else
 		fatal("select_p_job_test: Mode %d is invalid", mode);
 
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (job_ptr->job_resrcs)
 			log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
 		else {

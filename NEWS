@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Improve qsub wrapper support for passing environment variables.
  -- Modify sdiag to report Slurm RPC traffic by user, type, count and time
     consumed.
+ -- In select plugins, stop triggering extra logging based upon the debug flag
+    CPU_Bind and use SelectType instead.
 
 * Changes in Slurm 14.03.1
 ==========================

@@ -742,7 +742,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		cps     = select_node_record[n].cores;
 		vpus    = MIN(select_node_record[n].vpus, ntasks_per_core);
 
-		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: job %u node %s vpus %u cpus %u",
 			     job_ptr->job_id,
 			     select_node_record[n].node_ptr->name,
