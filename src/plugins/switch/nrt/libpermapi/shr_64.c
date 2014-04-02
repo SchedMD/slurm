@@ -1870,6 +1870,12 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	debug2("usage_mode\t= %d", pe_job_req->node_usage);
 	debug2("network_usage protocols\t= %s",
 	       pe_job_req->network_usage.protocols);
+	if (!opt.network)
+		xstrcat(opt.network, pe_job_req->network_usage.protocols);
+	else if (!strstr(opt.network, pe_job_req->network_usage.protocols)) {
+		xstrcat(opt.network, ",");
+		xstrcat(opt.network, pe_job_req->network_usage.protocols);
+	}
 	debug2("network_usage adapter_usage\t= %s",
 	       pe_job_req->network_usage.adapter_usage);
 	debug2("network_usage adapter_type\t= %s",
