@@ -155,13 +155,6 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 		sleep(1);       /* Give the primary slurmctld set-up time */
 	}
 
-	/* The job list needs to be freed before the wait, we also
-	 * free it afterwards just to make sure.
-	 */
-	lock_slurmctld(config_write_lock);
-	job_fini();
-	unlock_slurmctld(config_write_lock);
-
 	/* repeatedly ping ControlMachine */
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
@@ -224,11 +217,18 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
 	pthread_join(slurmctld_config.thread_id_rpc, NULL);
 
+	/* The job list needs to be freed before we run
+	 * ctld_assoc_mgr_init, it should be empty here in the first place.
+	 */
+	lock_slurmctld(config_write_lock);
+	job_fini();
+	init_job_conf();
+	unlock_slurmctld(config_write_lock);
+
 	ctld_assoc_mgr_init(callbacks);
 
 	/* clear old state and read new state */
 	lock_slurmctld(config_write_lock);
-	job_fini();
 	if (switch_restore(slurmctld_conf.state_save_location, true)) {
 		error("failed to restore switch state");
 		abort();

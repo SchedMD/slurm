@@ -398,8 +398,6 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize preempt plugin" );
 	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
-	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
-		fatal( "failed to initialize accounting_storage plugin");
 	if (jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
 	if (job_submit_plugin_init() != SLURM_SUCCESS )
@@ -419,10 +417,17 @@ int main(int argc, char *argv[])
 			slurm_sched_fini();	/* make sure shutdown */
 			primary = 0;
 			run_backup(&callbacks);
+			info("starting it up");
+			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
+				fatal("failed to initialize "
+				      "accounting_storage plugin");
 		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			trigger_primary_ctld_res_ctrl();
 			ctld_assoc_mgr_init(&callbacks);
+			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
+				fatal("failed to initialize "
+				      "accounting_storage plugin");
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_restore(slurmctld_conf.state_save_location,
@@ -1553,7 +1558,6 @@ static void *_slurmctld_background(void *no_data)
 			last_node_acct = now;
 			_accounting_cluster_ready();
 		}
- 
 
 		if (last_proc_req_start == 0) {
 			/* Stats will reset at midnight (aprox).

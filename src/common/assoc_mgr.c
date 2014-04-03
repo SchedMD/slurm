@@ -1197,6 +1197,7 @@ extern int assoc_mgr_fini(char *state_save_location)
 	assoc_mgr_wckey_list = NULL;
 
 	assoc_mgr_root_assoc = NULL;
+	running_cache = 0;
 
 	assoc_mgr_unlock(&locks);
 
