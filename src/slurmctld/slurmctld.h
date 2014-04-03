@@ -1674,6 +1674,10 @@ extern void run_health_check(void);
 /* save_all_state - save entire slurmctld state for later recovery */
 extern void save_all_state(void);
 
+/* make sure the assoc_mgr lists are up and running and state is
+ * restored */
+extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks);
+
 /* send all info for the controller to accounting */
 extern void send_all_to_accounting(time_t event_time);
 

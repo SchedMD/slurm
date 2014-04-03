@@ -155,6 +155,13 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 		sleep(1);       /* Give the primary slurmctld set-up time */
 	}
 
+	/* The job list needs to be freed before the wait, we also
+	 * free it afterwards just to make sure.
+	 */
+	lock_slurmctld(config_write_lock);
+	job_fini();
+	unlock_slurmctld(config_write_lock);
+
 	/* repeatedly ping ControlMachine */
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
@@ -217,14 +224,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
 	pthread_join(slurmctld_config.thread_id_rpc, NULL);
 
-	if (!acct_db_conn) {
-		/* Make sure we get a connection right away to avoid
-		   race condition on this happening too late.
-		*/
-		acct_db_conn = acct_storage_g_get_connection(
-			callbacks, 0, false,
-			slurmctld_cluster_name);
-	}
+	ctld_assoc_mgr_init(callbacks);
 
 	/* clear old state and read new state */
 	lock_slurmctld(config_write_lock);

@@ -176,6 +176,7 @@ extern int slurm_open_slurmdbd_conn(char *auth_info,
 	xfree(slurmdbd_cluster);
 	slurmdbd_cluster = slurm_get_cluster_name();
 
+	agent_shutdown = 0;
 	rollback_started = rollback;
 
 	if (slurmdbd_fd < 0) {

@@ -183,6 +183,8 @@ static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char    *slurm_conf_filename;
 static int      primary = 1 ;
+static pthread_t assoc_cache_thread = (pthread_t) 0;
+
 /*
  * Static list of signals to block in this process
  * *Must be zero-terminated*
@@ -238,8 +240,6 @@ int main(int argc, char *argv[])
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
-	assoc_init_args_t assoc_init_arg;
-	pthread_t assoc_cache_thread = (pthread_t) 0;
 	slurm_trigger_callbacks_t callbacks;
 	char *dir_name;
 
@@ -359,64 +359,12 @@ int main(int argc, char *argv[])
 		      slurmctld_conf.accounting_storage_type);
 	}
 
-	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
-	assoc_init_arg.enforce = accounting_enforce;
-	assoc_init_arg.update_resvs = update_assocs_in_resvs;
-	assoc_init_arg.remove_assoc_notify = _remove_assoc;
-	assoc_init_arg.remove_qos_notify = _remove_qos;
-	assoc_init_arg.update_assoc_notify = _update_assoc;
-	assoc_init_arg.update_qos_notify = _update_qos;
-	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
-				     ASSOC_MGR_CACHE_USER  |
-				     ASSOC_MGR_CACHE_QOS;
-	if (slurmctld_conf.track_wckey)
-		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
-
+	memset(&callbacks, 0, sizeof(slurm_trigger_callbacks_t));
 	callbacks.acct_full   = trigger_primary_ctld_acct_full;
 	callbacks.dbd_fail    = trigger_primary_dbd_fail;
 	callbacks.dbd_resumed = trigger_primary_dbd_res_op;
 	callbacks.db_fail     = trigger_primary_db_fail;
 	callbacks.db_resumed  = trigger_primary_db_res_op;
-	acct_db_conn = acct_storage_g_get_connection(&callbacks, 0, false,
-						     slurmctld_cluster_name);
-	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
-		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-			error("Association database appears down, "
-			      "reading from state file.");
-		else
-			debug("Association database appears down, "
-			      "reading from state file.");
-
-		if ((load_assoc_mgr_state(slurmctld_conf.state_save_location)
-		     != SLURM_SUCCESS)
-		    && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
-			error("Unable to get any information from "
-			      "the state file");
-			fatal("slurmdbd and/or database must be up at "
-			      "slurmctld start time");
-		}
-	}
-
-	/* Now load the usage from a flat file since it isn't kept in
-	   the database No need to check for an error since if this
-	   fails we will get an error message and we will go on our
-	   way.  If we get an error we can't do anything about it.
-	*/
-	load_assoc_usage(slurmctld_conf.state_save_location);
-	load_qos_usage(slurmctld_conf.state_save_location);
-
-	/* This thread is looking for when we get correct data from
-	   the database so we can update the assoc_ptr's in the jobs
-	*/
-	if (running_cache) {
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&assoc_cache_thread, &thread_attr,
-				      _assoc_cache_mgr, NULL)) {
-			error("pthread_create error %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
-	}
 
 	info("%s version %s started on cluster %s",
 	     slurm_prog_name, SLURM_VERSION_STRING, slurmctld_cluster_name);
@@ -474,6 +422,7 @@ int main(int argc, char *argv[])
 		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			trigger_primary_ctld_res_ctrl();
+			ctld_assoc_mgr_init(&callbacks);
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_restore(slurmctld_conf.state_save_location,
@@ -1659,7 +1608,6 @@ static void *_slurmctld_background(void *no_data)
 	return NULL;
 }
 
-
 /* save_all_state - save entire slurmctld state for later recovery */
 extern void save_all_state(void)
 {
@@ -1678,6 +1626,84 @@ extern void save_all_state(void)
 		dump_assoc_mgr_state(save_loc);
 		xfree(save_loc);
 	}
+}
+
+/* make sure the assoc_mgr is up and running with the most current state */
+extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
+{
+	assoc_init_args_t assoc_init_arg;
+	int num_jobs = 0;
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
+	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
+	assoc_init_arg.enforce = accounting_enforce;
+	assoc_init_arg.update_resvs = update_assocs_in_resvs;
+	assoc_init_arg.remove_assoc_notify = _remove_assoc;
+	assoc_init_arg.remove_qos_notify = _remove_qos;
+	assoc_init_arg.update_assoc_notify = _update_assoc;
+	assoc_init_arg.update_qos_notify = _update_qos;
+	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
+				     ASSOC_MGR_CACHE_USER  |
+				     ASSOC_MGR_CACHE_QOS;
+	if (slurmctld_conf.track_wckey)
+		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
+
+	/* Don't save state but blow away old lists if they exist. */
+	assoc_mgr_fini(NULL);
+
+	if (acct_db_conn)
+		acct_storage_g_close_connection(&acct_db_conn);
+
+	acct_db_conn = acct_storage_g_get_connection(callbacks, 0, false,
+						     slurmctld_cluster_name);
+
+	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
+		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+			error("Association database appears down, "
+			      "reading from state file.");
+		else
+			debug("Association database appears down, "
+			      "reading from state file.");
+
+		if ((load_assoc_mgr_state(slurmctld_conf.state_save_location)
+		     != SLURM_SUCCESS)
+		    && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+			error("Unable to get any information from "
+			      "the state file");
+			fatal("slurmdbd and/or database must be up at "
+			      "slurmctld start time");
+		}
+	}
+
+	/* Now load the usage from a flat file since it isn't kept in
+	   the database No need to check for an error since if this
+	   fails we will get an error message and we will go on our
+	   way.  If we get an error we can't do anything about it.
+	*/
+	load_assoc_usage(slurmctld_conf.state_save_location);
+	load_qos_usage(slurmctld_conf.state_save_location);
+
+	lock_slurmctld(job_read_lock);
+	if (job_list)
+		num_jobs = list_count(job_list);
+	unlock_slurmctld(job_read_lock);
+
+	/* This thread is looking for when we get correct data from
+	   the database so we can update the assoc_ptr's in the jobs
+	*/
+	if (running_cache || num_jobs) {
+		pthread_attr_t thread_attr;
+
+		slurm_attr_init(&thread_attr);
+		while (pthread_create(&assoc_cache_thread, &thread_attr,
+				      _assoc_cache_mgr, NULL)) {
+			error("pthread_create error %m");
+			sleep(1);
+		}
+		slurm_attr_destroy(&thread_attr);
+	}
+
 }
 
 /* send all info for the controller to accounting */
@@ -2121,6 +2147,9 @@ static void *_assoc_cache_mgr(void *no_data)
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+
+	if (!running_cache)
+		lock_slurmctld(job_write_lock);
 
 	while(running_cache == 1) {
 		slurm_mutex_lock(&assoc_cache_mutex);
