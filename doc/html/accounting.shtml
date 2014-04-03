@@ -296,10 +296,9 @@ Set to a unique name for each Slurm-managed cluster so that
 accounting records from each can be identified.</li>
 <li><b>TrackWCKey</b>:
 Boolean.  If you want to track wckeys (Workload Characterization Key)
-  of users.  A Wckey is an orthogonal way to do accounting against
-  maybe a group of unrelated accounts. WCKeys can be defined using
-  sacctmgr add wckey 'name'.  When a job is run use srun --wckey and
-  time will be summed up for this wckey.
+  of users.  A Wckey is an orthogonal way to do accounting against possibly
+  unrelated accounts. When a job is run, use the --wckey option to specify a
+  value and accounting records will be collected by this wckey.
 </li>
 </ul>
 
@@ -771,7 +770,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 10 September 2013</p>
+<p style="text-align: center;">Last modified 3 April 2014</p>
 
 <!--#include virtual="footer.txt"-->
 
