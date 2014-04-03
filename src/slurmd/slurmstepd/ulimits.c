@@ -260,6 +260,8 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 		rlim_to_string (env_value,  req, sizeof (req)) );
 
 	r.rlim_cur = (rlim_t) env_value;
+	if (r.rlim_max < r.rlim_cur)
+		r.rlim_max = r.rlim_cur;
 
 	if (setrlimit( rli->resource, &r ) < 0) {
 		/*

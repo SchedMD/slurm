@@ -25,6 +25,9 @@ documents those changes that are of interest to users and admins.
     Set the SLURM_PMI_KVS_DUP_KEYS if you want the code to check for
     duplicate keys.
  -- Add job submission time to squeue.
+ -- Permit user root to propagate resource limits higher than the hard limit
+    slurmd has on that compute node has (i.e. raise both current and maximum
+    limits).
 
 * Changes in Slurm 14.03.0
 ==========================
