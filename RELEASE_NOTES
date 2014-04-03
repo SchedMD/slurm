@@ -35,7 +35,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- Modify etc/cgroup.release_common.example to set specify full path to the
     scontrol command. Also find cgroup mount point by reading cgroup.conf file.
-
+ -- Added SchedulerParameters options of bf_yield_interval and bf_yield_sleep
+    to control how frequently and for how long the backfill scheduler will
+    relinquish its locks.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

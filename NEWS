@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
     consumed.
  -- In select plugins, stop triggering extra logging based upon the debug flag
     CPU_Bind and use SelectType instead.
+ -- Added SchedulerParameters options of bf_yield_interval and bf_yield_sleep
+    to control how frequently and for how long the backfill scheduler will
+    relinquish its locks.
 
 * Changes in Slurm 14.03.1
 ==========================

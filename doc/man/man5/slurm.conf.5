@@ -1904,6 +1904,23 @@ if the value of \fBbf_window\fR is increased, then it is generally advisable
 to also increase \fBbf_resolution\fR.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
+\fBbf_yield_interval=#\fR
+The backfill scheduler will periodically relinquish locks in order for other
+pending operations to take place.
+This specifies the times when the locks are relinquish in microseconds.
+The default value is 2,000,000 microseconds (2 seconds).
+Smaller values may be helpful for high throughput computing when used in
+conjunction with the \fBbf_continue\fR option.
+Also see the \fBbf_yield_sleep\fR option.
+.TP
+\fBbf_yield_sleep=#\fR
+The backfill scheduler will periodically relinquish locks in order for other
+pending operations to take place.
+This specifies the length of time for which the locks are relinquish in
+microseconds.
+The default value is 500,000 microseconds (0.5 seconds).
+Also see the \fBbf_yield_interval\fR option.
+.TP
 \fBdefault_queue_depth=#\fR
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
 running job completes or other routine actions occur. The full queue will be
