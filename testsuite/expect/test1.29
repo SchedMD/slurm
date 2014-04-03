@@ -77,6 +77,7 @@ set cur_fsize  -1
 set cur_nofile -1
 set cur_nproc  -1
 set cur_stack  -1
+
 spawn ./$file_prog_get
 expect {
 	-re "USER_CORE=($number)" {
@@ -100,28 +101,36 @@ expect {
 		exp_continue
 	}
 }
+
 if {$cur_core != -1} {
-	if {$cur_core == 0} {
-		set limit_core 0
-	} else {
-		set limit_core [expr ($cur_core / 1024) - 2]
+	set limit_core [expr ($cur_core / 1024) - 2]
+	if {$limit_core < 1} {
+		set limit_core [expr $cur_core / 1024]
 	}
 }
 if {$cur_fsize != -1} {
-	if {$cur_fsize == 0} {
-		set limit_fsize 0
-	} else {
-		set limit_fsize [expr ($cur_fsize / 1024) - 2]
+	set limit_fsize [expr ($cur_fsize / 1024) - 2]
+	if {$limit_fsize < 1} {
+		set limit_fsize [expr $cur_fsize / 1024]
 	}
 }
 if {$cur_nofile != -1} {
 	set limit_nofile [expr $cur_nofile - 2]
+	if {$limit_nofile < 1} {
+		set limit_nofile $cur_nofile
+	}
 }
 if {$cur_nproc != -1} {
 	set limit_nproc [expr $cur_nproc - 200]
+	if {$limit_nproc < 1} {
+		set limit_nofile $cur_nproc
+	}
 }
 if {$cur_stack != -1} {
 	set limit_stack [expr ($cur_stack / 1024) - 2]
+	if {$limit_stack < 1} {
+		set limit_stack [expr $cur_stack / 1024]
+	}
 }
 
 #
