@@ -2168,6 +2168,15 @@ static void *_assoc_cache_mgr(void *no_data)
 		slurm_mutex_unlock(&assoc_cache_mutex);
 	}
 
+	if (!job_list) {
+		/* This could happen in rare occations, it doesn't
+		 * matter since when the job_list is populated things
+		 * will be in sync.
+		 */
+		debug2("No job list yet");
+		goto end_it;
+	}
+
 	debug2("got real data from the database "
 	       "refreshing the association ptr's for %d jobs",
 	       list_count(job_list));
@@ -2214,6 +2223,7 @@ static void *_assoc_cache_mgr(void *no_data)
 		}
 	}
 	list_iterator_destroy(itr);
+end_it:
 	unlock_slurmctld(job_write_lock);
 	/* This needs to be after the lock and after we update the
 	   jobs so if we need to send them we are set. */
