@@ -541,7 +541,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 			error("pthread_create error %m");
 			if (++retries > MAX_RETRIES)
 				fatal("Can't create pthread");
-			sleep(1);	/* sleep and try again */
+			usleep(100000);	/* sleep and try again */
 		}
 		slurm_attr_destroy(&attr_agent);
 		thr_count++;
@@ -637,7 +637,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 			error("pthread_create error %m");
 			if (++retries > MAX_RETRIES)
 				fatal("Can't create pthread");
-			sleep(1);	/* sleep and try again */
+			usleep(100000);	/* sleep and try again */
 		}
 		slurm_attr_destroy(&attr_agent);
 
