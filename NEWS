@@ -27,6 +27,9 @@ documents those changes that are of interest to users and admins.
     scheduler logic if the job submissions occur at the nearly same time.
  -- Fix issue where associations weren't correct if backup takes control and
     new associations were added since it was started.
+ -- Fix race condition is corner case with backup slurmctld.
+ -- With the backup slurmctld make sure we reinit beginning values in the
+    slurmdbd plugin.
 
 * Changes in Slurm 2.6.7
 ========================
