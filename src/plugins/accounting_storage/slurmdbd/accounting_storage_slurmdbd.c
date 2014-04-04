@@ -115,6 +115,7 @@ static pthread_t db_inx_handler_thread;
 static pthread_t cleanup_handler_thread;
 static pthread_mutex_t db_inx_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_db_inx = 0;
+static int first = 1;
 
 extern int jobacct_storage_p_job_start(void *db_conn,
 				       struct job_record *job_ptr);
@@ -389,7 +390,6 @@ static void *_cleanup_thread(void *no_data)
  */
 extern int init ( void )
 {
-	static int first = 1;
 	char *cluster_name = NULL;
 
 	if (first) {
@@ -448,6 +448,7 @@ extern int fini ( void )
 
 	slurm_mutex_unlock(&db_inx_lock);
 
+	first = 1;
 	xfree(slurmdbd_auth_info);
 
 	return SLURM_SUCCESS;
