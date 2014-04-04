@@ -235,8 +235,10 @@ static void *_set_db_inx_thread(void *no_data)
 		/* info("in lock db_thread"); */
 		running_db_inx = 1;
 		if (!job_list) {
-			error("No job list, exiting");
-			break;
+			slurm_mutex_unlock(&db_inx_lock);
+			error("No job list, waiting");
+			sleep(1);
+			continue;
 		}
 		/* Here we have off loaded starting
 		 * jobs in the database out of band
