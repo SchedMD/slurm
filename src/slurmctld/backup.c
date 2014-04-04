@@ -217,18 +217,18 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
 	pthread_join(slurmctld_config.thread_id_rpc, NULL);
 
-	if (!acct_db_conn) {
-		/* Make sure we get a connection right away to avoid
-		   race condition on this happening too late.
-		*/
-		acct_db_conn = acct_storage_g_get_connection(
-			callbacks, 0, false,
-			slurmctld_cluster_name);
-	}
+	/* The job list needs to be freed before we run
+	 * ctld_assoc_mgr_init, it should be empty here in the first place.
+	 */
+	lock_slurmctld(config_write_lock);
+	job_fini();
+	init_job_conf();
+	unlock_slurmctld(config_write_lock);
+
+	ctld_assoc_mgr_init(callbacks);
 
 	/* clear old state and read new state */
 	lock_slurmctld(config_write_lock);
-	job_fini();
 	if (switch_g_restore(slurmctld_conf.state_save_location, true)) {
 		error("failed to restore switch state");
 		abort();

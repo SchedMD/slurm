@@ -3153,6 +3153,7 @@ fini:	/* We need to use schedule() to initiate a batch job in order to run
 	slurm_mutex_unlock(&sched_cnt_mutex);
 	if (sched_now_cnt)
 		(void) schedule(sched_now_cnt); /* has own locks */
+
 	xfree(err_msg);
 }
 
