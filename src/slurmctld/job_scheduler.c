@@ -1504,10 +1504,10 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	struct job_record *qjob_ptr, *djob_ptr;
 
 	if ((job_ptr->details == NULL) ||
-	    (job_ptr->details->depend_list == NULL))
+	    (job_ptr->details->depend_list == NULL) ||
+	    ((count = list_count(job_ptr->details->depend_list)) == 0))
 		return 0;
 
-	count = list_count(job_ptr->details->depend_list);
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
