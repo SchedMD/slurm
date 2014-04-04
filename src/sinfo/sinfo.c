@@ -243,9 +243,6 @@ _query_server(partition_info_msg_t ** part_pptr,
 	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
 	static block_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
 	static reserve_info_msg_t *old_resv_ptr = NULL, *new_resv_ptr;
-	int cc;
-	uint16_t alloc_cpus;
-	struct node_info *node;
 	int error_code;
 	uint16_t show_flags = 0;
 
@@ -298,19 +295,6 @@ _query_server(partition_info_msg_t ** part_pptr,
 	} else {
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
 					     show_flags);
-	}
-
-	/* Set the node state as NODE_STATE_MIXED.
-	 */
-	for (cc = 0; cc < new_node_ptr->record_count; cc++) {
-		node = &(new_node_ptr->node_array[cc]);
-		slurm_get_select_nodeinfo(node->select_nodeinfo,
-					  SELECT_NODEDATA_SUBCNT,
-					  NODE_STATE_ALLOCATED,
-					  &alloc_cpus);
-		if (IS_NODE_ALLOCATED(node)
-		    && alloc_cpus < node->cpus)
-			node->node_state = NODE_STATE_MIXED;
 	}
 
 	if (error_code) {

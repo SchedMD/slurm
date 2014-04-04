@@ -30,6 +30,7 @@ documents those changes that are of interest to users and admins.
  -- Fix race condition is corner case with backup slurmctld.
  -- With the backup slurmctld make sure we reinit beginning values in the
     slurmdbd plugin.
+ -- Fix sinfo to work correctly with draining/mixed nodes.
 
 * Changes in Slurm 2.6.7
 ========================
