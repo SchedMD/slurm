@@ -2182,6 +2182,7 @@ slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr)
 	slurm_ctl_conf_t *conf;
 	slurm_protocol_config_t *myproto = NULL;
 	int retry, have_backup = 0;
+	int msg_timeout = slurm_get_msg_timeout();
 
 	if (!working_cluster_rec) {
 		/* This means the addr wasn't set up already.
@@ -2198,9 +2199,10 @@ slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr)
 				myproto->primary_controller.sin_port;
 	}
 
-	for (retry=0; retry<slurm_get_msg_timeout(); retry++) {
+	msg_timeout *= 10;	/* Do iteration every 0.1 secs */
+	for (retry = 0; retry < msg_timeout; retry++) {
 		if (retry)
-			sleep(1);
+			usleep(100000);
 		if (working_cluster_rec) {
 			if (working_cluster_rec->control_addr.sin_port == 0) {
 				slurm_set_addr(
@@ -3681,11 +3683,12 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 
 	if (conn_timeout == (uint16_t) NO_VAL)
 		conn_timeout = MIN(slurm_get_msg_timeout(), 10);
+	conn_timeout *= 10;     /* Do iteration every 0.1 secs */
 	/* This connect retry logic permits Slurm hierarchical communications
 	 * to better survive slurmd restarts */
 	for (i = 0; i <= conn_timeout; i++) {
 		if (i > 0)
-			sleep(1);
+			usleep(100000);
 		fd = slurm_open_msg_conn(&msg->address);
 		if ((fd >= 0) || (errno != ECONNREFUSED))
 			break;
