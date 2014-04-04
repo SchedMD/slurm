@@ -2070,11 +2070,16 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 	if (picked_mps) {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
-			char rel_str[step_jobinfo->dim_cnt];
-			for (dim = 0; dim < step_jobinfo->dim_cnt; dim++)
-				rel_str[dim] =
-					alpha_num[step_jobinfo->conn_type[dim]];
-
+			char rel_str[step_jobinfo->dim_cnt+1];
+			for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
+				if (step_jobinfo->conn_type[dim]
+				    == (uint16_t)NO_VAL)
+					rel_str[dim] = alpha_num[0];
+				else
+					rel_str[dim] = alpha_num[
+						step_jobinfo->conn_type[dim]];
+			}
+			rel_str[dim] = '\0';
 			tmp_char = bitmap2node_name(picked_mps);
 			if (step_jobinfo->ionode_str)
 				xstrfmtcat(tmp_char, "[%s]",
