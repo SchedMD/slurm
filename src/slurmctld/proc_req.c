@@ -2948,8 +2948,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			sched_cnt += schedule_cnt;
 			slurm_mutex_unlock(&sched_cnt_mutex);
 		}
-		schedule_job_save();	/* has own locks */
-		schedule_node_save();	/* has own locks */
 	}
 
 fini:	/* We need to use schedule() to initiate a batch job in order to run
@@ -2966,6 +2964,8 @@ fini:	/* We need to use schedule() to initiate a batch job in order to run
 	slurm_mutex_unlock(&sched_cnt_mutex);
 	if (sched_now_cnt)
 		(void) schedule(sched_now_cnt); /* has own locks */
+	schedule_job_save();	/* has own locks */
+	schedule_node_save();	/* has own locks */
 }
 
 /* _slurm_rpc_update_job - process RPC to update the configuration of a
