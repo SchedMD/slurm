@@ -330,6 +330,13 @@ documents those changes that are of interest to users and admins.
  -- launch/poe - Implicitly set --network in job step create request as needed.
  -- Permit multiple batch job submissions to be made for each run of the
     scheduler logic if the job submissions occur at the nearly same time.
+ -- Fix issue where associations weren't correct if backup takes control and
+    new associations were added since it was started.
+ -- Fix race condition is corner case with backup slurmctld.
+ -- With the backup slurmctld make sure we reinit beginning values in the
+    slurmdbd plugin.
+ -- Fix sinfo to work correctly with draining/mixed nodes.
+ -- MySQL - Fix it so a lock isn't held unnecessarily.
 
 * Changes in Slurm 2.6.7
 ========================

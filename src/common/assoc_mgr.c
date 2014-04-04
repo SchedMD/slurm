@@ -1324,6 +1324,9 @@ extern int assoc_mgr_fini(char *state_save_location)
 	assoc_mgr_user_list = NULL;
 	assoc_mgr_wckey_list = NULL;
 
+	assoc_mgr_root_assoc = NULL;
+	running_cache = 0;
+
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
@@ -3961,6 +3964,11 @@ extern int load_assoc_usage(char *state_save_location)
 		   has occured on the entire system and use that to
 		   normalize against.
 		*/
+		if (assoc) {
+			assoc->usage->grp_used_wall = 0;
+			assoc->usage->usage_raw = 0;
+		}
+
 		while (assoc) {
 			assoc->usage->grp_used_wall += grp_used_wall;
 			assoc->usage->usage_raw += (long double)usage_raw;
@@ -4062,8 +4070,8 @@ extern int load_qos_usage(char *state_save_location)
 			if (qos->id == qos_id)
 				break;
 		if (qos) {
-			qos->usage->grp_used_wall += grp_used_wall;
-			qos->usage->usage_raw += (long double)usage_raw;
+			qos->usage->grp_used_wall = grp_used_wall;
+			qos->usage->usage_raw = (long double)usage_raw;
 		}
 
 		list_iterator_reset(itr);
