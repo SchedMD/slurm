@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
  -- With the backup slurmctld make sure we reinit beginning values in the
     slurmdbd plugin.
  -- Fix sinfo to work correctly with draining/mixed nodes.
+ -- MySQL - Fix it so a lock isn't held unnecessarily.
 
 * Changes in Slurm 2.6.7
 ========================
