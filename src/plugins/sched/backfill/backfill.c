@@ -424,21 +424,24 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_interval=")))
 		backfill_interval = atoi(tmp_ptr + 12);
 	if (backfill_interval < 1) {
-		fatal("Invalid backfill scheduler bf_interval: %d",
+		error("Invalid backfill scheduler bf_interval: %d",
 		      backfill_interval);
+		backfill_interval = BACKFILL_INTERVAL;
 	}
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_window=")))
 		backfill_window = atoi(tmp_ptr + 10) * 60;  /* mins to secs */
 	if (backfill_window < 1) {
-		fatal("Invalid backfill scheduler window: %d",
+		error("Invalid backfill scheduler window: %d",
 		      backfill_window);
+		backfill_window = BACKFILL_WINDOW;
 	}
 	if (sched_params && (tmp_ptr=strstr(sched_params, "max_job_bf=")))
 		max_backfill_job_cnt = atoi(tmp_ptr + 11);
 	if (max_backfill_job_cnt < 1) {
-		fatal("Invalid backfill scheduler max_job_bf: %d",
+		error("Invalid backfill scheduler max_job_bf: %d",
 		      max_backfill_job_cnt);
+		max_backfill_job_cnt = 50;
 	}
 	/* "bf_res=" is vestigial from version 2.3 and can be removed later.
 	 * Only "bf_resolution=" is documented. */
@@ -447,29 +450,33 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_resolution=")))
 		backfill_resolution = atoi(tmp_ptr + 14);
 	if (backfill_resolution < 1) {
-		fatal("Invalid backfill scheduler resolution: %d",
+		error("Invalid backfill scheduler resolution: %d",
 		      backfill_resolution);
+		backfill_resolution = BACKFILL_RESOLUTION;
 	}
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_part=")))
 		max_backfill_job_per_part = atoi(tmp_ptr + 16);
 	if (max_backfill_job_per_part < 0) {
-		fatal("Invalid backfill scheduler bf_max_job_part: %d",
+		error("Invalid backfill scheduler bf_max_job_part: %d",
 		      max_backfill_job_per_part);
+		max_backfill_job_per_part = 0;
 	}
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_start=")))
 		max_backfill_jobs_start = atoi(tmp_ptr + 17);
 	if (max_backfill_jobs_start < 0) {
-		fatal("Invalid backfill scheduler bf_max_job_start: %d",
+		error("Invalid backfill scheduler bf_max_job_start: %d",
 		      max_backfill_jobs_start);
+		max_backfill_jobs_start = 0;
 	}
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_user=")))
 		max_backfill_job_per_user = atoi(tmp_ptr + 16);
 	if (max_backfill_job_per_user < 0) {
-		fatal("Invalid backfill scheduler bf_max_job_user: %d",
+		error("Invalid backfill scheduler bf_max_job_user: %d",
 		      max_backfill_job_per_user);
+		max_backfill_job_per_user = 0;
 	}
 
 	/* bf_continue makes backfill continue where it was if interrupted
