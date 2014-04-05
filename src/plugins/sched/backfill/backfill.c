@@ -130,6 +130,7 @@ static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
 static int max_backfill_jobs_start = 0;
 static bool backfill_continue = false;
+static int defer_rpc_cnt = 0;
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
@@ -243,7 +244,7 @@ static bool _job_is_completing(void)
 static bool _many_pending_rpcs(void)
 {
 	//info("thread_count = %u", slurmctld_config.server_thread_count);
-	if (slurmctld_config.server_thread_count > SLURMCTLD_THREAD_LIMIT)
+	if (slurmctld_config.server_thread_count >= defer_rpc_cnt)
 		return true;
 	return false;
 }
@@ -477,6 +478,14 @@ static void _load_config(void)
 		backfill_continue = true;
 	}
 
+	if (sched_params && (tmp_ptr=strstr(sched_params, "max_rpc_cnt=")))
+		defer_rpc_cnt = atoi(tmp_ptr + 12);
+	if (defer_rpc_cnt < 0) {
+		error("Invalid backfill scheduler max_rpc_cnt: %d",
+		      defer_rpc_cnt);
+		defer_rpc_cnt = 0;
+	}
+
 	xfree(sched_params);
 }
 
@@ -682,7 +691,9 @@ static int _attempt_backfill(void)
 	}
 	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
-		if ((time(NULL) - sched_start) >= sched_timeout) {
+		if (((defer_rpc_cnt > 0) &&
+		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
+		    ((time(NULL) - sched_start) >= sched_timeout)) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
 				info("backfill: completed yielding locks "
@@ -856,7 +867,9 @@ static int _attempt_backfill(void)
 		/* Determine impact of any resource reservations */
 		later_start = now;
  TRY_LATER:
-		if ((time(NULL) - sched_start) >= sched_timeout) {
+		if (((defer_rpc_cnt > 0) &&
+		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
+		    ((time(NULL) - sched_start) >= sched_timeout)) {
 			uint32_t save_job_id = job_ptr->job_id;
 			uint32_t save_time_limit = job_ptr->time_limit;
 			job_ptr->time_limit = orig_time_limit;

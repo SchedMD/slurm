@@ -1841,6 +1841,14 @@ Maximum number of jobs to test for a circular job dependency. Stop testing
 after this number of job dependencies have been tested. The default value is
 10 jobs.
 .TP
+\fBmax_rpc_cnt=#\fR
+If the number of active threads in the slurmctld daemon is equal to or
+larger than this value, defer scheduling of jobs.
+This can improve Slurm's ability to process requests at a cost of initiating
+new jobs less frequently.
+The default value is zero, which disables this option.
+If a value is set, then a value of 10 or higher is recommended.
+.TP
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 300 seconds.
