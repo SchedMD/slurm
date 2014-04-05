@@ -745,6 +745,7 @@ extern int schedule(uint32_t job_limit)
 	static int sched_timeout = 0;
 	static int def_job_limit = 100;
 	static int max_jobs_per_part = 0;
+	static int defer_rpc_cnt = 0;
 	time_t now = time(NULL), sched_start;
 
 	DEF_TIMERS;
@@ -796,6 +797,13 @@ extern int schedule(uint32_t job_limit)
 				max_jobs_per_part = i;
 			}
 		}
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "max_rpc_cnt=")))
+			defer_rpc_cnt = atoi(tmp_ptr + 12);
+		if (defer_rpc_cnt < 0) {
+			error("Invalid max_rpc_cnt: %d", defer_rpc_cnt);
+			defer_rpc_cnt = 0;
+		}
 		xfree(sched_params);
 
 		sched_timeout = slurm_get_msg_timeout() / 2;
@@ -803,6 +811,13 @@ extern int schedule(uint32_t job_limit)
 		sched_timeout = MIN(sched_timeout, 4);
 		sched_update = slurmctld_conf.last_update;
 	}
+
+	if ((defer_rpc_cnt > 0) &&
+	    (slurmctld_config.server_thread_count >= defer_rpc_cnt)) {
+		debug("sched: schedule() returning, too many RPCs");
+		return 0;
+	}
+
 	/* Rather than periodicallly going to bottom of queue, let the
 	 * backfill scheduler do so since it can periodically relinquish
 	 * locks rather than blocking all RPCs. */
@@ -830,14 +845,14 @@ extern int schedule(uint32_t job_limit)
 		unlock_slurmctld(job_write_lock);
 		debug("sched: schedule() returning, no front end nodes are "
 		       "available");
-		return SLURM_SUCCESS;
+		return 0;
 	}
 	/* Avoid resource fragmentation if important */
 	if ((!wiki_sched) && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
 		debug("sched: schedule() returning, some job is still "
 		       "completing");
-		return SLURM_SUCCESS;
+		return 0;
 	}
 
 #ifdef HAVE_ALPS_CRAY
@@ -964,6 +979,11 @@ next_part:			part_ptr = (struct part_record *)
 		if (job_depth++ > job_limit) {
 			debug3("sched: already tested %u jobs, breaking out",
 			       job_depth);
+			break;
+		}
+		if ((defer_rpc_cnt > 0) &&
+		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) {
+			debug("sched: schedule() returning, too many RPCs");
 			break;
 		}
 
@@ -1649,7 +1669,8 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	static time_t cache_time = 0;
 
 	if ((job_ptr->details == NULL) ||
-	    (job_ptr->details->depend_list == NULL))
+	    (job_ptr->details->depend_list == NULL) ||
+	    ((count = list_count(job_ptr->details->depend_list)) == 0))
 		return 0;
 
 	if ((job_ptr->array_task_id != NO_VAL) &&
@@ -1663,7 +1684,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		return cache_results;
 	}
 
-	count = list_count(job_ptr->details->depend_list);
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
