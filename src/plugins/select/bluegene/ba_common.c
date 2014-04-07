@@ -38,6 +38,11 @@
 
 #include "ba_common.h"
 #include "bg_node_info.h"
+#ifndef HAVE_BG_L_P
+# include "ba_bgq/block_allocator.h"
+#else
+# include "ba/block_allocator.h"
+#endif
 
 #define DISPLAY_FULL_DIM 1
 
@@ -58,6 +63,38 @@ uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
 bitstr_t *ba_main_mp_bitmap = NULL;
 pthread_mutex_t ba_system_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static bool _check_deny_pass(int dim, uint16_t *deny_pass)
+{
+	uint16_t check = 0;
+
+	/* return true by default */
+	if (!deny_pass)
+		return true;
+
+	switch (dim) {
+	case A:
+		check = PASS_DENY_A;
+		break;
+	case X:
+		check = PASS_DENY_X;
+		break;
+	case Y:
+		check = PASS_DENY_Y;
+		break;
+	case Z:
+		check = PASS_DENY_Z;
+		break;
+	default:
+		error("unknown dim %d", dim);
+		return 1;
+		break;
+	}
+
+	if (*deny_pass & check)
+		return 1;
+	return 0;
+}
 
 static void _pack_ba_connection(ba_connection_t *ba_connection,
 				Buf buffer, uint16_t protocol_version)
@@ -381,10 +418,8 @@ static int _geo_test_maps(bitstr_t *node_bitmap,
 			      "LONGEST_BGQ_DIM_LEN (%d)", LONGEST_BGQ_DIM_LEN);
 			return SLURM_ERROR;
 		}
-		if (deny_pass)
-			dim_deny_pass = (bool) deny_pass[i];
-		else	/* No passthru allowed by default */
-			dim_deny_pass = true;
+		dim_deny_pass = _check_deny_pass(i, deny_pass);
+
 		geo_array[i] = &geo_combos[my_geo_system->dim_size[i] - 1];
 		geo_array_inx[i] = _find_next_geo_inx(geo_array[i], -1,
 						      geo_req->geometry[i],
@@ -414,10 +449,7 @@ static int _geo_test_maps(bitstr_t *node_bitmap,
 
 		/* Increment offsets */
 		for (i = 0; i < my_geo_system->dim_count; i++) {
-			if (deny_pass)
-				dim_deny_pass = (bool) deny_pass[i];
-			else	/* No passthru allowed by default */
-				dim_deny_pass = true;
+			dim_deny_pass = _check_deny_pass(i, deny_pass);
 			geo_array_inx[i] = _find_next_geo_inx(geo_array[i],
 							geo_array_inx[i],
 						     	geo_req->geometry[i],
@@ -1676,4 +1708,3 @@ extern char *give_geo(uint16_t *int_geo, int dims, bool with_sep)
 	}
 	return geo;
 }
-

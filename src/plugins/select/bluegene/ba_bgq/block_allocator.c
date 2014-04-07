@@ -107,6 +107,9 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 /** */
 static uint16_t _find_distance(uint16_t start, uint16_t end, int dim);
 
+static void _find_distance_ba_mp(
+	ba_mp_t *curr_mp, ba_mp_t *end_mp, int dim, uint16_t *distance);
+
 static int _ba_set_ionode_str_internal(int level, int *coords,
 				       int *start_offset, int *end_offset,
 				       hostlist_t hl);
@@ -1125,6 +1128,7 @@ extern ba_mp_t *ba_sub_block_in_record(
 	uint32_t max_clear_cnt = 0, clear_cnt;
 	bitstr_t *total_bitmap = NULL;
 	uint16_t start_loc[ba_mp_geo_system->dim_count];
+	bool passthrough_used = false;
 
 	xassert(ba_mp_geo_system);
 	xassert(bg_record->ba_mp_list);
@@ -1140,8 +1144,10 @@ try_again:
 
 	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = list_next(itr))) {
-		if (!ba_mp->used)
+		if (!ba_mp->used) {
+			passthrough_used = true;
 			continue;
+		}
 
 		/* Create the bitmap if it doesn't exist.  Since this
 		 * is a copy of the original and the cnode_bitmap is
@@ -1192,15 +1198,38 @@ try_again:
 	}
 
 	/* SUCCESS! */
+	if (passthrough_used) {
+		/* Since we don't keep track of next mp's in a block
+		 * we just recreate it in the virtual system.  This
+		 * will only happen on rare occation, so it shouldn't
+		 * hurt performance in most cases. (block_state_mutex
+		 * should already be locked)
+		 */
+		reset_ba_system(false);
+		if (check_and_set_mp_list(bg_record->ba_mp_list)
+		    == SLURM_ERROR) {
+			error("ba_sub_block_in_record: "
+			      "something happened in the load of %s, "
+			      "this should never happen",
+			      bg_record->bg_block_id);
+			passthrough_used = false;
+		}
+	}
 
 	/* Since we use conn_type as the relative start point, if the
 	   block uses more than 1 midplane we need to give the
 	   relative start point a boost when we go to a different midplane.
 	*/
 	memset(jobinfo->conn_type, 0, sizeof(jobinfo->conn_type));
-	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-		jobinfo->conn_type[dim] = _find_distance(
-			bg_record->start[dim], ba_mp->coord[dim], dim);
+	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++) {
+		if (!passthrough_used)
+			jobinfo->conn_type[dim] = _find_distance(
+				bg_record->start[dim], ba_mp->coord[dim], dim);
+		else
+			_find_distance_ba_mp(coord2ba_mp(bg_record->start),
+					     ba_mp, dim,
+					     &jobinfo->conn_type[dim]);
+	}
 
 	bit_or(ba_mp->cnode_bitmap, jobinfo->units_used);
 	jobinfo->ionode_str = ba_node_map_ranged_hostlist(
@@ -2182,6 +2211,30 @@ static uint16_t _find_distance(uint16_t start, uint16_t end, int dim)
 		return (((DIM_SIZE[dim]-1) - start) + (end+1)) * 4;
 	} else
 		return (end - start) * 4;
+}
+
+static void _find_distance_ba_mp(
+	ba_mp_t *curr_mp, ba_mp_t *end_mp, int dim, uint16_t *distance)
+{
+	xassert(curr_mp);
+
+	if ((*distance) > DIM_SIZE[dim]) {
+		error("Whoa, we are higher than we can possibly go, this "
+		      "should never happen.  If it does you will get an "
+		      "error with your srun.");
+		(*distance) = 0;
+		return;
+	}
+
+	if (curr_mp->coord[dim] == end_mp->coord[dim]) {
+		(*distance) *= 4;
+		return;
+	}
+
+	if (curr_mp->used)
+		(*distance)++;
+
+	_find_distance_ba_mp(curr_mp->next_mp[dim], end_mp, dim, distance);
 }
 
 static int _ba_set_ionode_str_internal(int level, int *coords,
