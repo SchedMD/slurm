@@ -181,6 +181,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	step_ptr->time_limit = INFINITE;
 	step_ptr->jobacct    = jobacctinfo_create(NULL);
 	step_ptr->requid     = -1;
+	step_ptr->start_protocol_ver = SLURM_PROTOCOL_VERSION;
 	(void) list_append (job_ptr->step_list, step_ptr);
 
 	return step_ptr;
@@ -3249,6 +3250,7 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 	pack16(step_ptr->cpus_per_task, buffer);
 	pack16(step_ptr->resv_port_cnt, buffer);
 	pack16(step_ptr->state, buffer);
+	pack16(step_ptr->start_protocol_ver, buffer);
 
 	pack8(step_ptr->no_kill, buffer);
 
@@ -3313,6 +3315,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	struct step_record *step_ptr = NULL;
 	uint8_t no_kill;
 	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
+	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt, state;
 	uint32_t core_size, cpu_count, exit_code, pn_min_memory, name_len;
 	uint32_t step_id, time_limit, cpu_freq;
@@ -3326,7 +3329,69 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	List gres_list = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack32(&step_id, buffer);
+		safe_unpack16(&cyclic_alloc, buffer);
+		safe_unpack16(&port, buffer);
+		safe_unpack16(&ckpt_interval, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
+		safe_unpack16(&state, buffer);
+		safe_unpack16(&start_protocol_ver, buffer);
+
+		safe_unpack8(&no_kill, buffer);
+
+		safe_unpack32(&cpu_count, buffer);
+		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack32(&exit_code, buffer);
+		if (exit_code != NO_VAL) {
+			safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
+			safe_unpack16(&bit_cnt, buffer);
+		}
+		safe_unpack32(&core_size, buffer);
+		if (core_size)
+			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack32(&cpu_freq, buffer);
+
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+		safe_unpack_time(&ckpt_time, buffer);
+
+		safe_unpackstr_xmalloc(&host, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
+		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&network, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		if (gres_plugin_step_state_unpack(&gres_list, buffer,
+						  job_ptr->job_id, step_id,
+						  protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack16(&batch_step, buffer);
+		if (!batch_step) {
+			if (unpack_slurm_step_layout(&step_layout, buffer,
+						     protocol_version))
+				goto unpack_error;
+			switch_g_alloc_jobinfo(&switch_tmp,
+					       job_ptr->job_id, step_id);
+			if (switch_g_unpack_jobinfo(switch_tmp, buffer,
+						    protocol_version))
+				goto unpack_error;
+		}
+		checkpoint_alloc_jobinfo(&check_tmp);
+		if (checkpoint_unpack_jobinfo(check_tmp, buffer,
+					      protocol_version))
+			goto unpack_error;
+
+		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
+						   protocol_version))
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack16(&port, buffer);
@@ -3448,9 +3513,10 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->check_job    = check_tmp;
 	step_ptr->cpu_freq     = cpu_freq;
 	step_ptr->state        = state;
+	step_ptr->start_protocol_ver = start_protocol_ver;
 
 	if (!step_ptr->ext_sensors)
-			step_ptr->ext_sensors = ext_sensors_alloc();
+		step_ptr->ext_sensors = ext_sensors_alloc();
 
 	step_ptr->exit_code    = exit_code;
 	if (bit_fmt) {

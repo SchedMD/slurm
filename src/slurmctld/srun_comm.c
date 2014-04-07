@@ -58,7 +58,8 @@
  * defunct srun processes
  */
 static void _srun_agent_launch(slurm_addr_t *addr, char *host,
-		slurm_msg_type_t type, void *msg_args)
+			       slurm_msg_type_t type, void *msg_args,
+			       uint16_t protocol_version)
 {
 	agent_arg_t *agent_args = xmalloc(sizeof(agent_arg_t));
 
@@ -68,6 +69,8 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	agent_args->hostlist   = hostlist_create(host);
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
+	agent_args->protocol_version = protocol_version;
+
 	agent_queue_request(agent_args);
 }
 
@@ -115,7 +118,8 @@ extern void srun_allocate (uint32_t job_id)
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
 		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   RESPONSE_RESOURCE_ALLOCATION, msg_arg);
+				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,
+				   job_ptr->start_protocol_ver);
 	}
 }
 
@@ -137,7 +141,8 @@ extern void srun_allocate_abort(struct job_record *job_ptr)
 		msg_arg->step_id  = NO_VAL;
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   SRUN_JOB_COMPLETE,
-				   msg_arg);
+				   msg_arg,
+				   job_ptr->start_protocol_ver);
 	}
 }
 
@@ -190,7 +195,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		msg_arg->step_id  = step_ptr->step_id;
 		msg_arg->nodelist = xstrdup(node_name);
 		_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL,
-				   msg_arg);
+				   msg_arg, step_ptr->start_protocol_ver);
 	}
 	list_iterator_destroy(step_iterator);
 
@@ -202,7 +207,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		msg_arg->step_id  = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
 		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_NODE_FAIL,
-				   msg_arg);
+				   msg_arg, job_ptr->start_protocol_ver);
 	}
 }
 
@@ -236,7 +241,8 @@ extern void srun_ping (void)
 			msg_arg->job_id  = job_ptr->job_id;
 			msg_arg->step_id = NO_VAL;
 			_srun_agent_launch(addr, job_ptr->alloc_node,
-					   SRUN_PING, msg_arg);
+					   SRUN_PING, msg_arg,
+					   job_ptr->start_protocol_ver);
 		}
 	}
 
@@ -265,7 +271,8 @@ extern void srun_step_timeout(struct step_record *step_ptr, time_t timeout_val)
 	msg_arg->job_id   = step_ptr->job_ptr->job_id;
 	msg_arg->step_id  = step_ptr->step_id;
 	msg_arg->timeout  = timeout_val;
-	_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, msg_arg);
+	_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, msg_arg,
+			   step_ptr->start_protocol_ver);
 }
 
 /*
@@ -291,7 +298,7 @@ extern void srun_timeout (struct job_record *job_ptr)
 		msg_arg->step_id  = NO_VAL;
 		msg_arg->timeout  = job_ptr->end_time;
 		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_TIMEOUT,
-				   msg_arg);
+				   msg_arg, job_ptr->start_protocol_ver);
 	}
 
 
@@ -321,7 +328,7 @@ extern int srun_user_message(struct job_record *job_ptr, char *msg)
 		msg_arg->job_id = job_ptr->job_id;
 		msg_arg->msg    = xstrdup(msg);
 		_srun_agent_launch(addr, job_ptr->resp_host, SRUN_USER_MSG,
-				   msg_arg);
+				   msg_arg, job_ptr->start_protocol_ver);
 		return SLURM_SUCCESS;
 	} else if (job_ptr->batch_flag && IS_JOB_RUNNING(job_ptr)) {
 #ifndef HAVE_FRONT_END
@@ -380,7 +387,8 @@ extern void srun_job_complete (struct job_record *job_ptr)
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
 		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   SRUN_JOB_COMPLETE, msg_arg);
+				   SRUN_JOB_COMPLETE, msg_arg,
+				   job_ptr->start_protocol_ver);
 	}
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
@@ -413,7 +421,8 @@ extern bool srun_job_suspend (struct job_record *job_ptr, uint16_t op)
 		msg_arg->job_id  = job_ptr->job_id;
 		msg_arg->op     = op;
 		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   SRUN_REQUEST_SUSPEND, msg_arg);
+				   SRUN_REQUEST_SUSPEND, msg_arg,
+				   job_ptr->start_protocol_ver);
 		msg_sent = true;
 	}
 	return msg_sent;
@@ -436,7 +445,7 @@ extern void srun_step_complete (struct step_record *step_ptr)
 		msg_arg->job_id   = step_ptr->job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
 		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE,
-				   msg_arg);
+				   msg_arg, step_ptr->start_protocol_ver);
 	}
 }
 
@@ -461,7 +470,7 @@ extern void srun_step_missing (struct step_record *step_ptr,
 		msg_arg->step_id  = step_ptr->step_id;
 		msg_arg->nodelist = xstrdup(node_list);
 		_srun_agent_launch(addr, step_ptr->host, SRUN_STEP_MISSING,
-				   msg_arg);
+				   msg_arg, step_ptr->start_protocol_ver);
 	}
 }
 
@@ -485,7 +494,7 @@ extern void srun_step_signal (struct step_record *step_ptr, uint16_t signal)
 		msg_arg->job_step_id = step_ptr->step_id;
 		msg_arg->signal      = signal;
 		_srun_agent_launch(addr, step_ptr->host, SRUN_STEP_SIGNAL,
-				   msg_arg);
+				   msg_arg, step_ptr->start_protocol_ver);
 	}
 }
 
@@ -516,7 +525,7 @@ extern void srun_exec(struct step_record *step_ptr, char **argv)
 		for (i=0; i<cnt ; i++)
 			msg_arg->argv[i] = xstrdup(argv[i]);
 		_srun_agent_launch(addr, step_ptr->host, SRUN_EXEC,
-				   msg_arg);
+				   msg_arg, step_ptr->start_protocol_ver);
 	} else {
 		error("srun_exec %u.%u lacks communication channel",
 			step_ptr->job_ptr->job_id, step_ptr->step_id);
