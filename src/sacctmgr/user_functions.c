@@ -1695,6 +1695,13 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 
 	user_cond->assoc_cond = xmalloc(sizeof(slurmdb_association_cond_t));
 	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
+	/* We need this to make sure we only change users, not
+	 * accounts if this list didn't exist it would change
+	 * accounts. Having it blank is fine, it just needs to
+	 * exist.  This also happens in _set_cond, but that doesn't
+	 * always happen.
+	 */
+	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
