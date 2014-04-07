@@ -995,16 +995,6 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 
 	if (sinfo_data && sinfo_data->nodes_total) {
 		my_state = sinfo_data->node_state;
-		if (IS_NODE_DRAIN(sinfo_data)) {
-			/* don't worry about mixed since the
-			 * whole node is being drained. */
-		} else if ((sinfo_data->cpus_alloc && sinfo_data->cpus_other)
-			   || (sinfo_data->cpus_idle
-			       && (sinfo_data->cpus_idle
-				   != sinfo_data->cpus_total))) {
-			my_state &= NODE_STATE_FLAGS;
-			my_state |= NODE_STATE_MIXED;
-		}
 
 		upper_state = node_state_string_compact(my_state);
 		lower_state = _str_tolower(upper_state);
