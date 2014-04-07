@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 2.6.9
+========================
+
 * Changes in Slurm 2.6.8
 ========================
  -- Add support for Torque/PBS job array options and environment variables.
