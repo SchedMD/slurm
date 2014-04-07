@@ -245,6 +245,8 @@ _query_server(partition_info_msg_t ** part_pptr,
 	static reserve_info_msg_t *old_resv_ptr = NULL, *new_resv_ptr;
 	int error_code;
 	uint16_t show_flags = 0;
+	int cc;
+	node_info_t *node_ptr;
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
@@ -303,6 +305,46 @@ _query_server(partition_info_msg_t ** part_pptr,
 	}
 	old_node_ptr = new_node_ptr;
 	*node_pptr = new_node_ptr;
+
+	/* Set the node state as NODE_STATE_MIXED. */
+	for (cc = 0; cc < new_node_ptr->record_count; cc++) {
+		node_ptr = &(new_node_ptr->node_array[cc]);
+		if (IS_NODE_DRAIN(node_ptr)) {
+			/* don't worry about mixed since the
+			 * whole node is being drained. */
+		} else {
+			uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
+			int single_node_cpus =
+				(node_ptr->cpus / g_node_scaling);
+
+			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+						     SELECT_NODEDATA_SUBCNT,
+						     NODE_STATE_ALLOCATED,
+						     &alloc_cpus);
+			if (params.cluster_flags & CLUSTER_FLAG_BG) {
+				if (!alloc_cpus &&
+				    (IS_NODE_ALLOCATED(node_ptr) ||
+				     IS_NODE_COMPLETING(node_ptr)))
+					alloc_cpus = node_ptr->cpus;
+				else
+					alloc_cpus *= single_node_cpus;
+			}
+			idle_cpus = node_ptr->cpus - alloc_cpus;
+			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+						     SELECT_NODEDATA_SUBCNT,
+						     NODE_STATE_ERROR,
+						     &err_cpus);
+			if (params.cluster_flags & CLUSTER_FLAG_BG)
+				err_cpus *= single_node_cpus;
+			idle_cpus -= err_cpus;
+
+			if ((alloc_cpus && err_cpus) ||
+			    (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
+				node_ptr->node_state &= NODE_STATE_FLAGS;
+				node_ptr->node_state |= NODE_STATE_MIXED;
+			}
+		}
+	}
 
 	if (old_resv_ptr) {
 		if (clear_old)
