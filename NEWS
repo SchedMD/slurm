@@ -306,6 +306,9 @@ documents those changes that are of interest to users and admins.
  -- Sched/backfill - Change default max_job_bf parameter from 50 to 100.
  -- Added -I|--item-extract option to sh5util to extract data item from series.
 
+* Changes in Slurm 2.6.9
+========================
+
 * Changes in Slurm 2.6.8
 ========================
  -- Add support for Torque/PBS job array options and environment variables.
