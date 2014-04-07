@@ -174,9 +174,9 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 
 %description
 Slurm is an open source, fault-tolerant, and highly
-scalable cluster management and job scheduling system for Linux clusters
-containing up to 65,536 nodes. Components include machine status,
-partition management, job management, scheduling and accounting modules
+scalable cluster management and job scheduling system for Linux clusters.
+Components include machine status, partition management, job management,
+scheduling and accounting modules
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
