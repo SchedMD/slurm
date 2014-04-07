@@ -108,7 +108,6 @@
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
 #define JOB_STATE_VERSION       "PROTOCOL_VERSION"
-#define JOB_14_03_STATE_VERSION "VER015"	/* SLURM version 14.03 */
 #define JOB_2_6_STATE_VERSION   "VER014"	/* SLURM version 2.6 */
 
 #define JOB_CKPT_VERSION      "PROTOCOL_VERSION"
