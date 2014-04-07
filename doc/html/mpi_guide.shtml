@@ -397,12 +397,13 @@ allocation, but the task launch mechanism differs by system type.</p>
 <h3>BlueGene/Q</h3>
 <p>The BlueGene/Q systems support the ability to allocate different portions of
 a BlueGene block to different users and different jobs, so SLURM must be
-directly involved in each task launch request.
+directly involved in each task launch request.</p>
+<p>
 <b>The following is subject to change in order to support debugging.</b>
 In order to accomplish this, SLURM's srun command is executed to launch tasks.
-The srun command creates a job step allocation then invokes IBM's
-<span class="commandline">runjob</span> command to launch tasks within the
-allocated resources.</p>
+The srun command creates a job step allocation which is linked to IBM's
+<span class="commandline">runjob</span> libraries which will launch
+the tasks within the allocated resources.</p>
 
 <h3>BlueGene/L and BlueGene/P</h3>
 <p>BlueGene/L and P MPI relies upon the native
