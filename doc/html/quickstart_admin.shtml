@@ -110,7 +110,7 @@ Some macro definitions that may be used in building SLURM include:
 <dd>Specify if debugging logic within SLURM is to be enabled
 <dt>_prefix
 <dd>Pathname of directory to contain the SLURM files
-<dt>slurm_sysconfdir
+<dt>_sysconfdir  (or _slurm_sysconfdir)
 <dd>Pathname of directory containing the slurm.conf configuration file
 <dt>with_munge
 <dd>Specifies the MUNGE (authentication library) installation location
@@ -128,7 +128,7 @@ Some macro definitions that may be used in building SLURM include:
 #
 %_enable_debug     "--with-debug"
 %_prefix           /admin/llnl
-%slurm_sysconfdir  %{_prefix}/etc/slurm
+%_sysconfdir       %{_prefix}/etc/slurm
 %_defaultdocdir    %{_prefix}/doc
 %with_munge        "--with-munge=/opt/freeware"
 %with_proctrack    "--with-proctrack=/admin/llnl/include"
@@ -737,6 +737,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 December 2013</p>
+<p style="text-align:center;">Last modified 7 April 2014</p>
 
 <!--#include virtual="footer.txt"-->
