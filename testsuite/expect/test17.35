@@ -1,0 +1,111 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test performance/timing of job submissions.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Morris Jette <jette@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id    "17.35"
+set file_in    "test$test_id\.in"
+set exit_code  0
+set job_cnt    100
+set target     400
+
+print_header $test_id
+
+make_bash_script $file_in "
+inx=0
+while \[ \$inx -lt $job_cnt \]
+do
+	$sbatch --begin=midnight --job-name=$file_in --wrap date &
+	inx=\$((inx+1))
+done
+wait
+"
+
+set match 0
+set time  100000
+spawn time -f "elapsed %E" ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		incr match
+		exp_continue
+	}
+	-re "elapsed ($number):($number).($digit)($digit)" {
+		set mins       $expect_out(1,string)
+		set secs       $expect_out(2,string)
+		set tenths     $expect_out(3,string)
+		set hundredths $expect_out(4,string)
+		set time_used [expr $mins * 6000 + $secs * 100 + $tenths * 10 + $hundredths]
+		exp_continue
+	}
+	-re "elapsed ($number):($number).($digit)" {
+		set mins   $expect_out(1,string)
+		set secs   $expect_out(2,string)
+		set tenths $expect_out(3,string)
+		set time_used [expr $mins * 6000 + $secs * 100 + $tenths * 10]
+		exp_continue
+	}
+	-re "elapsed ($number):($number)" {
+		set mins   $expect_out(1,string)
+		set secs   $expect_out(2,string)
+		set tenths $expect_out(3,string)
+		set time_used [expr $mins * 6000 + $secs * 100]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $job_cnt} {
+	send_user "FAILURE: job count mismatch ($match != $job_cnt)\n"
+	set exit_code 1
+}
+exec $scancel --name=$file_in
+
+# Prevent zero divide
+if {$time_used == 0} {
+	set time_used 1
+}
+set rate [ expr ($job_cnt * 100) / $time_used ]
+send_user "Job submit rate $rate jobs per second\n"
+if {$rate < $target} {
+	send_user "FAILURE: Job submit rate of $rate below target of $target\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_in
+}
+exit $exit_code
