@@ -1421,6 +1421,7 @@ the values returned by 'PMI_KVS_Get_key_length_max()' and
 int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[], int val_len)
 {
 	int i, rc;
+	int j;
 
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_KVS_Iter_first\n");
@@ -1432,33 +1433,36 @@ int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[]
 	if (val == NULL)
 		return PMI_ERR_INVALID_VAL;
 
-	/* find the proper kvs record */
+	key[0] = '\0';
+	val[0] = '\0';
+	/* find the proper kvs record
+	 */
 	pthread_mutex_lock(&kvs_mutex);
 	for (i=0; i<kvs_rec_cnt; i++) {
+
 		if (kvs_recs[i].kvs_state == KVS_STATE_DEFUNCT)
 			continue;
+
 		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
 			continue;
+
 		kvs_recs[i].kvs_inx = 0;
 		if (kvs_recs[i].kvs_inx >= kvs_recs[i].kvs_cnt) {
-			key[0] = '\0';
-			val[0] = '\0';
 			rc = PMI_SUCCESS;
-		} else if (strlen(kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx]) >
-				(key_len-1)) {
-			rc = PMI_ERR_INVALID_KEY_LENGTH;
-		} else if (strlen(kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx]) >
-				(val_len-1)) {
-			rc = PMI_ERR_INVALID_VAL_LENGTH;
-		} else {
-			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx],
-				key_len);
-			strncpy(val,
-				kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
-				val_len);
-			rc = PMI_SUCCESS;
+			goto fini;
 		}
-		goto fini;
+
+		for (j = 0; i < kvs_recs[i].kvs_cnt; j++) {
+
+			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_LOCAL)
+				continue;
+
+			strncpy(key, kvs_recs[i].kvs_keys[j], key_len);
+			strncpy(val, kvs_recs[i].kvs_values[j],	val_len);
+			kvs_recs[i].kvs_inx = j;
+			rc = PMI_SUCCESS;
+			goto fini;
+		}
 	}
 	rc = PMI_ERR_INVALID_KVS;
 
@@ -1498,7 +1502,9 @@ key and val, must be at least as long as the values returned by
 int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 		char val[], int val_len)
 {
-	int i, rc;
+	int i;
+	int rc;
+	int j;
 
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_KVS_Iter_next\n");
@@ -1510,6 +1516,8 @@ int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 	if (val == NULL)
 		return PMI_ERR_INVALID_VAL;
 
+	key[0] = '\0';
+	val[0] = '\0';
 	/* find the proper kvs record */
 	pthread_mutex_lock(&kvs_mutex);
 	for (i=0; i<kvs_rec_cnt; i++) {
@@ -1519,24 +1527,21 @@ int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 			continue;
 		kvs_recs[i].kvs_inx++;
 		if (kvs_recs[i].kvs_inx >= kvs_recs[i].kvs_cnt) {
-			key[0] = '\0';
-			val[0] = '\0';
 			rc = PMI_SUCCESS;
-		} else if (strlen(kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx]) >
-				(key_len-1)) {
-			rc = PMI_ERR_INVALID_KEY_LENGTH;
-		} else if (strlen(kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx]) >
-				(val_len-1)) {
-			rc = PMI_ERR_INVALID_VAL_LENGTH;
-		} else {
-			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx],
-				key_len);
-			strncpy(val,
-				kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
-				val_len);
-			rc = PMI_SUCCESS;
+			goto fini;
 		}
-		goto fini;
+		for (j = kvs_recs[i].kvs_inx; j < kvs_recs[i].kvs_cnt; j++) {
+
+			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_LOCAL)
+				continue;
+
+			strncpy(key, kvs_recs[i].kvs_keys[j], key_len);
+			strncpy(val, kvs_recs[i].kvs_values[j],	val_len);
+			kvs_recs[i].kvs_inx = j;
+			rc = PMI_SUCCESS;
+			goto fini;
+		}
+
 	}
 	rc = PMI_ERR_INVALID_KVS;
 

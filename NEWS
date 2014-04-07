@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     slurmd has on that compute node has (i.e. raise both current and maximum
     limits).
  -- Fix issue with license used count when doing an scontrol reconfig.
+ -- Fix the PMI iterator to not report duplicated keys.
 
 * Changes in Slurm 14.03.0
 ==========================
@@ -322,6 +323,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.9
 ========================
+ -- Fix sinfo to work correctly with draining/mixed nodes as well as filtering
+    on Mixed state.
 
 * Changes in Slurm 2.6.8
 ========================
