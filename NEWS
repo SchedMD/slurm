@@ -352,6 +352,9 @@ documents those changes that are of interest to users and admins.
  -- MySQL - Fix it so a lock isn't held unnecessarily.
  -- Added new SchedulerParameters option of max_rpc_cnt when too many RPCs
     are active.
+ -- BGQ - Fix deny_pass to work correctly.
+ -- BGQ - Fix sub block steps using a block when the block has passthrough's
+    in it.
 
 * Changes in Slurm 2.6.7
 ========================
