@@ -264,7 +264,7 @@ extern int license_init(char *licenses)
 }
 
 /* Update licenses on this system based upon slurm.conf.
- * Preserve all previously allocated licenses */
+ * Remove all previously allocated licenses */
 extern int license_update(char *licenses)
 {
         ListIterator iter;
@@ -291,6 +291,7 @@ extern int license_update(char *licenses)
 			list_remove(iter);
 			if (!new_list)
 				new_list = list_create(license_free_rec);
+			license_entry->used = 0;
 			list_append(new_list, license_entry);
 			continue;
 		}
@@ -304,8 +305,7 @@ extern int license_update(char *licenses)
                         info("license %s removed with %u in use",
                          license_entry->name, license_entry->used);
                 } else {
-                        match->used = license_entry->used;
-                        if (match->used > match->total) {
+                        if (license_entry->used > match->total) {
                                 info("license %s count decreased",
                                  match->name);
                         }

@@ -60,7 +60,7 @@ extern char *get_licenses_used(void);
 extern int license_init(char *licenses);
 
 /* Update licenses on this system based upon slurm.conf.
- * Preserve all previously allocated licenses */
+ * Remove all previously allocated licenses */
 extern int license_update(char *licenses);
 
 extern void license_add_remote(slurmdb_res_rec_t *rec);
