@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix sinfo to work correctly with draining/mixed nodes as well as filtering
     on Mixed state.
+ -- Fix sacctmgr update user with no "where" condition.
 
 * Changes in Slurm 2.6.8
 ========================
