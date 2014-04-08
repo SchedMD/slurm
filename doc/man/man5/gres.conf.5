@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "December 2013" "gres.conf 14.03" "Slurm configuration file"
+.TH "gres.conf" "5" "April 2014" "gres.conf 14.11" "Slurm configuration file"
 .SH "NAME"
 gres.conf \- Slurm configuration file for generic resource management.
 
@@ -37,7 +37,8 @@ to use specific CPUs with specific devices (e.g. on a NUMA
 architecture). Multiple CPUs may be specified using a comma
 delimited list or a range may be specified using a "\-" separator
 (e.g. "0,1,2,3" or "0\-3").
-If not specified, then any CPU can be used with the resources.
+If not specified, then any CPU can be used with the resources, which also
+increases the speed of Slurm's scheduling algorithm.
 If any CPU can be used with the resources, then do not specify the
 \fBCPUs\fR option for improved speed in the SLURM scheduling logic.
 Since SLURM must be able to perform resource management on heterogeneous
