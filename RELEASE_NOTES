@@ -38,6 +38,10 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added SchedulerParameters options of bf_yield_interval and bf_yield_sleep
     to control how frequently and for how long the backfill scheduler will
     relinquish its locks.
+ -- To support larger numbers of jobs when the StateSaveDirectory is on a
+    file system that supports a limited number of files in a directory, add a
+    subdirectory called "hash.#" based upon the last digit of the job ID.
+
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

@@ -178,10 +178,10 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      uint16_t protocol_version);
 static int  _purge_job_record(uint32_t job_id);
 static void _purge_missing_jobs(int node_inx, time_t now);
-static void _read_data_array_from_file(char *file_name, char ***data,
+static int  _read_data_array_from_file(char *file_name, char ***data,
 				       uint32_t * size,
  				       struct job_record *job_ptr);
-static void _read_data_from_file(char *file_name, char **data);
+static int  _read_data_from_file(char *file_name, char **data);
 static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
@@ -311,13 +311,24 @@ void delete_job_details(struct job_record *job_entry)
 /* _delete_job_desc_files - delete job descriptor related files */
 static void _delete_job_desc_files(uint32_t job_id)
 {
-	char *dir_name, job_dir[20], *file_name;
+	char *dir_name = NULL, *file_name;
 	struct stat sbuf;
+	int hash = job_id % 10, stat_rc;
 
 	dir_name = slurm_get_state_save_location();
-
-	sprintf(job_dir, "/job.%d", job_id);
-	xstrcat(dir_name, job_dir);
+	xstrfmtcat(dir_name, "/hash.%d/job.%u", hash, job_id);
+	stat_rc = stat(dir_name, &sbuf);
+	if (stat_rc != 0) {
+		/* Read version 14.03 or earlier state format */
+		xfree(dir_name);
+		dir_name = slurm_get_state_save_location();
+		xstrfmtcat(dir_name, "/job.%u", job_id);
+		stat_rc = stat(dir_name, &sbuf);
+		if (stat_rc != 0) {
+			xfree(dir_name);
+			return;
+		}
+	}
 
 	file_name = xstrdup(dir_name);
 	xstrcat(file_name, "/environment");
@@ -329,8 +340,7 @@ static void _delete_job_desc_files(uint32_t job_id)
 	(void) unlink(file_name);
 	xfree(file_name);
 
-	if (stat(dir_name, &sbuf) == 0)	/* remove job directory as needed */
-		(void) rmdir(dir_name);
+	(void) rmdir(dir_name);
 	xfree(dir_name);
 }
 
@@ -4907,13 +4917,21 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc)
 static int
 _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 {
-	int error_code = 0;
+	int error_code = 0, hash;
 	char *dir_name, job_dir[32], *file_name;
 	DEF_TIMERS;
 
 	START_TIMER;
 	/* Create state_save_location directory */
 	dir_name = slurm_get_state_save_location();
+
+	/* Create directory based upon job ID due to limitations on the number
+	 * of files possible in a directory on some file system types (e.g.
+	 * up to 64k files on a FAT32 file system). */
+	hash = job_id % 10;
+	sprintf(job_dir, "/hash.%d", hash);
+	xstrcat(dir_name, job_dir);
+	(void) mkdir(dir_name, 0700);
 
 	/* Create job_id specific directory */
 	sprintf(job_dir, "/job.%u", job_id);
@@ -4949,13 +4967,21 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 static int
 _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 {
-	int error_code = 0;
-	char *dir_name_src, *dir_name_dest, job_dir[32];
+	int error_code = 0, hash;
+	char *dir_name_src, *dir_name_dest, job_dir[40];
 	char *file_name_src, *file_name_dest;
 
 	/* Create state_save_location directory */
 	dir_name_src  = slurm_get_state_save_location();
 	dir_name_dest = xstrdup(dir_name_src);
+
+	/* Create directory based upon job ID due to limitations on the number
+	 * of files possible in a directory on some file system types (e.g.
+	 * up to 64k files on a FAT32 file system). */
+	hash = job_id_dest % 10;
+	sprintf(job_dir, "/hash.%d", hash);
+	xstrcat(dir_name_dest, job_dir);
+	(void) mkdir(dir_name_dest, 0700);
 
 	/* Create job_id_dest specific directory */
 	sprintf(job_dir, "/job.%u", job_id_dest);
@@ -4968,6 +4994,10 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 	}
 
 	/* Identify job_id_src specific directory */
+	hash = job_id_src % 10;
+	sprintf(job_dir, "/hash.%d", hash);
+	xstrcat(dir_name_src, job_dir);
+	(void) mkdir(dir_name_src, 0700);
 	sprintf(job_dir, "/job.%u", job_id_src);
 	xstrcat(dir_name_src, job_dir);
 
@@ -5089,12 +5119,22 @@ static int _write_data_to_file(char *file_name, char *data)
 char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
 	char job_dir[30], *file_name, **environment = NULL;
+	int hash = job_ptr->job_id % 10;
 
 	file_name = slurm_get_state_save_location();
-	sprintf(job_dir, "/job.%d/environment", job_ptr->job_id);
+	sprintf(job_dir, "/hash.%d/job.%u/environment", hash, job_ptr->job_id);
 	xstrcat(file_name, job_dir);
 
-	_read_data_array_from_file(file_name, &environment, env_size, job_ptr);
+	if (_read_data_array_from_file(file_name, &environment, env_size,
+				       job_ptr)) {
+		/* Read state from version 14.03 or earlier */
+		xfree(file_name);
+		file_name = slurm_get_state_save_location();
+		sprintf(job_dir, "/job.%u/environment", job_ptr->job_id);
+		xstrcat(file_name, job_dir);
+		(void) _read_data_array_from_file(file_name, &environment,
+						  env_size, job_ptr);
+	}
 
 	xfree(file_name);
 	return environment;
@@ -5107,19 +5147,27 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
  */
 char *get_job_script(struct job_record *job_ptr)
 {
-	char *script = NULL;
+	char *file_name, job_dir[40], *script = NULL;
+	int hash;
 
-	if (job_ptr->batch_flag) {
-		char *file_name = slurm_get_state_save_location();
-		char job_dir[30];
+	if (!job_ptr->batch_flag)
+		return NULL;
 
-		sprintf(job_dir, "/job.%d/script", job_ptr->job_id);
-		xstrcat(file_name, job_dir);
+	hash = job_ptr->job_id % 10;
+	file_name = slurm_get_state_save_location();
+	sprintf(job_dir, "/hash.%d/job.%u/script", hash, job_ptr->job_id);
+	xstrcat(file_name, job_dir);
 
-		_read_data_from_file(file_name, &script);
-
+	if (_read_data_from_file(file_name, &script)) {
+		/* Read version 14.03 or earlier state format */
 		xfree(file_name);
+		file_name = slurm_get_state_save_location();
+		sprintf(job_dir, "/job.%u/script", job_ptr->job_id);
+		xstrcat(file_name, job_dir);
+		(void) _read_data_from_file(file_name, &script);
 	}
+
+	xfree(file_name);
 	return script;
 }
 
@@ -5130,9 +5178,10 @@ char *get_job_script(struct job_record *job_ptr)
  *	must be xfreed when no longer needed
  * OUT size - number of elements in data
  * IN job_ptr - job
+ * RET 0 on success, -1 on error
  * NOTE: The output format of this must be identical with _xduparray2()
  */
-static void
+static int
 _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 			   struct job_record *job_ptr)
 {
@@ -5149,7 +5198,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 	fd = open(file_name, 0);
 	if (fd < 0) {
 		error("Error opening file %s, %m", file_name);
-		return;
+		return -1;
 	}
 
 	amount = read(fd, &rec_cnt, sizeof(uint32_t));
@@ -5159,14 +5208,14 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 		else
 			verbose("File %s has zero size", file_name);
 		close(fd);
-		return;
+		return -1;
 	}
 
 	if (rec_cnt == 0) {
 		*data = NULL;
 		*size = 0;
 		close(fd);
-		return;
+		return 0;
 	}
 
 	pos = 0;
@@ -5178,7 +5227,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 			error("Error reading file %s, %m", file_name);
 			xfree(buffer);
 			close(fd);
-			return;
+			return -1;
 		}
 		pos += amount;
 		if (amount < BUF_SIZE)	/* end of file */
@@ -5248,7 +5297,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 
 	*size = rec_cnt;
 	*data = array_ptr;
-	return;
+	return 0;
 }
 
 /*
@@ -5256,8 +5305,9 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
  * IN file_name - file to read from
  * OUT data - pointer to  string
  *	must be xfreed when no longer needed
+ * RET - 0 on success, -1 on error
  */
-void _read_data_from_file(char *file_name, char **data)
+static int _read_data_from_file(char *file_name, char **data)
 {
 	int fd, pos, buf_size, amount;
 	char *buffer;
@@ -5269,7 +5319,7 @@ void _read_data_from_file(char *file_name, char **data)
 	fd = open(file_name, 0);
 	if (fd < 0) {
 		error("Error opening file %s, %m", file_name);
-		return;
+		return -1;
 	}
 
 	pos = 0;
@@ -5281,7 +5331,7 @@ void _read_data_from_file(char *file_name, char **data)
 			error("Error reading file %s, %m", file_name);
 			xfree(buffer);
 			close(fd);
-			return;
+			return -1;
 		}
 		if (amount < BUF_SIZE)	/* end of file */
 			break;
@@ -5292,7 +5342,7 @@ void _read_data_from_file(char *file_name, char **data)
 
 	*data = buffer;
 	close(fd);
-	return;
+	return 0;
 }
 
 /* Given a job request, return a multi_core_data struct.
@@ -9433,8 +9483,8 @@ int sync_job_files(void)
  */
 static void _get_batch_job_dir_ids(List batch_dirs)
 {
-	DIR *f_dir;
-	struct dirent *dir_ent;
+	DIR *f_dir, *h_dir;
+	struct dirent *dir_ent, *hash_ent;
 	long long_job_id;
 	uint32_t *job_id_ptr;
 	char *endptr;
@@ -9448,15 +9498,40 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 	}
 
 	while ((dir_ent = readdir(f_dir))) {
-		if (strncmp("job.#", dir_ent->d_name, 4))
-			continue;
-		long_job_id = strtol(&dir_ent->d_name[4], &endptr, 10);
-		if ((long_job_id == 0) || (endptr[0] != '\0'))
-			continue;
-		debug3("found batch directory for job_id %ld", long_job_id);
-		job_id_ptr = xmalloc(sizeof(uint32_t));
-		*job_id_ptr = long_job_id;
-		list_append (batch_dirs, job_id_ptr);
+		if (!strncmp("job.#", dir_ent->d_name, 4)) {
+			/* Read version 14.03 or earlier format state */
+			long_job_id = strtol(&dir_ent->d_name[4], &endptr, 10);
+			if ((long_job_id == 0) || (endptr[0] != '\0'))
+				continue;
+			debug3("found batch directory for job_id %ld",
+			      long_job_id);
+			job_id_ptr = xmalloc(sizeof(uint32_t));
+			*job_id_ptr = long_job_id;
+			list_append(batch_dirs, job_id_ptr);
+		} else if (!strncmp("hash.#", dir_ent->d_name, 5)) {
+			char *h_path = NULL;
+			xstrfmtcat(h_path, "%s/%s",
+				   slurmctld_conf.state_save_location,
+				   dir_ent->d_name);
+			h_dir = opendir(h_path);
+			xfree(h_path);
+			if (!h_dir)
+				continue;
+			while ((hash_ent = readdir(h_dir))) {
+				if (strncmp("job.#", hash_ent->d_name, 4))
+					continue;
+				long_job_id = strtol(&hash_ent->d_name[4],
+						     &endptr, 10);
+				if ((long_job_id == 0) || (endptr[0] != '\0'))
+					continue;
+				debug3("Found batch directory for job_id %ld",
+				      long_job_id);
+				job_id_ptr = xmalloc(sizeof(uint32_t));
+				*job_id_ptr = long_job_id;
+				list_append(batch_dirs, job_id_ptr);
+			}
+			closedir(h_dir);
+		}
 	}
 
 	closedir(f_dir);
