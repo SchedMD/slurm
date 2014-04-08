@@ -2698,7 +2698,7 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name)
 {
-	int i, j, cpu_cnt, cpus_ctld, gres_avail = 0, top_inx;
+	int i, j, cpu_size, cpus_ctld, gres_avail = 0, top_inx;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cpus_avail = NULL, cpu_cnt = 0;
@@ -2759,14 +2759,22 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			return (uint32_t) 0;	/* insufficient, gres to use */
 
 		cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
-		if (cpus_ctld < 1) {
-			error("gres/%s: job %u cpus on node %s < 1",
-			      gres_name, job_id, node_name);
-			return (uint32_t) 0;
-		}
 		if (cpu_bitmap) {
+			if (cpus_ctld < 1) {
+				error("gres/%s: job %u cpus on node %s < 1",
+				      gres_name, job_id, node_name);
+				return (uint32_t) 0;
+			}
 			_validate_gres_node_cpus(node_gres_ptr, cpus_ctld,
 						 node_name);
+		} else {
+			for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+				if (!node_gres_ptr->topo_cpus_bitmap[i])
+					continue;
+				cpus_ctld = bit_size(node_gres_ptr->
+						     topo_cpus_bitmap[i]);
+				break;
+			}
 		}
 
 		alloc_cpu_bitmap = bit_alloc(cpus_ctld);
@@ -2791,8 +2799,8 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				cpus_avail[i] = cpu_end_bit - cpu_start_bit + 1;
 				continue;
 			}
-			cpu_cnt = bit_size(node_gres_ptr->topo_cpus_bitmap[i]);
-			for (j = 0; j < cpu_cnt; j++) {
+			cpu_size = bit_size(node_gres_ptr->topo_cpus_bitmap[i]);
+			for (j = 0; j < cpu_size; j++) {
 				if (cpu_bitmap &&
 				    !bit_test(cpu_bitmap, cpu_start_bit+j))
 					continue;
