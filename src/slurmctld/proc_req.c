@@ -2819,7 +2819,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		error_code = validate_job_create_req(job_desc_msg);
 		if (job_desc_msg->array_bitmap)
-			schedule_cnt = 0;	/* Do full schedule cycle */
+			schedule_cnt = 100;
 	}
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {

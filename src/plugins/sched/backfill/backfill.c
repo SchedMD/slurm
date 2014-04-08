@@ -244,7 +244,8 @@ static bool _job_is_completing(void)
 static bool _many_pending_rpcs(void)
 {
 	//info("thread_count = %u", slurmctld_config.server_thread_count);
-	if (slurmctld_config.server_thread_count >= defer_rpc_cnt)
+	if ((defer_rpc_cnt > 0) &&
+	    (slurmctld_config.server_thread_count >= defer_rpc_cnt))
 		return true;
 	return false;
 }
