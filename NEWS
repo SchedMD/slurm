@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- To support larger numbers of jobs when the StateSaveDirectory is on a
     file system that supports a limited number of files in a directory, add a
     subdirectory called "hash.#" based upon the last digit of the job ID.
+ -- More gracefully handle missing batch script file. Just kill the job and do
+    not drain the compute node.
 
 * Changes in Slurm 14.03.1
 ==========================

@@ -1362,6 +1362,18 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 	launch_msg_ptr->uid = job_ptr->user_id;
 
+	if ((launch_msg_ptr->script = get_job_script(job_ptr)) == NULL) {
+		error("Can not find batch script, Aborting batch job %u",
+		      job_ptr->job_id);
+		/* FIXME: This is a kludge, but this event indicates a missing
+		 * batch script and should never happen. We are too deep into
+		 * the job launch to gracefully clean up here. */
+		job_ptr->end_time    = time(NULL);
+		job_ptr->time_limit = 0;
+		slurm_free_job_launch_msg(launch_msg_ptr);
+		return NULL;
+	}
+
 	if (getpwuid_r(launch_msg_ptr->uid, &pwd, buffer, PW_BUF_SIZE, &result)
 	    || !result) {
 #ifdef HAVE_NATIVE_CRAY
@@ -1383,27 +1395,26 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
 	launch_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
-	launch_msg_ptr->partition = xstrdup(job_ptr->partition);
 	launch_msg_ptr->overcommit = job_ptr->details->overcommit;
 	launch_msg_ptr->open_mode  = job_ptr->details->open_mode;
-	launch_msg_ptr->acctg_freq = xstrdup(job_ptr->details->acctg_freq);
 	launch_msg_ptr->cpus_per_task = job_ptr->details->cpus_per_task;
 	launch_msg_ptr->pn_min_memory = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->restart_cnt   = job_ptr->restart_cnt;
 
 	if (make_batch_job_cred(launch_msg_ptr, job_ptr, protocol_version)) {
-		error("aborting batch job %u", job_ptr->job_id);
+		error("Can not build credential. Aborting batch job %u",
+		      job_ptr->job_id);
 		/* FIXME: This is a kludge, but this event indicates a serious
-		 * problem with OpenSSH and should never happen. We are
-		 * too deep into the job launch to gracefully clean up. */
+		 * problem with OpenSSH and should never happen. We are too
+		 * deep into the job launch to gracefully clean up here. */
 		job_ptr->end_time    = time(NULL);
 		job_ptr->time_limit = 0;
-		xfree(launch_msg_ptr->alias_list);
-		xfree(launch_msg_ptr->nodes);
-		xfree(launch_msg_ptr);
+		slurm_free_job_launch_msg(launch_msg_ptr);
 		return NULL;
 	}
 
+	launch_msg_ptr->acctg_freq = xstrdup(job_ptr->details->acctg_freq);
+	launch_msg_ptr->partition = xstrdup(job_ptr->partition);
 	launch_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
 	launch_msg_ptr->std_in = xstrdup(job_ptr->details->std_in);
 	launch_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
@@ -1416,7 +1427,6 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
 	launch_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);
-	launch_msg_ptr->script = get_job_script(job_ptr);
 	launch_msg_ptr->environment = get_job_env(job_ptr,
 						  &launch_msg_ptr->envc);
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
