@@ -103,8 +103,9 @@
 #define KVS_STATE_LOCAL    0
 #define KVS_STATE_DEFUNCT  1
 
-#define KVS_KEY_STATE_GLOBAL   0
-#define KVS_KEY_STATE_LOCAL    1
+#define KVS_KEY_STATE_GLOBAL    0
+#define KVS_KEY_STATE_LOCAL     1
+#define KVS_KEY_STATE_DISABLED  2
 
 /* default key names form is jobid.stepid[.taskid.sequence] */
 struct kvs_rec {
@@ -139,6 +140,7 @@ inline static void _kvs_dump(void);
 static int  _kvs_put( const char kvsname[], const char key[],
 		const char value[], int local);
 static void _kvs_swap(struct kvs_rec *kvs_ptr, int inx1, int inx2);
+static void _kvs_disable_local_keys(void);
 
 /* Global variables */
 long pmi_jobid;
@@ -675,6 +677,9 @@ int PMI_Barrier( void )
 		return PMI_SUCCESS;
 	if (pmi_debug)
 		fprintf(stderr, "Past PMI_Barrier\n");
+
+
+	_kvs_disable_local_keys();
 
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++) {
 		kvs_ptr = kvs_set_ptr->kvs_comm_ptr[i];
@@ -1454,7 +1459,7 @@ int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[]
 
 		for (j = 0; i < kvs_recs[i].kvs_cnt; j++) {
 
-			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_LOCAL)
+			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_DISABLED)
 				continue;
 
 			strncpy(key, kvs_recs[i].kvs_keys[j], key_len);
@@ -1532,7 +1537,7 @@ int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 		}
 		for (j = kvs_recs[i].kvs_inx; j < kvs_recs[i].kvs_cnt; j++) {
 
-			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_LOCAL)
+			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_DISABLED)
 				continue;
 
 			strncpy(key, kvs_recs[i].kvs_keys[j], key_len);
@@ -1961,4 +1966,24 @@ inline static void _kvs_dump(void)
 		}
 	}
 #endif
+}
+
+/* _kvs_disable_local_keys()
+ *
+ * The PMI_Barrier() call returns all [key,val] from all
+ * ranks including myself. As such there are duplicated
+ * keys with state LOCAL and GLOBAL, disdable the LOCAL
+ * one so the iterator won't return duplicated keys.
+ */
+static void
+_kvs_disable_local_keys(void)
+{
+	int i;
+	int j;
+
+	for (i = 0; i < kvs_rec_cnt; i++) {
+		for (j = 0; j < kvs_recs[i].kvs_cnt; j++)
+			if (kvs_recs[i].kvs_key_states[j] == KVS_KEY_STATE_LOCAL)
+				kvs_recs[i].kvs_key_states[j] = KVS_KEY_STATE_DISABLED;
+	}
 }
