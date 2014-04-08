@@ -66,8 +66,11 @@ typedef struct gres_slurmd_conf {
 	char *file;
 	uint8_t has_file;	/* non-zero if file is set, flag for RPC */
 
-	/* Name of this gres type */
+	/* Name of this gres */
 	char *name;
+
+	/* Type of this gres (e.g. model name) */
+	char *type;
 
 	/* Gres ID number */
 	uint32_t plugin_id;

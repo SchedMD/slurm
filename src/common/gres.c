@@ -552,6 +552,7 @@ static void _destroy_gres_slurmd_conf(void *x)
 	xfree(p->cpus);
 	xfree(p->file);		/* Only used by slurmd */
 	xfree(p->name);
+	xfree(p->type);
 	xfree(p);
 }
 
@@ -566,20 +567,22 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	xassert(p);
 
 	if (!gres_debug) {
-		verbose("Gres Name=%s Count=%u", p->name, p->count);
+		verbose("Gres Name=%s Type=%s Count=%u",
+			p->name, p->type, p->count);
 		return 0;
 	}
 
 	if (p->cpus) {
-		info("Gres Name=%s Count=%u ID=%u File=%s CPUs=%s CpuCnt=%u",
-		     p->name, p->count, p->plugin_id, p->file, p->cpus,
+		info("Gres Name=%s Type=%s Count=%u ID=%u File=%s CPUs=%s "
+		     "CpuCnt=%u",
+		     p->name, p->type, p->count, p->plugin_id, p->file, p->cpus,
 		     p->cpu_cnt);
 	} else if (p->file) {
-		info("Gres Name=%s Count=%u ID=%u File=%s",
-		     p->name, p->count, p->plugin_id, p->file);
+		info("Gres Name=%s Type=%s Count=%u ID=%u File=%s",
+		     p->name, p->type, p->count, p->plugin_id, p->file);
 	} else {
-		info("Gres Name=%s Count=%u ID=%u", p->name, p->count,
-		     p->plugin_id);
+		info("Gres Name=%s Type=%s Count=%u ID=%u", p->name, p->type,
+		     p->count, p->plugin_id);
 	}
 
 	return 0;
@@ -650,7 +653,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
-		{"Name",  S_P_STRING},	/* Gres type name */
+		{"Name",  S_P_STRING},	/* Gres name */
+		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
 		{NULL}
 	};
 	int i;
@@ -691,6 +695,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		p->count = _validate_file(p->file, p->name);
 		p->has_file = 1;
 	}
+
+	(void) s_p_get_string(&p->type, "Type", tbl);
 
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
 		tmp_long = strtol(tmp_str, &last, 10);
@@ -744,7 +750,8 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
-		{"Name",  S_P_STRING},	/* Gres type name */
+		{"Name",  S_P_STRING},	/* Gres name */
+		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
 		{NULL}
 	};
 	s_p_hashtbl_t *tbl;
@@ -968,7 +975,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 {
 	int rc;
 	uint32_t magic = GRES_MAGIC;
-	uint16_t rec_cnt = 0, version= SLURM_PROTOCOL_VERSION;
+	uint16_t rec_cnt = 0, version = SLURM_PROTOCOL_VERSION;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 
@@ -990,6 +997,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 			pack32(gres_slurmd_conf->plugin_id, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
 			packstr(gres_slurmd_conf->name, buffer);
+			packstr(gres_slurmd_conf->type, buffer);
 		}
 		list_iterator_destroy(iter);
 	}
@@ -1009,7 +1017,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 	uint32_t count, cpu_cnt, magic, plugin_id, utmp32;
 	uint16_t rec_cnt, version;
 	uint8_t has_file;
-	char *tmp_cpus, *tmp_name;
+	char *tmp_cpus, *tmp_name, *tmp_type;
 	gres_slurmd_conf_t *p;
 
 	rc = gres_plugin_init();
@@ -1024,67 +1032,149 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i=0; i<rec_cnt; i++) {
-		safe_unpack32(&magic, buffer);
-		if (magic != GRES_MAGIC)
-			goto unpack_error;
+	if (version >= SLURM_14_11_PROTOCOL_VERSION) {
+		for (i = 0; i < rec_cnt; i++) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
 
-		safe_unpack32(&count, buffer);
-		safe_unpack32(&cpu_cnt, buffer);
-		safe_unpack8(&has_file, buffer);
-		safe_unpack32(&plugin_id, buffer);
-		safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
-		safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
+			safe_unpack32(&count, buffer);
+			safe_unpack32(&cpu_cnt, buffer);
+			safe_unpack8(&has_file, buffer);
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 
- 		for (j=0; j<gres_context_cnt; j++) {
- 			if (gres_context[j].plugin_id != plugin_id)
-				continue;
-			if (strcmp(gres_context[j].gres_name, tmp_name)) {
-				/* Should be caught in gres_plugin_init() */
-				error("gres_plugin_node_config_unpack: gres/%s"
-				      " duplicate plugin ID with %s, unable "
-				      "to process",
-				      tmp_name, gres_context[j].gres_name);
-				continue;
-			}
-			if (gres_context[j].has_file && !has_file && count) {
-				error("gres_plugin_node_config_unpack: gres/%s"
-				      " lacks File parameter for node %s",
+	 		for (j = 0; j < gres_context_cnt; j++) {
+	 			if (gres_context[j].plugin_id != plugin_id)
+					continue;
+				if (strcmp(gres_context[j].gres_name,
+					   tmp_name)) {
+					/* Should have beeen caught in
+					 * gres_plugin_init() */
+					error("gres_plugin_node_config_unpack: "
+					      "gres/%s duplicate plugin ID with"
+					      " %s, unable to process",
+					      tmp_name,
+					      gres_context[j].gres_name);
+					continue;
+				}
+				if (gres_context[j].has_file &&
+				    !has_file && count) {
+					error("gres_plugin_node_config_unpack: "
+					      "gres/%s lacks File parameter "
+					      "for node %s",
+					      tmp_name, node_name);
+					has_file = 1;
+				}
+				if (has_file && (count > 1024)) {
+					/* Avoid over-subscribing memory with
+					 * huge bitmaps */
+					error("gres_plugin_node_config_unpack: "
+					      "gres/%s has File plus very "
+					      "large Count (%u) for node %s, "
+					      "resetting value to 1024",
+					      tmp_name, count, node_name);
+					count = 1024;
+				}
+				if (has_file)	/* Don't clear if already set */
+					gres_context[j].has_file = has_file;
+				break;
+	 		}
+			if (j >= gres_context_cnt) {
+				/* GresPlugins is inconsistently configured.
+				 * Not a fatal error. Skip this data. */
+				error("gres_plugin_node_config_unpack: no "
+				      "plugin configured to unpack data "
+				      "type %s from node %s",
 				      tmp_name, node_name);
-				has_file = 1;
+				xfree(tmp_cpus);
+				xfree(tmp_name);
+				continue;
 			}
-			if (has_file && (count > 1024)) {
-				/* Avoid over-subscribing memory with huge
-				 * bitmaps */
-				error("gres_plugin_node_config_unpack: gres/%s"
-				      " has File plus very large Count (%u) "
-				      "for node %s, resetting value to 1024",
-				      tmp_name, count, node_name);
-				count = 1024;
-			}
-			if (has_file)	/* Don't clear if already set */
-				gres_context[j].has_file = has_file;
-			break;
- 		}
-		if (j >= gres_context_cnt) {
-			/* A sign that GresPlugins is inconsistently
-			 * configured. Not a fatal error. Skip this data. */
-			error("gres_plugin_node_config_unpack: no plugin "
-			      "configured to unpack data type %s from node %s",
-			      tmp_name, node_name);
-			xfree(tmp_cpus);
-			xfree(tmp_name);
-			continue;
+			p = xmalloc(sizeof(gres_slurmd_conf_t));
+			p->count = count;
+			p->cpu_cnt = cpu_cnt;
+			p->has_file = has_file;
+			p->cpus = tmp_cpus;
+			tmp_cpus = NULL;	/* Nothing left to xfree */
+			p->name = tmp_name;     /* Preserve for accounting! */
+			p->type = tmp_type;
+			tmp_type = NULL;	/* Nothing left to xfree */
+			p->plugin_id = plugin_id;
+			list_append(gres_conf_list, p);
 		}
-		p = xmalloc(sizeof(gres_slurmd_conf_t));
-		p->count = count;
-		p->cpu_cnt = cpu_cnt;
-		p->has_file = has_file;
-		p->cpus = tmp_cpus;
-		tmp_cpus = NULL;	/* Nothing left to xfree */
-		p->name = tmp_name;     /* We need to preserve for accounting! */
-		p->plugin_id = plugin_id;
-		list_append(gres_conf_list, p);
+	} else {
+		for (i = 0; i < rec_cnt; i++) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+
+			safe_unpack32(&count, buffer);
+			safe_unpack32(&cpu_cnt, buffer);
+			safe_unpack8(&has_file, buffer);
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
+
+	 		for (j = 0; j < gres_context_cnt; j++) {
+	 			if (gres_context[j].plugin_id != plugin_id)
+					continue;
+				if (strcmp(gres_context[j].gres_name,
+					   tmp_name)) {
+					/* Should have beeen caught in
+					 * gres_plugin_init() */
+					error("gres_plugin_node_config_unpack: "
+					      "gres/%s duplicate plugin ID with"
+					      " %s, unable to process",
+					      tmp_name,
+					      gres_context[j].gres_name);
+					continue;
+				}
+				if (gres_context[j].has_file &&
+				    !has_file && count) {
+					error("gres_plugin_node_config_unpack: "
+					      "gres/%s lacks File parameter "
+					      "for node %s",
+					      tmp_name, node_name);
+					has_file = 1;
+				}
+				if (has_file && (count > 1024)) {
+					/* Avoid over-subscribing memory with
+					 * huge bitmaps */
+					error("gres_plugin_node_config_unpack: "
+					      "gres/%s has File plus very "
+					      "large Count (%u) for node %s, "
+					      "resetting value to 1024",
+					      tmp_name, count, node_name);
+					count = 1024;
+				}
+				if (has_file)	/* Don't clear if already set */
+					gres_context[j].has_file = has_file;
+				break;
+	 		}
+			if (j >= gres_context_cnt) {
+				/* GresPlugins is inconsistently configured.
+				 * Not a fatal error. Skip this data. */
+				error("gres_plugin_node_config_unpack: no "
+				      "plugin configured to unpack data "
+				      "type %s from node %s",
+				      tmp_name, node_name);
+				xfree(tmp_cpus);
+				xfree(tmp_name);
+				continue;
+			}
+			p = xmalloc(sizeof(gres_slurmd_conf_t));
+			p->count = count;
+			p->cpu_cnt = cpu_cnt;
+			p->has_file = has_file;
+			p->cpus = tmp_cpus;
+			tmp_cpus = NULL;	/* Nothing left to xfree */
+			p->name = tmp_name;     /* Preserve for accounting! */
+			p->plugin_id = plugin_id;
+			list_append(gres_conf_list, p);
+		}
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 	return rc;

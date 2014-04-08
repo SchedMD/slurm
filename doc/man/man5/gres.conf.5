@@ -95,6 +95,11 @@ line should apply to.
 The NodeName specification can use a Slurm hostlist specification as shown in
 the example below.
 
+.TP
+\fBType\fR
+An arbitrary string identifying the type of device.
+For example, a particular model of GPU.
+
 .SH "EXAMPLES"
 .LP
 .br
@@ -106,13 +111,13 @@ the example below.
 .br
 # Configure support for our four GPUs
 .br
-Name=gpu File=/dev/nvidia0 CPUs=0,1
+Name=gpu Type=gtx560 File=/dev/nvidia0 CPUs=0,1
 .br
-Name=gpu File=/dev/nvidia1 CPUs=0,1
+Name=gpu Type=gtx560 File=/dev/nvidia1 CPUs=0,1
 .br
-Name=gpu File=/dev/nvidia2 CPUs=2,3
+Name=gpu Type=tesla  File=/dev/nvidia2 CPUs=2,3
 .br
-Name=gpu File=/dev/nvidia3 CPUs=2,3
+Name=gpu Type=tesla  File=/dev/nvidia3 CPUs=2,3
 .br
 Name=bandwidth Count=20M
 
@@ -134,7 +139,7 @@ NodeName=tux[16\-31] Name=gpu File=/dev/nvidia[0\-7]
 Copyright (C) 2010 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2014 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
