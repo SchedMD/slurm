@@ -1204,11 +1204,13 @@ static void _gres_node_list_delete(void *list_element)
 	for (i=0; i<gres_node_ptr->topo_cnt; i++) {
 		FREE_NULL_BITMAP(gres_node_ptr->topo_cpus_bitmap[i]);
 		FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
+		xfree(gres_node_ptr->type[i]);
 	}
 	xfree(gres_node_ptr->topo_cpus_bitmap);
 	xfree(gres_node_ptr->topo_gres_bitmap);
 	xfree(gres_node_ptr->topo_gres_cnt_alloc);
 	xfree(gres_node_ptr->topo_gres_cnt_avail);
+	xfree(gres_node_ptr->type);
 	xfree(gres_node_ptr);
 	xfree(gres_ptr);
 }
@@ -1414,7 +1416,7 @@ static uint32_t _get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt)
 			continue;
 		gres_cnt += gres_slurmd_conf->count;
 		rec_cnt++;
-		if (gres_slurmd_conf->cpus)
+		if (gres_slurmd_conf->cpus || gres_slurmd_conf->type)
 			cpu_set_cnt++;
 	}
 	list_iterator_destroy(iter);
@@ -1470,7 +1472,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 {
 	int i, j, gres_inx, rc = SLURM_SUCCESS;
 	uint32_t gres_cnt, set_cnt = 0;
-	bool updated_config = false;
+	bool cpus_config = false, updated_config = false;
 	gres_node_state_t *gres_data;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -1496,14 +1498,17 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		/* Need to clear topology info */
 		xfree(gres_data->topo_gres_cnt_alloc);
 		xfree(gres_data->topo_gres_cnt_avail);
-		for (i=0; i<gres_data->topo_cnt; i++) {
+		for (i = 0; i < gres_data->topo_cnt; i++) {
 			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
 			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
+			xfree(gres_data->type[i]);
 		}
 		xfree(gres_data->topo_gres_bitmap);
 		xfree(gres_data->topo_cpus_bitmap);
+		xfree(gres_data->type);
 		gres_data->topo_cnt = set_cnt;
 	}
+
 	if (context_ptr->has_file && (set_cnt != gres_data->topo_cnt)) {
 		/* Need to rebuild topology info */
 		/* Resize the data structures here */
@@ -1513,16 +1518,19 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->topo_gres_cnt_avail =
 			xrealloc(gres_data->topo_gres_cnt_avail,
 				 set_cnt * sizeof(uint32_t));
-		for (i=0; i<gres_data->topo_cnt; i++)
+		for (i = 0; i < gres_data->topo_cnt; i++) {
 			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
+			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
+			xfree(gres_data->type[i]);
+		}
 		gres_data->topo_gres_bitmap =
 			xrealloc(gres_data->topo_gres_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
-		for (i=0; i<gres_data->topo_cnt; i++)
-			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
 		gres_data->topo_cpus_bitmap =
 			xrealloc(gres_data->topo_cpus_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
+		gres_data->type =
+			xrealloc(gres_data->type, set_cnt * sizeof(char *));
 		gres_data->topo_cnt = set_cnt;
 
 		iter = list_iterator_create(gres_conf_list);
@@ -1539,18 +1547,22 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 			if (gres_slurmd_conf->cpus) {
 				bit_unfmt(gres_data->topo_cpus_bitmap[i],
 					  gres_slurmd_conf->cpus);
+				cpus_config = true;
 			} else {
-				error("%s: has CPUs configured for only some "
-				      "of the records on node %s",
-				      context_ptr->gres_type, node_name);
+				if (cpus_config) {
+					error("%s: has CPUs configured for only"
+					      " some of the records on node %s",
+					      context_ptr->gres_type,node_name);
+				}
 				bit_nset(gres_data->topo_cpus_bitmap[i], 0,
 					 (gres_slurmd_conf->cpu_cnt - 1));
 			}
 			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
-			for (j=0; j<gres_slurmd_conf->count; j++) {
+			for (j = 0; j < gres_slurmd_conf->count; j++) {
 				bit_set(gres_data->topo_gres_bitmap[i],
 					gres_inx++);
 			}
+			gres_data->type[i] = xstrdup(gres_slurmd_conf->type);
 			i++;
 		}
 		list_iterator_destroy(iter);
@@ -1604,11 +1616,13 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 			for (i=0; i<gres_data->topo_cnt; i++) {
 				FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
 				FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
+				xfree(gres_data->type[i]);
 			}
 			xfree(gres_data->topo_cpus_bitmap);
 			xfree(gres_data->topo_gres_bitmap);
 			xfree(gres_data->topo_gres_cnt_alloc);
 			xfree(gres_data->topo_gres_cnt_avail);
+			xfree(gres_data->type);
 		}
 		gres_data->topo_cnt = 0;
 	} else if ((fast_schedule == 0) &&
@@ -1939,6 +1953,7 @@ static void *_node_state_dup(void *gres_data)
 						sizeof(uint32_t));
 	new_gres->topo_gres_cnt_avail = xmalloc(gres_ptr->topo_cnt *
 						sizeof(uint32_t));
+	new_gres->type = xmalloc(gres_ptr->topo_cnt * sizeof(char *));
 	for (i=0; i<gres_ptr->topo_cnt; i++) {
 		new_gres->topo_cpus_bitmap[i] =
 			bit_copy(gres_ptr->topo_cpus_bitmap[i]);
@@ -1948,6 +1963,7 @@ static void *_node_state_dup(void *gres_data)
 			gres_ptr->topo_gres_cnt_alloc[i];
 		new_gres->topo_gres_cnt_avail[i] =
 			gres_ptr->topo_gres_cnt_avail[i];
+		new_gres->type[i] = xstrdup(gres_ptr->type[i]);
 	}
 	return new_gres;
 }
@@ -2090,16 +2106,17 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 			info("  topo_cpus_bitmap[%d]:%s", i, tmp_str);
 		} else
 			info("  topo_cpus_bitmap[%d]:NULL", i);
-		if (gres_node_ptr->topo_cpus_bitmap[i]) {
+		if (gres_node_ptr->topo_gres_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_node_ptr->topo_gres_bitmap[i]);
 			info("  topo_gres_bitmap[%d]:%s", i, tmp_str);
 		} else
 			info("  topo_gres_bitmap[%d]:NULL", i);
-		info("  topo_gres_cnt_alloc[%d]:%u",i,
+		info("  topo_gres_cnt_alloc[%d]:%u", i,
 		     gres_node_ptr->topo_gres_cnt_alloc[i]);
-		info("  topo_gres_cnt_avail[%d]:%u",i,
+		info("  topo_gres_cnt_avail[%d]:%u", i,
 		     gres_node_ptr->topo_gres_cnt_avail[i]);
+		info("  type[%d]:%s", i, gres_node_ptr->type[i]);
 	}
 }
 
