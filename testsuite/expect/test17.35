@@ -35,7 +35,7 @@ set test_id    "17.35"
 set file_in    "test$test_id\.in"
 set exit_code  0
 set job_cnt    100
-set target     400
+set target     200
 
 print_header $test_id
 
@@ -101,6 +101,7 @@ set rate [ expr ($job_cnt * 100) / $time_used ]
 send_user "Job submit rate $rate jobs per second\n"
 if {$rate < $target} {
 	send_user "FAILURE: Job submit rate of $rate below target of $target\n"
+	send_user "FAILURE: This may be due to use of NFS rather than local storage for logs or state information\n"
 	set exit_code 1
 }
 
