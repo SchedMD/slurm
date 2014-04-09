@@ -44,6 +44,9 @@ documents those changes that are of interest to users and admins.
  -- If the environment variable is greater than MAX_ENV_STRLEN don't
     set it in the job env otherwise the exec() fails.
  -- Optimize scontrol hold/release logic for job arrays.
+ -- Modify srun to report an exit code of zero rather than nine if some tasks
+    exit with a return code of zero and others are killed with SIGKILL. Only an
+    exit code of zero did this.
 
 * Changes in Slurm 14.03.0
 ==========================
