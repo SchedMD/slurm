@@ -369,7 +369,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	// Check the result
 	if (status == 0) {
 		// Cancel the job step, since we didn't find the exiting msg
-		fprintf(stderr, "Terminating job step, task %d improper exit\n",
+		error("Terminating job step, task %d improper exit",
 			job->envtp->procid);
 		slurm_terminate_job_step(job->jobid, job->stepid);
 	}
