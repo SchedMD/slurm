@@ -103,6 +103,19 @@ if {$job_id2 == 0} {
 
 exec $bin_rm -f $file_in
 
+if {[wait_for_job $job_id1 "RUNNING"] != 0} {
+        send_user "\nFAILURE: waiting for job $job_id1 to start\n"
+        cancel_job $job_id1
+        cancel_job $job_id2
+        exit 1
+}
+if {[wait_for_job $job_id2 "RUNNING"] != 0} {
+        send_user "\nFAILURE: waiting for job $job_id2 to start\n"
+        cancel_job $job_id1
+        cancel_job $job_id2
+        exit 1
+}
+
 #
 # Look for these jobs with scontrol
 #

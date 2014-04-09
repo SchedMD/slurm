@@ -1539,9 +1539,9 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 		 * of managed jobs.
 		 */
 		if (!defer_sched)
-			(void) schedule(0);
-		schedule_node_save();
-		schedule_job_save();
+			(void) schedule(0);	/* Has own locking */
+		schedule_node_save();		/* Has own locking */
+		schedule_job_save();		/* Has own locking */
 	}
 
 	/* NOTE: RPC has no response */
@@ -2258,12 +2258,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_node_registration");
 		if (newly_up) {
-			static time_t last_schedule = (time_t) 0;
-			time_t now = time(NULL);
-			if (difftime(now, last_schedule) > 5) {
-				last_schedule = now;
-				schedule(0);	/* has its own locks */
-			}
+			queue_job_scheduler();
 		}
 	}
 
@@ -2603,8 +2598,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		     TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		priority_g_reconfig(false);	/* notify priority plugin too */
-		schedule(0);			/* has its own locks */
-		save_all_state();
+		save_all_state();		/* has its own locks */
+		queue_job_scheduler();
 	}
 }
 
@@ -2895,12 +2890,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */
 static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 {
-	static time_t config_update = 0;
-	static bool defer_sched = false;
 	static int active_rpc_cnt = 0;
-	static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-	static int sched_cnt = 0;
-	int sched_now_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	uint32_t step_id = 0;
@@ -2912,17 +2902,10 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	int schedule_cnt = 1;
 	char *err_msg = NULL;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB from uid=%d", uid);
-
-	if (config_update != slurmctld_conf.last_update) {
-		char *sched_params = slurm_get_sched_params();
-		defer_sched = (sched_params && strstr(sched_params,"defer"));
-		xfree(sched_params);
-	}
 
 	slurm_msg_t_init(&response_msg);
 	response_msg.flags = msg->flags;
@@ -2939,11 +2922,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%d", uid);
 	}
-	if (error_code == SLURM_SUCCESS) {
+	if (error_code == SLURM_SUCCESS)
 		error_code = validate_job_create_req(job_desc_msg);
-		if (job_desc_msg->array_bitmap)
-			schedule_cnt = 100;
-	}
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		_throttle_start(&active_rpc_cnt);
@@ -3058,8 +3038,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	} else if (!job_ptr) {	/* Mostly to avoid CLANG error */
 		fatal("job_allocate failed to allocate job, rc=%d",error_code);
 	} else {
-		if (job_ptr->part_ptr_list)
-			schedule_cnt *= list_count(job_ptr->part_ptr_list);
 		info("_slurm_rpc_submit_batch_job JobId=%u %s",
 		     job_ptr->job_id, TIME_STR);
 		/* send job_ID */
@@ -3070,32 +3048,12 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
-		/* In defer mode, avoid triggering the scheduler logic
-		 * for every submit batch job request. */
-		if (!defer_sched) {
-			slurm_mutex_lock(&sched_cnt_mutex);
-			sched_cnt += schedule_cnt;
-			slurm_mutex_unlock(&sched_cnt_mutex);
-		}
+		schedule_job_save();	/* Has own locks */
+		schedule_node_save();	/* Has own locks */
+		queue_job_scheduler();
 	}
 
-fini:	/* We need to use schedule() to initiate a batch job in order to run
-	 * the various prologs, boot the node, etc. We also run schedule()
-	 * even if this job could not start, say due to a higher priority job,
-	 * since the locks are released above and we might start some other
-	 * job here. We do not run schedule() on each batch submission to
-	 * limit its overhead on large numbers of job submissions */
-	slurm_mutex_lock(&sched_cnt_mutex);
-	if ((active_rpc_cnt == 0) || (sched_cnt > 32)) {
-		sched_now_cnt = sched_cnt;
-		sched_cnt = 0;
-	}
-	slurm_mutex_unlock(&sched_cnt_mutex);
-	if (sched_now_cnt)
-		(void) schedule(sched_now_cnt); /* has own locks */
-	schedule_job_save();	/* has own locks */
-	schedule_node_save();	/* has own locks */
-	xfree(err_msg);
+fini:	xfree(err_msg);
 }
 
 /* _slurm_rpc_update_job - process RPC to update the configuration of a
@@ -3130,9 +3088,9 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 		       job_desc_msg->job_id, uid, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		/* Below functions provide their own locking */
-		schedule(0);
 		schedule_job_save();
 		schedule_node_save();
+		queue_job_scheduler();
 	}
 }
 
@@ -3276,9 +3234,8 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	}
 
 	/* Below functions provide their own locks */
-	if (schedule(0))
-		schedule_job_save();
 	schedule_node_save();
+	queue_job_scheduler();
 	trigger_reconfig();
 }
 
@@ -3327,12 +3284,8 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 		       part_desc_ptr->name, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-		/* NOTE: These functions provide their own locks */
-		schedule_part_save();
-		if (schedule(0)) {
-			schedule_job_save();
-			schedule_node_save();
-		}
+		schedule_part_save();		/* Has its locking */
+		queue_job_scheduler();
 	}
 }
 
@@ -3374,10 +3327,8 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 		     part_desc_ptr->name, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-		/* NOTE: These functions provide their own locks */
-		schedule(0);
-		save_all_state();
-
+		save_all_state();	/* Has own locking */
+		queue_job_scheduler();
 	}
 }
 
@@ -3434,11 +3385,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 		response_msg.data     = &resv_resp_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
-		/* NOTE: These functions provide their own locks */
-		if (schedule(0)) {
-			schedule_job_save();
-			schedule_node_save();
-		}
+		queue_job_scheduler();
 	}
 }
 
@@ -3480,11 +3427,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 		       resv_desc_ptr->name, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-		/* NOTE: These functions provide their own locks */
-		if (schedule(0)) {
-			schedule_job_save();
-			schedule_node_save();
-		}
+		queue_job_scheduler();
 	}
 }
 
@@ -3527,12 +3470,7 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 		     resv_desc_ptr->name, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-		/* NOTE: These functions provide their own locks */
-		if (schedule(0)) {
-			schedule_job_save();
-			schedule_node_save();
-		}
-
+		queue_job_scheduler();
 	}
 }
 
@@ -3786,10 +3724,10 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	} else {
 		info("_slurm_rpc_suspend(%s) for %u %s", op,
 		     sus_ptr->job_id, TIME_STR);
-		/* Functions below provide their own locking */
+
+		schedule_job_save();	/* Has own locking */
 		if (sus_ptr->op == SUSPEND_JOB)
-			(void) schedule(0);
-		schedule_job_save();
+			queue_job_scheduler();
 	}
 }
 

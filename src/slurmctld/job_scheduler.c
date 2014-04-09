@@ -747,7 +747,6 @@ extern int schedule(uint32_t job_limit)
 	static int max_jobs_per_part = 0;
 	static int defer_rpc_cnt = 0;
 	time_t now = time(NULL), sched_start;
-
 	DEF_TIMERS;
 
 	sched_start = now;
