@@ -244,12 +244,13 @@ static uint32_t _get_job_time(uint32_t job_id)
 extern int
 scontrol_hold(char *op, char *job_id_str)
 {
+	static uint32_t last_job_id = NO_VAL;
+	static job_info_msg_t *resp = NULL;
 	int i, rc = SLURM_SUCCESS;
 	char *next_str;
 	job_desc_msg_t job_msg;
 	uint32_t job_id;
 	uint32_t array_id;
-	job_info_msg_t *resp;
 	slurm_job_info_t *job_ptr;
 
 	if (job_id_str) {
@@ -259,18 +260,22 @@ scontrol_hold(char *op, char *job_id_str)
 		else
 			array_id = NO_VAL;
 		if ((job_id == 0) || (next_str[0] != '\0')) {
-			fprintf(stderr, "Invalid job id specified\n");
+			fprintf(stderr, "Invalid job id specified (%s)\n",
+				job_id_str);
 			return 1;
 		}
 	} else {
-		fprintf(stderr, "Invalid job id specified\n");
-		return 1;
+		last_job_id = NO_VAL;	/* Refresh cache on next call */
+		return 0;
 	}
 
-	if (scontrol_load_job(&resp, job_id)) {
-		if (quiet_flag == -1)
-			slurm_perror ("slurm_load_job error");
-		return 1;
+	if (last_job_id != job_id) {
+		if (scontrol_load_job(&resp, job_id)) {
+			if (quiet_flag == -1)
+				slurm_perror ("slurm_load_job error");
+			return 1;
+		}
+		last_job_id = job_id;
 	}
 
 	slurm_init_job_desc_msg (&job_msg);
@@ -303,6 +308,9 @@ scontrol_hold(char *op, char *job_id_str)
 		job_msg.job_id = job_ptr->job_id;
 		if (slurm_update_job(&job_msg))
 			rc = slurm_get_errno();
+
+		if (array_id != NO_VAL)
+			break;
 	}
 
 	return rc;

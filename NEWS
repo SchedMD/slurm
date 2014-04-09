@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     frequently, but still in a timely fashion.
  -- If the environment variable is greater than MAX_ENV_STRLEN don't
     set it in the job env otherwise the exec() fails.
+ -- Optimize scontrol hold/release logic for job arrays.
 
 * Changes in Slurm 14.03.0
 ==========================

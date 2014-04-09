@@ -932,6 +932,7 @@ _process_command (int argc, char *argv[])
 						slurm_perror("slurm_suspend error");
 				}
 			}
+			(void) scontrol_hold(argv[0], NULL);   /* Clear cache */
 		}
 	}
 	else if ((strncasecmp (tag, "suspend", MAX(tag_len, 2)) == 0) ||
