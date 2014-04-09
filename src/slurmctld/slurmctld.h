@@ -1653,6 +1653,9 @@ void purge_old_job(void);
 /* Convert a comma delimited list of QOS names into a bitmap */
 extern void qos_list_build(char *qos, bitstr_t **qos_bits);
 
+/* Request that the job scheduler execute soon (typically within seconds) */
+extern void queue_job_scheduler(void);
+
 /*
  * rehash_jobs - Create or rebuild the job hash table.
  * NOTE: run lock_slurmctld before entry: Read config, write job

@@ -35,6 +35,12 @@ documents those changes that are of interest to users and admins.
     limits).
  -- Fix issue with license used count when doing an scontrol reconfig.
  -- Fix the PMI iterator to not report duplicated keys.
+ -- Fix issue with sinfo when -o is used without the %P option.
+ -- Rather than immediately invoking an execution of the scheduling logic on
+    every event type that can enable the execution of a new job, queue its
+    execution. This permits faster execution of some operations, such as
+    modifying large counts of jobs, by executing the scheduling logic less
+    frequently, but still in a timely fashion.
 
 * Changes in Slurm 14.03.0
 ==========================

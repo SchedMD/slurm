@@ -190,6 +190,8 @@ static pid_t	slurmctld_pid;
 static char    *slurm_conf_filename;
 static int      primary = 1 ;
 static pthread_t assoc_cache_thread = (pthread_t) 0;
+static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int      job_sched_cnt = 0;
 
 /*
  * Static list of signals to block in this process
@@ -779,10 +781,18 @@ static int _reconfigure_slurm(void)
 	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();
 	priority_g_reconfig(true);	/* notify priority plugin too */
-	schedule(0);			/* has its own locks */
-	save_all_state();
+	save_all_state();		/* Has own locking */
+	queue_job_scheduler();
 
 	return rc;
+}
+
+/* Request that the job scheduler execute soon (typically within seconds) */
+extern void queue_job_scheduler(void)
+{
+	slurm_mutex_lock(&sched_cnt_mutex);
+	job_sched_cnt++;
+	slurm_mutex_unlock(&sched_cnt_mutex);
 }
 
 /* _slurmctld_signal_hand - Process daemon-wide signals */
@@ -1318,10 +1328,10 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_uid_update;
 	static time_t last_reboot_msg_time;
 	static bool ping_msg_sent = false;
-	static bool run_job_scheduler = false;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int group_time, group_force;
+	uint32_t job_limit;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -1418,7 +1428,7 @@ static void *_slurmctld_background(void *no_data)
 			last_resv_time = now;
 			lock_slurmctld(node_write_lock);
 			if (set_node_maint_mode(false) > 0)
-				run_job_scheduler = true;
+				queue_job_scheduler();
 			unlock_slurmctld(node_write_lock);
 		}
 
@@ -1540,12 +1550,23 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_write_lock);
 		}
 
-		if ((difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) ||
-		    run_job_scheduler) {
+		job_limit = NO_VAL;
+		if (difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) {
+			slurm_mutex_lock(&sched_cnt_mutex);
+			/* job_limit = job_sched_cnt;	Ignored */
+			job_limit = INFINITE;
+			job_sched_cnt = 0;
+			slurm_mutex_unlock(&sched_cnt_mutex);
+		} else if (job_sched_cnt) {
+			slurm_mutex_lock(&sched_cnt_mutex);
+			job_limit = 0;	/* Default depth */
+			job_sched_cnt = 0;
+			slurm_mutex_unlock(&sched_cnt_mutex);
+		}
+		if (job_limit != NO_VAL) {
 			now = time(NULL);
 			last_sched_time = now;
-			run_job_scheduler = false;
-			if (schedule(INFINITE))
+			if (schedule(job_limit))
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();
 		}
