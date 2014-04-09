@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     limits).
  -- Fix issue with license used count when doing an scontrol reconfig.
  -- Fix the PMI iterator to not report duplicated keys.
+ -- Fix issue with sinfo when -o is used without the %P option.
 
 * Changes in Slurm 14.03.0
 ==========================

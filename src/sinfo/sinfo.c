@@ -802,6 +802,9 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	if ((part_ptr == NULL) || (sinfo_ptr->part_info == NULL))
 		return false;
 
+	if ((_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
+		return false;
+
 	if (params.match_flags.avail_flag &&
 	    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
 		return false;
@@ -825,10 +828,6 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 
 	if (params.match_flags.max_time_flag &&
 	    (part_ptr->max_time != sinfo_ptr->part_info->max_time))
-		return false;
-
-	if (params.match_flags.partition_flag &&
-	    (_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
 		return false;
 
 	if (params.match_flags.root_flag &&
