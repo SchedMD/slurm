@@ -288,16 +288,16 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	vsnprintf (value, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
 
-	if (envp && *envp) {
-		if (env_array_overwrite(envp, name, value) == 1)
-			rc = 0;
-		else
-			rc = 1;
+	int size = strlen(name) + strlen(value) + 2;
+	if (size >= MAX_ENV_STRLEN) {
+		error("environment variable %s is too long", name);
+		rc = ENOMEM;
 	} else {
-		int size = strlen(name) + strlen(value) + 2;
-		if (size >= MAX_ENV_STRLEN) {
-			error("environment variable %s is too long", name);
-			rc = ENOMEM;
+		if (envp && *envp) {
+			if (env_array_overwrite(envp, name, value) == 1)
+				rc = 0;
+			else
+				rc = 1;
 		} else {
 			/* XXX Space is allocated on the heap and will never
 			 * be reclaimed.
