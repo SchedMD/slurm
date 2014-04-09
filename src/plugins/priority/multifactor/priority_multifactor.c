@@ -598,13 +598,8 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 		if (start_time > use_time)
 			diff = start_time - use_time;
 
-		if (job_ptr->details->begin_time) {
-			if (diff < max_age) {
-				job_ptr->prio_factors->priority_age =
-					(double)diff / (double)max_age;
-			} else
-				job_ptr->prio_factors->priority_age = 1.0;
-		} else if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) {
+		if (job_ptr->details->begin_time
+		    || (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)) {
 			if (diff < max_age) {
 				job_ptr->prio_factors->priority_age =
 					(double)diff / (double)max_age;
