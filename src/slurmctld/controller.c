@@ -1557,7 +1557,8 @@ static void *_slurmctld_background(void *no_data)
 			job_limit = INFINITE;
 			job_sched_cnt = 0;
 			slurm_mutex_unlock(&sched_cnt_mutex);
-		} else if (job_sched_cnt) {
+		} else if (job_sched_cnt &&
+			   (difftime(now, last_sched_time) >= 3)) {
 			slurm_mutex_lock(&sched_cnt_mutex);
 			job_limit = 0;	/* Default depth */
 			job_sched_cnt = 0;
