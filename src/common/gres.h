@@ -98,8 +98,7 @@ typedef struct gres_node_state {
 	bitstr_t **topo_gres_bitmap;
 	uint32_t *topo_gres_cnt_alloc;
 	uint32_t *topo_gres_cnt_avail;
-	char **type;	/* Type of this gres (e.g. model name) */
-
+	char **topo_model;	/* Type of this gres (e.g. model name) */
 } gres_node_state_t;
 
 /* Gres job state as used by slurmctld daemon */
