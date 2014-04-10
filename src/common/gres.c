@@ -214,6 +214,8 @@ static void	_validate_config(slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
 static void	_validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 					 int cpus_ctld, char *node_name);
+static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
+				 uint16_t fast_schedule, char **reason_down);
 
 /* Convert a gres_name into a number for faster comparision operations */
 static uint32_t	_build_id(char *gres_name)
@@ -1318,6 +1320,35 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 	gres_data->gres_cnt_config = gres_config_cnt;
 }
 
+static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
+			    uint16_t fast_schedule, char **reason_down)
+{
+	int i, j;
+	uint32_t model_cnt;
+
+	if (gres_data->type_cnt == 0)
+		return 0;
+
+	for (i = 0; i < gres_data->type_cnt; i++) {
+		model_cnt = 0;
+		for (j = 0; j < gres_data->topo_cnt; j++) {
+			if (!strcmp(gres_data->type_model[i],
+				    gres_data->topo_model[j]))
+				model_cnt += gres_data->topo_gres_cnt_avail[j];
+		}
+		if (fast_schedule >= 2) {
+			gres_data->type_cnt_avail[i] = model_cnt;
+		} else if (model_cnt < gres_data->type_cnt_avail[i]) {
+			xstrfmtcat(*reason_down,
+				   "%s:%s count too low (%u < %u)",
+				   gres_name, gres_data->type_model[i],
+				   model_cnt, gres_data->type_cnt_avail[i]);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 static void _set_gres_cnt(char *orig_config, char **new_config,
 			  uint32_t new_cnt, char *gres_name,
 			  char *gres_name_colon, int gres_name_colon_len)
@@ -1667,6 +1698,9 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 				   gres_data->gres_cnt_found,
 				   gres_data->gres_cnt_config);
 		}
+		rc = EINVAL;
+	} else if (_valid_gres_type(context_ptr->gres_type, gres_data,
+				    fast_schedule, reason_down)) {
 		rc = EINVAL;
 	} else if ((fast_schedule == 2) && gres_data->topo_cnt &&
 		   (gres_data->gres_cnt_found != gres_data->gres_cnt_config)) {
@@ -2342,7 +2376,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc2 = SLURM_ERROR;
-		for (i=0; i<gres_context_cnt; i++) {
+		for (i = 0; i < gres_context_cnt; i++) {
 			rc2 = _job_state_validate(tok, &job_gres_data,
 						  &gres_context[i]);
 			if (rc2 != SLURM_SUCCESS)

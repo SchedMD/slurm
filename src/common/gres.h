@@ -92,18 +92,19 @@ typedef struct gres_node_state {
 	uint32_t  gres_cnt_alloc;
 	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File field */
 
-	/* Topology specific information (if gres.conf contains CPUs spec) */
-	uint16_t topo_cnt;
+	/* Topology specific information (if gres.conf contains CPUs option) */
+	uint16_t topo_cnt;		/* Size of topo_ arrays */
 	bitstr_t **topo_cpus_bitmap;
 	bitstr_t **topo_gres_bitmap;
 	uint32_t *topo_gres_cnt_alloc;
 	uint32_t *topo_gres_cnt_avail;
-	char **topo_model;	/* Type of this gres (e.g. model name) */
+	char **topo_model;		/* Type of this gres (e.g. model name) */
 
-	uint16_t type_cnt;
-	char **type_model;	/* Type of this gres (e.g. model name) */
+	/* Gres type specific information (if gres.conf contains type option) */
+	uint16_t type_cnt;		/* Size of type_ arrays */
 	uint32_t *type_cnt_alloc;
 	uint32_t *type_cnt_avail;
+	char **type_model;		/* Type of this gres (e.g. model name) */
 } gres_node_state_t;
 
 /* Gres job state as used by slurmctld daemon */

@@ -73,6 +73,8 @@ file.</LI>
 <LI><B>Type</B> Optionally specify the device type. For example, this might
 be used to identify a specific model of GPU, which users can then specify
 in their job request.
+Requires the use of configuration parameter <B>File</B> so that specific
+individual devices can be identified by type.
 NOTE: This is a new capability added in Slurm version 14.11.</LI>
 </UL>
 
