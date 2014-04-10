@@ -143,8 +143,9 @@ static gres_node_state_t *
 static uint32_t	_build_id(char *gres_name);
 static bitstr_t *_cpu_bitmap_rebuild(bitstr_t *old_cpu_bitmap, int new_size);
 static void	_destroy_gres_slurmd_conf(void *x);
-static uint32_t	_get_gres_cnt(char *orig_config, char *gres_name,
-			      char *gres_name_colon, int gres_name_colon_len);
+static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
+			      char *gres_name, char *gres_name_colon,
+			      int gres_name_colon_len);
 static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt);
 static int	_gres_find_id(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
@@ -1219,20 +1220,25 @@ static void _gres_node_list_delete(void *list_element)
  * Compute the total GRES count for a particular gres_name.
  * Note that a given gres_name can appear multiple times in the orig_config
  * string for multiple types (e.g. "gres=gpu:kepler:1,gpu:tesla:2").
+ * IN/OUT gres_data - set gres_cnt_config field in this structure
  * IN orig_config - gres configuration from slurm.conf
  * IN gres_name - name of the gres type (e.g. "gpu")
  * IN gres_name_colon - gres name with appended colon
  * IN gres_name_colon_len - size of gres_name_colon
  * RET - Total configured count for this GRES type
  */
-static uint32_t _get_gres_cnt(char *orig_config, char *gres_name,
-			      char *gres_name_colon, int gres_name_colon_len)
+static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
+			  char *gres_name, char *gres_name_colon,
+			  int gres_name_colon_len)
 {
 	char *node_gres_config, *tok, *num, *last_num = NULL, *last_tok = NULL;
 	uint32_t gres_config_cnt = 0, tmp_gres_cnt = 0;
 
-	if (orig_config == NULL)
-		return gres_config_cnt;
+	xassert(gres_data);
+	if (orig_config == NULL) {
+		gres_data->gres_cnt_config = 0;
+		return;
+	}
 
 	node_gres_config = xstrdup(orig_config);
 	tok = strtok_r(node_gres_config, ",", &last_tok);
@@ -1263,7 +1269,7 @@ static uint32_t _get_gres_cnt(char *orig_config, char *gres_name,
 	}
 	xfree(node_gres_config);
 
-	return gres_config_cnt;
+	gres_data->gres_cnt_config = gres_config_cnt;
 }
 
 static void _set_gres_cnt(char *orig_config, char **new_config,
@@ -1329,7 +1335,6 @@ static int _node_config_init(char *node_name, char *orig_config,
 			     gres_state_t *gres_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t gres_config_cnt = 0;
 	bool updated_config = false;
 	gres_node_state_t *gres_data;
 
@@ -1346,14 +1351,13 @@ static int _node_config_init(char *node_name, char *orig_config,
 		return rc;
 	}
 
-	gres_config_cnt = _get_gres_cnt(orig_config,
-					context_ptr->gres_name,
-					context_ptr->gres_name_colon,
-					context_ptr->gres_name_colon_len);
-	gres_data->gres_cnt_config = gres_config_cnt;
+	_get_gres_cnt(gres_data, orig_config,
+		      context_ptr->gres_name,
+		      context_ptr->gres_name_colon,
+		      context_ptr->gres_name_colon_len);
 	/* Use count from recovered state, if higher */
 	gres_data->gres_cnt_avail  = MAX(gres_data->gres_cnt_avail,
-					 gres_config_cnt);
+					 gres_data->gres_cnt_config);
 	if ((gres_data->gres_bit_alloc != NULL) &&
 	    (gres_data->gres_cnt_avail >
 	     bit_size(gres_data->gres_bit_alloc))) {
@@ -1583,10 +1587,10 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->gres_cnt_config = 0;
 	else if (gres_data->gres_cnt_config == NO_VAL) {
 		/* This should have been filled in by _node_config_init() */
-		gres_data->gres_cnt_config =
-			_get_gres_cnt(orig_config, context_ptr->gres_name,
-				      context_ptr->gres_name_colon,
-				      context_ptr->gres_name_colon_len);
+		_get_gres_cnt(gres_data, orig_config,
+			      context_ptr->gres_name,
+			      context_ptr->gres_name_colon,
+			      context_ptr->gres_name_colon_len);
 	}
 
 	if ((gres_data->gres_cnt_config == 0) || (fast_schedule > 0))
@@ -1713,11 +1717,10 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = gres_ptr->gres_data;
 
-	gres_data->gres_cnt_config = _get_gres_cnt(orig_config,
-						   context_ptr->gres_name,
-						   context_ptr->gres_name_colon,
-						   context_ptr->
-						   gres_name_colon_len);
+	_get_gres_cnt(gres_data, orig_config,
+		      context_ptr->gres_name,
+		      context_ptr->gres_name_colon,
+		      context_ptr->gres_name_colon_len);
 	if ((gres_data->gres_cnt_config == 0) || (fast_schedule > 0))
 		gres_data->gres_cnt_avail = gres_data->gres_cnt_config;
 	else if (gres_data->gres_cnt_found != NO_VAL)
