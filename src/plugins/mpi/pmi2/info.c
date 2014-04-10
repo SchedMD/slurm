@@ -271,33 +271,33 @@ ifconfig(void)
 			continue;
 #endif
 		if (ifa->ifa_addr->sa_family != AF_INET
-			&& ifa->ifa_addr->sa_family != AF_INET6)
+		    && ifa->ifa_addr->sa_family != AF_INET6)
 			continue;
 
 		if (ifa->ifa_addr->sa_family == AF_INET) {
 			s = getnameinfo(ifa->ifa_addr,
-							sizeof(struct sockaddr_in),
-							addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+					sizeof(struct sockaddr_in),
+					addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 			if (s != 0) {
 				error("%s: AF_INET getnameinfo() failed: %s",
-					  __func__, gai_strerror(s));
+				      __func__, gai_strerror(s));
 				continue;
 			}
 			n = n + sprintf(buf + n, ",(%s,%s,%s)",
-							ifa->ifa_name, "IP_V4", addr);
+					ifa->ifa_name, "IP_V4", addr);
 			continue;
 		}
 		if (ifa->ifa_addr->sa_family == AF_INET6) {
 			s = getnameinfo(ifa->ifa_addr,
-							sizeof(struct sockaddr_in6),
-							addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+					sizeof(struct sockaddr_in6),
+					addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 			if (s != 0) {
 				error("%s: AF_INET6 getnameinfo() failed: %s",
-					  __func__, gai_strerror(s));
+				      __func__, gai_strerror(s));
 				continue;
 			}
 			n = n + sprintf(buf + n, ",(%s,%s,%s)",
-							ifa->ifa_name, "IP_V6", addr);
+					ifa->ifa_name, "IP_V6", addr);
 		}
 	}
 	n = n + sprintf(buf + n, ")");
