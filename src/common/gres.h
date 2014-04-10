@@ -109,6 +109,8 @@ typedef struct gres_node_state {
 
 /* Gres job state as used by slurmctld daemon */
 typedef struct gres_job_state {
+	char *type_model;		/* Type of this gres (e.g. model name) */
+
 	/* Count of resources needed per node */
 	uint32_t gres_cnt_alloc;
 
@@ -125,6 +127,8 @@ typedef struct gres_job_state {
 
 /* Gres job step state as used by slurmctld daemon */
 typedef struct gres_step_state {
+	char *type_model;		/* Type of this gres (e.g. model name) */
+
 	/* Count of resources needed per node */
 	uint32_t gres_cnt_alloc;
 

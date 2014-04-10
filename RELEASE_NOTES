@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 14.11
-1 April 2014
+10 April 2014
 
 
 IMPORTANT NOTE:
@@ -25,6 +25,8 @@ Slurm will result in loss of state information.
 
 HIGHLIGHTS
 ==========
+ -- Add support for allocation of GRES by model type for heterogenous systems
+    (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of any type).
 
 
 RPMBUILD CHANGES
