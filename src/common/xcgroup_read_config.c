@@ -41,6 +41,7 @@
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -139,7 +140,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"CgroupSubsystems", S_P_STRING},
 		{"CgroupReleaseAgentDir", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
-		{"TaskAffinity", S_P_BOOLEAN},
+		{"TaskAffinity", S_P_STRING},
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
 		{"AllowedRAMSpace", S_P_STRING},
 		{"MaxRAMPercent", S_P_STRING},
@@ -154,7 +155,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"AllowedDevicesFile", S_P_STRING},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
-	char *conf_path = NULL;
+	char *conf_path = NULL, *tmp_str = NULL;
 	struct stat buf;
 
 	/* Set initial values */
@@ -206,9 +207,14 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_cores,
 				     "ConstrainCores", tbl))
 			slurm_cgroup_conf->constrain_cores = false;
-		if (!s_p_get_boolean(&slurm_cgroup_conf->task_affinity,
-				     "TaskAffinity", tbl))
-			slurm_cgroup_conf->task_affinity = false;
+
+		slurm_cgroup_conf->task_affinity = 0;
+		if (s_p_get_string(&tmp_str, "TaskAffinity", tbl)) {
+			if (!strcasecmp(tmp_str, "yes"))
+				slurm_cgroup_conf->task_affinity = 1;
+			else if (!strcasecmp(tmp_str, "hard"))
+				slurm_cgroup_conf->task_affinity = 2;
+		}
 
 		/* RAM and Swap constraints related conf items */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_ram_space,
