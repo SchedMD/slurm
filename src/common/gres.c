@@ -1202,7 +1202,7 @@ static void _gres_node_list_delete(void *list_element)
 	gres_ptr = (gres_state_t *) list_element;
 	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
 	FREE_NULL_BITMAP(gres_node_ptr->gres_bit_alloc);
-	for (i=0; i<gres_node_ptr->topo_cnt; i++) {
+	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
 		FREE_NULL_BITMAP(gres_node_ptr->topo_cpus_bitmap[i]);
 		FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
 		xfree(gres_node_ptr->topo_model[i]);
@@ -1212,6 +1212,14 @@ static void _gres_node_list_delete(void *list_element)
 	xfree(gres_node_ptr->topo_gres_cnt_alloc);
 	xfree(gres_node_ptr->topo_gres_cnt_avail);
 	xfree(gres_node_ptr->topo_model);
+	for (i = 0; i < gres_node_ptr->type_cnt; i++) {
+		xfree(gres_node_ptr->type_cnt_alloc[i]);
+		xfree(gres_node_ptr->type_cnt_avail[i]);
+		xfree(gres_node_ptr->type_model[i]);
+	}
+	xfree(gres_node_ptr->type_cnt_alloc);
+	xfree(gres_node_ptr->type_cnt_avail);
+	xfree(gres_node_ptr->type_model);
 	xfree(gres_node_ptr);
 	xfree(gres_ptr);
 }
@@ -1231,13 +1239,19 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			  char *gres_name, char *gres_name_colon,
 			  int gres_name_colon_len)
 {
-	char *node_gres_config, *tok, *num, *last_num = NULL, *last_tok = NULL;
+	char *node_gres_config, *tok, *last_tok = NULL;
+	char *type, *num, *last_num = NULL;
 	uint32_t gres_config_cnt = 0, tmp_gres_cnt = 0;
+	int i;
 
 	xassert(gres_data);
 	if (orig_config == NULL) {
 		gres_data->gres_cnt_config = 0;
 		return;
+	}
+
+	for (i = 0; i < gres_data->type_cnt; i++) {
+		gres_data->type_cnt_avail[i] = 0;
 	}
 
 	node_gres_config = xstrdup(orig_config);
@@ -1248,13 +1262,13 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			break;
 		}
 		if (!strncmp(tok, gres_name_colon, gres_name_colon_len)) {
+			type = strchr(tok, ':');
 			num = strrchr(tok, ':');
 			if (!num) {
 				error("Bad GRES configuration: %s", tok);
 				break;
 			}
-			num++;
-			tmp_gres_cnt = strtol(num, &last_num, 10);
+			tmp_gres_cnt = strtol(num + 1, &last_num, 10);
 			if (last_num[0] == '\0')
 				;
 			else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
@@ -1264,6 +1278,38 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
 				tmp_gres_cnt *= (1024 * 1024 * 1024);
 			gres_config_cnt += tmp_gres_cnt;
+			if (type != num) {
+				num[0] = '\0';
+				type++;
+				for (i = 0; i < gres_data->type_cnt; i++) {
+					if (strcmp(gres_data->type_model[i],
+						   type))
+						continue;
+					gres_data->type_cnt_avail[i] +=
+						tmp_gres_cnt;
+					break;
+				}
+				if (i >= gres_data->type_cnt) {
+					gres_data->type_cnt++;
+					gres_data->type_cnt_alloc =
+						xrealloc(gres_data->
+							 type_cnt_alloc,
+							 sizeof(uint32_t) *
+							 gres_data->type_cnt);
+					gres_data->type_cnt_avail =
+						xrealloc(gres_data->
+							 type_cnt_avail,
+							 sizeof(uint32_t) *
+							 gres_data->type_cnt);
+					gres_data->type_model =
+						xrealloc(gres_data->type_model,
+							 sizeof(char *) *
+							 gres_data->type_cnt);
+					gres_data->type_cnt_avail[i] +=
+						tmp_gres_cnt;
+					gres_data->type_model[i] = xstrdup(type);
+				}
+			}
 		}
 		tok = strtok_r(NULL, ",", &last_tok);
 	}
@@ -1717,7 +1763,6 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	if (gres_ptr->gres_data == NULL)
 		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = gres_ptr->gres_data;
-
 	_get_gres_cnt(gres_data, orig_config,
 		      context_ptr->gres_name,
 		      context_ptr->gres_name_colon,
@@ -1969,7 +2014,7 @@ static void *_node_state_dup(void *gres_data)
 	new_gres->topo_gres_cnt_avail = xmalloc(gres_ptr->topo_cnt *
 						sizeof(uint32_t));
 	new_gres->topo_model = xmalloc(gres_ptr->topo_cnt * sizeof(char *));
-	for (i=0; i<gres_ptr->topo_cnt; i++) {
+	for (i = 0; i < gres_ptr->topo_cnt; i++) {
 		if (gres_ptr->topo_cpus_bitmap[i]) {
 			new_gres->topo_cpus_bitmap[i] =
 				bit_copy(gres_ptr->topo_cpus_bitmap[i]);
@@ -1981,6 +2026,18 @@ static void *_node_state_dup(void *gres_data)
 		new_gres->topo_gres_cnt_avail[i] =
 			gres_ptr->topo_gres_cnt_avail[i];
 		new_gres->topo_model[i] = xstrdup(gres_ptr->topo_model[i]);
+	}
+
+	new_gres->type_cnt       = gres_ptr->type_cnt;
+	new_gres->type_cnt_alloc = xmalloc(gres_ptr->type_cnt *
+					   sizeof(uint32_t));
+	new_gres->type_cnt_avail = xmalloc(gres_ptr->type_cnt *
+					   sizeof(uint32_t));
+	new_gres->type_model = xmalloc(gres_ptr->type_cnt * sizeof(char *));
+	for (i = 0; i < gres_ptr->type_cnt; i++) {
+		new_gres->type_cnt_alloc[i] = gres_ptr->type_cnt_alloc[i];
+		new_gres->type_cnt_avail[i] = gres_ptr->type_cnt_avail[i];
+		new_gres->type_model[i] = xstrdup(gres_ptr->type_model[i]);
 	}
 	return new_gres;
 }
@@ -2116,7 +2173,7 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 	} else {
 		info("  gres_bit_alloc:NULL");
 	}
-	for (i=0; i<gres_node_ptr->topo_cnt; i++) {
+	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
 		if (gres_node_ptr->topo_cpus_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_node_ptr->topo_cpus_bitmap[i]);
@@ -2134,6 +2191,13 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 		info("  topo_gres_cnt_avail[%d]:%u", i,
 		     gres_node_ptr->topo_gres_cnt_avail[i]);
 		info("  type[%d]:%s", i, gres_node_ptr->topo_model[i]);
+	}
+	for (i = 0; i < gres_node_ptr->type_cnt; i++) {
+		info("  type_cnt_alloc[%d]:%u", i,
+		     gres_node_ptr->type_cnt_alloc[i]);
+		info("  type_cnt_avail[%d]:%u", i,
+		     gres_node_ptr->type_cnt_avail[i]);
+		info("  type[%d]:%s", i, gres_node_ptr->type_model[i]);
 	}
 }
 
