@@ -69,15 +69,20 @@ the option must be specified on all nodes and SLURM will track the assignment
 of each specific resource on each node. Otherwise SLURM will only track a
 count of allocated resources rather than the state of each individual device
 file.</LI>
+
+<LI><B>Type</B> Optionally specify the device type. For example, this might
+be used to identify a specific model of GPU, which users can then specify
+in their job request.
+NOTE: This is a new capability added in Slurm version 14.11.</LI>
 </UL>
 
 <P>Sample gres.conf file:</P>
 <PRE>
 # Configure support for our four GPUs
-Name=gpu File=/dev/nvidia0 CPUs=0,1
-Name=gpu File=/dev/nvidia1 CPUs=0,1
-Name=gpu File=/dev/nvidia2 CPUs=2,3
-Name=gpu File=/dev/nvidia3 CPUs=2,3
+Name=gpu Type=tesla  File=/dev/nvidia0 CPUs=0,1
+Name=gpu Type=tesla  File=/dev/nvidia1 CPUs=0,1
+Name=gpu Type=kepler File=/dev/nvidia2 CPUs=2,3
+Name=gpu Type=kepler File=/dev/nvidia3 CPUs=2,3
 Name=bandwidth Count=20M
 </PRE>
 <!-------------------------------------------------------------------------->
@@ -88,11 +93,13 @@ requested at job submit time using the <I>--gres</I> option supported by
 the <I>salloc</I>, <I>sbatch</I> and <I>srun</I> commands. The option
 requires an argument specifying which generic resources are required and
 how many resources. The resource specification is of the form
-<I>name[:count]</I>. The <I>name</I> is the same name as
+<I>name[:type:count]</I>. The <I>name</I> is the same name as
 specified by the <I>GresTypes</I> and <I>Gres</I> configuration parameters.
+<I>type</I> identifies a specific type of that generic resource (e.g. a
+specific model of GPU).
 <I>count</I> specifies how many resources are required and has a default
 value of 1. For example:<BR> 
-<I>sbatch --gres=gpu:2 ...</I>.</P>
+<I>sbatch --gres=gpu:kepler:2 ...</I>.</P>
 
 <P>Jobs will be allocated specific generic resources as needed to satisfy
 the request. If the job is suspended, those resources do not become available
@@ -171,6 +178,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 25 October 2012</p>
+<p style="text-align: center;">Last modified 10 April 2014</p>
 
 </body></html>

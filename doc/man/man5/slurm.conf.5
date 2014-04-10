@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "October 2013" "slurm.conf 14.03" "Slurm configuration file"
+.TH "slurm.conf" "5" "April 2014" "slurm.conf 14.11" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2973,13 +2973,14 @@ Also see \fBGres\fR.
 .TP
 \fBGres\fR
 A comma delimited list of generic resources specifications for a node.
-Each resource specification consists of a name followed by an optional
-colon with a numeric value (default value is one)
-(e.g. "Gres=bandwidth:10000,gpu:2").
+Each resource specification consists of a name followed by a colon with a
+numeric value (e.g. "Gres=bandwidth:10000,gpu:2").
 A suffix of "K", "M" or "G" may be used to multiply the number by 1024,
-1048576 or 1073741824 respectively (e.g. "Gres=bandwidth:4G,gpu:4")..
+1048576 or 1073741824 respectively (e.g. "Gres=bandwidth:4G,gpu:4").
 By default a node has no generic resources and its maximum count is
 4,294,967,295.
+The generic resource type can optionally be specified using a third colon
+separated field after the name (e.g. "Gres=gpu:tesla:1,gpu:kepler:1").
 Also see \fBFeature\fR.
 
 .TP

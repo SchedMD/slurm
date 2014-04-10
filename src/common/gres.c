@@ -1215,11 +1215,21 @@ static void _gres_node_list_delete(void *list_element)
 	xfree(gres_ptr);
 }
 
+/*
+ * Compute the total GRES count for a particular gres_name.
+ * Note that a given gres_name can appear multiple times in the orig_config
+ * string for multiple types (e.g. "gres=gpu:kepler:1,gpu:tesla:2").
+ * IN orig_config - gres configuration from slurm.conf
+ * IN gres_name - name of the gres type (e.g. "gpu")
+ * IN gres_name_colon - gres name with appended colon
+ * IN gres_name_colon_len - size of gres_name_colon
+ * RET - Total configured count for this GRES type
+ */
 static uint32_t _get_gres_cnt(char *orig_config, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len)
 {
-	char *node_gres_config, *tok, *last_num = NULL, *last_tok = NULL;
-	uint32_t gres_config_cnt = 0;
+	char *node_gres_config, *tok, *num, *last_num = NULL, *last_tok = NULL;
+	uint32_t gres_config_cnt = 0, tmp_gres_cnt = 0;
 
 	if (orig_config == NULL)
 		return gres_config_cnt;
@@ -1232,17 +1242,22 @@ static uint32_t _get_gres_cnt(char *orig_config, char *gres_name,
 			break;
 		}
 		if (!strncmp(tok, gres_name_colon, gres_name_colon_len)) {
-			tok += gres_name_colon_len;
-			gres_config_cnt = strtol(tok, &last_num, 10);
+			num = strrchr(tok, ':');
+			if (!num) {
+				error("Bad GRES configuration: %s", tok);
+				break;
+			}
+			num++;
+			tmp_gres_cnt = strtol(num, &last_num, 10);
 			if (last_num[0] == '\0')
 				;
 			else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
-				gres_config_cnt *= 1024;
+				tmp_gres_cnt *= 1024;
 			else if ((last_num[0] == 'm') || (last_num[0] == 'M'))
-				gres_config_cnt *= (1024 * 1024);
+				tmp_gres_cnt *= (1024 * 1024);
 			else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
-				gres_config_cnt *= (1024 * 1024 * 1024);
-			break;
+				tmp_gres_cnt *= (1024 * 1024 * 1024);
+			gres_config_cnt += tmp_gres_cnt;
 		}
 		tok = strtok_r(NULL, ",", &last_tok);
 	}
