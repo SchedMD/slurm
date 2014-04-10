@@ -29,7 +29,6 @@ documents those changes that are of interest to users and admins.
  -- Modify srun to report an exit code of zero rather than nine if some tasks
     exit with a return code of zero and others are killed with SIGKILL. Only an
     exit code of zero did this.
- -- task/cgroup make TaskAffinity=hard bind to threads instead of cores.
  -- Fix a typo in scontrol man page.
  -- Avoid slurmctld crash getting job info if detail_ptr is NULL.
  -- Fix sacctmgr add user where both defaultaccount and accounts are specified.
