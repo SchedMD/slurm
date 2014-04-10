@@ -3203,7 +3203,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			job_ptr->part_ptr = part_ptr;
 			debug2("Try job %u on next partition %s",
 			       job_ptr->job_id, part_ptr->name);
-			if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
+			if (job_limits_check(&job_ptr, false) != WAIT_FOR_SCHED)
 				continue;
 			rc = select_nodes(job_ptr, test_only,
 					  select_node_bitmap);
@@ -3213,7 +3213,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		}
 		list_iterator_destroy(iter);
 	} else {
-		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
+		if (job_limits_check(&job_ptr, false) != WAIT_FOR_SCHED)
 			test_only = true;
 		rc = select_nodes(job_ptr, test_only, select_node_bitmap);
 	}
@@ -3688,7 +3688,7 @@ extern int prolog_complete(uint32_t job_id, bool requeue,
 		error("Prolog launch failure, JobId=%u", job_ptr->job_id);
 	}
 
-	job_ptr->state_reason = WAIT_NO_REASON;
+	job_ptr->state_reason = WAIT_FOR_SCHED;
 	return SLURM_SUCCESS;
 }
 
@@ -4250,7 +4250,7 @@ _valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
  * IN job_ptr - pointer to job table entry.
  * IN check_min_time - if true test job's minimum time limit,
  *		otherwise test maximum time limit
- * RET WAIT_NO_REASON on success, fail status otherwise.
+ * RET WAIT_FOR_SCHED on success, fail status otherwise.
  */
 extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 {
@@ -4276,7 +4276,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!detail_ptr) {	/* To prevent CLANG error */
 		fatal("job %u has NULL details_ptr", job_ptr->job_id);
-		return WAIT_NO_REASON;
+		return WAIT_FOR_SCHED;
 	}
 
 #ifdef HAVE_BG
@@ -4291,7 +4291,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	part_max_nodes = part_ptr->max_nodes;
 #endif
 
-	fail_reason = WAIT_NO_REASON;
+	fail_reason = WAIT_FOR_SCHED;
 
 	if (check_min_time && job_ptr->time_min)
 		time_check = job_ptr->time_min;
@@ -7499,7 +7499,7 @@ static bool _top_priority(struct job_record *job_ptr)
 				job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
 			}
-		} else if (job_ptr->state_reason == WAIT_NO_REASON) {
+		} else if (job_ptr->state_reason == WAIT_FOR_SCHED) {
 			job_ptr->state_reason = WAIT_PRIORITY;
 			xfree(job_ptr->state_desc);
 		}
@@ -8393,7 +8393,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			set_job_prio(job_ptr);
 			info("sched: update_job: releasing user hold "
 			     "for job_id %u", job_specs->job_id);
-			job_ptr->state_reason = WAIT_NO_REASON;
+			job_ptr->state_reason = WAIT_FOR_SCHED;
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
 		} else if (authorized ||
@@ -8421,7 +8421,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				xfree(job_ptr->state_desc);
 			} else if ((job_ptr->state_reason == WAIT_HELD) ||
 				   (job_ptr->state_reason == WAIT_HELD_USER)) {
-				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->state_reason = WAIT_FOR_SCHED;
 				job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 				xfree(job_ptr->state_desc);
 			}
@@ -8925,7 +8925,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	fail_reason = job_limits_check(&job_ptr, false);
-	if (fail_reason != WAIT_NO_REASON) {
+	if (fail_reason != WAIT_FOR_SCHED) {
 		if (fail_reason == WAIT_QOS_THRES)
 			error_code = ESLURM_QOS_THRES;
 		else if ((fail_reason == WAIT_PART_TIME_LIMIT) ||
@@ -8940,7 +8940,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		return error_code;
 	} else if ((job_ptr->state_reason != WAIT_HELD) &&
 		   (job_ptr->state_reason != WAIT_HELD_USER)) {
-		job_ptr->state_reason = WAIT_NO_REASON;
+		job_ptr->state_reason = WAIT_FOR_SCHED;
 	}
 
 #ifdef HAVE_BG
@@ -10149,14 +10149,14 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 
 	/* Job is eligible to start now */
 	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
-		job_ptr->state_reason = WAIT_NO_REASON;
+		job_ptr->state_reason = WAIT_FOR_SCHED;
 		xfree(job_ptr->state_desc);
 	}
 	if ((detail_ptr && (detail_ptr->begin_time == 0) &&
 	    (job_ptr->priority != 0))) {
 		detail_ptr->begin_time = now;
 	} else if (job_ptr->state_reason == WAIT_TIME) {
-		job_ptr->state_reason = WAIT_NO_REASON;
+		job_ptr->state_reason = WAIT_FOR_SCHED;
 		xfree(job_ptr->state_desc);
 	}
 	return true;

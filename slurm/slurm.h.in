@@ -295,7 +295,7 @@ enum job_states {
  * system efficiency */
 enum job_state_reason {
 /* Reasons for job to be pending */
-	WAIT_NO_REASON = 0,	/* not set or job not pending */
+	WAIT_FOR_SCHED = 0,	/* job is waiting for scheduling  */
 	WAIT_PRIORITY,		/* higher priority jobs exist */
 	WAIT_DEPENDENCY,	/* dependent job has not completed */
 	WAIT_RESOURCES,		/* required resources not available */

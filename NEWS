@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     exit with a return code of zero and others are killed with SIGKILL. Only an
     exit code of zero did this.
  -- task/cgroup make TaskAffinity=hard bind to threads instead of cores.
+ -- Add a new pending reason WaitingForScheduling which indicates a job has
+    not been processed by the scheduler yet.
 
 * Changes in Slurm 14.03.0
 ==========================
