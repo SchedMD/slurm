@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
  -- task/cgroup make TaskAffinity=hard bind to threads instead of cores.
  -- Add a new pending reason WaitingForScheduling which indicates a job has
     not been processed by the scheduler yet.
+ -- Fix a typo in scontrol man page.
 
 * Changes in Slurm 14.03.0
 ==========================
