@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
  -- Fix sacctmgr add user where both defaultaccount and accounts are specified.
  -- Added SchedulerParameters option of max_sched_time to limit how long the
     main scheduling loop can execute for.
+ -- Added SchedulerParameters option of sched_interval to control how frequently
+    the main scheduling loop will execute.
 
 * Changes in Slurm 14.03.0
 ==========================

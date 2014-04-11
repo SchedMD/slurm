@@ -820,6 +820,14 @@ extern int schedule(uint32_t job_limit)
 			sched_timeout = MIN(sched_timeout, 4);
 		}
 
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "sched_interval=")))
+			sched_interval = atoi(tmp_ptr + 15);
+		if (sched_interval < 0) {
+			error("Invalid sched_interval: %d", sched_interval);
+			sched_interval = 60;
+		}
+
 		xfree(sched_params);
 		sched_update = slurmctld_conf.last_update;
 	}

@@ -107,13 +107,6 @@
 #define	RPC_RETRY_INTERVAL	60
 #endif
 
-/* Attempt to schedule jobs every PERIODIC_SCHEDULE seconds despite
- * any RPC activity. This will catch any state transisions that may
- * have otherwise been missed */
-#ifndef PERIODIC_SCHEDULE
-#define	PERIODIC_SCHEDULE	60
-#endif
-
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #ifndef PERIODIC_TIMEOUT
 #define	PERIODIC_TIMEOUT	30
@@ -218,6 +211,7 @@ extern int   association_based_accounting;
 extern uint32_t   cluster_cpus;
 extern int   with_slurmdbd;
 extern bool  load_2_4_state;
+extern int   sched_interval;
 extern bool  slurmctld_init_db;
 
 /*****************************************************************************\
