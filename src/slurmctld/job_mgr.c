@@ -6966,7 +6966,9 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 {
 	uint16_t shared = 0;
 
-	if (detail_ptr->share_res == 1)
+	if (!detail_ptr)
+		shared = (uint16_t) NO_VAL;
+	else if (detail_ptr->share_res == 1)
 		shared = 1;
 	else if (detail_ptr->whole_node == 1)
 		shared = 0;
