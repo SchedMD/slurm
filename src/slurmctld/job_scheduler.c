@@ -187,7 +187,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 #ifdef HAVE_FRONT_END
 	/* At least one front-end node up at this point */
 	if (job_ptr->state_reason == WAIT_FRONT_END) {
-		job_ptr->state_reason = WAIT_NO_REASON;
+		job_ptr->state_reason = WAIT_FOR_SCHED;
 		xfree(job_ptr->state_desc);
 		last_job_update = time(NULL);
 	}
@@ -236,12 +236,12 @@ static bool _job_runnable_test2(struct job_record *job_ptr, bool check_min_time)
 
 	reason = job_limits_check(&job_ptr, check_min_time);
 	if ((reason != job_ptr->state_reason) &&
-	    ((reason != WAIT_NO_REASON) ||
+	    ((reason != WAIT_FOR_SCHED) ||
 	     (!part_policy_job_runnable_state(job_ptr)))) {
 		job_ptr->state_reason = reason;
 		xfree(job_ptr->state_desc);
 	}
-	if (reason != WAIT_NO_REASON)
+	if (reason != WAIT_FOR_SCHED)
 		return false;
 	return true;
 }
@@ -275,7 +275,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
 				reason = job_limits_check(&job_ptr, backfill);
-				if ((reason != WAIT_NO_REASON) &&
+				if ((reason != WAIT_FOR_SCHED) &&
 				    (reason != job_ptr->state_reason) &&
 				    (!part_policy_job_runnable_state(job_ptr))){
 					job_ptr->state_reason = reason;
@@ -284,7 +284,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				/* priority_array index matches part_ptr_list
 				 * position: increment inx*/
 				inx++;
-				if (reason != WAIT_NO_REASON)
+				if (reason != WAIT_FOR_SCHED)
 					continue;
 				if (job_ptr->priority_array) {
 					_job_queue_append(job_queue, job_ptr,
@@ -534,7 +534,7 @@ next_part:		part_ptr = (struct part_record *)
 				continue;
 			}
 		}
-		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
+		if (job_limits_check(&job_ptr, false) != WAIT_FOR_SCHED)
 			continue;
 
 		/* Test for valid account, QOS and required nodes on each pass */
@@ -550,7 +550,7 @@ next_part:		part_ptr = (struct part_record *)
 						     accounting_enforce,
 						     (slurmdb_association_rec_t **)
 						     &job_ptr->assoc_ptr)) {
-				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->state_reason = WAIT_FOR_SCHED;
 				xfree(job_ptr->state_desc);
 				job_ptr->assoc_id = assoc_rec.id;
 				last_job_update = now;
@@ -573,7 +573,7 @@ next_part:		part_ptr = (struct part_record *)
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {
 				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->state_reason = WAIT_FOR_SCHED;
 				last_job_update = now;
 			}
 		}
@@ -581,7 +581,7 @@ next_part:		part_ptr = (struct part_record *)
 		if ((job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
 		    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
 		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
-			job_ptr->state_reason = WAIT_NO_REASON;
+			job_ptr->state_reason = WAIT_FOR_SCHED;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
 		}
@@ -833,7 +833,7 @@ extern int schedule(uint32_t job_limit)
 				list_next(job_iterator))) {
 			if (!IS_JOB_PENDING(job_ptr))
 				continue;
-			if ((job_ptr->state_reason != WAIT_NO_REASON) &&
+			if ((job_ptr->state_reason != WAIT_FOR_SCHED) &&
 			    (job_ptr->state_reason != WAIT_RESOURCES) &&
 			    (job_ptr->state_reason != WAIT_NODE_NOT_AVAIL))
 				continue;
@@ -928,7 +928,7 @@ next_part:			part_ptr = (struct part_record *)
 				if (part_ptr) {
 					job_ptr->part_ptr = part_ptr;
 					if (job_limits_check(&job_ptr, false) !=
-					    WAIT_NO_REASON)
+					    WAIT_FOR_SCHED)
 						continue;
 				} else {
 					list_iterator_destroy(part_iterator);
@@ -997,7 +997,7 @@ next_part:			part_ptr = (struct part_record *)
 				}
 			}
 			if (found_resv) {
-				if (job_ptr->state_reason == WAIT_NO_REASON) {
+				if (job_ptr->state_reason == WAIT_FOR_SCHED) {
 					job_ptr->state_reason = WAIT_PRIORITY;
 					xfree(job_ptr->state_desc);
 				}
@@ -1012,7 +1012,7 @@ next_part:			part_ptr = (struct part_record *)
 		} else if (_failed_partition(job_ptr->part_ptr, failed_parts,
 					     failed_part_cnt)) {
 			if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL)
-			    || (job_ptr->state_reason == WAIT_NO_REASON)) {
+			    || (job_ptr->state_reason == WAIT_FOR_SCHED)) {
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
 				last_job_update = now;
@@ -1039,7 +1039,7 @@ next_part:			part_ptr = (struct part_record *)
 						    accounting_enforce,
 						    (slurmdb_association_rec_t **)
 						    &job_ptr->assoc_ptr)) {
-				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->state_reason = WAIT_FOR_SCHED;
 				xfree(job_ptr->state_desc);
 				job_ptr->assoc_id = assoc_rec.id;
 				last_job_update = now;
@@ -1062,7 +1062,7 @@ next_part:			part_ptr = (struct part_record *)
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {
 				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->state_reason = WAIT_FOR_SCHED;
 				last_job_update = now;
 			}
 		}

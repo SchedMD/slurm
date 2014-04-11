@@ -1,4 +1,0 @@
-set slurm_dir "/home/david/clusters/1403/linux"
-set  mpicc "/home/david/local/openmpi-1.6.5/bin/mpicc"
-set build_dir "/home/david/clusters/1403/linux/build"
-set src_dir    "/home/david/slurm/1403/slurm"
