@@ -1059,7 +1059,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 
 	/* clear old state reason */
 	if (!acct_policy_job_runnable_state(job_ptr))
-		job_ptr->state_reason = WAIT_FOR_SCHED;
+		job_ptr->state_reason = WAIT_NO_REASON;
 
 	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
@@ -1341,7 +1341,7 @@ extern bool acct_policy_job_runnable_post_select(
 
 	/* clear old state reason */
 	if (!acct_policy_job_runnable_state(job_ptr))
-		job_ptr->state_reason = WAIT_FOR_SCHED;
+		job_ptr->state_reason = WAIT_NO_REASON;
 
 	job_cpu_time_limit = (uint64_t)job_ptr->time_limit * (uint64_t)cpu_cnt;
 

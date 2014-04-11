@@ -1,0 +1,55 @@
+--- print.c.orig	2014-04-02 18:32:36.000000000 +0000
++++ print.c	2014-04-02 18:33:55.000000000 +0000
+@@ -680,6 +680,18 @@
+ 	return (long) (difftime(end_time, job_ptr->start_time));
+ }
+
++int _print_job_time_submit(job_info_t * job, int width, bool right,
++                          char* suffix)
++{
++        if (job == NULL)        /* Print the Header instead */
++                _print_str("SUBMIT_TIME", width, right, true);
++        else
++                _print_time(job->submit_time, 0, width, right);
++        if (suffix)
++                printf("%s", suffix);
++        return SLURM_SUCCESS;
++}
++
+ int _print_job_time_start(job_info_t * job, int width, bool right,
+ 			  char* suffix)
+ {
+--- print.h.orig	2014-04-02 19:10:41.000000000 +0000
++++ print.h	2014-04-02 19:18:37.000000000 +0000
+@@ -129,6 +129,8 @@
+ 	                        _print_job_time_limit)
+ #define job_format_add_time_used(list,wid,right,suffix) \
+ 	job_format_add_function(list,wid,right,suffix,_print_job_time_used)
++#define job_format_add_time_submit(list,wid,right,suffix) \
++	job_format_add_function(list,wid,right,suffix,_print_job_time_submit)
+ #define job_format_add_time_start(list,wid,right,suffix) \
+ 	job_format_add_function(list,wid,right,suffix,_print_job_time_start)
+ #define job_format_add_time_end(list,wid,right,suffix) \
+@@ -240,6 +242,8 @@
+ 			char* suffix);
+ int _print_job_time_used(job_info_t * job, int width, bool right_justify,
+ 			char* suffix);
++int _print_job_time_submit(job_info_t * job, int width, bool right_justify,
++			char* suffix);
+ int _print_job_time_start(job_info_t * job, int width, bool right_justify,
+ 			char* suffix);
+ int _print_job_time_end(job_info_t * job, int width, bool right_justify,
+--- opts.c.orig	2014-04-02 18:36:56.000000000 +0000
++++ opts.c	2014-04-02 19:18:07.000000000 +0000
+@@ -784,6 +784,11 @@
+ 							field_size,
+ 							right_justify,
+ 							suffix );
++			else if (field[0] == 'V')
++				job_format_add_time_submit( params.format_list,
++							   field_size,
++							   right_justify,
++							   suffix );
+ 			else if (field[0] == 'w')
+ 				job_format_add_wckey( params.format_list,
+ 						      field_size,
