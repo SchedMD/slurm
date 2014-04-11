@@ -56,17 +56,6 @@
 
 static int	_print_str(char *str, int width, bool right, bool cut_output);
 
-/********************
- * Global Variables *
- ********************/
-extern uint32_t max_age; /* time when not to add any more */
-extern uint32_t weight_age; /* weight for age factor */
-extern uint32_t weight_fs; /* weight for Fairshare factor */
-extern uint32_t weight_js; /* weight for Job Size factor */
-extern uint32_t weight_part; /* weight for Partition factor */
-extern uint32_t weight_qos; /* weight for QOS factor */
-
-
 /*****************************************************************************
  * Global Print Functions
  *****************************************************************************/

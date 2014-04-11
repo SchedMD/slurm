@@ -1086,7 +1086,8 @@ extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job)
 
 /* affinity should be set using sched_setaffinity to not force */
 /* user to have to play with the cgroup hierarchy to modify it */
-extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
+extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
+						int task_affinity)
 {
 	int fstatus = SLURM_ERROR;
 
@@ -1205,18 +1206,32 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 
 	hwtype = HWLOC_OBJ_MACHINE;
 	nobj = 1;
-	if (npus >= jnpus || bind_type & CPU_BIND_TO_THREADS) {
-		hwtype = HWLOC_OBJ_PU;
-		nobj = npus;
-	}
-	if (ncores >= jnpus || bind_type & CPU_BIND_TO_CORES) {
-		hwtype = HWLOC_OBJ_CORE;
-		nobj = ncores;
-	}
-	if (nsockets >= jntasks &&
-	    bind_type & CPU_BIND_TO_SOCKETS) {
-		hwtype = socket_or_node;
-		nobj = nsockets;
+	if (task_affinity == 2) {
+		if (npus >= jnpus || bind_type & CPU_BIND_TO_THREADS) {
+			hwtype = HWLOC_OBJ_PU;
+			nobj = npus;
+		} else if (ncores >= jnpus || bind_type & CPU_BIND_TO_CORES) {
+			hwtype = HWLOC_OBJ_CORE;
+			nobj = ncores;
+		} else if (nsockets >= jntasks &&
+			   bind_type & CPU_BIND_TO_SOCKETS) {
+			hwtype = socket_or_node;
+			nobj = nsockets;
+		}
+	} else {
+		if (npus >= jnpus || bind_type & CPU_BIND_TO_THREADS) {
+			hwtype = HWLOC_OBJ_PU;
+			nobj = npus;
+		}
+		if (ncores >= jnpus || bind_type & CPU_BIND_TO_CORES) {
+			hwtype = HWLOC_OBJ_CORE;
+			nobj = ncores;
+		}
+		if (nsockets >= jntasks &&
+		    bind_type & CPU_BIND_TO_SOCKETS) {
+			hwtype = socket_or_node;
+			nobj = nsockets;
+		}
 	}
 	/*
 	 * HWLOC returns all the NUMA nodes available regardless of the
