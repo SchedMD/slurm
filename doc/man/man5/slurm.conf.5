@@ -1939,6 +1939,12 @@ new jobs less frequently.
 The default value is zero, which disables this option.
 If a value is set, then a value of 10 or higher is recommended.
 .TP
+\fBmax_sched_time=#\fR
+How long, in seconds, that the main scheduling loop will execute for before
+exiting.
+The default value is half of \fBMessageTimeout\fR with a minimum default value
+of 1 second and a maximum default value of 4 seconds.
+.TP
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 300 seconds.

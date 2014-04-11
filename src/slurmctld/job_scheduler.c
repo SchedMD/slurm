@@ -722,7 +722,7 @@ extern int schedule(uint32_t job_limit)
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
-	int error_code, i, j, part_cnt;
+	int error_code, i, j, part_cnt, time_limit;
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
@@ -803,11 +803,24 @@ extern int schedule(uint32_t job_limit)
 			error("Invalid max_rpc_cnt: %d", defer_rpc_cnt);
 			defer_rpc_cnt = 0;
 		}
-		xfree(sched_params);
 
-		sched_timeout = slurm_get_msg_timeout() / 2;
-		sched_timeout = MAX(sched_timeout, 1);
-		sched_timeout = MIN(sched_timeout, 4);
+		time_limit = slurm_get_msg_timeout() / 2;
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "max_sched_time="))) {
+			sched_timeout = atoi(tmp_ptr + 15);
+			if ((sched_timeout <= 0) ||
+			    (sched_timeout > time_limit)) {
+				error("Invalid max_sched_time: %d",
+				      sched_timeout);
+				sched_timeout = 0;
+			}
+		}
+		if (sched_timeout == 0) {
+			sched_timeout = MAX(time_limit, 1);
+			sched_timeout = MIN(sched_timeout, 4);
+		}
+
+		xfree(sched_params);
 		sched_update = slurmctld_conf.last_update;
 	}
 

@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
  -- Fix a typo in scontrol man page.
  -- Avoid slurmctld crash getting job info if detail_ptr is NULL.
  -- Fix sacctmgr add user where both defaultaccount and accounts are specified.
+ -- Added SchedulerParameters option of max_sched_time to limit how long the
+    main scheduling loop can execute for.
 
 * Changes in Slurm 14.03.0
 ==========================
