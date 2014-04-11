@@ -477,15 +477,71 @@ A node_name of \fBlocalhost\fR is mapped to the current host name.
 These codes identify the reason that a job is waiting for execution.
 A job may be waiting for more than one reason, in which case only
 one of those reasons is displayed.
-.TP 20
+.TP 22
+\fBAssociationJobLimit\fR
+The job's association has reached its maximum job count.
+.TP
+\fBAssociationResourceLimit\fR
+The job's association has reached some resource limit.
+.TP
+\fBAssociationTimeLimit\fR
+The job's association has reached its time limit.
+.TP
+\fBBadConstraints\fR
+The job's constraints can not be satisfied.
+.TP
+\fBBeginTime\fR
+The job's earliest start time has not yet been reached.
+.TP
+\fBBlockFreeAction\fR
+An IBM BlueGene block is being freedand can not allow more jobs to start.
+.TP
+\fBBlockMaxError\fR
+An IBM BlueGene block has too many cnodes in error state to allow more jobs to start.
+.TP
+\fBCleaning\fR
+The job is being requeued and still cleaning up from its previous execution.
+.TP
 \fBDependency\fR
 This job is waiting for a dependent job to complete.
 .TP
-\fBNone\fR
-No reason is set for this job.
+\fBFrontEndDown\fR
+No front end node is available to execute this job.
+.TP
+\fBInactiveLimit\fR
+The job reached the system InactiveLimit.
+.TP
+\fBInvalidAccount\fR
+The job's account is invalid.
+.TP
+\fBInvalidQOS\fR
+The job's QOS is invalid.
+.TP
+\fBJobHeldAdmin\fR
+The job is held by a system administrator.
+.TP
+\fBJobHeldUser\fR
+The job is held by the user.
+.TP
+\fBJobLaunchFailure\fR
+The job could not be launched.
+This may be due to a file system problem, invalid program name, etc.
+.TP
+\fBLicenses\fR
+The job is waiting for a license.
+.TP
+\fBNodeDown\fR
+A node required by the job is down.
+.TP
+\fBNonZeroExitCode\fR
+The job terminated with a non\-zero exit code.
 .TP
 \fBPartitionDown\fR
 The partition required by this job is in a DOWN state.
+.TP
+\fBPartitionInactive\fR
+The partition required by this job is in an Inactive state and not able to
+start jobs.
 .TP
 \fBPartitionNodeLimit\fR
 The number of nodes required by this job is outside of it's
@@ -496,32 +552,41 @@ Can also indicate that required nodes are DOWN or DRAINED.
 The job's time limit exceeds it's partition's current time limit.
 .TP
 \fBPriority\fR
-One or more higher priority jobs exist for this partition.
+One or more higher priority jobs exist for this partition or advanced reservation.
+.TP
+\fBProlog\fR
+It's PrologSlurmctld program is still running.
+.TP
+\fBQOSJobLimit\fR
+The job's QOS has reached its maximum job count.
+.TP
+\fBQOSResourceLimit\fR
+The job's QOS has reached some resource limit.
+.TP
+\fBQOSTimeLimit\fR
+The job's QOS has reached its time limit.
+.TP
+\fBReqNodeNotAvail\fR
+Some node specifically required by the job is not currently available.
+.TP
+\fBReservation\fR
+The job is waiting its advanced reservation to become available.
 .TP
 \fBResources\fR
 The job is waiting for resources to become available.
 .TP
-\fBNodeDown\fR
-A node required by the job is down.
-.TP
-\fBBadConstraints\fR
-The job's constraints can not be satisfied.
-.TP
 \fBSystemFailure\fR
 Failure of the SLURM system, a file system, the network, etc.
-.TP
-\fBJobLaunchFailure\fR
-The job could not be launched.
-This may be due to a file system problem, invalid program name, etc.
-.TP
-\fBNonZeroExitCode\fR
-The job terminated with a non\-zero exit code.
 .TP
 \fBTimeLimit\fR
 The job exhausted its time limit.
 .TP
-\fBInactiveLimit\fR
-The job reached the system InactiveLimit.
+\fBQOSUsageThreshold\fR
+Required QOS threshold has been breached.
+.TP
+\fBWaitingForScheduling\fR
+No reason has been set for this job yet.
+Waiting for the scheduler to determine the appropriate reason.
 
 .SH "JOB STATE CODES"
 Jobs typically pass through several states in the course of their
