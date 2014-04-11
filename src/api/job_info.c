@@ -565,8 +565,6 @@ line6:
 	else
 		xstrcat(out, "\n   ");
 
-
-
 	/****** Line 14 (optional) ******/
 	if (job_ptr->batch_host) {
 		snprintf(tmp_line, sizeof(tmp_line), "BatchHost=%s",
