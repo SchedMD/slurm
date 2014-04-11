@@ -993,8 +993,8 @@ extern void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg)
 extern char *job_reason_string(enum job_state_reason inx)
 {
 	switch (inx) {
-	case WAIT_FOR_SCHED:
-		return "WaitingForScheduling";
+	case WAIT_NO_REASON:
+		return "None";
 	case WAIT_PROLOG:
 		return "Prolog";
 	case WAIT_PRIORITY:

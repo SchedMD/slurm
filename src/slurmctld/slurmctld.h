@@ -107,13 +107,6 @@
 #define	RPC_RETRY_INTERVAL	60
 #endif
 
-/* Attempt to schedule jobs every PERIODIC_SCHEDULE seconds despite
- * any RPC activity. This will catch any state transisions that may
- * have otherwise been missed */
-#ifndef PERIODIC_SCHEDULE
-#define	PERIODIC_SCHEDULE	60
-#endif
-
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #ifndef PERIODIC_TIMEOUT
 #define	PERIODIC_TIMEOUT	30
@@ -218,6 +211,7 @@ extern int   association_based_accounting;
 extern uint32_t   cluster_cpus;
 extern int   with_slurmdbd;
 extern bool  load_2_4_state;
+extern int   sched_interval;
 extern bool  slurmctld_init_db;
 
 /*****************************************************************************\
@@ -812,7 +806,7 @@ extern struct part_record *create_part_record (void);
  * IN job_ptr - pointer to job table entry.
  * IN check_min_time - if true test job's minimum time limit,
  *		otherwise test maximum time limit
- * RET WAIT_FOR_SCHED on success, fail status otherwise.
+ * RET WAIT_NO_REASON on success, fail status otherwise.
  */
 extern int job_limits_check(struct job_record **job_pptr, bool check_min_time);
 

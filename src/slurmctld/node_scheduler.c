@@ -1747,7 +1747,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	/* assign the nodes and stage_in the job */
-	job_ptr->state_reason = WAIT_FOR_SCHED;
+	job_ptr->state_reason = WAIT_NO_REASON;
 	xfree(job_ptr->state_desc);
 
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes)

@@ -243,7 +243,9 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 		   || !strncasecmp (type, "Acct", MAX(command_len, 4))) {
 		if (!assoc_cond->acct_list)
 			assoc_cond->acct_list = list_create(slurm_destroy_char);
-		if (slurm_addto_char_list(assoc_cond->acct_list, value))
+		slurm_addto_char_list(assoc_cond->acct_list, value);
+
+		if (list_count(assoc_cond->acct_list))
 			set = 1;
 	} else if (!strncasecmp(type, "Ids", MAX(command_len, 1))
 		   || !strncasecmp(type, "Associations", MAX(command_len, 2))) {
