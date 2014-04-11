@@ -152,6 +152,7 @@ enum {
 	SORTID_NODELIST,
 	SORTID_NODELIST_EXC,
 	SORTID_NODELIST_REQ,
+	SORTID_NODELIST_SCHED,
 #endif
 	SORTID_NODE_INX,
 	SORTID_NODES,
@@ -322,6 +323,8 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_REQ, "NodeList Requested",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_NODELIST_SCHED, "NodeList Scheduled",
+	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 #endif
 	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
@@ -1687,6 +1690,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 					   find_col_name(display_data_job,
 							 SORTID_NODELIST_REQ),
 					   job_ptr->req_nodes);
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_job,
+							 SORTID_NODELIST_SCHED),
+					   job_ptr->sched_nodes);
 	}
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
@@ -2182,6 +2189,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_NODELIST,     tmp_nodes,
 			   SORTID_NODELIST_EXC, job_ptr->exc_nodes,
 			   SORTID_NODELIST_REQ, job_ptr->req_nodes,
+			   SORTID_NODELIST_SCHED,
+				job_ptr->sched_nodes,
 			   SORTID_NODES,        tmp_node_cnt,
 			   SORTID_NODES_MAX,    tmp_nodes_max,
 			   SORTID_NODES_MIN,    tmp_nodes_min,
@@ -4512,6 +4521,9 @@ extern void cluster_change_job(void)
 				break;
 			case SORTID_NODELIST_REQ:
 				display_data->name = "NodeList Requested";
+				break;
+			case SORTID_NODELIST_SCHED:
+				display_data->name = "NodeList Scheduled";
 				break;
 			case SORTID_IMAGE_BLRTS:
 				display_data->name = NULL;

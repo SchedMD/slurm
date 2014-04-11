@@ -8,7 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Improve qsub wrapper support for passing environment variables.
  -- Modify sdiag to report Slurm RPC traffic by user, type, count and time
     consumed.
- -- In select plugins, stop triggering extra SHiSlogging based upon the debug flag
+ -- In select plugins, stop triggering extra logging based upon the debug flag
     CPU_Bind and use SelectType instead.
  -- Added SchedulerParameters options of bf_yield_interval and bf_yield_sleep
     to control how frequently and for how long the backfill scheduler will

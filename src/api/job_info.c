@@ -558,10 +558,14 @@ line6:
 		xstrcat(out, tmp_line);
 		xfree(ionodes);
 	}
+	if (job_ptr->sched_nodes)
+		xstrfmtcat(out, " Sched%s=%s", nodelist, job_ptr->sched_nodes);
 	if (one_liner)
 		xstrcat(out, " ");
 	else
 		xstrcat(out, "\n   ");
+
+
 
 	/****** Line 14 (optional) ******/
 	if (job_ptr->batch_host) {
