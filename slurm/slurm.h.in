@@ -1248,6 +1248,7 @@ typedef struct job_info {
 	time_t resize_time;	/* time of latest size change */
 	uint16_t restart_cnt;	/* count of job restarts */
 	char *resv_name;	/* reservation name */
+	char *sched_nodes;	/* list of nodes scheduled to be used for job */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
 						* process using
 						* slurm_get_select_jobinfo()

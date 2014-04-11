@@ -541,6 +541,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->network);
 		xfree(job->node_inx);
 		xfree(job->nodes);
+		xfree(job->sched_nodes);
 		xfree(job->partition);
 		xfree(job->qos);
 		xfree(job->req_node_inx);

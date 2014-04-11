@@ -1142,6 +1142,8 @@ static int _attempt_backfill(void)
 		reject_array_job_id = 0;
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
+		xfree(job_ptr->sched_nodes);
+		job_ptr->sched_nodes = bitmap2node_name(avail_bitmap);
 		bit_not(avail_bitmap);
 		_add_reservation(job_ptr->start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);

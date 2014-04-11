@@ -619,6 +619,7 @@ struct job_record {
 	struct slurmctld_resv *resv_ptr;/* reservation structure pointer */
 	uint32_t requid;	    	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
+	char *sched_nodes;		/* list of nodes scheduled for job */
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK

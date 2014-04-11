@@ -778,6 +778,23 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 	return SLURM_SUCCESS;
 }
 
+int _print_job_schednodes(job_info_t * job, int width, bool right, char* suffix)
+{
+	if (job == NULL) {	/* Print the Header instead */
+		char *title = "SCHEDNODES";
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
+			title = "MIDPLANELIST";
+		_print_str(title, width, right, false);
+	} else {
+		/* NOTE: BlueGene I/O node info not available */
+		_print_str(job->sched_nodes, width, right, false);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_reason_list(job_info_t * job, int width, bool right,
 		char* suffix)
 {

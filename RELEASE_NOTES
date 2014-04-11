@@ -53,7 +53,8 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Improve qsub wrapper support for passing environment variables.
  -- Modify sdiag to report Slurm RPC traffic by type, count and time consumed.
-
+ -- Enable display of nodes anticipated to be used for pending jobs by squeue,
+    sview or scontrol.
 
 OTHER CHANGES
 =============
@@ -72,7 +73,8 @@ Added the following struct definitions
  -- Added the following fields to struct stats_info_response_msg:
     rpc_type_size, rpc_type_id, rpc_type_cnt, rpc_type_time,
     rpc_user_size, rpc_user_id, rpc_user_cnt, rpc_user_time.
-
+ -- Added the following fields to struct jop_info:
+    sched_nodes
 
 Changed the following enums and #defines
 ========================================
