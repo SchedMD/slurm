@@ -34,6 +34,7 @@ documents those changes that are of interest to users and admins.
     not been processed by the scheduler yet.
  -- Fix a typo in scontrol man page.
  -- Avoid slurmctld crash getting job info if detail_ptr is NULL.
+ -- Fix sacctmgr add user where both defaultaccount and accounts are specified.
 
 * Changes in Slurm 14.03.0
 ==========================
