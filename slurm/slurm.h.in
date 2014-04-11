@@ -1188,11 +1188,13 @@ typedef struct job_info {
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *batch_host;	/* name of host running batch script */
 	char *batch_script;	/* contents of batch script */
+	uint16_t boards_per_node;  /* boards per node required by job   */
 	char *command;		/* command to be executed, built from submitted
 				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t core_spec;	/* specialized core count */
+	uint16_t cores_per_socket; /* cores per socket required by job  */
 	uint16_t cpus_per_task;	/* number of processors required for
 				 * each task */
 	char *dependency;	/* synchronize job execution with other jobs */
@@ -1208,15 +1210,11 @@ typedef struct job_info {
 	char *gres;		/* comma separated list of generic resources */
 	uint32_t group_id;	/* group job submitted as */
 	uint32_t job_id;	/* job ID */
+	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	char *licenses;		/* licenses required by the job */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
-	uint16_t boards_per_node;  /* boards per node required by job   */
-	uint16_t sockets_per_board;/* sockets per board required by job */
-	uint16_t sockets_per_node; /* sockets per node required by job  */
-	uint16_t cores_per_socket; /* cores per socket required by job  */
-	uint16_t threads_per_core; /* threads per core required by job  */
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
@@ -1235,6 +1233,7 @@ typedef struct job_info {
 	uint32_t pn_min_memory; /* minimum real memory per node, default=0 */
 	uint16_t pn_min_cpus;   /* minimum # CPUs per node, default=0 */
 	uint32_t pn_min_tmp_disk; /* minimum tmp disk per node, default=0 */
+	time_t preempt_time;	/* preemption signal time */
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job,
 				 * 0=held, 1=required nodes DOWN/DRAINED */
@@ -1253,9 +1252,10 @@ typedef struct job_info {
 						* process using
 						* slurm_get_select_jobinfo()
 						*/
-	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t show_flags;	/* conveys level of details requested */
+	uint16_t sockets_per_board;/* sockets per board required by job */
+	uint16_t sockets_per_node; /* sockets per node required by job  */
 	time_t start_time;	/* time execution begins, actual or expected */
 	char *state_desc;	/* optional details for state_reason */
 	uint16_t state_reason;	/* reason job still pending or failed, see
@@ -1267,8 +1267,8 @@ typedef struct job_info {
 	time_t suspend_time;	/* time job last suspended or resumed */
 	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
 	uint32_t time_min;	/* minimum run time in minutes or INFINITE */
+	uint16_t threads_per_core; /* threads per core required by job  */
 	uint32_t user_id;	/* user the job runs as */
-	time_t 	preempt_time;	/* preemption signal time */
 	uint32_t wait4switch;   /* Maximum time to wait for minimum switches */
 	char *wckey;            /* wckey for job */
 	char *work_dir;		/* pathname of working directory */
