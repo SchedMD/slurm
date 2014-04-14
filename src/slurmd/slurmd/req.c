@@ -794,8 +794,14 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 
 		/*
 		 * Grandchild exec's the slurmstepd
+		 *
+		 * If the slurmd is being shutdown/restarted before
+		 * the pipe happens the old conf->lfd could be reused
+		 * and if we close it the dup2 below will fail.
 		 */
-		slurm_shutdown_msg_engine(conf->lfd);
+		if ((to_stepd[0] != conf->lfd)
+		    && (to_slurmd[1] != conf->lfd))
+			slurm_shutdown_msg_engine(conf->lfd);
 
 		if (close(to_stepd[1]) < 0)
 			error("close write to_stepd in grandchild: %m");
