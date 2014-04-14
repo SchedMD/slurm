@@ -56,6 +56,7 @@ static void _update_job_size(uint32_t job_id);
 static int _parse_requeue_flags(char *, uint32_t *state_flags);
 static job_info_msg_t *_get_job_info(const char *jobid, uint32_t *task_id);
 static job_ids_t *_get_job_ids(const char *jobid,  uint32_t *num_ids);
+static job_ids_t *_get_job_ids2(const char *jobid,  uint32_t *num_ids);
 
 /*
  * scontrol_checkpoint - perform some checkpoint/resume operation
@@ -328,11 +329,11 @@ extern int
 scontrol_suspend(char *op, char *job_id_str)
 {
 	job_ids_t *ids;
-	uint32_t num_ids;
+	uint32_t num_ids = 0;
 	int i;
 	int cc;
 
-	ids = _get_job_ids(job_id_str, &num_ids);
+	ids = _get_job_ids2(job_id_str, &num_ids);
 	if (ids == NULL) {
 		exit_code = 1;
 		return 0;
@@ -376,7 +377,7 @@ scontrol_requeue(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	int i;
 	job_ids_t *ids;
-	uint32_t num_ids;
+	uint32_t num_ids = 0;
 
 	if (! argv[0]) {
 		exit_code = 1;
@@ -482,10 +483,12 @@ extern int
 scontrol_update_job (int argc, char *argv[])
 {
 	bool update_size = false;
-	int i, update_cnt = 0;
+	int i, update_cnt = 0, rc = SLURM_SUCCESS;
 	char *tag, *val;
 	int taglen, vallen;
 	job_desc_msg_t job_msg;
+	job_ids_t *ids = NULL;
+	uint32_t num_ids = 0;
 
 	slurm_init_job_desc_msg (&job_msg);
 
@@ -509,12 +512,13 @@ scontrol_update_job (int argc, char *argv[])
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
+			xfree(ids);
 			return -1;
 		}
 
 		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
-			job_msg.job_id = slurm_xlate_job_id(val);
-			if (job_msg.job_id == 0) {
+			ids = _get_job_ids2(val, &num_ids);
+			if (ids == NULL) {
 				error ("Invalid JobId value: %s", val);
 				exit_code = 1;
 				return 0;
@@ -536,13 +540,29 @@ scontrol_update_job (int argc, char *argv[])
 			if ((time_limit < 0) && (time_limit != INFINITE)) {
 				error("Invalid TimeLimit value");
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			if (incr || decr) {
-				job_current_time = _get_job_time(job_msg.
+				if (num_ids == 0) {
+					error("JobId must preceed TimeLimit "
+					      "increment or decrement");
+					exit_code = 1;
+					xfree(ids);
+					return 0;
+				}
+				if (num_ids > 1) {
+					error("TimeLimit increment/decrement "
+					      "not supported for job arrays");
+					exit_code = 1;
+					xfree(ids);
+					return 0;
+				}
+				job_current_time = _get_job_time(ids[0].
 								 job_id);
 				if (job_current_time == NO_VAL) {
 					exit_code = 1;
+					xfree(ids);
 					return 0;
 				}
 				if (incr) {
@@ -552,6 +572,7 @@ scontrol_update_job (int argc, char *argv[])
 					      " current time limit (%u > %u)",
 					      time_limit, job_current_time);
 					exit_code = 1;
+					xfree(ids);
 					return 0;
 				} else {
 					time_limit = job_current_time -
@@ -566,6 +587,7 @@ scontrol_update_job (int argc, char *argv[])
 			if ((time_min < 0) && (time_min != INFINITE)) {
 				error("Invalid TimeMin value");
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			job_msg.time_min = time_min;
@@ -575,6 +597,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint32(val, &job_msg.priority)) {
 				error ("Invalid Priority value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -587,6 +610,7 @@ scontrol_update_job (int argc, char *argv[])
 					"-%d and %d", NICE_OFFSET,
 					NICE_OFFSET);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			job_msg.nice = NICE_OFFSET + nice;
@@ -600,6 +624,7 @@ scontrol_update_job (int argc, char *argv[])
 			    (max_cpus && (max_cpus < min_cpus))) {
 				error ("Invalid NumCPUs value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			job_msg.min_cpus = min_cpus;
@@ -612,6 +637,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint32(val, &job_msg.num_tasks)) {
 				error ("Invalid ReqProcs value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -620,6 +646,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint16(val, &job_msg.requeue)) {
 				error ("Invalid Requeue value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -638,8 +665,10 @@ scontrol_update_job (int argc, char *argv[])
 				rc = get_resource_arg_range(
 						val, "requested node count",
 						&min_nodes, &max_nodes, false);
-				if (!rc)
+				if (!rc) {
+					xfree(ids);
 					return rc;
+				}
 				job_msg.min_nodes = (uint32_t) min_nodes;
 				job_msg.max_nodes = (uint32_t) max_nodes;
 			}
@@ -650,6 +679,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint16(val, &job_msg.sockets_per_node)) {
 				error ("Invalid ReqSockets value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -658,6 +688,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint16(val, &job_msg.cores_per_socket)) {
 				error ("Invalid ReqCores value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -666,6 +697,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint16(val, &job_msg.ntasks_per_node)) {
 				error ("Invalid TasksPerNode value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
                         update_cnt++;
@@ -674,6 +706,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint16(val, &job_msg.threads_per_core)) {
 				error ("Invalid ReqThreads value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -682,6 +715,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint16(val, &job_msg.pn_min_cpus)) {
 				error ("Invalid MinCPUsNode value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -691,6 +725,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint32(val, &job_msg.pn_min_memory)) {
 				error ("Invalid MinMemoryNode value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -700,6 +735,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint32(val, &job_msg.pn_min_memory)) {
 				error ("Invalid MinMemoryCPU value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			job_msg.pn_min_memory |= MEM_PER_CPU;
@@ -710,6 +746,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint32(val, &job_msg.pn_min_tmp_disk)) {
 				error ("Invalid MinTmpDiskNode value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -754,6 +791,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint32(val, &job_msg.wait4switch)) {
 				error ("Invalid wait-for-switch value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -766,6 +804,7 @@ scontrol_update_job (int argc, char *argv[])
 			else if (parse_uint16(val, &job_msg.shared)) {
 				error ("Invalid wait-for-switch value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -778,6 +817,7 @@ scontrol_update_job (int argc, char *argv[])
 			else if (parse_uint16(val, &job_msg.contiguous)) {
 				error ("Invalid Contiguous value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -786,6 +826,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (parse_uint16(val, &job_msg.core_spec)) {
 				error ("Invalid CoreSpec value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -870,6 +911,7 @@ scontrol_update_job (int argc, char *argv[])
 			else if (parse_uint16(val, &job_msg.rotate)) {
 				error ("Invalid wait-for-switch value: %s", val);
 				exit_code = 1;
+				xfree(ids);
 				return 0;
 			}
 			update_cnt++;
@@ -900,6 +942,7 @@ scontrol_update_job (int argc, char *argv[])
 			fprintf (stderr, "Update of this parameter is not "
 				 "supported: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
+				xfree(ids);
 			return 0;
 		}
 	}
@@ -910,13 +953,36 @@ scontrol_update_job (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_job(&job_msg))
-		return slurm_get_errno ();
-
-	if (update_size)
+	if (num_ids == 0) {
+		error("No job ID specified");
+		exit_code = 1;
+		xfree(ids);
+		return 0;
+	}
+	if ((num_ids > 1) && update_size) {
+		error("Job resizing not supported for entire job array");
+		error("Each job array element must be re-sized individually");
+		exit_code = 1;
+		xfree(ids);
+		return 0;
+	}
+	for (i = 0; i < num_ids; i++) {
+		job_msg.job_id = ids[i].job_id;
+		if (slurm_update_job(&job_msg)) {
+			rc = slurm_get_errno();
+			if (ids[i].array_task_id == NO_VAL) {
+				error("Error updating job %u", ids[i].job_id);
+			} else {
+				error("Error updating job %u_%u (%u)",
+				      ids[i].array_job_id, ids[i].array_task_id,
+				      ids[i].job_id);
+			}
+		}
+	}
+	if (update_size)	/* See check above for one job ID */
 		_update_job_size(job_msg.job_id);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
@@ -1122,10 +1188,10 @@ _get_job_info(const char *jobid, uint32_t *task_id)
 	return job_info;
 }
 
-/* _get_job_ids()
+/* _get_job_ids() - Return array of job record for all job states.
+ * First the pending jobs, then all other jobs
  */
-static job_ids_t *
-_get_job_ids(const char *jobid, uint32_t *num_ids)
+static job_ids_t *_get_job_ids(const char *jobid, uint32_t *num_ids)
 {
 	job_info_msg_t *job_info;
 	job_ids_t *job_ids;
@@ -1133,6 +1199,7 @@ _get_job_ids(const char *jobid, uint32_t *num_ids)
 	int i;
 	int cc;
 
+	*num_ids = 0;
 	task_id = 0;
 	job_info = _get_job_info(jobid, &task_id);
 	if (job_info == NULL)
@@ -1199,6 +1266,65 @@ _get_job_ids(const char *jobid, uint32_t *num_ids)
 	}
 
 	xassert(i == *num_ids);
+	slurm_free_job_info_msg(job_info);
+
+	return job_ids;
+}
+
+/* _get_job_ids2() - Return array of job record for all incomplete jobs
+ */
+static job_ids_t *_get_job_ids2(const char *jobid, uint32_t *num_ids)
+{
+	job_info_msg_t *job_info;
+	job_ids_t *job_ids = NULL;
+	uint32_t job_state, task_id;
+	int i;
+	int cc;
+
+	*num_ids = 0;
+	task_id = 0;
+	job_info = _get_job_info(jobid, &task_id);
+	if (job_info == NULL)
+		return NULL;
+
+	if (task_id != NO_VAL) {
+		/* Search for the job_id of the specified task. */
+		for (cc = 0; cc < job_info->record_count; cc++) {
+			if (task_id == job_info->job_array[cc].array_task_id) {
+				job_state = job_info->job_array[cc].job_state;
+				job_state &= JOB_STATE_BASE;
+				if (job_state > JOB_SUSPENDED)
+					break;
+				*num_ids = 1;
+				job_ids = xmalloc(sizeof(job_ids_t));
+				job_ids[0].array_job_id =
+					job_info->job_array[cc].array_job_id;
+				job_ids[0].array_task_id =
+					job_info->job_array[cc].array_task_id;
+				job_ids[0].job_id =
+					job_info->job_array[cc].job_id;
+				break;
+			}
+		}
+		slurm_free_job_info_msg(job_info);
+		return job_ids;
+	}
+
+	*num_ids = job_info->record_count;
+	job_ids = xmalloc(job_info->record_count * sizeof(job_ids_t));
+	i = 0;
+	for (cc = 0; cc < job_info->record_count; cc++) {
+		job_state = job_info->job_array[cc].job_state & JOB_STATE_BASE;
+		if (job_state < JOB_SUSPENDED) {
+			job_ids[i].array_job_id =
+				job_info->job_array[cc].array_job_id;
+			job_ids[i].array_task_id =
+				job_info->job_array[cc].array_task_id;
+			job_ids[i].job_id = job_info->job_array[cc].job_id;
+			++i;
+		}
+	}
+	*num_ids = i;
 	slurm_free_job_info_msg(job_info);
 
 	return job_ids;
