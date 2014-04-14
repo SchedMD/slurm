@@ -1963,8 +1963,14 @@ If a value is set, then a value of 10 or higher is recommended.
 \fBmax_sched_time=#\fR
 How long, in seconds, that the main scheduling loop will execute for before
 exiting.
-The default value is half of \fBMessageTimeout\fR with a minimum default value
-of 1 second and a maximum default value of 4 seconds.
+If a value is configured, be aware that all other Slurm operations will be
+deferred during this time period.
+Make certain the value is lower than \fBMessageTimeout\fR.
+If a value is not explicitly configured, the default value is half of
+\fBMessageTimeout\fR with a minimum default value of 1 second and a maximum
+default value of 4 seconds.
+For example if MessageTimeout=10, the time limit will be 4 seconds
+(i.e. MIN(10/2, 4) = 4).
 .TP
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the

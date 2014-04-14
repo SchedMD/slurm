@@ -55,6 +55,8 @@ COMMAND CHANGES (see man pages for details)
  -- Modify sdiag to report Slurm RPC traffic by type, count and time consumed.
  -- Enable display of nodes anticipated to be used for pending jobs by squeue,
     sview or scontrol.
+ -- Modify squeue --start option to print the nodes expected to be used for
+    pending job (in addition to expected start time, etc.).
 
 OTHER CHANGES
 =============

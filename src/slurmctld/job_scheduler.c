@@ -746,10 +746,9 @@ extern int schedule(uint32_t job_limit)
 	static int def_job_limit = 100;
 	static int max_jobs_per_part = 0;
 	static int defer_rpc_cnt = 0;
-	time_t now = time(NULL), sched_start;
+	time_t now, sched_start;
 	DEF_TIMERS;
 
-	sched_start = now;
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
@@ -830,6 +829,10 @@ extern int schedule(uint32_t job_limit)
 
 		xfree(sched_params);
 		sched_update = slurmctld_conf.last_update;
+		info("SchedulingParameters: default_queue_depth=%d "
+		     "max_rpc_cnt=%d max_sched_time=%d partition_job_depth=%d ",
+		     def_job_limit, defer_rpc_cnt, sched_timeout,
+		     max_jobs_per_part);
 	}
 
 	if ((defer_rpc_cnt > 0) &&
@@ -847,6 +850,8 @@ extern int schedule(uint32_t job_limit)
 		job_limit = def_job_limit;
 
 	lock_slurmctld(job_write_lock);
+	now = time(NULL);
+	sched_start = now;
 	START_TIMER;
 	if (!avail_front_end(NULL)) {
 		ListIterator job_iterator = list_iterator_create(job_list);

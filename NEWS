@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for allocation of GRES by model type for heterogenous systems
     (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of any type).
  -- Record and enable display of nodes anticipated to be used for pending jobs.
+ -- Modify squeue --start option to print the nodes expected to be used for
+    pending job (in addition to expected start time, etc.).
 
 * Changes in Slurm 14.03.1
 ==========================
@@ -60,6 +62,9 @@ documents those changes that are of interest to users and admins.
     main scheduling loop can execute for.
  -- Added SchedulerParameters option of sched_interval to control how frequently
     the main scheduling loop will execute.
+ -- Move start time of main scheduling loop timeout after locks are aquired.
+ -- Add squeue job format option of "%y" to print a job's nice value.
+ -- Update scontrol update jobID logic to operate on entire job arrays.
 
 * Changes in Slurm 14.03.0
 ==========================
