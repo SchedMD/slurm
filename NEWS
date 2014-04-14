@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
  -- Move start time of main scheduling loop timeout after locks are aquired.
  -- Add squeue job format option of "%y" to print a job's nice value.
  -- Update scontrol update jobID logic to operate on entire job arrays.
+ -- Fix PrologFlags=Alloc to run the prolog on each of the nodes in the
+    allocation instead of just the first.
 
 * Changes in Slurm 14.03.0
 ==========================

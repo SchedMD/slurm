@@ -1840,7 +1840,6 @@ static void _launch_prolog(struct job_record *job_ptr)
 				xmalloc(sizeof(prolog_launch_msg_t));
 
 	xassert(job_ptr);
-	xassert(job_ptr->batch_host);
 	xassert(prolog_msg_ptr);
 
 	/* Locks: Write job */
@@ -1861,18 +1860,16 @@ static void _launch_prolog(struct job_record *job_ptr)
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;
-	agent_arg_ptr->node_count = 1;
   #ifdef HAVE_FRONT_END
 	xassert(job_ptr->front_end_ptr);
 	xassert(job_ptr->front_end_ptr->name);
 	agent_arg_ptr->protocol_version =
 		job_ptr->front_end_ptr->protocol_version;
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->front_end_ptr->name);
+	agent_arg_ptr->node_count = 1;
   #else
-	struct node_record *node_ptr;
-	if ((node_ptr = find_node_record(job_ptr->batch_host)))
-		agent_arg_ptr->protocol_version = node_ptr->protocol_version;
-	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
+	agent_arg_ptr->hostlist = hostlist_create(job_ptr->nodes);
+	agent_arg_ptr->node_count = job_ptr->node_cnt;
   #endif
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
 	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
