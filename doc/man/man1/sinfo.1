@@ -460,6 +460,15 @@ this state per system administrator request. See the \fBupdate
 node\fR command in the \fBscontrol\fR(1) man page or the
 \fBslurm.conf\fR(5) man page for more information.
 .TP
+\fBERROR\fR
+The node is currently in an error state and not capable of running any jobs.
+SLURM can automatically place nodes in this state if some failure occurs.
+System administrators may also explicitly place nodes in this state. If
+a node resumes normal operation, SLURM can automatically
+return it to service. See the \fBReturnToService\fR
+and \fBSlurmdTimeout\fR parameter descriptions in the
+\fBslurm.conf\fR(5) man page for more information.
+.TP
 \fBFAIL\fR
 The node is expected to fail soon and is unavailable for
 use per system administrator request.
@@ -472,12 +481,32 @@ soon and is unavailable for use per system administrator request.
 See the \fBupdate node\fR command in the \fBscontrol\fR(1)
 man page or the \fBslurm.conf\fR(5) man page for more information.
 .TP
+\fBFUTURE\fR
+The node is currently not fully configured, but expected to be available at
+some point in the indefinite future for use.
+.TP
 \fBIDLE\fR
 The node is not allocated to any jobs and is available for use.
 .TP
 \fBMAINT\fR
 The node is currently in a reservation with a flag value of "maintenance"
 or is scheduled to be rebooted.
+.TP
+\fBMIXED\fR
+The node has some of its CPUs ALLOCATED while others are IDLE.
+.TP
+\fBPERFCTRS (NPC)\fR
+Network Performance Counters associated with this node are in use, rendering
+this node as not usable for any other jobs
+.TP
+\fBPOWER_DOWN\fR
+The node is currently powered down and not capable of running any jobs.
+.TP
+\fBPOWER_UP\fR
+The node is currently in the process of being powered up.
+.TP
+\fBRESERVED\fR
+The node is in an advanced reservation and not generally available.
 .TP
 \fBUNKNOWN\fR
 The SLURM controller has just started and the node's state
