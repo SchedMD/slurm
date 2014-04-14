@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
  -- Added SchedulerParameters option of sched_interval to control how frequently
     the main scheduling loop will execute.
  -- Move start time of main scheduling loop timeout after locks are aquired.
+ -- Add squeue job format option of "%y" to print a job's nice value.
 
 * Changes in Slurm 14.03.0
 ==========================

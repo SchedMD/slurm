@@ -808,6 +808,10 @@ extern int parse_format( char* format )
 							  field_size,
 							  right_justify,
 							  suffix );
+			else if (field[0] == 'y')
+				job_format_add_nice( params.format_list,
+						     field_size, right_justify,
+						     suffix );
 			else if (field[0] == 'z')
 				job_format_add_num_sct( params.format_list,
 							   field_size,

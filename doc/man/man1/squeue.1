@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "November 2013" "squeue 14.03" "Slurm components"
+.TH SQUEUE "1" "April 2014" "squeue 14.03" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -367,6 +367,10 @@ List of node names explicitly excluded by the job.
 .TP
 \fB%X\fR
 Count of cores reserved on each node for system use (core specialization).
+(Valid for jobs only)
+.TP
+\fB%y\fR
+Nice value (adjustment to a job's scheduling priority).
 (Valid for jobs only)
 .TP
 \fB%z\fR

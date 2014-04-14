@@ -193,7 +193,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_work_dir)
 #define job_format_add_invalid(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,(void*)_print_com_invalid)
-
+#define job_format_add_nice(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_nice)
 
 /*****************************************************************************
  * Job Line Print Functions
@@ -305,6 +306,8 @@ int _print_job_command(job_info_t * job, int width, bool right_justify,
 		        char* suffix);
 int _print_job_work_dir(job_info_t * job, int width, bool right_justify,
 			char* suffix);
+int _print_job_nice(job_info_t * job, int width, bool right_justify,
+		    char* suffix);
 
 /*****************************************************************************
  * Step Print Format Functions
