@@ -829,6 +829,10 @@ extern int schedule(uint32_t job_limit)
 
 		xfree(sched_params);
 		sched_update = slurmctld_conf.last_update;
+		info("SchedulingParameters: default_queue_depth=%d "
+		     "max_rpc_cnt=%d max_sched_time=%d partition_job_depth=%d ",
+		     def_job_limit, defer_rpc_cnt, sched_timeout,
+		     max_jobs_per_part);
 	}
 
 	if ((defer_rpc_cnt > 0) &&
