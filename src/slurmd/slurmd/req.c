@@ -1129,6 +1129,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		int rc;
 		job_env_t job_env;
 
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
 
@@ -1157,7 +1159,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			errnum = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
-	}
+	} else
+		_wait_for_job_running_prolog(req->job_id);
+
 #endif
 
 	if (req->job_mem_lim || req->step_mem_lim) {
@@ -1432,6 +1436,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	job_env_t job_env;
+	bool     first_job_run;
 
 	if (req == NULL)
 		return;
@@ -1456,15 +1461,20 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (container_g_create(req->job_id))
 		error("container_g_create(%u): %m", req->job_id);
 
-	memset(&job_env, 0, sizeof(job_env_t));
+	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 
-	job_env.jobid = req->job_id;
-	job_env.step_id = 0;	/* not available */
-	job_env.node_list = req->nodes;
-	job_env.partition = req->partition;
-	job_env.spank_job_env = req->spank_job_env;
-	job_env.spank_job_env_size = req->spank_job_env_size;
-	job_env.uid = req->uid;
+	if (first_job_run) {
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+
+		memset(&job_env, 0, sizeof(job_env_t));
+
+		job_env.jobid = req->job_id;
+		job_env.step_id = 0;	/* not available */
+		job_env.node_list = req->nodes;
+		job_env.partition = req->partition;
+		job_env.spank_job_env = req->spank_job_env;
+		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.uid = req->uid;
 #if defined(HAVE_BG)
 		select_g_select_jobinfo_get(req->select_jobinfo,
 					    SELECT_JOBDATA_BLOCK_ID,
@@ -1473,20 +1483,21 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.resv_id = select_g_select_jobinfo_xstrdup(
 			req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
-	rc = _run_prolog(&job_env);
+		rc = _run_prolog(&job_env);
 
-	if (rc) {
-		int term_sig, exit_status;
-		if (WIFSIGNALED(rc)) {
-			exit_status = 0;
-			term_sig    = WTERMSIG(rc);
-		} else {
-			exit_status = WEXITSTATUS(rc);
-			term_sig    = 0;
+		if (rc) {
+			int term_sig, exit_status;
+			if (WIFSIGNALED(rc)) {
+				exit_status = 0;
+				term_sig    = WTERMSIG(rc);
+			} else {
+				exit_status = WEXITSTATUS(rc);
+				term_sig    = 0;
+			}
+			error("[job %u] prolog failed status=%d:%d",
+			      req->job_id, exit_status, term_sig);
+			rc = ESLURMD_PROLOG_FAILED;
 		}
-		error("[job %u] prolog failed status=%d:%d",
-		      req->job_id, exit_status, term_sig);
-		rc = ESLURMD_PROLOG_FAILED;
 	}
 
 	_notify_slurmctld_prolog_fini(req->job_id, rc);
