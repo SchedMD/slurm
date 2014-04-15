@@ -1262,6 +1262,8 @@ void print_fields(type_t type, void *object)
 				snprintf(outbuf, sizeof(outbuf), "Medium");
 			else if (tmp_dub == CPU_FREQ_HIGH)
 				snprintf(outbuf, sizeof(outbuf), "High");
+			else if (tmp_dub == CPU_FREQ_HIGHM1)
+				snprintf(outbuf, sizeof(outbuf), "Highm1");
 			else if (!fuzzy_equal(tmp_dub, NO_VAL))
 				convert_num_unit2((double)tmp_dub,
 						  outbuf, sizeof(outbuf),

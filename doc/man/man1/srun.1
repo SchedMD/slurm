@@ -376,8 +376,9 @@ requested frequency if possible, on the cpus selected for the step on
 the compute node(s).  In addition to specifying a numerical frequency in
 kilohertz, the request can specify \fIlow\fR, \fImedium\fR, or
 \fIhigh\fR for the value. "Low" will select the lowest available
-frequency, "high" will select the highest available frequency, while
-"medium" attempts to set a frequency in the middle of the available
+frequency, "high" will select the highest available frequency,
+"highm1" (high minus one) will select the next highest available frequency,
+while "medium" attempts to set a frequency in the middle of the available
 range. If the numeric value specified does not exactly match a legal
 available frequency, SLURM will attempt to pick a legal frequency
 close to the request.
@@ -1915,10 +1916,11 @@ Same as \fB\-\-cpu_bind\fR
 .TP
 \fBSLURM_CPU_FREQ_REQ\fR
 Same as \fB\-\-cpu\-freq\fR. Can specify a numerical frequency in
-kilohertz, or the request can specify \fIlow\fR, \fImedium\fR, or
-\fIhigh\fR for the value. "Low" will select the lowest available
-frequency, "high" will select the highest available frequency, while
-"medium" attempts to set a frequency in the middle of the available
+kilohertz, or the request can specify \fIlow\fR, \fImedium\fR, \fIhighm1\fR
+or \fIhigh\fR for the value. "Low" will select the lowest available
+frequency, "high" will select the highest available frequency,
+"highm1" (high minus one) will select the next highest available frequency,
+while "medium" attempts to set a frequency in the middle of the available
 range. If the numeric value specified does not exactly match a legal
 available frequency, SLURM will attempt to pick a legal frequency
 close to the request.
@@ -2160,8 +2162,8 @@ Core_ID x threads_per_core + Thread_ID).
 \fBSLURM_CPU_FREQ_REQ\fR
 Contains the value requested for cpu frequency on the srun command as
 a numerical frequency in kilohertz, or a coded value for a request of
-\fIlow\fR, \fImedium\fR, or \fIhigh\fR for the frequency. See the
-description of the \fB\-\-cpu\-freq\fR option or the
+\fIlow\fR, \fImedium\fR,\fIhighm1\fR or \fIhigh\fR for the frequency.
+See the description of the \fB\-\-cpu\-freq\fR option or the
 \fBSLURM_CPU_FREQ_REQ\fR input environment variable.
 .TP
 \fBSLURM_CPUS_ON_NODE\fR
