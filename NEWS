@@ -57,6 +57,8 @@ documents those changes that are of interest to users and admins.
     has ran yet or not.
  -- Fix squeue to use a correct macro to check job state.
  -- BGQ - Fix incorrect logic issues if MaxBlockInError=0 in the bluegene.conf.
+ -- priority/basic - Insure job priorities continue to decrease when jobs are
+    submitted with the --nice option.
 
 * Changes in Slurm 14.03.0
 ==========================

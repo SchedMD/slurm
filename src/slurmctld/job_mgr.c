@@ -7369,18 +7369,25 @@ static int _set_job_id(struct job_record *job_ptr)
  */
 extern void set_job_prio(struct job_record *job_ptr)
 {
+	uint32_t relative_prio;
+
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
+
 	if (IS_JOB_FINISHED(job_ptr))
 		return;
 	job_ptr->priority = slurm_sched_g_initial_priority(lowest_prio,
-							 job_ptr);
-	if ((job_ptr->priority == 0)   ||
-	    (job_ptr->direct_set_prio) ||
-	    (job_ptr->details && (job_ptr->details->nice != NICE_OFFSET)))
+							   job_ptr);
+	if ((job_ptr->priority == 0) || (job_ptr->direct_set_prio))
 		return;
 
-	lowest_prio = MIN(job_ptr->priority, lowest_prio);
+	relative_prio = job_ptr->priority;
+	if (job_ptr->details && (job_ptr->details->nice != NICE_OFFSET)) {
+		int offset = job_ptr->details->nice;
+		offset -= NICE_OFFSET;
+		relative_prio += offset;
+	}
+	lowest_prio = MIN(relative_prio, lowest_prio);
 }
 
 /* After recovering job state, if using priority/basic then we increment the
