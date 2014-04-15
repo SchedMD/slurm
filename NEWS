@@ -47,6 +47,8 @@ documents those changes that are of interest to users and admins.
  -- Fix race condition if a step is starting while the slurmd is being
     restarted.
  -- Make sure a job's prolog has ran before starting a step.
+ -- BGQ - Fix invalid memory read when using DefaultConnType in the
+    bluegene.conf
 
 * Changes in Slurm 14.03.0
 ==========================
