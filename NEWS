@@ -56,6 +56,7 @@ documents those changes that are of interest to users and admins.
  -- Remove need to check PrologFlags=Alloc in slurmd since we can tell if prolog
     has ran yet or not.
  -- Fix squeue to use a correct macro to check job state.
+ -- BGQ - Fix incorrect logic issues if MaxBlockInError=0 in the bluegene.conf.
 
 * Changes in Slurm 14.03.0
 ==========================

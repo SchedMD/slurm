@@ -429,8 +429,9 @@ static bg_record_t *_find_matching_block(List block_list,
 								tmp_list, 0, 0);
 						list_destroy(tmp_list);
 					}
-				} else if (found_record->err_ratio
-					   >= bg_conf->max_block_err) {
+				} else if (found_record->err_ratio &&
+					   (found_record->err_ratio
+					    >= bg_conf->max_block_err)) {
 					slurm_mutex_unlock(&block_state_mutex);
 					/* This means the block is higher than
 					   the given max_block_err defined in
@@ -2067,8 +2068,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						job_ptr->state_reason =
 							WAIT_BLOCK_D_ACTION;
 						xfree(job_ptr->state_desc);
-					} else if (found_record->err_ratio
-						   >= bg_conf->max_block_err) {
+					} else if (found_record->err_ratio &&
+						   (found_record->err_ratio >=
+						    bg_conf->max_block_err)) {
 						job_ptr->state_reason =
 							WAIT_BLOCK_MAX_ERR;
 						xfree(job_ptr->state_desc);
