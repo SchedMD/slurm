@@ -1315,7 +1315,7 @@ static job_ids_t *_get_job_ids2(const char *jobid, uint32_t *num_ids)
 	i = 0;
 	for (cc = 0; cc < job_info->record_count; cc++) {
 		job_state = job_info->job_array[cc].job_state & JOB_STATE_BASE;
-		if (job_state < JOB_SUSPENDED) {
+		if (job_state <= JOB_SUSPENDED) {
 			job_ids[i].array_job_id =
 				job_info->job_array[cc].array_job_id;
 			job_ids[i].array_task_id =

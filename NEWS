@@ -53,8 +53,6 @@ documents those changes that are of interest to users and admins.
     exit with a return code of zero and others are killed with SIGKILL. Only an
     exit code of zero did this.
  -- task/cgroup make TaskAffinity=hard bind to threads instead of cores.
- -- Add a new pending reason WaitingForScheduling which indicates a job has
-    not been processed by the scheduler yet.
  -- Fix a typo in scontrol man page.
  -- Avoid slurmctld crash getting job info if detail_ptr is NULL.
  -- Fix sacctmgr add user where both defaultaccount and accounts are specified.
@@ -65,6 +63,25 @@ documents those changes that are of interest to users and admins.
  -- Move start time of main scheduling loop timeout after locks are aquired.
  -- Add squeue job format option of "%y" to print a job's nice value.
  -- Update scontrol update jobID logic to operate on entire job arrays.
+ -- Fix PrologFlags=Alloc to run the prolog on each of the nodes in the
+    allocation instead of just the first.
+ -- Fix race condition if a step is starting while the slurmd is being
+    restarted.
+ -- Make sure a job's prolog has ran before starting a step.
+ -- BGQ - Fix invalid memory read when using DefaultConnType in the
+    bluegene.conf
+ -- Make sure we send node state to the DBD on clean start of controller.
+ -- Fix some sinfo and squeue sorting anomalies due to differences in data
+    types.
+ -- Only send message back to slurmctld when PrologFlags=Alloc is used on a
+    Cray/ALPS system, otherwise use the slurmd to wait on the prolog to gate
+    the start of the step.
+ -- Remove need to check PrologFlags=Alloc in slurmd since we can tell if prolog
+    has ran yet or not.
+ -- Fix squeue to use a correct macro to check job state.
+ -- BGQ - Fix incorrect logic issues if MaxBlockInError=0 in the bluegene.conf.
+ -- priority/basic - Insure job priorities continue to decrease when jobs are
+    submitted with the --nice option.
 
 * Changes in Slurm 14.03.0
 ==========================

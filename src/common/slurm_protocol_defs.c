@@ -994,7 +994,7 @@ extern char *job_reason_string(enum job_state_reason inx)
 {
 	switch (inx) {
 	case WAIT_NO_REASON:
-		return "WaitingForScheduling";
+		return "None";
 	case WAIT_PROLOG:
 		return "Prolog";
 	case WAIT_PRIORITY:

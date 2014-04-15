@@ -794,8 +794,14 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 
 		/*
 		 * Grandchild exec's the slurmstepd
+		 *
+		 * If the slurmd is being shutdown/restarted before
+		 * the pipe happens the old conf->lfd could be reused
+		 * and if we close it the dup2 below will fail.
 		 */
-		slurm_shutdown_msg_engine(conf->lfd);
+		if ((to_stepd[0] != conf->lfd)
+		    && (to_slurmd[1] != conf->lfd))
+			slurm_shutdown_msg_engine(conf->lfd);
 
 		if (close(to_stepd[1]) < 0)
 			error("close write to_stepd in grandchild: %m");
@@ -1119,9 +1125,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 #ifndef HAVE_FRONT_END
-	if (first_job_run && !(slurm_get_prolog_flags() & PROLOG_FLAG_ALLOC)) {
+	if (first_job_run) {
 		int rc;
 		job_env_t job_env;
+
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
@@ -1151,7 +1159,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			errnum = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
-	}
+	} else
+		_wait_for_job_running_prolog(req->job_id);
+
 #endif
 
 	if (req->job_mem_lim || req->step_mem_lim) {
@@ -1402,8 +1412,12 @@ static void _note_batch_job_finished(uint32_t job_id)
 	slurm_mutex_unlock(&fini_mutex);
 }
 
-static void
-_notify_slurmctld_prolog_fini(uint32_t job_id, uint32_t prolog_return_code)
+#ifdef HAVE_ALPS_CRAY
+/* Send notification to slurmctld we are finished running the prolog.
+ * This is needed on system that don't use srun to launch their tasks.
+ */
+static void _notify_slurmctld_prolog_fini(
+	uint32_t job_id, uint32_t prolog_return_code)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -1420,12 +1434,14 @@ _notify_slurmctld_prolog_fini(uint32_t job_id, uint32_t prolog_return_code)
 	    (rc != SLURM_SUCCESS))
 		error("Error sending prolog completion notification: %m");
 }
+#endif
 
 static void _rpc_prolog(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	job_env_t job_env;
+	bool     first_job_run;
 
 	if (req == NULL)
 		return;
@@ -1450,15 +1466,20 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (container_g_create(req->job_id))
 		error("container_g_create(%u): %m", req->job_id);
 
-	memset(&job_env, 0, sizeof(job_env_t));
+	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 
-	job_env.jobid = req->job_id;
-	job_env.step_id = 0;	/* not available */
-	job_env.node_list = req->nodes;
-	job_env.partition = req->partition;
-	job_env.spank_job_env = req->spank_job_env;
-	job_env.spank_job_env_size = req->spank_job_env_size;
-	job_env.uid = req->uid;
+	if (first_job_run) {
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+
+		memset(&job_env, 0, sizeof(job_env_t));
+
+		job_env.jobid = req->job_id;
+		job_env.step_id = 0;	/* not available */
+		job_env.node_list = req->nodes;
+		job_env.partition = req->partition;
+		job_env.spank_job_env = req->spank_job_env;
+		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.uid = req->uid;
 #if defined(HAVE_BG)
 		select_g_select_jobinfo_get(req->select_jobinfo,
 					    SELECT_JOBDATA_BLOCK_ID,
@@ -1467,23 +1488,26 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.resv_id = select_g_select_jobinfo_xstrdup(
 			req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
-	rc = _run_prolog(&job_env);
+		rc = _run_prolog(&job_env);
 
-	if (rc) {
-		int term_sig, exit_status;
-		if (WIFSIGNALED(rc)) {
-			exit_status = 0;
-			term_sig    = WTERMSIG(rc);
-		} else {
-			exit_status = WEXITSTATUS(rc);
-			term_sig    = 0;
+		if (rc) {
+			int term_sig, exit_status;
+			if (WIFSIGNALED(rc)) {
+				exit_status = 0;
+				term_sig    = WTERMSIG(rc);
+			} else {
+				exit_status = WEXITSTATUS(rc);
+				term_sig    = 0;
+			}
+			error("[job %u] prolog failed status=%d:%d",
+			      req->job_id, exit_status, term_sig);
+			rc = ESLURMD_PROLOG_FAILED;
 		}
-		error("[job %u] prolog failed status=%d:%d",
-		      req->job_id, exit_status, term_sig);
-		rc = ESLURMD_PROLOG_FAILED;
 	}
 
+#ifdef HAVE_ALPS_CRAY
 	_notify_slurmctld_prolog_fini(req->job_id, rc);
+#endif
 }
 
 static void

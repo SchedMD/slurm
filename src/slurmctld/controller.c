@@ -462,8 +462,10 @@ int main(int argc, char *argv[])
 			unlock_slurmctld(config_write_lock);
 			select_g_select_nodeinfo_set_all();
 
-			if (recover == 0)
+			if (recover == 0) {
+				slurmctld_init_db = 1;
 				_accounting_mark_all_nodes_down("cold-start");
+			}
 
 			primary = 1;
 
