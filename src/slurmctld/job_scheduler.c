@@ -747,6 +747,7 @@ extern int schedule(uint32_t job_limit)
 	static int max_jobs_per_part = 0;
 	static int defer_rpc_cnt = 0;
 	time_t now, sched_start;
+	uint32_t reject_array_job_id = 0;
 	DEF_TIMERS;
 
 	if (sched_update != slurmctld_conf.last_update) {
@@ -869,14 +870,14 @@ extern int schedule(uint32_t job_limit)
 
 		unlock_slurmctld(job_write_lock);
 		debug("sched: schedule() returning, no front end nodes are "
-		       "available");
+		      "available");
 		return 0;
 	}
 	/* Avoid resource fragmentation if important */
 	if ((!wiki_sched) && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
 		debug("sched: schedule() returning, some job is still "
-		       "completing");
+		      "completing");
 		return 0;
 	}
 
@@ -988,6 +989,12 @@ next_part:			part_ptr = (struct part_record *)
 			break;
 		}
 
+		if (job_ptr->array_task_id != NO_VAL) {
+			if (reject_array_job_id == job_ptr->array_job_id)
+				continue;  /* already rejected array element */
+			/* assume reject whole array for now, clear if OK */
+			reject_array_job_id = job_ptr->array_job_id;
+		}
 		if (max_jobs_per_part) {
 			bool skip_job = false;
 			for (j = 0; j < part_cnt; j++) {
@@ -998,11 +1005,14 @@ next_part:			part_ptr = (struct part_record *)
 					skip_job = true;
 				break;
 			}
-			if (skip_job)
+			if (skip_job) {
+				debug("sched: reacked partition %s job limit",
+				      job_ptr->part_ptr->name);
 				continue;
+			}
 		}
 		if (job_depth++ > job_limit) {
-			debug3("sched: already tested %u jobs, breaking out",
+			debug("sched: already tested %u jobs, breaking out",
 			       job_depth);
 			break;
 		}
@@ -1043,7 +1053,7 @@ next_part:			part_ptr = (struct part_record *)
 				xfree(job_ptr->state_desc);
 				last_job_update = now;
 			}
-			debug3("sched: JobId=%u. State=PENDING. "
+			debug("sched: JobId=%u. State=PENDING. "
 			       "Reason=%s(Priority), Priority=%u, "
 			       "Partition=%s.",
 			       job_ptr->job_id,
@@ -1070,6 +1080,8 @@ next_part:			part_ptr = (struct part_record *)
 				job_ptr->assoc_id = assoc_rec.id;
 				last_job_update = now;
 			} else {
+				debug("sched: JobId=%u has invalid association",
+				      job_ptr->job_id);
 				continue;
 			}
 		}
@@ -1080,8 +1092,8 @@ next_part:			part_ptr = (struct part_record *)
 			    !bit_test(assoc_ptr->usage->valid_qos,
 				      job_ptr->qos_id) &&
 			    !job_ptr->limit_set_qos) {
-				info("sched: JobId=%u has invalid QOS",
-					job_ptr->job_id);
+				debug("sched: JobId=%u has invalid QOS",
+				      job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_QOS;
 				last_job_update = now;
@@ -1261,6 +1273,7 @@ next_part:			part_ptr = (struct part_record *)
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
+			reject_array_job_id = 0;
 		} else if ((error_code ==
 			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			   job_ptr->part_ptr_list) {
