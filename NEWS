@@ -50,6 +50,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix invalid memory read when using DefaultConnType in the
     bluegene.conf
  -- Make sure we send node state to the DBD on clean start of controller.
+ -- Fix some sinfo and squeue sorting anomalies due to differences in data
+    types.
 
 * Changes in Slurm 14.03.0
 ==========================

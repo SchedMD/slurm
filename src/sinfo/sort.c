@@ -169,7 +169,14 @@ void sort_sinfo_list(List sinfo_list)
 /*****************************************************************************
  * Local Sort Functions
  *****************************************************************************/
-
+static inline int _diff_uint32(uint32_t value_1, uint32_t value_2)
+{
+	if (value_1 > value_2)
+		return 1;
+	if (value_1 < value_2)
+		return -1;
+	return 0;
+}
 static void
 _get_sinfo_from_void(sinfo_data_t **s1, sinfo_data_t **s2, void *v1, void *v2)
 {
@@ -205,7 +212,7 @@ static int _sort_by_cpu_load(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->min_cpu_load - sinfo2->min_cpu_load;
+	diff = _diff_uint32(sinfo1->min_cpu_load, sinfo2->min_cpu_load);
 
 	if (reverse_order)
 		diff = -diff;
@@ -220,7 +227,7 @@ static int _sort_by_cpus(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->min_cpus - sinfo2->min_cpus;
+	diff = _diff_uint32(sinfo1->min_cpus, sinfo2->min_cpus);
 
 	if (reverse_order)
 		diff = -diff;
@@ -235,9 +242,9 @@ static int _sort_by_sct(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diffs = sinfo1->min_sockets - sinfo2->min_sockets;
-	diffc = sinfo1->min_cores - sinfo2->min_cores;
-	difft = sinfo1->min_threads - sinfo2->min_threads;
+	diffs = _diff_uint32(sinfo1->min_sockets, sinfo2->min_sockets);
+	diffc = _diff_uint32(sinfo1->min_cores,   sinfo2->min_cores);
+	difft = _diff_uint32(sinfo1->min_threads, sinfo2->min_threads);
 
 	if (reverse_order) {
 		diffs = -diffs;
@@ -260,7 +267,7 @@ static int _sort_by_sockets(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->min_sockets - sinfo2->min_sockets;
+	diff = _diff_uint32(sinfo1->min_sockets, sinfo2->min_sockets);
 
 	if (reverse_order)
 		diff = -diff;
@@ -275,7 +282,7 @@ static int _sort_by_cores(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->min_cores - sinfo2->min_cores;
+	diff = _diff_uint32(sinfo1->min_cores, sinfo2->min_cores);
 
 	if (reverse_order)
 		diff = -diff;
@@ -290,7 +297,7 @@ static int _sort_by_threads(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->min_threads - sinfo2->min_threads;
+	diff = _diff_uint32(sinfo1->min_threads, sinfo2->min_threads);
 
 	if (reverse_order)
 		diff = -diff;
@@ -305,7 +312,7 @@ static int _sort_by_disk(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->min_disk - sinfo2->min_disk;
+	diff = _diff_uint32(sinfo1->min_disk, sinfo2->min_disk);
 
 	if (reverse_order)
 		diff = -diff;
@@ -485,7 +492,7 @@ static int _sort_by_job_size(void *void1, void *void2)
 		if (val2 != INFINITE)
 			val2 += sinfo2->part_info->min_nodes;
 	}
-	diff = val1 - val2;
+	diff = _diff_uint32(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -505,7 +512,7 @@ static int _sort_by_max_time(void *void1, void *void2)
 		val1 = sinfo1->part_info->max_time;
 	if (sinfo2->part_info)
 		val2 = sinfo2->part_info->max_time;
-	diff = val1 - val2;
+	diff = _diff_uint32(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -520,7 +527,7 @@ static int _sort_by_memory(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->min_mem - sinfo2->min_mem;
+	diff = _diff_uint32(sinfo1->min_mem, sinfo2->min_mem);
 
 	if (reverse_order)
 		diff = -diff;
@@ -592,7 +599,7 @@ static int _sort_by_nodes_ai(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->nodes_alloc - sinfo2->nodes_alloc;
+	diff = _diff_uint32(sinfo1->nodes_alloc, sinfo2->nodes_alloc);
 
 	if (reverse_order)
 		diff = -diff;
@@ -607,7 +614,7 @@ static int _sort_by_nodes(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->nodes_total - sinfo2->nodes_total;
+	diff = _diff_uint32(sinfo1->nodes_total, sinfo2->nodes_total);
 
 	if (reverse_order)
 		diff = -diff;
@@ -758,7 +765,7 @@ static int _sort_by_priority(void *void1, void *void2)
 	int diff;
 	sinfo_data_t *sinfo1;
 	sinfo_data_t *sinfo2;
-	int val1 = 0, val2 = 0;
+	uint32_t val1 = 0, val2 = 0;
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
@@ -766,7 +773,7 @@ static int _sort_by_priority(void *void1, void *void2)
 		val1 = sinfo1->part_info->priority;
 	if (sinfo2->part_info)
 		val2 = sinfo2->part_info->priority;
-	diff = val1 - val2;
+	diff = _diff_uint32(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -797,7 +804,7 @@ static int _sort_by_weight(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = sinfo1->min_weight - sinfo2->min_weight;
+	diff = _diff_uint32(sinfo1->min_weight, sinfo2->min_weight);
 
 	if (reverse_order)
 		diff = -diff;
