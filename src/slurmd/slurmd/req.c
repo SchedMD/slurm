@@ -1125,7 +1125,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 #ifndef HAVE_FRONT_END
-	if (first_job_run && !(slurm_get_prolog_flags() & PROLOG_FLAG_ALLOC)) {
+	if (first_job_run) {
 		int rc;
 		job_env_t job_env;
 

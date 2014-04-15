@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
  -- Only send message back to slurmctld when PrologFlags=Alloc is used on a
     Cray/ALPS system, otherwise use the slurmd to wait on the prolog to gate
     the start of the step.
+ -- Remove need to check PrologFlags=Alloc in slurmd since we can tell if prolog
+    has ran yet or not.
 
 * Changes in Slurm 14.03.0
 ==========================
