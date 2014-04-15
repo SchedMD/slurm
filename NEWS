@@ -52,6 +52,9 @@ documents those changes that are of interest to users and admins.
  -- Make sure we send node state to the DBD on clean start of controller.
  -- Fix some sinfo and squeue sorting anomalies due to differences in data
     types.
+ -- Only send message back to slurmctld when PrologFlags=Alloc is used on a
+    Cray/ALPS system, otherwise use the slurmd to wait on the prolog to gate
+    the start of the step.
 
 * Changes in Slurm 14.03.0
 ==========================

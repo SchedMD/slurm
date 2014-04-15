@@ -1843,7 +1843,9 @@ static void _launch_prolog(struct job_record *job_ptr)
 	xassert(prolog_msg_ptr);
 
 	/* Locks: Write job */
+#ifdef HAVE_ALPS_CRAY
 	job_ptr->state_reason = WAIT_PROLOG;
+#endif
 
 	prolog_msg_ptr->job_id = job_ptr->job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;

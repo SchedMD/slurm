@@ -1412,8 +1412,12 @@ static void _note_batch_job_finished(uint32_t job_id)
 	slurm_mutex_unlock(&fini_mutex);
 }
 
-static void
-_notify_slurmctld_prolog_fini(uint32_t job_id, uint32_t prolog_return_code)
+#ifdef HAVE_ALPS_CRAY
+/* Send notification to slurmctld we are finished running the prolog.
+ * This is needed on system that don't use srun to launch their tasks.
+ */
+static void _notify_slurmctld_prolog_fini(
+	uint32_t job_id, uint32_t prolog_return_code)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -1430,6 +1434,7 @@ _notify_slurmctld_prolog_fini(uint32_t job_id, uint32_t prolog_return_code)
 	    (rc != SLURM_SUCCESS))
 		error("Error sending prolog completion notification: %m");
 }
+#endif
 
 static void _rpc_prolog(slurm_msg_t *msg)
 {
@@ -1500,7 +1505,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		}
 	}
 
+#ifdef HAVE_ALPS_CRAY
 	_notify_slurmctld_prolog_fini(req->job_id, rc);
+#endif
 }
 
 static void
