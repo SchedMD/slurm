@@ -1801,12 +1801,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	slurm_sched_g_newalloc(job_ptr);
 
 	/* Request asynchronous launch of a prolog for a
-	 * non batch job. For a batch job the prolog will be
-	 * started synchroniously by slurmd. */
-	if (job_ptr->batch_flag == 0 &&
-		(slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)) {
+	 * non batch job. */
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
 		_launch_prolog(job_ptr);
-	}
 
       cleanup:
 	if (preemptee_job_list)
@@ -1842,6 +1839,13 @@ static void _launch_prolog(struct job_record *job_ptr)
 	xassert(job_ptr);
 	xassert(prolog_msg_ptr);
 
+#ifdef HAVE_FRONT_END
+	/* For a batch job the prolog will be
+	 * started synchroniously by slurmd.
+	 */
+	if (job_ptr->batch_flag)
+		return;
+#endif
 	/* Locks: Write job */
 #ifdef HAVE_ALPS_CRAY
 	job_ptr->state_reason = WAIT_PROLOG;

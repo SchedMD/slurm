@@ -59,6 +59,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix incorrect logic issues if MaxBlockInError=0 in the bluegene.conf.
  -- priority/basic - Insure job priorities continue to decrease when jobs are
     submitted with the --nice option.
+ -- Make the PrologFlag=Alloc work on batch scripts
 
 * Changes in Slurm 14.03.0
 ==========================
