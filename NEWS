@@ -57,6 +57,7 @@ documents those changes that are of interest to users and admins.
     the start of the step.
  -- Remove need to check PrologFlags=Alloc in slurmd since we can tell if prolog
     has ran yet or not.
+ -- Fix squeue to use a correct macro to check job state.
 
 * Changes in Slurm 14.03.0
 ==========================

@@ -215,11 +215,14 @@ _verify_job_ids (void)
 	int rc = 0;
 
 	for (j = 0; j < opt.job_cnt; j++ ) {
+		job_info_t *jp;
+
 		for (i = 0; i < job_buffer_ptr->record_count; i++) {
 			if (_match_job(j, i))
 				break;
 		}
-		if (((job_ptr[i].job_state >= JOB_COMPLETE) ||
+		jp = &job_ptr[i];
+		if (((IS_JOB_FINISHED(jp)) ||
 		     (i >= job_buffer_ptr->record_count)) &&
 		     (job_ptr[i].array_task_id == NO_VAL) &&
 		     (opt.verbose >= 0)) {
