@@ -49,6 +49,7 @@ documents those changes that are of interest to users and admins.
  -- Make sure a job's prolog has ran before starting a step.
  -- BGQ - Fix invalid memory read when using DefaultConnType in the
     bluegene.conf
+ -- Make sure we send node state to the DBD on clean start of controller.
 
 * Changes in Slurm 14.03.0
 ==========================
