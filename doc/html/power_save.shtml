@@ -217,7 +217,12 @@ to ensure that all nodes are booted and ready for use.</p>
 
 <p>Execution of the <i>salloc</i> command also triggers execution of the <i>Prolog</i>
 script if the <i>Alloc</i> flag is set in <i>PrologFlags</i>. In this case <i>salloc</i>
-waits for script termination before returning control to the user.</p>
+waits for script termination before returning control to the user.
+  To not wait on the salloc side set the <i>NoHold</i> flag
+  in <i>PrologFlags</i>.  This will automatically set
+  the <i>Alloc</i> flag and use the slurmd to wait for the prolog to
+  finish instead of salloc.  This flag should be used when srun is
+  used to launch a step.</p>
 
 <h2>Fault Tolerance</h2>
 

@@ -2019,7 +2019,10 @@ typedef struct reservation_name_msg {
 #define HEALTH_CHECK_NODE_MIXED	0x0004	/* execute on partially allocated nodes */
 #define HEALTH_CHECK_NODE_ANY	0xffff	/* execute on all node states */
 
-#define PROLOG_FLAG_ALLOC 0x0001 /* execute prolog upon allocation */
+#define PROLOG_FLAG_ALLOC  0x0001 /* execute prolog upon allocation */
+#define PROLOG_FLAG_NOHOLD 0x0002 /* don't block salloc/srun until
+				   * slurmctld knows the prolog has
+				   * run on each node in the allocation */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1

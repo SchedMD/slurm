@@ -1550,6 +1550,13 @@ is started, no Prolog is executed. \fBAlloc\fR is useful for preparing things
 before a user starts to use any allocated resources.
 In particular, this flag is needed on a Cray system when cluster compatibility
 mode is enabled.
+.TP 6
+\fBNoHold\fR
+If set, Alloc is also set.  This will allow for salloc to not block until the
+prolog is finished on each node.  The blocking will happen when steps reach
+the slurmd and before any execution has happened in the step. This is a much
+faster way to work and if using srun to launch your tasks you should use this
+flag.
 .RE
 
 .TP
