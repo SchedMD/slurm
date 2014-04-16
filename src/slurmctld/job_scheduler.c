@@ -843,11 +843,6 @@ extern int schedule(uint32_t job_limit)
 		return 0;
 	}
 
-	/* Rather than periodicallly going to bottom of queue, let the
-	 * backfill scheduler do so since it can periodically relinquish
-	 * locks rather than blocking all RPCs. */
-	if ((job_limit == INFINITE) && backfill_sched)
-		job_limit = def_job_limit;
 	if (job_limit == 0)
 		job_limit = def_job_limit;
 
