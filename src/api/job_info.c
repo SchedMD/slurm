@@ -281,7 +281,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char time_str[32], *group_name, *user_name;
 	char tmp1[128], tmp2[128], tmp3[128], tmp4[128], tmp5[128], tmp6[128];
 	char *tmp6_ptr;
-	char tmp_line[512];
+	char tmp_line[1024];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
 	job_resources_t *job_resrcs = job_ptr->job_resrcs;
@@ -998,8 +998,8 @@ line15:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		slurm_get_job_stderr(tmp1, sizeof(tmp1), job_ptr);
-		xstrfmtcat(out, "StdErr=%s", tmp1);
+		slurm_get_job_stderr(tmp_line, sizeof(tmp_line), job_ptr);
+		xstrfmtcat(out, "StdErr=%s", tmp_line);
 	}
 
 	/****** Line 30 (optional) ******/
@@ -1008,8 +1008,8 @@ line15:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		slurm_get_job_stdin(tmp1, sizeof(tmp1), job_ptr);
-		xstrfmtcat(out, "StdIn=%s", tmp1);
+		slurm_get_job_stdin(tmp_line, sizeof(tmp_line), job_ptr);
+		xstrfmtcat(out, "StdIn=%s", tmp_line);
 	}
 
 	/****** Line 31 (optional) ******/
@@ -1018,8 +1018,8 @@ line15:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		slurm_get_job_stdout(tmp1, sizeof(tmp1), job_ptr);
-		xstrfmtcat(out, "StdOut=%s", tmp1);
+		slurm_get_job_stdout(tmp_line, sizeof(tmp_line), job_ptr);
+		xstrfmtcat(out, "StdOut=%s", tmp_line);
 	}
 
 	/****** Line 32 (optional) ******/

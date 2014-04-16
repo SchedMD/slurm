@@ -64,6 +64,8 @@ documents those changes that are of interest to users and admins.
     salloc/srun, instead wait in the slurmd when a step hits a node and the
     prolog is still running.
  -- Added --cpu-freq=highm1 (high minus one) option.
+ -- Expand StdIn/Out/Err string length output by "scontrol show job" from 128
+    to 1024 bytes.
 
 * Changes in Slurm 14.03.0
 ==========================
