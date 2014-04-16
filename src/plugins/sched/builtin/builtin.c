@@ -74,8 +74,8 @@ static bool stop_builtin = false;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static bool config_flag = false;
-static int backfill_interval = BACKFILL_INTERVAL;
-static int max_backfill_job_cnt = 50;
+static int builtin_interval = BACKFILL_INTERVAL;
+static int max_sched_job_cnt = 50;
 static int sched_timeout = 0;
 
 /*********************** local functions *********************/
@@ -114,17 +114,21 @@ static void _load_config(void)
 	sched_params = slurm_get_sched_params();
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "interval=")))
-		backfill_interval = atoi(tmp_ptr + 9);
-	if (backfill_interval < 1) {
-		fatal("Invalid backfill scheduler interval: %d",
-		      backfill_interval);
+		builtin_interval = atoi(tmp_ptr + 9);
+	if (builtin_interval < 1) {
+		error("Invalid SchedulerParameters interval: %d",
+		      builtin_interval);
+		builtin_interval = BACKFILL_INTERVAL;
 	}
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "max_job_bf=")))
-		max_backfill_job_cnt = atoi(tmp_ptr + 11);
-	if (max_backfill_job_cnt < 1) {
-		fatal("Invalid backfill scheduler max_job_bf: %d",
-		      max_backfill_job_cnt);
+		max_sched_job_cnt = atoi(tmp_ptr + 11);
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_test=")))
+		max_sched_job_cnt = atoi(tmp_ptr + 16);
+	if (max_sched_job_cnt < 1) {
+		error("Invalid SchedulerParameters bf_max_job_test: %d",
+		      max_sched_job_cnt);
+		max_sched_job_cnt = 50;
 	}
 	xfree(sched_params);
 
@@ -132,7 +136,7 @@ static void _load_config(void)
 	if (!strcmp(select_type, "select/serial")) {
 		/* Do not spend time computing expected start time for
 		 * pending jobs */
-		max_backfill_job_cnt = 0;
+		max_sched_job_cnt = 0;
 		stop_builtin_agent();
 	}
 	xfree(select_type);
@@ -163,8 +167,9 @@ static void _compute_start_times(void)
 		if (part_ptr != job_ptr->part_ptr)
 			continue;	/* Only test one partition */
 
-		if (job_cnt++ > max_backfill_job_cnt) {
-			debug("backfill: loop taking to long, breaking out");
+		if (job_cnt++ > max_sched_job_cnt) {
+			debug2("scheduling loop exiting after %d jobs",
+			       max_sched_job_cnt);
 			break;
 		}
 
@@ -227,7 +232,8 @@ static void _compute_start_times(void)
 		FREE_NULL_BITMAP(exc_core_bitmap);
 
 		if ((time(NULL) - sched_start) >= sched_timeout) {
-			debug("backfill: loop taking to long, breaking out");
+			debug2("scheduling loop exiting after %d jobs",
+			       max_sched_job_cnt);
 			break;
 		}
 	}
@@ -246,15 +252,15 @@ extern void *builtin_agent(void *args)
 {
 	time_t now;
 	double wait_time;
-	static time_t last_backfill_time = 0;
+	static time_t last_sched_time = 0;
 	/* Read config, nodes and partitions; Write jobs */
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	_load_config();
-	last_backfill_time = time(NULL);
+	last_sched_time = time(NULL);
 	while (!stop_builtin) {
-		_my_sleep(backfill_interval);
+		_my_sleep(builtin_interval);
 		if (stop_builtin)
 			break;
 		if (config_flag) {
@@ -262,13 +268,13 @@ extern void *builtin_agent(void *args)
 			_load_config();
 		}
 		now = time(NULL);
-		wait_time = difftime(now, last_backfill_time);
-		if ((wait_time < backfill_interval))
+		wait_time = difftime(now, last_sched_time);
+		if ((wait_time < builtin_interval))
 			continue;
 
 		lock_slurmctld(all_locks);
 		_compute_start_times();
-		last_backfill_time = time(NULL);
+		last_sched_time = time(NULL);
 		unlock_slurmctld(all_locks);
 	}
 	return NULL;
