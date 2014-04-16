@@ -89,6 +89,7 @@ documents those changes that are of interest to users and admins.
  -- Added --cpu-freq=highm1 (high minus one) option.
  -- Expand StdIn/Out/Err string length output by "scontrol show job" from 128
     to 1024 bytes.
+ -- squeue %F format will now print the job ID for non-array jobs.
 
 * Changes in Slurm 14.03.0
 ==========================
