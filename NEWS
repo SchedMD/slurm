@@ -82,6 +82,13 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix incorrect logic issues if MaxBlockInError=0 in the bluegene.conf.
  -- priority/basic - Insure job priorities continue to decrease when jobs are
     submitted with the --nice option.
+ -- Make the PrologFlag=Alloc work on batch scripts
+ -- Make PrologFlag=NoHold (automatically sets PrologFlag=Alloc) not hold in
+    salloc/srun, instead wait in the slurmd when a step hits a node and the
+    prolog is still running.
+ -- Added --cpu-freq=highm1 (high minus one) option.
+ -- Expand StdIn/Out/Err string length output by "scontrol show job" from 128
+    to 1024 bytes.
 
 * Changes in Slurm 14.03.0
 ==========================

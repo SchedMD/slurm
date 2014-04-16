@@ -1802,12 +1802,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	slurm_sched_g_newalloc(job_ptr);
 
 	/* Request asynchronous launch of a prolog for a
-	 * non batch job. For a batch job the prolog will be
-	 * started synchroniously by slurmd. */
-	if (job_ptr->batch_flag == 0 &&
-		(slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)) {
+	 * non batch job. */
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
 		_launch_prolog(job_ptr);
-	}
 
       cleanup:
 	if (preemptee_job_list)
@@ -1837,16 +1834,22 @@ static void _launch_prolog(struct job_record *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
-	prolog_msg_ptr = (prolog_launch_msg_t *)
-				xmalloc(sizeof(prolog_launch_msg_t));
 
 	xassert(job_ptr);
-	xassert(prolog_msg_ptr);
+
+#ifdef HAVE_FRONT_END
+	/* For a batch job the prolog will be
+	 * started synchroniously by slurmd.
+	 */
+	if (job_ptr->batch_flag)
+		return;
+#endif
+
+	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 
 	/* Locks: Write job */
-#ifdef HAVE_ALPS_CRAY
-	job_ptr->state_reason = WAIT_PROLOG;
-#endif
+	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
+		job_ptr->state_reason = WAIT_PROLOG;
 
 	prolog_msg_ptr->job_id = job_ptr->job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;

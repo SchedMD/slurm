@@ -358,6 +358,8 @@ void print_fields(slurmdb_step_rec_t *step)
 				snprintf(outbuf, sizeof(outbuf), "Medium");
 			else if (step->req_cpufreq == CPU_FREQ_HIGH)
 				snprintf(outbuf, sizeof(outbuf), "High");
+			else if (step->req_cpufreq == CPU_FREQ_HIGHM1)
+				snprintf(outbuf, sizeof(outbuf), "Highm1");
 			else if (!fuzzy_equal(step->req_cpufreq, NO_VAL))
 				convert_num_unit2((double)step->req_cpufreq,
 						  outbuf, sizeof(outbuf),

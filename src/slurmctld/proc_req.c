@@ -1766,7 +1766,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 
 	error_code = prolog_complete(comp_msg->job_id,
-				  job_requeue, comp_msg->prolog_rc);
+				     job_requeue, comp_msg->prolog_rc);
 
 	unlock_slurmctld(job_write_lock);
 

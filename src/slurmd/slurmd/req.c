@@ -1412,7 +1412,6 @@ static void _note_batch_job_finished(uint32_t job_id)
 	slurm_mutex_unlock(&fini_mutex);
 }
 
-#ifdef HAVE_ALPS_CRAY
 /* Send notification to slurmctld we are finished running the prolog.
  * This is needed on system that don't use srun to launch their tasks.
  */
@@ -1434,7 +1433,6 @@ static void _notify_slurmctld_prolog_fini(
 	    (rc != SLURM_SUCCESS))
 		error("Error sending prolog completion notification: %m");
 }
-#endif
 
 static void _rpc_prolog(slurm_msg_t *msg)
 {
@@ -1505,16 +1503,15 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		}
 	}
 
-#ifdef HAVE_ALPS_CRAY
-	_notify_slurmctld_prolog_fini(req->job_id, rc);
-#endif
+	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
+		_notify_slurmctld_prolog_fini(req->job_id, rc);
 }
 
 static void
 _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
-	bool     first_job_run = true;
+	bool     first_job_run;
 	int      rc = SLURM_SUCCESS;
 	bool	 replied = false, revoked;
 	slurm_addr_t *cli = &msg->orig_addr;
@@ -1538,8 +1535,24 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 
 	task_g_slurmd_batch_request(req->job_id, req);	/* determine task affinity */
 
-	if ((req->step_id != SLURM_BATCH_SCRIPT) && (req->step_id != 0))
-		first_job_run = false;
+	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
+
+	/* BlueGene prolog waits for partition boot and is very slow.
+	 * On any system we might need to load environment variables
+	 * for Moab (see --get-user-env), which could also be slow.
+	 * Just reply now and send a separate kill job request if the
+	 * prolog or launch fail. */
+	replied = true;
+	if (new_msg && (slurm_send_rc_msg(msg, rc) < 1)) {
+		/* The slurmctld is no longer waiting for a reply.
+		 * This typically indicates that the slurmd was
+		 * blocked from memory and/or CPUs and the slurmctld
+		 * has requeued the batch job request. */
+		error("Could not confirm batch launch for job %u, "
+		      "aborting request", req->job_id);
+		rc = SLURM_COMMUNICATIONS_SEND_ERROR;
+		goto done;
+	}
 
 	/*
 	 * Insert jobid into credential context to denote that
@@ -1547,22 +1560,6 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	 */
 	if (first_job_run) {
 		job_env_t job_env;
-		/* BlueGene prolog waits for partition boot and is very slow.
-		 * On any system we might need to load environment variables
-		 * for Moab (see --get-user-env), which could also be slow.
-		 * Just reply now and send a separate kill job request if the
-		 * prolog or launch fail. */
-		replied = true;
-		if (new_msg && (slurm_send_rc_msg(msg, rc) < 1)) {
-			/* The slurmctld is no longer waiting for a reply.
-			 * This typically indicates that the slurmd was
-			 * blocked from memory and/or CPUs and the slurmctld
-			 * has requeued the batch job request. */
-			error("Could not confirm batch launch for job %u, "
-			      "aborting request", req->job_id);
-			rc = SLURM_COMMUNICATIONS_SEND_ERROR;
-			goto done;
-		}
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
@@ -1606,7 +1603,9 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 			rc = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
-	}
+	} else
+		_wait_for_job_running_prolog(req->job_id);
+
 	_get_user_env(req);
 	_set_batch_job_limits(msg);
 

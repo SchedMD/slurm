@@ -452,6 +452,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 
 
 		case CPU_FREQ_MEDIUM :
+		case CPU_FREQ_HIGHM1 :
 			snprintf(path, sizeof(path),
 				 PATH_TO_CPU
 				 "cpu%u/cpufreq/scaling_available_frequencies",
@@ -466,7 +467,13 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 					break;
 				freq_med = (j + 1) / 2;
 			}
-			cpufreq[cpuidx].frequency_to_set = freq_list[freq_med];
+			if (cpu_freq == CPU_FREQ_MEDIUM) {
+				cpufreq[cpuidx].frequency_to_set =
+					freq_list[freq_med];
+			} else {
+				cpufreq[cpuidx].frequency_to_set =
+					freq_list[j > 0 ? j-1 : 0];
+			}
 			break;
 
 
@@ -564,6 +571,10 @@ cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq)
 
 	if (strncasecmp(arg, "lo", 2) == 0) {
 		*cpu_freq = CPU_FREQ_LOW;
+		return 0;
+	} else if (strncasecmp(arg, "him1", 4) == 0 ||
+		   strncasecmp(arg, "highm1", 6) == 0) {
+		*cpu_freq = CPU_FREQ_HIGHM1;
 		return 0;
 	} else if (strncasecmp(arg, "hi", 2) == 0) {
 		*cpu_freq = CPU_FREQ_HIGH;

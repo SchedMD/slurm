@@ -656,6 +656,9 @@ int setup_env(env_t *env, bool preserve_env)
 			case CPU_FREQ_HIGH :
 				str="high";
 				break;
+			case CPU_FREQ_HIGHM1 :
+				str="highm1";
+				break;
 			default :
 				str="unknown";
 				break;

@@ -282,6 +282,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			snprintf(tmp_line, sizeof(tmp_line),
 				 "CPUFreqReq=High\n\n");
 			break;
+		case CPU_FREQ_HIGHM1 :
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "CPUFreqReq=HighM1\n\n");
+			break;
 		default :
 			snprintf(tmp_line, sizeof(tmp_line),
 				 "CPUFreqReq=Unknown\n\n");
