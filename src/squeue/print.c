@@ -1578,7 +1578,7 @@ static int _filter_job(job_info_t * job)
 	ListIterator iterator;
 	uint32_t *user;
 	uint16_t *state_id;
-	char *account, *part, *qos, *name;
+	char *account, *license, *part, *qos, *name;
 	squeue_job_step_t *job_step_id;
 
 	if (params.job_list) {
@@ -1611,6 +1611,30 @@ static int _filter_job(job_info_t * job)
 			iterator = list_iterator_create(params.part_list);
 			while ((part = list_next(iterator))) {
 				if (strcmp(part, token) == 0) {
+					filter = 0;
+					break;
+				}
+			}
+			list_iterator_destroy(iterator);
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_name);
+		if (filter == 1)
+			return 2;
+	}
+
+	if (params.licenses_list) {
+		char *token = NULL, *last = NULL, *tmp_name = NULL;
+
+		filter = 1;
+		if (job->licenses) {
+			tmp_name = xstrdup(job->licenses);
+			token = strtok_r(tmp_name, ",", &last);
+		}
+		while (token && filter) {
+			iterator = list_iterator_create(params.licenses_list);
+			while ((license = list_next(iterator))) {
+				if (strcmp(license, token) == 0) {
 					filter = 0;
 					break;
 				}
