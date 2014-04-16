@@ -242,7 +242,6 @@ if ($variable_list) {
 		$separator = ",";
 	}
 
-print "variable_list:$variable_list:\n";
 #	The logic below ignores quoted commas, but the quotes must be escaped
 #	to be forwarded from the shell to Perl. For example: 
 #	qsub -v foo=\"b,ar\" tmp
