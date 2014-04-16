@@ -1760,7 +1760,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		} else if ((djob_ptr == NULL) ||
 			   (djob_ptr->magic != JOB_MAGIC) ||
 			   ((djob_ptr->job_id != dep_ptr->job_id) &&
-			    (djob_ptr->array_job_id != dep_ptr->job_id))){
+			    (djob_ptr->array_job_id != dep_ptr->job_id))) {
 			/* job is gone, dependency lifted */
 			clear_dep = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
@@ -2706,7 +2706,7 @@ static void *_run_prolog(void *arg)
 /*
  * Copy a job's feature list
  * IN feature_list_src - a job's depend_lst
- * RET copy of depend_list_src, must be freed by caller
+ * RET copy of feature_list_src, must be freed by caller
  */
 extern List feature_list_copy(List feature_list_src)
 {
