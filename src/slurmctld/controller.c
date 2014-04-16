@@ -1313,6 +1313,7 @@ static void _queue_reboot_msg(void)
 static void *_slurmctld_background(void *no_data)
 {
 	static time_t last_sched_time;
+	static time_t last_full_sched_time;
 	static time_t last_checkpoint_time;
 	static time_t last_group_time;
 	static time_t last_health_check_time;
@@ -1362,7 +1363,8 @@ static void *_slurmctld_background(void *no_data)
 
 	/* Let the dust settle before doing work */
 	now = time(NULL);
-	last_sched_time = last_checkpoint_time = last_group_time = now;
+	last_sched_time = last_full_sched_time = now;
+	last_checkpoint_time = last_group_time = now;
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
 	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
@@ -1554,12 +1556,13 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		job_limit = NO_VAL;
-		if (difftime(now, last_sched_time) >= sched_interval) {
+		if (difftime(now, last_full_sched_time) >= sched_interval) {
 			slurm_mutex_lock(&sched_cnt_mutex);
 			/* job_limit = job_sched_cnt;	Ignored */
 			job_limit = INFINITE;
 			job_sched_cnt = 0;
 			slurm_mutex_unlock(&sched_cnt_mutex);
+			last_full_sched_time = now;
 		} else if (job_sched_cnt &&
 			   (difftime(now, last_sched_time) >= 3)) {
 			slurm_mutex_lock(&sched_cnt_mutex);

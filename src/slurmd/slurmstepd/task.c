@@ -187,10 +187,11 @@ static int
 _run_script_and_set_env(const char *name, const char *path,
 			stepd_step_rec_t *job)
 {
-	int status, rc, nread;
+	int status, rc;
 	pid_t cpid;
-	int pfd[2], offset = 0;
+	int pfd[2];
 	char buf[4096];
+	FILE *f;
 
 	xassert(job->env);
 	if (path == NULL || path[0] == '\0')
@@ -233,13 +234,19 @@ _run_script_and_set_env(const char *name, const char *path,
 	}
 
 	close(pfd[1]);
-	buf[0] = '\0';
-	while ((nread = read(pfd[0], buf+offset, (sizeof(buf)-offset))) > 0)
-		offset += nread;
-	/* debug ("read %d:%s:", offset, buf); */
-	_proc_stdout(buf, &job->env);
+	f = fdopen(pfd[0], "r");
+	if (f == NULL) {
+		error("Cannot open pipe device");
+		log_fini();
+		exit(1);
+	}
+	while (feof(f) == 0) {
+		if (fgets(buf, sizeof(buf) - 1, f) != NULL) {
+			_proc_stdout(buf, &job->env);
+		}
+	}
+	fclose(f);
 
-	close(pfd[0]);
 	while (1) {
 		rc = waitpid(cpid, &status, 0);
 		if (rc < 0) {

@@ -727,6 +727,7 @@ extern int schedule(uint32_t job_limit)
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr, **failed_parts = NULL;
+	struct part_record *skip_part_ptr = NULL;
 	struct slurmctld_resv **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	struct part_record **sched_part_ptr = NULL;
@@ -842,11 +843,6 @@ extern int schedule(uint32_t job_limit)
 		return 0;
 	}
 
-	/* Rather than periodicallly going to bottom of queue, let the
-	 * backfill scheduler do so since it can periodically relinquish
-	 * locks rather than blocking all RPCs. */
-	if ((job_limit == INFINITE) && backfill_sched)
-		job_limit = def_job_limit;
 	if (job_limit == 0)
 		job_limit = def_job_limit;
 
@@ -1006,8 +1002,11 @@ next_part:			part_ptr = (struct part_record *)
 				break;
 			}
 			if (skip_job) {
-				debug("sched: reacked partition %s job limit",
-				      job_ptr->part_ptr->name);
+				if (job_ptr->part_ptr == skip_part_ptr)
+					continue;
+				debug2("sched: reached partition %s job limit",
+				       job_ptr->part_ptr->name);
+				skip_part_ptr = job_ptr->part_ptr;
 				continue;
 			}
 		}

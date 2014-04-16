@@ -1935,7 +1935,8 @@ Also see the \fBbf_yield_interval\fR option.
 \fBdefault_queue_depth=#\fR
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
 running job completes or other routine actions occur. The full queue will be
-tested on a less frequent basis. The default value is 100.
+tested on a less frequent basis as defined by the \fBsched_interval\fR option
+described below. The default value is 100.
 See the \fBpartition_job_depth\fR option to limit depth by partition.
 In the case of large clusters (more than 1000 nodes), configuring a relatively
 small value may be desirable.
@@ -2007,8 +2008,9 @@ priorities of preemptable jobs.
 The logic to support this option is only available in the select/cons_res plugin.
 .TP
 \fBsched_interval=#\fR
-How frequently, in seconds, the main scheduling loop will execute if the
-\fBdefer\fR option is configured.
+How frequently, in seconds, the main scheduling loop will execute and test all
+pending jobs.
+The default value is 60 seconds.
 .RE
 
 .TP

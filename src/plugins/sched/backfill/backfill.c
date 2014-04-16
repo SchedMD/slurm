@@ -451,7 +451,7 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_interval=")))
 		backfill_interval = atoi(tmp_ptr + 12);
 	if (backfill_interval < 1) {
-		error("Invalid backfill scheduler bf_interval: %d",
+		error("Invalid SchedulerParameters bf_interval: %d",
 		      backfill_interval);
 		backfill_interval = BACKFILL_INTERVAL;
 	}
@@ -459,7 +459,7 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_window=")))
 		backfill_window = atoi(tmp_ptr + 10) * 60;  /* mins to secs */
 	if (backfill_window < 1) {
-		error("Invalid backfill scheduler window: %d",
+		error("Invalid SchedulerParameters bf_window: %d",
 		      backfill_window);
 		backfill_window = BACKFILL_WINDOW;
 	}
@@ -471,7 +471,7 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_test=")))
 		max_backfill_job_cnt = atoi(tmp_ptr + 16);
 	if (max_backfill_job_cnt < 1) {
-		error("Invalid backfill scheduler max_job_bf: %d",
+		error("Invalid SchedulerParameters bf_max_job_test: %d",
 		      max_backfill_job_cnt);
 		max_backfill_job_cnt = 50;
 	}
@@ -482,7 +482,7 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_resolution=")))
 		backfill_resolution = atoi(tmp_ptr + 14);
 	if (backfill_resolution < 1) {
-		error("Invalid backfill scheduler resolution: %d",
+		error("Invalid SchedulerParameters bf_resolution: %d",
 		      backfill_resolution);
 		backfill_resolution = BACKFILL_RESOLUTION;
 	}
@@ -490,7 +490,7 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_part=")))
 		max_backfill_job_per_part = atoi(tmp_ptr + 16);
 	if (max_backfill_job_per_part < 0) {
-		error("Invalid backfill scheduler bf_max_job_part: %d",
+		error("Invalid SchedulerParameters bf_max_job_part: %d",
 		      max_backfill_job_per_part);
 		max_backfill_job_per_part = 0;
 	}
@@ -498,7 +498,7 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_start=")))
 		max_backfill_jobs_start = atoi(tmp_ptr + 17);
 	if (max_backfill_jobs_start < 0) {
-		error("Invalid backfill scheduler bf_max_job_start: %d",
+		error("Invalid SchedulerParameters bf_max_job_start: %d",
 		      max_backfill_jobs_start);
 		max_backfill_jobs_start = 0;
 	}
@@ -506,7 +506,7 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_user=")))
 		max_backfill_job_per_user = atoi(tmp_ptr + 16);
 	if (max_backfill_job_per_user < 0) {
-		error("Invalid backfill scheduler bf_max_job_user: %d",
+		error("Invalid SchedulerParameters bf_max_job_user: %d",
 		      max_backfill_job_per_user);
 		max_backfill_job_per_user = 0;
 	}
@@ -536,7 +536,7 @@ static void _load_config(void)
 	if (sched_params && (tmp_ptr=strstr(sched_params, "max_rpc_cnt=")))
 		defer_rpc_cnt = atoi(tmp_ptr + 12);
 	if (defer_rpc_cnt < 0) {
-		error("Invalid backfill scheduler max_rpc_cnt: %d",
+		error("Invalid SchedulerParameters max_rpc_cnt: %d",
 		      defer_rpc_cnt);
 		defer_rpc_cnt = 0;
 	}
