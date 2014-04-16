@@ -8434,6 +8434,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 				xfree(job_ptr->state_desc);
 			}
+		} else if (job_specs->priority == INFINITE
+			   && job_ptr->state_reason != WAIT_HELD_USER) {
+			/* If the job was already released ignore another
+			 * release request.
+			 */
+			debug("%s: job %d already release ignoring request",
+			      __func__, job_ptr->job_id);
 		} else {
 			error("sched: Attempt to modify priority for job %u",
 			      job_specs->job_id);

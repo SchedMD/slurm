@@ -69,6 +69,8 @@ documents those changes that are of interest to users and admins.
  -- squeue %F format will now print the job ID for non-array jobs.
  -- Use quicksort for all priority based job sorting, which improves performance
     significantly with large job counts.
+ -- If a job has already been released from a held state ignore successive
+    release requests.
 
 * Changes in Slurm 14.03.0
 ==========================
