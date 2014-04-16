@@ -926,6 +926,7 @@ extern int schedule(uint32_t job_limit)
 	} else {
 		job_queue = build_job_queue(false, false);
 		slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
+		sort_job_queue(job_queue);
 	}
 	while (1) {
 		if (fifo_sched) {
@@ -963,8 +964,7 @@ next_part:			part_ptr = (struct part_record *)
 					continue;
 			}
 		} else {
-			job_queue_rec = list_pop_bottom(job_queue,
-			                                sort_job_queue2);
+			job_queue_rec = list_pop(job_queue);
 			if (!job_queue_rec)
 				break;
 			job_ptr  = job_queue_rec->job_ptr;

@@ -702,8 +702,8 @@ static int _attempt_backfill(void)
 		uid = xmalloc(BF_MAX_USERS * sizeof(uint32_t));
 		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
 	}
-	while ((job_queue_rec = (job_queue_rec_t *)
-				list_pop_bottom(job_queue, sort_job_queue2))) {
+	sort_job_queue(job_queue);
+	while ((job_queue_rec = (job_queue_rec_t *) list_pop(job_queue))) {
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
 		    ((time(NULL) - sched_start) >= sched_timeout)) {

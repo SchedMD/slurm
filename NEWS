@@ -67,6 +67,8 @@ documents those changes that are of interest to users and admins.
  -- Expand StdIn/Out/Err string length output by "scontrol show job" from 128
     to 1024 bytes.
  -- squeue %F format will now print the job ID for non-array jobs.
+ -- Use quicksort for all priority based job sorting, which improves performance
+    significantly with large job counts.
 
 * Changes in Slurm 14.03.0
 ==========================
