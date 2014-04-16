@@ -187,9 +187,9 @@ static int
 _run_script_and_set_env(const char *name, const char *path,
 			stepd_step_rec_t *job)
 {
-	int status, rc, nread;
+	int status, rc;
 	pid_t cpid;
-	int pfd[2], offset = 0;
+	int pfd[2];
 	char buf[4096];
 	FILE *f;
 
