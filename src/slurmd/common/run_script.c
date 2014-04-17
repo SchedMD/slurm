@@ -163,7 +163,7 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 		setpgrp();
 #endif
 		execve(path, argv, env);
-		error("execve(): %m");
+		error("execve(%s): %m", path);
 		exit(127);
 	}
 

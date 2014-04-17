@@ -229,7 +229,7 @@ _run_script_and_set_env(const char *name, const char *path,
 		setpgrp();
 #endif
 		execve(path, argv, job->env);
-		error("execve(): %m");
+		error("execve(%s): %m", path);
 		exit(127);
 	}
 

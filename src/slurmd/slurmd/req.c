@@ -4564,7 +4564,7 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
                 setpgrp();
 #endif
 		execve (argv[0], argv, env);
-		error ("execve: %m");
+		error ("execve(%s): %m", argv[0]);
 		exit (127);
 	}
 
