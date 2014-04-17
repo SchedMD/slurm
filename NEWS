@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
  -- Record and enable display of nodes anticipated to be used for pending jobs.
  -- Modify squeue --start option to print the nodes expected to be used for
     pending job (in addition to expected start time, etc.).
+ -- Add association hash to the assoc_mgr.
 
 * Changes in Slurm 14.03.1
 ==========================

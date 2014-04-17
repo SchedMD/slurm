@@ -49,6 +49,9 @@
 
 #define ASSOC_USAGE_VERSION 1
 
+#define ASSOC_HASH_SIZE 1000
+#define ASSOC_HASH_ID_INX(_assoc_id)	(_assoc_id % ASSOC_HASH_SIZE)
+
 slurmdb_association_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
 uint32_t g_qos_count = 0;
@@ -62,9 +65,212 @@ static char *assoc_mgr_cluster_name = NULL;
 static int setup_children = 0;
 static assoc_mgr_lock_flags_t assoc_mgr_locks;
 static assoc_init_args_t init_setup;
+static slurmdb_association_rec_t **assoc_hash_id = NULL;
+static slurmdb_association_rec_t **assoc_hash = NULL;
 
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
+
+static int _get_str_inx(char *name)
+{
+	int j, index = 0;
+
+	if (!name)
+		return 0;
+
+	for (j = 1; *name; name++, j++)
+		index += (int)*name * j;
+
+	return index;
+}
+
+static int _assoc_hash_index(slurmdb_association_rec_t *assoc)
+{
+	int index;
+
+	xassert(assoc);
+	xassert(!assoc->user || assoc->uid != NO_VAL);
+
+	/* Multiply each character by its numerical position in the
+	 * name string to add a bit of entropy.
+	 */
+
+	index = assoc->uid;
+
+	/* only set on the slurmdbd */
+	if (!assoc_mgr_cluster_name && assoc->cluster)
+		index += _get_str_inx(assoc->cluster);
+
+	if (assoc->acct)
+		index += _get_str_inx(assoc->acct);
+
+	if (assoc->partition)
+		index += _get_str_inx(assoc->partition);
+
+	index %= ASSOC_HASH_SIZE;
+	if (index < 0)
+		index += ASSOC_HASH_SIZE;
+
+	return index;
+
+}
+
+static void _add_assoc_hash(slurmdb_association_rec_t *assoc)
+{
+	int inx = ASSOC_HASH_ID_INX(assoc->id);
+
+	if (!assoc_hash_id)
+		assoc_hash_id = xmalloc(ASSOC_HASH_SIZE *
+				     sizeof(slurmdb_association_rec_t *));
+	if (!assoc_hash)
+		assoc_hash = xmalloc(ASSOC_HASH_SIZE *
+				     sizeof(slurmdb_association_rec_t *));
+
+	if (!assoc->user || assoc->uid != NO_VAL) {
+		assoc->assoc_next_id = assoc_hash_id[inx];
+		assoc_hash_id[inx] = assoc;
+
+		inx = _assoc_hash_index(assoc);
+		assoc->assoc_next = assoc_hash[inx];
+		assoc_hash[inx] = assoc;
+	}
+}
+
+static bool _remove_from_assoc_list(slurmdb_association_rec_t *assoc)
+{
+	slurmdb_association_rec_t *assoc_ptr;
+	ListIterator itr = list_iterator_create(assoc_mgr_association_list);
+
+	while ((assoc_ptr = list_next(itr))) {
+		if (assoc_ptr == assoc) {
+			list_remove(itr);
+			break;
+		}
+	}
+
+	list_iterator_destroy(itr);
+
+	return assoc_ptr ? 1 : 0;
+}
+/*
+ * find_job_record - return a pointer to the job record with the given job_id
+ * IN job_id - requested job's id
+ * RET pointer to the job's record, NULL on error
+ */
+static slurmdb_association_rec_t *_find_assoc_rec_id(uint32_t assoc_id)
+{
+	slurmdb_association_rec_t *assoc =
+		assoc_hash_id[ASSOC_HASH_ID_INX(assoc_id)];
+
+	while (assoc) {
+		if (assoc->id == assoc_id)
+			return assoc;
+		assoc = assoc->assoc_next_id;
+	}
+
+	return NULL;
+}
+
+/*
+ * find_job_record - return a pointer to the job record with the given job_id
+ * IN job_id - requested job's id
+ * RET pointer to the job's record, NULL on error
+ */
+static slurmdb_association_rec_t *_find_assoc_rec(
+	slurmdb_association_rec_t *assoc)
+{
+	slurmdb_association_rec_t *assoc_ptr;
+	int inx;
+
+	if (assoc->id)
+		return _find_assoc_rec_id(assoc->id);
+
+	inx = _assoc_hash_index(assoc);
+	assoc_ptr = assoc_hash[inx];
+
+	while (assoc_ptr) {
+		if ((!assoc->user && assoc_ptr->user)
+		    && (assoc->uid == NO_VAL && assoc_ptr->uid != NO_VAL)) {
+			debug("we are looking for a "
+			       "nonuser association");
+			goto next;
+		} else if (assoc->uid != assoc_ptr->uid) {
+			debug("not the right user %u != %u",
+			       assoc->uid, assoc_ptr->uid);
+			goto next;
+		}
+
+		if (assoc->acct &&
+		    (!assoc_ptr->acct
+		     || strcasecmp(assoc->acct, assoc_ptr->acct))) {
+			debug("not the right account %s != %s",
+			       assoc->acct, assoc_ptr->acct);
+			goto next;
+		}
+
+		/* only check for on the slurmdbd */
+		if (!assoc_mgr_cluster_name && assoc->cluster
+		    && (!assoc_ptr->cluster
+			|| strcasecmp(assoc->cluster, assoc_ptr->cluster))) {
+			debug("not the right cluster");
+			goto next;
+		}
+
+		if (assoc->partition
+		    && (!assoc_ptr->partition
+			|| strcasecmp(assoc->partition,
+				      assoc_ptr->partition))) {
+			debug("not the right partition");
+			goto next;
+		}
+
+		break;
+	next:
+		assoc_ptr = assoc_ptr->assoc_next;
+	}
+
+	return assoc_ptr;
+}
+
+/*
+ * _list_delete_assoc - delete a assoc record
+ * IN assoc_entry - pointer to assoc_record to delete
+ * global: assoc_list - pointer to global assoc list
+ *	assoc_count - count of assoc list entries
+ *	assoc_hash - hash table into assoc records
+ */
+static void _delete_assoc_hash(void *assoc)
+{
+	slurmdb_association_rec_t *assoc_ptr =
+		(slurmdb_association_rec_t *) assoc;
+	slurmdb_association_rec_t **assoc_pptr;
+
+	xassert(assoc);
+
+	/* Remove the record from assoc hash table */
+	assoc_pptr = &assoc_hash_id[ASSOC_HASH_ID_INX(assoc_ptr->id)];
+	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) !=
+			      (slurmdb_association_rec_t *) assoc))
+		assoc_pptr = &assoc_ptr->assoc_next_id;
+
+	if (!assoc_pptr) {
+		fatal("assoc id hash error");
+		return;	/* Fix CLANG false positive error */
+	}
+	*assoc_pptr = assoc_ptr->assoc_next_id;
+
+	assoc_ptr = (slurmdb_association_rec_t *) assoc;
+	assoc_pptr = &assoc_hash[_assoc_hash_index(assoc_ptr)];
+	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) !=
+			      (slurmdb_association_rec_t *) assoc))
+		assoc_pptr = &assoc_ptr->assoc_next;
+
+	if (!assoc_pptr) {
+		fatal("assoc hash error");
+		return;	/* Fix CLANG false positive error */
+	}
+	*assoc_pptr = assoc_ptr->assoc_next;
+}
 
 /* you should check for assoc == NULL before this function */
 static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
@@ -530,11 +736,15 @@ static int _post_association_list(List assoc_list)
 	if (!assoc_list)
 		return SLURM_ERROR;
 
+	xfree(assoc_hash_id);
+	xfree(assoc_hash);
+
 	itr = list_iterator_create(assoc_list);
 
 	//START_TIMER;
 	while ((assoc = list_next(itr))) {
 		_set_assoc_parent_and_user(assoc, assoc_list, reset);
+		_add_assoc_hash(assoc);
 		reset = 0;
 	}
 
@@ -1327,6 +1537,8 @@ extern int assoc_mgr_fini(char *state_save_location)
 	assoc_mgr_root_assoc = NULL;
 	running_cache = 0;
 
+	xfree(assoc_hash_id);
+
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
@@ -1498,8 +1710,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 				   int enforce,
 				   slurmdb_association_rec_t **assoc_pptr)
 {
-	ListIterator itr = NULL;
-	slurmdb_association_rec_t * found_assoc = NULL;
 	slurmdb_association_rec_t * ret_assoc = NULL;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -1573,62 +1783,17 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 /* 	     assoc->user, assoc->uid, assoc->acct, */
 /* 	     assoc->cluster, assoc->partition); */
 	assoc_mgr_lock(&locks);
-	itr = list_iterator_create(assoc_mgr_association_list);
-	while ((found_assoc = list_next(itr))) {
-		if (assoc->id) {
-			if (assoc->id == found_assoc->id) {
-				ret_assoc = found_assoc;
-				break;
-			}
-			continue;
-		} else {
-			if (assoc->uid == NO_VAL
-			    && found_assoc->uid != NO_VAL) {
-				debug3("we are looking for a "
-				       "nonuser association");
-				continue;
-			} else if (assoc->uid != found_assoc->uid) {
-				debug4("not the right user %u != %u",
-				       assoc->uid, found_assoc->uid);
-				continue;
-			}
 
-			if (found_assoc->acct
-			    && strcasecmp(assoc->acct, found_assoc->acct)) {
-				debug4("not the right account %s != %s",
-				       assoc->acct, found_assoc->acct);
-				continue;
-			}
-
-			/* only check for on the slurmdbd */
-			if (!assoc_mgr_cluster_name && found_assoc->cluster
-			    && strcasecmp(assoc->cluster,
-					  found_assoc->cluster)) {
-				debug4("not the right cluster");
-				continue;
-			}
-
-			if (assoc->partition) {
-				if (!found_assoc->partition) {
-					ret_assoc = found_assoc;
-					debug3("found association "
-					       "for no partition");
-					continue;
-				} else if (strcasecmp(assoc->partition,
-						      found_assoc->partition)) {
-					debug4("not the right partition");
-					continue;
-				}
-			} else if (found_assoc->partition) {
-				debug4("partition specific association "
-				       "looking for one without.");
-				continue;
-			}
-		}
-		ret_assoc = found_assoc;
-		break;
+	/* First look for the assoc with a partition and then check
+	 * for the non-partition association if we don't find one.
+	 */
+	ret_assoc = _find_assoc_rec(assoc);
+	if (!ret_assoc && assoc->partition) {
+		char *part_holder = assoc->partition;
+		assoc->partition = NULL;
+		ret_assoc = _find_assoc_rec(assoc);
+		assoc->partition = part_holder;
 	}
-	list_iterator_destroy(itr);
 
 	if (!ret_assoc) {
 		assoc_mgr_unlock(&locks);
@@ -2404,7 +2569,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 		return SLURM_SUCCESS;
 	}
 
-	itr = list_iterator_create(assoc_mgr_association_list);
 	while ((object = list_pop(update->objects))) {
 		bool update_jobs = false;
 		if (object->cluster && assoc_mgr_cluster_name) {
@@ -2427,50 +2591,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			object->cluster = xstrdup("test");
 		}
 
-		list_iterator_reset(itr);
-		while ((rec = list_next(itr))) {
-			if (object->id) {
-				if (object->id == rec->id) {
-					break;
-				}
-				continue;
-			} else {
-				if (!object->user && rec->user) {
-					debug4("we are looking for a "
-					       "nonuser association");
-					continue;
-				} else if (object->uid != rec->uid) {
-					debug4("not the right user");
-					continue;
-				}
+		rec = _find_assoc_rec(object);
 
-				if (object->acct
-				    && (!rec->acct
-					|| strcasecmp(object->acct,
-						      rec->acct))) {
-					debug4("not the right account");
-					continue;
-				}
-
-				if (object->partition
-				    && (!rec->partition
-					|| strcasecmp(object->partition,
-						      rec->partition))) {
-					debug4("not the right partition");
-					continue;
-				}
-
-				/* only check for on the slurmdbd */
-				if (!assoc_mgr_cluster_name && object->cluster
-				    && (!rec->cluster
-					|| strcasecmp(object->cluster,
-						      rec->cluster))) {
-					debug4("not the right cluster");
-					continue;
-				}
-				break;
-			}
-		}
 		//info("%d assoc %u", update->type, object->id);
 		switch(update->type) {
 		case SLURMDB_MODIFY_ASSOC:
@@ -2640,7 +2762,12 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			*/
 			if (object->is_def != 1)
 				object->is_def = 0;
+
+			/* Set something so we know to add it to the hash */
+			object->uid = INFINITE;
+
 			list_append(assoc_mgr_association_list, object);
+
 			object = NULL;
 			parents_changed = 1; /* set since we need to
 						set the parent
@@ -2662,6 +2789,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 							set the shares
 							of surrounding children
 						     */
+
+			_delete_assoc_hash(rec);
+			_remove_from_assoc_list(rec);
 			if (init_setup.remove_assoc_notify) {
 				/* since there are some deadlock
 				   issues while inside our lock here
@@ -2670,10 +2800,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				if (!remove_list)
 					remove_list = list_create(
 						slurmdb_destroy_association_rec);
-				list_remove(itr);
 				list_append(remove_list, rec);
 			} else
-				list_delete_item(itr);
+				slurmdb_destroy_association_rec(rec);
 			break;
 		case SLURMDB_REMOVE_ASSOC_USAGE:
 			if (!rec) {
@@ -2697,7 +2826,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 		slurmdb_sort_hierarchical_assoc_list(
 			assoc_mgr_association_list);
 
-		list_iterator_reset(itr);
+		itr = list_iterator_create(assoc_mgr_association_list);
 		/* flush the children lists */
 		if (setup_children) {
 			while ((object = list_next(itr))) {
@@ -2708,6 +2837,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			list_iterator_reset(itr);
 		}
 		while ((object = list_next(itr))) {
+			bool addit = false;
 			/* reset the limits because since a parent
 			   changed we could have different usage
 			*/
@@ -2716,8 +2846,19 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				object->usage->usage_raw = 0;
 				object->usage->grp_used_wall = 0;
 			}
+
+			/* This means we were just added, so we need
+			   to be added to the hash after the uid is set.
+			*/
+			if (object->uid == INFINITE)
+				addit = true;
+
 			_set_assoc_parent_and_user(
 				object, assoc_mgr_association_list, reset);
+
+			if (addit)
+				_add_assoc_hash(object);
+
 			reset = 0;
 		}
 		/* Now that we have set up the parents correctly we
@@ -2768,11 +2909,11 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				log_assoc_rec(object, assoc_mgr_qos_list);
 			}
 		}
+		list_iterator_destroy(itr);
 	} else if (resort)
 		slurmdb_sort_hierarchical_assoc_list(
 			assoc_mgr_association_list);
 
-	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
 	/* This needs to happen outside of the
@@ -3493,7 +3634,6 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 				       uint32_t assoc_id,
 				       int enforce)
 {
-	ListIterator itr = NULL;
 	slurmdb_association_rec_t * found_assoc = NULL;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -3514,12 +3654,7 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 		return SLURM_SUCCESS;
 	}
 
-	itr = list_iterator_create(assoc_mgr_association_list);
-	while ((found_assoc = list_next(itr))) {
-		if (assoc_id == found_assoc->id)
-			break;
-	}
-	list_iterator_destroy(itr);
+	found_assoc = _find_assoc_rec_id(assoc_id);
 	assoc_mgr_unlock(&locks);
 
 	if (found_assoc || !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
@@ -3890,7 +4025,6 @@ extern int load_assoc_usage(char *state_save_location)
 	char *data = NULL, *state_file;
 	Buf buffer;
 	time_t buf_time;
-	ListIterator itr = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -3945,7 +4079,6 @@ extern int load_assoc_usage(char *state_save_location)
 
 	safe_unpack_time(&buf_time, buffer);
 
-	itr = list_iterator_create(assoc_mgr_association_list);
 	while (remaining_buf(buffer) > 0) {
 		uint32_t assoc_id = 0;
 		uint32_t grp_used_wall = 0;
@@ -3955,9 +4088,7 @@ extern int load_assoc_usage(char *state_save_location)
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack64(&usage_raw, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
-		while ((assoc = list_next(itr)))
-			if (assoc->id == assoc_id)
-				break;
+		assoc = _find_assoc_rec_id(assoc_id);
 
 		/* We want to do this all the way up to and including
 		   root.  This way we can keep track of how much usage
@@ -3975,9 +4106,7 @@ extern int load_assoc_usage(char *state_save_location)
 
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
-		list_iterator_reset(itr);
 	}
-	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
 	free_buf(buffer);
@@ -3986,8 +4115,6 @@ extern int load_assoc_usage(char *state_save_location)
 unpack_error:
 	if (buffer)
 		free_buf(buffer);
-	if (itr)
-		list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
@@ -4318,8 +4445,10 @@ extern int assoc_mgr_set_missing_uids()
 					debug2("refresh association "
 					       "couldn't get a uid for user %s",
 					       object->user);
-				} else
+				} else {
 					object->uid = pw_uid;
+					_add_assoc_hash(object);
+				}
 			}
 		}
 		list_iterator_destroy(itr);

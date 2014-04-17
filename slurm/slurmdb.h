@@ -401,10 +401,18 @@ typedef struct {
 
 /* slurmdb_association_cond_t is defined above alphabetical */
 
-typedef struct {
+typedef struct slurmdb_association_rec {
 	List accounting_list; 	   /* list of slurmdb_accounting_rec_t *'s */
 	char *acct;		   /* account/project associated to
 				    * association */
+	struct slurmdb_association_rec *assoc_next; /* next association with
+						       * same hash index
+						       * based off the
+						       * account/user
+						       * DOESN'T GET PACKED */
+	struct slurmdb_association_rec *assoc_next_id; /* next association with
+							* same hash index
+							* DOESN'T GET PACKED */
 	char *cluster;		   /* cluster associated to association */
 
 	uint32_t def_qos_id;       /* Which QOS id is this
