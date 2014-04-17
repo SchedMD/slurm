@@ -74,6 +74,8 @@ documents those changes that are of interest to users and admins.
  -- Add squeue -L/--licenses option to filter jobs by license names.
  -- Handle abort job on node on front end systems without core dumping.
  -- Fix dependency support for job arrays.
+ -- When updating jobs verify the update request is not identical to
+    the current settings.
 
 * Changes in Slurm 14.03.0
 ==========================
