@@ -79,6 +79,8 @@ documents those changes that are of interest to users and admins.
  -- When sorting jobs and priorities are equal sort by job_id.
  -- Do not overwrite existing reason for node being down or drained.
  -- Requeue batch job if Munge is down and credential can not be created.
+ -- Make _slurm_init_msg_engine() tollerate bug in bind() returning a busy
+    ephemeral port.
 
 * Changes in Slurm 14.03.0
 ==========================
