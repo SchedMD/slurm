@@ -111,7 +111,7 @@ const uint32_t	plugin_version		= 120;
 static char	gres_name[]		= "gpu";
 
 static int *gpu_devices = NULL;
-static int nb_available_files;
+static int nb_available_files = 0;
 
 extern int init(void)
 {
@@ -123,6 +123,7 @@ extern int fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
 	xfree(gpu_devices);
+	nb_available_files = 0;
 
 	return SLURM_SUCCESS;
 }
@@ -148,11 +149,10 @@ extern int node_config_load(List gres_conf_list)
 			nb_gpu++;
 	}
 	list_iterator_destroy(iter);
-	gpu_devices = NULL;
+	xfree(gpu_devices);	/* No-op if NULL */
 	nb_available_files = -1;
 	/* (Re-)Allocate memory if number of files changed */
 	if (nb_gpu > nb_available_files) {
-		xfree(gpu_devices);	/* No-op if NULL */
 		gpu_devices = (int *) xmalloc(sizeof(int) * nb_gpu);
 		nb_available_files = nb_gpu;
 		for (i = 0; i < nb_available_files; i++)
@@ -321,8 +321,10 @@ extern void recv_stepd(int fd)
 	int i;
 
 	safe_read(fd, &nb_available_files, sizeof(int));
-	if (nb_available_files > 0)
+	if (nb_available_files > 0) {
+		xfree(gpu_devices);	/* No-op if NULL */
 		gpu_devices = xmalloc(sizeof(int) * nb_available_files);
+	}
 	for (i = 0; i < nb_available_files; i++)
 		safe_read(fd, &gpu_devices[i], sizeof(int));
 	return;
