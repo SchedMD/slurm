@@ -3728,8 +3728,13 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		/* Since the job completion logger removes the job submit
 		 * information, we need to add it again. */
 		acct_policy_add_job_submit(job_ptr);
-
-		info("Requeue JobId=%u due to node failure", job_ptr->job_id);
+		if (node_fail) {
+			info("Requeue JobId=%u due to node failure",
+			     job_ptr->job_id);
+		} else {
+			info("Requeue JobId=%u per user/system request",
+			    job_ptr->job_id);
+		}
 	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details &&
 		   job_ptr->batch_flag) {
 		/* Possible failure mode with DOWN node and job requeue.
@@ -10013,7 +10018,8 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 		 * larger than the time stamp on the revoke request. Also the
 		 * I/O must be all cleared out and the named socket purged,
 		 * so delay for at least ten seconds. */
-		job_ptr->details->begin_time = now + 10;
+		if (job_ptr->details->begin_time <= now)
+			job_ptr->details->begin_time = now + 10;
 		if (!with_slurmdbd)
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 		/* Since this could happen on a launch we need to make sure the

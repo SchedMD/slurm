@@ -102,6 +102,7 @@ documents those changes that are of interest to users and admins.
     the current settings.
  -- When sorting jobs and priorities are equal sort by job_id.
  -- Do not overwrite existing reason for node being down or drained.
+ -- Requeue batch job if Munge is down and credential can not be created.
 
 * Changes in Slurm 14.03.0
 ==========================
