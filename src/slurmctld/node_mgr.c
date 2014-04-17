@@ -1737,11 +1737,13 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid )
 		bit_clear (avail_node_bitmap, node_inx);
 		info ("drain_nodes: node %s state set to DRAIN",
 			this_node_name);
-
-		xfree(node_ptr->reason);
-		node_ptr->reason = xstrdup(reason);
-		node_ptr->reason_time = now;
-		node_ptr->reason_uid = reason_uid;
+		if ((node_ptr->reason == NULL) ||
+		    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
+			xfree(node_ptr->reason);
+			node_ptr->reason = xstrdup(reason);
+			node_ptr->reason_time = now;
+			node_ptr->reason_uid = reason_uid;
+		}
 		if ((node_ptr->run_job_cnt  == 0) &&
 		    (node_ptr->comp_job_cnt == 0)) {
 			/* no jobs, node is drained */
