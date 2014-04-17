@@ -73,6 +73,7 @@ documents those changes that are of interest to users and admins.
     release requests.
  -- Fix srun/salloc/sbatch man pages for the --no-kill option. 
  -- Add squeue -L/--licenses option to filter jobs by license names.
+ -- Handle abort job on node on front end systems without core dumping.
 
 * Changes in Slurm 14.03.0
 ==========================

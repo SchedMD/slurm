@@ -9582,7 +9582,7 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
 	agent_info->retry	= 0;
 	agent_info->hostlist	= hostlist_create(node_name);
 #ifdef HAVE_FRONT_END
-	if (job_ptr->front_end_ptr)
+	if (job_ptr && job_ptr->front_end_ptr)
 		agent_info->protocol_version =
 			job_ptr->front_end_ptr->protocol_version;
 	debug("Aborting job %u on front end node %s", job_id, node_name);
