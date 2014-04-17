@@ -1413,7 +1413,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		 */
 		error("uid %ld not found on system, aborting job %u",
 		      (long)launch_msg_ptr->uid, job_ptr->job_id);
-		job_ptr->end_time    = time(NULL);
+		job_ptr->end_time   = time(NULL);
 		job_ptr->time_limit = 0;
 		slurm_free_job_launch_msg(launch_msg_ptr);
 		return NULL;
@@ -1434,15 +1434,18 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->restart_cnt   = job_ptr->restart_cnt;
 
 	if (make_batch_job_cred(launch_msg_ptr, job_ptr, protocol_version)) {
-		error("aborting batch job %u", job_ptr->job_id);
 		/* FIXME: This is a kludge, but this event indicates a serious
-		 * problem with OpenSSH and should never happen. We are
-		 * too deep into the job launch to gracefully clean up. */
-		job_ptr->end_time    = time(NULL);
-		job_ptr->time_limit = 0;
+		 * problem with Munge or OpenSSH and should never happen. We
+		 * are too deep into the job launch to gracefully clean up from
+		 * from the launch, so requeue if possible. */
+		error("Can not create job credential, attempting to requeue "
+		      "batch job %u", job_ptr->job_id);
 		xfree(launch_msg_ptr->alias_list);
 		xfree(launch_msg_ptr->nodes);
 		xfree(launch_msg_ptr);
+		job_ptr->batch_flag = 1;	/* Allow repeated requeue */
+		job_ptr->details->begin_time = time(NULL) + 120;
+		(void) job_complete(job_ptr->job_id, getuid(), true, false, 0);
 		return NULL;
 	}
 
