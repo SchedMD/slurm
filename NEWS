@@ -53,7 +53,6 @@ documents those changes that are of interest to users and admins.
  -- Modify srun to report an exit code of zero rather than nine if some tasks
     exit with a return code of zero and others are killed with SIGKILL. Only an
     exit code of zero did this.
- -- task/cgroup make TaskAffinity=hard bind to threads instead of cores.
  -- Fix a typo in scontrol man page.
  -- Avoid slurmctld crash getting job info if detail_ptr is NULL.
  -- Fix sacctmgr add user where both defaultaccount and accounts are specified.
@@ -91,6 +90,18 @@ documents those changes that are of interest to users and admins.
  -- Expand StdIn/Out/Err string length output by "scontrol show job" from 128
     to 1024 bytes.
  -- squeue %F format will now print the job ID for non-array jobs.
+ -- Use quicksort for all priority based job sorting, which improves performance
+    significantly with large job counts.
+ -- If a job has already been released from a held state ignore successive
+    release requests.
+ -- Fix srun/salloc/sbatch man pages for the --no-kill option.
+ -- Add squeue -L/--licenses option to filter jobs by license names.
+ -- Handle abort job on node on front end systems without core dumping.
+ -- Fix dependency support for job arrays.
+ -- When updating jobs verify the update request is not identical to
+    the current settings.
+ -- When sorting jobs and priorities are equal sort by job_id.
+ -- Do not overwrite existing reason for node being down or drained.
 
 * Changes in Slurm 14.03.0
 ==========================

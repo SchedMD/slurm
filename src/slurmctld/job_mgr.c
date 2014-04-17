@@ -7550,6 +7550,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		mc_ptr = detail_ptr->mc_ptr;
 	last_job_update = now;
 
+	if (job_specs->account
+	    && !xstrcmp(job_specs->account, job_ptr->account)) {
+		debug("sched: update_job: new account identical to "
+		      "old account %u", job_ptr->job_id);
+		xfree(job_specs->account);
+	}
+
 	if (job_specs->account) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
@@ -7699,6 +7706,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_ptr->wait4switch, job_specs->job_id);
 	}
 
+	if (job_specs->partition
+	    && !xstrcmp(job_specs->partition, job_ptr->partition)) {
+		debug("sched: update_job: new partition identical to "
+		      "old partition %u", job_ptr->job_id);
+		xfree(job_specs->partition);
+	}
+
 	if (job_specs->partition) {
 		List part_ptr_list = NULL;
 		bool old_res = false;
@@ -7844,15 +7858,21 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 							job_ptr->limit_set_qos
 								= 0;
 						update_accounting = true;
-					}
+					} else
+						debug("sched: update_job: "
+						      "new qos identical to "
+						      "old qos %u",
+						      job_ptr->job_id);
 				}
 			}
 		}
 	}
+
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
 	if (job_specs->qos) {
+
 		if (!authorized && !IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else {
@@ -7885,7 +7905,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					else
 						job_ptr->limit_set_qos = 0;
 					update_accounting = true;
-				}
+				} else
+					debug("sched: update_job: new qos "
+					      "identical to old qos %u",
+					      job_ptr->job_id);
 			}
 		}
 	}
@@ -8246,6 +8269,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_specs->reservation
+	    && !xstrcmp(job_specs->reservation, job_ptr->resv_name)) {
+		debug("sched: update_job: new reservation identical to "
+		      "old reservation %u", job_ptr->job_id);
+		xfree(job_specs->reservation);
+	}
+
 	/* this needs to be after partition and qos checks */
 	if (job_specs->reservation) {
 		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
@@ -8357,6 +8387,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 				xfree(job_ptr->state_desc);
 			}
+		} else if (job_specs->priority == INFINITE
+			   && job_ptr->state_reason != WAIT_HELD_USER) {
+			/* If the job was already released ignore another
+			 * release request.
+			 */
+			debug("%s: job %d already release ignoring request",
+			      __func__, job_ptr->job_id);
 		} else {
 			error("sched: Attempt to modify priority for job %u",
 			      job_specs->job_id);
@@ -8369,6 +8406,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->nice != (uint16_t) NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || (job_ptr->details == NULL))
 			error_code = ESLURM_DISABLED;
+		else if (job_ptr->details &&
+			 (job_ptr->details->nice == job_specs->nice))
+			debug("sched: update_job: new nice identical to "
+			      "old nice %u", job_ptr->job_id);
 		else if (authorized || (job_specs->nice >= NICE_OFFSET)) {
 			int64_t new_prio = job_ptr->priority;
 			new_prio += job_ptr->details->nice;
@@ -8604,6 +8645,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_specs->name
+	    && !xstrcmp(job_specs->name, job_ptr->name)) {
+		debug("sched: update_job: new name identical to "
+		      "old name %u", job_ptr->job_id);
+		xfree(job_specs->name);
+	}
+
 	if (job_specs->name) {
 		if (IS_JOB_FINISHED(job_ptr)) {
 			error_code = ESLURM_DISABLED;
@@ -8630,6 +8678,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
+
+	if (job_specs->wckey
+	    && !xstrcmp(job_specs->wckey, job_ptr->wckey)) {
+		debug("sched: update_job: new wckey identical to "
+		      "old wckey %u", job_ptr->job_id);
+		xfree(job_specs->wckey);
+	}
 
 	if (job_specs->wckey) {
 		if (!IS_JOB_PENDING(job_ptr))
@@ -8797,13 +8852,18 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (job_specs->begin_time < now)
 				job_specs->begin_time = now;
 
-			detail_ptr->begin_time = job_specs->begin_time;
-			update_accounting = true;
-			slurm_make_time_str(&detail_ptr->begin_time, time_str,
-					    sizeof(time_str));
-			info("sched: update_job: setting begin to %s for "
-			     "job_id %u",
-			     time_str, job_ptr->job_id);
+			if (detail_ptr->begin_time != job_specs->begin_time) {
+				detail_ptr->begin_time = job_specs->begin_time;
+				update_accounting = true;
+				slurm_make_time_str(&detail_ptr->begin_time,
+						    time_str, sizeof(time_str));
+				info("sched: update_job: setting begin "
+				     "to %s for job_id %u",
+				     time_str, job_ptr->job_id);
+			} else
+				debug("sched: update_job: new begin time "
+				      "identical to old begin time %u",
+				      job_ptr->job_id);
 		} else {
 			error_code = ESLURM_DISABLED;
 			goto fini;
@@ -9498,7 +9558,7 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
 	agent_info->retry	= 0;
 	agent_info->hostlist	= hostlist_create(node_name);
 #ifdef HAVE_FRONT_END
-	if (job_ptr->front_end_ptr)
+	if (job_ptr && job_ptr->front_end_ptr)
 		agent_info->protocol_version =
 			job_ptr->front_end_ptr->protocol_version;
 	debug("Aborting job %u on front end node %s", job_id, node_name);

@@ -70,6 +70,11 @@ Report more of the available information for the selected jobs or job steps,
 subject to any constraints specified.
 
 .TP
+\fB\-L\fR, \fB\-\-licenses=<license_list>\fR
+Request jobs requesting or using one or more of the named licenses.
+The license list consists of a comma separated list of license names.
+
+.TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
 A value of of '\fIall\fR' will query to run on all clusters.
@@ -354,6 +359,9 @@ User ID for a job or job step.
 Reservation for the job.
 (Valid for jobs only)
 .TP
+\fB%V\fR
+The job's submission time.
+.TP
 \fB%w\fR
 Workload Characterization Key (wckey).
 (Valid for jobs only)
@@ -385,9 +393,6 @@ When (S:C:T) has not been set, "*" is displayed.
 .TP
 \fB%Z\fR
 The job's working directory.
-.TP
-\fB%V\fR
-The job's submission time.
 .RE
 
 .TP
@@ -688,6 +693,9 @@ Another suggested value is "%a %T" for a day of week and time stamp (e.g.
 \fBSQUEUE_FORMAT\fR
 \fB\-o <output_format>, \-\-format=<output_format>\fR
 .TP
+\fBSQUEUE_LICENSES\fR
+\fB\-p-l <license_list>, \-\-license=<license_list>\fR
+.TP
 \fBSQUEUE_PARTITION\fR
 \fB\-p <part_list>, \-\-partition=<part_list>\fR
 .TP
@@ -764,7 +772,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2014 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

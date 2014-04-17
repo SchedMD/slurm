@@ -56,7 +56,6 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job);
 extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job);
 
 /* set a task affinity based on its local id and job information */
-extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
-	int task_affinity);
+extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job);
 
 #endif

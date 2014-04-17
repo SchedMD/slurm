@@ -275,10 +275,8 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 
 	if (use_cpuset) {
 		/* set affinity if requested */
-		if (slurm_cgroup_conf.task_affinity) {
-			task_cgroup_cpuset_set_task_affinity(
-				job, slurm_cgroup_conf.task_affinity);
-		}
+		if (slurm_cgroup_conf.task_affinity)
+			task_cgroup_cpuset_set_task_affinity(job);
 	}
 
 	return SLURM_SUCCESS;

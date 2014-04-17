@@ -653,60 +653,6 @@ list_pop (List l)
 	return v;
 }
 
-/* list_pop_top()
- */
-void *
-list_pop_top (List l, ListCmpF f)
-{
-	void *v = NULL;
-	ListNode *pp, *pTop;
-	assert(l != NULL);
-	assert(f != NULL);
-	list_mutex_lock(&l->mutex);
-	assert(l->magic == LIST_MAGIC);
-
-	pTop = &l->head;
-	if (*pTop) {
-		pp = &(*pTop)->next;
-		while (*pp) {
-			if (f(&(*pp)->data, &(*pTop)->data) > 0)
-				pTop = pp;
-			pp = &(*pp)->next;
-		}
-		v = list_node_destroy(l, pTop);
-	}
-	list_mutex_unlock(&l->mutex);
-
-	return v;
-}
-
-/* list_pop_bottom()
- */
-void *
-list_pop_bottom (List l, ListCmpF f)
-{
-	void *v = NULL;
-	ListNode *pp, *pBottom;
-	assert(l != NULL);
-	assert(f != NULL);
-	list_mutex_lock(&l->mutex);
-	assert(l->magic == LIST_MAGIC);
-
-	pBottom = &l->head;
-	if (*pBottom) {
-		pp = &(*pBottom)->next;
-		while (*pp) {
-			if (f(&(*pp)->data, &(*pBottom)->data) < 0)
-				pBottom = pp;
-			pp = &(*pp)->next;
-		}
-		v = list_node_destroy(l, pBottom);
-	}
-	list_mutex_unlock(&l->mutex);
-
-	return v;
-}
-
 /* list_peek()
  */
 void *

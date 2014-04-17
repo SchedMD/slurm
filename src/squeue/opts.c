@@ -106,6 +106,7 @@ parse_command_line( int argc, char* argv[] )
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
+		{"licenses",   required_argument, 0, 'L'},
 		{"cluster",    required_argument, 0, 'M'},
 		{"clusters",   required_argument, 0, 'M'},
 		{"name",       required_argument, 0, 'n'},
@@ -143,7 +144,7 @@ parse_command_line( int argc, char* argv[] )
 	}
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:ahi:j::ln:M:o:p:q:R:rs::S:t:u:U:vVw:",
+				       "A:ahi:j::lL:n:M:o:p:q:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -181,6 +182,11 @@ parse_command_line( int argc, char* argv[] )
 		case (int) 'l':
 			params.long_list = true;
 			override_format_env = true;
+			break;
+		case (int) 'L':
+			xfree(params.licenses);
+			params.licenses = xstrdup(optarg);
+			params.licenses_list = _build_str_list(params.licenses);
 			break;
 		case (int) 'M':
 			if (params.clusters)
@@ -351,6 +357,12 @@ parse_command_line( int argc, char* argv[] )
 	     ( env_val = getenv("SQUEUE_NAMES") ) ) {
 		params.names = xstrdup(env_val);
 		params.name_list = _build_str_list( params.names );
+	}
+
+	if ( ( params.partitions == NULL ) &&
+	     ( env_val = getenv("SQUEUE_LICENSES") ) ) {
+		params.licenses = xstrdup(env_val);
+		params.licenses_list = _build_str_list( params.licenses );
 	}
 
 	if ( ( params.partitions == NULL ) &&
@@ -911,7 +923,7 @@ _print_options(void)
 {
 	ListIterator iterator;
 	int i;
-	char *part, *name;
+	char *license, *name, *part;
 	uint32_t *user;
 	enum job_states *state_id;
 	squeue_job_step_t *job_step_id;
@@ -930,6 +942,7 @@ _print_options(void)
 	printf( "iterate     = %d\n", params.iterate );
 	printf( "job_flag    = %d\n", params.job_flag );
 	printf( "jobs        = %s\n", params.jobs );
+	printf( "licenses    = %s\n", params.licenses );
 	printf( "names       = %s\n", params.names );
 	printf( "nodes       = %s\n", hostlist ) ;
 	printf( "partitions  = %s\n", params.partitions ) ;
@@ -964,6 +977,15 @@ _print_options(void)
 		iterator = list_iterator_create( params.name_list );
 		while ( (name = list_next( iterator )) ) {
 			printf( "name_list[%d] = %u\n", i++, *name);
+		}
+		list_iterator_destroy( iterator );
+	}
+
+	if ((params.verbose > 1) && params.licenses_list) {
+		i = 0;
+		iterator = list_iterator_create( params.licenses_list );
+		while ( (license = list_next( iterator )) ) {
+			printf( "licenses_list[%d] = %s\n", i++, license);
 		}
 		list_iterator_destroy( iterator );
 	}
@@ -1064,21 +1086,21 @@ _build_job_list( char* str )
  * RET List of strings
  */
 static List
-_build_str_list( char* str )
+_build_str_list(char* str)
 {
 	List my_list;
-	char *part = NULL, *tmp_char = NULL, *my_part_list = NULL;
+	char *tok = NULL, *tmp_char = NULL, *my_str = NULL;
 
-	if ( str == NULL)
+	if (str == NULL)
 		return NULL;
-	my_list = list_create( NULL );
-	my_part_list = xstrdup( str );
-	part = strtok_r( my_part_list, ",", &tmp_char );
-	while (part) {
-		list_append( my_list, part );
-		part = strtok_r( NULL, ",", &tmp_char );
+	my_list = list_create(NULL);
+	my_str = xstrdup(str);
+	tok = strtok_r(my_str, ",", &tmp_char);
+	while (tok) {
+		list_append(my_list, tok);
+		tok = strtok_r(NULL, ",", &tmp_char);
 	}
-	/* NOTE: Do NOT xfree my_part_list or the elements just added to the
+	/* NOTE: Do NOT xfree my_list or the elements just added to the
 	 * list will also be freed. */
 	return my_list;
 }
@@ -1229,7 +1251,7 @@ Usage: squeue [-A account] [--clusters names] [-i seconds] [--job jobid]\n\
               [-n name] [-o format] [-p partitions] [--qos qos]\n\
               [--reservation reservation] [--sort fields] [--start]\n\
               [--step step_id] [-t states] [-u user_name] [--usage]\n\
-              [-w nodes] [-ahjlrsv]\n");
+              [-L licenses] [-w nodes] [-ahjlrsv]\n");
 }
 
 static void _help(void)
@@ -1245,6 +1267,7 @@ Usage: squeue [OPTIONS]\n\
   -j, --job=job(s)                comma separated list of jobs IDs\n\
 				  to view, default is all\n\
   -l, --long                      long report\n\
+  -L, --licenses=(license names)  comma separated list of license names to view\n\
   -M, --clusters=cluster_name     cluster to issue commands to.  Default is\n\
                                   current cluster.  cluster with no name will\n\
                                   reset to default.\n\

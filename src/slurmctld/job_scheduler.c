@@ -926,6 +926,7 @@ extern int schedule(uint32_t job_limit)
 	} else {
 		job_queue = build_job_queue(false, false);
 		slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
+		sort_job_queue(job_queue);
 	}
 	while (1) {
 		if (fifo_sched) {
@@ -963,8 +964,7 @@ next_part:			part_ptr = (struct part_record *)
 					continue;
 			}
 		} else {
-			job_queue_rec = list_pop_bottom(job_queue,
-			                                sort_job_queue2);
+			job_queue_rec = list_pop(job_queue);
 			if (!job_queue_rec)
 				break;
 			job_ptr  = job_queue_rec->job_ptr;
@@ -1331,7 +1331,7 @@ extern void sort_job_queue(List job_queue)
 }
 
 /* Note this differs from the ListCmpF typedef since we want jobs sorted
- *	in order of decreasing priority */
+ *	in order of decreasing priority then by increasing job id */
 extern int sort_job_queue2(void *x, void *y)
 {
 	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
@@ -1379,7 +1379,12 @@ extern int sort_job_queue2(void *x, void *y)
 		return 1;
 	if (p1 > p2)
 		return -1;
-	return 0;
+
+	/* If the priorities are the same sort by increasing job id's */
+	if (job_rec1->job_id > job_rec2->job_id)
+		return 1;
+
+	return -1;
 }
 
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
@@ -1625,7 +1630,8 @@ extern void print_job_dependency(struct job_record *job_ptr)
 			info("  singleton");
 			continue;
 		}
-		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER)
+
+		if      (dep_ptr->depend_type == SLURM_DEPEND_AFTER)
 			dep_str = "after";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY)
 			dep_str = "afterany";
@@ -1642,6 +1648,50 @@ extern void print_job_dependency(struct job_record *job_ptr)
 		else
 			array_task_id = "";
 		info("  %s:%u%s", dep_str, dep_ptr->job_id, array_task_id);
+	}
+	list_iterator_destroy(depend_iter);
+}
+
+static void _depend_list2str(struct job_record *job_ptr)
+{
+	ListIterator depend_iter;
+	struct depend_spec *dep_ptr;
+	char *array_task_id, *dep_str, *sep = "";
+
+	if (job_ptr->details == NULL)
+		return;
+	xfree(job_ptr->details->dependency);
+	if (job_ptr->details->depend_list == NULL)
+		return;
+
+	depend_iter = list_iterator_create(job_ptr->details->depend_list);
+	while ((dep_ptr = list_next(depend_iter))) {
+		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
+			xstrfmtcat(job_ptr->details->dependency,
+				   "%ssingleton", sep);
+			sep = ",";
+			continue;
+		}
+
+		if      (dep_ptr->depend_type == SLURM_DEPEND_AFTER)
+			dep_str = "after";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY)
+			dep_str = "afterany";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK)
+			dep_str = "afternotok";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK)
+			dep_str = "afterok";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND)
+			dep_str = "expand";
+		else
+			dep_str = "unknown";
+		if (dep_ptr->array_task_id == INFINITE)
+			array_task_id = "_*";
+		else
+			array_task_id = "";
+		xstrfmtcat(job_ptr->details->dependency, "%s%s:%u%s",
+			   sep, dep_str, dep_ptr->job_id, array_task_id);
+		sep = ",";
 	}
 	list_iterator_destroy(depend_iter);
 }
@@ -1770,7 +1820,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		} else if ((djob_ptr == NULL) ||
 			   (djob_ptr->magic != JOB_MAGIC) ||
 			   ((djob_ptr->job_id != dep_ptr->job_id) &&
-			    (djob_ptr->array_job_id != dep_ptr->job_id))){
+			    (djob_ptr->array_job_id != dep_ptr->job_id))) {
 			/* job is gone, dependency lifted */
 			clear_dep = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
@@ -1867,7 +1917,6 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	List new_depend_list = NULL;
 	struct depend_spec *dep_ptr;
 	struct job_record *dep_job_ptr;
-	char dep_buf[32];
 	bool expand_cnt = 0;
 
 	if (job_ptr->details == NULL)
@@ -1932,22 +1981,13 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				    (dep_job_ptr->array_job_id == job_id) &&
 				    (dep_job_ptr->array_task_id != NO_VAL)) {
 					array_task_id = INFINITE;
-					snprintf(dep_buf, sizeof(dep_buf),
-						 "afterany:%u_*", job_id);
-				} else {
-					snprintf(dep_buf, sizeof(dep_buf),
-						 "afterany:%u", job_id);
 				}
 			} else {
 				dep_job_ptr = find_job_array_rec(job_id,
 								 array_task_id);
-				snprintf(dep_buf, sizeof(dep_buf),
-					 "afterany:%u_%u", job_id,
-					 array_task_id);
 			}
 			if (!dep_job_ptr)	/* assume already done */
 				break;
-			new_depend = dep_buf;
 			dep_ptr = xmalloc(sizeof(struct depend_spec));
 			dep_ptr->array_task_id = array_task_id;
 			dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
@@ -2008,9 +2048,10 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				    (dep_job_ptr->array_task_id != NO_VAL)) {
 					array_task_id = INFINITE;
 				}
-			} else
+			} else {
 				dep_job_ptr = find_job_array_rec(job_id,
 								 array_task_id);
+			}
 			if ((depend_type == SLURM_DEPEND_EXPAND) &&
 			    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
 			     (!IS_JOB_RUNNING(dep_job_ptr))              ||
@@ -2038,7 +2079,12 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				dep_ptr = xmalloc(sizeof(struct depend_spec));
 				dep_ptr->array_task_id = array_task_id;
 				dep_ptr->depend_type = depend_type;
-				dep_ptr->job_id  = dep_job_ptr->job_id;
+				if (array_task_id == NO_VAL)
+					dep_ptr->job_id  = dep_job_ptr->job_id;
+				else {
+					dep_ptr->job_id  =
+						dep_job_ptr->array_job_id;
+				}
 				dep_ptr->job_ptr = dep_job_ptr;
 				(void) list_append(new_depend_list, dep_ptr);
 			}
@@ -2060,11 +2106,10 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	}
 
 	if (rc == SLURM_SUCCESS) {
-		xfree(job_ptr->details->dependency);
-		job_ptr->details->dependency = xstrdup(new_depend);
 		if (job_ptr->details->depend_list)
 			list_destroy(job_ptr->details->depend_list);
 		job_ptr->details->depend_list = new_depend_list;
+		_depend_list2str(job_ptr);
 #if _DEBUG
 		print_job_dependency(job_ptr);
 #endif
@@ -2716,7 +2761,7 @@ static void *_run_prolog(void *arg)
 /*
  * Copy a job's feature list
  * IN feature_list_src - a job's depend_lst
- * RET copy of depend_list_src, must be freed by caller
+ * RET copy of feature_list_src, must be freed by caller
  */
 extern List feature_list_copy(List feature_list_src)
 {
