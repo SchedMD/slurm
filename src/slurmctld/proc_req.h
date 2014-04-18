@@ -43,11 +43,19 @@
 
 #include "src/common/slurm_protocol_api.h"
 
+/* Each TCP/IP client connection has a socket
+ * and address with port
+ */
+typedef struct connection_arg {
+	int newsockfd;
+	slurm_addr_t cli_addr;
+} connection_arg_t;
+
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
  */
-void slurmctld_req (slurm_msg_t * msg);
+void slurmctld_req(slurm_msg_t * msg, connection_arg_t *);
 
 /*
  * slurm_drain_nodes - process a request to drain a list of nodes,

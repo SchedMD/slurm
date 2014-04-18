@@ -1295,6 +1295,12 @@ extern char *slurm_ctime(const time_t *timep);
 /* Return ctime like string without the newline, thread safe. */
 extern char *slurm_ctime_r(const time_t *timep, char *time_str);
 
+/* Given a protocol opcode return its string
+ * description mapping the slurm_msg_type_t
+ * to its name.
+ */
+extern char *rpc_num2string(uint16_t opcode);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

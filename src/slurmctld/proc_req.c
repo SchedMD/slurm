@@ -74,6 +74,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_acct_gather.h"
+#include "src/common/slurm_protocol_interface.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
@@ -186,14 +187,28 @@ extern int prolog_complete(uint32_t job_id, bool requeue,
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
  */
-void slurmctld_req (slurm_msg_t * msg)
+void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 {
+	char inetbuf[64];
+
 	/* Just to validate the cred */
 	(void) g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	if (g_slurm_auth_errno(msg->auth_cred) != SLURM_SUCCESS) {
 		error("Bad authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(msg->auth_cred)));
 		return;
+	}
+
+	/* Debug the protocol layer.
+	 */
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
+		char *p;
+
+		p = rpc_num2string(msg->msg_type);
+		_slurm_print_slurm_addr(&arg->cli_addr,
+					inetbuf,
+					sizeof(inetbuf));
+		info("%s: received opcode %s from %s", __func__, p, inetbuf);
 	}
 
 	switch (msg->msg_type) {

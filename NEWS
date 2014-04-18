@@ -83,6 +83,8 @@ documents those changes that are of interest to users and admins.
     ephemeral port.
  -- Don't block scheduling of entire job array if it could run in multiple
     partitions.
+ -- Introduce a new debug flag Protocol to print protocol requests received 
+    together with the remote IP address and port.
 
 * Changes in Slurm 14.03.0
 ==========================
