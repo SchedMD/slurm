@@ -159,8 +159,14 @@ static bool _remove_from_assoc_list(slurmdb_association_rec_t *assoc)
  */
 static slurmdb_association_rec_t *_find_assoc_rec_id(uint32_t assoc_id)
 {
-	slurmdb_association_rec_t *assoc =
-		assoc_hash_id[ASSOC_HASH_ID_INX(assoc_id)];
+	slurmdb_association_rec_t *assoc;
+
+	if (!assoc_hash_id) {
+		debug2("_find_assoc_rec_id: no associations added yet");
+		return NULL;
+	}
+
+	assoc =	assoc_hash_id[ASSOC_HASH_ID_INX(assoc_id)];
 
 	while (assoc) {
 		if (assoc->id == assoc_id)
@@ -184,6 +190,12 @@ static slurmdb_association_rec_t *_find_assoc_rec(
 
 	if (assoc->id)
 		return _find_assoc_rec_id(assoc->id);
+
+	if (!assoc_hash) {
+		debug2("_find_assoc_rec: no associations added yet");
+		return NULL;
+	}
+
 
 	inx = _assoc_hash_index(assoc);
 	assoc_ptr = assoc_hash[inx];
