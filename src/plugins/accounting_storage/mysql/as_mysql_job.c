@@ -259,7 +259,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		/* If we have a db_index lets end the previous record. */
 		if (!job_ptr->db_index) {
 			error("We don't have a db_index for job %u, "
-			      "this should never happen.", job_ptr->job_id);
+			      "this should only happen when resizing "
+			      "jobs and the database interface was down.",
+			      job_ptr->job_id);
 			job_ptr->db_index = _get_db_index(mysql_conn,
 							  submit_time,
 							  job_ptr->job_id,
