@@ -622,6 +622,7 @@ static int _attempt_backfill(void)
 	uint16_t *njobs = NULL;
 	bool already_counted;
 	uint32_t reject_array_job_id = 0;
+	struct part_record *reject_array_part = NULL;
 	uint32_t job_start_cnt = 0;
 	time_t config_update = slurmctld_conf.last_update;
 	time_t part_update = last_part_update;
@@ -749,10 +750,12 @@ static int _attempt_backfill(void)
 		if (!avail_front_end(job_ptr))
 			continue;	/* No available frontend for this job */
 		if (job_ptr->array_task_id != NO_VAL) {
-			if (reject_array_job_id == job_ptr->array_job_id)
+			if ((reject_array_job_id == job_ptr->array_job_id) &&
+			    (reject_array_part   == part_ptr))
 				continue;  /* already rejected array element */
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job_id = job_ptr->array_job_id;
+			reject_array_part   = part_ptr;
 		}
 		job_ptr->part_ptr = part_ptr;
 
@@ -1047,6 +1050,7 @@ static int _attempt_backfill(void)
 			} else {
 				/* Started this job, move to next one */
 				reject_array_job_id = 0;
+				reject_array_part   = NULL;
 
 				/* Update the database if job time limit
 				 * changed and move to next job */
@@ -1095,6 +1099,7 @@ static int _attempt_backfill(void)
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
 		reject_array_job_id = 0;
+		reject_array_part   = NULL;
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
 		bit_not(avail_bitmap);
