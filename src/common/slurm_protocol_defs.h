@@ -1250,9 +1250,6 @@ extern uint16_t preempt_mode_num(const char *preempt_mode);
 extern char *log_num2string(uint16_t inx);
 extern uint16_t log_string2num(char *name);
 
-/* Convert RPC message type number to equivalent string */
-extern char *rpc_num2string(uint16_t inx);
-
 /* Convert HealthCheckNodeState numeric value to a string.
  * Caller must xfree() the return value */
 extern char *health_check_node_state_str(uint16_t node_state);
@@ -1297,6 +1294,12 @@ extern char *slurm_ctime(const time_t *timep);
 
 /* Return ctime like string without the newline, thread safe. */
 extern char *slurm_ctime_r(const time_t *timep, char *time_str);
+
+/* Given a protocol opcode return its string
+ * description mapping the slurm_msg_type_t
+ * to its name.
+ */
+extern char *rpc_num2string(uint16_t opcode);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

@@ -233,10 +233,6 @@ inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
 
-typedef struct connection_arg {
-	int newsockfd;
-} connection_arg_t;
-
 time_t last_proc_req_start = 0;
 time_t next_stats_reset = 0;
 
@@ -975,6 +971,8 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		fd_set_close_on_exec(newsockfd);
 		conn_arg = xmalloc(sizeof(connection_arg_t));
 		conn_arg->newsockfd = newsockfd;
+		memcpy(&conn_arg->cli_addr, &cli_addr, sizeof(slurm_addr_t));
+
 		if (slurmctld_config.shutdown_time)
 			no_thread = 1;
 		else if (pthread_create(&thread_id_rpc_req,
@@ -1033,7 +1031,7 @@ static void *_service_connection(void *arg)
 			info("_service_connection/slurm_receive_msg %m");
 	} else {
 		/* process the request */
-		slurmctld_req(msg);
+		slurmctld_req(msg, conn);
 	}
 	if ((conn->newsockfd >= 0)
 	    && slurm_close_accepted_conn(conn->newsockfd) < 0)

@@ -714,44 +714,36 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * way to guarantee that the application not only has exclusive access
 	 * to the node but also will not be suspended.  This may not happen.
 	 *
-	 * Only configure the network if the application has more than one rank.
-	 * Single rank applications have no other ranks to communicate with, so
-	 * they do not need any network resources.
+	 * Cray shmem still uses the network, even when it's using only one
+	 * node, so we must always configure the network.
 	 */
+	cpu_scaling = get_cpu_scaling(job);
+	if (cpu_scaling == -1) {
+		return SLURM_ERROR;
+	}
 
-	if (job->ntasks > 1) {
-		cpu_scaling = get_cpu_scaling(job);
-		if (cpu_scaling == -1) {
-			return SLURM_ERROR;
-		}
+	mem_scaling = get_mem_scaling(job);
+	if (mem_scaling == -1) {
+		return SLURM_ERROR;
+	}
 
-		mem_scaling = get_mem_scaling(job);
-		if (mem_scaling == -1) {
-			return SLURM_ERROR;
-		}
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		CRAY_INFO("Network Scaling: CPU %d Memory %d",
+			  cpu_scaling, mem_scaling);
+	}
 
-		if (debug_flags & DEBUG_FLAG_SWITCH) {
-			CRAY_INFO("--Network Scaling Start--");
-			CRAY_INFO("--CPU Scaling: %d--", cpu_scaling);
-			CRAY_INFO("--Memory Scaling: %d--", mem_scaling);
-			CRAY_INFO("--Network Scaling End--");
-			CRAY_INFO("--PAGG Job Container ID: %"PRIx64"--",
-				  job->cont_id);
-		}
-
-		rc = alpsc_configure_nic(&err_msg, 0, cpu_scaling, mem_scaling,
-					 job->cont_id, sw_job->num_cookies,
-					 (const char **) sw_job->cookies,
-					 &num_ptags, &ptags, ntt_desc_ptr);
-		ALPSC_CN_DEBUG("alpsc_configure_nic");
-		/*
-		 * We don't use the ptags because Cray's LLI acquires them
-		 * itself, so they can be immediately discarded.
-		 */
-		free(ptags);
-		if (rc != 1) {
-			return SLURM_ERROR;
-		}
+	rc = alpsc_configure_nic(&err_msg, 0, cpu_scaling, mem_scaling,
+				 job->cont_id, sw_job->num_cookies,
+				 (const char **) sw_job->cookies,
+				 &num_ptags, &ptags, ntt_desc_ptr);
+	ALPSC_CN_DEBUG("alpsc_configure_nic");
+	/*
+	 * We don't use the ptags because Cray's LLI acquires them
+	 * itself, so they can be immediately discarded.
+	 */
+	free(ptags);
+	if (rc != 1) {
+		return SLURM_ERROR;
 	}
 
 	// Not defined yet -- deferred

@@ -108,6 +108,11 @@ documents those changes that are of interest to users and admins.
     ephemeral port.
  -- Don't block scheduling of entire job array if it could run in multiple
     partitions.
+ -- Introduce a new debug flag Protocol to print protocol requests received
+    together with the remote IP address and port.
+ -- CRAY - Set up the network even when only using 1 node.
+ -- CRAY - Greatly reduce the number of error messages produced from the task
+    plugin and provide more information in the message.
 
 * Changes in Slurm 14.03.0
 ==========================
