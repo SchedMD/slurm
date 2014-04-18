@@ -172,7 +172,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 
 	if (job_ptr->resize_time) {
 		req->eligible_time = job_ptr->resize_time;
-		req->submit_time   = job_ptr->resize_time;
+		req->submit_time   = job_ptr->details->submit_time;
 	} else if (job_ptr->details) {
 		req->eligible_time = job_ptr->details->begin_time;
 		req->submit_time   = job_ptr->details->submit_time;
@@ -255,7 +255,7 @@ static void *_set_db_inx_thread(void *no_data)
 		lock_slurmctld(job_read_lock);	/* USE READ LOCK, SEE ABOVE */
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
-			if (!job_ptr->db_index) {
+			if (!job_ptr->db_index && !job_ptr->resize_time) {
 				dbd_job_start_msg_t *req =
 					xmalloc(sizeof(dbd_job_start_msg_t));
 				if (_setup_job_start_msg(req, job_ptr)

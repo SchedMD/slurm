@@ -9255,11 +9255,12 @@ extern void job_pre_resize_acctg(struct job_record *job_ptr)
 	/* if we don't have a db_index go a start this one up since if
 	   running with the slurmDBD the job may not have started yet.
 	*/
-	if (!job_ptr->db_index)
+
+	if ((!job_ptr->db_index || job_ptr->db_index == NO_VAL)
+	    && !job_ptr->resize_time)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_ptr->job_state |= JOB_RESIZING;
-	job_ptr->resize_time = time(NULL);
 	/* NOTE: job_completion_logger() calls
 	 *	 acct_policy_remove_job_submit() */
 	job_completion_logger(job_ptr, false);
@@ -9275,13 +9276,23 @@ extern void job_pre_resize_acctg(struct job_record *job_ptr)
 /* Record accounting information for a job immediately after changing size */
 extern void job_post_resize_acctg(struct job_record *job_ptr)
 {
+	time_t org_submit = job_ptr->details->submit_time;
+
 	/* NOTE: The RESIZING FLAG needed to be set with
 	   job_pre_resize_acctg the assert is here to make sure we
 	   code it that way. */
 	xassert(IS_JOB_RESIZING(job_ptr));
 	acct_policy_add_job_submit(job_ptr);
 	acct_policy_job_begin(job_ptr);
+
+	if (job_ptr->resize_time)
+		job_ptr->details->submit_time = job_ptr->resize_time;
+
+	job_ptr->resize_time = time(NULL);
+
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
+	job_ptr->details->submit_time = org_submit;
 	job_ptr->job_state &= (~JOB_RESIZING);
 }
 

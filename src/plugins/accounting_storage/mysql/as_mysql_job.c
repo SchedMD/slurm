@@ -261,6 +261,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 			error("We don't have a db_index for job %u, "
 			      "this should never happen.", job_ptr->job_id);
 			job_ptr->db_index = _get_db_index(mysql_conn,
+							  job_ptr->details->
 							  submit_time,
 							  job_ptr->job_id,
 							  job_ptr->assoc_id);
@@ -568,24 +569,9 @@ no_rollup_change:
 
 	/* now we will reset all the steps */
 	if (IS_JOB_RESIZING(job_ptr)) {
+		/* FIXME : Verify this is still needed */
 		if (IS_JOB_SUSPENDED(job_ptr))
 			as_mysql_suspend(mysql_conn, job_db_inx, job_ptr);
-		/* Here we aren't sure how many cpus are being changed here in
-		   the step since we don't have that information from the
-		   job.  The resize of steps shouldn't happen very often in
-		   the first place (srun --no-kill option), and this don't
-		   effect accounting in the first place so it isn't a
-		   big deal. */
-
-		query = xstrdup_printf("update \"%s_%s\" set job_db_inx=%u "
-				       "where job_db_inx=%u;",
-				       mysql_conn->cluster_name, step_table,
-				       job_ptr->db_index, job_db_inx);
-
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
 	}
 
 	return rc;
@@ -699,7 +685,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				 struct job_record *job_ptr)
 {
-	char *query = NULL, *nodes = NULL;
+	char *query = NULL;
 	int rc = SLURM_SUCCESS, job_state;
 	time_t submit_time, end_time;
 
@@ -713,6 +699,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
+
 	debug2("as_mysql_slurmdb_job_complete() called");
 
 	if (job_ptr->resize_time)
@@ -753,11 +740,6 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	} else
 		slurm_mutex_unlock(&rollup_lock);
 
-	if (job_ptr->nodes && job_ptr->nodes[0])
-		nodes = job_ptr->nodes;
-	else
-		nodes = "None assigned";
-
 	if (!job_ptr->db_index) {
 		if (!(job_ptr->db_index =
 		      _get_db_index(mysql_conn,
@@ -789,9 +771,9 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	 */
 
 	query = xstrdup_printf("update \"%s_%s\" set "
-			       "time_end=%ld, state=%d, nodelist='%s'",
+			       "time_end=%ld, state=%d",
 			       mysql_conn->cluster_name, job_table,
-			       end_time, job_state, nodes);
+			       end_time, job_state);
 
 	if (job_ptr->derived_ec != NO_VAL)
 		xstrfmtcat(query, ", derived_ec=%u", job_ptr->derived_ec);
