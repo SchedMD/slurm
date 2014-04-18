@@ -103,6 +103,10 @@ documents those changes that are of interest to users and admins.
  -- When sorting jobs and priorities are equal sort by job_id.
  -- Do not overwrite existing reason for node being down or drained.
  -- Requeue batch job if Munge is down and credential can not be created.
+ -- Make _slurm_init_msg_engine() tolerate bug in bind() returning a busy
+    ephemeral port.
+ -- Don't block scheduling of entire job array if it could run in multiple
+    partitions.
 
 * Changes in Slurm 14.03.0
 ==========================

@@ -749,6 +749,7 @@ extern int schedule(uint32_t job_limit)
 	static int defer_rpc_cnt = 0;
 	time_t now, sched_start;
 	uint32_t reject_array_job_id = 0;
+	struct part_record *reject_array_part = NULL;
 	DEF_TIMERS;
 
 	if (sched_update != slurmctld_conf.last_update) {
@@ -986,10 +987,13 @@ next_part:			part_ptr = (struct part_record *)
 		}
 
 		if (job_ptr->array_task_id != NO_VAL) {
-			if (reject_array_job_id == job_ptr->array_job_id)
+			if ((reject_array_job_id == job_ptr->array_job_id) &&
+			    (reject_array_part   == job_ptr->part_ptr))
 				continue;  /* already rejected array element */
+
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job_id = job_ptr->array_job_id;
+			reject_array_part   = job_ptr->part_ptr;
 		}
 		if (max_jobs_per_part) {
 			bool skip_job = false;
@@ -1273,6 +1277,7 @@ next_part:			part_ptr = (struct part_record *)
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
 			reject_array_job_id = 0;
+			reject_array_part   = NULL;
 		} else if ((error_code ==
 			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			   job_ptr->part_ptr_list) {
