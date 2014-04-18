@@ -891,12 +891,11 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * way to guarantee that the application not only has exclusive access
 	 * to the node but also will not be suspended.  This may not happen.
 	 *
-	 * Only configure the network if the application has more than one rank.
-	 * Single rank applications have no other ranks to communicate with, so
-	 * they do not need any network resources.
+	 * Cray shmem still uses the network, even when it's using only one
+	 * node, so we must always configure the network.
 	 */
 
-	if (job->ntasks > 1) {
+	if (job->ntasks > 0) {
 		/*
 		 * Get the number of CPUs.
 		 */
