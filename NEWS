@@ -400,6 +400,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.10
 =========================
+ -- Switch/nrt - On switch resource allocation failure, free partial allocation.
 
 * Changes in Slurm 2.6.9
 ========================
