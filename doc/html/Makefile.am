@@ -1,5 +1,5 @@
 
-htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/${PACKAGE}-${SLURM_VERSION_STRING}/html
 
 generated_html = \
 	accounting.html \
