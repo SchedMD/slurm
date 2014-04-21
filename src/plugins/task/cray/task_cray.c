@@ -323,7 +323,6 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	char status;
 	int rv, fd;
-	stepd_step_info_t *task;
 	char *reason;
 
 	debug("task_p_post_term: %u.%u, task %d",
@@ -372,7 +371,6 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 
 	// Check the result
 	if (status == 0 && !terminated) {
-		task = job->task[job->envtp->localid];
 		if (task->killed_by_cmd) {
 			// We've been killed by request. User already knows
 			return SLURM_SUCCESS;
