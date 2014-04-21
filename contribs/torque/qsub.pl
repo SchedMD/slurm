@@ -188,7 +188,7 @@ if($variable_list) {
 	my @parts = $variable_list =~ m/(?:(?<=")[^"]*(?=(?:\s*"\s*,|\s*"\s*$)))|(?<=,)(?:[^",]*(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]+(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]*(?=(?:\s*,)))/g;
 	foreach my $part (@parts) {
 		my ($key, $value) = $part =~ /(.*)=(.*)/;
-		if ($key && $value) {
+		if (defined($key) && defined($value)) {
 			$ENV{$key} = $value;
 		}
 	}
