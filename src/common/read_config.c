@@ -241,6 +241,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxMemPerNode", S_P_UINT32},
 	{"MaxStepCount", S_P_UINT32},
 	{"MaxTasksPerNode", S_P_UINT16},
+	{"MemLimitEnforce", S_P_STRING},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
 	{"MpiDefault", S_P_STRING},
@@ -2280,6 +2281,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->max_job_id		= NO_VAL;
 	ctl_conf_ptr->max_mem_per_cpu           = 0;
 	ctl_conf_ptr->max_step_cnt		= (uint32_t) NO_VAL;
+	ctl_conf_ptr->mem_limit_enforce         = true;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
@@ -3940,6 +3942,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		return SLURM_ERROR;
 	}
 #endif
+	/* The default value is true meaning the memory
+	 * is going to be enforced by slurmstepd and/or
+	 * slurmd.
+	 */
+	if (s_p_get_string(&temp_str, "MemLimitEnforce", hashtbl)) {
+		if (strncasecmp(temp_str, "no", 2) == 0)
+			conf->mem_limit_enforce = false;
+		xfree(temp_str);
+	}
 
 	xfree(default_storage_type);
 	xfree(default_storage_loc);

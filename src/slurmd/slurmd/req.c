@@ -1985,6 +1985,12 @@ _enforce_job_mem_limit(void)
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
 
+	/* If users have configured MemLimitEnforce=no
+	 * in their slurm.conf keep going.
+	 */
+	if (conf->mem_limit_enforce == false)
+		return;
+
 	slurm_mutex_lock(&job_limits_mutex);
 	if (!job_limits_loaded)
 		_load_job_limits();
@@ -5234,7 +5240,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 		rc = EINVAL;
 		goto done;
 	}
-	
+
 	/* connect to specified address */
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
@@ -5262,7 +5268,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 	req_uid = htonl(req->len);
 	safe_write(fd, &req_uid, sizeof(uint32_t));
 	safe_write(fd, req->data, req->len);
-	
+
 rwfail:
 done:
 	if (fd >= 0)
