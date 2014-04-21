@@ -296,6 +296,12 @@ dnl check for how to emulate setproctitle
 dnl
 X_AC_SETPROCTITLE
 
+dnl check if we can use standard printf functions
+dnl Has to happen before X_AC_DEBUG just incase --enable-developer is used.
+dnl
+X_AC_PRINTF_NULL
+
+
 dnl check for debug compilation, must follow X_AC_CRAY
 dnl
 X_AC_DEBUG
@@ -334,10 +340,6 @@ dnl
 X_AC_MAN2HTML
 AM_CONDITIONAL(HAVE_MAN2HTML, test "x$ac_have_man2html" = "xyes")
 AC_SUBST(HAVE_MAN2HTML)
-
-dnl check if we can use standard printf functions
-dnl
-X_AC_PRINTF_NULL
 
 dnl Check for whether to include readline support
 dnl
