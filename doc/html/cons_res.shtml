@@ -66,6 +66,7 @@ SelectTypeParameter in the slurm.conf.</li>
 <pre>
 #
 # Excerpts from sample slurm.conf file
+#
 
 SelectType=select/cons_res
 SelectTypeParameters=CR_Core_Memory
@@ -117,9 +118,9 @@ hydra[12-16]     5 allNodes*  ...       4  2:2:1   2007
 <p>Using select/cons_res plug-in with CR_Memory</p>
 <pre>
 Example:
-# srun -N 5 -n 20 --job-mem=1000 sleep 100 &  <-- running
-# srun -N 5 -n 20 --job-mem=10 sleep 100 &    <-- running
-# srun -N 5 -n 10 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
+# srun -N 5 -n 20 --mem=1000 sleep 100 &  <-- running
+# srun -N 5 -n 20 --mem=10 sleep 100 &    <-- running
+# srun -N 5 -n 10 --mem=1000 sleep 100 &  <-- queued and waiting for resources
 
 # squeue
 JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
@@ -131,8 +132,8 @@ JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
 <p>Using select/cons_res plug-in with CR_Socket_Memory (2 sockets/node)</p>
 <pre>
 Example 1:
-# srun -N 5 -n 5 --job-mem=1000 sleep 100 &        <-- running
-# srun -n 1 -w hydra12 --job-mem=2000 sleep 100 &  <-- queued and waiting for resources
+# srun -N 5 -n 5 --mem=1000 sleep 100 &        <-- running
+# srun -n 1 -w hydra12 --mem=2000 sleep 100 &  <-- queued and waiting for resources
 
 # squeue
 JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
@@ -140,8 +141,8 @@ JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
  1889  allNodes  sleep sballe  R  0:08      5 hydra[12-16]
 
 Example 2:
-# srun -N 5 -n 10 --job-mem=10 sleep 100 & <-- running
-# srun -n 1 --job-mem=10 sleep 100 & <-- queued and waiting for resourcessqueue
+# srun -N 5 -n 10 --mem=10 sleep 100 & <-- running
+# srun -n 1 --mem=10 sleep 100 & <-- queued and waiting for resourcessqueue
 
 # squeue
 JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
@@ -152,9 +153,9 @@ JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
 <p>Using select/cons_res plug-in with CR_CPU_Memory (4 CPUs/node)</p>
 <pre>
 Example 1:
-# srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- running
-# srun -N 5 -n 5 --job-mem=10 sleep 100 &    <-- running
-# srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
+# srun -N 5 -n 5 --mem=1000 sleep 100 &  <-- running
+# srun -N 5 -n 5 --mem=10 sleep 100 &    <-- running
+# srun -N 5 -n 5 --mem=1000 sleep 100 &  <-- queued and waiting for resources
 
 # squeue
 JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
@@ -163,8 +164,8 @@ JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
  1834  allNodes  sleep sballe  R  0:07      5 hydra[12-16]
 
 Example 2:
-# srun -N 5 -n 20 --job-mem=10 sleep 100 & <-- running
-# srun -n 1 --job-mem=10 sleep 100 &       <-- queued and waiting for resources
+# srun -N 5 -n 20 --mem=10 sleep 100 & <-- running
+# srun -n 1 --mem=10 sleep 100 &       <-- queued and waiting for resources
 
 # squeue
 JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
@@ -340,6 +341,6 @@ one mpi process per node.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 January 2014</p>
+<p style="text-align:center;">Last modified 21 April 2014</p>
 
 <!--#include virtual="footer.txt"-->
