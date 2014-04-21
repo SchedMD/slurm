@@ -1975,6 +1975,10 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			/* old format, just a single job_id */
 			if (array_task_id == NO_VAL) {
 				dep_job_ptr = find_job_record(job_id);
+				if (!dep_job_ptr) {
+					dep_job_ptr = find_job_array_rec(job_id,
+								      INFINITE);
+				}
 				if (dep_job_ptr &&
 				    (dep_job_ptr->array_job_id == job_id) &&
 				    (dep_job_ptr->array_task_id != NO_VAL)) {
@@ -2041,6 +2045,10 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			}
 			if (array_task_id == NO_VAL) {
 				dep_job_ptr = find_job_record(job_id);
+				if (!dep_job_ptr) {
+					dep_job_ptr = find_job_array_rec(job_id,
+								      INFINITE);
+				}		
 				if (dep_job_ptr &&
 				    (dep_job_ptr->array_job_id == job_id) &&
 				    (dep_job_ptr->array_task_id != NO_VAL)) {
