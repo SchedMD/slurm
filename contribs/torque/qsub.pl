@@ -234,29 +234,40 @@ if($res_opts{walltime}) {
 }
 
 if ($variable_list) {
-	my $separator = "";
-	if ($export_env) {
-		$command .= " --export=";
+	if ($interactive) {
+		$variable_list =~ s/\'/\"/g;
+		my @parts = $variable_list =~ m/(?:(?<=")[^"]*(?=(?:\s*"\s*,|\s*"\s*$)))|(?<=,)(?:[^",]*(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]+(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]*(?=(?:\s*,)))/g;
+		foreach my $part (@parts) {
+			my ($key, $value) = $part =~ /(.*)=(.*)/;
+			if (defined($key) && defined($value)) {
+				$ENV{$key} = $value;
+			}
+		}
 	} else {
-		$command .= " --export=none";
-		$separator = ",";
-	}
+		my $separator = "";
+		if ($export_env) {
+			$command .= " --export=";
+		} else {
+			$command .= " --export=none";
+			$separator = ",";
+		}
 
-#	The logic below ignores quoted commas, but the quotes must be escaped
-#	to be forwarded from the shell to Perl. For example: 
-#	qsub -v foo=\"b,ar\" tmp
-	$variable_list =~ s/\'/\"/g;
-	my @parts = $variable_list =~ m/(?:(?<=")[^"]*(?=(?:\s*"\s*,|\s*"\s*$)))|(?<=,)(?:[^",]*(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]+(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]*(?=(?:\s*,)))/g;
-	foreach my $part (@parts) {
-		my ($key, $value) = $part =~ /(.*)=(.*)/;
-		if (defined($key) && defined($value)) {
-			$command .= "$separator";
-			$command .= "$key=$value";
-			$separator = ",";
-		} elsif (defined($ENV{$part})) {
-			$command .= "$separator";
-			$command .= "$part=$ENV{$part}";
-			$separator = ",";
+#		The logic below ignores quoted commas, but the quotes must be escaped
+#		to be forwarded from the shell to Perl. For example:
+#		qsub -v foo=\"b,ar\" tmp
+		$variable_list =~ s/\'/\"/g;
+		my @parts = $variable_list =~ m/(?:(?<=")[^"]*(?=(?:\s*"\s*,|\s*"\s*$)))|(?<=,)(?:[^",]*(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]+(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]*(?=(?:\s*,)))/g;
+		foreach my $part (@parts) {
+			my ($key, $value) = $part =~ /(.*)=(.*)/;
+			if (defined($key) && defined($value)) {
+				$command .= "$separator";
+				$command .= "$key=$value";
+				$separator = ",";
+			} elsif (defined($ENV{$part})) {
+				$command .= "$separator";
+				$command .= "$part=$ENV{$part}";
+				$separator = ",";
+			}
 		}
 	}
 }
