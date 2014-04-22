@@ -1703,6 +1703,9 @@ static void _rm_dependency(struct job_record *job_ptr,
 	int rmv_len;
 	char *base_off, *rmv_dep, *rmv_off;
 
+	if (!job_ptr->details || !job_ptr->details->dependency)
+		return;
+
 	if (dep_ptr->array_task_id == INFINITE) {
 		rmv_dep = xstrdup_printf(":%u_*", dep_ptr->job_id);
 	} else if (dep_ptr->array_task_id != NO_VAL) {
@@ -1774,6 +1777,8 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	    (cache_job_ptr->job_id == cache_job_id) &&
 	    (cache_job_ptr->array_job_id == job_ptr->array_job_id) &&
 	    (cache_job_ptr->details) &&
+	    (cache_job_ptr->details->orig_dependency) &&
+	    (job_ptr->details->orig_dependency) &&
 	    (!strcmp(cache_job_ptr->details->orig_dependency,
 		     job_ptr->details->orig_dependency))) {
 		return cache_results;
