@@ -55,7 +55,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	
 	if (conf->control_addr)
 		STORE_FIELD(hv, conf, control_addr, charp);
-	if (conf->control_machine)if(
+	if (conf->control_machine)
 		STORE_FIELD(hv, conf, control_machine, charp);
 	if (conf->crypto_type)
 		STORE_FIELD(hv, conf, crypto_type, charp);
@@ -204,7 +204,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->slurm_user_name)
 		STORE_FIELD(hv, conf, slurm_user_name, charp);
 	STORE_FIELD(hv, conf, slurmd_user_id, uint32_t);
-	if (conf->slurmd_user_name)if(
+	if (conf->slurmd_user_name)
 		STORE_FIELD(hv, conf, slurmd_user_name, charp);
 	STORE_FIELD(hv, conf, slurmctld_debug, uint16_t);
 	if (conf->slurmctld_logfile)
@@ -252,7 +252,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->task_prolog)
 		STORE_FIELD(hv, conf, task_prolog, charp);
 	if (conf->tmp_fs)
-		STORE_FIELD(hv, conf, tmp_fs, charp);if(
+		STORE_FIELD(hv, conf, tmp_fs, charp);
 	if (conf->topology_plugin)
 		STORE_FIELD(hv, conf, topology_plugin, charp);
 	STORE_FIELD(hv, conf, track_wckey, uint16_t);
@@ -289,7 +289,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, accounting_storage_user, charp, FALSE);
 
 	FETCH_FIELD(hv, conf, authinfo, charp, FALSE);
-	FETCH_FIELD(hv, conf, authtype, charp, FALSE);if(
+	FETCH_FIELD(hv, conf, authtype, charp, FALSE);
 	FETCH_FIELD(hv, conf, backup_addr, charp, FALSE);
 	FETCH_FIELD(hv, conf, backup_controller, charp, FALSE);
 	FETCH_FIELD(hv, conf, batch_start_timeout, uint16_t, TRUE);
@@ -332,7 +332,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, job_comp_user, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_credential_private_key, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_credential_public_certificate, charp, FALSE);
-	FETCH_FIELD(hv, conf, job_file_append, uint16_t, if(TRUE);
+	FETCH_FIELD(hv, conf, job_file_append, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, job_requeue, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, job_submit_plugins, charp, FALSE);
 
@@ -417,7 +417,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, slurmd_logfile, charp, FALSE);
 	FETCH_FIELD(hv, conf, slurmd_pidfile, charp, FALSE);
 	FETCH_FIELD(hv, conf, slurmd_port, uint32_t, TRUE);
-	FETCH_FIELD(hv, conf, slurmd_spooldir, charp, FALif(SE);
+	FETCH_FIELD(hv, conf, slurmd_spooldir, charp, FALSE);
 	FETCH_FIELD(hv, conf, slurmd_timeout, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, srun_epilog, charp, FALSE);
 	FETCH_FIELD(hv, conf, srun_prolog, charp, FALSE);
@@ -454,7 +454,7 @@ int
 slurmd_status_to_hv(slurmd_status_t *status, HV *hv)
 {
 	STORE_FIELD(hv, status, booted, time_t);
-	STORE_FIELD(hv, status, last_slurmctld_msg, time_if(t);
+	STORE_FIELD(hv, status, last_slurmctld_msg, time_t);
 	STORE_FIELD(hv, status, slurmd_debug, uint16_t);
 	STORE_FIELD(hv, status, actual_cpus, uint16_t);
 	STORE_FIELD(hv, status, actual_sockets, uint16_t);
