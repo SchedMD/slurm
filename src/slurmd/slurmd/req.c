@@ -241,6 +241,8 @@ static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t job_suspend_array[NUM_PARALLEL_SUSPEND];
 static int job_suspend_size = 0;
 
+static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -1114,6 +1116,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	req->envc = envcount(req->env);
 
 #ifndef HAVE_FRONT_END
+	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 #endif
 	if (_check_job_credential(req, req_uid, nodeid, &step_hset,
@@ -1121,6 +1124,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m",
 		      (long) req_uid, host);
+#ifndef HAVE_FRONT_END
+		slurm_mutex_unlock(&prolog_mutex);
+#endif
 		goto done;
 	}
 
@@ -1130,6 +1136,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env_t job_env;
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+		_add_job_running_prolog(req->job_id);
+		slurm_mutex_unlock(&prolog_mutex);
 
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
@@ -1159,9 +1167,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			errnum = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
-	} else
+	} else {
+		slurm_mutex_unlock(&prolog_mutex);
 		_wait_for_job_running_prolog(req->job_id);
-
+	}
 #endif
 
 	if (req->job_mem_lim || req->step_mem_lim) {
@@ -1464,10 +1473,13 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (container_g_create(req->job_id))
 		error("container_g_create(%u): %m", req->job_id);
 
+	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 
 	if (first_job_run) {
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+		_add_job_running_prolog(req->job_id);
+		slurm_mutex_unlock(&prolog_mutex);
 
 		memset(&job_env, 0, sizeof(job_env_t));
 
@@ -1501,7 +1513,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 			      req->job_id, exit_status, term_sig);
 			rc = ESLURMD_PROLOG_FAILED;
 		}
-	}
+	} else
+		slurm_mutex_unlock(&prolog_mutex);
 
 	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 		_notify_slurmctld_prolog_fini(req->job_id, rc);
@@ -1535,6 +1548,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 
 	task_g_slurmd_batch_request(req->job_id, req);	/* determine task affinity */
 
+	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 
 	/* BlueGene prolog waits for partition boot and is very slow.
@@ -1551,6 +1565,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		error("Could not confirm batch launch for job %u, "
 		      "aborting request", req->job_id);
 		rc = SLURM_COMMUNICATIONS_SEND_ERROR;
+		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
 
@@ -1560,8 +1575,9 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	 */
 	if (first_job_run) {
 		job_env_t job_env;
-
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
+		_add_job_running_prolog(req->job_id);
+		slurm_mutex_unlock(&prolog_mutex);
 
 		memset(&job_env, 0, sizeof(job_env_t));
 
@@ -1603,8 +1619,10 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 			rc = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
-	} else
+	} else {
+		slurm_mutex_unlock(&prolog_mutex);
 		_wait_for_job_running_prolog(req->job_id);
+	}
 
 	_get_user_env(req);
 	_set_batch_job_limits(msg);
@@ -4624,7 +4642,6 @@ _run_prolog(job_env_t *job_env)
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
-	_add_job_running_prolog(job_env->jobid);
 
 	rc = _run_job_script("prolog", my_prolog, job_env->jobid,
 			     -1, my_env, job_env->uid);
@@ -4694,7 +4711,6 @@ _run_prolog(job_env_t *job_env)
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
-	_add_job_running_prolog(job_env->jobid);
 
 	slurm_attr_init(&timer_attr);
 	timer_struct.job_id      = job_env->jobid;
@@ -4709,15 +4725,16 @@ _run_prolog(job_env_t *job_env)
 	prolog_fini = true;
 	pthread_cond_broadcast(&timer_cond);
 	slurm_mutex_unlock(&timer_mutex);
-	_remove_job_running_prolog(job_env->jobid);
-	xfree(my_prolog);
-	_destroy_env(my_env);
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= (msg_timeout / 2)) {
 		info("prolog for job %u ran for %d seconds",
 		     job_env->jobid, diff_time);
 	}
+
+	_remove_job_running_prolog(job_env->jobid);
+	xfree(my_prolog);
+	_destroy_env(my_env);
 
 	pthread_join(timer_id, NULL);
 	return rc;
