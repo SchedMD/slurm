@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2014 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -51,18 +51,19 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "src/common/forward.h"
+#include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/slurm_ext_sensors.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/job_options.h"
-#include "src/common/forward.h"
-#include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_acct_gather_energy.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 
 /*
@@ -2313,7 +2314,12 @@ extern void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->arch);
+		acct_gather_energy_destroy(node->energy);
+		ext_sensors_destroy(node->ext_sensors);
 		xfree(node->features);
+		xfree(node->gres);
+		xfree(node->gres_drain);
+		xfree(node->gres_used);
 		xfree(node->name);
 		xfree(node->node_hostname);
 		xfree(node->node_addr);
@@ -2322,6 +2328,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		select_g_select_nodeinfo_free(node->select_nodeinfo);
 		node->select_nodeinfo = NULL;
 		xfree(node->version);
+		/* Do NOT free node, it is an element of an array */
 	}
 }
 

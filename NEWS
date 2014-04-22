@@ -33,6 +33,7 @@ documents those changes that are of interest to users and admins.
     report error conditions. 
  -- Modify scontrol to print error message for each array task when updating
     the entire array.
+ -- Added gres_drain and gres_used fields to node_info_t.
 
 * Changes in Slurm 14.03.2
 ==========================

@@ -230,7 +230,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 3 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "Gres=%s",node_ptr->gres);
+	snprintf(tmp_line, sizeof(tmp_line), "Gres=%s", node_ptr->gres);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -238,6 +238,28 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 4 (optional) ******/
+	if (node_ptr->gres_drain) {
+		snprintf(tmp_line, sizeof(tmp_line), "GresDrain=%s",
+			 node_ptr->gres_drain);
+		xstrcat(out, tmp_line);
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+
+	/****** Line 5 (optional) ******/
+	if (node_ptr->gres_used) {
+		snprintf(tmp_line, sizeof(tmp_line), "GresUsed=%s",
+			 node_ptr->gres_used);
+		xstrcat(out, tmp_line);
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+
+	/****** Line 6 (optional) ******/
 	if (node_ptr->node_hostname || node_ptr->node_addr) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "NodeAddr=%s NodeHostName=%s Version=%s",
@@ -250,7 +272,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 			xstrcat(out, "\n   ");
 	}
 
-	/****** Line 5 ******/
+	/****** Line 7 ******/
 	if (node_ptr->os) {
 		snprintf(tmp_line, sizeof(tmp_line), "OS=%s ", node_ptr->os);
 		xstrcat(out, tmp_line);
@@ -269,7 +291,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 6 ******/
+	/****** Line 8 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "State=%s%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
@@ -282,7 +304,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 7 ******/
+	/****** Line 9 ******/
 	if (node_ptr->boot_time) {
 		slurm_make_time_str ((time_t *)&node_ptr->boot_time,
 				     time_str, sizeof(time_str));
@@ -349,7 +371,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 8 ******/
+	/****** Line 12 ******/
 	if (node_ptr->reason && node_ptr->reason[0])
 		xstrcat(reason_str, node_ptr->reason);
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,

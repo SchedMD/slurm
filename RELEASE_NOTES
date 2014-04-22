@@ -62,6 +62,7 @@ COMMAND CHANGES (see man pages for details)
  -- Modify squeue --start option to print the nodes expected to be used for
     pending job (in addition to expected start time, etc.).
 
+
 OTHER CHANGES
 =============
 
@@ -79,8 +80,10 @@ Added the following struct definitions
  -- Added the following fields to struct stats_info_response_msg:
     rpc_type_size, rpc_type_id, rpc_type_cnt, rpc_type_time,
     rpc_user_size, rpc_user_id, rpc_user_cnt, rpc_user_time.
- -- Added the following fields to struct jop_info:
+ -- Added the following fields to struct job_info:
     sched_nodes
+ -- Added the following fields to struct node_info:
+    gres_drain and gres_used.
 
 Changed the following enums and #defines
 ========================================

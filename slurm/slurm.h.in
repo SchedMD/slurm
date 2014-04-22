@@ -1579,13 +1579,15 @@ typedef struct node_info {
 	uint16_t boards;        /* total number of boards per node  */
 	time_t boot_time;	/* time of node boot */
 	uint16_t cores;         /* number of cores per socket       */
+	uint32_t cpu_load;	/* CPU load * 100 */
 	uint16_t cpus;		/* configured count of cpus running on
 				 * the node */
 	acct_gather_energy_t *energy;	 /* energy data */
 	ext_sensors_data_t *ext_sensors; /* external sensor data */
 	char *features;		/* list of a node's features */
 	char *gres;		/* list of a node's generic resources */
-	uint32_t cpu_load;	/* CPU load * 100 */
+	char *gres_drain;	/* list of drained GRES */
+	char *gres_used;	/* list of GRES in current use */
 	char *name;		/* node name to slurm */
 	char *node_addr;	/* communication name (optional) */
 	char *node_hostname;	/* node's hostname (optional) */
@@ -1597,15 +1599,15 @@ typedef struct node_info {
 				 * no reason is set. */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
 				 * no reason is set. */
+	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
+						  * use
+						  * slurm_get_select_nodeinfo()
+						  * to access contents */
 	time_t slurmd_start_time;/* time of slurmd startup */
 	uint16_t sockets;       /* total number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
-	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
-						  * use
-						  * slurm_get_select_nodeinfo()
-						  * to access contents */
 	char *version;		 /* Slurm version number */
 } node_info_t;
 
