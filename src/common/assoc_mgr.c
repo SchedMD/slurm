@@ -89,7 +89,6 @@ static int _assoc_hash_index(slurmdb_association_rec_t *assoc)
 	int index;
 
 	xassert(assoc);
-	xassert(!assoc->user || assoc->uid != NO_VAL);
 
 	/* Multiply each character by its numerical position in the
 	 * name string to add a bit of entropy.
@@ -126,14 +125,12 @@ static void _add_assoc_hash(slurmdb_association_rec_t *assoc)
 		assoc_hash = xmalloc(ASSOC_HASH_SIZE *
 				     sizeof(slurmdb_association_rec_t *));
 
-	if (!assoc->user || assoc->uid != NO_VAL) {
-		assoc->assoc_next_id = assoc_hash_id[inx];
-		assoc_hash_id[inx] = assoc;
+	assoc->assoc_next_id = assoc_hash_id[inx];
+	assoc_hash_id[inx] = assoc;
 
-		inx = _assoc_hash_index(assoc);
-		assoc->assoc_next = assoc_hash[inx];
-		assoc_hash[inx] = assoc;
-	}
+	inx = _assoc_hash_index(assoc);
+	assoc->assoc_next = assoc_hash[inx];
+	assoc_hash[inx] = assoc;
 }
 
 static bool _remove_from_assoc_list(slurmdb_association_rec_t *assoc)
@@ -423,6 +420,11 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 				xfree(assoc->user);
 				assoc->user = xstrdup(user->name);
 				assoc->uid = user->uid;
+				/* Since the uid changed the
+				   hash as well will change.
+				*/
+				_delete_assoc_hash(assoc);
+				_add_assoc_hash(assoc);
 				debug3("changing assoc %d", assoc->id);
 			}
 		}
@@ -594,7 +596,7 @@ static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
 /* locks should be put in place before calling this function
  * ASSOC_WRITE, USER_WRITE */
 static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
-				      List assoc_list, int reset)
+				      int reset)
 {
 	static slurmdb_association_rec_t *last_acct_parent = NULL;
 	static slurmdb_association_rec_t *last_parent = NULL;
@@ -606,7 +608,7 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		last_parent = NULL;
 	}
 
-	if (!assoc || !assoc_list) {
+	if (!assoc || !assoc_mgr_association_list) {
 		error("you didn't give me an association");
 		return SLURM_ERROR;
 	}
@@ -629,19 +631,19 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 			   && assoc->parent_id == last_acct_parent->id) {
 			assoc->usage->parent_assoc_ptr = last_acct_parent;
 		} else {
-			slurmdb_association_rec_t *assoc2 = NULL;
-			ListIterator itr = list_iterator_create(assoc_list);
-			while ((assoc2 = list_next(itr))) {
-				if (assoc2->id == assoc->parent_id) {
-					assoc->usage->parent_assoc_ptr = assoc2;
-					if (assoc->user)
-						last_parent = assoc2;
-					else
-						last_acct_parent = assoc2;
-					break;
-				}
+			slurmdb_association_rec_t *assoc2 =
+				_find_assoc_rec_id(assoc->parent_id);
+			if (!assoc2)
+				error("Can't find parent id %u for assoc %u, "
+				      "this should never happen.",
+				      assoc->parent_id, assoc->id);
+			else {
+				assoc->usage->parent_assoc_ptr = assoc2;
+				if (assoc->user)
+					last_parent = assoc2;
+				else
+					last_acct_parent = assoc2;
 			}
-			list_iterator_destroy(itr);
 		}
 		if (assoc->usage->parent_assoc_ptr && setup_children) {
 			if (!assoc->usage->parent_assoc_ptr->usage)
@@ -738,24 +740,24 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
 /* locks should be put in place before calling this function
  * ASSOC_WRITE, USER_WRITE */
-static int _post_association_list(List assoc_list)
+static int _post_association_list(void)
 {
 	slurmdb_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 	int reset = 1;
 	//DEF_TIMERS;
 
-	if (!assoc_list)
+	if (!assoc_mgr_association_list)
 		return SLURM_ERROR;
 
 	xfree(assoc_hash_id);
 	xfree(assoc_hash);
 
-	itr = list_iterator_create(assoc_list);
+	itr = list_iterator_create(assoc_mgr_association_list);
 
 	//START_TIMER;
 	while ((assoc = list_next(itr))) {
-		_set_assoc_parent_and_user(assoc, assoc_list, reset);
+		_set_assoc_parent_and_user(assoc, reset);
 		_add_assoc_hash(assoc);
 		reset = 0;
 	}
@@ -788,7 +790,7 @@ static int _post_association_list(List assoc_list)
 	}
 	list_iterator_destroy(itr);
 
-	slurmdb_sort_hierarchical_assoc_list(assoc_list);
+	slurmdb_sort_hierarchical_assoc_list(assoc_mgr_association_list);
 
 	//END_TIMER2("load_associations");
 	return SLURM_SUCCESS;
@@ -969,7 +971,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 		}
 	}
 
-	_post_association_list(assoc_mgr_association_list);
+	_post_association_list();
 
 	assoc_mgr_unlock(&locks);
 
@@ -1176,7 +1178,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 		return SLURM_ERROR;
 	}
 
-	_post_association_list(assoc_mgr_association_list);
+	_post_association_list();
 
 	if (!current_assocs) {
 		assoc_mgr_unlock(&locks);
@@ -2865,8 +2867,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			if (object->uid == INFINITE)
 				addit = true;
 
-			_set_assoc_parent_and_user(
-				object, assoc_mgr_association_list, reset);
+			_set_assoc_parent_and_user(object, reset);
 
 			if (addit)
 				_add_assoc_hash(object);
@@ -4309,7 +4310,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			if (assoc_mgr_association_list)
 				list_destroy(assoc_mgr_association_list);
 			assoc_mgr_association_list = msg->my_list;
-			_post_association_list(assoc_mgr_association_list);
+			_post_association_list();
 
 			debug("Recovered %u associations",
 			      list_count(assoc_mgr_association_list));
@@ -4459,6 +4460,10 @@ extern int assoc_mgr_set_missing_uids()
 					       object->user);
 				} else {
 					object->uid = pw_uid;
+					/* Since the uid changed the
+					   hash as well will change.
+					*/
+					_delete_assoc_hash(object);
 					_add_assoc_hash(object);
 				}
 			}
