@@ -11,7 +11,7 @@
   Minor:	03
   Micro:	1
   Version:	14.03.1
-  Release:	1
+  Release:	2
 
 ##
 #  When changing API_CURRENT update src/common/slurm_protocol_common.h
