@@ -969,6 +969,10 @@ scontrol_update_job (int argc, char *argv[])
 	for (i = 0; i < num_ids; i++) {
 		job_msg.job_id = ids[i].job_id;
 		if (slurm_update_job(&job_msg)) {
+			/* Save the errno in case one
+			 * or more array tasks are in
+			 * error.
+			 */
 			rc = slurm_get_errno();
 			if (ids[i].array_task_id == NO_VAL) {
 				error("Error updating job %u", ids[i].job_id);
@@ -977,6 +981,10 @@ scontrol_update_job (int argc, char *argv[])
 				      ids[i].array_job_id, ids[i].array_task_id,
 				      ids[i].job_id);
 			}
+			/* Print the errno message for each
+			 * job array task.
+			 */
+			slurm_perror("slurm_update_job()");
 		}
 	}
 	if (update_size)	/* See check above for one job ID */

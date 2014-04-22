@@ -1489,6 +1489,7 @@ _update_it (int argc, char *argv[])
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int block_tag = 0, sub_tag = 0, res_tag = 0;
 	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
+	int jerror_code = SLURM_SUCCESS;
 
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
@@ -1534,7 +1535,7 @@ _update_it (int argc, char *argv[])
 	 * aren't any other duplicate tags.  */
 
 	if (job_tag)
-		error_code = scontrol_update_job (argc, argv);
+		jerror_code = scontrol_update_job (argc, argv);
 	else if (step_tag)
 		error_code = scontrol_update_step (argc, argv);
 	else if (res_tag)
@@ -1567,6 +1568,12 @@ _update_it (int argc, char *argv[])
 		exit_code = 1;
 		slurm_perror ("slurm_update error");
 	}
+	/* The slurm error message is already
+	 * printed for each array task in
+	 * scontrol_update_job()
+	 */
+	if (jerror_code)
+		exit_code = 1;
 }
 
 /*
