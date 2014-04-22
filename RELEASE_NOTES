@@ -47,6 +47,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     subdirectory called "hash.#" based upon the last digit of the job ID.
  -- Added GRES type (e.g. model name) and "non_consume" fields for resources
     that are limited, but can be shared between jobs.
+ -- Added PriorityParameters configuration parameter in slurm.conf.
 
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)

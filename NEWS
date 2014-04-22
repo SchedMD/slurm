@@ -34,6 +34,7 @@ documents those changes that are of interest to users and admins.
  -- Modify scontrol to print error message for each array task when updating
     the entire array.
  -- Added gres_drain and gres_used fields to node_info_t.
+ -- Added PriorityParameters configuration parameter in slurm.conf.
 
 * Changes in Slurm 14.03.2
 ==========================
