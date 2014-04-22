@@ -523,6 +523,13 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			      "within an existing job. Set specialized cores "
 			      "at job allocation time.");
 		}
+#ifdef HAVE_NATIVE_CRAY
+		if (opt.network) {
+			error("Ignoring --network value for a job step "
+			      "within an existing job. Set network options "
+			      "at job allocation time.");
+		}
+#endif
 		if (opt.alloc_nodelist == NULL)
 			opt.alloc_nodelist = xstrdup(resp->node_list);
 		if (opt.exclusive)
