@@ -38,6 +38,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.2
 ==========================
+ -- Fix race condition if PrologFlags=Alloc,NoHold is used.
+
+* Changes in Slurm 14.03.1-2
+==========================
  -- Update configure to set correct version without having to run autogen.sh
 
 * Changes in Slurm 14.03.1
