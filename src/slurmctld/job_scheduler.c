@@ -1753,10 +1753,10 @@ extern int test_job_dependency(struct job_record *job_ptr)
 {
 	ListIterator depend_iter, job_iterator;
 	struct depend_spec *dep_ptr;
-	bool failure = false, depends = false, expands = false;
+	bool failure = false, depends = false;
  	List job_queue = NULL;
  	bool run_now;
-	int count = 0, results = 0;
+	int results = 0;
 	struct job_record *qjob_ptr, *djob_ptr;
 	time_t now = time(NULL);
 	/* For performance reasons with job arrays, we cache dependency
@@ -1768,7 +1768,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
-	    ((count = list_count(job_ptr->details->depend_list)) == 0))
+	    (list_count(job_ptr->details->depend_list) == 0))
 		return 0;
 
 	if ((job_ptr->array_task_id != NO_VAL) &&
@@ -1787,7 +1787,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
-		count--;
 		if (dep_ptr->array_task_id == INFINITE) {
 			/* Advance to latest element of this job array */
 			dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
@@ -1858,7 +1857,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND) {
 			time_t now = time(NULL);
-			expands = true;
 			if (IS_JOB_PENDING(dep_ptr->job_ptr)) {
 				depends = true;
 			} else if (IS_JOB_FINISHED(dep_ptr->job_ptr)) {
@@ -1884,7 +1882,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		}
 	}
 	list_iterator_destroy(depend_iter);
-	if (!depends && !expands && (count == 0))
+	if (list_count(job_ptr->details->depend_list) == 0)
 		xfree(job_ptr->details->dependency);
 
 	if (failure)
