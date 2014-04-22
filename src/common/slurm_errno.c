@@ -290,9 +290,20 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid job array specification"			},
 	{ ESLURM_RESERVATION_NAME_DUP,
 	  "Duplicate reservation name"			},
+	{ ESLURM_JOB_STARTED,
+	  "Job has already started"},
+	{ ESLURM_JOB_FINISHED,
+	  "Job has already finished"},
+	{ ESLURM_JOB_NOT_RUNNING,
+	  "Job is not running"},
+	{ ESLURM_JOB_NOT_PENDING_NOR_RUNNING,
+	  "Job is not pending nor running"},
+	{ ESLURM_JOB_NOT_SUSPENDED,
+	  "Job is not suspended"},
+	{ ESLURM_JOB_NOT_FINISHED,
+	  "Job is not finished"},
 
 	/* slurmd error codes */
-
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
 	  "Pipe error on task spawn"				},
 	{ ESLURMD_KILL_TASK_FAILED,

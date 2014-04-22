@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
     not terminate jobs if they exceed requested memory.
  -- Add support for non-consumable generic resources for resources that are
     limited, but can be shared between jobs.
+ -- Introduce 5 new Slurm errors in slurm_errno.h related to job to better
+    report error conditions. 
 
 * Changes in Slurm 14.03.2
 ==========================

@@ -7564,7 +7564,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->account) {
 		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			int rc = update_job_account("update_job", job_ptr,
 						    job_specs->account);
@@ -7579,7 +7579,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->exc_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->exc_nodes[0] == '\0') {
 			xfree(detail_ptr->exc_nodes);
 			FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
@@ -7651,7 +7651,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->req_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->req_nodes[0] == '\0') {
 			xfree(detail_ptr->req_nodes);
 			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
@@ -7723,7 +7723,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		bool old_res = false;
 
 		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		}
 
@@ -7827,7 +7827,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
 			if (!IS_JOB_PENDING(job_ptr))
-				error_code = ESLURM_DISABLED;
+				error_code = ESLURM_JOB_NOT_PENDING;
 			else {
 				slurmdb_qos_rec_t qos_rec;
 				slurmdb_qos_rec_t *new_qos_ptr;
@@ -7879,7 +7879,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->qos) {
 
 		if (!authorized && !IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			slurmdb_qos_rec_t qos_rec;
 			slurmdb_qos_rec_t *new_qos_ptr;
@@ -7983,7 +7983,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	/* Reset min and max cpu counts as needed, insure consistency */
 	if (job_specs->min_cpus != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->min_cpus < 1)
 			error_code = ESLURM_INVALID_CPU_COUNT;
 		else {
@@ -7993,7 +7993,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 	if (job_specs->max_cpus != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			save_max_cpus = detail_ptr->max_cpus;
 			detail_ptr->max_cpus = job_specs->max_cpus;
@@ -8048,7 +8048,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if ((job_specs->pn_min_cpus != (uint16_t) NO_VAL) &&
 	    (job_specs->pn_min_cpus != 0)) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (authorized
 			 || (detail_ptr->pn_min_cpus
 			     > job_specs->pn_min_cpus)) {
@@ -8067,7 +8067,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->num_tasks != NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->num_tasks < 1)
 			error_code = ESLURM_BAD_TASK_COUNT;
 		else {
@@ -8117,7 +8117,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			;	/* shrink running job, processed later */
 		else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->min_nodes < 1) {
 			info("update_job: min_nodes < 1 for job %u",
 			     job_specs->job_id);
@@ -8130,7 +8130,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 	if (job_specs->max_nodes != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			save_max_nodes = detail_ptr->max_nodes;
 			detail_ptr->max_nodes = job_specs->max_nodes;
@@ -8173,7 +8173,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->time_limit != NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->time_limit == job_specs->time_limit) {
 			debug("sched: update_job: new time limit identical to "
 			      "old time limit %u", job_specs->job_id);
@@ -8250,7 +8250,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			/* We may want to use this for deadline scheduling
 			 * at some point in the future. For now only reset
 			 * the time limit of running jobs. */
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_RUNNING;
 		} else if (job_specs->end_time < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
 		} else if (authorized ||
@@ -8284,7 +8284,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	/* this needs to be after partition and qos checks */
 	if (job_specs->reservation) {
 		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
 		} else {
 			int rc;
 			char *save_resv_name = job_ptr->resv_name;
@@ -8342,7 +8342,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		   position (larger time slices) than competing jobs
 		*/
 		if (IS_JOB_FINISHED(job_ptr) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->priority == job_specs->priority) {
 			debug("update_job: setting priority to current value");
 			if ((job_ptr->priority == 0) &&
@@ -8410,7 +8410,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->nice != (uint16_t) NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || (job_ptr->details == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->details &&
 			 (job_ptr->details->nice == job_specs->nice))
 			debug("sched: update_job: new nice identical to "
@@ -8436,7 +8436,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->pn_min_memory != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->pn_min_memory
 			 == detail_ptr->pn_min_memory)
 			debug("sched: update_job: new memory limit identical "
@@ -8468,7 +8468,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->pn_min_tmp_disk != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (authorized
 			 || (detail_ptr->pn_min_tmp_disk
 			     > job_specs->pn_min_tmp_disk)) {
@@ -8490,7 +8490,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->sockets_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {
 			mc_ptr->sockets_per_node = job_specs->sockets_per_node;
@@ -8502,7 +8502,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->cores_per_socket != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {
 			mc_ptr->cores_per_socket = job_specs->cores_per_socket;
@@ -8514,7 +8514,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if ((job_specs->threads_per_core != (uint16_t) NO_VAL)) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {
 			mc_ptr->threads_per_core = job_specs->threads_per_core;
@@ -8526,7 +8526,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->shared != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (!authorized) {
 			error("sched: Attempt to change sharing for job %u",
 			      job_specs->job_id);
@@ -8548,7 +8548,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->contiguous != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (authorized
 			 || (detail_ptr->contiguous > job_specs->contiguous)) {
 			detail_ptr->contiguous = job_specs->contiguous;
@@ -8566,7 +8566,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->core_spec != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (authorized) {
 			detail_ptr->core_spec = job_specs->core_spec;
 			info("sched: update_job: setting core_spec to %u "
@@ -8583,7 +8583,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->features) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->features[0] != '\0') {
 			char *old_features = detail_ptr->features;
 			List old_list = detail_ptr->feature_list;
@@ -8624,7 +8624,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		List tmp_gres_list = NULL;
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
 		    (detail_ptr->expanding_jobid != 0)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (job_specs->gres[0] == '\0') {
 			info("sched: update_job: cleared gres for job %u",
 			     job_specs->job_id);
@@ -8659,7 +8659,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->name) {
 		if (IS_JOB_FINISHED(job_ptr)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_FINISHED;
 			goto fini;
 		} else {
 			xfree(job_ptr->name);
@@ -8674,7 +8674,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->std_out) {
 		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (detail_ptr) {
 			xfree(detail_ptr->std_out);
 			detail_ptr->std_out = job_specs->std_out;
@@ -8693,7 +8693,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->wckey) {
 		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			int rc = update_job_wckey("update_job",
 						  job_ptr,
@@ -8810,7 +8810,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (authorized) {
 			detail_ptr->ntasks_per_node =
 				job_specs->ntasks_per_node;
@@ -8828,7 +8828,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->dependency) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			int rc;
 			rc = update_job_dependency(job_ptr,
@@ -8870,7 +8870,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				      "identical to old begin time %u",
 				      job_ptr->job_id);
 		} else {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		}
 	}
@@ -8914,7 +8914,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 * allowed to make changes */
 			info("sched: update_job: could not change licenses "
 			     "for job %u", job_ptr->job_id);
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
 			FREE_NULL_LIST(license_list);
 		}
 	}
@@ -8945,7 +8945,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if (conn_type[0] != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			char *conn_type_char = conn_type_string_full(conn_type);
 			if ((conn_type[0] >= SELECT_SMALL)
@@ -9008,7 +9008,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_ROTATE, &rotate);
 	if (rotate != (uint16_t) NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {
 			info("sched: update_job: setting rotate to %u for "
@@ -9023,7 +9023,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_REBOOT, &reboot);
 	if (reboot != (uint16_t) NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {
 			info("sched: update_job: setting reboot to %u for "
@@ -9038,7 +9038,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_GEOMETRY, geometry);
 	if (geometry[0] != (uint16_t) NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (authorized) {
 			uint32_t i, tot = 1;
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
@@ -9065,7 +9065,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (image) {
 		if (!IS_JOB_PENDING(job_ptr)) {
 			xfree(image);
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {
 			info("sched: update_job: setting BlrtsImage to %s "
@@ -9081,7 +9081,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_LINUX_IMAGE, &image);
 	if (image) {
 		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			xfree(image);
 			goto fini;
 		} else {
@@ -9097,7 +9097,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_MLOADER_IMAGE, &image);
 	if (image) {
 		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			xfree(image);
 			goto fini;
 		} else {
@@ -9114,7 +9114,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_RAMDISK_IMAGE, &image);
 	if (image) {
 		if (!IS_JOB_PENDING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
+			error_code = ESLURM_JOB_NOT_PENDING;
 			xfree(image);
 			goto fini;
 		} else {
@@ -10591,7 +10591,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	/* perform the operation */
 	if (sus_ptr->op == SUSPEND_JOB) {
 		if (!IS_JOB_RUNNING(job_ptr)) {
-			rc = ESLURM_DISABLED;
+			rc = ESLURM_JOB_NOT_RUNNING;
 			goto reply;
 		}
 		rc = _suspend_job_nodes(job_ptr, indf_susp);
@@ -10613,7 +10613,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		suspend_job_step(job_ptr);
 	} else if (sus_ptr->op == RESUME_JOB) {
 		if (!IS_JOB_SUSPENDED(job_ptr)) {
-			rc = ESLURM_DISABLED;
+			rc = ESLURM_JOB_NOT_SUSPENDED;
 			goto reply;
 		}
 		rc = _resume_job_nodes(job_ptr, indf_susp);
@@ -10969,7 +10969,7 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 	if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL)) {
 		info("%s: attempt to modify account for non-pending "
 		     "job_id %u", module, job_ptr->job_id);
-		return ESLURM_DISABLED;
+		return ESLURM_JOB_NOT_PENDING;
 	}
 
 
@@ -11042,7 +11042,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 	if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL)) {
 		info("%s: attempt to modify account for non-pending "
 		     "job_id %u", module, job_ptr->job_id);
-		return ESLURM_DISABLED;
+		return ESLURM_JOB_NOT_PENDING;
 	}
 
 	memset(&wckey_rec, 0, sizeof(slurmdb_wckey_rec_t));
@@ -11174,7 +11174,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 	} else if (IS_JOB_SUSPENDED(job_ptr)) {
 		/* job can't get cycles for checkpoint
 		 * if it is already suspended */
-		rc = ESLURM_DISABLED;
+		rc = ESLURM_JOB_SUSPENDED;
 		goto reply;
 	} else if (!IS_JOB_RUNNING(job_ptr)) {
 		rc = ESLURM_ALREADY_DONE;
@@ -11569,7 +11569,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd
 
 	if ((job_ptr = find_job_record(ckpt_ptr->job_id)) &&
 	    ! IS_JOB_FINISHED(job_ptr)) {
-		rc = ESLURM_DISABLED;
+		rc = ESLURM_JOB_NOT_FINISHED;
 		goto reply;
 	}
 
