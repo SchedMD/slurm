@@ -3130,10 +3130,10 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		return cpu_cnt;
 	} else if (job_gres_ptr->type_model) {
 		for (i = 0; i < node_gres_ptr->type_cnt; i++) {
-			if (!node_gres_ptr->type_model[i] ||
-			    strcmp(node_gres_ptr->type_model[i],
-				   job_gres_ptr->type_model))
-				continue;
+			if (node_gres_ptr->type_model[i] &&
+			    !strcmp(node_gres_ptr->type_model[i],
+				    job_gres_ptr->type_model))
+				break;
 		}
 		if (i >= node_gres_ptr->type_cnt)
 			return (uint32_t) 0;	/* no such type */
