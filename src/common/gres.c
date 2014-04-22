@@ -702,7 +702,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		p->has_file = 1;
 	}
 
-	(void) s_p_get_string(&p->type, "Type", tbl);
+	if (s_p_get_string(&p->type, "Type", tbl) && !p->file) {
+		p->file = xstrdup("/dev/null");
+		p->has_file = 1;
+	}
 
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
 		tmp_long = strtol(tmp_str, &last, 10);
@@ -785,7 +788,7 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	int has_file = -1, rec_count = 0;
+	int has_file = -1, has_type = -1, rec_count = 0;
 
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
@@ -800,7 +803,15 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 			      "specification while others do not",
 			      context_ptr->gres_name);
 		}
-		if ((has_file == 0) && (rec_count > 1)) {
+		if (has_type == -1) {
+			has_type = (int) (gres_slurmd_conf->type != NULL);
+		} else if (( has_type && !gres_slurmd_conf->type) ||
+			   (!has_type &&  gres_slurmd_conf->type)) {
+			fatal("gres.conf for %s, some records have Type "
+			      "specification while others do not",
+			      context_ptr->gres_name);
+		}
+		if ((has_file == 0) && (has_type == 0) && (rec_count > 1)) {
 			fatal("gres.conf duplicate records for %s",
 			      context_ptr->gres_name);
 		}
