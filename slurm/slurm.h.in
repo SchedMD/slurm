@@ -2156,6 +2156,7 @@ typedef struct slurm_ctl_conf {
 				  * see PRIORITY_FLAGS_* above */
 	uint32_t priority_max_age; /* time when not to add any more
 				    * priority to a job if reached */
+    	char *priority_params;	/* priority plugin parameters */
 	uint16_t priority_reset_period; /* when to clear usage,
 					 * see PRIORITY_RESET_* */
 	char *priority_type;    /* priority type plugin */

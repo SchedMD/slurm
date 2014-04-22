@@ -116,7 +116,7 @@ int main (int argc, char *argv[])
 	}
 
 	/* Check to see if we are running a supported accounting plugin */
-	if (strncasecmp(prio_type, "priority/multifactor", 20)) {
+	if (strcasecmp(prio_type, "priority/basic") == 0) {
 		fprintf (stderr, "You are not running a supported "
 			 "priority plugin\n(%s).\n"
 			 "Only 'priority/multifactor' and "

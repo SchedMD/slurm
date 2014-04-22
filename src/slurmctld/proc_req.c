@@ -716,6 +716,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->priority_favor_small= conf->priority_favor_small;
 	conf_ptr->priority_flags      = conf->priority_flags;
 	conf_ptr->priority_max_age    = conf->priority_max_age;
+	conf_ptr->priority_params     = xstrdup(conf->priority_params);
 	conf_ptr->priority_reset_period = conf->priority_reset_period;
 	conf_ptr->priority_type       = xstrdup(conf->priority_type);
 	conf_ptr->priority_weight_age = conf->priority_weight_age;

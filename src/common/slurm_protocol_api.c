@@ -558,6 +558,22 @@ uint32_t slurm_get_priority_max_age(void)
 	return age;
 }
 
+/* slurm_get_priority_params
+ * RET char * - Value of PriorityParameters, MUST be xfreed by caller */
+char *slurm_get_priority_params(void)
+{
+	char *params = 0;
+	slurm_ctl_conf_t *conf;
+
+ 	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		params = xstrdup(conf->priority_params);
+		slurm_conf_unlock();
+	}
+	return params;
+}
+
 /* slurm_get_priority_reset_period
  * returns the priority usage reset period from slurmctld_conf object
  * RET uint16_t - flag, see PRIORITY_RESET_* in slurm/slurm.h.

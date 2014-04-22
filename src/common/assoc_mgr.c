@@ -1443,7 +1443,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 
 	if (!checked_prio) {
 		char *prio = slurm_get_priority_type();
-		if (prio && !strncmp(prio, "priority/multifactor", 20))
+		if (prio && strcmp(prio, "priority/basic"))
 			setup_children = 1;
 
 		xfree(prio);
