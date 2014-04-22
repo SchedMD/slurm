@@ -1,4 +1,4 @@
-htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/${PACKAGE}-${SLURM_VERSION_STRING}/html
 
 man5_MANS = \
 	acct_gather.conf.5 \

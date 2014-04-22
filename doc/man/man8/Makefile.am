@@ -1,4 +1,4 @@
-htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/${PACKAGE}-${SLURM_VERSION_STRING}/html
 
 man8_MANS = slurmctld.8 \
 	slurmd.8 \

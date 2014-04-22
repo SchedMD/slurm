@@ -43,8 +43,8 @@ allowing a process to run on more than one logical processor.
 <a name=flags>
 <h2>Overview of new srun flags</h2></a>
 
-<p> Several new flags have been defined to allow users to
-better take advantage of the new architecture by
+<p> Several flags have been defined to allow users to
+better take advantage of this architecture by
 explicitly specifying the number of sockets, cores, and threads required
 by their application.  Table 1 summarizes the new multi-core flags.
 
@@ -89,8 +89,12 @@ by their application.  Table 1 summarizes the new multi-core flags.
 <b><a href="#srun_consres">Memory as a consumable resource</a></b>
 </td></tr>
 <tr>
-    <td> --job-mem=<i>mem</i></td>
-    <td> maximum amount of real memory per node required by the job.
+    <td> --mem=<i>mem</i></td>
+    <td> amount of real memory per node required by the job.
+</td></tr>
+<tr>
+    <td> --mem-per-cpu=<i>mem</i></td>
+    <td> amount of real memory per allocated CPU required by the job.
 </td></tr>
 <tr><td colspan=2>
 <b><a href="#srun_ntasks">Task invocation control</a></b>
@@ -125,17 +129,13 @@ by their application.  Table 1 summarizes the new multi-core flags.
 Table 1: New srun flags to support the multi-core/multi-threaded environment
 </center>
 
-<p>It is important to note that many of these
-flags are only meaningful if the processes' affinity is set. In order for
-the affinity to be set, the task/affinity plugin must be first enabled in
-slurm.conf:
-
-<PRE>
-TaskPlugin=task/affinity          # enable task affinity
-</PRE>
-
-<p>See the "Task Launch" section if generating slurm.conf via
-<a href="configurator.html">configurator.html</a>.
+<p>It is important to note that many of these flags are only meaningful if the
+processes' have some affinity to specific CPUs and (optionally) memory.
+Task affinity is configured using the TaskPlugin parameter in the slurm.conf file.
+Several options exist for the TaskPlugin depending upon system architecture
+and available software, any of them except "task/none" will find tasks to CPUs.
+See the "Task Launch" section if generating slurm.conf via
+<a href="configurator.html">configurator.html</a>.</p>
 
 <a name="srun_lowlevelmc">
 <h3>Low-level --cpu_bind=... - Explicit binding interface</h3></a>
@@ -150,9 +150,11 @@ TaskPlugin=task/affinity          # enable task affinity
     no[ne]          don't bind tasks to CPUs (default)
     rank            bind by task rank
     map_cpu:<i>&lt;list&gt;</i>  specify a CPU ID binding for each task
-                    where <i>&lt;list&gt;</i> is <i>&lt;cpuid1&gt;,&lt;cpuid2&gt;,...&lt;cpuidN&gt;</i>
-    mask_cpu:<i>&lt;list&gt;</i> specify a CPU ID binding mask for each task
-                    where <i>&lt;list&gt;</i> is <i>&lt;mask1&gt;,&lt;mask2&gt;,...&lt;maskN&gt;</i>
+                    where <i>&lt;list&gt;</i> is
+                    <i>&lt;cpuid1&gt;,&lt;cpuid2&gt;,...&lt;cpuidN&gt;</i>
+    mask_cpu:<i>&lt;list&gt;</i> specify a CPU ID binding mask for each
+                    task where <i>&lt;list&gt;</i> is
+                    <i>&lt;mask1&gt;,&lt;mask2&gt;,...&lt;maskN&gt;</i>
     sockets         auto-generated masks bind to sockets
     cores           auto-generated masks bind to cores
     threads         auto-generated masks bind to threads
@@ -274,18 +276,17 @@ to -m block:cyclic with --cpu_bind=thread.</p>
 <a name="srun_consres">
 <h3>Memory as a Consumable Resource</h3></a>
 
-<p>The --job-mem flag specifies the maximum amount of memory in MB
+<p>The --mem flag specifies the maximum amount of memory in MB
 needed by the job per node.  This flag is used to support the memory
 as a consumable resource allocation strategy.</p>
 
 <PRE>
---job-mem=<i>MB</i>      maximum amount of real memory per node
-                  required by the job.
-                  --mem >= --job-mem if --mem is specified.
+--mem=<i>MB</i>      maximum amount of real memory per node
+              required by the job.
 </PRE>
 
 <p>This flag allows the scheduler to co-allocate jobs on specific nodes
-given that their added memory requirement do not exceed the amount
+given that their added memory requirement do not exceed the total amount
 of memory on the nodes.</p>
 
 
@@ -296,7 +297,7 @@ SelectType=select/cons_res      # enable consumable resources
 SelectTypeParameters=CR_Memory  # memory as a consumable resource
 </PRE>
 
-<p> Using memory as a consumable resource can also be combined with
+<p> Using memory as a consumable resource is typically combined with
 the CPU, Socket, or Core consumable resources using SelectTypeParameters
 values of: CR_CPU_Memory, CR_Socket_Memory or CR_Core_Memory
 
@@ -727,7 +728,7 @@ parts*    4    2:2:1    2        2        1
 the following identifiers are available:</p>
 
 <PRE>
-%m  Minimum size of memory (in MB) requested by the job
+%m  Size of memory (in MB) requested by the job
 %H  Number of requested sockets per node
 %I  Number of requested cores per socket
 %J  Number of requested threads per core
@@ -755,45 +756,16 @@ JOBID ST TIME NODES SOCKETS CORES THREADS S:C:T NODELIST(REASON)
    16  R 1:26     1 2       2     1       2:2:1 hydra15
 </PRE>
 
-<p>
-The display of the minimum size of memory requested by the job has
-been extended to also show the amount of memory requested by
-the --job-mem flag.  If --job-mem and --mem are set to the
-same value, a single number is display for MIN_MEMORY.  Otherwise
-a range is reported:
+<p>The squeue command can also display the memory size of jobs, for example:</p>
 
-<p>submit job 21:
-<pre>
-% srun sleep 100 &
-</pre>
+<PRE>
+% sbatch --mem=123 tmp
+Submitted batch job 24
 
-<p>submit job 22:
-<pre>
-% srun --job-mem=2048MB --mem=1024MB sleep 100 &
-srun: mem < job-mem - resizing mem to be equal to job-mem
-</pre>
-
-<p>submit job 23:
-<pre>
-% srun --job-mem=2048MB --mem=10240MB sleep 100 &
-</pre>
-
-<pre>
-% squeue -o "%.5i %.2t %.4M %.5D %m"
+$ squeue -o "%.5i %.2t %.4M %.5D %m"
 JOBID ST TIME NODES MIN_MEMORY
-   21 PD 0:00     1 0-1
-   22 PD 0:00     1 2048
-   23 PD 0:00     1 2048-10240
-   17  R 1:12     1 0
-   18  R 1:11     1 0
-   19  R 1:11     1 0
-   20  R 1:10     1 0
-</pre>
-
-<p>In the above examples, note that once a job starts running, the
-MIN_* constraints are all reported as zero regardless of what
-their initial values were (since they are meaningless once
-the job starts running).
+  24   R 0:05     1 123
+</PRE>
 
 <p>See also 'squeue --help' and 'man squeue'</p>
 
@@ -977,7 +949,7 @@ using NodeName:
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 22 July 2010</p>
+<p style="text-align:center;">Last modified 21 April 2014</p>
 
 <!--#include virtual="footer.txt"-->
 
