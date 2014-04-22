@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
  -- Better logic to handle resized jobs when the DBD is down.
  -- Introduce MemLimitEnforce yes|no in slurm.conf. If set no Slurm will
     not terminate jobs if they exceed requested memory.
+ -- Add support for non-consumable generic resources for resources that are
+    limited, but can be shared between jobs.
 
 * Changes in Slurm 14.03.2
 ==========================

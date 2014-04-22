@@ -25,9 +25,11 @@ Slurm will result in loss of state information.
 
 HIGHLIGHTS
 ==========
- -- Add support for allocation of GRES by model type for heterogenous systems
-    (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of any type).
-
+ -- Add support for allocation of generic resources by model type for
+    heterogenous systems (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of
+    any type).
+ -- Added support for non-consumable generic resources that are limited, but
+    can be shared between jobs.
 
 RPMBUILD CHANGES
 ================
@@ -43,6 +45,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- To support larger numbers of jobs when the StateSaveDirectory is on a
     file system that supports a limited number of files in a directory, add a
     subdirectory called "hash.#" based upon the last digit of the job ID.
+ -- Added GRES type (e.g. model name) and "non_consume" fields for resources
+    that are limited, but can be shared between jobs.
 
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)

@@ -3014,14 +3014,19 @@ Also see \fBGres\fR.
 .TP
 \fBGres\fR
 A comma delimited list of generic resources specifications for a node.
-Each resource specification consists of a name followed by a colon with a
-numeric value (e.g. "Gres=bandwidth:10000,gpu:2").
-A suffix of "K", "M" or "G" may be used to multiply the number by 1024,
-1048576 or 1073741824 respectively (e.g. "Gres=bandwidth:4G,gpu:4").
+The format is: "<name>[:<type>][:no_consume]:<number>[K|M|G]".
+The first field is the resource name, which matches the GresType configuration
+parameter name.
+The optional type field might be used to identify a model of that generic
+resource.
+A generic resource can also be specified as non\-consumable (i.e. multiple
+jobs can use the same generic resource) with the optional field ":no_consume".
+The final field must specify a generic resources count.
+A suffix of "K", "M" or "G" may be used to multiply the count by 1024,
+1048576 or 1073741824 respectively.
+(e.g."Gres=gpu:tesla:1,gpu:kepler:1,bandwidth:lustre:no_consume:4G").
 By default a node has no generic resources and its maximum count is
 4,294,967,295.
-The generic resource type can optionally be specified using a third colon
-separated field after the name (e.g. "Gres=gpu:tesla:1,gpu:kepler:1").
 Also see \fBFeature\fR.
 
 .TP

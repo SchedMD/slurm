@@ -18,8 +18,19 @@ interest are:</P>
 <LI><B>GresTypes</B> a comma delimited list of generic resources to be
 managed (e.g. <I>GresTypes=gpu,mic</I>). This name may be that of an
 optional plugin providing additional control over the resources.</LI>
-<LI><B>Gres</B> the specific generic resource and their count associated with
-each node (e.g. <I>NodeName=linux[0-999] Gres=gpu:1,mic:2</I>).</LI>
+<LI><B>Gres</B> the generic resource configuration details in the format<br>
+&lt;name&gt;[:&lt;type&gt;][:no_consume]:&lt;number&gt;[K|M|G]<br>
+The first field is the resource name, which matches the GresType configuration
+parameter name.
+The optional type field might be used to identify a model of that generic
+resource.
+A generic resource can also be specified as non\-consumable (i.e. multiple
+jobs can use the same generic resource) with the optional field ":no_consume".
+The final field must specify a generic resource count.
+A suffix of "K", "M" or "G" may be used to multiply the count by 1024,
+1048576 or 1073741824 respectively.
+By default a node has no generic resources and its maximum count is
+4,294,967,295.</LI>
 </UL>
 
 <P>Note that the Gres specification for each node works in the same fashion
@@ -28,6 +39,13 @@ as the other resources managed. Depending upon the value of the
 than configured will be placed in a DOWN state.</P>
 
 <P>Note that the Gres specification is not supported on BlueGene systems.</P>
+
+<P>Sample slurm.conf file:</P>
+<PRE>
+# Configure support for our four GPUs
+GresType=gpu,bandwidth
+NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,bandwidth:lustre:no_consume:4G
+</PRE>
 
 <P>Each compute node with generic resources must also contain a <I>gres.conf</I>
 file describing which resources are available on the node, their count, 
@@ -80,12 +98,12 @@ NOTE: This is a new capability added in Slurm version 14.11.</LI>
 
 <P>Sample gres.conf file:</P>
 <PRE>
-# Configure support for our four GPUs
+# Configure support for our four GPUs, plus bandwidth
 Name=gpu Type=tesla  File=/dev/nvidia0 CPUs=0,1
 Name=gpu Type=tesla  File=/dev/nvidia1 CPUs=0,1
 Name=gpu Type=kepler File=/dev/nvidia2 CPUs=2,3
 Name=gpu Type=kepler File=/dev/nvidia3 CPUs=2,3
-Name=bandwidth Count=20M
+Name=bandwidth Type=lustre Count=4G
 </PRE>
 <!-------------------------------------------------------------------------->
 <h2>Running Jobs</h2>

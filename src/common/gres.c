@@ -1229,6 +1229,39 @@ static void _gres_node_list_delete(void *list_element)
 	xfree(gres_ptr);
 }
 
+static void _add_gres_type(char *type, gres_node_state_t *gres_data,
+			   uint32_t tmp_gres_cnt)
+{
+	int i;
+
+	if (!strcasecmp(type, "no_consume")) {
+		gres_data->no_consume = true;
+		return;
+	}
+
+	for (i = 0; i < gres_data->type_cnt; i++) {
+		if (strcmp(gres_data->type_model[i], type))
+			continue;
+		gres_data->type_cnt_avail[i] += tmp_gres_cnt;
+		break;
+	}
+
+	if (i >= gres_data->type_cnt) {
+		gres_data->type_cnt++;
+		gres_data->type_cnt_alloc =
+			xrealloc(gres_data->type_cnt_alloc,
+				 sizeof(uint32_t) * gres_data->type_cnt);
+		gres_data->type_cnt_avail =
+			xrealloc(gres_data->type_cnt_avail,
+				 sizeof(uint32_t) * gres_data->type_cnt);
+		gres_data->type_model =
+			xrealloc(gres_data->type_model,
+				 sizeof(char *) * gres_data->type_cnt);
+		gres_data->type_cnt_avail[i] += tmp_gres_cnt;
+		gres_data->type_model[i] = xstrdup(type);
+	}
+}
+
 /*
  * Compute the total GRES count for a particular gres_name.
  * Note that a given gres_name can appear multiple times in the orig_config
@@ -1245,7 +1278,8 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			  int gres_name_colon_len)
 {
 	char *node_gres_config, *tok, *last_tok = NULL;
-	char *type, *num, *last_num = NULL;
+	char *sub_tok, *last_sub_tok = NULL;
+	char *num, *last_num = NULL;
 	uint32_t gres_config_cnt = 0, tmp_gres_cnt = 0;
 	int i;
 
@@ -1267,7 +1301,6 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			break;
 		}
 		if (!strncmp(tok, gres_name_colon, gres_name_colon_len)) {
-			type = strchr(tok, ':');
 			num = strrchr(tok, ':');
 			if (!num) {
 				error("Bad GRES configuration: %s", tok);
@@ -1282,38 +1315,20 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 				tmp_gres_cnt *= (1024 * 1024);
 			else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
 				tmp_gres_cnt *= (1024 * 1024 * 1024);
+			else {
+				error("Bad GRES configuration: %s", tok);
+				break;
+			}
 			gres_config_cnt += tmp_gres_cnt;
-			if (type != num) {
-				num[0] = '\0';
-				type++;
-				for (i = 0; i < gres_data->type_cnt; i++) {
-					if (strcmp(gres_data->type_model[i],
-						   type))
-						continue;
-					gres_data->type_cnt_avail[i] +=
-						tmp_gres_cnt;
-					break;
-				}
-				if (i >= gres_data->type_cnt) {
-					gres_data->type_cnt++;
-					gres_data->type_cnt_alloc =
-						xrealloc(gres_data->
-							 type_cnt_alloc,
-							 sizeof(uint32_t) *
-							 gres_data->type_cnt);
-					gres_data->type_cnt_avail =
-						xrealloc(gres_data->
-							 type_cnt_avail,
-							 sizeof(uint32_t) *
-							 gres_data->type_cnt);
-					gres_data->type_model =
-						xrealloc(gres_data->type_model,
-							 sizeof(char *) *
-							 gres_data->type_cnt);
-					gres_data->type_cnt_avail[i] +=
-						tmp_gres_cnt;
-					gres_data->type_model[i] = xstrdup(type);
-				}
+			num[0] = '\0';
+
+			sub_tok = strtok_r(tok, ":", &last_sub_tok);
+			if (sub_tok)	/* Skip GRES name */
+				sub_tok = strtok_r(NULL, ":", &last_sub_tok);
+			while (sub_tok) {
+				_add_gres_type(sub_tok, gres_data,
+					       tmp_gres_cnt);
+				sub_tok = strtok_r(NULL, ":", &last_sub_tok);
 			}
 		}
 		tok = strtok_r(NULL, ",", &last_tok);
@@ -2201,9 +2216,17 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 		snprintf(tmp_str, sizeof(tmp_str), "%u",
 			 gres_node_ptr->gres_cnt_found);
 	}
-	info("  gres_cnt found:%s configured:%u avail:%u alloc:%u",
-	     tmp_str, gres_node_ptr->gres_cnt_config,
-	     gres_node_ptr->gres_cnt_avail, gres_node_ptr->gres_cnt_alloc);
+info("log: no_consume:%d", gres_node_ptr->no_consume);
+	if (gres_node_ptr->no_consume) {
+		info("  gres_cnt found:%s configured:%u avail:%u no_consume",
+		     tmp_str, gres_node_ptr->gres_cnt_config,
+		     gres_node_ptr->gres_cnt_avail);
+	} else {
+		info("  gres_cnt found:%s configured:%u avail:%u alloc:%u",
+		     tmp_str, gres_node_ptr->gres_cnt_config,
+		     gres_node_ptr->gres_cnt_avail,
+		     gres_node_ptr->gres_cnt_alloc);
+	}
 	if (gres_node_ptr->gres_bit_alloc) {
 		bit_fmt(tmp_str, sizeof(tmp_str), gres_node_ptr->gres_bit_alloc);
 		info("  gres_bit_alloc:%s", tmp_str);
@@ -2914,6 +2937,9 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 	bitstr_t *alloc_cpu_bitmap = NULL;
 	bool test_cpu_map = true;
 
+	if (node_gres_ptr->no_consume)
+		use_total_gres = true;
+
 	if (job_gres_ptr->gres_cnt_alloc && node_gres_ptr->topo_cnt &&
 	    *topo_set) {
 		/* Need to determine how many gres available for these
@@ -3309,6 +3335,10 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	xassert(node_offset >= 0);
 	xassert(job_gres_ptr);
 	xassert(node_gres_ptr);
+
+	if (node_gres_ptr->no_consume)
+		return SLURM_SUCCESS;
+
 	if (job_gres_ptr->node_cnt == 0) {
 		job_gres_ptr->node_cnt = node_cnt;
 		if (job_gres_ptr->gres_bit_alloc) {
@@ -3317,7 +3347,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 			xfree(job_gres_ptr->gres_bit_alloc);
 		}
 		job_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
-						      node_cnt);
+						       node_cnt);
 	} else if (job_gres_ptr->node_cnt < node_cnt) {
 		error("gres/%s: job %u node_cnt increase from %u to %d",
 		      gres_name, job_id, job_gres_ptr->node_cnt, node_cnt);
@@ -3554,6 +3584,10 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	xassert(node_offset >= 0);
 	xassert(job_gres_ptr);
 	xassert(node_gres_ptr);
+
+	if (node_gres_ptr->no_consume)
+		return SLURM_SUCCESS;
+
 	if (job_gres_ptr->node_cnt <= node_offset) {
 		error("gres/%s: job %u dealloc of node %s bad node_offset %d "
 		      "count is %u", gres_name, job_id, node_name, node_offset,

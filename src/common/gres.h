@@ -84,6 +84,9 @@ typedef struct gres_node_state {
 	/* Configured resources via Gres parameter */
 	uint32_t gres_cnt_config;
 
+	/* Non-consumable: Do not track resources allocated to jobs */
+	bool no_consume;
+
 	/* Total resources available for allocation to jobs.
 	 * gres_cnt_found or gres_cnt_config, depending upon FastSchedule */
 	uint32_t gres_cnt_avail;
