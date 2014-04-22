@@ -234,20 +234,11 @@ AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
 AC_DEFINE_UNQUOTED(SLURM_VERSION_STRING, "$SLURM_VERSION_STRING",
                    [Define the project's version string.])
 
-dnl Overwrite PACKAGE_VERSION and PACKAGE_STRING from what AC_INIT made.
-dnl Up till this point we didn't know the correct version
-dnl
-AC_DEFINE_UNQUOTED(PACKAGE_VERSION, "$SLURM_VERSION_STRING", [Define to the version of this package.])
-PACKAGE_STRING="`printf "slurm %s" $SLURM_VERSION_STRING`"
-AC_DEFINE_UNQUOTED(PACKAGE_STRING, "$PACKAGE_STRING", [Define to the full name and version of this package.])
-
 AC_SUBST(SLURM_MAJOR)
 AC_SUBST(SLURM_MINOR)
 AC_SUBST(SLURM_MICRO)
 AC_SUBST(RELEASE)
 AC_SUBST(SLURM_VERSION_STRING)
-AC_SUBST(PACKAGE_VERSION)
-AC_SUBST(PACKAGE_STRING)
 
 ]) dnl AC_SLURM_VERSION
  

@@ -7,7 +7,7 @@ dnl
 dnl Here we send in 0 as the version.
 dnl We overwrite PACKAGE_VERSION and PACKAGE_STRING in X_AC_SLURM_VERSION below
 dnl
-AC_INIT(slurm, 0, [slurm-dev@schedmd.com], [], [http://slurm.schedmd.com])
+AC_INIT(slurm, m4_esyscmd([perl -ne 'print,exit if s/^\s*VERSION:\s*(\d*.\d*).\S*/\1/i' ./META | sed 's/^v//' | tr '-' '_' | tr -d '\n']), [slurm-dev@schedmd.com], [], [http://slurm.schedmd.com])
 AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR([auxdir])
@@ -296,12 +296,6 @@ dnl check for how to emulate setproctitle
 dnl
 X_AC_SETPROCTITLE
 
-dnl check if we can use standard printf functions
-dnl Has to happen before X_AC_DEBUG just incase --enable-developer is used.
-dnl
-X_AC_PRINTF_NULL
-
-
 dnl check for debug compilation, must follow X_AC_CRAY
 dnl
 X_AC_DEBUG
@@ -340,6 +334,10 @@ dnl
 X_AC_MAN2HTML
 AM_CONDITIONAL(HAVE_MAN2HTML, test "x$ac_have_man2html" = "xyes")
 AC_SUBST(HAVE_MAN2HTML)
+
+dnl check if we can use standard printf functions
+dnl
+X_AC_PRINTF_NULL
 
 dnl Check for whether to include readline support
 dnl
