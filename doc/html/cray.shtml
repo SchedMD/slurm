@@ -44,15 +44,18 @@
   There are 2 different types of counters, system and blade.
 <p>
   For the system option (--network=system) only one job can use system at
-  a time.  This option will allocate every node in the cluster.  If
-  steps inside the allocation wish to run on less than the full system
-  they must specify the node count for each step.
+  a time.   Only nodes requested will be marked in use for the job
+  allocation.  If the job does not fill up the entire system the rest
+  of the nodes are not able to be used by other jobs using NPC, if
+  idle their state will appear as PerfCnts.  These nodes are still
+  available for other jobs not using NPC.
 </p>
 <p>
   For the blade option (--network=blade) Only nodes requested
   will be marked in use for the job allocation.  If the job does not
   fill up the entire blade(s) allocated to the job those blade(s) are not
-  able to be used by other jobs, but will appear in the state PerfCnts.
+  able to be used by other jobs using NPC, if idle their state will appear as
+  PerfCnts.  These nodes are still available for other jobs not using NPC.
 </p>
 <li>Core Specialization</li>
 <p>

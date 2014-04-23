@@ -146,7 +146,6 @@ time_t last_node_update;
 #endif
 
 static blade_info_t *blade_array = NULL;
-static bitstr_t *blade_nodes_running_jobs = NULL;
 static bitstr_t *blade_nodes_running_npc = NULL;
 static uint32_t blade_cnt = 0;
 static pthread_mutex_t blade_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -730,18 +729,14 @@ static void _remove_job_from_blades(select_jobinfo_t *jobinfo)
 			blade_array[i].job_cnt = 0;
 		}
 
-		if (jobinfo->npc) {
+		if (jobinfo->npc == NPC_SYS) {
+			bit_nclear(blade_nodes_running_npc, 0,
+				   node_record_count-1);
+		} else if (jobinfo->npc) {
 			bit_not(blade_nodes_running_npc);
 			bit_or(blade_nodes_running_npc,
 			       blade_array[i].node_bitmap);
 			bit_not(blade_nodes_running_npc);
-		}
-
-		if (!blade_array[i].job_cnt) {
-			bit_not(blade_nodes_running_jobs);
-			bit_or(blade_nodes_running_jobs,
-			       blade_array[i].node_bitmap);
-			bit_not(blade_nodes_running_jobs);
 		}
 	}
 
@@ -804,16 +799,14 @@ static void _set_job_running(struct job_record *job_ptr)
 
 		nodeinfo = node_record_table_ptr[i].select_nodeinfo->data;
 		if (!bit_test(jobinfo->blade_map, nodeinfo->blade_id)) {
-			bit_set(jobinfo->blade_map,
-				nodeinfo->blade_id);
-			if (!blade_array[nodeinfo->blade_id].job_cnt)
-				bit_or(blade_nodes_running_jobs,
-				       blade_array[nodeinfo->blade_id].
-				       node_bitmap);
+			bit_set(jobinfo->blade_map, nodeinfo->blade_id);
 
 			blade_array[nodeinfo->blade_id].job_cnt++;
 
-			if (jobinfo->npc)
+			if (jobinfo->npc == NPC_SYS) {
+				bit_nset(blade_nodes_running_npc, 0,
+					 node_record_count-1);
+			} else if (jobinfo->npc)
 				bit_or(blade_nodes_running_npc,
 				       blade_array[nodeinfo->blade_id].
 				       node_bitmap);
@@ -836,13 +829,14 @@ static void _set_job_running_restore(select_jobinfo_t *jobinfo)
 		if (!bit_test(jobinfo->blade_map, i))
 			continue;
 
-		if (!blade_array[i].job_cnt)
-			bit_or(blade_nodes_running_jobs, blade_array[i].node_bitmap);
-
 		blade_array[i].job_cnt++;
 
-		if (jobinfo->npc)
-			bit_or(blade_nodes_running_npc, blade_array[i].node_bitmap);
+		if (jobinfo->npc == NPC_SYS) {
+			bit_nset(blade_nodes_running_npc, 0,
+				 node_record_count-1);
+		} else if (jobinfo->npc)
+			bit_or(blade_nodes_running_npc,
+			       blade_array[i].node_bitmap);
 	}
 
 	if (jobinfo->npc)
@@ -1071,7 +1065,6 @@ extern int fini ( void )
 
 	slurm_mutex_lock(&blade_mutex);
 
-	FREE_NULL_BITMAP(blade_nodes_running_jobs);
 	FREE_NULL_BITMAP(blade_nodes_running_npc);
 
 	for (i=0; i<blade_cnt; i++)
@@ -1414,9 +1407,6 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	if (!blade_array)
 		blade_array = xmalloc(sizeof(blade_info_t) * node_cnt);
 
-	if (!blade_nodes_running_jobs)
-		blade_nodes_running_jobs = bit_alloc(node_cnt);
-
 	if (!blade_nodes_running_npc)
 		blade_nodes_running_npc = bit_alloc(node_cnt);
 
@@ -1553,30 +1543,33 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 	slurm_mutex_lock(&blade_mutex);
-	if (jobinfo->npc == NPC_NONE) {
-		if (mode != SELECT_MODE_TEST_ONLY) {
-			bit_not(blade_nodes_running_npc);
-			bit_and(bitmap, blade_nodes_running_npc);
-			bit_not(blade_nodes_running_npc);
-		}
-	} else {
+
+	if (jobinfo->npc != NPC_NONE) {
 		/* If looking for network performance counters unmark
 		   all the nodes that are in use since they cannot be used.
 		*/
 		if (mode != SELECT_MODE_TEST_ONLY) {
-			bit_not(blade_nodes_running_jobs);
-			bit_and(bitmap, blade_nodes_running_jobs);
-			bit_not(blade_nodes_running_jobs);
+			if (jobinfo->npc == NPC_SYS) {
+				/* All the nodes have to be free of
+				 * network performance counters to run
+				 * NPC_SYS.
+				 */
+				if (bit_ffs(blade_nodes_running_npc) != -1)
+					bit_nclear(bitmap, 0,
+						   bit_size(bitmap) - 1);
+			} else {
+				bit_not(blade_nodes_running_npc);
+				bit_and(bitmap, blade_nodes_running_npc);
+				bit_not(blade_nodes_running_npc);
+			}
 		}
 	}
 
 	/* char *tmp = bitmap2node_name(bitmap); */
-	/* char *tmp2 = bitmap2node_name(blade_nodes_running_jobs); */
 	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
 
-	/* info("trying %u on %s '%s' '%s'", job_ptr->job_id, tmp, tmp2, tmp3); */
+	/* info("trying %u on %s '%s'", job_ptr->job_id, tmp, tmp3); */
 	/* xfree(tmp); */
-	/* xfree(tmp2); */
 	/* xfree(tmp3); */
 	slurm_mutex_unlock(&blade_mutex);
 
@@ -1602,11 +1595,9 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 
 	_set_job_running(job_ptr);
 
-	/* char *tmp2 = bitmap2node_name(blade_nodes_running_jobs); */
 	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
 
-	/* info("adding %u '%s' '%s'", job_ptr->job_id, tmp2, tmp3); */
-	/* xfree(tmp2); */
+	/* info("adding %u '%s'", job_ptr->job_id, tmp3); */
 	/* xfree(tmp3); */
 	slurm_mutex_unlock(&blade_mutex);
 
@@ -2239,17 +2230,7 @@ extern int select_p_update_node_state(struct node_record *node_ptr)
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
-	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
-	switch (type) {
-	case SELECT_SET_NODE_CNT:
-		if (job_desc->network && !strcmp(job_desc->network, "system"))
-			job_desc->min_cpus = job_desc->min_nodes =
-				job_desc->max_nodes = node_record_count;
-		return SLURM_SUCCESS;
-		break;
-	default:
-		return other_alter_node_cnt(type, data);
-	}
+	return other_alter_node_cnt(type, data);
 }
 
 extern int select_p_reconfigure(void)
