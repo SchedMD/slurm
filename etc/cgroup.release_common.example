@@ -44,7 +44,7 @@ fi
 slurmcg=${rmcg%/uid_*}
 if [[ ${slurmcg} == ${rmcg} ]]
 then
-    # not a slurm job pattern, perhaps the slurmcg, just remove 
+    # not a slurm job pattern, perhaps the slurmcg, just remove
     # the dir with a lock and exit
     flock -x ${mountdir} -c "rmdir ${rmcg}"
     exit $?
@@ -55,7 +55,7 @@ orphancg=${slurmcg}/orphan
 if [[ ! -d ${orphancg} ]]
 then
     mkdir ${orphancg}
-    case ${subsystem} in 
+    case ${subsystem} in
 	cpuset)
 	    cat ${mountdir}/cpuset.cpus > ${orphancg}/cpuset.cpus
 	    cat ${mountdir}/cpuset.mems > ${orphancg}/cpuset.mems
@@ -64,7 +64,7 @@ then
 	    ;;
     esac
 fi
-    
+
 # kernel call
 if [[ $# -eq 1 ]]
 then
@@ -76,7 +76,7 @@ then
     uidcg=${rmcg%/job_*}
     if [[ ${uidcg} == ${rmcg} ]]
     then
-	# not a slurm job pattern, perhaps the uidcg, just remove 
+	# not a slurm job pattern, perhaps the uidcg, just remove
 	# the dir with a lock and exit
 	flock -x ${mountdir} -c "rmdir ${rmcg}"
 	exit $?
@@ -122,7 +122,7 @@ then
     # and the remaining job
     if [[ -d ${uidcg} ]]
     then
-	case ${subsystem} in 
+	case ${subsystem} in
 	    cpuset)
 		cpus=$(cat ${uidcg}/job_*/cpuset.cpus 2>/dev/null)
 		if [[ -n ${cpus} ]]
@@ -131,7 +131,7 @@ then
 		    cpus=$(echo ${cpus} | tr ' ' ',')
 		    echo ${cpus} > ${uidcg}/cpuset.cpus
 		else
-		    # first move the remaining processes to 
+		    # first move the remaining processes to
 		    # a cgroup reserved for orphaned processes
 		    for t in $(cat ${uidcg}/tasks)
 		    do
