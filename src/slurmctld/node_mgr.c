@@ -876,13 +876,19 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			packstr(dump_node_ptr->gres, buffer);
 		else
 			packstr(dump_node_ptr->config_ptr->gres, buffer);
+
+		/* Gathering GRES deails is slow, so don't by default */
 		if (show_flags & SHOW_DETAIL) {
-/* FIXME: Need to flesh this out */
-			gres_drain = "Gres_Drain_TBD";
-			gres_used  = "Gres_Used_TBD";
+			gres_drain =
+				gres_get_node_drain(dump_node_ptr->gres_list);
+			gres_used  =
+				gres_get_node_used(dump_node_ptr->gres_list);
 		}
 		packstr(gres_drain, buffer);
 		packstr(gres_used, buffer);
+		xfree(gres_drain);
+		xfree(gres_used);
+
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
