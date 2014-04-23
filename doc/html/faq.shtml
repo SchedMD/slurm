@@ -1801,10 +1801,19 @@ qstat, and qsub commands (see contribs/torque in the distribution and the
 "slurm-torque" RPM).
 There is also a wrapper for the showq command at
 <a href="https://github.com/pedmon/slurm_showq">
-https://github.com/pedmon/slurm_showq</a>.
-Slurm recognizes and translates the "#PBS" options in batch scripts.
-Most, but not all options are supported.
-Please share any enhancements that you make.</p>
+https://github.com/pedmon/slurm_showq</a>.</p>
+
+<p>Slurm recognizes and translates the "#PBS" options in batch scripts.
+Most, but not all options are supported.</p>
+
+<p>Slurm also includes a SPANK plugin that will set all of the PBS environment
+variables based upon the Slurm environment (e.g. PBS_JOBID, PBS_JOBNAME,
+PBS_WORKDIR, etc.).
+One environment not set by PBS_ENVIRONMENT, which if set would result in the
+failure of some MPI implementations.
+The plugin will be installed in<br>
+&lt;install_directory&gt;/lib/slurm/spank_pbs.so<br>
+See the SPANK man page for configuration details.</p>
 
 <p><a name="sssd"><b>53. I am having trouble using SSSD with Slurm.</b></a></br>
 SSSD or System Security Services Deamon does not allow enumeration of group
@@ -1854,7 +1863,7 @@ If you which to prevent this condition from setting the node into a DOWN state
 then configure ReturnToService to 2. See the slurm.conf man page for details.
 Otherwise use the scontrol or sview to manually return the node to service.</p>
 
-<p><a name="reqspec"><b>57.How can a job which has exited with a specific exit
+<p><a name="reqspec"><b>57. How can a job which has exited with a specific exit
   code be requeued?</b></a></br>
 Slurm supports requeue in hold with a <b>SPECIAL_EXIT</b> state using the
 command:</p>
@@ -1942,6 +1951,6 @@ sacctmgr delete user name=adam cluster=tux account=chemistry
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 February 2014</p>
+<p style="text-align:center;">Last modified 23 April 2014</p>
 
 <!--#include virtual="footer.txt"-->
