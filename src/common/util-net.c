@@ -1,6 +1,4 @@
 /*****************************************************************************\
- *  $Id$
- *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
@@ -42,6 +40,10 @@
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -50,6 +52,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 
 #include "src/common/strlcpy.h"
@@ -366,3 +369,39 @@ const char * inet_ntop(int family, const void *addr, char *str, size_t len)
 	return(str);
 }
 #endif /* !HAVE_INET_NTOP */
+
+/* is_full_path()
+ *
+ * Test if the given path is a full or relative one.
+ */
+extern
+bool is_full_path(const char *path)
+{
+	if (path[0] == '/')
+		return true;
+
+	return false;
+}
+
+/* make_full_path()
+ *
+ * Given a relative path in input make it full relative
+ * to the current working directory.
+ */
+extern char *make_full_path(char *rpath)
+{
+	char *cwd;
+	char *cwd2;
+	int len;
+
+	cwd =  get_current_dir_name();
+	/* 2 = / + 0
+	 */
+	len = strlen(cwd) + strlen(rpath) + 2;
+	cwd2 = xmalloc(len);
+	sprintf(cwd2, "%s/%s", cwd, rpath);
+	free(cwd);
+
+	return cwd2;
+}
+

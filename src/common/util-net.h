@@ -44,10 +44,15 @@
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #include <netdb.h>
 #include <netinet/in.h>
 #include <unistd.h>
-
+#include "src/common/macros.h"
+#include "src/common/xmalloc.h"
 
 #define HOSTENT_SIZE 8192               /* cf. Stevens UNPv1 11.15 p304 */
 
@@ -123,5 +128,17 @@ const char * inet_ntop(int family, const void *addr, char *str, size_t len);
  */
 #endif /* !HAVE_INET_NTOP */
 
+/* is_full_path()
+ *
+ * Test if the given path is a full or relative one.
+ */
+extern bool is_full_path(const char *);
+
+/* make_full_path()
+ *
+ * Given a relative path in input make it full relative
+ * to the current working directory.
+ */
+extern char *make_full_path(char *);
 
 #endif /* !_UTIL_NET_H */
