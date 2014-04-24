@@ -66,6 +66,25 @@ set uid [get_my_uid]
 set gid [get_my_gid]
 set timeout 120
 
+# Cluster
+array set clus_req {}
+
+# Account 1
+array set acct_req1 {}
+set acct_req1(cluster) $cluster
+
+# Account 2
+array set acct_req2 {}
+set acct_req2(cluster) $cluster
+set acct_req2(parent) $account2
+
+# User
+array set user_req {}
+set user_req(cluster) $cluster
+set user_req(account) $accounts
+set user_req(wckey) $wckey1
+
+
 print_header $test_id
 
 # Fri Thu Jan 31 00:00:00 2008 - Needed only for the 00:00:00 for timing purposes
@@ -147,9 +166,10 @@ if { [test_account_storage] == 0 } {
 	exit 0
 }
 
-set wc_key_track [test_track_wckey]
+set wc_key_track [check_wckey_tracking]
 if { $wc_key_track == 0 } {
 	send_user "\nWARNING: Portions of this test will not work without TrackWCKey\n"
+	exit 0
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
@@ -161,14 +181,14 @@ remove_user "" "" $users
 remove_acct "" $accounts
 remove_cluster "$cluster"
 #add cluster
-incr exit_code [add_cluster "$cluster" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster2 $cluster [array get clus_req]]
 if { $exit_code } {
  	remove_cluster "$cluster"
 	exit $exit_code
 }
 
 #add accounts
-incr exit_code [add_acct "$cluster" "" "$account1,$account2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct2 "$account1,$account2" [array get acct_req1]]
 if { $exit_code } {
 	remove_acct "" "$account1,$account2"
 	remove_cluster "$cluster"
@@ -176,7 +196,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$cluster" "$account2" "$account3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct2 $account3 [array get acct_req2]]
 if { $exit_code } {
 	remove_acct "" $accounts
 	remove_cluster "$cluster"
@@ -184,7 +204,7 @@ if { $exit_code } {
 }
 
 #add users
-incr exit_code [add_user "$cluster" $accounts $users "" "" "" $wckey1 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_user2 $users [array get user_req]]
 if { $exit_code } {
 	remove_user "" "" $users
 	remove_acct "" $accounts

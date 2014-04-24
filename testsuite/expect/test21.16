@@ -38,21 +38,6 @@ set exit_code   0
 set tc1		slurm_test-cluster-1
 set tc2		slurm_test-cluster-2
 set tc3		slurm_test-cluster-3
-set fs1		2500
-set gcm1        100
-set gcrm1       200
-set gc1         1000
-set gj1         300
-set gmem1       1000
-set gn1         10000
-set gsj1        3000
-set gw1         00:45:00
-set mcm1	1000000
-set mc1         1000
-set mj1		50
-set mn1		300
-set msj1        500
-set mw1		01:00:00
 set dqos1       "test$test_id\_qos"
 set ta1		slurm_test-account.1
 set ta2		slurm_test-account.2
@@ -62,22 +47,47 @@ set tu2         slurm_test-user.2
 set tu3         slurm_test-user.3
 set tu4         slurm_test-user.4
 set tu5         slurm_test-user.5
-set alo		Operator
-set fs		fairshare
-set gcm         GrpCpuMin
-set gcrm        GrpCpuRunMin
-set gc          GrpCpu
-set gj          GrpJob
-set gmem        GrpMemory
-set gn          GrpNode
-set gsj         GrpSubmitJob
-set gw          GrpWall
-set mcm         maxcpumins
-set mc		maxcpu
-set mj		maxjob
-set mn		maxnode
-set mw		maxwall
 set access_err  0
+
+# Cluster
+array set clus_req {}
+
+# Account
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2,$tc3
+
+# Users
+array set user_req1 {
+	adminlevel      Operator
+	defaultaccount  slurm_test-account.2
+	fairshare       2500
+	maxcpumins      1000000
+	maxjobs         50
+	maxnodes        300
+	maxwall         01:00:00
+}
+set user_req1(cluster) $tc1,$tc2,$tc3
+set user_req1(account) $ta1,$ta2,$ta3
+
+array set user_req2 {
+	adminlevel      Operator
+	defaultaccount  slurm_test-account.2
+	fairshare       2500
+	grpcpumin       100
+	grpcpurunmin    200
+	grpcpus         1000
+	grpjobs         300
+	grpmemory       1000
+	grpnodes        10000
+	grpsubmitjobs   3000
+	grpwall         00:45:00
+	maxcpumins      1000000
+	maxjobs         50
+	maxnodes        300
+	maxwall         01:00:00
+}
+set user_req2(cluster) $tc1
+set user_req2(account) $ta1
 
 print_header $test_id
 
@@ -107,7 +117,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster2 "$tc1,$tc2,$tc3" [array get clus_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4,$tu5"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -116,7 +126,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4,$tu5"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -126,7 +136,7 @@ if { $exit_code } {
 
 #add users
 # account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
-incr exit_code [add_user "$tc1,$tc2,$tc3" "$ta1,$ta2,$ta3" $tu1,$tu2,$tu3 "" "$alo" "$ta2" "" "" "" "$fs1" "" "" "" "" "" "" "" "" "$mcm1" "" "$mj1" "$mn1" "" "$mw1" ""]
+incr exit_code [add_user2 "$tu1,$tu2,$tu3" [array get user_req1]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4,$tu5"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -141,10 +151,10 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "(($tu1|$tu2|$tu3).$ta2.$alo.($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$fs1.$mcm1.$mj1.$mn1.$mw1.)" {
+	-re "(($tu1|$tu2|$tu3).$ta2.$user_req1(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req2(fairshare).$user_req1(maxcpumins).$user_req1(maxjobs).$user_req1(maxnodes).$user_req1(maxwall).)" {
 		incr matches
 		exp_continue
 	}
@@ -189,17 +199,16 @@ if { $exit_code } {
 #
 # Add user with all limits set
 #
-incr exit_code [add_user "$tc1" "$ta1" "$tu4,$tu5" "" "$alo" "" "" "" "" "$fs1" "$gcm1" "$gcrm1" "$gc1" "$gj1" "$gmem1" "$gn1" "$gsj1" "$gw1" "$mcm1" "$mc1" "$mj1" "$mn1" "$msj1" "$mw1" "$dqos1"]
+incr exit_code [add_user2 "$tu4,$tu5" [array get user_req2]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4,$tu5"
 	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2,$tc3,$tc4"
+	remove_cluster "$tc1,$tc2,$tc3"
 	remove_qos "$dqos1"
 	exit $exit_code
 }
 
 # Check Limits of both users
-check_assoc_limit 3 user $tu4 $fs1 $gcm1 $gc1 $gcrm1 $gj1 $gn1 $gsj1 $gw1 $mc1 $mcm1 $mj1 $msj1 $mn1 $mw1 $gmem1 $dqos1
+check_assoc_limit 3 user $tu4 $user_req2(fairshare) $user_req2(grpcpumin) $user_req2(grpcpus) $user_req2(grpcpurunmin) $user_req2(grpjob) $user_req2(grpnodes) $user_req2(grpsubmitjobs) $user_req(grpwall)
 
-check_assoc_limit 3 user $tu5 $fs1 $gcm1 $gc1 $gcrm1 $gj1 $gn1 $gsj1 $gw1 $mc1 $mcm1 $mj1 $msj1 $mn1 $mw1 $gmem1 $dqos1
-
+check_assoc_limit 3 user $tu5 $user_req2(fairshare) $user_req2(grpcpumin) $user_req2(grpcpus) $user_req2(grpcpurunmin) $user_req2(grpjob) $user_req2(grpnodes) $user_req2(grpsubmitjobs) $user_req(grpwall)

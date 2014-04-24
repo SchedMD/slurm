@@ -87,6 +87,17 @@ set mw		maxwall
 set dbu		debug
 set access_err  0
 
+# Cluster
+array set clus_req {}
+
+# Accounts
+array set acct_req {}
+set acct_req(cluster) [format "%s%s" $test_nu "clus1"],[format "%s%s" $test_nu "clus2"],[format "%s%s" $test_nu "clus3"]
+
+# User
+array set user_req {}
+set user_req(cluster) [format "%s%s" $test_nu "clus1"],[format "%s%s" $test_nu "clus2"],[format "%s%s" $test_nu "clus3"]
+set user_req(account) [format "%s%s" $test_nu "acct1"],[format "%s%s" $test_nu "acct2"],[format "%s%s" $test_nu "acct3"]
 
 print_header $test_id
 
@@ -115,7 +126,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster2 "$tc1,$tc2,$tc3" [array get clus_req]]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
@@ -124,7 +135,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$nm1,$nm2,$nm3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct2 "$nm1,$nm2,$nm3" [array get acct_req]]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
@@ -133,7 +144,7 @@ if { $exit_code } {
 }
 
 #add users
-incr exit_code [add_user  "$tc1,$tc2,$tc3" "$nm1,$nm2,$nm3" "$us1,$us2,$us3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_user2 "$us1,$us2,$us3" [array get user_req]]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"

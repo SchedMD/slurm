@@ -62,25 +62,14 @@ set ta2		slurm_test-account.2
 set ta3		slurm_test-account.3
 set ta4		slurm_test-account.4
 set dsc		Description
-set ds1		scienceacct
-set ds2		physicsacct
-set ds3		theoryacct
-set ds4		appliedacct
 set org		Organization
-set or1		scienceorg
-set or2		physicsorg
-set or3		theoryorg
-set or4		appliedorg
 set usr		User
 set tu1         slurm_test-user.1
 set tu2         slurm_test-user.2
 set tu3         slurm_test-user.3
 set tu4         slurm_test-user.4
-set qs		QOS
-set qs1		tnormal
-set qs2		runfirst
-set qs3		runlast
-set pat		parent
+set qs          QOS
+set qs2         runfirst
 set al		AdminLevel
 set aln		None
 set ala		Administrator
@@ -93,10 +82,6 @@ set pde		pdebug
 set pba		pbatch
 set dw		DefaultWCKey
 set wk		WCKeys
-set wk1		latch
-set wk2		stone
-set wk3		hole
-set wk4		turn
 set fs		Fairshare
 set gm		GrpCPUMins
 set gc		GrpCPUs
@@ -114,83 +99,149 @@ set mn		MaxNodes
 set mnj		MaxNodesPerJob
 set mw		MaxWall
 set md		MaxWallDurationPerJob
-set fs1		1000
-set fs2		2375
-set fs3		3240
-set fs4		4321
-set fs5		5678
-set fs6		6789
-set gm1		1100
-set gc1		10
-set gj1		120
-set gs1		130
-set gn1		140
-set gw1		60
-set gt1		01:00:00
-set mc1		150
-set mm1		110000
-set mj1		160
-set ms1		170
-set mn1		180
-set mw1		70
-set mt1		01:10:00
-set gm2		2000
-set gc2		20
-set gj2		210
-set gs2		220
-set gn2		230
-set gw2		120
-set gt2		02:00:00
-set mc2		240
-set mm2		220000
-set mj2		250
-set ms2		260
-set mn2		270
-set mw2		140
-set mt2		02:20:00
-set gm3		3300
-set gc3		30
-set gj3		310
-set gs3		320
-set gn3		330
-set gw3		180
-set gt3		03:00:00
-set mc3		340
-set mm3		330000
-set mj3		350
-set ms3		360
-set mn3		370
-set mw3		210
-set mt3		03:30:00
-set gm4		4000
-set gc4		40
-set gj4		410
-set gs4		420
-set gn4		430
-set gw4		240
-set gt4		04:00:00
-set mc4		440
-set mm4		420000
-set mj4		450
-set ms4		460
-set mn4		470
-set mw4		280
-set mt4		04:40:00
-set gm5		5500
-set gc5		50
-set gj5		510
-set gs5		520
-set gn5		530
-set gw5		300
-set gt5		05:00:00
-set mc5		540
-set mm5		550000
-set mj5		550
-set ms5		560
-set mn5		570
-set mw5		350
-set mt5		05:50:00
-set gm6		6600
+
+set wckey_check hole,latch,stone,turn
+
+# Accounts
+array set acct_req {
+	cluster        slurm_test-cluster-3
+	parent         root
+	description    appliedacct
+	organization   organization
+	fairshare      5678
+	grpcpumins     5500
+	grpcpus        50
+	grpjobs        510
+	grpsubmitjobs  520
+	grpnodes       530
+	grpwall        300
+	maxcpus        540
+	maxcpumins     550000
+	maxjobs        550
+	maxsubmitjobs  560
+	maxnodes       570
+	maxwall        350
+}
+set acct_req(qos) $qs2
+
+array set acct_req2 {
+	cluster        slurm_test-cluster-3
+	parent         slurm_test-account.4
+	description    theoryacct
+	organization   theoryorg
+	fairshare      4321
+	grpcpumins     4000
+	grpcpus        40
+	grpjobs        410
+	grpnodes       430
+	grpsubmitjobs  420
+	grpwall        240
+	maxcpumins     420000
+	maxcpus        440
+	maxjobs        450
+	maxnodes       470
+	maxsubmitjobs  460
+	maxwall        280
+}
+set acct_req2(qos) $qs2
+
+array set acct_req3 {
+	cluster        slurm_test-cluster-3
+	parent         slurm_test-account.3
+	description    physicsacct
+	organization   physicsorg
+	fairshare      3240
+	grpcpumins     3300
+	grpcpus        30
+	grpjobs        310
+	grpnodes       330
+	grpsubmitjobs  320
+	grpwall        180
+	maxcpumins     330000
+	maxcpus        340
+	maxjobs        350
+	maxnodes       370
+	maxsubmitjobs  360
+	maxwall        210
+}
+set acct_req3(qos) $qs2
+
+# Users
+array set user_req {
+
+	cluster        slurm_test-cluster-3
+	account        slurm_test-account.4
+	adminlevel     Administrator
+	defaultaccount slurm_test-account.3
+	defaultwckey   hole
+	wckey          latch,stone,turn
+	fairshare      3240
+	grpcpumins     3300
+	grpcpus        30
+	grpjobs        310
+	grpnodes       330
+	grpsubmitjobs  320
+	grpwall        180
+	maxcpumins     330000
+	maxcpus        340
+	maxjobs        350
+	maxnodes       370
+	maxsubmitjobs  360
+	maxwall        210
+}
+set user_req(qos) $qs2
+
+array set user_req2 {
+
+	cluster        slurm_test-cluster-3
+	account        slurm_test-account.3
+	adminlevel     Operator
+	defaultaccount slurm_test-account.2
+	defaultwckey   stone
+	wckey          latch,hole,turn
+	fairshare      2375
+	grpcpumins     2000
+	grpcpus        20
+	grpjobs        210
+	grpnodes       230
+	grpsubmitjobs  220
+	grpwall        120
+	maxcpumins     220000
+	maxcpus        240
+	maxjobs        250
+	maxnodes       270
+	maxsubmitjobs  260
+	maxwall        140
+
+}
+set user_req2(qos) $qs2
+
+array set user_req3 {
+
+	cluster        slurm_test-cluster-3
+	account        slurm_test-account.2
+	adminlevel     None
+	defaultaccount slurm_test-account.2
+	defaultwckey   latch
+	wckey          stone,hole,turn
+	fairshare      1000
+	grpcpumins     1100
+	grpcpus        10
+	grpjobs        120
+	grpnodes       140
+	grpsubmitjobs  130
+	grpwall        60
+	maxcpumins     110000
+	maxcpus        150
+	maxjobs        160
+	maxnodes       180
+	maxsubmitjobs  170
+	maxwall        70
+
+}
+set user_req3(qos) $qs2
+
+# Clusters
 array set clus_req {
 	fairshare 6789
 	grpcpus	  60
@@ -232,8 +283,8 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 
 #make sure we have a clean system and permission to do this work
 remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-remove_qos "$qs1,$qs2,$qs3"
+remove_acct "" "$ta2,$ta3,$ta4"
+remove_qos "$qs2"
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
@@ -244,8 +295,8 @@ if {$access_err != 0} {
 incr exit_code [add_qos "$qs2"]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs1,$qs2,$qs3"
+	remove_acct "" "$ta2,$ta3,$ta4"
+	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
@@ -255,66 +306,64 @@ if { $exit_code } {
 incr exit_code [add_cluster2 $tc3 [array get clus_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs1,$qs2,$qs3"
+	remove_acct "" "$ta2,$ta3,$ta4"
+	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
 #add accounts
-#cluster parent name description organization qos Fairshare GrpCPUMins GrpCPURunMins GrpCPUs GrpJobs GrpMem GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob
-incr exit_code [add_acct "$tc3" "$roo" "$ta4" "$ds4" "$or4" "$qs2" "$fs5" "$gm5" "" "$gc5" "$gj5" "" "$gn5" "$gs5" "$gw5" "$mm5" "$mc5" "$mj5" "$mn5" "$ms5" "$mw5"]
+incr exit_code [add_acct2 $ta4 [array get acct_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs1,$qs2,tas3"
+	remove_acct "" "$ta2,$ta3,$ta4"
+	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
-incr exit_code [add_acct "$tc3" "$ta4" "$ta3" "$ds3" "$or3" "$qs2" "$fs4" "$gm4" "" "$gc4" "$gj4" "" "$gn4" "$gs4" "$gw4" "$mm4" "$mc4" "$mj4" "$mn4" "$ms4" "$mw4"]
+incr exit_code [add_acct2 $ta3 [array get acct_req2]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs1,$qs2,$qs3"
+	remove_acct "" "$ta2,$ta3,$ta4"
+	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
-incr exit_code [add_acct "$tc3" "$ta3" "$ta2" "$ds2" "$or2" "$qs2" "$fs3" "$gm3" "" "$gc3" "$gj3" "" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3"]
+incr exit_code [add_acct2 $ta2 [array get acct_req3]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs1,$qs2,$qs3"
+	remove_acct "" "$ta2,$ta3,$ta4"
+	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
 #add users
-# cluster account name part adminlevel defaultaccount defaultwckey wckeys qoslevel Fairshare GrpCPUMins GrpCPURunMins GrpCPUs GrpJobs GrpMem GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob
-incr exit_code [add_user "$tc3" "$ta4" "$tu3" "" "$ala" "$ta3" "$wk3" "$wk1,$wk2,$wk4" "$qs2" "$fs3" "$gm3" "" "$gc3" "$gj3" "" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" ""]
+incr exit_code [add_user2 $tu3 [array get user_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs1,$qs2,$qs3"
+	remove_acct "" "$ta2,$ta3,$ta4"
+	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
-incr exit_code [add_user "$tc3" "$ta3" "$tu2" "" "$alo" "$ta2" "$wk2" "$wk1,$wk3,$wk4" "$qs2" "$fs2" "$gm2" "" "$gc2" "$gj2" "" "$gn2" "$gs2" "$gw2" "$mm2" "$mc2" "$mj2" "$mn2" "$ms2" "$mw2" ""]
+incr exit_code [add_user2 $tu2 [array get user_req2]]
 if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$utu3,$tu4"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs1,$qs2,$qs3"
+	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
+	remove_acct "" "$ta2,$ta3,$ta4"
+	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
-incr exit_code [add_user "$tc3" "$ta2" "$tu1" "" "$aln" "$ta2" "$wk1" "$wk2,$wk3,$wk4" "$qs2" "$fs1" "$gm1" "" "$gc1" "$gj1" "" "$gn1" "$gs1" "$gw1" "$mm1" "$mc1" "$mj1" "$mn1" "$ms1" "$mw1" ""]
+incr exit_code [add_user2 $tu1 [array get user_req3]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs1,$qs2,$qs3"
+	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
@@ -325,23 +374,23 @@ set matches 0
 set my_pid [spawn $sacctmgr -i dump $clu=$tc3 file=$file_out4]
 expect {
 	-re "(Cluster .* returned nothing)" {
-	        send_user "FAILURE: there was a problem with the dump\n"
+		send_user "FAILURE: there was a problem with the dump\n"
 	    	incr exit_code 1
 	}
 	-re "(No filename given)" {
-	        send_user "FAILURE: there was a problem with the file name\n"
+		send_user "FAILURE: there was a problem with the file name\n"
 	    	incr exit_code 1
 	}
 	-re "(Can only do one cluster at a time)" {
-	        send_user "FAILURE: there was a problem with the dump\n"
+		send_user "FAILURE: there was a problem with the dump\n"
 	    	incr exit_code 1
 	}
 	-re "too few arguments for keyword" {
-	        send_user "FAILURE: there was a problem with the dump request\n"
+		send_user "FAILURE: there was a problem with the dump request\n"
 	    	incr exit_code 1
 	}
 	-re "Unknown option" {
-	        send_user "FAILURE: there was a problem with the request\n"
+		send_user "FAILURE: there was a problem with the request\n"
 	    	incr exit_code 1
 	}
 	-re "(sacctmgr: Cluster)" {
@@ -366,6 +415,7 @@ if {$matches != 1} {
 set matches 0
 set tfile [open "$file_out4" r]
 while {[gets $tfile line] != -1} {
+
 	if {![string compare $line "No such file or directory"]} {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		incr exit_code 1
@@ -378,37 +428,38 @@ while {[gets $tfile line] != -1} {
 	} elseif {![string compare $line "$usr - $roo:$dac='$roo':$al='$ala':$fs=1"]} {
 		send_user "match 3\n"
 		incr matches
-	} elseif {![string compare $line "$acc - $ta4:$dsc='$ds4':$org='$or4':$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mp=$mm5:$mu=$mc5:$mj=$mj5:$mnj=$mn5:$ms=$ms5:$md=$mw5:$qs='$qs2'"]} {
+	} elseif {![string compare $line "$acc - $ta4:$dsc='$acct_req(description)':$org='$acct_req(organization)':$fs=$acct_req(fairshare):$gm=$acct_req(grpcpumins):$gc=$acct_req(grpcpus):$gj=$acct_req(grpjobs):$gn=$acct_req(grpnodes):$gs=$acct_req(grpsubmitjobs):$gw=$acct_req(grpwall):$mp=$acct_req(maxcpumins):$mu=$acct_req(maxcpus):$mj=$acct_req(maxjobs):$mnj=$acct_req(maxnodes):$ms=$acct_req(maxsubmitjobs):$md=$acct_req(maxwall):$qs='$acct_req(qos)'"]} {
 		send_user "match 4\n"
 		incr matches
 	} elseif {![string compare $line "$par - $ta4"]} {
 		send_user "match 5\n"
 		incr matches
-	} elseif {![string compare $line "$usr - $tu3:$dac='$ta3':$dw='$wk3':$al='$ala':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2'"]} {
+	} elseif {![string compare $line "$usr - $tu3:$dac='$user_req(defaultaccount)':$dw='$user_req(defaultwckey)':$al='$user_req(adminlevel)':$wk='$wckey_check':$fs=$user_req(fairshare):$gm=$user_req(grpcpumins):$gc=$user_req(grpcpus):$gj=$user_req(grpjobs):$gn=$user_req(grpnodes):$gs=$user_req(grpsubmitjobs):$gw=$user_req(grpwall):$mp=$user_req(maxcpumins):$mu=$user_req(maxcpus):$mj=$user_req(maxjobs):$mnj=$user_req(maxnodes):$ms=$user_req(maxsubmitjobs):$md=$user_req(maxwall):$qs='$user_req(qos)'"]} {
 		# should come through 2 times
 		send_user "match 6\n"
 		incr matches
-	} elseif {![string compare $line "$acc - $ta3:$dsc='$ds3':$org='$or3':$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mp=$mm4:$mu=$mc4:$mj=$mj4:$mnj=$mn4:$ms=$ms4:$md=$mw4:$qs='$qs2'"]} {
+	} elseif {![string compare $line "$acc - $ta3:$dsc='$acct_req2(description)':$org='$acct_req2(organization)':$fs=$acct_req2(fairshare):$gm=$acct_req2(grpcpumins):$gc=$acct_req2(grpcpus):$gj=$acct_req2(grpjobs):$gn=$acct_req2(grpnodes):$gs=$acct_req2(grpsubmitjobs):$gw=$acct_req2(grpwall):$mp=$acct_req2(maxcpumins):$mu=$acct_req2(maxcpus):$mj=$acct_req2(maxjobs):$mnj=$acct_req2(maxnodes):$ms=$acct_req2(maxsubmitjobs):$md=$acct_req2(maxwall):$qs='$acct_req2(qos)'"]} {
 		send_user "match 7\n"
 		incr matches
 	} elseif {![string compare $line "$par - $ta3"]} {
 		send_user "match 8\n"
 		incr matches
-	} elseif {![string compare $line "$acc - $ta2:$dsc='$ds2':$org='$or2':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2'"]} {
+	} elseif {![string compare $line "$acc - $ta2:$dsc='$acct_req3(description)':$org='$acct_req3(organization)':$fs=$acct_req3(fairshare):$gm=$acct_req3(grpcpumins):$gc=$acct_req3(grpcpus):$gj=$acct_req3(grpjobs):$gn=$acct_req3(grpnodes):$gs=$acct_req3(grpsubmitjobs):$gw=$acct_req3(grpwall):$mp=$acct_req3(maxcpumins):$mu=$acct_req3(maxcpus):$mj=$acct_req3(maxjobs):$mnj=$acct_req3(maxnodes):$ms=$acct_req3(maxsubmitjobs):$md=$acct_req3(maxwall):$qs='$acct_req3(qos)'"]} {
 		send_user "match 9\n"
 		incr matches
 	} elseif {![string compare $line "$par - $ta2"]} {
 		send_user "match 10\n"
 		incr matches
-	} elseif {![string compare $line "$usr - $tu1:$dac='$ta2':$dw='$wk1':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2'"]} {
+	} elseif {![string compare $line "$usr - $tu1:$dac='$user_req3(defaultaccount)':$dw='$user_req3(defaultwckey)':$wk='$wckey_check':$fs=$user_req3(fairshare):$gm=$user_req3(grpcpumins):$gc=$user_req3(grpcpus):$gj=$user_req3(grpjobs):$gn=$user_req3(grpnodes):$gs=$user_req3(grpsubmitjobs):$gw=$user_req3(grpwall):$mp=$user_req3(maxcpumins):$mu=$user_req3(maxcpus):$mj=$user_req3(maxjobs):$mnj=$user_req3(maxnodes):$ms=$user_req3(maxsubmitjobs):$md=$user_req3(maxwall):$qs='$user_req3(qos)'"]} {
 		send_user "match 11\n"
 		incr matches
-	} elseif {![string compare $line "$usr - $tu2:$dac='$ta2':$dw='$wk2':$al='$alo':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2'"]} {
+	} elseif {![string compare $line "$usr - $tu2:$dac='$user_req2(defaultaccount)':$dw='$user_req2(defaultwckey)':$al='$user_req2(adminlevel)':$wk='$wckey_check':$fs=$user_req2(fairshare):$gm=$user_req2(grpcpumins):$gc=$user_req2(grpcpus):$gj=$user_req2(grpjobs):$gn=$user_req2(grpnodes):$gs=$user_req2(grpsubmitjobs):$gw=$user_req2(grpwall):$mp=$user_req2(maxcpumins):$mu=$user_req2(maxcpus):$mj=$user_req2(maxjobs):$mnj=$user_req2(maxnodes):$ms=$user_req2(maxsubmitjobs):$md=$user_req2(maxwall):$qs='$user_req2(qos)'"]} {
 		# should come through 2 times
 		send_user "match 12\n"
 		incr matches
 	}
 }
+
 
 if {$matches != 14} {
 	send_user "\nFAILURE:  Parse of file for 14 entries incorrect with only $matches.\n"
@@ -419,8 +470,8 @@ if {$matches != 14} {
 # This is the end below here
 
 incr exit_code [remove_user "" "" "$tu1,$tu2,$tu3,$tu4"]
-incr exit_code [remove_acct "" "$ta1,$ta2,$ta3,$ta4"]
-incr exit_code [remove_qos "$qs1,$qs2,$qs3"]
+incr exit_code [remove_acct "" "$ta2,$ta3,$ta4"]
+incr exit_code [remove_qos "$qs2"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code == 0} {
@@ -430,4 +481,3 @@ if {$exit_code == 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code
-

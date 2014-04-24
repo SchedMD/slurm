@@ -56,6 +56,9 @@ set ect1	40
 set ect1a	25
 set access_err  0
 
+# Cluster
+array set clus_req {}
+
 print_header $test_id
 
 set timeout 60
@@ -84,7 +87,7 @@ if {$access_err != 0} {
 #
 #add cluster
 #
-incr exit_code [add_cluster "$tc2" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster2 "$tc2" [array get clus_req]]
 if { $exit_code } {
 	exit $exit_code
 }

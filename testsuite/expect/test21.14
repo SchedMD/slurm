@@ -37,29 +37,73 @@ set test_id     "21.14"
 set exit_code   0
 set tc1		slurm_test-cluster-1
 set tc2		slurm_test-cluster-2
-set tc3		slurm_test-cluster-3
-set fs1		2500
-set fs2		1700
-set mc1		1000000
-set mc2		700000
-set mj1		50
-set mj2		70
-set mn1		300
-set mn2		700
-set mw1		01:00:00
-set mw2		00:07:00
-set acc		account
-set ass		associations
 set ta1		slurm_test-account.1
 set ta2		slurm_test-account.2
 set ta3		slurm_test-account.3
-set ds1		testacct1
-set ds2		testacct2
-set ds3		testacct3
-set or1		accountorga1
-set or2		acttrg
-set qs1		normal
 set access_err  0
+
+########## Cluster ##########
+array set clus_req {}
+
+########## Account ##########
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2
+
+########## Modify Accounts ##########
+
+# Mod account 1
+array set acct_mod_desc1 {}
+array set acct_mod_acct_vals1 {
+	description   testacct2
+	organization  acttrg
+}
+array set acct_mod_assoc_vals1 {}
+
+# Mod account 2
+array set acct_mod_desc2 {}
+array set acct_mod_acct_vals2 {}
+array set acct_mod_assoc_vals2 {
+	fairshare   1700
+	maxcpumins  700000
+	maxjobs     70
+	maxnodes    700
+	maxwall     00:07:00
+}
+
+# Mod account 3
+array set acct_mod_desc3 {}
+array set acct_mod_acct_vals3 {
+	description   testacct1
+	organization  accountorga1
+}
+array set acct_mod_assoc_vals3 {
+	fairshare   -1
+	maxcpumins  -1
+	maxjobs     -1
+	maxnodes    -1
+	maxwall     -1
+}
+
+# Mod account 4
+array set acct_mod_desc4 {}
+set acct_mod_desc4(cluster) $tc1
+array set acct_mod_acct_vals4 {}
+array set acct_mod_assoc_vals4 {}
+set acct_mod_assoc_vals4(parent) $ta2
+
+# Mod account 5
+array set acct_mod_desc5 {}
+set acct_mod_desc5(cluster) $tc1
+array set acct_mod_acct_vals5 {}
+array set acct_mod_assoc_vals5 {}
+set acct_mod_assoc_vals5(parent) $ta3
+
+# Mod account 6
+array set acct_mod_desc6 {}
+set acct_mod_desc6(cluster) $tc1
+array set acct_mod_acct_vals6 {}
+array set acct_mod_assoc_vals6 {}
+set acct_mod_assoc_vals6(parent) $ta2
 
 print_header $test_id
 
@@ -87,7 +131,7 @@ if {$access_err != 0} {
 remove_acct "" "$ta1,$ta2,$ta3"
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster2 "$tc1,$tc2" [array get clus_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -95,7 +139,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -103,7 +147,7 @@ if { $exit_code } {
 }
 
 # OK This is the real test, first test change the desc and org of the accounts
-incr exit_code [mod_acct "" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $ds2 $or2]
+incr exit_code [mod_acct2 "$ta1,$ta2,$ta3" [array get acct_mod_desc1] [array get acct_mod_acct_vals1] [array get acct_mod_assoc_vals1]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -120,7 +164,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($ta1|$ta2|$ta3).$ds2.$or2." {
+	-re "($ta1|$ta2|$ta3).$acct_mod_acct_vals1(description).$acct_mod_acct_vals1(organization)." {
 		incr matches
 		exp_continue
 	}
@@ -139,7 +183,7 @@ if {$matches != 3} {
 }
 
 # Next, test change the limits of the accounts
-incr exit_code [mod_acct "" "" "$ta1,$ta2,$ta3" "" "" "" $fs2 "" "" "" "" "" "" "" "" $mc2 "" $mj2 $mn2 "" $mw2 "" "" ""]
+incr exit_code [mod_acct2 "$ta1,$ta2,$ta3" [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -156,7 +200,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($ta1|$ta2|$ta3).($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2." {
+	-re "($ta1|$ta2|$ta3).($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall)." {
 		incr matches
 		exp_continue
 	}
@@ -175,7 +219,7 @@ if {$matches != 6} {
 }
 
 # Next, test change the desc and limits of the accounts
-incr exit_code [mod_acct "" "" "$ta1,$ta3" "" "" "" -1 "" "" "" "" "" "" "" "" -1 "" -1 -1 "" -1 "" $ds1 $or1]
+incr exit_code [mod_acct2 "$ta1,$ta3" [array get acct_mod_desc3] [array get acct_mod_acct_vals3] [array get acct_mod_assoc_vals3]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -194,7 +238,7 @@ expect {
 	}
 	# Any time you use () around something you need to combine all
 	# those things together since you can miss some and they be thrown away
-	-re "(($ta1|$ta3).$ds1.$or1.($tc1|$tc2).1.....|$ta2.$ds2.$or2.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.)" {
+	-re "(($ta1|$ta3).$acct_mod_acct_vals3(description).$acct_mod_acct_vals3(organization).($tc1|$tc2).1.....|$ta2.$acct_mod_acct_vals1(description).$acct_mod_acct_vals1(organization).($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).)" {
 		incr matches
 		exp_continue
 	}
@@ -214,7 +258,7 @@ if {$matches != 6} {
 }
 
 # Next, test change the parent of ta3 to be $ta2 on $tc1 sibling to be a child
-incr exit_code [mod_acct "$tc1" "" "$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "$ta2" "" ""]
+incr exit_code [mod_acct2 $ta3 [array get acct_mod_desc4] [array get acct_mod_assoc_vals4] [array get acct_mod_acct_vals4]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -231,7 +275,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "$ta3.$ta2.$tc1.1.$mc2.$mj2.$mn2.$mw2." {
+	-re "$ta3.$ta2.$tc1.1.$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall)." {
 		send_user "hey\n"
 		incr matches
 		exp_continue
@@ -257,7 +301,7 @@ if {$matches != 2} {
 
 # Next, test change the parent of $ta2 to be $ta3 on $tc1
 # making the child the parent
-incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "$ta3" "" ""]
+incr exit_code [mod_acct2 $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -274,7 +318,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($ta2.root.$tc2.$fs2.$mc2.$mj2.$mn2.$mw2.|$ta2.$ta3.$tc1.$fs2.$mc2.$mj2.$mn2.$mw2.|$ta3.root.($tc1|$tc2).1.....)" {
+	-re "($ta2.root.$tc2.$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta2.$ta3.$tc1.$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.root.($tc1|$tc2).1.....)" {
 		incr matches
 		exp_continue
 	}
@@ -292,10 +336,9 @@ if {$matches != 4} {
 	incr exit_code 1
 }
 
-
 # Next, test change the parent of $ta3 to be $ta2 on $tc1 again
 # only this time the parent will become the child instead of it being a sibling.
-incr exit_code [mod_acct "$tc1" "" "$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "$ta2" "" ""]
+incr exit_code [mod_acct2 $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -312,7 +355,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($ta2.root.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.|$ta3.$ta2.$tc1.1.$mc2.$mj2.$mn2.$mw2.|$ta3.root.$tc2.1.....)" {
+	-re "($ta2.root.($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.$ta2.$tc1.1.$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.root.$tc2.1.....)" {
 		incr matches
 		exp_continue
 	}

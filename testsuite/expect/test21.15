@@ -38,49 +38,58 @@ set exit_code   0
 set tc1		slurm_test-cluster-1
 set tc2		slurm_test-cluster-2
 set tc3		slurm_test-cluster-3
-set tc4         slurm_test-cluster-4
-set fs1		2500
-set gcm1        100
-set gcrm1       200
-set gc1         1000
-set gj1         300
-set gmem1       1000
-set gn1         10000
-set gsj1        3000
-set gw1         00:45:00
-set mcm1	1000000
-set mc1         1000
-set mj1		50
-set mn1		300
-set msj1        500
-set mw1		01:00:00
 set dqos1       "test$test_id\_qos"
 set ta1		slurm_test-account.1
 set ta2		slurm_test-account.2
 set ta3		slurm_test-account.3
-set ta4         slurm_test-account.4
-set usr		user
 set tu1         slurm_test-user.1
 set tu2         slurm_test-user.2
-set alo		Operator
-set fs		fairshare
-set gcm         GrpCpuMin
-set gcrm        GrpCpuRunMin
-set gc          GrpCpu
-set gj          GrpJob
-set gmem        GrpMemory
-set gn          GrpNode
-set gsj         GrpSubmitJob
-set gw          GrpWall
-set mcm         MaxCpuMin
-set mc		maxcpu
-set mj		maxjob
-set mn		maxnode
-set msj         MaxSubmitJobs
-set mw		maxwall
-set dbu		debug
 set access_err  0
 
+# Cluster
+array set clus_req {}
+
+# Account
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2,$tc3
+
+# User1
+array set user_req1 {
+
+	adminlevel      Operator
+	fairshare       2500
+	maxcpumin       1000000
+	maxjob          50
+	maxnode         300
+	maxwall         01:00:00
+
+}
+set user_req1(cluster) $tc1,$tc2,$tc3
+set user_req1(account) $ta1,$ta2,$ta3
+set user_req1(defaultaccount) $ta2
+
+array set user_req2 {
+
+	adminlevel    Operator
+	fairshare     2500
+	grpcpumins    100
+	grpcpurunmins 200
+	grpcpus       1000
+	grpjob        300
+	grpmemory     1000
+	grpnode       10000
+	grpsubmitjob  3000
+	grpwall       00:45:00
+	maxcpumin     1000000
+	maxcpus       1000
+	maxjob        50
+	maxnode       300
+	maxsubmitjobs 500
+	maxwall       01:00:00
+}
+set user_req2(cluster) $tc1
+set user_req2(account) $ta1
+set user_req2(defaultqos) $dqos1
 
 print_header $test_id
 
@@ -101,8 +110,8 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 
 #make sure we have a clean system and permission to do this work
 remove_user "" "" "$tu1,$tu2"
-remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-remove_cluster "$tc1,$tc2,$tc3,$tc4"
+remove_acct "" "$ta1,$ta2,$ta3"
+remove_cluster "$tc1,$tc2,$tc3"
 remove_qos "$dqos1"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
@@ -110,7 +119,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster2 "$tc1,$tc2,$tc3" [array get clus_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -119,7 +128,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -129,7 +138,7 @@ if { $exit_code } {
 
 #add users
 # account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
-incr exit_code [add_user "$tc1,$tc2,$tc3" "$ta1,$ta2,$ta3" "$tu1" "" "$alo" "$ta2" "" "" "" "$fs1" "" "" "" "" "" "" "" "" "$mcm1" "" "$mj1" "$mn1" "" "$mw1" ""]
+incr exit_code [add_user2 $tu1 [array get user_req1]]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -147,7 +156,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($tu1.$ta2.$alo.($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$fs1.$mcm1.$mj1.$mn1.$mw1.)" {
+	-re "($tu1.$ta2.$user_req1(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req1(fairshare).$user_req1(maxcpumin).$user_req1(maxjob).$user_req1(maxnode).$user_req1(maxwall).)" {
 		incr matches
 		exp_continue
 	}
@@ -180,24 +189,24 @@ if { $exit_code } {
 #
 # Add user with all limits set
 #
-incr exit_code [add_user "$tc1" "$ta1" "$tu2" "" "$alo" "" "" "" "" "$fs1" "$gcm1" "$gcrm1" "$gc1" "$gj1" "$gmem1" "$gn1" "$gsj1" "$gw1" "$mcm1" "$mc1" "$mj1" "$mn1" "$msj1" "$mw1" "$dqos1"]
+incr exit_code [add_user2 $tu2 [array get user_req2]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_cluster "$tc1,$tc2,$tc3,$tc4"
+	remove_acct "" "$ta1,$ta2,$ta3"
+	remove_cluster "$tc1,$tc2,$tc3"
 	remove_qos "$dqos1"
 	exit $exit_code
 }
 
-check_assoc_limit 3 user $tu2 $fs1 $gcm1 $gc1 $gcrm1 $gj1 $gn1 $gsj1 $gw1 $mc1 $mcm1 $mj1 $msj1 $mn1 $mw1 $gmem1 $dqos1
+check_assoc_limit 3 user $tu2 $user_req2(fairshare) $user_req2(grpcpumins) $user_req2(grpcpus) $user_req2(grpcpurunmins) $user_req2(grpjob) $user_req2(grpnode) $user_req2(grpsubmitjob) $user_req2(grpwall) $user_req2(maxcpus) $user_req2(maxcpumin) $user_req2(maxjob) $user_req2(maxsubmitjobs) $user_req2(maxnode) $user_req2(maxwall) $user_req2(grpmemory) $user_req2(defaultqos)
 
 # This is the end below here
 
 incr exit_code [remove_user "$tc1" "" "$tu1"]
 incr exit_code [remove_user "" "$ta1,$ta2,$ta3" "$tu1,$tu2"]
 incr exit_code [remove_user "" "" "$tu1,$tu2"]
-incr exit_code [remove_acct "" "$ta1,$ta2,$ta3,$ta4"]
-incr exit_code [remove_cluster "$tc1,$tc2,$tc3,$tc4"]
+incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
+incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 incr exit_code [remove_qos "$dqos1"]
 
 if {$exit_code == 0} {
@@ -206,5 +215,3 @@ if {$exit_code == 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code
-
-# Test this and make sure there are no errors

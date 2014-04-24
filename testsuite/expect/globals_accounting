@@ -506,6 +506,79 @@ proc add_acct { cluster parent name desc org qos fairshare grpcpumin grpcpurunmi
 	return $exit_code
 }
 
+proc add_acct2 { name acct_req_in } {
+	global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	array set acct_req $acct_req_in
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
+	}
+
+	set command "name=$name"
+
+	foreach option [array names acct_req] {
+
+		if { ![string compare $option "qos"] } {
+			if { ![string compare $acct_req($option) " "] } {
+				set $acct_req($option) "''"
+			}
+		}
+
+		set command "$command $option=$acct_req($option)"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add account $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Adding Account" {
+			incr matches
+			exp_continue
+		}
+		-re "Associations" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 2} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding account.
+	got $matches\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
+}
+
 #
 # Use sacctmgr to remove an account
 #
@@ -769,6 +842,137 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpuru
 	return $exit_code
 }
 
+########################################################################
+#
+# IN: acct_mod_desc_in - consist of the cluster,
+#     description, organization, and parent.
+#     Stuff before the where.
+#
+#     acct_mod_acct_vals_in - account values consist of parent,
+#     organization, description
+#
+#     acct_mod_assoc_vals_in - association consist of
+#     fairshare, grpcpumin, grpcpurunmins, grpcpu, grpjob
+#     grpmemory, grpnode, grpsubmit, grpwall, maxcpumin
+#     maxcpu, maxjob, maxnode, maxsubmit, maxwall. Stuff
+#     after the set
+#
+########################################################################
+proc mod_acct2 { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_in } {
+
+	global sacctmgr timeout
+
+	set exit_code 0
+	set valid_array 1
+	set matches 0
+	set expected 0
+	set acct_stuff 0
+	set assoc_stuff 0
+	array set acct_mod_desc $acct_mod_desc_in
+	array set acct_mod_assoc_vals $acct_mod_assoc_vals_in
+	array set acct_mod_acct_vals $acct_mod_acct_vals_in
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to modify\n"
+		return 1
+	}
+
+	#set up the where
+	set wcommand "where name=$name"
+
+	foreach desc [array names acct_mod_desc] {
+
+		if { ![string compare $desc "qos"] } {
+			if { ![string compare $acct_mod_desc($desc) " "] } {
+				set $acct_mod_desc($desc) "''"
+			}
+		}
+		set wcommand "$wcommand $desc=$acct_mod_desc($desc)"
+	}
+
+	#set up the set
+	set scommand "set"
+
+	foreach acct_val [array names acct_mod_acct_vals] {
+
+		if { ![string compare $acct_val "qos"] } {
+			if { ![string compare $acct_mod_acct_vals($acct_val) " "] } {
+				set $acct_mod_acct_vals($acct_val) "''"
+			}
+		}
+
+		set scommand "$scommand $acct_val=$acct_mod_acct_vals($acct_val)"
+		set acct_stuff 1
+
+	}
+
+	foreach assoc_val [array names acct_mod_assoc_vals] {
+
+		if { ![string compare $assoc_val "qos"] } {
+			if { ![string compare $acct_mod_assoc_vals($assoc_val) " "] } {
+				set $acct_mod_assoc_vals($assoc_val) "''"
+			}
+		}
+
+		set scommand "$scommand $assoc_val=$acct_mod_assoc_vals($assoc_val)"
+		set assoc_stuff 1
+	}
+
+	incr expected $acct_stuff
+	incr expected $assoc_stuff
+
+		set my_pid [eval spawn $sacctmgr -i modify account $scommand $wcommand ]
+		expect {
+			-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+				send_user "FAILURE: there was a problem with the sacctmgr command\n"
+				incr exit_code 1
+			}
+			-re "Problem getting" {
+				send_user "FAILURE: there was a problem getting information from the database\n"
+				incr exit_code 1
+			}
+			-re "Problem adding" {
+				send_user "FAILURE: there was an unknown problem\n"
+				incr exit_code 1
+			}
+			-re "No associations" {
+				send_user "FAILURE: your command didn't return anything\n"
+				incr exit_code 1
+			}
+			-re "Modified accounts" {
+				incr matches
+				exp_continue
+			}
+			-re "Modified account associations" {
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sacctmgr add not responding\n"
+				slow_kill $my_pid
+				incr exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$matches != $expected} {
+			send_user "\nFAILURE:  sacctmgr had a problem modifying account.
+	got $matches needed $expected\n"
+			incr exit_code 1
+		}
+
+		if { ![check_acct_associations] } {
+			send_user "\nFAILURE:  Our associations don't line up\n"
+			incr exit_code 1
+		}
+		return $exit_code
+
+
+
+}
+
 #
 # Use sacctmgr to add an user
 #
@@ -952,6 +1156,196 @@ proc add_user { cluster account name part admin dacct dwckey wckey qos fairshare
 	}
 	return $exit_code
 }
+
+
+proc add_user2 { name user_req_in } {
+	global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	array set user_req $user_req_in
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
+	}
+
+	set command "user=$name"
+
+
+	foreach option [array names user_req] {
+
+		# if { [string length $account] } {
+		# 	set command "$command account=$account"
+		# }
+
+		# if { [string length $admin] } {
+		# 	set command "$command adminlevel=$admin"
+		# }
+
+		# if { [string length $cluster] } {
+		# 	set command "$command cluster=$cluster"
+		# }
+
+		# if { [string length $dacct] } {
+		# 	set command "$command defaultaccount=$dacct"
+		# }
+
+		# if { [string length $dwckey] } {
+		# 	set command "$command defaultwckey=$dwckey"
+		# }
+
+		# if { [string length $fairshare] } {
+		# 	set command "$command fairshare=$fairshare"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $grpcpumin] } {
+		# 	set command "$command GrpCPUMins=$grpcpumin"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $grpcpurunmins] } {
+		# 	set command "$command GrpCpuRunMin=$grpcpurunmins"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $grpcpu] } {
+		# 	set command "$command GrpCPUs=$grpcpu"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $grpjob] } {
+		# 	set command "$command GrpJobs=$grpjob"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $grpmem] } {
+		# 	set command "$command GrpMemory=$grpmem"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $grpnode] } {
+		# 	set command "$command GrpNodes=$grpnode"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $grpsubmit] } {
+		# 	set command "$command GrpSubmitJobs=$grpsubmit"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $grpwall] } {
+		# 	set command "$command GrpWall=$grpwall"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $maxcpumin] } {
+		# 	set command "$command MaxCPUMins=$maxcpumin"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $maxcpu] } {
+		# 	set command "$command MaxCPUs=$maxcpu"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $maxjob] } {
+		# 	set command "$command MaxJobs=$maxjob"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $maxnode] } {
+		# 	set command "$command MaxNodes=$maxnode"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $maxsubmit] } {
+		# 	set command "$command MaxSubmitJobs=$maxsubmit"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $maxwall] } {
+		# 	set command "$command MaxWall=$maxwall"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $defaultqos] } {
+		# 	set command "$command DefaultQos=$defaultqos"
+		# 	set assoc_stuff 1
+		# }
+
+		# if { [string length $part] } {
+		# 	set command "$command partition=$part"
+		# }
+
+		# if { [string length $wckey] } {
+		# 	set command "$command wckeys=$wckey"
+		# }
+
+		if { ![string compare $option "qos"] } {
+			if { ![string compare  $user_req($option) " "] } {
+				set $user_req($option)  "''"
+			}
+		}
+		set command "$command $option=$user_req($option)"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add user $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Adding User" {
+			incr matches
+			exp_continue
+		}
+		-re "Associations" {
+			incr matches
+			exp_continue
+		}
+		-re "WCKeys" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 2 && $matches != 3} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding user.
+	got $matches\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
+
+
+
+}
+
 
 #
 # Use sacctmgr to remove an user
@@ -1170,6 +1564,137 @@ proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare gr
 			set qos ""
 		}
 		set scommand "$scommand qoslevel='$qos'"
+		set assoc_stuff 1
+	}
+
+	incr expected $acct_stuff
+	incr expected $assoc_stuff
+
+	set my_pid [eval spawn $sacctmgr -i modify user $scommand $wcommand ]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Modified user associations" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified users" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr modify not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $expected} {
+		send_user "\nFAILURE:  sacctmgr had a problem modifying user.
+	got $matches needed $expected\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
+}
+
+###############################################################
+#
+#
+# IN: user_mod_desc_in - consist of the cluster,
+#     account, partition, adminlevel, defaultaccount, and
+#     defaultwckey.  Stuff before the where.
+#
+#     user_mod_acct_vals_in - account values consist of adminlevel,
+#     defaultaccount, and defaultwckey. Stuff before set.
+#
+#     user_mod_assoc_vals_in - association consist of
+#     fairshare, grpcpumin, grpcpurunmins, grpcpu, grpjob
+#     grpmemory, grpnode, grpsubmit, grpwall, maxcpumin
+#     maxcpu, maxjob, maxnode, maxsubmit, maxwall. Stuff
+#     after the set
+#
+#
+##############################################################
+
+proc mod_user2 { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
+	global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set expected 0
+	set acct_stuff 0
+	set assoc_stuff 0
+	array set user_mod_info $user_mod_info_req
+	array set user_mod_acct $user_mod_acct_req
+	array set user_mod_assoc $user_mod_assoc_req
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to modify\n"
+		return 1
+	}
+
+	#set up the where
+	set wcommand "where name=$name"
+	foreach desc [array names user_mod_info] {
+
+		if { ![string compare $desc "qos"] } {
+			if { ![string compare $user_mod_info($desc) " "] } {
+				set $user_mod_info($desc) "''"
+			}
+		}
+
+		set wcommand "$wcommand $desc=$user_mod_info($desc)"
+	}
+
+	#set up the set
+	set scommand "set"
+
+	# Account Values
+	foreach desc [array names user_mod_acct] {
+
+		if { ![string compare $desc "qos"] } {
+			if { ![string compare $user_mod_acct($desc) " "] } {
+				set $user_mod_acct($desc) "''"
+			}
+		}
+
+		set scommand "$scommand $desc=$user_mod_acct($desc)"
+		set acct_stuff 1
+	}
+
+
+	# Association Values
+	foreach desc [array names user_mod_assoc] {
+
+		if { ![string compare $desc "qos"] } {
+			if { ![string compare $user_mod_assoc($desc) " "] } {
+				set $user_mod_assoc($desc) "''"
+			}
+		}
+
+		set scommand "$scommand $desc=$user_mod_assoc($desc)"
 		set assoc_stuff 1
 	}
 
@@ -1542,7 +2067,7 @@ proc archive_load { file } {
 # Use sacctmgr to create a res
 #
 proc add_res {name count manager server desc} {
-        global sacctmgr timeout
+	global sacctmgr timeout
 
 	set exit_code 0
 	set matches 0
@@ -1609,7 +2134,7 @@ proc add_res {name count manager server desc} {
 # Use sacctmgr to create a clus_res
 #
 proc add_clus_res {name allowed} {
-        global sacctmgr timeout
+	global sacctmgr timeout
 
 	set exit_code 0
 	set matches 0
@@ -1666,7 +2191,7 @@ proc add_clus_res {name allowed} {
 # Use sacctmgr to remove the test res
 #
 proc remove_res {name} {
-        global access_err sacctmgr timeout
+	global access_err sacctmgr timeout
 
 	set exit_code 0
 	set matches 0
@@ -1726,7 +2251,7 @@ proc remove_res {name} {
 # Use sacctmgr to remove the test clus_res
 #
 proc remove_clus_res {name} {
-        global access_err sacctmgr timeout
+	global access_err sacctmgr timeout
 
 	set exit_code 0
 	set matches 0
@@ -1928,4 +2453,35 @@ proc reset_qos_usage { cluster qos } {
 			wait
 		}
 	}
+}
+
+
+###############################################################
+#
+# Proc: check_wckey_tracking
+#
+# Purpose: Check to see that wcky tracking is enabled in the
+# SlurmDBD
+#
+# Returns: 1 if successful, 0 otherwise
+#
+#
+###############################################################
+proc check_wckey_tracking { } {
+	global sacctmgr
+
+	log_user 0
+	set wckey 0
+	spawn $sacctmgr show config
+	expect {
+		-re "TrackWCKey *= Yes" {
+			set wckey 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $wckey
 }

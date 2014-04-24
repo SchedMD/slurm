@@ -37,29 +37,53 @@ set test_id     "21.13"
 set exit_code   0
 set tc1		slurm_test-cluster-1
 set tc2		slurm_test-cluster-2
-set tc3		slurm_test-cluster-3
-set fs1		2500
-set fs2		1700
-set mc1		1000000
-set mc2		700000
-set mj1		50
-set mj2		70
-set mn1		300
-set mn2		700
-set mw1		01:00:00
-set mw2		00:07:00
 set ta1		slurm_test-account.1
 set ta2		slurm_test-account.2
 set ta3		slurm_test-account.3
 set ds1		slurmtestaccount1
 set ds2		slurmtestaccount2
-set ds3		slurmtestaccount3
 set or1		accountorg1
 set or2		accountorg2
-set or3		accountorg3
-set qs1		normal
-set par		parent
 set access_err  0
+
+# Cluster
+array set clus_req {}
+
+# Account
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2
+
+# Modify Account
+array set acct_mod_desc {}
+array set acct_mod_acct_vals {
+	description   slurmtestaccount2
+	organization  accountorg2
+}
+array set acct_mod_assoc_vals {}
+
+array set acct_mod_desc2 {}
+array set acct_mod_acct_vals2 {}
+array set acct_mod_assoc_vals2 {
+	fairshare     1700
+	maxcpumins    700000
+	maxjobs       70
+	maxnodes      700
+	maxwall       00:07:00
+}
+
+array set acct_mod_desc3 {}
+array set acct_mod_acct_vals3 {
+	description   slurmtestaccount1
+	organization  accountorg1
+}
+array set acct_mod_assoc_vals3 {
+	fairshare     -1
+	maxcpumins    -1
+	maxjobs       -1
+	maxnodes      -1
+	maxwall       -1
+}
+
 
 print_header $test_id
 
@@ -90,7 +114,7 @@ if {$access_err != 0} {
 remove_acct "" "$ta1,$ta2,$ta3"
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster2 "$tc1,$tc2" [array get clus_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -98,7 +122,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -106,7 +130,7 @@ if { $exit_code } {
 }
 
 # OK This is the real test, first test change the desc and org of the accounts
-incr exit_code [mod_acct "" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $ds2 $or2]
+incr exit_code [mod_acct2 "$ta1,$ta2,$ta3" [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -120,10 +144,10 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list account account=$ta1,$ta2,$ta3 format="Account,Description,Organization"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($ta1|$ta2|$ta3).$ds2.$or2." {
+	-re "($ta1|$ta2|$ta3).$acct_mod_acct_vals(description).$acct_mod_acct_vals(organization)." {
 		incr matches
 		exp_continue
 	}
@@ -142,7 +166,7 @@ if {$matches != 3} {
 }
 
 # Next, test change the limits of the accounts
-incr exit_code [mod_acct "" "" "$ta1" "" "" "" "$fs2" "" "" "" "" "" "" "" "" "$mc2" "" "$mj2" "$mn2" "" "$mw2" "" "" ""]
+incr exit_code [mod_acct2 $ta1  [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -156,10 +180,10 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list associations account=$ta1,$ta2,$ta3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($ta1.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.|($ta2|$ta3).($tc1|$tc2).1)" {
+	-re "($ta1.($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|($ta2|$ta3).($tc1|$tc2).1)" {
 		incr matches
 		exp_continue
 	}
@@ -179,7 +203,7 @@ if {$matches != 6} {
 }
 
 # Next, test change the desc and limits of the accounts
-incr exit_code [mod_acct "" "" "$ta1" "" "" "" -1 "" "" "" "" "" "" "" "" -1 "" -1 -1 "" -1 "" $ds1 $or1]
+incr exit_code [mod_acct2 $ta1  [array get acct_mod_desc3] [array get acct_mod_assoc_vals3] [array get acct_mod_acct_vals3]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -193,12 +217,12 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list account withassoc account=$ta1,$ta2,$ta3 format="Account,Description,Organization,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	# Any time you use () around something you need to combine all
 	# those things together since you can miss some and they be thrown away
-	-re "($ta1.$ds1.$or1.($tc1|$tc2).1.....|($ta2|$ta3).$ds2.$or2.($tc1|$tc2).1.....)" {
+	-re "($ta1.$acct_mod_acct_vals3(description).$acct_mod_acct_vals3(organization).($tc1|$tc2).1.....|($ta2|$ta3).$acct_mod_acct_vals(description).$acct_mod_acct_vals(organization).($tc1|$tc2).1.....)" {
 		incr matches
 		exp_continue
 	}
@@ -229,4 +253,3 @@ if {$exit_code == 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code
-

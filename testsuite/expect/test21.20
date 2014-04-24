@@ -51,6 +51,45 @@ set tu3         slurm_test-user.3
 set alo		Operator
 set access_err  0
 
+# Cluster
+array set clus_req {}
+
+# Accounts
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2,$tc3
+
+# User
+array set user_req {
+	defaultaccount slurm_test-account.2
+}
+set user_req(cluster) $tc1,$tc2,$tc3
+set user_req(account) $ta1,$ta2,$ta3
+set user_req(qos) $qs1,$qs2
+
+# Mod User 1
+array set user_mod_info {}
+set user_mod_info(cluster) $tc1,$tc2,$tc3
+set user_mod_info(account) "'$ta2'"
+array set user_mod_acct {}
+array set user_mod_assoc {}
+set user_mod_assoc(qoslevel) $qs3
+
+# Mod User 2
+array set user_mod_info2 {}
+set user_mod_info2(cluster) $tc1,$tc2,$tc3
+set user_mod_info2(account) "'$ta2'"
+array set user_mod_acct2 {}
+array set user_mod_assoc2 {}
+set user_mod_assoc2(qoslevel) "+$qs3"
+
+# Mod User 3
+array set user_mod_info3 {}
+set user_mod_info3(cluster) $tc1,$tc2,$tc3
+set user_mod_info3(account) "'$ta2'"
+array set user_mod_acct3 {}
+array set user_mod_assoc3 {}
+set user_mod_assoc3(qoslevel) "'-$qs2'"
+
 print_header $test_id
 
 set timeout 60
@@ -79,7 +118,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster2 "$tc1,$tc2,$tc3" [array get clus_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -99,7 +138,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -110,8 +149,7 @@ if { $exit_code } {
 
 #add users
 # cluster account name part admin dacct dwckey wckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall
-
-incr exit_code [add_user "$tc1,$tc2,$tc3" "$ta1,$ta2,$ta3" $tu1,$tu2,$tu3 "" "$alo" "$ta2" "" "" "$qs1,$qs2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_user2 "$tu1,$tu2,$tu3" [array get user_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -150,11 +188,12 @@ if {$matches != 27} {
 }
 
 #modify user1 QoS
-# account adminlevel cluster defaultaccount qoslevel name
-# cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
 
-#
-incr exit_code [mod_user "$tc1,$tc2,$tc3" "$ta2" $tu1 "" "" "" "" "$qs3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+# First array: information about user (ie. cluster,acount,partition...)
+# Second array: account inforamtion about user (ie. adminlevel, default account, ...)
+# Third array: assocoiation information about user (ie. fairshare, grpcpumins, grpcpu...)
+
+incr exit_code [mod_user2 $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -197,10 +236,13 @@ if {$matches != 21} {
 }
 
 #modify user2 QoS
-# account adminlevel cluster defaultaccount qoslevel name
-# qoslevel waccounts wcluster wnames
-#
-incr exit_code [mod_user "$tc1,$tc2,$tc3" "$ta2" $tu2 "" "" "" "" "+$qs3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+
+# First array: information about user (ie. cluster,acount,partition...)
+# Second array: account inforamtion about user (ie. adminlevel, default account, ...)
+# Third array: assocoiation information about user (ie. fairshare, grpcpumins, grpcpu...)
+
+incr exit_code [mod_user2 $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]]
+
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -248,10 +290,13 @@ if {$matches != 15} {
 
 
 #modify user3 QoS
-# account adminlevel cluster defaultaccount qoslevel name
-# qoslevel waccounts wcluster wnames
-#
-incr exit_code [mod_user "$tc1,$tc2,$tc3" "$ta2" $tu3 "" "" "" "" "-$qs2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+
+# First array: information about user (ie. cluster,acount,partition...)
+# Second array: account inforamtion about user (ie. adminlevel, default account, ...)
+# Third array: assocoiation information about user (ie. fairshare, grpcpumins, grpcpu...)
+
+incr exit_code [mod_user2 $tu3 [array get user_mod_info3] [array get user_mod_acct3] [array get user_mod_assoc3]]
+
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
