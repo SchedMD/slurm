@@ -38,7 +38,7 @@ proc inc21_21_4 {maxwall } {
 	#
 	spawn $srun -t[expr $maxwall + 1] --account=$ta $bin_id
 	expect {
-		-re "Job violates accounting policy" {
+		-re "Job violates accounting/QOS policy" {
 			send_user "\nThis error is expected, not a problem (Within: inc21.21.4)\n"
 			exp_continue
 		}
