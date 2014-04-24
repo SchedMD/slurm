@@ -162,7 +162,10 @@ proc _test_limits { } {
 	if { $exit_code } {
 		return $exit_code
 	}
-	sleep 2
+
+	# sleep the Schedule cycle default is 4
+	sleep 4
+
 	set matches 0
 	set mypid [spawn $squeue -o "\%i \%t \%r"]
 	expect {
