@@ -43,7 +43,7 @@ proc inc21_30_2 {} {
 			incr jobmatch
 		}
 		-re "Pending job allocation ($number)" {
-			send_user "\nFAILURE: Job should be running, but is not. (Within: inc21.30.2)\n"
+			send_user "\nFAILURE: Job should be running, but is not. If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen. (Within: inc21.30.2)\n"
 			set job_id1 $expect_out(1,string)
 			set exit_code 1
 		}
@@ -69,7 +69,7 @@ proc inc21_30_2 {} {
 			incr jobmatch
 		}
 		timeout {
-			send_user "\nFAILURE: salloc is not reponding (Within: inc21.30.2)\n"
+			send_user "\nFAILURE: salloc is not reponding (Within: inc21.30.2) If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen. \n"
 			set exit_code 1
 		}
 		eof {
