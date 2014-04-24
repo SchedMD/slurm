@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for sbatch #PBS -m (mail) option parsing.
  -- Fix job dependency bug. Jobs dependent upon multiple other jobs may start
     prematurely.
+ -- Set "Reason" field for all elements of a job array on short-circuited
+    scheduling for job arrays.
 
 * Changes in Slurm 14.03.1-2
 ==========================

@@ -750,6 +750,7 @@ extern int schedule(uint32_t job_limit)
 	time_t now, sched_start;
 	uint32_t reject_array_job_id = 0;
 	struct part_record *reject_array_part = NULL;
+	uint16_t reject_state_reason = WAIT_NO_REASON;
 	DEF_TIMERS;
 
 	if (sched_update != slurmctld_conf.last_update) {
@@ -988,8 +989,10 @@ next_part:			part_ptr = (struct part_record *)
 
 		if (job_ptr->array_task_id != NO_VAL) {
 			if ((reject_array_job_id == job_ptr->array_job_id) &&
-			    (reject_array_part   == job_ptr->part_ptr))
+			    (reject_array_part   == job_ptr->part_ptr)) {
+				job_ptr->state_reason = reject_state_reason;
 				continue;  /* already rejected array element */
+			}
 
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job_id = job_ptr->array_job_id;
@@ -1300,6 +1303,13 @@ next_part:			part_ptr = (struct part_record *)
 				job_completion_logger(job_ptr, false);
 				delete_job_details(job_ptr);
 			}
+		}
+
+		if ((reject_array_job_id == job_ptr->array_job_id) &&
+		    (reject_array_part   == job_ptr->part_ptr)) {
+			/* All other elements of this job array get the
+			 * same reason */
+			reject_state_reason = job_ptr->state_reason;
 		}
 	}
 
