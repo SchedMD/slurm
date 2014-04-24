@@ -87,6 +87,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/util-net.h"
 
 #include "src/api/pmi_server.h"
 
@@ -1003,7 +1004,10 @@ static void _set_options(const int argc, char **argv)
 		case (int)'D':
 			opt.cwd_set = true;
 			xfree(opt.cwd);
-			opt.cwd = xstrdup(optarg);
+			if (is_full_path(optarg))
+				opt.cwd = xstrdup(optarg);
+			else
+				opt.cwd = make_full_path(optarg);
 			break;
 		case (int)'e':
 			if (opt.pty) {

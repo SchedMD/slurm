@@ -480,9 +480,10 @@ sharing the same job name and user have terminated.
 
 .TP
 \fB\-D\fR, \fB\-\-chdir\fR=<\fIpath\fR>
-have the remote processes do a chdir to \fIpath\fR before beginning
+Have the remote processes do a chdir to \fIpath\fR before beginning
 execution. The default is to chdir to the current working directory
-of the \fBsrun\fR process.
+of the \fBsrun\fR process. The path can be specified as full path or
+relative path to the directory where the command is executed.
 
 .TP
 \fB\-e\fR, \fB\-\-error\fR=<\fImode\fR>

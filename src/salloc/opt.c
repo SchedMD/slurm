@@ -87,7 +87,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
+#include "src/common/util-net.h"
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
@@ -750,7 +750,10 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'D':
 			xfree(opt.cwd);
-			opt.cwd = xstrdup(optarg);
+			if (is_full_path(optarg))
+				opt.cwd = xstrdup(optarg);
+			else
+				opt.cwd = make_full_path(optarg);
 			break;
 		case 'F':
 			xfree(opt.nodelist);

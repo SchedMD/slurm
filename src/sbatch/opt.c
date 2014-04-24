@@ -86,6 +86,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/util-net.h"
 
 #include "src/sbatch/opt.h"
 
@@ -1178,7 +1179,10 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'D':
 			xfree(opt.cwd);
-			opt.cwd = xstrdup(optarg);
+			if (is_full_path(optarg))
+				opt.cwd = xstrdup(optarg);
+			else
+				opt.cwd = make_full_path(optarg);
 			break;
 		case 'e':
 			xfree(opt.efname);
