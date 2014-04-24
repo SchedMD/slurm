@@ -2580,30 +2580,14 @@ static bool _opt_verify(void)
 
 static uint16_t _parse_pbs_mail_type(const char *arg)
 {
-	uint16_t rc;
+	uint16_t rc =  0;
 
-	if (strcasecmp(arg, "b") == 0)
-		rc = MAIL_JOB_BEGIN;
-	else if  (strcasecmp(arg, "e") == 0)
-		rc = MAIL_JOB_END;
-	else if (strcasecmp(arg, "a") == 0)
-		rc = MAIL_JOB_FAIL;
-	else if (strcasecmp(arg, "bea") == 0
-		|| strcasecmp(arg, "eba") == 0
-		|| strcasecmp(arg, "eab") == 0
-		|| strcasecmp(arg, "bae") == 0)
-		rc = MAIL_JOB_BEGIN | MAIL_JOB_END |  MAIL_JOB_FAIL;
-	else if (strcasecmp(arg, "be") == 0
-		|| strcasecmp(arg, "eb") == 0)
-		rc = MAIL_JOB_BEGIN | MAIL_JOB_END;
-	else if (strcasecmp(arg, "ba") == 0
-		|| strcasecmp(arg, "ab") == 0)
-		rc = MAIL_JOB_BEGIN | MAIL_JOB_FAIL;
-	else if (strcasecmp(arg, "ea") == 0
-		|| strcasecmp(arg, "ae") == 0)
-		rc = MAIL_JOB_END |  MAIL_JOB_FAIL;
-	else
-		rc = 0;		/* arg="n" or failure */
+	if (strchr(arg, 'b') || strchr(arg, 'B'))
+		rc |= MAIL_JOB_BEGIN;
+	if (strchr(arg, 'e') || strchr(arg, 'E'))
+		rc |= MAIL_JOB_END;
+	if (strchr(arg, 'a') || strchr(arg, 'A'))
+		rc |= MAIL_JOB_FAIL;
 
 	return rc;
 }

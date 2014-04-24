@@ -997,16 +997,18 @@ In this configuration supported values include:
 .RS
 .TP 6
 \fBsystem\fR
-Use the system\-wide network performance counters. Because only one
-job can use this at a time this option will allocate every node in the
-cluster.  In steps inside the allocation wish to run on less than the
-full system they must specify the node count for each step.
+Use the system\-wide network performance counters. Only nodes requested
+will be marked in use for the job allocation.  If the job does not
+fill up the entire system the rest of the nodes are not
+able to be used by other jobs using NPC, if idle their state will appear as
+PerfCnts.  These nodes are still available for other jobs not using NPC.
 .TP
 \fBblade\fR
 Use the blade network performance counters. Only nodes requested
 will be marked in use for the job allocation.  If the job does not
 fill up the entire blade(s) allocated to the job those blade(s) are not
-able to be used by other jobs, but will appear in the state PerfCnts.
+able to be used by other jobs using NPC, if idle their state will appear as
+PerfCnts.  These nodes are still available for other jobs not using NPC.
 .TP
 .RE
 

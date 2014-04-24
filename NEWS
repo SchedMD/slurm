@@ -39,6 +39,11 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 14.03.2
 ==========================
  -- Fix race condition if PrologFlags=Alloc,NoHold is used.
+ -- Cray - Make NPC only limit running other NPC jobs on shared blades instead
+    of limited non NPC jobs.
+ -- Fix for sbatch #PBS -m (mail) option parsing.
+ -- Fix job dependency bug. Jobs dependent upon multiple other jobs may start
+    prematurely.
 
 * Changes in Slurm 14.03.1-2
 ==========================
