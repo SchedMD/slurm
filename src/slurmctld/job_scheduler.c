@@ -1695,55 +1695,6 @@ static void _depend_list2str(struct job_record *job_ptr)
 }
 
 /*
- * Remove a dependency from within the job dependency string.
- */
-static void _rm_dependency(struct job_record *job_ptr,
-			   struct depend_spec *dep_ptr)
-{
-	int rmv_len;
-	char *base_off, *rmv_dep, *rmv_off;
-
-	if (!job_ptr->details || !job_ptr->details->dependency)
-		return;
-
-	if (dep_ptr->array_task_id == INFINITE) {
-		rmv_dep = xstrdup_printf(":%u_*", dep_ptr->job_id);
-	} else if (dep_ptr->array_task_id != NO_VAL) {
-		rmv_dep = xstrdup_printf(":%u_%u",
-					 dep_ptr->job_id,
-					 dep_ptr->array_task_id);
-	} else {
-		rmv_dep = xstrdup_printf(":%u", dep_ptr->job_id);
-	}
-	rmv_len = strlen(rmv_dep);
-	base_off = job_ptr->details->dependency;
-	while ((rmv_off = strstr(base_off, rmv_dep))) {
-		if (isdigit(rmv_off[rmv_len])) {
-			/* Partial job ID match (e.g. "123" rather than "12") */
-			base_off += rmv_len;
-			continue;
-		}
-		memmove(rmv_off, rmv_off + rmv_len,
-			strlen(rmv_off + rmv_len) + 1);
-		if (rmv_off[0] == ':')
-			continue;
-		if ((rmv_off == job_ptr->details->dependency) ||
-		    ! isalpha(rmv_off[-1]))
-			continue;
-		/* Remove dependency type also (e.g. "afterany"); */
-		for (base_off = rmv_off - 1;
-		     base_off > job_ptr->details->dependency; base_off--) {
-			if (!isalpha(base_off[0])) {
-				base_off++;
-				break;
-			}
-		}
-		memmove(base_off, rmv_off, strlen(rmv_off) + 1);
-	}
-	xfree(rmv_dep);
-}
-
-/*
  * Determine if a job's dependencies are met
  * RET: 0 = no dependencies
  *      1 = dependencies remain
@@ -1753,7 +1704,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 {
 	ListIterator depend_iter, job_iterator;
 	struct depend_spec *dep_ptr;
-	bool failure = false, depends = false;
+	bool failure = false, depends = false, rebuild_str = false;
  	List job_queue = NULL;
  	bool run_now;
 	int results = 0;
@@ -1877,11 +1828,13 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		} else
 			failure = true;
 		if (clear_dep) {
-			_rm_dependency(job_ptr, dep_ptr);
 			list_delete_item(depend_iter);
+			rebuild_str = true;
 		}
 	}
 	list_iterator_destroy(depend_iter);
+	if (rebuild_str)
+		_depend_list2str(job_ptr);
 	if (list_count(job_ptr->details->depend_list) == 0)
 		xfree(job_ptr->details->dependency);
 
