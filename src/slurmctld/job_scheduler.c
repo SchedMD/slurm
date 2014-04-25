@@ -776,6 +776,18 @@ extern int schedule(uint32_t job_limit)
 		xfree(prio_type);
 
 		sched_params = slurm_get_sched_params();
+
+
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "batch_sched_delay=")))
+		/*                                 012345678901234567 */
+			batch_sched_delay = atoi(tmp_ptr + 18);
+		if (batch_sched_delay < 0) {
+			error("Invalid batch_sched_delay: %d",
+			      batch_sched_delay);
+			batch_sched_delay = 3;
+		}
+
 		if (sched_params &&
 		    (tmp_ptr = strstr(sched_params, "default_queue_depth="))) {
 		/*                                   01234567890123456789 */
@@ -1323,7 +1335,14 @@ next_part:			part_ptr = (struct part_record *)
 			list_iterator_destroy(job_iterator);
 		if (part_iterator)
 			list_iterator_destroy(part_iterator);
-	} else {
+	} else if (job_queue) {
+		if (job_ptr && (job_ptr->state_reason == WAIT_NO_REASON))
+			job_ptr->state_reason = WAIT_SCHED_TIMEOUT;
+		while ((job_queue_rec = list_pop(job_queue))) {
+			job_ptr = job_queue_rec->job_ptr;
+			if (job_ptr->state_reason == WAIT_NO_REASON)
+				job_ptr->state_reason = WAIT_SCHED_TIMEOUT;
+		}
 		FREE_NULL_LIST(job_queue);
 	}
 	xfree(sched_part_ptr);

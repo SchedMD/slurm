@@ -337,34 +337,12 @@ the same time limit (for example the partition's time limit), then backfill
 will not be effective. Note that partitions can have both default and maximum
 time limits, which can be helpful in configuring a system for effective
 backfill scheduling.</p>
-<p>In addition, there are significant limitations in the current backfill
-scheduler plugin.
-It was designed to perform backfill node scheduling for a homogeneous cluster.
-It does not manage scheduling on individual processors (or other consumable
-resources). It does not update the required or excluded node list of
-individual jobs. It does support job's with constraints/features unless
-the exclusive OR operator is used in the constraint expression.
-You can use the scontrol show command to check if these conditions apply.</p>
-<ul>
-<li>Partition: State=UP</li>
-<li>Partition: RootOnly=NO</li>
-<li>Partition: Shared=NO</li>
-<li>Job: ReqNodeList=NULL</li>
-<li>Job: ExcNodeList=NULL</li>
-<li>Job: Contiguous=0</li>
-<li>Job: Features=NULL</li>
-<li>Job: MinCPUs, MinMemory, and MinTmpDisk satisfied by all nodes in
-the partition</li>
-<li>Job: MinCPUs or MinNodes not to exceed partition's MaxNodes</li>
-</ul>
-<p>If the partitions specifications differ from those listed above,
-no jobs in that partition will be scheduled by the backfills scheduler.
-Their jobs will only be scheduled on a First-In-First-Out (FIFO) basis.</p>
-<p>Jobs failing to satisfy the requirements above (i.e. with specific
-node requirements) will not be considered candidates for backfill
-scheduling and other jobs may be scheduled ahead of these jobs.
-These jobs are subject to starvation, but will not block other
-jobs from running when sufficient resources are available for them.</p>
+
+<p>In addition, there are a multitude of backfill scheduling parameters
+which can impact which jobs are considered for backfill scheduling, such
+as the maximum number of jobs tested per user. For more information see
+the slurm.conf man page and check the configuration of SchedulingParameters
+on your system.</p>
 
 <p><a name="steps"><b>8. How can I run multiple jobs from within a
 single script?</b></a><br>
@@ -1951,6 +1929,6 @@ sacctmgr delete user name=adam cluster=tux account=chemistry
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 April 2014</p>
+<p style="text-align:center;">Last modified 25 April 2014</p>
 
 <!--#include virtual="footer.txt"-->

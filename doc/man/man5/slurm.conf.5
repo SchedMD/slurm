@@ -1861,6 +1861,13 @@ The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.
 .RS
 .TP
+\fBbatch_sched_delay=#\fR
+How long, in seconds, the scheduling of batch jobs can be delayed.
+This can be useful in a high\-throughput environment in which batch jobs are
+submitted at a very high rate (i.e. using the sbatch command) and one wishes
+to reduce the overhead of attempting to schedule each job at submit time.
+The default value is 3 seconds.
+.TP
 \fBbf_continue\fR
 The backfill scheduler periodically releases locks in order to permit other
 operations to proceed rather than blocking all activity for what could be an
