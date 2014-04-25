@@ -776,6 +776,18 @@ extern int schedule(uint32_t job_limit)
 		xfree(prio_type);
 
 		sched_params = slurm_get_sched_params();
+
+
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "batch_sched_delay=")))
+		/*                                 012345678901234567 */
+			batch_sched_delay = atoi(tmp_ptr + 18);
+		if (batch_sched_delay < 0) {
+			error("Invalid batch_sched_delay: %d",
+			      batch_sched_delay);
+			batch_sched_delay = 3;
+		}
+
 		if (sched_params &&
 		    (tmp_ptr = strstr(sched_params, "default_queue_depth="))) {
 		/*                                   01234567890123456789 */

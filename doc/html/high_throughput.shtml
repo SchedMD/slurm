@@ -104,6 +104,11 @@ schedules jobs only on a First In First Out (FIFO) basis.</li>
 <li><b>SchedulerParameters</b>:
 Several scheduling parameters are available.
 <ul>
+<li>Setting option <b>batch_sched_delay</b> will control how long the
+scheduling of batch jobs can be delayed. This effects only batch jobs.
+For example, if many jobs are submitted each second, the overhead of
+trying to schedule each one will adversely impact the rate at which jobs
+can be submitted. The default value is 3 seconds.</li>
 <li>Setting option <b>defer</b> will avoid attempting to schedule each job
 individually at job submit time, but defer it until a later time when
 scheduling multiple jobs simultaneously may be possible.
@@ -164,6 +169,6 @@ not appear to add any measurable overhead.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 7 March 2014</p>
+<p style="text-align:center;">Last modified 25 April 2014</p>
 
 <!--#include virtual="footer.txt"-->

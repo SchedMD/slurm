@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
  -- Set "Reason" field for all elements of a job array on short-circuited
     scheduling for job arrays.
  -- Allow -D option of salloc/srun/sbatch to specify relative path.
+ -- Added SchedulerParameter of batch_sched_delay to permit many batch jobs
+    to be submitted between each scheduling attempt to reduce overhead of
+    scheduling logic.
 
 * Changes in Slurm 14.03.1-2
 ==========================
