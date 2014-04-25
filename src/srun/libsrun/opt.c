@@ -196,6 +196,8 @@
 #define LONG_OPT_LAUNCH_CMD      0x156
 #define LONG_OPT_PROFILE         0x157
 #define LONG_OPT_EXPORT          0x158
+#define LONG_OPT_PRIORITY        0x160
+
 
 extern char **environ;
 
@@ -528,6 +530,9 @@ static void _opt_default()
 	opt.wait4switch = -1;
 	opt.launcher_opts = NULL;
 	opt.launch_cmd = false;
+
+	opt.nice = 0;
+	opt.priority = 0;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -910,6 +915,7 @@ static void _set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
+		{"priority",         required_argument, 0, LONG_OPT_PRIORITY},
 		{"profile",          required_argument, 0, LONG_OPT_PROFILE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
@@ -1420,6 +1426,19 @@ static void _set_options(const int argc, char **argv)
 				}
 			}
 			break;
+		case LONG_OPT_PRIORITY: {
+			long long priority = strtoll(optarg, NULL, 10);
+			if (priority < 0) {
+				error("Priority must be >= 0");
+				exit(error_exit);
+			}
+			if (priority >= NO_VAL) {
+				error("Priority must be < %i", NO_VAL);
+				exit(error_exit);
+			}
+			opt.priority = priority;
+			break;
+		}
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
 			break;
@@ -2548,6 +2567,7 @@ static void _help(void)
 "  -o, --output=out            location of stdout redirection\n"
 "  -O, --overcommit            overcommit resources\n"
 "  -p, --partition=partition   partition requested\n"
+"      --priority=value        set the priority of the job to value\n"
 "      --prolog=program        run \"program\" before launching job step\n"
 "      --profile=value         enable acct_gather_profile for detailed data\n"
 "                              value is all or none or any combination of\n"

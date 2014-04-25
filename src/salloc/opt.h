@@ -104,6 +104,7 @@ typedef struct salloc_options {
 	unsigned int jobid;	/* --jobid=jobid		*/
 	char *dependency;	/* --dependency, -P type:jobid	*/
 	int nice;		/* --nice			*/
+	uint32_t priority;	/* --priority */
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/
 	char *qos;		/* --qos			*/

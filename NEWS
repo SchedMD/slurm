@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- scontrol hold/release accepts job name option (in addition to job ID).
  -- Handle when trying to cancel a step that hasn't started yet better.
  -- Handle Max/GrpCPU limits better
+ -- Add --priority option to salloc, sbatch and srun commands.
 
 * Changes in Slurm 14.03.1-2
 ==========================

@@ -125,6 +125,7 @@ Lead Slurm developers are:
 <li>Steven McDougall (SiCortex)</li>
 <li>Donna Mecozzi (Lawrence Livermore National Laboratory)</li>
 <li>Bj&oslash;rn-Helge Mevik (University of Oslo, Norway)</li>
+<li>Stuart Midgley (Down Under GeoSolutions)</li>
 <li>Chris Morrone (Lawrence Livermore National Laboratory)</li>
 <li>Pere Munt (Barcelona Supercomputing Center, Spain)</li>
 <br>
@@ -195,6 +196,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 11 April 2014</p>
+<p style="text-align:center;">Last modified 25 April 2014</p>
 
 <!--#include virtual="footer.txt"-->

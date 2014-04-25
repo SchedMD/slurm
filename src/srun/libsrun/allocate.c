@@ -675,6 +675,8 @@ job_desc_msg_create_from_opts (void)
 	j->dependency     = opt.dependency;
 	if (opt.nice)
 		j->nice   = NICE_OFFSET + opt.nice;
+	if (opt.priority)
+		j->priority = opt.priority;
 
 	if (opt.cpu_bind)
 		j->cpu_bind       = opt.cpu_bind;
