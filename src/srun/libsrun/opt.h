@@ -138,6 +138,7 @@ typedef struct srun_options {
 	char *mpi_type;		/* --mpi=type			*/
 	char *dependency;	/* --dependency, -P type:jobid	*/
 	int nice;		/* --nice			*/
+	uint32_t priority;	/* --priority */
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/
 	char *qos;		/* --qos			*/

@@ -167,6 +167,8 @@
 #define LONG_OPT_WAIT_ALL_NODES  0x142
 #define LONG_OPT_REQ_SWITCH      0x143
 #define LONG_OPT_PROFILE         0x144
+#define LONG_OPT_PRIORITY        0x160
+
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -368,6 +370,9 @@ static void _opt_default()
 	opt.wckey           = NULL;
 	opt.req_switch      = -1;
 	opt.wait4switch     = -1;
+
+	opt.nice = 0;
+	opt.priority = 0;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -673,6 +678,7 @@ void set_options(const int argc, char **argv)
 		{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"nice",          optional_argument, 0, LONG_OPT_NICE},
+		{"priority",      required_argument, 0, LONG_OPT_PRIORITY},
 		{"no-bell",       no_argument,       0, LONG_OPT_NO_BELL},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
@@ -1018,6 +1024,19 @@ void set_options(const int argc, char **argv)
 				}
 			}
 			break;
+		case LONG_OPT_PRIORITY: {
+			long long priority = strtoll(optarg, NULL, 10);
+			if (priority < 0) {
+				error("Priority must be >= 0");
+				exit(error_exit);
+			}
+			if (priority >= NO_VAL) {
+				error("Priority must be < %i", NO_VAL);
+				exit(error_exit);
+			}
+			opt.priority = priority;
+			break;
+		}
 		case LONG_OPT_BELL:
 			opt.bell = BELL_ALWAYS;
 			break;
@@ -1923,6 +1942,7 @@ static void _help(void)
 "      --ntasks-per-node=n     number of tasks to invoke on each node\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -O, --overcommit            overcommit resources\n"
+"      --priority=value        set the priority of the job to value\n"
 "      --profile=value         enable acct_gather_profile for detailed data\n"
 "                              value is all or none or any combination of\n"
 "                              energy, lustre, network or task\n"
