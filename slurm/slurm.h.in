@@ -334,6 +334,7 @@ enum job_state_reason {
 	WAIT_CLEANING,          /* If a job is requeued and it is
 				 * still cleaning up from the last run. */
 	WAIT_PROLOG,		/* Prolog is running */
+	WAIT_SCHED_TIMEOUT,	/* Scheduler could not test */
 };
 
 enum job_acct_types {
