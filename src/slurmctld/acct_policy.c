@@ -480,25 +480,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
-		} else if ((job_desc->max_cpus == NO_VAL)
-			   || (acct_policy_limit_set->max_cpus
-			       && (job_desc->max_cpus > qos_max_cpus_limit))) {
-			job_desc->max_cpus = qos_max_cpus_limit;
-			acct_policy_limit_set->max_cpus = 1;
-		} else if (strict_checking
-			   && (job_desc->max_cpus > qos_max_cpus_limit)) {
-			if (reason)
-				*reason = WAIT_QOS_RESOURCE_LIMIT;
-			info("job submit for user %s(%u): "
-			     "max cpu changed %u -> %u because "
-			     "of qos limit",
-			     user_name,
-			     job_desc->user_id,
-			     job_desc->max_cpus,
-			     qos_max_cpus_limit);
-			if (job_desc->max_cpus == NO_VAL)
-				acct_policy_limit_set->max_cpus = 1;
-			job_desc->max_cpus = qos_max_cpus_limit;
 		}
 
 		/* for validation we don't need to look at
@@ -628,25 +609,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       qos_ptr->max_cpus_pj);
 			rc = false;
 			goto end_it;
-		} else if ((job_desc->max_cpus == NO_VAL)
-			   || (acct_policy_limit_set->max_cpus
-			       && (job_desc->max_cpus
-				   > qos_ptr->max_cpus_pj))) {
-			job_desc->max_cpus = qos_ptr->max_cpus_pj;
-			acct_policy_limit_set->max_cpus = 1;
-		} else if (reason
-			   && job_desc->max_cpus > qos_ptr->max_cpus_pj) {
-			*reason = WAIT_QOS_JOB_LIMIT;
-			info("job submit for user %s(%u): "
-			     "max cpu changed %u -> %u because "
-			     "of qos limit",
-			     user_name,
-			     job_desc->user_id,
-			     job_desc->max_cpus,
-			     qos_ptr->max_cpus_pj);
-			if (job_desc->max_cpus == NO_VAL)
-				acct_policy_limit_set->max_cpus = 1;
-			job_desc->max_cpus = qos_ptr->max_cpus_pj;
 		}
 
 		/* for validation we don't need to look at
@@ -770,22 +732,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
-		} else if ((job_desc->max_cpus == NO_VAL)
-			   || (acct_policy_limit_set->max_cpus
-			       && (job_desc->max_cpus > assoc_ptr->grp_cpus))) {
-			job_desc->max_cpus = assoc_ptr->grp_cpus;
-			acct_policy_limit_set->max_cpus = 1;
-		} else if (job_desc->max_cpus > assoc_ptr->grp_cpus) {
-			info("job submit for user %s(%u): "
-			     "max cpu changed %u -> %u because "
-			     "of account limit",
-			     user_name,
-			     job_desc->user_id,
-			     job_desc->max_cpus,
-			     assoc_ptr->grp_cpus);
-			if (job_desc->max_cpus == NO_VAL)
-				acct_policy_limit_set->max_cpus = 1;
-			job_desc->max_cpus = assoc_ptr->grp_cpus;
 		}
 
 		/* for validation we don't need to look at
@@ -893,23 +839,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       assoc_ptr->max_cpus_pj);
 			rc = false;
 			break;
-		} else if (job_desc->max_cpus == NO_VAL
-			   || (acct_policy_limit_set->max_cpus
-			       && (job_desc->max_cpus
-				   > assoc_ptr->max_cpus_pj))) {
-			job_desc->max_cpus = assoc_ptr->max_cpus_pj;
-			acct_policy_limit_set->max_cpus = 1;
-		} else if (job_desc->max_cpus > assoc_ptr->max_cpus_pj) {
-			info("job submit for user %s(%u): "
-			     "max cpu changed %u -> %u because "
-			     "of account limit",
-			     user_name,
-			     job_desc->user_id,
-			     job_desc->max_cpus,
-			     assoc_ptr->max_cpus_pj);
-			if (job_desc->max_cpus == NO_VAL)
-				acct_policy_limit_set->max_cpus = 1;
-			job_desc->max_cpus = assoc_ptr->max_cpus_pj;
 		}
 
 		/* for validation we don't need to look at
