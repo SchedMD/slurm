@@ -346,7 +346,7 @@ static bool _is_valid_path (char *path, char *msg)
 	 *  Allocate temporary space for walking the list of dirs:
 	 */
 	int pathlen;
-	char *buf, *p, *entry;
+	char *buf = NULL, *p, *entry;
 
 	if (path == NULL) {
 		error ("is_valid_path: path is NULL!");

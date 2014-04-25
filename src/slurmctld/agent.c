@@ -1517,6 +1517,26 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 	}
 }
 
+static void _set_job_term_info(struct job_record *job_ptr, uint16_t mail_type,
+			       char *buf, int buf_len)
+{
+	uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
+
+	buf[0] = '\0';
+	if ((mail_type == MAIL_JOB_END) || (mail_type == MAIL_JOB_FAIL)) {
+		if (WIFEXITED(job_ptr->exit_code)) {
+			int exit_code = WEXITSTATUS(job_ptr->exit_code);
+			snprintf(buf, buf_len, ", %s, ExitCode %d",
+				 job_state_string(base_state), exit_code);
+		} else {
+			snprintf(buf, buf_len, ", %s",
+				 job_state_string(base_state));
+		}
+	} else if (buf_len > 0) {
+		buf[0] = '\0';
+	}
+}
+
 /*
  * mail_job_info - Send e-mail notice of job state change
  * IN job_ptr - job identification
@@ -1524,7 +1544,7 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
  */
 extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 {
-	char job_time[128];
+	char job_time[128], term_msg[128];
 	mail_info_t *mi = _mail_alloc();
 
 	if (!job_ptr->mail_user)
@@ -1533,9 +1553,11 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 		mi->user_name = xstrdup(job_ptr->mail_user);
 
 	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
-	mi->message = xstrdup_printf("SLURM Job_id=%u Name=%s %s%s",
+	_set_job_term_info(job_ptr, mail_type, term_msg, sizeof(term_msg));
+	mi->message = xstrdup_printf("SLURM Job_id=%u Name=%s %s%s%s",
 				     job_ptr->job_id, job_ptr->name,
-				     _mail_type_str(mail_type), job_time);
+				     _mail_type_str(mail_type), job_time,
+				     term_msg);
 
 	debug("email msg to %s: %s", mi->user_name, mi->message);
 
