@@ -1335,8 +1335,8 @@ next_part:			part_ptr = (struct part_record *)
 			list_iterator_destroy(job_iterator);
 		if (part_iterator)
 			list_iterator_destroy(part_iterator);
-	} else {
-		if (job_ptr->state_reason == WAIT_NO_REASON)
+	} else if (job_queue) {
+		if (job_ptr && (job_ptr->state_reason == WAIT_NO_REASON))
 			job_ptr->state_reason = WAIT_SCHED_TIMEOUT;
 		while ((job_queue_rec = list_pop(job_queue))) {
 			job_ptr = job_queue_rec->job_ptr;
