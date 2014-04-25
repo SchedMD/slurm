@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     scheduling logic.
  -- Added job reason of "SchedTimeout" if the scheduler was not able to reach
     the job to attempt scheduling it.
+ -- Add job's exit state and exit code to email message.
 
 * Changes in Slurm 14.03.1-2
 ==========================
