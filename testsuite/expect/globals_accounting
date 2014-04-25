@@ -152,7 +152,7 @@ maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
 		timeout {
 			send_user "\nFAILURE: sacctmgr add not responding\n"
 			slow_kill $my_pid
-			exit_code 1
+			incr exit_code 1
 		}
 		eof {
 			wait
@@ -256,7 +256,7 @@ proc add_cluster2 { name clus_req_in } {
 		timeout {
 			send_user "\nFAILURE: sacctmgr add not responding\n"
 			slow_kill $my_pid
-			exit_code 1
+			incr exit_code 1
 		}
 		eof {
 			wait
@@ -1264,7 +1264,7 @@ proc add_qos {name} {
 		timeout {
 			send_user "\nFAILURE: sacctmgr add not responding\n"
 			slow_kill $my_pid
-			exit_code 1
+			incr exit_code 1
 		}
 		eof {
 			wait
@@ -1590,7 +1590,7 @@ proc add_res {name count manager server desc} {
 		timeout {
 			send_user "\nFAILURE: sacctmgr add not responding\n"
 			slow_kill $my_pid
-			exit_code 1
+			incr exit_code 1
 		}
 		eof {
 			wait
@@ -1647,7 +1647,7 @@ proc add_clus_res {name allowed} {
 		timeout {
 			send_user "\nFAILURE: sacctmgr add not responding\n"
 			slow_kill $my_pid
-			exit_code 1
+			incr exit_code 1
 		}
 		eof {
 			wait
