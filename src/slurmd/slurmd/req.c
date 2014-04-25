@@ -4078,10 +4078,11 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 */
 	if (_waiter_init(req->job_id) == SLURM_ERROR) {
 		if (msg->conn_fd >= 0) {
-			if (_step_is_starting(req->job_id, NO_VAL))
-				slurm_send_rc_msg (msg, EAGAIN);
-			else
-				slurm_send_rc_msg (msg, SLURM_SUCCESS);
+			/* No matter if the step hasn't started yet or
+			 * not just send a success to let the
+			 * controller know we got this request.
+			 */
+			slurm_send_rc_msg (msg, SLURM_SUCCESS);
 		}
 		return;
 	}
@@ -4105,8 +4106,12 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 */
 	if (_step_is_starting(req->job_id, NO_VAL)) {
 		if (msg->conn_fd >= 0) {
-			debug4("sent EAGAIN");
-			slurm_send_rc_msg (msg, EAGAIN);
+			/* If the step hasn't started yet just send a
+			 * success to let the controller know we got
+			 * this request.
+			 */
+			debug("sent SUCCESS, waiting for step to start");
+			slurm_send_rc_msg (msg, SLURM_SUCCESS);
 			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 				error ( "rpc_kill_job: close(%d): %m",
 					msg->conn_fd);

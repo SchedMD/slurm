@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
     the job to attempt scheduling it.
  -- Add job's exit state and exit code to email message.
  -- scontrol hold/release accepts job name option (in addition to job ID).
+ -- Handle when trying to cancel a step that hasn't started yet better.
 
 * Changes in Slurm 14.03.1-2
 ==========================
