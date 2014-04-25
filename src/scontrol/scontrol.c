@@ -1804,8 +1804,10 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               descriptive string.                          \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
-     hold <jobid_list>        prevent specified job from starting (see release)\n\
-     holdu <jobid_list>       place user hold on specified job (see release)\n\
+     hold <job_list>          prevent specified job from starting. <job_list>\n\
+			      is either a space separate list of job IDs or\n\
+			      job names \n\
+     holdu <job_list>         place user hold on specified job (see hold)  \n\
      hide                     do not display information about hidden      \n\
 			      partitions                                   \n\
      listpids <job_id<.step>> List pids associated with the given jobid, or\n\
@@ -1823,7 +1825,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      reboot_nodes [<nodelist>]  reboot the nodes when they become idle.    \n\
                               By default all nodes are rebooted.           \n\
      reconfigure              re-read configuration files.                 \n\
-     release <jobid_list>     permit specified job to start (see hold)     \n\
+     release <job_list>       permit specified job to start (see hold)     \n\
      requeue <job_id>         re-queue a batch job                         \n\
      requeuehold <job_id>     re-queue and hold a batch                    \n\
      resume <jobid_list>      resume previously suspended job (see suspend)\n\
@@ -1834,9 +1836,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
 			      (the primary controller will be stopped)     \n\
-     suspend <jobid_list>     susend specified job (see resume)            \n\
+     suspend <job_list>       susend specified job (see resume)            \n\
      takeover                 ask slurm backup controller to take over     \n\
-     uhold <jobid_list>       place user hold on specified job (see release)\n\
+     uhold <jobid_list>       place user hold on specified job (see hold)\n\
      update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
 			      step or bluegene block/submp configuration   \n\
      verbose                  enable detailed logging.                     \n\
