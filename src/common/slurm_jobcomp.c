@@ -109,6 +109,7 @@ jobcomp_destroy_job(void *object)
 		xfree(job->rotate);
 		xfree(job->geo);
 		xfree(job->bg_start_point);
+		xfree(job->work_dir);
 		xfree(job);
 	}
 }
