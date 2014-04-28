@@ -77,7 +77,7 @@ static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 	tmp = xstrdup(fname);
 	while ((ptr = strstr(tmp, "%A"))) {	/* Array job ID */
 		ptr[0] = '\0';
-		if (job_ptr->array_task_id == (uint16_t) NO_VAL) {
+		if (job_ptr->array_task_id == NO_VAL) {
 			/* Not a job array */
 			xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->job_id, ptr+2);
 		} else {
