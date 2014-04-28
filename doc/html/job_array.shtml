@@ -83,7 +83,7 @@ output files names of this sort "slurm-36_1.out", "slurm-36_2.out" and
 "slurm-36_3.out".
 If these file name options are used without being part of a job array then
 "%A" will be replaced by the current job ID and "%a" will be replaced by
-65534 (NO_VAL).</p>
+4,294,967,294 (equivalent to 0xfffffffe or NO_VAL).</p>
 
 <h2>Scancel Command Use</h2>
 
@@ -300,6 +300,6 @@ array data structure is added rather than the current logic that only
 adds a new field to the existing job data structure.
 It is not certain when that work will occur.</p>
 
-<p style="text-align:center;">Last modified 24 January 2014</p>
+<p style="text-align:center;">Last modified 28 April 2014</p>
 
 <!--#include virtual="footer.txt"-->

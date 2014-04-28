@@ -130,7 +130,7 @@ typedef struct {
 	uint32_t       jobid;  /* Current SLURM job id                      */
 	uint32_t       stepid; /* Current step id (or NO_VAL)               */
 	uint32_t       array_job_id;  /* job array master job ID            */
-	uint16_t       array_task_id; /* job array ID                       */
+	uint32_t       array_task_id; /* job array ID                       */
 	uint32_t       nnodes; /* number of nodes in current job            */
 	uint32_t       ntasks; /* total number of tasks in current job      */
 	uint32_t       nodeid; /* relative position of this node in job     */

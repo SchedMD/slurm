@@ -101,34 +101,34 @@ fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 			switch (*p) {
 			case 'a':  /* '%a' => array task id   */
 				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*d", wid,
+				xstrfmtcat(name, "%0*u", wid,
 					   job->array_task_id);
 				q = ++p;
 				break;
 			case 'A':  /* '%A' => array master job id */
 				xmemcat(name, q, p - 1);
 				if (job->array_task_id == NO_VAL) {
-					xstrfmtcat(name, "%0*d", wid,
+					xstrfmtcat(name, "%0*u", wid,
 						   job->jobid);
 				} else {
-					xstrfmtcat(name, "%0*d", wid,
+					xstrfmtcat(name, "%0*u", wid,
 						   job->array_job_id);
 				}
 				q = ++p;
 				break;
 			case 's':  /* '%s' => step id        */
 				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*d", wid, job->stepid);
+				xstrfmtcat(name, "%0*u", wid, job->stepid);
 				q = ++p;
 				break;
 			case 't':  /* '%t' => taskid         */
 				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*d", wid, taskid);
+				xstrfmtcat(name, "%0*u", wid, taskid);
 				q = ++p;
 				break;
 			case 'n':  /* '%n' => nodeid         */
 				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*d", wid, job->nodeid);
+				xstrfmtcat(name, "%0*u", wid, job->nodeid);
 				q = ++p;
 				break;
 			case 'N':  /* '%N' => node name      */
@@ -147,10 +147,10 @@ fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 			case 'J':  /* '%J' => jobid.stepid */
 			case 'j':  /* '%j' => jobid        */
 				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*d", wid, job->jobid);
+				xstrfmtcat(name, "%0*u", wid, job->jobid);
 
 				if ((*p == 'J') && (job->stepid != NO_VAL))
-					xstrfmtcat(name, ".%d", job->stepid);
+					xstrfmtcat(name, ".%u", job->stepid);
 				q = ++p;
 				break;
 

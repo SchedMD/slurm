@@ -363,7 +363,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->array_job_id  = msg->job_id;
-	job->array_task_id = (uint16_t) NO_VAL;
+	job->array_task_id = NO_VAL;
 	for (i = 0; i < msg->envc; i++) {
 		/*                         1234567890123456789 */
 		if (!strncmp(msg->env[i], "SLURM_ARRAY_JOB_ID=", 19))
