@@ -274,6 +274,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"PropagateResourceLimits", S_P_STRING},
 	{"RebootProgram", S_P_STRING},
 	{"ReconfigFlags", S_P_STRING},
+	{"RequeueExit", S_P_STRING},
+	{"RequeueExitHold", S_P_STRING},
 	{"ResumeProgram", S_P_STRING},
 	{"ResumeRate", S_P_UINT16},
 	{"ResumeTimeout", S_P_UINT16},
@@ -2165,6 +2167,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->reboot_program);
+	xfree (ctl_conf_ptr->requeue_exit);
+	xfree (ctl_conf_ptr->requeue_exit_hold);
 	xfree (ctl_conf_ptr->resume_program);
 	xfree (ctl_conf_ptr->resv_epilog);
 	xfree (ctl_conf_ptr->resv_prolog);
@@ -2306,6 +2310,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->reboot_program);
 	ctl_conf_ptr->reconfig_flags		= 0;
+	xfree(ctl_conf_ptr->requeue_exit);
+	xfree(ctl_conf_ptr->requeue_exit_hold);
 	ctl_conf_ptr->resume_timeout		= 0;
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
@@ -3957,6 +3963,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->mem_limit_enforce = false;
 		xfree(temp_str);
 	}
+
+	/* The default values for both of these variables are NULL.
+	 */
+	s_p_get_string(&conf->requeue_exit, "RequeueExit", hashtbl);
+	s_p_get_string(&conf->requeue_exit_hold, "RequeueExitHold", hashtbl);
 
 	xfree(default_storage_type);
 	xfree(default_storage_loc);

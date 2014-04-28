@@ -1726,6 +1726,20 @@ the definitions in the slurm.conf file.
 .RE
 
 .TP
+\fBRequeueExit\fR
+Enables automatic job requeue for jobs which exit with the specified values.
+Separate multiple exit code by a comma. Jobs will be put back in to pending
+state and later scheduled again. Restarted jobs will have the environment
+variable \fBSLURM_RESTART_COUNT\fP set to the number of reruns.
+
+.TP
+\fBRequeueExitHold\fR
+Enables automatic requeue of jobs into pending state in hold, meaning their
+priority is zero. Separate multiple exit code by a comma. These jobs are put
+in the \fBJOB_SPECIAL_EXIT\fP exit state. Restarted jobs will have the
+environment variable \fBSLURM_RESTART_COUNT\fP set to the number of reruns.
+
+.TP
 \fBResumeProgram\fR
 SLURM supports a mechanism to reduce power consumption on nodes that
 remain idle for an extended period of time.

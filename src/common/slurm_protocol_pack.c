@@ -5059,6 +5059,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->reboot_program, buffer);
 		pack16(build_ptr->reconfig_flags, buffer);
+		packstr(build_ptr->requeue_exit, buffer);
+		packstr(build_ptr->requeue_exit_hold, buffer);
 		packstr(build_ptr->resume_program, buffer);
 		pack16(build_ptr->resume_rate, buffer);
 		pack16(build_ptr->resume_timeout, buffer);
@@ -5841,7 +5843,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->priority_favor_small, buffer);
 		safe_unpack16(&build_ptr->priority_flags, buffer);
 		safe_unpack32(&build_ptr->priority_max_age, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->priority_params, &uint32_tmp, 
+		safe_unpackstr_xmalloc(&build_ptr->priority_params, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&build_ptr->priority_reset_period, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->priority_type, &uint32_tmp,
@@ -5869,6 +5871,12 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->reboot_program, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&build_ptr->reconfig_flags, buffer);
+
+		safe_unpackstr_xmalloc(&build_ptr->requeue_exit,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->requeue_exit_hold,
+				       &uint32_tmp, buffer);
+
 		safe_unpackstr_xmalloc(&build_ptr->resume_program,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->resume_rate, buffer);

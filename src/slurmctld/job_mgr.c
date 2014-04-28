@@ -129,6 +129,10 @@ static int	select_serial = -1;
 static bool     wiki_sched = false;
 static bool     wiki2_sched = false;
 static bool     wiki_sched_test = false;
+static uint32_t num_exit;
+static int32_t  *requeue_exit;
+static uint32_t num_hold;
+static int32_t  *requeue_exit_hold;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
@@ -214,6 +218,8 @@ static void _xmit_new_end_time(struct job_record *job_ptr);
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
                                         struct part_record *,
                                         List part_list);
+static void  _set_job_requeue_exit_value(struct job_record *);
+static int32_t *_make_requeue_array(char *, uint32_t *);
 
 /*
  * create_job_record - create an empty job_record including job_details.
@@ -11766,21 +11772,30 @@ job_hold_requeue(struct job_record *job_ptr)
 
 	xassert(job_ptr);
 
+	/* If the job is already pending it was
+	 * eventually requeued somewhere else.
+	 */
+	if (IS_JOB_PENDING(job_ptr))
+		return;
+
+	/* Check if the job exit with one of the
+	 * configured requeue values.
+	 */
+	_set_job_requeue_exit_value(job_ptr);
+
 	state = job_ptr->job_state;
 
 	if (! (state & JOB_SPECIAL_EXIT)
-	    && ! (state & JOB_REQUEUE_HOLD)
 	    && ! (state & JOB_REQUEUE))
 		return;
 
 	debug("%s: job %u state 0x%x", __func__, job_ptr->job_id, state);
 
-	/* We have to set the state here in case
-	 * we are not requeueing the job from
-	 * job_requeue() but from job_epilog_complete().
+	/* Set the job pending
 	 */
 	flags = job_ptr->job_state & JOB_STATE_FLAGS;
 	job_ptr->job_state = JOB_PENDING | flags;
+	job_ptr->restart_cnt++;
 
 	/* Test if user wants to requeue the job
 	 * in hold or with a special exit value.
@@ -11795,18 +11810,118 @@ job_hold_requeue(struct job_record *job_ptr)
 		job_ptr->priority = 0;
 	}
 
-	if (state & JOB_REQUEUE_HOLD) {
-		/* The job will be requeued in status
-		 * PENDING and held
-		 */
-		job_ptr->state_reason = WAIT_HELD_USER;
-		job_ptr->priority = 0;
-	}
-
-	job_ptr->job_state &= ~JOB_REQUEUE_HOLD;
 	job_ptr->job_state &= ~JOB_REQUEUE;
 
 	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
 	      job_ptr->job_id, job_ptr->job_state,
 	      job_ptr->state_reason, job_ptr->priority);
+}
+
+/* init_requeue_policy()
+ * Initialize the requeue exit/hold arrays.
+ */
+void
+init_requeue_policy(void)
+{
+	requeue_exit = _make_requeue_array(slurmctld_conf.requeue_exit,
+					   &num_exit);
+	requeue_exit_hold = _make_requeue_array(slurmctld_conf.requeue_exit_hold,
+						&num_hold);
+}
+
+/* _make_requeue_array()
+ *
+ * Process the RequeueExit|RequeueExitHold configuration
+ * parameters creating two arrays holding the exit values
+ * of jobs for which they have to be requeued.
+ */
+static int32_t *
+_make_requeue_array(char *conf_buf, uint32_t *num)
+{
+	char *p;
+	char *p0;
+	char cnum[12];
+	int cc;
+	int n;
+	int32_t *ar;
+
+	if (conf_buf == NULL) {
+		*num = 0;
+		return NULL;
+	}
+
+	debug2("%s: exit values: %s", __func__, conf_buf);
+
+	p0 = p = xstrdup(conf_buf);
+	/* First tokenize the string removing ,
+	 */
+	for (cc = 0; p[cc] != 0; cc++) {
+		if (p[cc] == ',')
+			p[cc] = ' ';
+	}
+
+	/* Count the number of exit values
+	 */
+	cc = 0;
+	while (sscanf(p, "%s%n", cnum, &n) != EOF) {
+		++cc;
+		p += n;
+	}
+
+	ar = xmalloc(cc * sizeof(int));
+
+	cc = 0;
+	p = p0;
+	while (sscanf(p, "%s%n", cnum, &n) != EOF) {
+		ar[cc] = atoi(cnum);
+		++cc;
+		p += n;
+	}
+
+	*num = cc;
+	xfree(p0);
+
+	return ar;
+}
+
+/* _set_job_requeue_exit_value()
+ *
+ * Compared the job exit values with the configured
+ * RequeueExit and RequeueHoldExit and it mach is
+ * found set the appropriate state for job_hold_requeue()
+ * If RequeueExit or RequeueExitHold are not defined
+ * the mum_exit and num_hold are zero.
+ *
+ */
+static void
+_set_job_requeue_exit_value(struct job_record *job_ptr)
+{
+	int cc;
+	int exit_code;
+
+	/* Search the arrays for a matching value
+	 * based on the job exit code
+	 */
+	exit_code = WEXITSTATUS(job_ptr->exit_code);
+	for (cc = 0; cc < num_exit; cc++) {
+		if (exit_code == requeue_exit[cc]) {
+			debug2("%s: job %d exit code %d state JOB_REQUEUE",
+			       __func__, job_ptr->job_id, exit_code);
+			job_ptr->job_state |= JOB_REQUEUE;
+			return;
+		}
+	}
+
+	for (cc = 0; cc < num_hold; cc++) {
+		if (exit_code == requeue_exit_hold[cc]) {
+			/* Bah... not sure if want to set special
+			 * exit state in this case, but for sure
+			 * don't want another array...
+			 */
+			debug2("%s: job %d exit code %d state JOB_SPECIAL_EXIT",
+			       __func__, job_ptr->job_id, exit_code);
+			job_ptr->job_state |= JOB_SPECIAL_EXIT;
+			return;
+		}
+	}
 }

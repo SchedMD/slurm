@@ -2036,4 +2036,12 @@ extern bool validate_operator(uid_t uid);
  */
 extern void job_hold_requeue(struct job_record *job_ptr);
 
+/* init_requeue_policy()
+ *
+ * Build the arrays holding the job exit code upon
+ * which jobs should get requeued.
+ */
+extern void init_requeue_policy(void);
+
+
 #endif /* !_HAVE_SLURMCTLD_H */

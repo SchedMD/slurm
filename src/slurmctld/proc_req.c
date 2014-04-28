@@ -738,6 +738,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->reboot_program      = xstrdup(conf->reboot_program);
 	conf_ptr->reconfig_flags      = conf->reconfig_flags;
+	conf_ptr->requeue_exit        = xstrdup(conf->requeue_exit);
+	conf_ptr->requeue_exit_hold   = xstrdup(conf->requeue_exit_hold);
 	conf_ptr->resume_program      = xstrdup(conf->resume_program);
 	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->resume_timeout      = conf->resume_timeout;
@@ -3865,12 +3867,19 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	/* Requeue operation went all right, see if the user
 	 * wants to mark the job as special case or hold it.
 	 */
-	if (req_ptr->state & JOB_SPECIAL_EXIT)
+	if (req_ptr->state & JOB_SPECIAL_EXIT) {
 		job_ptr->job_state |= JOB_SPECIAL_EXIT;
-	if (req_ptr->state & JOB_REQUEUE_HOLD)
-		job_ptr->job_state |= JOB_REQUEUE_HOLD;
+		job_ptr->state_reason = WAIT_HELD_USER;
+		job_ptr->priority = 0;
+	}
+	if (req_ptr->state & JOB_REQUEUE_HOLD) {
+		job_ptr->state_reason = WAIT_HELD_USER;
+		job_ptr->priority = 0;
+	}
 
-	job_hold_requeue(job_ptr);
+	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
+	      job_ptr->job_id, job_ptr->job_state,
+	      job_ptr->state_reason, job_ptr->priority);
 
 	info("%s: %u: %s", __func__, req_ptr->job_id, TIME_STR);
 
