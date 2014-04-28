@@ -199,6 +199,8 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			list_append(job_info_list, jobcomp_info);
 			jobcomp_info->name = fptr;
 			fptr = strstr(fptr, "=");
+			if (!fptr)
+				break;
 			*fptr++ = 0;
 			jobcomp_info->val = fptr;
 			fptr = strstr(fptr, " ");
