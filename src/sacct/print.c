@@ -168,7 +168,7 @@ void print_fields(type_t type, void *object)
 				break;
 			case JOBCOMP:
 			default:
-				tmp_int = NO_VAL;
+				tmp_int = job_comp->proc_cnt;
 				break;
 			}
 			field->print_routine(field,

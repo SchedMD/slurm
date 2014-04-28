@@ -66,6 +66,7 @@ typedef struct {
 	uint32_t gid;
 	char *gid_name;
 	uint32_t node_cnt;
+	uint32_t proc_cnt;
 	char *nodelist;
 	char *jobname;
 	char *state;
@@ -77,6 +78,7 @@ typedef struct {
 	uint32_t max_procs;
 	char *geo;
 	char *bg_start_point;
+	char *work_dir;
 } jobcomp_job_rec_t;
 
 typedef struct slurm_jobcomp_context * slurm_jobcomp_context_t;

@@ -1066,8 +1066,6 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "BlockFreeAction";
 	case WAIT_CLEANING:
 		return "Cleaning";
-	case WAIT_SCHED_TIMEOUT:
-		return "SchedTimeout";
 	default:
 		return "?";
 	}

@@ -1002,6 +1002,7 @@ next_part:			part_ptr = (struct part_record *)
 		if (job_ptr->array_task_id != NO_VAL) {
 			if ((reject_array_job_id == job_ptr->array_job_id) &&
 			    (reject_array_part   == job_ptr->part_ptr)) {
+				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = reject_state_reason;
 				continue;  /* already rejected array element */
 			}
@@ -1025,6 +1026,10 @@ next_part:			part_ptr = (struct part_record *)
 					continue;
 				debug2("sched: reached partition %s job limit",
 				       job_ptr->part_ptr->name);
+				if (job_ptr->state_reason == WAIT_NO_REASON) {
+					xfree(job_ptr->state_desc);
+					job_ptr->state_reason = WAIT_PRIORITY;
+				}
 				skip_part_ptr = job_ptr->part_ptr;
 				continue;
 			}
@@ -1065,8 +1070,8 @@ next_part:			part_ptr = (struct part_record *)
 			}
 		} else if (_failed_partition(job_ptr->part_ptr, failed_parts,
 					     failed_part_cnt)) {
-			if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL)
-			    || (job_ptr->state_reason == WAIT_NO_REASON)) {
+			if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) ||
+			    (job_ptr->state_reason == WAIT_NO_REASON)) {
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
 				last_job_update = now;
@@ -1100,6 +1105,9 @@ next_part:			part_ptr = (struct part_record *)
 			} else {
 				debug("sched: JobId=%u has invalid association",
 				      job_ptr->job_id);
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
 				continue;
 			}
 		}
@@ -1336,13 +1344,6 @@ next_part:			part_ptr = (struct part_record *)
 		if (part_iterator)
 			list_iterator_destroy(part_iterator);
 	} else if (job_queue) {
-		if (job_ptr && (job_ptr->state_reason == WAIT_NO_REASON))
-			job_ptr->state_reason = WAIT_SCHED_TIMEOUT;
-		while ((job_queue_rec = list_pop(job_queue))) {
-			job_ptr = job_queue_rec->job_ptr;
-			if (job_ptr->state_reason == WAIT_NO_REASON)
-				job_ptr->state_reason = WAIT_SCHED_TIMEOUT;
-		}
 		FREE_NULL_LIST(job_queue);
 	}
 	xfree(sched_part_ptr);

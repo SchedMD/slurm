@@ -58,6 +58,8 @@ documents those changes that are of interest to users and admins.
  -- Handle Max/GrpCPU limits better
  -- Add --priority option to salloc, sbatch and srun commands.
  -- Honor partition priorities over job priorities.
+ -- Fix sacct -c when using jobcomp/filetxt to read newer variables
+ -- Fix segfault of sacct -c if spaces are in the variables.
 
 * Changes in Slurm 14.03.1-2
 ==========================

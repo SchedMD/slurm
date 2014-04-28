@@ -129,10 +129,14 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 			job->nodelist = xstrdup(jobcomp_info->val);
 		} else if (!strcasecmp("NodeCnt", jobcomp_info->name)) {
 			job->node_cnt = atoi(jobcomp_info->val);
+		} else if (!strcasecmp("ProcCnt", jobcomp_info->name)) {
+			job->proc_cnt = atoi(jobcomp_info->val);
 		} else if (!strcasecmp("JobState", jobcomp_info->name)) {
 			job->state = xstrdup(jobcomp_info->val);
 		} else if (!strcasecmp("Timelimit", jobcomp_info->name)) {
 			job->timelimit = xstrdup(jobcomp_info->val);
+		} else if (!strcasecmp("Workdir", jobcomp_info->name)) {
+			job->work_dir = xstrdup(jobcomp_info->val);
 		}
 #ifdef HAVE_BG
 		else if (!strcasecmp("MaxProcs", jobcomp_info->name)) {
@@ -195,6 +199,8 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			list_append(job_info_list, jobcomp_info);
 			jobcomp_info->name = fptr;
 			fptr = strstr(fptr, "=");
+			if (!fptr)
+				break;
 			*fptr++ = 0;
 			jobcomp_info->val = fptr;
 			fptr = strstr(fptr, " ");

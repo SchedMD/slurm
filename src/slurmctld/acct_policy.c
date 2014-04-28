@@ -272,7 +272,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	}
 
 	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
-	while(assoc_ptr) {
+	while (assoc_ptr) {
 		switch(type) {
 		case ACCT_POLICY_ADD_SUBMIT:
 			assoc_ptr->usage->used_submit_jobs++;
@@ -978,6 +978,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 		return true;
 
 	if (!_valid_job_assoc(job_ptr)) {
+		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = FAIL_ACCOUNT;
 		return false;
 	}
@@ -987,8 +988,10 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 		return true;
 
 	/* clear old state reason */
-	if (!acct_policy_job_runnable_state(job_ptr))
+	if (!acct_policy_job_runnable_state(job_ptr)) {
+		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_NO_REASON;
+	}
 
 	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
@@ -1102,7 +1105,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 	}
 
 	assoc_ptr = job_ptr->assoc_ptr;
-	while(assoc_ptr) {
+	while (assoc_ptr) {
 		wall_mins = assoc_ptr->usage->grp_used_wall / 60;
 
 #if _DEBUG
