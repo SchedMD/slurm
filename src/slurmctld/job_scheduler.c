@@ -1395,6 +1395,15 @@ extern int sort_job_queue2(void *x, void *y)
 	if (!has_resv1 && has_resv2)
 		return 1;
 
+	if (job_rec1->part_ptr && job_rec2->part_ptr) {
+		p1 = job_rec1->part_ptr->priority;
+		p2 = job_rec2->part_ptr->priority;
+		if (p1 < p2)
+			return 1;
+		if (p1 > p2)
+			return -1;
+	}
+
 	if (job_rec1->job_ptr->part_ptr_list &&
 	    job_rec1->job_ptr->priority_array)
 		p1 = job_rec1->priority;
