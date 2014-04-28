@@ -282,7 +282,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 					xfree(job_ptr->state_desc);
 				}
 				/* priority_array index matches part_ptr_list
-				 * position: increment inx*/
+				 * position: increment inx */
 				inx++;
 				if (reason != WAIT_NO_REASON)
 					continue;

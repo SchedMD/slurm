@@ -45,10 +45,11 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct job_queue_rec {
-	uint32_t job_id;
-	struct job_record *job_ptr;
-	struct part_record *part_ptr;
-	uint32_t priority;
+	uint32_t job_id;		/* Job ID */
+	struct job_record *job_ptr;	/* Pointer to job record */
+	struct part_record *part_ptr;	/* Pointer to partition record. Each
+					 * job may have multiple partitions. */
+	uint32_t priority;		/* Job priority in THIS partition */
 } job_queue_rec_t;
 
 /*
