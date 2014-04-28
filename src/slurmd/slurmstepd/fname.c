@@ -107,8 +107,13 @@ fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 				break;
 			case 'A':  /* '%A' => array master job id */
 				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*d", wid,
-					   job->array_job_id);
+				if (job->array_task_id == NO_VAL) {
+					xstrfmtcat(name, "%0*d", wid,
+						   job->jobid);
+				} else {
+					xstrfmtcat(name, "%0*d", wid,
+						   job->array_job_id);
+				}
 				q = ++p;
 				break;
 			case 's':  /* '%s' => step id        */

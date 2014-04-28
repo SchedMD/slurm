@@ -75,28 +75,34 @@ static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 	char *ptr, *tmp, *tmp2 = NULL, *user;
 
 	tmp = xstrdup(fname);
-	while ((ptr = strstr(tmp, "%A"))) {
+	while ((ptr = strstr(tmp, "%A"))) {	/* Array job ID */
 		ptr[0] = '\0';
-		xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->array_job_id, ptr+2);
+		if (job_ptr->array_task_id == NO_VAL) {
+			/* Not a job array */
+			xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->job_id, ptr+2);
+		} else {
+			xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->array_job_id,
+				   ptr+2);
+		}
 		xfree(tmp);	/* transfer the results */
 		tmp = tmp2;
 		tmp2 = NULL;
 	}
-	while ((ptr = strstr(tmp, "%a"))) {
+	while ((ptr = strstr(tmp, "%a"))) {	/* Array task ID */
 		ptr[0] = '\0';
 		xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->array_task_id, ptr+2);
 		xfree(tmp);	/* transfer the results */
 		tmp = tmp2;
 		tmp2 = NULL;
 	}
-	while ((ptr = strstr(tmp, "%j"))) {
+	while ((ptr = strstr(tmp, "%j"))) {	/* Job ID */
 		ptr[0] = '\0';
 		xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->job_id, ptr+2);
 		xfree(tmp);	/* transfer the results */
 		tmp = tmp2;
 		tmp2 = NULL;
 	}
-	while ((ptr = strstr(tmp, "%u"))) {
+	while ((ptr = strstr(tmp, "%u"))) {	/* User name */
 		ptr[0] = '\0';
 		user = uid_to_string((uid_t) job_ptr->user_id);
 		xstrfmtcat(tmp2, "%s%s%s", tmp, user, ptr+2);
