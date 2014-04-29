@@ -149,6 +149,31 @@ expect {
 	}
 }
 
+if {$task_cnt > 32} {
+	send "exit\r"
+	expect {
+		-re "error" {
+			send_user "\nFAILURE: some error occurred\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: salloc not responding "
+			send_user "or failure to recognize prompt\n"
+			slow_kill $salloc_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$exit_code == 0} {
+		exec $bin_rm -f $file_prog
+		send_user "\nWARNING: Expect unable to work with more than 32-bit numbers\n"
+	}
+	exit $exit_code
+}
+
 #
 # Run a job step with affinity
 #
@@ -285,7 +310,7 @@ set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	set mstr [ dec2hex $mask]
+	set mstr [ uint2hex $mask ]
 	send "$srun -c1 --cpu_bind=mask_cpu:$mstr ./$file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
@@ -326,7 +351,7 @@ set full_mask [ expr (1 << $task_cnt) - 1 ]
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	set mstr [ dec2hex  $mask]
+	set mstr [ uint2hex  $mask ]
 	set fwd_mask "$fwd_mask,$mstr"
 	set fwd_map  "$fwd_map,$cpu_cnt"
 	set rev_mask "$mstr,$rev_mask"
@@ -555,4 +580,3 @@ if {$exit_code == 0} {
 	send_user "  or if Shared=FORCE for the default partition.\n"
 }
 exit $exit_code
-
