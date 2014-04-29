@@ -8442,8 +8442,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			xfree(job_ptr->state_desc);
 		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
-			if (job_specs->priority != 0)
+			if (job_specs->priority != 0) {
 				job_ptr->details->nice = NICE_OFFSET;
+				job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
+			}
 			if (job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
@@ -8466,7 +8468,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			} else if ((job_ptr->state_reason == WAIT_HELD) ||
 				   (job_ptr->state_reason == WAIT_HELD_USER)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
-				job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 				xfree(job_ptr->state_desc);
 			}
 		} else if (job_specs->priority == INFINITE
@@ -9009,8 +9010,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = SLURM_SUCCESS;
 		else
 			error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		job_ptr->state_reason = fail_reason;
-		xfree(job_ptr->state_desc);
+		if ((job_ptr->state_reason != WAIT_HELD) &&
+		    (job_ptr->state_reason != WAIT_HELD_USER)) {
+			job_ptr->state_reason = fail_reason;
+			xfree(job_ptr->state_desc);
+		}
 		return error_code;
 	} else if ((job_ptr->state_reason != WAIT_HELD) &&
 		   (job_ptr->state_reason != WAIT_HELD_USER)) {
