@@ -152,6 +152,10 @@ static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
+static void _launch_complete_add(uint32_t job_id);
+static void _launch_complete_log(char *type, uint32_t job_id);
+static void _launch_complete_rm(uint32_t job_id);
+static void _launch_complete_wait(uint32_t job_id);
 static void _note_batch_job_finished(uint32_t job_id);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
@@ -183,8 +187,8 @@ static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
-static int  _run_prolog(job_env_t *job_env);
 static int  _run_epilog(job_env_t *job_env);
+static int  _run_prolog(job_env_t *job_env);
 static void _rpc_forward_data(slurm_msg_t *msg);
 
 
@@ -240,6 +244,11 @@ static int next_fini_job_inx = 0;
 static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t job_suspend_array[NUM_PARALLEL_SUSPEND];
 static int job_suspend_size = 0;
+
+#define JOB_STATE_CNT 64
+static pthread_mutex_t job_state_mutex   = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  job_state_cond    = PTHREAD_COND_INITIALIZER;
+static uint32_t active_job_id[JOB_STATE_CNT];
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1207,6 +1216,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
 				      step_hset);
 	debug3("_rpc_launch_tasks: return from _forkexec_slurmstepd");
+	_launch_complete_add(req->job_id);
 
     done:
 	if (step_hset)
@@ -1652,6 +1662,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 
 	slurm_mutex_unlock(&launch_mutex);
+	_launch_complete_add(req->job_id);
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
@@ -3650,7 +3661,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	ListIterator i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;
-	int first_time, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 
 	if ((req->op != SUSPEND_JOB) && (req->op != RESUME_JOB)) {
 		error("REQUEST_SUSPEND_INT: bad op code %u", req->op);
@@ -3685,22 +3696,14 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/* Try to get a thread lock for this job. If the lock
 	 * is not available then sleep and try again */
-	first_time = 1;
 	while (!_get_suspend_job_lock(req->job_id)) {
-	 	first_time = 0;
 		debug3("suspend lock sleep for %u", req->job_id);
-		sleep(1);
+		usleep(10000);
 	}
 
-	/* If suspending and you got the lock on the first try then
-	 * sleep for 1 second to give any launch requests a chance
-	 * to get started and avoid a race condition that would
-	 * effectively cause the suspend request to get ignored
-	 * because "there's no job to suspend" */
-	if (first_time && (req->op == SUSPEND_JOB)) {
-		debug3("suspend first sleep for %u", req->job_id);
-		sleep(1);
-	}
+	/* Defer suspend until job prolog and launch complete */
+	if (req->op == SUSPEND_JOB)
+		_launch_complete_wait(req->job_id);
 
 	if ((req->op == SUSPEND_JOB) && (req->indf_susp))
 		switch_g_job_suspend(req->switch_info, 5);
@@ -3873,6 +3876,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	if (container_g_delete(req->job_id))
 		error("container_g_delete(%u): %m", req->job_id);
+	_launch_complete_rm(req->job_id);
 
 	xfree(job_env.resv_id);
 }
@@ -3927,6 +3931,7 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		_waiter_complete(job_id);
 		if (container_g_delete(job_id))
 			error("container_g_delete(%u): %m", job_id);
+		_launch_complete_rm(job_id);
 		return;
 	}
 #endif
@@ -3981,6 +3986,7 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		debug("completed epilog for jobid %u", job_id);
 	if (container_g_delete(job_id))
 		error("container_g_delete(%u): %m", job_id);
+	_launch_complete_rm(job_id);
 
     done:
 	_wait_state_completed(job_id, 5);
@@ -4195,6 +4201,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		}
 		if (container_g_delete(req->job_id))
 			error("container_g_delete(%u): %m", req->job_id);
+		_launch_complete_rm(req->job_id);
 		return;
 	}
 #endif
@@ -4271,6 +4278,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		debug("completed epilog for jobid %u", req->job_id);
 	if (container_g_delete(req->job_id))
 		error("container_g_delete(%u): %m", req->job_id);
+	_launch_complete_rm(req->job_id);
 
     done:
 	_wait_state_completed(req->job_id, 5);
@@ -5299,4 +5307,114 @@ done:
 	slurm_send_rc_msg(msg, rc);
 }
 
+static void _launch_complete_add(uint32_t job_id)
+{
+	int j, empty;
 
+	slurm_mutex_lock(&job_state_mutex);
+	empty = -1;
+	for (j = 0; j < JOB_STATE_CNT; j++) {
+		if (job_id == active_job_id[j])
+			break;
+		if ((active_job_id[j] == 0) && (empty == -1))
+			empty = j;
+	}
+	if (job_id != active_job_id[j]) {
+		if (empty == -1)	/* Discard oldest job */
+			empty = 0;
+		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
+			active_job_id[j - 1] = active_job_id[j];
+		}
+		active_job_id[JOB_STATE_CNT - 1] = 0;
+		for (j = 0; j < JOB_STATE_CNT; j++) {
+			if (active_job_id[j] == 0) {
+				active_job_id[j] = job_id;
+				break;
+			}
+		}
+	}
+	pthread_cond_signal(&job_state_cond);
+	slurm_mutex_unlock(&job_state_mutex);
+	_launch_complete_log("job add", job_id);
+}
+
+static void _launch_complete_log(char *type, uint32_t job_id)
+{
+#if 0
+	int j;
+
+	info("active %s %u", type, job_id);
+	slurm_mutex_lock(&job_state_mutex);
+	for (j = 0; j < JOB_STATE_CNT; j++) {
+		if (active_job_id[j] != 0) {
+			info("active_job_id[%d]=%u", j, active_job_id[j]);
+		}
+	}
+	slurm_mutex_unlock(&job_state_mutex);
+#endif
+}
+
+static void _launch_complete_rm(uint32_t job_id)
+{
+	int j;
+
+	slurm_mutex_lock(&job_state_mutex);
+	for (j = 0; j < JOB_STATE_CNT; j++) {
+		if (job_id == active_job_id[j])
+			break;
+	}
+	if (job_id == active_job_id[j]) {
+		for (j = j + 1; j < JOB_STATE_CNT; j++) {
+			active_job_id[j - 1] = active_job_id[j];
+		}
+		active_job_id[JOB_STATE_CNT - 1] = 0;
+	}
+	slurm_mutex_unlock(&job_state_mutex);
+	_launch_complete_log("job remove", job_id);
+}
+
+static void _launch_complete_wait(uint32_t job_id)
+{
+	int i, j, empty;
+	time_t start = time(NULL);
+	struct timeval now;
+	struct timespec timeout;
+
+	slurm_mutex_lock(&job_state_mutex);
+	for (i = 0; ; i++) {
+		empty = -1;
+		for (j = 0; j < JOB_STATE_CNT; j++) {
+			if (job_id == active_job_id[j])
+				break;
+			if ((active_job_id[j] == 0) && (empty == -1))
+				empty = j;
+		}
+		if (j < JOB_STATE_CNT)	/* Found job, ready to return */
+			break;
+		if (difftime(start, time(NULL) <= 3)) {	/* Retry for 3 secs */
+			debug2("wait for launch of job %u before suspending it",
+			       job_id);
+			gettimeofday(&now, NULL);
+			timeout.tv_sec  = now.tv_sec + 1;
+			timeout.tv_nsec = now.tv_usec * 1000;
+			pthread_cond_timedwait(&job_state_cond,&job_state_mutex,
+					       &timeout);
+			continue;
+		}
+		if (empty == -1)	/* Discard oldest job */
+			empty = 0;
+		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
+			active_job_id[j - 1] = active_job_id[j];
+		}
+		active_job_id[JOB_STATE_CNT - 1] = 0;
+		for (j = 0; j < JOB_STATE_CNT; j++) {
+			if (active_job_id[j] == 0) {
+				active_job_id[j] = job_id;
+				break;
+			}
+		}
+		break;
+	}
+	slurm_mutex_unlock(&job_state_mutex);
+	_launch_complete_log("job wait", job_id);
+}
