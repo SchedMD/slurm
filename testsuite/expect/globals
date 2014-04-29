@@ -1761,34 +1761,7 @@ proc test_super_user { } {
 
 ################################################################
 #
-# Proc: dec2hex16
-#
-# Purpose: Create a 16 bit hex number from a signed decimal number
-#
-# Returns: 16 bit hex version of input 'value'
-#
-# Input: value -- decimal number to convert
-#
-# Courtesy of Chris Cornish
-# http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
-################################################################
-# Replace all non-decimal characters
-proc dec2hex16 {value} {
-	regsub -all {[^0-x\.-]} $value {} newtemp
-	set value [string trim $newtemp]
-	if {$value < 32767 && $value > -32768} {
-		set tempvalue [format "%#010X" [expr $value]]
-		return [string range $tempvalue 6 9]
-	} elseif {$value < 32768} {
-		return "8000"
-	} else {
-		return "7FFF"
-	}
-}
-
-################################################################
-#
-# Proc: dec2hex32
+# Proc: dec2hex
 #
 # Purpose: Create a 32 bit hex number from a signed decimal number
 #
@@ -1810,6 +1783,32 @@ proc dec2hex {value} {
 		return "80000000"
 	} else {
 		return "7FFFFFFF"
+	}
+}
+
+################################################################
+#
+# Proc: uint2hex
+#
+# Purpose: Create a 32 bit hex number from an unsigned decimal
+# number. 
+#
+# Returns: 32 bit hex version of input 'value'
+#
+# Input: value -- unsigneddecimal number to convert
+#
+# Courtesy of Chris Cornish
+# http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+################################################################
+# Replace all non-decimal characters
+proc uint2hex {value} {
+	regsub -all {[^0-x\.-]} $value {} newtemp
+	set value [string trim $newtemp]
+	if {$value <= 4294967295 && $value >= 0} {
+		set tempvalue [format "%#010X" [expr $value]]
+		return [string range $tempvalue 2 9]
+	} else {
+		return "FFFFFFFF"
 	}
 }
 
