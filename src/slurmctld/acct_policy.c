@@ -1272,8 +1272,10 @@ extern bool acct_policy_job_runnable_post_select(
 		safe_limits = true;
 
 	/* clear old state reason */
-	if (!acct_policy_job_runnable_state(job_ptr))
+	if (!acct_policy_job_runnable_state(job_ptr)) {
+		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_NO_REASON;
+	}
 
 	job_cpu_time_limit = (uint64_t)job_ptr->time_limit * (uint64_t)cpu_cnt;
 
