@@ -178,13 +178,18 @@ launch a shell on a node in the job's allocation?</a></li>
 Free Open Source Software (FOSS) does not mean that it is without cost.
 It does mean that the you have access to the code so that you are free to
 use it, study it, and/or enhance it.
+These reasons contribute to Slurm (and FOSS in general) being subject to
+active research and development worldwide, displacing proprietary software
+in many environments.
 If the software is large and complex, like Slurm or the Linux kernel,
-then its use is not without cost.
-If your work is important, you'll want the leading Slurm experts at your
+then while there is no license fee, its use is not without cost.</p>
+<p>If your work is important, you'll want the leading Slurm experts at your
 disposal to keep your systems operating at peak efficiency.
 While Slurm has a global development community incorporating leading edge
 technology, <a href="http://www.schedmd.com">SchedMD</a> personnel have developed
 most of the code and can provide competitively priced commercial support.
+SchedMD works with various organizations to provide a range of support
+options ranging from remote level-3 support to 24x7 on-site personnel.
 Customers switching from commercial workload mangers to Slurm typically
 report higher scalability, better performance and lower costs.</p>
 
@@ -629,13 +634,13 @@ or <b>--distribution</b>' is 'arbitrary'.  This means you can tell slurm to
 layout your tasks in any fashion you want.  For instance if I had an
 allocation of 2 nodes and wanted to run 4 tasks on the first node and
 1 task on the second and my nodes allocated from SLURM_NODELIST
-where tux[0-1] my srun line would look like this.<p>
-<i>srun -n5 -m arbitrary -w tux[0,0,0,0,1] hostname</i><p>
+where tux[0-1] my srun line would look like this:<br><br>
+<i>srun -n5 -m arbitrary -w tux[0,0,0,0,1] hostname</i><br><br>
 If I wanted something similar but wanted the third task to be on tux 1
-I could run this...<p>
-<i>srun -n5 -m arbitrary -w tux[0,0,1,0,0] hostname</i><p>
+I could run this:<br><br>
+<i>srun -n5 -m arbitrary -w tux[0,0,1,0,0] hostname</i><br><br>
 Here is a simple perl script named arbitrary.pl that can be ran to easily lay
-out tasks on nodes as they are in SLURM_NODELIST<p>
+out tasks on nodes as they are in SLURM_NODELIST.</p>
 <pre>
 #!/usr/bin/perl
 my @tasks = split(',', $ARGV[0]);
@@ -663,9 +668,9 @@ foreach my $task (@tasks) {
 print $layout;
 </pre>
 
-We can now use this script in our srun line in this fashion.<p>
-<i>srun -m arbitrary -n5 -w `arbitrary.pl 4,1` -l hostname</i><p>
-This will layout 4 tasks on the first node in the allocation and 1
+<p>We can now use this script in our srun line in this fashion.<br><br>
+<i>srun -m arbitrary -n5 -w `arbitrary.pl 4,1` -l hostname</i><br><br>
+<p>This will layout 4 tasks on the first node in the allocation and 1
 task on the second node.</p>
 
 <p><a name="hold"><b>21. How can I temporarily prevent a job from running
@@ -926,11 +931,10 @@ $ srun -p mic ./hello.mic
 <br>
 <p>
 Slurm supports requeue jobs in done or failed state. Use the
-command:
+command:</p>
 <p align=left><b>scontrol requeue job_id</b></p>
 </head>
-</p>
-The job will be requeued back in PENDING state and scheduled again.
+<p>The job will be requeued back in PENDING state and scheduled again.
 See man(1) scontrol.
 </p>
 <p>Consider a simple job like this:</p>
@@ -957,12 +961,10 @@ $->squeue
     JOBID PARTITION   NAME     USER ST     TIME  NODES NODELIST(REASON)
       10      mira    zoppo    david  R    0:03    1      alanz1
 </pre>
-<p>
-Slurm supports requeuing jobs in hold state with the command:
+<p>Slurm supports requeuing jobs in hold state with the command:</p>
 <p align=left><b>'scontrol requeuehold job_id'</b></p>
-The job can be in state RUNNING, SUSPENDED, COMPLETED or FAILED
-before being requeued.
-</p>
+<p>The job can be in state RUNNING, SUSPENDED, COMPLETED or FAILED
+before being requeued.</p>
 <pre>
 $->scontrol requeuehold 10
 $->squeue
@@ -1929,6 +1931,6 @@ sacctmgr delete user name=adam cluster=tux account=chemistry
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 April 2014</p>
+<p style="text-align:center;">Last modified 30 April 2014</p>
 
 <!--#include virtual="footer.txt"-->
