@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     the job's priority. This is needed to support job arrays better.
  -- Correct squeue command not to merge jobs with state pending and completing
     together.
+ -- Fix issue where user is requesting --acctg-freq=0 and no memory limits.
 
 * Changes in Slurm 14.03.1-2
 ==========================
