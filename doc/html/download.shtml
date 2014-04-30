@@ -33,7 +33,7 @@ a message.</li>
 <li><b>MUNGE</b> (recommended)<br>
 In order to compile the "auth/munge" authentication plugin for SLURM,
 you will need to build and install MUNGE, available from
-<a href="http://munge.googlecode.com/">http://munge.googlecode.com/</a> and
+<a href="https://code.google.com/p/munge/">https://code.google.com/p/munge/</a> and
 <a href="http://packages.debian.org/src:munge">Debian</a> and
 <a href="http://fedoraproject.org/">Fedora</a> and
 <a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.</li>
@@ -272,6 +272,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 26 March 2014</p>
+<p style="text-align:center;">Last modified 30 April 2014</p>
 
 <!--#include virtual="footer.txt"-->

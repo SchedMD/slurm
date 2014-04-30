@@ -117,7 +117,7 @@ users should have consistent names and IDs.</p>
 
 <p>The best way to insure security of the data is by authenticating
 communications to the SlurmDBD and we recommend
-<a href="http://munge.googlecode.com/">MUNGE</a> for that purpose.
+<a href="https://code.google.com/p/munge/">MUNGE</a> for that purpose.
 If you have one cluster managed by SLURM and execute the SlurmDBD
 on that one cluster, the normal MUNGE configuration will suffice.
 Otherwise MUNGE should then be installed on all nodes of all
@@ -770,7 +770,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 3 April 2014</p>
+<p style="text-align:center;">Last modified 30 April 2014</p>
 
 <!--#include virtual="footer.txt"-->
 
