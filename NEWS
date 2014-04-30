@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 2.6.10
 =========================
  -- Switch/nrt - On switch resource allocation failure, free partial allocation.
+ -- Switch/nrt - Properly track usage of CAU and RDMA resources with multiple
+    tasks per compute node.
 
 * Changes in Slurm 2.6.9
 ========================
