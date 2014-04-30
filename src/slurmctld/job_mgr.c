@@ -8432,20 +8432,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					job_ptr->state_reason = WAIT_HELD;
 			}
 		} else if ((job_ptr->priority == 0) &&
-			   (job_ptr->state_reason == WAIT_HELD_USER)) {
+			   (job_specs->priority == INFINITE) &&
+			   (authorized ||
+			    (job_ptr->state_reason == WAIT_HELD_USER))) {
 			job_ptr->direct_set_prio = 0;
 			set_job_prio(job_ptr);
-			info("sched: update_job: releasing user hold "
-			     "for job_id %u", job_specs->job_id);
+			info("sched: update_job: releasing hold for job_id %u",
+			     job_specs->job_id);
 			job_ptr->state_reason = WAIT_NO_REASON;
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
+		} else if ((job_ptr->priority == 0) &&
+			   (job_specs->priority != INFINITE)) {
+			info("ignore priority reset request on held job %u",
+			     job_specs->job_id);
 		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
-			if (job_specs->priority != 0) {
+			if (job_specs->priority != 0)
 				job_ptr->details->nice = NICE_OFFSET;
-				job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
-			}
 			if (job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
@@ -8464,10 +8468,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					job_ptr->state_reason = WAIT_HELD_USER;
 				} else
 					job_ptr->state_reason = WAIT_HELD;
-				xfree(job_ptr->state_desc);
-			} else if ((job_ptr->state_reason == WAIT_HELD) ||
-				   (job_ptr->state_reason == WAIT_HELD_USER)) {
-				job_ptr->state_reason = WAIT_NO_REASON;
 				xfree(job_ptr->state_desc);
 			}
 		} else if (job_specs->priority == INFINITE
