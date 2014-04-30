@@ -267,12 +267,14 @@ static int	_add_immed_use(char *hostname, slurm_nrt_jobinfo_t *jp,
 static int	_allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_adapter_t adapter_type, int network_id,
-			nrt_protocol_table_t *protocol_table, int instances);
+			nrt_protocol_table_t *protocol_table, int instances,
+			int task_inx);
 static int	_allocate_window_single(char *adapter_name,
 			slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_adapter_t adapter_type, int network_id,
-			nrt_protocol_table_t *protocol_table, int instances);
+			nrt_protocol_table_t *protocol_table, int instances,
+			int task_inx);
 static slurm_nrt_libstate_t *_alloc_libstate(void);
 static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_copy_node(slurm_nrt_nodeinfo_t *dest,
@@ -1125,7 +1127,8 @@ static int
 _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 		      uint32_t node_id, nrt_task_id_t task_id,
 		      nrt_adapter_t adapter_type, int network_id,
-		      nrt_protocol_table_t *protocol_table, int instances)
+		      nrt_protocol_table_t *protocol_table, int instances,
+		      int task_inx)
 {
 	nrt_tableinfo_t *tableinfo = jp->tableinfo;
 	nrt_job_key_t job_key = jp->job_key;
@@ -1170,7 +1173,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			if (user_space &&
 			    (adapter->adapter_type == NRT_IPONLY))
 				continue;
-			if ((context_id == 0) &&
+			if ((context_id == 0) && (task_inx == 0) &&
 			    (_add_block_use(jp, adapter))) {
 				goto alloc_fail;
 			}
@@ -1311,7 +1314,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 			char *hostname, uint32_t node_id,
 			nrt_task_id_t task_id, nrt_adapter_t adapter_type,
 			int network_id, nrt_protocol_table_t *protocol_table,
-		        int instances)
+		        int instances, int task_inx)
 {
 	nrt_tableinfo_t *tableinfo = jp->tableinfo;
 	nrt_job_key_t job_key = jp->job_key;
@@ -1370,7 +1373,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 	table_inx = -1;
 	for (context_id = 0; context_id < protocol_table->protocol_table_cnt;
 	     context_id++) {
-		if ((context_id == 0) &&
+		if ((context_id == 0) && (task_inx == 0) &&
 		    (_add_block_use(jp, adapter))) {
 			goto alloc_fail;
 		}
@@ -3209,7 +3212,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 								adapter_type,
 								network_id,
 								protocol_table,
-								instances);
+								instances, j);
 				} else {
 					rc = _allocate_window_single(
 								adapter_name,
@@ -3218,7 +3221,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 								adapter_type,
 								network_id,
 								protocol_table,
-								instances);
+								instances, j);
 				}
 				if (rc != SLURM_SUCCESS) {
 					_unlock();
