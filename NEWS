@@ -66,6 +66,8 @@ documents those changes that are of interest to users and admins.
  -- Fix segfault of sacct -c if spaces are in the variables.
  -- Release held job only with "scontrol release <jobid>" and not by resetting
     the job's priority. This is needed to support job arrays better.
+ -- Correct squeue command not to merge jobs with state pending and completing
+    together.
 
 * Changes in Slurm 14.03.1-2
 ==========================
