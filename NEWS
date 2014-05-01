@@ -71,6 +71,7 @@ documents those changes that are of interest to users and admins.
  -- Fix issue where user is requesting --acctg-freq=0 and no memory limits.
  -- Fix issue with GrpCPURunMins if a job's timelimit is altered while the job
     is running.
+ -- Temporary fix for handling our typemap for the perl api with newer perl.
 
 * Changes in Slurm 14.03.1-2
 ==========================
