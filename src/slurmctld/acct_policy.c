@@ -378,6 +378,63 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 	_adjust_limit_usage(ACCT_POLICY_JOB_FINI, job_ptr);
 }
 
+extern void acct_policy_alter_job(struct job_record *job_ptr,
+				  uint32_t new_time_limit)
+{
+	slurmdb_association_rec_t *assoc_ptr = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	uint64_t used_cpu_run_secs, new_used_cpu_run_secs;
+
+	if (!IS_JOB_RUNNING(job_ptr) || (job_ptr->time_limit == new_time_limit))
+		return;
+
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
+	    || !_valid_job_assoc(job_ptr))
+		return;
+
+	used_cpu_run_secs = (uint64_t)job_ptr->total_cpus
+		* (uint64_t)job_ptr->time_limit * 60;
+	new_used_cpu_run_secs = (uint64_t)job_ptr->total_cpus
+		* (uint64_t)new_time_limit * 60;
+
+	assoc_mgr_lock(&locks);
+	if (job_ptr->qos_ptr) {
+		slurmdb_qos_rec_t *qos_ptr =
+			(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+
+		qos_ptr->usage->grp_used_cpu_run_secs -=
+			used_cpu_run_secs;
+		qos_ptr->usage->grp_used_cpu_run_secs +=
+			new_used_cpu_run_secs;
+		debug2("altering %u QOS %s got %"PRIu64" "
+		       "just removed %"PRIu64" and added %"PRIu64"",
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       qos_ptr->usage->grp_used_cpu_run_secs,
+		       used_cpu_run_secs,
+		       new_used_cpu_run_secs);
+	}
+
+	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	while (assoc_ptr) {
+		assoc_ptr->usage->grp_used_cpu_run_secs -=
+			used_cpu_run_secs;
+		assoc_ptr->usage->grp_used_cpu_run_secs +=
+			new_used_cpu_run_secs;
+		debug2("altering %u acct %s got %"PRIu64" "
+		       "just removed %"PRIu64" and added %"PRIu64"",
+		       job_ptr->job_id,
+		       assoc_ptr->acct,
+		       assoc_ptr->usage->grp_used_cpu_run_secs,
+		       used_cpu_run_secs,
+		       new_used_cpu_run_secs);
+		/* now handle all the group limits of the parents */
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+	assoc_mgr_unlock(&locks);
+}
+
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 struct part_record *part_ptr,
 				 slurmdb_association_rec_t *assoc_in,
