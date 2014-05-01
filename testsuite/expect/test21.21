@@ -70,22 +70,22 @@ proc _test_limits { } {
 	#
 	# Start sub-test: test for maxnode
 	#
-	inc21_21_1 $maxnode
+	inc21_21_1 $acct_mod_assoc_vals(maxnode)
 
 	#
 	# Start sub-test: test for maxnode+1
 	#
-	inc21_21_2 $maxnode
+	inc21_21_2 $acct_mod_assoc_vals(maxnode)
 
 	#
 	# Start sub-test: testing maxwall
 	#
-	inc21_21_3 $maxwall
+	inc21_21_3 $acct_mod_assoc_vals(maxwall)
 
 	#
 	# Start sub-test: testing maxwall+1
 	#
-	inc21_21_4 $maxwall
+	inc21_21_4 $acct_mod_assoc_vals(maxwall)
 
 
 	# This should overwrite the old file_in which has already been used,
@@ -95,7 +95,7 @@ proc _test_limits { } {
 	"
 
 	# test job max cnt and submit
-	for {set inx 0} {$inx < $maxsubmit} {incr inx} {
+	for {set inx 0} {$inx < $acct_mod_assoc_vals(maxsubmit)} {incr inx} {
 		set job_id($inx) 0
 		set mypid [spawn $sbatch -N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in]
 		expect {
