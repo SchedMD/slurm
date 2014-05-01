@@ -76,6 +76,17 @@ extern void acct_policy_job_begin(struct job_record *job_ptr);
  */
 extern void acct_policy_job_fini(struct job_record *job_ptr);
 
+/*
+ * acct_policy_alter_job - if resources change on a job this needs to
+ * be called after they have been validated, but before they actually
+ * do.  Each of the resources can be changed one at a time.  If no
+ * change happens on a resouce just put old values in for the new.
+ * At the time of writing this function any node or cpu size change
+ * while running was already handled in the job_pre|post_resize_acctg functions.
+ */
+extern void acct_policy_alter_job(struct job_record *job_ptr,
+				  uint32_t new_time_limit);
+
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 struct part_record *part_ptr,
 				 slurmdb_association_rec_t *assoc_in,

@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
  -- Correct squeue command not to merge jobs with state pending and completing
     together.
  -- Fix issue where user is requesting --acctg-freq=0 and no memory limits.
+ -- Fix issue with GrpCPURunMins if a job's timelimit is altered while the job
+    is running.
 
 * Changes in Slurm 14.03.1-2
 ==========================

@@ -1021,22 +1021,36 @@ static int _attempt_backfill(void)
 			uint32_t save_time_limit = job_ptr->time_limit;
 			int rc = _start_job(job_ptr, resv_bitmap);
 			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
-				if (orig_time_limit == NO_VAL)
+				if (orig_time_limit == NO_VAL) {
+					acct_policy_alter_job(
+						job_ptr, comp_time_limit);
 					job_ptr->time_limit = comp_time_limit;
-				else
+				} else {
+					acct_policy_alter_job(
+						job_ptr, orig_time_limit);
 					job_ptr->time_limit = orig_time_limit;
+				}
 				job_ptr->end_time = job_ptr->start_time +
 						    (job_ptr->time_limit * 60);
 			} else if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
 				/* Set time limit as high as possible */
+				acct_policy_alter_job(job_ptr, comp_time_limit);
 				job_ptr->time_limit = comp_time_limit;
 				job_ptr->end_time = job_ptr->start_time +
 						    (comp_time_limit * 60);
 				_reset_job_time_limit(job_ptr, now,
 						      node_space);
 				time_limit = job_ptr->time_limit;
+			} else if (orig_time_limit == NO_VAL) {
+				acct_policy_alter_job(job_ptr, comp_time_limit);
+				job_ptr->time_limit = comp_time_limit;
+				job_ptr->end_time = job_ptr->start_time +
+					(job_ptr->time_limit * 60);
 			} else {
+				acct_policy_alter_job(job_ptr, orig_time_limit);
 				job_ptr->time_limit = orig_time_limit;
+				job_ptr->end_time = job_ptr->start_time +
+					(job_ptr->time_limit * 60);
 			}
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				/* Unknown future start time, just skip job */
@@ -1197,6 +1211,7 @@ static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 {
 	int32_t j, resv_delay;
 	uint32_t orig_time_limit = job_ptr->time_limit;
+	uint32_t new_time_limit;
 
 	for (j=0; ; ) {
 		if ((node_space[j].begin_time != now) &&
@@ -1212,7 +1227,9 @@ static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
-	job_ptr->time_limit = MAX(job_ptr->time_min, job_ptr->time_limit);
+	new_time_limit = MAX(job_ptr->time_min, job_ptr->time_limit);
+	acct_policy_alter_job(job_ptr, new_time_limit);
+	job_ptr->time_limit = new_time_limit;
 	job_ptr->end_time = job_ptr->start_time + (job_ptr->time_limit * 60);
 
 	job_time_adj_resv(job_ptr);
