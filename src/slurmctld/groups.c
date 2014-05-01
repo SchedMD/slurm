@@ -112,13 +112,16 @@ extern uid_t *get_group_members(char *group_name)
 	buflen = MAX(buflen, i);
 #endif
 	grp_buffer = xmalloc(buflen);
-	/* We need to check for !grp_result, since it appears some
-	 * versions of this function do not return an error on failure. */
 	while (1) {
 		slurm_seterrno(0);
 		res = getgrnam_r(group_name, &grp, grp_buffer, buflen,
 				 &grp_result);
-		if (res != 0) {
+
+		/* We need to check for !grp_result, since it appears some
+		 * versions of this function do not return an error on
+		 * failure.
+		 */
+		if (res != 0 || !grp_result) {
 			if (errno == ERANGE) {
 				buflen *= 2;
 				xrealloc(grp_buffer, buflen);
