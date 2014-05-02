@@ -409,8 +409,16 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		struct job_record *job_ptr;
 		sec_record->job_list = list_create(NULL);
 		itr = list_iterator_create(fir_record->job_list);
-		while ((job_ptr = list_next(itr)))
+		while ((job_ptr = list_next(itr))) {
+			if (job_ptr->magic != JOB_MAGIC) {
+				error("copy_bg_record: bad job magic, "
+				      "this should never happen");
+				list_delete_item(itr);
+				continue;
+			}
+
 			list_append(sec_record->job_list, job_ptr);
+		}
 		list_iterator_destroy(itr);
 	}
 	sec_record->job_ptr = fir_record->job_ptr;
@@ -2056,8 +2064,14 @@ static void _set_block_avail(bg_record_t *bg_record)
 
 		bg_record->avail_cnode_cnt = bg_record->cnode_cnt;
 		while ((job_ptr = list_next(itr))) {
-			select_jobinfo_t *jobinfo =
-				job_ptr->select_jobinfo->data;
+			select_jobinfo_t *jobinfo;
+			if (job_ptr->magic != JOB_MAGIC) {
+				error("_set_block_avail: bad job magic, "
+				      "this should never happen");
+				list_delete_item(itr);
+				continue;
+			}
+			jobinfo = job_ptr->select_jobinfo->data;
 			if (job_ptr->end_time > bg_record->avail_job_end)
 				bg_record->avail_job_end =
 					job_ptr->end_time;
