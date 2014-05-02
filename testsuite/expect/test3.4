@@ -97,7 +97,27 @@ if {$read_priority != 0} {
 #
 # Change that job's priority
 #
-spawn $scontrol update JobId=$job_id Priority=$new_prio
+spawn $scontrol release $job_id
+expect {
+	-re "slurm_update error: Access.*denied" {
+		send_user "\nWARNING: User not authorized to modify jobs\n"
+		cancel_job $job_id
+		exit $exit_code
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Change that job's priority
+#
+spawn $scontrol update Jobid=$job_id Priority=$new_prio
 expect {
 	-re "slurm_update error: Access.*denied" {
 		send_user "\nWARNING: User not authorized to modify jobs\n"
