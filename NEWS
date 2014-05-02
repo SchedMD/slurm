@@ -34,6 +34,7 @@ documents those changes that are of interest to users and admins.
     is running.
  -- Temporary fix for handling our typemap for the perl api with newer perl.
  -- Fix allowgroup on bad group seg fault with the controller.
+ -- Handle node ranges better when dealing with accounting max node limits.
 
 * Changes in Slurm 14.03.1-2
 ==========================
