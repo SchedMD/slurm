@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 14.03.3
+==========================
+
 * Changes in Slurm 14.03.2
 ==========================
  -- Fix race condition if PrologFlags=Alloc,NoHold is used.
