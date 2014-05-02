@@ -62,6 +62,8 @@ extern bool acct_gather_suspended;
 extern int acct_gather_conf_init(void);
 extern int acct_gather_conf_destroy(void);
 extern int acct_gather_parse_freq(int type, char *freq);
+extern int acct_gather_check_acct_freq_task(
+	uint32_t job_mem_lim, char *acctg_freq);
 extern void acct_gather_suspend_poll(void);
 extern void acct_gather_resume_poll(void);
 

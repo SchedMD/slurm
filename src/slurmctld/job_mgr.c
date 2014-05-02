@@ -4076,7 +4076,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid)
 {
 	static int launch_type_poe = -1;
-	static uint32_t acct_freq_task = NO_VAL;
 	int error_code = SLURM_SUCCESS, i, qos_error;
 	struct part_record *part_ptr = NULL;
 	List part_ptr_list = NULL;
@@ -4090,7 +4089,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	static uint32_t node_scaling = 1;
 	static uint32_t cpus_per_mp = 1;
 	acct_policy_limit_set_t acct_policy_limit_set;
-	int acctg_freq;
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -4126,25 +4124,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	error_code = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
-
-	/* Validate a job's accounting frequency, if specified */
-	if (acct_freq_task == NO_VAL) {
-		char *acct_freq = slurm_get_jobacct_gather_freq();
-		int i = acct_gather_parse_freq(PROFILE_TASK, acct_freq);
-		xfree(acct_freq);
-		if (i != -1)
-			acct_freq_task = i;
-		else
-			acct_freq_task = (uint16_t) NO_VAL;
-	}
-	acctg_freq = acct_gather_parse_freq(PROFILE_TASK, job_desc->acctg_freq);
-	if ((acctg_freq != -1) &&
-	    ((acctg_freq == 0) || (acctg_freq > acct_freq_task))) {
-		error("Invalid accounting frequency (%d > %u)",
-		      acctg_freq, acct_freq_task);
-		error_code = ESLURMD_INVALID_ACCT_FREQ;
-		goto cleanup_fail;
-	}
 
 	/* insure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
@@ -5659,6 +5638,11 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		}
 	} else if (!_valid_pn_min_mem(job_desc_msg, part_ptr))
 		return ESLURM_INVALID_TASK_MEMORY;
+
+	/* Validate a job's accounting frequency, if specified */
+	if (acct_gather_check_acct_freq_task(
+		    job_desc_msg->pn_min_memory, job_desc_msg->acctg_freq))
+		return ESLURMD_INVALID_ACCT_FREQ;
 
 	if (job_desc_msg->min_nodes == NO_VAL)
 		job_desc_msg->min_nodes = 1;	/* default node count of 1 */

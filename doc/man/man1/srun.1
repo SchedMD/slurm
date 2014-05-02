@@ -46,6 +46,9 @@ may be specified. Supported datatypes are as follows:
 where \fI<interval>\fR is the task sampling interval in seconds
 for the jobacct_gather plugins and for task
 profiling by the acct_gather_profile plugin.
+NOTE: This frequency is used to monitor memory usage. If memory limits
+are enforced the highest frequency a user can request is what is configured in
+the slurm.conf file.  They can not turn it off (=0) either.
 .TP
 \fBenergy=\fI<interval>\fR
 where \fI<interval>\fR is the sampling interval in seconds
