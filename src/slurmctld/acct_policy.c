@@ -1949,18 +1949,28 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr)
 
 	if (max_nodes_limit == INFINITE) {
 		slurmdb_association_rec_t *assoc_ptr = job_ptr->assoc_ptr;
-		int parent = 0; /*flag to tell us if we are looking at the
+		bool parent = 0; /*flag to tell us if we are looking at the
 				 * parent or not
 				 */
+		bool grp_set = 0;
 
 		while (assoc_ptr) {
-			max_nodes_limit =
-				MIN(max_nodes_limit, assoc_ptr->grp_nodes);
-			if (!parent)
+			if (assoc_ptr->grp_nodes != INFINITE) {
+				max_nodes_limit = MIN(max_nodes_limit,
+						      assoc_ptr->grp_nodes);
+				grp_set = 1;
+			}
+
+			if (!parent && (assoc_ptr->max_nodes_pj != INFINITE))
 				max_nodes_limit = MIN(max_nodes_limit,
 						      assoc_ptr->max_nodes_pj);
 
+			/* only check the first grp set */
+			if (grp_set)
+				break;
+
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+			parent = 1;
 			continue;
 		}
 
