@@ -422,6 +422,7 @@ documents those changes that are of interest to users and admins.
  -- Switch/nrt - On switch resource allocation failure, free partial allocation.
  -- Switch/nrt - Properly track usage of CAU and RDMA resources with multiple
     tasks per compute node.
+ -- Fix issue where user is requesting --acctg-freq=0 and no memory limits.
 
 * Changes in Slurm 2.6.9
 ========================
