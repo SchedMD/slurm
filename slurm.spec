@@ -148,12 +148,10 @@ BuildRequires: mysql-devel >= 5.0.0
 %endif
 
 %if %{slurm_with cray_alps}
-BuildRequires: cray-MySQL-devel-enterprise
-Requires: cray-MySQL-devel-enterprise
+BuildRequires: mysql-devel
 %endif
 
 %if %{slurm_with cray}
-BuildRequires: cray-MySQL-devel-enterprise
 BuildRequires: cray-libalpscomm_cn-devel
 BuildRequires: cray-libalpscomm_sn-devel
 BuildRequires: libnuma-devel

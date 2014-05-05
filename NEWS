@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ==========================
  -- Correction to default batch output file name. In version 14.03.2 was using
     "slurm_<jobid>_4294967294.out" due to error in job array logic.
+ -- In slurm.spec file, replace "Requires cray-MySQL-devel-enterprise" with
+    "Requires mysql-devel".
 
 * Changes in Slurm 14.03.2
 ==========================
