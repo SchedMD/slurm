@@ -148,7 +148,7 @@ static char *
 _batchfilename(stepd_step_rec_t *job, const char *name)
 {
 	if (name == NULL) {
-		if (job->array_task_id == (uint16_t) NO_VAL)
+		if (job->array_task_id == NO_VAL)
 			return fname_create(job, "slurm-%J.out", 0);
 		else
 			return fname_create(job, "slurm-%A_%a.out", 0);
