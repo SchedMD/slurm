@@ -61,6 +61,11 @@ The name can include a numberic range suffix to be interpreted by SLURM
 This field is generally required if enforcement of generic resource
 allocations is to be supported (i.e. prevents a users from making
 use of resources allocated to a different user).
+Enforcement of the file allocation relies upon Linux Control Groups (cgroups)
+and Slurm's task/cgroup plugin, which will place the allocated files into
+the job's cgroup and prevent use of other files.
+Please see Slurm's <a href="cgroups.html">Cgroups Guide</a> for more
+information.<br>
 If File is specified then Count must be either set to the number
 of file names specified or not set (the default value is the number of files
 specified).
@@ -171,6 +176,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 25 October 2012</p>
+<p style="text-align: center;">Last modified 5 May 2014</p>
 
 </body></html>
