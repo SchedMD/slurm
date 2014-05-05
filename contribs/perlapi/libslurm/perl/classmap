@@ -4,7 +4,7 @@
 # XXX: DO NOT use $class or other variables used in xsubpp, or there will be
 # trouble with xsubpp v1.9508 as in RHEL5.3
 
-$class_map = {
+$slurm_perl_api::class_map = {
 	"slurm_t" 			=> "Slurm",
 	"bitstr_tPtr"		 	=> "Slurm::Bitstr",
 	"hostlist_t" 			=> "Slurm::Hostlist",
