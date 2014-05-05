@@ -11839,21 +11839,3 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	      job_ptr->job_id, job_ptr->job_state,
 	      job_ptr->state_reason, job_ptr->priority);
 }
-
-/* Return the default account for a given user ID.
- * Call must xfree the returned string */
-extern char *uid2def_account(uid_t user_id)
-{
-	slurmdb_association_rec_t assoc_rec, *assoc_ptr = NULL;
-	char *def_account = NULL;
-	
-
-	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
-	assoc_rec.uid       = user_id;
-	if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				     accounting_enforce, &assoc_ptr)) {
-		def_account = xstrdup(assoc_rec.acct);
-	}
-
-	return def_account;
-}

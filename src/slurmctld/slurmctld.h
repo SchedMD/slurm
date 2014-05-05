@@ -1882,11 +1882,6 @@ extern int sync_job_files(void);
 /* After recovering job state, if using priority/basic then we increment the
  * priorities of all jobs to avoid decrementing the base down to zero */
 extern void sync_job_priorities(void);
-
-/* Return the default account for a given user ID.
- * Call must xfree the returned string */
-extern char *uid2def_account(uid_t user_id);
-
 /*
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
