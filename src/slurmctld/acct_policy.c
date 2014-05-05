@@ -949,7 +949,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 	uint32_t time_limit;
 	bool rc = true;
 	uint32_t wall_mins;
-	int parent = 0; /*flag to tell us if we are looking at the
+	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
@@ -1227,7 +1227,7 @@ extern bool acct_policy_job_runnable_post_select(
 	uint32_t job_memory = 0;
 	bool admin_set_memory_limit = false;
 	bool safe_limits = false;
-	int parent = 0; /*flag to tell us if we are looking at the
+	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
@@ -1949,9 +1949,9 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr)
 
 	if (max_nodes_limit == INFINITE) {
 		slurmdb_association_rec_t *assoc_ptr = job_ptr->assoc_ptr;
-		bool parent = 0; /*flag to tell us if we are looking at the
-				 * parent or not
-				 */
+		bool parent = 0; /* flag to tell us if we are looking at the
+				  * parent or not
+				  */
 		bool grp_set = 0;
 
 		while (assoc_ptr) {

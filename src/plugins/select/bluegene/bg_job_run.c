@@ -656,15 +656,56 @@ int term_jobs_on_block(char *bg_block_id)
  */
 extern int start_job(struct job_record *job_ptr)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, dim;
 	bg_record_t *bg_record = NULL;
-
 	bg_action_t *bg_action_ptr = NULL;
+	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record = jobinfo->bg_record;
+
+	if (!bg_record || !block_ptr_exist_in_list(bg_lists->main, bg_record)) {
+		slurm_mutex_unlock(&block_state_mutex);
+		error("bg_record %s doesn't exist, requested for job (%d)",
+		      jobinfo->bg_block_id, job_ptr->job_id);
+		_destroy_bg_action(bg_action_ptr);
+		return SLURM_ERROR;
+	}
+
+	if ((jobinfo->conn_type[0] != SELECT_NAV)
+	    && (jobinfo->conn_type[0] < SELECT_SMALL)) {
+		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+			jobinfo->conn_type[dim] = bg_record->conn_type[dim];
+	}
+
+	/* If it isn't 0 then it was setup previous (sub-block)
+	*/
+	if (jobinfo->geometry[dim] == 0)
+		memcpy(jobinfo->geometry, bg_record->geo,
+		       sizeof(bg_record->geo));
+
+	if (bg_record->job_list) {
+		/* Mark the ba_mp cnodes as used now. */
+		ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
+		xassert(ba_mp);
+		xassert(ba_mp->cnode_bitmap);
+		bit_or(ba_mp->cnode_bitmap, jobinfo->units_avail);
+		if (!find_job_in_bg_record(bg_record, job_ptr->job_id))
+			list_append(bg_record->job_list, job_ptr);
+	} else {
+		bg_record->job_running = job_ptr->job_id;
+		bg_record->job_ptr = job_ptr;
+	}
+
+	job_ptr->job_state |= JOB_CONFIGURING;
 
 	bg_action_ptr = xmalloc(sizeof(bg_action_t));
 	bg_action_ptr->op = START_OP;
 	bg_action_ptr->job_ptr = job_ptr;
 
+	/* FIXME: The below get_select_jobinfo calls could be avoided
+	 * by just using the jobinfo as we do above.
+	 */
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_BLOCK_ID,
 			   &(bg_action_ptr->bg_block_id));
@@ -725,26 +766,6 @@ extern int start_job(struct job_record *job_ptr)
 				   bg_action_ptr->mloaderimage);
 	}
 
-	slurm_mutex_lock(&block_state_mutex);
-	bg_record = find_bg_record_in_list(bg_lists->main,
-					   bg_action_ptr->bg_block_id);
-	if (!bg_record) {
-		slurm_mutex_unlock(&block_state_mutex);
-		error("bg_record %s doesn't exist, requested for job (%d)",
-		      bg_action_ptr->bg_block_id, job_ptr->job_id);
-		_destroy_bg_action(bg_action_ptr);
-		return SLURM_ERROR;
-	}
-
-	last_bg_update = time(NULL);
-
-	if (bg_record->job_list) {
-		if (!find_job_in_bg_record(bg_record, job_ptr->job_id))
-			list_append(bg_record->job_list, job_ptr);
-	} else {
-		bg_record->job_running = bg_action_ptr->job_ptr->job_id;
-		bg_record->job_ptr = bg_action_ptr->job_ptr;
-	}
 	num_unused_cpus -= job_ptr->total_cpus;
 
 	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record))
@@ -757,6 +778,8 @@ extern int start_job(struct job_record *job_ptr)
 	   away.
 	*/
 	bg_record->modifying = 1;
+	last_bg_update = time(NULL);
+
 	slurm_mutex_unlock(&block_state_mutex);
 
 	info("Queue start of job %u in BG block %s",

@@ -1637,7 +1637,20 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	if ((error_code == SLURM_SUCCESS) && select_bitmap) {
-		uint32_t node_cnt = bit_set_count(select_bitmap);
+		uint32_t node_cnt = NO_VAL;
+#ifdef HAVE_BG
+		xassert(job_ptr->select_jobinfo);
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT, &node_cnt);
+		if (node_cnt == NO_VAL) {
+			/* This should never happen */
+			node_cnt = bit_set_count(select_bitmap);
+			error("node_cnt not available at %s:%d\n",
+			      __FILE__, __LINE__);
+		}
+#else
+		node_cnt = bit_set_count(select_bitmap);
+#endif
 		if (!acct_policy_job_runnable_post_select(
 			    job_ptr, node_cnt, job_ptr->total_cpus,
 			    job_ptr->details->pn_min_memory)) {
@@ -1822,6 +1835,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		}
 		xfree(node_set_ptr);
 	}
+
+#ifdef HAVE_BG
+	if (error_code != SLURM_SUCCESS)
+		free_job_resources(&job_ptr->job_resrcs);
+#endif
 
 	return error_code;
 }
