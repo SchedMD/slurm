@@ -4337,7 +4337,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
-	slurmdb_association_rec_t assoc_rec, *assoc_ptr;
+	slurmdb_association_rec_t assoc_rec, *assoc_ptr = NULL;
 	List license_list = NULL;
 	bool valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
@@ -11746,15 +11746,14 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 
 /* job_hold_requeue()
  *
- * Requeue the job either in JOB_SPECIAL_EXIT state
- * in which is put on hold or if JOB_REQUEUE_HOLD is
- * specified don't change its state. The requeue
- * can happen directly from job_requeue() or from
- * job_epilog_complete() after the last component
- * has finished.
+ * Requeue the job based upon its current state.
+ * If JOB_SPECIAL_EXIT then requeue and hold with JOB_SPECIAL_EXIT state.
+ * If JOB_REQUEUE_HOLD then requeue and hold.
+ * If JOB_REQUEUE then requeue and let it run again.
+ * The requeue can happen directly from job_requeue() or from
+ * job_epilog_complete() after the last component has finished.
  */
-void
-job_hold_requeue(struct job_record *job_ptr)
+extern void job_hold_requeue(struct job_record *job_ptr)
 {
 	uint32_t state;
 	uint32_t flags;

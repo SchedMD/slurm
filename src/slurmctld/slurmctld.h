@@ -770,6 +770,13 @@ enum select_plugindata_info {
 extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 			      char *node_name);
 
+/*
+ * allocated_session_in_use - check if an interactive session is already running
+ * IN new_alloc - allocation (alloc_node:alloc_sid) to test for
+ * Returns true if an interactive session of the same node:sid already exists.
+ */
+extern bool allocated_session_in_use(job_desc_msg_t *new_alloc);
+
 /* Complete a batch job requeue logic after all steps complete so that
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(struct job_record  *job_ptr);
@@ -1006,6 +1013,13 @@ extern int init_node_conf ();
  */
 extern int init_part_conf (void);
 
+/* init_requeue_policy()
+ *
+ * Build the arrays holding the job exit code upon
+ * which jobs should get requeued.
+ */
+extern void init_requeue_policy(void);
+
 /*
  * is_node_down - determine if the specified node's state is DOWN
  * IN name - name of the node
@@ -1019,13 +1033,6 @@ extern bool is_node_down (char *name);
  * RET true if node exists and is responding, otherwise false
  */
 extern bool is_node_resp (char *name);
-
-/*
- * allocated_session_in_use - check if an interactive session is already running
- * IN new_alloc - allocation (alloc_node:alloc_sid) to test for
- * Returns true if an interactive session of the same node:sid already exists.
- */
-extern bool allocated_session_in_use(job_desc_msg_t *new_alloc);
 
 /*
  * job_alloc_info - get details about an existing job allocation
@@ -1116,6 +1123,18 @@ extern void job_fini (void);
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_fail(uint32_t job_id, uint16_t job_state);
+
+
+/* job_hold_requeue()
+ *
+ * Requeue the job based upon its current state.
+ * If JOB_SPECIAL_EXIT then requeue and hold with JOB_SPECIAL_EXIT state.
+ * If JOB_REQUEUE_HOLD then requeue and hold.
+ * If JOB_REQUEUE then requeue and let it run again.
+ * The requeue can happen directly from job_requeue() or from
+ * job_epilog_complete() after the last component has finished.
+ */
+extern void job_hold_requeue(struct job_record *job_ptr);
 
 /*
  * determine if job is ready to execute per the node select plugin
@@ -1875,7 +1894,6 @@ extern int sync_job_files(void);
 /* After recovering job state, if using priority/basic then we increment the
  * priorities of all jobs to avoid decrementing the base down to zero */
 extern void sync_job_priorities(void);
-
 /*
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
@@ -2028,20 +2046,5 @@ extern bool validate_super_user(uid_t uid);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_operator(uid_t uid);
-
-/* job_hold_requeue() - requeue a job in hold or requeue_exit
- *                      state.
- *
- * IN - job record
- */
-extern void job_hold_requeue(struct job_record *job_ptr);
-
-/* init_requeue_policy()
- *
- * Build the arrays holding the job exit code upon
- * which jobs should get requeued.
- */
-extern void init_requeue_policy(void);
-
 
 #endif /* !_HAVE_SLURMCTLD_H */
