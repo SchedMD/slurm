@@ -303,7 +303,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 					       &whole_nodes,  &whole_sockets,
 					       &whole_cores,  &whole_threads,
 					       &part_sockets, &part_cores);
-		if ((whole_nodes == 0) && avail_mask) {
+		if ((whole_nodes == 0) && avail_mask &&
+		    (req->job_core_spec == 0)) {
 			/* Step does NOT have access to whole node,
 			 * bind to full mask of available processors */
 			xfree(req->cpu_bind);

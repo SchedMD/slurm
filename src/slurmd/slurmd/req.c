@@ -1104,8 +1104,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
-	task_g_slurmd_launch_request(req->job_id, req, nodeid);
-
 	super_user = _slurm_authorized_user(req_uid);
 
 	if ((super_user == false) && (req_uid != req->uid)) {
@@ -1138,6 +1136,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #endif
 		goto done;
 	}
+
+	/* Must follow _check_job_credential(), which sets some req fields */
+	task_g_slurmd_launch_request(req->job_id, req, nodeid);
 
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {

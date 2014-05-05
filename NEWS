@@ -39,6 +39,8 @@ documents those changes that are of interest to users and admins.
     and RequeueExitHold  descriptions in slurm.conf man page.
  -- Modify slurmd to cache launched job IDs for more responsive job suspend and
     gang scheduling.
+ -- Permit jobs steps full control over cpu_bind options if specialized cores
+    are included in the job allocation.
 
 * Changes in Slurm 14.03.3
 ==========================
