@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Temp fix issue where job could be left on job_list after it finished.
  -- BGQ - Fix issue where limits were checked on midplane counts instead of
     cnode counts.
+ -- BGQ - Move code to only start job on a block after limits are checked.
 
 * Changes in Slurm 2.6.9
 ========================

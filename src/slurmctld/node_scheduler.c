@@ -1799,6 +1799,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		xfree(node_set_ptr);
 	}
 
+#ifdef HAVE_BG
+	if (error_code != SLURM_SUCCESS)
+		free_job_resources(&job_ptr->job_resrcs);
+#endif
+
 	return error_code;
 }
 
