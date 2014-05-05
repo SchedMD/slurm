@@ -31,7 +31,7 @@ AC_DEFUN([X_AC_LUA],
                  #include <lauxlib.h>
 		 #include <lualib.h>
 		],
-		[lua_State *L = luaL_newstate ();
+		[lua_State *L = luaL_newstate (); luaL_openlibs(L);
 		],
 		[], [x_ac_have_lua="no"])
 

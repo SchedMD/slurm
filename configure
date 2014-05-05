@@ -22846,7 +22846,7 @@ $as_echo_n "checking for whether we can link to liblua... " >&6; }
 int
 main ()
 {
-lua_State *L = luaL_newstate ();
+lua_State *L = luaL_newstate (); luaL_openlibs(L);
 
   ;
   return 0;
