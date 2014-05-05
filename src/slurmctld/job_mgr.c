@@ -11781,15 +11781,14 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 
 /* job_hold_requeue()
  *
- * Requeue the job either in JOB_SPECIAL_EXIT state
- * in which is put on hold or if JOB_REQUEUE_HOLD is
- * specified don't change its state. The requeue
- * can happen directly from job_requeue() or from
- * job_epilog_complete() after the last component
- * has finished.
+ * Requeue the job based upon its current state.
+ * If JOB_SPECIAL_EXIT then requeue and hold with JOB_SPECIAL_EXIT state.
+ * If JOB_REQUEUE_HOLD then requeue and hold.
+ * If JOB_REQUEUE then requeue and let it run again.
+ * The requeue can happen directly from job_requeue() or from
+ * job_epilog_complete() after the last component has finished.
  */
-void
-job_hold_requeue(struct job_record *job_ptr)
+extern void job_hold_requeue(struct job_record *job_ptr)
 {
 	uint32_t state;
 	uint32_t flags;

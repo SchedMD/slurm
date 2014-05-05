@@ -1112,6 +1112,18 @@ extern void job_fini (void);
  */
 extern int job_fail(uint32_t job_id, uint16_t job_state);
 
+
+/* job_hold_requeue()
+ *
+ * Requeue the job based upon its current state.
+ * If JOB_SPECIAL_EXIT then requeue and hold with JOB_SPECIAL_EXIT state.
+ * If JOB_REQUEUE_HOLD then requeue and hold.
+ * If JOB_REQUEUE then requeue and let it run again.
+ * The requeue can happen directly from job_requeue() or from
+ * job_epilog_complete() after the last component has finished.
+ */
+extern void job_hold_requeue(struct job_record *job_ptr);
+
 /*
  * determine if job is ready to execute per the node select plugin
  * IN job_id - job to test
@@ -2027,12 +2039,5 @@ extern bool validate_super_user(uid_t uid);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_operator(uid_t uid);
-
-/* job_hold_requeue() - requeue a job in hold or requeue_exit
- *                      state.
- *
- * IN - job record
- */
-extern void job_hold_requeue(struct job_record *job_ptr);
 
 #endif /* !_HAVE_SLURMCTLD_H */
