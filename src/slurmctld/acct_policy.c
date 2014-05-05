@@ -555,26 +555,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
-		} else if ((job_desc->max_nodes == 0)
-			   || (acct_policy_limit_set->max_nodes
-			       && (job_desc->max_nodes
-				   > qos_max_nodes_limit))) {
-			job_desc->max_nodes = qos_max_nodes_limit;
-			acct_policy_limit_set->max_nodes = 1;
-		} else if (strict_checking
-			   && job_desc->max_nodes > qos_max_nodes_limit) {
-			if (reason)
-				*reason = WAIT_QOS_JOB_LIMIT;
-			info("job submit for user %s(%u): "
-			     "max node changed %u -> %u because "
-			     "of qos limit",
-			     user_name,
-			     job_desc->user_id,
-			     job_desc->max_nodes,
-			     qos_max_nodes_limit);
-			if (job_desc->max_nodes == NO_VAL)
-				acct_policy_limit_set->max_nodes = 1;
-			job_desc->max_nodes = qos_max_nodes_limit;
 		}
 
 		if ((qos_ptr->grp_submit_jobs != INFINITE) &&
@@ -670,26 +650,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       qos_ptr->max_nodes_pj);
 			rc = false;
 			goto end_it;
-		} else if ((job_desc->max_nodes == 0)
-			   || (acct_policy_limit_set->max_nodes
-			       && (job_desc->max_nodes
-				   > qos_ptr->max_nodes_pj))) {
-			job_desc->max_nodes = qos_ptr->max_nodes_pj;
-			acct_policy_limit_set->max_nodes = 1;
-		} else if (strict_checking
-			   && job_desc->max_nodes > qos_ptr->max_nodes_pj) {
-			if (reason)
-				*reason = WAIT_QOS_JOB_LIMIT;
-			info("job submit for user %s(%u): "
-			     "max node changed %u -> %u because "
-			     "of qos limit",
-			     user_name,
-			     job_desc->user_id,
-			     job_desc->max_nodes,
-			     qos_ptr->max_nodes_pj);
-			if (job_desc->max_nodes == NO_VAL)
-				acct_policy_limit_set->max_nodes = 1;
-			job_desc->max_nodes = qos_ptr->max_nodes_pj;
 		}
 
 		if (qos_ptr->max_submit_jobs_pu != INFINITE) {
@@ -824,23 +784,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
-		} else if ((job_desc->max_nodes == 0)
-			   || (acct_policy_limit_set->max_nodes
-			       && (job_desc->max_nodes
-				   > assoc_ptr->grp_nodes))) {
-			job_desc->max_nodes = assoc_ptr->grp_nodes;
-			acct_policy_limit_set->max_nodes = 1;
-		} else if (job_desc->max_nodes > assoc_ptr->grp_nodes) {
-			info("job submit for user %s(%u): "
-			     "max node changed %u -> %u because "
-			     "of account limit",
-			     user_name,
-			     job_desc->user_id,
-			     job_desc->max_nodes,
-			     assoc_ptr->grp_nodes);
-			if (job_desc->max_nodes == NO_VAL)
-				acct_policy_limit_set->max_nodes = 1;
-			job_desc->max_nodes = assoc_ptr->grp_nodes;
 		}
 
 		if ((!qos_ptr ||
@@ -932,24 +875,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       assoc_ptr->max_nodes_pj);
 			rc = false;
 			break;
-		} else if (((job_desc->max_nodes == NO_VAL)
-			    || (job_desc->max_nodes == 0))
-			   || (acct_policy_limit_set->max_nodes
-			       && (job_desc->max_nodes
-				   > assoc_ptr->max_nodes_pj))) {
-			job_desc->max_nodes = assoc_ptr->max_nodes_pj;
-			acct_policy_limit_set->max_nodes = 1;
-		} else if (job_desc->max_nodes > assoc_ptr->max_nodes_pj) {
-			info("job submit for user %s(%u): "
-			     "max node changed %u -> %u because "
-			     "of account limit",
-			     user_name,
-			     job_desc->user_id,
-			     job_desc->max_nodes,
-			     assoc_ptr->max_nodes_pj);
-			if (job_desc->max_nodes == NO_VAL)
-				acct_policy_limit_set->max_nodes = 1;
-			job_desc->max_nodes = assoc_ptr->max_nodes_pj;
 		}
 
 		if ((!qos_ptr ||
@@ -2004,6 +1929,46 @@ end_it:
 	return rc;
 }
 
+extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr)
+{
+	uint32_t max_nodes_limit = INFINITE;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	/* check to see if we are enforcing associations */
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return max_nodes_limit;
+
+	assoc_mgr_lock(&locks);
+	if (job_ptr->qos_ptr) {
+		slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
+		max_nodes_limit =
+			MIN(qos_ptr->grp_nodes, qos_ptr->max_nodes_pu);
+		max_nodes_limit =
+			MIN(max_nodes_limit, qos_ptr->max_nodes_pj);
+	}
+
+	if (max_nodes_limit == INFINITE) {
+		slurmdb_association_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+		int parent = 0; /*flag to tell us if we are looking at the
+				 * parent or not
+				 */
+
+		while (assoc_ptr) {
+			max_nodes_limit =
+				MIN(max_nodes_limit, assoc_ptr->grp_nodes);
+			if (!parent)
+				max_nodes_limit = MIN(max_nodes_limit,
+						      assoc_ptr->max_nodes_pj);
+
+			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+			continue;
+		}
+
+	}
+	assoc_mgr_unlock(&locks);
+	return max_nodes_limit;
+}
 /*
  * acct_policy_update_pending_job - Make sure the limits imposed on a job on
  *	submission are correct after an update to a qos or association.  If
