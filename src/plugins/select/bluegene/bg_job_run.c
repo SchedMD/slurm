@@ -656,7 +656,7 @@ int term_jobs_on_block(char *bg_block_id)
  */
 extern int start_job(struct job_record *job_ptr)
 {
-	int rc = SLURM_SUCCESS, dim;
+	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
 	bg_action_t *bg_action_ptr = NULL;
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
@@ -668,19 +668,19 @@ extern int start_job(struct job_record *job_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		error("bg_record %s doesn't exist, requested for job (%d)",
 		      jobinfo->bg_block_id, job_ptr->job_id);
-		_destroy_bg_action(bg_action_ptr);
 		return SLURM_ERROR;
 	}
 
 	if ((jobinfo->conn_type[0] != SELECT_NAV)
 	    && (jobinfo->conn_type[0] < SELECT_SMALL)) {
+		int dim;
 		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
 			jobinfo->conn_type[dim] = bg_record->conn_type[dim];
 	}
 
 	/* If it isn't 0 then it was setup previous (sub-block)
 	*/
-	if (jobinfo->geometry[dim] == 0)
+	if (jobinfo->geometry[SYSTEM_DIMENSIONS] == 0)
 		memcpy(jobinfo->geometry, bg_record->geo,
 		       sizeof(bg_record->geo));
 
