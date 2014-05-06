@@ -3726,14 +3726,34 @@ to all of the programs.
 .TP
 \fBBASIL_RESERVATION_ID\fR
 Basil reservation ID.
-Available on Cray XT/XE systems only.
+Available on Cray systems with ALPS only.
 .TP
 \fBMPIRUN_PARTITION\fR
 BlueGene partition name.
 Available on BlueGene systems only.
 .TP
+\fBSLURM_ARRAY_JOB_ID\fR
+If this job is part of a job array, this will be set to the job ID.
+Otherwise it will not be set.
+To reference this specific task of a job array, combine
+SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
+(e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_ARRAY_TASK_ID\fR
+If this job is part of a job array, this will be set to the task ID.
+Otherwise it will not be set.
+To reference this specific task of a job array, combine
+SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
+(e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name used for the job.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_JOB_CLUSTER_NAME\fR
+Name of the cluster executing for the job.
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_CONSTRAINTS\fR
@@ -3756,7 +3776,6 @@ exit() function. The second number of the signal that caused the process to
 terminante if it was terminated by a signal.
 Available in \fBEpilogSlurmctld\fR only.
 .TP
-
 \fBSLURM_JOB_GID\fR
 Group ID of the job's owner.
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
@@ -3767,6 +3786,9 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_ID\fR
 Job ID.
+CAUTION: If this job is the first task of a job array, then Slurm commands using
+this job ID will refer to the entire job array rather than this specific task
+of the job array.
 .TP
 \fBSLURM_JOB_NAME\fR
 Name of the job.

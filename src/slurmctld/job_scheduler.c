@@ -2510,11 +2510,9 @@ static char **_build_env(struct job_record *job_ptr)
 	sprintf(buf, "%d:%d", exit_code, signal);
 	setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
 
-	if (job_ptr->array_job_id != 0) {
+	if (job_ptr->array_task_id != NO_VAL) {
 		setenvf(&my_env, "SLURM_ARRAY_JOB_ID", "%u",
 			job_ptr->array_job_id);
-	}
-	if (job_ptr->array_task_id != NO_VAL) {
 		setenvf(&my_env, "SLURM_ARRAY_TASK_ID", "%u",
 			job_ptr->array_task_id);
 	}
