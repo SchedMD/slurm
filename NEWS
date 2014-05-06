@@ -1,8 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in Slurm 14.03.4
+* Changes in Slurm 14.03.3-2
 ==========================
+ -- BGQ - Fix issue with uninitialized variable.
 
 * Changes in Slurm 14.03.3
 ==========================
