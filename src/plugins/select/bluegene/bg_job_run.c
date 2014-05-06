@@ -667,7 +667,6 @@ extern int start_job(struct job_record *job_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		error("bg_record %s doesn't exist, requested for job (%d)",
 		      jobinfo->bg_block_id, job_ptr->job_id);
-		_destroy_bg_action(bg_action_ptr);
 		return SLURM_ERROR;
 	}
 
