@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.4
 ==========================
+ -- Fix issue where not enforcing QOS but a partition either allows or denies
+    them.
 
 * Changes in Slurm 14.03.3-2
 ============================

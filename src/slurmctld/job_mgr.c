@@ -4223,11 +4223,18 @@ _valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
 {
 	if (part_ptr->allow_qos_bitstr) {
 		int match = 0;
+		if (!qos_ptr) {
+			info("_valid_job_par_qos: job's QOS not known, "
+			     "so it can't use this partition (%s allows %s)",
+			     part_ptr->name, part_ptr->allow_qos);
+
+			return ESLURM_INVALID_QOS;
+		}
 		if ((qos_ptr->id < bit_size(part_ptr->allow_qos_bitstr)) &&
 		    bit_test(part_ptr->allow_qos_bitstr, qos_ptr->id))
 			match = 1;
 		if (match == 0) {
-			info("_valid_job_par_qost: job's QOS not permitted to "
+			info("_valid_job_par_qos: job's QOS not permitted to "
 			     "use this partition (%s allows %s not %s)",
 			     part_ptr->name, part_ptr->allow_qos,
 			     qos_ptr->name);
@@ -4235,6 +4242,11 @@ _valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
 		}
 	} else if (part_ptr->deny_qos_bitstr) {
 		int match = 0;
+		if (!qos_ptr) {
+			debug2("_valid_job_par_qos: job's QOS not known, "
+			       "so couldn't check if it was denied or not");
+			return SLURM_SUCCESS;
+		}
 		if ((qos_ptr->id < bit_size(part_ptr->deny_qos_bitstr)) &&
 		    bit_test(part_ptr->deny_qos_bitstr, qos_ptr->id))
 			match = 1;
