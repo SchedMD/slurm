@@ -33,7 +33,8 @@ T_SLURM
 
 
 T_PTROBJ_SLURM
-	sv_setref_pv( $arg, \"$ntype\", (void*)$var );
+	sv_setref_pv( $arg, \"${eval(`cat classmap`);\$slurm_perl_api::class_map->{$ntype}}\", (void*)$var );
+
 #####################################
 INPUT
 
@@ -48,12 +49,12 @@ T_SLURM
 	}
 
 T_PTROBJ_SLURM
-	if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG)) {
+	if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG) && sv_derived_from($arg, \"${eval(`cat classmap`);\$slurm_perl_api::class_map->{$ntype}}\")) {
 		IV tmp = SvIV((SV*)SvRV($arg));
 		$var = INT2PTR($type,tmp);
 	} else {
 		Perl_croak(aTHX_ \"%s: %s is not of type %s\",
 			${$ALIAS?\q[GvNAME(CvGV(cv))]:\qq[\"$pname\"]},
-			\"$var\", \"$ntype\");
+			\"$var\", \"${eval(`cat classmap`);\$slurm_perl_api::class_map->{$ntype}}\");
 	}
 
