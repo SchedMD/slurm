@@ -2065,6 +2065,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t batch_start_timeout;	/* max secs for batch job to start */
 	time_t boot_time;	/* time slurmctld last booted */
 	char *checkpoint_type;	/* checkpoint plugin type */
+	char *chos_loc;		/* Chroot OS path */
 	char *core_spec_plugin;	/* core specialization plugin name */
 	char *cluster_name;     /* general name of the entire cluster */
 	uint16_t complete_wait;	/* seconds to wait for job completion before

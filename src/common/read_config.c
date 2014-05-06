@@ -175,8 +175,9 @@ s_p_options_t slurm_conf_options[] = {
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
 	{"BatchStartTimeout", S_P_UINT16},
-	{"CheckpointType", S_P_STRING},
 	{"CacheGroups", S_P_UINT16},
+	{"CheckpointType", S_P_STRING},
+	{"ChosLoc", S_P_STRING},
 	{"CoreSpecPlugin", S_P_STRING},
 	{"ClusterName", S_P_STRING},
 	{"CompleteWait", S_P_UINT16},
@@ -2124,6 +2125,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
 	xfree (ctl_conf_ptr->checkpoint_type);
+	xfree (ctl_conf_ptr->chos_loc);
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
@@ -2233,6 +2235,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->backup_controller);
 	ctl_conf_ptr->batch_start_timeout	= 0;
 	xfree (ctl_conf_ptr->checkpoint_type);
+	xfree (ctl_conf_ptr->chos_loc);
 	xfree (ctl_conf_ptr->cluster_name);
 	ctl_conf_ptr->complete_wait		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->control_addr);
@@ -2830,6 +2833,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
+
+	s_p_get_string(&conf->chos_loc, "ChosLoc", hashtbl);
 
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);

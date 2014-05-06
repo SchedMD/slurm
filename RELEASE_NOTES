@@ -47,8 +47,14 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     subdirectory called "hash.#" based upon the last digit of the job ID.
  -- Added GRES type (e.g. model name) and "non_consume" fields for resources
     that are limited, but can be shared between jobs.
- -- Added PriorityParameters configuration parameter in slurm.conf.
-
+ -- Added ChosLoc configuration parameter in slurm.conf (Chroot OS tool
+    location).
+ -- Added MemLimitEnforce configuration parameter in slurm.conf (Used to disable
+    enforcement of memory limits)
+ -- Added PriorityParameters configuration parameter in slurm.conf (String used
+    to hold configuration information for the PriorityType plugin).
+ -- Added RequeueExit and RequeueExitHold configuration parameter in slurm.conf
+    (Defines job exit codes which trigger a job being requeued and/or held).
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -85,6 +91,9 @@ Added the following struct definitions
     sched_nodes
  -- Added the following fields to struct node_info:
     gres_drain and gres_used.
+ -- Added the following fields to struct slurm_ctl_conf:
+    chos_loc, mem_limit_enforce, priority_params
+    requeue_exit, requeue_exit_hold
 
 Changed the following enums and #defines
 ========================================

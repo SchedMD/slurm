@@ -36,11 +36,13 @@ documents those changes that are of interest to users and admins.
  -- Added gres_drain and gres_used fields to node_info_t.
  -- Added PriorityParameters configuration parameter in slurm.conf.
  -- Introduce automatic job requeue policy based on exit value. See RequeueExit
-    and RequeueExitHold  descriptions in slurm.conf man page.
+    and RequeueExitHold descriptions in slurm.conf man page.
  -- Modify slurmd to cache launched job IDs for more responsive job suspend and
     gang scheduling.
  -- Permit jobs steps full control over cpu_bind options if specialized cores
     are included in the job allocation.
+ -- Added ChosLoc configuration parameter to specifiy the pathname of the
+    Chroot OS tool.
 
 * Changes in Slurm 14.03.4
 ==========================
