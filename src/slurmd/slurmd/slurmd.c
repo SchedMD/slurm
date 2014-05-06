@@ -1239,6 +1239,7 @@ _process_cmdline(int ac, char **av)
 			exit(0);
 			break;
 		case 'd':
+			xfree(conf->stepd_loc);
 			conf->stepd_loc = xstrdup(optarg);
 			break;
 		case 'D':
@@ -1287,9 +1288,10 @@ _process_cmdline(int ac, char **av)
 	 *  If slurmstepd path wasn't overridden by command line, set
 	 *   it to the default here:
 	 */
-	if (!conf->stepd_loc)
+	if (!conf->stepd_loc) {
 		conf->stepd_loc =
 			xstrdup_printf("%s/sbin/slurmstepd", SLURM_PREFIX);
+	}
 }
 
 

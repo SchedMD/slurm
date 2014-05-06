@@ -42,21 +42,20 @@
 #endif
 
 #include <fcntl.h>
+#include <grp.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/un.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #include <utime.h>
-#include <grp.h>
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
@@ -68,6 +67,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/plugstack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -81,11 +81,10 @@
 #include "src/common/util-net.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/get_mach_stat.h"
-#include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/reverse_tree_math.h"
+#include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/xcpu.h"
 
 #include "src/slurmd/common/job_container_plugin.h"
