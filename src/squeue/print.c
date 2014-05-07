@@ -155,10 +155,9 @@ static bool _merge_job_array(List l, job_info_t * job_ptr)
 		return merge;
 	if (job_ptr->array_task_id == NO_VAL)
 		return merge;
-	if (!IS_JOB_PENDING(job_ptr))
+	if (job_ptr->job_state != JOB_PENDING)	/* Don't merge SPECIAL_EXIT */
 		return merge;
-	if (IS_JOB_COMPLETING(job_ptr))
-		return merge;
+
 	xfree(job_ptr->node_inx);
 	if (!l)
 		return merge;
@@ -168,8 +167,7 @@ static bool _merge_job_array(List l, job_info_t * job_ptr)
 
 		if ((list_job_ptr->array_task_id ==  NO_VAL)
 		    || (job_ptr->array_job_id != list_job_ptr->array_job_id)
-		    || (!IS_JOB_PENDING(list_job_ptr))
-		    || (IS_JOB_COMPLETING(list_job_ptr)))
+		    || (list_job_ptr->job_state != JOB_PENDING))
 			continue;
 
 		/* We re-purpose the job's node_inx array to store the
@@ -403,9 +401,8 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 		_print_str("JOBID", width, right, true);
 	} else if ((job->array_task_id != NO_VAL)
 		   && !params.array_flag
-		   && IS_JOB_PENDING(job)
-		   && job->node_inx
-		   && (!IS_JOB_COMPLETING(job))) {
+		   && (job->job_state == JOB_PENDING)
+		   && job->node_inx) {
 		uint32_t i, local_width = width, max_task_id = 0;
 		char *id, *task_str;
 		bitstr_t *task_bits;
