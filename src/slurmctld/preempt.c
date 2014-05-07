@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include <pthread.h>
+#include <signal.h>
 
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
@@ -79,10 +80,16 @@ static bool init_run = false;
 /* *********************************************************************** */
 static void _preempt_signal(struct job_record *job_ptr, uint32_t grace_time)
 {
-	/* allow the job termination mechanism to signal the job */
+	if (job_ptr->preempt_time)
+		return;
 
 	job_ptr->preempt_time = time(NULL);
-	job_ptr->end_time = job_ptr->preempt_time + (time_t)grace_time;
+	job_ptr->end_time = MIN(job_ptr->end_time,
+				(job_ptr->preempt_time + (time_t)grace_time));
+
+	/* Signal the job at the beginning of preemption GraceTime */
+//	job_signal(job_ptr->job_id, SIGCONT, 0, 0, 0);
+//	job_signal(job_ptr->job_id, SIGTERM, 0, 0, 0);
 }
 /* *********************************************************************** */
 /*  TAG(                    slurm_job_check_grace                       )  */

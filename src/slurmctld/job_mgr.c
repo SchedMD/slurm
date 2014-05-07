@@ -5763,6 +5763,32 @@ void job_time_limit(void)
 		 * running, suspended and pending job */
 		resv_status = job_resv_check(job_ptr);
 
+		if (job_ptr->preempt_time &&
+		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+			if ((job_ptr->warn_time) &&
+			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
+			     job_ptr->end_time)) {
+				debug("Warning signal %u to job %u ",
+				      job_ptr->warn_signal, job_ptr->job_id);
+				(void) job_signal(job_ptr->job_id,
+						  job_ptr->warn_signal,
+						  job_ptr->warn_flags, 0,
+						  false);
+				job_ptr->warn_signal = 0;
+				job_ptr->warn_time = 0;
+			}
+			if (job_ptr->end_time <= now) {
+				last_job_update = now;
+				info("Preemption GraceTime reached JobId=%u",
+				     job_ptr->job_id);
+				_job_timed_out(job_ptr);
+				job_ptr->job_state = JOB_PREEMPTED |
+						     JOB_COMPLETING;
+				xfree(job_ptr->state_desc);
+			}
+			continue;
+		}
+
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 
@@ -5781,17 +5807,9 @@ void job_time_limit(void)
 			continue;
 		}
 		if (job_ptr->time_limit != INFINITE) {
-			if (job_ptr->end_time <= over_run) {
-				last_job_update = now;
-				info("Time limit exhausted for JobId=%u",
-				     job_ptr->job_id);
-				_job_timed_out(job_ptr);
-				job_ptr->state_reason = FAIL_TIMEOUT;
-				xfree(job_ptr->state_desc);
-				continue;
-			} else if ((job_ptr->warn_time) &&
-				   (job_ptr->warn_time + PERIODIC_TIMEOUT +
-				    now >= job_ptr->end_time)) {
+			if ((job_ptr->warn_time) &&
+			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
+			     job_ptr->end_time)) {
 				debug("Warning signal %u to job %u ",
 				      job_ptr->warn_signal, job_ptr->job_id);
 				(void) job_signal(job_ptr->job_id,
@@ -5800,6 +5818,15 @@ void job_time_limit(void)
 						  false);
 				job_ptr->warn_signal = 0;
 				job_ptr->warn_time = 0;
+			}
+			if (job_ptr->end_time <= over_run) {
+				last_job_update = now;
+				info("Time limit exhausted for JobId=%u",
+				     job_ptr->job_id);
+				_job_timed_out(job_ptr);
+				job_ptr->state_reason = FAIL_TIMEOUT;
+				xfree(job_ptr->state_desc);
+				continue;
 			}
 		}
 
