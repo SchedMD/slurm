@@ -73,6 +73,7 @@ static int _sort_by_preempt_mode(void *void1, void *void2);
 static int _sort_by_priority(void *void1, void *void2);
 static int _sort_by_reason(void *void1, void *void2);
 static int _sort_by_reason_time(void *void1, void *void2);
+static int _sort_by_reason_user(void *void1, void *void2);
 static int _sort_by_root(void *void1, void *void2);
 static int _sort_by_share(void *void1, void *void2);
 static int _sort_by_state(void *void1, void *void2);
@@ -115,7 +116,7 @@ void sort_sinfo_list(List sinfo_list)
 		else if (params.sort[i] == 'D')
 			list_sort(sinfo_list, _sort_by_nodes);
 		else if (params.sort[i] == 'E')
-			list_sort(sinfo_list, _sort_by_reason_time);
+			list_sort(sinfo_list, _sort_by_reason);
 		else if (params.sort[i] == 'f')
 			list_sort(sinfo_list, _sort_by_features);
 		else if (params.sort[i] == 'F')
@@ -124,6 +125,8 @@ void sort_sinfo_list(List sinfo_list)
 			list_sort(sinfo_list, _sort_by_groups);
 		else if (params.sort[i] == 'h')
 			list_sort(sinfo_list, _sort_by_share);
+		else if (params.sort[i] == 'H')
+			list_sort(sinfo_list, _sort_by_reason_time);
 		else if (params.sort[i] == 'l')
 			list_sort(sinfo_list, _sort_by_max_time);
 		else if (params.sort[i] == 'm')
@@ -145,13 +148,17 @@ void sort_sinfo_list(List sinfo_list)
 		else if (params.sort[i] == 'r')
 			list_sort(sinfo_list, _sort_by_root);
 		else if (params.sort[i] == 'R')
-			list_sort(sinfo_list, _sort_by_reason);
+			list_sort(sinfo_list, _sort_by_partition);
 		else if (params.sort[i] == 's')
 			list_sort(sinfo_list, _sort_by_job_size);
 		else if (params.sort[i] == 't')
 			list_sort(sinfo_list, _sort_by_state);
 		else if (params.sort[i] == 'T')
 			list_sort(sinfo_list, _sort_by_state);
+		else if (params.sort[i] == 'u')
+			list_sort(sinfo_list, _sort_by_reason_user);
+		else if (params.sort[i] == 'U')
+			list_sort(sinfo_list, _sort_by_reason_user);
 		else if (params.sort[i] == 'w')
 			list_sort(sinfo_list, _sort_by_weight);
 		else if (params.sort[i] == 'X')
@@ -609,33 +616,36 @@ static int _sort_by_reason(void *void1, void *void2)
 	return diff;
 }
 
-/* Sort by the time associated with the reason (if any).
- * If no time, sort by the "reason" string.
- * "reason" is of the format "<reason[<user>@MM/DD-HH:MM_SS]"
- * or (ISO8601)              "<reason[<user>@YYYY-MM-DDTHH:MM:SS]"
- * In either case a simple string compare sort order the records. */
 static int _sort_by_reason_time(void *void1, void *void2)
 {
 	int diff;
 	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
 	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
-	char *tmp, *val1 = "", *val2 = "";
 
-	if (sinfo1->reason) {
-		tmp = strrchr(sinfo1->reason, '@');
-		if (tmp)
-			val1 = tmp + 1;
-		else
-			val1 = sinfo1->reason;
-	}
-	if (sinfo2->reason) {
-		tmp = strrchr(sinfo2->reason, '@');
-		if (tmp)
-			val2 = tmp + 1;
-		else
-			val2 = sinfo2->reason;
-	}
-	diff = strcmp(val1, val2);
+	if (sinfo1->reason_time > sinfo2->reason_time)
+		diff = 1;
+	else if (sinfo1->reason_time < sinfo2->reason_time)
+		diff = -1;
+	else
+		diff = 0;
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_reason_user(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+
+	if (sinfo1->reason_uid > sinfo2->reason_uid)
+		diff = 1;
+	else if (sinfo1->reason_uid < sinfo2->reason_uid)
+		diff = -1;
+	else
+		diff = 0;
 
 	if (reverse_order)
 		diff = -diff;
