@@ -164,7 +164,11 @@ extern char *default_plugstack;
 #define DEFAULT_SUSPEND_RATE        60
 #define DEFAULT_SUSPEND_TIME        0
 #define DEFAULT_SUSPEND_TIMEOUT     30
-#define DEFAULT_SWITCH_TYPE         "switch/none"
+#if defined HAVE_NATIVE_CRAY
+#  define DEFAULT_SWITCH_TYPE         "switch/cray"
+#else
+#  define DEFAULT_SWITCH_TYPE         "switch/none"
+#endif
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
 #if defined HAVE_3D && !defined HAVE_ALPS_CRAY
