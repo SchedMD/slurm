@@ -3005,6 +3005,7 @@ static void _help(void)
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+"      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --requeue               if set, permit the job to be requeued\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
