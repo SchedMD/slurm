@@ -838,7 +838,10 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		fd_set_noclose_on_exec(STDERR_FILENO);
 		log_fini();
 		if (!failed) {
-			execvp(argv[0], argv);
+			if (conf->chos_loc && !access(conf->chos_loc, X_OK))
+				execvp(conf->chos_loc, argv);
+			else
+				execvp(argv[0], argv);
 			error("exec of slurmstepd failed: %m");
 		}
 		exit(2);
@@ -4600,7 +4603,10 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 #else
                 setpgrp();
 #endif
-		execve (argv[0], argv, env);
+		if (conf->chos_loc && !access(conf->chos_loc, X_OK))
+			execve(conf->chos_loc, argv, env);
+		else
+			execve(argv[0], argv, env);
 		error ("execve(%s): %m", argv[0]);
 		exit (127);
 	}
