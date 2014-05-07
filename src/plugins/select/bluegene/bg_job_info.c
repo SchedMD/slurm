@@ -274,8 +274,6 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 	bg_record_t **bg_record = (bg_record_t **) data;
 	char **tmp_char = (char **) data;
 
-	xassert(jobinfo);
-
 	if (!jobinfo) {
 		if (data_type == SELECT_JOBDATA_CLEANING) {
 			debug2("get_select_jobinfo: jobinfo is NULL");

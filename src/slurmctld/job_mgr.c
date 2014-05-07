@@ -4175,11 +4175,18 @@ _valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
 {
 	if (part_ptr->allow_qos_bitstr) {
 		int match = 0;
+		if (!qos_ptr) {
+			info("_valid_job_par_qos: job's QOS not known, "
+			     "so it can't use this partition (%s allows %s)",
+			     part_ptr->name, part_ptr->allow_qos);
+
+			return ESLURM_INVALID_QOS;
+		}
 		if ((qos_ptr->id < bit_size(part_ptr->allow_qos_bitstr)) &&
 		    bit_test(part_ptr->allow_qos_bitstr, qos_ptr->id))
 			match = 1;
 		if (match == 0) {
-			info("_valid_job_par_qost: job's QOS not permitted to "
+			info("_valid_job_par_qos: job's QOS not permitted to "
 			     "use this partition (%s allows %s not %s)",
 			     part_ptr->name, part_ptr->allow_qos,
 			     qos_ptr->name);
@@ -4187,6 +4194,11 @@ _valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
 		}
 	} else if (part_ptr->deny_qos_bitstr) {
 		int match = 0;
+		if (!qos_ptr) {
+			debug2("_valid_job_par_qos: job's QOS not known, "
+			       "so couldn't check if it was denied or not");
+			return SLURM_SUCCESS;
+		}
 		if ((qos_ptr->id < bit_size(part_ptr->deny_qos_bitstr)) &&
 		    bit_test(part_ptr->deny_qos_bitstr, qos_ptr->id))
 			match = 1;
@@ -5744,6 +5756,32 @@ void job_time_limit(void)
 		 * running, suspended and pending job */
 		resv_status = job_resv_check(job_ptr);
 
+		if (job_ptr->preempt_time &&
+		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+			if ((job_ptr->warn_time) &&
+			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
+			     job_ptr->end_time)) {
+				debug("Warning signal %u to job %u ",
+				      job_ptr->warn_signal, job_ptr->job_id);
+				(void) job_signal(job_ptr->job_id,
+						  job_ptr->warn_signal,
+						  job_ptr->warn_flags, 0,
+						  false);
+				job_ptr->warn_signal = 0;
+				job_ptr->warn_time = 0;
+			}
+			if (job_ptr->end_time <= now) {
+				last_job_update = now;
+				info("Preemption GraceTime reached JobId=%u",
+				     job_ptr->job_id);
+				_job_timed_out(job_ptr);
+				job_ptr->job_state = JOB_PREEMPTED |
+						     JOB_COMPLETING;
+				xfree(job_ptr->state_desc);
+			}
+			continue;
+		}
+
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 
@@ -5762,17 +5800,9 @@ void job_time_limit(void)
 			continue;
 		}
 		if (job_ptr->time_limit != INFINITE) {
-			if (job_ptr->end_time <= over_run) {
-				last_job_update = now;
-				info("Time limit exhausted for JobId=%u",
-				     job_ptr->job_id);
-				_job_timed_out(job_ptr);
-				job_ptr->state_reason = FAIL_TIMEOUT;
-				xfree(job_ptr->state_desc);
-				continue;
-			} else if ((job_ptr->warn_time) &&
-				   (job_ptr->warn_time + PERIODIC_TIMEOUT +
-				    now >= job_ptr->end_time)) {
+			if ((job_ptr->warn_time) &&
+			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
+			     job_ptr->end_time)) {
 				debug("Warning signal %u to job %u ",
 				      job_ptr->warn_signal, job_ptr->job_id);
 				(void) job_signal(job_ptr->job_id,
@@ -5781,6 +5811,15 @@ void job_time_limit(void)
 						  false);
 				job_ptr->warn_signal = 0;
 				job_ptr->warn_time = 0;
+			}
+			if (job_ptr->end_time <= over_run) {
+				last_job_update = now;
+				info("Time limit exhausted for JobId=%u",
+				     job_ptr->job_id);
+				_job_timed_out(job_ptr);
+				job_ptr->state_reason = FAIL_TIMEOUT;
+				xfree(job_ptr->state_desc);
+				continue;
 			}
 		}
 
@@ -8176,7 +8215,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->time_limit = job_specs->time_limit;
 			if (IS_JOB_RUNNING(job_ptr) ||
 			    IS_JOB_SUSPENDED(job_ptr)) {
-				if (job_ptr->time_limit == INFINITE) {
+				if (job_ptr->preempt_time) {
+					;	/* Preemption in progress */
+				} else if (job_ptr->time_limit == INFINITE) {
 					/* Set end time in one year */
 					job_ptr->end_time = now +
 						(365 * 24 * 60 * 60);
@@ -8237,7 +8278,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	if (job_specs->end_time) {
-		if (!IS_JOB_RUNNING(job_ptr)) {
+		if (!IS_JOB_RUNNING(job_ptr) || job_ptr->preempt_time) {
 			/* We may want to use this for deadline scheduling
 			 * at some point in the future. For now only reset
 			 * the time limit of running jobs. */
@@ -10631,7 +10672,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			xfree(sched_type);
 			wiki_sched_test = true;
 		}
-		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched)) {
+		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched) &&
+		    (!job_ptr->preempt_time)) {
  			debug3("Job %u resumed, updating end_time",
  			       job_ptr->job_id);
 			job_ptr->end_time = now +
@@ -11911,5 +11953,20 @@ _set_job_requeue_exit_value(struct job_record *job_ptr)
 			job_ptr->job_state |= JOB_SPECIAL_EXIT;
 			return;
 		}
+	}
+}
+
+/* Reset a job's end-time based upon it's end_time.
+ * NOTE: Do not reset the end_time if already being preempted */
+extern void job_end_time_reset(struct job_record  *job_ptr)
+{
+	if (job_ptr->preempt_time)
+		return;
+	if (job_ptr->time_limit == INFINITE) {
+		job_ptr->end_time = job_ptr->start_time +
+				    (365 * 24 * 60 * 60); /* secs in year */
+	} else {
+		job_ptr->end_time = job_ptr->start_time +
+				    (job_ptr->time_limit * 60);	/* secs */
 	}
 }

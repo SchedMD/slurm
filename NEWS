@@ -43,9 +43,17 @@ documents those changes that are of interest to users and admins.
     are included in the job allocation.
  -- Added ChosLoc configuration parameter to specifiy the pathname of the
     Chroot OS tool.
+ -- Sent SIGCONT/SIGTERM when a job is selected for preemption with GraceTime
+    configured rather than waiting for GraceTime to be reached before notifying
+    the job.
 
 * Changes in Slurm 14.03.4
 ==========================
+ -- Fix issue where not enforcing QOS but a partition either allows or denies
+    them.
+ -- CRAY - make switch/cray default when running on a Cray natively
+ -- Disable job time limit change if it's preemption is in progress.
+ -- Correct logic to properly enforce job preemption GraceTime.
 
 * Changes in Slurm 14.03.3-2
 ============================

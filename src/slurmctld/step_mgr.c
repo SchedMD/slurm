@@ -904,7 +904,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				*return_code = ESLURM_NODES_BUSY;
 				/* Update job's end-time to allow for node
 				 * boot time. */
-				if (job_ptr->time_limit != INFINITE) {
+				if ((job_ptr->time_limit != INFINITE) &&
+				    (!job_ptr->preempt_time)) {
 					job_ptr->end_time = time(NULL) +
 						(job_ptr->time_limit * 60);
 				}
