@@ -3618,7 +3618,7 @@ extern void job_time_adj_resv(struct job_record *job_ptr)
 	}
 	list_iterator_destroy(iter);
 	job_ptr->time_limit = MAX(job_ptr->time_limit, job_ptr->time_min);
-	job_ptr->end_time = job_ptr->start_time + (job_ptr->time_limit * 60);
+	job_end_time_reset(job_ptr);
 }
 
 /* For a given license_list, return the total count of licenses of the

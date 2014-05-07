@@ -1742,12 +1742,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->time_limit = part_ptr->max_time;
 	}
 
-	if (job_ptr->time_limit == INFINITE)
-		job_ptr->end_time = job_ptr->start_time +
-				    (365 * 24 * 60 * 60); /* secs in year */
-	else
-		job_ptr->end_time = job_ptr->start_time +
-			(job_ptr->time_limit * 60);   /* secs */
+	job_end_time_reset(job_ptr);
 
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */

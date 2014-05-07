@@ -8259,7 +8259,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->time_limit = job_specs->time_limit;
 			if (IS_JOB_RUNNING(job_ptr) ||
 			    IS_JOB_SUSPENDED(job_ptr)) {
-				if (job_ptr->time_limit == INFINITE) {
+				if (job_ptr->preempt_time) {
+					;	/* Preemption in progress */
+				} else if (job_ptr->time_limit == INFINITE) {
 					/* Set end time in one year */
 					job_ptr->end_time = now +
 						(365 * 24 * 60 * 60);
@@ -8320,7 +8322,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	if (job_specs->end_time) {
-		if (!IS_JOB_RUNNING(job_ptr)) {
+		if (!IS_JOB_RUNNING(job_ptr) || job_ptr->preempt_time) {
 			/* We may want to use this for deadline scheduling
 			 * at some point in the future. For now only reset
 			 * the time limit of running jobs. */
@@ -10678,7 +10680,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			xfree(sched_type);
 			wiki_sched_test = true;
 		}
-		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched)) {
+		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched) &&
+		    (!job_ptr->preempt_time)) {
  			debug3("Job %u resumed, updating end_time",
  			       job_ptr->job_id);
 			job_ptr->end_time = now +
@@ -11850,4 +11853,19 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
 	      job_ptr->job_id, job_ptr->job_state,
 	      job_ptr->state_reason, job_ptr->priority);
+}
+
+/* Reset a job's end-time based upon it's end_time.
+ * NOTE: Do not reset the end_time if already being preempted */
+extern void job_end_time_reset(struct job_record  *job_ptr)
+{
+	if (job_ptr->preempt_time)
+		return;
+	if (job_ptr->time_limit == INFINITE) {
+		job_ptr->end_time = job_ptr->start_time +
+				    (365 * 24 * 60 * 60); /* secs in year */
+	} else {
+		job_ptr->end_time = job_ptr->start_time +
+				    (job_ptr->time_limit * 60);	/* secs */
+	}
 }
