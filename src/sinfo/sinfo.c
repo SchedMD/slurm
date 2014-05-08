@@ -797,6 +797,8 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 			     partition_info_t* part_ptr)
 {
+	if (params.list_reasons)	/* Don't care about partition */
+		return true;
 	if (part_ptr == sinfo_ptr->part_info) /* identical partition */
 		return true;
 	if ((part_ptr == NULL) || (sinfo_ptr->part_info == NULL))
@@ -1054,10 +1056,11 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 	list_iterator_destroy(itr);
 
 	/* if no match, create new sinfo_data entry */
-	if (!sinfo_ptr)
+	if (!sinfo_ptr) {
 		list_append(sinfo_list,
 			    _create_sinfo(part_ptr, part_num,
 					  node_ptr, node_scaling));
+	}
 
 	return rc;
 }
