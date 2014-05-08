@@ -62,7 +62,8 @@ rounded to the next lowest 1,000. Only the major version number of this symbol
 is significant.</li>
 </ul>
 <p class="footer"><a href="#top">top</a></p>
-<h2>API Functions</h2>
+
+<h2>API Functions in All Plugins</h2>
 <p class="commandline">int init (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: If present, this function is called
 just after the plugin is loaded. This allows the plugin to perform any global
@@ -77,15 +78,18 @@ just before the plugin is unloaded. This allows the plugin to do any finalizatio
 after the last plugin-specific API call is made.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
-<p><b>Note</b>: These functions are not the same as those described in the <span class="commandline">dlopen
-(3)</span> system library. The C run-time system co-opts those symbols for its
-own initialization. The system <span class="commandline">init()</span> is called
-before the SLURM <span class="commandline">plugininit()</span>, and the SLURM
-<span class="commandline">fini()</span> is called before the system's <span class="commandline">fini()</span>.</p>
-<p>The functions need not appear. The plugin may provide either <span class="commandline">init()</span>
-or <span class="commandline">fini()</span> or both.</p>
+<p><b>Note</b>: These init and fini functions are not the same as those
+described in the <span class="commandline">dlopen (3)</span> system library.
+The C run-time system co-opts those symbols for its own initialization.
+The system <span class="commandline">_init()</span> is called before the SLURM
+<span class="commandline">init()</span>, and the SLURM
+<span class="commandline">fini()</span> is called before the system's
+<span class="commandline">_fini()</span>.</p>
+<p>The functions need not appear. The plugin may provide either
+<span class="commandline">init()</span> or <span class="commandline">fini()</span> or both.</p>
 <p class="footer"><a href="#top">top</a></p>
 <h2>Thread Safety</h2>
+
 <p>SLURM is a multithreaded application. The SLURM plugin library may exercise
 the plugin functions in a re-entrant fashion. It is the responsibility of the
 plugin author to provide the necessarily mutual exclusion and synchronization
@@ -108,6 +112,6 @@ utilize a thread for that functionality. This thread may be created by the
 for an example of how to do this.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 July 2004</p></td>
+<p style="text-align:center;">Last modified 8 May 2014</p>
 
 <!--#include virtual="footer.txt"-->

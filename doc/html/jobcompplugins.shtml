@@ -57,6 +57,27 @@ SLURM_SUCCESS. </p>
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should be stubbed.</p>
 
+<p class="commandline"> int init (void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is loaded, before any other functions are
+  called. Put global initialization here.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.</p>
+
+<p class="commandline"> void fini (void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is removed. Clear any allocated storage here.
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p><b>Note</b>: These init and fini functions are not the same as those
+described in the <span class="commandline">dlopen (3)</span> system library.
+The C run-time system co-opts those symbols for its own initialization.
+The system <span class="commandline">_init()</span> is called before the SLURM
+<span class="commandline">init()</span>, and the SLURM
+<span class="commandline">fini()</span> is called before the system's
+<span class="commandline">_fini()</span>.</p>
+
 <p class="commandline">int slurm_jobcomp_set_location (char * location);</p>
 <p style="margin-left:.2in"><b>Description</b>: Specify the location to be used for job logging.</p>
 <p style="margin-left:.2in"><b>Argument</b>:<span class="commandline"> location</span>&nbsp;
@@ -131,6 +152,6 @@ releases of SLURM may revise this API. A job completion plugin conveys its abili
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 March 2010</p>
+<p style="text-align:center;">Last modified 8 May 2014</p>
 
 <!--#include virtual="footer.txt"-->
