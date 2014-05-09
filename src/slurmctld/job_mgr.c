@@ -10569,6 +10569,39 @@ static int _job_suspend_switch_test(struct job_record *job_ptr)
 }
 
 /*
+ * Determine if a job can be resumed.
+ * Check for multiple jobs on the same nodes with core specialization.
+ * RET 0 on success, otherwise ESLURM error code
+ */
+static int _job_resume_test(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	ListIterator job_iterator;
+	struct job_record *test_job_ptr;
+
+	if ((job_ptr->details == NULL) || (job_ptr->details->core_spec == 0) ||
+	    (job_ptr->node_bitmap == NULL))
+		return rc;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((test_job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (test_job_ptr->details &&
+		    test_job_ptr->details->core_spec &&
+		    IS_JOB_RUNNING(test_job_ptr) &&
+		    test_job_ptr->node_bitmap &&
+		    bit_overlap(test_job_ptr->node_bitmap,
+				job_ptr->node_bitmap)) {
+			rc = ESLURM_NODES_BUSY;
+			break;
+		}
+/* FIXME: Also test for ESLURM_INTERCONNECT_BUSY */
+	}
+	list_iterator_destroy(job_iterator);
+
+	return rc;
+}
+
+/*
  * job_suspend - perform some suspend/resume operation
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
@@ -10589,11 +10622,11 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	struct job_record *job_ptr = NULL;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
+
 #ifdef HAVE_BG
 	rc = ESLURM_NOT_SUPPORTED;
+	goto reply;
 #endif
-	if (rc)
-		goto reply;
 
 	/* find the job */
 	job_ptr = find_job_record (sus_ptr->job_id);
@@ -10620,6 +10653,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = ESLURM_NOT_SUPPORTED;
 		goto reply;
 	}
+	if ((sus_ptr->op == RESUME_JOB) && (rc = _job_resume_test(job_ptr)))
+		goto reply;
 
 	/* Notify salloc/srun of suspend/resume */
 	srun_job_suspend(job_ptr, sus_ptr->op);
