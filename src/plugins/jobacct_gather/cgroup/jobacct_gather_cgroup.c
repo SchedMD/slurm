@@ -105,8 +105,8 @@ static slurm_cgroup_conf_t slurm_cgroup_conf;
 static void _prec_extra(jag_prec_t *prec)
 {
 	unsigned long utime, stime, total_rss, total_pgpgin;
-	char *cpu_time, *memory_stat, *ptr;
-	size_t cpu_time_size, memory_stat_size;
+	char *cpu_time = NULL, *memory_stat = NULL, *ptr;
+	size_t cpu_time_size = 0, memory_stat_size = 0;
 
 
 	//DEF_TIMERS;
@@ -135,6 +135,8 @@ static void _prec_extra(jag_prec_t *prec)
 		sscanf(ptr, "total_pgmajfault %lu", &total_pgpgin);
 		prec->pages = total_pgpgin;
 	}
+	xfree(cpu_time);
+	xfree(memory_stat);
 
 	/* FIXME: Enable when kernel support ready.
 	 *
