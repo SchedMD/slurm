@@ -251,10 +251,10 @@ extern void log_set_debug_flags(void);
  * "%T" => strftime "%a, %d %b %Y %H:%M:%S %z" (rfc2822 date/time)
  */
 
-/* fatal() aborts program unless NDEBUG defined
+/* fatal() exits program
  * error() returns SLURM_ERROR
  */
-void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2))) __NORETURN_ATTR;
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
