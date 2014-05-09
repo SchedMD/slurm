@@ -14,8 +14,9 @@ documents those changes that are of interest to users and admins.
  -- Handle node ranges better when dealing with accounting max node limits.
  -- Fix perlapi to compile correctly with perl 5.18
  -- BGQ - Fix issue with uninitialized variable.
- -- Correct sinfo --sort fields to match documentation: E => Reason, 
+ -- Correct sinfo --sort fields to match documentation: E => Reason,
     H -> Reason Time (new), R -> Partition Name, u/U -> Reason user (new)
+ -- If an invalid assoc_ptr comes in don't use the id to verify it.
 
 * Changes in Slurm 2.6.9
 ========================
