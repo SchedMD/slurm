@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "April 2014" "slurm.conf 14.11" "Slurm configuration file"
+.TH "slurm.conf" "5" "May 2014" "slurm.conf 14.11" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -347,7 +347,6 @@ OpenMPI (version 1.3 or higher)
 .TP
 \fBcheckpoint/poe\fR
 for use with IBM POE (Parallel Operating Environment) only
-.TP
 .RE
 
 .TP
@@ -2170,6 +2169,11 @@ The only supported options for \fBSelectType=select/linear\fR are
 \fBCR_ONE_TASK_PER_CORE\fR and
 \fBCR_Memory\fR, which treats memory as a consumable resource and
 prevents memory over subscription with job preemption or gang scheduling.
+By default \fBSelectType=select/linear\fR allocates whole nodes to jobs without
+considering their memory consumption.
+By default \fBSelectType=select/cons_res\fR, \fBSelectType=select/cray\fR, and
+\fBSelectType=select/serial\fR use \fBCR_CPU\fR, which allocates CPU to jobs
+without considering their memory consumption.
 .RS
 .TP
 The following options are supported for \fBSelectType=select/cray\fR:
