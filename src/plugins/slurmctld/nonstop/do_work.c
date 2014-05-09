@@ -374,7 +374,7 @@ extern int restore_nonstop_state(void)
 	uint32_t job_cnt = 0;
 	char *data;
 	uint16_t protocol_version = (uint16_t) NO_VAL;
-	Buf buffer = init_buf(0);
+	Buf buffer;
 	int error_code = SLURM_SUCCESS, i, state_fd;
 	time_t buf_time;
 	job_failures_t *job_fail_ptr = NULL;
