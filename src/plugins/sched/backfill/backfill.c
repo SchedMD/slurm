@@ -606,7 +606,7 @@ static int _attempt_backfill(void)
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
-	bitstr_t *exc_core_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL, *non_cg_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
@@ -660,6 +660,9 @@ static int _attempt_backfill(void)
 	}
 
 	gettimeofday(&bf_time1, NULL);
+
+	non_cg_bitmap = bit_copy(cg_node_bitmap);
+	bit_not(non_cg_bitmap);
 
 	slurmctld_diag_stats.bf_queue_len = list_count(job_queue);
 	slurmctld_diag_stats.bf_queue_len_sum += slurmctld_diag_stats.
@@ -720,6 +723,9 @@ static int _attempt_backfill(void)
 				xfree(job_queue_rec);
 				break;
 			}
+			/* cg_node_bitmap may be changed */
+			bit_copybits(non_cg_bitmap, cg_node_bitmap);
+			bit_not(non_cg_bitmap);
 			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
 			job_test_count = 0;
@@ -898,6 +904,9 @@ static int _attempt_backfill(void)
 				rc = 1;
 				break;
 			}
+			/* cg_node_bitmap may be changed */
+			bit_copybits(non_cg_bitmap, cg_node_bitmap);
+			bit_not(non_cg_bitmap);
 
 			/* With bf_continue configured, the original job could
 			 * have been scheduled or cancelled and purged.
@@ -935,6 +944,7 @@ static int _attempt_backfill(void)
 		/* Identify usable nodes for this job */
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
+		bit_and(avail_bitmap, non_cg_bitmap);
 		for (j=0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
 			     node_space[j].next && (later_start == 0))
@@ -1105,6 +1115,7 @@ static int _attempt_backfill(void)
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(exc_core_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
+	FREE_NULL_BITMAP(non_cg_bitmap);
 
 	for (i=0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
