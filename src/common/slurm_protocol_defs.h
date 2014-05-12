@@ -588,8 +588,8 @@ typedef struct complete_prolog {
 typedef struct step_complete_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;
-	uint32_t range_first;
-	uint32_t range_last;
+	uint32_t range_first;	/* First node rank within job step's alloc */
+	uint32_t range_last;	/* Last node rank within job step's alloc */
  	uint32_t step_rc;	/* largest task return code */
 	jobacctinfo_t *jobacct;
 } step_complete_msg_t;

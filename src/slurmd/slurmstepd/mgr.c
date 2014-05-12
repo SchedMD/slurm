@@ -777,6 +777,12 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 	memset(&msg, 0, sizeof(step_complete_msg_t));
 	msg.job_id = job->jobid;
 	msg.job_step_id = job->stepid;
+	if (job->batch) {	/* Nested batch step anomalies */
+		if (first == -1)
+			first = 0;
+		if (last == -1)
+			last = 0;
+	}
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;
