@@ -89,7 +89,7 @@ acct_gather_profile plugin will write detailed data as a HDF5 file.
 The directory is assumed to be on a file system shared by the controller and
 all compute nodes. This is a required parameter.<p>
 
-<dt><b>ProfileHDF5CollectDefault</b> = [options]</dt>
+<dt><b>ProfileHDF5Default</b> = [options]</dt>
 <p>
 A  comma  delimited list of data types to be collected for each job submission.
 Use this option with caution. A node-step file will be created on every
@@ -137,7 +137,7 @@ for 2013 era Intel processors is 3 seconds.</p>
 <h3>Data Collection</h3>
 <p>The --profile option on salloc|sbatch|srun  controls whether data is
 collected and what type of data is collected. If --profile is not specified
-no data collected unless the <B>ProfileHDF5CollectDefault</B>
+no data collected unless the <B>ProfileHDF5Default</B>
 option is used in acct_gather.conf. --profile on the command line overrides
 any value specified in the configuration file.</p>
 
