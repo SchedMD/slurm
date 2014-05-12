@@ -1576,8 +1576,30 @@ cleanup:
 	FREE_NULL_BITMAP(nodes_idle);
 	FREE_NULL_BITMAP(nodes_picked);
 	xfree(usable_cpu_cnt);
-	if (*return_code == SLURM_SUCCESS)
+	if (*return_code == SLURM_SUCCESS) {
 		*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+	} else if (*return_code == ESLURM_NODE_NOT_AVAIL) {
+		/* Return ESLURM_NODES_BUSY if the node is not responding.
+		 * The node will eventually either come back UP or go DOWN. */
+		nodes_picked = bit_copy(up_node_bitmap);
+		bit_not(nodes_picked);
+		bit_and(nodes_picked, job_ptr->node_bitmap);
+		first_bit = bit_ffs(nodes_picked);
+		if (first_bit == -1)
+			last_bit = -2;
+		else
+			last_bit = bit_fls(nodes_picked);
+		for (i = first_bit; i <= last_bit; i++) {
+			if (!bit_test(nodes_picked, i))
+				continue;
+			node_ptr = node_record_table_ptr + i;
+			if (!IS_NODE_NO_RESPOND(node_ptr)) {
+				*return_code = ESLURM_NODES_BUSY;
+				break;
+			}
+		}
+		FREE_NULL_BITMAP(nodes_picked);
+	}
 	return NULL;
 }
 

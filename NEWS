@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Correct logic to properly enforce job preemption GraceTime.
  -- Fix sinfo -R to print each down/drained node once, rather than once per
     partition.
+ -- If a job has non-responding node, retry job step create rather than
+    returning with DOWN node error.
 
 * Changes in Slurm 14.03.3-2
 ============================
