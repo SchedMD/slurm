@@ -206,7 +206,7 @@ pid_t stepd_daemon_pid(int fd);
  * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
-extern int stepd_suspend(int fd, suspend_int_msg_t *susp_req);
+extern int stepd_suspend(int fd, suspend_int_msg_t *susp_req, int phase);
 
 /*
  * Resume execution of the job step that has been suspended by a
@@ -216,7 +216,7 @@ extern int stepd_suspend(int fd, suspend_int_msg_t *susp_req);
  * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
-extern int stepd_resume(int fd, suspend_int_msg_t *susp_req);
+extern int stepd_resume(int fd, suspend_int_msg_t *susp_req, int phase);
 
 /*
  * Reconfigure the job step (Primarily to allow the stepd to refresh

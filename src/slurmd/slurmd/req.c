@@ -3759,22 +3759,21 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 		if (req->op == SUSPEND_JOB) {
 			for (x = 0; x < fdi; x++) {
-				if (fd[fdi] == -1)
-					continue;
-				debug2("Suspending job %u (cached step count %d)",
-				       req->job_id, x);
-				if (stepd_suspend(fd[x], req) < 0) {
+				(void) stepd_suspend(fd[x], req, 0);
+			}
+			for (x = 0; x < fdi; x++) {
+				if (stepd_suspend(fd[x], req, 1) < 0) {
 					debug("Suspend of job %u failed: %m",
 					      req->job_id);
 				}
 			}
+
 		} else {
 			for (x = 0; x < fdi; x++) {
-				if (fd[fdi] == -1)
-					continue;
-				debug2("Resuming job %u (cached step count %d)",
-				       req->job_id, x);
-				if (stepd_resume(fd[x], req) < 0) {
+				(void) stepd_resume(fd[x], req, 0);
+			}
+			for (x = 0; x < fdi; x++) {
+				if (stepd_resume(fd[x], req, 1) < 0) {
 					debug("Resume of job %u failed: %m",
 					      req->job_id);
 				}

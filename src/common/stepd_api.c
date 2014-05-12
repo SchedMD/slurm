@@ -724,21 +724,23 @@ rwfail:
  * and sets errno.
  */
 extern int
-stepd_suspend(int fd, suspend_int_msg_t *susp_req)
+stepd_suspend(int fd, suspend_int_msg_t *susp_req, int phase)
 {
 	int req = REQUEST_STEP_SUSPEND;
 	int rc = 0;
 	int errnum = 0;
 
-	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &susp_req->cpu_freq, sizeof(uint32_t));
-	safe_write(fd, &susp_req->job_core_spec, sizeof(uint16_t));
+	if (phase == 0) {
+		safe_write(fd, &req, sizeof(int));
+		safe_write(fd, &susp_req->cpu_freq, sizeof(uint32_t));
+		safe_write(fd, &susp_req->job_core_spec, sizeof(uint16_t));
+	} else {
+		/* Receive the return code and errno */
+		safe_read(fd, &rc, sizeof(int));
+		safe_read(fd, &errnum, sizeof(int));
+		errno = errnum;
+	}
 
-	/* Receive the return code and errno */
-	safe_read(fd, &rc, sizeof(int));
-	safe_read(fd, &errnum, sizeof(int));
-
-	errno = errnum;
 	return rc;
 rwfail:
 	return -1;
@@ -753,21 +755,23 @@ rwfail:
  * and sets errno.
  */
 extern int
-stepd_resume(int fd, suspend_int_msg_t *susp_req)
+stepd_resume(int fd, suspend_int_msg_t *susp_req, int phase)
 {
 	int req = REQUEST_STEP_RESUME;
 	int rc = 0;
 	int errnum = 0;
 
-	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &susp_req->cpu_freq, sizeof(uint32_t));
-	safe_write(fd, &susp_req->job_core_spec, sizeof(uint16_t));
+	if (phase == 0) {
+		safe_write(fd, &req, sizeof(int));
+		safe_write(fd, &susp_req->cpu_freq, sizeof(uint32_t));
+		safe_write(fd, &susp_req->job_core_spec, sizeof(uint16_t));
+	} else {
+		/* Receive the return code and errno */
+		safe_read(fd, &rc, sizeof(int));
+		safe_read(fd, &errnum, sizeof(int));
+		errno = errnum;
+	}
 
-	/* Receive the return code and errno */
-	safe_read(fd, &rc, sizeof(int));
-	safe_read(fd, &errnum, sizeof(int));
-
-	errno = errnum;
 	return rc;
 rwfail:
 	return -1;
