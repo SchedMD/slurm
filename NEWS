@@ -5,12 +5,12 @@ documents those changes that are of interest to users and admins.
 ==========================
  -- Fix issue where not enforcing QOS but a partition either allows or denies
     them.
- -- CRAY - make switch/cray default when running on a Cray natively
+ -- CRAY - Make switch/cray default when running on a Cray natively.
+ -- CRAY - Make job_container/cncu default when running on a Cray natively.
  -- Disable job time limit change if it's preemption is in progress.
  -- Correct logic to properly enforce job preemption GraceTime.
  -- Fix sinfo -R to print each down/drained node once, rather than once per
     partition.
- -- CRAY - make job_container/cncu default when running on a Cray natively
 
 * Changes in Slurm 14.03.3-2
 ============================
