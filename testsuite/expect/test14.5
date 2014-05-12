@@ -61,13 +61,13 @@ set pid         [pid]
 set file1       "/tmp/test.$pid.1.$test_id"
 set file2       "/tmp/test.$pid.2.$test_id"
 make_bash_script $file_in "
-  $srun $bin_rm $file1
+  $srun $bin_rm -f $file1
   $sbcast --preserve $sbcast $file1
   ls -l $sbcast
   ls -l $file1
   $srun $bin_rm -f $file1
 
-  $srun $bin_rm $file2
+  $srun $bin_rm -f $file2
   $sbcast $sbcast $file2
   ls -l $file2
   $srun $bin_rm -f $file2
