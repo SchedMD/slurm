@@ -3720,8 +3720,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
-	 * as appropriate. Since the "suspend" action contains a 'sleep 1',
-	 * suspend multiple jobsteps in parallel.
+	 * as appropriate. Since the "suspend" action may contains a sleep
+	 * (if the launch is in progress) suspend multiple jobsteps in parallel.
 	 */
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -3758,13 +3758,23 @@ _rpc_suspend_job(slurm_msg_t *msg)
 			break;
 
 		if (req->op == SUSPEND_JOB) {
-			stepd_suspend(fd, fdi, req->job_id);
-		} else {
-			/* "resume" remains a serial action (for now) */
 			for (x = 0; x < fdi; x++) {
+				if (fd[fdi] == -1)
+					continue;
+				debug2("Suspending job %u (cached step count %d)",
+				       req->job_id, x);
+				if (stepd_suspend(fd[x], req) < 0) {
+					debug("Suspend of job %u failed: %m",
+					      req->job_id);
+				}
+			}
+		} else {
+			for (x = 0; x < fdi; x++) {
+				if (fd[fdi] == -1)
+					continue;
 				debug2("Resuming job %u (cached step count %d)",
 				       req->job_id, x);
-				if (stepd_resume(fd[x]) < 0) {
+				if (stepd_resume(fd[x], req) < 0) {
 					debug("Resume of job %u failed: %m",
 					      req->job_id);
 				}
@@ -3788,8 +3798,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	_unlock_suspend_job(req->job_id);
 
 	if (step_cnt == 0) {
-		debug2("No steps in jobid %u to suspend/resume",
-		       req->job_id);
+		debug2("No steps in jobid %u to suspend/resume", req->job_id);
 	}
 }
 

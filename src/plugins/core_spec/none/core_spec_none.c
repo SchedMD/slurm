@@ -138,10 +138,10 @@ extern int core_spec_p_clear(uint64_t cont_id)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_suspend(uint64_t cont_id)
+extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_suspend(%"PRIu64")", cont_id);
+	info("core_spec_p_suspend(%"PRIu64") count %u", cont_id, core_count);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -151,10 +151,10 @@ extern int core_spec_p_suspend(uint64_t cont_id)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_resume(uint64_t cont_id)
+extern int core_spec_p_resume(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_resume(%"PRIu64")", cont_id);
+	info("core_spec_p_resume(%"PRIu64") count %u", cont_id, core_count);
 #endif
 	return SLURM_SUCCESS;
 }
