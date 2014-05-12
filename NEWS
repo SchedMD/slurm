@@ -456,6 +456,7 @@ documents those changes that are of interest to users and admins.
  -- Correct sinfo --sort fields to match documentation: E => Reason,
     H -> Reason Time (new), R -> Partition Name, u/U -> Reason user (new)
  -- If an invalid assoc_ptr comes in don't use the id to verify it.
+ -- Sched/backfill modified to avoid using nodes in completing state.
 
 * Changes in Slurm 2.6.9
 ========================
