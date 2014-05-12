@@ -894,7 +894,7 @@ static void
 _send_step_complete_msgs(stepd_step_rec_t *job)
 {
 	int start, size;
-	int first=-1, last=-1;
+	int first = -1, last = -1;
 	bool sent_own_comp_msg = false;
 
 	pthread_mutex_lock(&step_complete.lock);
@@ -909,9 +909,9 @@ _send_step_complete_msgs(stepd_step_rec_t *job)
 		return;
 	}
 
-	while(_bit_getrange(start, size, &first, &last)) {
+	while (_bit_getrange(start, size, &first, &last)) {
 		/* THIS node is not in the bit string, so we need to prepend
-		   the local rank */
+		 * the local rank */
 		if (start == 0 && first == 0) {
 			sent_own_comp_msg = true;
 			first = -1;
@@ -922,9 +922,10 @@ _send_step_complete_msgs(stepd_step_rec_t *job)
 		start = last + 1;
 	}
 
-	if (!sent_own_comp_msg)
+	if (!sent_own_comp_msg) {
 		_one_step_complete_msg(job, step_complete.rank,
 				       step_complete.rank);
+	}
 
 	pthread_mutex_unlock(&step_complete.lock);
 }
