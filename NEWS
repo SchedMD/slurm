@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     H -> Reason Time (new), R -> Partition Name, u/U -> Reason user (new)
  -- If an invalid assoc_ptr comes in don't use the id to verify it.
  -- Sched/backfill modified to avoid using nodes in completing state.
+ -- Correct support for job --profile=none option and related documentation.
 
 * Changes in Slurm 2.6.9
 ========================

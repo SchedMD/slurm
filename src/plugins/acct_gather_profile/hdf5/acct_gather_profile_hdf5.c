@@ -131,7 +131,7 @@ static uint32_t _determine_profile()
 
 	if (g_profile_running != ACCT_GATHER_PROFILE_NOT_SET)
 		profile = g_profile_running;
-	else if (g_job->profile > ACCT_GATHER_PROFILE_NONE)
+	else if (g_job->profile >= ACCT_GATHER_PROFILE_NONE)
 		profile = g_job->profile;
 	else
 		profile = hdf5_conf.def;
