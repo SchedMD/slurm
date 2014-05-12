@@ -75,7 +75,7 @@ $srun touch -t01020304 $sgather_tmp
 $srun ls -l $sgather_tmp
 $sgather -p $sgather_tmp $sgather_out
 ls -l ${sgather_out}\*
-$bin_rm ${sgather_out}\*
+$bin_rm -f ${sgather_out}\*
 $srun ls -l $sgather_tmp
 $srun $bin_rm -f $sgather_tmp
 exit 0

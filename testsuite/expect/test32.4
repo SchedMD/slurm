@@ -73,7 +73,7 @@ $bin_rm -f ${sgather_out}\*
 $srun $bin_cp -f $sgather $sgather_tmp
 $sgather $sgather_tmp $sgather_out
 sum $sgather ${sgather_out}\*
-$bin_rm ${sgather_out}\*
+$bin_rm -f ${sgather_out}\*
 $srun ls -l $sgather_tmp
 $srun $bin_rm -f $sgather_tmp
 exit 0

@@ -147,7 +147,7 @@ cancel_job $job_id
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-	exec $bin_rm $script
+	exec $bin_rm -f $script
 }
 
 exit $exit_code

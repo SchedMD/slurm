@@ -146,7 +146,7 @@ if {$node_count != 3} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm $file_in $file_out $file_out2
+	exec $bin_rm -f $file_in $file_out $file_out2
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

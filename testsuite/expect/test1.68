@@ -146,7 +146,7 @@ if {$fini_match != 1} {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-	exec $bin_rm $test_timer $test_srun $file_in $stop_srun
+	exec $bin_rm -f $test_timer $test_srun $file_in $stop_srun
 }
 exit $exit_code
 

@@ -161,7 +161,7 @@ if {$num_procs_test3 != 1} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm $file_in $file_out
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 
