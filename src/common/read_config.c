@@ -4402,14 +4402,18 @@ extern int sort_key_pairs(void *v1, void *v2)
 extern char *get_extra_conf_path(char *conf_name)
 {
 	char *val = getenv("SLURM_CONF");
-	char *rc = NULL;
+	char *rc = NULL, *slash;
 
 	if (!val)
 		val = default_slurm_config_file;
 
 	/* Replace file name on end of path */
 	rc = xstrdup(val);
-	xstrsubstitute(rc, "slurm.conf", conf_name);
+	if ((slash = strrchr(rc, '/')))
+		slash[1] = '\0';
+	else
+		rc[0] = '\0';
+	xstrcat(rc, conf_name);
 
 	return rc;
 }
