@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     partition.
  -- If a job has non-responding node, retry job step create rather than
     returning with DOWN node error.
+ -- Support SLURM_CONF path which does not have "slurm.conf" as the file name.
 
 * Changes in Slurm 14.03.3-2
 ============================
