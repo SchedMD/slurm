@@ -1457,9 +1457,8 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		 */
 		error("uid %ld not found on system, aborting job %u",
 		      (long)launch_msg_ptr->uid, job_ptr->job_id);
-		job_ptr->end_time   = time(NULL);
-		job_ptr->time_limit = 0;
 		slurm_free_job_launch_msg(launch_msg_ptr);
+		(void) job_complete(job_ptr->job_id, getuid(), false, true, 0);
 		return NULL;
 #endif
 	} else
@@ -1484,9 +1483,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		 * from the launch, so requeue if possible. */
 		error("Can not create job credential, attempting to requeue "
 		      "batch job %u", job_ptr->job_id);
-		xfree(launch_msg_ptr->alias_list);
-		xfree(launch_msg_ptr->nodes);
-		xfree(launch_msg_ptr);
+		slurm_free_job_launch_msg(launch_msg_ptr);
 		job_ptr->batch_flag = 1;	/* Allow repeated requeue */
 		job_ptr->details->begin_time = time(NULL) + 120;
 		(void) job_complete(job_ptr->job_id, getuid(), true, false, 0);
@@ -1505,7 +1502,13 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
 	launch_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);
-	launch_msg_ptr->script = get_job_script(job_ptr);
+	if ((launch_msg_ptr->script = get_job_script(job_ptr)) == NULL) {
+		error("Batch script is missing, aborting job %u",
+		      job_ptr->job_id);
+		slurm_free_job_launch_msg(launch_msg_ptr);
+		(void) job_complete(job_ptr->job_id, getuid(), false, true, 0);
+		return NULL;
+	}
 	launch_msg_ptr->environment = get_job_env(job_ptr,
 						  &launch_msg_ptr->envc);
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
