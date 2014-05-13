@@ -95,7 +95,7 @@ extern int create_config(void)
 		goto end_it;
 	}
 	if (cray_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("Reading the cray.conf file");
+		info("Reading the cray.conf file %s", cray_conf_file);
 	
 	if (last_config_update) {
 		if (last_config_update == config_stat.st_mtime) {
@@ -116,7 +116,7 @@ extern int create_config(void)
 
 	if (s_p_parse_file(tbl, NULL, cray_conf_file, false) == SLURM_ERROR)
 		fatal("something wrong with opening/reading cray "
-		      "conf file");
+		      "conf file %s", cray_conf_file);
 	xfree(cray_conf_file);
 
 	if (!s_p_get_string(&cray_conf->apbasil, "apbasil", tbl))
