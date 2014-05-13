@@ -1292,8 +1292,10 @@ static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
 	min_rem_nodes = min_nodes;
 	if (req_map) {
 		for (i = 0; i < cr_node_cnt; i++) {
-			if (!bit_test(req_map, i))
+			if (!bit_test(req_map, i)) {
+				bit_clear(node_map, i);
 				continue;
+			}
 			if (bit_test(node_map, i)) {
 				avail_cpus = cpu_cnt[i];
 				if (max_nodes > 0) {
