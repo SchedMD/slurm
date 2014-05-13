@@ -168,8 +168,15 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(
 
 	/* build job step cgroup relative path if not set (may not be) */
 	if (*jobstep_cgroup_path == '\0') {
-		if (snprintf(jobstep_cgroup_path, PATH_MAX, "%s/step_%u",
-			     job_cgroup_path, stepid) >= PATH_MAX) {
+		int len;
+		if (stepid == SLURM_BATCH_SCRIPT)
+			len = snprintf(jobstep_cgroup_path, PATH_MAX,
+				       "%s/step_batch", job_cgroup_path);
+		else
+			len = snprintf(jobstep_cgroup_path, PATH_MAX,
+				       "%s/step_%u",
+				       job_cgroup_path, stepid);
+		if (len >= PATH_MAX) {
 			error("jobacct_gather/cgroup: unable to build job step "
 			      "%u cpuacct cg relative path : %m", stepid);
 			return SLURM_ERROR;
