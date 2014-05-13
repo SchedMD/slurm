@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- CRAY - make job_container/cncu default when running on a Cray natively
  -- Fix issue where batch cpuset wasn't looked at correctly in
     jobacct_gather/cgroup.
+ -- Correct squeue's job node and CPU counts for requeued jobs.
 
 * Changes in Slurm 14.03.3-2
 ============================
