@@ -6864,7 +6864,11 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
 				pack32(job_ptr->cpu_cnt, buffer);
 				pack32((uint32_t) 0, buffer);
-			} else if (job_ptr->total_cpus) {
+			} else if (job_ptr->total_cpus &&
+				   !IS_JOB_PENDING(job_ptr)) {
+				/* If job is PENDING ignore total_cpus,
+				 * which may have been set by previous run
+				 * followed by job requeue. */
 				pack32(job_ptr->total_cpus, buffer);
 				pack32((uint32_t) 0, buffer);
 			} else {
