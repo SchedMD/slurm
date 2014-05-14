@@ -68,6 +68,8 @@ documents those changes that are of interest to users and admins.
     jobacct_gather/cgroup.
  -- Correct squeue's job node and CPU counts for requeued jobs.
  -- Correct SelectTypeParameters=CR_LLN with job selecition of specific nodes.
+ -- Only if ALL of their partitions are hidden will a job be hidden by default.
+ -- Run EpilogSlurmctld for a job is killed during slurmctld reconfiguration.
 
 * Changes in Slurm 14.03.3-2
 ============================

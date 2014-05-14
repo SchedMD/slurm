@@ -1811,6 +1811,10 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
 			job_completion_logger(job_ptr, false);
+			if (job_ptr->job_state == JOB_NODE_FAIL) {
+				/* build_cg_bitmap() may clear JOB_COMPLETING */
+				epilog_slurmctld(job_ptr);
+			}
 			cnt++;
 		} else if (IS_NODE_IDLE(node_ptr)) {
 			cnt++;

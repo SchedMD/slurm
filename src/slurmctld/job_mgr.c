@@ -6226,6 +6226,33 @@ static int _list_find_job_old(void *job_entry, void *key)
 	return 1;		/* Purge the job */
 }
 
+/* Determine if ALL partitions associated with a job are hidden */
+static bool _all_parts_hidden(struct job_record *job_ptr)
+{
+	bool rc;
+	ListIterator part_iterator;
+	struct part_record *part_ptr;
+
+	if (job_ptr->part_ptr_list) {
+		rc = true;
+		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
+		while ((part_ptr = (struct part_record *)
+				   list_next(part_iterator))) {
+			if (!(part_ptr->flags & PART_FLAG_HIDDEN)) {
+				rc = false;
+				break;
+			}
+		}
+		list_iterator_destroy(part_iterator);
+		return rc;
+	}
+
+	if ((job_ptr->part_ptr) &&
+	    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
+		return true;
+	return false;
+}
+
 /* Determine if a given job should be seen by a specific user */
 static bool _hide_job(struct job_record *job_ptr, uid_t uid)
 {
@@ -6279,8 +6306,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		xassert (job_ptr->magic == JOB_MAGIC);
 
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-		    (job_ptr->part_ptr) &&
-		    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
+		    _all_parts_hidden(job_ptr))
 			continue;
 
 		if (_hide_job(job_ptr, uid))
@@ -7176,12 +7202,12 @@ void reset_job_bitmaps(void)
 			} else if (IS_JOB_RUNNING(job_ptr)) {
 				job_ptr->end_time = time(NULL);
 				job_ptr->job_state = JOB_NODE_FAIL |
-					JOB_COMPLETING;
+						     JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);
 			} else if (IS_JOB_SUSPENDED(job_ptr)) {
 				job_ptr->end_time = job_ptr->suspend_time;
 				job_ptr->job_state = JOB_NODE_FAIL |
-					JOB_COMPLETING;
+						     JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);
 				job_ptr->tot_sus_time +=
 					difftime(now, job_ptr->suspend_time);
@@ -7192,6 +7218,10 @@ void reset_job_bitmaps(void)
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
 			job_completion_logger(job_ptr, false);
+			if (job_ptr->job_state == JOB_NODE_FAIL) {
+				/* build_cg_bitmap() may clear JOB_COMPLETING */
+				epilog_slurmctld(job_ptr);
+			}
 		}
 	}
 
