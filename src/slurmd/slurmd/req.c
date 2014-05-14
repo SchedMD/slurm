@@ -1019,7 +1019,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			i = conf->cpus / (i_last_bit - i_first_bit);
 			if (i > 1) {
 				info("Scaling CPU count by factor of "
-				     "%d (%u/(%u-%u)",
+				     "%d (%u/(%u-%u))",
 				     i, conf->cpus, i_last_bit, i_first_bit);
 				step_cpus *= i;
 				job_cpus *= i;
