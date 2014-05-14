@@ -49,6 +49,8 @@ documents those changes that are of interest to users and admins.
  -- Do not resume a job with specialized cores on a node running another job
     with specialized cores (only one can run at a time).
  -- Add specialized core count to job suspend/resume calls.
+ -- task/cgroup - Correct specialized core task binding with user supplied
+    invalid CPU mask or map.
 
 * Changes in Slurm 14.03.4
 ==========================

@@ -1084,6 +1084,43 @@ extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job)
 	return fstatus;
 }
 
+/* The job has specialized cores, synchroize user mask with available cores */
+static bool _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
+{
+	int i, j, overlaps = 0;
+	bool superset = true;
+
+	for (i = 0; i < CPU_SETSIZE; i++) {
+		if (!CPU_ISSET(i, ts))
+			continue;
+		j = hwloc_bitmap_isset(obj->allowed_cpuset, i);
+		if (j > 0) {
+			overlaps++;
+		} else if (j == 0) {
+			CPU_CLR(i, ts);
+			superset = false;
+		}
+	}
+
+	if (overlaps == 0) {
+		/* The task's cpu map is completely invalid.
+		 * Give it all allowed CPUs */
+		for (i = 0; i < CPU_SETSIZE; i++) {
+			if (hwloc_bitmap_isset(obj->allowed_cpuset, i) > 0)
+				CPU_SET(i, ts);
+		}
+	}
+
+	if (!superset) {
+		info("task/cgroup: Ignoring user CPU binding which overlaps "
+		     "specialized cores for task[%u]", task_id);
+		fprintf(stderr, "Requested cpu_bind option overlaps "
+			"specialized cores for task[%u]\n", task_id);
+	}
+
+	return superset;
+}
+
 /* affinity should be set using sched_setaffinity to not force */
 /* user to have to play with the cgroup hierarchy to modify it */
 extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
@@ -1107,7 +1144,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	hwloc_obj_type_t hwtype;
 	hwloc_obj_type_t req_hwtype;
 	int bind_verbose = 0;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, match;
 	pid_t    pid = job->envtp->task_pid;
 	size_t tssize;
 	uint32_t nldoms;
@@ -1251,8 +1288,9 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		 * Bind the taskid in accordance with the specified mode
 		 */
 		obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, 0);
-		if (!hwloc_bitmap_isequal(obj->complete_cpuset,
-				obj->allowed_cpuset)) {
+		match = hwloc_bitmap_isequal(obj->complete_cpuset,
+					     obj->allowed_cpuset);
+		if ((job->job_core_spec == 0) && !match) {
 			info("task/cgroup: entire node must be allocated, "
 			     "disabling affinity, task[%u]", taskid);
 			fprintf(stderr, "Requested cpu_bind option requires "
@@ -1267,6 +1305,8 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 					  job);
 			tssize = sizeof(cpu_set_t);
 			fstatus = SLURM_SUCCESS;
+			if (job->job_core_spec)
+				_validate_mask(taskid, obj, &ts);
 			if ((rc = sched_setaffinity(pid, tssize, &ts))) {
 				error("task/cgroup: task[%u] unable to set "
 				      "mask 0x%s", taskid,
