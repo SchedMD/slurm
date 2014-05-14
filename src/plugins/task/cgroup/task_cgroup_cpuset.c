@@ -1120,8 +1120,8 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	uint32_t jnpus = jntasks * job->cpus_per_task;
 
 	bind_type = job->cpu_bind_type;
-	if (conf->task_plugin_param & CPU_BIND_VERBOSE ||
-	    bind_type & CPU_BIND_VERBOSE)
+	if ((conf->task_plugin_param & CPU_BIND_VERBOSE) ||
+	    (bind_type & CPU_BIND_VERBOSE))
 		bind_verbose = 1 ;
 
 	/* Allocate and initialize hwloc objects */
@@ -1238,13 +1238,13 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	if (hwloc_compare_types(hwtype,HWLOC_OBJ_MACHINE) == 0) {
 
 		info("task/cgroup: task[%u] disabling affinity because of %s "
-		     "granularity",taskid,hwloc_obj_type_string(hwtype));
+		     "granularity",taskid, hwloc_obj_type_string(hwtype));
 
-	} else if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0 &&
-		   jnpus > nobj) {
-
-		info("task/cgroup: task[%u] not enough %s objects, disabling "
-		     "affinity",taskid,hwloc_obj_type_string(hwtype));
+	} else if ((hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) &&
+		   (nobj < jnpus)) {
+		info("task/cgroup: task[%u] not enough %s objects (%d < %d), "
+		     "disabling affinity",
+		     taskid, hwloc_obj_type_string(hwtype), nobj, jnpus);
 
 	} else if (bind_type & bind_mode) {
 		/* Explicit binding mode specified by the user
@@ -1259,21 +1259,23 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 				"entire node to be allocated; disabling "
 				"affinity\n");
 		} else {
-			if (bind_verbose)
+			if (bind_verbose) {
 				info("task/cgroup: task[%u] is requesting "
-					"explicit binding mode",taskid);
+				     "explicit binding mode", taskid);
+			}
 			_get_sched_cpuset(topology, hwtype, req_hwtype, &ts,
-					job);
+					  job);
 			tssize = sizeof(cpu_set_t);
 			fstatus = SLURM_SUCCESS;
 			if ((rc = sched_setaffinity(pid, tssize, &ts))) {
 				error("task/cgroup: task[%u] unable to set "
-					"mask 0x%s", taskid,
-					cpuset_to_str(&ts, mstr));
+				      "mask 0x%s", taskid,
+				      cpuset_to_str(&ts, mstr));
 				fstatus = SLURM_ERROR;
-			} else if (bind_verbose)
+			} else if (bind_verbose) {
 				info("task/cgroup: task[%u] mask 0x%s",
-					taskid, cpuset_to_str(&ts, mstr));
+				     taskid, cpuset_to_str(&ts, mstr));
+			}
 			slurm_chkaffinity(&ts, job, rc);
 		}
 	} else {
