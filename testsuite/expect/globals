@@ -930,30 +930,53 @@ proc test_topology { } {
 
 ################################################################
 #
-# Proc: test_affinity
+# Proc: test_cpu_affinity
 #
-# Purpose: Determine if system is enforcing affinity
+# Purpose: Determine if system is enforcing CPU affinity
 #
 # Returns 1 if enforcing, 0 if none
 #
 ################################################################
-proc test_affinity { } {
+proc test_cpu_affinity { } {
 	global scontrol alpha
 
 	log_user 0
 	set affinity 0
 	spawn $scontrol show config
 	expect {
-		-re "TaskPlugin *= task/($alpha)" {
+		-re "task/($alpha)" {
 			if {![string compare $expect_out(1,string) "affinity"] || ![string compare $expect_out(1,string) "cgroup"]} {
 				set affinity 1
 			}
 			exp_continue
 		}
-		-re "TaskPlugin *= ($alpha)" {
-			if {![string compare $expect_out(1,string) "affinity"] || ![string compare $expect_out(1,string) "cgroup"]} {
-				set affinity 1
-			}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $affinity
+}
+
+################################################################
+#
+# Proc: test_mem_affinity
+#
+# Purpose: Determine if system is enforcing memory affinity
+#
+# Returns 1 if enforcing, 0 if none
+#
+################################################################
+proc test_mem_affinity { } {
+	global scontrol alpha
+
+	log_user 0
+	set affinity 0
+	spawn $scontrol show config
+	expect {
+		-re "task/affinity" {
+			set affinity 1
 			exp_continue
 		}
 		eof {

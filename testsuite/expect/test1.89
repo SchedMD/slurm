@@ -46,10 +46,10 @@ if {[test_serial]} {
 }
 
 #
-# Test if task affinity support is supported.
+# Test if CPU affinity support is supported.
 #
-if {![test_affinity]} {
-	send_user "\nWARNING: task affinity not supported on this system\n"
+if {![test_cpu_affinity]} {
+	send_user "\nWARNING: CPU affinity not supported on this system\n"
 	exit 0
 }
 send_user "\ntask affinity plugin installed\n"
@@ -265,7 +265,9 @@ expect {
 	}
 	-re $prompt
 }
-if {$verbose_cnt != $task_cnt} {
+# Both task/affinity and task/cpu will generate verbose message,
+# so check for double messages in case both plugins are configured.
+if {$verbose_cnt != $task_cnt && $verbose_cnt != [expr $task_cnt * 2]} {
 	send_user "\nFAILURE: verbose messages count inconsisent ($verbose_cnt != $task_cnt)\n"
 	set exit_code 1
 }

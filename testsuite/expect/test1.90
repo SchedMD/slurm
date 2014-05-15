@@ -48,7 +48,7 @@ if { [test_launch_poe] } {
 #
 # Test if memory affinity support is supported.
 #
-set affinity [test_affinity]
+set affinity [test_mem_affinity]
 
 spawn ls /usr/include/numa.h
 expect {
