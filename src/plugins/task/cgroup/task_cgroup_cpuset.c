@@ -1112,10 +1112,10 @@ static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
 	}
 
 	if (!superset) {
-		info("task/cgroup: Ignoring user CPU binding which overlaps "
-		     "specialized cores for task[%u]", task_id);
-		fprintf(stderr, "Requested cpu_bind option overlaps "
-			"specialized cores for task[%u]\n", task_id);
+		info("task/cgroup: Ignoring user CPU binding outside of job "
+		     "step allocation for task[%u]", task_id);
+		fprintf(stderr, "Requested cpu_bind option outside of job "
+			"step allocation for task[%u]\n", task_id);
 	}
 }
 
