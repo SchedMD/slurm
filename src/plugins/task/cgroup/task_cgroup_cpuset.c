@@ -1085,7 +1085,7 @@ extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job)
 }
 
 /* The job has specialized cores, synchroize user mask with available cores */
-static bool _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
+static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
 {
 	int i, j, overlaps = 0;
 	bool superset = true;
@@ -1117,8 +1117,6 @@ static bool _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
 		fprintf(stderr, "Requested cpu_bind option overlaps "
 			"specialized cores for task[%u]\n", task_id);
 	}
-
-	return superset;
 }
 
 /* affinity should be set using sched_setaffinity to not force */
