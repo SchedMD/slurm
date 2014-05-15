@@ -265,6 +265,55 @@ void batch_bind(batch_job_launch_msg_t *req)
 	slurm_cred_free_args(&arg);
 }
 
+/* The job has specialized cores, synchronize user mask with available cores */
+static void _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
+{
+	char *new_mask = NULL, *save_ptr = NULL, *tok;
+	cpu_set_t avail_cpus, task_cpus;
+	bool superset = true;
+
+	CPU_ZERO(&avail_cpus);
+	(void) str_to_cpuset(&avail_cpus, avail_mask);
+	tok = strtok_r(req->cpu_bind, ",", &save_ptr);
+	while (tok) {
+		int i, overlaps = 0;
+		char mask_str[1 + CPU_SETSIZE / 4];
+		CPU_ZERO(&task_cpus);
+		(void) str_to_cpuset(&task_cpus, tok);
+		for (i = 0; i < CPU_SETSIZE; i++) {
+			if (!CPU_ISSET(i, &task_cpus))
+				continue;
+			if (CPU_ISSET(i, &avail_cpus)) {
+				overlaps++;
+			} else {
+				CPU_CLR(i, &task_cpus);
+				superset = false;
+			}
+		}
+		if (overlaps == 0) {
+			/* The task's cpu map is completely invalid.
+			 * Give it all allowed CPUs */
+			for (i = 0; i < CPU_SETSIZE; i++) {
+				if (CPU_ISSET(i, &avail_cpus))
+					CPU_SET(i, &task_cpus);
+			}
+		}
+		cpuset_to_str(&task_cpus, mask_str);
+		if (new_mask)
+			xstrcat(new_mask, ",");
+		xstrcat(new_mask, mask_str);
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+
+	if (!superset) {
+		info("task/affinity: Ignoring user CPU binding outside of job "
+		     "step allocation");
+	}
+
+	xfree(req->cpu_bind);
+	req->cpu_bind = new_mask;
+}
+
 /*
  * lllp_distribution
  *
@@ -305,15 +354,15 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 					       &part_sockets, &part_cores);
 		if ((whole_nodes == 0) && avail_mask &&
 		    (req->job_core_spec == 0)) {
-			/* Step does NOT have access to whole node,
-			 * bind to full mask of available processors */
+			info("task/affinity: entire node must be allocated, "
+			     "disabling affinity");
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
 			req->cpu_bind_type &= (~bind_mode);
 			req->cpu_bind_type |= CPU_BIND_MASK;
 		} else {
-			/* Step does have access to whole node,
-			 * bind to whatever step wants */
+			if (req->job_core_spec)
+				_validate_mask(req, avail_mask);
 			xfree(avail_mask);
 		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);

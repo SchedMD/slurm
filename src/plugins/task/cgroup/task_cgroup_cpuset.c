@@ -1084,7 +1084,7 @@ extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job)
 	return fstatus;
 }
 
-/* The job has specialized cores, synchroize user mask with available cores */
+/* The job has specialized cores, synchronize user mask with available cores */
 static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
 {
 	int i, j, overlaps = 0;
