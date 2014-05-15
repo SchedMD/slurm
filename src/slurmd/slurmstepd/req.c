@@ -1122,14 +1122,12 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 	static int launch_poe = -1;
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	uint32_t cpu_freq = 0;
 	uint16_t job_core_spec = 0;
 
-	safe_read(fd, &cpu_freq, sizeof(uint32_t));
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
-	debug("_handle_suspend for step:%u.%u uid:%ld cpu_freq:%u core_spec:%u",
-	      job->jobid, job->stepid, (long)uid, cpu_freq, job_core_spec);
+	debug("_handle_suspend for step:%u.%u uid:%ld core_spec:%u",
+	      job->jobid, job->stepid, (long)uid, job_core_spec);
 
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step suspend request from uid %ld for job %u.%u ",
@@ -1196,9 +1194,6 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 	}
 	if (core_spec_g_suspend(job->cont_id, job_core_spec))
 		error("core_spec_g_suspend: %m");
-	/* reset the cpu frequencies if cpu_freq option used */
-	if (job->cpu_freq != NO_VAL)
-		cpu_freq_reset(job);
 
 	pthread_mutex_unlock(&suspend_mutex);
 
@@ -1216,14 +1211,12 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	uint32_t cpu_freq = 0;
 	uint16_t job_core_spec = 0;
 
-	safe_read(fd, &cpu_freq, sizeof(uint32_t));
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
-	debug("_handle_resume for step:%u.%u uid:%ld cpu_freq:%u core_spec:%u",
-	      job->jobid, job->stepid, (long)uid, cpu_freq, job_core_spec);
+	debug("_handle_resume for step:%u.%u uid:%ld core_spec:%u",
+	      job->jobid, job->stepid, (long)uid, job_core_spec);
 
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step resume request from uid %ld for job %u.%u ",

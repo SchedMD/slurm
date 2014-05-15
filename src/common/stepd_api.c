@@ -732,7 +732,6 @@ stepd_suspend(int fd, suspend_int_msg_t *susp_req, int phase)
 
 	if (phase == 0) {
 		safe_write(fd, &req, sizeof(int));
-		safe_write(fd, &susp_req->cpu_freq, sizeof(uint32_t));
 		safe_write(fd, &susp_req->job_core_spec, sizeof(uint16_t));
 	} else {
 		/* Receive the return code and errno */
@@ -763,7 +762,6 @@ stepd_resume(int fd, suspend_int_msg_t *susp_req, int phase)
 
 	if (phase == 0) {
 		safe_write(fd, &req, sizeof(int));
-		safe_write(fd, &susp_req->cpu_freq, sizeof(uint32_t));
 		safe_write(fd, &susp_req->job_core_spec, sizeof(uint16_t));
 	} else {
 		/* Receive the return code and errno */

@@ -9964,7 +9964,6 @@ static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
 {
 	xassert ( msg != NULL );
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
-		pack32(msg->cpu_freq, buffer);
 		pack8(msg->indf_susp, buffer);
 		pack16(msg->job_core_spec, buffer);
 		pack32(msg->job_id,  buffer);
@@ -9997,7 +9996,6 @@ static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
 	*msg_ptr = msg ;
 
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->cpu_freq, buffer);
 		safe_unpack8(&msg->indf_susp, buffer);
 		safe_unpack16(&msg->job_core_spec, buffer);
 		safe_unpack32(&msg->job_id, buffer);
