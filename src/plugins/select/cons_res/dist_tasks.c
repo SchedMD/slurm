@@ -899,12 +899,17 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 {
 	int error_code, cr_cpu = 1;
 
-	if (((job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) ||
-	     (job_ptr->details->whole_node != 0)) &&
-	    (job_ptr->details->core_spec == 0)) {
-		/* the job has been allocated an EXCLUSIVE set of nodes,
+	if (job_ptr->details->core_spec != 0) {
+		/* The job has been allocated all non-specialized cores,
+		 * so we don't need to select specific CPUs. */
+		return SLURM_SUCCESS;
+	}
+
+	if ((job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) ||
+	    (job_ptr->details->whole_node != 0)) {
+		/* The job has been allocated an EXCLUSIVE set of nodes,
 		 * so it gets all of the bits in the core_bitmap and
-		 * all of the available CPUs in the cpus array */
+		 * all of the available CPUs in the cpus array. */
 		int size = bit_size(job_ptr->job_resrcs->core_bitmap);
 		bit_nset(job_ptr->job_resrcs->core_bitmap, 0, size-1);
 		return SLURM_SUCCESS;
