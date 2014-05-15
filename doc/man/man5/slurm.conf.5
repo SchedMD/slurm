@@ -303,6 +303,9 @@ to a "standby" mode when the ControlMachine becomes available once again.
 This should be a node name without the full domain name.   I.e., the hostname
 returned by the \fIgethostname()\fR function cut at the first dot (e.g. use
 "tux001" rather than "tux001.my.com").
+The backup controller recovers state information from the
+\fBStateSaveLocation\fR directory, which must be readable and writable from both
+the primary and backup controllers.
 While not essential, it is recommended that you specify a backup controller.
 See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
@@ -2259,6 +2262,13 @@ serial jobs as idle resources will tend to be highly fragmented, resulting
 in parallel jobs being distributed across many nodes.
 Also see the partition configuration parameter \fBLLN\fR
 use the least loaded nodes in selected partitions.
+.TP
+\fBCR_Pack_Nodes\fR
+Rather than evenly distributing a job's tasks evenly across it's allocated
+nodes, pack them as tightly as possible on the nodes. For example, a job
+starting ten tasks acrosss two nodes each without this option will start
+five tasks on each of the two nodes. With this option, eight tasks will be
+started on the first node and two on the second node.
 .TP
 \fBCR_Socket\fR
 Sockets are consumable resources.
