@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Correct SelectTypeParameters=CR_LLN with job selecition of specific nodes.
  -- Only if ALL of their partitions are hidden will a job be hidden by default.
  -- Run EpilogSlurmctld for a job is killed during slurmctld reconfiguration.
+ -- Close window with srun if waiting for an allocation and while printing
+    something you also get a signal which would produce deadlock.
 
 * Changes in Slurm 14.03.3-2
 ============================
