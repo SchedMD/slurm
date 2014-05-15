@@ -99,6 +99,8 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			*param |= CR_NHC_NO;
 		} else if (!strcasecmp(str_parameters, "NHC_No_Steps")) {
 			*param |= CR_NHC_STEP_NO;
+		} else if (!strcasecmp(str_parameters, "CR_PACK_NODES")) {
+			*param |= CR_PACK_NODES;
 		} else {
 			error("Bad SelectTypeParameter: %s", str_parameters);
 			rc = SLURM_ERROR;
@@ -173,6 +175,11 @@ extern char *select_type_param_string(uint16_t select_type_param)
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "CR_LLN");
+	}
+	if (select_type_param & CR_PACK_NODES) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_PACK_NODES");
 	}
 	if (select_str[0] == '\0')
 		strcat(select_str, "NONE");

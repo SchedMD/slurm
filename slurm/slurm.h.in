@@ -663,16 +663,22 @@ enum ctx_keys {
 			  * node health check at all.
 			  */
 
-#define CR_ONE_TASK_PER_CORE 0x0100
 /* By default, schedule only one task per core.
- * Without this option, tasks would be
- * allocated threads. */
+ * Without this option, tasks would be allocated threads. */
+#define CR_ONE_TASK_PER_CORE 0x0100
+
+/* Pack tasks tightly onto allocated nodes rather than distributing them evenly
+ * across available nodes */
+#define CR_PACK_NODES  0x0200
+
+/* By default, distribute cores using a block approach inside the nodes */
 #define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
-/* By default, distribute cores using a block
- * approach inside the nodes */
-#define CR_ALLOCATE_FULL_SOCKET 0x2000
+
 /* Allocate full sockets to jobs rather than individual cores */
+#define CR_ALLOCATE_FULL_SOCKET 0x2000
+
 #define CR_LLN		0x4000  /* Select nodes by "least loaded." */
+
 
 #define MEM_PER_CPU  0x80000000
 #define SHARED_FORCE 0x8000

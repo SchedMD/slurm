@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
  -- Run EpilogSlurmctld for a job is killed during slurmctld reconfiguration.
  -- Close window with srun if waiting for an allocation and while printing
     something you also get a signal which would produce deadlock.
+ -- Add SelectTypeParameters option of CR_PACK_NODES to pack a job's tasks
+    tightly on its allocated nodes rather than distributing them evenly across
+    the allocated nodes.
 
 * Changes in Slurm 14.03.3-2
 ============================

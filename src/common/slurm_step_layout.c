@@ -44,14 +44,14 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
-#include "src/common/slurm_step_layout.h"
 #include "src/common/log.h"
+#include "src/common/node_select.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_step_layout.h"
+#include "src/common/slurmdb_defs.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/read_config.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/node_select.h"
-#include "src/common/slurmdb_defs.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -539,38 +539,71 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	return SLURM_SUCCESS;
 }
 
-/* to effectively deal with heterogeneous nodes, we fake a cyclic
- * distribution to figure out how many tasks go on each node and
- * then make those assignments in a block fashion */
 static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 {
-	int i, j, taskid = 0;
-	bool over_subscribe = false;
+	static uint16_t select_params = (uint16_t) NO_VAL;
+	int i, j, task_id = 0;
 
-	/* figure out how many tasks go to each node */
-	for (j=0; (taskid<step_layout->task_cnt); j++) {   /* cycle counter */
-		bool space_remaining = false;
-		for (i=0; ((i<step_layout->node_cnt)
-			   && (taskid<step_layout->task_cnt)); i++) {
-			if ((j<cpus[i]) || over_subscribe) {
-				taskid++;
+	if (select_params == (uint16_t) NO_VAL)
+		select_params = slurm_get_select_type_param();
+
+	if (select_params & CR_PACK_NODES) {
+		/* Pass 1: Put one task on each node */
+		for (i = 0; ((i < step_layout->node_cnt) &&
+			     (task_id < step_layout->task_cnt)); i++) {
+			if (step_layout->tasks[i] < cpus[i]) {
 				step_layout->tasks[i]++;
-				if ((j+1) < cpus[i])
-					space_remaining = true;
+				task_id++;
 			}
 		}
-		if (!space_remaining)
-			over_subscribe = true;
+
+		/* Pass 2: Fill remaining CPUs on a node-by-node basis */
+		for (i = 0; ((i < step_layout->node_cnt) &&
+			     (task_id < step_layout->task_cnt)); i++) {
+			while ((step_layout->tasks[i] < cpus[i]) &&
+			       (task_id < step_layout->task_cnt)) {
+				step_layout->tasks[i]++;
+				task_id++;
+			}
+		}
+
+		/* Pass 3: Spread remainign tasks across all nodes */
+		while (task_id < step_layout->task_cnt) {
+			for (i = 0; ((i < step_layout->node_cnt) &&
+				     (task_id < step_layout->task_cnt)); i++) {
+				step_layout->tasks[i]++;
+				task_id++;
+			}
+		}
+	} else {
+		/* To effectively deal with heterogeneous nodes, we fake a
+		 * cyclic distribution to determine how many tasks go on each
+		 * node and then make those assignments in a block fashion. */
+		bool over_subscribe = false;
+		for (j = 0; task_id < step_layout->task_cnt; j++) {
+			bool space_remaining = false;
+			for (i = 0; ((i < step_layout->node_cnt) &&
+				     (task_id < step_layout->task_cnt)); i++) {
+				if ((j < cpus[i]) || over_subscribe) {
+					step_layout->tasks[i]++;
+					task_id++;
+					if ((j + 1) < cpus[i])
+						space_remaining = true;
+				}
+			}
+			if (!space_remaining)
+				over_subscribe = true;
+		}
 	}
 
-	/* now distribute the tasks */
-	taskid = 0;
-	for (i=0; i < step_layout->node_cnt; i++) {
+	/* Now distribute the tasks */
+	task_id = 0;
+	for (i = 0; i < step_layout->node_cnt; i++) {
 		step_layout->tids[i] = xmalloc(sizeof(uint32_t)
 					       * step_layout->tasks[i]);
-		for (j=0; j<step_layout->tasks[i]; j++) {
-			step_layout->tids[i][j] = taskid;
-			taskid++;
+		for (j = 0; j < step_layout->tasks[i]; j++) {
+			step_layout->tids[i][j] = task_id;
+			task_id++;
 		}
 	}
 	return SLURM_SUCCESS;
