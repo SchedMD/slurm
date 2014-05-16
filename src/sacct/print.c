@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "sacct.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/parse_time.h"
 #include "slurm.h"
 
@@ -1256,18 +1257,7 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if (tmp_dub == CPU_FREQ_LOW)
-				snprintf(outbuf, sizeof(outbuf), "Low");
-			else if (tmp_dub == CPU_FREQ_MEDIUM)
-				snprintf(outbuf, sizeof(outbuf), "Medium");
-			else if (tmp_dub == CPU_FREQ_HIGH)
-				snprintf(outbuf, sizeof(outbuf), "High");
-			else if (tmp_dub == CPU_FREQ_HIGHM1)
-				snprintf(outbuf, sizeof(outbuf), "Highm1");
-			else if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit2((double)tmp_dub,
-						  outbuf, sizeof(outbuf),
-						  UNIT_KILO, 1000, false);
+			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_dub);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));

@@ -327,35 +327,35 @@ extern int task_p_slurmd_release_resources (uint32_t job_id)
 extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
 	char path[PATH_MAX];
-	int rc;
+	int rc = SLURM_SUCCESS;
 
-	if (!(conf->task_plugin_param & CPU_BIND_CPUSETS))
-		return SLURM_SUCCESS;
-
+	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 #ifdef MULTIPLE_SLURMD
-	if (snprintf(path, PATH_MAX, "%s/slurm_%s_%u",
-		     CPUSET_DIR,
-		     (conf->node_name != NULL)?conf->node_name:"",
-		     job->jobid) > PATH_MAX) {
-		error("cpuset path too long");
-		return SLURM_ERROR;
-	}
+		if (snprintf(path, PATH_MAX, "%s/slurm_%s_%u",
+			     CPUSET_DIR,
+			     (conf->node_name != NULL)?conf->node_name:"",
+			     job->jobid) > PATH_MAX) {
+			error("cpuset path too long");
+			rc = SLURM_ERROR;
+		}
 #else
-	if (snprintf(path, PATH_MAX, "%s/slurm%u",
-		     CPUSET_DIR, job->jobid) > PATH_MAX) {
-		error("cpuset path too long");
-		return SLURM_ERROR;
-	}
+		if (snprintf(path, PATH_MAX, "%s/slurm%u",
+			     CPUSET_DIR, job->jobid) > PATH_MAX) {
+			error("cpuset path too long");
+			rc = SLURM_ERROR;
+		}
 #endif
-
-	rc = slurm_build_cpuset(CPUSET_DIR, path, job->uid, job->gid);
-	if (rc != SLURM_SUCCESS) {
-		error("%s: slurm_build_cpuset() failed", __func__);
-		return SLURM_ERROR;
+		if (rc == SLURM_SUCCESS) {
+			rc = slurm_build_cpuset(CPUSET_DIR, path, job->uid,
+						job->gid);
+			if (rc != SLURM_SUCCESS) {
+				error("%s: slurm_build_cpuset() failed",
+				       __func__);
+			}
+		}
 	}
 
-	/* if cpuset was built ok, check for cpu frequency setting */
-	if (job->cpu_freq != NO_VAL)
+	if ((rc == SLURM_SUCCESS) && (job->cpu_freq != NO_VAL))
 		cpu_freq_cpuset_validate(job);
 
 	return rc;

@@ -82,15 +82,20 @@ void
 cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores);
 
 /*
- * verify cpu_freq parameter
+ * Verify cpu_freq parameter
  *
- * in addition to a numeric frequency value, we allow the user
- * to specify "low", "medium", or "high" frequency
+ * In addition to a numeric frequency value, we allow the user to specify
+ * "low", "medium", "highm1", or "high" frequency plus "performance",
+ * "powersave", "userspace" and "ondemand" governor
  *
  * returns -1 on error, 0 otherwise
  */
 int
 cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq);
+
+/* Convert a cpu_freq number to its equivalent string */
+void
+cpu_freq_to_string(char *buf, int buf_size, uint32_t cpu_freq);
 
 /*
  * set the userspace governor and the new frequency value

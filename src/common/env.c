@@ -53,20 +53,21 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/param.h>		/* MAXPATHLEN */
-#include "src/common/macros.h"
 #include "slurm/slurm.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/log.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
-#include "src/common/read_config.h"
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
 #include "src/common/node_select.h"
+#include "src/common/macros.h"
 #include "src/common/proc_args.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -642,30 +643,13 @@ int setup_env(env_t *env, bool preserve_env)
 	    (env->cpu_freq != 0)) {      /* Default value from slurmstepd
 					  * for batch jobs */
 		int sts;
-		char *str;
 
 		if (env->cpu_freq & CPU_FREQ_RANGE_FLAG) {
-			switch (env->cpu_freq)
-			{
-			case CPU_FREQ_LOW :
-				str="low";
-				break;
-			case CPU_FREQ_MEDIUM :
-				str="medium";
-				break;
-			case CPU_FREQ_HIGH :
-				str="high";
-				break;
-			case CPU_FREQ_HIGHM1 :
-				str="highm1";
-				break;
-			default :
-				str="unknown";
-				break;
-			}
-			sts = setenvf(&env->env, "SLURM_CPU_FREQ_REQ", str);
+			char buf[32];
+			cpu_freq_to_string(buf, sizeof(buf), env->cpu_freq);
+			sts = setenvf(&env->env, "SLURM_CPU_FREQ_REQ", buf);
 		} else {
-			sts = setenvf(&env->env, "SLURM_CPU_FREQ_REQ", "%d",
+			sts = setenvf(&env->env, "SLURM_CPU_FREQ_REQ", "%u",
 				      env->cpu_freq);
 		}
 		if (sts) {

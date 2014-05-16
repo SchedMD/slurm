@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "sstat.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/parse_time.h"
 #include "slurm.h"
 #define FORMAT_STRING_SIZE 34
@@ -352,18 +353,8 @@ void print_fields(slurmdb_step_rec_t *step)
                                              (curr_inx == field_count));
                         break;
 		case PRINT_REQ_CPUFREQ:
-			if (step->req_cpufreq == CPU_FREQ_LOW)
-				snprintf(outbuf, sizeof(outbuf), "Low");
-			else if (step->req_cpufreq == CPU_FREQ_MEDIUM)
-				snprintf(outbuf, sizeof(outbuf), "Medium");
-			else if (step->req_cpufreq == CPU_FREQ_HIGH)
-				snprintf(outbuf, sizeof(outbuf), "High");
-			else if (step->req_cpufreq == CPU_FREQ_HIGHM1)
-				snprintf(outbuf, sizeof(outbuf), "Highm1");
-			else if (!fuzzy_equal(step->req_cpufreq, NO_VAL))
-				convert_num_unit2((double)step->req_cpufreq,
-						  outbuf, sizeof(outbuf),
-						  UNIT_KILO, 1000, false);
+			cpu_freq_to_string(outbuf, sizeof(outbuf),
+					   step->req_cpufreq);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));

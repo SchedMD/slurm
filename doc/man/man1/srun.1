@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 2.6" "January 2013" "SLURM Commands"
+.TH "srun" "1" "SLURM 14.11" "May 2014" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -374,17 +374,20 @@ Show help message for cpu_bind
 .TP
 \fB\-\-cpu\-freq\fR =<\fIrequested frequency in kilohertz\fR>
 
-Request that the job step initiated by this srun be run at the
-requested frequency if possible, on the cpus selected for the step on
-the compute node(s).  In addition to specifying a numerical frequency in
-kilohertz, the request can specify \fIlow\fR, \fImedium\fR, or
-\fIhigh\fR for the value. "Low" will select the lowest available
-frequency, "high" will select the highest available frequency,
-"highm1" (high minus one) will select the next highest available frequency,
-while "medium" attempts to set a frequency in the middle of the available
-range. If the numeric value specified does not exactly match a legal
-available frequency, SLURM will attempt to pick a legal frequency
-close to the request.
+Request that the job step initiated by this srun command be run at the
+requested frequency if possible, on the CPUs selected for the step on
+the compute node(s).
+In addition to specifying a numerical frequency in kilohertz, the request can
+specify \fILow\fR, \fIMedium\fR, \fIHighM1\fR or \fIHigh\fR for the frequency.
+"Low" will select the lowest available frequency.
+"High" will select the highest available frequency.
+"HighM1" (high minus one) will select the next highest available frequency.
+"Medium" attempts to set a frequency in the middle of the available range.
+If the numeric value specified does not exactly match a legal available
+frequency, SLURM will attempt to pick a legal frequency close to the request.
+The user may also specify one of the following CPU governors:
+\fIConservative\fR, \fIOnDemand\fR, \fIPerformance\fR, \fIPowerSave\fR or
+\fIUserSpace\fR.
 
 The following informational environment variable is set in the job
 step when \fB\-\-cpu\-freq\fR option is requested.
@@ -393,29 +396,29 @@ step when \fB\-\-cpu\-freq\fR option is requested.
 .fi
 
 This environment variable can also be used to supply the value for the
-cpu frequency request if it is set when the 'srun' command is issued.
+CPU frequency request if it is set when the 'srun' command is issued.
 The \fB\-\-cpu\-freq\fR on the command line will override the
 environment variable value.  See the \fBENVIRONMENT VARIABLES\fR
 section for a description of the SLURM_CPU_FREQ_REQ variable.
 
 \fBNOTE\fR: This parameter is treated as a request, not a requirement.
-If the job step's node does not support setting the cpu frequency, or
+If the job step's node does not support setting the CPU frequency, or
 the requested value is outside the bounds of the legal frequencies, an
 error is logged, but the job step is allowed to continue.
 
-\fBNOTE\fR: Setting the frequency for just the cpus of the job step
-implies that the tasks are confined to those cpus.  If task
+\fBNOTE\fR: Setting the frequency for just the CPUs of the job step
+implies that the tasks are confined to those CPUs.  If task
 confinement (i.e., TaskPlugin=task/affinity or
 TaskPlugin=task/cgroup with the "ConstrainCores" option) is not
 configured, this parameter is ignored.
 
-\fBNOTE\fR: When the step completes, the frequency of each selected cpu
+\fBNOTE\fR: When the step completes, the frequency of each selected CPU
 is set to its minimum available scaling frequency, to minimize default
 energy consumption.  The frequency scaling governor for each selected
-cpu is then reset to its previous type. If that previous
-type is not \fIuserspace\fR, the frequency may also be changed, depending
+CPU is then reset to its previous type. If that previous
+type is not \fIUserSpace\fR, the frequency may also be changed, depending
 on the restored governor type. In general, the frequencies of selected
-cpus before and after a job step is run are unpredictable.
+CPUs before and after a job step is run are unpredictable.
 
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
@@ -1929,15 +1932,7 @@ Same as \fB\-\-core\-spec\fR
 Same as \fB\-\-cpu_bind\fR
 .TP
 \fBSLURM_CPU_FREQ_REQ\fR
-Same as \fB\-\-cpu\-freq\fR. Can specify a numerical frequency in
-kilohertz, or the request can specify \fIlow\fR, \fImedium\fR, \fIhighm1\fR
-or \fIhigh\fR for the value. "Low" will select the lowest available
-frequency, "high" will select the highest available frequency,
-"highm1" (high minus one) will select the next highest available frequency,
-while "medium" attempts to set a frequency in the middle of the available
-range. If the numeric value specified does not exactly match a legal
-available frequency, SLURM will attempt to pick a legal frequency
-close to the request.
+Same as \fB\-\-cpu\-freq\fR.
 .TP
 \fBSLURM_CPUS_PER_TASK\fR
 Same as \fB\-c, \-\-cpus\-per\-task\fR

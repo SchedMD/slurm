@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
  -- Add specialized core count to job suspend/resume calls.
  -- task/affinity and task/cgroup - Correct specialized core task binding with
     user supplied invalid CPU mask or map.
+ -- Add srun --cpu-freq options to set the CPU governor (OnDemand, Performance,
+    PowerSave or UserSpace).
 
 * Changes in Slurm 14.03.4
 ==========================
