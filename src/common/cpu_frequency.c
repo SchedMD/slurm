@@ -438,7 +438,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 	unsigned int j, freq_med = 0;
 	uint32_t  freq_list[FREQ_LIST_MAX] =  { 0 };
 	char path[SYSFS_PATH_MAX];
-	FILE *fp;
+	FILE *fp = NULL;
 
 	/* see if user requested named value  */
 	if (cpu_freq & CPU_FREQ_RANGE_FLAG) {
@@ -559,7 +559,9 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 			      "invalid cpu_freq value %u", cpu_freq);
 			return;
 		}
-		fclose(fp);
+
+		if (fp)
+			fclose(fp);
 
 	} else {
 		/* find legal value close to requested value */
@@ -599,8 +601,9 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 		fclose(fp);
 	}
 
-	debug3("cpu_freq_cgroup_validate: cpu %u, frequency to set: %u",
-	       cpuidx, cpufreq[cpuidx].new_frequency);
+	debug3("cpu_freq_cgroup_validate: CPU:%u, frequency:%u governor:%s",
+	       cpuidx, cpufreq[cpuidx].new_frequency,
+	       cpufreq[cpuidx].new_governor);
 
 	return;
 }
@@ -759,22 +762,21 @@ cpu_freq_reset(stepd_step_rec_t *job)
 
 	j = 0;
 	for (i = 0; i < cpu_freq_count; i++) {
-
-		if (cpufreq[i].new_frequency == 0)
+		if ((cpufreq[i].new_frequency == 0) &&
+		    (cpufreq[i].new_governor[0] == '\0'))
 			continue;
 
 		snprintf(path, sizeof(path),
 			 PATH_TO_CPU "cpu%u/cpufreq/scaling_setspeed", i);
 		snprintf(value, LINE_LEN, "%u", cpufreq[i].orig_frequency);
-
-		if ( ( fp = fopen(path, "w") ) == NULL )
+		if ((fp = fopen(path, "w" ) == NULL)
 			continue;
 		fputs(value, fp);
 		fclose(fp);
 
 		snprintf(path, sizeof(path),
 			 PATH_TO_CPU "cpu%u/cpufreq/scaling_governor", i);
-		if ( ( fp = fopen(path, "w") ) == NULL )
+		if ((fp = fopen(path, "w")) == NULL)
 			continue;
 		fputs(cpufreq[i].orig_governor, fp);
 		fputc('\n', fp);
@@ -783,7 +785,7 @@ cpu_freq_reset(stepd_step_rec_t *job)
 		j++;
 		debug3("cpu_freq_reset: "
 		       "cpu %u, frequency reset: %u, governor reset: %s",
-		       i,cpufreq[i].orig_frequency,cpufreq[i].orig_governor);
+		       i, cpufreq[i].orig_frequency, cpufreq[i].orig_governor);
 	}
 	debug("cpu_freq_reset: #cpus reset = %u", j);
 }
