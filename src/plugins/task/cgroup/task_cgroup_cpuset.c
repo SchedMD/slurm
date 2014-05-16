@@ -1059,9 +1059,7 @@ again:
 		fstatus = SLURM_SUCCESS;
 
 	/* validate the requested cpu frequency and set it */
-	if (job->cpu_freq != NO_VAL) {
-		cpu_freq_cgroup_validate(job, step_alloc_cores);
-	}
+	cpu_freq_cgroup_validate(job, step_alloc_cores);
 
 error:
 	xcgroup_unlock(&cpuset_cg);

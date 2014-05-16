@@ -355,7 +355,7 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 		}
 	}
 
-	if ((rc == SLURM_SUCCESS) && (job->cpu_freq != NO_VAL))
+	if (rc == SLURM_SUCCESS)
 		cpu_freq_cpuset_validate(job);
 
 	return rc;
