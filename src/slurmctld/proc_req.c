@@ -1617,7 +1617,6 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK
 	};
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	bool job_requeue = false;
 
 	/* init */
 	START_TIMER;
@@ -1631,7 +1630,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	/* do RPC call */
 	/* Mark job and/or job step complete */
 	error_code = job_complete(comp_msg->job_id, uid,
-				  job_requeue, false, comp_msg->job_rc);
+				  false, false, comp_msg->job_rc);
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
 	END_TIMER2("_slurm_rpc_complete_job_allocation");
@@ -2612,7 +2611,6 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	bool job_requeue = false;
 	bool dump_job = false, dump_node = false;
 
 	/* init */
@@ -2639,7 +2637,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 
 	if (req->job_step_id == SLURM_BATCH_SCRIPT) {
 		/* FIXME: test for error, possibly cause batch job requeue */
-		error_code = job_complete(req->job_id, uid, job_requeue,
+		error_code = job_complete(req->job_id, uid, false,
 					  false, step_rc);
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
@@ -2658,7 +2656,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		}
 	} else {
 		error_code = job_step_complete(req->job_id, req->job_step_id,
-					       uid, job_requeue, step_rc);
+					       uid, false, step_rc);
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
 		END_TIMER2("_slurm_rpc_step_complete");

@@ -7774,7 +7774,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	if (job_specs->requeue != (uint16_t) NO_VAL) {
-		detail_ptr->requeue = job_specs->requeue;
+		detail_ptr->requeue = MIN(job_specs->requeue, 1);
 		info("sched: update_job: setting requeue to %u for job_id %u",
 		     job_specs->requeue, job_specs->job_id);
 	}
