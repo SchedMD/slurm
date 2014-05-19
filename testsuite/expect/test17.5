@@ -80,6 +80,69 @@ expect {
 }
 
 #
+# Spawn a sbatch command to varify that the default output file is
+# created and contain the correct contents
+#
+set job_id 0
+spawn $sbatch -t1 -N1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+#
+# Check for desired output
+#
+set def_out "slurm-$job_id\.out"
+set got_stdout 0
+if {[file exist $def_out]} {
+	spawn $bin_cat $def_out
+	expect {
+		-re "uid=" {
+			incr got_stdout
+			exp_continue
+		}
+		-re "$sleep_error_message" {
+			incr got_stdout
+			send_user "\nThis error is expected do not worry\n"
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+}
+if { $got_stdout != 2 } {
+	send_user "\nFAILURE: Unexpected stdout contents $got_stdout != 2 \n"
+	set exit_code 1
+}
+
+# Remove the output file after it has been checked
+exec $bin_rm -f $def_out
+
+#
 # Spawn a shell via sbatch that submits from a different directory and uses stdout/err
 # and confirm their contents
 #
@@ -162,8 +225,8 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 set got_stdout 0
 if {[wait_for_file $file_out] == 0} {
-        spawn $bin_cat $file_out
-        expect {
+	spawn $bin_cat $file_out
+	expect {
 		-re "uid=" {
 			set got_stdout 1
 			exp_continue
@@ -244,10 +307,10 @@ if {[wait_for_file $file_out_j_glob] == 0} {
 	set exit_code 1
 }
 if {[wait_for_file $file_err_j_glob] == 0} {
-        exec $bin_rm -f $file_err_j_glob
+	exec $bin_rm -f $file_err_j_glob
 } else {
-        send_user "\nFAILURE: file format of %j in stderr failed\n"
-        set exit_code 1
+	send_user "\nFAILURE: file format of %j in stderr failed\n"
+	set exit_code 1
 }
 
 #
@@ -294,10 +357,10 @@ if {[wait_for_file $file_out_u_glob] == 0} {
 	set exit_code 1
 }
 if {[wait_for_file $file_err_u_glob] == 0} {
-        exec $bin_rm -f $file_err_u_glob
+	exec $bin_rm -f $file_err_u_glob
 } else {
-        send_user "\nFAILURE: file format of %u in stderr failed\n"
-        set exit_code 1
+	send_user "\nFAILURE: file format of %u in stderr failed\n"
+	set exit_code 1
 }
 
 #
@@ -344,8 +407,8 @@ if { [file exists $file_out2] } {
 	set exit_code 1
 }
 if { [file exists $file_err2] } {
-        send_user "\nFAILURE: Found unexpected stderr file $file_err2\n"
-        set exit_code 1
+	send_user "\nFAILURE: Found unexpected stderr file $file_err2\n"
+	set exit_code 1
 }
 
 if {$exit_code == 0} {

@@ -9,7 +9,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2011-2013 SchedMD LLC
+# Copyright (C) 2011-2014 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
@@ -72,6 +72,45 @@ $bin_sleep aaaa
 exit 0
 "
 
+#
+# Submit a job array with no output or error flags and make sure the default
+# output file is created
+#
+set job_id 0
+spawn $sbatch --array=$array_begin-[expr $array_end -1] -t1 $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	set exit_code 1
+}
+
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+for {set cnt 0} {$cnt<$array_end} {incr cnt} {
+	if {[wait_for_file slurm-$job_id\_$cnt\.out] != 0} {
+		send_user "\nFAILURE: output file was not created or not the correct format. slurm-$job_id\_$cnt\.out not found\n"
+		set exit_code 1
+	} else {
+		exec $bin_rm -f slurm-$job_id\_$cnt\.out
+	}
+}
+
 # submit a batch with an array from 0 to 3; array size 4
 set job_id 0
 spawn $sbatch --array=$array_begin-[expr $array_end -1] --output=$file_out --error=$file_error -t1 $file_script
@@ -103,7 +142,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Checks that the correct error and output files were created with the correct format
 for {set cnt 0} {$cnt<$array_end} {incr cnt} {
 	if {[wait_for_file test$test_id-$job_id\_$cnt\.output] != 0} {
-		send_user "\nFAILURE: outout file was not created or not the correct format. test$test_id-$job_id\_$cnt\.output not found\n"
+		send_user "\nFAILURE: output file was not created or not the correct format. test$test_id-$job_id\_$cnt\.output not found\n"
 		set exit_code 1
 	}
 	if {[wait_for_file test$test_id-$job_id\_$cnt\.error] !=0} {
