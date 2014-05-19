@@ -235,10 +235,8 @@ struct job_record *create_job_record(int *error_code)
 	struct job_details *detail_ptr;
 
 	if (job_count >= slurmctld_conf.max_job_cnt) {
-		error("create_job_record: job_count exceeds MaxJobCount limit "
-		      "configured");
-		*error_code = EAGAIN;
-		return NULL;
+		error("create_job_record: MaxJobCount reached (%u)",
+		      slurmctld_conf.max_job_cnt);
 	}
 
 	job_count++;
@@ -3004,7 +3002,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 		return job_ptr_new;
 
 	/* Set job-specific ID and hash table */
-	if (_set_job_id(job_ptr_new))
+	if (_set_job_id(job_ptr_new) != SLURM_SUCCESS)
 		fatal("job array create_job_record error");
 	_add_job_hash(job_ptr_new);
 
@@ -4951,6 +4949,10 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc)
 			      job_count, i, slurmctld_conf.max_job_cnt);
 			return EAGAIN;
 		}
+	} else if (job_count >= slurmctld_conf.max_job_cnt) {
+		error("create_job_record: MaxJobCount limit reached (%u)",
+		      slurmctld_conf.max_job_cnt);
+		return EAGAIN;
 	}
 
 	/* Make sure anything that may be put in the database will be
@@ -7400,15 +7402,16 @@ extern uint32_t get_next_job_id(void)
 static int _set_job_id(struct job_record *job_ptr)
 {
 	int i;
-	uint32_t new_id;
-
-	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
+	uint32_t new_id, max_jobs;
 
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
 
+	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
+	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
+
 	/* Insure no conflict in job id if we roll over 32 bits */
-	for (i = 0; i < 1000; i++) {
+	for (i = 0; i < max_jobs; i++) {
 		if (++job_id_sequence >= slurmctld_conf.max_job_id)
 			job_id_sequence = slurmctld_conf.first_job_id;
 		new_id = job_id_sequence;
