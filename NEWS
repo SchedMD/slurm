@@ -530,6 +530,7 @@ documents those changes that are of interest to users and admins.
  -- If an invalid assoc_ptr comes in don't use the id to verify it.
  -- Sched/backfill modified to avoid using nodes in completing state.
  -- Correct support for job --profile=none option and related documentation.
+ -- Properly enforce job --requeue and --norequeue options.
 
 * Changes in Slurm 2.6.9
 ========================
