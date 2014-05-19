@@ -710,36 +710,46 @@ cpu_freq_set(stepd_step_rec_t *job)
 
 	j = 0;
 	for (i = 0; i < cpu_freq_count; i++) {
-		snprintf(path, sizeof(path),
-			 PATH_TO_CPU "cpu%u/cpufreq/scaling_governor", i);
-		if ((fp = fopen(path, "w")) == NULL)
-			continue;
+		bool updated = false;
+
 		if (cpufreq[i].new_governor[0] != '\0') {
-			snprintf(gov_value, LINE_LEN, "%s\n",
+			snprintf(gov_value, LINE_LEN, "%s",
 				 cpufreq[i].new_governor);
+			updated = true;
 		} else if (cpufreq[i].new_frequency != 0) {
-			snprintf(gov_value, LINE_LEN, "userspace\n");
-		} else if (cpufreq[i].avail_governors & GOV_ONDEMAND) {
-			snprintf(gov_value, LINE_LEN, "ondemand\n");
+			snprintf(gov_value, LINE_LEN, "userspace");
+			updated = true;
 		}
-		fputs(gov_value, fp);
-		fclose(fp);
+		if (updated) {
+			snprintf(path, sizeof(path),
+				 PATH_TO_CPU "cpu%u/cpufreq/scaling_governor",
+				 i);
+			if ((fp = fopen(path, "w")) == NULL)
+				continue;
+			fputs(gov_value, fp);
+			fputc('\n', fp);
+			fclose(fp);
+		}
 
 		if (cpufreq[i].new_frequency == 0) {
 			freq_value[0] = '\0';
-			goto log_it;
+		} else {
+			snprintf(path, sizeof(path),
+				 PATH_TO_CPU "cpu%u/cpufreq/scaling_setspeed",
+				 i);
+			snprintf(freq_value, LINE_LEN, "%u",
+				 cpufreq[i].new_frequency);
+			if ((fp = fopen(path, "w")) == NULL)
+				continue;
+			fputs(freq_value, fp);
+			fclose(fp);
 		}
-		snprintf(path, sizeof(path),
-			 PATH_TO_CPU "cpu%u/cpufreq/scaling_setspeed", i);
-		snprintf(freq_value, LINE_LEN, "%u", cpufreq[i].new_frequency);
-		if ((fp = fopen(path, "w")) == NULL)
-			continue;
-		fputs(freq_value, fp);
-		fclose(fp);
 
-		j++;
-log_it:		debug2("cpu_freq_set: CPU:%u frequency:%s governor:%s",
-		       i, freq_value, gov_value);
+		if (updated) {
+			j++;
+			debug3("cpu_freq_set: CPU:%u frequency:%s governor:%s",
+			       i, freq_value, gov_value);
+		}
 	}
 	debug("cpu_freq_set: #cpus set = %u", j);
 }
@@ -761,25 +771,49 @@ cpu_freq_reset(stepd_step_rec_t *job)
 
 	j = 0;
 	for (i = 0; i < cpu_freq_count; i++) {
-		snprintf(path, sizeof(path),
-			 PATH_TO_CPU "cpu%u/cpufreq/scaling_setspeed", i);
-		snprintf(value, LINE_LEN, "%u", cpufreq[i].orig_frequency);
-		if ((fp = fopen(path, "w"))) {
-			fputs(value, fp);
-			fclose(fp);
+		bool updated = false;
+
+		if (cpufreq[i].new_frequency != 0) {
+			snprintf(path, sizeof(path),
+				 PATH_TO_CPU "cpu%u/cpufreq/scaling_setspeed",
+				 i);
+			snprintf(value, LINE_LEN, "%u",
+				 cpufreq[i].orig_frequency);
+			if ((fp = fopen(path, "w"))) {
+				fputs(value, fp);
+				fclose(fp);
+			}
+			updated = true;
 		}
 
-		snprintf(path, sizeof(path),
-			 PATH_TO_CPU "cpu%u/cpufreq/scaling_governor", i);
-		if ((fp = fopen(path, "w"))) {
-			fputs(cpufreq[i].orig_governor, fp);
-			fputc('\n', fp);
-			fclose(fp);
+		/* We want to restore to "ondemand" governor to recover from
+		 * hard slurmd failures and for gang scheduling where one job's
+		 * initial state might reflect the state of a currently running
+		 * job that is sharing resources temporarily (until one of the
+		 * jobs is suspended). */
+		if ((cpufreq[i].new_governor[0] != '\0') &&
+		    (cpufreq[i].avail_governors & GOV_ONDEMAND)) {
+			strcpy(cpufreq[i].orig_governor, "ondemand");
+
+		}
+		if (cpufreq[i].new_governor[0] != '\0') {
+			snprintf(path, sizeof(path),
+				 PATH_TO_CPU "cpu%u/cpufreq/scaling_governor",
+				 i);
+			if ((fp = fopen(path, "w"))) {
+				fputs(cpufreq[i].orig_governor, fp);
+				fputc('\n', fp);
+				fclose(fp);
+			}
+			updated = true;
 		}
 
-		j++;
-		debug3("cpu_freq_reset: CPU:%u, frequency:%u governor: %s",
-		       i, cpufreq[i].orig_frequency, cpufreq[i].orig_governor);
+		if (updated) {
+			j++;
+			debug3("cpu_freq_reset: CPU:%u frequency:%u governor:%s",
+			       i, cpufreq[i].orig_frequency,
+			       cpufreq[i].orig_governor);
+		}
 	}
 	debug("cpu_freq_reset: #cpus reset = %u", j);
 }

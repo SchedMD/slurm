@@ -53,6 +53,10 @@ documents those changes that are of interest to users and admins.
     user supplied invalid CPU mask or map.
  -- Add srun --cpu-freq options to set the CPU governor (OnDemand, Performance,
     PowerSave or UserSpace).
+ -- Add support for a job step's CPU governor and/or frequency to be reset on
+    suspend/resume (or gang scheduling). The default for an idle CPU will now
+    be "ondemand" rather than "userspace" with the lowest frequency (to recover
+    from hard slurmd failures and support gang scheduling).
 
 * Changes in Slurm 14.03.4
 ==========================
