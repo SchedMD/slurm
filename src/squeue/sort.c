@@ -163,6 +163,8 @@ void sort_job_list(List job_list)
 			list_sort(job_list, _sort_job_by_priority);
 		else if (params.sort[i] == 'P')
 			list_sort(job_list, _sort_job_by_partition);
+		else if (params.sort[i] == 'Q')
+			list_sort(job_list, _sort_job_by_priority);
 		else if (params.sort[i] == 'S')
 			list_sort(job_list, _sort_job_by_time_start);
 		else if (params.sort[i] == 't')
