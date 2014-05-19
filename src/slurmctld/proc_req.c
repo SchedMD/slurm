@@ -1788,7 +1788,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 			error_code = update_node(&update_node_msg);
 #endif	/* !HAVE_FRONT_END */
 #endif	/* !HAVE_BG */
-			if (comp_msg->job_rc != SLURM_SUCCESS)
+			if ((comp_msg->job_rc != SLURM_SUCCESS) && job_ptr &&
+			    job_ptr->details && job_ptr->details->requeue)
 				job_requeue = true;
 			dump_job = true;
 			dump_node = true;

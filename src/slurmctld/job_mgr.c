@@ -2469,8 +2469,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				excise_node_from_job(job_ptr, node_ptr);
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
-				   slurmctld_conf.job_requeue &&
-				   (job_ptr->details->requeue > 0)) {
+				   job_ptr->details->requeue) {
 				char requeue_msg[128];
 
 				srun_node_fail(job_ptr->job_id, node_name);
@@ -8838,8 +8837,8 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		    (job_ptr->start_time       < startup_time)	&&
 		    (node_inx == bit_ffs(job_ptr->node_bitmap))) {
 			bool requeue = false;
-			if (slurmctld_conf.job_requeue &&
-			    (job_ptr->start_time < node_ptr->boot_time))
+			if ((job_ptr->start_time < node_ptr->boot_time) &&
+			    (job_ptr->details && job_ptr->details->requeue))
 				requeue = true;
 			info("Batch JobId=%u missing from node 0",
 			     job_ptr->job_id);
