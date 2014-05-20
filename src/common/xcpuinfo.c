@@ -243,7 +243,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	 */
 	if ( nobj[SOCKET] == 0 ) {
 		debug("get_cpuinfo() fudging nobj[SOCKET] from 0 to 1");
-		nobj[SOCKET] = 1;
+		nobj[CORE] = 1;
 	}
 	if ( nobj[CORE] == 0 ) {
 		debug("get_cpuinfo() fudging nobj[CORE] from 0 to 1");
