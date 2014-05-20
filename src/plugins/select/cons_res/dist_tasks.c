@@ -799,6 +799,38 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				}
 			}
 			xfree(cpus_cnt);
+		} else if (job_ptr->details->cpus_per_task > 1) {
+			/* Try to pack all CPUs of each tasks on one socket. */
+			uint32_t *cpus_cnt, cpus_per_task;
+
+			cpus_per_task = job_ptr->details->cpus_per_task;
+			cpus_cnt = xmalloc(sizeof(uint32_t) * sockets);
+			for (s = 0; s < sockets; s++) {
+				for (j = sock_start[s]; j < sock_end[s]; j++) {
+					if (bit_test(core_map, j))
+						cpus_cnt[s] += vpus;
+				}
+				cpus_cnt[s] -= (cpus_cnt[s] % cpus_per_task);
+			}
+			for (s = 0; ((s < sockets) && (cpus > 0)); s++) {
+				while ((sock_start[s] < sock_end[s]) &&
+				       (cpus_cnt[s] > 0) && (cpus > 0)) {
+					if (bit_test(core_map, sock_start[s])) {
+						sock_used[s] = true;
+						core_cnt++;
+						if (cpus_cnt[s] < vpus)
+							cpus_cnt[s] = 0;
+						else
+							cpus_cnt[s] -= vpus;
+						if (cpus < vpus)
+							cpus = 0;
+						else
+							cpus -= vpus;
+					}
+					sock_start[s]++;
+				}
+			}
+			xfree(cpus_cnt);
 		}
 
 		while (cpus > 0) {
@@ -807,7 +839,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				if (sock_avoid[s])
 					continue;
 				while (sock_start[s] < sock_end[s]) {
-					if (bit_test(core_map,sock_start[s])) {
+					if (bit_test(core_map, sock_start[s])) {
 						sock_used[s] = true;
 						core_cnt++;
 						break;
