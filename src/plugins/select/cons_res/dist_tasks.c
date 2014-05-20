@@ -770,9 +770,13 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		cpus  = job_res->cpus[i];
 
 		if (ntasks_per_socket != 0xffff) {
-			int x_cpus;
+			int x_cpus, cpus_per_socket;
 			uint32_t total_cpus = 0;
-			uint32_t *cpus_cnt = xmalloc(sizeof(uint32_t)* sockets);
+			uint32_t *cpus_cnt;
+
+			cpus_per_socket = ntasks_per_socket *
+					  job_ptr->details->cpus_per_task;
+			cpus_cnt = xmalloc(sizeof(uint32_t) * sockets);
 			for (s = 0; s < sockets; s++) {
 				for (j = sock_start[s]; j < sock_end[s]; j++) {
 					if (bit_test(core_map, j))
@@ -781,14 +785,14 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				total_cpus += cpus_cnt[s];
 			}
 			for (s = 0; s < sockets && total_cpus > cpus; s++) {
-				if (cpus_cnt[s] > ntasks_per_socket) {
-					x_cpus = cpus_cnt[s] -ntasks_per_socket;
-					cpus_cnt[s] = ntasks_per_socket;
+				if (cpus_cnt[s] > cpus_per_socket) {
+					x_cpus = cpus_cnt[s] - cpus_per_socket;
+					cpus_cnt[s] = cpus_per_socket;
 					total_cpus -= x_cpus;
 				}
 			}
 			for (s = 0; s < sockets && total_cpus > cpus; s++) {
-				if ((cpus_cnt[s] <= ntasks_per_socket) &&
+				if ((cpus_cnt[s] <= cpus_per_socket) &&
 				    (total_cpus - cpus_cnt[s] >= cpus)) {
 					sock_avoid[s] = true;
 					total_cpus -= cpus_cnt[s];
