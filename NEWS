@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     Previous logic could spread the tasks CPUs across multiple sockets.
  -- Add new distribution method fcyclic so when a task is using multiple cpus
     it can bind cyclically across sockets.
+ -- task/affinity - When using --hint=nomultithread only bind to the first
+    thread in a core.
 
 * Changes in Slurm 14.03.3-2
 ============================

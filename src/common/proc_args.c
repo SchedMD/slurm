@@ -689,11 +689,13 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		} else if (strcasecmp(tok, "multithread") == 0) {
 			*min_threads = NO_VAL;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
+			*cpu_bind_type &= (~CPU_BIND_ONE_THREAD_PER_CORE);
 			if (*ntasks_per_core == NO_VAL)
 				*ntasks_per_core = INFINITE;
 		} else if (strcasecmp(tok, "nomultithread") == 0) {
 			*min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
+			*cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
 		} else {
 			error("unrecognized --hint argument \"%s\", "
 			      "see --hint=help", tok);

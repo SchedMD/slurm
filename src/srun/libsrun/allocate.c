@@ -694,8 +694,12 @@ job_desc_msg_create_from_opts (void)
 		j->sockets_per_node    = opt.sockets_per_node;
 	if (opt.cores_per_socket != NO_VAL)
 		j->cores_per_socket      = opt.cores_per_socket;
-	if (opt.threads_per_core != NO_VAL)
+	if (opt.threads_per_core != NO_VAL) {
 		j->threads_per_core    = opt.threads_per_core;
+		/* if 1 always make sure affinity knows about it */
+		if (j->threads_per_core == 1)
+			opt.cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
+	}
 	j->user_id        = opt.uid;
 	j->dependency     = opt.dependency;
 	if (opt.nice)

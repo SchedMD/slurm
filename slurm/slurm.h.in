@@ -551,6 +551,11 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	CPU_BIND_LDMAP	   = 0x400,/* =map_ldom:<list of locality domains> */
 	CPU_BIND_LDMASK	   = 0x800,/* =mask_ldom:<list of ldom masks> */
 
+	/* the following is used primarily for the
+	   --hint=nomultithread when -mblock:block is requested. */
+	CPU_BIND_ONE_THREAD_PER_CORE = 0x2000,/* Only bind to one
+					       * thread of a core */
+
 	/* the following is used only as a flag for expressing
 	 * the contents of TaskPluginParams */
 	CPU_BIND_CPUSETS   = 0x8000
