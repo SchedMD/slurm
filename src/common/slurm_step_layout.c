@@ -447,6 +447,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 
         if ((task_dist == SLURM_DIST_CYCLIC) ||
             (task_dist == SLURM_DIST_CYCLIC_CYCLIC) ||
+            (task_dist == SLURM_DIST_CYCLIC_CFULL) ||
             (task_dist == SLURM_DIST_CYCLIC_BLOCK))
 		return _task_layout_cyclic(step_layout, cpus);
 	else if (task_dist == SLURM_DIST_ARBITRARY
@@ -778,6 +779,14 @@ extern char *slurm_step_layout_type_name(task_dist_states_t task_dist)
 		break;
 	case SLURM_DIST_BLOCK_BLOCK:	/* block for node and block for lllp  */
 		return "BBlock";
+		break;
+	case SLURM_DIST_CYCLIC_CFULL:	/* cyclic for node and full
+					 * cyclic for lllp  */
+		return "CFCyclic";
+		break;
+	case SLURM_DIST_BLOCK_CFULL:	/* block for node and full
+					 * cyclic for lllp  */
+		return "BFCyclic";
 		break;
 	case SLURM_NO_LLLP_DIST:	/* No distribution specified for lllp */
 	case SLURM_DIST_UNKNOWN:

@@ -240,6 +240,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	case SLURM_DIST_CYCLIC_BLOCK:
 	case SLURM_DIST_BLOCK_CYCLIC:
 	case SLURM_DIST_BLOCK_BLOCK:
+	case SLURM_DIST_CYCLIC_CFULL:
+	case SLURM_DIST_BLOCK_CFULL:
 		job->ctx_params.task_dist = opt.distribution;
 		break;
 	case SLURM_DIST_PLANE:

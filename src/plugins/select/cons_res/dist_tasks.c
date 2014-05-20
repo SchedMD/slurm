@@ -1009,6 +1009,8 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	case SLURM_DIST_CYCLIC:
 	case SLURM_DIST_BLOCK_CYCLIC:
 	case SLURM_DIST_CYCLIC_CYCLIC:
+	case SLURM_DIST_BLOCK_CFULL:
+	case SLURM_DIST_CYCLIC_CFULL:
 	case SLURM_DIST_UNKNOWN:
 		error_code = _cyclic_sync_core_bitmap(job_ptr, cr_type);
 		break;

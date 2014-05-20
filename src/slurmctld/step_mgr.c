@@ -2077,6 +2077,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    (step_specs->task_dist != SLURM_DIST_BLOCK_CYCLIC) &&
 	    (step_specs->task_dist != SLURM_DIST_CYCLIC_BLOCK) &&
 	    (step_specs->task_dist != SLURM_DIST_BLOCK_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CFULL) &&
 	    (step_specs->task_dist != SLURM_DIST_PLANE) &&
 	    (step_specs->task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
@@ -2266,6 +2268,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	switch(step_specs->task_dist) {
 	case SLURM_DIST_CYCLIC:
 	case SLURM_DIST_CYCLIC_CYCLIC:
+	case SLURM_DIST_CYCLIC_CFULL:
 	case SLURM_DIST_CYCLIC_BLOCK:
 		step_ptr->cyclic_alloc = 1;
 		break;

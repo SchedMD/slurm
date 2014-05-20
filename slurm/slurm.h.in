@@ -519,7 +519,13 @@ typedef enum task_dist_states {
 	SLURM_DIST_BLOCK_CYCLIC, /* block for node and cyclic for lllp  */
 	SLURM_DIST_BLOCK_BLOCK,	/* block for node and block for lllp  */
 	SLURM_NO_LLLP_DIST,	/* No distribution specified for lllp */
-	SLURM_DIST_UNKNOWN	/* unknown dist */
+	SLURM_DIST_UNKNOWN,	/* unknown dist */
+	SLURM_DIST_CYCLIC_CFULL, /* Same as cyclic:cyclic except for
+				    multi-cpu tasks cyclically
+				    bind cpus */
+	SLURM_DIST_BLOCK_CFULL, /* Same as block:cyclic except for
+				   multi-cpu tasks cyclically
+				   bind cpus  */
 } task_dist_states_t;
 
 /* Open stdout/err file mode, 0 for system default (JobFileAppend) */

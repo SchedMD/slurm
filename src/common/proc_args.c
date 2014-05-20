@@ -135,6 +135,14 @@ void set_distribution(task_dist_states_t distribution,
 			*dist      = "block:block";
 			*lllp_dist = "block";
 			break;
+		case SLURM_DIST_CYCLIC_CFULL:
+			*dist      = "cyclic:fcyclic";
+			*lllp_dist = "fcyclic";
+			break;
+		case SLURM_DIST_BLOCK_CFULL:
+			*dist      = "block:fcyclic";
+			*lllp_dist = "cyclic";
+			break;
 		default:
 			error("unknown dist, type %d", distribution);
 			break;
@@ -176,6 +184,10 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 			result = SLURM_DIST_BLOCK_BLOCK;
 		} else if (strcasecmp(arg, "block:cyclic") == 0) {
 			result = SLURM_DIST_BLOCK_CYCLIC;
+		} else if (strcasecmp(arg, "block:fcyclic") == 0) {
+			result = SLURM_DIST_BLOCK_CFULL;
+		} else if (strcasecmp(arg, "cyclic:fcyclic") == 0) {
+			result = SLURM_DIST_CYCLIC_CFULL;
 		}
 	} else if (plane_dist) {
 		if (strncasecmp(arg, "plane", len) == 0) {
