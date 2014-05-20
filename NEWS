@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
     thread in a core.
  -- Make cgroup task layout (block | cyclic) method mirror that of
     task/affinity.
+ -- If TaskProlog sets SLURM_PROLOG_CPU_MASK reset affinity for that task
+    based on the mask given.
 
 * Changes in Slurm 14.03.3-2
 ============================
