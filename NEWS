@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
  -- Add SelectTypeParameters option of CR_PACK_NODES to pack a job's tasks
     tightly on its allocated nodes rather than distributing them evenly across
     the allocated nodes.
+ -- Fix division by zero issue when get_cpuinfo returns 0 for number of sockets.
 
 * Changes in Slurm 14.03.3-2
 ============================
