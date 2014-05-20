@@ -1354,17 +1354,17 @@ The keywords below have no associated value
 If set, priority age factor will be increased despite job dependencies
 or holds.
 .TP
+\fBDEPTH_OBLIVIOUS\fR
+If set, priority will be calculated based similar to the normal multifactor
+calculation, but depth of the associations in the tree do not adversely effect
+their priority.
+.TP
 \fBSMALL_RELATIVE_TO_TIME\fR
 If set, the job's size component will be based upon not the job size alone, but
 the job's size divided by it's time limit.
 .TP
 \fBTICKET_BASED\fR
 If set, priority will be calculated based on the ticket system.
-.TP
-\fBDEPTH_OBLIVIOUS\fR
-If set, priority will be calculated based similar to the normal multifactor
-calculation, but depth of the associations in the tree do not adversely effect
-their priority.
 .RE
 
 .TP
