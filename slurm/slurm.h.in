@@ -721,6 +721,9 @@ enum ctx_keys {
 #define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x0008	/* Flag to use depth oblivious
 						 * formula for computing
 						 * hierarchical fairshare */
+#define PRIORITY_FLAGS_CALCULATE_RUNNING 0x0010	/* Calculate priorities for
+						 * running jobs, not only the
+						 * pending jobs. */
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/

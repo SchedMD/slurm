@@ -1287,7 +1287,8 @@ static void *_decay_thread(void *no_data)
 				    || IS_JOB_COMPLETING(job_ptr))
 					continue;
 				/* apply new usage */
-				if (!IS_JOB_PENDING(job_ptr) &&
+				if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING)||
+				     !IS_JOB_PENDING(job_ptr)) &&
 				    job_ptr->start_time && job_ptr->assoc_ptr) {
 					if (!_apply_new_usage(
 						    job_ptr,
@@ -1295,13 +1296,11 @@ static void *_decay_thread(void *no_data)
 						continue;
 				}
 
-				/*
-				 * Priority 0 is reserved for held
-				 * jobs. Also skip priority
-				 * calculation for non-pending jobs.
-				 */
-				if ((job_ptr->priority == 0)
-				    || !IS_JOB_PENDING(job_ptr))
+				/* Priority 0 is reserved for held jobs */
+				if (job_ptr->priority == 0)
+					continue;
+				if (!IS_JOB_PENDING(job_ptr) &&
+				    !(flags & PRIORITY_FLAGS_CALCULATE_RUNNING))
 					continue;
 
 				job_ptr->priority = _get_priority_internal(
@@ -1343,7 +1342,8 @@ static void *_decay_thread(void *no_data)
 				    || IS_JOB_COMPLETING(job_ptr))
 					continue;
 				/* apply new usage */
-				if (!IS_JOB_PENDING(job_ptr) &&
+				if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING)||
+				     !IS_JOB_PENDING(job_ptr)) &&
 				    job_ptr->start_time && job_ptr->assoc_ptr
 				    && g_last_ran)
 					_apply_new_usage(job_ptr,
@@ -1847,10 +1847,8 @@ extern List priority_p_get_priority_factors_list(
 		ret_list = list_create(slurm_destroy_priority_factors_object);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
-			/*
-			 * We are only looking for pending jobs
-			 */
-			if (!IS_JOB_PENDING(job_ptr))
+			if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
+			    !IS_JOB_PENDING(job_ptr))
 				continue;
 
 			/*

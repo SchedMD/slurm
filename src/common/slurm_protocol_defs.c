@@ -1441,6 +1441,7 @@ extern char *trigger_type(uint32_t trig_type)
 		return "unknown";
 }
 
+/* user needs to xfree return value */
 extern char *reservation_flags_string(uint32_t flags)
 {
 	char *flag_str = xstrdup("");
@@ -1522,6 +1523,37 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "FIRST_CORES");
 	}
+	return flag_str;
+}
+
+/* user needs to xfree return value */
+extern char *priority_flags_string(uint16_t priority_flags)
+{
+	char *flag_str = xstrdup("");
+
+	if (priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+		xstrcat(flag_str, "ACCRUE_ALWAYS");
+	if (priority_flags & PRIORITY_FLAGS_SIZE_RELATIVE) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "SMALL_RELATIVE_TO_TIME");
+	}
+	if (priority_flags & PRIORITY_FLAGS_CALCULATE_RUNNING) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "CALCULATE_RUNNING");
+	}
+	if (priority_flags & PRIORITY_FLAGS_TICKET_BASED) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "TICKET_BASED");
+	}
+	if (priority_flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "DEPTH_OBLIVIOUS");
+	}
+
 	return flag_str;
 }
 

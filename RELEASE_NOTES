@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 14.11
-16 May 2014
+20 May 2014
 
 
 IMPORTANT NOTE:
@@ -58,7 +58,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add SelectTypeParameters option of CR_PACK_NODES to pack a job's tasks
     tightly on its allocated nodes rather than distributing them evenly across
     the allocated nodes.
-
+ -- Added PriorityFlags option of Calulate_Running to continue recalculating
+    the priority of running jobs.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

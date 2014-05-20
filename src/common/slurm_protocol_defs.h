@@ -1285,7 +1285,10 @@ extern bool valid_spank_job_env(char **spank_job_env,
 extern char *trigger_res_type(uint16_t res_type);
 extern char *trigger_type(uint32_t trig_type);
 
-/* user needs to xfree after */
+/* user needs to xfree return value */
+extern char *priority_flags_string(uint16_t priority_flags);
+
+/* user needs to xfree return value */
 extern char *reservation_flags_string(uint32_t flags);
 
 /* Return ctime like string without the newline.
