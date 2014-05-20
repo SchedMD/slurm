@@ -1320,21 +1320,36 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		 *
 		 * You can see the equivalent code for the
 		 * task/affinity plugin in
-		 * src/plugins/task/affinity/dist_tasks.c, around line 384.
+		 * src/plugins/task/affinity/dist_tasks.c, around line 368
 		 */
 		switch (job->task_dist) {
-		case SLURM_DIST_CYCLIC:
+		case SLURM_DIST_BLOCK_BLOCK:
+		case SLURM_DIST_CYCLIC_BLOCK:
+		case SLURM_DIST_PLANE:
+			/* tasks are distributed in blocks within a plane */
+			_task_cgroup_cpuset_dist_block(
+				topology, hwtype, req_hwtype,
+				nobj, job, bind_verbose, cpuset);
+			break;
+		case SLURM_DIST_ARBITRARY:
 		case SLURM_DIST_BLOCK:
-		case SLURM_DIST_CYCLIC_CYCLIC:
-		case SLURM_DIST_BLOCK_CYCLIC:
+		case SLURM_DIST_CYCLIC:
+		case SLURM_DIST_UNKNOWN:
+			if (slurm_get_select_type_param()
+			    & CR_CORE_DEFAULT_DIST_BLOCK) {
+				_task_cgroup_cpuset_dist_block(
+					topology, hwtype, req_hwtype,
+					nobj, job, bind_verbose, cpuset);
+				break;
+			}
+			/* We want to fall through here if we aren't doing a
+			   default dist block.
+			*/
+		default:
 			_task_cgroup_cpuset_dist_cyclic(
 				topology, hwtype, req_hwtype,
 				job, bind_verbose, cpuset);
 			break;
-		default:
-			_task_cgroup_cpuset_dist_block(
-				topology, hwtype, req_hwtype,
-				nobj, job, bind_verbose, cpuset);
 		}
 
 		hwloc_bitmap_asprintf(&str, cpuset);
