@@ -740,7 +740,8 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			continue;
 		sockets = select_node_record[n].sockets;
 		cps     = select_node_record[n].cores;
-		vpus    = MIN(select_node_record[n].vpus, ntasks_per_core);
+		vpus    = MIN(select_node_record[n].vpus, (ntasks_per_core *
+					job_ptr->details->cpus_per_task));
 
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: job %u node %s vpus %u cpus %u",
@@ -770,9 +771,13 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		cpus  = job_res->cpus[i];
 
 		if (ntasks_per_socket != 0xffff) {
-			int x_cpus;
+			int x_cpus, cpus_per_socket;
 			uint32_t total_cpus = 0;
-			uint32_t *cpus_cnt = xmalloc(sizeof(uint32_t)* sockets);
+			uint32_t *cpus_cnt;
+
+			cpus_per_socket = ntasks_per_socket *
+					  job_ptr->details->cpus_per_task;
+			cpus_cnt = xmalloc(sizeof(uint32_t) * sockets);
 			for (s = 0; s < sockets; s++) {
 				for (j = sock_start[s]; j < sock_end[s]; j++) {
 					if (bit_test(core_map, j))
@@ -781,17 +786,49 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				total_cpus += cpus_cnt[s];
 			}
 			for (s = 0; s < sockets && total_cpus > cpus; s++) {
-				if (cpus_cnt[s] > ntasks_per_socket) {
-					x_cpus = cpus_cnt[s] -ntasks_per_socket;
-					cpus_cnt[s] = ntasks_per_socket;
+				if (cpus_cnt[s] > cpus_per_socket) {
+					x_cpus = cpus_cnt[s] - cpus_per_socket;
+					cpus_cnt[s] = cpus_per_socket;
 					total_cpus -= x_cpus;
 				}
 			}
 			for (s = 0; s < sockets && total_cpus > cpus; s++) {
-				if ((cpus_cnt[s] <= ntasks_per_socket) &&
+				if ((cpus_cnt[s] <= cpus_per_socket) &&
 				    (total_cpus - cpus_cnt[s] >= cpus)) {
 					sock_avoid[s] = true;
 					total_cpus -= cpus_cnt[s];
+				}
+			}
+			xfree(cpus_cnt);
+		} else if (job_ptr->details->cpus_per_task > 1) {
+			/* Try to pack all CPUs of each tasks on one socket. */
+			uint32_t *cpus_cnt, cpus_per_task;
+
+			cpus_per_task = job_ptr->details->cpus_per_task;
+			cpus_cnt = xmalloc(sizeof(uint32_t) * sockets);
+			for (s = 0; s < sockets; s++) {
+				for (j = sock_start[s]; j < sock_end[s]; j++) {
+					if (bit_test(core_map, j))
+						cpus_cnt[s] += vpus;
+				}
+				cpus_cnt[s] -= (cpus_cnt[s] % cpus_per_task);
+			}
+			for (s = 0; ((s < sockets) && (cpus > 0)); s++) {
+				while ((sock_start[s] < sock_end[s]) &&
+				       (cpus_cnt[s] > 0) && (cpus > 0)) {
+					if (bit_test(core_map, sock_start[s])) {
+						sock_used[s] = true;
+						core_cnt++;
+						if (cpus_cnt[s] < vpus)
+							cpus_cnt[s] = 0;
+						else
+							cpus_cnt[s] -= vpus;
+						if (cpus < vpus)
+							cpus = 0;
+						else
+							cpus -= vpus;
+					}
+					sock_start[s]++;
 				}
 			}
 			xfree(cpus_cnt);
@@ -803,7 +840,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				if (sock_avoid[s])
 					continue;
 				while (sock_start[s] < sock_end[s]) {
-					if (bit_test(core_map,sock_start[s])) {
+					if (bit_test(core_map, sock_start[s])) {
 						sock_used[s] = true;
 						core_cnt++;
 						break;

@@ -1979,7 +1979,7 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 	/* choose the best nodes for the job */
 	rc = _choose_nodes(job_ptr, node_map, min_nodes, max_nodes, req_nodes,
 			   cr_node_cnt, cpu_cnt, cr_type);
-	_log_select_maps("_select_nodes/chose_nodes", node_map, core_map);
+	_log_select_maps("_select_nodes/choose_nodes", node_map, core_map);
 
 	/* if successful, sync up the core_map with the node_map, and
 	 * create a cpus array */

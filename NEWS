@@ -83,6 +83,8 @@ documents those changes that are of interest to users and admins.
  -- Add SelectTypeParameters option of CR_PACK_NODES to pack a job's tasks
     tightly on its allocated nodes rather than distributing them evenly across
     the allocated nodes.
+ -- cpus-per-task support: Try to pack all CPUs of each tasks onto one socket.
+    Previous logic could spread the tasks CPUs across multiple sockets.
 
 * Changes in Slurm 14.03.3-2
 ============================
