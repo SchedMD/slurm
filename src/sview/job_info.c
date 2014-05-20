@@ -144,6 +144,7 @@ enum {
 	SORTID_NODELIST,
 	SORTID_NODELIST_EXC,
 	SORTID_NODELIST_REQ,
+	SORTID_NODELIST_SCHED,
 #endif
 	SORTID_NAME,
 	SORTID_NETWORK,
@@ -316,6 +317,8 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODELIST_REQ, "MidplaneList Requested",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_NODELIST_SCHED, "MidplaneList Scheduled",
+	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
