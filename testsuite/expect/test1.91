@@ -460,8 +460,13 @@ expect {
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 	}
+	-re "$srun" {
+		# just so we don't grab the srun call
+		exp_continue;
+	}
 	-re $prompt
 }
+
 if {$task_mask != $expected_mask} {
 	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$expected_mask)\n"
 	set exit_code 1

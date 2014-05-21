@@ -125,6 +125,7 @@
 #define OPT_CORE_SPEC   0x1a
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
+#define OPT_HINT	0x22
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -574,6 +575,7 @@ env_vars_t env_vars[] = {
 {"SLURM_EXPORT_ENV",    OPT_STRING,     &opt.export_env,    NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
 {"SLURM_GRES",          OPT_STRING,     &opt.gres,          NULL             },
+{"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
 {"SLURM_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL             },
 /* SLURM_JOBID was used in slurm version 1.3 and below, it is now vestigial */
@@ -693,7 +695,17 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (cpu_freq_verify_param(val, &opt.cpu_freq))
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
-
+	case OPT_HINT:
+		/* Keep after other options filled in */
+		if (verify_hint(val,
+				&opt.sockets_per_node,
+				&opt.cores_per_socket,
+				&opt.threads_per_core,
+				&opt.ntasks_per_core,
+				&opt.cpu_bind_type)) {
+			exit(error_exit);
+		}
+		break;
 	case OPT_MEM_BIND:
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
 					  &opt.mem_bind_type))

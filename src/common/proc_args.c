@@ -135,6 +135,14 @@ void set_distribution(task_dist_states_t distribution,
 			*dist      = "block:block";
 			*lllp_dist = "block";
 			break;
+		case SLURM_DIST_CYCLIC_CFULL:
+			*dist      = "cyclic:fcyclic";
+			*lllp_dist = "fcyclic";
+			break;
+		case SLURM_DIST_BLOCK_CFULL:
+			*dist      = "block:fcyclic";
+			*lllp_dist = "cyclic";
+			break;
 		default:
 			error("unknown dist, type %d", distribution);
 			break;
@@ -176,6 +184,10 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 			result = SLURM_DIST_BLOCK_BLOCK;
 		} else if (strcasecmp(arg, "block:cyclic") == 0) {
 			result = SLURM_DIST_BLOCK_CYCLIC;
+		} else if (strcasecmp(arg, "block:fcyclic") == 0) {
+			result = SLURM_DIST_BLOCK_CFULL;
+		} else if (strcasecmp(arg, "cyclic:fcyclic") == 0) {
+			result = SLURM_DIST_CYCLIC_CFULL;
 		}
 	} else if (plane_dist) {
 		if (strncasecmp(arg, "plane", len) == 0) {
@@ -677,11 +689,13 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		} else if (strcasecmp(tok, "multithread") == 0) {
 			*min_threads = NO_VAL;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
+			*cpu_bind_type &= (~CPU_BIND_ONE_THREAD_PER_CORE);
 			if (*ntasks_per_core == NO_VAL)
 				*ntasks_per_core = INFINITE;
 		} else if (strcasecmp(tok, "nomultithread") == 0) {
 			*min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
+			*cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
 		} else {
 			error("unrecognized --hint argument \"%s\", "
 			      "see --hint=help", tok);

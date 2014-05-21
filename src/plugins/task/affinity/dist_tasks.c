@@ -62,8 +62,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				   uint32_t node_id, bitstr_t ***masks_p);
 static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				    uint32_t node_id, bitstr_t ***masks_p);
-static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
-				    uint32_t node_id, bitstr_t ***masks_p);
 
 static void _lllp_map_abstract_masks(const uint32_t maxtasks,
 				     bitstr_t **masks);
@@ -338,7 +336,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	int maxtasks = req->tasks_to_launch[(int)node_id];
 	int whole_nodes, whole_sockets, whole_cores, whole_threads;
 	int part_sockets, part_cores;
-        const uint32_t *gtid = req->global_task_ids[(int)node_id];
+	const uint32_t *gtid = req->global_task_ids[(int)node_id];
 	static uint16_t bind_entity = CPU_BIND_TO_THREADS | CPU_BIND_TO_CORES |
 				      CPU_BIND_TO_SOCKETS | CPU_BIND_TO_LDOMS;
 	static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
@@ -424,18 +422,20 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		/* tasks are distributed in blocks within a plane */
 		rc = _task_layout_lllp_block(req, node_id, &masks);
 		break;
-	case SLURM_DIST_CYCLIC:
+	case SLURM_DIST_ARBITRARY:
 	case SLURM_DIST_BLOCK:
-	case SLURM_DIST_CYCLIC_CYCLIC:
-	case SLURM_DIST_BLOCK_CYCLIC:
-		rc = _task_layout_lllp_cyclic(req, node_id, &masks);
-		break;
+	case SLURM_DIST_CYCLIC:
+	case SLURM_DIST_UNKNOWN:
+		if (slurm_get_select_type_param()
+		    & CR_CORE_DEFAULT_DIST_BLOCK) {
+			rc = _task_layout_lllp_block(req, node_id, &masks);
+			break;
+		}
+		/* We want to fall through here if we aren't doing a
+		   default dist block.
+		*/
 	default:
-		if (req->cpus_per_task > 1)
-			rc = _task_layout_lllp_multi(req, node_id, &masks);
-		else
-			rc = _task_layout_lllp_cyclic(req, node_id, &masks);
-		req->task_dist = SLURM_DIST_BLOCK_CYCLIC;
+		rc = _task_layout_lllp_cyclic(req, node_id, &masks);
 		break;
 	}
 
@@ -766,88 +766,6 @@ static void _expand_masks(uint16_t cpu_bind_type, const uint32_t maxtasks,
 }
 
 /*
- * _task_layout_lllp_multi
- *
- * A variant of _task_layout_lllp_cyclic for use with allocations having
- * more than one CPU per task, put the tasks as close as possible (fill
- * core rather than going next socket for the extra task)
- *
- */
-static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
-				    uint32_t node_id, bitstr_t ***masks_p)
-{
-	int last_taskcount = -1, taskcount = 0;
-	uint16_t c, i, s, t, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
-	int size, max_tasks = req->tasks_to_launch[(int)node_id];
-	int max_cpus = max_tasks * req->cpus_per_task;
-	bitstr_t *avail_map;
-	bitstr_t **masks = NULL;
-
-	info ("_task_layout_lllp_multi ");
-
-	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
-	if (!avail_map)
-		return SLURM_ERROR;
-
-	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
-	masks = *masks_p;
-
-	size = bit_set_count(avail_map);
-	if (size < max_tasks) {
-		error("task/affinity: only %d bits in avail_map for %d tasks!",
-		      size, max_tasks);
-		FREE_NULL_BITMAP(avail_map);
-		return SLURM_ERROR;
-	}
-	if (size < max_cpus) {
-		/* Possible result of overcommit */
-		i = size / max_tasks;
-		info("task/affinity: reset cpus_per_task from %d to %d",
-		     req->cpus_per_task, i);
-		req->cpus_per_task = i;
-	}
-
-	i = 0;
-	while (taskcount < max_tasks) {
-		if (taskcount == last_taskcount)
-			fatal("_task_layout_lllp_multi failure");
-		last_taskcount = taskcount;
-		for (s = 0; s < hw_sockets; s++) {
-			for (c = 0; c < hw_cores; c++) {
-				for (t = 0; t < hw_threads; t++) {
-					uint16_t bit = s*(hw_cores*hw_threads) +
-							c*(hw_threads) + t;
-					if (bit_test(avail_map, bit) == 0)
-						continue;
-					if (masks[taskcount] == NULL) {
-						masks[taskcount] =
-							bit_alloc(conf->block_map_size);
-					}
-					bit_set(masks[taskcount], bit);
-					if (++i < req->cpus_per_task)
-						continue;
-					i = 0;
-					if (++taskcount >= max_tasks)
-						break;
-				}
-				if (taskcount >= max_tasks)
-					break;
-			}
-			if (taskcount >= max_tasks)
-				break;
-		}
-	}
-
-	/* last step: expand the masks to bind each task
-	 * to the requested resource */
-	_expand_masks(req->cpu_bind_type, max_tasks, masks,
-			hw_sockets, hw_cores, hw_threads, avail_map);
-	FREE_NULL_BITMAP(avail_map);
-
-	return SLURM_SUCCESS;
-}
-
-/*
  * _task_layout_lllp_cyclic
  *
  * task_layout_lllp_cyclic creates a cyclic distribution at the
@@ -856,10 +774,10 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
  * is the same as the Cyclic distribution performed in srun.
  *
  *  Distribution at the lllp:
- *  -m hostfile|plane|block|cyclic:block|cyclic
+ *  -m hostfile|block|cyclic:block|cyclic
  *
- * The first distribution "hostfile|plane|block|cyclic" is computed
- * in srun. The second distribution "plane|block|cyclic" is computed
+ * The first distribution "hostfile|block|cyclic" is computed
+ * in srun. The second distribution "block|cyclic" is computed
  * locally by each slurmd.
  *
  * The input to the lllp distribution algorithms is the gids (tasks
@@ -868,27 +786,28 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
  * The output is a mapping of the gids onto logical processors
  * (thread/core/socket) with is expressed cpu_bind masks.
  *
+ * If a task asks for more than one CPU per task, put the tasks as
+ * close as possible (fill core rather than going next socket for the
+ * extra task)
+ *
  */
 static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				    uint32_t node_id, bitstr_t ***masks_p)
 {
 	int last_taskcount = -1, taskcount = 0;
-	uint16_t c, i, s, t, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
+	uint16_t i, s, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
+	uint16_t offset = 0, p = 0;
 	int size, max_tasks = req->tasks_to_launch[(int)node_id];
 	int max_cpus = max_tasks * req->cpus_per_task;
-	int avail_size;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
+	int *socket_last_pu = NULL;
 
 	info ("_task_layout_lllp_cyclic ");
 
 	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
 	if (!avail_map)
 		return SLURM_ERROR;
-	avail_size = bit_size(avail_map);
-
-	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
-	masks = *masks_p;
 
 	size = bit_set_count(avail_map);
 	if (size < max_tasks) {
@@ -905,38 +824,73 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 		req->cpus_per_task = i;
 	}
 
-	i = 0;
+	socket_last_pu = xmalloc(hw_sockets * sizeof(int));
+
+	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
+	masks = *masks_p;
+
+	size = bit_size(avail_map);
+
+	offset = hw_cores * hw_threads;
+	s = 0;
 	while (taskcount < max_tasks) {
 		if (taskcount == last_taskcount)
 			fatal("_task_layout_lllp_cyclic failure");
 		last_taskcount = taskcount;
-		for (t = 0; t < hw_threads; t++) {
-			for (c = 0; c < hw_cores; c++) {
-				for (s = 0; s < hw_sockets; s++) {
-					uint16_t bit = s*(hw_cores*hw_threads) +
-						       c*(hw_threads) + t;
-					/* In case hardware and config differ */
-					bit %= avail_size;
-					if (bit_test(avail_map, bit) == 0)
-						continue;
-					if (masks[taskcount] == NULL) {
-						masks[taskcount] =
-							(bitstr_t *)
-							bit_alloc(conf->
-								  block_map_size);
-					}
-					bit_set(masks[taskcount], bit);
+		for (i = 0; i < size; i++) {
+			bool already_switched = false;
+			uint16_t bit = socket_last_pu[s] + (s * offset);
 
-					if (++i < req->cpus_per_task)
-						continue;
-					i = 0;
-					if (++taskcount >= max_tasks)
-						break;
-				}
-				if (taskcount >= max_tasks)
-					break;
+			/* In case hardware and config differ */
+			bit %= size;
+
+			/* set up for the next one */
+			socket_last_pu[s]++;
+			/* skip unrequested threads */
+			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
+				socket_last_pu[s] += hw_threads-1;
+			if (socket_last_pu[s] >= offset) {
+				/* Switch to the next socket we have
+				 * ran out here. */
+
+				/* This only happens if the slurmctld
+				   gave us an allocation that made a
+				   task split sockets.
+				*/
+				s = (s + 1) % hw_sockets;
+				already_switched = true;
 			}
-			if (taskcount >= max_tasks)
+
+			if (!bit_test(avail_map, bit))
+				continue;
+
+			if (!masks[taskcount])
+				masks[taskcount] =
+					bit_alloc(conf->block_map_size);
+
+			//info("setting %d %d", taskcount, bit);
+			bit_set(masks[taskcount], bit);
+
+			if (!already_switched
+			    && ((req->task_dist == SLURM_DIST_CYCLIC_CFULL) ||
+				(req->task_dist == SLURM_DIST_BLOCK_CFULL))) {
+				/* This means we are laying out cpus
+				 * within a task cyclically as well. */
+				s = (s + 1) % hw_sockets;
+				already_switched = true;
+			}
+
+			if (++p < req->cpus_per_task)
+				continue;
+			p = 0;
+
+			if (!already_switched) {
+				/* Now that we have finished a task, switch to
+				 * the next socket. */
+				s = (s + 1) % hw_sockets;
+			}
+
+			if (++taskcount >= max_tasks)
 				break;
 		}
 	}
@@ -944,8 +898,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
 	_expand_masks(req->cpu_bind_type, max_tasks, masks,
-			hw_sockets, hw_cores, hw_threads, avail_map);
+		      hw_sockets, hw_cores, hw_threads, avail_map);
 	FREE_NULL_BITMAP(avail_map);
+	xfree(socket_last_pu);
 
 	return SLURM_SUCCESS;
 }
@@ -975,11 +930,10 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				   uint32_t node_id, bitstr_t ***masks_p)
 {
-	int c, i, j, t, size, last_taskcount = -1, taskcount = 0;
+	int c, i, size, last_taskcount = -1, taskcount = 0;
 	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	int max_tasks = req->tasks_to_launch[(int)node_id];
 	int max_cpus = max_tasks * req->cpus_per_task;
-	int *task_array;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
 
@@ -1009,13 +963,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 
-	task_array = xmalloc(size * sizeof(int));
-	if (!task_array) {
-		error("In lllp_block: task_array memory error");
-		FREE_NULL_BITMAP(avail_map);
-		return SLURM_ERROR;
-	}
-
 	/* block distribution with oversubsciption */
 	c = 0;
 	while(taskcount < max_tasks) {
@@ -1027,16 +974,20 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		 * so just iterate over it
 		 */
 		for (i = 0; i < size; i++) {
-			/* skip unrequested threads */
-			if (i%hw_threads >= hw_threads)
-				continue;
 			/* skip unavailable resources */
 			if (bit_test(avail_map, i) == 0)
 				continue;
-			/* if multiple CPUs per task, only
-			 * count the task on the first CPU */
-			if (c == 0)
-				task_array[i] += 1;
+
+			if (!masks[taskcount])
+				masks[taskcount] = bit_alloc(
+					conf->block_map_size);
+			//info("setting %d %d", taskcount, i);
+			bit_set(masks[taskcount], i);
+
+			/* skip unrequested threads */
+			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
+				i += hw_threads-1;
+
 			if (++c < req->cpus_per_task)
 				continue;
 			c = 0;
@@ -1044,46 +995,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				break;
 		}
 	}
-	/* Distribute the tasks and create per-task masks that only
-	 * contain the first CPU. Note that unused resources
-	 * (task_array[i] == 0) will get skipped */
-	taskcount = 0;
-	for (i = 0; i < size; i++) {
-		for (t = 0; t < task_array[i]; t++) {
-			if (masks[taskcount] == NULL)
-				masks[taskcount] = (bitstr_t *)bit_alloc(conf->block_map_size);
-			bit_set(masks[taskcount++], i);
-		}
-	}
-	/* now set additional CPUs for cpus_per_task > 1 */
-	for (t=0; t<max_tasks && req->cpus_per_task>1; t++) {
-		if (!masks[t])
-			continue;
-		c = 0;
-		for (i = 0; i < size && c<req->cpus_per_task; i++) {
-			if (bit_test(masks[t], i) == 0)
-				continue;
-			for (j=i+1,c=1; j<size && c<req->cpus_per_task;j++) {
-				if (bit_test(avail_map, j) == 0)
-					continue;
-				bit_set(masks[t], j);
-				c++;
-			}
-			if (c < req->cpus_per_task) {
-				/* we haven't found all of the CPUs for this
-				 * task, so we'll wrap the search to cover the
-				 * whole node */
-				for (j=0; j<i && c<req->cpus_per_task; j++) {
-					if (bit_test(avail_map, j) == 0)
-						continue;
-					bit_set(masks[t], j);
-					c++;
-				}
-			}
-		}
-	}
-
-	xfree(task_array);
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
@@ -1220,4 +1131,3 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 	info("_lllp_generate_cpu_bind jobid [%u]: %s, %s",
 	     req->job_id, buf_type, masks_str);
 }
-

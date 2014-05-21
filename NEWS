@@ -87,6 +87,14 @@ documents those changes that are of interest to users and admins.
     the allocated nodes.
  -- cpus-per-task support: Try to pack all CPUs of each tasks onto one socket.
     Previous logic could spread the tasks CPUs across multiple sockets.
+ -- Add new distribution method fcyclic so when a task is using multiple cpus
+    it can bind cyclically across sockets.
+ -- task/affinity - When using --hint=nomultithread only bind to the first
+    thread in a core.
+ -- Make cgroup task layout (block | cyclic) method mirror that of
+    task/affinity.
+ -- If TaskProlog sets SLURM_PROLOG_CPU_MASK reset affinity for that task
+    based on the mask given.
 
 * Changes in Slurm 14.03.3-2
 ============================
