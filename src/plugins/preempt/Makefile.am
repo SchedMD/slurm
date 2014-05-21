@@ -1,3 +1,3 @@
 # Makefile for preemption plugins
 
-SUBDIRS = none partition_prio qos
+SUBDIRS = job_prio none partition_prio qos
