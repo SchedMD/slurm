@@ -758,10 +758,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
 	if (!avail_map)
 		return SLURM_ERROR;
-	socket_last_pu = xmalloc(hw_sockets * sizeof(int));
-
-	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
-	masks = *masks_p;
 
 	size = bit_set_count(avail_map);
 	if (size < max_tasks) {
@@ -777,6 +773,11 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 		     req->cpus_per_task, i);
 		req->cpus_per_task = i;
 	}
+
+	socket_last_pu = xmalloc(hw_sockets * sizeof(int));
+
+	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
+	masks = *masks_p;
 
 	size = bit_size(avail_map);
 
@@ -847,8 +848,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
 	_expand_masks(req->cpu_bind_type, max_tasks, masks,
-			hw_sockets, hw_cores, hw_threads, avail_map);
+		      hw_sockets, hw_cores, hw_threads, avail_map);
 	FREE_NULL_BITMAP(avail_map);
+	xfree(socket_last_pu);
 
 	return SLURM_SUCCESS;
 }
