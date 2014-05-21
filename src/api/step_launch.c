@@ -1803,12 +1803,15 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 		 * If stepd dies or we see I/O error with stepd.
 		 * Do not abort the whole job but collect all
 		 * taks on the node just like if they exited.
+		 *
+		 * Keep supporting 'srun -N x --pty bash'
 		 */
-		error("%s: aborting, io error with slurmstepd on node %d",
-		      __func__, node_id);
-		sls->abort = true;
-		pthread_cond_broadcast(&sls->cond);
-
+		if (getenv("SLURM_PTY_PORT") == NULL) {
+			error("%s: aborting, io error with slurmstepd on node %d",
+			      __func__, node_id);
+			sls->abort = true;
+			pthread_cond_broadcast(&sls->cond);
+		}
 	}
 
 	pthread_mutex_unlock(&sls->lock);

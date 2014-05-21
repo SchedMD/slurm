@@ -95,6 +95,7 @@ documents those changes that are of interest to users and admins.
     task/affinity.
  -- If TaskProlog sets SLURM_PROLOG_CPU_MASK reset affinity for that task
     based on the mask given.
+ -- Keep supporting 'srun -N x --pty bash' for historical reasons.
 
 * Changes in Slurm 14.03.3-2
 ============================
