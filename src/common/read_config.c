@@ -3847,6 +3847,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl))
 		conf->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
+#ifdef HAVE_FRONT_END
+	if (strcmp(conf->task_plugin, "task/none")) {
+		error("On FrontEnd systems TaskPlugin=task/none is required");
+		return SLURM_ERROR;
+	}
+#endif
 
 	if (s_p_get_string(&temp_str, "TaskPluginParam", hashtbl)) {
 		char *last = NULL, *tok;
