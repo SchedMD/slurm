@@ -4,7 +4,7 @@
  *  DESCRIPTION: This plugin enables the selection of preemptable jobs based
  *  upon their priority, the amount resources used under an account
  *  (optionally), the runtime of the job and its account (i.e. accounts not
- *  finishing with _p can be preempted...)
+ *  ending with "_p" can be preempted...)
  *
  *  OPTIONS: The following constants can be set to modify the plugin's behavior:
  *
@@ -157,10 +157,10 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 	}
 
 	i = strlen(preemptee_assoc->acct);
-	if (!strncmp(((preemptee_assoc->acct) + i - 3), "_np", 3)) {
+	if (strncmp(((preemptee_assoc->acct) + i - 2), "_p", 2)) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 			info("%s: Preemptee is skipped, NON-PREEMPTABLE "
-			     "(ending with NP) account %s",
+			     "(not ending with _p) account %s",
 			     plugin_type, preemptee_assoc->acct);
 		}
 		return false;
@@ -170,7 +170,7 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 	 * its share. If the account is using more than its share, then this
 	 * job is a candidate. If not, it is NOT a candidate. */
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("Preemptor(%u) USEDCPUs:%u SHARES: %f CL_CPU %u TOT: %f",
+		info("Preemptor(%u) UsedCPUs:%u Shares: %f Tot_CPU %u TOT: %f",
 		     preemptor_job_ptr->job_id,
 		     preemptee_assoc->usage->grp_used_cpus,
 		     preemptee_assoc->usage->shares_norm,
@@ -216,6 +216,16 @@ static int _find_acct_usage_list_entry(void *x, void *key)
 	if (*(element_ptr->id) == *keyid)
 		return 1;
 	return 0;
+}
+
+
+static void _account_under_alloc(List preempt_job_list)
+{
+/* FIXME: need to flesh out code */
+acct_usage_element *tmp = xmalloc(sizeof(acct_usage_element));
+uint32_t key = 0;
+_destroy_acct_usage_element(tmp);
+(void) _find_acct_usage_list_entry(tmp, &key);
 }
 
 /* Code taken from job_info.c calculate cummulative run time for a job */
@@ -555,8 +565,11 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	}
 	list_iterator_destroy(preemptee_candidate_iterator);
 
-	if ((preemptee_job_list == NULL) &&
-	    (slurm_get_debug_flags() & DEBUG_FLAG_PRIO)) {
+	if (preemptee_job_list) {
+		list_sort(preemptee_job_list, _sort_by_job_prio);
+		if (CHECK_FOR_ACCOUNT_UNDERALLOC)
+			_account_under_alloc(preemptee_job_list);
+	} else if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
     		info("NULL preemptee list for job (%u) %s",
 		     preemptor_job_ptr->job_id, preemptor_job_ptr->name);
 	}
