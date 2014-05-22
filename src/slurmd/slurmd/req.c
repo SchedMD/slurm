@@ -3615,10 +3615,10 @@ _get_suspend_job_lock(uint32_t job_id)
 {
 	static bool logged = false;
 	int i, empty_loc = -1, rc = 0;
-	pthread_mutex_lock(&suspend_mutex);
 
+	pthread_mutex_lock(&suspend_mutex);
 	for (i = 0; i < job_suspend_size; i++) {
-		if (job_suspend_array[i] == -1) {
+		if (job_suspend_array[i] == 0) {
 			empty_loc = i;
 			continue;
 		}
@@ -3654,7 +3654,7 @@ _unlock_suspend_job(uint32_t job_id)
 	pthread_mutex_lock(&suspend_mutex);
 	for (i = 0; i < job_suspend_size; i++) {
 		if (job_suspend_array[i] == job_id)
-			job_suspend_array[i] = -1;
+			job_suspend_array[i] = 0;
 	}
 	pthread_mutex_unlock(&suspend_mutex);
 }
