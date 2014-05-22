@@ -457,7 +457,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	xassert(acct_policy_limit_set);
 
 	if (!assoc_ptr) {
-		error("_validate_acct_policy: no assoc_ptr given for job.");
+		error("acct_policy_validate: no assoc_ptr given for job.");
 		return false;
 	}
 	user_name = assoc_ptr->user;
