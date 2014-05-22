@@ -2156,6 +2156,21 @@ uint16_t slurm_get_task_plugin_param(void)
 	return task_plugin_param;
 }
 
+/* Get SchedulerTimeSlice (secs) */
+uint16_t slurm_get_time_slice(void)
+{
+	uint16_t sched_time_slice = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		sched_time_slice = conf->sched_time_slice;
+		slurm_conf_unlock();
+	}
+	return sched_time_slice;
+}
+
 /* slurm_get_core_spec_plugin
  * RET core_spec plugin name, must be xfreed by caller */
 char *slurm_get_core_spec_plugin(void)
