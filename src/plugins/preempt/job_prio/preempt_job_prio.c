@@ -73,8 +73,8 @@
 /* If the #define options listed below for CHECK_FOR_PREEMPTOR_OVERALLOC and
  * CHECK_FOR_ACCOUNT_UNDERALLOC are commented out, this plugin will work as a
  * simple job priority based preemption plugin. */
-#define CHECK_FOR_PREEMPTOR_OVERALLOC 0
-#define CHECK_FOR_ACCOUNT_UNDERALLOC  0
+#define CHECK_FOR_PREEMPTOR_OVERALLOC 1
+#define CHECK_FOR_ACCOUNT_UNDERALLOC  1
 
 const char  plugin_name[]   = "Preempt by Job Priority and Runtime";
 const char  plugin_type[]   = "preempt/job_prio";
@@ -91,6 +91,111 @@ typedef struct
 
 
 /*****End of plugin specific declarations**********************************/
+
+/* Check accounts associated with these two jobs, return true if preemptor job
+ * can preempt preeemptee. This is done by checking if the preemptee account
+ * name contains an _p or not...)
+ * Also, check if Preemptors QoS is higher or lower than that of the preemptee.
+ * If QOS is the same of lower and they are from the same account, then this
+ * is NOT a candidate. */
+static bool _account_preemptable(struct job_record *preemptor_job_ptr,
+				 struct job_record *preemptee_job_ptr)
+{
+	slurmdb_association_rec_t *preemptor_assoc, *preemptee_assoc;
+	slurmdb_qos_rec_t *preemptor_qos, *preemptee_qos;
+	bool is_from_same_account = false;
+	int i;
+
+	preemptor_assoc =
+		(slurmdb_association_rec_t *)preemptor_job_ptr->assoc_ptr;
+	preemptee_assoc =
+		(slurmdb_association_rec_t *)preemptee_job_ptr->assoc_ptr;
+	if (!preemptor_assoc || !preemptee_assoc)
+		return false;
+	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+		info("%s: Preemptor JobID %u account %s, preemptee "
+		    "JobID %u account %s",
+		    plugin_type,
+		    preemptor_job_ptr->job_id, preemptor_assoc->acct,
+		    preemptee_job_ptr->job_id, preemptee_assoc->acct);
+	}
+
+	preemptor_qos = preemptor_job_ptr->qos_ptr;
+	preemptee_qos = preemptee_job_ptr->qos_ptr;
+	if (!preemptor_qos || !preemptee_qos)
+		return false;
+
+	if (!strcmp(preemptor_assoc->acct, preemptee_assoc->acct)) {
+		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+			info("%s: Preemptor and preemptee share account = %s",
+			     plugin_type, preemptee_assoc->acct);
+		}
+
+		if (preemptor_qos->priority <= preemptee_qos->priority) {
+			if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+				info("%s: Preemptor(%u, %s, QoS(%s)=%u) and "
+				     "preemptee(%u, %s, QOS(%s)=%u) share "
+				     "share account, but QOS1 <= QOS2",
+				     plugin_type, preemptor_job_ptr->job_id,
+				     preemptor_job_ptr->name,
+				     preemptor_qos->name,
+				     preemptor_qos->priority,
+				     preemptee_job_ptr->job_id,
+				     preemptee_job_ptr->name,
+				     preemptee_qos->name,
+				     preemptee_qos->priority);
+			}
+			/* Same association but lower or same QoS Priority.
+			 * This is not a candidate. */
+			return false;
+		}
+
+		/* This is a candidate from the same account as the preemptor...
+		 * Preempting this job will have an impact as far as whether
+		 * the account will become overallocated. */
+		is_from_same_account = true;
+	}
+
+	i = strlen(preemptee_assoc->acct);
+	if (!strncmp(((preemptee_assoc->acct) + i - 3), "_np", 3)) {
+		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+			info("%s: Preemptee is skipped, NON-PREEMPTABLE "
+			     "(ending with NP) account %s",
+			     plugin_type, preemptee_assoc->acct);
+		}
+		return false;
+	}
+
+	/* Check to see if the preemptee's account is currently using more than
+	 * its share. If the account is using more than its share, then this
+	 * job is a candidate. If not, it is NOT a candidate. */
+	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+		info("Preemptor(%u) USEDCPUs:%u SHARES: %f CL_CPU %u TOT: %f",
+		     preemptor_job_ptr->job_id,
+		     preemptee_assoc->usage->grp_used_cpus,
+		     preemptee_assoc->usage->shares_norm,
+		     preemptor_job_ptr->part_ptr->total_cpus,
+		     (preemptor_job_ptr->part_ptr->total_cpus*
+		      preemptee_assoc->usage->shares_norm));
+	}
+
+	if ((preemptee_assoc->usage->grp_used_cpus >
+	     preemptee_assoc->usage->shares_norm *
+	     preemptee_job_ptr->part_ptr->total_cpus) || is_from_same_account) {
+		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+			info("Preemptee(%u) acccount %s already overallocated",
+			     preemptee_job_ptr->job_id, preemptee_assoc->acct);
+		}
+	} else {
+		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+			info("Preemptee(%u) acccount %s not overallocated, skip",
+			     preemptee_job_ptr->job_id, preemptee_assoc->acct);
+		}
+		return false;
+	}
+
+	return true;
+}
 
 /* Destroy a acct_usage_element data structure element. */
 static void _destroy_acct_usage_element(void *object)
@@ -417,7 +522,7 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 		info("%s: Looking for jobs to preempt for JobId %u",
-		    plugin_type, preemptor_job_ptr->job_id);
+		     plugin_type, preemptor_job_ptr->job_id);
 	}
 
 	/* Build an array of pointers to preemption candidates */
@@ -436,6 +541,10 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		if (preemptor_job_ptr->details &&
 		    (preemptor_job_ptr->details->expanding_jobid ==
 		     preemptee_job_ptr->job_id))
+			continue;
+
+		if (CHECK_FOR_PREEMPTOR_OVERALLOC &&
+		    !_account_preemptable(preemptor_job_ptr, preemptee_job_ptr))
 			continue;
 
 		/* This job is a valid preemption candidate and should be added
