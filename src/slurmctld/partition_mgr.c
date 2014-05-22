@@ -1814,3 +1814,106 @@ extern bool part_policy_job_runnable_state(struct job_record *job_ptr)
 
 	return true;
 }
+
+/* Validate a job's account against the partition's AllowAccounts or
+ * DenyAccounts parameters. */
+extern int part_policy_valid_acct(
+	struct part_record *part_ptr, char *acct)
+{
+	int i;
+
+	if (part_ptr->allow_account_array && part_ptr->allow_account_array[0]) {
+		int match = 0;
+		if (!acct) {
+			info("part_policy_valid_acct: job's account "
+			     "not known, so it can't use this partition "
+			     "(%s allows %s)",
+			     part_ptr->name, part_ptr->allow_accounts);
+			return ESLURM_INVALID_ACCOUNT;
+		}
+
+		for (i = 0; part_ptr->allow_account_array[i]; i++) {
+			if (strcmp(part_ptr->allow_account_array[i], acct))
+				continue;
+			match = 1;
+			break;
+		}
+		if (match == 0) {
+			info("part_policy_valid_acct: job's account "
+			     "not permitted to use this partition "
+			     "(%s allows %s not %s)",
+			     part_ptr->name, part_ptr->allow_accounts, acct);
+			return ESLURM_INVALID_ACCOUNT;
+		}
+	} else if (part_ptr->deny_account_array &&
+		   part_ptr->deny_account_array[0]) {
+		int match = 0;
+		if (!acct) {
+			debug2("part_policy_valid_acct: job's account "
+			       "not known, so couldn't check if it was "
+			       "denied or not");
+			return SLURM_SUCCESS;
+		}
+		for (i = 0; part_ptr->deny_account_array[i]; i++) {
+			if (strcmp(part_ptr->deny_account_array[i], acct))
+				continue;
+			match = 1;
+			break;
+		}
+		if (match == 1) {
+			info("part_policy_valid_acct: job's account "
+			     "not permitted to use this partition "
+			     "(%s denies %s including %s)",
+			     part_ptr->name, part_ptr->deny_accounts, acct);
+			return ESLURM_INVALID_ACCOUNT;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* Validate a job's QOS against the partition's AllowQOS or
+ * DenyQOS parameters. */
+extern int part_policy_valid_qos(
+	struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
+{
+	if (part_ptr->allow_qos_bitstr) {
+		int match = 0;
+		if (!qos_ptr) {
+			info("part_policy_valid_qos: job's QOS not known, "
+			     "so it can't use this partition (%s allows %s)",
+			     part_ptr->name, part_ptr->allow_qos);
+			return ESLURM_INVALID_QOS;
+		}
+		if ((qos_ptr->id < bit_size(part_ptr->allow_qos_bitstr)) &&
+		    bit_test(part_ptr->allow_qos_bitstr, qos_ptr->id))
+			match = 1;
+		if (match == 0) {
+			info("part_policy_valid_qos: job's QOS not permitted to "
+			     "use this partition (%s allows %s not %s)",
+			     part_ptr->name, part_ptr->allow_qos,
+			     qos_ptr->name);
+			return ESLURM_INVALID_QOS;
+		}
+	} else if (part_ptr->deny_qos_bitstr) {
+		int match = 0;
+		if (!qos_ptr) {
+			debug2("part_policy_valid_qos: job's QOS not known, "
+			       "so couldn't check if it was denied or not");
+			return SLURM_SUCCESS;
+		}
+		if ((qos_ptr->id < bit_size(part_ptr->deny_qos_bitstr)) &&
+		    bit_test(part_ptr->deny_qos_bitstr, qos_ptr->id))
+			match = 1;
+		if (match == 1) {
+			info("part_policy_valid_qos: job's QOS not permitted "
+			     "to use this partition (%s denies %s "
+			     "including %s)",
+			     part_ptr->name, part_ptr->allow_qos,
+			     qos_ptr->name);
+			return ESLURM_INVALID_QOS;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
