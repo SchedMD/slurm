@@ -3810,7 +3810,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	_unlock_suspend_job(req->job_id);
 
 	END_TIMER;
-	if (DELTA_TIMER >= (time_slice * 10)) {
+	if (DELTA_TIMER >= (time_slice * 1000000)) {
 		if (req->op == SUSPEND_JOB) {
 			info("Suspend time for job_id %u was %s. "
 			     "Configure SchedulerTimeSlice higher.",
