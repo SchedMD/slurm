@@ -250,7 +250,7 @@ try_small_again:
 			break;
 #endif
 		default:
-			error("This size %d is unknown on this system", cnodes);
+			debug("This size %d is unknown on this system", cnodes);
 			goto finished;
 			break;
 		}
