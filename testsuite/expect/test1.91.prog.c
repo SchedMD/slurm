@@ -57,7 +57,7 @@ static long long unsigned int _mask_to_int(cpu_set_t *mask)
 	long long unsigned int i, rc = 0;
 	for (i=0; i<CPU_SETSIZE; i++) {
 		if (CPU_ISSET(i, mask))
-			rc += (1 << i);
+			rc += ((long long unsigned int)1 << i);
 	}
 	return rc;
 }
