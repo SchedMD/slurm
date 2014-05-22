@@ -3666,6 +3666,7 @@ _unlock_suspend_job(uint32_t job_id)
 static void
 _rpc_suspend_job(slurm_msg_t *msg)
 {
+	int time_slice = -1;
 	suspend_int_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	List steps;
@@ -3673,7 +3674,10 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	step_loc_t *stepd;
 	int step_cnt  = 0;
 	int rc = SLURM_SUCCESS;
+	DEF_TIMERS;
 
+	if (time_slice == -1)
+		time_slice = slurm_get_time_slice();
 	if ((req->op != SUSPEND_JOB) && (req->op != RESUME_JOB)) {
 		error("REQUEST_SUSPEND_INT: bad op code %u", req->op);
 		rc = ESLURM_NOT_SUPPORTED;
@@ -3711,6 +3715,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 		debug3("suspend lock sleep for %u", req->job_id);
 		usleep(10000);
 	}
+	START_TIMER;
 
 	/* Defer suspend until job prolog and launch complete */
 	if (req->op == SUSPEND_JOB)
@@ -3803,6 +3808,19 @@ _rpc_suspend_job(slurm_msg_t *msg)
 		switch_g_job_resume(req->switch_info, 5);
 
 	_unlock_suspend_job(req->job_id);
+
+	END_TIMER;
+	if (DELTA_TIMER >= (time_slice * 10)) {
+		if (req->op == SUSPEND_JOB) {
+			info("Suspend time for job_id %u was %s. "
+			     "Configure SchedulerTimeSlice higher.",
+			     req->job_id, TIME_STR);
+		} else {
+			info("Resume time for job_id %u was %s. "
+			     "Configure SchedulerTimeSlice higher.",
+			     req->job_id, TIME_STR);
+		}
+	}
 
 	if (step_cnt == 0) {
 		debug2("No steps in jobid %u to suspend/resume", req->job_id);
