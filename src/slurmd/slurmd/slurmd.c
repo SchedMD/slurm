@@ -113,7 +113,7 @@
 #  define MAXHOSTNAMELEN	64
 #endif
 
-#define MAX_THREADS		130
+#define MAX_THREADS		256
 
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
