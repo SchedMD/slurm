@@ -236,12 +236,14 @@ static pthread_mutex_t fini_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t fini_job_id[FINI_JOB_CNT];
 static int next_fini_job_inx = 0;
 
-/* NUM_PARALLEL_SUSPEND controls the number of jobs suspended/resumed
- * at one time as well as the number of jobsteps per job that can be
- * suspended at one time */
-#define NUM_PARALLEL_SUSPEND 8
+/* NUM_PARALLEL_SUSP_JOBS controls the number of jobs that can be suspended or
+ * resumed at one time. */
+#define NUM_PARALLEL_SUSP_JOBS 64
+/* NUM_PARALLEL_SUSP_STEPS controls the number of steps per job that can be
+ * suspended at one time. */
+#define NUM_PARALLEL_SUSP_STEPS 8
 static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint32_t job_suspend_array[NUM_PARALLEL_SUSPEND];
+static uint32_t job_suspend_array[NUM_PARALLEL_SUSP_JOBS];
 static int job_suspend_size = 0;
 
 #define JOB_STATE_CNT 64
@@ -3609,43 +3611,49 @@ no_job:
 /* if a lock is granted to the job then return 1; else return 0 if
  * the lock for the job is already taken or there's no more locks */
 static int
-_get_suspend_job_lock(uint32_t jobid)
+_get_suspend_job_lock(uint32_t job_id)
 {
-	int i, spot = -1;
+	static bool logged = false;
+	int i, empty_loc = -1, rc = 0;
 	pthread_mutex_lock(&suspend_mutex);
 
 	for (i = 0; i < job_suspend_size; i++) {
 		if (job_suspend_array[i] == -1) {
-			spot = i;
+			empty_loc = i;
 			continue;
 		}
-		if (job_suspend_array[i] == jobid) {
-			/* another thread already has the lock */
+		if (job_suspend_array[i] == job_id) {
+			/* another thread already a lock for this job ID */
 			pthread_mutex_unlock(&suspend_mutex);
-			return 0;
+			return rc;
 		}
 	}
-	i = 0;
-	if (spot != -1) {
+
+	if (empty_loc != -1) {
 		/* nobody has the lock and here's an available used lock */
-		job_suspend_array[spot] = jobid;
-		i = 1;
-	} else if (job_suspend_size < NUM_PARALLEL_SUSPEND) {
+		job_suspend_array[empty_loc] = job_id;
+		rc = 1;
+	} else if (job_suspend_size < NUM_PARALLEL_SUSP_JOBS) {
 		/* a new lock is available */
-		job_suspend_array[job_suspend_size++] = jobid;
-		i = 1;
+		job_suspend_array[job_suspend_size++] = job_id;
+		rc = 1;
+	} else if (!logged) {
+		error("Simultaneous job suspend/resume limit reached (%d). "
+		      "Configure SchedulerTimeSlice higher.",
+		      NUM_PARALLEL_SUSP_JOBS);
+		logged = true;
 	}
 	pthread_mutex_unlock(&suspend_mutex);
-	return i;
+	return rc;
 }
 
 static void
-_unlock_suspend_job(uint32_t jobid)
+_unlock_suspend_job(uint32_t job_id)
 {
 	int i;
 	pthread_mutex_lock(&suspend_mutex);
 	for (i = 0; i < job_suspend_size; i++) {
-		if (job_suspend_array[i] == jobid)
+		if (job_suspend_array[i] == job_id)
 			job_suspend_array[i] = -1;
 	}
 	pthread_mutex_unlock(&suspend_mutex);
@@ -3727,7 +3735,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	i = list_iterator_create(steps);
 
 	while (1) {
-		int x, fdi, fd[NUM_PARALLEL_SUSPEND];
+		int x, fdi, fd[NUM_PARALLEL_SUSP_STEPS];
 		fdi = 0;
 		while ((stepd = list_next(i))) {
 			if (stepd->jobid != req->job_id) {
@@ -3750,7 +3758,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 
 			fdi++;
-			if (fdi >= NUM_PARALLEL_SUSPEND)
+			if (fdi >= NUM_PARALLEL_SUSP_STEPS)
 				break;
 		}
 		/* check for open connections */
@@ -3785,7 +3793,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 				close(fd[x]);
 
 		/* check for no more jobs */
-		if (fdi < NUM_PARALLEL_SUSPEND)
+		if (fdi < NUM_PARALLEL_SUSP_STEPS)
 			break;
 	}
 	list_iterator_destroy(i);
