@@ -45,6 +45,8 @@ documents those changes that are of interest to users and admins.
     job is requesting pend unless EnforcePartLimits=Yes.  Before it would
     always kill the job at submit.
  -- Fix format output of scontrol command when printing node state.
+ -- Improve the clean up of cgroup hierarchy when using the
+    jobacct_gather/cgroup plugin.
 
 * Changes in Slurm 14.03.3-2
 ============================

@@ -66,14 +66,16 @@ static xcgroup_t job_memory_cg;
 static xcgroup_t step_memory_cg;
 xcgroup_t task_memory_cg;
 
+static uint32_t max_task_id;
 
-extern int jobacct_gather_cgroup_memory_init(
-	slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int
+jobacct_gather_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
 	jobstep_cgroup_path[0]='\0';
+	task_cgroup_path[0] = 0;
 
 	/* initialize memory cgroup namespace */
 	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "", "memory")
@@ -86,16 +88,18 @@ extern int jobacct_gather_cgroup_memory_init(
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_cgroup_memory_fini(
-	slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int
+jobacct_gather_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	xcgroup_t memory_cg;
+	bool lock_ok;
+	int cc;
 
-	if (user_cgroup_path[0] == '\0' ||
-	    job_cgroup_path[0] == '\0' ||
-	    jobstep_cgroup_path[0] == '\0')
+	if (user_cgroup_path[0] == '\0'
+	    || job_cgroup_path[0] == '\0'
+	    || jobstep_cgroup_path[0] == '\0'
+	    || task_cgroup_path[0] == 0)
 		return SLURM_SUCCESS;
-
 	/*
 	 * Move the slurmstepd back to the root memory cg and force empty
 	 * the step cgroup to move its allocated pages to its parent.
@@ -106,28 +110,81 @@ extern int jobacct_gather_cgroup_memory_fini(
 	 * by a cgroup. It is too difficult and near impossible to handle
 	 * that cleanup correctly with current memcg.
 	 */
-	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
-	    == XCGROUP_SUCCESS) {
+	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0) == XCGROUP_SUCCESS) {
 		xcgroup_set_uint32_param(&memory_cg, "tasks", getpid());
-		xcgroup_destroy(&memory_cg);
 		xcgroup_set_param(&step_memory_cg, "memory.force_empty", "1");
 	}
 
+	/* Lock the root of the cgroup and remove the subdirectories
+	 * related to this job.
+	 */
+	lock_ok = true;
+	if (xcgroup_lock(&memory_cg) != XCGROUP_SUCCESS) {
+		error("%s: failed to flock() %s %m", __func__, memory_cg.path);
+		lock_ok = false;
+	}
+
+	/* Clean up starting from the leaves way up, the
+	 * reverse order in which the cgroups were created.
+	 * The debug2 messages are not errors as it is possible
+	 * that some other processes/plugins are accessing
+	 * some of those directories. The last one to leave
+	 * will clean it up, eventually the release_agent.
+	 */
+	for (cc = 0; cc <= max_task_id; cc++) {
+		xcgroup_t cgroup;
+		char buf[PATH_MAX];
+
+		/* rmdir all tasks this running slurmstepd
+		 * was responsible for.
+		 */
+		sprintf(buf, "%s%s/task_%d",
+			memory_ns.mnt_point, jobstep_cgroup_path, cc);
+		cgroup.path = buf;
+
+		if (xcgroup_delete(&cgroup) != XCGROUP_SUCCESS) {
+			debug2("%s: failed to delete %s %m", __func__, buf);
+		}
+	}
+
+	/* Clean the rest of the hierarchy.
+	 */
+	if (xcgroup_delete(&step_memory_cg) != XCGROUP_SUCCESS) {
+		debug2("%s: failed to delete %s %m", __func__,
+		       step_memory_cg.path);
+	}
+
+	if (xcgroup_delete(&job_memory_cg) != XCGROUP_SUCCESS) {
+		debug2("%s: failed to delete %s %m", __func__,
+		       job_memory_cg.path);
+	}
+
+	if (xcgroup_delete(&user_memory_cg) != XCGROUP_SUCCESS) {
+		debug2("%s: failed to delete %s %m", __func__,
+		       user_memory_cg.path);
+	}
+
+	if (lock_ok == true)
+		xcgroup_unlock(&memory_cg);
+
+	xcgroup_destroy(&memory_cg);
 	xcgroup_destroy(&user_memory_cg);
 	xcgroup_destroy(&job_memory_cg);
 	xcgroup_destroy(&step_memory_cg);
+	xcgroup_destroy(&task_memory_cg);
 
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
 	jobstep_cgroup_path[0]='\0';
+	task_cgroup_path[0] = 0;
 
 	xcgroup_ns_destroy(&memory_ns);
 
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_cgroup_memory_attach_task(
-	pid_t pid, jobacct_id_t *jobacct_id)
+extern int
+jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	xcgroup_t memory_cg;
 	stepd_step_rec_t *job;
@@ -146,6 +203,12 @@ extern int jobacct_gather_cgroup_memory_attach_task(
 	jobid = job->jobid;
 	stepid = job->stepid;
 	taskid = jobacct_id->taskid;
+
+	if (taskid >= max_task_id)
+		max_task_id = taskid;
+
+	debug("%s: jobid %u stepid %u taskid %u max_task_id %u",
+	      __func__, jobid, stepid, taskid, max_task_id);
 
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = jobacct_cgroup_create_slurm_cg(&memory_ns);
