@@ -44,6 +44,7 @@ documents those changes that are of interest to users and admins.
  -- If a job requests a partition and it doesn't allow a QOS or account the
     job is requesting pend unless EnforcePartLimits=Yes.  Before it would
     always kill the job at submit.
+ -- Fix format output of scontrol command when printing node state.
 
 * Changes in Slurm 14.03.3-2
 ============================
