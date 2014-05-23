@@ -83,12 +83,12 @@ const uint32_t  plugin_version  = 100;
 
 /* The acct_usage_element data structure holds informaiton about
  * an association's current usage and current CPU count*/
-typedef struct
+typedef struct acct_usage_element
 {
 	uint32_t id;
 	double current_usage;
 	uint32_t current_cpu_count;
-} acct_usage_element;
+} acct_usage_element_t;
 
 
 /*****End of plugin specific declarations**********************************/
@@ -190,7 +190,7 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 		     preemptee_assoc->usage->grp_used_cpus,
 		     preemptee_assoc->usage->shares_norm,
 		     preemptor_job_ptr->part_ptr->total_cpus,
-		     (preemptor_job_ptr->part_ptr->total_cpus*
+		     (preemptor_job_ptr->part_ptr->total_cpus *
 		      preemptee_assoc->usage->shares_norm));
 	}
 
@@ -217,14 +217,14 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 /* Destroy a acct_usage_element data structure element. */
 static void _destroy_acct_usage_element(void *object)
 {
-	acct_usage_element *tmp = (acct_usage_element *)object;
+	acct_usage_element_t *tmp = (acct_usage_element_t *)object;
 	xfree(tmp);
 }
 
 /* Find the matching association ID in usage_acct_list List. */
 static int _find_acct_usage_list_entry(void *x, void *key)
 {
-	acct_usage_element *element_ptr = (acct_usage_element *) x;
+	acct_usage_element_t *element_ptr = (acct_usage_element_t *) x;
 	uint32_t *keyid = (uint32_t *) key;
 
 	if (element_ptr->id == *keyid)
@@ -395,14 +395,14 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 	uint32_t preemptee_assoc_id;
 	slurmdb_association_rec_t *preemptor_temp_fs_ass;
 	slurmdb_association_rec_t *preemptee_temp_fs_ass, *preemptee_assoc;
-	acct_usage_element *new_acct_usage_ptr = NULL;
-        acct_usage_element *preemptee_acct_usage_ptr = NULL;
-        acct_usage_element *preemptor_acct_usage_ptr = NULL;
+	acct_usage_element_t *new_acct_usage_ptr = NULL;
+	acct_usage_element_t *preemptee_acct_usage_ptr = NULL;
+	acct_usage_element_t *preemptor_acct_usage_ptr = NULL;
 	double preemptor_new_usage = 0.0;
 	long preemptor_new_usage_long, preemptee_current_usage;
 	struct job_record *preemptee_job_ptr;
 	ListIterator it;
-	acct_usage_element *found_acct_usage_ptr = NULL;
+	acct_usage_element_t *found_acct_usage_ptr = NULL;
 	char *share_type;
 
 	preemptor_assoc = (slurmdb_association_rec_t *)
@@ -436,123 +436,123 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 		found_acct_usage_ptr = list_find_first(acct_usage_list,
 					(ListFindF) _find_acct_usage_list_entry,
 					(void *)&preemptee_assoc_id);
-        	if (found_acct_usage_ptr) {
-        		found_acct_usage_ptr->current_usage -=
+		if (found_acct_usage_ptr) {
+			found_acct_usage_ptr->current_usage -=
 				((double)preemptee_cpu_cnt) /
 				((double)preemptee_job_ptr->part_ptr->total_cpus);
-        		found_acct_usage_ptr->current_cpu_count -=
+			found_acct_usage_ptr->current_cpu_count -=
 				preemptee_cpu_cnt;
-        		preemptee_acct_usage_ptr = found_acct_usage_ptr;
+			preemptee_acct_usage_ptr = found_acct_usage_ptr;
 			share_type = "";
-        	} else {
-        		new_acct_usage_ptr = (acct_usage_element *)
-					     xmalloc(sizeof(acct_usage_element));
-        		new_acct_usage_ptr->id = preemptee_assoc_id;
-        		new_acct_usage_ptr->current_usage =
+		} else {
+			new_acct_usage_ptr = (acct_usage_element_t *)
+					     xmalloc(sizeof(acct_usage_element_t));
+			new_acct_usage_ptr->id = preemptee_assoc_id;
+			new_acct_usage_ptr->current_usage =
 				(((double)(preemptee_grp_used_cpu -
 					   preemptee_cpu_cnt)) /
 				 ((double)preemptee_job_ptr->part_ptr->total_cpus))
 				  - preemptee_assoc->usage->shares_norm;
-        		new_acct_usage_ptr->current_cpu_count =
+			new_acct_usage_ptr->current_cpu_count =
 				preemptee_grp_used_cpu - preemptee_cpu_cnt -
-        			(int)(preemptee_assoc->usage->shares_norm *
+				(int)(preemptee_assoc->usage->shares_norm *
 				(preemptee_job_ptr->part_ptr->total_cpus));
 			list_append(acct_usage_list, new_acct_usage_ptr);
 			preemptee_acct_usage_ptr = new_acct_usage_ptr;
 			share_type = "initial";
 		}
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-        		info("%s: %s shares for account (%s) (myshare = %lf "
+			info("%s: %s shares for account (%s) (myshare = %lf "
 			     "raw = %u) = %lf, grp_cpu(%lf)/total(%lf) = %lf",
 			     plugin_type, share_type, preemptee_assoc->acct,
 			     preemptee_assoc->usage->shares_norm,
 			     (int)(preemptee_assoc->usage->shares_norm *
-        			   (preemptee_job_ptr->part_ptr->total_cpus)),
+				   (preemptee_job_ptr->part_ptr->total_cpus)),
 			     preemptee_acct_usage_ptr->current_usage,
-        		     (double)preemptee_grp_used_cpu,
+			     (double)preemptee_grp_used_cpu,
 			     (double)preemptee_job_ptr->part_ptr->total_cpus,
-        		     (((double)preemptee_grp_used_cpu) /
+			     (((double)preemptee_grp_used_cpu) /
 			      ((double)preemptee_job_ptr->part_ptr->total_cpus)));
 		}
 
-           	preemptor_acct_usage_ptr = list_find_first(acct_usage_list,
+	   	preemptor_acct_usage_ptr = list_find_first(acct_usage_list,
 					(ListFindF) _find_acct_usage_list_entry,
 					(void *)&preemptor_assoc->id);
-        	if (preemptor_acct_usage_ptr) {
+		if (preemptor_acct_usage_ptr) {
 			preemptor_new_usage =
 				preemptor_acct_usage_ptr->current_usage +
 				(((double)preemptor_cpu_cnt) /
-        			 preemptor_job_ptr->part_ptr->total_cpus) ;
+				 preemptor_job_ptr->part_ptr->total_cpus) ;
 			if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-        			info("%s: (1)Preemptor (%i %s) new usage = %lf",
+				info("%s: (1)Preemptor (%i %s) new usage = %lf",
 				     plugin_type, preemptor_job_ptr->job_id,
 				     preemptor_job_ptr->name,
-        			     preemptor_new_usage);
+				     preemptor_new_usage);
 			}
-        	} else {
-        		preemptor_new_usage =
+		} else {
+			preemptor_new_usage =
 				(((double)preemptor_cpu_cnt +
 				  (double)preemptor_grp_used_cpu) /
-        			  (double)preemptor_job_ptr->part_ptr->total_cpus)
+				  (double)preemptor_job_ptr->part_ptr->total_cpus)
 				 - preemptor_assoc->usage->shares_norm;
 			if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-        			info("%s: (2)Preemptor (%i %s) new usage "
+				info("%s: (2)Preemptor (%i %s) new usage "
 				     "( ((%u + %u) / %u) - %lf ) = %lf "
 				     "(account = %s parent = %s)",
-        			     plugin_type, preemptor_job_ptr->job_id,
+				     plugin_type, preemptor_job_ptr->job_id,
 				     preemptor_job_ptr->name, preemptor_cpu_cnt,
 				     preemptor_grp_used_cpu,
-        			     preemptor_job_ptr->part_ptr->total_cpus,
+				     preemptor_job_ptr->part_ptr->total_cpus,
 				     preemptor_assoc->usage->shares_norm,
 				     preemptor_new_usage, preemptor_assoc->acct,
 				     preemptor_assoc->parent_acct);
 			}
-        	}
+		}
 
-        	preemptor_new_usage_long =
+		preemptor_new_usage_long =
 			(long)(preemptor_new_usage * EPSILON);
-        	preemptee_current_usage =
+		preemptee_current_usage =
 			(long)(preemptee_acct_usage_ptr->current_usage*EPSILON);
-        	if (((strcmp(preemptor_assoc->acct,
+		if (((strcmp(preemptor_assoc->acct,
 			     ((slurmdb_association_rec_t *)
 			      preemptee_job_ptr->assoc_ptr)->acct) != 0) &&
-        	    (preemptor_new_usage >= preemptee_acct_usage_ptr->current_usage ||
-        	     preemptee_acct_usage_ptr->current_cpu_count <= 0)) &&
+		    (preemptor_new_usage >= preemptee_acct_usage_ptr->current_usage ||
+		     preemptee_acct_usage_ptr->current_cpu_count <= 0)) &&
 		    (preemptee_acct_usage_ptr->current_usage > 0)) {
 			if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-        			info("%s: Removing job (%u) %s (share = %lf) "
+				info("%s: Removing job (%u) %s (share = %lf) "
 				     "from the list due to possible "
 				      "overallocation of %s with job %i "
-        			      "(preemptshare = %lf) (%ld vs %ld) "
+				      "(preemptshare = %lf) (%ld vs %ld) "
 				      "(account = %s parent = %s)",
 				      plugin_type, preemptee_job_ptr->job_id,
-        			      preemptee_job_ptr->name,
+				      preemptee_job_ptr->name,
 				      preemptee_acct_usage_ptr->current_usage,
 				      preemptor_job_ptr->name,
-        			      preemptor_job_ptr->job_id,
+				      preemptor_job_ptr->job_id,
 				      preemptor_new_usage,
 				      preemptee_current_usage,
 				      preemptor_new_usage_long,
-        			      ((slurmdb_association_rec_t*)
+				      ((slurmdb_association_rec_t*)
 				       preemptee_job_ptr->assoc_ptr)->acct,
-        			      ((slurmdb_association_rec_t*)
+				      ((slurmdb_association_rec_t*)
 				       preemptee_job_ptr->assoc_ptr)->
 				       parent_acct);
 			}
-        		preemptee_acct_usage_ptr->current_usage +=
+			preemptee_acct_usage_ptr->current_usage +=
 				((double)preemptee_cpu_cnt) /
-        			((double)preemptee_job_ptr->part_ptr->total_cpus);
-        		list_remove(it);
-        	} else if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-        		info("%s: Keeping job (%u) %s (share = %lf) on the "
+				((double)preemptee_job_ptr->part_ptr->total_cpus);
+			list_remove(it);
+		} else if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+			info("%s: Keeping job (%u) %s (share = %lf) on the "
 			     "list safe from overallocation of %s with job %u "
 			     "preemptshare = %lf)",
 			     plugin_type, preemptee_job_ptr->job_id,
 			     preemptee_job_ptr->name,
-        		     preemptee_acct_usage_ptr->current_usage,
+			     preemptee_acct_usage_ptr->current_usage,
 			     preemptor_job_ptr->name, preemptor_job_ptr->job_id,
-        		     preemptor_new_usage);
-        	}
+			     preemptor_new_usage);
+		}
 	}
 	list_iterator_destroy(it);
 
@@ -801,7 +801,7 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		if (CHECK_FOR_ACCOUNT_UNDERALLOC) {
 			_account_under_alloc(preemptor_job_ptr,
 					     preemptee_job_list);
-	}
+		}
 	} else if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
     		info("%s: NULL preemptee list for job (%u) %s",
 		     plugin_type, preemptor_job_ptr->job_id,
