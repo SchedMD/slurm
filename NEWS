@@ -59,6 +59,7 @@ documents those changes that are of interest to users and admins.
     from hard slurmd failures and support gang scheduling).
  -- Added PriorityFlags option of Calulate_Running to continue recalculating
     the priority of running jobs.
+ -- Replace round-robin front-end node selection with least-loaded algorithm.
 
 * Changes in Slurm 14.03.4
 ==========================

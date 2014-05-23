@@ -215,14 +215,12 @@ static bool _front_end_access(front_end_record_t *front_end_ptr,
 extern front_end_record_t *assign_front_end(struct job_record *job_ptr)
 {
 #ifdef HAVE_FRONT_END
-	static int last_assigned = -1;
-	front_end_record_t *front_end_ptr;
+	front_end_record_t *front_end_ptr, *best_front_end = NULL;
 	uint16_t state_flags;
 	int i;
 
-	for (i = 0; i < front_end_node_cnt; i++) {
-		last_assigned = (last_assigned + 1) % front_end_node_cnt;
-		front_end_ptr = front_end_nodes + last_assigned;
+	for (i = 0, front_end_ptr = front_end_nodes; i < front_end_node_cnt;
+	     i++, front_end_ptr++) {
 		if (job_ptr->batch_host) {   /* Find specific front-end node */
 			if (strcmp(job_ptr->batch_host, front_end_ptr->name))
 				continue;
@@ -236,14 +234,17 @@ extern front_end_record_t *assign_front_end(struct job_record *job_ptr)
 			if (!_front_end_access(front_end_ptr, job_ptr))
 				continue;
 		}
-		state_flags = front_end_nodes[last_assigned].node_state &
-			      NODE_STATE_FLAGS;
-		front_end_nodes[last_assigned].node_state =
-				NODE_STATE_ALLOCATED | state_flags;
-		front_end_nodes[last_assigned].job_cnt_run++;
-		return front_end_ptr;
+		if ((best_front_end == NULL) ||
+		    (front_end_ptr->job_cnt_run < best_front_end->job_cnt_run))
+			best_front_end = front_end_ptr;
 	}
-	if (job_ptr->batch_host) {	/* Find specific front-end node */
+
+	if (best_front_end) {
+		state_flags = best_front_end->node_state & NODE_STATE_FLAGS;
+		best_front_end->node_state = NODE_STATE_ALLOCATED | state_flags;
+		best_front_end->job_cnt_run++;
+		return best_front_end;
+	} else if (job_ptr->batch_host) {    /* Find specific front-end node */
 		error("assign_front_end: front end node %s not found",
 		      job_ptr->batch_host);
 	} else {		/* Find some usable front-end node */
