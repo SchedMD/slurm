@@ -204,7 +204,7 @@ scontrol_update_node (int argc, char *argv[])
 						 "NoResp DRAIN FAIL RESUME "
 						 "POWER_DOWN POWER_UP UNDRAIN");
 					for (k = 0; k < NODE_STATE_END; k++) {
-						fprintf (stderr, "%s ",
+						fprintf (stderr, " %s",
 						         node_state_string(k));
 					}
 					fprintf (stderr, "\n");
