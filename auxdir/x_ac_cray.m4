@@ -93,8 +93,6 @@ AC_DEFUN([X_AC_CRAY],
         test -d "$_test_dir/lib64" || continue
         test -f "$_test_dir/lib64/libjob.so" || continue
 
-        saved_CPPFLAGS="$CPPFLAGS"
-        saved_LIBS="$LIBS"
         CRAY_JOB_CPPFLAGS="$CRAY_JOB_CPPFLAGS -I$_test_dir/include"
         CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -L$_test_dir/lib64 -ljob"
       fi
@@ -123,6 +121,8 @@ AC_DEFUN([X_AC_CRAY],
         CRAY_TASK_LDFLAGS="$CRAY_TASK_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS"
       fi
 
+      saved_CPPFLAGS="$CPPFLAGS"
+      saved_LIBS="$LIBS"
       CPPFLAGS="$CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $saved_CPPFLAGS"
       LIBS="$CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $saved_LIBS"
 
