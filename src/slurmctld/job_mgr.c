@@ -10108,6 +10108,7 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	if (job_ptr->details) {
 		/* the time stamp on the new batch launch credential must be
 		 * larger than the time stamp on the revoke request. Also the
