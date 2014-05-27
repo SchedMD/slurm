@@ -13,6 +13,9 @@
 #    * mySQL (relies on testing for mySQL presence earlier);
 #    * libexpat, needed for XML-RPC calls to Cray's BASIL
 #      (Batch Application  Scheduler Interface Layer) interface.
+#    Tests for required libraries (non-Cray systems with a Cray network):
+#    * libalpscomm_sn
+#    * libalpscomm_cn
 #*****************************************************************************
 #
 # Copyright 2013 Cray Inc. All Rights Reserved.
@@ -25,6 +28,7 @@ AC_DEFUN([X_AC_CRAY],
   ac_have_real_cray="no"
   ac_have_alps_emulation="no"
   ac_have_alps_cray_emulation="no"
+  ac_have_cray_network="no"
 
   AC_ARG_WITH(
     [alps-emulation],
@@ -52,15 +56,27 @@ AC_DEFUN([X_AC_CRAY],
       esac ]
   )
 
+  AC_ARG_ENABLE(
+    [cray-network],
+    AS_HELP_STRING(--enable-cray-network,Run SLURM on a non-Cray system with a Cray network),
+      [ case "$enableval" in
+	yes) ac_have_cray_network="yes" ;;
+	 no) ac_have_cray_network="no"  ;;
+	  *) AC_MSG_ERROR([bad value "$enableval" for --enable-cray-network]) ;:
+      esac ]
+  )
+
   if test "$ac_have_alps_emulation" = "yes"; then
     ac_have_alps_cray="yes"
     AC_MSG_NOTICE([Running A ALPS Cray system against an ALPS emulation])
     AC_DEFINE(HAVE_ALPS_EMULATION, 1, [Define to 1 if running against an ALPS emulation])
+
   elif test "$ac_have_alps_cray_emulation" = "yes"; then
     ac_have_alps_cray="yes"
     AC_MSG_NOTICE([Running in Cray emulation mode])
     AC_DEFINE(HAVE_ALPS_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system using ALPS])
-  elif test "$ac_have_native_cray" = "yes"; then
+
+  elif test "$ac_have_native_cray" = "yes" || test "$ac_have_cray_network" = "yes" ; then
     _x_ac_cray_job_dir="job/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"
 
@@ -69,17 +85,19 @@ AC_DEFUN([X_AC_CRAY],
     for d in $_x_ac_cray_dirs; do
       test -d "$d" || continue
 
-      _test_dir="$d/$_x_ac_cray_job_dir"
-      test -d "$_test_dir" || continue
-      test -d "$_test_dir/include" || continue
-      test -f "$_test_dir/include/job.h" || continue
-      test -d "$_test_dir/lib64" || continue
-      test -f "$_test_dir/lib64/libjob.so" || continue
+      if test "$ac_have_native_cray" = "yes"; then
+        _test_dir="$d/$_x_ac_cray_job_dir"
+        test -d "$_test_dir" || continue
+        test -d "$_test_dir/include" || continue
+        test -f "$_test_dir/include/job.h" || continue
+        test -d "$_test_dir/lib64" || continue
+        test -f "$_test_dir/lib64/libjob.so" || continue
 
-      saved_CPPFLAGS="$CPPFLAGS"
-      saved_LIBS="$LIBS"
-      CRAY_JOB_CPPFLAGS="$CRAY_JOB_CPPFLAGS -I$_test_dir/include"
-      CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -L$_test_dir/lib64 -ljob"
+        saved_CPPFLAGS="$CPPFLAGS"
+        saved_LIBS="$LIBS"
+        CRAY_JOB_CPPFLAGS="$CRAY_JOB_CPPFLAGS -I$_test_dir/include"
+        CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -L$_test_dir/lib64 -ljob"
+      fi
 
       _test_dir="$d/$_x_ac_cray_alpscomm_dir"
       test -d "$_test_dir" || continue
@@ -95,38 +113,54 @@ AC_DEFUN([X_AC_CRAY],
       CRAY_ALPSC_CN_LDFLAGS="$CRAY_ALPSC_CN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_cn"
       CRAY_ALPSC_SN_LDFLAGS="$CRAY_ALPSC_SN_LDFLAGS -L$_test_dir/lib64 -lalpscomm_sn"
 
-
-
       CRAY_SWITCH_CPPFLAGS="$CRAY_SWITCH_CPPFLAGS $CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
       CRAY_SWITCH_LDFLAGS="$CRAY_SWITCH_LDFLAGS $CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
       CRAY_SELECT_CPPFLAGS="$CRAY_SELECT_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS"
       CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS"
-      CRAY_TASK_CPPFLAGS="$CRAY_TASK_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS"
-      CRAY_TASK_LDFLAGS="$CRAY_TASK_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS"
+
+      if test "$ac_have_native_cray" = "yes"; then
+        CRAY_TASK_CPPFLAGS="$CRAY_TASK_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS"
+        CRAY_TASK_LDFLAGS="$CRAY_TASK_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS"
+      fi
 
       CPPFLAGS="$CRAY_JOB_CPPFLAGS $CRAY_ALPSC_CN_CPPFLAGS $CRAY_ALPSC_SN_CPPFLAGS $saved_CPPFLAGS"
       LIBS="$CRAY_JOB_LDFLAGS $CRAY_ALPSC_CN_LDFLAGS $CRAY_ALPSC_SN_LDFLAGS $saved_LIBS"
 
-      AC_LINK_IFELSE(
-	[AC_LANG_PROGRAM(
-	   [[#include <job.h>
-	     #include <alpscomm_sn.h>
-	     #include <alpscomm_cn.h>
-	   ]],
-	   [[ job_getjidcnt();
-	      alpsc_release_cookies((char **)0, 0, 0);
-	      alpsc_flush_lustre((char **)0);
-	   ]]
-	)],
-	[have_cray_files="yes"],
-	[AC_MSG_ERROR(There is a problem linking to the Cray api.)])
+      if test "$ac_have_native_cray" = "yes"; then
+        AC_LINK_IFELSE(
+	  [AC_LANG_PROGRAM(
+	    [[#include <job.h>
+	      #include <alpscomm_sn.h>
+	      #include <alpscomm_cn.h>
+	    ]],
+	    [[ job_getjidcnt();
+	       alpsc_release_cookies((char **)0, 0, 0);
+	       alpsc_flush_lustre((char **)0);
+	    ]]
+	  )],
+	  [have_cray_files="yes"],
+	  [AC_MSG_ERROR(There is a problem linking to the Cray api.)])
 
-      # See if we have 5.2UP01 alpscomm functions
-      AC_SEARCH_LIBS([alpsc_get_topology],
-	[alpscomm_sn],
-	[AC_DEFINE(HAVE_NATIVE_CRAY_GA, 1,
-	[Define to 1 if alpscomm functions new to CLE 5.2UP01 are defined])])
+        # See if we have 5.2UP01 alpscomm functions
+        AC_SEARCH_LIBS([alpsc_pre_suspend],
+	  [alpscomm_cn],
+	  [AC_DEFINE(HAVE_NATIVE_CRAY_GA, 1,
+	  [Define to 1 if alpscomm functions new to CLE 5.2UP01 are defined])])
 
+      elif test "$ac_have_cray_network" = "yes"; then
+        AC_LINK_IFELSE(
+          [AC_LANG_PROGRAM(
+            [[#include <alpscomm_sn.h>
+             #include <alpscomm_cn.h>
+            ]],
+            [[
+              alpsc_release_cookies((char **)0, 0, 0);
+              alpsc_flush_lustre((char **)0);
+            ]]
+          )],
+          [have_cray_files="yes"],
+          [AC_MSG_ERROR(There is a problem linking to the Cray API.)])
+      fi
 
       LIBS="$saved_LIBS"
       CPPFLAGS="$saved_CPPFLAGS"
@@ -137,13 +171,25 @@ AC_DEFUN([X_AC_CRAY],
     if test -z "$have_cray_files"; then
       AC_MSG_ERROR([Unable to locate Cray API dir install. (usually in /opt/cray)])
     else
-      AC_MSG_NOTICE([Running on a Cray system in native mode without ALPS])
+      if test "$ac_have_native_cray" = "yes"; then
+        AC_MSG_NOTICE([Running on a Cray system in native mode without ALPS])
+      elif test "$ac_have_cray_network" = "yes"; then
+        AC_MSG_NOTICE([Running on a system with a Cray network])
+      fi
     fi
 
-    ac_have_real_cray="yes"
-    ac_have_native_cray="yes"
-    AC_DEFINE(HAVE_NATIVE_CRAY, 1, [Define to 1 for running on a Cray in native mode without ALPS])
-    AC_DEFINE(HAVE_REAL_CRAY,   1, [Define to 1 for running on a real Cray system])
+    if test "$ac_have_native_cray" = "yes"; then
+      ac_have_real_cray="yes"
+      ac_have_native_cray="yes"
+      AC_DEFINE(HAVE_NATIVE_CRAY, 1, [Define to 1 for running on a Cray in native mode without ALPS])
+      AC_DEFINE(HAVE_REAL_CRAY,   1, [Define to 1 for running on a real Cray system])
+    elif test "$ac_have_cray_network" = "yes"; then
+      ac_have_cray_network="yes"
+      AC_DEFINE(HAVE_3D,            1, [Define to 1 if 3-dimensional architecture])
+      AC_DEFINE(SYSTEM_DIMENSIONS,  3, [3-dimensional architecture])
+      AC_DEFINE(HAVE_CRAY_NETWORK,  1, [Define to 1 for systems with a Cray network])
+    fi
+
   else
     # Check for a Cray-specific file:
     #  * older XT systems use an /etc/xtrelease file
@@ -188,6 +234,7 @@ AC_DEFUN([X_AC_CRAY],
   AM_CONDITIONAL(HAVE_NATIVE_CRAY, test "$ac_have_native_cray" = "yes")
   AM_CONDITIONAL(HAVE_ALPS_CRAY, test "$ac_have_alps_cray" = "yes")
   AM_CONDITIONAL(HAVE_REAL_CRAY, test "$ac_have_real_cray" = "yes")
+  AM_CONDITIONAL(HAVE_CRAY_NETWORK, test "$ac_have_cray_network" = "yes")
   AM_CONDITIONAL(HAVE_ALPS_EMULATION, test "$ac_have_alps_emulation" = "yes")
   AM_CONDITIONAL(HAVE_ALPS_CRAY_EMULATION, test "$ac_have_alps_cray_emulation" = "yes")
 

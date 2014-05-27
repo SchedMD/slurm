@@ -15,6 +15,7 @@
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
 # --with cray        %_with_cray        1    build for a Cray system without ALPS
 # --with cray_alps   %_with_cray_alps   1    build for a Cray system with ALPS
+# --with cray_network %_with_cray_network 1  build for a non-Cray system with a Cray network
 # --with debug       %_with_debug       1    enable extra debugging within Slurm
 # --with lua         %_with_lua         1    build Slurm lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
@@ -43,6 +44,7 @@
 %slurm_without_opt bluegene
 %slurm_without_opt cray
 %slurm_without_opt cray_alps
+%slurm_without_opt cray_network
 %slurm_without_opt debug
 %slurm_without_opt sun_const
 %slurm_without_opt salloc_background
@@ -144,6 +146,18 @@ BuildRequires: cray-libjob-devel
 BuildRequires: gtk2-devel
 BuildRequires: glib2-devel
 BuildRequires: pkg-config
+%endif
+
+%if %{slurm_with cray_network}
+BuildRequires: cray-MySQL-devel-enterprise
+BuildRequires: cray-libalpscomm_cn-devel
+BuildRequires: cray-libalpscomm_sn-devel
+#BuildRequires: libnuma-devel
+BuildConflicts: cray-libnuma1
+BuildRequires: hwloc-devel
+BuildRequires: gtk2-devel
+BuildRequires: glib2-devel
+BuildRequires: pkgconfig
 %endif
 
 %ifnos aix5.3
@@ -417,6 +431,7 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 	%{?with_munge:--with-munge=%{?with_munge}}\
 	%{?with_blcr:--with-blcr=%{?with_blcr}}\
 	%{?slurm_with_cray:--enable-native-cray}\
+	%{?slurm_with_cray_network:--enable-cray-network}\
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
