@@ -9570,7 +9570,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		 * steps active at registration time, so this is not
 		 * an error condition, slurmd is also reporting steps
 		 * rather than jobs */
-		debug3("resetting job_count on node %s from %d to %d",
+		debug3("resetting job_count on node %s from %u to %d",
 			reg_msg->node_name, reg_msg->job_count, jobs_on_node);
 		reg_msg->job_count = jobs_on_node;
 	}
