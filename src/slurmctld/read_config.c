@@ -903,9 +903,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	_build_all_nodeline_info();
 	if (reconfig) {
 		if (_compare_hostnames(old_node_table_ptr,
-							   old_node_record_count,
-							   node_record_table_ptr,
-							   node_record_count) < 0) {
+				       old_node_record_count,
+				       node_record_table_ptr,
+				       node_record_count) < 0) {
 			fatal("%s: hostnames inconsistency detected", __func__);
 		}
 	}
@@ -1981,9 +1981,9 @@ _compare_hostnames(struct node_record *old_node_table,
 	hostset_t set;
 
 	if (old_node_count != node_count) {
-		error("%s: node count has changed before reconfiguration \
-from %d to %d. You have to restart slurmctld.",
-			  __func__, old_node_count, node_count);
+		error("%s: node count has changed before reconfiguration "
+		      "from %d to %d. You have to restart slurmctld.",
+		      __func__, old_node_count, node_count);
 		return -1;
 	}
 
@@ -2006,8 +2006,8 @@ from %d to %d. You have to restart slurmctld.",
 
 	cc = 0;
 	if (strcmp(old_ranged, ranged) != 0) {
-		error("%s: node names changed before reconfiguration. \
-You have to restart slurmctld.", __func__);
+		error("%s: node names changed before reconfiguration. "
+		      "You have to restart slurmctld.", __func__);
 		cc = -1;
 	}
 

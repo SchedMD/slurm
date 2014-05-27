@@ -1914,8 +1914,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	info("cons_res: select_p_node_init");
 	if ((cr_type & (CR_CPU | CR_SOCKET | CR_CORE)) == 0) {
-		fatal("Invalid SelectTypeParameter: %s",
-		      select_type_param_string(cr_type));
+		fatal("Invalid SelectTypeParameters: %s (%u)",
+		      select_type_param_string(cr_type), cr_type);
 	}
 	if (node_ptr == NULL) {
 		error("select_p_node_init: node_ptr == NULL");
