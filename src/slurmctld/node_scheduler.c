@@ -1541,6 +1541,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	bool configuring = false;
 	List preemptee_job_list = NULL;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
+	slurmdb_association_rec_t *assoc_ptr = NULL;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1550,6 +1551,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 
 	/* identify partition */
 	if (part_ptr == NULL) {
@@ -1558,6 +1560,28 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->part_ptr = part_ptr;
 		error("partition pointer reset for job %u, part %s",
 		      job_ptr->job_id, job_ptr->partition);
+	}
+
+	/* Quick check to see if this QOS is allowed on this
+	 * partition. */
+	if ((error_code = part_policy_valid_qos(
+		     job_ptr->part_ptr, qos_ptr)) != SLURM_SUCCESS) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_QOS;
+		last_job_update = now;
+		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	}
+
+	/* Quick check to see if this account is allowed on
+	 * this partition. */
+	if ((error_code = part_policy_valid_acct(
+		     job_ptr->part_ptr,
+		     job_ptr->assoc_ptr ? assoc_ptr->acct : NULL))
+	    != SLURM_SUCCESS) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_ACCOUNT;
+		last_job_update = now;
+		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 
 	if (job_ptr->priority == 0) {	/* user/admin hold */

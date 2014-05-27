@@ -97,6 +97,16 @@ documents those changes that are of interest to users and admins.
  -- If TaskProlog sets SLURM_PROLOG_CPU_MASK reset affinity for that task
     based on the mask given.
  -- Keep supporting 'srun -N x --pty bash' for historical reasons.
+ -- If EnforcePartLimits=Yes and QOS job is using can override limits, allow
+    it.
+ -- Fix issues if partition allows or denys account's or QOS' and either are
+    not set.
+ -- If a job requests a partition and it doesn't allow a QOS or account the
+    job is requesting pend unless EnforcePartLimits=Yes.  Before it would
+    always kill the job at submit.
+ -- Fix format output of scontrol command when printing node state.
+ -- Improve the clean up of cgroup hierarchy when using the
+    jobacct_gather/cgroup plugin.
 
 * Changes in Slurm 14.03.3-2
 ============================

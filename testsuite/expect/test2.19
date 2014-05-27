@@ -188,7 +188,7 @@ proc test_part {acct qos part qos_con } {
 	global srun host_name part_name exit_code
 
 	set sub_job 0
-	spawn $srun -A $acct --qos $qos -p $part hostname
+	spawn $srun -I -A $acct --qos $qos -p $part hostname
 	expect {
 		-re "$host_name" {
 			set sub_job 1

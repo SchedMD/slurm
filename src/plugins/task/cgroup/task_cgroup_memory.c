@@ -184,14 +184,14 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
 		if (xcgroup_lock(&memory_cg) == XCGROUP_SUCCESS) {
 			if (xcgroup_delete(&step_memory_cg) != SLURM_SUCCESS)
-				error("task/cgroup: unable to remove step "
-				      "memcg : %m");
+				debug2("task/cgroup: unable to remove step "
+				       "memcg : %m");
 			if (xcgroup_delete(&job_memory_cg) != XCGROUP_SUCCESS)
-				info("task/cgroup: not removing "
-				     "job memcg : %m");
+				debug2("task/cgroup: not removing "
+				       "job memcg : %m");
 			if (xcgroup_delete(&user_memory_cg) != XCGROUP_SUCCESS)
-				info("task/cgroup: not removing "
-				     "user memcg : %m");
+				debug2("task/cgroup: not removing "
+				       "user memcg : %m");
 			xcgroup_unlock(&memory_cg);
 		} else
 			error("task/cgroup: unable to lock root memcg : %m");

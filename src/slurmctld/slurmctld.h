@@ -1651,6 +1651,15 @@ extern List part_list_copy(List part_list_src);
  */
 extern bool part_policy_job_runnable_state(struct job_record *job_ptr);
 
+/* Validate a job's account against the partition's AllowAccounts or
+ * DenyAccounts parameters. */
+extern int part_policy_valid_acct(struct part_record *part_ptr, char *acct);
+
+/* Validate a job's QOS against the partition's AllowQOS or
+ * DenyQOS parameters. */
+extern int part_policy_valid_qos(
+	struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr);
+
 /*
  * partition_in_use - determine whether a partition is in use by a RUNNING
  *	PENDING or SUSPENDED job

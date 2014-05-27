@@ -53,10 +53,11 @@
 #include <dirent.h>
 
 #include "src/common/list.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_selecttype_info.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/node_select.h"
 
 /*
  * Must be synchronized with slurm_select_ops_t in node_select.h.
@@ -218,9 +219,12 @@ extern int slurm_select_init(bool only_default)
 		if (!strcasecmp(type, "select/linear")) {
 			uint16_t cr_type = slurm_get_select_type_param();
 			if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE) ||
-			    (cr_type & CR_CPU))
-				fatal("Invalid SelectTypeParameter "
-				      "for select/linear");
+			    (cr_type & CR_CPU)) {
+				fatal("Invalid SelectTypeParameters for "
+				      "select/linear: %s (%u)",
+				      select_type_param_string(cr_type),
+				      cr_type);
+			}
 		}
 
 #ifdef HAVE_BG

@@ -334,6 +334,8 @@ enum job_state_reason {
 	WAIT_CLEANING,          /* If a job is requeued and it is
 				 * still cleaning up from the last run. */
 	WAIT_PROLOG,		/* Prolog is running */
+	WAIT_QOS,	 	/* QOS not allowed */
+	WAIT_ACCOUNT,	 	/* Account not allowed */
 };
 
 enum job_acct_types {

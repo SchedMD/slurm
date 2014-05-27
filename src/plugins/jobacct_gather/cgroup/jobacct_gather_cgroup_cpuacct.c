@@ -66,8 +66,10 @@ static xcgroup_t job_cpuacct_cg;
 static xcgroup_t step_cpuacct_cg;
 xcgroup_t task_cpuacct_cg;
 
-extern int jobacct_gather_cgroup_cpuacct_init(
-	slurm_cgroup_conf_t *slurm_cgroup_conf)
+static uint32_t max_task_id;
+
+extern int
+jobacct_gather_cgroup_cpuacct_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
@@ -85,14 +87,17 @@ extern int jobacct_gather_cgroup_cpuacct_init(
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_cgroup_cpuacct_fini(
-	slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int
+jobacct_gather_cgroup_cpuacct_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	xcgroup_t cpuacct_cg;
+	bool lock_ok;
+	int cc;
 
-	if (user_cgroup_path[0] == '\0' ||
-	    job_cgroup_path[0] == '\0' ||
-	    jobstep_cgroup_path[0] == '\0')
+	if (user_cgroup_path[0] == '\0'
+	    || job_cgroup_path[0] == '\0'
+	    || jobstep_cgroup_path[0] == '\0'
+	    || task_cgroup_path[0] == 0)
 		return SLURM_SUCCESS;
 
 	/*
@@ -100,26 +105,75 @@ extern int jobacct_gather_cgroup_cpuacct_fini(
 	 * The release_agent will asynchroneously be called for the step
 	 * cgroup. It will do the necessary cleanup.
 	 */
-	if (xcgroup_create(&cpuacct_ns, &cpuacct_cg, "", 0, 0)
-	    == XCGROUP_SUCCESS) {
+	if (xcgroup_create(&cpuacct_ns,
+			   &cpuacct_cg, "", 0, 0) == XCGROUP_SUCCESS) {
 		xcgroup_set_uint32_param(&cpuacct_cg, "tasks", getpid());
-		xcgroup_destroy(&cpuacct_cg);
 	}
 
+	/* Lock the root of the cgroup and remove the subdirectories
+	 * related to this job.
+	 */
+	lock_ok = true;
+	if (xcgroup_lock(&cpuacct_cg) != XCGROUP_SUCCESS) {
+		error("%s: failed to flock() %s %m", __func__, cpuacct_cg.path);
+		lock_ok = false;
+	}
+
+	/* Clean up starting from the leaves way up, the
+	 * reverse order in which the cgroups were created.
+	 */
+	for (cc = 0; cc <= max_task_id; cc++) {
+		xcgroup_t cgroup;
+		char buf[PATH_MAX];
+
+		/* rmdir all tasks this running slurmstepd
+		 * was responsible for.
+		 */
+		sprintf(buf, "%s%s/task_%d",
+			cpuacct_ns.mnt_point, jobstep_cgroup_path, cc);
+		cgroup.path = buf;
+
+		if (xcgroup_delete(&cgroup) != XCGROUP_SUCCESS) {
+			debug2("%s: failed to delete %s %m", __func__, buf);
+		}
+	}
+
+	if (xcgroup_delete(&step_cpuacct_cg) != XCGROUP_SUCCESS) {
+		debug2("%s: failed to delete %s %m", __func__,
+		       cpuacct_cg.path);
+	}
+
+	if (xcgroup_delete(&job_cpuacct_cg) != XCGROUP_SUCCESS) {
+		debug2("%s: failed to delete %s %m", __func__,
+		       job_cpuacct_cg.path);
+	}
+
+	if (xcgroup_delete(&user_cpuacct_cg) != XCGROUP_SUCCESS) {
+		debug2("%s: failed to delete %s %m", __func__,
+		       user_cpuacct_cg.path);
+	}
+
+	if (lock_ok == true)
+		xcgroup_unlock(&cpuacct_cg);
+
+	xcgroup_destroy(&task_cpuacct_cg);
 	xcgroup_destroy(&user_cpuacct_cg);
 	xcgroup_destroy(&job_cpuacct_cg);
 	xcgroup_destroy(&step_cpuacct_cg);
+	xcgroup_destroy(&cpuacct_cg);
 
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
 	jobstep_cgroup_path[0]='\0';
+	task_cgroup_path[0] = 0;
+
 	xcgroup_ns_destroy(&cpuacct_ns);
 
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_cgroup_cpuacct_attach_task(
-	pid_t pid, jobacct_id_t *jobacct_id)
+extern int
+jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	xcgroup_t cpuacct_cg;
 	stepd_step_rec_t *job;
@@ -138,6 +192,12 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(
 	jobid = job->jobid;
 	stepid = job->stepid;
 	taskid = jobacct_id->taskid;
+
+	if (taskid >= max_task_id)
+		max_task_id = taskid;
+
+	debug("%s: jobid %u stepid %u taskid %u max_task_id %u",
+	      __func__, jobid, stepid, taskid, max_task_id);
 
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = jobacct_cgroup_create_slurm_cg(&cpuacct_ns);
