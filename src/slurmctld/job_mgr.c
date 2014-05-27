@@ -9629,6 +9629,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 				requeue = true;
 			info("Batch JobId=%u missing from node 0",
 			     job_ptr->job_id);
+			job_ptr->exit_code = 1;
 			job_complete(job_ptr->job_id, 0, requeue, true, NO_VAL);
 		} else {
 			_notify_srun_missing_step(job_ptr, node_inx,
