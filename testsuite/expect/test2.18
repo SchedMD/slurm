@@ -158,7 +158,7 @@ proc test_part { acct part acct_con } {
 
 
 	set sub_job 0
-	spawn $srun -A $acct -p $part hostname
+	spawn $srun -I -A $acct -p $part hostname
 	expect {
 		-re "$host_name" {
 			set sub_job 1
