@@ -149,7 +149,7 @@ BuildRequires: pkg-config
 %endif
 
 %if %{slurm_with cray_network}
-BuildRequires: cray-MySQL-devel-enterprise
+BuildRequires: mysql-devel
 BuildRequires: cray-libalpscomm_cn-devel
 BuildRequires: cray-libalpscomm_sn-devel
 #BuildRequires: libnuma-devel
