@@ -22957,7 +22957,7 @@ else
 int
 main ()
 {
- char tmp='\0'; char *n=NULL; snprintf(&tmp,1,"%s",n); exit(0);
+ char tmp[8]; char *n=NULL; snprintf(tmp,8,"%s",n); exit(0);
   ;
   return 0;
 }
