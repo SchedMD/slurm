@@ -264,11 +264,12 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 
 		if (s_p_get_string(&tmp, "ProfileHDF5Default", tbl)) {
 			hdf5_conf.def = acct_gather_profile_from_string(tmp);
-			xfree(tmp);
-			if (hdf5_conf.def == ACCT_GATHER_PROFILE_NOT_SET)
+			if (hdf5_conf.def == ACCT_GATHER_PROFILE_NOT_SET) {
 				fatal("ProfileHDF5Default can not be "
-				      "set to NotSet, please specify a valid "
-				      "option");
+				      "set to %s, please specify a valid "
+				      "option", tmp);
+			}
+			xfree(tmp);
 		}
 	}
 
