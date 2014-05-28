@@ -1609,6 +1609,8 @@ top:	orig_map = bit_copy(save_bitmap);
 			}
 			FREE_NULL_BITMAP(orig_map);
 			list_iterator_destroy(job_iterator);
+			_destroy_part_data(future_part);
+			_destroy_node_data(future_usage, NULL);
 			goto top;
 		}
 		list_iterator_destroy(job_iterator);
