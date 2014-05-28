@@ -59,7 +59,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/net.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/slurmd/slurmd/reverse_tree_math.h"
+#include "src/slurmd/common/reverse_tree_math.h"
 
 #include "setup.h"
 #include "tree.h"

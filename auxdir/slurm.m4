@@ -195,6 +195,8 @@ AC_SUBST(SLURM_API_REVISION)
 
 # rpm make target needs Version in META, not major and minor version numbers
 VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
+# If you ever use AM_INIT_AUTOMAKE(subdir-objects) do not define VERSION
+# since it will do it this automatically
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
 AC_SUBST(VERSION)
 

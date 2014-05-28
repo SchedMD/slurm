@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/slurmd/reverse_tree_math.h
+ * src/slurmd/common/reverse_tree_math.h
  * $Id: slurmd.h 7501 2006-03-14 20:05:50Z morrone $
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.

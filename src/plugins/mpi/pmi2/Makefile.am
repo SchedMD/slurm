@@ -17,14 +17,14 @@ mpi_pmi2_la_SOURCES = mpi_pmi2.c \
 	setup.c setup.h \
 	spawn.c spawn.h \
 	tree.c tree.h \
-	nameserv.c nameserv.h \
-	$(top_srcdir)/src/common/mpi.h \
-	$(top_srcdir)/src/slurmd/slurmd/reverse_tree_math.c \
-	$(top_srcdir)/src/slurmd/slurmd/reverse_tree_math.h
+	nameserv.c nameserv.h
 
 mpi_pmi2_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
+mpi_pmi2_la_LIBADD = \
+	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
+
 force:
 
-$(mpi_pmi2_LDADD) : force
+$(mpi_pmi2_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
