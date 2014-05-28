@@ -4066,7 +4066,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 					accounting_enforce, NULL);
 			}
 
-			if (!assoc_ptr && assoc_rec.id != assoc_ptr->id) {
+			if (assoc_ptr && assoc_rec.id != assoc_ptr->id) {
 				info("_valid_job_part: can't check multiple "
 				     "partitions with partition based "
 				     "associations");
