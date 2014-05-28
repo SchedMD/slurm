@@ -39,6 +39,10 @@
 #   include "config.h"
 #endif
 
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #if HAVE_STDINT_H
 #  include <stdint.h>
 #endif
@@ -57,6 +61,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
@@ -208,25 +213,30 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		return 2;
 	}
 
-	/* At least on a temporary basis, one could map AMD Bulldozer entities
-	 * onto the entities that Slurm does optimize placement for today (e.g.
-	 * map each Bulldozer core to a thread and each Bulldozer module to a
-	 * Slurm core, alternately map the Bulldozer module to a Slurm socket
-	 * and the Bulldozer socket to a Slurm board). Perhaps not ideal, but
-	 * it would achieve the desired locality. */
-
-	if ( hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
-	     hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET) ) {
-		/* One socket contains multiple NUMA-nodes 
-		 * like AMD Opteron 6000 series etc.
-		 * In such case, use NUMA-node instead of socket. */
-		objtype[SOCKET] = HWLOC_OBJ_NODE;
-		objtype[CORE]   = HWLOC_OBJ_CORE;
-		objtype[PU]     = HWLOC_OBJ_PU;
-	} else {
-		objtype[SOCKET] = HWLOC_OBJ_SOCKET;
-		objtype[CORE]   = HWLOC_OBJ_CORE;
-		objtype[PU]     = HWLOC_OBJ_PU;
+	/* Some processors (e.g. AMD Opteron 6000 series) contain multiple
+	 * NUMA nodes per socket. This is a configuration which does not map
+	 * into the hardware entities that Slurm optimizes resource allocation
+	 * for (PU/thread, core, socket, baseboard, node and network switch).
+	 * In order to optimize resource allocations on such hardware, Slurm
+	 * will consider each NUMA node within the socket as a separate socket.
+	 * You can disable this configuring "SchedulerParameters=Ignore_NUMA",
+	 * in which case Slurm will report the correct socket count on the node,
+	 * but not be able to optimize resource allocations on the NUMA nodes.
+	 */
+	objtype[SOCKET] = HWLOC_OBJ_SOCKET;
+	objtype[CORE]   = HWLOC_OBJ_CORE;
+	objtype[PU]     = HWLOC_OBJ_PU;
+	if (hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
+	    hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET)) {
+		char *sched_params = slurm_get_sched_params();
+		if (sched_params &&
+		    strcasestr(sched_params, "Ignore_NUMA")) {
+			info("Ignoring NUMA nodes within a socket");
+		} else {
+			info("Considering each NUMA node as a socket");
+			objtype[SOCKET] = HWLOC_OBJ_NODE;
+		}
+		xfree(sched_params);
 	}
 
 	/* number of objects */

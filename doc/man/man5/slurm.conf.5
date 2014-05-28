@@ -1946,6 +1946,15 @@ This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
 initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
 .TP
+\fBIgnore_NUMA\fR
+Some processors (e.g. AMD Opteron 6000 series) contain multiple NUMA nodes per
+socket. This is a configuration which does not map into the hardware entities
+that Slurm optimizes resource allocation for (PU/thread, core, socket,
+baseboard, node and network switch). In order to optimize resource allocations
+on such hardware, Slurm will consider each NUMA node within the socket as a
+separate socket by default. Use the Ignore_NUMA option to report the correct
+socket count, but \fBnot\fR optimize resource allocations on the NUMA nodes.
+.TP
 \fBmax_depend_depth=#\fR
 Maximum number of jobs to test for a circular job dependency. Stop testing
 after this number of job dependencies have been tested. The default value is
