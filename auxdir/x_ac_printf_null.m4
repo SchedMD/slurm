@@ -37,7 +37,7 @@ AC_DEFUN([X_AC_PRINTF_NULL], [
   AC_RUN_IFELSE([AC_LANG_PROGRAM([
 	#include <stdio.h>
 	#include <stdlib.h>],
-	[ char tmp[8]; char *n=NULL; snprintf(tmp,8,"%s",n); exit(0); ])],
+	[ char tmp='\0'; char *n=NULL; snprintf(&tmp,1,"%s",n); exit(0); ])],
     printf_null_ok=yes,
     printf_null_ok=no,
     printf_null_ok=yes)
