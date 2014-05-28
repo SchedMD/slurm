@@ -815,7 +815,7 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 force:
 
-$(mpi_pmi2_LIBADD) : force
+$(mpi_pmi2_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
