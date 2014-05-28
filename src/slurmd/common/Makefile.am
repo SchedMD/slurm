@@ -7,7 +7,8 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 # making a .la
 
-noinst_LTLIBRARIES = libslurmd_common.la
+noinst_LTLIBRARIES = libslurmd_common.la libslurmd_reverse_tree_math.la
+
 libslurmd_common_la_SOURCES =    \
 	core_spec_plugin.c core_spec_plugin.h \
 	job_container_plugin.c job_container_plugin.h \
@@ -18,3 +19,7 @@ libslurmd_common_la_SOURCES =    \
 	task_plugin.c task_plugin.h \
 	set_oomadj.c set_oomadj.h \
 	reverse_tree.h
+
+libslurmd_reverse_tree_math_la_SOURCES = \
+	reverse_tree_math.c \
+	reverse_tree_math.h

@@ -12,14 +12,14 @@ slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)	   \
 	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
-	../common/libslurmd_common.la
+	../common/libslurmd_common.la \
+	../common/libslurmd_reverse_tree_math.la
 
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
-	reverse_tree_math.c reverse_tree_math.h \
 	xcpu.c xcpu.h \
 	slurmd_plugstack.c slurmd_plugstack.h
 

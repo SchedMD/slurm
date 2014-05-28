@@ -48,6 +48,7 @@ documents those changes that are of interest to users and admins.
  -- Improve the clean up of cgroup hierarchy when using the
     jobacct_gather/cgroup plugin.
  -- Added SchedulerParameters value of Ignore_NUMA.
+ -- Fix issues with code when using automake 1.14.1
 
 * Changes in Slurm 14.03.3-2
 ============================
