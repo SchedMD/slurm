@@ -84,6 +84,9 @@
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 
+/* Define to 1 for systems with a Cray network */
+#undef HAVE_CRAY_NETWORK
+
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
 
