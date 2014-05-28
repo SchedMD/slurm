@@ -26,5 +26,5 @@ mpi_pmi2_la_LIBADD = \
 
 force:
 
-$(mpi_pmi2_LIBADD) : force
+$(mpi_pmi2_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
