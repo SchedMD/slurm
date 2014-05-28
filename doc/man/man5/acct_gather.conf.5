@@ -36,7 +36,7 @@ might also have to change the related options as well.
 Options used for AcctGatherEnergyType/ipmi are as follows:
 
 .RS
-.TP 20
+.TP 10
 \fBEnergyIPMIFrequency\fR=<number>
 This parameter is the number of seconds between BMC access samples.
 
@@ -61,7 +61,7 @@ is omitted, the plugin will use the first "watt" sensor it finds.
 The following acct_gather.conf parameters are defined to control the
 IPMI config default values for libipmiconsole.
 
-.TP
+.TP 10
 \fBEnergyIPMIUsername\fR=\fIUSERNAME\fR
 Specify BMC Username.
 
@@ -75,7 +75,7 @@ Specify BMC Password.
 Options used for AcctGatherProfileType/hdf5 are as follows:
 
 .RS
-.TP 20
+.TP 10
 \fBProfileHDF5Dir\fR=<path>
 This parameter is the path to the shared folder into which the
 acct_gather_profile plugin will write detailed data (usually as an HDF5 file).
@@ -88,24 +88,32 @@ A comma delimited list of data types to be collected for each job submission.
 Allowed values are:
 
 .RS
-.TP
-\fBAll\fR All data types are collected. (Cannot be combined with other values.)
+.TP 8
+\fBAll\fR
+All data types are collected. (Cannot be combined with other values.)
 
 .TP
-\fBNone\fR No data types are collected. This is the default.
- (Cannot be combined with other values.)
+\fBNone\fR
+No data types are collected. This is the default.
+(Cannot be combined with other values.)
 
 .TP
-\fBEnergy\fR Energy data is collected.
+\fBEnergy\fR
+Energy data is collected.
 
 .TP
-\fBTask\fR Task (I/O, Memory, ...) data is collected.
+\fBLustre\fR
+Lustre file system data is collected.
+Currently only the Lustre filesystem is supported.
 
 .TP
-\fBFilesystem\fR File system data is collected. Currently only Lustre filesystem is supported.
+\fBNetwork\fR
+Network (InfiniBand) data is collected.
 
 .TP
-\fBNetwork\fR Network (InfiniBand) data is collected.
+\fBTask\fR
+Task (I/O, Memory, ...) data is collected.
+
 .RE
 .RE
 
@@ -114,7 +122,7 @@ Allowed values are:
 Options used for AcctGatherInfinbandType/ofed are as follows:
 
 .RS
-.TP 20
+.TP 10
 \fBInfinibandOFEDFrequency\fR=<number>
 This parameter is the number of seconds between the calls to infiniband counters.
 
