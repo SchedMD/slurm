@@ -135,6 +135,34 @@ Some macro definitions that may be used in building SLURM include:
 %with_ssl          "--with-ssl=/opt/freeware"
 </pre></p>
 
+<h3>RPMs Installed</h3>
+
+<p>The RPMs needed on the head node, compute nodes, and slurmdbd node can vary
+by configuration, but here is a suggested starting point:
+<ul>
+<li>Head Node (where the slurmctld daemon runs),<br>
+    Compute and Login Nodes</li>
+	<ul>
+	<li>slurm</li>
+	<li>slurm-devel</li>
+	<li>slurm-munge</li>
+	<li>slurm-perlapi</li>
+	<li>slurm-plugins</li>
+	<li>slurm-sjobexit</li>
+	<li>slurm-sjstat</li>
+	<li>slurm-torque</li>
+	</ul>
+<li>Slurmdbd Node</li>
+	<ul>
+	<li>slurm</li>
+	<li>slurm-devel</li>
+	<li>slurm-munge</li>
+	<li>slurm-plugins</li>
+	<li>slurm-slurmdbd</li>
+	<li>slurm-sql</li>
+	</ul>
+</ul>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Daemons</h2>
@@ -737,6 +765,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 April 2014</p>
+<p style="text-align:center;">Last modified 29 May 2014</p>
 
 <!--#include virtual="footer.txt"-->
