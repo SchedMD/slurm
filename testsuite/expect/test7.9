@@ -54,6 +54,11 @@ set invalid 0
 log_user 0
 spawn $scontrol show config
 expect {
+	-re "acct_gather_filesystem/lustre" {
+		send_user "\nWARNING: test incompatible with acct_gather_filesystem/lustre\n"
+		set invalid 1
+		exp_continue
+	}
 	-re "launch/poe" {
 		send_user "\nWARNING: test incompatible with launch/poe\n"
 		set invalid 1
