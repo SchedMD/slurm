@@ -1552,6 +1552,7 @@ extern int assoc_mgr_fini(char *state_save_location)
 	running_cache = 0;
 
 	xfree(assoc_hash_id);
+	xfree(assoc_hash);
 
 	assoc_mgr_unlock(&locks);
 
