@@ -1427,8 +1427,10 @@ static void *_slurmctld_background(void *no_data)
 			if (_report_locks_set() == 0) {
 				info("Saving all slurm state");
 				save_all_state();
-			} else
-				error("can not save state, semaphores set");
+			} else {
+				error("Semaphores still set after %d seconds, "
+				      "can not save state", CONTROL_TIMEOUT);
+			}
 			break;
 		}
 

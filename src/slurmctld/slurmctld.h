@@ -135,7 +135,7 @@
 
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
 #ifndef CONTROL_TIMEOUT
-#define CONTROL_TIMEOUT 4	/* seconds */
+#define CONTROL_TIMEOUT 10	/* seconds */
 #endif
 
 /*****************************************************************************\
