@@ -4,49 +4,54 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#26">Slurm Version 2.6, June 2013</a></li>
 <li><a href="#1403">Slurm Version 14.03, March 2014</a></li>
-<li><a href="#1409">Slurm Version 14.09 and beyond</a></li>
+<li><a href="#1411">Slurm Version 14.11, November 2014</a></li>
+<li><a href="#1508">Slurm Version 15.08 and beyond</a></li>
 </ul>
 
-<h2><a name="26">Major Updates in Slurm Version 2.6</a></h2>
-<p>SLURM Version 2.6 was released in July 2013.
+<h2><a name="1403">Major Updates in Slurm Version 14.03</a></h2>
+<p>SLURM Version 14.03 was released in March 2014.
 Major enhancements include:
 <ul>
-<li>Support for job arrays, which increases performance and ease of use
-    for sets of similar jobs.</li>
-<li><a href="hdf5_profile_user_guide.html">Job profiling</a> capability added
-    to record a wide variety of job characteristics for each task on a user
-    configurable periodic basis. Data currently available includes CPU use,
-    memory use, energy use, Infiniband network use, Lustre file system use,
-    etc.</li>
-<li>Support for MPICH2 using PMI2 communications interface with much greater
-    scalability.</li>
-<li>Prolog and epilog support for advanced reservations.</li>
-<li>Much faster throughput for job step execution with --exclusive option. The
-    srun process is notified when resources become available rather than
-    periodic polling.</li>
-<li>Support improved for Intel MIC (Many Integrated Core) processor.</li>
-<li>Advanced reservations with hostname and core counts now supports asymmetric
-    reservations (e.g. specific different core count for each node).</li>
-<li><a href="ext_sensorsplugins.html">External sensor plugin infrastructure</a>
-    added to record power consumption, temperature, etc.</li>
-<li>Improved performance for high-throughput computing.</li>
-<li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce+</a> support
-    (launches ~1000x faster, runs ~10x faster).</li>
-<li>Added "MaxCPUsPerNode" partition configuration parameter. This can be
-    especially useful to schedule GPUs. For example a node can be associated
-    with two Slurm partitions (e.g. "cpu" and "gpu") and the partition/queue
-    "cpu" could be limited to only a subset of the node's CPUs, insuring that
-    one or more CPUs would be available to jobs in the "gpu" partition/queue.</li>
+<li>Added support for native Slurm operation on Cray systems (without ALPS).</li>
+<li>Added partition configuration parameters AllowAccounts, AllowQOS,
+    DenyAccounts and DenyQOS to provide greater control over use.</li>
+<li>Added the ability to perform load based scheduling. Allocating resources to
+    jobs on the nodes with the largest number if idle CPUs.</li>
+<li>Added support for reserving cores on a compute node for system services
+    (core specialization).</li>
+<li>Add mechanism for job_submit plugin to generate error message for srun,
+    salloc or sbatch to stderr.</li>
+<li>Added new structures and support for both server and cluster resources.</li>
+<li>Significant performance improvements, especially with respect to job
+    array support.</li>
+<li>Improved user support for fault-tolerance (e.g. "hot spare" resources).</li>
 </ul>
 </p>
 
-<h2><a name="1403">Major Updates in Slurm Version 14.03</a></h2>
-<p>NOTICE: Starting with 14.03 we will be numbering Slurm versions
-with a YEAR.MONTH format.<br>
-SLURM Version 14.03 release is planned in March 2014.
+<h2><a name="1411">Major Updates in Slurm Version 14.11</a></h2>
+<p>SLURM Version 14.11 is scheduled for release in November 2014.
 Major enhancements include:
+<ul>
+<li>Communication gateway nodes to improve scalability.</li>
+<li>Support for heterogeneous generic resources (i.e. user specification of
+    desired GPU types).</li>
+<li>Support for non-consumable generic resources that are shared, but limited
+    in number.</li>
+<li>Support for automatic job requeue policy based on exit value.</li>
+<li>Add user options to set the CPU governor (OnDemand, Performance,
+    PowerSave or UserSpace) in addition to being able to explicitly set the
+    CPU frequency currently available.</li>
+<li>Report Slurm message traffic by user, type, count and time consumed.</li>
+</ul>
+</p>
+
+
+<h2><a name="1508">Major Updates in Slurm Version 15.08 and beyond</a></h2>
+<p> Detailed plans for release dates and contents of additional SLURM releases
+have not been finalized. Anyone desiring to perform SLURM development should
+notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
+to coordinate activities. Future development plans includes:
 <ul>
 <li>Integration with
     <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
@@ -56,22 +61,6 @@ Major enhancements include:
     and power consumption.</li>
 <li>Energy consumption added as a factor in fair-share scheduling.</li>
 <li>Energy aware scheduling added with respect to power caps.</li>
-<li>Improved user support for fault-tolerance (e.g. "hot spare" resources).</li>
-<li>New partition configuration parameters: AllowAccounts, AllowQOS,
-    DenyAccounts and DenyQOS.</li>
-<li>Scalability improvements for MPI initialization including communication of
-    the compute node network interface details.</li>
-<li>Defer sending SIGKILL signal to processes while a core dump is in progress.</li>
-<li>Other important enhancements that can not be made public at this time...</li>
-</ul>
-</p>
-
-<h2><a name="1409">Major Updates in Slurm Version 14.09 and beyond</a></h2>
-<p> Detailed plans for release dates and contents of additional SLURM releases
-have not been finalized. Anyone desiring to perform SLURM development should
-notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
-to coordinate activities. Future development plans includes:
-<ul>
 <li>Distributed architecture to support the management of resources with Intel
     MIC processors.</li>
 <li>Support of I/O as a new resources, including proxy I/O nodes with data
@@ -80,8 +69,6 @@ to coordinate activities. Future development plans includes:
     post-processing, co-processing on I/O nodes, etc.) to optimize overall
     system utilization.</li>
 <li>IP communications over InfiniBand network for improved performance.</li>
-<li>Support for heterogeneous GPU environments (i.e. user specification of
-    desired GPU types).</li>
 <li>Fault-tolerance and jobs dynamic adaptation through communication protocol
     between Slurm , MPI libraries and the application.</li>
 <li>Improved support for high-throughput computing (e.g. multiple slurmctld
@@ -93,10 +80,8 @@ to coordinate activities. Future development plans includes:
     and refresh.</li>
 <li>Improved support for provisioning and virtualization.</li> 
 <li>Provide a web-based SLURM administration tool.</li>
-<li>Finer-grained BlueGene resouce management (partitions/queues and advanced
-    reservations containing less than a whole midplane).</li>
 </ul>
 
-<p style="text-align:center;">Last modified 05 December 2013</p>
+<p style="text-align:center;">Last modified 29 May 2014</p>
 
 <!--#include virtual="footer.txt"-->
