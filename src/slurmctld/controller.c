@@ -624,10 +624,10 @@ int main(int argc, char *argv[])
 
 
 	/* Give running agents a chance to complete and free memory.
-	 * Wait up to 60 seconds (3 seconds * 20) */
-	for (i=0; i<20; i++) {
+	 * Wait up to 60 seconds. */
+	for (i=0; i<60; i++) {
 		agent_purge();
-		sleep(3);
+		sleep(1);
 		cnt = get_agent_count();
 		if (cnt == 0)
 			break;
@@ -648,6 +648,7 @@ int main(int argc, char *argv[])
 	assoc_mgr_fini(dir_name);
 	xfree(dir_name);
 	reserve_port_config(NULL);
+	free_rpc_stats();
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */

@@ -51,6 +51,9 @@ typedef struct connection_arg {
 	slurm_addr_t cli_addr;
 } connection_arg_t;
 
+/* Free memory used to track RPC usage by type and user */
+extern void free_rpc_stats(void);
+
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
