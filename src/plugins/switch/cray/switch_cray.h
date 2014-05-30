@@ -104,6 +104,9 @@
 // Minimum network resource scaling (in percent)
 #define MIN_SCALING		1
 
+// Maximum concurrent job steps per node (based on network limits)
+#define MAX_STEPS_PER_NODE	4
+
 /**********************************************************
  * Type definitions
  **********************************************************/

@@ -120,26 +120,17 @@ int get_mem_scaling(stepd_step_rec_t *job)
 		return -1;
 	}
 
-	/*
-	 * Scale total_mem, which is in kilobytes, to megabytes because
-	 * app_mem is in megabytes.
-	 * Round to the nearest integer.
-	 * If the memory request is greater than 100 percent, then scale
-	 * it to 100%.
-	 * If the memory request is zero, then return an error.
-	 *
-	 * Note: Because this has caused some confusion in the past,
-	 * The MEM_PER_CPU flag is used to indicate that job->step_mem
-	 * is the amount of memory per CPU, not total.  However, this
-	 * flag is read and cleared in slurmd prior to passing this
-	 * value to slurmstepd.
-	 * The value comes to slurmstepd already properly scaled.
-	 * Thus, this function does not need to check the MEM_PER_CPU
-	 * flag.
-	 */
-	mem_scaling = ((((double) job->step_mem /
-			 ((double) total_mem / 1024)) * (double) 100))
-		+ 0.5;
+	// Find the memory scaling factor
+	if (job->step_mem == 0) {
+		// step_mem of 0 indicates no memory limit,
+		// divide to handle multiple --mem 0 steps per node
+		mem_scaling = MAX_SCALING / MAX_STEPS_PER_NODE;
+	} else {
+		// Convert step_mem to kB, then find percentage of total
+		mem_scaling = (uint64_t)job->step_mem * 1024 * 100 / total_mem;
+	}
+
+	// Make sure it's within boundaries
 	if (mem_scaling > MAX_SCALING) {
 		CRAY_INFO("Memory scaling out of bounds: %d. "
 			  "Reducing to %d%%.",
