@@ -36,6 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE 1
+
 #if HAVE_CONFIG_H
 #   include "config.h"
 #endif
@@ -47,6 +49,8 @@
 #  include <inttypes.h>
 #endif
 
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -194,12 +198,40 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
  * (once) at this time. */
 int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 {
+#ifdef HAVE_NATIVE_CRAY
+	char fname[64];
+	int fd;
+#endif
+
+	// Attach to the job container
 	if (job_attachpid(pid, job->cont_id) == (jid_t) -1) {
 		error("Failed to attach pid %d to job container: %m", pid);
 		return SLURM_ERROR;
 	}
 
 	_end_container_thread();
+
+#ifdef HAVE_NATIVE_CRAY
+	// Set apid for this pid
+	if (job_setapid(pid, SLURM_ID_HASH(job->jobid, job->stepid)) == -1) {
+		error("Failed to set pid %d apid: %m", pid);
+		return SLURM_ERROR;
+	}
+
+	// Explicitly mark pid as an application (/proc/<pid>/task_is_app)
+	snprintf(fname, sizeof(fname), "/proc/%d/task_is_app", pid);
+	fd = open(fname, O_WRONLY);
+	if (fd == -1) {
+		error("Failed to open %s: %m", fname);
+		return SLURM_ERROR;
+	}
+	if (write(fd, "1", 1) < 1) {
+		error("Failed to write to %s: %m", fname);
+		TEMP_FAILURE_RETRY(close(fd));
+		return SLURM_ERROR;
+	}
+	TEMP_FAILURE_RETRY(close(fd));
+#endif
 
 	return SLURM_SUCCESS;
 }
