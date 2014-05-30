@@ -320,6 +320,11 @@ fini:
 	xfree(nodelist_nids);
 
 	return status;
+
+#elif HAVE_CRAY_NETWORK
+	/* NHC not supported, but don't sleep before return. */
+	return 0;
+
 #else
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("simluating calling NHC for jobid %u "
@@ -526,7 +531,7 @@ static void _initialize_event(alpsc_ev_app_t *event,
 	event->nodes = NULL;
 	event->num_nodes = 0;
 
-	// Fill in nodes and num_nodes
+	// Fill in nodes and num_nodes if available
 	if (step_ptr->step_layout) {
 		hl = hostlist_create(step_ptr->step_layout->node_list);
 		if (hl == NULL) {
@@ -555,8 +560,6 @@ static void _initialize_event(alpsc_ev_app_t *event,
 
 		hostlist_iterator_destroy(hlit);
 		hostlist_destroy(hl);
-	} else {
-		// TODO: do we have to worry about batch scripts?
 	}
 	return;
 }
@@ -637,6 +640,14 @@ static void _update_app(struct job_record *job_ptr,
 
 	// Fill in the new event
 	_initialize_event(&app, job_ptr, step_ptr, state);
+
+	// If there are no nodes, set_application_info will fail
+	if (app.nodes == NULL || app.num_nodes == 0) {
+		debug("Job %"PRIu32".%"PRIu32" has no nodes, skipping",
+		      job_ptr->job_id, step_ptr->step_id);
+		_free_event(&app);
+		return;
+	}
 
 	pthread_mutex_lock(&aeld_mutex);
 
@@ -1380,7 +1391,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	int i, j;
 	uint64_t blade_id = 0;
 
-#ifdef HAVE_NATIVE_CRAY_GA
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	int nn, end_nn, last_nn = 0;
 	bool found = 0;
 	alpsc_topology_t *topology = NULL;
@@ -1432,7 +1443,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			nodeinfo->nid = atoll(nid_char);
 		}
 
-#ifdef HAVE_NATIVE_CRAY_GA
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 		end_nn = num_nodes;
 
 	start_again:
@@ -1488,7 +1499,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	/* give back the memory */
 	xrealloc(blade_array, sizeof(blade_info_t) * blade_cnt);
 
-#ifdef HAVE_NATIVE_CRAY_GA
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	free(topology);
 #endif
 
