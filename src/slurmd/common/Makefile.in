@@ -135,7 +135,8 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 libslurmd_common_la_LIBADD =
 am_libslurmd_common_la_OBJECTS = core_spec_plugin.lo \
 	job_container_plugin.lo proctrack.lo setproctitle.lo \
-	slurmstepd_init.lo run_script.lo task_plugin.lo set_oomadj.lo
+	slurmd_cgroup.lo slurmstepd_init.lo run_script.lo \
+	task_plugin.lo set_oomadj.lo
 libslurmd_common_la_OBJECTS = $(am_libslurmd_common_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -455,6 +456,7 @@ libslurmd_common_la_SOURCES = \
 	job_container_plugin.c job_container_plugin.h \
 	proctrack.c proctrack.h \
 	setproctitle.c setproctitle.h \
+	slurmd_cgroup.c slurmd_cgroup.h \
 	slurmstepd_init.c slurmstepd_init.h \
 	run_script.c run_script.h \
 	task_plugin.c task_plugin.h \
@@ -530,6 +532,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_script.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/set_oomadj.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd_cgroup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_plugin.Plo@am__quote@
 

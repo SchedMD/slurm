@@ -43,6 +43,7 @@
 #define _GNU_SOURCE
 #include <ctype.h>
 #include <sched.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
@@ -88,7 +89,9 @@ static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
 
 char* system_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
 
-static uint64_t percent_in_bytes (uint64_t mb, float percent)
+static int _xcgroup_cpuset_init(xcgroup_t* cg);
+
+static uint64_t _percent_in_bytes (uint64_t mb, float percent)
 {
 	return ((mb * 1024 * 1024) * (percent / 100.0));
 }
@@ -218,8 +221,8 @@ int init_system_memory_cgroup(void)
 	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
 		error ("system cgroup: Unable to get RealMemory size");
 
-	max_ram = percent_in_bytes(totalram, slurm_cgroup_conf.max_ram_percent);
-	max_swap = percent_in_bytes(totalram, slurm_cgroup_conf.max_swap_percent);
+	max_ram = _percent_in_bytes(totalram, slurm_cgroup_conf.max_ram_percent);
+	max_swap = _percent_in_bytes(totalram, slurm_cgroup_conf.max_swap_percent);
 	max_swap += max_ram;
 	min_ram_space = slurm_cgroup_conf.min_ram_space * 1024 * 1024;
 
@@ -338,7 +341,7 @@ char* system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
  * cpuset.cpus and cpuset.mems must be set or the cgroup
  * will not be available at all.
  * we duplicate the ancestor configuration in the init step */
-int _xcgroup_cpuset_init(xcgroup_t* cg)
+static int _xcgroup_cpuset_init(xcgroup_t* cg)
 {
 	int fstatus,i;
 

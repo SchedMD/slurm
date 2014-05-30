@@ -1886,8 +1886,7 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 
 static int _build_node_spec_bitmap(struct node_record *node_ptr)
 {
-	uint32_t n, c, coff, size;
-	int spec_cores, res_core, res_sock, res_off;
+	uint32_t c, coff, size;
 	int *cpu_spec_array;
 	uint i, node_inx;
 
@@ -1899,14 +1898,12 @@ static int _build_node_spec_bitmap(struct node_record *node_ptr)
 	size = coff - c;
 	node_ptr->node_spec_bitmap = NULL;
 	node_ptr->node_spec_bitmap = bit_alloc(size);
-	if (!node_ptr->node_spec_bitmap)
-		return SLURM_ERROR;
 	bit_nset(node_ptr->node_spec_bitmap, 0, size-1);
 
 	/* remove node's specialized cpus now */
 	cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
 	i = 0;
-	while(cpu_spec_array[i] != -1) {
+	while (cpu_spec_array[i] != -1) {
 		bit_nclear(node_ptr->node_spec_bitmap, (cpu_spec_array[i] /
 			   node_ptr->threads), (cpu_spec_array[i + 1] /
 			   node_ptr->threads));

@@ -764,7 +764,6 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 	uint32_t n, c, nodes, size;
 	int spec_cores, res_core, res_sock, res_off;
 	uint32_t coff;
-	int *cpu_spec_array;
 	uint16_t i;
 	struct node_record *node_ptr;
 
