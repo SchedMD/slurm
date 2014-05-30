@@ -578,12 +578,19 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		}
 		job = job_create_allocation(resp);
 
-		opt.exclusive = false;	/* not applicable for this step */
 		opt.time_limit = NO_VAL;/* not applicable for step, only job */
 		xfree(opt.constraints);	/* not applicable for this step */
 		if (!opt.job_name_set_cmd && opt.job_name_set_env) {
 			/* use SLURM_JOB_NAME env var */
 			opt.job_name_set_cmd = true;
+		}
+		if ((opt.core_spec_set || opt.exclusive) && opt.cpus_set) {
+			/* Step gets specified CPU count, which may only part
+			 * of the job allocation. */
+			opt.exclusive = true;
+		} else {
+			/* Step gets all CPUs in the job allocation. */
+			opt.exclusive = false;
 		}
 
 		/*
