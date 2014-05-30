@@ -151,8 +151,8 @@ jobid#123 for userid#100, using the default base directory (/cgroup):
 <p>If resource specialization is configured, a special <i>system</i> cgroup 
 is created below the <i>slurm</i> cgroup in the cpuset and memory 
 hierarchies:</p>
-<p><pre>/cgroup/cpuset/slurm/system</pre></p>
-<p><pre>/cgroup/memory/slurm/system</pre></p>
+<pre>/cgroup/cpuset/slurm/system
+/cgroup/memory/slurm/system</pre>
 <p>Note that all these structures apply to a specific compute node. Jobs that 
 use more than one node will have a cgroup structure on each node.</p>
 
@@ -204,6 +204,6 @@ the following example.</li>
 </ul>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 November 2013</p>
+<p style="text-align:center;">Last modified 30 May 2014</p>
 
 <!--#include virtual="footer.txt"-->

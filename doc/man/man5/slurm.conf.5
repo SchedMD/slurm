@@ -3043,7 +3043,7 @@ Number of cores on which Slurm compute node daemons (slurmd, slurmstepd) will
 be confined. These cores will not be available for allocation to user jobs.
 Isolation of the Slurm daemons from user jobs may improve
 performance.  If this option and \fBCPUSpecList\fR are both designated for a
-node an error is generated.  For information on the algorithm used by Slurm
+node, an error is generated.  For information on the algorithm used by Slurm
 to select the cores refer to the core specialization documentation
 ( http://slurm.schedmd.com/core_spec.html ). This option has no effect
 unless cgroup job confinement is also configured (\fBTaskPlugin=task/cgroup\fR
@@ -3073,7 +3073,7 @@ node daemons (slurmd, slurmstepd) will be confined. The list will be expanded
 to include all other CPUs, if any, on the same cores. These cores will not be 
 available for allocation to user jobs. Isolation of the
 Slurm daemons from user jobs may improve performance.  If this option
-and \fBCoreSpecCount\fR are both designated for a node an error is generated.
+and \fBCoreSpecCount\fR are both designated for a node, an error is generated.
 This option has no effect unless cgroup job confinement is also configured 
 (\fBTaskPlugin=task/cgroup\fR with \fBConstrainCores=yes\fR in cgroup.conf).
 
