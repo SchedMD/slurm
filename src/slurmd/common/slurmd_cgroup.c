@@ -472,7 +472,7 @@ extern void attach_system_cgroup_pid(pid_t pid)
 	xstrcat(slurm_cgpath,"/system");
 	if (xcgroup_ns_load(&slurm_cgroup_conf, &cpuset_ns, "cpuset")
 	    == XCGROUP_SUCCESS) {
-		if (xcgroup_load(&cpuset_ns,&system_cpuset_cg, slurm_cgpath)
+		if (xcgroup_load(&cpuset_ns, &system_cpuset_cg, slurm_cgpath)
 		    == XCGROUP_SUCCESS)
 			if (attach_system_cpuset_pid(pid) != SLURM_SUCCESS)
 				debug2("system cgroup: unable to attach pid to "
@@ -480,7 +480,7 @@ extern void attach_system_cgroup_pid(pid_t pid)
 	}
 	if (xcgroup_ns_load(&slurm_cgroup_conf, &memory_ns, "memory")
 	    == XCGROUP_SUCCESS) {
-		if (xcgroup_load(&memory_ns,&system_memory_cg, slurm_cgpath)
+		if (xcgroup_load(&memory_ns, &system_memory_cg, slurm_cgpath)
 		    == XCGROUP_SUCCESS)
 			if (attach_system_memory_pid(pid) != SLURM_SUCCESS)
 				debug2("system cgroup: unable to attach pid to "

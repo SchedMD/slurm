@@ -1240,7 +1240,7 @@ static int _restore_node_state(int recover,
 			old_node_ptr->os = NULL;
 		}
 		if (old_node_ptr->node_spec_bitmap) {
-			xfree(node_ptr->node_spec_bitmap);
+			FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 			node_ptr->node_spec_bitmap =
 				old_node_ptr->node_spec_bitmap;
 			old_node_ptr->node_spec_bitmap = NULL;

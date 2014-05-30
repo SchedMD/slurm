@@ -2104,7 +2104,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
 		i = 0;
 		node_ptr->core_spec_cnt = 0;
-		while(cpu_spec_array[i] != -1) {
+		while (cpu_spec_array[i] != -1) {
 			node_ptr->core_spec_cnt += (cpu_spec_array[i + 1] -
 				cpu_spec_array[i]) + 1;
 			i += 2;

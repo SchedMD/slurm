@@ -1985,7 +1985,7 @@ static int _core_spec_init(void)
 	} else {
 		/* CoreSpecCount designated in slurm.conf */
 		debug2("Resource spec: configured core specialization "
-		       "count: %d", conf->core_spec_cnt);
+		       "count: %u", conf->core_spec_cnt);
 		if (conf->core_spec_cnt >= ncores) {
 			error("Resource spec: CoreSpecCount too large");
 			_resource_spec_fini();
@@ -2053,8 +2053,8 @@ static int _memory_spec_init(void)
 		      "system memory cgroup");
 		return SLURM_ERROR;
 	}
-	info("Resource spec: system cgroup memory limit set to %d MB",
-			conf->mem_spec_limit);
+	info("Resource spec: system cgroup memory limit set to %u MB",
+	     conf->mem_spec_limit);
 	return SLURM_SUCCESS;
 }
 
@@ -2160,6 +2160,6 @@ static void _resource_spec_fini(void)
 {
 	xfree(res_abs_cores);
 	xfree(res_mac_cpus);
-	bit_free(res_core_bitmap);
-	bit_free(res_cpu_bitmap);
+	FREE_NULL_BITMAP(res_core_bitmap);
+	FREE_NULL_BITMAP(res_cpu_bitmap);
 }
