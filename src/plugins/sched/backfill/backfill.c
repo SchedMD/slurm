@@ -751,6 +751,8 @@ static int _attempt_backfill(void)
 	}
 	sort_job_queue(job_queue);
 	while ((job_queue_rec = (job_queue_rec_t *) list_pop(job_queue))) {
+		if (slurmctld_config.shutdown_time)
+			break;
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
 		    (_delta_tv(&start_tv) >= sched_timeout)) {
@@ -933,6 +935,8 @@ static int _attempt_backfill(void)
 		/* Determine impact of any resource reservations */
 		later_start = now;
  TRY_LATER:
+		if (slurmctld_config.shutdown_time)
+			break;
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
 		    (_delta_tv(&start_tv) >= sched_timeout)) {

@@ -753,6 +753,9 @@ extern int schedule(uint32_t job_limit)
 	uint16_t reject_state_reason = WAIT_NO_REASON;
 	DEF_TIMERS;
 
+	if (slurmctld_config.shutdown_time)
+		return 0;
+
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
