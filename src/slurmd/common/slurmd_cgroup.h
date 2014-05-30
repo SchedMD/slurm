@@ -45,27 +45,27 @@
 #include "src/common/xcgroup_read_config.h"
 
 /* Initialize slurmd system cpuset cgroup */
-int init_system_cpuset_cgroup(void);
+extern int init_system_cpuset_cgroup(void);
 
 /* Initialize slurmd system memory cgroup */
-int init_system_memory_cgroup(void);
+extern int init_system_memory_cgroup(void);
 
 /* Set reserved machine CPU IDs in system cpuset cgroup */
-int set_system_cgroup_cpus(char *phys_core_str);
+extern int set_system_cgroup_cpus(char *phys_core_str);
 
 /* Set memory limit in system memory cgroup */
-int set_system_cgroup_mem_limit(uint32_t mem_spec_limit);
+extern int set_system_cgroup_mem_limit(uint32_t mem_spec_limit);
 
 /* Attach pid to system cpuset cgroup */
-int attach_system_cpuset_pid(pid_t pid);
+extern int attach_system_cpuset_pid(pid_t pid);
 
-/* Attach pid to system memory cgroup */
-int attach_system_memory_pid(pid_t pid);
+/* Attach a pid to system memory cgroup */
+extern int attach_system_memory_pid(pid_t pid);
 
 /* Check that cgroup job confinement is configured */
-bool check_cgroup_job_confinement(void);
+extern bool check_cgroup_job_confinement(void);
 
 /* Attach a pid to the system cgroups */
-void attach_system_cgroup_pid(pid_t pid);
+extern void attach_system_cgroup_pid(pid_t pid);
 
 #endif	/* _SLURMD_CGROUP_H */

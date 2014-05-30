@@ -87,7 +87,7 @@ static uint64_t max_swap;       /* Upper bound for swap                   */
 static uint64_t totalram;       /* Total real memory available on node    */
 static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
 
-char* system_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
+static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
 
 static int _xcgroup_cpuset_init(xcgroup_t* cg);
 
@@ -96,7 +96,7 @@ static uint64_t _percent_in_bytes (uint64_t mb, float percent)
 	return ((mb * 1024 * 1024) * (percent / 100.0));
 }
 
-int init_system_cpuset_cgroup(void)
+extern int init_system_cpuset_cgroup(void)
 {
 	int rc;
 	int fstatus = SLURM_ERROR;
@@ -119,13 +119,13 @@ int init_system_cpuset_cgroup(void)
 	}
 
 	/* create slurm root cg in this cg namespace */
-	slurm_cgpath = system_cgroup_create_slurm_cg(&cpuset_ns);
+	slurm_cgpath = _system_cgroup_create_slurm_cg(&cpuset_ns);
 	if ( slurm_cgpath == NULL ) {
 		return SLURM_ERROR;
 	}
 
 	/* check that this cgroup has cpus allowed or initialize them */
-	if (xcgroup_load(&cpuset_ns,&slurm_cg,slurm_cgpath)
+	if (xcgroup_load(&cpuset_ns, &slurm_cg, slurm_cgpath)
 	    != XCGROUP_SUCCESS) {
 		error("system cgroup: unable to load slurm cpuset xcgroup");
 		xfree(slurm_cgpath);
@@ -143,8 +143,7 @@ again:
 		}
 
 		/* initialize the cpusets as it was nonexistent */
-		if (_xcgroup_cpuset_init(&slurm_cg) !=
-		    XCGROUP_SUCCESS) {
+		if (_xcgroup_cpuset_init(&slurm_cg) != XCGROUP_SUCCESS) {
 			xfree(slurm_cgpath);
 			xcgroup_destroy(&slurm_cg);
 			free_slurm_cgroup_conf(&slurm_cgroup_conf);
@@ -158,8 +157,7 @@ again:
 	xfree(slurm_cgpath);
 
 	/* create system cgroup in the cpuset ns */
-	if (xcgroup_create(&cpuset_ns,&system_cpuset_cg,
-			   system_cgroup_path,
+	if (xcgroup_create(&cpuset_ns, &system_cpuset_cg, system_cgroup_path,
 			   getuid(),getgid()) != XCGROUP_SUCCESS) {
 		goto error;
 	}
@@ -183,7 +181,7 @@ error:
 	return fstatus;
 }
 
-int init_system_memory_cgroup(void)
+extern int init_system_memory_cgroup(void)
 {
 	int fstatus = SLURM_ERROR;
 	xcgroup_t memory_cg;
@@ -254,7 +252,7 @@ int init_system_memory_cgroup(void)
         setenv("SLURMSTEPD_OOM_ADJ", "-1000", 0);
 
 	/* create slurm root cg in this cg namespace */
-	slurm_cgpath = system_cgroup_create_slurm_cg(&memory_ns);
+	slurm_cgpath = _system_cgroup_create_slurm_cg(&memory_ns);
 	if ( slurm_cgpath == NULL ) {
 		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 		return SLURM_ERROR;
@@ -265,7 +263,7 @@ int init_system_memory_cgroup(void)
 	xfree(slurm_cgpath);
 
 	/* create system cgroup in the cpuset ns */
-	if (xcgroup_create(&memory_ns,&system_memory_cg,
+	if (xcgroup_create(&memory_ns, &system_memory_cg,
 			   system_cgroup_path,
 			   getuid(),getgid()) != XCGROUP_SUCCESS) {
 		goto error;
@@ -275,10 +273,10 @@ int init_system_memory_cgroup(void)
 		goto error;
 	}
 
-	if ( xcgroup_set_param(&system_memory_cg,"memory.use_hierarchy","1")
+	if ( xcgroup_set_param(&system_memory_cg, "memory.use_hierarchy", "1")
 	     != XCGROUP_SUCCESS ) {
 		error("system cgroup: unable to ask for hierarchical accounting"
-		      "of system memcg '%s'",system_memory_cg.path);
+		      "of system memcg '%s'", system_memory_cg.path);
 		xcgroup_destroy (&system_memory_cg);
 		goto error;
 	}
@@ -294,16 +292,16 @@ error:
 	return fstatus;
 }
 
-char* system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
+static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 {
-
 	/* we do it here as we do not have access to the conf structure */
 	/* in libslurm (src/common/xcgroup.c) */
 	xcgroup_t slurm_cg;
 	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
+
 #ifdef MULTIPLE_SLURMD
 	if ( conf->node_name != NULL )
-		xstrsubstitute(pre,"%n", conf->node_name);
+		xstrsubstitute(pre, "%n", conf->node_name);
 	else {
 		xfree(pre);
 		pre = (char*) xstrdup("/slurm");
@@ -313,7 +311,7 @@ char* system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 	/* create slurm cgroup in the ns
 	 * disable notify_on_release to avoid the removal/creation
 	 * of this cgroup for each last/first running job on the node */
-	if (xcgroup_create(ns,&slurm_cg,pre,
+	if (xcgroup_create(ns, &slurm_cg, pre,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		xfree(pre);
 		return pre;
@@ -330,7 +328,7 @@ char* system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 	else {
 		debug3("system cgroup: slurm cgroup %s successfully created "
 		       "for ns %s: %m",
-		       pre,ns->subsystems);
+		       pre, ns->subsystems);
 		xcgroup_destroy(&slurm_cg);
 	}
 
@@ -343,18 +341,17 @@ char* system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
  * we duplicate the ancestor configuration in the init step */
 static int _xcgroup_cpuset_init(xcgroup_t* cg)
 {
-	int fstatus,i;
+	int fstatus, i;
 
 	char* cpuset_metafiles[] = {
 		"cpus",
 		"mems"
 	};
-//	char cpuset_meta[PATH_MAX];
-	char* cpuset_conf;
-	size_t csize;
+	char* cpuset_conf = NULL;
+	size_t csize = 0;
 
 	xcgroup_t acg;
-	char* acg_name;
+	char* acg_name = NULL;
 	char* p;
 
 	fstatus = XCGROUP_ERROR;
@@ -364,13 +361,13 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 	p = rindex(acg_name,'/');
 	if (p == NULL) {
 		debug2("system cgroup: unable to get ancestor path for "
-		       "cpuset cg '%s' : %m",cg->path);
+		       "cpuset cg '%s' : %m", cg->path);
 		return fstatus;
 	} else
 		*p = '\0';
-	if (xcgroup_load(cg->ns,&acg, acg_name) != XCGROUP_SUCCESS) {
+	if (xcgroup_load(cg->ns, &acg, acg_name) != XCGROUP_SUCCESS) {
 		debug2("system cgroup: unable to load ancestor for "
-		       "cpuset cg '%s' : %m",cg->path);
+		       "cpuset cg '%s' : %m", cg->path);
 		return fstatus;
 	}
 
@@ -379,8 +376,8 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 	again:
 		snprintf(cpuset_meta, sizeof(cpuset_meta), "%s%s",
 			 cpuset_prefix, cpuset_metafiles[i]);
-		if (xcgroup_get_param(&acg,cpuset_meta,
-				      &cpuset_conf,&csize)
+		if (xcgroup_get_param(&acg ,cpuset_meta,
+				      &cpuset_conf, &csize)
 		    != XCGROUP_SUCCESS) {
 			if (!cpuset_prefix_set) {
 				cpuset_prefix_set = 1;
@@ -394,12 +391,12 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 			return fstatus;
 		}
 		if (csize > 0)
-			cpuset_conf[csize-1]='\0';
-		if (xcgroup_set_param(cg,cpuset_meta,cpuset_conf)
+			cpuset_conf[csize-1] = '\0';
+		if (xcgroup_set_param(cg,cpuset_meta, cpuset_conf)
 		    != XCGROUP_SUCCESS) {
 			debug("system cgroup: unable to write %s configuration "
 			       "(%s) for cpuset cg '%s'",cpuset_meta,
-			       cpuset_conf,cg->path);
+			       cpuset_conf, cg->path);
 			xcgroup_destroy(&acg);
 			xfree(cpuset_conf);
 			return fstatus;
@@ -411,36 +408,36 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 	return XCGROUP_SUCCESS;
 }
 
-int set_system_cgroup_cpus(char *phys_cpu_str)
+extern int set_system_cgroup_cpus(char *phys_cpu_str)
 {
 	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
 	xcgroup_set_param(&system_cpuset_cg, cpuset_meta, phys_cpu_str);
 	return SLURM_SUCCESS;
 }
 
-int set_system_cgroup_mem_limit(uint32_t mem_spec_limit)
+extern int set_system_cgroup_mem_limit(uint32_t mem_spec_limit)
 {
 	uint64_t mem_spec_bytes = mem_spec_limit * 1024 * 1024;
 	xcgroup_set_uint64_param(&system_memory_cg, "memory.limit_in_bytes",
-			  mem_spec_bytes);
+				 mem_spec_bytes);
 	return SLURM_SUCCESS;
 }
 
-int attach_system_cpuset_pid(pid_t pid)
+extern int attach_system_cpuset_pid(pid_t pid)
 {
 	if (xcgroup_add_pids(&system_cpuset_cg, &pid, 1) != XCGROUP_SUCCESS)
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
-int attach_system_memory_pid(pid_t pid)
+extern int attach_system_memory_pid(pid_t pid)
 {
 	if (xcgroup_add_pids(&system_memory_cg, &pid, 1) != XCGROUP_SUCCESS)
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
-bool check_cgroup_job_confinement(void)
+extern bool check_cgroup_job_confinement(void)
 {
 	char *task_plugin_type = NULL;
 	bool status = FALSE;
@@ -448,15 +445,15 @@ bool check_cgroup_job_confinement(void)
 	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
 		return FALSE;
 	task_plugin_type = slurm_get_task_plugin();
-	if ((strncmp(task_plugin_type,"task/cgroup",11) == 0 ) &&
-		slurm_cgroup_conf.constrain_cores)
+	if (!strncmp(task_plugin_type,"task/cgroup", 11) &&
+	    slurm_cgroup_conf.constrain_cores)
 		status = TRUE;
 	xfree(task_plugin_type);
 	free_slurm_cgroup_conf(&slurm_cgroup_conf);
 	return status;
 }
 
-void attach_system_cgroup_pid(pid_t pid)
+extern void attach_system_cgroup_pid(pid_t pid)
 {
 	char* slurm_cgpath;
 
