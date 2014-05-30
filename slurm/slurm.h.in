@@ -1606,15 +1606,18 @@ typedef struct node_info {
 	uint16_t boards;        /* total number of boards per node  */
 	time_t boot_time;	/* time of node boot */
 	uint16_t cores;         /* number of cores per socket       */
+	uint16_t core_spec_cnt; /* number of specialized cores on node */
 	uint32_t cpu_load;	/* CPU load * 100 */
 	uint16_t cpus;		/* configured count of cpus running on
 				 * the node */
+	char *cpu_spec_list;	/* node's specialized cpus */
 	acct_gather_energy_t *energy;	 /* energy data */
 	ext_sensors_data_t *ext_sensors; /* external sensor data */
 	char *features;		/* list of a node's features */
 	char *gres;		/* list of a node's generic resources */
 	char *gres_drain;	/* list of drained GRES */
 	char *gres_used;	/* list of GRES in current use */
+	uint32_t mem_spec_limit; /* MB memory limit for specialization */
 	char *name;		/* node name to slurm */
 	char *node_addr;	/* communication name (optional) */
 	char *node_hostname;	/* node's hostname (optional) */

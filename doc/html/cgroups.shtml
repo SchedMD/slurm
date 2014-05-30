@@ -52,6 +52,7 @@ be run after updating the file.
 The cgroup plugins can provide a number of benefits over the
 other more standard plugins, as described below.
 </ul>
+<p>SLURM also uses cgroups for resource specialization.</p>
 
 <h2>SLURM Cgroups Configuration Overview</h2>
 <p>There are several sets of configuration options for SLURM cgroups:</p>
@@ -62,6 +63,8 @@ of the others.</li>
 <li><a href="cgroup.conf.html">cgroup.conf</a> provides general options that
 are common to all cgroup plugins, plus additional options that apply only to
 specific plugins.</li>
+<li>System-level resource specialization is enabled using node configuration 
+parameters.</li>
 <li>Additional configuration is required to enable automatic removal of SLURM
 cgroups when they are no longer in use.
 See <a href="#cleanup">Cleanup of SLURM Cgroups</a> below for details.</li>
@@ -122,6 +125,15 @@ jobacct_gather/linux plugin (sourced from /proc stat).
 options apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page for
 details.</p>
 
+<h2>Use of Cgroups for Resource Specialization</h2>
+<p>Resource Specialization may be used to reserve a subset of cores on each compute 
+node for exclusive use by SLURM compute node daemons (slurmd, slurmstepd). It 
+may also be used to apply a real memory limit to the daemons. The daemons are 
+confined to the reserved cores using a special <i>system</i> cgroup in the 
+cpuset hierarchy. The memory limit is enforced using a <i>system</i> cgroup 
+in the memory hierarchy. System-level resource specialization is enabled with 
+special node configuration parameters in 
+<a href="slurm.conf.html">slurm.conf</a>.</p>
 <h2>Organization of SLURM Cgroups</h2>
 <p>SLURM cgroups are organized as follows.  A base directory (mount point) is
 created at /cgroup, or as configured by the <i>CgroupMountpoint</I> option in
@@ -136,8 +148,13 @@ step or task), followed by the relevant numeric id. The following example shows
 the path of the task cgroup in the cpuset hierarchy for taskid#2 of stepid#0 of
 jobid#123 for userid#100, using the default base directory (/cgroup):
 <p><pre>/cgroup/cpuset/slurm/uid_100/job_123/step_0/task_2</pre></p>
-<p>Note that this structure applies to a specific compute node. Jobs that use more
-than one node will have a cgroup structure on each node.</p>
+<p>If resource specialization is configured, a special <i>system</i> cgroup 
+is created below the <i>slurm</i> cgroup in the cpuset and memory 
+hierarchies:</p>
+<p><pre>/cgroup/cpuset/slurm/system</pre></p>
+<p><pre>/cgroup/memory/slurm/system</pre></p>
+<p>Note that all these structures apply to a specific compute node. Jobs that 
+use more than one node will have a cgroup structure on each node.</p>
 
 <a name="cleanup"><h2>Cleanup of SLURM Cgroups</h2></a>
 <p>Linux provides a mechanism for the automatic removal of a cgroup when its

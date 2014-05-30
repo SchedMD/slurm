@@ -1191,11 +1191,16 @@ static int _restore_node_state(int recover,
 		node_ptr->boot_time     = old_node_ptr->boot_time;
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;
+		xfree(node_ptr->cpu_spec_list);
+		node_ptr->cpu_spec_list = old_node_ptr->cpu_spec_list;
+		old_node_ptr->cpu_spec_list = NULL;
+		node_ptr->core_spec_cnt = old_node_ptr->core_spec_cnt;
 		node_ptr->last_idle     = old_node_ptr->last_idle;
 		node_ptr->boards        = old_node_ptr->boards;
 		node_ptr->sockets       = old_node_ptr->sockets;
 		node_ptr->threads       = old_node_ptr->threads;
 		node_ptr->real_memory   = old_node_ptr->real_memory;
+		node_ptr->mem_spec_limit = old_node_ptr->mem_spec_limit;
 		node_ptr->slurmd_start_time = old_node_ptr->slurmd_start_time;
 		node_ptr->tmp_disk      = old_node_ptr->tmp_disk;
 		node_ptr->weight        = old_node_ptr->weight;
@@ -1233,6 +1238,12 @@ static int _restore_node_state(int recover,
 			xfree(node_ptr->os);
 			node_ptr->os = old_node_ptr->os;
 			old_node_ptr->os = NULL;
+		}
+		if (old_node_ptr->node_spec_bitmap) {
+			xfree(node_ptr->node_spec_bitmap);
+			node_ptr->node_spec_bitmap =
+				old_node_ptr->node_spec_bitmap;
+			old_node_ptr->node_spec_bitmap = NULL;
 		}
 	}
 

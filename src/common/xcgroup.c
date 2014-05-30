@@ -357,6 +357,16 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 	return fstatus;
 }
 
+int xcgroup_ns_load(slurm_cgroup_conf_t *conf, xcgroup_ns_t *cgns, char *subsys)
+{
+	cgns->mnt_point = xstrdup_printf("%s/%s",
+					 conf->cgroup_mountpoint, subsys);
+	cgns->mnt_args = NULL;
+	cgns->subsystems = xstrdup(subsys);
+	cgns->notify_prog = xstrdup_printf("%s/release_%s",
+					   conf->cgroup_release_agent, subsys);
+	return XCGROUP_SUCCESS;
+}
 
 /*
  * -----------------------------------------------------------------------------

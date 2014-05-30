@@ -56,6 +56,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xcgroup.h"
+#include "src/common/xcpuinfo.h"
 
 #include "task_cgroup.h"
 
@@ -208,68 +209,6 @@ int str_to_cpuset(cpu_set_t *mask, const char* str)
 	}
 
 	return 0;
-}
-
-/*
- * convert abstract range into the machine one
- */
-static int _abs_to_mac(char* lrange, char** prange)
-{
-	static int total_cores = -1, total_cpus = -1;
-	bitstr_t* absmap = NULL;
-	bitstr_t* macmap = NULL;
-	int icore, ithread;
-	int absid, macid;
-	int rc = SLURM_SUCCESS;
-
-	if (total_cores == -1) {
-		total_cores = conf->sockets * conf->cores;
-		total_cpus  = conf->block_map_size;
-	}
-
-	/* allocate bitmap */
-	absmap = bit_alloc(total_cores);
-	macmap = bit_alloc(total_cpus);
-
-	if (!absmap || !macmap) {
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	/* string to bitmap conversion */
-	if (bit_unfmt(absmap, lrange)) {
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	/* mapping abstract id to machine id using conf->block_map */
-	for (icore = 0; icore < total_cores; icore++) {
-		if (bit_test(absmap, icore)) {
-			for (ithread = 0; ithread<conf->threads; ithread++) {
-				absid  = icore*conf->threads + ithread;
-				absid %= total_cpus;
-
-				macid  = conf->block_map[absid];
-				macid %= total_cpus;
-
-				bit_set(macmap, macid);
-			}
-		}
- 	}
-
-	/* convert machine cpu bitmap to range string */
-	*prange = (char*)xmalloc(total_cpus*6);
-	bit_fmt(*prange, total_cpus*6, macmap);
-
-	/* free unused bitmaps */
-end_it:
-	FREE_NULL_BITMAP(absmap);
-	FREE_NULL_BITMAP(macmap);
-
-	if (rc != SLURM_SUCCESS)
-		info("_abs_to_mac failed");
-
-	return rc;
 }
 
 /* when cgroups are configured with cpuset, at least
@@ -948,12 +887,12 @@ again:
 	      job->job_alloc_cores);
 	debug("task/cgroup: step abstract cores are '%s'",
 	      job->step_alloc_cores);
-	if (_abs_to_mac(job->job_alloc_cores,
+	if (xcpuinfo_abs_to_mac(job->job_alloc_cores,
 			&job_alloc_cores) != SLURM_SUCCESS) {
 		error("task/cgroup: unable to build job physical cores");
 		goto error;
 	}
-	if (_abs_to_mac(job->step_alloc_cores,
+	if (xcpuinfo_abs_to_mac(job->step_alloc_cores,
 			&step_alloc_cores) != SLURM_SUCCESS) {
 		error("task/cgroup: unable to build step physical cores");
 		goto error;

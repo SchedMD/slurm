@@ -443,6 +443,7 @@ static void _list_delete_config (void *config_entry)
 
 	xassert(config_ptr);
 	xassert(config_ptr->magic == CONFIG_MAGIC);
+	xfree(config_ptr->cpu_spec_list);
 	xfree(config_ptr->feature);
 	xfree(config_ptr->gres);
 	build_config_feature_list(config_ptr);
@@ -669,8 +670,11 @@ extern int build_all_nodeline_info (bool set_bitmap)
 		config_ptr->boards = node->boards;
 		config_ptr->sockets = node->sockets;
 		config_ptr->cores = node->cores;
+		config_ptr->core_spec_cnt = node->core_spec_cnt;
+		config_ptr->cpu_spec_list = xstrdup(node->cpu_spec_list);
 		config_ptr->threads = node->threads;
 		config_ptr->real_memory = node->real_memory;
+		config_ptr->mem_spec_limit = node->mem_spec_limit;
 		config_ptr->tmp_disk = node->tmp_disk;
 		config_ptr->weight = node->weight;
 		if (node->feature && node->feature[0])
@@ -798,11 +802,15 @@ extern struct node_record *create_node_record (
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
 	node_ptr->cpu_load = NO_VAL;
+	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	node_ptr->boards = config_ptr->boards;
 	node_ptr->sockets = config_ptr->sockets;
 	node_ptr->cores = config_ptr->cores;
+	node_ptr->core_spec_cnt = config_ptr->core_spec_cnt;
 	node_ptr->threads = config_ptr->threads;
+	node_ptr->mem_spec_limit = config_ptr->mem_spec_limit;
 	node_ptr->real_memory = config_ptr->real_memory;
+	node_ptr->node_spec_bitmap = NULL;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
 	node_ptr->energy = acct_gather_energy_alloc();
@@ -990,12 +998,14 @@ extern void purge_node_rec (struct node_record *node_ptr)
 {
 	xfree(node_ptr->arch);
 	xfree(node_ptr->comm_name);
+	xfree(node_ptr->cpu_spec_list);
 	xfree(node_ptr->features);
 	xfree(node_ptr->gres);
 	if (node_ptr->gres_list)
 		list_destroy(node_ptr->gres_list);
 	xfree(node_ptr->name);
 	xfree(node_ptr->node_hostname);
+	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 	xfree(node_ptr->os);
 	xfree(node_ptr->part_pptr);
 	xfree(node_ptr->reason);

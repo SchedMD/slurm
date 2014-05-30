@@ -124,6 +124,9 @@ typedef struct names_ll_s {
 	uint16_t sockets;
 	uint16_t cores;
 	uint16_t threads;
+	char *cpu_spec_list;
+	uint16_t core_spec_cnt;
+	uint32_t mem_spec_limit;
 	slurm_addr_t addr;
 	bool addr_initialized;
 	struct names_ll_s *next_alias;
@@ -556,10 +559,13 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	int computed_procs;
 	static s_p_options_t _nodename_options[] = {
 		{"Boards", S_P_UINT16},
+		{"CoreSpecCount", S_P_UINT16},
 		{"CoresPerSocket", S_P_UINT16},
 		{"CPUs", S_P_UINT16},
+		{"CPUSpecList", S_P_STRING},
 		{"Feature", S_P_STRING},
 		{"Gres", S_P_STRING},
+		{"MemSpecLimit", S_P_UINT32},
 		{"NodeAddr", S_P_STRING},
 		{"NodeHostname", S_P_STRING},
 		{"Port", S_P_STRING},
@@ -630,17 +636,33 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			no_boards = true;
 		}
 
+		if (!s_p_get_uint16(&n->core_spec_cnt, "CoreSpecCount", tbl)
+		    && !s_p_get_uint16(&n->core_spec_cnt, 
+				       "CoreSpecCount", dflt))
+			n->core_spec_cnt = 0;
+
+
 		if (!s_p_get_uint16(&n->cores, "CoresPerSocket", tbl)
 		    && !s_p_get_uint16(&n->cores, "CoresPerSocket", dflt)) {
 			n->cores = 1;
 			no_cores = true;
 		}
 
+		if (!s_p_get_string(&n->cpu_spec_list, "CPUSpecList", tbl)
+		    && !s_p_get_string(&n->cpu_spec_list,
+				       "CPUSpecList", dflt))
+			n->cpu_spec_list = NULL;
+
 		if (!s_p_get_string(&n->feature, "Feature", tbl))
 			s_p_get_string(&n->feature, "Feature", dflt);
 
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);
+
+		if (!s_p_get_uint32(&n->mem_spec_limit, "MemSpecLimit", tbl)
+		    && !s_p_get_uint32(&n->mem_spec_limit,
+				       "MemSpecLimit", dflt))
+			n->mem_spec_limit = 0;
 
 		if (!s_p_get_string(&n->port_str, "Port", tbl) &&
 		    !s_p_get_string(&n->port_str, "Port", dflt)) {
@@ -803,6 +825,24 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			}
 			/* Node boards factored into sockets */
 			n->cpus = n->sockets * n->cores * n->threads;
+		}
+
+		if (n->core_spec_cnt >= (n->sockets * n->cores)) {
+			error("NodeNames=%s CoreSpecCount=#  is invalid "
+			      "reset to 1", n->nodenames);
+			n->core_spec_cnt = 1;
+		}
+
+		if ((n->core_spec_cnt > 0) && n->cpu_spec_list) {
+			error("NodeNames=%s CoreSpecCount=#  is invalid "
+			      "reset to 0", n->nodenames);
+			n->core_spec_cnt = 0;
+		}
+
+		if (n->mem_spec_limit >= n->real_memory) {
+			error("NodeNames=%s MemSpecLimit=# is invalid "
+			      "reset to 0", n->nodenames);
+			n->mem_spec_limit = 0;
 		}
 
 		*dest = (void *)n;
@@ -1387,7 +1427,9 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 			      char *address, uint16_t port,
 			      uint16_t cpus, uint16_t boards,
 			      uint16_t sockets, uint16_t cores,
-			      uint16_t threads, bool front_end)
+			      uint16_t threads, bool front_end,
+			      char *cpu_spec_list, uint16_t core_spec_cnt,
+			      uint32_t mem_spec_limit)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -1434,6 +1476,9 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	new->cores	= cores;
 	new->threads	= threads;
 	new->addr_initialized = false;
+	new->cpu_spec_list = xstrdup(cpu_spec_list);
+	new->core_spec_cnt = core_spec_cnt;
+	new->mem_spec_limit = mem_spec_limit;
 
 	/* Put on end of each list */
 	new->next_alias	= NULL;
@@ -1588,7 +1633,9 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		_push_to_hashtbls(alias, hostname, address, port,
 				  node_ptr->cpus, node_ptr->boards,
 				  node_ptr->sockets, node_ptr->cores,
-				  node_ptr->threads, 0);
+				  node_ptr->threads, 0, node_ptr->cpu_spec_list,
+				  node_ptr->core_spec_cnt,
+				  node_ptr->mem_spec_limit);
 		free(alias);
 	}
 	if (address)
@@ -1647,7 +1694,8 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 		address = hostlist_shift(address_list);
 
 		_push_to_hashtbls(hostname, hostname, address,
-				  front_end_ptr->port, 1, 1, 1, 1, 1, 1);
+				  front_end_ptr->port, 1, 1, 1, 1, 1, 1,
+				  NULL, 0, 0);
 		free(hostname);
 		free(address);
 	}
@@ -2069,6 +2117,41 @@ extern int slurm_conf_get_cpus_bsct(const char *node_name,
 	return SLURM_FAILURE;
 }
 
+/*
+ * slurm_conf_get_res_spec_info - Return resource specialization info
+ * for a given NodeName
+ * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
+ */
+extern int slurm_conf_get_res_spec_info(const char *node_name,
+					char **cpu_spec_list,
+					uint16_t *core_spec_cnt,
+					uint32_t *mem_spec_limit)
+{
+	int idx;
+	names_ll_t *p;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	idx = _get_hash_idx(node_name);
+	p = node_to_host_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->alias, node_name) == 0) {
+			if (core_spec_cnt)
+			*cpu_spec_list = xstrdup(p->cpu_spec_list);
+			if (core_spec_cnt)
+				*core_spec_cnt  = p->core_spec_cnt;
+			if (mem_spec_limit)
+				*mem_spec_limit = p->mem_spec_limit;
+			slurm_conf_unlock();
+			return SLURM_SUCCESS;
+		}
+		p = p->next_alias;
+	}
+	slurm_conf_unlock();
+
+	return SLURM_FAILURE;
+}
 
 /* gethostname_short - equivalent to gethostname, but return only the first
  * component of the fully qualified name

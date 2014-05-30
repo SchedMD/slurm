@@ -138,7 +138,16 @@ int xcgroup_ns_is_available(xcgroup_ns_t* cgns);
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
  */
-int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns,xcgroup_t* cg,pid_t pid);
+int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns,xcgroup_t* cg, pid_t pid);
+
+/*
+ * load a cgroup namespace
+ *
+ * returned values:
+ *  - XCGROUP_ERROR
+ *  - XCGROUP_SUCCESS
+ */
+int xcgroup_ns_load(slurm_cgroup_conf_t *conf, xcgroup_ns_t *cgns, char *subsys);
 
 /*
  * create a cgroup structure
