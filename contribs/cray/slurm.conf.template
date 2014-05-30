@@ -7,7 +7,7 @@
 #
 # See the slurm.conf man page for more information.
 #
-ControlMachine={sdb}
+ControlMachine=sdb
 #ControlAddr=
 #BackupController=
 #BackupAddr=
@@ -15,6 +15,7 @@ ControlMachine={sdb}
 AuthType=auth/munge
 CacheGroups=0
 #CheckpointType=checkpoint/none
+CoreSpecPlugin=cray
 CryptoType=crypto/munge
 #DisableRootJobs=NO
 #EnforcePartLimits=NO
@@ -22,16 +23,16 @@ CryptoType=crypto/munge
 #EpilogSlurmctld=
 #FirstJobId=1
 #MaxJobId=999999
-#GresTypes=
+GresTypes={grestypes}
 #GroupUpdateForce=0
 #GroupUpdateTime=600
 #JobCheckpointDir=/var/slurm/checkpoint
 JobContainerType=job_container/cncu
-#JobCredentialPrivateKey={sysconfdir}/slurm.key
-#JobCredentialPublicCertificate={sysconfdir}/slurm.cert
+#JobCredentialPrivateKey=
+#JobCredentialPublicCertificate=
 #JobFileAppend=0
 #JobRequeue=1
-#JobSubmitPlugins=1
+JobSubmitPlugins=cray
 #KillOnBadExit=0
 #LaunchType=launch/slurm
 #Licenses=foo*4,bar
@@ -48,25 +49,25 @@ ProctrackType=proctrack/cray
 #Prolog=
 #PrologSlurmctld=
 #PropagatePrioProcess=0
-PropagateResourceLimits=NONE
+PropagateResourceLimits=ALL
 #PropagateResourceLimitsExcept=
 #RebootProgram=
 # ReturnToService 2 will let rebooted nodes come back up immediately
 ReturnToService=2
 #SallocDefaultCommand=
-SlurmctldPidFile={slurmctldspooldir}/slurmctld.pid
+SlurmctldPidFile=/var/spool/slurm/slurmctld.pid
 SlurmctldPort=6817
-SlurmdPidFile={slurmdspooldir}/slurmd.pid
+SlurmdPidFile=/var/spool/slurmd/slurmd.pid
 SlurmdPort=6818
-SlurmdSpoolDir={slurmdspooldir}
+SlurmdSpoolDir=/var/spool/slurmd
 SlurmUser=root
 #SlurmdUser=root
 #SrunEpilog=
 #SrunProlog=
-StateSaveLocation={slurmctldspooldir}
+StateSaveLocation=/var/spool/slurm
 SwitchType=switch/cray
 #TaskEpilog=
-TaskPlugin=task/cgroup,task/cray
+TaskPlugin=task/affinity,task/cgroup,task/cray
 #TaskPluginParam=
 #TaskProlog=
 TopologyPlugin=topology/none
@@ -86,7 +87,7 @@ TopologyPlugin=topology/none
 #HealthCheckProgram=
 InactiveLimit=0
 KillWait=30
-#MessageTimeout=10
+MessageTimeout=60
 #ResvOverRun=0
 MinJobAge=300
 #OverTimeLimit=0
@@ -99,7 +100,7 @@ Waittime=0
 #
 # SCHEDULING
 DefMemPerCPU={defmem}
-FastSchedule=2
+FastSchedule=0
 MaxMemPerCPU={maxmem}
 #SchedulerRootFilter=1
 #SchedulerTimeSlice=30
@@ -144,9 +145,9 @@ JobCompType=jobcomp/none
 JobAcctGatherFrequency=30
 JobAcctGatherType=jobacct_gather/linux
 SlurmctldDebug=info
-SlurmctldLogFile={slurmctldspooldir}/slurmctld.log
+SlurmctldLogFile=/var/spool/slurm/slurmctld.log
 SlurmdDebug=info
-SlurmdLogFile={slurmdspooldir}/%h.log
+SlurmdLogFile=/var/spool/slurmd/%h.log
 #SlurmSchedLogFile=
 #SlurmSchedLogLevel=
 #
@@ -165,4 +166,5 @@ SlurmdLogFile={slurmdspooldir}/%h.log
 #
 # COMPUTE NODES
 {computenodes}
-PartitionName=workq Nodes={nodelist} Shared=YES Priority=1 Default=YES DefaultTime=60 MaxTime=24:00:00 State=UP
+
+PartitionName=workq Nodes={nodelist} Shared=NO Priority=1 Default=YES DefaultTime=60 MaxTime=24:00:00 State=UP
