@@ -666,7 +666,6 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	int *ptags = NULL;
 	char *err_msg = NULL;
 	alpsc_peInfo_t alpsc_pe_info = {-1, -1, -1, -1, NULL, NULL, NULL};
-	gni_ntt_descriptor_t *ntt_desc_ptr = NULL;
 	int gpu_cnt = 0;
 	int control_nid = 0, num_branches = 0;
 	struct sockaddr_in control_soc;
@@ -708,6 +707,14 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	// alpsc_set_PAGG_apid()
 
 	/*
+	 * Fill in the alpsc_pe_info structure
+	 */
+	rc = build_alpsc_pe_info(job, sw_job, &alpsc_pe_info);
+	if (rc != SLURM_SUCCESS) {
+		return rc;
+	}
+
+	/*
 	 * Configure the network
 	 *
 	 * I'm setting exclusive flag to zero for now until we can figure out a
@@ -735,26 +742,28 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	rc = alpsc_configure_nic(&err_msg, 0, cpu_scaling, mem_scaling,
 				 job->cont_id, sw_job->num_cookies,
 				 (const char **) sw_job->cookies,
-				 &num_ptags, &ptags, ntt_desc_ptr);
+				 &num_ptags, &ptags, NULL);
 	ALPSC_CN_DEBUG("alpsc_configure_nic");
+
+#if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
+	// Write the IAA file
+	rc = write_iaa_file(job, sw_job, ptags, num_ptags,
+			    &alpsc_pe_info);
+	if (rc != SLURM_SUCCESS) {
+		free(ptags);
+		free_alpsc_pe_info(&alpsc_pe_info);
+		return rc;
+	}
+#endif
+
 	/*
 	 * We don't use the ptags because Cray's LLI acquires them
 	 * itself, so they can be immediately discarded.
 	 */
 	free(ptags);
-	if (rc != 1) {
-		return SLURM_ERROR;
-	}
 
 	// Not defined yet -- deferred
 	//alpsc_config_gpcd();
-
-	/*
-	 * Fill in the alpsc_pe_info structure
-	 */
-	rc = build_alpsc_pe_info(job, sw_job, &alpsc_pe_info);
-	if (rc != SLURM_SUCCESS)
-		return rc;
 
 	/*
 	 * Set the cmd_index
@@ -829,7 +838,6 @@ extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 {
 	return;
 }
-
 extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer,
 					   uint16_t protocol_version)
 {
@@ -893,6 +901,12 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 		return SLURM_ERROR;
 	}
 	xfree(path_name);
+
+#if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
+	// Remove the IAA file
+	unlink_iaa_file(job);
+#endif
+
 #endif
 	return SLURM_SUCCESS;
 }
@@ -1110,4 +1124,4 @@ extern int switch_p_slurmd_step_init(void)
 	return SLURM_SUCCESS;
 }
 
-#endif
+#endif /* !defined(__FreeBSD__) */
