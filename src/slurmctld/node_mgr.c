@@ -888,12 +888,8 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack16(dump_node_ptr->config_ptr->boards, buffer);
 			pack16(dump_node_ptr->config_ptr->sockets, buffer);
 			pack16(dump_node_ptr->config_ptr->cores, buffer);
-			pack16(dump_node_ptr->config_ptr->core_spec_cnt,
-			       buffer);
 			pack16(dump_node_ptr->config_ptr->threads, buffer);
 			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
-			pack32(dump_node_ptr->config_ptr->mem_spec_limit,
-			       buffer);
 			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 		} else {
 	#endif
@@ -902,14 +898,16 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack16(dump_node_ptr->boards, buffer);
 			pack16(dump_node_ptr->sockets, buffer);
 			pack16(dump_node_ptr->cores, buffer);
-			pack16(dump_node_ptr->core_spec_cnt, buffer);
 			pack16(dump_node_ptr->threads, buffer);
 			pack32(dump_node_ptr->real_memory, buffer);
-			pack32(dump_node_ptr->mem_spec_limit, buffer);
 			pack32(dump_node_ptr->tmp_disk, buffer);
 	#ifndef HAVE_BG
 		}
 	#endif
+		pack16(dump_node_ptr->core_spec_cnt, buffer);
+		pack32(dump_node_ptr->mem_spec_limit, buffer);
+		packstr(dump_node_ptr->cpu_spec_list, buffer);
+
 		pack32(dump_node_ptr->cpu_load, buffer);
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
@@ -922,7 +920,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 					      buffer, protocol_version);
 
 		packstr(dump_node_ptr->arch, buffer);
-		packstr(dump_node_ptr->cpu_spec_list, buffer);
 		packstr(dump_node_ptr->features, buffer);
 		if (dump_node_ptr->gres)
 			packstr(dump_node_ptr->gres, buffer);

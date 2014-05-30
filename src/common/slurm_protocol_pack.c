@@ -3258,12 +3258,16 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpack16(&node->boards, buffer);
 		safe_unpack16(&node->sockets, buffer);
 		safe_unpack16(&node->cores, buffer);
-		safe_unpack16(&node->core_spec_cnt, buffer);
 		safe_unpack16(&node->threads, buffer);
 
 		safe_unpack32(&node->real_memory, buffer);
-		safe_unpack32(&node->mem_spec_limit, buffer);
 		safe_unpack32(&node->tmp_disk, buffer);
+
+		safe_unpack16(&node->core_spec_cnt, buffer);
+		safe_unpack32(&node->mem_spec_limit, buffer);
+		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
+				       buffer);
+
 		safe_unpack32(&node->cpu_load, buffer);
 		safe_unpack32(&node->weight, buffer);
 		safe_unpack32(&node->reason_uid, buffer);
@@ -3276,8 +3280,6 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 						protocol_version);
 
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
-				       buffer);
 		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
