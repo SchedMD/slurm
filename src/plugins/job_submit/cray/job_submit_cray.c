@@ -3,6 +3,7 @@
  *                      computers
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC.
+ *  Copyright (C) 2014 Cray Inc. All Rights Reserved.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -99,6 +100,25 @@ const char plugin_type[]       	= "job_submit/cray";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 100;
 
+#define CRAY_GRES "craynetwork"
+#define CRAY_GRES_POSTFIX CRAY_GRES":1"
+
+/*
+ * Append CRAY_GRES_POSTFIX to the gres provided by the user
+ */
+static void _append_gres(struct job_descriptor *job_desc)
+{
+	if (job_desc->gres == NULL) {
+		job_desc->gres = xstrdup(CRAY_GRES_POSTFIX);
+	} else if (strlen(job_desc->gres) == 0) {
+		xstrcat(job_desc->gres, CRAY_GRES_POSTFIX);
+	} else if (strstr(job_desc->gres, CRAY_GRES) == NULL) {
+		// Don't append if they already specified craynetwork
+		// Allows the user to ask for more or less than the default
+		xstrcat(job_desc->gres, "," CRAY_GRES_POSTFIX);
+	}
+}
+
 int init (void)
 {
 	return SLURM_SUCCESS;
@@ -111,11 +131,13 @@ int fini (void)
 
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
+	_append_gres(job_desc);
 	return SLURM_SUCCESS;
 }
 
 extern int job_modify(struct job_descriptor *job_desc,
 		      struct job_record *job_ptr, uint32_t submit_uid)
 {
+	_append_gres(job_desc);
 	return SLURM_SUCCESS;
 }
