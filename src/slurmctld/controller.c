@@ -755,12 +755,15 @@ static void  _init_config(void)
  * _slurm_rpc_reconfigure_controller function inside proc_req.c try
  * to keep these in sync.
  */
-static int _reconfigure_slurm(void)
+static void _reconfigure_slurm(void)
 {
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	int rc;
+
+	if (slurmctld_config.shutdown_time)
+		return;
 
 	/*
 	 * XXX - need to shut down the scheduler
@@ -783,8 +786,6 @@ static int _reconfigure_slurm(void)
 	priority_g_reconfig(true);	/* notify priority plugin too */
 	save_all_state();		/* Has own locking */
 	queue_job_scheduler();
-
-	return rc;
 }
 
 /* Request that the job scheduler execute soon (typically within seconds) */
