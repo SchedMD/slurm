@@ -103,10 +103,6 @@ int build_alpsc_pe_info(stepd_step_rec_t *job,
 		for (j = 0; j < job->msg->tasks_to_launch[i]; j++) {
 			task = job->msg->global_task_ids[i][j];
 			task_to_nodes_map[task] = nodes[i];
-			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				CRAY_INFO("peNidArray:\tTask: %d\tNode: %d",
-					  task, nodes[i]);
-			}
 		}
 	}
 	alpsc_pe_info->peNidArray = task_to_nodes_map;
@@ -162,16 +158,12 @@ error_free_alpsc_pe_info_t:
 static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info)
 {
 	int i;
-	info("*************************alpsc_peInfo Start"
-	     "*************************");
-	info("totalPEs: %d\nfirstPeHere: %d\npesHere: %d\npeDepth: %d\n",
+	info("alpsc_peInfo totalPEs: %d firstPeHere: %d pesHere: %d peDepth: %d",
 	     alps_info->totalPEs, alps_info->firstPeHere, alps_info->pesHere,
 	     alps_info->peDepth);
 	for (i = 0; i < alps_info->totalPEs; i++) {
-		info("Task: %d\tNode: %d", i, alps_info->peNidArray[i]);
+		debug3("Task: %d\tNode: %d", i, alps_info->peNidArray[i]);
 	}
-	info("*************************alpsc_peInfo Stop"
-	     "*************************");
 }
 
 /*

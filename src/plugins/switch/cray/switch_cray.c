@@ -679,12 +679,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	xassert(job->msg);
 	xassert(sw_job->magic == CRAY_JOBINFO_MAGIC);
 
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		CRAY_INFO("Job ID (in JOB): %" PRIu32
-		     "Job ID (in Switch jobinfo): %" PRIu32,
-		     job->jobid, sw_job->jobid);
-	}
-
+	// Attach to the cncu container
 	rc = alpsc_attach_cncu_container(&err_msg, sw_job->jobid, job->cont_id);
 	ALPSC_CN_DEBUG("alpsc_attach_cncu_container");
 	if (rc != 1) {

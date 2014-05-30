@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC
  *  Copyright 2013 Cray Inc. All Rights Reserved.
- *  Written by Danny Auble <da@schedmd.com>
+ *  Written by David Gloe
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -289,6 +289,7 @@ fileDel: st = unlink(dirnm);
 void print_jobinfo(slurm_cray_jobinfo_t *job)
 {
 	int i;
+	char *cookie_str = NULL, *cookie_id_str = NULL;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_ERR("job pointer was NULL");
@@ -297,23 +298,21 @@ void print_jobinfo(slurm_cray_jobinfo_t *job)
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
 
-	info("Program: %s", slurm_prog_name);
-	info("Address of slurm_cray_jobinfo_t structure: %p", job);
-	info("--Begin Jobinfo--");
-	info("  Magic: %" PRIx32, job->magic);
-	info("  Job ID: %" PRIu32, job->jobid);
-	info("  Step ID: %" PRIu32, job->stepid);
-	info("  APID: %" PRIu64, job->apid);
-	info("  PMI Port: %" PRIu32, job->port);
-	info("  num_cookies: %" PRIu32, job->num_cookies);
-	info("  --- cookies ---");
+	// Create cookie strings
 	for (i = 0; i < job->num_cookies; i++) {
-		info("  cookies[%d]: %s", i, job->cookies[i]);
+		xstrfmtcat(cookie_str, "%s%s", i ? "," : "", job->cookies[i]);
+		xstrfmtcat(cookie_id_str, "%s%"PRIu32,
+			   i ? "," : "", job->cookie_ids[i]);
 	}
-	info("  --- cookie_ids ---");
-	for (i = 0; i < job->num_cookies; i++) {
-		info("  cookie_ids[%d]: %" PRIu32, i, job->cookie_ids[i]);
-	}
-	info("  ------");
-	info("--END Jobinfo--");
+
+	// Log jobinfo
+	info("jobinfo magic=%"PRIx32" jobid=%"PRIu32" stepid=%"PRIu32
+	     "apid=%"PRIu64" port=%"PRIu32" num_cookies=%"PRIu32" cookies=%s"
+	     " cookie_ids=%s",
+	     job->magic, job->jobid, job->stepid, job->apid, job->port,
+	     job->num_cookies, cookie_str, cookie_id_str);
+
+	// Cleanup
+	xfree(cookie_str);
+	xfree(cookie_id_str);
 }
