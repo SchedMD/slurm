@@ -161,7 +161,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 core_spec_cray_la_LIBADD =
-am_core_spec_cray_la_OBJECTS = core_spec_cray.lo
+am_core_spec_cray_la_OBJECTS = core_spec_cray_la-core_spec_cray.lo
 core_spec_cray_la_OBJECTS = $(am_core_spec_cray_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -475,7 +475,8 @@ pkglib_LTLIBRARIES = core_spec_cray.la
 
 # Cray core specialization plugin.
 core_spec_cray_la_SOURCES = core_spec_cray.c
-core_spec_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+core_spec_cray_la_CPPFLAGS = $(CRAY_JOB_CPPFLAGS) $(AM_CPPFLAGS)
+core_spec_cray_la_LDFLAGS = $(CRAY_JOB_LDFLAGS) $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -555,7 +556,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core_spec_cray.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core_spec_cray_la-core_spec_cray.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -577,6 +578,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+core_spec_cray_la-core_spec_cray.lo: core_spec_cray.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(core_spec_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT core_spec_cray_la-core_spec_cray.lo -MD -MP -MF $(DEPDIR)/core_spec_cray_la-core_spec_cray.Tpo -c -o core_spec_cray_la-core_spec_cray.lo `test -f 'core_spec_cray.c' || echo '$(srcdir)/'`core_spec_cray.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/core_spec_cray_la-core_spec_cray.Tpo $(DEPDIR)/core_spec_cray_la-core_spec_cray.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='core_spec_cray.c' object='core_spec_cray_la-core_spec_cray.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(core_spec_cray_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o core_spec_cray_la-core_spec_cray.lo `test -f 'core_spec_cray.c' || echo '$(srcdir)/'`core_spec_cray.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
