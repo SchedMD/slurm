@@ -648,10 +648,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			no_cores = true;
 		}
 
-		if (!s_p_get_string(&n->cpu_spec_list, "CPUSpecList", tbl)
-		    && !s_p_get_string(&n->cpu_spec_list,
-				       "CPUSpecList", dflt))
-			n->cpu_spec_list = NULL;
+		if (!s_p_get_string(&n->cpu_spec_list, "CPUSpecList", tbl))
+			s_p_get_string(&n->cpu_spec_list, "CPUSpecList", dflt);
 
 		if (!s_p_get_string(&n->feature, "Feature", tbl))
 			s_p_get_string(&n->feature, "Feature", dflt);
@@ -828,20 +826,21 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		}
 
 		if (n->core_spec_cnt >= (n->sockets * n->cores)) {
-			error("NodeNames=%s CoreSpecCount=#  is invalid "
-			      "reset to 1", n->nodenames);
+			error("NodeNames=%s CoreSpecCount=%u is invalid, "
+			      "reset to 1", n->nodenames, n->core_spec_cnt);
 			n->core_spec_cnt = 1;
 		}
 
 		if ((n->core_spec_cnt > 0) && n->cpu_spec_list) {
-			error("NodeNames=%s CoreSpecCount=#  is invalid "
-			      "reset to 0", n->nodenames);
+			error("NodeNames=%s CoreSpecCount=%u is invalid "
+			      "with CPUSpecList, reset to 0",
+			      n->nodenames, n->core_spec_cnt);
 			n->core_spec_cnt = 0;
 		}
 
 		if (n->mem_spec_limit >= n->real_memory) {
-			error("NodeNames=%s MemSpecLimit=# is invalid "
-			      "reset to 0", n->nodenames);
+			error("NodeNames=%s MemSpecLimit=%u is invalid, "
+			      "reset to 0", n->nodenames, n->mem_spec_limit);
 			n->mem_spec_limit = 0;
 		}
 
@@ -2138,7 +2137,7 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
 			if (core_spec_cnt)
-			*cpu_spec_list = xstrdup(p->cpu_spec_list);
+				*cpu_spec_list = xstrdup(p->cpu_spec_list);
 			if (core_spec_cnt)
 				*core_spec_cnt  = p->core_spec_cnt;
 			if (mem_spec_limit)
