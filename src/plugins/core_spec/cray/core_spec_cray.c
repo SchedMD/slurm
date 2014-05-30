@@ -67,6 +67,11 @@
 /* Set _DEBUG to 1 for detailed module debugging, 0 otherwise */
 #define _DEBUG 0
 
+#ifdef HAVE_NATIVE_CRAY
+#include <stdlib.h>
+#include <job.h>
+#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -97,6 +102,10 @@ const char plugin_name[]       	= "Cray core specialization plugin";
 const char plugin_type[]       	= "core_spec/cray";
 const uint32_t plugin_version   = 100;
 
+// If job_set_corespec fails, retry this many times to wait
+// for suspends to complete.
+#define CORE_SPEC_RETRIES 5
+
 extern int init(void)
 {
 	info("%s: init", plugin_type);
@@ -119,6 +128,73 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 #if _DEBUG
 	info("core_spec_p_set(%"PRIu64") to %u", cont_id, core_count);
 #endif
+
+#ifdef HAVE_NATIVE_CRAY
+	int rc;
+	struct job_set_affinity_info affinity_info;
+	pid_t pid;
+	int i;
+
+	// Skip core spec setup for no specialized cores
+	if (core_count < 1) {
+		return SLURM_SUCCESS;
+	}
+
+	// Set the core spec information
+	// Retry because there's a small timing window during preemption
+	// when two core spec jobs can be running at once.
+	for (i = 0; i < CORE_SPEC_RETRIES; i++) {
+		if (i) {
+			sleep(1);
+		}
+
+		errno = 0;
+		rc = job_set_corespec(cont_id, core_count, NULL);
+		if (rc == 0 || errno != EINVAL) {
+			break;
+		}
+	}
+	if (rc != 0) {
+		error("job_set_corespec(%"PRIu64", %"PRIu16") failed: %m",
+		      cont_id, core_count);
+		return SLURM_ERROR;
+	}
+
+	pid = getpid();
+
+	// Slurm detaches the slurmstepd from the job, so we temporarily
+	// reattach so the job_set_affinity doesn't mess up one of the
+	// task's affinity settings
+	if (job_attachpid(pid, cont_id) == (jid_t)-1) {
+		error("job_attachpid(%zu, %"PRIu64") failed: %m",
+		      (size_t)pid, cont_id);
+		return SLURM_ERROR;
+	}
+
+	// Apply the core specialization with job_set_affinity
+	// Use NONE for the cpu list because Slurm handles its
+	// own task->cpu binding
+	memset(&affinity_info, 0, sizeof(struct job_set_affinity_info));
+	affinity_info.cpu_list = JOB_AFFINITY_NONE;
+	rc = job_set_affinity(cont_id, pid, &affinity_info);
+	if (rc != 0) {
+		if (affinity_info.message != NULL) {
+			error("job_set_affinity(%"PRIu64", %zu) failed %s: %m",
+			      cont_id, (size_t)pid, affinity_info.message);
+			free(affinity_info.message);
+		} else {
+			error("job_set_affinity(%"PRIu64", %zu) failed: %m",
+			      cont_id, (size_t)pid);
+		}
+		job_detachpid(pid);
+		return SLURM_ERROR;
+	} else if (affinity_info.message != NULL) {
+		info("job_set_affinity(%"PRIu64", %zu): %s",
+		     cont_id, (size_t)pid, affinity_info.message);
+		free(affinity_info.message);
+	}
+	job_detachpid(pid);
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -132,6 +208,8 @@ extern int core_spec_p_clear(uint64_t cont_id)
 #if _DEBUG
 	info("core_spec_p_clear(%"PRIu64")", cont_id);
 #endif
+	// Core specialization is automatically cleared when
+	// the job exits.
 	return SLURM_SUCCESS;
 }
 
@@ -145,6 +223,8 @@ extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
 #if _DEBUG
 	info("core_spec_p_suspend(%"PRIu64") count %u", cont_id, core_count);
 #endif
+	// The code that was here is now performed by
+	// switch_p_job_step_{pre,post}_suspend()
 	return SLURM_SUCCESS;
 }
 
@@ -158,5 +238,7 @@ extern int core_spec_p_resume(uint64_t cont_id, uint16_t core_count)
 #if _DEBUG
 	info("core_spec_p_resume(%"PRIu64") count %u", cont_id, core_count);
 #endif
+	// The code that was here is now performed by
+	// switch_p_job_step_{pre,post}_resume()
 	return SLURM_SUCCESS;
 }
