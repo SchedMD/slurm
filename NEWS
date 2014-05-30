@@ -60,6 +60,7 @@ documents those changes that are of interest to users and admins.
  -- Added PriorityFlags option of Calulate_Running to continue recalculating
     the priority of running jobs.
  -- Replace round-robin front-end node selection with least-loaded algorithm.
+ -- CRAY - Improve support of XC30 systems when running natively.
 
 * Changes in Slurm 14.03.4
 ==========================
