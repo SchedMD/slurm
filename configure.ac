@@ -414,8 +414,6 @@ AC_CONFIG_FILES([Makefile
 		 auxdir/Makefile
 		 contribs/Makefile
 		 contribs/cray/Makefile
-		 contribs/cray/opt_modulefiles_slurm
-		 contribs/cray/slurmconfgen.py
 		 contribs/lua/Makefile
 		 contribs/mic/Makefile
 		 contribs/pam/Makefile
