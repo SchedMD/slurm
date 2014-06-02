@@ -856,12 +856,12 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 extern void destroy_frontend(void *ptr)
 {
 	slurm_conf_frontend_t *n = (slurm_conf_frontend_t *) ptr;
+	xfree(n->addresses);
 	xfree(n->allow_groups);
 	xfree(n->allow_users);
 	xfree(n->deny_groups);
 	xfree(n->deny_users);
 	xfree(n->frontends);
-	xfree(n->addresses);
 	xfree(n->reason);
 	xfree(ptr);
 }

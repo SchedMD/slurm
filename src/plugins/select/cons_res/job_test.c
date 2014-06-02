@@ -791,8 +791,8 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 			spec_cores = core_spec;
 			for (res_core = select_node_record[n].cores - 1;
 			     (spec_cores && (res_core >= 0)); res_core--) {
-				for (res_sock = select_node_record[n].sockets -
-				     1;(spec_cores && (res_sock >= 0));
+				for (res_sock = select_node_record[n].sockets-1;
+				     (spec_cores && (res_sock >= 0));
 				     res_sock--) {
 					res_off = 
 					  (res_sock*select_node_record[n].cores)

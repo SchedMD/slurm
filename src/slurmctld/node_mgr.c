@@ -1901,9 +1901,9 @@ static int _build_node_spec_bitmap(struct node_record *node_ptr)
 	cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
 	i = 0;
 	while (cpu_spec_array[i] != -1) {
-		bit_nclear(node_ptr->node_spec_bitmap, (cpu_spec_array[i] /
-			   node_ptr->threads), (cpu_spec_array[i + 1] /
-			   node_ptr->threads));
+		bit_nclear(node_ptr->node_spec_bitmap,
+			   (cpu_spec_array[i] / node_ptr->threads),
+			   (cpu_spec_array[i + 1] / node_ptr->threads));
 		i += 2;
 	}
 	xfree(cpu_spec_array);

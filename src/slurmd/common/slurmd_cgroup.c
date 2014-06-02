@@ -132,9 +132,10 @@ extern int init_system_cpuset_cgroup(void)
 		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 		return SLURM_ERROR;
 	}
+
 again:
 	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
-	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cpus,&cpus_size);
+	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cpus, &cpus_size);
 	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
 		if (!cpuset_prefix_set && (rc != XCGROUP_SUCCESS)) {
 			cpuset_prefix_set = 1;
@@ -265,7 +266,7 @@ extern int init_system_memory_cgroup(void)
 	/* create system cgroup in the cpuset ns */
 	if (xcgroup_create(&memory_ns, &system_memory_cg,
 			   system_cgroup_path,
-			   getuid(),getgid()) != XCGROUP_SUCCESS) {
+			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		goto error;
 	}
 	if (xcgroup_instanciate(&system_memory_cg) != XCGROUP_SUCCESS) {

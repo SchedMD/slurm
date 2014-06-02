@@ -203,8 +203,7 @@ int xcgroup_instanciate(xcgroup_t* cg);
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
  */
-int xcgroup_load(xcgroup_ns_t* cgns,xcgroup_t* cg,
-		 char* uri);
+int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri);
 
 /*
  * delete a cgroup instance in a cgroup namespace (rmdir)
