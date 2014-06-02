@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
  -- Sched/backfill modified to avoid using nodes in completing state.
  -- Correct support for job --profile=none option and related documentation.
  -- Properly enforce job --requeue and --norequeue options.
+ -- If a job --mem-per-cpu limit exceeds the partition or system limit, then
+    scale the job's memory limit and CPUs per task to satisfy the limit.
 
 * Changes in Slurm 2.6.9
 ========================

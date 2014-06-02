@@ -5336,11 +5336,22 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 		return true;
 
 	if ((job_mem_limit & MEM_PER_CPU) && (sys_mem_limit & MEM_PER_CPU)) {
+		uint32_t mem_ratio;
 		job_mem_limit &= (~MEM_PER_CPU);
 		sys_mem_limit &= (~MEM_PER_CPU);
 		if (job_mem_limit <= sys_mem_limit)
 			return true;
-		return false;
+		mem_ratio = (job_mem_limit + sys_mem_limit - 1);
+		mem_ratio /= sys_mem_limit;
+		debug("increasing cpus_per_task and decreasing mem_per_cpu by "
+		      "factor of %u based upon mem_per_cpu limits", mem_ratio);
+		if (job_desc_msg->cpus_per_task == (uint16_t) NO_VAL)
+			job_desc_msg->cpus_per_task = mem_ratio;
+		else
+			job_desc_msg->cpus_per_task *= mem_ratio;
+		job_desc_msg->pn_min_memory = ((job_mem_limit + mem_ratio - 1) /
+					       mem_ratio) | MEM_PER_CPU;
+		return true;
 	}
 
 	if (((job_mem_limit & MEM_PER_CPU) == 0) &&
