@@ -1945,6 +1945,13 @@ static int _set_topo_info(void)
  */
 static int _resource_spec_init(void)
 {
+	static bool first_run = true;
+
+	if (first_run) {
+		fini_system_cgroup();	/* Prevent memory leak */
+		first_run = false;
+	}
+
 	if (_core_spec_init() != SLURM_SUCCESS)
 		error("Resource spec: core specialization disabled");
 	if (_memory_spec_init() != SLURM_SUCCESS)
