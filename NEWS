@@ -50,6 +50,9 @@ documents those changes that are of interest to users and admins.
  -- Added SchedulerParameters value of Ignore_NUMA.
  -- Fix issues with code when using automake 1.14.1
  -- select/cons_res plugin: Fix memory leak related to job preemption.
+ -- After reconfig rebuild the job node counters only for jobs that has
+    not finished yet otherwise if requeued the job may enter an invalid
+    COMPLETING state.
 
 * Changes in Slurm 14.03.3-2
 ============================

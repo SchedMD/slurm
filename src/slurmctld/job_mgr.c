@@ -7267,7 +7267,12 @@ void reset_job_bitmaps(void)
 			job_fail = true;
 		}
 		_reset_step_bitmaps(job_ptr);
-		build_node_details(job_ptr, false);	/* set node_addr */
+
+		/* Do not increase the job->node_cnt for
+		 * finished jobs.
+		 */
+		if (! IS_JOB_FINISHED(job_ptr))
+			build_node_details(job_ptr, false); /* set node_addr */
 
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;
