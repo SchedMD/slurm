@@ -61,14 +61,14 @@
 #define PATH_MAX 256
 #endif
 
-static xcgroup_t system_cpuset_cg;
-static xcgroup_t system_memory_cg;
+static xcgroup_t system_cpuset_cg = {NULL, NULL, NULL, 0, 0, 0, 0};
+static xcgroup_t system_memory_cg = {NULL, NULL, NULL, 0, 0, 0, 0};
 
 static bool cpuset_prefix_set = false;
 static char *cpuset_prefix = "";
 
-static xcgroup_ns_t cpuset_ns;
-static xcgroup_ns_t memory_ns;
+static xcgroup_ns_t cpuset_ns = {NULL, NULL, NULL, NULL};
+static xcgroup_ns_t memory_ns = {NULL, NULL, NULL, NULL};
 
 char cpuset_meta[PATH_MAX];
 
@@ -151,6 +151,7 @@ again:
 			return SLURM_ERROR;
 		}
 	}
+	xcgroup_destroy(&slurm_cg);
 	xfree(cpus);
 
 	/* build system cgroup relative path */
@@ -177,7 +178,6 @@ again:
 
 error:
 	xcgroup_unlock(&cpuset_cg);
-	xcgroup_destroy(&cpuset_cg);
 	free_slurm_cgroup_conf(&slurm_cgroup_conf);
 	return fstatus;
 }
@@ -293,6 +293,14 @@ error:
 	return fstatus;
 }
 
+extern void fini_system_cgroup(void)
+{
+	xcgroup_destroy(&system_cpuset_cg);
+	xcgroup_destroy(&system_memory_cg);
+	xcgroup_ns_destroy(&cpuset_ns);
+	xcgroup_ns_destroy(&memory_ns);
+}
+
 static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 {
 	/* we do it here as we do not have access to the conf structure */
@@ -363,14 +371,17 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 	if (p == NULL) {
 		debug2("system cgroup: unable to get ancestor path for "
 		       "cpuset cg '%s' : %m", cg->path);
+		xfree(acg_name);
 		return fstatus;
 	} else
 		*p = '\0';
 	if (xcgroup_load(cg->ns, &acg, acg_name) != XCGROUP_SUCCESS) {
 		debug2("system cgroup: unable to load ancestor for "
 		       "cpuset cg '%s' : %m", cg->path);
+		xfree(acg_name);
 		return fstatus;
 	}
+	xfree(acg_name);
 
 	/* inherits ancestor params */
 	for (i = 0 ; i < 2 ; i++) {

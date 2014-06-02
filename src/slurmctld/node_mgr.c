@@ -1893,7 +1893,7 @@ static int _build_node_spec_bitmap(struct node_record *node_ptr)
 	c = cr_get_coremap_offset(node_inx);
 	coff = cr_get_coremap_offset(node_inx+1);
 	size = coff - c;
-	node_ptr->node_spec_bitmap = NULL;
+	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 	node_ptr->node_spec_bitmap = bit_alloc(size);
 	bit_nset(node_ptr->node_spec_bitmap, 0, size-1);
 

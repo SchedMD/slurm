@@ -50,6 +50,10 @@ extern int init_system_cpuset_cgroup(void);
 /* Initialize slurmd system memory cgroup */
 extern int init_system_memory_cgroup(void);
 
+/* Free memory allocated by init_system_cpuset_cgroup() and
+ * init_system_memory_cgroup() functions */
+extern void fini_system_cgroup(void);
+
 /* Set reserved machine CPU IDs in system cpuset cgroup */
 extern int set_system_cgroup_cpus(char *phys_core_str);
 

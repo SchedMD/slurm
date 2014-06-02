@@ -806,6 +806,11 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 
 		if (!node_ptr->cpu_spec_list)
 			continue;
+		if (!node_ptr->node_spec_bitmap) {
+			info("CPUSpecList not registered for node %s yet",
+			     node_ptr->name);
+			continue;
+		}
 		/* remove node's specialized cpus now */
 		for (i = 0; i < (coff - c) ; i++) {
 			if (!bit_test(node_ptr->node_spec_bitmap, i))

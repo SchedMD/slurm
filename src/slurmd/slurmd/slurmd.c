@@ -1186,6 +1186,7 @@ _destroy_conf(void)
 		xfree(conf->chos_loc);
 		xfree(conf->cluster_name);
 		xfree(conf->conffile);
+		xfree(conf->cpu_spec_list);
 		xfree(conf->epilog);
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
@@ -1653,6 +1654,7 @@ _slurmd_fini(void)
 	_resource_spec_fini();
 	job_container_fini();
 	acct_gather_conf_destroy();
+	fini_system_cgroup();
 
 	return SLURM_SUCCESS;
 }

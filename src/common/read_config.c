@@ -890,6 +890,7 @@ static void _destroy_nodename(void *ptr)
 	slurm_conf_node_t *n = (slurm_conf_node_t *)ptr;
 
 	xfree(n->addresses);
+	xfree(n->cpu_spec_list);
 	xfree(n->feature);
 	xfree(n->hostnames);
 	xfree(n->gres);
@@ -1383,9 +1384,10 @@ static void _free_name_hashtbl(void)
 	for (i=0; i<NAME_HASH_LEN; i++) {
 		p = node_to_host_hashtbl[i];
 		while (p) {
-			xfree(p->alias);
-			xfree(p->hostname);
 			xfree(p->address);
+			xfree(p->alias);
+			xfree(p->cpu_spec_list);
+			xfree(p->hostname);
 			q = p->next_alias;
 			xfree(p);
 			p = q;
