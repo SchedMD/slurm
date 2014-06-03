@@ -932,12 +932,44 @@ proc test_topology { } {
 #
 # Proc: test_cpu_affinity
 #
-# Purpose: Determine if system is enforcing CPU affinity
+# Purpose: Determine if system is using the task/affinity plugin
 #
 # Returns 1 if enforcing, 0 if none
 #
 ################################################################
 proc test_cpu_affinity { } {
+	global scontrol alpha
+
+	log_user 0
+	set affinity 0
+	spawn $scontrol show config
+	expect {
+		-re "task/($alpha)" {
+			if {![string compare $expect_out(1,string) "affinity"]} {
+				set affinity 1
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $affinity
+}
+
+################################################################
+#
+# Proc: test_cpu_affinity_or_cgroup
+#
+# Purpose: Determine if system is enforcing CPU affinity (using
+# either the task/affinity and/or task/cgroup plugin)
+#
+# Returns 1 if enforcing, 0 if none
+#
+################################################################
+proc test_cpu_affinity_or_cgroup { } {
 	global scontrol alpha
 
 	log_user 0
