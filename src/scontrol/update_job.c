@@ -259,6 +259,8 @@ scontrol_hold(char *op, char *job_str)
 		job_str += 6;
 	if (job_str && !strncasecmp(job_str, "Name=", 5))
 		job_str += 5;
+	if (job_str && !strncasecmp(job_str, "Job=", 4))
+		job_str += 4;
 
 	if (job_str && (job_str[0] >= '0') && (job_str[0] <= '9')) {
 		job_id = (uint32_t) strtol(job_str, &next_str, 10);
@@ -349,6 +351,11 @@ scontrol_suspend(char *op, char *job_id_str)
 	int i;
 	int cc;
 
+	if (strncasecmp(job_id_str, "jobid=", 6) == 0)
+		job_id_str += 6;
+	if (strncasecmp(job_id_str, "job=", 4) == 0)
+		job_id_str += 4;
+
 	ids = _get_job_ids2(job_id_str, &num_ids);
 	if (ids == NULL) {
 		exit_code = 1;
@@ -400,6 +407,11 @@ scontrol_requeue(int argc, char **argv)
 		return 0;
 	}
 
+	if (strncasecmp(argv[0], "jobid=", 6) == 0)
+		argv[0] += 6;
+	if (strncasecmp(argv[0], "job=", 4) == 0)
+		argv[0] += 4;
+
 	ids = _get_job_ids(argv[0], &num_ids);
 	if (ids == NULL) {
 		exit_code = 1;
@@ -444,6 +456,11 @@ scontrol_requeue_hold(int argc, char **argv)
 		job_id_str = argv[0];
 	else
 		job_id_str = argv[1];
+
+	if (strncasecmp(job_id_str, "jobid=", 6) == 0)
+		job_id_str += 6;
+	if (strncasecmp(job_id_str, "job=", 4) == 0)
+		job_id_str += 4;
 
 	ids = _get_job_ids(job_id_str, &num_ids);
 	if (ids == NULL) {

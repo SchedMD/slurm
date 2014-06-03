@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
     COMPLETING state.
  -- Do not purge the script and environment files for completed jobs on
     slurmctld reconfiguration or restart (they might be later requeued).
+ -- scontrol now accepts the option job=xxx or jobid=xxx for the requeue,
+    requeuehold and release operations.
 
 * Changes in Slurm 14.03.3-2
 ============================
