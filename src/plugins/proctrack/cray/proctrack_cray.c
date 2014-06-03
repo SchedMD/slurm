@@ -196,7 +196,7 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
  * was created and all of it's spawned tasks are placed into the container
  * when forked, all we need to do is remove the slurmstepd from the container
  * (once) at this time. */
-int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
+int proctrack_p_add(stepd_step_rec_t *job, pid_t pid, bool is_app)
 {
 #ifdef HAVE_NATIVE_CRAY
 	char fname[64];
@@ -212,6 +212,10 @@ int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 	_end_container_thread();
 
 #ifdef HAVE_NATIVE_CRAY
+	/* If this isn't an application skip the below */
+	if (!is_app)
+		return SLURM_SUCCESS;
+
 	// Set apid for this pid
 	if (job_setapid(pid, SLURM_ID_HASH(job->jobid, job->stepid)) == -1) {
 		error("Failed to set pid %d apid: %m", pid);

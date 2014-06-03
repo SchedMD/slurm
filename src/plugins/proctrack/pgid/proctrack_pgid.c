@@ -121,7 +121,7 @@ extern int proctrack_p_create ( stepd_step_rec_t *job )
 /*
  * Uses job step process group id.
  */
-extern int proctrack_p_add ( stepd_step_rec_t *job, pid_t pid )
+extern int proctrack_p_add ( stepd_step_rec_t *job, pid_t pid, bool is_app )
 {
 	job->cont_id = (uint64_t)job->pgid;
 	return SLURM_SUCCESS;

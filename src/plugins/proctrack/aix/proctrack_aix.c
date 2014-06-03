@@ -128,7 +128,7 @@ extern int proctrack_p_create ( stepd_step_rec_t *job )
  * Uses job step process group id as a unique identifier.  Job id
  * and step id are not unique by themselves.
  */
-extern int proctrack_p_add ( stepd_step_rec_t *job, pid_t pid )
+extern int proctrack_p_add ( stepd_step_rec_t *job, pid_t pid, bool is_app )
 {
 	int pgid = (int) job->pgid;
 

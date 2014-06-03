@@ -363,7 +363,7 @@ out:
 	return rc;
 }
 
-int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)
+int proctrack_p_add (stepd_step_rec_t *job, pid_t pid, bool is_app)
 {
 	int rc = SLURM_ERROR;
 
