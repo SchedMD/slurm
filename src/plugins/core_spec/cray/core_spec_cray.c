@@ -123,11 +123,10 @@ extern int fini(void)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_set(stepd_step_rec_t *job, uint16_t core_count)
+extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 {
-	xassert(job);
 #if _DEBUG
-	info("core_spec_p_set(%"PRIu64") to %u", job->cont_id, core_count);
+	info("core_spec_p_set(%"PRIu64") to %u", cont_id, core_count);
 #endif
 
 #ifdef HAVE_NATIVE_CRAY
@@ -150,14 +149,14 @@ extern int core_spec_p_set(stepd_step_rec_t *job, uint16_t core_count)
 		}
 
 		errno = 0;
-		rc = job_set_corespec(job->cont_id, core_count, NULL);
+		rc = job_set_corespec(cont_id, core_count, NULL);
 		if (rc == 0 || errno != EINVAL) {
 			break;
 		}
 	}
 	if (rc != 0) {
 		error("job_set_corespec(%"PRIu64", %"PRIu16") failed: %m",
-		      job->cont_id, core_count);
+		      cont_id, core_count);
 		return SLURM_ERROR;
 	}
 
@@ -166,9 +165,9 @@ extern int core_spec_p_set(stepd_step_rec_t *job, uint16_t core_count)
 	// Slurm detaches the slurmstepd from the job, so we temporarily
 	// reattach so the job_set_affinity doesn't mess up one of the
 	// task's affinity settings
-	if (job_attachpid(pid, job->cont_id) == (jid_t)-1) {
+	if (job_attachpid(pid, cont_id) == (jid_t)-1) {
 		error("job_attachpid(%zu, %"PRIu64") failed: %m",
-		      (size_t)pid, job->cont_id);
+		      (size_t)pid, cont_id);
 		return SLURM_ERROR;
 	}
 
@@ -177,21 +176,21 @@ extern int core_spec_p_set(stepd_step_rec_t *job, uint16_t core_count)
 	// own task->cpu binding
 	memset(&affinity_info, 0, sizeof(struct job_set_affinity_info));
 	affinity_info.cpu_list = JOB_AFFINITY_NONE;
-	rc = job_set_affinity(job->cont_id, pid, &affinity_info);
+	rc = job_set_affinity(cont_id, pid, &affinity_info);
 	if (rc != 0) {
 		if (affinity_info.message != NULL) {
 			error("job_set_affinity(%"PRIu64", %zu) failed %s: %m",
-			      job->cont_id, (size_t)pid, affinity_info.message);
+			      cont_id, (size_t)pid, affinity_info.message);
 			free(affinity_info.message);
 		} else {
 			error("job_set_affinity(%"PRIu64", %zu) failed: %m",
-			      job->cont_id, (size_t)pid);
+			      cont_id, (size_t)pid);
 		}
 		job_detachpid(pid);
 		return SLURM_ERROR;
 	} else if (affinity_info.message != NULL) {
 		info("job_set_affinity(%"PRIu64", %zu): %s",
-		     job->cont_id, (size_t)pid, affinity_info.message);
+		     cont_id, (size_t)pid, affinity_info.message);
 		free(affinity_info.message);
 	}
 	job_detachpid(pid);
@@ -204,11 +203,10 @@ extern int core_spec_p_set(stepd_step_rec_t *job, uint16_t core_count)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_clear(stepd_step_rec_t *job)
+extern int core_spec_p_clear(uint64_t cont_id)
 {
-	xassert(job);
 #if _DEBUG
-	info("core_spec_p_clear(%"PRIu64")", job->cont_id);
+	info("core_spec_p_clear(%"PRIu64")", cont_id);
 #endif
 	// Core specialization is automatically cleared when
 	// the job exits.
@@ -220,12 +218,10 @@ extern int core_spec_p_clear(stepd_step_rec_t *job)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_suspend(stepd_step_rec_t *job, uint16_t core_count)
+extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
 {
-	xassert(job);
 #if _DEBUG
-	info("core_spec_p_suspend(%"PRIu64") count %u",
-	     job->cont_id, core_count);
+	info("core_spec_p_suspend(%"PRIu64") count %u", cont_id, core_count);
 #endif
 	// The code that was here is now performed by
 	// switch_p_job_step_{pre,post}_suspend()
@@ -237,12 +233,10 @@ extern int core_spec_p_suspend(stepd_step_rec_t *job, uint16_t core_count)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_resume(stepd_step_rec_t *job, uint16_t core_count)
+extern int core_spec_p_resume(uint64_t cont_id, uint16_t core_count)
 {
-	xassert(job);
 #if _DEBUG
-	info("core_spec_p_resume(%"PRIu64") count %u",
-	     job->cont_id, core_count);
+	info("core_spec_p_resume(%"PRIu64") count %u", cont_id, core_count);
 #endif
 	// The code that was here is now performed by
 	// switch_p_job_step_{pre,post}_resume()

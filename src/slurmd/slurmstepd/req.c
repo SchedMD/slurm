@@ -1192,7 +1192,7 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		}
 		suspended = true;
 	}
-	if (core_spec_g_suspend(job, job_core_spec))
+	if (core_spec_g_suspend(job->cont_id, job_core_spec))
 		error("core_spec_g_suspend: %m");
 
 	pthread_mutex_unlock(&suspend_mutex);
@@ -1245,7 +1245,7 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
-		if (core_spec_g_resume(job, job_core_spec))
+		if (core_spec_g_resume(job->cont_id, job_core_spec))
 			error("core_spec_g_resume: %m");
 		if (proctrack_g_signal(job->cont_id, SIGCONT) < 0) {
 			verbose("Error resuming %u.%u: %m",

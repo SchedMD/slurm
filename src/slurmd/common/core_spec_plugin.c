@@ -44,11 +44,12 @@
 
 #include "src/slurmd/common/core_spec_plugin.h"
 
+
 typedef struct core_spec_ops {
-	int	(*core_spec_p_set)	(stepd_step_rec_t *job, uint16_t count);
-	int	(*core_spec_p_clear)	(stepd_step_rec_t *job);
-	int	(*core_spec_p_suspend)	(stepd_step_rec_t *job, uint16_t count);
-	int	(*core_spec_p_resume)	(stepd_step_rec_t *job, uint16_t count);
+	int	(*core_spec_p_set)	(uint64_t cont_id, uint16_t count);
+	int	(*core_spec_p_clear)	(uint64_t cont_id);
+	int	(*core_spec_p_suspend)	(uint64_t cont_id, uint16_t count);
+	int	(*core_spec_p_resume)	(uint64_t cont_id, uint16_t count);
 } core_spec_ops_t;
 
 /*
@@ -172,7 +173,7 @@ done:
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_set(stepd_step_rec_t *job, uint16_t core_count)
+extern int core_spec_g_set(uint64_t cont_id, uint16_t core_count)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -181,7 +182,7 @@ extern int core_spec_g_set(stepd_step_rec_t *job, uint16_t core_count)
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].core_spec_p_set))(job, core_count);
+		rc = (*(ops[i].core_spec_p_set))(cont_id, core_count);
 	}
 
 	return rc;
@@ -192,7 +193,7 @@ extern int core_spec_g_set(stepd_step_rec_t *job, uint16_t core_count)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_clear(stepd_step_rec_t *job)
+extern int core_spec_g_clear(uint64_t cont_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -201,7 +202,7 @@ extern int core_spec_g_clear(stepd_step_rec_t *job)
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].core_spec_p_clear))(job);
+		rc = (*(ops[i].core_spec_p_clear))(cont_id);
 	}
 
 	return rc;
@@ -212,7 +213,7 @@ extern int core_spec_g_clear(stepd_step_rec_t *job)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_suspend(stepd_step_rec_t *job, uint16_t count)
+extern int core_spec_g_suspend(uint64_t cont_id, uint16_t count)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -221,7 +222,7 @@ extern int core_spec_g_suspend(stepd_step_rec_t *job, uint16_t count)
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].core_spec_p_suspend))(job, count);
+		rc = (*(ops[i].core_spec_p_suspend))(cont_id, count);
 	}
 
 	return rc;
@@ -232,7 +233,7 @@ extern int core_spec_g_suspend(stepd_step_rec_t *job, uint16_t count)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_resume(stepd_step_rec_t *job, uint16_t count)
+extern int core_spec_g_resume(uint64_t cont_id, uint16_t count)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -241,7 +242,7 @@ extern int core_spec_g_resume(stepd_step_rec_t *job, uint16_t count)
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].core_spec_p_resume))(job, count);
+		rc = (*(ops[i].core_spec_p_resume))(cont_id, count);
 	}
 
 	return rc;
