@@ -113,8 +113,7 @@ Pointer to a slurmd job structure.</p>
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int proctrack_p_add (stepd_step_rec_t *job,
-  pid_t pid, bool is_app);</p>
+<p class="commandline">int proctrack_p_add (stepd_step_rec_t *job, pid_t pid);</p>
 <p style="margin-left:.2in"><b>Description</b>: Add a specific process ID
 to a given job step's container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -122,8 +121,6 @@ to a given job step's container.</p>
 Pointer to a slurmd job structure.<br>
 <span class="commandline"> pid</span>&nbsp; &nbsp;&nbsp;(input)
 The ID of the process to add to this job's container.</p>
-<span class="commandline">is_app</span>&nbsp; &nbsp;&nbsp;(input)
-True if pid is a user application, 0 otherwise.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if successful. On failure,
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>

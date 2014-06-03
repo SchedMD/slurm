@@ -487,7 +487,7 @@ extern int proctrack_p_create (stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_add (stepd_step_rec_t *job, pid_t pid, bool is_app)
+extern int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)
 {
 	return _slurm_cgroup_add_pids(job->cont_id, &pid, 1);
 }

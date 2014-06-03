@@ -389,7 +389,7 @@ extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 		return SLURM_ERROR;
 	}
 
-	proctrack_g_add(&job, pid, true);
+	proctrack_g_add(&job, pid);
 
 	return container_p_add_cont(job_id, job.cont_id);
 }

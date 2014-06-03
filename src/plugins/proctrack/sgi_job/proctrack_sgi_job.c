@@ -212,7 +212,7 @@ int proctrack_p_create (stepd_step_rec_t *job)
  * was created and all of it's spawned tasks are placed into the container
  * when forked, all we need to do is remove the slurmstepd from the container
  * (once) at this time. */
-int proctrack_p_add (stepd_step_rec_t *job, pid_t pid, bool is_app)
+int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)
 {
 	static bool first = 1;
 

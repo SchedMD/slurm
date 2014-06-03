@@ -71,8 +71,7 @@
 /* ************************************************************************ */
 typedef struct slurm_proctrack_ops {
 	int              (*create)    (stepd_step_rec_t * job);
-	int              (*add)       (stepd_step_rec_t * job, pid_t pid,
-				       bool is_app);
+	int              (*add)       (stepd_step_rec_t * job, pid_t pid);
 	int              (*signal)    (uint64_t id, int signal);
 	int              (*destroy)   (uint64_t id);
 	uint64_t         (*find_cont) (pid_t pid);
@@ -178,12 +177,12 @@ extern int proctrack_g_create(stepd_step_rec_t * job)
  *
  * Returns a SLURM errno.
  */
-extern int proctrack_g_add(stepd_step_rec_t * job, pid_t pid, bool is_app)
+extern int proctrack_g_add(stepd_step_rec_t * job, pid_t pid)
 {
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(ops.add)) (job, pid, is_app);
+	return (*(ops.add)) (job, pid);
 }
 
 /* Determine if core dump in progress

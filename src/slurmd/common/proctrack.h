@@ -78,13 +78,12 @@ extern int proctrack_g_create(stepd_step_rec_t *job);
  * Add a process to the specified container
  * job IN - stepd_step_rec_t structure
  * pid IN      - process ID to be added to the container
- * is_app IN - True if pid is a user application.
  * job->cont_id OUT - Plugin must fill in job->cont_id either here
  *                    or in proctrack_g_create()
  *
  * Returns a SLURM errno.
  */
-extern int proctrack_g_add(stepd_step_rec_t *job, pid_t pid, bool is_app);
+extern int proctrack_g_add(stepd_step_rec_t *job, pid_t pid);
 
 /*
  * Signal all processes within a container

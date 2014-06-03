@@ -1599,7 +1599,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			      job->pgid);
 		}
 
-		if (proctrack_g_add(job, job->task[i]->pid, true)
+		if (proctrack_g_add(job, job->task[i]->pid)
 		    == SLURM_ERROR) {
 			error("proctrack_g_add: %m");
 			rc = SLURM_ERROR;
