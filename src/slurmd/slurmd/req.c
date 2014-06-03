@@ -3659,6 +3659,22 @@ _unlock_suspend_job(uint32_t job_id)
 	pthread_mutex_unlock(&suspend_mutex);
 }
 
+/* Add record for every launched job so we know they are ready for suspend */
+extern void record_launched_jobs(void)
+{
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		_launch_complete_add(stepd->jobid);
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+}
+
 /*
  * Send a job suspend/resume request through the appropriate slurmstepds for
  * each job step belonging to a given job allocation.
@@ -3761,7 +3777,6 @@ _rpc_suspend_job(slurm_msg_t *msg)
 				continue;
 			}
 
-
 			fdi++;
 			if (fdi >= NUM_PARALLEL_SUSP_STEPS)
 				break;
@@ -3771,17 +3786,36 @@ _rpc_suspend_job(slurm_msg_t *msg)
 			break;
 
 		if (req->op == SUSPEND_JOB) {
+			int susp_fail_count = 0;
+			/* The suspend RPCs are processed in parallel for
+			 * every step in the job */
 			for (x = 0; x < fdi; x++) {
 				(void) stepd_suspend(fd[x], req, 0);
 			}
 			for (x = 0; x < fdi; x++) {
 				if (stepd_suspend(fd[x], req, 1) < 0) {
+					susp_fail_count++;
+				} else {
+					close(fd[x]);
+					fd[x] = -1;
+				}
+			}
+			/* Suspend RPCs can fail at step startup, so retry */
+			if (susp_fail_count) {
+				sleep(1);
+				for (x = 0; x < fdi; x++) {
+					if (fd[x] == -1)
+						continue;
+					(void) stepd_suspend(fd[x], req, 0);
+					if (stepd_suspend(fd[x], req, 1) >= 0)
+						continue;
 					debug("Suspend of job %u failed: %m",
 					      req->job_id);
 				}
 			}
-
 		} else {
+			/* The resume RPCs are processed in parallel for
+			 * every step in the job */
 			for (x = 0; x < fdi; x++) {
 				(void) stepd_resume(fd[x], req, 0);
 			}
@@ -3792,10 +3826,11 @@ _rpc_suspend_job(slurm_msg_t *msg)
 				}
 			}
 		}
-		for (x = 0; x < fdi; x++)
+		for (x = 0; x < fdi; x++) {
 			/* fd may have been closed by stepd_suspend */
 			if (fd[x] != -1)
 				close(fd[x]);
+		}
 
 		/* check for no more jobs */
 		if (fdi < NUM_PARALLEL_SUSP_STEPS)

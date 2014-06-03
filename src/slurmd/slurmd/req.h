@@ -52,4 +52,7 @@ void destroy_starting_step(void *x);
 
 int init_gids_cache(int cache);
 
+/* Add record for every launched job so we know they are ready for suspend */
+extern void record_launched_jobs(void);
+
 #endif
