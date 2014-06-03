@@ -49,16 +49,18 @@
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/bitstring.h"
+#include "src/common/forward.h"
+#include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
-#include "src/common/slurm_accounting_storage.h"
-#include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_acct_gather_energy.h"
-#include "src/common/slurm_ext_sensors.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/slurm_ext_sensors.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -67,8 +69,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
-#include "src/common/forward.h"
-#include "src/common/job_options.h"
+
 
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
@@ -1956,8 +1957,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	}
 
-	if (rc)
-		error("Malformed RPC of type %u received", msg->msg_type);
+	if (rc) {
+		error("Malformed RPC of type %s(%u) received",
+		      rpc_num2string(msg->msg_type), msg->msg_type);
+	}
 	return rc;
 }
 

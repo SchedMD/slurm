@@ -44,6 +44,7 @@
 
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_util.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
@@ -76,8 +77,9 @@ int check_header_version(header_t * header)
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
 		    (header->version != SLURM_14_03_PROTOCOL_VERSION) &&
 		    (header->version != SLURM_2_6_PROTOCOL_VERSION)) {
-			debug("unsupported RPC version %hu msg type %u",
-			      header->version, header->msg_type);
+			debug("unsupported RPC version %hu msg type %s(%u)",
+			      header->version, rpc_num2string(header->msg_type),
+			      header->msg_type);
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 		}
 	} else if (header->version != check_version) {
@@ -95,8 +97,10 @@ int check_header_version(header_t * header)
 			if ((header->version != SLURM_PROTOCOL_VERSION)     &&
 			    (header->version != SLURM_14_03_PROTOCOL_VERSION) &&
 			    (header->version != SLURM_2_6_PROTOCOL_VERSION)) {
-				debug("Unsupported RPC version %hu msg type %u",
-				      header->version, header->msg_type);
+				debug("Unsupported RPC version %hu "
+				      "msg type %s(%u)", header->version,
+				      rpc_num2string(header->msg_type),
+				      header->msg_type);
 				slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 			}
 			break;
