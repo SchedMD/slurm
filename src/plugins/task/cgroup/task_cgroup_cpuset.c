@@ -640,7 +640,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 						       HWLOC_OBJ_SOCKET);
 	obj_idx = xmalloc(nsockets * sizeof(uint32_t));
 
-	if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
+	if (hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) {
 		/* cores or threads granularity */
 		npskip = taskid * job->cpus_per_task;
 		npdist = job->cpus_per_task;
@@ -1089,7 +1089,10 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	uint32_t nobj;
 	uint32_t taskid = job->envtp->localid;
 	uint32_t jntasks = job->node_tasks;
-	uint32_t jnpus = jntasks * job->cpus_per_task;
+	uint32_t jnpus;
+
+	job->cpus_per_task = MAX(1, job->cpus_per_task);
+	jnpus = jntasks * job->cpus_per_task;
 
 	bind_type = job->cpu_bind_type;
 	if ((conf->task_plugin_param & CPU_BIND_VERBOSE) ||
@@ -1207,8 +1210,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	/*
 	 * If not enough objects to do the job, revert to no affinity mode
 	 */
-	if (hwloc_compare_types(hwtype,HWLOC_OBJ_MACHINE) == 0) {
-
+	if (hwloc_compare_types(hwtype, HWLOC_OBJ_MACHINE) == 0) {
 		info("task/cgroup: task[%u] disabling affinity because of %s "
 		     "granularity",taskid, hwloc_obj_type_string(hwtype));
 
@@ -1332,16 +1334,16 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		hwloc_bitmap_asprintf(&str, cpuset);
 
 		tssize = sizeof(cpu_set_t);
-		if (hwloc_cpuset_to_glibc_sched_affinity(topology,cpuset,
-							 &ts,tssize) == 0) {
+		if (hwloc_cpuset_to_glibc_sched_affinity(topology, cpuset,
+							 &ts, tssize) == 0) {
 			fstatus = SLURM_SUCCESS;
-			if ((rc = sched_setaffinity(pid,tssize,&ts))) {
+			if ((rc = sched_setaffinity(pid, tssize, &ts))) {
 				error("task/cgroup: task[%u] unable to set "
-				      "taskset '%s'",taskid,str);
+				      "taskset '%s'", taskid, str);
 				fstatus = SLURM_ERROR;
 			} else if (bind_verbose) {
-				info("task/cgroup: task[%u] taskset '%s' is set"
-				     ,taskid,str);
+				info("task/cgroup: task[%u] set taskset '%s'",
+				     taskid, str);
 			}
 			slurm_chkaffinity(&ts, job, rc);
 		} else {

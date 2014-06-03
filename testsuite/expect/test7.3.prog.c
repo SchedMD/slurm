@@ -160,6 +160,7 @@ int main (int argc, char *argv[])
 	launch->user_managed_io = true; /* This is the key to using
 					  "user managed" IO */
 	launch->mpi_plugin_name = "none"; /* Don't try to use PMI */
+	launch->cpus_per_task = 1;
 
 	if (slurm_step_launch(ctx, launch, NULL) != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch");
