@@ -5431,7 +5431,7 @@ static void _launch_complete_wait(uint32_t job_id)
 		}
 		if (j < JOB_STATE_CNT)	/* Found job, ready to return */
 			break;
-		if (difftime(start, time(NULL) <= 3)) {	/* Retry for 3 secs */
+		if (difftime(time(NULL), start) <= 3) {  /* Retry for 3 secs */
 			debug2("wait for launch of job %u before suspending it",
 			       job_id);
 			gettimeofday(&now, NULL);
