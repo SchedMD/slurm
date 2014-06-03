@@ -9902,8 +9902,6 @@ static void _validate_job_files(List batch_dirs)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!job_ptr->batch_flag)
 			continue;
-		if (IS_JOB_FINISHED(job_ptr))
-			continue;
 		/* Want to keep this job's files */
 		del_cnt = list_delete_all(batch_dirs, _find_batch_dir,
 					  &(job_ptr->job_id));
