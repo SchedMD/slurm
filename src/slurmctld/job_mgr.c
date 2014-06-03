@@ -7209,9 +7209,9 @@ void reset_job_bitmaps(void)
 		_reset_step_bitmaps(job_ptr);
 
 		/* Do not increase the job->node_cnt for
-		 * finished jobs.
+		 * completed jobs.
 		 */
-		if (! IS_JOB_FINISHED(job_ptr))
+		if (! IS_JOB_COMPLETED(job_ptr))
 			build_node_details(job_ptr, false); /* set node_addr */
 
 		if (_reset_detail_bitmaps(job_ptr))
@@ -9866,8 +9866,6 @@ static void _validate_job_files(List batch_dirs)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!job_ptr->batch_flag)
-			continue;
-		if (IS_JOB_FINISHED(job_ptr))
 			continue;
 		/* Want to keep this job's files */
 		del_cnt = list_delete_all(batch_dirs, _find_batch_dir,
