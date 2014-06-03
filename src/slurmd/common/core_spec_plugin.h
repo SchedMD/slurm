@@ -37,6 +37,9 @@
 #ifndef _CORE_SPEC_PLUGIN_H_
 #define _CORE_SPEC_PLUGIN_H_
 
+
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
 /*
  * Initialize the core specialization plugin.
  *
@@ -62,26 +65,26 @@ extern int core_spec_g_fini(void);
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_set(uint64_t cont_id, uint16_t core_count);
+extern int core_spec_g_set(stepd_step_rec_t *job, uint16_t core_count);
 /*
  * Clear specialized cores at job termination
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_clear(uint64_t cont_id);
+extern int core_spec_g_clear(stepd_step_rec_t *job);
 
 /*
  * Reset specialized cores at job suspend
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_suspend(uint64_t cont_id, uint16_t core_count);
+extern int core_spec_g_suspend(stepd_step_rec_t *job, uint16_t core_count);
 
 /*
  * Reset specialized cores at job resume
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_g_resume(uint64_t cont_id, uint16_t core_count);
+extern int core_spec_g_resume(stepd_step_rec_t *job, uint16_t core_count);
 
 #endif /* _CORE_SPEC_PLUGIN_H_ */

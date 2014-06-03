@@ -112,10 +112,11 @@ extern int fini(void)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
+extern int core_spec_p_set(stepd_step_rec_t *job, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_set(%"PRIu64") to %u", cont_id, core_count);
+	xassert(job);
+	info("core_spec_p_set(%"PRIu64") to %u", job->cont_id, core_count);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -125,10 +126,11 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_clear(uint64_t cont_id)
+extern int core_spec_p_clear(stepd_step_rec_t *job)
 {
 #if _DEBUG
-	info("core_spec_p_clear(%"PRIu64")", cont_id);
+	xassert(job);
+	info("core_spec_p_clear(%"PRIu64")", job->cont_id);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -138,10 +140,12 @@ extern int core_spec_p_clear(uint64_t cont_id)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
+extern int core_spec_p_suspend(stepd_step_rec_t *job, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_suspend(%"PRIu64") count %u", cont_id, core_count);
+	xassert(job);
+	info("core_spec_p_suspend(%"PRIu64") count %u",
+	     job->cont_id, core_count);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -151,10 +155,12 @@ extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
  *
  * Return SLURM_SUCCESS on success
  */
-extern int core_spec_p_resume(uint64_t cont_id, uint16_t core_count)
+extern int core_spec_p_resume(stepd_step_rec_t *job, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_resume(%"PRIu64") count %u", cont_id, core_count);
+	xassert(job);
+	info("core_spec_p_resume(%"PRIu64") count %u",
+	     job->cont_id, core_count);
 #endif
 	return SLURM_SUCCESS;
 }
