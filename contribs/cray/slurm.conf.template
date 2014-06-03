@@ -107,7 +107,7 @@ MaxMemPerCPU={maxmem}
 SchedulerType=sched/backfill
 SchedulerPort=7321
 SelectType=select/cray
-SelectTypeParameters=CR_CPU_Memory,other_cons_res
+SelectTypeParameters=CR_CORE_Memory,other_cons_res
 #
 #
 # JOB PRIORITY
