@@ -587,8 +587,12 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	safe_unpack32(&job->port, buffer);
 #ifdef HAVE_NATIVE_CRAY
 	/* If the libstate save/restore failed, at least make sure that we
-	 * do not re-allocate ports assigned to job steps that we recover. */
-	if ((job->port >= MIN_PORT) && (job->port <= MAX_PORT))
+	 * do not re-allocate ports assigned to job steps that we
+	 * recover.
+	 *
+	 * NOTE: port_resv is NULL when unpacking things in srun.
+	 */
+	if (port_resv && (job->port >= MIN_PORT) && (job->port <= MAX_PORT))
 		bit_set(port_resv, job->port - MIN_PORT);
 #endif
 
