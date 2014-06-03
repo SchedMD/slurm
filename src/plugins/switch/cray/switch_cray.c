@@ -592,8 +592,10 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	 *
 	 * NOTE: port_resv is NULL when unpacking things in srun.
 	 */
+	pthread_mutex_lock(&port_mutex);
 	if (port_resv && (job->port >= MIN_PORT) && (job->port <= MAX_PORT))
 		bit_set(port_resv, job->port - MIN_PORT);
+	pthread_mutex_unlock(&port_mutex);
 #endif
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
