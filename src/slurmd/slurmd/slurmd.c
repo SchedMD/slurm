@@ -240,9 +240,9 @@ main (int argc, char *argv[])
 		 * written.  This is a memory leak, but a fatal is
 		 * called right after so it isn't that big of a deal.
 		 */
-		if ((pw=getpwuid(slurmd_uid)))
+		if ((pw = getpwuid(slurmd_uid)))
 			slurmd_user = xstrdup(pw->pw_name);
-		if ((pw=getpwuid(curr_uid)))
+		if ((pw = getpwuid(curr_uid)))
 			curr_user = pw->pw_name;
 
 		fatal("You are running slurmd as something "
@@ -318,8 +318,7 @@ main (int argc, char *argv[])
 
 	conf->pid = getpid();
 	/* This has to happen after daemon(), which closes all fd's,
-	   so we keep the write lock of the pidfile.
-	*/
+	 * so we keep the write lock of the pidfile. */
 	pidfd = create_pidfile(conf->pidfile, 0);
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
