@@ -753,23 +753,31 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 				 (const char **) sw_job->cookies,
 				 &num_ptags, &ptags, NULL);
 	ALPSC_CN_DEBUG("alpsc_configure_nic");
+	if (rc != 1) {
+		free(ptags);
+		free_alpsc_pe_info(&alpsc_pe_info);
+		return SLURM_ERROR;
+	}
+	/*
+	 * xmalloc the ptags and copy the ptag array to the xmalloced
+	 * space, so they can be xfreed later
+	 */
+	if (num_ptags) {
+		sw_job->ptags = xmalloc(sizeof(int) * num_ptags);
+		memcpy(sw_job->ptags, ptags, sizeof(int) * num_ptags);
+		free(ptags);
+		sw_job->num_ptags = num_ptags;
+	}
 
 #if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
 	// Write the IAA file
-	rc = write_iaa_file(job, sw_job, ptags, num_ptags,
+	rc = write_iaa_file(job, sw_job, sw_job->ptags, sw_job->num_ptags,
 			    &alpsc_pe_info);
 	if (rc != SLURM_SUCCESS) {
-		free(ptags);
 		free_alpsc_pe_info(&alpsc_pe_info);
 		return rc;
 	}
 #endif
-
-	/*
-	 * We don't use the ptags because Cray's LLI acquires them
-	 * itself, so they can be immediately discarded.
-	 */
-	free(ptags);
 
 	/*
 	 * If there is reserved access to network performance counters,
