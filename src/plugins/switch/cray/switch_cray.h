@@ -189,11 +189,12 @@ extern int list_str_to_array(char *list, int *cnt, int32_t **numbers);
 extern void alpsc_debug(const char *file, int line, const char *func,
 			int rc, int expected_rc, const char *alpsc_func,
 			char **err_msg);
-extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 extern int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid);
 extern int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job);
 extern void recursive_rmdir(const char *dirnm);
 #endif /* HAVE_NATIVE_CRAY */
+
+extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 
 // Implemented in iaa.c
 #if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
