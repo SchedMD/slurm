@@ -62,7 +62,7 @@ proc _test_limits { } {
 		maxwall    10
 	}
 
-	incr exit_code [mod_acct2 $ta [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]]
+	incr exit_code [mod_acct $ta [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]]
 	if { $exit_code } {
 		return $exit_code
 	}
