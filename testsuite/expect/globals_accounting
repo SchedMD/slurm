@@ -46,137 +46,7 @@ set timeout 60
 #
 # Use sacctmgr to create a cluster
 #
-proc add_cluster {name qos fairshare grpcpu grpmem grpjob grpnode grpsubmit \
-maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
-	global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to add\n"
-		return 1
-	}
-
-	set command "$name"
-
-	if { [string length $fairshare] } {
-		set command "$command fairshare=$fairshare"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpu] } {
-		set command "$command GrpCPUs=$grpcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpmem] } {
-		set command "$command GrpMem=$grpmem"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpjob] } {
-		set command "$command GrpJobs=$grpjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpnode] } {
-		set command "$command GrpNodes=$grpnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpsubmit] } {
-		set command "$command GrpSubmitJobs=$grpsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpumin] } {
-		set command "$command MaxCPUMins=$maxcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpu] } {
-		set command "$command MaxCPUs=$maxcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxjob] } {
-		set command "$command MaxJobs=$maxjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxnode] } {
-		set command "$command MaxNodes=$maxnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxsubmit] } {
-		set command "$command MaxSubmitJobs=$maxsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxwall] } {
-		set command "$command MaxWall=$maxwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $qos] } {
-		if { ![string compare $qos " "] } {
-			set qos ""
-		}
-		set command "$command qoslevel='$qos'"
-	}
-
-	set my_pid [eval spawn $sacctmgr -i add cluster $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Adding Cluster" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem adding clusters
-	got $matches\n"
-		incr exit_code 1
-	}
-
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-
-	return $exit_code
-}
-
-#
-# Use sacctmgr to create a cluster
-#
-proc add_cluster2 { name clus_req_in } {
+proc add_cluster { name clus_req_in } {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -190,40 +60,7 @@ proc add_cluster2 { name clus_req_in } {
 	set command "$name"
 
 	foreach option [array names clus_req] {
-		# send_user "looking for option $option\n"
-		# switch -- $option \
-		#     fairshare {
-		# 	    set command "$command fairshare=$clus_req($option)"
-		#     } grpcpu {
-		# 	    set command "$command GrpCPUs=$clus_req($option)"
-		#     } grpmem {
-		# 	    set command "$command GrpMem=$clus_req($option)"
-		#     } grpjob {
-		# 	    set command "$command GrpJobs=$clus_req($option)"
-		#     } grpnode {
-		# 	    set command "$command GrpNodes=$clus_req($option)"
-		#     } grpsubmit {
-		# 	    set command "$command GrpSubmitJobs=$clus_req($option)"
-		#     } maxcpumin {
-		# 	    set command "$command MaxCPUMins=$clus_req($option)"
-		#     } maxcpu {
-		# 	    set command "$command MaxCPUs=$clus_req($option)"
-		#     } maxjob {
-		# 	    set command "$command MaxJobs=$clus_req($option)"
-		#     } maxnode {
-		# 	    set command "$command MaxNodes=$clus_req($option)"
-		#     } maxsubmit {
-		# 	    set command "$command MaxSubmitJobs=$clus_req($option)"
-		#     } maxwall {
-		# 	    set command "$command MaxWall=$clus_req($option)"
-		#     } qos {
-		# 	    if { ![string compare $clus_req($option) " "] } {
-		# 		    set $clus_req($option) ""
-		# 	    }
-		# 	    set command "$command qoslevel='$clus_req($option)'"
-		#     } default {
-		# 	    send_user "$option is not a valid option for a cluster_request\n"
-		#     }
+
 		if { ![string compare $option "qos"] } {
 			if { ![string compare $clus_req($option) " "] } {
 				set $clus_req($option) "''"
@@ -352,161 +189,7 @@ proc remove_cluster {name} {
 #
 # Use sacctmgr to add an account
 #
-#
-# Use sacctmgr to add an user
-#
-proc add_acct { cluster parent name desc org qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
-	global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to add\n"
-		return 1
-	}
-
-	set command "name=$name"
-
-	if { [string length $cluster] } {
-		set command "$command cluster=$cluster"
-	}
-
-	if { [string length $desc] } {
-		set command "$command description=$desc"
-	}
-
-	if { [string length $fairshare] } {
-		set command "$command fairshare=$fairshare"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpumin] } {
-		set command "$command GrpCPUMins=$grpcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpu] } {
-		set command "$command GrpCPUs=$grpcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpjob] } {
-		set command "$command GrpJobs=$grpjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpnode] } {
-		set command "$command GrpNodes=$grpnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpsubmit] } {
-		set command "$command GrpSubmitJobs=$grpsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpwall] } {
-		set command "$command GrpWall=$grpwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpumin] } {
-		set command "$command MaxCPUMins=$maxcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpu] } {
-		set command "$command MaxCPUs=$maxcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxjob] } {
-		set command "$command MaxJobs=$maxjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxnode] } {
-		set command "$command MaxNodes=$maxnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxsubmit] } {
-		set command "$command MaxSubmitJobs=$maxsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxwall] } {
-		set command "$command MaxWall=$maxwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $parent] } {
-		set command "$command parent=$parent"
-	}
-
-	if { [string length $org] } {
-		set command "$command organization=$org"
-	}
-
-	if { [string length $qos] } {
-		if { ![string compare $qos " "] } {
-			set qos ""
-		}
-		set command "$command qoslevel='$qos'"
-		set assoc_stuff 1
-	}
-
-	set my_pid [eval spawn $sacctmgr -i add account $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Adding Account" {
-			incr matches
-			exp_continue
-		}
-		-re "Associations" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 2} {
-		send_user "\nFAILURE:  sacctmgr had a problem adding account.
-	got $matches\n"
-		incr exit_code 1
-	}
-
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	return $exit_code
-}
-
-proc add_acct2 { name acct_req_in } {
+proc add_acct { name acct_req_in } {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -654,194 +337,10 @@ proc remove_acct { cluster name } {
 
 	return $exit_code
 }
+
 #
 # Use sacctmgr to modify an account
 #
-proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall parent desc org } {
-	global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-	set expected 0
-	set acct_stuff 0
-	set assoc_stuff 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to modify\n"
-		return 1
-	}
-
-	#set up the where
-	set wcommand "where name=$name"
-
-	if { [string length $cluster] } {
-		set wcommand "$wcommand cluster=$cluster"
-	}
-
-	if { [string length $wdesc] } {
-		set wcommand "$wcommand description='$wdesc'"
-	}
-
-	if { [string length $worg] } {
-		set wcommand "$wcommand organization='$worg'"
-	}
-
-	if { [string length $wparent] } {
-		set wcommand "$wcommand parent='$wparent'"
-	}
-
-	#set up the set
-	set scommand "set"
-	if { [string length $parent] } {
-		set scommand "$scommand parent=$parent"
-		set assoc_stuff 1
-	}
-
-	if { [string length $desc] } {
-		set scommand "$scommand description='$desc'"
-		set acct_stuff 1
-	}
-
-	if { [string length $org] } {
-		set scommand "$scommand organization='$org'"
-		set acct_stuff 1
-	}
-
-	if { [string length $fairshare] } {
-		set scommand "$scommand fairshare=$fairshare"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpumin] } {
-		set scommand "$scommand GrpCPUMins=$grpcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpurunmins] } {
-		set scommand "$scommand GrpCpuRunMins=$grpcpurunmins"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpu] } {
-		set scommand "$scommand GrpCPUs=$grpcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpjob] } {
-		set scommand "$scommand GrpJobs=$grpjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpmem] } {
-		set scommand "$scommand GrpMemory=$grpmem"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpnode] } {
-		set scommand "$scommand GrpNodes=$grpnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpsubmit] } {
-		set scommand "$scommand GrpSubmitJobs=$grpsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpwall] } {
-		set scommand "$scommand GrpWall=$grpwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpumin] } {
-		set scommand "$scommand MaxCPUMins=$maxcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpu] } {
-		set scommand "$scommand MaxCPUs=$maxcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxjob] } {
-		set scommand "$scommand MaxJobs=$maxjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxnode] } {
-		set scommand "$scommand MaxNodes=$maxnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxsubmit] } {
-		set scommand "$scommand MaxSubmitJobs=$maxsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxwall] } {
-		set scommand "$scommand MaxWall=$maxwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $qos] } {
-		if { ![string compare $qos " "] } {
-			set qos ""
-		}
-		set scommand "$scommand qoslevel='$qos'"
-		set assoc_stuff 1
-	}
-
-	incr expected $acct_stuff
-	incr expected $assoc_stuff
-
-	set my_pid [eval spawn $sacctmgr -i modify account $scommand $wcommand ]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Modified accounts" {
-			incr matches
-			exp_continue
-		}
-		-re "Modified account associations" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != $expected} {
-		send_user "\nFAILURE:  sacctmgr had a problem modifying account.
-	got $matches needed $expected\n"
-		incr exit_code 1
-	}
-
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	return $exit_code
-}
-
 ########################################################################
 #
 # IN: acct_mod_desc_in - consist of the cluster,
@@ -858,7 +357,7 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpuru
 #     after the set
 #
 ########################################################################
-proc mod_acct2 { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_in } {
+proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_in } {
 
 	global sacctmgr timeout
 
@@ -969,196 +468,12 @@ proc mod_acct2 { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals
 		}
 		return $exit_code
 
-
-
 }
 
 #
 # Use sacctmgr to add an user
 #
-proc add_user { cluster account name part admin dacct dwckey wckey qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall defaultqos} {
-	global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to add\n"
-		return 1
-	}
-
-	set command "user=$name"
-
-	if { [string length $account] } {
-		set command "$command account=$account"
-	}
-
-	if { [string length $admin] } {
-		set command "$command adminlevel=$admin"
-	}
-
-	if { [string length $cluster] } {
-		set command "$command cluster=$cluster"
-	}
-
-	if { [string length $dacct] } {
-		set command "$command defaultaccount=$dacct"
-	}
-
-	if { [string length $dwckey] } {
-		set command "$command defaultwckey=$dwckey"
-	}
-
-	if { [string length $fairshare] } {
-		set command "$command fairshare=$fairshare"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpumin] } {
-		set command "$command GrpCPUMins=$grpcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpurunmins] } {
-		set command "$command GrpCpuRunMin=$grpcpurunmins"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpu] } {
-		set command "$command GrpCPUs=$grpcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpjob] } {
-		set command "$command GrpJobs=$grpjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpmem] } {
-		set command "$command GrpMemory=$grpmem"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpnode] } {
-		set command "$command GrpNodes=$grpnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpsubmit] } {
-		set command "$command GrpSubmitJobs=$grpsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpwall] } {
-		set command "$command GrpWall=$grpwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpumin] } {
-		set command "$command MaxCPUMins=$maxcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpu] } {
-		set command "$command MaxCPUs=$maxcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxjob] } {
-		set command "$command MaxJobs=$maxjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxnode] } {
-		set command "$command MaxNodes=$maxnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxsubmit] } {
-		set command "$command MaxSubmitJobs=$maxsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxwall] } {
-		set command "$command MaxWall=$maxwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $defaultqos] } {
-		set command "$command DefaultQos=$defaultqos"
-		set assoc_stuff 1
-	}
-
-	if { [string length $part] } {
-		set command "$command partition=$part"
-	}
-
-	if { [string length $qos] } {
-		if { ![string compare $qos " "] } {
-			set qos ""
-		}
-		set command "$command qoslevel='$qos'"
-	}
-
-	if { [string length $wckey] } {
-		set command "$command wckeys=$wckey"
-	}
-
-	set my_pid [eval spawn $sacctmgr -i add user $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Adding User" {
-			incr matches
-			exp_continue
-		}
-		-re "Associations" {
-			incr matches
-			exp_continue
-		}
-		-re "WCKeys" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 2 && $matches != 3} {
-		send_user "\nFAILURE:  sacctmgr had a problem adding user.
-	got $matches\n"
-		incr exit_code 1
-	}
-
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	return $exit_code
-}
-
-
-proc add_user2 { name user_req_in } {
+proc add_user { name user_req_in } {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -1173,114 +488,6 @@ proc add_user2 { name user_req_in } {
 
 
 	foreach option [array names user_req] {
-
-		# if { [string length $account] } {
-		# 	set command "$command account=$account"
-		# }
-
-		# if { [string length $admin] } {
-		# 	set command "$command adminlevel=$admin"
-		# }
-
-		# if { [string length $cluster] } {
-		# 	set command "$command cluster=$cluster"
-		# }
-
-		# if { [string length $dacct] } {
-		# 	set command "$command defaultaccount=$dacct"
-		# }
-
-		# if { [string length $dwckey] } {
-		# 	set command "$command defaultwckey=$dwckey"
-		# }
-
-		# if { [string length $fairshare] } {
-		# 	set command "$command fairshare=$fairshare"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $grpcpumin] } {
-		# 	set command "$command GrpCPUMins=$grpcpumin"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $grpcpurunmins] } {
-		# 	set command "$command GrpCpuRunMin=$grpcpurunmins"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $grpcpu] } {
-		# 	set command "$command GrpCPUs=$grpcpu"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $grpjob] } {
-		# 	set command "$command GrpJobs=$grpjob"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $grpmem] } {
-		# 	set command "$command GrpMemory=$grpmem"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $grpnode] } {
-		# 	set command "$command GrpNodes=$grpnode"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $grpsubmit] } {
-		# 	set command "$command GrpSubmitJobs=$grpsubmit"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $grpwall] } {
-		# 	set command "$command GrpWall=$grpwall"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $maxcpumin] } {
-		# 	set command "$command MaxCPUMins=$maxcpumin"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $maxcpu] } {
-		# 	set command "$command MaxCPUs=$maxcpu"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $maxjob] } {
-		# 	set command "$command MaxJobs=$maxjob"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $maxnode] } {
-		# 	set command "$command MaxNodes=$maxnode"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $maxsubmit] } {
-		# 	set command "$command MaxSubmitJobs=$maxsubmit"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $maxwall] } {
-		# 	set command "$command MaxWall=$maxwall"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $defaultqos] } {
-		# 	set command "$command DefaultQos=$defaultqos"
-		# 	set assoc_stuff 1
-		# }
-
-		# if { [string length $part] } {
-		# 	set command "$command partition=$part"
-		# }
-
-		# if { [string length $wckey] } {
-		# 	set command "$command wckeys=$wckey"
-		# }
 
 		if { ![string compare $option "qos"] } {
 			if { ![string compare  $user_req($option) " "] } {
@@ -1342,10 +549,7 @@ proc add_user2 { name user_req_in } {
 	}
 	return $exit_code
 
-
-
 }
-
 
 #
 # Use sacctmgr to remove an user
@@ -1430,195 +634,6 @@ proc remove_user { cluster acct user } {
 #
 # Use sacctmgr to modify an user
 #
-proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpurunmins grpcpu grpjob grpmem grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey defaultqos} {
-	global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-	set expected 0
-	set acct_stuff 0
-	set assoc_stuff 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to modify\n"
-		return 1
-	}
-
-	#set up the where
-	set wcommand "where name=$name"
-
-	if { [string length $cluster] } {
-		set wcommand "$wcommand cluster=$cluster"
-	}
-
-	if { [string length $account] } {
-		set wcommand "$wcommand account='$account'"
-	}
-
-	if { [string length $part] } {
-		set wcommand "$wcommand partition=$part"
-	}
-
-	if { [string length $wadmin] } {
-		set wcommand "$wcommand adminlevel=$wadmin"
-	}
-
-	if { [string length $wdacct] } {
-		set wcommand "$wcommand defaultaccount='$wdacct'"
-	}
-
-	if { [string length $wdwckey] } {
-		set wcommand "$wcommand defaultwckey=$wwckey"
-	}
-
-	#set up the set
-	set scommand "set"
-
-	if { [string length $admin] } {
-		set scommand "$scommand adminlevel=$admin"
-		set acct_stuff 1
-	}
-
-	if { [string length $dacct] } {
-		set scommand "$scommand defaultaccount='$dacct'"
-		set acct_stuff 1
-	}
-
-	if { [string length $defaultqos] } {
-		set command "$command DefaultQos=$defaultqos"
-		set assoc_stuff 1
-	}
-
-	if { [string length $dwckey] } {
-		set scommand "$scommand defaultwckey=$dwckey"
-		set acct_stuff 1
-	}
-
-	if { [string length $fairshare] } {
-		set scommand "$scommand fairshare=$fairshare"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpumin] } {
-		set scommand "$scommand GrpCPUMins=$grpcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpu] } {
-		set scommand "$scommand GrpCPUs=$grpcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpjob] } {
-		set scommand "$scommand GrpJobs=$grpjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpnode] } {
-		set scommand "$scommand GrpNodes=$grpnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpsubmit] } {
-		set scommand "$scommand GrpSubmitJobs=$grpsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpwall] } {
-		set scommand "$scommand GrpWall=$grpwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpumin] } {
-		set scommand "$scommand MaxCPUMins=$maxcpumin"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpu] } {
-		set scommand "$scommand MaxCPUs=$maxcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxjob] } {
-		set scommand "$scommand MaxJobs=$maxjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxnode] } {
-		set scommand "$scommand MaxNodes=$maxnode"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxsubmit] } {
-		set scommand "$scommand MaxSubmitJobs=$maxsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxwall] } {
-		set scommand "$scommand MaxWall=$maxwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $qos] } {
-		if { ![string compare $qos " "] } {
-			set qos ""
-		}
-		set scommand "$scommand qoslevel='$qos'"
-		set assoc_stuff 1
-	}
-
-	incr expected $acct_stuff
-	incr expected $assoc_stuff
-
-	set my_pid [eval spawn $sacctmgr -i modify user $scommand $wcommand ]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Modified user associations" {
-			incr matches
-			exp_continue
-		}
-		-re "Modified users" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr modify not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != $expected} {
-		send_user "\nFAILURE:  sacctmgr had a problem modifying user.
-	got $matches needed $expected\n"
-		incr exit_code 1
-	}
-
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	return $exit_code
-}
-
 ###############################################################
 #
 #
@@ -1638,7 +653,7 @@ proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare gr
 #
 ##############################################################
 
-proc mod_user2 { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
+proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -1807,6 +822,55 @@ proc add_qos {name} {
 	}
 
 	return $exit_code
+}
+
+#
+# Modify QoS
+#
+proc mod_qos { qos_name qos_mod_val_in} {
+
+	global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set expected 0
+	set wcommand "where name=$qos_name"
+	set scommand "set"
+	array set qos_mod_vals $qos_mod_val_in
+
+	if { ![string length $qos_name] } {
+		send_user "FAILURE: we need a name to modify\n"
+		return 1
+	}
+
+	foreach desc [array names qos_mod_vals] {
+
+		if { ![string compare $qos_mod_vals($desc) " "] } {
+			set $qos_mod_vals($desc) "''"
+		}
+
+		set scommand "$scommand $desc=$qos_mod_vals($desc)"
+	}
+
+	set change_cnt 0
+	set my_pid [eval spawn $sacctmgr -i modify qos $wcommand $scommand]
+	expect {
+		-re "Modified qos" {
+			incr change_cnt
+		}
+		timeout {
+			send_user "\nFAILURE sacctmgr not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$change_cnt==0} {
+		send_user "\nFAILURE: sacctmgr did not change qos $qos_name\n"
+		set exit_code 1
+	}
+
 }
 
 #

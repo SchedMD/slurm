@@ -114,7 +114,7 @@ if {$access_err != 0} {
 remove_acct "" "$ta1,$ta2,$ta3"
 
 #add cluster
-incr exit_code [add_cluster2 "$tc1,$tc2" [array get clus_req]]
+incr exit_code [add_cluster "$tc1,$tc2" [array get clus_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -122,7 +122,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
+incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -130,7 +130,7 @@ if { $exit_code } {
 }
 
 # OK This is the real test, first test change the desc and org of the accounts
-incr exit_code [mod_acct2 "$ta1,$ta2,$ta3" [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]]
+incr exit_code [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -166,7 +166,7 @@ if {$matches != 3} {
 }
 
 # Next, test change the limits of the accounts
-incr exit_code [mod_acct2 $ta1  [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]]
+incr exit_code [mod_acct $ta1  [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -203,7 +203,7 @@ if {$matches != 6} {
 }
 
 # Next, test change the desc and limits of the accounts
-incr exit_code [mod_acct2 $ta1  [array get acct_mod_desc3] [array get acct_mod_assoc_vals3] [array get acct_mod_acct_vals3]]
+incr exit_code [mod_acct $ta1  [array get acct_mod_desc3] [array get acct_mod_assoc_vals3] [array get acct_mod_acct_vals3]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"

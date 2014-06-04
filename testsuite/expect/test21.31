@@ -87,7 +87,7 @@ if {$access_err != 0} {
 #
 #add cluster
 #
-incr exit_code [add_cluster2 "$tc2" [array get clus_req]]
+incr exit_code [add_cluster "$tc2" [array get clus_req]]
 if { $exit_code } {
 	exit $exit_code
 }

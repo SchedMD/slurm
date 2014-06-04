@@ -33,7 +33,7 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "test21.24"
+set test_id     "21.24"
 set file_in     "$test_id.input"
 set file_in2    "$test_id.input2"
 set file_in3    "$test_id.input3"
@@ -303,7 +303,7 @@ if { $exit_code } {
 
 #
 #add cluster
-incr exit_code [add_cluster2 $tc3 [array get clus_req]]
+incr exit_code [add_cluster $tc3 [array get clus_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta2,$ta3,$ta4"
@@ -313,7 +313,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct2 $ta4 [array get acct_req]]
+incr exit_code [add_acct $ta4 [array get acct_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta2,$ta3,$ta4"
@@ -322,7 +322,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-incr exit_code [add_acct2 $ta3 [array get acct_req2]]
+incr exit_code [add_acct $ta3 [array get acct_req2]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta2,$ta3,$ta4"
@@ -331,7 +331,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-incr exit_code [add_acct2 $ta2 [array get acct_req3]]
+incr exit_code [add_acct $ta2 [array get acct_req3]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta2,$ta3,$ta4"
@@ -341,7 +341,7 @@ if { $exit_code } {
 }
 
 #add users
-incr exit_code [add_user2 $tu3 [array get user_req]]
+incr exit_code [add_user $tu3 [array get user_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta2,$ta3,$ta4"
@@ -350,7 +350,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-incr exit_code [add_user2 $tu2 [array get user_req2]]
+incr exit_code [add_user $tu2 [array get user_req2]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta2,$ta3,$ta4"
@@ -359,7 +359,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-incr exit_code [add_user2 $tu1 [array get user_req3]]
+incr exit_code [add_user $tu1 [array get user_req3]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta1,$ta2,$ta3,$ta4"

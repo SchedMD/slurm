@@ -119,7 +119,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster2 "$tc1,$tc2,$tc3" [array get clus_req]]
+incr exit_code [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -128,7 +128,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
+incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -138,7 +138,7 @@ if { $exit_code } {
 
 #add users
 # account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
-incr exit_code [add_user2 $tu1 [array get user_req1]]
+incr exit_code [add_user $tu1 [array get user_req1]]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -189,7 +189,7 @@ if { $exit_code } {
 #
 # Add user with all limits set
 #
-incr exit_code [add_user2 $tu2 [array get user_req2]]
+incr exit_code [add_user $tu2 [array get user_req2]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2"
 	remove_acct "" "$ta1,$ta2,$ta3"

@@ -52,7 +52,7 @@ set exit_code	0
 set acct        test_acct
 set user_name   ""
 set qosname     name
-set qostest     [format "%s %s" $test_id "qosTest"]
+set qostest     "$test_id\_qostest"
 set grn         GrpNodes
 set grn_num     2
 set grcpu       GrpCpus
@@ -90,6 +90,28 @@ set maxjobsub   MaxSubmitJobs
 set maxjobsub_num 2
 set time_spacing 1
 
+# mod qos
+array set mod_qos_vals {
+	GrpNodes        -1
+	GrpCpus         -1
+	GrpJob          -1
+	GrpSubmit       -1
+	GrpCpuMin       -1
+	GrpCpuRunMin    -1
+	GrpMem          -1
+	GrpWall         -1
+	MaxCpus         -1
+	MaxNode         -1
+	MaxJobs         -1
+	MaxSubmitJobs   -1
+	MaxCpuMin       -1
+	MaxWall         -1
+	MaxCpusPerUser  -1
+	MaxNode         -1
+}
+
+
+
 print_header $test_id
 
 # Checks the state of the job
@@ -114,32 +136,6 @@ proc check_state { job } {
 
 	if {$state_match != 1} {
 		send_user "\nFAILURE job should be pending, but is not\n"
-		set exit_code 1
-	}
-
-}
-
-# modifies the QoS
-proc mod_qos { node cpu job sub mcpu mnode mjobs mjobsub gcpumin gcpurunmin gmem gwall mcpumin mwall mcpupu mnodespu} {
-
-	global sacctmgr exit_code qosname qostest grn grcpu grjobs grsub maxcpu maxnodes maxjobs maxjobsub grpcpumin grpcpurunmin grpmem grpwall maxcpumin maxwall maxcpumin maxwall maxcpuspu maxnodespu
-
-	set change_cnt 0
-	spawn $sacctmgr -i modify qos where $qosname=$qostest set $grn=$node $grcpu=$cpu $grjobs=$job $grsub=$sub $maxcpu=$mcpu $maxnodes=$mnode $maxjobs=$mjobs $maxjobsub=$mjobsub $grpcpumin=$gcpumin $grpcpurunmin=$gcpurunmin $grpmem=$gmem $grpwall=$gwall $maxcpumin=$mcpumin $maxwall=$mwall $maxcpuspu=$mcpupu $maxnodespu=$mnodespu
-	expect {
-		-re "Modified qos" {
-			incr change_cnt
-		}
-		timeout {
-			send_user "\nFAILURE sacctmgr not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$change_cnt==0} {
-		send_user "\nFAILURE: sacctmgr did not change qos $qostest\n"
 		set exit_code 1
 	}
 
@@ -308,160 +304,195 @@ expect {
 #
 # Test GrpNode limit
 #
-mod_qos $grn_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(GrpNodes) $grn_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_1
 if {$exit_code != 0} {
 	endit
 }
+# Reset the value to 0
+set mod_qos_vals(GrpNodes) "-1"
 
 #
 # Test GrpCpus
 #
-mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(GrpCpus) $grcpu_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_2
 if {$exit_code != 0} {
 	endit
 }
+set mod_qos_vals(GrpCpus) "-1"
+
 
 #
 # test GrpJob limits
 #
-mod_qos -1 -1 $grjobs_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(GrpJobs) $grjobs_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_3
 if {$exit_code != 0} {
 	endit
 }
+set mod_qos_vals(GrpJobs) "-1"
 
 #
 # test GrpSubmit
 #
-mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(GrpSubmit) $grsub_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_4
 if {$exit_code != 0} {
 	endit
 }
+set mod_qos_vals(GrpSubmit) "-1"
 
 #
 # Test MaxCpus limits
 #
-mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(MaxCpus) $maxcpu_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_5
 if {$exit_code != 0} {
 	endit
 }
+set mod_qos_vals(MaxCpus) "-1"
 
 #
 # Test MaxNode limit
 #
-mod_qos -1 -1 -1 -1 -1 $maxnode_num -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(MaxNodes) $maxnode_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_6
 if {$exit_code != 0} {
 	endit
 }
+set mod_qos_vals(MaxNodes) "-1"
 
 #
 # Test MaxJobs limit
 #
-mod_qos -1 -1 -1 -1 -1 -1 $maxjobs_num -1 -1 -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(MaxJobs) $maxjobs_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_7
 if {$exit_code != 0} {
 	endit
 }
+set mod_qos_vals(MaxJobs) "-1"
 
 #
 # Test MaxJobsSubmits limit
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 $maxjobsub_num -1 -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(MaxSubmitJobs) $maxjobsub_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_8
 if {$exit_code != 0} {
 	endit
 }
+set mod_qos_vals(MaxSubmitJobs) "-1"
 
 #
 # Test GroupCPUMins
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 $grpcpumin_num -1 -1 -1 -1 -1 -1 -1
+set mod_qos_vals(GrpCpuMin) $grpcpumin_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_9
 if {$exit_code != 0 } {
 	endit
 }
+set mod_qos_vals(GrpCpuMin) "-1"
 
 #
 # Test GroupCPURunMins
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpcpurunmin_num -1 -1 -1 -1 -1 -1
+set mod_qos_vals(GrpCpuRunMin) $grpcpurunmin_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_10
 if {$exit_code != 0 } {
 	endit
 }
+set mod_qos_vals(GrpCpuRunMin) "-1"
 
 #
 # Test Group Memory
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpmem_num -1 -1 -1 -1 -1
+set mod_qos_vals(GrpMem) $grpmem_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_11
 if {$exit_code != 0 } {
 	endit
 }
+set mod_qos_vals(GrpMem) "-1"
 
 #
 # Test Group wall
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $grpwall_num -1 -1 -1 -1
+set mod_qos_vals(GrpWall) $grpwall_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_12
 if {$exit_code != 0 } {
 	endit
 }
+set mod_qos_vals(GrpWall) "-1"
 
 #
 # Test Max Cpu Mins
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxcpumin_num -1 -1 -1
+set mod_qos_vals(MaxCpuMin) $maxcpumin_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_13
 if {$exit_code != 0 } {
 	endit
 }
+set mod_qos_vals(MaxCpuMin) "-1"
 
 #
 # Test Max Wall
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxwall_num -1 -1
+set mod_qos_vals(MaxWall) $maxwall_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_14
 if {$exit_code != 0 } {
 	endit
 }
+set mod_qos_vals(MaxWall) "-1"
 
 #
 # Test Max CPUs Per User
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxcpuspu_num -1
+set mod_qos_vals(MaxCpusPerUser) $maxcpuspu_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_15
 if {$exit_code != 0 } {
 	endit
 }
+set mod_qos_vals(MaxCpusPerUser) "-1"
+
 #
 # Test MaxNodesPerUser
 #
-mod_qos -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 $maxnodespu_num
+set mod_qos_vals(MaxNodesPerUser) $maxnodespu_num
+mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_16
 if {$exit_code != 0 } {
 	endit
 }
+set mod_qos_vals(MaxNodesPerUser) "-1"
 
 endit

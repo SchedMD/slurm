@@ -131,7 +131,7 @@ if {$access_err != 0} {
 remove_acct "" "$ta1,$ta2,$ta3"
 
 #add cluster
-incr exit_code [add_cluster2 "$tc1,$tc2" [array get clus_req]]
+incr exit_code [add_cluster "$tc1,$tc2" [array get clus_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -139,7 +139,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
+incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -147,7 +147,7 @@ if { $exit_code } {
 }
 
 # OK This is the real test, first test change the desc and org of the accounts
-incr exit_code [mod_acct2 "$ta1,$ta2,$ta3" [array get acct_mod_desc1] [array get acct_mod_acct_vals1] [array get acct_mod_assoc_vals1]]
+incr exit_code [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc1] [array get acct_mod_acct_vals1] [array get acct_mod_assoc_vals1]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -183,7 +183,7 @@ if {$matches != 3} {
 }
 
 # Next, test change the limits of the accounts
-incr exit_code [mod_acct2 "$ta1,$ta2,$ta3" [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]]
+incr exit_code [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -219,7 +219,7 @@ if {$matches != 6} {
 }
 
 # Next, test change the desc and limits of the accounts
-incr exit_code [mod_acct2 "$ta1,$ta3" [array get acct_mod_desc3] [array get acct_mod_acct_vals3] [array get acct_mod_assoc_vals3]]
+incr exit_code [mod_acct "$ta1,$ta3" [array get acct_mod_desc3] [array get acct_mod_acct_vals3] [array get acct_mod_assoc_vals3]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -258,7 +258,7 @@ if {$matches != 6} {
 }
 
 # Next, test change the parent of ta3 to be $ta2 on $tc1 sibling to be a child
-incr exit_code [mod_acct2 $ta3 [array get acct_mod_desc4] [array get acct_mod_assoc_vals4] [array get acct_mod_acct_vals4]]
+incr exit_code [mod_acct $ta3 [array get acct_mod_desc4] [array get acct_mod_assoc_vals4] [array get acct_mod_acct_vals4]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -301,7 +301,7 @@ if {$matches != 2} {
 
 # Next, test change the parent of $ta2 to be $ta3 on $tc1
 # making the child the parent
-incr exit_code [mod_acct2 $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]]
+incr exit_code [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -338,7 +338,7 @@ if {$matches != 4} {
 
 # Next, test change the parent of $ta3 to be $ta2 on $tc1 again
 # only this time the parent will become the child instead of it being a sibling.
-incr exit_code [mod_acct2 $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]]
+incr exit_code [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"

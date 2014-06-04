@@ -108,7 +108,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster2 "$tc1,$tc2,$tc3" [array get clus_req]]
+incr exit_code [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]]
 if { $exit_code } {
      	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -117,7 +117,7 @@ if { $exit_code } {
 }
 
 #add accounts
-incr exit_code [add_acct2 "$ta1,$ta2,$ta3" [array get acct_req]]
+incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -126,7 +126,7 @@ if { $exit_code } {
 }
 
 #add users
-incr exit_code [add_user2 "$tu1,$tu2,$tu3" [array get user_req]]
+incr exit_code [add_user "$tu1,$tu2,$tu3" [array get user_req]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -137,7 +137,7 @@ if { $exit_code } {
 # First test change the AdminLevel and DefaultAccount of a user
 # cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
 
-incr exit_code [mod_user2 $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]]
+incr exit_code [mod_user $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -178,7 +178,7 @@ if {$matches != 3} {
 # Next, test change the limits of one user
 # cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
 
-incr exit_code [mod_user2 $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]]
+incr exit_code [mod_user $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
