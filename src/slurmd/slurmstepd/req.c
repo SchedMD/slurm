@@ -1198,7 +1198,7 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 	}
 	if (!job->batch && switch_g_job_step_post_suspend(job))
 		error("switch_g_job_step_post_suspend: %m");
-	if (core_spec_g_suspend(job->cont_id, job_core_spec))
+	if (!job->batch && core_spec_g_suspend(job->cont_id, job_core_spec))
 		error("core_spec_g_suspend: %m");
 
 	pthread_mutex_unlock(&suspend_mutex);
@@ -1253,7 +1253,8 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 	} else {
 		if (!job->batch && switch_g_job_step_pre_resume(job))
 			error("switch_g_job_step_pre_resume: %m");
-		if (core_spec_g_resume(job->cont_id, job_core_spec))
+		if (!job->batch && core_spec_g_resume(job->cont_id,
+						      job_core_spec))
 			error("core_spec_g_resume: %m");
 		if (proctrack_g_signal(job->cont_id, SIGCONT) < 0) {
 			verbose("Error resuming %u.%u: %m",
