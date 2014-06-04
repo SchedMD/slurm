@@ -672,10 +672,11 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	int *ptags = NULL;
 	char *err_msg = NULL;
 	alpsc_peInfo_t alpsc_pe_info = {-1, -1, -1, -1, NULL, NULL, NULL};
-	int gpu_cnt = 0;
+	int gpu_cnt = 0, access;
 	int control_nid = 0, num_branches = 0;
 	struct sockaddr_in control_soc;
 	alpsc_branchInfo_t alpsc_branch_info;
+	char *npc = "unknown";
 
 	if (!sw_job || (sw_job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_DEBUG("job->switch_job was NULL");
@@ -763,8 +764,28 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 */
 	free(ptags);
 
-	// Not defined yet -- deferred
-	//alpsc_config_gpcd();
+	/*
+	 * If there is reserved access to network performance counters,
+	 * configure the appropriate access permission in the kernel.
+	 */
+	access = ALPSC_NET_PERF_CTR_NONE;
+	select_g_select_jobinfo_get(job->msg->select_jobinfo,
+		SELECT_JOBDATA_NETWORK, &npc);
+	CRAY_DEBUG("network performance counters SELECT_JOBDATA_NETWORK %s",
+		npc);
+	if (strcasecmp(npc, "system") == 0) {
+		access = ALPSC_NET_PERF_CTR_SYSTEM;
+	} else if (strcasecmp(npc, "blade") == 0) {
+		access = ALPSC_NET_PERF_CTR_BLADE;
+	}
+	if (access != ALPSC_NET_PERF_CTR_NONE) {
+		rc = alpsc_set_perf_ctr_perms(&err_msg, job->cont_id, access);
+		ALPSC_CN_DEBUG("alpsc_set_perf_ctr_perms");
+		if (rc != 1) {
+			free_alpsc_pe_info(&alpsc_pe_info);
+			return SLURM_ERROR;
+		}
+	}
 
 	/*
 	 * Set the cmd_index
