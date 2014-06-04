@@ -387,6 +387,29 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 	return resp_data;
 }
 
+static bool _duplicate_trigger(trigger_info_t *trig_desc)
+{
+	bool found_dup = false;
+	ListIterator trig_iter;
+	trig_mgr_info_t *trig_rec;
+
+	trig_iter = list_iterator_create(trigger_list);
+	while ((trig_rec = list_next(trig_iter))) {
+		if ((trig_desc->flags     == trig_rec->flags)      &&
+		    (trig_desc->res_type  == trig_rec->res_type)   &&
+		    (trig_desc->trig_type == trig_rec->trig_type)  &&
+		    (trig_desc->offset    == trig_rec->trig_time)  &&
+		    (trig_desc->user_id   == trig_rec->user_id)    &&
+		    !strcmp(trig_desc->program, trig_rec->program) &&
+		    !strcmp(trig_desc->res_id, trig_rec->res_id)) {
+			found_dup = true;
+			break;
+		}
+	}
+	list_iterator_destroy(trig_iter);
+	return found_dup;
+}
+
 extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 {
 	int i;
@@ -448,6 +471,11 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 				continue;
 			}
 		}
+		msg->trigger_array[i].user_id = (uint32_t) uid;
+		if (_duplicate_trigger(&msg->trigger_array[i])) {
+			rc = ESLURM_TRIGGER_DUP;
+			continue;
+		}
 		trig_add = xmalloc(sizeof(trig_mgr_info_t));
 		msg->trigger_array[i].trig_id = next_trigger_id;
 		trig_add->trig_id = next_trigger_id;
@@ -468,8 +496,8 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 		trig_add->trig_type = msg->trigger_array[i].trig_type;
 		trig_add->trig_time = msg->trigger_array[i].offset;
 		trig_add->orig_time = msg->trigger_array[i].offset;
-		trig_add->user_id = (uint32_t) uid;
-		trig_add->group_id = (uint32_t) gid;
+		trig_add->user_id   = msg->trigger_array[i].user_id;
+		trig_add->group_id  = (uint32_t) gid;
 		/* move don't copy "program" */
 		trig_add->program = msg->trigger_array[i].program;
 		msg->trigger_array[i].program = NULL;

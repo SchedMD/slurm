@@ -289,7 +289,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_ARRAY,
 	  "Invalid job array specification"			},
 	{ ESLURM_RESERVATION_NAME_DUP,
-	  "Duplicate reservation name"			},
+	  "Duplicate reservation name"				},
+	{ ESLURM_TRIGGER_DUP,
+	  "Duplicate event trigger"				},
 
 	/* slurmd error codes */
 

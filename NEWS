@@ -62,6 +62,8 @@ documents those changes that are of interest to users and admins.
     displaying a list of triggers.
  -- Modify strigger to accept arguments to the program to execute when an
     event trigger occurs.
+ -- Attempt to create duplicate event trigger now generates ESLURM_TRIGGER_DUP
+    ("Duplicate event trigger").
 
 * Changes in Slurm 14.03.3-2
 ============================
