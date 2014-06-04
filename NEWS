@@ -57,6 +57,7 @@ documents those changes that are of interest to users and admins.
     slurmctld reconfiguration or restart (they might be later requeued).
  -- scontrol now accepts the option job=xxx or jobid=xxx for the requeue,
     requeuehold and release operations.
+ -- task/cgroup - fix to bind batch job in the proper CPUs.
 
 * Changes in Slurm 14.03.3-2
 ============================

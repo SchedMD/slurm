@@ -1117,7 +1117,10 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	uint32_t nobj;
 	uint32_t taskid = job->envtp->localid;
 	uint32_t jntasks = job->node_tasks;
-	uint32_t jnpus = jntasks * job->cpus_per_task;
+	uint32_t jnpus;
+
+	job->cpus_per_task = MAX(1, job->cpus_per_task);
+	jnpus = jntasks * job->cpus_per_task;
 
 	bind_type = job->cpu_bind_type;
 	if (conf->task_plugin_param & CPU_BIND_VERBOSE ||
