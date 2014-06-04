@@ -508,6 +508,10 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 		}
 	}
 
+	// Free the ptags (if any)
+	if (job->num_ptags)
+		xfree(job->ptags);
+
 	xfree(job);
 
 	return;
@@ -624,6 +628,9 @@ unpack_error:
 			xfree(job->cookies);
 		}
 	}
+	// Free the ptags (if any)
+	if (job->num_ptags)
+		xfree(job->ptags);
 
 	return SLURM_ERROR;
 }
@@ -1146,4 +1153,86 @@ extern int switch_p_slurmd_step_init(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Functions for suspend/resume support
+ */
+extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
+{
+#if _DEBUG
+	info("switch_p_job_step_pre_suspend(job %u.%u)",
+		job->jobid, job->stepid);
+#endif
+#ifdef HAVE_NATIVE_CRAY
+	slurm_cray_jobinfo_t *jobinfo = (slurm_cray_jobinfo_t *)job->switch_job;
+	char *err_msg = NULL;
+	int rc;
+
+	rc = alpsc_pre_suspend(&err_msg, job->cont_id, jobinfo->ptags,
+			       jobinfo->num_ptags, SUSPEND_TIMEOUT_MSEC);
+	ALPSC_CN_DEBUG("alpsc_pre_suspend");
+	if (rc != 1) {
+		return SLURM_ERROR;
+	}
+#endif
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
+{
+#if _DEBUG
+	info("switch_p_job_step_post_suspend(job %u.%u)",
+		job->jobid, job->stepid);
+#endif
+#ifdef HAVE_NATIVE_CRAY
+	char *err_msg = NULL;
+	int rc;
+
+	rc = alpsc_post_suspend(&err_msg, job->cont_id);
+	ALPSC_CN_DEBUG("alpsc_post_suspend");
+	if (rc != 1) {
+		return SLURM_ERROR;
+	}
+#endif
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
+{
+#if _DEBUG
+	info("switch_p_job_step_pre_resume(job %u.%u)",
+		job->jobid, job->stepid);
+#endif
+#ifdef HAVE_NATIVE_CRAY
+	slurm_cray_jobinfo_t *jobinfo = (slurm_cray_jobinfo_t *)job->switch_job;
+	char *err_msg = NULL;
+	int rc;
+
+	rc = alpsc_pre_resume(&err_msg, job->cont_id, jobinfo->ptags,
+			       jobinfo->num_ptags);
+	ALPSC_CN_DEBUG("alpsc_pre_resume");
+	if (rc != 1) {
+		return SLURM_ERROR;
+	}
+#endif
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
+{
+#if _DEBUG
+	info("switch_p_job_step_post_resume(job %u.%u)",
+		job->jobid, job->stepid);
+#endif
+#ifdef HAVE_NATIVE_CRAY
+	char *err_msg = NULL;
+	int rc;
+
+	rc = alpsc_post_resume(&err_msg, job->cont_id);
+	ALPSC_CN_DEBUG("alpsc_post_resume");
+	if (rc != 1) {
+		return SLURM_ERROR;
+	}
+#endif
+	return SLURM_SUCCESS;
+}
 #endif /* !defined(__FreeBSD__) */

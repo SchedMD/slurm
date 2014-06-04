@@ -341,7 +341,7 @@ extern int switch_g_job_suspend(void *suspend_info, int max_wait);
  * IN max_wait - maximum number of seconds to wait for operation to complete
  * RET SLURM_SUCCESS or error code
  */
-extern int switch_g_job_resume(void *suspend_infoo, int max_wait);
+extern int switch_g_job_resume(void *suspend_info, int max_wait);
 
 /*
  * This function is run from the same process as switch_g_job_init()
@@ -415,5 +415,29 @@ extern int switch_g_free_node_info(switch_node_info_t **switch_node);
  */
 extern char*switch_g_sprintf_node_info(switch_node_info_t *switch_node,
 	char *buf, size_t size);
+
+/********************************************************************\
+ * JOB STEP {PRE,POST}-SUSPEND and {PRE-POST}-RESUME FUNCTIONS      *
+\********************************************************************/
+
+/*
+ * Do job-step-related pre-suspend actions
+ */
+extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *job);
+
+/*
+ * Do job-step-related post-suspend actions
+ */
+extern int switch_g_job_step_post_suspend(stepd_step_rec_t *job);
+
+/*
+ * Do job-step-related pre-resume actions
+ */
+extern int switch_g_job_step_pre_resume(stepd_step_rec_t *job);
+
+/*
+ * Do job-step-related post-resume actions
+ */
+extern int switch_g_job_step_post_resume(stepd_step_rec_t *job);
 
 #endif /* _SWITCH_H */

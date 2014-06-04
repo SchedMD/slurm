@@ -128,6 +128,10 @@ typedef struct slurm_switch_ops {
 	int          (*slurmd_init)       ( void );
 	int          (*slurmd_step_init)  ( void );
 	int          (*reconfig)          ( void );
+	int          (*job_step_pre_suspend)( stepd_step_rec_t *job );
+	int          (*job_step_post_suspend)( stepd_step_rec_t *job );
+	int          (*job_step_pre_resume)( stepd_step_rec_t *job );
+	int          (*job_step_post_resume)( stepd_step_rec_t *job );
 } slurm_switch_ops_t;
 
 /*
@@ -176,7 +180,11 @@ static const char *syms[] = {
 	"switch_p_slurmctld_init",
 	"switch_p_slurmd_init",
 	"switch_p_slurmd_step_init",
-	"switch_p_reconfig"
+	"switch_p_reconfig",
+	"switch_p_job_step_pre_suspend",
+	"switch_p_job_step_post_suspend",
+	"switch_p_job_step_pre_resume",
+	"switch_p_job_step_post_resume",
 };
 
 static slurm_switch_ops_t ops;
@@ -587,4 +595,36 @@ extern int switch_g_slurmd_step_init(void)
 		return SLURM_ERROR;
 
 	return (*(ops.slurmd_step_init)) ();
+}
+
+extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *job)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.job_step_pre_suspend)) ( job );
+}
+
+extern int switch_g_job_step_post_suspend(stepd_step_rec_t *job)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.job_step_post_suspend)) ( job );
+}
+
+extern int switch_g_job_step_pre_resume(stepd_step_rec_t *job)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.job_step_pre_resume)) ( job );
+}
+
+extern int switch_g_job_step_post_resume(stepd_step_rec_t *job)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.job_step_post_resume)) ( job );
 }
