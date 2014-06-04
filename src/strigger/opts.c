@@ -117,6 +117,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"cluster",                       required_argument, 0, 'M'},
 		{"clusters",                      required_argument, 0, 'M'},
 		{"node",                          optional_argument, 0, 'n'},
+		{"noheader",                            no_argument, 0, 'N'},
 		{"offset",                        required_argument, 0, 'o'},
 		{"program",                       required_argument, 0, 'p'},
 		{"quiet",                               no_argument, 0, 'Q'},
@@ -141,7 +142,7 @@ extern void parse_command_line(int argc, char *argv[])
 
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv,
-				       "aAbBcCdDeFfgGhHi:Ij:M:n::o:p:QrtuvV",
+				       "aAbBcCdDeFfgGhHi:Ij:M:n::No:p:QrtuvV",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -224,6 +225,9 @@ extern void parse_command_line(int argc, char *argv[])
 				params.node_id = xstrdup(optarg);
 			else
 				params.node_id = xstrdup("*");
+			break;
+		case (int)'N':
+			params.no_header = true;
 			break;
 		case (int)'o':
 			params.offset = atoi(optarg);
@@ -311,6 +315,7 @@ static void _init_options( void )
 	params.bu_ctld_as_ctrl = false;
 	params.flags        = 0;
 	params.front_end    = false;
+	params.no_header    = false;
 	params.node_down    = false;
 	params.node_drained = false;
 	params.node_fail    = false;
@@ -345,6 +350,7 @@ static void _print_options( void )
 	verbose("front_end    = %s", params.front_end ? "true" : "false");
 	verbose("job_id       = %u", params.job_id);
 	verbose("job_fini     = %s", params.job_fini ? "true" : "false");
+	verbose("no_header    = %s", params.no_header ? "true" : "false");
 	verbose("node_down    = %s", params.node_down ? "true" : "false");
 	verbose("node_drained = %s", params.node_drained ? "true" : "false");
 	verbose("node_fail    = %s", params.node_fail ? "true" : "false");
@@ -444,8 +450,18 @@ static void _validate_options( void )
 	}
 
 	if (params.program) {
+		int i;
 		struct stat buf;
-		if (stat(params.program, &buf)) {
+		char *program = xstrdup(params.program);
+
+		for (i = 0; program[i]; i++) {
+			if (isspace(program[i])) {
+				program[i] = '\0';
+				break;
+			}
+		}
+
+		if (stat(program, &buf)) {
 			error("Invalid --program value, file not found");
 			exit(1);
 		}
@@ -453,6 +469,7 @@ static void _validate_options( void )
 			error("Invalid --program value, not regular file");
 			exit(1);
 		}
+		xfree(program);
 	}
 
 	if ((params.offset < -32000) || (params.offset > 32000)) {
@@ -464,7 +481,7 @@ static void _validate_options( void )
 static void _usage( void )
 {
 	printf("Usage: strigger [--set | --get | --clear | --version] "
-	       "[-aAbBcCdDefFgGhHiIjnopQrtuv]\n");
+	       "[-aAbBcCdDefFgGhHiIjnNopQrtuv]\n");
 }
 
 static void _help( void )
@@ -514,6 +531,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
                       current cluster.  cluster with no name will\n\
                       reset to default.\n\
   -n, --node[=host]   trigger related to specific node, all nodes by default\n\
+  -N, --noheader      Do not print the message header\n\
   -o, --offset=#      trigger's offset time from event, negative to preceed\n\
   -p, --program=path  pathname of program to execute when triggered\n\
   -Q, --quiet         quiet mode (suppress informational messages)\n\

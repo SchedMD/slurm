@@ -118,6 +118,13 @@ documents those changes that are of interest to users and admins.
     slurmctld reconfiguration or restart (they might be later requeued).
  -- scontrol now accepts the option job=xxx or jobid=xxx for the requeue,
     requeuehold and release operations.
+ -- task/cgroup - fix to bind batch job in the proper CPUs.
+ -- Added strigger option of -N, --noheader to not print the header when
+    displaying a list of triggers.
+ -- Modify strigger to accept arguments to the program to execute when an
+    event trigger occurs.
+ -- Attempt to create duplicate event trigger now generates ESLURM_TRIGGER_DUP
+    ("Duplicate event trigger").
 
 * Changes in Slurm 14.03.3-2
 ============================

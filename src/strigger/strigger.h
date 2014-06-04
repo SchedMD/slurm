@@ -70,6 +70,7 @@ struct strigger_parameters {
 	bool	 pri_dbd_res_op;
 	bool	 pri_db_fail;
 	bool	 pri_db_res_op;
+	bool     no_header;
 	bool     node_down;
 	bool     node_drained;
 	char *   node_id;

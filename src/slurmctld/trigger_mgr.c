@@ -52,6 +52,8 @@
 #if defined(__FreeBSD__)
 #include <signal.h>
 #endif
+
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -184,12 +186,23 @@ static int _match_all_triggers(void *x, void *key)
 static bool _validate_trigger(trig_mgr_info_t *trig_in)
 {
 	struct stat buf;
-	int modes;
+	int i, modes;
+	char *program = xstrdup(trig_in->program);
 
-	if (stat(trig_in->program, &buf) != 0) {
+	for (i = 0; program[i]; i++) {
+		if (isspace(program[i])) {
+			program[i] = '\0';
+			break;
+		}
+	}
+
+	if (stat(program, &buf) != 0) {
 		info("trigger program %s not found", trig_in->program);
+		xfree(program);
 		return false;
 	}
+	xfree(program);
+
 	if (!S_ISREG(buf.st_mode)) {
 		info("trigger program %s not a regular file", trig_in->program);
 		return false;
@@ -372,6 +385,29 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 	return resp_data;
 }
 
+static bool _duplicate_trigger(trigger_info_t *trig_desc)
+{
+	bool found_dup = false;
+	ListIterator trig_iter;
+	trig_mgr_info_t *trig_rec;
+
+	trig_iter = list_iterator_create(trigger_list);
+	while ((trig_rec = list_next(trig_iter))) {
+		if ((trig_desc->flags     == trig_rec->flags)      &&
+		    (trig_desc->res_type  == trig_rec->res_type)   &&
+		    (trig_desc->trig_type == trig_rec->trig_type)  &&
+		    (trig_desc->offset    == trig_rec->trig_time)  &&
+		    (trig_desc->user_id   == trig_rec->user_id)    &&
+		    !strcmp(trig_desc->program, trig_rec->program) &&
+		    !strcmp(trig_desc->res_id, trig_rec->res_id)) {
+			found_dup = true;
+			break;
+		}
+	}
+	list_iterator_destroy(trig_iter);
+	return found_dup;
+}
+
 extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 {
 	int i;
@@ -433,6 +469,11 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 				continue;
 			}
 		}
+		msg->trigger_array[i].user_id = (uint32_t) uid;
+		if (_duplicate_trigger(&msg->trigger_array[i])) {
+			rc = ESLURM_TRIGGER_DUP;
+			continue;
+		}
 		trig_add = xmalloc(sizeof(trig_mgr_info_t));
 		msg->trigger_array[i].trig_id = next_trigger_id;
 		trig_add->trig_id = next_trigger_id;
@@ -453,8 +494,8 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 		trig_add->trig_type = msg->trigger_array[i].trig_type;
 		trig_add->trig_time = msg->trigger_array[i].offset;
 		trig_add->orig_time = msg->trigger_array[i].offset;
-		trig_add->user_id = (uint32_t) uid;
-		trig_add->group_id = (uint32_t) gid;
+		trig_add->user_id   = msg->trigger_array[i].user_id;
+		trig_add->group_id  = (uint32_t) gid;
 		/* move don't copy "program" */
 		trig_add->program = msg->trigger_array[i].program;
 		msg->trigger_array[i].program = NULL;
@@ -1457,22 +1498,38 @@ static void _trigger_database_event(trig_mgr_info_t *trig_in, time_t now)
  * may be sufficient. */
 static void _trigger_run_program(trig_mgr_info_t *trig_in)
 {
-	char program[1024], arg0[1024], arg1[1024], user_name[1024];
+	char *tmp, *save_ptr = NULL, *tok;
+	char *program, *args[64], user_name[1024];
 	char *pname, *uname;
 	uid_t uid;
 	gid_t gid;
 	pid_t child_pid;
+	int i;
 
 	if (!_validate_trigger(trig_in))
 		return;
-	strncpy(program, trig_in->program, sizeof(program));
+
+	tmp = xstrdup(trig_in->program);
+	tok = strtok_r(trig_in->program, " ", &save_ptr);
+	program = xstrdup(tok);
 	pname = strrchr(program, '/');
 	if (pname == NULL)
 		pname = program;
 	else
 		pname++;
-	strncpy(arg0, pname, sizeof(arg0));
-	strncpy(arg1, trig_in->res_id, sizeof(arg1));
+	args[0] = xstrdup(pname);
+	for (i = 1; i < 63; i++) {
+		tok = strtok_r(NULL, " ", &save_ptr);
+		if (!tok) {
+			args[i] = xstrdup(trig_in->res_id);
+			break;
+		}
+		args[i] = xstrdup(tok);
+	}
+	for (i++; i < 64; i++)
+		args[i] = NULL;
+	xfree(tmp);
+
 	uid = trig_in->user_id;
 	gid = trig_in->group_id;
 	uname = uid_to_string(uid);
@@ -1506,10 +1563,14 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 			error("trigger: setuid: %m");
 			exit(1);
 		}
-		execl(program, arg0, arg1, NULL);
+		execv(program, args);
 		exit(1);
-	} else
+	} else {
 		error("fork: %m");
+	}
+	xfree(program);
+	for (i = 0; i < 64; i++)
+		xfree(args[i]);
 }
 
 static void _clear_event_triggers(void)

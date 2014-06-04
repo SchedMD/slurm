@@ -1,4 +1,4 @@
-.TH STRIGGER "1" "September 2011" "strigger 2.4" "Slurm components"
+.TH STRIGGER "1" "June 2015" "strigger 14.03" "Slurm components"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -160,6 +160,10 @@ all nodes allocated to that job will considered the nodes used as a
 trigger event.
 
 .TP
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
+Clusters to issue commands to.
+
+.TP
 \fB\-n\fR, \fB\-\-node\fR[=\fIhost\fR]
 Host name(s) of interest.
 By default, all nodes associated with the job (if \fB\-\-jobid\fR
@@ -175,8 +179,8 @@ the value and not include a space between them. For example "\-ntux"
 and not "\-n tux".
 
 .TP
-\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
-Clusters to issue commands to.
+\fB\-N\fR, \fB\-\-noheader\fR
+Do not print the header when displaying a list of triggers.
 
 .TP
 \fB\-o\fR, \fB\-\-offset\fR=\fIseconds\fR
@@ -191,6 +195,7 @@ time limit, specify \fB\-\-offset=320\fR (5 minutes plus 20 seconds).
 \fB\-p\fR, \fB\-\-program\fR=\fIpath\fR
 Execute the program at the specified fully qualified pathname
 when the event occurs.
+You may quote the path and include extra program arguments if desired.
 The program will be executed as the user who sets the trigger.
 If the program fails to terminate within 5 minutes, it will
 be killed along with any spawned processes.
@@ -203,6 +208,8 @@ This can be useful to clear triggers which may have already been purged.
 .TP
 \fB\-r\fR, \fB\-\-reconfig\fR
 Trigger an event when the system configuration changes.
+This is triggered when the slurmctld daemon reads its configuration file or
+when a node state changes.
 
 .TP
 \fB\-\-set\fP

@@ -394,7 +394,7 @@ static int _get_trigger(void)
 				continue;
 		}
 
-		if (line_no == 0) {
+		if ((line_no == 0) && !params.no_header) {
 			/*      7777777 999999999 7777777 */
 			printf("TRIG_ID RES_TYPE   RES_ID "
 
