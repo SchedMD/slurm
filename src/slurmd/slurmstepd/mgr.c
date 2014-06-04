@@ -124,6 +124,7 @@
 #include "src/slurmd/slurmstepd/pam_ses.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
+#include "src/slurmd/slurmstepd/fname.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
@@ -1384,6 +1385,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	jobacct_id_t jobacct_id;
 	char *oom_value;
 	List exec_wait_list = NULL;
+	char *esc;
 
 	xassert(job != NULL);
 
@@ -1441,6 +1443,15 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		error ("_drop_privileges: %m");
 		rc = SLURM_ERROR;
 		goto fail2;
+	}
+
+	/* If there is an \ in the path
+	 * remove it.
+	 */
+	esc = is_path_escaped(job->cwd);
+	if (esc) {
+		xfree(job->cwd);
+		job->cwd = esc;
 	}
 
 	if (chdir(job->cwd) < 0) {

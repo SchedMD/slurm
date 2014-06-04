@@ -70,17 +70,31 @@ fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 	char *orig = xstrdup(format);
 	char *p, *q;
 	int id;
+	char *esc;
 
 	if (((id = fname_single_task_io (format)) >= 0) && (taskid != id))
 			return (xstrdup ("/dev/null"));
+
+	esc = is_path_escaped(orig);
 
 	/* If format doesn't specify an absolute pathname,
 	 * use cwd
 	 */
 	if (orig[0] != '/') {
 		xstrcat(name, job->cwd);
+		if (esc) {
+			xstrcat(name, esc);
+			goto via;
+		}
 		if (name[strlen(name)-1] != '/')
 			xstrcatchar(name, '/');
+	}
+
+	if (esc) {
+		/* esc is malloc
+		 */
+		name = esc;
+		goto via;
 	}
 
 	q = p = orig;
@@ -165,7 +179,7 @@ fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 
 	if (q != p)
 		xmemcat(name, q, p);
-
+via:
 	xfree(orig);
 	return name;
 }
@@ -185,4 +199,42 @@ int fname_single_task_io (const char *fmt)
 		return (int)taskid;
 
 	return -1;
+}
+
+/* is_path_escaped()
+ *
+ * If there are \ chars in the path strip them.
+ * The new path will tell the caller not to
+ * translate escaped characters.
+ */
+char *
+is_path_escaped(char *p)
+{
+	char *buf;
+	bool t;
+	int i;
+
+	if (p == NULL)
+		return NULL;
+
+	buf = xmalloc((strlen(p) + 1) * sizeof(char));
+	t = false;
+	i = 0;
+
+	while (*p) {
+		if (*p == '\\') {
+			t = true;
+			++p;
+			continue;
+		}
+		buf[i] = *p;
+		++i;
+		++p;
+	}
+
+	if (t == false) {
+		xfree(buf);
+		return NULL;
+	}
+	return buf;
 }

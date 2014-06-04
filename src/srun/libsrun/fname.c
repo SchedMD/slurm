@@ -58,6 +58,7 @@
  */
 #define MAX_WIDTH 10
 
+static char *_is_path_escaped(char *);
 
 /*
  * Fill in as much of filename as possible from srun, update
@@ -72,6 +73,7 @@ fname_create(srun_job_t *job, char *format)
 	char *p, *q, *name, *tmp_env;
 	uint32_t array_job_id  = job->jobid;
 	uint16_t array_task_id = (uint16_t) NO_VAL;
+	char *esc;
 
 	fname = xmalloc(sizeof(*fname));
 	fname->type = IO_ALL;
@@ -107,6 +109,15 @@ fname_create(srun_job_t *job, char *format)
 		 *  no IO can open /dev/null.
 		 */
 		fname->name   = xstrdup (format);
+		return fname;
+	}
+
+	/* Check if path has escaped characters
+	 * in it and prevent them to be expanded.
+	 */
+	esc = _is_path_escaped(format);
+	if (esc) {
+		fname->name = esc;
 		return fname;
 	}
 
@@ -207,4 +218,42 @@ fname_remote_string (fname_t *f)
 		return (xstrdup (f->name));
 
 	return (NULL);
+}
+
+/* is_path_escaped()
+ *
+ * If there are \ chars in the path strip them.
+ * The new path will tell the caller not to
+ * translate escaped characters.
+ */
+static char *
+_is_path_escaped(char *p)
+{
+	char *buf;
+	bool t;
+	int i;
+
+	if (p == NULL)
+		return NULL;
+
+	buf = xmalloc((strlen(p) + 1) * sizeof(char));
+	t = false;
+	i = 0;
+
+	while (*p) {
+		if (*p == '\\') {
+			t = true;
+			++p;
+			continue;
+		}
+		buf[i] = *p;
+		++i;
+		++p;
+	}
+
+	if (t == false) {
+		xfree(buf);
+		return NULL;
+	}
+	return buf;
 }
