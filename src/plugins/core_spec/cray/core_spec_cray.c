@@ -195,8 +195,6 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 	}
 	job_detachpid(pid);
 #endif
-	// The code that was here is now performed by
-	// switch_p_job_step_{pre,post}_suspend()
 	return SLURM_SUCCESS;
 }
 

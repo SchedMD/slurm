@@ -1036,31 +1036,3 @@ extern int switch_p_slurmd_step_init(void)
 		info("switch_p_slurmd_step_init() starting");
 	return SLURM_SUCCESS;
 }
-
-extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
-{
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_pre_suspend() starting");
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
-{
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_post_suspend() starting");
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
-{
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_pre_resume() starting");
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
-{
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_job_step_post_resume() starting");
-	return SLURM_SUCCESS;
-}

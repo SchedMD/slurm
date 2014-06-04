@@ -59,7 +59,6 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather.h"
 #include "src/common/stepd_api.h"
-#include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/checkpoint.h"
@@ -1166,9 +1165,6 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
-		if (!job->batch && switch_g_job_step_pre_suspend(job))
-			error("switch_g_job_step_pre_suspend: %m");
-
 		/* SIGTSTP is sent first to let MPI daemons stop their tasks,
 		 * then wait 2 seconds, then send SIGSTOP to the spawned
 		 * process's container to stop everything else.
@@ -1196,8 +1192,6 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		}
 		suspended = true;
 	}
-	if (!job->batch && switch_g_job_step_post_suspend(job))
-		error("switch_g_job_step_post_suspend: %m");
 	if (core_spec_g_suspend(job->cont_id, job_core_spec))
 		error("core_spec_g_suspend: %m");
 
@@ -1251,8 +1245,6 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
-		if (!job->batch && switch_g_job_step_pre_resume(job))
-			error("switch_g_job_step_pre_resume: %m");
 		if (core_spec_g_resume(job->cont_id, job_core_spec))
 			error("core_spec_g_resume: %m");
 		if (proctrack_g_signal(job->cont_id, SIGCONT) < 0) {
@@ -1263,8 +1255,6 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 		}
 		suspended = false;
 	}
-	if (!job->batch && switch_g_job_step_post_resume(job))
-		error("switch_g_job_step_post_resume: %m");
 	/* set the cpu frequencies if cpu_freq option used */
 	if (job->cpu_freq != NO_VAL)
 		cpu_freq_set(job);
