@@ -131,20 +131,22 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 
 /*
  * Print the results of an alpscomm call
+ * err_msg is freed and NULLed
  */
 void alpsc_debug(const char *file, int line, const char *func,
 		  int rc, int expected_rc, const char *alpsc_func,
-		  char *err_msg)
+		  char **err_msg)
 {
 	if (rc != expected_rc) {
 		error("(%s: %d: %s) %s failed: %s", file, line, func,
 		      alpsc_func,
-		      err_msg ? err_msg : "No error message present");
-	} else if (err_msg) {
+		      *err_msg ? *err_msg : "No error message present");
+	} else if (*err_msg) {
 		info("(%s: %d: %s) %s: %s", file, line, func,
-		     alpsc_func, err_msg);
+		     alpsc_func, *err_msg);
 	}
-	free(err_msg);
+	free(*err_msg);
+	*err_msg = NULL;
 }
 
 

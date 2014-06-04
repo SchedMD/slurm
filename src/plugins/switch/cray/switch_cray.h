@@ -99,13 +99,16 @@
 #define ATTEMPTS		2
 
 // Maximum network resource scaling (in percent)
-#define MAX_SCALING		50
+#define MAX_SCALING		100
 
 // Minimum network resource scaling (in percent)
 #define MIN_SCALING		1
 
 // Maximum concurrent job steps per node (based on network limits)
 #define MAX_STEPS_PER_NODE	4
+
+// alpsc_pre_suspend() timeout
+#define SUSPEND_TIMEOUT_MSEC	(10*1000)
 
 /**********************************************************
  * Type definitions
@@ -123,10 +126,23 @@ typedef struct slurm_cray_jobinfo {
 	char     **cookies;
 	/* The array itself must be free()d when this struct is destroyed. */
 	uint32_t *cookie_ids;
-	uint32_t port;/* Port for PMI Communications */
-	uint32_t       jobid;  /* Current SLURM job id */
-	uint32_t       stepid; /* Current step id */
-	/* Cray Application ID; A unique combination of the job id and step id*/
+
+	// Number of ptags allocated
+	int num_ptags;
+
+	// Array of ptags
+	int *ptags;
+
+	// Port for PMI communications
+	uint32_t port;
+
+	// Slurm job id
+	uint32_t jobid;
+
+	// Slurm step id
+	uint32_t stepid;
+
+	// Cray Application ID (Slurm hash)
 	uint64_t apid;
 } slurm_cray_jobinfo_t;
 
@@ -172,12 +188,12 @@ extern int get_mem_scaling(stepd_step_rec_t *job);
 extern int list_str_to_array(char *list, int *cnt, int32_t **numbers);
 extern void alpsc_debug(const char *file, int line, const char *func,
 			int rc, int expected_rc, const char *alpsc_func,
-			char *err_msg);
+			char **err_msg);
+extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 extern int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid);
 extern int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job);
 extern void recursive_rmdir(const char *dirnm);
 #endif /* HAVE_NATIVE_CRAY */
-extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 
 // Implemented in iaa.c
 #if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
@@ -190,9 +206,9 @@ extern void unlink_iaa_file(slurm_cray_jobinfo_t *job);
  * Macros
  **********************************************************/
 #define ALPSC_CN_DEBUG(f) alpsc_debug(THIS_FILE, __LINE__, __FUNCTION__, \
-					rc, 1, f, err_msg);
+					rc, 1, f, &err_msg);
 #define ALPSC_SN_DEBUG(f) alpsc_debug(THIS_FILE, __LINE__, __FUNCTION__, \
-					rc, 0, f, err_msg);
+					rc, 0, f, &err_msg);
 #define CRAY_ERR(fmt, ...) error("(%s: %d: %s) "fmt, THIS_FILE, __LINE__, \
 				 __FUNCTION__, ##__VA_ARGS__);
 #define CRAY_DEBUG(fmt, ...) debug2("(%s: %d: %s) "fmt, THIS_FILE, __LINE__, \

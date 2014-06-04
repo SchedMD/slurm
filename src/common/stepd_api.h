@@ -203,7 +203,7 @@ pid_t stepd_daemon_pid(int fd);
  * Suspend execution of the job step.  Only root or SlurmUser is
  * authorized to use this call.
  *
- * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * Returns SLURM_SUCCESS if successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
 extern int stepd_suspend(int fd, suspend_int_msg_t *susp_req, int phase);
@@ -213,7 +213,7 @@ extern int stepd_suspend(int fd, suspend_int_msg_t *susp_req, int phase);
  * call to stepd_suspend().  Only root or SlurmUser is
  * authorized to use this call.
  *
- * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * Returns SLURM_SUCCESS if successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
 extern int stepd_resume(int fd, suspend_int_msg_t *susp_req, int phase);
@@ -222,14 +222,14 @@ extern int stepd_resume(int fd, suspend_int_msg_t *susp_req, int phase);
  * Reconfigure the job step (Primarily to allow the stepd to refresh
  * it's log file pointer.
  *
- * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * Returns SLURM_SUCCESS if successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
 int stepd_reconfig(int fd);
 
 /*
  *
- * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * Returns SLURM_SUCCESS if successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
 int stepd_completion(int fd, step_complete_msg_t *sent);
