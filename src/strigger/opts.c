@@ -450,8 +450,18 @@ static void _validate_options( void )
 	}
 
 	if (params.program) {
+		int i;
 		struct stat buf;
-		if (stat(params.program, &buf)) {
+		char *program = xstrdup(params.program);
+
+		for (i = 0; program[i]; i++) {
+			if (isspace(program[i])) {
+				program[i] = '\0';
+				break;
+			}
+		}
+
+		if (stat(program, &buf)) {
 			error("Invalid --program value, file not found");
 			exit(1);
 		}
@@ -459,6 +469,7 @@ static void _validate_options( void )
 			error("Invalid --program value, not regular file");
 			exit(1);
 		}
+		xfree(program);
 	}
 
 	if ((params.offset < -32000) || (params.offset > 32000)) {
