@@ -68,6 +68,9 @@ documents those changes that are of interest to users and admins.
     when specified escaped e.g. sbatch -o /home/zebra\\%s will not expand
     %s as the stepid of the running job.
  -- CRAYALPS - Add better support for CLE 5.2 when running Slurm over ALPS.
+ -- Test time when job_state file was written to detect multiple primary
+    slurmctld daemons (e.g. both backup and primary are functioning as
+    primary and there is a split brain problem).
 
 * Changes in Slurm 14.03.3-2
 ============================
