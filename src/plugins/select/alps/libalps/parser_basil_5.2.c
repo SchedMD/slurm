@@ -1,5 +1,5 @@
 /*
- * XML tag handlers specific to Basil 5.1 (development release)
+ * XML tag handlers specific to Basil 5.2
  *
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
  * Licensed under the GPLv2.
