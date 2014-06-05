@@ -1827,14 +1827,14 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			} else
 				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
-			if (IS_JOB_FINISHED(dep_ptr->job_ptr)) {
+			if (IS_JOB_COMPLETED(dep_ptr->job_ptr)) {
 				clear_dep = true;
 			} else
 				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
 			if (dep_ptr->job_ptr->job_state & JOB_SPECIAL_EXIT) {
 				clear_dep = true;
-			} else if (!IS_JOB_FINISHED(dep_ptr->job_ptr)) {
+			} else if (!IS_JOB_COMPLETED(dep_ptr->job_ptr)) {
 				depends = true;
 			} else if (!IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
 				clear_dep = true;
@@ -1843,7 +1843,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				break;
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
-			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
+			if (!IS_JOB_COMPLETED(dep_ptr->job_ptr))
 				depends = true;
 			else if (IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
 				clear_dep = true;
@@ -1855,7 +1855,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			time_t now = time(NULL);
 			if (IS_JOB_PENDING(dep_ptr->job_ptr)) {
 				depends = true;
-			} else if (IS_JOB_FINISHED(dep_ptr->job_ptr)) {
+			} else if (IS_JOB_COMPLETED(dep_ptr->job_ptr)) {
 				failure = true;
 				break;
 			} else if ((dep_ptr->job_ptr->end_time != 0) &&
@@ -2060,7 +2060,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				if (!dep_job_ptr) {
 					dep_job_ptr = find_job_array_rec(job_id,
 								      INFINITE);
-				}		
+				}
 				if (dep_job_ptr &&
 				    (dep_job_ptr->array_job_id == job_id) &&
 				    (dep_job_ptr->array_task_id != NO_VAL)) {
