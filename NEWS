@@ -125,6 +125,10 @@ documents those changes that are of interest to users and admins.
     event trigger occurs.
  -- Attempt to create duplicate event trigger now generates ESLURM_TRIGGER_DUP
     ("Duplicate event trigger").
+ -- Treat special characters like %A, %s etc. literally in the file names
+    when specified escaped e.g. sbatch -o /home/zebra\\%s will not expand
+    %s as the stepid of the running job.
+ -- CRAYALPS - Add better support for CLE 5.2 when running Slurm over ALPS.
 
 * Changes in Slurm 14.03.3-2
 ============================

@@ -59,6 +59,7 @@ enum basil_version {
 	BV_4_1,		/* Basil 1.2 CLE 4.x unconfirmed simulator version  */
 	BV_5_0,		/* Basil 1.2 CLE 5.x unconfirmed simulator version  */
 	BV_5_1,		/* Basil 1.3 CLE 5.x unconfirmed simulator version  */
+	BV_5_2,		/* Basil 1.3 CLE 5.2 */
 	BV_MAX
 };
 
