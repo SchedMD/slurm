@@ -666,9 +666,10 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		/* ReqProcs was removed in SLURM version 2.1 */
-		else if (strncasecmp(tag, "ReqProcs", MAX(taglen, 8)) == 0) {
+		else if ((strncasecmp(tag, "NumTasks", MAX(taglen, 8)) == 0) ||
+			 (strncasecmp(tag, "ReqProcs", MAX(taglen, 8)) == 0)) {
 			if (parse_uint32(val, &job_msg.num_tasks)) {
-				error ("Invalid ReqProcs value: %s", val);
+				error ("Invalid NumTasks value: %s", val);
 				exit_code = 1;
 				xfree(ids);
 				return 0;
