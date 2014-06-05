@@ -71,6 +71,7 @@ documents those changes that are of interest to users and admins.
  -- Test time when job_state file was written to detect multiple primary
     slurmctld daemons (e.g. both backup and primary are functioning as
     primary and there is a split brain problem).
+ -- Fix scontrol to accept update jobid=# numtasks=#
 
 * Changes in Slurm 14.03.3-2
 ============================
