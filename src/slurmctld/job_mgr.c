@@ -5074,6 +5074,12 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 	sprintf(job_dir, "/job.%u", job_id);
 	xstrcat(dir_name, job_dir);
 	if (mkdir(dir_name, 0700)) {
+		if (!slurmctld_primary && (errno == EEXIST)) {
+			fatal("Apparent duplicate job ID %u. Two primary "
+			      "slurmctld daemons may currently be active. "
+			      "Shutting down this daemon to avoid inconsistent "
+			      "state due to split brain.", job_id);
+		}
 		error("mkdir(%s) error %m", dir_name);
 		xfree(dir_name);
 		return ESLURM_WRITING_TO_FILE;
@@ -5116,6 +5122,12 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 	sprintf(job_dir, "/job.%u", job_id_dest);
 	xstrcat(dir_name_dest, job_dir);
 	if (mkdir(dir_name_dest, 0700)) {
+		if (!slurmctld_primary && (errno == EEXIST)) {
+			fatal("Apparent duplicate job ID %u. Two primary "
+			      "slurmctld daemons may currently be active. "
+			      "Shutting down this daemon to avoid inconsistent "
+			      "state due to split brain.", job_id_dest);
+		}
 		error("mkdir(%s) error %m", dir_name_dest);
 		xfree(dir_name_src);
 		xfree(dir_name_dest);
@@ -9933,6 +9945,9 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 int sync_job_files(void)
 {
 	List batch_dirs;
+
+	if (!slurmctld_primary)	/* Don't purge files from backup slurmctld */
+		return SLURM_SUCCESS;
 
 	batch_dirs = list_create(_del_batch_list_rec);
 	_get_batch_job_dir_ids(batch_dirs);
