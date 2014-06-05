@@ -77,6 +77,7 @@ documents those changes that are of interest to users and admins.
     is made to re-use them consider this a fatal error. It may indicate that
     multiple primary slurmctld daemons are active (e.g. both backup and primary
     are functioning as primary and there is a split brain problem).
+ -- Set correct error code when requeuing a completing/pending job
 
 * Changes in Slurm 14.03.3-2
 ============================

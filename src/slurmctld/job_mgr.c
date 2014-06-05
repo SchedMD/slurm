@@ -10948,12 +10948,10 @@ extern int job_requeue(uid_t uid,
 	 * already requeued.
 	 */
 	if (IS_JOB_COMPLETING(job_ptr)
-		|| (IS_JOB_PENDING(job_ptr)))
+	    || (IS_JOB_PENDING(job_ptr))) {
+		rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
 		goto reply;
-
-	/* nothing else to do if pending */
-	if (IS_JOB_PENDING(job_ptr))
-		goto reply;
+	}
 
 	if (job_ptr->batch_flag == 0) {
 		debug("Job-requeue can only be done for batch jobs");
