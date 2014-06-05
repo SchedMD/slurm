@@ -138,12 +138,11 @@ am_libalps_la_OBJECTS = libalps_la-basil_mysql_routines.lo \
 	libalps_la-parser_common.lo libalps_la-parser_basil_1.0.lo \
 	libalps_la-parser_basil_1.1.lo libalps_la-parser_basil_3.1.lo \
 	libalps_la-parser_basil_4.0.lo libalps_la-parser_basil_5.1.lo \
-	libalps_la-parser_basil_5.2.lo \
-	libalps_la-basil_request.lo libalps_la-do_query.lo \
-	libalps_la-do_reserve.lo libalps_la-do_release.lo \
-	libalps_la-do_confirm.lo libalps_la-do_switch.lo \
-	libalps_la-memory_handling.lo libalps_la-popen2.lo \
-	libalps_la-atoul.lo
+	libalps_la-parser_basil_5.2.lo libalps_la-basil_request.lo \
+	libalps_la-do_query.lo libalps_la-do_reserve.lo \
+	libalps_la-do_release.lo libalps_la-do_confirm.lo \
+	libalps_la-do_switch.lo libalps_la-memory_handling.lo \
+	libalps_la-popen2.lo libalps_la-atoul.lo
 libalps_la_OBJECTS = $(am_libalps_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -622,6 +621,10 @@ libalps_la-parser_basil_5.1.lo: parser_basil_5.1.c
 
 libalps_la-parser_basil_5.2.lo: parser_basil_5.2.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-parser_basil_5.2.lo -MD -MP -MF $(DEPDIR)/libalps_la-parser_basil_5.2.Tpo -c -o libalps_la-parser_basil_5.2.lo `test -f 'parser_basil_5.2.c' || echo '$(srcdir)/'`parser_basil_5.2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libalps_la-parser_basil_5.2.Tpo $(DEPDIR)/libalps_la-parser_basil_5.2.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='parser_basil_5.2.c' object='libalps_la-parser_basil_5.2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_basil_5.2.lo `test -f 'parser_basil_5.2.c' || echo '$(srcdir)/'`parser_basil_5.2.c
 
 libalps_la-basil_request.lo: basil_request.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-basil_request.lo -MD -MP -MF $(DEPDIR)/libalps_la-basil_request.Tpo -c -o libalps_la-basil_request.lo `test -f 'basil_request.c' || echo '$(srcdir)/'`basil_request.c
