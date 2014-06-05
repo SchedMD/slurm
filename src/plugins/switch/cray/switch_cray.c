@@ -178,7 +178,7 @@ static void _state_read_buf(Buf buffer)
 	if (!port_resv || (bit_size(port_resv) != PORT_CNT)) {
 		error("_state_read_buf: Reserve Port size was %d not %d, "
 		      "reallocating",
-		      port_resv ? bit_size(port_resv) : PORT_CNT);
+		      port_resv ? bit_size(port_resv) : -1, PORT_CNT);
 		port_resv = bit_realloc(port_resv, PORT_CNT);
 	}
 	pthread_mutex_unlock(&port_mutex);
