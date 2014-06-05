@@ -318,7 +318,7 @@ static void _delete_job_desc_files(uint32_t job_id)
 
 	dir_name = slurm_get_state_save_location();
 
-	sprintf(job_dir, "/job.%d", job_id);
+	sprintf(job_dir, "/job.%u", job_id);
 	xstrcat(dir_name, job_dir);
 
 	file_name = xstrdup(dir_name);
@@ -5246,7 +5246,7 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 	char job_dir[30], *file_name, **environment = NULL;
 
 	file_name = slurm_get_state_save_location();
-	sprintf(job_dir, "/job.%d/environment", job_ptr->job_id);
+	sprintf(job_dir, "/job.%u/environment", job_ptr->job_id);
 	xstrcat(file_name, job_dir);
 
 	_read_data_array_from_file(file_name, &environment, env_size, job_ptr);
@@ -5268,7 +5268,7 @@ char *get_job_script(struct job_record *job_ptr)
 		char *file_name = slurm_get_state_save_location();
 		char job_dir[30];
 
-		sprintf(job_dir, "/job.%d/script", job_ptr->job_id);
+		sprintf(job_dir, "/job.%u/script", job_ptr->job_id);
 		xstrcat(file_name, job_dir);
 
 		_read_data_from_file(file_name, &script);
