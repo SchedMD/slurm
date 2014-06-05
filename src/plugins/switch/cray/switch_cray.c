@@ -151,16 +151,22 @@ static void _state_read_buf(Buf buffer)
 		error("******************************************************");
 		return;
 	}
+
+	pthread_mutex_lock(&port_mutex);
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&min_port, buffer);
 		safe_unpack32(&max_port, buffer);
 		safe_unpack32(&last_alloc_port, buffer);
+		/* make sure we are NULL here */
+		FREE_NULL_BITMAP(port_resv);
 		unpack_bit_str(&port_resv, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint8_t port_set = 0;
 		safe_unpack32(&min_port, buffer);
 		safe_unpack32(&max_port, buffer);
 		safe_unpack32(&last_alloc_port, buffer);
+		/* make sure we are NULL here */
+		FREE_NULL_BITMAP(port_resv);
 		port_resv = bit_alloc(PORT_CNT);
 		for (i = 0; i < PORT_CNT; i++) {
 			safe_unpack8(&port_set, buffer);
@@ -168,6 +174,15 @@ static void _state_read_buf(Buf buffer)
 				bit_set(port_resv, i);
 		}
 	}
+
+	if (!port_resv || (bit_size(port_resv) != PORT_CNT)) {
+		error("_state_read_buf: Reserve Port size was %d not %d, "
+		      "reallocating",
+		      port_resv ? bit_size(port_resv) : PORT_CNT);
+		port_resv = bit_realloc(port_resv, PORT_CNT);
+	}
+	pthread_mutex_unlock(&port_mutex);
+
 	if ((min_port != MIN_PORT) || (max_port != MAX_PORT)) {
 		error("******************************************************");
 		error("Can not recover switch/cray state");
