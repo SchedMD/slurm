@@ -125,6 +125,7 @@ static uint32_t job_id_sequence = 0;	/* first job_id to assign new job */
 static struct   job_record **job_hash = NULL;
 static struct   job_record **job_array_hash_j = NULL;
 static struct   job_record **job_array_hash_t = NULL;
+static time_t   last_file_write_time = (time_t) 0;
 static int	select_serial = -1;
 static bool     wiki_sched = false;
 static bool     wiki2_sched = false;
@@ -159,6 +160,7 @@ static void _dump_job_details(struct job_details *detail_ptr,
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
+static time_t _get_last_state_write_time(void);
 static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
@@ -439,7 +441,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	return qos_ptr;
 }
 
-
 /*
  * dump_all_job_state - save the state of all jobs to file for checkpoint
  *	Changes here should be reflected in load_last_job_id() and
@@ -449,7 +450,7 @@ int dump_all_job_state(void)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
 	static int high_buffer_size = (1024 * 1024);
-	int error_code = 0, log_fd;
+	int error_code = SLURM_SUCCESS, log_fd;
 	char *old_file, *new_file, *reg_file;
 	struct stat stat_buf;
 	/* Locks: Read config and job */
@@ -459,9 +460,27 @@ int dump_all_job_state(void)
 	struct job_record *job_ptr;
 	Buf buffer = init_buf(high_buffer_size);
 	time_t min_age = 0, now = time(NULL);
+	time_t last_state_file_time;
 	DEF_TIMERS;
 
 	START_TIMER;
+	/* Check that last state file was written at expected time.
+	 * This is a check for two slurmctld daemons running at the same
+	 * time in primary mode (a split-brain problem). */
+	last_state_file_time = _get_last_state_write_time();
+	if (last_file_write_time && last_state_file_time &&
+	    (last_file_write_time != last_state_file_time)) {
+		error("Bad job state save file time. We wrote it at time %u, "
+		      "but the file contains a time stamp of %u.",
+		      (uint32_t) last_file_write_time,
+		      (uint32_t) last_state_file_time);
+		if (slurmctld_primary == 0) {
+			fatal("Two slurmctld daemons are running as primary. "
+			      "Shutting down this daemon to avoid inconsistent "
+			      "state due to split brain.");
+		}
+	}
+
 	/* write header: version, time */
 	packstr(JOB_STATE_VERSION, buffer);
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
@@ -558,6 +577,7 @@ int dump_all_job_state(void)
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, reg_file);
 		(void) unlink(new_file);
+		last_file_write_time = now;
 	}
 	xfree(old_file);
 	xfree(reg_file);
@@ -596,6 +616,73 @@ static int _open_job_state_file(char **state_file)
 	xstrcat(*state_file, ".old");
 	state_fd = open(*state_file, O_RDONLY);
 	return state_fd;
+}
+
+/* Note that the backup slurmctld has assumed primary control.
+ * This function can be called multiple times. */
+extern void backup_slurmctld_restart(void)
+{
+	last_file_write_time = (time_t) 0;
+}
+
+/* Return the time stamp in the current job state save file */
+static time_t _get_last_state_write_time(void)
+{
+	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	uint32_t data_size = 0;
+	int state_fd;
+	char *data, *state_file;
+	Buf buffer;
+	time_t buf_time = (time_t) 0;
+	char *ver_str = NULL;
+	uint32_t ver_str_len;
+	uint16_t protocol_version = (uint16_t)NO_VAL;
+
+	/* read the file */
+	state_fd = _open_job_state_file(&state_file);
+	if (state_fd < 0) {
+		info("No job state file (%s) found", state_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = 128;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 (data_allocated - data_size));
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m",
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size += data_read;
+			if (data_size >= 128)
+				break;
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+	if (error_code)
+		return error_code;
+
+	buffer = create_buf(data, data_size);
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	if (ver_str) {
+		if (!strcmp(ver_str, JOB_STATE_VERSION))
+			safe_unpack16(&protocol_version, buffer);
+		else if (!strcmp(ver_str, JOB_2_6_STATE_VERSION))
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
+	}
+	safe_unpack_time(&buf_time, buffer);
+
+unpack_error:
+	xfree(ver_str);
+	free_buf(buffer);
+	return buf_time;
 }
 
 /*

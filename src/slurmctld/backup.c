@@ -210,6 +210,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 		slurmctld_conf.backup_controller);
 	unlock_slurmctld(config_read_lock);
 
+	backup_slurmctld_restart();
 	trigger_primary_ctld_fail();
 	trigger_backup_ctld_as_ctrl();
 

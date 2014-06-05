@@ -174,6 +174,7 @@ int   with_slurmdbd = 0;
 bool want_nodes_reboot = true;
 int   batch_sched_delay = 3;
 int   sched_interval = 60;
+int   slurmctld_primary = 1;
 
 /* Next used for stats/diagnostics */
 diag_stats_t slurmctld_diag_stats;
@@ -190,7 +191,6 @@ static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char    *slurm_conf_filename;
-static int      primary = 1 ;
 static pthread_t assoc_cache_thread = (pthread_t) 0;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int      job_sched_cnt = 0;
@@ -438,7 +438,7 @@ int main(int argc, char *argv[])
 		    (strcmp(node_name,
 			    slurmctld_conf.backup_controller) == 0)) {
 			slurm_sched_fini();	/* make sure shutdown */
-			primary = 0;
+			slurmctld_primary = 0;
 			run_backup(&callbacks);
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 				fatal("failed to initialize "
@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
 				_accounting_mark_all_nodes_down("cold-start");
 			}
 
-			primary = 1;
+			slurmctld_primary = 1;
 
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
@@ -497,7 +497,7 @@ int main(int argc, char *argv[])
 
 		info("Running as primary controller");
 		if ((slurmctld_config.resume_backup == false) &&
-		    (primary == 1)) {
+		    (slurmctld_primary == 1)) {
 			trigger_primary_ctld_res_op();
 		}
 
@@ -602,7 +602,7 @@ int main(int argc, char *argv[])
 
 		/* primary controller doesn't resume backup mode */
 		if ((slurmctld_config.resume_backup == true) &&
-		    (primary == 1))
+		    (slurmctld_primary == 1))
 			break;
 
 		recover = 2;

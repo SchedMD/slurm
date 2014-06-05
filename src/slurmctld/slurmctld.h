@@ -214,6 +214,7 @@ extern bool  load_2_4_state;
 extern int   batch_sched_delay;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
+extern int   slurmctld_primary;
 
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h
@@ -776,6 +777,10 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
  * Returns true if an interactive session of the same node:sid already exists.
  */
 extern bool allocated_session_in_use(job_desc_msg_t *new_alloc);
+
+/* Note that the backup slurmctld has assumed primary control.
+ * This function can be called multiple times. */
+extern void backup_slurmctld_restart(void);
 
 /* Complete a batch job requeue logic after all steps complete so that
  * subsequent jobs appear in a separate accounting record. */
