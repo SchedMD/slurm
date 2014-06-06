@@ -85,6 +85,8 @@ documents those changes that are of interest to users and admins.
     comes last.
  -- When attempting to requeue a job distinguish the case in which the job is
     JOB_COMPLETING or already pending.
+ -- When reconfiguring the controller don't restart the slurmctld epilog if it
+    is already running.
 
 * Changes in Slurm 14.03.3-2
 ============================

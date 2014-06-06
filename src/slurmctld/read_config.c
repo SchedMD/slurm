@@ -1731,6 +1731,17 @@ static int _sync_nodes_to_comp_job(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->node_bitmap) && IS_JOB_COMPLETING(job_ptr)) {
+
+			/* If the controller is reconfiguring
+			 * and the job is in completing state
+			 * and the slurmctld epilog is already
+			 * running which means deallocate_nodes()
+			 * was alredy called, do invoke it again
+			 * and don't start another epilog.
+			 */
+			if (job_ptr->epilog_running == true)
+				continue;
+
 			update_cnt++;
 			/* This needs to be set up for the priority
 			   plugin and this happens before it is
@@ -1739,7 +1750,8 @@ static int _sync_nodes_to_comp_job(void)
 			if (!cluster_cpus)
 				set_cluster_cpus();
 
-			info("Job %u in completing state", job_ptr->job_id);
+			info("%s: Job %u in completing state",
+			     __func__, job_ptr->job_id);
 			if (!job_ptr->node_bitmap_cg)
 				build_cg_bitmap(job_ptr);
 			deallocate_nodes(job_ptr, false, false, false);
@@ -1750,7 +1762,7 @@ static int _sync_nodes_to_comp_job(void)
 	}
 	list_iterator_destroy(job_iterator);
 	if (update_cnt)
-		info("_sync_nodes_to_comp_job completing %d jobs", update_cnt);
+		info("%s: completing %d jobs", __func__, update_cnt);
 	return update_cnt;
 }
 
