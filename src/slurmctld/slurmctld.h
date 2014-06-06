@@ -2052,4 +2052,18 @@ extern bool validate_super_user(uid_t uid);
  */
 extern bool validate_operator(uid_t uid);
 
+/* cleanup_completing()
+ *
+ * Clean up the JOB_COMPLETING flag and eventually
+ * requeue the job if there is a pending request
+ * for it. This function assumes the caller has the
+ * appropriate locks on the job_record.
+ * This function is called when a job completes
+ * by either when the slurmd epilog finishes or
+ * when the slurmctld epilog finishes, whichever
+ * comes last.
+ */
+extern void cleanup_completing(struct job_record *);
+
+
 #endif /* !_HAVE_SLURMCTLD_H */

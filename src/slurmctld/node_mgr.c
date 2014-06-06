@@ -3058,19 +3058,16 @@ void make_node_idle(struct node_record *node_ptr,
 		job_update_cpu_cnt(job_ptr, inx);
 
 		if (job_ptr->node_cnt) {
-			if ((--job_ptr->node_cnt) == 0) {
-				time_t delay;
-				delay = last_job_update - job_ptr->end_time;
-				if (delay > 60)
-					info("Job %u completion process took "
-						"%ld seconds", job_ptr->job_id,
-						(long) delay);
-				job_ptr->job_state &= (~JOB_COMPLETING);
-				job_hold_requeue(job_ptr);
-
-				delete_step_records(job_ptr);
-				slurm_sched_g_schedule();
-			}
+			/* Clean up the JOB_COMPLETING flag
+			 * only if there is not the slurmctld
+			 * epilog running, otherwise wait
+			 * when it terminates then this
+			 * function will be invoked.
+			 */
+			job_ptr->node_cnt--;
+			if (job_ptr->node_cnt == 0
+				&& job_ptr->epilog_running == false)
+				cleanup_completing(job_ptr);
 		} else {
 			error("node_cnt underflow on job_id %u",
 			      job_ptr->job_id);

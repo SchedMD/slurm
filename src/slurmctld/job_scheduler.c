@@ -81,6 +81,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
+#include "src/slurmctld/sched_plugin.h"
 
 #define _DEBUG 0
 #define MAX_FAILED_RESV 10
@@ -2548,9 +2549,9 @@ static char **_build_env(struct job_record *job_ptr)
 
 static void *_run_epilog(void *arg)
 {
-	/* Locks: Read job */
-	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	/* Locks: Write job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 	epilog_arg_t *epilog_arg = (epilog_arg_t *) arg;
 	pid_t cpid;
@@ -2597,11 +2598,19 @@ static void *_run_epilog(void *arg)
 		       epilog_arg->job_id);
 	}
 
- fini:	lock_slurmctld(job_read_lock);
+ fini:	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(epilog_arg->job_id);
-	if (job_ptr)
+	if (job_ptr) {
 		job_ptr->epilog_running = false;
-	unlock_slurmctld(job_read_lock);
+		/* Clean up the JOB_COMPLETING flag
+		 * only if the node count is 0 meaning
+		 * the slurmd epilog already completed.
+		 */
+		if (job_ptr->node_cnt == 0
+		    && IS_JOB_COMPLETING(job_ptr))
+			cleanup_completing(job_ptr);
+	}
+	unlock_slurmctld(job_write_lock);
 	xfree(epilog_arg->epilog_slurmctld);
 	for (i=0; epilog_arg->my_env[i]; i++)
 		xfree(epilog_arg->my_env[i]);
@@ -3015,4 +3024,29 @@ extern void rebuild_job_part_list(struct job_record *job_ptr)
 		xstrcat(job_ptr->partition, part_ptr->name);
 	}
 	list_iterator_destroy(part_iterator);
+}
+
+/* cleanup_completing()
+ *
+ * Clean up the JOB_COMPLETING flag and eventually
+ * requeue the job if there is a pending request
+ * for it. This function assumes the caller has the
+ * appropriate locks on the job_record.
+ */
+void
+cleanup_completing(struct job_record *job_ptr)
+{
+	time_t delay;
+
+	delay = last_job_update - job_ptr->end_time;
+	if (delay > 60) {
+		info("%s: job %u completion process took %ld seconds",
+		     __func__, job_ptr->job_id,(long) delay);
+	}
+
+	job_ptr->job_state &= (~JOB_COMPLETING);
+	job_hold_requeue(job_ptr);
+
+	delete_step_records(job_ptr);
+	slurm_sched_g_schedule();
 }

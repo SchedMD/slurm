@@ -80,6 +80,9 @@ documents those changes that are of interest to users and admins.
  -- Set correct error code when requeuing a completing/pending job
  -- When checking for if dependency of type afterany, afterok and afternotok
     don't clear the dependency if the job is completing.
+ -- Cleanup the JOB_COMPLETING flag and eventually requeue the job when the
+    last epilog completes, either slurmd epilog or slurmctld epilog, whichever
+    comes last.
 
 * Changes in Slurm 14.03.3-2
 ============================
