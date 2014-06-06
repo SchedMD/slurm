@@ -3038,6 +3038,18 @@ Boards and CPUs are mutually exclusive.
 The default value is 1.
 
 .TP
+\fBCoreSpecCount\fR
+Number of cores on which Slurm compute node daemons (slurmd, slurmstepd) will
+be confined. These cores will not be available for allocation to user jobs.
+Isolation of the Slurm daemons from user jobs may improve
+performance.  If this option and \fBCPUSpecList\fR are both designated for a
+node, an error is generated.  For information on the algorithm used by Slurm
+to select the cores refer to the core specialization documentation
+( http://slurm.schedmd.com/core_spec.html ). This option has no effect
+unless cgroup job confinement is also configured (\fBTaskPlugin=task/cgroup\fR
+with \fBConstrainCores=yes\fR in cgroup.conf).
+
+.TP
 \fBCoresPerSocket\fR
 Number of cores in a single physical processor socket (e.g. "2").
 The CoresPerSocket value describes physical cores, not the
@@ -3053,6 +3065,17 @@ If \fBCPUs\fR is omitted, it will set equal to the product of
 \fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 CPUs and Boards are mutually exclusive.
 The default value is 1.
+
+.TP
+\fBCPUSpecList\fR
+A comma delimited list of Slurm abstract CPU IDs on which Slurm compute
+node daemons (slurmd, slurmstepd) will be confined. The list will be expanded
+to include all other CPUs, if any, on the same cores. These cores will not be 
+available for allocation to user jobs. Isolation of the
+Slurm daemons from user jobs may improve performance.  If this option
+and \fBCoreSpecCount\fR are both designated for a node, an error is generated.
+This option has no effect unless cgroup job confinement is also configured 
+(\fBTaskPlugin=task/cgroup\fR with \fBConstrainCores=yes\fR in cgroup.conf).
 
 .TP
 \fBFeature\fR
@@ -3082,6 +3105,12 @@ A suffix of "K", "M" or "G" may be used to multiply the count by 1024,
 By default a node has no generic resources and its maximum count is
 4,294,967,295.
 Also see \fBFeature\fR.
+
+.TP
+\fBMemSpecLimit\fR
+Limit on combined real memory allocation for compute node daemons 
+(slurmd, slurmstepd), in megabytes. Use of this parameter may improve
+job performance.
 
 .TP
 \fBPort\fR

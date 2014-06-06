@@ -81,8 +81,11 @@ typedef struct slurmd_config {
 	uint16_t     cpus;              /* lowest-level logical processors */
 	uint16_t     boards;            /* total boards count              */
 	uint16_t     sockets;           /* total sockets count             */
-	uint16_t     cores;             /* core per socket  count          */
 	uint16_t     threads;           /* thread per core count           */
+	char         *cpu_spec_list;    /* cpu specialization list         */
+	uint16_t     core_spec_cnt;     /* core specialization count       */
+	uint32_t     mem_spec_limit;    /* memory specialization limit     */
+	uint16_t     cores;             /* core per socket  count          */
 	uint16_t     conf_cpus;         /* conf file logical processors    */
 	uint16_t     conf_boards;       /* conf file boards count          */
 	uint16_t     conf_sockets;      /* conf file sockets count         */

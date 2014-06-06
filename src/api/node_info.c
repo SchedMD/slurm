@@ -291,6 +291,30 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
+	/****** core & memory specialization Line (optional) ******/
+	if (node_ptr->core_spec_cnt || node_ptr->cpu_spec_list ||
+	    node_ptr->mem_spec_limit) {
+		if (node_ptr->core_spec_cnt) {
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "CoreSpecCount=%u ", node_ptr->core_spec_cnt);
+			xstrcat(out, tmp_line);
+		}
+		if (node_ptr->cpu_spec_list) {
+			snprintf(tmp_line, sizeof(tmp_line), "CPUSpecList=%s ",
+				 node_ptr->cpu_spec_list);
+			xstrcat(out, tmp_line);
+		}
+		if (node_ptr->mem_spec_limit) {
+			snprintf(tmp_line, sizeof(tmp_line), "MemSpecLimit=%u",
+				 node_ptr->mem_spec_limit);
+			xstrcat(out, tmp_line);
+		}
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+
 	/****** Line 8 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),

@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "April 2014" "scontrol 14.03" "Slurm components"
+.TH SCONTROL "1" "May 2014" "scontrol 14.11" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1431,6 +1431,20 @@ node sample, in celsius.
 .PP
 If the reported value is "n/s" (not supported), the node does not support the
 configured \fBExtSensorsType\fR plugin.
+
+.TP
+The meaning of the resource specialization information is as follows:
+
+.TP
+\fICPUSpecList\fP
+The list of Slurm abstract CPU IDs on this node reserved for
+exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
+
+.TP
+\fIMemSpecLimit\fP
+The combined memory limit, in megabytes, on this node for the Slurm compute 
+node daemons (slurmd, slurmstepd). 
+
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

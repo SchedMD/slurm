@@ -207,11 +207,14 @@ typedef struct slurm_conf_node {
 	char *feature;		/* arbitrary list of node's features */
 	char *port_str;
 	uint16_t cpus;		/* count of cpus running on the node */
+	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
 	uint16_t boards; 	/* number of boards per node */
 	uint16_t sockets;       /* number of sockets per node */
 	uint16_t cores;         /* number of cores per CPU */
+	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t real_memory;	/* MB real memory on the node */
+	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
 	char *reason;
 	char *state;
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
@@ -455,6 +458,18 @@ extern int slurm_conf_get_cpus_bsct(const char *node_name,
 				    uint16_t *cpus, uint16_t *boards,
 				    uint16_t *sockets, uint16_t *cores,
 				    uint16_t *threads);
+
+/*
+ * slurm_conf_get_res_spec_info - Return resource specialization info
+ * for a given NodeName
+ * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_get_res_spec_info(const char *node_name,
+					char **cpu_spec_list,
+					uint16_t *core_spec_cnt,
+					uint32_t *mem_spec_limit);
 
 /*
  * init_slurm_conf - initialize or re-initialize the slurm configuration

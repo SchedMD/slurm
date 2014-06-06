@@ -357,6 +357,16 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 	return fstatus;
 }
 
+int xcgroup_ns_load(slurm_cgroup_conf_t *conf, xcgroup_ns_t *cgns, char *subsys)
+{
+	cgns->mnt_point = xstrdup_printf("%s/%s",
+					 conf->cgroup_mountpoint, subsys);
+	cgns->mnt_args = NULL;
+	cgns->subsystems = xstrdup(subsys);
+	cgns->notify_prog = xstrdup_printf("%s/release_%s",
+					   conf->cgroup_release_agent, subsys);
+	return XCGROUP_SUCCESS;
+}
 
 /*
  * -----------------------------------------------------------------------------
@@ -524,7 +534,7 @@ int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
 	cg->gid = buf.st_gid;
 
 	/* read the content of the notify flag */
-	xcgroup_get_uint32_param(cg,"notify_on_release",&(cg->notify));
+	xcgroup_get_uint32_param(cg, "notify_on_release", &(cg->notify));
 
 	return XCGROUP_SUCCESS;
 }
@@ -563,7 +573,7 @@ static int cgroup_procs_writable (xcgroup_t *cg)
 	return (rc);
 }
 
-/*This call is not intended to be used to move thread pids
+/* This call is not intended to be used to move thread pids
  */
 int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
 {
@@ -689,8 +699,7 @@ int xcgroup_get_param(xcgroup_t* cg, char* param, char **content, size_t *csize)
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
 		debug2("unable to build filepath for '%s' and"
 		       " parameter '%s' : %m", cpath, param);
-	}
-	else {
+	} else {
 		fstatus = _file_read_content(file_path, content, csize);
 		if (fstatus != XCGROUP_SUCCESS)
 			debug2("unable to get parameter '%s' for '%s'",

@@ -764,6 +764,8 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 	uint32_t n, c, nodes, size;
 	int spec_cores, res_core, res_sock, res_off;
 	uint32_t coff;
+	uint16_t i;
+	struct node_record *node_ptr;
 
 	nodes = bit_size(node_map);
 	size = cr_get_coremap_offset(nodes);
@@ -784,19 +786,35 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 		}
 		bit_nset(core_map, c, coff-1);
 
-		if (!core_spec)
-			continue;
-		/* Remove specialized cores right now */
-		spec_cores = core_spec;
-		for (res_core = select_node_record[n].cores - 1;
-		     (spec_cores && (res_core >= 0)); res_core--) {
-			for (res_sock = select_node_record[n].sockets - 1;
-			     (spec_cores && (res_sock >= 0)); res_sock--) {
-				res_off = (res_sock*select_node_record[n].cores)
+		if (core_spec) {
+			/* Remove specialized cores right now */
+			spec_cores = core_spec;
+			for (res_core = select_node_record[n].cores - 1;
+			     (spec_cores && (res_core >= 0)); res_core--) {
+				for (res_sock = select_node_record[n].sockets-1;
+				     (spec_cores && (res_sock >= 0));
+				     res_sock--) {
+					res_off = 
+					  (res_sock*select_node_record[n].cores)
 					  + res_core;
-				bit_clear(core_map, c + res_off);
-				spec_cores--;
+					bit_clear(core_map, c + res_off);
+					spec_cores--;
+				}
 			}
+		}
+		node_ptr = select_node_record[n].node_ptr;
+
+		if (!node_ptr->cpu_spec_list)
+			continue;
+		if (!node_ptr->node_spec_bitmap) {
+			info("CPUSpecList not registered for node %s yet",
+			     node_ptr->name);
+			continue;
+		}
+		/* remove node's specialized cpus now */
+		for (i = 0; i < (coff - c) ; i++) {
+			if (!bit_test(node_ptr->node_spec_bitmap, i))
+				bit_clear(core_map, c + i);
 		}
 	}
 	return core_map;

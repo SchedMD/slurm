@@ -110,6 +110,7 @@
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/reverse_tree.h"
@@ -1089,6 +1090,9 @@ job_manager(stepd_step_rec_t *job)
 	reattach_job = job;
 
 	job->state = SLURMSTEPD_STEP_RUNNING;
+
+	/* Attach slurmstepd to system cgroups, if configured */
+	attach_system_cgroup_pid(getpid());
 
 	/* if we are not polling then we need to make sure we get some
 	 * information here

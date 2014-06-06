@@ -66,12 +66,13 @@ if {[test_launch_poe]} {
 #
 # Submit a 1 node job to determine the node's CPU count
 #
+set core_spec_cnt  0
 set cpu_cnt        0
 set cpus_per_node  0
 set host           ""
 set timeout        $max_job_delay
 set task_cnt       0
-set threads_per_core 0
+set threads_per_core 1
 set units ""
 
 # find me an idle node in default partition
@@ -121,6 +122,9 @@ sleep 2
 set fd [open "|$scontrol --oneliner show node $def_hostlist"]
 exp_internal 1
 while {[gets $fd line] != -1} {
+	if {[regexp {NodeName=(\w+).*CPUTot=(\d+)(K?).*CoreSpecCount=(\d+).*State=IDLE ThreadsPerCore=(\d+)} $line frag host cpu_cnt units core_spec_cnt threads_per_core] == 1} {
+		break
+	}
 	if {[regexp {NodeName=(\w+).*CPUTot=(\d+)(K?).*State=IDLE ThreadsPerCore=(\d+)} $line frag host cpu_cnt units threads_per_core] == 1} {
 		break
 	}
@@ -170,6 +174,9 @@ expect {
 }
 
 # Convert CPU count to core count if necessary
+if {$core_spec_cnt != 0} {
+	set cpu_cnt [expr $cpu_cnt - ($core_spec_cnt * $threads_per_core)]
+}
 if {$cpu_cnt != $task_cnt} {
 	set core_cnt  $cpu_cnt
 	if {$threads_per_core != 0} {

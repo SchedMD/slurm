@@ -66,10 +66,13 @@
 struct config_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint16_t cpus;		/* count of processors running on the node */
+	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
 	uint16_t boards;	/* count of boards configured */
 	uint16_t sockets;	/* number of sockets per node */
 	uint16_t cores;		/* number of cores per CPU */
+	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;	/* number of threads per core */
+	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
 	uint32_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint32_t weight;	/* arbitrary priority of node for
@@ -108,8 +111,11 @@ struct node_record {
 	uint16_t boards; 		/* count of boards configured */
 	uint16_t sockets;		/* number of sockets per node */
 	uint16_t cores;			/* number of cores per CPU */
+	char *cpu_spec_list;		/* node's specialized cpus */
+	uint16_t core_spec_cnt;		/* number of specialized cores on node*/
 	uint16_t threads;		/* number of threads per core */
 	uint32_t real_memory;		/* MB real memory on the node */
+	uint32_t mem_spec_limit;	/* MB memory limit for specialization */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	uint32_t up_time;		/* seconds since node boot */
 	struct config_record *config_ptr;  /* configuration spec ptr */
@@ -161,6 +167,7 @@ struct node_record {
 	time_t cpu_load_time;		/* Time when cpu_load last set */
 	uint16_t protocol_version;	/* Slurm version number */
 	char *version;			/* Slurm version */
+	bitstr_t *node_spec_bitmap;	/* node cpu specialization bitmap */
 };
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */

@@ -214,13 +214,16 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	packstr (dump_node_ptr->reason, buffer);
 	packstr (dump_node_ptr->features, buffer);
 	packstr (dump_node_ptr->gres, buffer);
+	packstr (dump_node_ptr->cpu_spec_list, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
 	pack16  (dump_node_ptr->cpus, buffer);
 	pack16  (dump_node_ptr->boards, buffer);
 	pack16  (dump_node_ptr->sockets, buffer);
 	pack16  (dump_node_ptr->cores, buffer);
+	pack16  (dump_node_ptr->core_spec_cnt, buffer);
 	pack16  (dump_node_ptr->threads, buffer);
 	pack32  (dump_node_ptr->real_memory, buffer);
+	pack32  (dump_node_ptr->mem_spec_limit, buffer);
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
@@ -272,12 +275,12 @@ extern int load_all_node_state ( bool state_only )
 {
 	char *comm_name = NULL, *node_hostname = NULL;
 	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
-	char *features = NULL, *gres = NULL;
+	char *features = NULL, *gres = NULL, *cpu_spec_list = NULL;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
-	uint16_t node_state;
+	uint16_t node_state, core_spec_cnt = 0;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint32_t real_memory, tmp_disk, data_size = 0, name_len;
-	uint32_t reason_uid = NO_VAL;
+	uint32_t reason_uid = NO_VAL, mem_spec_limit = 0;
 	time_t reason_time = 0;
 	List gres_list = NULL;
 	struct node_record *node_ptr;
@@ -348,7 +351,35 @@ extern int load_all_node_state ( bool state_only )
 
 	while (remaining_buf (buffer) > 0) {
 		uint16_t base_state, obj_protocol_version = (uint16_t)NO_VAL;
-		if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_hostname,
+							    &name_len, buffer);
+			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
+			safe_unpackstr_xmalloc (&cpu_spec_list,
+							    &name_len, buffer);
+			safe_unpack16 (&node_state,  buffer);
+			safe_unpack16 (&cpus,        buffer);
+			safe_unpack16 (&boards,     buffer);
+			safe_unpack16 (&sockets,     buffer);
+			safe_unpack16 (&cores,       buffer);
+			safe_unpack16 (&core_spec_cnt, buffer);
+			safe_unpack16 (&threads,     buffer);
+			safe_unpack32 (&real_memory, buffer);
+			safe_unpack32 (&mem_spec_limit, buffer);
+			safe_unpack32 (&tmp_disk,    buffer);
+			safe_unpack32 (&reason_uid,  buffer);
+			safe_unpack_time (&reason_time, buffer);
+			safe_unpack16 (&obj_protocol_version, buffer);
+			if (gres_plugin_node_state_unpack(
+				    &gres_list, buffer, node_name,
+				    protocol_version) != SLURM_SUCCESS)
+				goto unpack_error;
+			base_state = node_state & NODE_STATE_BASE;
+		} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_hostname,
@@ -485,8 +516,17 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->boards        = boards;
 					node_ptr->sockets       = sockets;
 					node_ptr->cores         = cores;
+					node_ptr->core_spec_cnt =
+						core_spec_cnt;
+					xfree(node_ptr->cpu_spec_list);
+					node_ptr->cpu_spec_list =
+						cpu_spec_list;
+					cpu_spec_list = NULL;/* Nothing */
+							     /*to free */
 					node_ptr->threads       = threads;
 					node_ptr->real_memory   = real_memory;
+					node_ptr->mem_spec_limit =
+						mem_spec_limit;
 					node_ptr->tmp_disk      = tmp_disk;
 				}
 				if (node_state & NODE_STATE_POWER_UP) {
@@ -545,13 +585,18 @@ extern int load_all_node_state ( bool state_only )
 			gres			= NULL;	/* Nothing to free */
 			node_ptr->gres_list	= gres_list;
 			gres_list		= NULL;	/* Nothing to free */
+			xfree(node_ptr->cpu_spec_list);
+			node_ptr->cpu_spec_list = cpu_spec_list;
+			cpu_spec_list 		= NULL; /* Nothing to free */
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
 			node_ptr->sockets       = sockets;
 			node_ptr->cores         = cores;
+			node_ptr->core_spec_cnt = core_spec_cnt;
 			node_ptr->threads       = threads;
 			node_ptr->real_memory   = real_memory;
+			node_ptr->mem_spec_limit = mem_spec_limit;
 			node_ptr->tmp_disk      = tmp_disk;
 			node_ptr->last_response = (time_t) 0;
 		}
@@ -859,6 +904,10 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 	#ifndef HAVE_BG
 		}
 	#endif
+		pack16(dump_node_ptr->core_spec_cnt, buffer);
+		pack32(dump_node_ptr->mem_spec_limit, buffer);
+		packstr(dump_node_ptr->cpu_spec_list, buffer);
+
 		pack32(dump_node_ptr->cpu_load, buffer);
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
@@ -1453,11 +1502,14 @@ struct config_record * _dup_config(struct config_record *config_ptr)
 	new_config_ptr = create_config_record();
 	new_config_ptr->magic       = config_ptr->magic;
 	new_config_ptr->cpus        = config_ptr->cpus;
+	new_config_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	new_config_ptr->boards      = config_ptr->boards;
 	new_config_ptr->sockets     = config_ptr->sockets;
 	new_config_ptr->cores       = config_ptr->cores;
+	new_config_ptr->core_spec_cnt = config_ptr->core_spec_cnt;
 	new_config_ptr->threads     = config_ptr->threads;
 	new_config_ptr->real_memory = config_ptr->real_memory;
+	new_config_ptr->mem_spec_limit = config_ptr->mem_spec_limit;
 	new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
 	new_config_ptr->weight      = config_ptr->weight;
 	new_config_ptr->feature     = xstrdup(config_ptr->feature);
@@ -1829,6 +1881,35 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 	return false;
 }
 
+static int _build_node_spec_bitmap(struct node_record *node_ptr)
+{
+	uint32_t c, coff, size;
+	int *cpu_spec_array;
+	uint i, node_inx;
+
+	if (!node_ptr->cpu_spec_list)
+		return SLURM_SUCCESS;
+	node_inx = node_ptr - node_record_table_ptr;
+	c = cr_get_coremap_offset(node_inx);
+	coff = cr_get_coremap_offset(node_inx+1);
+	size = coff - c;
+	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
+	node_ptr->node_spec_bitmap = bit_alloc(size);
+	bit_nset(node_ptr->node_spec_bitmap, 0, size-1);
+
+	/* remove node's specialized cpus now */
+	cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
+	i = 0;
+	while (cpu_spec_array[i] != -1) {
+		bit_nclear(node_ptr->node_spec_bitmap,
+			   (cpu_spec_array[i] / node_ptr->threads),
+			   (cpu_spec_array[i + 1] / node_ptr->threads));
+		i += 2;
+	}
+	xfree(cpu_spec_array);
+	return SLURM_SUCCESS; 
+}
+
 extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg)
 {
@@ -1864,6 +1945,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	bool gang_flag = false;
 	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
+	int *cpu_spec_array;
 
 	node_ptr = find_node_record (reg_msg->node_name);
 	if (node_ptr == NULL)
@@ -2013,6 +2095,26 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		}
 	}
 	node_ptr->tmp_disk = reg_msg->tmp_disk;
+
+	if (reg_msg->cpu_spec_list != NULL) {
+		xfree(node_ptr->cpu_spec_list);
+		node_ptr->cpu_spec_list = reg_msg->cpu_spec_list;
+		reg_msg->cpu_spec_list = NULL;	/* Nothing left to free */
+
+		cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
+		i = 0;
+		node_ptr->core_spec_cnt = 0;
+		while (cpu_spec_array[i] != -1) {
+			node_ptr->core_spec_cnt += (cpu_spec_array[i + 1] -
+				cpu_spec_array[i]) + 1;
+			i += 2;
+		}
+		if (node_ptr->threads)
+			node_ptr->core_spec_cnt /= node_ptr->threads;
+		xfree(cpu_spec_array);
+		if (_build_node_spec_bitmap(node_ptr) != SLURM_SUCCESS)
+			error_code = EINVAL;
+	}
 
 	xfree(node_ptr->arch);
 	node_ptr->arch = reg_msg->arch;
