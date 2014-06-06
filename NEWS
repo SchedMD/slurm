@@ -83,6 +83,8 @@ documents those changes that are of interest to users and admins.
  -- Cleanup the JOB_COMPLETING flag and eventually requeue the job when the
     last epilog completes, either slurmd epilog or slurmctld epilog, whichever
     comes last.
+ -- When attempting to requeue a job distinguish the case in which the job is
+    JOB_COMPLETING or already pending.
 
 * Changes in Slurm 14.03.3-2
 ============================
