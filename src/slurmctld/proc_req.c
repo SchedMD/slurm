@@ -3851,9 +3851,12 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 			 * requested operation and carry on. The requeue
 			 * will be done after the last job epilog completes.
 			 */
-			if (req_ptr->state & JOB_SPECIAL_EXIT)
+			if (!(job_ptr->job_state & JOB_SPECIAL_EXIT)
+			    && req_ptr->state & JOB_SPECIAL_EXIT)
 				job_ptr->job_state |= JOB_SPECIAL_EXIT;
-			if (req_ptr->state & JOB_REQUEUE_HOLD)
+
+			if (!(job_ptr->job_state & JOB_REQUEUE_HOLD)
+			    && req_ptr->state & JOB_REQUEUE_HOLD)
 				job_ptr->job_state |= JOB_REQUEUE_HOLD;
 			job_ptr->job_state |= JOB_REQUEUE;
 

@@ -50,13 +50,17 @@ print_header $test_id
 # by just closing all files after fd=3. Closing all files from switch/elan
 # would disable its use.
 #
+set job_profile 0
 set invalid 0
 log_user 0
 spawn $scontrol show config
 expect {
 	-re "acct_gather_filesystem/lustre" {
-		send_user "\nWARNING: test incompatible with acct_gather_filesystem/lustre\n"
-		set invalid 1
+		set job_profile 1
+		exp_continue
+	}
+	-re "acct_gather_profile/hdf5" {
+		set job_profile 1
 		exp_continue
 	}
 	-re "launch/poe" {
@@ -175,6 +179,12 @@ if {$fini != 1} {
 	send_user "\nFAILURE: script never completed\n"
 	set exit_code 1
 }
+if {$job_profile == 1} {
+	if {$matches == $iterations} {
+		send_user "  Job profiling leave one open file\n"
+		set matches 0
+	}
+}
 if {$matches != 0} {
 	set tot [expr $iterations + 1]
 	if {$matches <= 1} {
@@ -187,6 +197,7 @@ if {$matches != 0} {
 	send_user "  JobAcctFrequency is set to a small value and is\n"
 	send_user "  indicative of a non-checkpointable job. For details,\n"
 	send_user "  see src/plugins/jobacct/linux/jobacct_linux.c\n"
+	send_user "  To diagnose, use lsof to examine spawned job.\n"
 }
 
 if {$exit_code == 0} {

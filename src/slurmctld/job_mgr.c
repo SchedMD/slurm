@@ -10942,16 +10942,22 @@ extern int job_requeue(uid_t uid,
 		goto reply;
 	}
 
-	/* In the process of completing or
-	 * already requeued.
+	/* In the job is in the process of completing
+	 * disable the requeue. The caller will eventually
+	 * remember the hold requeue and special state.
 	 */
-	if (IS_JOB_COMPLETING(job_ptr)
-		|| (IS_JOB_PENDING(job_ptr)))
+	if (IS_JOB_COMPLETING(job_ptr)) {
+		rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
 		goto reply;
+	}
 
-	/* nothing else to do if pending */
-	if (IS_JOB_PENDING(job_ptr))
+	/* If the job is already pending do nothing
+	 * and return  is well to the library.
+	 */
+	if (IS_JOB_PENDING(job_ptr)) {
+		rc = ESLURM_JOB_PENDING;
 		goto reply;
+	}
 
 	if (job_ptr->batch_flag == 0) {
 		debug("Job-requeue can only be done for batch jobs");
