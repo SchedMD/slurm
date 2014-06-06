@@ -155,7 +155,7 @@ if {$matches == 0} {
 }
 
 set matches 0
-set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-30 --program=$cwd/$file_in_time]
+set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-40 --program=$cwd/$file_in_time]
 expect {
 	-re "trigger set" {
 		incr matches
@@ -260,7 +260,7 @@ expect {
 	}
 }
 if {$job_matches != 3} {
-	send_user "\nFAILURE: trigger get failure\n"
+	send_user "\nFAILURE: trigger get failure ($job_matches != 3)\n"
 	set exit_code 1
 }
 
