@@ -100,7 +100,6 @@ extern int init_system_cpuset_cgroup(void)
 {
 	int rc;
 	int fstatus = SLURM_ERROR;
-	xcgroup_t cpuset_cg;
 	char* cpus = NULL;
 	size_t cpus_size;
 	char* slurm_cgpath;
@@ -121,6 +120,8 @@ extern int init_system_cpuset_cgroup(void)
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = _system_cgroup_create_slurm_cg(&cpuset_ns);
 	if ( slurm_cgpath == NULL ) {
+		xcgroup_ns_destroy(&cpuset_ns);
+		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 		return SLURM_ERROR;
 	}
 
@@ -129,6 +130,7 @@ extern int init_system_cpuset_cgroup(void)
 	    != XCGROUP_SUCCESS) {
 		error("system cgroup: unable to load slurm cpuset xcgroup");
 		xfree(slurm_cgpath);
+		xcgroup_ns_destroy(&cpuset_ns);
 		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 		return SLURM_ERROR;
 	}
@@ -147,7 +149,9 @@ again:
 		if (_xcgroup_cpuset_init(&slurm_cg) != XCGROUP_SUCCESS) {
 			xfree(slurm_cgpath);
 			xcgroup_destroy(&slurm_cg);
+			xcgroup_ns_destroy(&cpuset_ns);
 			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+			xfree(cpus);
 			return SLURM_ERROR;
 		}
 	}
@@ -164,11 +168,9 @@ again:
 		goto error;
 	}
 	if (xcgroup_instanciate(&system_cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&system_cpuset_cg);
 		goto error;
 	}
 	if (_xcgroup_cpuset_init(&system_cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&system_cpuset_cg);
 		goto error;
 	}
 
@@ -177,7 +179,9 @@ again:
 	return SLURM_SUCCESS;
 
 error:
-	xcgroup_unlock(&cpuset_cg);
+	xcgroup_unlock(&system_cpuset_cg);
+	xcgroup_destroy(&system_cpuset_cg);
+	xcgroup_ns_destroy(&cpuset_ns);
 	free_slurm_cgroup_conf(&slurm_cgroup_conf);
 	return fstatus;
 }
@@ -185,7 +189,6 @@ error:
 extern int init_system_memory_cgroup(void)
 {
 	int fstatus = SLURM_ERROR;
-	xcgroup_t memory_cg;
 	char* slurm_cgpath;
 
 	/* read cgroup configuration */
@@ -255,6 +258,7 @@ extern int init_system_memory_cgroup(void)
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = _system_cgroup_create_slurm_cg(&memory_ns);
 	if ( slurm_cgpath == NULL ) {
+		xcgroup_ns_destroy(&memory_ns);
 		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 		return SLURM_ERROR;
 	}
@@ -270,7 +274,6 @@ extern int init_system_memory_cgroup(void)
 		goto error;
 	}
 	if (xcgroup_instanciate(&system_memory_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&system_memory_cg);
 		goto error;
 	}
 
@@ -278,7 +281,6 @@ extern int init_system_memory_cgroup(void)
 	     != XCGROUP_SUCCESS ) {
 		error("system cgroup: unable to ask for hierarchical accounting"
 		      "of system memcg '%s'", system_memory_cg.path);
-		xcgroup_destroy (&system_memory_cg);
 		goto error;
 	}
 
@@ -287,8 +289,9 @@ extern int init_system_memory_cgroup(void)
 	return SLURM_SUCCESS;
 
 error:
-	xcgroup_unlock(&memory_cg);
-	xcgroup_destroy(&memory_cg);
+	xcgroup_unlock(&system_memory_cg);
+	xcgroup_destroy(&system_memory_cg);
+	xcgroup_ns_destroy(&memory_ns);
 	free_slurm_cgroup_conf(&slurm_cgroup_conf);
 	return fstatus;
 }

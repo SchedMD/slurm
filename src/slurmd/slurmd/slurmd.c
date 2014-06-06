@@ -638,7 +638,10 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->sockets	 = conf->sockets;
 	msg->cores	 = conf->cores;
 	msg->threads	 = conf->threads;
-	msg->cpu_spec_list = xstrdup (res_abs_cpus);
+	if (res_abs_cpus[0] == '\0')
+		msg->cpu_spec_list = NULL;
+	else
+		msg->cpu_spec_list = xstrdup (res_abs_cpus);
 	msg->real_memory = conf->real_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
 	msg->hash_val    = slurm_get_hash_val();
@@ -1981,6 +1984,7 @@ static int _core_spec_init(void)
 	res_abs_cores = xmalloc(ncores * 4 * sizeof(char));
 	res_core_bitmap = bit_alloc(ncores);
 	res_cpu_bitmap  = bit_alloc(ncpus);
+	res_abs_cpus[0] = '\0';
 
 	if (conf->cpu_spec_list != NULL) {
 		/* CPUSpecList designated in slurm.conf */
