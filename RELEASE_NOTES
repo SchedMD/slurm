@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 14.11
-20 May 2014
+6 June 2014
 
 
 IMPORTANT NOTE:
@@ -25,7 +25,9 @@ Slurm will result in loss of state information.
 
 HIGHLIGHTS
 ==========
- -- Add support for allocation of generic resources by model type for
+ -- Added support for reserving CPUs and/or memory on a compute node for system
+    use.
+ -- Added support for allocation of generic resources by model type for
     heterogenous systems (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of
     any type).
  -- Added support for non-consumable generic resources that are limited, but
@@ -60,6 +62,10 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     the allocated nodes.
  -- Added PriorityFlags option of Calulate_Running to continue recalculating
     the priority of running jobs.
+ -- Add new node configuration parameters CoreSpecCount, CPUSpecList and
+    MemSpecLimit which support the reservation of resources for system use
+    with Linux cgroup.
+
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -97,7 +103,8 @@ Added the following struct definitions
  -- Added the following fields to struct job_info:
     sched_nodes
  -- Added the following fields to struct node_info:
-    gres_drain and gres_used.
+    gres_drain and gres_used
+    core_spec_cnt, cpu_spec_list, mem_spec_limit
  -- Added the following fields to struct slurm_ctl_conf:
     chos_loc, mem_limit_enforce, priority_params
     requeue_exit, requeue_exit_hold

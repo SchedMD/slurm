@@ -61,6 +61,9 @@ documents those changes that are of interest to users and admins.
     the priority of running jobs.
  -- Replace round-robin front-end node selection with least-loaded algorithm.
  -- CRAY - Improve support of XC30 systems when running natively.
+ -- Add new node configuration parameters CoreSpecCount, CPUSpecList and
+    MemSpecLimit which support the reservation of resources for system use
+    with Linux cgroup.
 
 * Changes in Slurm 14.03.4
 ==========================

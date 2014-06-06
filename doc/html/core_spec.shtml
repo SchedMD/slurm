@@ -23,7 +23,7 @@ Use the <i>squeue</i> command with the "%X" format option to see the count
 The <i>scontrol</i> and <i>sview</i> commands can also be used to modify
 the count for pending jobs.</p>
 
-<p>Configuring core specialization for a job implicitly sets its
+<p>Explicitly setting a job's specialized core value implicitly sets its
 <i>--exclusive</i> option, reserving entire nodes for the job, however
 the number of CPUs available for the job's steps will not exceed that
 explicitly requested by the job. For example "salloc -n1 --core-spec=1 bash"
@@ -59,15 +59,33 @@ socket: 0 core: 0</p>
 job allocation request options, especially --cores-per-socket.</p>
 
 <h2>System Configuration</h2>
-<p>Core Specialization is only supported if <i>SelectType</i> is configured
-as either <i>select/cons_res</i> or <i>select/cray</i>. A job's core
-specialization option will be silently cleared on other configurations.
+
+<p>There are two fundamentally different mechanisms for core specialization;
+one for Cray systems and a different model for other systems.</p>
+
+<p>For Cray systems, configure <i>SelectType=select/cray</i> and
+<i>CoreSpecPlugin=core_spec/cray</i>.
+By default, no resources will be reserved for system use.
+The user must explicitly set a specialized core count as described above.</p>
+
+<p>For all other systems, configure <i>SelectType=select/cons_res</i>,
+<i>CoreSpecPlugin=core_spec/none</i> and <i>TaskPlugin=task/cgroup</i>.
+In addition, specialized resources should be configured in slurm.conf on the
+node specification line using the <i>CoreSpecCount</i> or <i>CPUSpecList</i>
+option to identify the CPUs to reserve.
+The <i>MemSpecLimit</i> option can be used to reserve memory.
+These resource will be reserved using Linux cgroups.
+Users wanting a different number of specialized cores should use the
+<i>--core-spec</i> option as described above.</p>
+
+<p>A job's core specialization option will be silently cleared on other
+configurations.
 In addition, each compute node's core count must be configured or the CPUs
 count must be configured to the node's core count.
 If the core count is not configured and the CPUs value is configured to the
 count of hyperthreads, then hyperthreads rather than cores will be reserved for
 system use.</p>
 
-<p style="text-align:center;">Last modified 21 February 2014</p>
+<p style="text-align:center;">Last modified 6 June 2014</p>
 
 <!--#include virtual="footer.txt"-->
