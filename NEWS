@@ -64,6 +64,8 @@ documents those changes that are of interest to users and admins.
  -- Add new node configuration parameters CoreSpecCount, CPUSpecList and
     MemSpecLimit which support the reservation of resources for system use
     with Linux cgroup.
+ -- Add child_forked() function to the slurm_acct_gather_profile plugin to
+    close open files, leaving application with no extra open file descriptors.
 
 * Changes in Slurm 14.03.4
 ==========================

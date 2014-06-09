@@ -60,6 +60,7 @@
 #define USLEEP_TIME 1000000
 
 typedef struct slurm_acct_gather_profile_ops {
+	void (*child_forked)    (void);
 	void (*conf_options)    (s_p_options_t **full_options,
 				 int *full_options_cnt);
 	void (*conf_set)        (s_p_hashtbl_t *tbl);
@@ -70,7 +71,7 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
 	int (*add_sample_data)  (uint32_t, void*);
-	void (*conf_values)      (List *data);
+	void (*conf_values)     (List *data);
 
 } slurm_acct_gather_profile_ops_t;
 
@@ -79,6 +80,7 @@ typedef struct slurm_acct_gather_profile_ops {
  * declared for slurm_acct_gather_profile_ops_t.
  */
 static const char *syms[] = {
+	"acct_gather_profile_p_child_forked",
 	"acct_gather_profile_p_conf_options",
 	"acct_gather_profile_p_conf_set",
 	"acct_gather_profile_p_get",
@@ -465,6 +467,14 @@ extern void acct_gather_profile_endpoll(void)
 			      "(acct_gather_profile_endpoll)", i);
 		}
 	}
+}
+
+extern void acct_gather_profile_g_child_forked(void)
+{
+	if (acct_gather_profile_init() < 0)
+		return;
+	(*(ops.child_forked))();
+	return;
 }
 
 extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,

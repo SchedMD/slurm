@@ -99,10 +99,19 @@ The system <span class="commandline">_init()</span> is called before the SLURM
 <span class="commandline">_fini()</span>.</p>
 
 <p class="commandline">
+void acct_gather_profile_g_conf_options(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Called from slurmstepd between fork() and exec() of application.
+Close open files<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
 void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 int *full_options_cnt)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-Defines configuration options in acct_gather.conf<br />
+Defines configuration options in acct_gather.conf<br>
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">full(out) option definitions.</span>
 <span class="commandline">full_options_cnt(out) number in full.</span>
@@ -113,7 +122,7 @@ Defines configuration options in acct_gather.conf<br />
 <p class="commandline">
 void acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-Set configuration options from acct_gather.conf<br />
+Set configuration options from acct_gather.conf<br>
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">tbl -- hash table of options./span>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -123,7 +132,7 @@ Set configuration options from acct_gather.conf<br />
 <p class="commandline">
 void acct_gather_profile_g_conf_get(s_p_hashtbl_t *tbl)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-Gets configuration options from acct_gather.conf<br />
+Gets configuration options from acct_gather.conf<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">void* pointer to slurm_acct_gather_conf_t</span>
  on success, or<br> <span class="commandline">NULL</span> on failure.
@@ -361,6 +370,6 @@ outlined for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 9 June 2014</p>
 
 <!--#include virtual="footer.txt"-->

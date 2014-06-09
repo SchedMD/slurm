@@ -108,6 +108,10 @@ extern char *acct_gather_profile_type_t_name(acct_gather_profile_type_t type);
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def);
 extern void acct_gather_profile_endpoll(void);
 
+/* Called from slurmstepd between fork() and exec() of application.
+ * Close open files */
+extern void acct_gather_profile_g_child_forked(void);
+
 /*
  * Define plugin local conf for acct_gather.conf
  *

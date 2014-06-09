@@ -1547,6 +1547,9 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 */
 			prepare_stdio (job, job->task[i]);
 
+			/* Close profiling file descriptors */
+			acct_gather_profile_g_child_forked();
+
 			/*
 			 *  Block until parent notifies us that it is ok to
 			 *   proceed. This allows the parent to place all

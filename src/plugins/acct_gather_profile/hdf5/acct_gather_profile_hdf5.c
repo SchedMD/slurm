@@ -117,13 +117,13 @@ static uint32_t debug_flags = 0;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
 static stepd_step_rec_t *g_job = NULL;
 
-static void _reset_slurm_profile_conf()
+static void _reset_slurm_profile_conf(void)
 {
 	xfree(hdf5_conf.dir);
 	hdf5_conf.def = ACCT_GATHER_PROFILE_NONE;
 }
 
-static uint32_t _determine_profile()
+static uint32_t _determine_profile(void)
 {
 	uint32_t profile;
 
@@ -155,7 +155,7 @@ static int _get_taskid_from_pid(pid_t pid, uint32_t *gtid)
 	return SLURM_ERROR;
 }
 
-static int _create_directories()
+static int _create_directories(void)
 {
 	int rc;
 	struct stat st;
@@ -349,7 +349,6 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	profile_init();
 	file_id = H5Fcreate(profile_file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
 			    H5P_DEFAULT);
-
 	if (chown(profile_file_name, (uid_t)g_job->uid,
 		  (gid_t)g_job->gid) < 0)
 		error("chown(%s): %m", profile_file_name);
@@ -360,7 +359,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 		info("PROFILE: Failed to create Node group");
 		return SLURM_FAILURE;
 	}
-
+	/* fd_set_close_on_exec(file_id); Not supported for HDF5 */
 	sprintf(group_node, "/%s_%s", GRP_NODE, g_job->node_name);
 	gid_node = H5Gcreate(file_id, group_node, H5P_DEFAULT,
 			     H5P_DEFAULT, H5P_DEFAULT);
@@ -379,7 +378,23 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	return rc;
 }
 
-extern int acct_gather_profile_p_node_step_end()
+extern int acct_gather_profile_p_child_forked(void)
+{
+	if (gid_totals > 0)
+		H5Gclose(gid_totals);
+	if (gid_samples > 0)
+		H5Gclose(gid_samples);
+	if (gid_tasks > 0)
+		H5Gclose(gid_tasks);
+	if (gid_node > 0)
+		H5Gclose(gid_node);
+	if (file_id > 0)
+		H5Fclose(file_id);
+
+	return SLURM_SUCCESS;
+}
+
+extern int acct_gather_profile_p_node_step_end(void)
 {
 	int rc = SLURM_SUCCESS;
 
