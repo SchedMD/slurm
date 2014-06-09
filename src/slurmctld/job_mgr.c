@@ -3174,7 +3174,10 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);
 	details_new->work_dir = xstrdup(job_details->work_dir);
-	_copy_job_desc_files(job_ptr->job_id, job_ptr_new->job_id);
+	if (_copy_job_desc_files(job_ptr->job_id, job_ptr_new->job_id)) {
+		_list_delete_job((void *) job_ptr_new);
+		return NULL;
+	}
 
 	return job_ptr_new;
 }
@@ -5034,10 +5037,9 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 	xstrcat(dir_name, job_dir);
 	if (mkdir(dir_name, 0700)) {
 		if (!slurmctld_primary && (errno == EEXIST)) {
-			fatal("Apparent duplicate job ID %u. Two primary "
-			      "slurmctld daemons may currently be active. "
-			      "Shutting down this daemon to avoid inconsistent "
-			      "state due to split brain.", job_id);
+			error("Apparent duplicate job ID %u. Two primary "
+			      "slurmctld daemons might currently be active",
+			      job_id);
 		}
 		error("mkdir(%s) error %m", dir_name);
 		xfree(dir_name);
@@ -5065,11 +5067,37 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 	return error_code;
 }
 
+/* Return true of the specified job ID already has a batch directory so
+ * that a different job ID can be created. This is to help limit damage from
+ * split-brain, where two slurmctld daemons are running as primary. */
+static bool _dup_job_file_test(uint32_t job_id)
+{
+	char *dir_name_src, job_dir[40];
+	struct stat buf;
+	int rc, hash;
+
+	dir_name_src  = slurm_get_state_save_location();
+	hash = job_id % 10;
+	sprintf(job_dir, "/hash.%d", hash);
+	xstrcat(dir_name_src, job_dir);
+	sprintf(job_dir, "/job.%u", job_id);
+	xstrcat(dir_name_src, job_dir);
+	rc = stat(dir_name_src, &buf);
+	xfree(dir_name_src);
+	if (rc == 0) {
+		error("Vestigial state files for job %u, but no job record. "
+		      "this may be the result of two slurmctld running in "
+		      "primary mode", job_id);
+		return true;
+	}
+	return false;
+}
+
 /* _copy_job_desc_files - create copies of a job script and environment files */
 static int
 _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 {
-	int error_code = 0, hash;
+	int error_code = SLURM_SUCCESS, hash;
 	char *dir_name_src, *dir_name_dest, job_dir[40];
 	char *file_name_src, *file_name_dest;
 
@@ -5090,10 +5118,9 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 	xstrcat(dir_name_dest, job_dir);
 	if (mkdir(dir_name_dest, 0700)) {
 		if (!slurmctld_primary && (errno == EEXIST)) {
-			fatal("Apparent duplicate job ID %u. Two primary "
-			      "slurmctld daemons may currently be active. "
-			      "Shutting down this daemon to avoid inconsistent "
-			      "state due to split brain.", job_id_dest);
+			error("Apparent duplicate job ID %u. Two primary "
+			      "slurmctld daemons might currently be active",
+			      job_id_dest);
 		}
 		error("mkdir(%s) error %m", dir_name_dest);
 		xfree(dir_name_src);
@@ -7464,10 +7491,12 @@ static int _set_job_id(struct job_record *job_ptr)
 		if (++job_id_sequence >= slurmctld_conf.max_job_id)
 			job_id_sequence = slurmctld_conf.first_job_id;
 		new_id = job_id_sequence;
-		if (find_job_record(new_id) == NULL) {
-			job_ptr->job_id = new_id;
-			return SLURM_SUCCESS;
-		}
+		if (find_job_record(new_id))
+			continue;
+		if (_dup_job_file_test(new_id))
+			continue;
+		job_ptr->job_id = new_id;
+		return SLURM_SUCCESS;
 	}
 	error("We have exhausted our supply of valid job id values. "
 	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
