@@ -37,7 +37,7 @@
 
 #include "switch_cray.h"
 
-#ifdef HAVE_NATIVE_CRAY
+#if defined (HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 
 #include <stdio.h>
 #include <stdlib.h>

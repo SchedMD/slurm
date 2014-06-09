@@ -49,7 +49,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 #include "alpscomm_cn.h"
 #include "alpscomm_sn.h"
 #endif
@@ -149,6 +149,7 @@ typedef struct slurm_cray_jobinfo {
 /**********************************************************
  * Global variables
  **********************************************************/
+#ifndef HAVE_CRAY_NETWORK
 // Which ports are reserved (holds PORT_CNT bits)
 extern bitstr_t *port_resv;
 
@@ -157,6 +158,7 @@ extern uint32_t last_alloc_port;
 
 // Mutex controlling access to port variables
 extern pthread_mutex_t port_mutex;
+#endif
 
 // Debug flags
 extern uint32_t debug_flags;
@@ -164,17 +166,17 @@ extern uint32_t debug_flags;
 /**********************************************************
  * Function declarations
  **********************************************************/
-
-#ifdef HAVE_NATIVE_CRAY
 // Implemented in ports.c
 extern int assign_port(uint32_t *ret_port);
 extern int release_port(uint32_t real_port);
 
 // Implemented in pe_info.c
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 extern int build_alpsc_pe_info(stepd_step_rec_t *job,
 			       slurm_cray_jobinfo_t *sw_job,
 			       alpsc_peInfo_t *alpsc_pe_info);
 extern void free_alpsc_pe_info(alpsc_peInfo_t *alpsc_pe_info);
+#endif
 
 // Implemented in gpu.c
 extern int setup_gpu(stepd_step_rec_t *job);
@@ -192,7 +194,6 @@ extern void alpsc_debug(const char *file, int line, const char *func,
 extern int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid);
 extern int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job);
 extern void recursive_rmdir(const char *dirnm);
-#endif /* HAVE_NATIVE_CRAY */
 
 extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 

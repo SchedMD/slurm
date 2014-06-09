@@ -222,7 +222,7 @@ static void _internal_step_complete(
 		step_ptr->state = JOB_COMPLETING;
 
 		select_g_step_finish(step_ptr);
-#ifndef HAVE_NATIVE_CRAY
+#if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 		/* On native Cray, post_job_step is called after NHC completes.
 		 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
 		post_job_step(step_ptr);

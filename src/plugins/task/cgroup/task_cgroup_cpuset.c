@@ -100,42 +100,6 @@ static inline int hwloc_bitmap_isequal(
 	return hwloc_cpuset_isequal(bitmap1, bitmap2);
 }
 
-
-/* The job has specialized cores, synchronize user mask with available cores */
-static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
-{
-	int i, j, overlaps = 0;
-	bool superset = true;
-
-	for (i = 0; i < CPU_SETSIZE; i++) {
-		if (!CPU_ISSET(i, ts))
-			continue;
-		j = hwloc_bitmap_isset(obj->allowed_cpuset, i);
-		if (j > 0) {
-			overlaps++;
-		} else if (j == 0) {
-			CPU_CLR(i, ts);
-			superset = false;
-		}
-	}
-
-	if (overlaps == 0) {
-		/* The task's cpu map is completely invalid.
-		 * Give it all allowed CPUs */
-		for (i = 0; i < CPU_SETSIZE; i++) {
-			if (hwloc_bitmap_isset(obj->allowed_cpuset, i) > 0)
-				CPU_SET(i, ts);
-		}
-	}
-
-	if (!superset) {
-		info("task/cgroup: Ignoring user CPU binding outside of job "
-		     "step allocation for task[%u]", task_id);
-		fprintf(stderr, "Requested cpu_bind option outside of job "
-			"step allocation for task[%u]\n", task_id);
-	}
-}
-
 # endif
 
 static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
@@ -458,6 +422,9 @@ static int _task_cgroup_cpuset_dist_block(
 	hwloc_obj_type_t req_hwtype, uint32_t nobj,
 	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset);
 
+/* The job has specialized cores, synchronize user mask with available cores */
+static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts);
+
 
 static int _get_ldom_sched_cpuset(hwloc_topology_t topology,
 		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
@@ -754,6 +721,42 @@ static int _task_cgroup_cpuset_dist_block(
 			    bind_verbose, cpuset);
 	}
 	return XCGROUP_SUCCESS;
+}
+
+
+/* The job has specialized cores, synchronize user mask with available cores */
+static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
+{
+	int i, j, overlaps = 0;
+	bool superset = true;
+
+	for (i = 0; i < CPU_SETSIZE; i++) {
+		if (!CPU_ISSET(i, ts))
+			continue;
+		j = hwloc_bitmap_isset(obj->allowed_cpuset, i);
+		if (j > 0) {
+			overlaps++;
+		} else if (j == 0) {
+			CPU_CLR(i, ts);
+			superset = false;
+		}
+	}
+
+	if (overlaps == 0) {
+		/* The task's cpu map is completely invalid.
+		 * Give it all allowed CPUs */
+		for (i = 0; i < CPU_SETSIZE; i++) {
+			if (hwloc_bitmap_isset(obj->allowed_cpuset, i) > 0)
+				CPU_SET(i, ts);
+		}
+	}
+
+	if (!superset) {
+		info("task/cgroup: Ignoring user CPU binding outside of job "
+		     "step allocation for task[%u]", task_id);
+		fprintf(stderr, "Requested cpu_bind option outside of job "
+			"step allocation for task[%u]\n", task_id);
+	}
 }
 
 #endif

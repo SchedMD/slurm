@@ -375,8 +375,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			   slurm_step_layout_t *step_layout, char *network)
 {
-
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	int i, rc, cnt = 0;
 	uint32_t port = 0;
 	int num_cookies = 2;
@@ -460,6 +459,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	}
 	free(cookies);
 
+#ifdef HAVE_NATIVE_CRAY
 	/*
 	 * Get a unique port for PMI communications
 	 */
@@ -468,7 +468,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		CRAY_INFO("assign_port failed");
 		return SLURM_ERROR;
 	}
-
+#endif
 	/*
 	 * Populate the switch_jobinfo_t struct
 	 */
@@ -535,7 +535,6 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 			  uint16_t protocol_version)
 {
-
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
 
 	xassert(buffer);
@@ -604,7 +603,8 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		goto unpack_error;
 	}
 	safe_unpack32(&job->port, buffer);
-#ifdef HAVE_NATIVE_CRAY
+
+#ifndef HAVE_CRAY_NETWORK
 	/* If the libstate save/restore failed, at least make sure that we
 	 * do not re-allocate ports assigned to job steps that we
 	 * recover.
@@ -687,18 +687,30 @@ int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
 extern int switch_p_job_init(stepd_step_rec_t *job)
 {
 
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *sw_job = (slurm_cray_jobinfo_t *) job->switch_job;
-	int rc, num_ptags, cmd_index = 0;
+	int rc, num_ptags;
 	int mem_scaling, cpu_scaling;
 	int *ptags = NULL;
 	char *err_msg = NULL;
+	uint64_t cont_id = job->cont_id;
 	alpsc_peInfo_t alpsc_pe_info = {-1, -1, -1, -1, NULL, NULL, NULL};
-	int gpu_cnt = 0, access;
+#ifdef HAVE_NATIVE_CRAY
+	int gpu_cnt = 0, cmd_index = 0;
 	int control_nid = 0, num_branches = 0;
 	struct sockaddr_in control_soc;
 	alpsc_branchInfo_t alpsc_branch_info;
-	char *npc = "unknown";
+#endif
+
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+	char *npc = "none";
+	int access = ALPSC_NET_PERF_CTR_NONE;
+#endif
+
+#ifdef HAVE_CRAY_NETWORK
+	/* No PAGG job containers; uid used instead to configure network */
+	cont_id = (uint64_t)job->uid;
+#endif
 
 	if (!sw_job || (sw_job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_DEBUG("job->switch_job was NULL");
@@ -708,6 +720,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	xassert(job->msg);
 	xassert(sw_job->magic == CRAY_JOBINFO_MAGIC);
 
+#ifdef HAVE_NATIVE_CRAY
 	// Attach to the cncu container
 	rc = alpsc_attach_cncu_container(&err_msg, sw_job->jobid, job->cont_id);
 	ALPSC_CN_DEBUG("alpsc_attach_cncu_container");
@@ -729,7 +742,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 */
 
 	// alpsc_set_PAGG_apid()
-
+#endif
 	/*
 	 * Fill in the alpsc_pe_info structure
 	 */
@@ -764,7 +777,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	}
 
 	rc = alpsc_configure_nic(&err_msg, 0, cpu_scaling, mem_scaling,
-				 job->cont_id, sw_job->num_cookies,
+				 cont_id, sw_job->num_cookies,
 				 (const char **) sw_job->cookies,
 				 &num_ptags, &ptags, NULL);
 	ALPSC_CN_DEBUG("alpsc_configure_nic");
@@ -794,6 +807,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	}
 #endif
 
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	/*
 	 * If there is reserved access to network performance counters,
 	 * configure the appropriate access permission in the kernel.
@@ -851,10 +865,9 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		free_alpsc_pe_info(&alpsc_pe_info);
 		return SLURM_ERROR;
 	}
-
+#endif
 	/* Clean up alpsc_pe_info*/
 	free_alpsc_pe_info(&alpsc_pe_info);
-
 	/*
 	 * Write some environment variables used by LLI and PMI
 	 */
@@ -862,6 +875,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
+#ifdef HAVE_NATIVE_CRAY
 	/*
 	 * Query the generic resources to see if the GPU should be allocated
 	 */
@@ -876,6 +890,8 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * Set the Job's APID
 	 */
 	job_setapid(getpid(), sw_job->apid);
+#endif
+
 #endif
 	return SLURM_SUCCESS;
 }
@@ -919,10 +935,8 @@ extern int switch_p_job_resume(void *suspend_info, int max_wait)
 
 int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 {
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) jobinfo;
-	int rc;
-	char *path_name = NULL;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_ERR("jobinfo pointer was NULL");
@@ -930,6 +944,10 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 	}
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
+
+#ifdef HAVE_NATIVE_CRAY
+	int rc;
+	char *path_name = NULL;
 
 	/*
 	 * Remove the APID directory LEGACY_SPOOL_DIR/<APID>
@@ -953,6 +971,7 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 		return SLURM_ERROR;
 	}
 	xfree(path_name);
+#endif
 
 #if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
 	// Remove the IAA file
@@ -965,10 +984,13 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 
 int switch_p_job_postfini(stepd_step_rec_t *job)
 {
-#ifdef HAVE_NATIVE_CRAY
-	int rc, gpu_cnt = 0;
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
+	int rc;
 	char *err_msg = NULL;
 	uid_t pgid = job->jmgr_pid;
+#ifdef HAVE_NATIVE_CRAY
+        int gpu_cnt = 0;
+#endif
 
 	if (!job->switch_job) {
 		CRAY_DEBUG("job->switch_job was NULL");
@@ -992,13 +1014,14 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 	 * 3. Compact memory
 	 */
 
+#ifdef HAVE_NATIVE_CRAY
 	// Set the proxy back to the default state.
 	rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
 				GRES_STEP_DATA_COUNT, &gpu_cnt);
 	if (gpu_cnt > 0) {
 		reset_gpu(job);
 	}
-
+#endif
 	// Flush Lustre Cache
 	rc = alpsc_flush_lustre(&err_msg);
 	ALPSC_CN_DEBUG("alpsc_flush_lustre");
@@ -1097,7 +1120,7 @@ extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 				      char *nodelist)
 {
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) jobinfo;
 	char *err_msg = NULL;
 	int rc = 0;
@@ -1119,7 +1142,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 		return SLURM_ERROR;
 
 	}
-
+#ifdef HAVE_NATIVE_CRAY
 	/*
 	 * Release the reserved PMI port
 	 * If this fails, do not exit with an error.
@@ -1129,6 +1152,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 		CRAY_ERR("Releasing port %" PRIu32 " failed.", job->port);
 		// return SLURM_ERROR;
 	}
+#endif
 
 #endif
 	return SLURM_SUCCESS;
@@ -1185,7 +1209,7 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
 	info("switch_p_job_step_pre_suspend(job %u.%u)",
 		job->jobid, job->stepid);
 #endif
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *jobinfo = (slurm_cray_jobinfo_t *)job->switch_job;
 	char *err_msg = NULL;
 	int rc;
@@ -1206,7 +1230,7 @@ extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
 	info("switch_p_job_step_post_suspend(job %u.%u)",
 		job->jobid, job->stepid);
 #endif
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
 	int rc;
 
@@ -1225,7 +1249,7 @@ extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
 	info("switch_p_job_step_pre_resume(job %u.%u)",
 		job->jobid, job->stepid);
 #endif
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *jobinfo = (slurm_cray_jobinfo_t *)job->switch_job;
 	char *err_msg = NULL;
 	int rc;
@@ -1246,7 +1270,7 @@ extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
 	info("switch_p_job_step_post_resume(job %u.%u)",
 		job->jobid, job->stepid);
 #endif
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
 	int rc;
 

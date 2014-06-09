@@ -47,7 +47,7 @@
 #include "src/common/xstring.h"
 #include "switch_cray.h"
 
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 
 /*
  * Create APID directory with given uid/gid as the owner.
@@ -286,8 +286,6 @@ fileDel: st = unlink(dirnm);
 	}
 }
 
-#endif /* HAVE_NATIVE_CRAY */
-
 void print_jobinfo(slurm_cray_jobinfo_t *job)
 {
 	int i;
@@ -318,3 +316,4 @@ void print_jobinfo(slurm_cray_jobinfo_t *job)
 	xfree(cookie_str);
 	xfree(cookie_id_str);
 }
+#endif /* HAVE_NATIVE_CRAY || HAVE_CRAY_NETWORK */
