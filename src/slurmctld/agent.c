@@ -1554,12 +1554,21 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 
 	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
 	_set_job_term_info(job_ptr, mail_type, term_msg, sizeof(term_msg));
-	mi->message = xstrdup_printf("SLURM Job_id=%u Name=%s %s%s%s",
-				     job_ptr->job_id, job_ptr->name,
-				     _mail_type_str(mail_type), job_time,
-				     term_msg);
-
-	debug("email msg to %s: %s", mi->user_name, mi->message);
+	if (job_ptr->array_task_id != NO_VAL) {
+		mi->message = xstrdup_printf("SLURM Job_id=%u_%u (%u) Name=%s "
+					     "%s%s%s",
+					     job_ptr->array_job_id,
+					     job_ptr->array_task_id,
+					     job_ptr->job_id, job_ptr->name,
+					     _mail_type_str(mail_type),
+					     job_time, term_msg);
+	} else {
+		mi->message = xstrdup_printf("SLURM Job_id=%u Name=%s %s%s%s",
+					     job_ptr->job_id, job_ptr->name,
+					     _mail_type_str(mail_type),
+					     job_time, term_msg);
+	}
+	info("email msg to %s: %s", mi->user_name, mi->message);
 
 	slurm_mutex_lock(&mail_mutex);
 	if (!mail_list) {

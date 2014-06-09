@@ -337,9 +337,8 @@ static int process_cmdline (int argc, char *argv[])
 static void
 _send_ok_to_slurmd(int sock)
 {
-	/* If running under memcheck stdout doesn't work correctly so
-	 * just skip it.
-	 */
+	/* If running under valgrind/memcheck, this pipe doesn't work correctly
+	 * so just skip it. */
 #ifndef SLURMSTEPD_MEMCHECK
 	int ok = SLURM_SUCCESS;
 	safe_write(sock, &ok, sizeof(int));
@@ -352,6 +351,9 @@ rwfail:
 static void
 _send_fail_to_slurmd(int sock)
 {
+	/* If running under valgrind/memcheck, this pipe doesn't work correctly
+	 * so just skip it. */
+#ifndef SLURMSTEPD_MEMCHECK
 	int fail = SLURM_FAILURE;
 
 	if (errno)
@@ -361,6 +363,7 @@ _send_fail_to_slurmd(int sock)
 	return;
 rwfail:
 	error("Unable to send \"fail\" to slurmd");
+#endif
 }
 
 /*

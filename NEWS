@@ -155,6 +155,8 @@ documents those changes that are of interest to users and admins.
     JOB_COMPLETING or already pending.
  -- When reconfiguring the controller don't restart the slurmctld epilog if it
     is already running.
+ -- Email messages for job array events print now use the job ID using the
+    format "#_# (#)" rather than just the internal job ID.
 
 * Changes in Slurm 14.03.3-2
 ============================

@@ -730,6 +730,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 	} else if (pid > 0) {
 		int rc = 0;
 #ifndef SLURMSTEPD_MEMCHECK
+		int i;
 		time_t start_time = time(NULL);
 #endif
 		/*
@@ -749,13 +750,15 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			goto done;
 		}
 
-		/* If running under memcheck stdout doesn't work correctly so
-		 * just skip it.
-		 */
+		/* If running under valgrind/memcheck, this pipe doesn't work
+		 * correctly so just skip it. */
 #ifndef SLURMSTEPD_MEMCHECK
-		if (read(to_slurmd[0], &rc, sizeof(int)) != sizeof(int)) {
-			error("Error reading return code message "
-			      "from slurmstepd: %m");
+		i = read(to_slurmd[0], &rc, sizeof(int));
+		if (i < 0) {
+			error("Can not read return code from slurmstepd: %m");
+			rc = SLURM_FAILURE;
+		} else if (i != sizeof(int)) {
+			error("slurmstepd failed to send return code");
 			rc = SLURM_FAILURE;
 		} else {
 			int delta_time = time(NULL) - start_time;
