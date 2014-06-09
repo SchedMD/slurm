@@ -69,6 +69,7 @@ List part_list __attribute__((weak_import));
 List job_list __attribute__((weak_import));
 int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
+int slurmctld_primary __attribute__((weak_import));
 struct switch_record *switch_record_table __attribute__((weak_import));
 int switch_record_cnt __attribute__((weak_import));
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
@@ -82,6 +83,7 @@ List part_list;
 List job_list;
 int node_record_count;
 time_t last_node_update;
+int slurmctld_primary;
 struct switch_record *switch_record_table;
 int switch_record_cnt;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
@@ -184,9 +186,10 @@ extern int init ( void )
 	 *	plugin_id = 105;
 	 */
 	if (bg_recover != NOT_FROM_CONTROLLER) {
-		if (slurmctld_conf.select_type_param & CR_OTHER_CONS_RES)
+		if (slurmctld_conf.select_type_param & CR_OTHER_CONS_RES) {
 			fatal("SelectTypeParams=other_cons_res is not valid "
 			      "for select/alps");
+		}
 	}
 
 	create_config();
@@ -224,6 +227,8 @@ extern int select_p_job_init(List job_list)
  */
 extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 {
+	if (slurmctld_primary == 0)
+		return false;
 	if (basil_node_ranking(node_ptr, node_cnt) < 0)
 		fatal("can not resolve node coordinates: ALPS problem?");
 	return true;
@@ -231,7 +236,7 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	if (basil_geometry(node_ptr, node_cnt)) {
+	if (slurmctld_primary && basil_geometry(node_ptr, node_cnt)) {
 		error("can not get initial ALPS node state");
 		return SLURM_ERROR;
 	}
@@ -306,7 +311,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 
-	if ((!_zero_size_job(job_ptr)) &&
+	if (slurmctld_primary && !_zero_size_job(job_ptr) &&
 	    (do_basil_reserve(job_ptr) != SLURM_SUCCESS)) {
 		job_ptr->state_reason = WAIT_RESOURCES;
 		xfree(job_ptr->state_desc);
@@ -329,9 +334,10 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	 *		means that we need to confirm only if batch_flag is 0,
 	 *		and execute the other_job_ready() only in slurmctld.
 	 */
-	if (!job_ptr->batch_flag && !_zero_size_job(job_ptr))
+	if (slurmctld_primary && !job_ptr->batch_flag &&
+	    !_zero_size_job(job_ptr))
 		rc = do_basil_confirm(job_ptr);
-	if (rc != SLURM_SUCCESS || (job_ptr->job_state == (uint16_t)NO_VAL))
+	if ((rc != SLURM_SUCCESS) || (job_ptr->job_state == (uint16_t) NO_VAL))
 		return rc;
 	return other_job_ready(job_ptr);
 }
@@ -367,22 +373,24 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 	 * after the job. Releasing the reservation will stop any new aprun
 	 * lines from being executed.
 	 */
-	switch (signal) {
-		case SIGCHLD:
-		case SIGCONT:
-		case SIGSTOP:
-		case SIGTSTP:
-		case SIGTTIN:
-		case SIGTTOU:
-		case SIGURG:
-		case SIGWINCH:
-			break;
-		default:
-			if (signal < SIGRTMIN)
-				do_basil_release(job_ptr);
+	if (slurmctld_primary) {
+		switch (signal) {
+			case SIGCHLD:
+			case SIGCONT:
+			case SIGSTOP:
+			case SIGTSTP:
+			case SIGTTIN:
+			case SIGTTOU:
+			case SIGURG:
+			case SIGWINCH:
+				break;
+			default:
+				if (signal < SIGRTMIN)
+					do_basil_release(job_ptr);
+		}
 	}
 
-	if (!_zero_size_job(job_ptr)) {
+	if (slurmctld_primary && !_zero_size_job(job_ptr)) {
 		if (signal != SIGKILL) {
 			if (do_basil_signal(job_ptr, signal) != SLURM_SUCCESS)
 				return SLURM_ERROR;
@@ -402,7 +410,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
-	if ((!_zero_size_job(job_ptr)) &&
+	if (slurmctld_primary && !_zero_size_job(job_ptr) &&
 	    (do_basil_release(job_ptr) != SLURM_SUCCESS))
 		return SLURM_ERROR;
 	/*
@@ -420,7 +428,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
 
-	if ((!_zero_size_job(job_ptr)) &&
+	if (slurmctld_primary && !_zero_size_job(job_ptr) &&
 	    (do_basil_switch(job_ptr, 1) != SLURM_SUCCESS))
 		return SLURM_ERROR;
 
@@ -432,7 +440,7 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
 
-	if ((!_zero_size_job(job_ptr)) &&
+	if (slurmctld_primary && !_zero_size_job(job_ptr) &&
 	    (do_basil_switch(job_ptr, 0) != SLURM_SUCCESS))
 		return SLURM_ERROR;
 
@@ -871,7 +879,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
-	if (basil_inventory())
+	if (slurmctld_primary && basil_inventory())
 		return SLURM_ERROR;
 	return other_reconfigure();
 }

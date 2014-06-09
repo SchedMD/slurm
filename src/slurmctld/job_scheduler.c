@@ -754,6 +754,11 @@ extern int schedule(uint32_t job_limit)
 	uint16_t reject_state_reason = WAIT_NO_REASON;
 	DEF_TIMERS;
 
+#ifdef HAVE_ALPS_CRAY
+	if (!slurmctld_primary)
+		return 0;
+#endif
+
 	if (slurmctld_config.shutdown_time)
 		return 0;
 

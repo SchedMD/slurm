@@ -68,6 +68,11 @@ int init( void )
 {
 	pthread_attr_t attr;
 
+#ifdef HAVE_ALPS_CRAY
+	if (!slurmctld_primary)
+		return SLURM_SUCCESS;
+#endif
+
 	verbose( "sched: Backfill scheduler plugin loaded" );
 
 	pthread_mutex_lock( &thread_flag_mutex );
