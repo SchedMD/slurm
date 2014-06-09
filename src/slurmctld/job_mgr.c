@@ -10972,11 +10972,10 @@ extern int job_requeue(uid_t uid,
 	}
 
 	/* In the job is in the process of completing
-	 * disable the requeue. The caller will eventually
-	 * remember the hold requeue and special state.
+	 * return SLURM_SUCCESS, the caller will record
+	 * the request.
 	 */
 	if (IS_JOB_COMPLETING(job_ptr)) {
-		rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
 		goto reply;
 	}
 
