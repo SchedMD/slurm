@@ -100,6 +100,42 @@ static inline int hwloc_bitmap_isequal(
 	return hwloc_cpuset_isequal(bitmap1, bitmap2);
 }
 
+
+/* The job has specialized cores, synchronize user mask with available cores */
+static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
+{
+	int i, j, overlaps = 0;
+	bool superset = true;
+
+	for (i = 0; i < CPU_SETSIZE; i++) {
+		if (!CPU_ISSET(i, ts))
+			continue;
+		j = hwloc_bitmap_isset(obj->allowed_cpuset, i);
+		if (j > 0) {
+			overlaps++;
+		} else if (j == 0) {
+			CPU_CLR(i, ts);
+			superset = false;
+		}
+	}
+
+	if (overlaps == 0) {
+		/* The task's cpu map is completely invalid.
+		 * Give it all allowed CPUs */
+		for (i = 0; i < CPU_SETSIZE; i++) {
+			if (hwloc_bitmap_isset(obj->allowed_cpuset, i) > 0)
+				CPU_SET(i, ts);
+		}
+	}
+
+	if (!superset) {
+		info("task/cgroup: Ignoring user CPU binding outside of job "
+		     "step allocation for task[%u]", task_id);
+		fprintf(stderr, "Requested cpu_bind option outside of job "
+			"step allocation for task[%u]\n", task_id);
+	}
+}
+
 # endif
 
 static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
@@ -1019,41 +1055,6 @@ extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job)
 	fstatus = SLURM_SUCCESS;
 
 	return fstatus;
-}
-
-/* The job has specialized cores, synchronize user mask with available cores */
-static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
-{
-	int i, j, overlaps = 0;
-	bool superset = true;
-
-	for (i = 0; i < CPU_SETSIZE; i++) {
-		if (!CPU_ISSET(i, ts))
-			continue;
-		j = hwloc_bitmap_isset(obj->allowed_cpuset, i);
-		if (j > 0) {
-			overlaps++;
-		} else if (j == 0) {
-			CPU_CLR(i, ts);
-			superset = false;
-		}
-	}
-
-	if (overlaps == 0) {
-		/* The task's cpu map is completely invalid.
-		 * Give it all allowed CPUs */
-		for (i = 0; i < CPU_SETSIZE; i++) {
-			if (hwloc_bitmap_isset(obj->allowed_cpuset, i) > 0)
-				CPU_SET(i, ts);
-		}
-	}
-
-	if (!superset) {
-		info("task/cgroup: Ignoring user CPU binding outside of job "
-		     "step allocation for task[%u]", task_id);
-		fprintf(stderr, "Requested cpu_bind option outside of job "
-			"step allocation for task[%u]\n", task_id);
-	}
 }
 
 /* affinity should be set using sched_setaffinity to not force */
