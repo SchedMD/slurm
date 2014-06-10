@@ -291,7 +291,7 @@ typedef struct {
 	List resv_list;		/* list of char * */
 	List resvid_list;	/* list of char * */
 	List state_list;        /* list of char * */
-	List step_list;         /* list of jobacct_selected_step_t */
+	List step_list;         /* list of slurmdb_selected_step_t */
 	uint32_t timelimit_max; /* max timelimit */
 	uint32_t timelimit_min; /* min timelimit */
 	time_t usage_end;
@@ -585,9 +585,12 @@ typedef struct {
 } slurmdb_job_modify_cond_t;
 
 typedef struct {
+	char    *account;
 	uint32_t alloc_cpus;
 	uint32_t alloc_nodes;
-	char    *account;
+	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
+	uint32_t array_task_id;	/* task_id of a job array of NO_VAL
+				 * if N/A */
 	uint32_t associd;
 	char	*blockid;
 	char    *cluster;
@@ -728,6 +731,8 @@ typedef struct {
 } slurmdb_reservation_rec_t;
 
 typedef struct {
+	uint32_t array_task_id;	/* task_id of a job array of NO_VAL
+				 * if N/A */
 	uint32_t jobid;
 	uint32_t stepid;
 } slurmdb_selected_step_t;

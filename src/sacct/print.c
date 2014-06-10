@@ -149,7 +149,7 @@ void print_fields(type_t type, void *object)
 
 	list_iterator_reset(print_fields_itr);
 	while((field = list_next(print_fields_itr))) {
-		char *tmp_char = NULL;
+		char *tmp_char = NULL, id[FORMAT_STRING_SIZE];
 		int tmp_int = NO_VAL, tmp_int2 = NO_VAL;
 		double tmp_dub = (double)NO_VAL;
 		uint32_t tmp_uint32 = (uint32_t)NO_VAL;
@@ -631,6 +631,47 @@ void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_JOBID:
+			if (type == JOBSTEP)
+				job = step->job_ptr;
+
+			if (job) {
+				if (job->array_task_id != NO_VAL)
+					snprintf(id, FORMAT_STRING_SIZE,
+						 "%u_%u",
+						 job->array_job_id,
+						 job->array_task_id);
+				else
+					snprintf(id, FORMAT_STRING_SIZE,
+						 "%u",
+						 job->jobid);
+			}
+
+			switch(type) {
+			case JOB:
+				tmp_char = xstrdup(id);
+				break;
+			case JOBSTEP:
+				if (step->stepid == NO_VAL)
+					tmp_char = xstrdup_printf(
+						"%s.batch", id);
+				else
+					tmp_char = xstrdup_printf(
+						"%s.%u",
+						id, step->stepid);
+				break;
+			case JOBCOMP:
+				tmp_char = xstrdup_printf("%u",
+							  job_comp->jobid);
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_JOBIDRAW:
 			switch(type) {
 			case JOB:
 				tmp_char = xstrdup_printf("%u", job->jobid);

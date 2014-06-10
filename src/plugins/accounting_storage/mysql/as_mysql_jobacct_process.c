@@ -60,6 +60,8 @@ char *job_req_inx[] = {
 	"t1.derived_ec",
 	"t1.derived_es",
 	"t1.exit_code",
+	"t1.id_array_job",
+	"t1.id_array_task",
 	"t1.id_assoc",
 	"t1.id_block",
 	"t1.id_group",
@@ -98,6 +100,8 @@ enum {
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
 	JOB_REQ_EXIT_CODE,
+	JOB_REQ_ARRAYJOBID,
+	JOB_REQ_ARRAYTASKID,
 	JOB_REQ_ASSOCID,
 	JOB_REQ_BLOCKID,
 	JOB_REQ_GID,
@@ -500,6 +504,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->alloc_cpus = slurm_atoul(row[JOB_REQ_ALLOC_CPUS]);
 		job->alloc_nodes = slurm_atoul(row[JOB_REQ_ALLOC_NODES]);
 		job->associd = slurm_atoul(row[JOB_REQ_ASSOCID]);
+		job->array_job_id = slurm_atoul(row[JOB_REQ_ARRAYJOBID]);
+		job->array_task_id = slurm_atoul(row[JOB_REQ_ARRAYTASKID]);
 		job->resvid = slurm_atoul(row[JOB_REQ_RESVID]);
 		job->cluster = xstrdup(cluster_name);
 
@@ -657,7 +663,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			set = 0;
 			itr = list_iterator_create(job_cond->step_list);
 			while ((selected_step = list_next(itr))) {
-				if (selected_step->jobid != job->jobid) {
+				if ((selected_step->jobid != job->jobid) &&
+				    (selected_step->jobid !=
+				     job->array_job_id)) {
 					continue;
 				} else if (selected_step->stepid == NO_VAL) {
 					job->show_full = 1;
@@ -676,6 +684,11 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					   selected_step->stepid);
 				set = 1;
 				job->show_full = 0;
+				/* Set it back just in case we are
+				   looking at a job array.
+				*/
+				if (selected_step->stepid == SLURM_BATCH_SCRIPT)
+					selected_step->stepid = INFINITE;
 			}
 			list_iterator_destroy(itr);
 			if (set)
@@ -1332,8 +1345,17 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while ((selected_step = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.id_job=%u",
-				   selected_step->jobid);
+			if (selected_step->array_task_id == NO_VAL)
+				xstrfmtcat(*extra, "(t1.id_job=%u || "
+					   "t1.id_array_job=%u)",
+					   selected_step->jobid,
+					   selected_step->jobid);
+			else {
+				xstrfmtcat(*extra, "(t1.id_array_job=%u && "
+					   "t1.id_array_task=%u)",
+					   selected_step->jobid,
+					   selected_step->array_task_id);
+			}
 			set = 1;
 		}
 		list_iterator_destroy(itr);

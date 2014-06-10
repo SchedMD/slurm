@@ -169,4 +169,10 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
 	slurmdb_cluster_rec_t *cluster);
 
+/* OUT: job_id_str - filled in with the id of the job/array
+ * RET: job_id_str */
+extern char *slurmdb_get_selected_step_id(
+	char *job_id_str, int len,
+	slurmdb_selected_step_t *selected_step);
+
 #endif

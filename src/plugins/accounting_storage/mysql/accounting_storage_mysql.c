@@ -981,6 +981,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "exit_code", "int unsigned default 0 not null" },
 		{ "job_name", "tinytext not null" },
 		{ "id_assoc", "int unsigned not null" },
+		{ "id_array_job", "int unsigned default 0 not null" },
+		{ "id_array_task", "int unsigned default 0xfffffffe not null" },
 		{ "id_block", "tinytext" },
 		{ "id_job", "int unsigned not null" },
 		{ "id_qos", "int unsigned default 0 not null" },

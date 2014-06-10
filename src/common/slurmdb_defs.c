@@ -49,6 +49,8 @@
 #include "src/common/slurm_auth.h"
 #include "src/slurmdbd/read_config.h"
 
+#define FORMAT_STRING_SIZE 34
+
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 
 static void _free_res_cond_members(slurmdb_res_cond_t *res_cond);
@@ -2472,4 +2474,31 @@ extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
 	slurmdb_report_cluster->cpu_count /= count;
 
 	return slurmdb_report_cluster;
+}
+
+extern char *slurmdb_get_selected_step_id(
+	char *job_id_str, int len,
+	slurmdb_selected_step_t *selected_step)
+{
+	char id[FORMAT_STRING_SIZE];
+
+	xassert(selected_step);
+
+	if (selected_step->array_task_id != NO_VAL)
+		snprintf(id, FORMAT_STRING_SIZE,
+			 "%u_%u",
+			 selected_step->jobid,
+			 selected_step->array_task_id);
+	else
+		snprintf(id, FORMAT_STRING_SIZE,
+			 "%u",
+			 selected_step->jobid);
+
+	if (selected_step->stepid != NO_VAL)
+		snprintf(job_id_str, len, "%s.%u",
+			 id, selected_step->stepid);
+	else
+		snprintf(job_id_str, len, "%s", id);
+
+	return job_id_str;
 }

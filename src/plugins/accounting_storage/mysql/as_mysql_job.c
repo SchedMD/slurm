@@ -425,7 +425,8 @@ no_rollup_change:
 			begin_time = submit_time;
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
-			"(id_job, id_assoc, id_qos, id_wckey, id_user, "
+			"(id_job, id_array_job, id_array_task, "
+			"id_assoc, id_qos, id_wckey, id_user, "
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
 			"job_name, track_steps, state, priority, cpus_req, "
@@ -448,9 +449,11 @@ no_rollup_change:
 			xstrcat(query, ", gres_alloc");
 
 		xstrfmtcat(query,
-			   ") values (%u, %u, %u, %u, %u, %u, '%s', %u, %u, "
-			   "%ld, %ld, %ld, '%s', %u, %u, %u, %u, %u, %u, %u",
-			   job_ptr->job_id, job_ptr->assoc_id,
+			   ") values (%u, %u, %u, %u, %u, %u, %u, %u, "
+			   "'%s', %u, %u, %ld, %ld, %ld, "
+			   "'%s', %u, %u, %u, %u, %u, %u, %u",
+			   job_ptr->job_id, job_ptr->array_job_id,
+			   job_ptr->array_task_id, job_ptr->assoc_id,
 			   job_ptr->qos_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
@@ -484,14 +487,16 @@ no_rollup_change:
 			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, cpus_alloc=%u, nodes_alloc=%u, "
-			   "mem_req=%u",
+			   "mem_req=%u, id_array_job=%u, id_array_task=%u",
 			   wckeyid, job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   submit_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
 			   job_ptr->total_cpus, node_cnt,
-			   job_ptr->details->pn_min_memory);
+			   job_ptr->details->pn_min_memory,
+			   job_ptr->array_job_id,
+			   job_ptr->array_task_id);
 
 		if (job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
@@ -549,12 +554,15 @@ no_rollup_change:
 			   "cpus_alloc=%u, nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, "
 			   "timelimit=%u, mem_req=%u, "
+			   "id_array_job=%u, id_array_task=%u, "
 			   "time_eligible=%ld where job_db_inx=%d",
 			   start_time, jname, job_state,
 			   job_ptr->total_cpus, node_cnt, job_ptr->qos_id,
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->details->pn_min_memory,
+			   job_ptr->array_job_id,
+			   job_ptr->array_task_id,
 			   begin_time, job_ptr->db_index);
 
 		debug3("%d(%s:%d) query\n%s",

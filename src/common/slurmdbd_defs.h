@@ -230,7 +230,7 @@ typedef struct dbd_get_jobs_msg {
 				 * of accounting record */
 	uint32_t gid;		/* group id */
 	time_t last_update;	/* time of latest info */
-	List selected_steps;	/* List of jobacct_selected_step_t *'s */
+	List selected_steps;	/* List of slurmdb_selected_step_t *'s */
 	List selected_parts;	/* List of char *'s */
 	char *user;		/* user name */
 } dbd_get_jobs_msg_t;
@@ -271,6 +271,9 @@ typedef struct dbd_job_start_msg {
 				 * with associations */
 	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t alloc_nodes;   /* how many nodes used in job */
+	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
+	uint32_t array_task_id;	/* task_id of a job array of NO_VAL
+				 * if N/A */
 	uint32_t assoc_id;	/* accounting association id */
 	char *   block_id;      /* Bluegene block id */
 	uint32_t db_index;	/* index into the db for this job */

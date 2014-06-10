@@ -64,6 +64,8 @@ typedef struct {
 	char *alloc_cpus;
 	char *alloc_nodes;
 	char *associd;
+	char *array_jobid;
+	char *array_taskid;
 	char *blockid;
 	char *derived_ec;
 	char *derived_es;
@@ -194,6 +196,8 @@ static char *job_req_inx[] = {
 	"cpus_alloc",
 	"nodes_alloc",
 	"id_assoc",
+	"id_array_job",
+	"id_array_task",
 	"id_block",
 	"derived_ec",
 	"derived_es",
@@ -229,6 +233,8 @@ enum {
 	JOB_REQ_ALLOC_CPUS,
 	JOB_REQ_ALLOC_NODES,
 	JOB_REQ_ASSOCID,
+	JOB_REQ_ARRAYJOBID,
+	JOB_REQ_ARRAYTASKID,
 	JOB_REQ_BLOCKID,
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
@@ -446,6 +452,8 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->alloc_cpus, buffer);
 	packstr(object->alloc_nodes, buffer);
 	packstr(object->associd, buffer);
+	packstr(object->array_jobid, buffer);
+	packstr(object->array_taskid, buffer);
 	packstr(object->blockid, buffer);
 	packstr(object->derived_ec, buffer);
 	packstr(object->derived_es, buffer);
@@ -483,7 +491,42 @@ static int _unpack_local_job(local_job_t *object,
 {
 	uint32_t tmp32;
 
-	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		unpackstr_ptr(&object->account, &tmp32, buffer);
+		unpackstr_ptr(&object->alloc_cpus, &tmp32, buffer);
+		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
+		unpackstr_ptr(&object->associd, &tmp32, buffer);
+		unpackstr_ptr(&object->array_jobid, &tmp32, buffer);
+		unpackstr_ptr(&object->array_taskid, &tmp32, buffer);
+		unpackstr_ptr(&object->blockid, &tmp32, buffer);
+		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
+		unpackstr_ptr(&object->derived_es, &tmp32, buffer);
+		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
+		unpackstr_ptr(&object->timelimit, &tmp32, buffer);
+		unpackstr_ptr(&object->eligible, &tmp32, buffer);
+		unpackstr_ptr(&object->end, &tmp32, buffer);
+		unpackstr_ptr(&object->gid, &tmp32, buffer);
+		unpackstr_ptr(&object->id, &tmp32, buffer);
+		unpackstr_ptr(&object->jobid, &tmp32, buffer);
+		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
+		unpackstr_ptr(&object->name, &tmp32, buffer);
+		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
+		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+		unpackstr_ptr(&object->partition, &tmp32, buffer);
+		unpackstr_ptr(&object->priority, &tmp32, buffer);
+		unpackstr_ptr(&object->qos, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
+		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
+		unpackstr_ptr(&object->resvid, &tmp32, buffer);
+		unpackstr_ptr(&object->start, &tmp32, buffer);
+		unpackstr_ptr(&object->state, &tmp32, buffer);
+		unpackstr_ptr(&object->submit, &tmp32, buffer);
+		unpackstr_ptr(&object->suspended, &tmp32, buffer);
+		unpackstr_ptr(&object->track_steps, &tmp32, buffer);
+		unpackstr_ptr(&object->uid, &tmp32, buffer);
+		unpackstr_ptr(&object->wckey, &tmp32, buffer);
+		unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
+	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		unpackstr_ptr(&object->account, &tmp32, buffer);
 		unpackstr_ptr(&object->alloc_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
@@ -1568,6 +1611,8 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 		job.alloc_cpus = row[JOB_REQ_ALLOC_CPUS];
 		job.alloc_nodes = row[JOB_REQ_ALLOC_NODES];
 		job.associd = row[JOB_REQ_ASSOCID];
+		job.array_jobid = row[JOB_REQ_ARRAYJOBID];
+		job.array_taskid = row[JOB_REQ_ARRAYTASKID];
 		job.blockid = row[JOB_REQ_BLOCKID];
 		job.derived_ec = row[JOB_REQ_DERIVED_EC];
 		job.derived_es = row[JOB_REQ_DERIVED_ES];
@@ -1649,6 +1694,8 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.alloc_cpus,
 			   object.alloc_nodes,
 			   object.associd,
+			   object.array_jobid,
+			   object.array_taskid,
 			   object.blockid,
 			   object.derived_ec,
 			   object.derived_es,

@@ -70,6 +70,7 @@ print_field_t fields[] = {
 	{6,  "GID", print_fields_uint, PRINT_GID},
 	{9,  "Group", print_fields_str, PRINT_GROUP},
 	{-12, "JobID", print_fields_str, PRINT_JOBID},
+	{-12, "JobIDRaw", print_fields_str, PRINT_JOBIDRAW},
 	{10, "JobName", print_fields_str, PRINT_JOBNAME},
 	{9,  "Layout", print_fields_str, PRINT_LAYOUT},
 	{12, "MaxDiskRead", print_fields_str, PRINT_MAXDISKREAD},

@@ -181,6 +181,8 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->start_time    = job_ptr->start_time;
 	req->gid           = job_ptr->group_id;
 	req->job_id        = job_ptr->job_id;
+	req->array_job_id  = job_ptr->array_job_id;
+	req->array_task_id = job_ptr->array_task_id;
 
 	req->db_index      = job_ptr->db_index;
 

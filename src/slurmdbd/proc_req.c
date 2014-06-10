@@ -2790,6 +2790,8 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.total_cpus = job_start_msg->alloc_cpus;
 	job.total_nodes = job_start_msg->alloc_nodes;
 	job.account = _replace_double_quotes(job_start_msg->account);
+	job.array_job_id = job_start_msg->array_job_id;
+	job.array_task_id = job_start_msg->array_task_id;
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;
 	if (job_start_msg->db_index != NO_VAL)

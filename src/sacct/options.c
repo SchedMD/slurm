@@ -322,6 +322,27 @@ static int _addto_step_list(List step_list, char *names)
 							selected_step->stepid =
 								atoi(dot);
 					}
+
+					dot = strstr(name, "_");
+					if (dot == NULL) {
+						debug2("No jobarray requested");
+						selected_step->array_task_id =
+							NO_VAL;
+					} else {
+						*dot++ = 0;
+						/* INFINITE means give
+						 * me all the tasks of
+						 * the array */
+						if (!dot)
+							selected_step->
+								array_task_id =
+								INFINITE;
+						else
+							selected_step->
+								array_task_id =
+								atoi(dot);
+					}
+
 					selected_step->jobid = atoi(name);
 					xfree(name);
 
@@ -354,6 +375,7 @@ static int _addto_step_list(List step_list, char *names)
 
 			selected_step =
 				xmalloc(sizeof(slurmdb_selected_step_t));
+
 			dot = strstr(name, ".");
 			if (dot == NULL) {
 				debug2("No jobstep requested");
@@ -366,6 +388,20 @@ static int _addto_step_list(List step_list, char *names)
 				else
 					selected_step->stepid = atoi(dot);
 			}
+			dot = strstr(name, "_");
+			if (dot == NULL) {
+				debug2("No jobarray requested");
+				selected_step->array_task_id =
+					NO_VAL;
+			} else {
+				*dot++ = 0;
+				/* INFINITE means give me all the tasks of
+				 * the array */
+				if (dot[0])
+					selected_step->array_task_id =
+						atoi(dot);
+			}
+
 			selected_step->jobid = atoi(name);
 			xfree(name);
 
@@ -746,14 +782,6 @@ void parse_command_line(int argc, char **argv)
 			}
 			break;
 		case 'j':
-			if ((strspn(optarg, "0123456789, ") < strlen(optarg))
-			    && (strspn(optarg, ".batch0123456789, ")
-				< strlen(optarg))) {
-				fprintf(stderr, "Invalid jobs list: %s\n",
-					optarg);
-				exit(1);
-			}
-
 			if (!job_cond->step_list)
 				job_cond->step_list = list_create(
 					slurmdb_destroy_selected_step);
@@ -1064,13 +1092,10 @@ void parse_command_line(int argc, char **argv)
 		debug2("Jobs requested:");
 		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
-			if (selected_step->stepid != NO_VAL)
-				debug2("\t: %d.%d",
-					selected_step->jobid,
-					selected_step->stepid);
-			else
-				debug2("\t: %d",
-					selected_step->jobid);
+			char id[FORMAT_STRING_SIZE];
+
+			debug2("\t: %s", slurmdb_get_selected_step_id(
+				       id, sizeof(id), selected_step));
 		}
 		list_iterator_destroy(itr);
 	}
