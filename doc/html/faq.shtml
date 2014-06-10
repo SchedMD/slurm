@@ -1809,7 +1809,7 @@ case_sensitive = False
 <p><a name="ha_db"><b>54. How critical is configuring high availability for my
 database?</b></a></br>
 <ul>
-<li>Consider if you really need mysql failover. Short outage of slurdbd is not
+<li>Consider if you really need mysql failover. Short outage of slurmdbd is not
 a problem, because slurmctld will store all data in memory and send it to
 slurmdbd when it's back operating. The slurmctld daemon will also cache all
 user limits and fair share information.</li>
