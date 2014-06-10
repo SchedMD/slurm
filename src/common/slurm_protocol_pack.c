@@ -11834,10 +11834,15 @@ _unpack_license_info_msg(license_info_msg_t **msg,
 					       &zz, buffer);
 			safe_unpack32(&((*msg)->lic_array[i]).total, buffer);
 			safe_unpack32(&((*msg)->lic_array[i]).in_use, buffer);
-			(*msg)->lic_array[i].available =
-				(*msg)->lic_array[i].total -
-				(*msg)->lic_array[i].in_use;
-			xassert((*msg)->lic_array[i].available >= 0);
+			/* The total number of licenses can decrease
+			 * at runtime.
+			 */
+			if ((*msg)->lic_array[i].total < (*msg)->lic_array[i].in_use)
+				(*msg)->lic_array[i].available = 0;
+			else
+				(*msg)->lic_array[i].available =
+					(*msg)->lic_array[i].total -
+					(*msg)->lic_array[i].in_use;
 			safe_unpack8(&((*msg)->lic_array[i]).remote, buffer);
 		}
 
