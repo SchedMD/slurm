@@ -189,6 +189,27 @@ static int _addto_job_list(List job_list, char *names)
 							selected_step->stepid =
 								atoi(dot);
 					}
+
+					dot = strstr(name, "_");
+					if (dot == NULL) {
+						debug2("No jobarray requested");
+						selected_step->array_task_id =
+							NO_VAL;
+					} else {
+						*dot++ = 0;
+						/* INFINITE means give
+						 * me all the tasks of
+						 * the array */
+						if (!dot)
+							selected_step->
+								array_task_id =
+								INFINITE;
+						else
+							selected_step->
+								array_task_id =
+								atoi(dot);
+					}
+
 					selected_step->jobid =
 						slurm_xlate_job_id(name);
 					xfree(name);
@@ -234,6 +255,27 @@ static int _addto_job_list(List job_list, char *names)
 				else
 					selected_step->stepid = atoi(dot);
 			}
+
+			dot = strstr(name, "_");
+			if (dot == NULL) {
+				debug2("No jobarray requested");
+				selected_step->array_task_id =
+					NO_VAL;
+			} else {
+				*dot++ = 0;
+				/* INFINITE means give
+				 * me all the tasks of
+				 * the array */
+				if (!dot)
+					selected_step->
+						array_task_id =
+						INFINITE;
+				else
+					selected_step->
+						array_task_id =
+						atoi(dot);
+			}
+
 			selected_step->jobid = slurm_xlate_job_id(name);
 			xfree(name);
 
@@ -332,13 +374,6 @@ void parse_command_line(int argc, char **argv)
 				   STAT_FIELDS_PID);
 			break;
 		case 'j':
-			if ((strspn(optarg, "0123456789, ") < strlen(optarg))
-			    && (strspn(optarg, ".batch0123456789, ")
-				< strlen(optarg))) {
-				fprintf(stderr, "Invalid jobs list: %s\n",
-					optarg);
-				exit(1);
-			}
 			if (!params.opt_job_list)
 				params.opt_job_list = list_create(
 					slurmdb_destroy_selected_step);
@@ -385,13 +420,6 @@ void parse_command_line(int argc, char **argv)
 
 	if (optind < argc) {
 		optarg = argv[optind];
-		if ((strspn(optarg, "0123456789, ") < strlen(optarg))
-		    && (strspn(optarg, ".batch0123456789, ")
-			< strlen(optarg))) {
-			fprintf(stderr, "Invalid jobs list: %s\n",
-				optarg);
-			exit(1);
-		}
 		if (!params.opt_job_list)
 			params.opt_job_list = list_create(
 				slurmdb_destroy_selected_step);
