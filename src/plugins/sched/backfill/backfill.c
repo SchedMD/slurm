@@ -174,16 +174,15 @@ static void _dump_job_sched(struct job_record *job_ptr, time_t end_time,
 	xfree(node_list);
 }
 
-static void _dump_job_test(struct job_record *job_ptr, bitstr_t *avail_bitmap)
+static void _dump_job_test(struct job_record *job_ptr, bitstr_t *avail_bitmap,
+			   time_t start_time)
 {
 	char begin_buf[32], *node_list;
 
-	if (job_ptr->start_time == 0) {
+	if (start_time == 0)
 		strcpy(begin_buf, "NOW");
-	} else {
-		slurm_make_time_str(&job_ptr->start_time, begin_buf,
-				    sizeof(begin_buf));
-	}
+	else
+		slurm_make_time_str(&start_time, begin_buf, sizeof(begin_buf));
 	node_list = bitmap2node_name(avail_bitmap);
 	info("Test job %u at %s on %s", job_ptr->job_id, begin_buf, node_list);
 	xfree(node_list);
@@ -654,6 +653,7 @@ static int _attempt_backfill(void)
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *non_cg_bitmap = NULL;
+	bitstr_t *previous_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
@@ -934,6 +934,7 @@ static int _attempt_backfill(void)
 
 		/* Determine impact of any resource reservations */
 		later_start = now;
+		FREE_NULL_BITMAP(previous_bitmap);
  TRY_LATER:
 		if (slurmctld_config.shutdown_time)
 			break;
@@ -945,7 +946,7 @@ static int _attempt_backfill(void)
 			job_ptr->time_limit = orig_time_limit;
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				info("backfill: completed yielding locks 2"
+				info("backfill: completed yielding locks "
 				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
@@ -1030,12 +1031,16 @@ static int _attempt_backfill(void)
 
 		/* Test if insufficient nodes remain OR
 		 *	required nodes missing OR
-		 *	nodes lack features */
+		 *	nodes lack features OR
+		 *	no change since previously tested nodes (only changes
+		 *	in other partition nodes) */
 		if ((bit_set_count(avail_bitmap) < min_nodes) ||
 		    ((job_ptr->details->req_node_bitmap) &&
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
-		    (job_req_node_filter(job_ptr, avail_bitmap))) {
+		    (job_req_node_filter(job_ptr, avail_bitmap)) ||
+		    (previous_bitmap &&
+		     bit_equal(previous_bitmap, avail_bitmap))) {
 			if (later_start) {
 				job_ptr->start_time = 0;
 				goto TRY_LATER;
@@ -1045,6 +1050,9 @@ static int _attempt_backfill(void)
 			job_ptr->start_time = sched_start + backfill_window;
 			continue;
 		}
+
+		FREE_NULL_BITMAP(previous_bitmap);
+		previous_bitmap = bit_copy(avail_bitmap);
 
 		/* Identify nodes which are definitely off limits */
 		FREE_NULL_BITMAP(resv_bitmap);
@@ -1061,7 +1069,7 @@ static int _attempt_backfill(void)
 		}
 
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
-			_dump_job_test(job_ptr, avail_bitmap);
+			_dump_job_test(job_ptr, avail_bitmap, start_res);
 		j = _try_sched(job_ptr, &avail_bitmap, min_nodes, max_nodes,
 			       req_nodes, exc_core_bitmap);
 
@@ -1117,7 +1125,7 @@ static int _attempt_backfill(void)
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				/* Planned to start job, but something bad
-				 * happended. */
+				 * happened. */
 				job_ptr->start_time = 0;
 				break;
 			} else {
@@ -1191,6 +1199,7 @@ static int _attempt_backfill(void)
 	FREE_NULL_BITMAP(exc_core_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 	FREE_NULL_BITMAP(non_cg_bitmap);
+	FREE_NULL_BITMAP(previous_bitmap);
 
 	for (i=0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
