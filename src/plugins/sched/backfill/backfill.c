@@ -611,6 +611,7 @@ static int _attempt_backfill(void)
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *non_cg_bitmap = NULL;
+	bitstr_t *previous_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
@@ -889,6 +890,7 @@ static int _attempt_backfill(void)
 
 		/* Determine impact of any resource reservations */
 		later_start = now;
+		FREE_NULL_BITMAP(previous_bitmap);
  TRY_LATER:
 		if (slurmctld_config.shutdown_time)
 			break;
@@ -900,7 +902,7 @@ static int _attempt_backfill(void)
 			job_ptr->time_limit = orig_time_limit;
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				info("backfill: completed yielding locks 2"
+				info("backfill: completed yielding locks "
 				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
@@ -984,12 +986,16 @@ static int _attempt_backfill(void)
 
 		/* Test if insufficient nodes remain OR
 		 *	required nodes missing OR
-		 *	nodes lack features */
+		 *	nodes lack features OR
+		 *	no change since previously tested nodes (only changes
+		 *	in other partition nodes) */
 		if ((bit_set_count(avail_bitmap) < min_nodes) ||
 		    ((job_ptr->details->req_node_bitmap) &&
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
-		    (job_req_node_filter(job_ptr, avail_bitmap))) {
+		    (job_req_node_filter(job_ptr, avail_bitmap)) ||
+		    (previous_bitmap &&
+		     bit_equal(previous_bitmap, avail_bitmap))) {
 			if (later_start) {
 				job_ptr->start_time = 0;
 				goto TRY_LATER;
@@ -999,6 +1005,9 @@ static int _attempt_backfill(void)
 			job_ptr->start_time = sched_start + backfill_window;
 			continue;
 		}
+
+		FREE_NULL_BITMAP(previous_bitmap);
+		previous_bitmap = bit_copy(avail_bitmap);
 
 		/* Identify nodes which are definitely off limits */
 		FREE_NULL_BITMAP(resv_bitmap);
@@ -1143,6 +1152,7 @@ static int _attempt_backfill(void)
 	FREE_NULL_BITMAP(exc_core_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 	FREE_NULL_BITMAP(non_cg_bitmap);
+	FREE_NULL_BITMAP(previous_bitmap);
 
 	for (i=0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
