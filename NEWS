@@ -69,6 +69,7 @@ documents those changes that are of interest to users and admins.
  -- Cray/ALPS system - Enable backup controller to run outside of the Cray to
     accept new job submissions and most other operations on the pending jobs.
  -- Have sacct print job and task array id's for job arrays.
+ -- Smooth out fanout logic
 
 * Changes in Slurm 14.03.4
 ==========================

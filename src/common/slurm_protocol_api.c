@@ -4011,7 +4011,7 @@ extern int *set_span(int total,  uint16_t tree_width)
 	}
 
 	while (left > 0) {
-		for(i = 0; i < tree_width; i++) {
+		for (i = 0; i < tree_width; i++) {
 			if ((tree_width-i) >= left) {
 				if (span[i] == 0) {
 					left = 0;
@@ -4022,14 +4022,22 @@ extern int *set_span(int total,  uint16_t tree_width)
 					break;
 				}
 			} else if (left <= tree_width) {
+				if (span[i] == 0)
+					left--;
+
 				span[i] += left;
 				left = 0;
 				break;
 			}
+
+			if (span[i] == 0)
+				left--;
+
 			span[i] += tree_width;
 			left -= tree_width;
 		}
 	}
+
 	return span;
 }
 
