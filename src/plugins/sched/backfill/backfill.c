@@ -1088,10 +1088,14 @@ static int _attempt_backfill(void)
 				job_ptr->start_time = 0;
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
-				error("backfill: planned start of job %u "
-				      "failed: %s", job_ptr->job_id,
-				      slurm_strerror(rc));
-				/* Drop through and reserve these resources */
+				if (debug_flags & DEBUG_FLAG_BACKFILL) {
+					info("backfill: planned start of job %u"
+					     " failed: %s", job_ptr->job_id,
+					     slurm_strerror(rc));
+				}
+				/* Drop through and reserve these resources.
+				 * Likely due to state changes during sleep.
+				 * Make best-effort based upon original state */
 				job_ptr->time_limit = orig_time_limit;
 				later_start = 0;
 			} else {
