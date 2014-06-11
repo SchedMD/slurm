@@ -1088,12 +1088,12 @@ static int _attempt_backfill(void)
 				job_ptr->start_time = 0;
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
-				if (debug_flags & DEBUG_FLAG_BACKFILL) {
-					info("backfill: planned start of job "
-					     "%u failed", job_ptr->job_id);
-				}
-				job_ptr->start_time = 0;
-				break;
+				error("backfill: planned start of job %u "
+				      "failed: %s", job_ptr->job_id,
+				      slurm_strerror(rc));
+				/* Drop through and reserve these resources */
+				job_ptr->time_limit = orig_time_limit;
+				later_start = 0;
 			} else {
 				/* Started this job, move to next one */
 				reject_array_job_id = 0;
@@ -1147,7 +1147,8 @@ static int _attempt_backfill(void)
 			      backfill_resolution;
 		end_reserve = (end_reserve / backfill_resolution) *
 			      backfill_resolution;
-		if (_test_resv_overlap(node_space, avail_bitmap,
+		if ((job_ptr->start_time > now) &&
+		    _test_resv_overlap(node_space, avail_bitmap,
 				       start_time, end_reserve)) {
 			/* This job overlaps with an existing reservation for
 			 * job to be backfill scheduled, which the sched
