@@ -96,6 +96,8 @@ documents those changes that are of interest to users and admins.
     use in the future. Now that very verbose resource use map is only logged
     with a DebugFlag value of BackfillMap
  -- Fix slurmstepd core dump.
+ -- Modify the description of -E and -S option of sacct command as point in time
+    'before' or 'after' the database records are returned.
 
 * Changes in Slurm 14.03.3-2
 ============================
