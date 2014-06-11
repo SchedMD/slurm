@@ -200,7 +200,8 @@ static void _poll_data(void)
 {
 	/* Update the data */
 	slurm_mutex_lock(&task_list_lock);
-	(*(ops.poll_data))(task_list, pgid_plugin, cont_id);
+	if (task_list)
+		(*(ops.poll_data))(task_list, pgid_plugin, cont_id);
 	slurm_mutex_unlock(&task_list_lock);
 }
 
