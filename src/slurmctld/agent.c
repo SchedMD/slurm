@@ -65,6 +65,10 @@
 #  include "config.h"
 #endif
 
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #include <errno.h>
 #include <pthread.h>
 #include <pwd.h>
@@ -221,6 +225,13 @@ void *agent(void *args)
 	thd_t *thread_ptr;
 	task_info_t *task_specific_ptr;
 	time_t begin_time;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "slurmctld_agent", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "slurmctld_agent");
+	}
+#endif
 
 #if 0
 	info("Agent_cnt is %d of %d with msg_type %d",

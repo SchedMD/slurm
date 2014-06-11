@@ -47,6 +47,10 @@
 #  include <inttypes.h>
 #endif
 
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -227,6 +231,12 @@ static void *_set_db_inx_thread(void *no_data)
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	/* DEF_TIMERS; */
 
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "slurmctld_dbinx", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "slurmctld_dbinx");
+	}
+#endif
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 

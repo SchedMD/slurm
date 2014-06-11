@@ -70,6 +70,9 @@ documents those changes that are of interest to users and admins.
     accept new job submissions and most other operations on the pending jobs.
  -- Have sacct print job and task array id's for job arrays.
  -- Smooth out fanout logic
+ -- If <sys/prctl.h> is present name major threads in slurmctld, for example backfill
+    thread: slurmctld_bckfl, the rpc manager: slurmctld_rpcmg etc.
+    The name can be seen for example using top -H.
 
 * Changes in Slurm 14.03.4
 ==========================

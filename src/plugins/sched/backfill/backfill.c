@@ -50,6 +50,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -587,6 +595,12 @@ extern void *backfill_agent(void *args)
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "slurmctld_bckfl", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "slurm_backfill");
+	}
+#endif
 	_load_config();
 	last_backfill_time = time(NULL);
 	while (!stop_backfill) {

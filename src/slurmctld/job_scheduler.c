@@ -56,6 +56,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/env.h"
 #include "src/common/gres.h"
@@ -752,6 +756,9 @@ extern int schedule(uint32_t job_limit)
 	uint32_t reject_array_job_id = 0;
 	struct part_record *reject_array_part = NULL;
 	uint16_t reject_state_reason = WAIT_NO_REASON;
+#if HAVE_SYS_PRCTL_H
+	char get_name[16];
+#endif
 	DEF_TIMERS;
 
 #ifdef HAVE_ALPS_CRAY
@@ -761,6 +768,17 @@ extern int schedule(uint32_t job_limit)
 
 	if (slurmctld_config.shutdown_time)
 		return 0;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_GET_NAME, get_name, NULL, NULL, NULL) < 0) {
+		error("%s: cannot get my name %m", __func__);
+			strcpy(get_name, "slurmctld");
+	}
+	if (prctl(PR_SET_NAME, "slurmctld_sched", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "slurmctld_sched");
+	}
+#endif
 
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params, *tmp_ptr;
@@ -863,7 +881,7 @@ extern int schedule(uint32_t job_limit)
 	if ((defer_rpc_cnt > 0) &&
 	    (slurmctld_config.server_thread_count >= defer_rpc_cnt)) {
 		debug("sched: schedule() returning, too many RPCs");
-		return 0;
+		goto out;
 	}
 
 	if (job_limit == 0)
@@ -890,14 +908,14 @@ extern int schedule(uint32_t job_limit)
 		unlock_slurmctld(job_write_lock);
 		debug("sched: schedule() returning, no front end nodes are "
 		      "available");
-		return 0;
+		goto out;
 	}
 	/* Avoid resource fragmentation if important */
 	if ((!wiki_sched) && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
 		debug("sched: schedule() returning, some job is still "
 		      "completing");
-		return 0;
+		goto out;
 	}
 
 #ifdef HAVE_ALPS_CRAY
@@ -910,7 +928,7 @@ extern int schedule(uint32_t job_limit)
 	if (select_g_reconfigure()) {
 		unlock_slurmctld(job_write_lock);
 		debug4("sched: not scheduling due to ALPS");
-		return SLURM_SUCCESS;
+		goto out;
 	}
 #endif
 
@@ -1362,6 +1380,13 @@ next_part:			part_ptr = (struct part_record *)
 
 	_do_diag_stats(DELTA_TIMER);
 
+out:
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, get_name, NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, get_name);
+	}
+#endif
 	return job_cnt;
 }
 

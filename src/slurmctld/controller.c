@@ -809,6 +809,12 @@ static void *_slurmctld_signal_hand(void *no_data)
 	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, 0};
 	sigset_t set;
 
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "slurmctld_sigmgr", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "slurmctld_sigmgr");
+	}
+#endif
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
@@ -883,6 +889,13 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	int sigarray[] = {SIGUSR1, 0};
 	char* node_addr = NULL;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "slurmctld_rpcmgr", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "slurmctld_rpcmgr");
+	}
+#endif
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -1019,6 +1032,12 @@ static void *_service_connection(void *arg)
 	void *return_code = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "slurmctld_srvcn", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "slurmctld_srvcn");
+	}
+#endif
 	slurm_msg_t_init(msg);
 	/*
 	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows

@@ -61,6 +61,9 @@
 #if HAVE_VALUES_H
 #  include <values.h>
 #endif
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
 
 #include <sys/stat.h>
 #include <stdio.h>
@@ -1147,6 +1150,12 @@ static void *_decay_thread(void *no_data)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "slurmctld_decay", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "slurmctld_decay");
+	}
+#endif
 	/*
 	 * DECAY_FACTOR DESCRIPTION:
 	 *
