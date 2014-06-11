@@ -1322,12 +1322,20 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 	bool placed = false;
 	int i, j;
 
+#if 0	
+	info("add job start:%u end:%u", start_time, end_reserve);
 	for (j = 0; ; ) {
-		if ((node_space[j].begin_time >= start_time) ||
-		    (node_space[j].end_time   == start_time)) {
-			/* no need to insert new start entry record */
-			placed = true;
-		} else if (node_space[j].end_time > start_time) {
+		info("node start:%u end:%u",
+		     (uint32_t) node_space[j].begin_time,
+		     (uint32_t) node_space[j].end_time);
+		if ((j = node_space[j].next) == 0)
+			break;
+	}
+#endif
+
+	start_time = MAX(start_time, node_space[0].begin_time);
+	for (j = 0; ; ) {
+		if (node_space[j].end_time > start_time) {
 			/* insert start entry record */
 			i = *node_space_recs;
 			node_space[i].begin_time = start_time;
@@ -1340,10 +1348,12 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			(*node_space_recs)++;
 			placed = true;
 		}
+		if (node_space[j].end_time == start_time) {
+			/* no need to insert new start entry record */
+			placed = true;
+		}
 		if (placed == true) {
 			while ((j = node_space[j].next)) {
-				if (end_reserve == node_space[j].end_time)
-					break;
 				if (end_reserve < node_space[j].end_time) {
 					/* insert end entry record */
 					i = *node_space_recs;
@@ -1357,6 +1367,9 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 					node_space[i].next = node_space[j].next;
 					node_space[j].next = i;
 					(*node_space_recs)++;
+					break;
+				}
+				if (end_reserve == node_space[j].end_time) {
 					break;
 				}
 			}
