@@ -660,7 +660,10 @@ static int _attempt_backfill(void)
 
 	job_queue = build_job_queue(true, true);
 	if (list_count(job_queue) == 0) {
-		debug("backfill: no jobs to backfill");
+		if (debug_flags & DEBUG_FLAG_BACKFILL)
+			info("backfill: no jobs to backfill");
+		else
+			debug("backfill: no jobs to backfill");
 		list_destroy(job_queue);
 		return 0;
 	}
@@ -716,7 +719,8 @@ static int _attempt_backfill(void)
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
 				info("backfill: completed yielding locks "
-				     "after testing %d jobs, %s",
+				     "after testing %u(%d) jobs, %s",
+				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, TIME_STR);
 			}
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
@@ -724,8 +728,10 @@ static int _attempt_backfill(void)
 			    (last_part_update != part_update)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
-					     "breaking out after testing %d "
-					     "jobs", job_test_count);
+					     "breaking out after testing "
+					     "%u(%d) jobs",
+					     slurmctld_diag_stats.bf_last_depth,
+					     job_test_count);
 				}
 				rc = 1;
 				xfree(job_queue_rec);
@@ -750,7 +756,10 @@ static int _attempt_backfill(void)
 		}
 		orig_time_limit = job_ptr->time_limit;
 		part_ptr = job_queue_rec->part_ptr;
+
 		job_test_count++;
+		slurmctld_diag_stats.bf_last_depth++;
+		already_counted = false;
 
 		xfree(job_queue_rec);
 		if (!IS_JOB_PENDING(job_ptr))
@@ -769,9 +778,6 @@ static int _attempt_backfill(void)
 
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill test for job %u", job_ptr->job_id);
-
-		slurmctld_diag_stats.bf_last_depth++;
-		already_counted = false;
 
 		if (max_backfill_job_per_part) {
 			bool skip_job = false;
@@ -903,7 +909,8 @@ static int _attempt_backfill(void)
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
 				info("backfill: completed yielding locks "
-				     "after testing %d jobs, %s",
+				     "after testing %u(%d) jobs, %s",
+				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, TIME_STR);
 			}
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
@@ -911,8 +918,10 @@ static int _attempt_backfill(void)
 			    (last_part_update != part_update)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
-					     "breaking out after testing %d "
-					     "jobs", job_test_count);
+					     "breaking out after testing "
+					     "%u(%d) jobs",
+					     slurmctld_diag_stats.bf_last_depth,
+					     job_test_count);
 				}
 				rc = 1;
 				break;
@@ -1165,7 +1174,8 @@ static int _attempt_backfill(void)
 	_do_diag_stats(&bf_time1, &bf_time2, yield_sleep);
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		END_TIMER;
-		info("backfill: completed testing %d jobs, %s",
+		info("backfill: completed testing %u(%d) jobs, %s",
+		     slurmctld_diag_stats.bf_last_depth,
 		     job_test_count, TIME_STR);
 	}
 	return rc;
