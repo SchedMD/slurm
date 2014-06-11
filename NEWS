@@ -50,8 +50,8 @@ documents those changes that are of interest to users and admins.
  -- Added SchedulerParameters value of Ignore_NUMA.
  -- Fix issues with code when using automake 1.14.1
  -- select/cons_res plugin: Fix memory leak related to job preemption.
- -- After reconfig rebuild the job node counters only for jobs that has
-    not finished yet otherwise if requeued the job may enter an invalid
+ -- After reconfig rebuild the job node counters only for jobs that have
+    not finished yet, otherwise if requeued the job may enter an invalid
     COMPLETING state.
  -- Do not purge the script and environment files for completed jobs on
     slurmctld reconfiguration or restart (they might be later requeued).
@@ -73,10 +73,10 @@ documents those changes that are of interest to users and admins.
     primary and there is a split brain problem).
  -- Fix scontrol to accept update jobid=# numtasks=#
  -- If the backup slurmctld assumes primary status, then do NOT purge any
-    job state files (batch script and environment files) but if any attempt
-    is made to re-use them consider this a fatal error. It may indicate that
-    multiple primary slurmctld daemons are active (e.g. both backup and primary
-    are functioning as primary and there is a split brain problem).
+    job state files (batch script and environment files) and do not re-use them.
+    This may indicate that multiple primary slurmctld daemons are active (e.g.
+    both backup and primary are functioning as primary and there is a split
+    brain problem).
  -- Set correct error code when requeuing a completing/pending job
  -- When checking for if dependency of type afterany, afterok and afternotok
     don't clear the dependency if the job is completing.
