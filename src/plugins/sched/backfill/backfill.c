@@ -1393,6 +1393,22 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		    ((j = node_space[j].next) == 0))
 			break;
 	}
+
+	/* Drop records with identical bitmaps (up to one record).
+	 * This can significantly improve performance of the backfill tests. */
+	for (i = 0; ; ) {
+		if ((j = node_space[i].next) == 0)
+			break;
+		if (!bit_equal(node_space[i].avail_bitmap,
+			       node_space[j].avail_bitmap)) {
+			i = j;
+			continue;
+		}
+		node_space[i].end_time = node_space[j].end_time;
+		node_space[i].next = node_space[j].next;
+		FREE_NULL_BITMAP(node_space[j].avail_bitmap);
+		break;
+	}
 }
 
 /*
