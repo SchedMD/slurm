@@ -1318,7 +1318,11 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 	int i, j;
 
 	for (j = 0; ; ) {
-		if (node_space[j].end_time > start_time) {
+		if ((node_space[j].begin_time >= start_time) ||
+		    (node_space[j].end_time   == start_time)) {
+			/* no need to insert new start entry record */
+			placed = true;
+		} else if (node_space[j].end_time > start_time) {
 			/* insert start entry record */
 			i = *node_space_recs;
 			node_space[i].begin_time = start_time;
@@ -1329,10 +1333,6 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[i].next = node_space[j].next;
 			node_space[j].next = i;
 			(*node_space_recs)++;
-			placed = true;
-		}
-		if (node_space[j].end_time == start_time) {
-			/* no need to insert new start entry record */
 			placed = true;
 		}
 		if (placed == true) {
