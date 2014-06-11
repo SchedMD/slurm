@@ -1116,8 +1116,9 @@ static int _attempt_backfill(void)
 				}
 				continue;
 			}
-		} else
+		} else {
 			job_ptr->time_limit = orig_time_limit;
+		}
 
 		if (later_start &&
 		    (job_ptr->start_time > (later_start+backfill_resolution))) {
