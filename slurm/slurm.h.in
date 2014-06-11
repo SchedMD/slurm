@@ -2028,7 +2028,8 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_FILESYSTEM 	0x00800000      /* AcctGatherFilesystem plugin */
 #define DEBUG_FLAG_JOB_CONT 	0x01000000      /* JobContainer plugin */
 #define DEBUG_FLAG_TASK 	0x02000000      /* TaskType plugin */
-#define DEBUG_FLAG_PROTOCOL     0x04000000
+#define DEBUG_FLAG_PROTOCOL	0x04000000	/* Communication protocol */
+#define DEBUG_FLAG_BACKFILL_MAP	0x08000000	/* Backfill scheduler node map */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
