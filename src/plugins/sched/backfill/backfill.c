@@ -710,7 +710,13 @@ static int _attempt_backfill(void)
 		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
 	}
 	sort_job_queue(job_queue);
-	while ((job_queue_rec = (job_queue_rec_t *) list_pop(job_queue))) {
+	while (1) {
+		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
+		if (!job_queue_rec) {
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: reached end of job queue");
+			break;
+		}
 		if (slurmctld_config.shutdown_time)
 			break;
 		if (((defer_rpc_cnt > 0) &&
