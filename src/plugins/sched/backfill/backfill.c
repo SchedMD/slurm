@@ -688,7 +688,7 @@ static int _attempt_backfill(void)
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
 	node_space[0].next = 0;
 	node_space_recs = 1;
-	if (debug_flags & DEBUG_FLAG_BACKFILL)
+	if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 		_dump_node_space_table(node_space);
 
 	if (max_backfill_job_per_part) {
@@ -1032,7 +1032,7 @@ static int _attempt_backfill(void)
 			already_counted = true;
 		}
 
-		if (debug_flags & DEBUG_FLAG_BACKFILL)
+		if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_job_test(job_ptr, avail_bitmap, start_res);
 		j = _try_sched(job_ptr, &avail_bitmap, min_nodes, max_nodes,
 			       req_nodes, exc_core_bitmap);
@@ -1150,7 +1150,7 @@ static int _attempt_backfill(void)
 		bit_not(avail_bitmap);
 		_add_reservation(job_ptr->start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);
-		if (debug_flags & DEBUG_FLAG_BACKFILL)
+		if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_node_space_table(node_space);
 	}
 	xfree(bf_part_jobs);

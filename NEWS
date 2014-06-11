@@ -91,6 +91,10 @@ documents those changes that are of interest to users and admins.
     format "#_# (#)" rather than just the internal job ID.
  -- Set the number of free licenses to be 0 if the global license count decreases
     and total is less than in use.
+ -- Add DebugFlag of BackfillMap. Previously a DebugFlag value of Backfill
+    logged information about what it was doing plus a map of expected resouce
+    use in the future. Now that very verbose resource use map is only logged
+    with a DebugFlag value of BackfillMap
 
 * Changes in Slurm 14.03.3-2
 ============================
