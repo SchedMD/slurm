@@ -597,6 +597,12 @@ extern gboolean left_button_pressed(GtkTreeView *tree_view,
 extern gboolean row_activated(GtkTreeView *tree_view, GtkTreePath *path,
 			      GtkTreeViewColumn *column,
 			      const signal_params_t *signal_params);
+extern gboolean row_expander(GtkTreeView *tree_view,
+			     gboolean arg1, gboolean arg2,
+			     const signal_params_t *signal_params);
+extern gboolean row_expand(GtkTreeView *tree_view,  GtkTreeIter *iter,
+			   GtkTreePath *path,
+			   const signal_params_t *signal_params);
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 			    const signal_params_t *signal_params);
 extern gboolean key_pressed(GtkTreeView *tree_view, GdkEventKey *event,

@@ -1441,8 +1441,6 @@ extern gboolean key_released(GtkTreeView *tree_view,
 
 }/*key_released ^^^*/
 
-
-
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 			    const signal_params_t *signal_params)
 {
@@ -1507,13 +1505,18 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	last_event_x = event->x; /*save THIS x*/
 	last_event_y = event->y; /*save THIS y*/
 
-	if (event->x <= 20) {
+	if (event->x <= 28) {
 		/* When you try to resize a column this event happens
 		   for some reason.  Resizing always happens in the
 		   first 2 of x so if that happens just return and
 		   continue. Also if we want to expand/collapse a
-		   column, that happens in the first 20 so just skip
-		   that also. */
+		   column, that happens in the first 28 (The default
+		   expander size is 14, and as of writing this we
+		   could expand 2 levels, so just skip
+		   that also.  If anyone in the future can figure out
+		   a way to know for sure the expander was clicked
+		   and not the actual column please fix this :).
+		*/
 		did_something = FALSE;
 	} else if (event->button == 1) {
 		/*  left click */
