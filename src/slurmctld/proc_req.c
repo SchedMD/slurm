@@ -3845,26 +3845,8 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_requeue");
 
 	if (error_code) {
-
-		if (error_code == ESLURM_TRANSITION_STATE_NO_UPDATE) {
-			/* The job is in state JOB_COMPLETING save the
-			 * requested operation and carry on. The requeue
-			 * will be done after the last job epilog completes.
-			 */
-			if (!(job_ptr->job_state & JOB_SPECIAL_EXIT)
-			    && req_ptr->state & JOB_SPECIAL_EXIT)
-				job_ptr->job_state |= JOB_SPECIAL_EXIT;
-
-			if (!(job_ptr->job_state & JOB_REQUEUE_HOLD)
-			    && req_ptr->state & JOB_REQUEUE_HOLD)
-				job_ptr->job_state |= JOB_REQUEUE_HOLD;
-			job_ptr->job_state |= JOB_REQUEUE;
-
-		} else {
-			info("%s: %u: %s", __func__, req_ptr->job_id,
-			     slurm_strerror(error_code));
-		}
-
+		info("%s: %u: %s", __func__, req_ptr->job_id,
+		     slurm_strerror(error_code));
 		return;
 	}
 
