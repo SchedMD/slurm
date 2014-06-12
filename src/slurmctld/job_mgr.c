@@ -4617,7 +4617,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	       job_desc->min_cpus, job_desc->max_cpus);
 	if (select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc)
 	    != SLURM_SUCCESS) {
-		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
 
@@ -8193,7 +8193,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	       job_specs->min_cpus, job_specs->max_cpus);
 	if (select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_specs)
 	    != SLURM_SUCCESS) {
-		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
 	debug3("update after alteration asking for nodes %u-%u cpus %u-%u",
