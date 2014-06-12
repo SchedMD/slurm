@@ -98,6 +98,7 @@ documents those changes that are of interest to users and admins.
  -- Fix slurmstepd core dump.
  -- Modify the description of -E and -S option of sacct command as point in time
     'before' or 'after' the database records are returned.
+ -- Correct support for partition with Shared=YES configuration.
 
 * Changes in Slurm 14.03.3-2
 ============================
