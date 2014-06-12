@@ -1189,8 +1189,14 @@ static int _attempt_backfill(void)
 			job_ptr->time_limit = orig_time_limit;
 		}
 
-		if (later_start &&
-		    (job_ptr->start_time > (later_start+backfill_resolution))) {
+		start_time  = job_ptr->start_time;
+		end_reserve = job_ptr->start_time + (time_limit * 60);
+		start_time  = (start_time / backfill_resolution) *
+			      backfill_resolution;
+		end_reserve = (end_reserve / backfill_resolution) *
+			      backfill_resolution;
+
+		if (later_start && (start_time > later_start)) {
 			/* Try later when some nodes currently reserved for
 			 * pending jobs are free */
 			job_ptr->start_time = 0;
@@ -1210,12 +1216,6 @@ static int _attempt_backfill(void)
 			break;
 		}
 
-		start_time  = job_ptr->start_time;
-		end_reserve = job_ptr->start_time + (time_limit * 60);
-		start_time  = (start_time / backfill_resolution) *
-			      backfill_resolution;
-		end_reserve = (end_reserve / backfill_resolution) *
-			      backfill_resolution;
 		if ((job_ptr->start_time > now) &&
 		    _test_resv_overlap(node_space, avail_bitmap,
 				       start_time, end_reserve)) {

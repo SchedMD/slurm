@@ -634,10 +634,11 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      bitstr_t *node_bitmap,
 			      uint16_t cr_type,
 			      struct node_use_record *node_usage,
-			      enum node_cr_state job_node_req)
+			      enum node_cr_state job_node_req,
+			      bitstr_t *exc_core_bitmap)
 {
 	struct node_record *node_ptr;
-	uint32_t i, free_mem, gres_cpus, gres_cores, min_mem;
+	uint32_t i, j, free_mem, gres_cpus, gres_cores, min_mem;
 	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
 	int i_first, i_last;
@@ -679,6 +680,17 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 				debug3("cons_res: _vns: node %s no mem %u < %u",
 					select_node_record[i].node_ptr->name,
 					free_mem, min_mem);
+				goto clear_bit;
+			}
+		}
+
+		/* Exclude nodes with reserved cores */
+		if (job_ptr->details->whole_node && exc_core_bitmap) {
+			for (j = core_start_bit; j <= core_end_bit; j++) {
+				if (bit_test(exc_core_bitmap, j))
+					continue;
+				debug3("cons_res: _vns: node %s exc",
+				       select_node_record[i].node_ptr->name);
 				goto clear_bit;
 			}
 		}
@@ -2024,6 +2036,35 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 	return cpus;
 }
 
+/* When any cores on a node are removed from being available for a job,
+ * then remove the entire node from being available. */
+static void _block_whole_nodes(bitstr_t *node_bitmap,
+			       bitstr_t *orig_core_bitmap,
+			       bitstr_t *new_core_bitmap)
+{
+	int first_node, last_node, i_node;
+	int first_core, last_core, i_core;
+
+	first_node = bit_ffs(node_bitmap);
+	if (first_node >= 0)
+		last_node = bit_fls(node_bitmap);
+	else
+		last_node = first_node - 1;
+
+	for (i_node = first_node; i_node <= last_node; i_node++) {
+		if (!bit_test(node_bitmap, i_node))
+			continue;
+		first_core = cr_get_coremap_offset(i_node);
+		last_core  = cr_get_coremap_offset(i_node + 1) - 1;
+		for (i_core = first_core; i_core <= last_core; i_core++) {
+			if ( bit_test(orig_core_bitmap, i_core) &&
+			    !bit_test(new_core_bitmap,  i_core)) {
+				bit_clear(node_bitmap, i_node);
+				break;
+			}
+		}
+	}
+}
 
 /* cr_job_test - does most of the real work for select_p_job_test(), which
  *	includes contiguous selection, load-leveling and max_share logic
@@ -2084,7 +2125,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	if (!test_only) {
 		error_code = _verify_node_state(cr_part_ptr, job_ptr,
 						node_bitmap, cr_type,
-						node_usage, job_node_req);
+						node_usage, job_node_req,
+						exc_core_bitmap);
 		if (error_code != SLURM_SUCCESS) {
 			return error_code;
 		}
@@ -2214,10 +2256,11 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		}
 	}
 	if (exc_core_bitmap) {
+#if _DEBUG
 		char str[100];
 		bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
 		debug2("excluding cores reserved: %s", str);
-
+#endif
 		bit_not(exc_core_bitmap);
 		bit_and(free_cores, exc_core_bitmap);
 		bit_not(exc_core_bitmap);
@@ -2234,7 +2277,6 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			bit_copybits(tmpcore, p_ptr->row[i].row_bitmap);
 			bit_not(tmpcore); /* set bits now "free" resources */
 			bit_and(free_cores, tmpcore);
-
 			if (p_ptr->part_ptr != job_ptr->part_ptr)
 				continue;
 			if (part_core_map) {
@@ -2245,6 +2287,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			}
 		}
 	}
+	if (job_ptr->details->whole_node)
+		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
+
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
 				  node_bitmap, cr_node_cnt, free_cores,
 				  node_usage, cr_type, test_only,
@@ -2307,7 +2352,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		    (p_ptr->part_ptr->preempt_mode != PREEMPT_MODE_OFF)) {
 			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 				info("cons_res: cr_job_test: continuing on "
-				     "part: %s  ", p_ptr->part_ptr->name);
+				     "part: %s", p_ptr->part_ptr->name);
 			}
 			continue;
 		}
@@ -2321,6 +2366,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			bit_and(free_cores, tmpcore);
 		}
 	}
+	if (job_ptr->details->whole_node)
+		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 	/* make these changes permanent */
 	bit_copybits(avail_cores, free_cores);
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
