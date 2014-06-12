@@ -2077,5 +2077,10 @@ extern bool validate_operator(uid_t uid);
  */
 extern void cleanup_completing(struct job_record *);
 
+/*
+ * jobid2str() - print all the parts that uniquely
+ *               identify a job.
+ */
+extern inline char *jobid2str(struct job_record *, char *);
 
 #endif /* !_HAVE_SLURMCTLD_H */

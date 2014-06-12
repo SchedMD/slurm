@@ -12204,3 +12204,22 @@ extern void job_end_time_reset(struct job_record  *job_ptr)
 				    (job_ptr->time_limit * 60);	/* secs */
 	}
 }
+
+/*
+ * jobid2str() - print all the parts that uniquely
+ *               identify a job.
+ */
+char *
+jobid2str(struct job_record *job, char *buf)
+{
+       if (job == NULL
+           || buf == NULL)
+               return "no jobid in slurmctld?";
+
+       sprintf(buf, "jobid %u task_id %u array_id %u state 0x%x cnt %d",
+               job->job_id, job->array_task_id,
+               job->array_job_id, job->job_state,
+               job->node_cnt);
+
+       return buf;
+}
