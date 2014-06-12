@@ -767,7 +767,13 @@ static int _attempt_backfill(void)
 		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
 	}
 	sort_job_queue(job_queue);
-	while ((job_queue_rec = (job_queue_rec_t *) list_pop(job_queue))) {
+	while (1) {
+		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
+		if (!job_queue_rec) {
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: reached end of job queue");
+			break;
+		}
 		if (slurmctld_config.shutdown_time)
 			break;
 		if (((defer_rpc_cnt > 0) &&
@@ -1447,6 +1453,22 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		if ((node_space[j].begin_time >= end_reserve) ||
 		    ((j = node_space[j].next) == 0))
 			break;
+	}
+
+	/* Drop records with identical bitmaps (up to one record).
+	 * This can significantly improve performance of the backfill tests. */
+	for (i = 0; ; ) {
+		if ((j = node_space[i].next) == 0)
+			break;
+		if (!bit_equal(node_space[i].avail_bitmap,
+			       node_space[j].avail_bitmap)) {
+			i = j;
+			continue;
+		}
+		node_space[i].end_time = node_space[j].end_time;
+		node_space[i].next = node_space[j].next;
+		FREE_NULL_BITMAP(node_space[j].avail_bitmap);
+		break;
 	}
 }
 
