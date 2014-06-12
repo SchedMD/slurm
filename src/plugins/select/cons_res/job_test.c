@@ -634,10 +634,11 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      bitstr_t *node_bitmap,
 			      uint16_t cr_type,
 			      struct node_use_record *node_usage,
-			      enum node_cr_state job_node_req)
+			      enum node_cr_state job_node_req,
+			      bitstr_t *exc_core_bitmap)
 {
 	struct node_record *node_ptr;
-	uint32_t i, free_mem, gres_cpus, gres_cores, min_mem;
+	uint32_t i, j, free_mem, gres_cpus, gres_cores, min_mem;
 	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
 	int i_first, i_last;
@@ -679,6 +680,17 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 				debug3("cons_res: _vns: node %s no mem %u < %u",
 					select_node_record[i].node_ptr->name,
 					free_mem, min_mem);
+				goto clear_bit;
+			}
+		}
+
+		/* Exclude nodes with reserved cores */
+		if (job_ptr->details->whole_node && exc_core_bitmap) {
+			for (j = core_start_bit; j <= core_end_bit; j++) {
+				if (bit_test(exc_core_bitmap, j))
+					continue;
+				debug3("cons_res: _vns: node %s exc",
+				       select_node_record[i].node_ptr->name);
 				goto clear_bit;
 			}
 		}
@@ -2066,7 +2078,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	if (!test_only) {
 		error_code = _verify_node_state(cr_part_ptr, job_ptr,
 						node_bitmap, cr_type,
-						node_usage, job_node_req);
+						node_usage, job_node_req,
+						exc_core_bitmap);
 		if (error_code != SLURM_SUCCESS) {
 			return error_code;
 		}
