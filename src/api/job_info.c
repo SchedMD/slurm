@@ -283,7 +283,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
-	int i, j;
+	int i, j, k;
 	char time_str[32], *group_name, *user_name;
 	char tmp1[128], tmp2[128], tmp3[128], tmp4[128], tmp5[128], tmp6[128];
 	char *tmp6_ptr;
@@ -295,7 +295,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	time_t run_time;
 	uint32_t min_nodes, max_nodes = 0;
 	char *nodelist = "NodeList";
-	bitstr_t *core_bitmap;
+	bitstr_t *cpu_bitmap;
 	char *host;
 	int sock_inx, sock_reps, last;
 	int abs_node_inx, rel_node_inx;
@@ -307,6 +307,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	hostlist_t hl, hl_last;
 	char select_buf[122];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	node_info_msg_t *node_ptr;
+	uint32_t threads;
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		nodelist = "MidplaneList";
@@ -737,6 +739,8 @@ line6:
 
 /*	tmp1[] stores the current cpu(s) allocated	*/
 		tmp2[0] = '\0';	/* stores last cpu(s) allocated */
+		node_ptr = NULL;
+		slurm_load_node((time_t) NULL, &node_ptr, 0);
 		for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
 		     rel_node_inx++) {
 
@@ -749,17 +753,29 @@ line6:
 
 			bit_reps = job_resrcs->sockets_per_node[sock_inx] *
 				job_resrcs->cores_per_socket[sock_inx];
-
-			core_bitmap = bit_alloc(bit_reps);
-			for (j=0; j < bit_reps; j++) {
-				if (bit_test(job_resrcs->core_bitmap, bit_inx))
-					bit_set(core_bitmap, j);
+			host = hostlist_shift(hl);
+			threads = 1;
+			if (node_ptr) {
+				for (j=0; j < node_ptr->record_count; j++) {
+					if (strcmp(host,
+					    node_ptr->node_array[j].name) == 0){
+						threads =
+						node_ptr->node_array[j].threads;
+						break;
+					}
+				}
+			}
+			cpu_bitmap = bit_alloc(bit_reps * threads);
+			for (j = 0; j < bit_reps; j++) {
+				if (bit_test(job_resrcs->core_bitmap, bit_inx)){
+					for (k = 0; k < threads; k++)
+						bit_set(cpu_bitmap,
+							(j * threads) + k);
+				}
 				bit_inx++;
 			}
-
-			bit_fmt(tmp1, sizeof(tmp1), core_bitmap);
-			FREE_NULL_BITMAP(core_bitmap);
-			host = hostlist_shift(hl);
+			bit_fmt(tmp1, sizeof(tmp1), cpu_bitmap);
+			FREE_NULL_BITMAP(cpu_bitmap);
 /*
  *		If the allocation values for this host are not the same as the
  *		last host, print the report of the last group of hosts that had
@@ -810,6 +826,7 @@ line6:
 				abs_node_inx++;
 			}
 		}
+		slurm_free_node_info_msg(node_ptr);
 
 		if (hostlist_count(hl_last)) {
 			last_hosts = hostlist_ranged_string_xmalloc(hl_last);
