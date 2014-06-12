@@ -56,12 +56,52 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/forward.h"
+#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+
+static pthread_mutex_t job_node_info_lock = PTHREAD_MUTEX_INITIALIZER;
+static node_info_msg_t *job_node_ptr = NULL;
+
+/* This set of functions loads/free node information so that we can map a job's
+ * core bitmap to it's CPU IDs based upon the thread count on each node. */
+static void _load_node_info(void)
+{
+	slurm_mutex_lock(&job_node_info_lock);
+	if (!job_node_ptr)
+		(void) slurm_load_node((time_t) NULL, &job_node_ptr, 0);
+	slurm_mutex_unlock(&job_node_info_lock);
+}
+static uint32_t _threads_per_core(char *host)
+{
+	uint32_t i, threads = 1;
+
+	if (!job_node_ptr)
+		return threads;
+
+	slurm_mutex_lock(&job_node_info_lock);
+	for (i = 0; i < job_node_ptr->record_count; i++) {
+		if (!strcmp(host, job_node_ptr->node_array[i].name)) {
+			threads = job_node_ptr->node_array[i].threads;
+			break;
+		}
+	}
+	slurm_mutex_unlock(&job_node_info_lock);
+	return threads;
+}
+static void _free_node_info(void)
+{
+	slurm_mutex_lock(&job_node_info_lock);
+	if (job_node_ptr) {
+		slurm_free_node_info_msg(job_node_ptr);
+		job_node_ptr = NULL;
+	}
+	slurm_mutex_unlock(&job_node_info_lock);
+}
 
 /* Perform file name substitutions
  * %A - Job array's master job allocation number.
@@ -267,9 +307,13 @@ static void _sprint_range(char *str, uint32_t str_size,
 extern void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 {
-	char *print_this = slurm_sprint_job_info(job_ptr, one_liner);
+	char *print_this;
+
+	_load_node_info();
+	print_this = slurm_sprint_job_info(job_ptr, one_liner);
 	fprintf(out, "%s", print_this);
 	xfree(print_this);
+	_free_node_info();
 }
 
 /*
@@ -307,7 +351,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	hostlist_t hl, hl_last;
 	char select_buf[122];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	node_info_msg_t *node_ptr;
 	uint32_t threads;
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
@@ -739,8 +782,6 @@ line6:
 
 /*	tmp1[] stores the current cpu(s) allocated	*/
 		tmp2[0] = '\0';	/* stores last cpu(s) allocated */
-		node_ptr = NULL;
-		slurm_load_node((time_t) NULL, &node_ptr, 0);
 		for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
 		     rel_node_inx++) {
 
@@ -752,19 +793,9 @@ line6:
 			sock_reps++;
 
 			bit_reps = job_resrcs->sockets_per_node[sock_inx] *
-				job_resrcs->cores_per_socket[sock_inx];
+				   job_resrcs->cores_per_socket[sock_inx];
 			host = hostlist_shift(hl);
-			threads = 1;
-			if (node_ptr) {
-				for (j=0; j < node_ptr->record_count; j++) {
-					if (strcmp(host,
-					    node_ptr->node_array[j].name) == 0){
-						threads =
-						node_ptr->node_array[j].threads;
-						break;
-					}
-				}
-			}
+			threads = _threads_per_core(host);
 			cpu_bitmap = bit_alloc(bit_reps * threads);
 			for (j = 0; j < bit_reps; j++) {
 				if (bit_test(job_resrcs->core_bitmap, bit_inx)){
@@ -826,7 +857,6 @@ line6:
 				abs_node_inx++;
 			}
 		}
-		slurm_free_node_info_msg(node_ptr);
 
 		if (hostlist_count(hl_last)) {
 			last_hosts = hostlist_ranged_string_xmalloc(hl_last);
