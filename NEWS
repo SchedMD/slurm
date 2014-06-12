@@ -175,6 +175,8 @@ documents those changes that are of interest to users and admins.
  -- If job requests --exclusive then do not use nodes which have any cores in an
     advanced reservation. Also prevents case where nodes can be shared by other
     jobs.
+ -- For "scontrol --details show job" report the correct CPU_IDs when thre are
+    multiple threads per core (we are translating a core bitmap to CPU IDs).
 
 * Changes in Slurm 14.03.3-2
 ============================
