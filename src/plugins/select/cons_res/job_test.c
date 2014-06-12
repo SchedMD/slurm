@@ -2018,6 +2018,35 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 	return cpus;
 }
 
+/* When any cores on a node are removed from being available for a job,
+ * then remove the entire node from being available. */
+static void _block_whole_nodes(bitstr_t *node_bitmap,
+			       bitstr_t *orig_core_bitmap,
+			       bitstr_t *new_core_bitmap)
+{
+	int first_node, last_node, i_node;
+	int first_core, last_core, i_core;
+
+	first_node = bit_ffs(node_bitmap);
+	if (first_node >= 0)
+		last_node = bit_fls(node_bitmap);
+	else
+		last_node = first_node - 1;
+
+	for (i_node = first_node; i_node <= last_node; i_node++) {
+		if (!bit_test(node_bitmap, i_node))
+			continue;
+		first_core = cr_get_coremap_offset(i_node);
+		last_core  = cr_get_coremap_offset(i_node + 1) - 1;
+		for (i_core = first_core; i_core <= last_core; i_core++) {
+			if ( bit_test(orig_core_bitmap, i_core) &&
+			    !bit_test(new_core_bitmap,  i_core)) {
+				bit_clear(node_bitmap, i_node);
+				break;
+			}
+		}
+	}
+}
 
 /* cr_job_test - does most of the real work for select_p_job_test(), which
  *	includes contiguous selection, load-leveling and max_share logic
@@ -2230,7 +2259,6 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			bit_copybits(tmpcore, p_ptr->row[i].row_bitmap);
 			bit_not(tmpcore); /* set bits now "free" resources */
 			bit_and(free_cores, tmpcore);
-
 			if (p_ptr->part_ptr != job_ptr->part_ptr)
 				continue;
 			if (part_core_map) {
@@ -2241,6 +2269,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			}
 		}
 	}
+	if (job_ptr->details->whole_node)
+		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
+
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
 				  node_bitmap, cr_node_cnt, free_cores,
 				  node_usage, cr_type, test_only,
@@ -2303,7 +2334,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		    (p_ptr->part_ptr->preempt_mode != PREEMPT_MODE_OFF)) {
 			if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
 				info("cons_res: cr_job_test: continuing on "
-				     "part: %s  ", p_ptr->part_ptr->name);
+				     "part: %s", p_ptr->part_ptr->name);
 			}
 			continue;
 		}
@@ -2317,6 +2348,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			bit_and(free_cores, tmpcore);
 		}
 	}
+	if (job_ptr->details->whole_node)
+		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 	/* make these changes permanent */
 	bit_copybits(avail_cores, free_cores);
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
