@@ -2209,10 +2209,11 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		}
 	}
 	if (exc_core_bitmap) {
+#if _DEBUG
 		char str[100];
 		bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
 		debug2("excluding cores reserved: %s", str);
-
+#endif
 		bit_not(exc_core_bitmap);
 		bit_and(free_cores, exc_core_bitmap);
 		bit_not(exc_core_bitmap);
