@@ -30,7 +30,7 @@ documents those changes that are of interest to users and admins.
  -- Add support for non-consumable generic resources for resources that are
     limited, but can be shared between jobs.
  -- Introduce 5 new Slurm errors in slurm_errno.h related to job to better
-    report error conditions. 
+    report error conditions.
  -- Modify scontrol to print error message for each array task when updating
     the entire array.
  -- Added gres_drain and gres_used fields to node_info_t.
