@@ -64,12 +64,13 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
 #include "src/common/pack.h"
-#include "src/common/slurmdbd_defs.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/slurm_auth.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -333,8 +334,8 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
-		error("slurmdbd: Sending message type %u: %d: %m",
-		      req->msg_type, rc);
+		error("slurmdbd: Sending message type %s: %d: %m",
+		      rpc_num2string(req->msg_type), rc);
 		goto end_it;
 	}
 
