@@ -10972,10 +10972,14 @@ extern int job_requeue(uid_t uid,
 	}
 
 	/* In the job is in the process of completing
-	 * return SLURM_SUCCESS, the caller will record
-	 * the request.
+	 * return SLURM_SUCCESS and set the status
+	 * to JOB_PENDING since we support requeue
+	 * of done/exit/exiting jobs.
 	 */
 	if (IS_JOB_COMPLETING(job_ptr)) {
+		uint32_t flags;
+		flags = job_ptr->job_state & JOB_STATE_FLAGS;
+		job_ptr->job_state = JOB_PENDING | flags;
 		goto reply;
 	}
 
