@@ -2204,6 +2204,25 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
+/* Return the count of nodes which have never registered for service,
+ * so we don't know their memory size, etc. */
+static int _no_reg_nodes(void)
+{
+	static int node_count = -1;
+	struct node_record *node_ptr;
+	int inx;
+
+	if (node_count == 0)	/* No need to keep testing */
+		return node_count;
+	node_count = 0;
+	for (inx = 0, node_ptr = node_record_table_ptr; inx < node_record_count;
+	     inx++, node_ptr++) {
+		if (node_ptr->last_response == 0)
+			node_count++;
+	}
+	return node_count;
+}
+
 /*
  * _build_node_list - identify which nodes could be allocated to a job
  *	based upon node features, memory, processors, etc. Note that a
@@ -2386,14 +2405,18 @@ static int _build_node_list(struct job_record *job_ptr,
 	FREE_NULL_BITMAP(usable_node_mask);
 
 	if (node_set_inx == 0) {
+		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("No nodes satisfy job %u requirements in partition %s",
 		     job_ptr->job_id, job_ptr->part_ptr->name);
 		xfree(node_set_ptr);
 		if (job_ptr->resv_name) {
 			job_ptr->state_reason = WAIT_RESERVATION;
-			return ESLURM_NODES_BUSY;
+			rc = ESLURM_NODES_BUSY;
+		} else if ((slurmctld_conf.fast_schedule == 0) &&
+			   (_no_reg_nodes() > 0)) {
+			rc = ESLURM_NODES_BUSY;
 		}
-		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		return rc;
 	}
 
 	/* If any nodes are powered down, put them into a new node_set
