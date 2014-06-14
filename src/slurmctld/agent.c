@@ -1348,8 +1348,8 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 	if (agent_arg_ptr == NULL)
 		return;
 
-	debug2("Spawning RPC agent for msg_type %u",
-	       agent_arg_ptr->msg_type);
+	debug2("Spawning RPC agent for msg_type %s",
+	       rpc_num2string(agent_arg_ptr->msg_type));
 	slurm_attr_init(&attr_agent);
 	if (pthread_attr_setdetachstate(&attr_agent,
 					PTHREAD_CREATE_DETACHED))
