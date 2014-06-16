@@ -107,6 +107,8 @@ documents those changes that are of interest to users and admins.
     jobs.
  -- For "scontrol --details show job" report the correct CPU_IDs when thre are
     multiple threads per core (we are translating a core bitmap to CPU IDs).
+ -- If DebugFlags=Protocol is configured in slurm.conf print details of the connection,
+    ip address and port accepted by the controller.
 
 * Changes in Slurm 14.03.3-2
 ============================

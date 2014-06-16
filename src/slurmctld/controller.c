@@ -87,6 +87,7 @@
 #include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_protocol_interface.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -974,6 +975,15 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		conn_arg = xmalloc(sizeof(connection_arg_t));
 		conn_arg->newsockfd = newsockfd;
 		memcpy(&conn_arg->cli_addr, &cli_addr, sizeof(slurm_addr_t));
+
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
+			char inetbuf[64];
+
+			_slurm_print_slurm_addr(&cli_addr,
+						inetbuf,
+						sizeof(inetbuf));
+			info("%s: accept() connection from %s", __func__, inetbuf);
+		}
 
 		if (slurmctld_config.shutdown_time)
 			no_thread = 1;
