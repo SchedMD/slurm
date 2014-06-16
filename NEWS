@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 14.11.0pre2
+==============================
+
 * Changes in Slurm 14.11.0pre1
 ==============================
  -- Modify etc/cgroup.release_common.example to set specify full path to the
