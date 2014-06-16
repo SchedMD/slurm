@@ -605,7 +605,9 @@ unpack_error:
 		list_destroy(gres_list);
 		gres_list = NULL;
 	}
-	xfree (node_name);
+	xfree(comm_name);
+	xfree(node_hostname);
+	xfree(node_name);
 	xfree(reason);
 	goto fini;
 }
