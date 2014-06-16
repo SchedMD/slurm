@@ -216,6 +216,10 @@ extern int   sched_interval;
 extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
 
+/* Buffer size use to print the jobid2str()
+ * jobid, taskid and state.
+ */
+#define JBUFSIZ 256
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h
 \*****************************************************************************/
@@ -2082,5 +2086,10 @@ extern void cleanup_completing(struct job_record *);
  *               identify a job.
  */
 extern inline char *jobid2str(struct job_record *, char *);
+
+/* trace_job() - print the job details if
+ *               the DEBUG_FLAG_TRACE_JOBS is set
+ */
+extern inline void trace_job(struct job_record *, const char *, const char *);
 
 #endif /* !_HAVE_SLURMCTLD_H */

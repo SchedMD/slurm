@@ -78,6 +78,8 @@ documents those changes that are of interest to users and admins.
  -- Provide more precise error message when job allocation can not be satisfied
     (e.g. memory, disk, cpu count, etc. rather than just "node configuration
     not available").
+ -- Create a new DebugFlags named TraceJobs in slurm.conf to print detailed information
+    about jobs in slurmctld. The information include job ids, state and node count.
 
 * Changes in Slurm 14.03.4
 ==========================

@@ -2030,6 +2030,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_TASK 	0x02000000      /* TaskType plugin */
 #define DEBUG_FLAG_PROTOCOL	0x04000000	/* Communication protocol */
 #define DEBUG_FLAG_BACKFILL_MAP	0x08000000	/* Backfill scheduler node map */
+#define DEBUG_FLAG_TRACE_JOBS   0x10000000      /* Trace jobs by id and state */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to

@@ -3749,20 +3749,24 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	time_t now = time(NULL);
 	uint32_t job_comp_flag = 0;
 	bool suspended = false;
+	char jbuf[JBUFSIZ];
 
-	info("completing job %u status %d", job_id, job_return_code);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		info("job_complete: invalid JobId=%u", job_id);
+		info("%s: invalid JobId=%u", __func__, job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
+
+	info("%s: job %s WIFEXITED %d WEXITSTATUS %d",
+	     __func__, jobid2str(job_ptr, jbuf),
+	     WIFEXITED(job_return_code), WEXITSTATUS(job_return_code));
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
-		error("Security violation, JOB_COMPLETE RPC for job %u "
-		      "from uid %u",
+		error("%s: Security violation, JOB_COMPLETE RPC for job %u "
+		      "from uid %u", __func__,
 		      job_ptr->job_id, (unsigned int) uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -3779,7 +3783,8 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if ((job_return_code == NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr))) {
-		info("Job %u cancelled from interactive user", job_ptr->job_id);
+		info("%s: Job %s cancelled from interactive user",
+		     __func__, jobid2str(job_ptr, jbuf));
 	}
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
@@ -3799,7 +3804,8 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		requeue = 0;
 		if (job_return_code == 0)
 			job_return_code = 1;
-		info("Batch job launch failure, JobId=%u", job_ptr->job_id);
+		info("%s: batch job %s launch failure",
+		     __func__, jobid2str(job_ptr, jbuf));
 	}
 
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
@@ -3822,11 +3828,11 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		 * information, we need to add it again. */
 		acct_policy_add_job_submit(job_ptr);
 		if (node_fail) {
-			info("Requeue JobId=%u due to node failure",
-			     job_ptr->job_id);
+			info("%s: requeue job %s due to node failure",
+			     __func__, jobid2str(job_ptr, jbuf));
 		} else {
-			info("Requeue JobId=%u per user/system request",
-			    job_ptr->job_id);
+			info("%s: requeue job %s per user/system request",
+			     __func__, jobid2str(job_ptr, jbuf));
 		}
 	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details &&
 		   job_ptr->batch_flag) {
@@ -3881,8 +3887,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		build_cg_bitmap(job_ptr);
 		deallocate_nodes(job_ptr, false, suspended, false);
 	}
-	info("sched: job_complete for JobId=%u successful, exit code=%u",
-	     job_id, job_return_code);
+
+	info("%s: job %s done", __func__, jobid2str(job_ptr, jbuf));
+
 	return SLURM_SUCCESS;
 }
 
@@ -10107,16 +10114,19 @@ _xmit_new_end_time(struct job_record *job_ptr)
  * RET true if job is COMPLETED, otherwise false
  */
 extern bool job_epilog_complete(uint32_t job_id, char *node_name,
-		uint32_t return_code)
+				uint32_t return_code)
 {
 #ifdef HAVE_FRONT_END
 	int i;
 #endif
 	struct job_record  *job_ptr = find_job_record(job_id);
 	struct node_record *node_ptr;
+	char jbuf[JBUFSIZ];
 
 	if (job_ptr == NULL)
 		return true;
+
+	trace_job(job_ptr, __func__, "enter");
 
 	/* There is a potential race condition this handles.
 	 * If slurmctld cold-starts while slurmd keeps running,
@@ -10133,17 +10143,19 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (node_ptr)
 			base_state = node_ptr->node_state & NODE_STATE_BASE;
 		if (base_state == NODE_STATE_DOWN) {
-			debug("Epilog complete response for job %u from DOWN "
-			      "node %s", job_id, node_name);
+			debug("%s: job %s complete response from DOWN "
+			      "node %s", __func__,
+			      jobid2str(job_ptr, jbuf), node_name);
 		} else if (job_ptr->restart_cnt) {
 			/* Duplicate epilog complete can be due to race
 			 * condition, especially with select/serial */
-			debug("Duplicate epilog complete response for job %u",
-			      job_id);
+			debug("%s: job %s duplicate epilog complete response",
+			      __func__, jobid2str(job_ptr, jbuf));
 		} else {
 
-			error("Epilog complete response for non-running job "
-			      "%u, slurmctld and slurmd out of sync", job_id);
+			error("%s: job %s is non-running slurmctld"
+			      "and slurmd out of sync",
+			      __func__, jobid2str(job_ptr, jbuf));
 		}
 #endif
 		return false;
@@ -10156,17 +10168,19 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	   the job will be downed below.
 	*/
 	if (return_code)
-		error("Epilog error for job %u on %s",
-		      job_ptr->job_id, job_ptr->batch_host);
+		error("%s: job %s epilog error on %s",
+		      __func__, jobid2str(job_ptr, jbuf),
+		      job_ptr->batch_host);
 
 	if (job_ptr->front_end_ptr && IS_JOB_COMPLETING(job_ptr)) {
 		front_end_record_t *front_end_ptr = job_ptr->front_end_ptr;
 		if (front_end_ptr->job_cnt_comp)
 			front_end_ptr->job_cnt_comp--;
 		else {
-			error("job_cnt_comp underflow for for job %u on "
-			      "front end %s",
-			      job_ptr->job_id, front_end_ptr->name);
+			error("%s: job %s job_cnt_comp underflow on "
+			      "front end %s", __func__,
+			      jobid2str(job_ptr, jbuf),
+			      front_end_ptr->name);
 		}
 		if (front_end_ptr->job_cnt_comp == 0)
 			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
@@ -10202,7 +10216,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	}
 #else
 	if (return_code) {
-		error("Epilog error on %s, draining the node", node_name);
+		error("%s: job %s epilog error on %s, draining the node",
+		      __func__, jobid2str(job_ptr, jbuf), node_name);
 		drain_nodes(node_name, "Epilog error",
 			    slurm_get_slurm_user_id());
 	}
@@ -12216,16 +12231,29 @@ extern void job_end_time_reset(struct job_record  *job_ptr)
  *               identify a job.
  */
 char *
-jobid2str(struct job_record *job, char *buf)
+jobid2str(struct job_record *job_ptr, char *buf)
 {
-       if (job == NULL
-           || buf == NULL)
-               return "no jobid in slurmctld?";
+	if (job_ptr == NULL)
+		return "No jobid in slurmctld?";
+	if (buf == NULL)
+		return "Invalid argument";
 
        sprintf(buf, "jobid %u task_id %u array_id %u state 0x%x cnt %d",
-               job->job_id, job->array_task_id,
-               job->array_job_id, job->job_state,
-               job->node_cnt);
+               job_ptr->job_id, job_ptr->array_task_id,
+               job_ptr->array_job_id, job_ptr->job_state,
+               job_ptr->node_cnt);
 
        return buf;
+}
+
+/* trace_job() - print the job details if
+ *               the DEBUG_FLAG_TRACE_JOBS is set
+ */
+void
+trace_job(struct job_record *job_ptr, const char *func, const char *extra)
+{
+	char jbuf[JBUFSIZ];
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_TRACE_JOBS)
+		info("%s: %s job %s", func, extra, jobid2str(job_ptr, jbuf));
 }

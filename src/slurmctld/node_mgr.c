@@ -863,7 +863,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
  * IN dump_node_ptr - pointer to node for which information is requested
  * IN/OUT buffer - buffer where data is placed, pointers automatically updated
  * IN protocol_version - slurm protocol version of client
- * IN show_flags - 
+ * IN show_flags -
  * NOTE: if you make any changes here be sure to make the corresponding
  *	changes to load_node_config in api/node_info.c
  * NOTE: READ lock_slurmctld config before entry
@@ -1907,7 +1907,7 @@ static int _build_node_spec_bitmap(struct node_record *node_ptr)
 		i += 2;
 	}
 	xfree(cpu_spec_array);
-	return SLURM_SUCCESS; 
+	return SLURM_SUCCESS;
 }
 
 extern int update_node_record_acct_gather_data(
@@ -3158,6 +3158,7 @@ void make_node_idle(struct node_record *node_ptr,
 	uint16_t node_flags;
 	time_t now = time(NULL);
 	bitstr_t *node_bitmap = NULL;
+	char jbuf[JBUFSIZ];
 
 	if (job_ptr) { /* Specific job completed */
 		if (job_ptr->node_bitmap_cg)
@@ -3165,6 +3166,8 @@ void make_node_idle(struct node_record *node_ptr,
 		else
 			node_bitmap = job_ptr->node_bitmap;
 	}
+
+	trace_job(job_ptr, __func__, "enter");
 
 	xassert(node_ptr);
 	if (node_bitmap && (bit_test(node_bitmap, inx))) {
@@ -3186,8 +3189,8 @@ void make_node_idle(struct node_record *node_ptr,
 				&& job_ptr->epilog_running == false)
 				cleanup_completing(job_ptr);
 		} else {
-			error("node_cnt underflow on job_id %u",
-			      job_ptr->job_id);
+			error("%s: job %s node_cnt underflow",
+			      __func__, jobid2str(job_ptr, jbuf));
 		}
 
 		if (IS_JOB_SUSPENDED(job_ptr)) {
@@ -3195,22 +3198,24 @@ void make_node_idle(struct node_record *node_ptr,
 			if (node_ptr->sus_job_cnt)
 				(node_ptr->sus_job_cnt)--;
 			else
-				error("Node %s sus_job_cnt underflow in "
-					"make_node_idle", node_ptr->name);
+				error("%s: job %s node %s sus_job_cnt underflow",
+				      __func__, jobid2str(job_ptr, jbuf),
+				      node_ptr->name);
 		} else if (IS_JOB_RUNNING(job_ptr)) {
 			/* Remove node from running job */
 			if (node_ptr->run_job_cnt)
 				(node_ptr->run_job_cnt)--;
 			else
-				error("Node %s run_job_cnt underflow in "
-					"make_node_idle", node_ptr->name);
+				error("%s: job %s node %s run_job_cnt underflow",
+				      __func__, jobid2str(job_ptr, jbuf),
+				      node_ptr->name);
 		} else {
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			else
-				error("Node %s comp_job_cnt underflow in "
-					"make_node_idle, job_id %u",
-					node_ptr->name, job_ptr->job_id);
+				error("%s: job %s node %s run_job_cnt underflow",
+				      __func__, jobid2str(job_ptr, jbuf),
+				      node_ptr->name);
 			if (node_ptr->comp_job_cnt > 0)
 				return;		/* More jobs completing */
 		}
@@ -3222,8 +3227,8 @@ void make_node_idle(struct node_record *node_ptr,
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_DOWN(node_ptr)) {
-		debug3("make_node_idle: Node %s being left DOWN",
-			node_ptr->name);
+		debug3("%s: job %s node %s being left DOWN",
+		       __func__, jobid2str(job_ptr, jbuf), node_ptr->name);
 		return;
 	}
 	bit_set(up_node_bitmap, inx);
@@ -3238,8 +3243,8 @@ void make_node_idle(struct node_record *node_ptr,
 	    (node_ptr->run_job_cnt == 0) && (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		bit_set(idle_node_bitmap, inx);
-		debug3("make_node_idle: Node %s is DRAINED",
-		       node_ptr->name);
+		debug3("%s: job %s node %s is DRAINED",
+		       __func__, jobid2str(job_ptr, jbuf), node_ptr->name);
 		node_ptr->last_idle = now;
 		trigger_node_drained(node_ptr);
 		clusteracct_storage_g_node_down(acct_db_conn,

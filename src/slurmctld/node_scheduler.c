@@ -467,6 +467,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 
+	trace_job(job_ptr, __func__, "");
+
 	if (select_serial == -1) {
 		if (strcmp(slurmctld_conf.select_type, "select/serial"))
 			select_serial = 0;

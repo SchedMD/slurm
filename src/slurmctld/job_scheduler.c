@@ -3072,6 +3072,8 @@ cleanup_completing(struct job_record *job_ptr)
 {
 	time_t delay;
 
+	trace_job(job_ptr, __func__, "");
+
 	delay = last_job_update - job_ptr->end_time;
 	if (delay > 60) {
 		info("%s: job %u completion process took %ld seconds",

@@ -702,7 +702,7 @@ extern int license_job_return(struct job_record *job_ptr)
 		return rc;
 
 	last_license_update = time(NULL);
-
+	trace_job(job_ptr, __func__, "");
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = (licenses_t *) list_next(iter))) {
@@ -712,16 +712,16 @@ extern int license_job_return(struct job_record *job_ptr)
 			if (match->used >= license_entry->total)
 				match->used -= license_entry->total;
 			else {
-				error("license use count underflow for %s",
-				      match->name);
+				error("%s: license use count underflow for %s",
+				      __func__, match->name);
 				match->used = 0;
 				rc = SLURM_ERROR;
 			}
 			license_entry->used = 0;
 		} else {
 			/* This can happen after a reconfiguration */
-			error("job returning unknown license name %s",
-			      license_entry->name);
+			error("%s: job returning unknown license name %s",
+			      __func__, license_entry->name);
 		}
 	}
 	list_iterator_destroy(iter);

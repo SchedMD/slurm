@@ -503,6 +503,10 @@ Slurmctld resource allocation for job steps
 \fBSwitch\fR
 Switch plugin
 .TP
+\fBTraceJobs\fR
+Trace jobs in slurmctld. It will print detailed job information
+including state, job ids and allocated nodes counter.
+.TP
 \fBTriggers\fR
 Slurmctld triggers
 .TP
@@ -3075,11 +3079,11 @@ The default value is 1.
 \fBCPUSpecList\fR
 A comma delimited list of Slurm abstract CPU IDs on which Slurm compute
 node daemons (slurmd, slurmstepd) will be confined. The list will be expanded
-to include all other CPUs, if any, on the same cores. These cores will not be 
+to include all other CPUs, if any, on the same cores. These cores will not be
 available for allocation to user jobs. Isolation of the
 Slurm daemons from user jobs may improve performance.  If this option
 and \fBCoreSpecCount\fR are both designated for a node, an error is generated.
-This option has no effect unless cgroup job confinement is also configured 
+This option has no effect unless cgroup job confinement is also configured
 (\fBTaskPlugin=task/cgroup\fR with \fBConstrainCores=yes\fR in cgroup.conf).
 
 .TP
@@ -3113,7 +3117,7 @@ Also see \fBFeature\fR.
 
 .TP
 \fBMemSpecLimit\fR
-Limit on combined real memory allocation for compute node daemons 
+Limit on combined real memory allocation for compute node daemons
 (slurmd, slurmstepd), in megabytes. Use of this parameter may improve
 job performance.
 
