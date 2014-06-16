@@ -37,6 +37,10 @@ set exit_code  0
 set job_cnt    100
 set target     200
 
+if {[test_cray]} {
+	set target 65
+}
+
 print_header $test_id
 
 make_bash_script $file_in "
