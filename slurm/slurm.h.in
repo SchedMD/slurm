@@ -336,6 +336,7 @@ enum job_state_reason {
 	WAIT_PROLOG,		/* Prolog is running */
 	WAIT_QOS,	 	/* QOS not allowed */
 	WAIT_ACCOUNT,	 	/* Account not allowed */
+	WAIT_DEP_INVALID        /* Dependency condition invalid or never satisfied */
 };
 
 enum job_acct_types {

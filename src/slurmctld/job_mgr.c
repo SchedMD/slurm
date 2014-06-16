@@ -7210,7 +7210,6 @@ void purge_old_job(void)
 {
 	ListIterator job_iterator;
 	struct job_record  *job_ptr;
-	time_t now = time(NULL);
 	int i;
 
 	job_iterator = list_iterator_create(job_list);
@@ -7218,15 +7217,12 @@ void purge_old_job(void)
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
 		if (test_job_dependency(job_ptr) == 2) {
-			info("Job dependency can't be satisfied, cancelling "
-			     "job %u", job_ptr->job_id);
-			job_ptr->job_state	= JOB_CANCELLED;
+			char jbuf[JBUFSIZ];
+
+			debug("%s: Job %s dependency condition never satisfied",
+			      __func__, jobid2str(job_ptr, jbuf));
+			job_ptr->state_reason = WAIT_DEP_INVALID;
 			xfree(job_ptr->state_desc);
-			job_ptr->start_time	= now;
-			job_ptr->end_time	= now;
-			job_completion_logger(job_ptr, false);
-			last_job_update		= now;
-			srun_allocate_abort(job_ptr);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -10403,16 +10399,12 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		xfree(job_ptr->state_desc);
 		return false;
 	} else if (depend_rc == 2) {
-		time_t now = time(NULL);
-		info("Job dependency can't be satisfied, cancelling job %u",
-		     job_ptr->job_id);
-		job_ptr->job_state	= JOB_CANCELLED;
+		char jbuf[JBUFSIZ];
+
+		debug("%s: Job %s dependency condition never satisfied",
+		      __func__, jobid2str(job_ptr, jbuf));
+		job_ptr->state_reason = WAIT_DEP_INVALID;
 		xfree(job_ptr->state_desc);
-		job_ptr->start_time	= now;
-		job_ptr->end_time	= now;
-		srun_allocate_abort(job_ptr);
-		job_completion_logger(job_ptr, false);
-		srun_allocate_abort(job_ptr);
 		return false;
 	}
 

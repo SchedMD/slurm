@@ -1071,6 +1071,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSNotAllowed";
 	case WAIT_ACCOUNT:
 		return "AccountNotAllowed";
+	case WAIT_DEP_INVALID:
+		return "DependencyNeverSatisfied";
 	default:
 		return "?";
 	}
