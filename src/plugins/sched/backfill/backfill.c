@@ -1285,7 +1285,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 	} else
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
 
-	rc = select_nodes(job_ptr, false, NULL);
+	rc = select_nodes(job_ptr, false, NULL, NULL);
 	if (job_ptr->details) { /* select_nodes() might cancel the job! */
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = orig_exc_nodes;

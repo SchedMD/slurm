@@ -75,6 +75,9 @@ documents those changes that are of interest to users and admins.
     thread: slurmctld_bckfl, the rpc manager: slurmctld_rpcmg etc.
     The name can be seen for example using top -H.
  -- sview - Better job_array support.
+ -- Provide more precise error message when job allocation can not be satisfied
+    (e.g. memory, disk, cpu count, etc. rather than just "node configuration
+    not available").
 
 * Changes in Slurm 14.03.4
 ==========================

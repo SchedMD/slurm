@@ -3226,9 +3226,10 @@ static void _create_job_array(struct job_record *job_ptr,
  * IN select_node_bitmap - bitmap of nodes to be used for the
  *	job's resource allocation (not returned if NULL), caller
  *	must free
+ * OUT err_msg - error message for job, caller must xfree
  */
 static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
-			       bitstr_t **select_node_bitmap)
+			       bitstr_t **select_node_bitmap, char **err_msg)
 {
 	struct part_record *part_ptr;
 	ListIterator iter;
@@ -3243,7 +3244,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
 				continue;
 			rc = select_nodes(job_ptr, test_only,
-					  select_node_bitmap);
+					  select_node_bitmap, err_msg);
 			if ((rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			    (rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE))
 				break;
@@ -3252,7 +3253,8 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 	} else {
 		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
 			test_only = true;
-		rc = select_nodes(job_ptr, test_only, select_node_bitmap);
+		rc = select_nodes(job_ptr, test_only, select_node_bitmap,
+				  err_msg);
 	}
 
 	return rc;
@@ -3382,7 +3384,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	no_alloc = test_only || too_fragmented ||
 		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
-	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL);
+	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
 	if (!test_only) {
 		last_job_update = now;
 		slurm_sched_g_schedule();	/* work for external scheduler */

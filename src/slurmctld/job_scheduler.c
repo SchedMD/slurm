@@ -647,7 +647,7 @@ next_part:		part_ptr = (struct part_record *)
 		job_ptr->details->exc_node_bitmap =
 			bit_copy(fini_job_ptr->job_resrcs->node_bitmap);
 		bit_not(job_ptr->details->exc_node_bitmap);
-		error_code = select_nodes(job_ptr, false, NULL);
+		error_code = select_nodes(job_ptr, false, NULL, NULL);
 		bit_free(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
@@ -1217,7 +1217,7 @@ next_part:			part_ptr = (struct part_record *)
 			continue;
 		}
 
-		error_code = select_nodes(job_ptr, false, NULL);
+		error_code = select_nodes(job_ptr, false, NULL, NULL);
 		if (error_code == ESLURM_NODES_BUSY) {
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u. Partition=%s.",
