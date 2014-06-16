@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.5
 ==========================
+ -- Enlarge the width specifier when printing partition SHARE
+    to display larger sharing values.
 
 * Changes in Slurm 14.03.4
 ==========================
