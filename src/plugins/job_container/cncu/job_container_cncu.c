@@ -241,6 +241,8 @@ extern int fini(void)
 {
 	slurm_mutex_lock(&context_lock);
 	xfree(state_dir);
+	xfree(job_id_array);
+	job_id_count = 0;
 	slurm_mutex_unlock(&context_lock);
 
 	return SLURM_SUCCESS;
@@ -254,7 +256,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 	xfree(state_dir);
 	state_dir = xstrdup(dir_name);
 	_restore_state(state_dir);
-	slurm_mutex_unlock(&context_lock);
 	for (i = 0; i < job_id_count; i++) {
 		if (job_id_array[i] == 0)
 			continue;
@@ -266,6 +267,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 		if (!recover)
 			job_id_array[i] = 0;
 	}
+	slurm_mutex_unlock(&context_lock);
 
 	return SLURM_SUCCESS;
 }
