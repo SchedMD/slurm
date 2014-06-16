@@ -228,7 +228,7 @@ expect {
 		wait
 	}
 }
-set $core_cnt [expr $core_cnt * $socket_cnt]
+set core_cnt [expr $core_cnt * $socket_cnt]
 if {$core_cnt == 0} {
 	send_user "\nFAILURE: sbatch did not find the number of cores\n"
 	exit 1
@@ -241,6 +241,7 @@ if {$core_cnt < 4} {
 #
 # Using the core spec within the node limits
 #
+send_user "\n\nRun within the specified node\n"
 core_spec_job  0 $first_node [expr $core_cnt - 2] 0
 core_spec_job -2 $first_node [expr $core_cnt - 2] 0
 
@@ -248,12 +249,14 @@ core_spec_job -2 $first_node [expr $core_cnt - 2] 0
 # Using core spec with more tasks then the node can handle. This should
 # cause the tasks to spread accross mutliple nodes as needed
 #
+send_user "\n\nSpread job across multiple nodes\n"
 core_spec_job 1 $first_node [expr $core_cnt - 2] 1
 core_spec_job 1 $first_node [expr $core_cnt - 1] 1
 
 #
 # Using core spec with more cores then the specified node has
 #
+send_user "\n\nFail by trying to use more cores than exist\n"
 core_spec_job 1 $first_node [expr $core_cnt + 5] -1
 core_spec_job 1 $first_node [expr $core_cnt + 7] -1
 

@@ -86,6 +86,9 @@ documents those changes that are of interest to users and admins.
  -- Create a new DebugFlags named TraceJobs in slurm.conf to print detailed information
     about jobs in slurmctld. The information include job ids, state and node count.
 
+* Changes in Slurm 14.03.5
+==========================
+
 * Changes in Slurm 14.03.4
 ==========================
  -- Fix issue where not enforcing QOS but a partition either allows or denies
@@ -124,7 +127,7 @@ documents those changes that are of interest to users and admins.
  -- Keep supporting 'srun -N x --pty bash' for historical reasons.
  -- If EnforcePartLimits=Yes and QOS job is using can override limits, allow
     it.
- -- Fix issues if partition allows or denys account's or QOS' and either are
+ -- Fix issues if partition allows or denies account's or QOS' and either are
     not set.
  -- If a job requests a partition and it doesn't allow a QOS or account the
     job is requesting pend unless EnforcePartLimits=Yes.  Before it would
