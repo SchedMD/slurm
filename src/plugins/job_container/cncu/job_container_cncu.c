@@ -138,7 +138,7 @@ static int _save_state(char *dir_name)
 
 static int _restore_state(char *dir_name)
 {
-	char *data = NULL, *file_name;
+	char *data = NULL;
 	int error_code = SLURM_SUCCESS;
 	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
 
@@ -147,9 +147,8 @@ static int _restore_state(char *dir_name)
 		return SLURM_ERROR;
 	}
 
-	file_name = xstrdup(dir_name);
-	xstrcat(file_name, "/job_container_state");
-	state_fd = open (file_name, O_RDONLY);
+	xstrcat(dir_name, "/job_container_state");
+	state_fd = open (dir_name, O_RDONLY);
 	if (state_fd >= 0) {
 		data_allocated = JOB_BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -159,7 +158,7 @@ static int _restore_state(char *dir_name)
 			if ((data_read < 0) && (errno == EINTR))
 				continue;
 			if (data_read < 0) {
-				error ("Read error on %s, %m", file_name);
+				error ("Read error on %s, %m", dir_name);
 				error_code = SLURM_ERROR;
 				break;
 			} else if (data_read == 0)
@@ -169,11 +168,9 @@ static int _restore_state(char *dir_name)
 			xrealloc(data, data_allocated);
 		}
 		close(state_fd);
-		xfree(file_name);
 	} else {
 		error("No %s file for %s state recovery",
-		      file_name, plugin_type);
-		xfree(file_name);
+		      dir_name, plugin_type);
 		return SLURM_SUCCESS;
 	}
 
@@ -240,7 +237,10 @@ extern int init(void)
  */
 extern int fini(void)
 {
+	slurm_mutex_lock(&context_lock);
 	xfree(state_dir);
+	slurm_mutex_unlock(&context_lock);
+
 	return SLURM_SUCCESS;
 }
 
@@ -249,7 +249,9 @@ extern int container_p_restore(char *dir_name, bool recover)
 	int i;
 
 	slurm_mutex_lock(&context_lock);
-	_restore_state(dir_name);
+	xfree(state_dir);
+	state_dir = xstrdup(dir_name);
+	_restore_state(state_dir);
 	slurm_mutex_unlock(&context_lock);
 	for (i = 0; i < job_id_count; i++) {
 		if (job_id_array[i] == 0)
@@ -263,8 +265,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 			job_id_array[i] = 0;
 	}
 
-	xfree(state_dir);
-	state_dir = xstrdup(dir_name);
 	return SLURM_SUCCESS;
 }
 
