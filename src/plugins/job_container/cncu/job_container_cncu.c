@@ -104,8 +104,7 @@ static int _save_state(char *dir_name)
 		error("job_container state directory is NULL");
 		return SLURM_ERROR;
 	}
-	file_name = xstrdup(dir_name);
-	xstrcat(file_name, "/job_container_state");
+	file_name = xstrdup_printf("%s/job_container_state", dir_name);
 	(void) unlink(file_name);
 	state_fd = creat(file_name, 0600);
 	if (state_fd < 0) {
@@ -138,7 +137,7 @@ static int _save_state(char *dir_name)
 
 static int _restore_state(char *dir_name)
 {
-	char *data = NULL;
+	char *data = NULL, *file_name = NULL;
 	int error_code = SLURM_SUCCESS;
 	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
 
@@ -147,8 +146,8 @@ static int _restore_state(char *dir_name)
 		return SLURM_ERROR;
 	}
 
-	xstrcat(dir_name, "/job_container_state");
-	state_fd = open (dir_name, O_RDONLY);
+	file_name = xstrdup_printf("%s/job_container_state", dir_name);
+	state_fd = open (file_name, O_RDONLY);
 	if (state_fd >= 0) {
 		data_allocated = JOB_BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -158,7 +157,7 @@ static int _restore_state(char *dir_name)
 			if ((data_read < 0) && (errno == EINTR))
 				continue;
 			if (data_read < 0) {
-				error ("Read error on %s, %m", dir_name);
+				error ("Read error on %s, %m", file_name);
 				error_code = SLURM_ERROR;
 				break;
 			} else if (data_read == 0)
@@ -170,9 +169,12 @@ static int _restore_state(char *dir_name)
 		close(state_fd);
 	} else {
 		error("No %s file for %s state recovery",
-		      dir_name, plugin_type);
+		      file_name, plugin_type);
+		xfree(file_name);
 		return SLURM_SUCCESS;
 	}
+
+	xfree(file_name);
 
 	if (error_code == SLURM_SUCCESS) {
 		job_id_array = (uint32_t *) data;
