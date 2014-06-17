@@ -95,12 +95,14 @@ static uint32_t _threads_per_core(char *host)
 }
 static void _free_node_info(void)
 {
+#if 0
 	slurm_mutex_lock(&job_node_info_lock);
 	if (job_node_ptr) {
 		slurm_free_node_info_msg(job_node_ptr);
 		job_node_ptr = NULL;
 	}
 	slurm_mutex_unlock(&job_node_info_lock);
+#endif
 }
 
 /* Perform file name substitutions
