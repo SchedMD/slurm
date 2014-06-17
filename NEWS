@@ -3,8 +3,6 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.11.0pre2
 ==============================
- -- When a job dependency can never be satisfied do not cancel the job but keep
-    pending with reason WAIT_DEP_INVALID (DependencyNeverSatisfied).
 
 * Changes in Slurm 14.11.0pre1
 ==============================
@@ -83,8 +81,11 @@ documents those changes that are of interest to users and admins.
  -- Provide more precise error message when job allocation can not be satisfied
     (e.g. memory, disk, cpu count, etc. rather than just "node configuration
     not available").
- -- Create a new DebugFlags named TraceJobs in slurm.conf to print detailed information
-    about jobs in slurmctld. The information include job ids, state and node count.
+ -- Create a new DebugFlags named TraceJobs in slurm.conf to print detailed
+    information about jobs in slurmctld. The information include job ids, state
+    and node count.
+ -- When a job dependency can never be satisfied do not cancel the job but keep
+    pending with reason WAIT_DEP_INVALID (DependencyNeverSatisfied).
 
 * Changes in Slurm 14.03.5
 ==========================
