@@ -529,7 +529,9 @@ static uint32_t _get_children_level_shares(slurmdb_association_rec_t *assoc)
 
 	itr = list_iterator_create(children);
 	while (child = list_next(itr)) {
-		if (child->shares_raw != SLURMDB_FS_USE_PARENT)
+		if (child->shares_raw == SLURMDB_FS_USE_PARENT)
+			sum += _get_children_level_shares(child);
+		else
 			sum += child->shares_raw;
 	}
 	list_iterator_destroy(itr);
@@ -549,8 +551,11 @@ static void _set_children_level_shares(slurmdb_association_rec_t *assoc,
 		return;
 
 	itr = list_iterator_create(children);
-	while (child = list_next(itr))
+	while (child = list_next(itr)) {
 		child->usage->level_shares = level_shares;
+		if (child->shares_raw == SLURMDB_FS_USE_PARENT)
+			_set_children_level_shares(child, level_shares);
+	}
 	list_iterator_destroy(itr);
 }
 
@@ -581,6 +586,7 @@ static int _post_association_list(List assoc_list)
 		list_iterator_reset(itr);
 		while ((assoc = list_next(itr))) {
 			if (!assoc->usage->children_list
+			    || assoc->shares_raw == SLURMDB_FS_USE_PARENT
 			    || list_is_empty(assoc->usage->children_list))
 				continue;
 
@@ -2759,6 +2765,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				List children = object->usage->children_list;
 				if (!children || list_is_empty(children))
 					goto is_user;
+				if (object->shares_raw == SLURMDB_FS_USE_PARENT)
+					continue;
 
 				_set_children_level_shares(
 					object,
@@ -4383,4 +4391,19 @@ extern int assoc_mgr_set_missing_uids()
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
+}
+
+
+/* Return first parent that is not SLURMDB_FS_USE_PARENT */
+extern slurmdb_association_rec_t* find_real_parent(
+		slurmdb_association_rec_t *assoc)
+{
+	slurmdb_association_rec_t *parent = NULL;
+	xassert(assoc);
+	parent = assoc->usage->parent_assoc_ptr;
+
+	while (parent && parent->shares_raw == SLURMDB_FS_USE_PARENT)
+		parent = parent->usage->parent_assoc_ptr;
+
+	return parent;
 }

@@ -395,24 +395,29 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
 	long double min_shares_norm;
+	slurmdb_association_rec_t *assoc2 = assoc;
 
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
 	   && assoc->usage->parent_assoc_ptr) {
+		/* This function needs to find the real parent because
+		 * shares_raw needs to be a useful value, not
+		 * SLURMDB_FS_USE_PARENT */
+		assoc2 = find_real_parent(assoc);
 		assoc->usage->shares_norm =
-			assoc->usage->parent_assoc_ptr->usage->shares_norm;
+			assoc2->usage->shares_norm;
 		assoc->usage->usage_norm =
-			assoc->usage->parent_assoc_ptr->usage->usage_norm;
+			assoc2->usage->usage_norm;
 	}
 
-	if (assoc->usage->level_shares) {
+	if (assoc2->usage->level_shares) {
 		min_shares_norm = (long double) MIN_USAGE_FACTOR
-			* assoc->shares_raw / assoc->usage->level_shares;
-		if (assoc->usage->usage_norm > min_shares_norm)
-			assoc->usage->usage_efctv = assoc->usage->usage_norm;
+			* assoc2->shares_raw / assoc2->usage->level_shares;
+		if (assoc2->usage->usage_norm > min_shares_norm)
+			assoc->usage->usage_efctv = assoc2->usage->usage_norm;
 		else
 			assoc->usage->usage_efctv = min_shares_norm;
 	} else
-		assoc->usage->usage_efctv = assoc->usage->usage_norm;
+		assoc->usage->usage_efctv = assoc2->usage->usage_norm;
 }
 
 
@@ -1764,7 +1769,7 @@ static long double _set_usage_efctv(slurmdb_association_rec_t *assoc)
 	/* Variable names taken from HTML documentation */
 	long double UAchild = assoc->usage->usage_norm;
 	long double UEparent =
-		 assoc->usage->parent_assoc_ptr->usage->usage_efctv;
+		 find_real_parent(assoc)->usage->usage_efctv;
 	uint32_t Schild = assoc->shares_raw;
 	uint32_t Sall_siblings = assoc->usage->level_shares;
 

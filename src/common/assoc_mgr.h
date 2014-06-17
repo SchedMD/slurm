@@ -402,4 +402,9 @@ extern int assoc_mgr_refresh_lists(void *db_conn);
  */
 extern int assoc_mgr_set_missing_uids();
 
+/* Return first parent that is not SLURMDB_FS_USE_PARENT */
+extern slurmdb_association_rec_t* find_real_parent(
+		slurmdb_association_rec_t *assoc);
+
+
 #endif /* _SLURM_ASSOC_MGR_H */
