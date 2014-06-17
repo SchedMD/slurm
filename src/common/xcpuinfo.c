@@ -499,15 +499,15 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 		uint32_t val;
 		if (_chk_cpuinfo_uint32(buffer, "processor", &val)) {
+			curcpu = numcpu;
 			numcpu++;
-			curcpu = val;
-		    	if (val >= numproc) {	/* out of bounds, ignore */
-				debug("cpuid is %u (> %d), ignored",
-					val, numproc);
+			if (curcpu >= numproc) {
+				info("processor limit reached (%u >= %d)",
+				     curcpu, numproc);
 				continue;
 			}
-			cpuinfo[val].seen = 1;
-			cpuinfo[val].cpuid = val;
+			cpuinfo[curcpu].seen = 1;
+			cpuinfo[curcpu].cpuid = val;
 			maxcpuid = MAX(maxcpuid, val);
 			mincpuid = MIN(mincpuid, val);
 		} else if (_chk_cpuinfo_uint32(buffer, "physical id", &val)) {
@@ -629,7 +629,6 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 
 #if DEBUG_DETAIL
 	/*** Display raw data ***/
-	debug3("");
 	debug3("numcpu:     %u", numcpu);
 	debug3("numphys:    %u", numphys);
 	debug3("numcores:   %u", numcores);
@@ -641,19 +640,18 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	debug3("physid:     %u->%u", minphysid, maxphysid);
 	debug3("coreid:     %u->%u", mincoreid, maxcoreid);
 
-	for (i = 0; i <= maxcpuid; i++) {
+	for (i = 0; i < numproc; i++) {
 		debug3("CPU %d:", i);
+		debug3(" cpuid:    %u", cpuinfo[i].cpuid);
 		debug3(" seen:     %u", cpuinfo[i].seen);
 		debug3(" physid:   %u", cpuinfo[i].physid);
 		debug3(" physcnt:  %u", cpuinfo[i].physcnt);
 		debug3(" siblings: %u", cpuinfo[i].siblings);
 		debug3(" cores:    %u", cpuinfo[i].cores);
 		debug3(" coreid:   %u", cpuinfo[i].coreid);
-		debug3(" corecnt:  %u", cpuinfo[i].corecnt);
-		debug3("");
+		debug3(" corecnt:  %u\n", cpuinfo[i].corecnt);
 	}
 
-	debug3("");
 	debug3("Sockets:          %u", sockets);
 	debug3("Cores per socket: %u", cores);
 	debug3("Threads per core: %u", threads);
