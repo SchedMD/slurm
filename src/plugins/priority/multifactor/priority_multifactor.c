@@ -231,8 +231,8 @@ static int _reset_usage(void)
 	xassert(assoc_mgr_association_list);
 
 	itr = list_iterator_create(assoc_mgr_association_list);
-	/* We want to do this to all associations including
-	   root.  All usage_raws are calculated from the bottom up.
+	/* We want to do this to all associations including root.
+	 * All usage_raws are calculated from the bottom up.
 	*/
 	while ((assoc = list_next(itr))) {
 		assoc->usage->usage_raw = 0;
@@ -392,7 +392,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 
 
 /* Set the effective usage of a node. */
-static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
+static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
 	long double min_shares_norm;
 
@@ -416,12 +416,11 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 }
 
 
-/* This should initially get the children list from
- * assoc_mgr_root_assoc.  Since our algorythm goes from top down we
- * calculate all the non-user associations now.  When a user submits a
- * job, that norm_fairshare is calculated.  Here we will set the
- * usage_efctv to NO_VAL for users to not have to calculate a bunch
- * of things that will never be used.
+/* This should initially get the children list from assoc_mgr_root_assoc.
+ * Since our algorithm goes from top down we calculate all the non-user
+ * associations now.  When a user submits a job, that norm_fairshare is
+ * calculated.  Here we will set the usage_efctv to NO_VAL for users to not
+ * have to calculate a bunch of things that will never be used.
  *
  * NOTE: acct_mgr_association_lock must be locked before this is called.
  */
@@ -502,10 +501,10 @@ static int _distribute_tickets(List children_list, uint32_t tickets)
 }
 
 
-/* job_ptr should already have the partition priority and such added
- * here before had we will be adding to it
+/* job_ptr should already have the partition priority and such added here
+ * before had we will be adding to it
  */
-static double _get_fairshare_priority( struct job_record *job_ptr)
+static double _get_fairshare_priority(struct job_record *job_ptr)
 {
 	slurmdb_association_rec_t *job_assoc =
 		(slurmdb_association_rec_t *)job_ptr->assoc_ptr;
@@ -568,7 +567,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 	return priority_fs;
 }
 
-static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
+static void _set_priority_factors(time_t start_time, struct job_record *job_ptr)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 
@@ -694,10 +693,12 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 		job_ptr->prio_factors->nice = NICE_OFFSET;
 }
 
-static uint32_t _get_priority_internal(time_t start_time,
+
+/* Returns the priority after applying the weight factors */
+static uint32_t _apply_priority_weights(time_t start_time,
 				       struct job_record *job_ptr)
 {
-	double priority		= 0.0;
+	double priority	= 0.0;
 	priority_factors_object_t pre_factors;
 
 	if (job_ptr->direct_set_prio && (job_ptr->priority > 0))
@@ -710,8 +711,6 @@ static uint32_t _get_priority_internal(time_t start_time,
 		return 0;
 	}
 
-	/* figure out the priority */
-	_get_priority_factors(start_time, job_ptr);
 	memcpy(&pre_factors, job_ptr->prio_factors,
 	       sizeof(priority_factors_object_t));
 
@@ -727,6 +726,10 @@ static uint32_t _get_priority_internal(time_t start_time,
 		+ job_ptr->prio_factors->priority_part
 		+ job_ptr->prio_factors->priority_qos
 		- (double)(job_ptr->prio_factors->nice - NICE_OFFSET);
+
+	/* Priority 0 is reserved for held jobs */
+	if (priority < 1)
+		priority = 1;
 
 	if (job_ptr->part_ptr_list) {
 		struct part_record *part_ptr;
@@ -758,9 +761,6 @@ static uint32_t _get_priority_internal(time_t start_time,
 			i++;
 		}
 	}
-	/* Priority 0 is reserved for held jobs */
-	if (priority < 1)
-		priority = 1;
 
 	if (priority_debug) {
 		info("Weighted Age priority is %f * %u = %.2f",
@@ -1131,6 +1131,146 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	return 1;
 }
 
+
+static void _ticket_based_decay(List job_list, time_t start_time)
+{
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	ListIterator itr = NULL;
+	struct job_record *job_ptr = NULL;
+
+	/* Read lock on jobs, nodes, and partitions */
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+
+	/* Multifactor Ticket Based core algo 1/3. Iterate through all jobs,
+	 * mark parent associations with the current sequence id, so that we
+	 * know which associations/users are active. At the same time as we're
+	 * looping through all the jobs anyway, apply the new usage of running
+	 * jobs too.
+	 */
+
+	lock_slurmctld(job_read_lock);
+	assoc_mgr_lock(&locks);
+	/* seqno 0 is a special invalid value. */
+	assoc_mgr_root_assoc->usage->active_seqno++;
+	if (!assoc_mgr_root_assoc->usage->active_seqno)
+		assoc_mgr_root_assoc->usage->active_seqno++;
+	assoc_mgr_unlock(&locks);
+	itr = list_iterator_create(job_list);
+	while ((job_ptr = list_next(itr))) {
+		/* Don't need to handle finished jobs. */
+		if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr))
+			continue;
+		/* apply new usage */
+		if (!IS_JOB_PENDING(job_ptr) &&
+		    job_ptr->start_time && job_ptr->assoc_ptr
+		    && g_last_ran)
+			_apply_new_usage(job_ptr,
+					 g_last_ran,
+					 start_time);
+
+		if (IS_JOB_PENDING(job_ptr)
+		    && job_ptr->assoc_ptr) {
+			assoc_mgr_lock(&locks);
+			_mark_assoc_active(job_ptr);
+			assoc_mgr_unlock(&locks);
+		}
+	}
+	list_iterator_destroy(itr);
+	unlock_slurmctld(job_read_lock);
+
+	/* Multifactor Ticket Based core algo 2/3. Start from the root,
+	 * distribute tickets to active child associations proportional to the
+	 * fair share (s*F). We start with UINT32_MAX tickets at the root.
+	 */
+	assoc_mgr_lock(&locks);
+	max_tickets = 0;
+	assoc_mgr_root_assoc->usage->tickets = (uint32_t) -1;
+	_distribute_tickets(
+		assoc_mgr_root_assoc->usage->children_list,
+		(uint32_t) -1);
+	assoc_mgr_unlock(&locks);
+
+	/* Multifactor Ticket Based core algo 3/3. Iterate through the job
+	 * list again, give priorities proportional to the  maximum number of
+	 * tickets given to any user.
+	 */
+	lock_slurmctld(job_write_lock);
+	itr = list_iterator_create(job_list);
+	while ((job_ptr = list_next(itr))) {
+		/*
+		 * Priority 0 is reserved for held
+		 * jobs. Also skip priority
+		 * calculation for non-pending jobs.
+		 */
+		if ((job_ptr->priority == 0) || !IS_JOB_PENDING(job_ptr))
+			continue;
+
+		_set_priority_factors(start_time, job_ptr);
+		job_ptr->priority =
+			_apply_priority_weights(start_time, job_ptr);
+		last_job_update = time(NULL);
+		debug2("priority for job %u is now %u",
+		       job_ptr->job_id, job_ptr->priority);
+	}
+	list_iterator_destroy(itr);
+	unlock_slurmctld(job_write_lock);
+}
+
+
+static bool _decay_thread_apply_new_usage(struct job_record *job_ptr,
+					  time_t *start_time_ptr)
+{
+
+	/* Don't need to handle finished jobs. */
+	if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr))
+		return false;
+
+	/* apply new usage */
+	if (!IS_JOB_PENDING(job_ptr) &&
+	    job_ptr->start_time && job_ptr->assoc_ptr) {
+		if (!_apply_new_usage(job_ptr, g_last_ran, *start_time_ptr))
+			return false;
+	}
+	return true;
+}
+
+
+static void _decay_thread_apply_weighted_factors(struct job_record *job_ptr,
+						 time_t *start_time_ptr)
+{
+	/*
+	 * Priority 0 is reserved for held
+	 * jobs. Also skip priority
+	 * calculation for non-pending jobs.
+	 */
+	if ((job_ptr->priority == 0) || !IS_JOB_PENDING(job_ptr))
+		return;
+
+	_set_priority_factors(*start_time_ptr, job_ptr);
+
+	job_ptr->priority = _apply_priority_weights(*start_time_ptr, job_ptr);
+	last_job_update = time(NULL);
+	debug2("priority for job %u is now %u",
+	       job_ptr->job_id, job_ptr->priority);
+
+}
+
+
+static void _decay_thread_apply_new_usage_and_weighted_factors(
+					struct job_record *job_ptr,
+					time_t *start_time_ptr)
+{
+	if (!_decay_thread_apply_new_usage(job_ptr, start_time_ptr))
+		return;
+
+	_decay_thread_apply_weighted_factors(job_ptr, start_time_ptr);
+}
+
+
 static void *_decay_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
@@ -1140,6 +1280,11 @@ static void *_decay_thread(void *no_data)
 	uint32_t calc_period = slurm_get_priority_calc_period();
 	double decay_hl = (double)slurm_get_priority_decay_hl();
 	uint16_t reset_period = slurm_get_priority_reset_period();
+
+	time_t now;
+	double run_delta = 0.0, real_decay = 0.0;
+	uint32_t excluded_flags = 0;
+	double elapsed;
 
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
@@ -1193,8 +1338,9 @@ static void *_decay_thread(void *no_data)
 	_init_grp_used_cpu_run_secs(g_last_ran);
 
 	while (1) {
-		time_t now = start_time;
-		double run_delta = 0.0, real_decay = 0.0;
+		now = start_time;
+		run_delta = 0.0;
+		real_decay = 0.0;
 
 		slurm_mutex_lock(&decay_lock);
 		running_decay = 1;
@@ -1278,129 +1424,21 @@ static void *_decay_thread(void *no_data)
 			break;
 		}
 
-		if (!(flags & PRIORITY_FLAGS_TICKET_BASED)) {
+		excluded_flags = PRIORITY_FLAGS_TICKET_BASED;
+
+		if (!(flags & excluded_flags)) {
 			lock_slurmctld(job_write_lock);
-			itr = list_iterator_create(job_list);
-			while ((job_ptr = list_next(itr))) {
-				/* Don't need to handle finished jobs. */
-				if (IS_JOB_FINISHED(job_ptr)
-				    || IS_JOB_COMPLETING(job_ptr))
-					continue;
-				/* apply new usage */
-				if (!IS_JOB_PENDING(job_ptr) &&
-				    job_ptr->start_time && job_ptr->assoc_ptr) {
-					if (!_apply_new_usage(
-						    job_ptr,
-						    g_last_ran, start_time))
-						continue;
-				}
-
-				/*
-				 * Priority 0 is reserved for held
-				 * jobs. Also skip priority
-				 * calculation for non-pending jobs.
-				 */
-				if ((job_ptr->priority == 0)
-				    || !IS_JOB_PENDING(job_ptr))
-					continue;
-
-				job_ptr->priority = _get_priority_internal(
-					start_time, job_ptr);
-				last_job_update = time(NULL);
-				debug2("priority for job %u is now %u",
-				       job_ptr->job_id, job_ptr->priority);
-			}
-			list_iterator_destroy(itr);
+			list_for_each(
+				job_list,
+				(ListForF) _decay_thread_apply_new_usage_and_weighted_factors,
+				&start_time
+			);
 			unlock_slurmctld(job_write_lock);
 		}
 
 	get_usage:
-		if (flags & PRIORITY_FLAGS_TICKET_BASED) {
-			/* Read lock on jobs, nodes, and partitions */
-			slurmctld_lock_t job_read_lock =
-				{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
-
-			/* Multifactor Ticket Based core algo
-			 * 1/3. Iterate through all jobs, mark parent
-			 * associations with the current
-			 * sequence id, so that we know which
-			 * associations/users are active. At the same time as
-			 * we're looping through all the jobs anyway, apply
-			 * the new usage of running jobs too.
-			 */
-
-			lock_slurmctld(job_read_lock);
-			assoc_mgr_lock(&locks);
-			/* seqno 0 is a special invalid value. */
-			assoc_mgr_root_assoc->usage->active_seqno++;
-			if (!assoc_mgr_root_assoc->usage->active_seqno)
-				assoc_mgr_root_assoc->usage->active_seqno++;
-			assoc_mgr_unlock(&locks);
-			itr = list_iterator_create(job_list);
-			while ((job_ptr = list_next(itr))) {
-				/* Don't need to handle finished jobs. */
-				if (IS_JOB_FINISHED(job_ptr)
-				    || IS_JOB_COMPLETING(job_ptr))
-					continue;
-				/* apply new usage */
-				if (!IS_JOB_PENDING(job_ptr) &&
-				    job_ptr->start_time && job_ptr->assoc_ptr
-				    && g_last_ran)
-					_apply_new_usage(job_ptr,
-							 g_last_ran,
-							 start_time);
-
-				if (IS_JOB_PENDING(job_ptr)
-				    && job_ptr->assoc_ptr) {
-					assoc_mgr_lock(&locks);
-					_mark_assoc_active(job_ptr);
-					assoc_mgr_unlock(&locks);
-				}
-			}
-			list_iterator_destroy(itr);
-			unlock_slurmctld(job_read_lock);
-
-			/* Multifactor Ticket Based core algo
-			 * 2/3. Start from the root,
-			 * distribute tickets to active child associations
-			 * proportional to the fair share (s*F). We start with
-			 * UINT32_MAX tickets at the root.
-			 */
-			assoc_mgr_lock(&locks);
-			max_tickets = 0;
-			assoc_mgr_root_assoc->usage->tickets = (uint32_t) -1;
-			_distribute_tickets(
-				assoc_mgr_root_assoc->usage->children_list,
-				(uint32_t) -1);
-			assoc_mgr_unlock(&locks);
-
-			/* Multifactor Ticket Based core algo
-			 * 3/3. Iterate through the job
-			 * list again, give priorities proportional to the
-			 * maximum number of tickets given to any user.
-			 */
-			lock_slurmctld(job_write_lock);
-			itr = list_iterator_create(job_list);
-			while ((job_ptr = list_next(itr))) {
-				/*
-				 * Priority 0 is reserved for held
-				 * jobs. Also skip priority
-				 * calculation for non-pending jobs.
-				 */
-				if ((job_ptr->priority == 0)
-				    || !IS_JOB_PENDING(job_ptr))
-					continue;
-
-				job_ptr->priority = _get_priority_internal(
-					start_time, job_ptr);
-				last_job_update = time(NULL);
-				debug2("priority for job %u is now %u",
-				       job_ptr->job_id, job_ptr->priority);
-			}
-			list_iterator_destroy(itr);
-			unlock_slurmctld(job_write_lock);
-
-		}
+		if (flags & PRIORITY_FLAGS_TICKET_BASED)
+			_ticket_based_decay(job_list, start_time);
 
 		g_last_ran = start_time;
 
@@ -1411,7 +1449,7 @@ static void *_decay_thread(void *no_data)
 
 		/* Sleep until the next time. */
 		now = time(NULL);
-		double elapsed = difftime(now, start_time);
+		elapsed = difftime(now, start_time);
 		if (elapsed < calc_period) {
 			sleep(calc_period - elapsed);
 			start_time = time(NULL);
@@ -1591,7 +1629,9 @@ int fini ( void )
 
 extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 {
-	uint32_t priority = _get_priority_internal(time(NULL), job_ptr);
+	uint32_t priority = 0;
+	_set_priority_factors(time(NULL), job_ptr);
+	priority = _apply_priority_weights(time(NULL), job_ptr);
 
 	debug2("initial priority for job %u is %u", job_ptr->job_id, priority);
 
@@ -1615,6 +1655,123 @@ extern void priority_p_reconfig(bool assoc_clear)
 
 	return;
 }
+
+
+static void _depth_oblivious_set_usage_efctv(
+			slurmdb_association_rec_t *assoc,
+			char *child,
+			char *child_str)
+{
+	long double ratio_p, ratio_l, k, f, ratio_s;
+	slurmdb_association_rec_t *parent_assoc = NULL;
+	ListIterator sib_itr = NULL;
+	slurmdb_association_rec_t *sibling = NULL;
+
+	/* We want priority_fs = pow(2.0, -R); where
+	   R = ratio_p * ratio_l^k
+	*/
+
+	/* ratio_p is R for our parent */
+
+	/* ratio_l is our usage ratio r divided by ratio_s,
+	 * the usage ratio of our siblings (including
+	 * ourselves). In the standard case where everything
+	 * is consumed at the leaf accounts ratio_s=ratio_p
+	 */
+
+	/* k is a factor which tends towards 0 when ratio_p
+	   diverges from 1 and ratio_l would bring back R
+	   towards 1
+	*/
+
+	/* Effective usage is now computed to be R*shares_norm
+	   so that the general formula of
+	   priority_fs = pow(2.0, -(usage_efctv / shares_norm))
+	   gives what we want: priority_fs = pow(2.0, -R);
+	*/
+
+	f = 5.0; /* FIXME: This could be a tunable parameter
+		    (higher f means more impact when parent consumption
+		    is inadequate) */
+	parent_assoc =  assoc->usage->parent_assoc_ptr;
+
+	if (assoc->usage->shares_norm &&
+	    parent_assoc->usage->shares_norm &&
+	    parent_assoc->usage->usage_efctv &&
+	    assoc->usage->usage_norm) {
+		ratio_p = (parent_assoc->usage->usage_efctv /
+		      parent_assoc->usage->shares_norm);
+
+		ratio_s = 0;
+		sib_itr = list_iterator_create(
+			parent_assoc->usage->children_list);
+		while ((sibling = list_next(sib_itr))) {
+			if(sibling->shares_raw != SLURMDB_FS_USE_PARENT)
+				ratio_s += sibling->usage->usage_norm;
+		}
+		list_iterator_destroy(sib_itr);
+		ratio_s /= parent_assoc->usage->shares_norm;
+
+		ratio_l = (assoc->usage->usage_norm /
+		      assoc->usage->shares_norm) / ratio_s;
+#if defined(__FreeBSD__)
+		if (!ratio_p || !ratio_l
+		    || log(ratio_p) * log(ratio_l) >= 0) {
+			k = 1;
+		} else {
+			k = 1 / (1 + pow(f * log(ratio_p), 2));
+		}
+
+		assoc->usage->usage_efctv =
+			ratio_p * pow(ratio_l, k) *
+			assoc->usage->shares_norm;
+#else
+		if (!ratio_p || !ratio_l
+		    || logl(ratio_p) * logl(ratio_l) >= 0) {
+			k = 1;
+		} else {
+			k = 1 / (1 + powl(f * logl(ratio_p), 2));
+		}
+
+		assoc->usage->usage_efctv =
+			ratio_p * pow(ratio_l, k) *
+			assoc->usage->shares_norm;
+#endif
+
+		if (priority_debug) {
+			info("Effective usage for %s %s off %s "
+			     "(%Lf * %Lf ^ %Lf) * %f  = %Lf",
+			     child, child_str,
+			     assoc->usage->parent_assoc_ptr->acct,
+			     ratio_p, ratio_l, k,
+			     assoc->usage->shares_norm,
+			     assoc->usage->usage_efctv);
+		}
+	} else {
+		assoc->usage->usage_efctv = assoc->usage->usage_norm;
+		if (priority_debug) {
+			info("Effective usage for %s %s off %s %Lf",
+			     child, child_str,
+			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->usage_efctv);
+		}
+	}
+}
+
+
+static long double _set_usage_efctv(slurmdb_association_rec_t *assoc)
+{
+	/* Variable names taken from HTML documentation */
+	long double UAchild = assoc->usage->usage_norm;
+	long double UEparent =
+		 assoc->usage->parent_assoc_ptr->usage->usage_efctv;
+	uint32_t Schild = assoc->shares_raw;
+	uint32_t Sall_siblings = assoc->usage->level_shares;
+
+	assoc->usage->usage_efctv = UAchild +
+		(UEparent - UAchild) * (Schild / (long double) Sall_siblings);
+}
+
 
 extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 {
@@ -1666,7 +1823,7 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 			     assoc->usage->usage_efctv,
 			     assoc->usage->usage_norm);
 	} else if (flags & PRIORITY_FLAGS_TICKET_BASED) {
-		_set_usage_efctv(assoc);
+		_ticket_based_set_usage_efctv(assoc);
 		if (priority_debug) {
 			info("Effective usage for %s %s off %s = %Lf",
 			     child, child_str,
@@ -1686,106 +1843,9 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 			     parent_assoc->usage->usage_efctv);
 		}
 	} else if (flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS) {
-		long double ratio_p, ratio_l, k, f, ratio_s;
-		slurmdb_association_rec_t *parent_assoc = NULL;
-		ListIterator sib_itr = NULL;
-		slurmdb_association_rec_t *sibling = NULL;
-
-		/* We want priority_fs = pow(2.0, -R); where
-		   R = ratio_p * ratio_l^k
-		*/
-
-		/* ratio_p is R for our parent */
-
-		/* ratio_l is our usage ratio r divided by ratio_s,
-		 * the usage ratio of our siblings (including
-		 * ourselves). In the standard case where everything
-		 * is consumed at the leaf accounts ratio_s=ratio_p
-		 */
-
-		/* k is a factor which tends towards 0 when ratio_p
-		   diverges from 1 and ratio_l would bring back R
-		   towards 1
-		*/
-
-		/* Effective usage is now computed to be R*shares_norm
-		   so that the general formula of
-		   priority_fs = pow(2.0, -(usage_efctv / shares_norm))
-		   gives what we want: priority_fs = pow(2.0, -R);
-		*/
-
-		f = 5.0; /* FIXME: This could be a tunable parameter
-			    (higher f means more impact when parent consumption
-			    is inadequate) */
-		parent_assoc =  assoc->usage->parent_assoc_ptr;
-
-		if (assoc->usage->shares_norm &&
-		    parent_assoc->usage->shares_norm &&
-		    parent_assoc->usage->usage_efctv &&
-		    assoc->usage->usage_norm) {
-			ratio_p = (parent_assoc->usage->usage_efctv /
-			      parent_assoc->usage->shares_norm);
-
-			ratio_s = 0;
-			sib_itr = list_iterator_create(
-				parent_assoc->usage->children_list);
-			while ((sibling = list_next(sib_itr))) {
-				if(sibling->shares_raw != SLURMDB_FS_USE_PARENT)
-					ratio_s += sibling->usage->usage_norm;
-			}
-			list_iterator_destroy(sib_itr);
-			ratio_s /= parent_assoc->usage->shares_norm;
-
-			ratio_l = (assoc->usage->usage_norm /
-			      assoc->usage->shares_norm) / ratio_s;
-#if defined(__FreeBSD__)
-			if (!ratio_p || !ratio_l
-			    || log(ratio_p) * log(ratio_l) >= 0) {
-				k = 1;
-			} else {
-				k = 1 / (1 + pow(f * log(ratio_p), 2));
-			}
-
-			assoc->usage->usage_efctv =
-				ratio_p * pow(ratio_l, k) *
-				assoc->usage->shares_norm;
-#else
-			if (!ratio_p || !ratio_l
-			    || logl(ratio_p) * logl(ratio_l) >= 0) {
-				k = 1;
-			} else {
-				k = 1 / (1 + powl(f * logl(ratio_p), 2));
-			}
-
-			assoc->usage->usage_efctv =
-				ratio_p * pow(ratio_l, k) *
-				assoc->usage->shares_norm;
-#endif
-
-			if (priority_debug) {
-				info("Effective usage for %s %s off %s "
-				     "(%Lf * %Lf ^ %Lf) * %f  = %Lf",
-				     child, child_str,
-				     assoc->usage->parent_assoc_ptr->acct,
-				     ratio_p, ratio_l, k,
-				     assoc->usage->shares_norm,
-				     assoc->usage->usage_efctv);
-			}
-		} else {
-			assoc->usage->usage_efctv = assoc->usage->usage_norm;
-			if (priority_debug) {
-				info("Effective usage for %s %s off %s %Lf",
-				     child, child_str,
-				     assoc->usage->parent_assoc_ptr->acct,
-				     assoc->usage->usage_efctv);
-			}
-		}
+		_depth_oblivious_set_usage_efctv(assoc, child, child_str);
 	} else {
-		assoc->usage->usage_efctv = assoc->usage->usage_norm +
-			((assoc->usage->parent_assoc_ptr->usage->usage_efctv -
-			  assoc->usage->usage_norm) *
-			 (assoc->shares_raw /
-			  (long double)assoc->usage->level_shares));
+		_set_usage_efctv(assoc);
 		if (priority_debug) {
 			info("Effective usage for %s %s off %s "
 			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
@@ -1800,6 +1860,7 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 		}
 	}
 }
+
 
 extern double priority_p_calc_fs_factor(long double usage_efctv,
 					long double shares_norm)
