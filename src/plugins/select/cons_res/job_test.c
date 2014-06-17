@@ -721,8 +721,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 
 		/* non-resource-sharing node check */
 		} else if (node_usage[i].node_state >= NODE_CR_ONE_ROW) {
-			if ((job_node_req == NODE_CR_RESERVED) ||
-			    (job_node_req == NODE_CR_AVAILABLE)) {
+			if (job_node_req == NODE_CR_RESERVED) {
 				debug3("cons_res: _vns: node %s non-sharing",
 				       node_ptr->name);
 				goto clear_bit;

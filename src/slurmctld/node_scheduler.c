@@ -684,8 +684,8 @@ static int _match_feature(char *seek, struct node_set *node_set_ptr)
  *	1		= exclusive
  *
  * Return values:
- *	0 = no sharing
- *	1 = share resources
+ *	0 = requires idle nodes
+ *	1 = can use non-idle nodes
  */
 static int
 _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
@@ -694,31 +694,36 @@ _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 	/* no sharing if partition Shared=EXCLUSIVE */
 	if (part_max_share == 0) {
 		job_ptr->details->whole_node = 1;
+		job_ptr->details->share_res = 0;
 		return 0;
 	}
 
 	/* sharing if partition Shared=FORCE with count > 1 */
 	if ((part_max_share & SHARED_FORCE) &&
-	    ((part_max_share & (~SHARED_FORCE)) > 1))
+	    ((part_max_share & (~SHARED_FORCE)) > 1)) {
+		job_ptr->details->share_res = 1;
 		return 1;
+	}
 
 	if (cons_res_flag) {
-		if (part_max_share == 1) /* partition configured Shared=NO */
-			return 0;
 		if ((job_ptr->details->share_res  == 0) ||
-		    (job_ptr->details->share_res  == (uint8_t) NO_VAL) ||
-		    (job_ptr->details->whole_node == 1))
+		    (job_ptr->details->whole_node == 1)) {
+			job_ptr->details->share_res = 0;
 			return 0;
+		}
 		return 1;
 	} else {
 		job_ptr->details->whole_node = 1;
-		if (part_max_share == 1) /* partition configured Shared=NO */
+		if (part_max_share == 1) { /* partition configured Shared=NO */
+			job_ptr->details->share_res = 0;
 			return 0;
+		}
 		/* share if the user requested it */
 		if (job_ptr->details->share_res == 1)
 			return 1;
+		job_ptr->details->share_res = 0;
+		return 0;
 	}
-	return 0;
 }
 
 /*
@@ -1081,7 +1086,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	shared = _resolve_shared_status(job_ptr, part_ptr->max_share,
 					cr_enabled);
-	job_ptr->details->share_res = shared;
 	if (cr_enabled)
 		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
