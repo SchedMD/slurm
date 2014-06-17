@@ -80,12 +80,13 @@ static uint32_t _threads_per_core(char *host)
 {
 	uint32_t i, threads = 1;
 
-	if (!job_node_ptr)
+	if (!job_node_ptr || !host)
 		return threads;
 
 	slurm_mutex_lock(&job_node_info_lock);
 	for (i = 0; i < job_node_ptr->record_count; i++) {
-		if (!strcmp(host, job_node_ptr->node_array[i].name)) {
+		if (job_node_ptr->node_array[i].name &&
+		    !strcmp(host, job_node_ptr->node_array[i].name)) {
 			threads = job_node_ptr->node_array[i].threads;
 			break;
 		}
