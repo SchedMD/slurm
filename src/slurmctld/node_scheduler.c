@@ -700,10 +700,7 @@ _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 		return 1;
 
 	if (cons_res_flag) {
-		if (part_max_share == 1) /* partition configured Shared=NO */
-			return 0;
 		if ((job_ptr->details->share_res  == 0) ||
-		    (job_ptr->details->share_res  == (uint8_t) NO_VAL) ||
 		    (job_ptr->details->whole_node == 1))
 			return 0;
 		return 1;
