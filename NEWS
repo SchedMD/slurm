@@ -648,6 +648,8 @@ documents those changes that are of interest to users and admins.
  -- Properly enforce job --requeue and --norequeue options.
  -- If a job --mem-per-cpu limit exceeds the partition or system limit, then
     scale the job's memory limit and CPUs per task to satisfy the limit.
+ -- Correct logic to support Power7 processor with 1 or 2 threads per core
+    (CPU IDs are not consecutive).
 
 * Changes in Slurm 2.6.9
 ========================

@@ -69,7 +69,7 @@ int main (int argc, char *argv[])
 
   	unpack64(&test64, buffer);
 	test_double2 = (long double)test64;
-	TEST(test64 != (uint64_t)test_double, "un/pack double as a uint64");
+	TEST((uint64_t)test_double2 != (uint64_t)test_double, "un/pack double as a uint64");
 	/* info("Original\t %Lf", test_double); */
 	/* info("uint64\t %ld", test64); */
 	/* info("converted LD\t %Lf", test_double2); */
