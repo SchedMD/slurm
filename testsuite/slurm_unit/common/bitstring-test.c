@@ -5,6 +5,12 @@
 #include <sys/time.h>
 #include <testsuite/dejagnu.h>
 
+/* Copied from src/common/bitstring.c */
+#define	_bitstr_words(nbits)	\
+	((((nbits) + BITSTR_MAXPOS) >> BITSTR_SHIFT) + BITSTR_OVERHEAD)
+#define	bit_decl(name, nbits) \
+	(name)[_bitstr_words(nbits)] = { BITSTR_MAGIC_STACK, (nbits) }
+
 /* Test for failure: 
 */
 #define TEST(_tst, _msg) do {		\
