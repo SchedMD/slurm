@@ -49,6 +49,13 @@
 #  include <inttypes.h>         /* for uint16_t, uint32_t definitions */
 #endif
 
+/* Statistically normalize a value to another range. Cast as needed to avoid
+ * integer division
+*/
+#define NORMALIZE_VALUE(x, from_min, from_max, to_min, to_max) (             \
+        to_min + (x - from_min) * (to_max - to_min) / (from_max - from_min)  \
+)
+
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/slurm_accounting_storage.h"
 

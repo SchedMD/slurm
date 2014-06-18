@@ -142,6 +142,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, preempt_type, charp);
 	STORE_FIELD(hv, conf, priority_decay_hl, uint32_t);
 	STORE_FIELD(hv, conf, priority_favor_small, uint16_t);
+	STORE_FIELD(hv, conf, priority_levels, uint16_t);
 	STORE_FIELD(hv, conf, priority_max_age, uint32_t);
 	STORE_FIELD(hv, conf, priority_reset_period, uint16_t);
 	if(conf->priority_type)
@@ -356,6 +357,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, preempt_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, priority_decay_hl, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, priority_favor_small, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, priority_levels, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, priority_max_age, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, priority_reset_period, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, priority_type, charp, FALSE);

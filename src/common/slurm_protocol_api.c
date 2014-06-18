@@ -538,6 +538,24 @@ bool slurm_get_priority_favor_small(void)
 	return factor;
 }
 
+/* slurm_get_priority_levels
+ * returns the number of priority levels of interest from slurmctld_conf object
+ * RET uint16_t - number of levels of interest
+ */
+uint16_t slurm_get_priority_levels(void)
+{
+	uint16_t levels = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		levels = conf->priority_levels;
+		slurm_conf_unlock();
+	}
+
+	return levels;
+}
 
 /* slurm_get_priority_max_age
  * returns the priority age max in seconds from slurmctld_conf object
