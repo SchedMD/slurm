@@ -65,6 +65,7 @@ static int g_node_scaling = 1;
 static int sinfo_cnt;	/* thread count */
 static pthread_mutex_t sinfo_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  sinfo_cnt_cond  = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t sinfo_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /************
  * Funtions *
@@ -90,6 +91,7 @@ static int  _query_server(partition_info_msg_t ** part_pptr,
 			  block_info_msg_t ** block_pptr,
 			  reserve_info_msg_t ** reserv_pptr, bool clear_old);
 static int _reservation_report(reserve_info_msg_t *resv_ptr);
+static bool _serial_part_data(void);
 static void _sort_hostlist(List sinfo_list);
 static int  _strcmp(char *data1, char *data2);
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
@@ -425,6 +427,8 @@ void *_build_part_info(void *args)
 	uint16_t part_num;
 	int j = 0;
 
+	if (_serial_part_data())
+		slurm_mutex_lock(&sinfo_list_mutex);
 	build_struct_ptr = (build_part_info_t *) args;
 	sinfo_list = build_struct_ptr->sinfo_list;
 	part_num = build_struct_ptr->part_num;
@@ -462,6 +466,8 @@ void *_build_part_info(void *args)
 	}
 
 	xfree(args);
+	if (_serial_part_data())
+		slurm_mutex_unlock(&sinfo_list_mutex);
 	slurm_mutex_lock(&sinfo_cnt_mutex);
 	if (sinfo_cnt > 0) {
 		sinfo_cnt--;
@@ -794,6 +800,18 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	return true;
 }
 
+/* Return true if the processing of partition data must be serialized. In that
+ * case, multiple partitions can write into the same sinfo data structure
+ * entries. The logic here is similar to that in _match_part_data() below. */
+static bool _serial_part_data(void)
+{
+	if (params.list_reasons)	/* Don't care about partition */
+		return true;
+	if (params.match_flags.partition_flag)	/* Match partition name */
+		return false;
+	return true;
+}
+
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 			     partition_info_t* part_ptr)
 {
@@ -804,7 +822,8 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	if ((part_ptr == NULL) || (sinfo_ptr->part_info == NULL))
 		return false;
 
-	if ((_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
+	if (params.match_flags.partition_flag
+	    && (_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
 		return false;
 
 	if (params.match_flags.avail_flag &&

@@ -89,8 +89,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.5
 ==========================
- -- Enlarge the width specifier when printing partition SHARE
-    to display larger sharing values.
+ -- Enlarge the width specifier when printing partition SHARE to display larger
+    sharing values.
+ -- sinfo locks added to prevent possibly duplicate record printing for
+    resources in multiple partitions.
 
 * Changes in Slurm 14.03.4
 ==========================
