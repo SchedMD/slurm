@@ -2045,9 +2045,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	if (!job_ptr->details)
 		return EINVAL;
 
-
-	if ((job_ptr->details->core_spec !=0)                  && 
-	    (job_ptr->details->core_spec != (uint16_t) NO_VAL) && 
+	if (slurm_get_use_spec_resources() == 0)
+		job_ptr->details->core_spec = (uint16_t) NO_VAL;
+	if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
 	    (job_ptr->details->whole_node == 0)) {
 		info("Setting Exclusive mode for job %u with CoreSpec=%u",
 		      job_ptr->job_id, job_ptr->details->core_spec);

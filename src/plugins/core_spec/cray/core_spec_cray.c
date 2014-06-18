@@ -136,7 +136,7 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 	int i;
 
 	// Skip core spec setup for no specialized cores
-	if (core_count < 1) {
+	if ((core_count == (uint16_t) NO_VAL) || (core_count < 1)) {
 		return SLURM_SUCCESS;
 	}
 

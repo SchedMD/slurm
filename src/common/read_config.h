@@ -92,8 +92,10 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_COMP_LOC        "/var/log/slurm_jobcomp.log"
 #define DEFAULT_JOB_COMP_DB         "slurm_jobcomp_db"
 #if defined HAVE_NATIVE_CRAY
+#  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 1
 #  define DEFAULT_JOB_CONTAINER_PLUGIN  "job_container/cncu"
 #else
+#  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
 #  define DEFAULT_JOB_CONTAINER_PLUGIN "job_container/none"
 #endif
 #define DEFAULT_KEEP_ALIVE_TIME     ((uint16_t) NO_VAL)

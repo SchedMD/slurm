@@ -65,9 +65,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add new node configuration parameters CoreSpecCount, CPUSpecList and
     MemSpecLimit which support the reservation of resources for system use
     with Linux cgroup.
- -- Added AllowSpecResourcesUsage configuration parameter in slurm.conf (This
+ -- Added AllowSpecResourcesUsage configuration parameter in slurm.conf. This
     allows jobs to use specialized resources on nodes allocated to them if the
-    job designates --Core-Spec=0).
+    job designates --core-spec=0.
 
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)

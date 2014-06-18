@@ -5535,7 +5535,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			     bitstr_t ** exc_bitmap)
 {
 	int error_code;
-	uint16_t use_spec_resources;
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
 
@@ -5702,12 +5701,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
-	detail_ptr->core_spec = job_desc->core_spec;
-	use_spec_resources = slurm_get_use_spec_resources();
-	if (((job_desc->core_spec != 0)				&&
-	    (job_desc->core_spec != (uint16_t) NO_VAL))		||
-	    ((job_desc->core_spec == 0) &&  use_spec_resources))
-			detail_ptr->whole_node = 1;
+	if (slurm_get_use_spec_resources())
+		detail_ptr->core_spec = job_desc->core_spec;
+	else
+		detail_ptr->core_spec = (uint16_t) NO_VAL;
+	if (detail_ptr->core_spec != (uint16_t) NO_VAL)
+		detail_ptr->whole_node = 1;
 	if (job_desc->task_dist != (uint16_t) NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
@@ -8797,12 +8796,15 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (authorized) {
-			detail_ptr->core_spec = job_specs->core_spec;
+			if (job_specs->core_spec == (uint16_t) INFINITE)
+				detail_ptr->core_spec = (uint16_t) NO_VAL;
+			else
+				detail_ptr->core_spec = job_specs->core_spec;
 			info("sched: update_job: setting core_spec to %u "
-			     "for job_id %u", job_specs->core_spec,
+			     "for job_id %u", detail_ptr->core_spec,
 			     job_specs->job_id);
 		} else {
-			error("sched: Attempt to add core_spec for job %u",
+			error("sched: Attempt to modify core_spec for job %u",
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -10790,7 +10792,7 @@ static int _job_resume_test(struct job_record *job_ptr)
 	job_iterator = list_iterator_create(job_list);
 	while ((test_job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (test_job_ptr->details &&
-		    test_job_ptr->details->core_spec &&
+		    (test_job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
 		    IS_JOB_RUNNING(test_job_ptr) &&
 		    test_job_ptr->node_bitmap &&
 		    bit_overlap(test_job_ptr->node_bitmap,

@@ -1231,7 +1231,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, 0);
 		match = hwloc_bitmap_isequal(obj->complete_cpuset,
 					     obj->allowed_cpuset);
-		if ((job->job_core_spec == 0) && !match) {
+		if ((job->job_core_spec == (uint16_t) NO_VAL) && !match) {
 			info("task/cgroup: entire node must be allocated, "
 			     "disabling affinity, task[%u]", taskid);
 			fprintf(stderr, "Requested cpu_bind option requires "
@@ -1246,7 +1246,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 					  job);
 			tssize = sizeof(cpu_set_t);
 			fstatus = SLURM_SUCCESS;
-			if (job->job_core_spec)
+			if (job->job_core_spec != (uint16_t) NO_VAL)
 				_validate_mask(taskid, obj, &ts);
 			if ((rc = sched_setaffinity(pid, tssize, &ts))) {
 				error("task/cgroup: task[%u] unable to set "

@@ -857,14 +857,13 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "CoreSpec", MAX(taglen, 4)) == 0) {
-			if (parse_uint16(val, &job_msg.core_spec)) {
-				if (job_msg.core_spec != (uint16_t) NO_VAL) {
-					error ("Invalid CoreSpec value: %s",
-						val);
-					exit_code = 1;
-					xfree(ids);
-					return 0;
-				}
+			if (!strcmp(val, "-1") || !strcmp(val, "*"))
+				job_msg.core_spec = (uint16_t) INFINITE;
+			else if (parse_uint16(val, &job_msg.core_spec)) {
+				error ("Invalid CoreSpec value: %s", val);
+				exit_code = 1;
+				xfree(ids);
+				return 0;
 			}
 			update_cnt++;
 		}

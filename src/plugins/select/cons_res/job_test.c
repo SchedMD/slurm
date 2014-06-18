@@ -777,15 +777,11 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 	int spec_cores, res_core, res_sock, res_off;
 	uint32_t coff;
 	uint16_t i;
-	uint16_t use_spec_resources;
 	struct node_record *node_ptr;
 
-	use_spec_resources = slurm_get_use_spec_resources();
 	nodes = bit_size(node_map);
 	size = cr_get_coremap_offset(nodes);
 	bitstr_t *core_map = bit_alloc(size);
-	if (!core_map)
-		return NULL;
 
 	nodes = bit_size(node_map);
 
@@ -816,17 +812,17 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 					spec_cores--;
 				}
 			}
+			continue;
 		}
 		node_ptr = select_node_record[n].node_ptr;
-		if ((!node_ptr->cpu_spec_list) ||
-		    ((use_spec_resources != 0) && (core_spec == 0)))
+		if ((core_spec == 0) || !node_ptr->cpu_spec_list)
 			continue;
 		if (!node_ptr->node_spec_bitmap) {
 			info("CPUSpecList not registered for node %s yet",
 			     node_ptr->name);
 			continue;
 		}
-		/* remove node's specialized cpus now */
+		/* remove node's specialized CPUs now */
 		for (i = 0; i < (coff - c) ; i++) {
 			if (!bit_test(node_ptr->node_spec_bitmap, i))
 				bit_clear(core_map, c + i);
@@ -2673,8 +2669,7 @@ alloc_job:
 
 	/* translate job_res->cpus array into format with rep count */
 	build_cnt = build_job_resources_cpu_array(job_res);
-	if ((job_ptr->details->core_spec != 0) && 
-	    (job_ptr->details->core_spec != (uint16_t) NO_VAL)){
+	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
 		int first, last = -1;
 		first = bit_ffs(job_res->node_bitmap);
 		if (first != -1)

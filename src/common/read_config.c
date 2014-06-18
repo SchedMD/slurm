@@ -2880,12 +2880,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "AcctGatherNodeFreq", hashtbl))
 		conf->acct_gather_node_freq = 0;
 
-	if (s_p_get_boolean(&truth, "AllowSpecResourcesUsage", hashtbl) && 
-			    truth) {
-		conf->use_spec_resources = 1;
-	} else {
-		conf->use_spec_resources = 0;
-	}
+	if (s_p_get_boolean(&truth, "AllowSpecResourcesUsage", hashtbl))
+		conf->use_spec_resources = truth;
+	else
+		conf->use_spec_resources = DEFAULT_ALLOW_SPEC_RESOURCE_USAGE;
 
 	s_p_get_string(&default_storage_type, "DefaultStorageType", hashtbl);
 	s_p_get_string(&default_storage_host, "DefaultStorageHost", hashtbl);

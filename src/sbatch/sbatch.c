@@ -336,7 +336,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.jobid_set)
 		desc->job_id = opt.jobid;
 	desc->contiguous = opt.contiguous ? 1 : 0;
-	desc->core_spec = opt.core_spec;
+	if (opt.core_spec != (uint16_t) NO_VAL)
+		desc->core_spec = opt.core_spec;
 	desc->features = opt.constraints;
 	desc->immediate = opt.immediate;
 	desc->gres = opt.gres;
