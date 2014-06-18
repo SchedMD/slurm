@@ -808,6 +808,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->wait_time           = conf->wait_time;
 
 	conf_ptr->use_pam             = conf->use_pam;
+	conf_ptr->use_spec_resources  = conf->use_spec_resources;
 	conf_ptr->unkillable_program  = xstrdup(conf->unkillable_program);
 	conf_ptr->unkillable_timeout  = conf->unkillable_timeout;
 	conf_ptr->version             = xstrdup(SLURM_VERSION_STRING);

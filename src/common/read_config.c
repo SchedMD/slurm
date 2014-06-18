@@ -173,6 +173,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AcctGatherProfileType", S_P_STRING},
 	{"AcctGatherInfinibandType", S_P_STRING},
 	{"AcctGatherFilesystemType", S_P_STRING},
+	{"AllowSpecResourcesUsage", S_P_BOOLEAN},
 	{"AuthInfo", S_P_STRING},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
@@ -2454,6 +2455,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->unkillable_program);
 	ctl_conf_ptr->unkillable_timeout        = (uint16_t) NO_VAL;
 	ctl_conf_ptr->use_pam			= 0;
+	ctl_conf_ptr->use_spec_resources	= 0;
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_on_bad_exit	= 0;
@@ -2877,6 +2879,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->acct_gather_node_freq,
 			    "AcctGatherNodeFreq", hashtbl))
 		conf->acct_gather_node_freq = 0;
+
+	if (s_p_get_boolean(&truth, "AllowSpecResourcesUsage", hashtbl) && 
+			    truth) {
+		conf->use_spec_resources = 1;
+	} else {
+		conf->use_spec_resources = 0;
+	}
 
 	s_p_get_string(&default_storage_type, "DefaultStorageType", hashtbl);
 	s_p_get_string(&default_storage_host, "DefaultStorageHost", hashtbl);

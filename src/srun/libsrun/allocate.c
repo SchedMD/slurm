@@ -646,8 +646,7 @@ job_desc_msg_create_from_opts (void)
 #endif
 
 	j->contiguous     = opt.contiguous;
-	if (opt.core_spec)
-		j->core_spec = opt.core_spec;
+	j->core_spec      = opt.core_spec;
 	j->features       = opt.constraints;
 	j->gres           = opt.gres;
 	if (opt.immediate == 1)

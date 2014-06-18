@@ -1863,8 +1863,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_memory, pn_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
-	uint16_t contiguous, core_spec = 0, nice, ntasks_per_node;
-	uint16_t cpus_per_task, requeue, task_dist;
+	uint16_t contiguous, core_spec = (uint16_t) NO_VAL, nice;
+	uint16_t ntasks_per_node, cpus_per_task, requeue, task_dist;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
 	uint8_t share_res, whole_node;
@@ -5535,6 +5535,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			     bitstr_t ** exc_bitmap)
 {
 	int error_code;
+	uint16_t use_spec_resources;
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
 
@@ -5701,11 +5702,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
-	if (job_desc->core_spec != (uint16_t) NO_VAL) {
-		detail_ptr->core_spec = job_desc->core_spec;
-		if (job_desc->core_spec)
+	detail_ptr->core_spec = job_desc->core_spec;
+	use_spec_resources = slurm_get_use_spec_resources();
+	if (((job_desc->core_spec != 0)				&&
+	    (job_desc->core_spec != (uint16_t) NO_VAL))		||
+	    ((job_desc->core_spec == 0) &&  use_spec_resources))
 			detail_ptr->whole_node = 1;
-	}
 	if (job_desc->task_dist != (uint16_t) NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
@@ -6101,8 +6103,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	}
 	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
-	if (job_desc_msg->core_spec == (uint16_t) NO_VAL)
-		job_desc_msg->core_spec = 0;
 
 	if (job_desc_msg->task_dist == (uint16_t) NO_VAL) {
 		/* not typically set by salloc or sbatch */
@@ -10782,7 +10782,8 @@ static int _job_resume_test(struct job_record *job_ptr)
 	ListIterator job_iterator;
 	struct job_record *test_job_ptr;
 
-	if ((job_ptr->details == NULL) || (job_ptr->details->core_spec == 0) ||
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->details->core_spec == (uint16_t) NO_VAL) ||
 	    (job_ptr->node_bitmap == NULL))
 		return rc;
 

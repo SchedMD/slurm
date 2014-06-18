@@ -1761,10 +1761,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if (!job_ptr->details)
 		return EINVAL;
 
-	if (job_ptr->details->core_spec) {
+	if (job_ptr->details->core_spec != NO_VAL) {
 		verbose("select/bluegene: job %u core_spec(%u) not supported",
 			job_ptr->job_id, job_ptr->details->core_spec);
-		job_ptr->details->core_spec = 0;
+		job_ptr->details->core_spec = (uint16_t) NO_VAL;
 	}
 
 	if (preemptee_candidates && preemptee_job_list

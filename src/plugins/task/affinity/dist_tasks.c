@@ -384,7 +384,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 					       &whole_cores,  &whole_threads,
 					       &part_sockets, &part_cores);
 		if ((whole_nodes == 0) && avail_mask &&
-		    (req->job_core_spec == 0)) {
+		    (req->job_core_spec == (uint16_t) NO_VAL)) {
 			info("task/affinity: entire node must be allocated, "
 			     "disabling affinity");
 			xfree(req->cpu_bind);
@@ -392,7 +392,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			req->cpu_bind_type &= (~bind_mode);
 			req->cpu_bind_type |= CPU_BIND_MASK;
 		} else {
-			if (req->job_core_spec) {
+			if (req->job_core_spec == (uint16_t) NO_VAL) {
 				if (req->cpu_bind_type & CPU_BIND_MASK)
 					_validate_mask(req, avail_mask);
 				else if (req->cpu_bind_type & CPU_BIND_MAP)

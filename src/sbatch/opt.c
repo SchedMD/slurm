@@ -320,7 +320,7 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
-	opt.core_spec = 0;
+	opt.core_spec = (uint16_t) NO_VAL;
 	opt.time_limit = NO_VAL;
 	opt.time_min = NO_VAL;
 	opt.partition = NULL;

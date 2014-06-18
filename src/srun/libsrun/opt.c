@@ -409,7 +409,7 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
-	opt.core_spec = 0;
+	opt.core_spec = (uint16_t) NO_VAL;
 	opt.core_spec_set = false;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
@@ -1160,7 +1160,8 @@ static void _set_options(const int argc, char **argv)
 			opt.shared = 1;
 			break;
 		case (int)'S':
-			opt.core_spec = _get_int(optarg, "core_spec", true);
+			opt.core_spec = _get_int(optarg, "core_spec",
+				false);
 			opt.core_spec_set = true;
 			break;
 		case (int)'t':

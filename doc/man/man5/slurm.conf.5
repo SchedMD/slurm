@@ -254,6 +254,15 @@ acct_gather.conf file.
 .RE
 
 .TP
+\fBAllowSpecResourcesUsage\fR
+If set to 1, Slurm allows individual jobs to override node resource
+specialization parameters.  For a job to take advantage of this feature
+a command line option of --Core-Spec=0 must be designated.  The default
+value for this option is 0 (jobs are not allowed to override node resource
+specialization parameters).
+.RE
+
+.TP
 \fBAuthInfo\fR
 Additional information to be used for authentication of communications
 between the Slurm daemons (slurmctld and slurmd) and the Slurm

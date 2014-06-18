@@ -1123,7 +1123,7 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 	static int launch_poe = -1;
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	uint16_t job_core_spec = 0;
+	uint16_t job_core_spec = (uint16_t) NO_VAL;
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
@@ -1217,7 +1217,7 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	uint16_t job_core_spec = 0;
+	uint16_t job_core_spec = (uint16_t) NO_VAL;
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
