@@ -867,9 +867,19 @@ _job_create_structure(allocation_info_t *ainfo)
 	job->jobid   = ainfo->jobid;
 
 	job->ntasks  = opt.ntasks;
-	for (i=0; i<ainfo->num_cpu_groups; i++) {
-		job->cpu_count += ainfo->cpus_per_node[i] *
-			ainfo->cpu_count_reps[i];
+
+	/* If cpus_per_task is set then get the exact count of cpus
+	   for the requested step (we might very well use less,
+	   especially if --exclusive is used).  Else get the total for the
+	   allocation given.
+	*/
+	if (opt.cpus_set)
+		job->cpu_count = opt.ntasks * opt.cpus_per_task;
+	else {
+		for (i=0; i<ainfo->num_cpu_groups; i++) {
+			job->cpu_count += ainfo->cpus_per_node[i] *
+				ainfo->cpu_count_reps[i];
+		}
 	}
 
 	job->rc       = -1;

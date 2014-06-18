@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.5
 ==========================
+ -- If a srun runs in an exclusive allocation and doesn't use the entire
+    allocation and CR_PACK_NODES is set layout tasks appropriately.
 
 * Changes in Slurm 14.03.4
 ==========================
