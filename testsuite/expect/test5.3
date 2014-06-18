@@ -42,7 +42,7 @@ print_header $test_id
 # Check the squeue iteration
 #
 
-spawn $squeue --iterate=2
+spawn $squeue -o "%P" --iterate=2
 expect {
 	-re "PARTITION" {
 		incr iteration
