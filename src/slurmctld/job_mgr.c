@@ -12233,10 +12233,16 @@ jobid2str(struct job_record *job_ptr, char *buf)
 	if (buf == NULL)
 		return "Invalid argument";
 
-       sprintf(buf, "jobid %u task_id %u array_id %u state 0x%x cnt %d",
-               job_ptr->job_id, job_ptr->array_task_id,
-               job_ptr->array_job_id, job_ptr->job_state,
-               job_ptr->node_cnt);
+	if (job_ptr->array_task_id == NO_VAL) {
+		sprintf(buf, "jobid %u state 0x%x cnt %d",
+			job_ptr->job_id, job_ptr->job_state,
+			job_ptr->node_cnt);
+	} else {
+		sprintf(buf, "jobid %u taskid %u arrayid %u state 0x%x cnt %d",
+			job_ptr->job_id, job_ptr->array_task_id,
+			job_ptr->array_job_id, job_ptr->job_state,
+			job_ptr->node_cnt);
+	}
 
        return buf;
 }
