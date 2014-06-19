@@ -92,10 +92,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.5
 ==========================
- -- Enlarge the width specifier when printing partition SHARE to display larger
-    sharing values.
- -- sinfo locks added to prevent possibly duplicate record printing for
-    resources in multiple partitions.
+ -- If a srun runs in an exclusive allocation and doesn't use the entire
+    allocation and CR_PACK_NODES is set layout tasks appropriately.
+ -- Correct Shared field in job state information seen by scontrol, sview, etc.
 
 * Changes in Slurm 14.03.4
 ==========================
@@ -185,8 +184,8 @@ documents those changes that are of interest to users and admins.
     is already running.
  -- Email messages for job array events print now use the job ID using the
     format "#_# (#)" rather than just the internal job ID.
- -- Set the number of free licenses to be 0 if the global license count decreases
-    and total is less than in use.
+ -- Set the number of free licenses to be 0 if the global license count
+    decreases and total is less than in use.
  -- Add DebugFlag of BackfillMap. Previously a DebugFlag value of Backfill
     logged information about what it was doing plus a map of expected resouce
     use in the future. Now that very verbose resource use map is only logged
@@ -203,6 +202,10 @@ documents those changes that are of interest to users and admins.
  -- If DebugFlags=Protocol is configured in slurm.conf print details of the
     connection, ip address and port accepted by the controller.
  -- Fix minor memory leak when reading in incomplete node data checkpoint file.
+ -- Enlarge the width specifier when printing partition SHARE to display larger
+    sharing values.
+ -- sinfo locks added to prevent possibly duplicate record printing for
+    resources in multiple partitions.
 
 * Changes in Slurm 14.03.3-2
 ============================
