@@ -1997,6 +1997,14 @@ microseconds.
 The default value is 500,000 microseconds (0.5 seconds).
 Also see the \fBbf_yield_interval\fR option.
 .TP
+\fBbuild_queue_timeout=#\fR
+Defines the maximum time that can be devoted to building a queue of jobs to
+be tested for scheduling.
+If the system has a huge number of jobs with dependencies, just building the
+job queue can take so much time as to adversely impact overall system
+performance and this parameter can be adjusted as needed.
+The default value is 2,000,000 microseconds (2 seconds).
+.TP
 \fBdefault_queue_depth=#\fR
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
 running job completes or other routine actions occur. The full queue will be

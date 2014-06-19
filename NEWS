@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Added AllowSpecResourcesUsage configuration parameter in slurm.conf. This
     allows jobs to use specialized resources on nodes allocated to them if the
     job designates --core-spec=0.
+ -- Add new SchedulerParameters option of build_queue_timeout to throttle how
+    much time can be consumed building the job queue for scheduling.
 
 * Changes in Slurm 14.11.0pre1
 ==============================

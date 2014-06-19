@@ -88,6 +88,7 @@
 #include "src/slurmctld/sched_plugin.h"
 
 #define _DEBUG 0
+#define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
 #define MAX_FAILED_RESV 10
 #define MAX_RETRIES 10
 
@@ -113,6 +114,7 @@ static bool	_scan_depend(List dependency_list, uint32_t job_id);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
 
+static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	save_last_part_update = 0;
 
 extern diag_stats_t slurmctld_diag_stats;
@@ -251,6 +253,26 @@ static bool _job_runnable_test2(struct job_record *job_ptr, bool check_min_time)
 	return true;
 }
 
+/* Return the number of micro-seconds between now and argument "tv",
+ * Initialize tv to NOW if zero on entry */
+static int _delta_tv(struct timeval *tv)
+{
+	struct timeval now = {0, 0};
+	int delta_t;
+
+	if (gettimeofday(&now, NULL))
+		return 1;		/* Some error */
+
+	if (tv->tv_sec == 0) {
+		tv->tv_sec  = now.tv_sec;
+		tv->tv_usec = now.tv_usec;
+		return 0;
+	}
+
+	delta_t  = (now.tv_sec - tv->tv_sec) * 1000000;
+	delta_t += (now.tv_usec - tv->tv_usec);
+	return delta_t;
+}
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
  * IN clear_start - if set then clear the start_time for pending jobs
@@ -265,10 +287,21 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	int reason;
+	struct timeval start_tv = {0, 0};
+	int tested_jobs = 0;
 
 	job_queue = list_create(_job_queue_rec_del);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (((tested_jobs % 100) == 0) &&
+		    (_delta_tv(&start_tv) >= build_queue_timeout)) {
+			info("build_job_queue has been running for %d usec, "
+			     "exiting with %d of %d jobs tested",
+			     build_queue_timeout, tested_jobs,
+			     list_count(job_list));
+			break;
+		}
+		tested_jobs++;
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
 
@@ -813,6 +846,16 @@ extern int schedule(uint32_t job_limit)
 			error("Invalid batch_sched_delay: %d",
 			      batch_sched_delay);
 			batch_sched_delay = 3;
+		}
+
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "build_queue_timeout=")))
+		/*                                 01234567890123456789 */
+			build_queue_timeout = atoi(tmp_ptr + 20);
+		if (build_queue_timeout < 100) {
+			error("Invalid build_queue_time: %d",
+			      build_queue_timeout);
+			build_queue_timeout = BUILD_TIMEOUT;
 		}
 
 		if (sched_params &&
