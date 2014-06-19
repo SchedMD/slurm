@@ -7171,11 +7171,11 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		shared = (uint16_t) NO_VAL;
 	else if (detail_ptr->share_res == 1)
 		shared = 1;
-	else if (detail_ptr->whole_node == 1)
+	else if ((detail_ptr->share_res == 0) ||
+		 (detail_ptr->whole_node == 1))
 		shared = 0;
 	else
 		shared = (uint16_t) NO_VAL;
-
 	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			pack16(shared, buffer);

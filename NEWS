@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ==========================
  -- If a srun runs in an exclusive allocation and doesn't use the entire
     allocation and CR_PACK_NODES is set layout tasks appropriately.
+ -- Correct Shared field in job state information seen by scontrol, sview, etc.
 
 * Changes in Slurm 14.03.4
 ==========================
