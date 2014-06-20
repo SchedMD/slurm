@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Correct Shared field in job state information seen by scontrol, sview, etc.
  -- Print Slurm error string in scontrol update job and reset the Slurm errno
     before each call to the API.
+ -- Fix task/cgroup to handle -mblock:fcyclic correctly
 
 * Changes in Slurm 14.03.4
 ==========================
