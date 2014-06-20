@@ -1004,6 +1004,7 @@ scontrol_update_job (int argc, char *argv[])
 	}
 	for (i = 0; i < num_ids; i++) {
 		job_msg.job_id = ids[i].job_id;
+		rc = 0;
 		if (slurm_update_job(&job_msg)) {
 			/* Save the errno in case one
 			 * or more array tasks are in
@@ -1011,11 +1012,13 @@ scontrol_update_job (int argc, char *argv[])
 			 */
 			rc = slurm_get_errno();
 			if (ids[i].array_task_id == NO_VAL) {
-				error("Error updating job %u", ids[i].job_id);
+				error("Error updating job %u: %s",
+				      ids[i].job_id, slurm_strerror(rc));
 			} else {
-				error("Error updating job %u_%u (%u)",
-				      ids[i].array_job_id, ids[i].array_task_id,
-				      ids[i].job_id);
+				error("Error updating job %u_%u (%u): %s",
+				      ids[i].array_job_id,
+				      ids[i].array_task_id,
+				      ids[i].job_id, slurm_strerror(rc));
 			}
 			/* Print the errno message for each
 			 * job array task.

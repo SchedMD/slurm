@@ -1703,6 +1703,8 @@ extern void put_string_attribute(hid_t parent, char *name, char *value)
 	hid_t   attr, space_attr, typ_attr;
 	hsize_t dim_attr[1] = {1}; // Single dimension array of values
 
+	if (!value)
+		value = "";
 	typ_attr = H5Tcopy(H5T_C_S1);
 	if (typ_attr < 0) {
 		debug3("PROFILE: failed to copy type for attribute %s", name);

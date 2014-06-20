@@ -53,6 +53,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/bitstring.h"
+#include "src/common/proc_args.h"
 #include "src/common/xstring.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xcgroup.h"
@@ -633,63 +634,81 @@ static int _task_cgroup_cpuset_dist_cyclic(
 {
 	hwloc_obj_t obj;
 	uint32_t *obj_idx;
-	uint32_t i, sock_idx, npskip, npdist, nsockets;
+	uint32_t i, j, sock_idx, sock_loop, ntskip, npdist, nsockets;
 	uint32_t taskid = job->envtp->localid;
 
 	if (bind_verbose)
-		info("task/cgroup: task[%u] using cyclic distribution, "
-		     "task_dist %u", taskid, job->task_dist);
+		info("task/cgroup: task[%u] using %s distribution "
+		     "(task_dist=%u)", taskid,
+		     format_task_dist_states(job->task_dist), job->task_dist);
 	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						       HWLOC_OBJ_SOCKET);
 	obj_idx = xmalloc(nsockets * sizeof(uint32_t));
 
 	if (hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) {
 		/* cores or threads granularity */
-		npskip = taskid * job->cpus_per_task;
+		ntskip = taskid;
 		npdist = job->cpus_per_task;
 	} else {
 		/* sockets or ldoms granularity */
-		npskip = taskid;
+		ntskip = taskid;
 		npdist = 1;
 	}
 
-	/* skip objs for lower taskids */
-	i = 0;
+	/* skip objs for lower taskids, then add them to the
+	   current task cpuset. To prevent infinite loop, check
+	   that we do not loop more than npdist times around the available
+	   sockets, which is the worst scenario we should afford here. */
+	i = 0; j = 0;
 	sock_idx = 0;
-	while (i < npskip) {
-		while ((sock_idx < nsockets) && (i < npskip)) {
+	sock_loop = 0;
+	while (i < ntskip + 1 && sock_loop < npdist + 1) {
+		/* fill one or multiple sockets using block mode, unless
+		   otherwise stated in the job->task_dist field */
+		while ((sock_idx < nsockets) && (j < npdist)) {
 			obj = hwloc_get_obj_below_by_type(
 				topology, HWLOC_OBJ_SOCKET, sock_idx,
 				hwtype, obj_idx[sock_idx]);
 			if (obj != NULL) {
 				obj_idx[sock_idx]++;
-				i++;
+				j++;
+				if (i == ntskip)
+					_add_hwloc_cpuset(hwtype, req_hwtype,
+							  obj, taskid,
+							  bind_verbose, cpuset);
+				if ((j < npdist) &&
+				    ((job->task_dist ==
+				      SLURM_DIST_CYCLIC_CFULL) ||
+				     (job->task_dist ==
+				      SLURM_DIST_BLOCK_CFULL)))
+					sock_idx++;
+			} else {
+				sock_idx++;
 			}
-			sock_idx++;
 		}
-		if (i < npskip)
+		/* if it succeed, switch to the next task, starting
+		   with the next available socket, otherwise, loop back
+		   from the first socket trying to find available slots. */
+		if (j == npdist) {
+			i++; j = 0;
+			sock_idx++; // no validity check, handled by the while
+			sock_loop = 0;
+		} else {
+			sock_loop++;
 			sock_idx = 0;
+		}
 	}
 
-	/* distribute objs cyclically across sockets */
-	i = npdist;
-	while (i > 0) {
-		while ((sock_idx < nsockets) && (i > 0)) {
-			obj = hwloc_get_obj_below_by_type(
-				topology, HWLOC_OBJ_SOCKET, sock_idx,
-				hwtype, obj_idx[sock_idx]);
-			if (obj != NULL) {
-				obj_idx[sock_idx]++;
-				_add_hwloc_cpuset(hwtype, req_hwtype, obj,
-					    taskid, bind_verbose, cpuset);
-				i--;
-			}
-			sock_idx++;
-		}
-		sock_idx = 0;
-	}
 	xfree(obj_idx);
-	return XCGROUP_SUCCESS;
+
+	/* should never happened in normal scenario */
+	if (sock_loop > npdist) {
+		error("task/cgroup: task[%u] infinite loop broken while trying"
+		      "to provision compute elements using %s", taskid,
+		      format_task_dist_states(job->task_dist));
+		return XCGROUP_ERROR;
+	} else
+		return XCGROUP_SUCCESS;
 }
 
 static int _task_cgroup_cpuset_dist_block(
