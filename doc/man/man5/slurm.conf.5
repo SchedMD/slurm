@@ -1728,7 +1728,9 @@ See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 \fBRebootProgram\fR
 Program to be executed on each compute node to reboot it. Invoked on each node
 once it becomes idle after the command "scontrol reboot_nodes" is executed by
-an authorized user. After being rebooting, the node is returned to normal use.
+an authorized user or a job is submitted with the "\-\-reboot" option.
+After being rebooting, the node is returned to normal use.
+NOTE: This configuration option does not apply to IBM BlueGene systems.
 
 .TP
 \fBReconfigFlags\fR

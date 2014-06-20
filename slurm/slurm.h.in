@@ -1123,6 +1123,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 == held (don't initiate) */
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
+	uint16_t reboot;	/* force node reboot before startup */
 	char *resp_host;	/* NOTE: Set by slurmctld */
 	char *req_nodes;	/* comma separated list of required nodes
 				 * default NONE */
@@ -1189,7 +1190,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t geometry[HIGHEST_DIMENSIONS];	/* node count in various
 						 * dimensions, e.g. X, Y, and Z */
 	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
-	uint16_t reboot;	/* force node reboot before startup */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	char *blrtsimage;       /* BlrtsImage for block */
 	char *linuximage;       /* LinuxImage for block */

@@ -1373,6 +1373,12 @@ with the \fB\-\-relative\fR option, a warning message will be
 printed and the \fB\-\-relative\fR option will take precedence.
 
 .TP
+\fB\-\-reboot\fR
+Force the allocated nodes to reboot before starting the job.
+This is only supported with some system configurations and will otherwise be
+silently ignored.
+
+.TP
 \fB\-\-resv\-ports\fR
 Reserve communication ports for this job.
 Used for OpenMPI.
@@ -1705,10 +1711,6 @@ By default the specified geometry can rotate in three dimensions.
 \fB\-\-ramdisk\-image\fR=<\fIpath\fR>
 Path to ramdisk image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
-
-.TP
-\fB\-\-reboot\fR
-Force the allocated nodes to reboot before starting the job.
 
 .PP
 .B srun

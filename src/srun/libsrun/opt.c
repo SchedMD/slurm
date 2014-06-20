@@ -2507,7 +2507,7 @@ static void _usage(void)
 #else
 "            [--export=NONE] [--geometry=AxXxYxZ] "
 #endif
-"[--conn-type=type] [--no-rotate] [--reboot]\n"
+"[--conn-type=type] [--no-rotate]\n"
 #ifdef HAVE_BGL
 "            [--blrts-image=path] [--linux-image=path]\n"
 "            [--mloader-image=path] [--ramdisk-image=path]\n"
@@ -2521,9 +2521,9 @@ static void _usage(void)
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "            [--switches=max-switches{@max-time-to-wait}]\n"
-"            [--core-spec=cores]\n"
+"            [--core-spec=cores] [--reboot]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n"
-"            [--acctg-freq=<datatype>=<interval>");
+"            [--acctg-freq=<datatype>=<interval>\n");
 }
 
 static void _help(void)
@@ -2592,6 +2592,7 @@ static void _help(void)
 "  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+"      --reboot                reboot block before starting job\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "      --restart-dir=dir       directory of checkpoint image files to restart\n"
 "                              from\n"
@@ -2683,7 +2684,6 @@ static void _help(void)
 "                              with the geometry option\n"
 #endif
 "  -R, --no-rotate             disable geometry rotation\n"
-"      --reboot                reboot block before starting job\n"
 #ifndef HAVE_BGL
 "                              If wanting to run in HTC mode (only for 1\n"
 "                              midplane and below).  You can use HTC_S for\n"

@@ -2931,7 +2931,7 @@ static void _usage(void)
 #else
 "              [--geometry=AxXxYxZ] "
 #endif
-"[--conn-type=type] [--no-rotate] [--reboot]\n"
+"[--conn-type=type] [--no-rotate]\n"
 #ifdef HAVE_BGL
 "              [--blrts-image=path] [--linux-image=path]\n"
 "              [--mloader-image=path] [--ramdisk-image=path]\n"
@@ -2946,7 +2946,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
-"              [--core-spec=cores]\n"
+"              [--core-spec=cores] [--reboot]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
@@ -3005,6 +3005,7 @@ static void _help(void)
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+"      --reboot                reboot compute nodes before starting job\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --requeue               if set, permit the job to be requeued\n"
 "  -t, --time=minutes          time limit\n"
@@ -3084,7 +3085,6 @@ static void _help(void)
 "                              with the geometry option\n"
 #endif
 "  -R, --no-rotate             disable geometry rotation\n"
-"      --reboot                reboot block before starting job\n"
 "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
 "                              if not set, then tries to fit TORUS else MESH\n"
 #ifndef HAVE_BGL
