@@ -386,7 +386,7 @@ extern void run_health_check(void)
 		hostlist_push_host(check_agent_args->hostlist,
 				   front_end_ptr->name);
 		check_agent_args->node_count++;
-	} slurmctld_conf.health_check_node_stat
+	}
 #else
 	run_cyclic = slurmctld_conf.health_check_node_state &
 		     HEALTH_CHECK_CYCLE;
