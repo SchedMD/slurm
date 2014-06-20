@@ -70,6 +70,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     job designates --core-spec=0.
  -- Add new SchedulerParameters option of build_queue_timeout to throttle how
     much time can be consumed building the job queue for scheduling.
+ -- Added HealthCheckNodeState option of "cycle" to cycle through the compute
+    nodes over the course of HealthCheckInterval rather than running all at
+    the same time.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

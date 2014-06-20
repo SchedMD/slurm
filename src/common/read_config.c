@@ -2744,23 +2744,32 @@ static uint16_t _health_node_state(char *state_str)
 	uint16_t state_num = 0;
 	char *tmp_str = xstrdup(state_str);
 	char *token, *last = NULL;
+	bool state_set = false;
 
 	token = strtok_r(tmp_str, ",", &last);
 	while (token) {
-		if (!strcasecmp(token, "ANY"))
+		if (!strcasecmp(token, "ANY")) {
 			state_num |= HEALTH_CHECK_NODE_ANY;
-		else if (!strcasecmp(token, "ALLOC"))
+			state_set = true;
+		} else if (!strcasecmp(token, "ALLOC")) {
 			state_num |= HEALTH_CHECK_NODE_ALLOC;
-		else if (!strcasecmp(token, "IDLE"))
+			state_set = true;
+		} else if (!strcasecmp(token, "CYCLE")) {
+			state_num |= HEALTH_CHECK_CYCLE;
+		} else if (!strcasecmp(token, "IDLE")) {
 			state_num |= HEALTH_CHECK_NODE_IDLE;
-		else if (!strcasecmp(token, "MIXED"))
+			state_set = true;
+		} else if (!strcasecmp(token, "MIXED")) {
 			state_num |= HEALTH_CHECK_NODE_MIXED;
-		else {
+			state_set = true;
+		} else {
 			error("Invalid HealthCheckNodeState value %s ignored",
 			      token);
 		}
 		token = strtok_r(NULL, ",", &last);
 	}
+	if (!state_set)
+		state_num |= HEALTH_CHECK_NODE_ANY;
 	xfree(tmp_str);
 
 	return state_num;

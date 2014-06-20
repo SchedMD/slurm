@@ -1496,8 +1496,13 @@ static void *_slurmctld_background(void *no_data)
 		    (difftime(now, last_health_check_time) >=
 		     slurmctld_conf.health_check_interval) &&
 		    is_ping_done()) {
-			now = time(NULL);
-			last_health_check_time = now;
+			if (slurmctld_conf.health_check_node_state &
+			     HEALTH_CHECK_CYCLE) {
+				/* Call run_health_check() on each cycle */
+			} else {
+				now = time(NULL);
+				last_health_check_time = now;
+			}
 			lock_slurmctld(node_write_lock);
 			run_health_check();
 			unlock_slurmctld(node_write_lock);

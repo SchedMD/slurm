@@ -366,7 +366,9 @@ extern void run_health_check(void)
 	front_end_record_t *front_end_ptr;
 #else
 	struct node_record *node_ptr;
-	int node_states = slurmctld_conf.health_check_node_state;
+	int node_test_cnt = 0, node_limit, node_states, run_cyclic;
+	static int base_node_loc = -1;
+	static time_t cycle_start_time = (time_t) 0;
 #endif
 	int i;
 	char *host_str = NULL;
@@ -381,18 +383,51 @@ extern void run_health_check(void)
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
-		hostlist_push_host(check_agent_args->hostlist, front_end_ptr->name);
+		hostlist_push_host(check_agent_args->hostlist,
+				   front_end_ptr->name);
 		check_agent_args->node_count++;
-	}
+	} slurmctld_conf.health_check_node_stat
 #else
+	run_cyclic = slurmctld_conf.health_check_node_state &
+		     HEALTH_CHECK_CYCLE;
+	node_states = slurmctld_conf.health_check_node_state &
+		      (~HEALTH_CHECK_CYCLE);
+	if (run_cyclic) {
+		time_t now = time(NULL);
+		if (cycle_start_time == (time_t) 0)
+			cycle_start_time = now;
+		else if (base_node_loc >= 0)
+			;	/* mid-cycle */
+		else if (difftime(now, cycle_start_time) <
+			 slurmctld_conf.health_check_interval) {
+			return;	/* Wait to start next cycle */
+		}
+		cycle_start_time = now;
+		/* Determine how many nodes we want to test on each call of
+		 * run_health_check() to spread out the work. */
+		node_limit = (node_record_count * 2) /
+			     slurmctld_conf.health_check_interval;
+		node_limit = MAX(node_limit, 10);
+	}
 	if ((node_states != HEALTH_CHECK_NODE_ANY) &&
 	    (node_states != HEALTH_CHECK_NODE_IDLE)) {
 		/* Update each node's alloc_cpus count */
 		select_g_select_nodeinfo_set_all();
 	}
 
-	for (i=0, node_ptr=node_record_table_ptr;
-	     i<node_record_count; i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		if (run_cyclic) {
+			if (node_test_cnt++ >= node_limit)
+				break;
+			base_node_loc++;
+			if (base_node_loc >= node_record_count) {
+				base_node_loc = -1;
+				break;
+			}
+			node_ptr = node_record_table_ptr + base_node_loc;
+		} else {
+			node_ptr = node_record_table_ptr + i;
+		}
 		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr))
 			continue;
@@ -421,10 +456,11 @@ extern void run_health_check(void)
 					continue;
 			}
 		}
-
 		hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
 		check_agent_args->node_count++;
 	}
+	if (run_cyclic && (i >= node_record_count))
+		base_node_loc = -1;
 #endif
 
 	if (check_agent_args->node_count == 0) {

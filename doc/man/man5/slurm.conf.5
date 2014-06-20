@@ -786,6 +786,12 @@ Run on nodes in the ALLOC state (all CPUs allocated).
 \fBANY\fR
 Run on nodes in any state.
 .TP
+\fBCYCLE\fR
+Rather than running the health check program on all nodes at the same time,
+cycle through running on all compute nodes through the course of the
+\fBHealthCheckInterval\fR. May be combined with the various node state
+options.
+.TP
 \fBIDLE\fR
 Run on nodes in the IDLE state.
 .TP

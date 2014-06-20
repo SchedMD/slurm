@@ -1380,13 +1380,21 @@ extern char *health_check_node_state_str(uint16_t node_state)
 {
 	char *state_str = NULL;
 
-	if (node_state == HEALTH_CHECK_NODE_ANY) {
+	if (node_state & HEALTH_CHECK_CYCLE)
+		state_str = xstrdup("CYCLE");
+	else
+		state_str = xstrdup("");
+
+	if ((node_state & HEALTH_CHECK_NODE_ANY) == HEALTH_CHECK_NODE_ANY) {
+		if (state_str[0])
+			xstrcat(state_str, ",");
 		state_str = xstrdup("ANY");
 		return state_str;
 	}
 
-	state_str = xstrdup("");
 	if (node_state & HEALTH_CHECK_NODE_IDLE)
+		if (state_str[0])
+			xstrcat(state_str, ",");
 		xstrcat(state_str, "IDLE");
 	if (node_state & HEALTH_CHECK_NODE_ALLOC) {
 		if (state_str[0])
