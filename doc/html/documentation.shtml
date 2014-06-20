@@ -50,6 +50,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
 <li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
 <li><a href="priority_multifactor3.html">Depth-Oblivious Fair-share Factor</a></li>
+<li><a href="level_based.html">Level-Based Multifactor</a></li>
 </ul>
 <li>SLURM Scheduling</li>
 <ul>

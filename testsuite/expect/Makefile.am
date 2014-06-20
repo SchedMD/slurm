@@ -452,6 +452,8 @@ EXTRA_DIST = \
 	test24.1			\
 	test24.1.prog.c			\
 	test24.2			\
+	test24.3			\
+	test24.3.prog.c			\
 	test25.1			\
 	test26.1			\
 	test26.2			\

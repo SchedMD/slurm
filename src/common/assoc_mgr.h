@@ -136,10 +136,21 @@ struct assoc_mgr_association_usage {
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
 
+	/* Currently LEVEL_BASED and TICKET_BASED systems are defining data on
+	 * this struct but instead we could keep a void pointer to system
+	 * specific data. This would allow subsystems to define whatever data
+	 * they need without having to modify this struct; it would also save
+	 * space.
+	 */
 	uint32_t tickets;       /* Number of tickets (for multifactor2
 				 * plugin). (DON'T PACK) */
 	unsigned active_seqno;  /* Sequence number for identifying
 				 * active associations (DON'T PACK) */
+
+	uint64_t priority_fs_raw;	/* (LEVEL_BASED) Priority used when
+					 * sorting (DON'T PACK) */
+	uint64_t priority_fs_ranked;	/* (LEVEL_BASED) Priority after
+					 * ranking (DON'T PACK) */
 
 	bitstr_t *valid_qos;    /* qos available for this association
 				 * derived from the qos_list.
@@ -401,5 +412,15 @@ extern int assoc_mgr_refresh_lists(void *db_conn);
  * calling program.
  */
 extern int assoc_mgr_set_missing_uids();
+
+/* Normalize shares for an association. External so a priority plugin
+ * can call it if needed.
+ */
+extern void assoc_mgr_normalize_assoc_shares(slurmdb_association_rec_t *assoc);
+
+/* Return first parent that is not SLURMDB_FS_USE_PARENT */
+extern slurmdb_association_rec_t* find_real_parent(
+		slurmdb_association_rec_t *assoc);
+
 
 #endif /* _SLURM_ASSOC_MGR_H */

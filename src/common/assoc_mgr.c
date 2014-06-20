@@ -66,8 +66,25 @@ static assoc_init_args_t init_setup;
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
 
+
+static void _normalize_assoc_shares_level_based(
+		slurmdb_association_rec_t *assoc)
+{
+	slurmdb_association_rec_t *assoc2 = assoc;
+	double shares_norm = 0.0;
+	if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+		assoc2 = find_real_parent(assoc);
+	if (assoc2->usage->level_shares)
+		shares_norm =
+			(double)assoc2->shares_raw /
+			(double)assoc2->usage->level_shares;
+	assoc->usage->shares_norm = shares_norm;
+}
+
+
 /* you should check for assoc == NULL before this function */
-static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
+static void _normalize_assoc_shares_traditional(
+		slurmdb_association_rec_t *assoc)
 {
 	slurmdb_association_rec_t *assoc2 = assoc;
 
@@ -87,6 +104,23 @@ static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 }
+
+
+/* you should check for assoc == NULL before this function */
+extern void assoc_mgr_normalize_assoc_shares(
+		slurmdb_association_rec_t *assoc)
+{
+	xassert(assoc);
+	/* Use slurmctld_conf.priority_flags directly instead of using a
+	 * global flags variable. assoc_mgr_init() would be the logical
+	 * place to set a global, but there is no great location for
+	 * resetting it when scontrol reconfigure is called */
+	if (slurmctld_conf.priority_flags & PRIORITY_FLAGS_LEVEL_BASED)
+		_normalize_assoc_shares_level_based(assoc);
+	else
+		_normalize_assoc_shares_traditional(assoc);
+}
+
 
 static int _addto_used_info(slurmdb_association_rec_t *assoc1,
 			    slurmdb_association_rec_t *assoc2)
@@ -517,10 +551,53 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 		(double)qos->priority / (double)g_qos_max_priority;
 }
 
+static uint32_t _get_children_level_shares(slurmdb_association_rec_t *assoc)
+{
+	List children = assoc->usage->children_list;
+	ListIterator itr = NULL;
+	slurmdb_association_rec_t *child;
+	uint32_t sum = 0;
+
+	if (!children || list_is_empty(children))
+		return 0;
+
+	itr = list_iterator_create(children);
+	while (child = list_next(itr)) {
+		if (child->shares_raw == SLURMDB_FS_USE_PARENT)
+			sum += _get_children_level_shares(child);
+		else
+			sum += child->shares_raw;
+	}
+	list_iterator_destroy(itr);
+
+	return sum;
+}
+
+
+static void _set_children_level_shares(slurmdb_association_rec_t *assoc,
+		uint32_t level_shares)
+{
+	List children = assoc->usage->children_list;
+	ListIterator itr = NULL;
+	slurmdb_association_rec_t *child;
+
+	if (!children || list_is_empty(children))
+		return;
+
+	itr = list_iterator_create(children);
+	while (child = list_next(itr)) {
+		child->usage->level_shares = level_shares;
+		if (child->shares_raw == SLURMDB_FS_USE_PARENT)
+			_set_children_level_shares(child, level_shares);
+	}
+	list_iterator_destroy(itr);
+}
+
+
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
 /* locks should be put in place before calling this function
  * ASSOC_WRITE, USER_WRITE */
-static int _post_association_list(List assoc_list)
+extern int _post_association_list(List assoc_list)
 {
 	slurmdb_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
@@ -539,30 +616,23 @@ static int _post_association_list(List assoc_list)
 	}
 
 	if (setup_children) {
-		slurmdb_association_rec_t *assoc2 = NULL;
-		ListIterator itr2 = NULL;
 		/* Now set the shares on each level */
 		list_iterator_reset(itr);
 		while ((assoc = list_next(itr))) {
-			int count = 0;
 			if (!assoc->usage->children_list
-			    || !list_count(assoc->usage->children_list))
+			    || assoc->shares_raw == SLURMDB_FS_USE_PARENT
+			    || list_is_empty(assoc->usage->children_list))
 				continue;
-			itr2 = list_iterator_create(
-				assoc->usage->children_list);
-			while ((assoc2 = list_next(itr2))) {
-				if (assoc2->shares_raw != SLURMDB_FS_USE_PARENT)
-					count += assoc2->shares_raw;
-			}
-			list_iterator_reset(itr2);
-			while ((assoc2 = list_next(itr2)))
-				assoc2->usage->level_shares = count;
-			list_iterator_destroy(itr2);
+
+			_set_children_level_shares(
+				assoc,
+				_get_children_level_shares(assoc)
+			);
 		}
 		/* Now normalize the static shares */
 		list_iterator_reset(itr);
 		while ((assoc = list_next(itr)))
-			_normalize_assoc_shares(assoc);
+			assoc_mgr_normalize_assoc_shares(assoc);
 	}
 	list_iterator_destroy(itr);
 
@@ -2281,6 +2351,7 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 		share->grp_cpu_mins = assoc->grp_cpu_mins;
 		share->cpu_run_mins = assoc->usage->grp_used_cpu_run_secs / 60;
+		share->priority_fs_raw = assoc->usage->priority_fs_raw;
 
 		if (assoc->user) {
 			/* We only calculate user effective usage when
@@ -2726,22 +2797,16 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 		list_iterator_reset(itr);
 		while ((object = list_next(itr))) {
 			if (setup_children) {
-				int count = 0;
-				ListIterator itr2 = NULL;
-				if (!object->usage->children_list ||
-				    !list_count(object->usage->children_list))
+				List children = object->usage->children_list;
+				if (!children || list_is_empty(children))
 					goto is_user;
-				itr2 = list_iterator_create(
-					object->usage->children_list);
-				while ((rec = list_next(itr2))) {
-					if (rec->shares_raw
-					    != SLURMDB_FS_USE_PARENT)
-						count += rec->shares_raw;
-				}
-				list_iterator_reset(itr2);
-				while ((rec = list_next(itr2)))
-					rec->usage->level_shares = count;
-				list_iterator_destroy(itr2);
+				if (object->shares_raw == SLURMDB_FS_USE_PARENT)
+					continue;
+
+				_set_children_level_shares(
+					object,
+					_get_children_level_shares(object)
+				);
 			}
 		is_user:
 			if (!object->user)
@@ -2764,7 +2829,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			/* Now normalize the static shares */
 			list_iterator_reset(itr);
 			while ((object = list_next(itr))) {
-				_normalize_assoc_shares(object);
+				assoc_mgr_normalize_assoc_shares(object);
 				log_assoc_rec(object, assoc_mgr_qos_list);
 			}
 		}
@@ -4361,4 +4426,19 @@ extern int assoc_mgr_set_missing_uids()
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
+}
+
+
+/* Return first parent that is not SLURMDB_FS_USE_PARENT */
+extern slurmdb_association_rec_t* find_real_parent(
+		slurmdb_association_rec_t *assoc)
+{
+	slurmdb_association_rec_t *parent = NULL;
+	xassert(assoc);
+	parent = assoc->usage->parent_assoc_ptr;
+
+	while (parent && parent->shares_raw == SLURMDB_FS_USE_PARENT)
+		parent = parent->usage->parent_assoc_ptr;
+
+	return parent;
 }

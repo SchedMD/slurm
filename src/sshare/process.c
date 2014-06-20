@@ -44,6 +44,7 @@ extern int long_flag;
 
 extern int process(shares_response_msg_t *resp)
 {
+	uint32_t flags = slurmctld_conf.priority_flags;
 	int rc = SLURM_SUCCESS;
 	association_shares_object_t *share = NULL;
 	ListIterator itr = NULL;
@@ -72,22 +73,37 @@ extern int process(shares_response_msg_t *resp)
 		PRINT_RAWU,
 		PRINT_RUNMINS,
 		PRINT_USER,
+		PRINT_FSRAW
 	};
 
 	if (!resp)
 		return SLURM_ERROR;
 
 	format_list = list_create(slurm_destroy_char);
-	if (long_flag) {
-		slurm_addto_char_list(format_list,
-				      "A,User,RawShares,NormShares,"
-				      "RawUsage,NormUsage,EffUsage,"
-				      "FSFctr,GrpCPUMins,CPURunMins");
+	if(flags & PRIORITY_FLAGS_LEVEL_BASED) {
+		if (long_flag) {
+			slurm_addto_char_list(format_list,
+					      "A,User,RawShares,NormShares,"
+					      "RawUsage,NormUsage,EffUsage,"
+					      "FSFctr,FSRaw,GrpCPUMins,CPURunMins");
+		} else {
+			slurm_addto_char_list(format_list,
+					      "A,User,RawShares,NormShares,"
+					      "RawUsage,EffUsage,FSFctr");
+		}
 	} else {
-		slurm_addto_char_list(format_list,
-				      "A,User,RawShares,NormShares,"
-				      "RawUsage,EffUsage,FSFctr");
+		if (long_flag) {
+			slurm_addto_char_list(format_list,
+					      "A,User,RawShares,NormShares,"
+					      "RawUsage,NormUsage,EffUsage,"
+					      "FSFctr,GrpCPUMins,CPURunMins");
+		} else {
+			slurm_addto_char_list(format_list,
+					      "A,User,RawShares,NormShares,"
+					      "RawUsage,EffUsage,FSFctr");
+		}
 	}
+
 
 	print_fields_list = list_create(destroy_print_field);
 	itr = list_iterator_create(format_list);
@@ -109,11 +125,16 @@ extern int process(shares_response_msg_t *resp)
 			field->name = xstrdup("Effectv Usage");
 			field->len = 13;
 			field->print_routine = print_fields_double;
-		} else if (!strncasecmp("FSFctr", object, 1)) {
+		} else if (!strncasecmp("FSFctr", object, 4)) {
 			field->type = PRINT_FSFACTOR;
 			field->name = xstrdup("FairShare");
 			field->len = 10;
 			field->print_routine = print_fields_double;
+		} else if (!strncasecmp("FSRaw", object, 4)) {
+			field->type = PRINT_FSRAW;
+			field->name = xstrdup("FairShare Raw");
+			field->len = 16;
+			field->print_routine = print_fields_hex064;
 		} else if (!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
@@ -228,6 +249,11 @@ extern int process(shares_response_msg_t *resp)
 							     (long double)
 							     share->
 							     shares_norm),
+						     (curr_inx == field_count));
+				break;
+			case PRINT_FSRAW:
+				field->print_routine(field,
+						     (uint64_t) share->priority_fs_raw,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:

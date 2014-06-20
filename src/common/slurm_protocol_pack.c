@@ -2004,6 +2004,7 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 
 		pack64(object->grp_cpu_mins, buffer);
 		pack64(object->cpu_run_mins, buffer);
+		pack64(object->priority_fs_raw, buffer);
 
 		pack16(object->user, buffer);
 	} else {
@@ -2039,6 +2040,7 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 
 		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
 		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
+		safe_unpack64(&object_ptr->priority_fs_raw, buffer);
 
 		safe_unpack16(&object_ptr->user, buffer);
 	} else {
@@ -5192,6 +5194,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->priority_calc_period, buffer);
 		pack16(build_ptr->priority_favor_small, buffer);
 		pack16(build_ptr->priority_flags, buffer);
+		pack16(build_ptr->priority_levels, buffer);
 		pack32(build_ptr->priority_max_age, buffer);
 		pack16(build_ptr->priority_reset_period, buffer);
 		packstr(build_ptr->priority_type, buffer);
@@ -5409,6 +5412,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->priority_calc_period, buffer);
 		pack16(build_ptr->priority_favor_small, buffer);
 		pack16(build_ptr->priority_flags, buffer);
+		pack16(build_ptr->priority_levels, buffer);
 		pack32(build_ptr->priority_max_age, buffer);
 		pack16(build_ptr->priority_reset_period, buffer);
 		packstr(build_ptr->priority_type, buffer);
@@ -5616,6 +5620,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->priority_calc_period, buffer);
 		pack16(build_ptr->priority_favor_small, buffer);
 		pack16(build_ptr->priority_flags, buffer);
+		pack16(build_ptr->priority_levels, buffer);
 		pack32(build_ptr->priority_max_age, buffer);
 		pack16(build_ptr->priority_reset_period, buffer);
 		packstr(build_ptr->priority_type, buffer);
@@ -5940,6 +5945,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->priority_calc_period, buffer);
 		safe_unpack16(&build_ptr->priority_favor_small, buffer);
 		safe_unpack16(&build_ptr->priority_flags, buffer);
+		safe_unpack16(&build_ptr->priority_levels, buffer);
 		safe_unpack32(&build_ptr->priority_max_age, buffer);
 		safe_unpack16(&build_ptr->priority_reset_period, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->priority_type, &uint32_tmp,
@@ -6248,6 +6254,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->priority_calc_period, buffer);
 		safe_unpack16(&build_ptr->priority_favor_small, buffer);
 		safe_unpack16(&build_ptr->priority_flags, buffer);
+		safe_unpack16(&build_ptr->priority_levels, buffer);
 		safe_unpack32(&build_ptr->priority_max_age, buffer);
 		safe_unpack16(&build_ptr->priority_reset_period, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->priority_type, &uint32_tmp,
@@ -6539,6 +6546,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->priority_calc_period, buffer);
 		safe_unpack16(&build_ptr->priority_favor_small, buffer);
 		safe_unpack16(&build_ptr->priority_flags, buffer);
+		safe_unpack16(&build_ptr->priority_levels, buffer);
 		safe_unpack32(&build_ptr->priority_max_age, buffer);
 		safe_unpack16(&build_ptr->priority_reset_period, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->priority_type, &uint32_tmp,
