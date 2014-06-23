@@ -3526,6 +3526,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	uint16_t job_term_state;
+	char jbuf[JBUFSIZ];
 
 	/* Jobs submitted using Moab command should be cancelled using
 	 * Moab command for accurate job records */
@@ -3598,7 +3599,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
 		}
 		/* build_cg_bitmap() not needed, job already completing */
-		verbose("job_signal of requeuing job %u successful", job_id);
+		verbose("job_signal of requeuing %s successful",
+			jobid2str(job_ptr, jbuf));
 		return SLURM_SUCCESS;
 	}
 
@@ -3609,7 +3611,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		job_ptr->end_time	= now;
 		srun_allocate_abort(job_ptr);
 		job_completion_logger(job_ptr, false);
-		verbose("job_signal of pending job %u successful", job_id);
+		verbose("job_signal of pending %s successful",
+			jobid2str(job_ptr, jbuf));
 		return SLURM_SUCCESS;
 	}
 
@@ -3626,8 +3629,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, false, true, preempt);
-		verbose("job_signal %u of suspended job %u successful",
-			signal, job_id);
+		verbose("job_signal %u of suspended %s successful",
+			signal, jobid2str(job_ptr, jbuf));
 		return SLURM_SUCCESS;
 	}
 
@@ -3649,13 +3652,14 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		} else {
 			_signal_job(job_ptr, signal);
 		}
-		verbose("job_signal %u of running job %u successful",
-			signal, job_id);
+		verbose("job_signal %u of running %s successful",
+			signal, jobid2str(job_ptr, jbuf));
 		return SLURM_SUCCESS;
 	}
 
-	verbose("job_signal: job %u can't be sent signal %u from state=%s",
-		job_id, signal, job_state_string(job_ptr->job_state));
+	verbose("job_signal: %s can't be sent signal %u from state=%s",
+		jobid2str(job_ptr, jbuf), signal,
+		job_state_string(job_ptr->job_state));
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 }
 
