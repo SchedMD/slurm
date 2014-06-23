@@ -1,0 +1,301 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that srun -N uses the MaxNode and GrpNode limit in
+#          QoS and that the first limit on the GrpNode and MaxNode
+#          limit is used in an association.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id     "1.74"
+set node_cnt    [available_nodes $partition]
+set cluster     [get_cluster_name]
+set node_name   ""
+set user        ""
+set acct        "test$test_id\_acct"
+set acct_c1     "test$test_id\_acct_c_1"
+set acct_c2     "test$test_id\_acct_c_2"
+set qos         "test$test_id\_qos"
+set access_err  0
+set exit_code   0
+array set mod_qos_vals {}
+array set mod_acct_desc_vals {}
+array set mod_acct_vals {}
+array set mod_acct_assoc_vals {}
+set mod_acct_assoc_vals(qos) $qos
+
+print_header $test_id
+
+if {$node_cnt <= 1} {
+	send_user "\nWARNING: cluster has to few nodes\n"
+	exit $exit_code
+}
+
+spawn $bin_id -u -n
+expect {
+	-re "($alpha_numeric_under)" {
+		set user $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+proc srun_test {exp_cnt account} {
+
+	global srun acct exit_code node_cnt number bin_echo
+
+	set job_id 0
+	set count 0
+	spawn $srun -v -l -t1 -A $account -N1-$node_cnt $bin_echo "my_test"
+	expect {
+		-re "$number: my_test" {
+			incr count
+			exp_continue
+		}
+		-re "jobid ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$count != $exp_cnt} {
+		send_user "\nFAILURE: incorrect number of jobs were ran $count != $exp_cnt\n"
+		set exit_code 1
+	}
+
+	if {$job_id == 0} {
+		send_user "\nFAILURE: did not get job id\n"
+		exit 1
+	} else {
+		return $job_id
+	}
+
+
+}
+
+proc add_child {parent child maxnode grpnode} {
+
+	global sacctmgr user exit_code
+
+	set child_added 0
+	spawn $sacctmgr -i add acct $child parent=$parent maxnode=$maxnode grpnode=$grpnode
+	expect {
+		-re "Associations" {
+			incr child_added
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $sacctmgr -i add user $user account=$child
+	expect {
+		-re "Associations" {
+			incr child_added
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $child_added
+
+}
+
+# Remove any vestigial test accounts
+remove_acct $cluster $acct
+remove_qos "$qos"
+
+# Add test account
+set acct_added 0
+spawn $sacctmgr -i add account $acct
+expect {
+
+	-re "Associations" {
+		set acct_added 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$acct_added == 0} {
+	send_user "\nFAILURE sacctmgr did not add account\n"
+	exit 1
+}
+
+set user_added 0
+spawn $sacctmgr -i add user $user account=$acct
+expect {
+	-re "Associations" {
+		set user_add 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$user_added != 0} {
+	send_user "\nFAILURE: sacctmgr did not add user $user to account $acct\n"
+	exit 1
+}
+
+
+############################# Test QoS Limits #################################
+
+wait_for_job [srun_test $node_cnt $acct] DONE
+
+# Now run test using MaxNode limits of the qos
+if {[add_qos $qos] != 0} {
+	send_user "\nFAILURE: qos was not added\n"
+	exit 1
+}
+
+set mod_qos_vals(MaxNodes) [expr $node_cnt - 1]
+mod_qos $qos [array get mod_qos_vals]
+
+if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
+	send_user "\nFAILURE: acount was not modified\n"
+	exit 1
+}
+
+wait_for_job [srun_test [expr $node_cnt-1] $acct] DONE
+
+# Now run test using GrpNode limits of qos
+set mod_qos_vals(MaxNodes) -1
+set mod_qos_vals(GrpNodes) [expr $node_cnt - 1]
+
+mod_qos $qos [array get mod_qos_vals]
+
+if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] } {
+	send_user "\nFAILURE: account was not modified\n"
+	exit 1
+}
+
+wait_for_job [srun_test [expr $node_cnt-1] $acct] DONE
+
+
+##################### Test limits based on associations #####################
+
+#
+# MaxNodes Limit
+#
+send_user "\nTesting MaxNode Limits\n"
+
+set mod_qos_vals(GrpNodes) -1
+mod_qos $qos [array get mod_qos_vals]
+
+if {[mod_acct $acct  [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]]} {
+	send_user "\nFAILURE: account was not modified\n"
+	exit 1
+}
+
+# Add child account
+if {[add_child $acct $acct_c1 [expr $node_cnt - 1] -1] != 2} {
+	send_user "\nFAILURE: child was not added to the account\n"
+	exit 1
+}
+
+# Add another child account
+if {[add_child $acct_c1 $acct_c2 [expr $node_cnt - 2] -1] != 2} {
+	send_user "\nFAILURE: child was not added to the account\n"
+	exit 1
+}
+
+# Run srun test on parent and child accounts
+wait_for_job [srun_test $node_cnt $acct] DONE
+
+wait_for_job [srun_test [expr $node_cnt - 1] $acct_c1] DONE
+
+wait_for_job [srun_test [expr $node_cnt - 2] $acct_c2] DONE
+
+#
+# GrpNodes Limit
+#
+send_user "\nTesting GrpNode Limits\n"
+
+# Modify child with GrpNode
+set mod_acct_assoc_vals(MaxNode) -1
+set mod_acct_assoc_vals(GrpNode) [expr $node_cnt - 1]
+mod_acct $acct_c1 [array get mod_acct_desc] [array get mod_acct_vals] [array get mod_acct_assoc_vals]
+
+# Modify child with GrpNode
+set mod_acct_assoc_vals(MaxNode) -1
+set mod_acct_assoc_vals(GrpNode) [expr $node_cnt - 2]
+mod_acct $acct_c2 [array get mod_acct_desc] [array get mod_acct_vals] [array get mod_acct_assoc_vals]
+
+# Run srun test on parent and child accounts
+wait_for_job [srun_test $node_cnt $acct] DONE
+
+wait_for_job [srun_test [expr $node_cnt - 1] $acct_c1] DONE
+
+wait_for_job [srun_test [expr $node_cnt - 2] $acct_c2] DONE
+
+# Remove the test account
+remove_acct $cluster $acct
+if {[remove_qos "$qos"] != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	set $exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+
+exit $exit_code
+
