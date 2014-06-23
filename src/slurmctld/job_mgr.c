@@ -1044,6 +1044,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	slurmdb_association_rec_t assoc_rec;
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
+	char jbuf[JBUFSIZ];
 
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
@@ -1715,7 +1716,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_ptr->state_reason = FAIL_ACCOUNT;
 	} else {
 		job_ptr->assoc_id = assoc_rec.id;
-		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
+		info("Recovered %s Assoc=%u",
+		     jobid2str(job_ptr, jbuf), job_ptr->assoc_id);
 
 		/* make sure we have started this job in accounting */
 		if (!job_ptr->db_index) {
@@ -3761,7 +3763,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	info("%s: job %s WIFEXITED %d WEXITSTATUS %d",
+	info("%s: %s WIFEXITED %d WEXITSTATUS %d",
 	     __func__, jobid2str(job_ptr, jbuf),
 	     WIFEXITED(job_return_code), WEXITSTATUS(job_return_code));
 
@@ -3787,7 +3789,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if ((job_return_code == NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr))) {
-		info("%s: Job %s cancelled from interactive user",
+		info("%s: %s cancelled from interactive user",
 		     __func__, jobid2str(job_ptr, jbuf));
 	}
 
@@ -3808,7 +3810,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		requeue = 0;
 		if (job_return_code == 0)
 			job_return_code = 1;
-		info("%s: batch job %s launch failure",
+		info("%s: batch %s launch failure",
 		     __func__, jobid2str(job_ptr, jbuf));
 	}
 
@@ -3832,10 +3834,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		 * information, we need to add it again. */
 		acct_policy_add_job_submit(job_ptr);
 		if (node_fail) {
-			info("%s: requeue job %s due to node failure",
+			info("%s: requeue %s due to node failure",
 			     __func__, jobid2str(job_ptr, jbuf));
 		} else {
-			info("%s: requeue job %s per user/system request",
+			info("%s: requeue %s per user/system request",
 			     __func__, jobid2str(job_ptr, jbuf));
 		}
 	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details &&
@@ -3892,7 +3894,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		deallocate_nodes(job_ptr, false, suspended, false);
 	}
 
-	info("%s: job %s done", __func__, jobid2str(job_ptr, jbuf));
+	info("%s: %s done", __func__, jobid2str(job_ptr, jbuf));
 
 	return SLURM_SUCCESS;
 }
@@ -7226,7 +7228,7 @@ void purge_old_job(void)
 		if (test_job_dependency(job_ptr) == 2) {
 			char jbuf[JBUFSIZ];
 
-			debug("%s: Job %s dependency condition never satisfied",
+			debug("%s: %s dependency condition never satisfied",
 			      __func__, jobid2str(job_ptr, jbuf));
 			job_ptr->state_reason = WAIT_DEP_INVALID;
 			xfree(job_ptr->state_desc);
@@ -10163,17 +10165,17 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (node_ptr)
 			base_state = node_ptr->node_state & NODE_STATE_BASE;
 		if (base_state == NODE_STATE_DOWN) {
-			debug("%s: job %s complete response from DOWN "
+			debug("%s: %s complete response from DOWN "
 			      "node %s", __func__,
 			      jobid2str(job_ptr, jbuf), node_name);
 		} else if (job_ptr->restart_cnt) {
 			/* Duplicate epilog complete can be due to race
 			 * condition, especially with select/serial */
-			debug("%s: job %s duplicate epilog complete response",
+			debug("%s: %s duplicate epilog complete response",
 			      __func__, jobid2str(job_ptr, jbuf));
 		} else {
 
-			error("%s: job %s is non-running slurmctld"
+			error("%s: %s is non-running slurmctld"
 			      "and slurmd out of sync",
 			      __func__, jobid2str(job_ptr, jbuf));
 		}
@@ -10188,7 +10190,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	   the job will be downed below.
 	*/
 	if (return_code)
-		error("%s: job %s epilog error on %s",
+		error("%s: %s epilog error on %s",
 		      __func__, jobid2str(job_ptr, jbuf),
 		      job_ptr->batch_host);
 
@@ -10197,7 +10199,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (front_end_ptr->job_cnt_comp)
 			front_end_ptr->job_cnt_comp--;
 		else {
-			error("%s: job %s job_cnt_comp underflow on "
+			error("%s: %s job_cnt_comp underflow on "
 			      "front end %s", __func__,
 			      jobid2str(job_ptr, jbuf),
 			      front_end_ptr->name);
@@ -10236,7 +10238,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	}
 #else
 	if (return_code) {
-		error("%s: job %s epilog error on %s, draining the node",
+		error("%s: %s epilog error on %s, draining the node",
 		      __func__, jobid2str(job_ptr, jbuf), node_name);
 		drain_nodes(node_name, "Epilog error",
 			    slurm_get_slurm_user_id());
@@ -10425,7 +10427,7 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	} else if (depend_rc == 2) {
 		char jbuf[JBUFSIZ];
 
-		debug("%s: Job %s dependency condition never satisfied",
+		debug("%s: %s dependency condition never satisfied",
 		      __func__, jobid2str(job_ptr, jbuf));
 		job_ptr->state_reason = WAIT_DEP_INVALID;
 		xfree(job_ptr->state_desc);
@@ -12244,26 +12246,24 @@ extern void job_end_time_reset(struct job_record  *job_ptr)
 }
 
 /*
- * jobid2str() - print all the parts that uniquely
- *               identify a job.
+ * jobid2str() - print all the parts that uniquely identify a job.
  */
-char *
+extern char *
 jobid2str(struct job_record *job_ptr, char *buf)
 {
 	if (job_ptr == NULL)
-		return "No jobid in slurmctld?";
+		return "jobid2str: Invalid job_ptr argument";
 	if (buf == NULL)
-		return "Invalid argument";
+		return "jobid2str: Invalid buf argument";
 
 	if (job_ptr->array_task_id == NO_VAL) {
-		sprintf(buf, "jobid %u state 0x%x cnt %d",
+		sprintf(buf, "JobID=%u State=0x%x NodeCnt=%u",
 			job_ptr->job_id, job_ptr->job_state,
 			job_ptr->node_cnt);
 	} else {
-		sprintf(buf, "jobid %u taskid %u arrayid %u state 0x%x cnt %d",
-			job_ptr->job_id, job_ptr->array_task_id,
-			job_ptr->array_job_id, job_ptr->job_state,
-			job_ptr->node_cnt);
+		sprintf(buf, "JobID=%u_%u (%u) State=0x%x NodeCnt=%u",
+			job_ptr->array_job_id, job_ptr->array_task_id,
+			job_ptr->job_id, job_ptr->job_state,job_ptr->node_cnt);
 	}
 
        return buf;

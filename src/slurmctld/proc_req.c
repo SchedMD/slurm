@@ -1601,12 +1601,12 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_epilog_complete");
 
 	if (epilog_msg->return_code)
-		error("%s: epilog error job %s Node=%s Err=%s %s",
+		error("%s: epilog error %s Node=%s Err=%s %s",
 		      __func__, jobid2str(job_ptr, jbuf),
 		      epilog_msg->node_name,
 		      slurm_strerror(epilog_msg->return_code), TIME_STR);
 	else
-		debug2("%s: job %s  Node=%s %s",
+		debug2("%s: %s Node=%s %s",
 		       __func__, jobid2str(job_ptr, jbuf),
 		       epilog_msg->node_name, TIME_STR);
 
@@ -1763,12 +1763,12 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("%s: job %s error %s ",
+		info("%s: %s error %s ",
 		     __func__, jobid2str(job_ptr, jbuf),
 		     slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s: job %s %s", __func__,
+		debug2("%s: %s %s", __func__,
 		       jobid2str(job_ptr, jbuf),
 		       TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);

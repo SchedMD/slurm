@@ -3191,7 +3191,7 @@ void make_node_idle(struct node_record *node_ptr,
 				&& job_ptr->epilog_running == false)
 				cleanup_completing(job_ptr);
 		} else {
-			error("%s: job %s node_cnt underflow",
+			error("%s: %s node_cnt underflow",
 			      __func__, jobid2str(job_ptr, jbuf));
 		}
 
@@ -3200,7 +3200,7 @@ void make_node_idle(struct node_record *node_ptr,
 			if (node_ptr->sus_job_cnt)
 				(node_ptr->sus_job_cnt)--;
 			else
-				error("%s: job %s node %s sus_job_cnt underflow",
+				error("%s: %s node %s sus_job_cnt underflow",
 				      __func__, jobid2str(job_ptr, jbuf),
 				      node_ptr->name);
 		} else if (IS_JOB_RUNNING(job_ptr)) {
@@ -3208,14 +3208,14 @@ void make_node_idle(struct node_record *node_ptr,
 			if (node_ptr->run_job_cnt)
 				(node_ptr->run_job_cnt)--;
 			else
-				error("%s: job %s node %s run_job_cnt underflow",
+				error("%s: %s node %s run_job_cnt underflow",
 				      __func__, jobid2str(job_ptr, jbuf),
 				      node_ptr->name);
 		} else {
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			else
-				error("%s: job %s node %s run_job_cnt underflow",
+				error("%s: %s node %s run_job_cnt underflow",
 				      __func__, jobid2str(job_ptr, jbuf),
 				      node_ptr->name);
 			if (node_ptr->comp_job_cnt > 0)
@@ -3229,7 +3229,7 @@ void make_node_idle(struct node_record *node_ptr,
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_DOWN(node_ptr)) {
-		debug3("%s: job %s node %s being left DOWN",
+		debug3("%s: %s node %s being left DOWN",
 		       __func__, jobid2str(job_ptr, jbuf), node_ptr->name);
 		return;
 	}
@@ -3245,7 +3245,7 @@ void make_node_idle(struct node_record *node_ptr,
 	    (node_ptr->run_job_cnt == 0) && (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		bit_set(idle_node_bitmap, inx);
-		debug3("%s: job %s node %s is DRAINED",
+		debug3("%s: %s node %s is DRAINED",
 		       __func__, jobid2str(job_ptr, jbuf), node_ptr->name);
 		node_ptr->last_idle = now;
 		trigger_node_drained(node_ptr);
