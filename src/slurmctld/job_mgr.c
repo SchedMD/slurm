@@ -920,6 +920,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->batch_flag, buffer);
 	pack16(dump_job_ptr->mail_type, buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
+	pack8(dump_job_ptr->reboot, buffer);
 	pack16(dump_job_ptr->restart_cnt, buffer);
 	pack16(dump_job_ptr->wait_all_nodes, buffer);
 	pack16(dump_job_ptr->warn_flags, buffer);
@@ -1013,6 +1014,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0;
 	time_t resize_time = 0, now = time(NULL);
+	uint8_t reboot = 0;
 	uint32_t array_task_id = NO_VAL;
 	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
@@ -1043,7 +1045,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
 		safe_unpack32(&assoc_id, buffer);
@@ -1103,6 +1105,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
 		safe_unpack16(&state_reason, buffer);
+		safe_unpack8 (&reboot, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&wait_all_nodes, buffer);
 		safe_unpack16(&warn_flags, buffer);
@@ -1633,6 +1636,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->pre_sus_time = pre_sus_time;
 	job_ptr->priority     = priority;
 	job_ptr->qos_id       = qos_id;
+	job_ptr->reboot       = reboot;
 	xfree(job_ptr->resp_host);
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */
@@ -4720,7 +4724,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	select_g_select_jobinfo_set(job_desc->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE,
 				    &conn_type);
-
 #endif
 
 	if (job_desc->max_nodes == NO_VAL)
@@ -5729,6 +5732,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->pn_min_cpus = MAX(detail_ptr->pn_min_cpus,
 					      detail_ptr->cpus_per_task);
 	}
+	if (job_desc->reboot != (uint16_t) NO_VAL)
+		job_ptr->reboot = MIN(job_desc->reboot, 1);
+	else
+		job_ptr->reboot = 0;
 	if (job_desc->requeue != (uint16_t) NO_VAL)
 		detail_ptr->requeue = MIN(job_desc->requeue, 1);
 	else
@@ -6595,6 +6602,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack16(dump_job_ptr->job_state,    buffer);
 		pack16(dump_job_ptr->batch_flag,   buffer);
 		pack16(dump_job_ptr->state_reason, buffer);
+		pack8(dump_job_ptr->reboot,        buffer);
 		pack16(dump_job_ptr->restart_cnt,  buffer);
 		pack16(show_flags,  buffer);
 
@@ -9360,6 +9368,20 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				image);
 		}
 		xfree(image);
+	}
+#else
+	if (job_specs->reboot != (uint16_t) NO_VAL) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+			goto fini;
+		} else {
+			info("sched: update_job: setting reboot to %u for "
+			     "jobid %u", job_specs->reboot, job_ptr->job_id);
+			if (job_specs->reboot == 0)
+				job_ptr->reboot = 0;
+			else
+				job_ptr->reboot = MAX(1, job_specs->reboot);
+		}
 	}
 #endif
 

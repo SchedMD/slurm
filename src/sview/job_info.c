@@ -174,6 +174,7 @@ enum {
 	SORTID_PRIORITY,
 	SORTID_QOS,
 	SORTID_REASON,
+	SORTID_REBOOT,
 	SORTID_REQUEUE,
 	SORTID_RESV_NAME,
 	SORTID_RESTARTS,
@@ -339,6 +340,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CORE_SPEC, "CoreSpec", FALSE, EDIT_TEXTBOX,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_REBOOT, "Reboot", FALSE, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REQUEUE, "Requeue", FALSE, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
@@ -706,10 +709,11 @@ static void _set_active_combo_job(GtkComboBox *combo,
 			action = 0;
 
 		break;
-	case SORTID_SHARED:
 	case SORTID_CONTIGUOUS:
+	case SORTID_REBOOT:
 	case SORTID_REQUEUE:
 	case SORTID_ROTATE:
+	case SORTID_SHARED:
 		if (!strcasecmp(temp_char, "yes"))
 			action = 0;
 		else if (!strcasecmp(temp_char, "no"))
@@ -947,12 +951,18 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			goto return_error;
 		job_msg->core_spec = (uint16_t)temp_int;
 		break;
+	case SORTID_REBOOT:
+		if (!strcasecmp(new_text, "yes"))
+			job_msg->reboot = 1;
+		else
+			job_msg->reboot = 0;
+		type = "reboot";
+		break;
 	case SORTID_REQUEUE:
 		if (!strcasecmp(new_text, "yes"))
 			job_msg->requeue = 1;
 		else
 			job_msg->requeue = 0;
-
 		type = "requeue";
 		break;
 	case SORTID_NODELIST_REQ:
@@ -1778,6 +1788,15 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_REASON), reason);
 
+	if (job_ptr->reboot)
+		sprintf(tmp_char, "yes");
+	else
+		sprintf(tmp_char, "no");
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_REBOOT),
+				   tmp_char);
+
 	if (job_ptr->requeue)
 		sprintf(tmp_char, "yes");
 	else
@@ -1955,7 +1974,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_rqswitch[40],  tmp_core_spec[40],   tmp_job_id[400];
 	char tmp_std_err[128],  tmp_std_in[128],     tmp_std_out[128];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
-	char *tmp_reason, *tmp_nodes;
+	char *tmp_reboot, *tmp_reason, *tmp_nodes;
 	char time_buf[32];
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
@@ -2118,6 +2137,11 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		tmp_reason = job_ptr->state_desc;
 	else
 		tmp_reason = job_reason_string(job_ptr->state_reason);
+
+	if (job_ptr->reboot)
+		tmp_reboot = "yes";
+	else
+		tmp_reboot =  "no";
 
 	if (job_ptr->requeue)
 		tmp_requeue = "yes";
@@ -2297,6 +2321,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_PRIORITY,     tmp_prio,
 				   SORTID_QOS,          job_ptr->qos,
 				   SORTID_REASON,       tmp_reason,
+				   SORTID_REBOOT,       tmp_reboot,
 				   SORTID_REQUEUE,      tmp_requeue,
 				   SORTID_RESTARTS,     job_ptr->restart_cnt,
 				   SORTID_RESV_NAME,    job_ptr->resv_name,
@@ -3519,10 +3544,11 @@ extern GtkListStore *create_model_job(int type)
 				   0, "Requeue",
 				   -1);
 		break;
-	case SORTID_SHARED:
 	case SORTID_CONTIGUOUS:
+	case SORTID_REBOOT:
 	case SORTID_REQUEUE:
 	case SORTID_ROTATE:
+	case SORTID_SHARED:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,

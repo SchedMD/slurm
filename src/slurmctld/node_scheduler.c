@@ -691,6 +691,11 @@ static int
 _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 		       int cons_res_flag)
 {
+#ifndef HAVE_BG
+	if (job_ptr->reboot)
+		return 0;
+#endif
+
 	/* no sharing if partition Shared=EXCLUSIVE */
 	if (part_max_share == 0) {
 		job_ptr->details->whole_node = 1;
@@ -1844,6 +1849,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	prolog_slurmctld(job_ptr);
+	reboot_job_nodes(job_ptr);
 	slurm_sched_g_newalloc(job_ptr);
 
 	/* Request asynchronous launch of a prolog for a

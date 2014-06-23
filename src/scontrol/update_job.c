@@ -945,7 +945,7 @@ scontrol_update_job (int argc, char *argv[])
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.rotate = 0;
 			else if (parse_uint16(val, &job_msg.rotate)) {
-				error ("Invalid wait-for-switch value: %s", val);
+				error ("Invalid rotate value: %s", val);
 				exit_code = 1;
 				xfree(ids);
 				return 0;
@@ -971,6 +971,19 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (!strncasecmp(tag, "EndTime", MAX(taglen, 2))) {
 			job_msg.end_time = parse_time(val, 0);
+			update_cnt++;
+		}
+		else if (!strncasecmp(tag, "Reboot", MAX(taglen, 3))) {
+			if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+				job_msg.reboot = 1;
+			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+				job_msg.reboot = 0;
+			else if (parse_uint16(val, &job_msg.reboot)) {
+				error ("Invalid reboot value: %s", val);
+				exit_code = 1;
+				xfree(ids);
+				return 0;
+			}
 			update_cnt++;
 		}
 		else {

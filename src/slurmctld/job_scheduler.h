@@ -125,6 +125,13 @@ extern void print_job_dependency(struct job_record *job_ptr);
  */
 extern int prolog_slurmctld(struct job_record *job_ptr);
 
+/*
+ * reboot_job_nodes - Reboot the compute nodes allocated to a job.
+ * IN job_ptr - pointer to job that will be initiated
+ * RET SLURM_SUCCESS(0) or error code
+ */
+extern int reboot_job_nodes(struct job_record *job_ptr);
+
 /* If a job can run in multiple partitions, make sure that the one 
  * actually used is first in the string. Needed for job state save/restore */
 extern void rebuild_job_part_list(struct job_record *job_ptr);

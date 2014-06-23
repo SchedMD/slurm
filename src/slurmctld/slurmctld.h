@@ -613,6 +613,7 @@ struct job_record {
 					 * void* because of interdependencies
 					 * in the header files, confirm the
 					 * value before use */
+	uint8_t reboot;			/* node reboot requested before start */
 	uint16_t restart_cnt;		/* count of restarts */
 	time_t resize_time;		/* time of latest size change */
 	uint32_t resv_id;		/* reservation ID */

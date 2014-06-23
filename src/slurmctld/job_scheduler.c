@@ -113,7 +113,9 @@ static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
-
+#ifndef HAVE_FRONT_END
+static void *	_wait_boot(void *arg);
+#endif
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	save_last_part_update = 0;
 
@@ -2697,6 +2699,124 @@ static void *_run_epilog(void *arg)
 }
 
 /*
+ * reboot_job_nodes - Reboot the compute nodes allocated to a job.
+ * IN job_ptr - pointer to job that will be initiated
+ * RET SLURM_SUCCESS(0) or error code
+ */
+#ifdef HAVE_FRONT_END
+extern int reboot_job_nodes(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+#else
+extern int reboot_job_nodes(struct job_record *job_ptr)
+{
+	int i, rc;
+	pthread_t thread_id_prolog;
+	pthread_attr_t thread_attr_prolog;
+	agent_arg_t *reboot_agent_args = NULL;
+	struct node_record *node_ptr;
+	time_t now = time(NULL);
+	uint16_t resume_timeout = slurm_get_resume_timeout();
+
+	if ((job_ptr->reboot == 0) || (job_ptr->node_bitmap == NULL) ||
+	    (slurmctld_conf.reboot_program == NULL) ||
+	    (slurmctld_conf.reboot_program[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
+	reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
+	reboot_agent_args->retry = 0;
+	reboot_agent_args->hostlist = hostlist_create(NULL);
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		hostlist_push(reboot_agent_args->hostlist, node_ptr->name);
+		reboot_agent_args->node_count++;
+		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+		bit_clear(avail_node_bitmap, i);
+		node_ptr->last_response = now + resume_timeout;
+	}
+	agent_queue_request(reboot_agent_args);
+
+	if (job_ptr->details)
+		job_ptr->details->prolog_running++;
+
+	slurm_attr_init(&thread_attr_prolog);
+	pthread_attr_setdetachstate(&thread_attr_prolog,
+				    PTHREAD_CREATE_DETACHED);
+	while (1) {
+		rc = pthread_create(&thread_id_prolog,
+				    &thread_attr_prolog,
+				    _wait_boot, (void *) job_ptr);
+		if (rc == 0) {
+			slurm_attr_destroy(&thread_attr_prolog);
+			return SLURM_SUCCESS;
+		}
+		if (errno == EAGAIN)
+			continue;
+		error("pthread_create: %m");
+		slurm_attr_destroy(&thread_attr_prolog);
+		return errno;
+	}
+}
+
+static void *_wait_boot(void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) arg;
+	/* Locks: Write jobs; read nodes */
+	slurmctld_lock_t job_write_lock = {
+		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+	uint16_t resume_timeout = slurm_get_resume_timeout();
+	struct node_record *node_ptr;
+	time_t start_time = time(NULL);
+	int i, total_node_cnt, wait_node_cnt;
+	uint32_t save_job_id = job_ptr->job_id;
+
+	do {
+		sleep(5);
+		total_node_cnt = wait_node_cnt = 0;
+		lock_slurmctld(job_write_lock);
+		if ((job_ptr->magic != JOB_MAGIC) ||
+		    (job_ptr->job_id != save_job_id)) {
+			error("Job %u vanished while waiting for node boot",
+			      save_job_id);
+			unlock_slurmctld(job_write_lock);
+			return NULL;
+		}
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i < node_record_count; i++, node_ptr++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			total_node_cnt++;
+			if (node_ptr->boot_time < start_time)
+				wait_node_cnt++;
+		}
+		if (wait_node_cnt) {
+			debug("Job %u still waiting for %d of %d nodes to boot",
+			      job_ptr->job_id, wait_node_cnt, total_node_cnt);
+		} else {
+			info("Job %u boot complete for all %d nodes",
+			     job_ptr->job_id, total_node_cnt);
+		}
+		i = (int) difftime(time(NULL), start_time);
+		if (i >= resume_timeout) {
+			error("Job %u timeout waiting for node %d of %d boots",
+			      job_ptr->job_id, wait_node_cnt, total_node_cnt);
+			wait_node_cnt = 0;
+		}
+		unlock_slurmctld(job_write_lock);
+	} while (wait_node_cnt);
+
+	if (job_ptr->details)
+		job_ptr->details->prolog_running--;
+
+	return NULL;
+}
+#endif
+
+/*
  * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	been allocated resources.
  * IN job_ptr - pointer to job that will be initiated
@@ -2718,7 +2838,7 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 	}
 
 	if (job_ptr->details)
-		job_ptr->details->prolog_running = 1;
+		job_ptr->details->prolog_running++;
 
 	slurm_attr_init(&thread_attr_prolog);
 	pthread_attr_setdetachstate(&thread_attr_prolog,
@@ -2747,9 +2867,9 @@ static void *_run_prolog(void *arg)
 	pid_t cpid;
 	int i, rc, status, wait_rc;
 	char *argv[2], **my_env;
-	/* Locks: Read config, job; Write nodes */
+	/* Locks: Read config; Write jobs, nodes */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	bitstr_t *node_bitmap = NULL;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
@@ -2834,7 +2954,7 @@ static void *_run_prolog(void *arg)
 	}
 	if (job_ptr) {
 		if (job_ptr->details)
-			job_ptr->details->prolog_running = 0;
+			job_ptr->details->prolog_running--;
 		if (job_ptr->batch_flag &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)))
 			launch_job(job_ptr);

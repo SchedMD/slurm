@@ -432,8 +432,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 5 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Requeue=%u Restarts=%u BatchFlag=%u ",
-		 job_ptr->requeue, job_ptr->restart_cnt, job_ptr->batch_flag);
+		 "Requeue=%u Restarts=%u BatchFlag=%u Reboot=%u ",
+		 job_ptr->requeue, job_ptr->restart_cnt, job_ptr->batch_flag,
+		 job_ptr->reboot);
 	xstrcat(out, tmp_line);
 	if (WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);

@@ -1268,6 +1268,7 @@ typedef struct job_info {
 				 * 0=held, 1=required nodes DOWN/DRAINED */
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
+	uint8_t reboot;		/* node reboot requested before start */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int32_t *req_node_inx;	/* required list index pairs into node_table:
 				 * start_range_1, end_range_1,

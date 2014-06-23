@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Added HealthCheckNodeState option of "cycle" to cycle through the compute
     nodes over the course of HealthCheckInterval rather than running all at
     the same time.
+ -- Add job "reboot" option for Linux clusters. This invokes the configured
+    RebootProgram to reboot nodes allocated to a job before it begins execution.
 
 * Changes in Slurm 14.11.0pre1
 ==============================

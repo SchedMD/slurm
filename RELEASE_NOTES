@@ -92,7 +92,8 @@ COMMAND CHANGES (see man pages for details)
 
 OTHER CHANGES
 =============
-
+ -- Add job "reboot" option for Linux clusters. This invokes the configured
+    RebootProgram to reboot nodes allocated to a job before it begins execution.
 
 API CHANGES
 ===========
@@ -108,7 +109,7 @@ Added the following struct definitions
     rpc_type_size, rpc_type_id, rpc_type_cnt, rpc_type_time,
     rpc_user_size, rpc_user_id, rpc_user_cnt, rpc_user_time.
  -- Added the following fields to struct job_info:
-    sched_nodes
+    reboot, sched_nodes
  -- Added the following fields to struct node_info:
     gres_drain and gres_used
     core_spec_cnt, cpu_spec_list, mem_spec_limit
