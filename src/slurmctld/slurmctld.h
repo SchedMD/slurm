@@ -201,6 +201,7 @@ typedef struct diag_stats {
 	uint32_t bf_active;
 } diag_stats_t;
 
+extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;
 extern slurmctld_config_t slurmctld_config;
 extern int   bg_recover;		/* state recovery mode */

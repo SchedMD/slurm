@@ -163,38 +163,38 @@ log_options_t log_opts = LOG_OPTS_INITIALIZER;
 log_options_t sched_log_opts = SCHEDLOG_OPTS_INITIALIZER;
 
 /* Global variables */
+int	accounting_enforce = 0;
+int	association_based_accounting = 0;
+void *	acct_db_conn = NULL;
+int	batch_sched_delay = 3;
+int	bg_recover = DEFAULT_RECOVER;
+uint32_t cluster_cpus = 0;
+time_t	last_proc_req_start = 0;
+bool	ping_nodes_now = false;
+int	sched_interval = 60;
+char *	slurmctld_cluster_name = NULL; /* name of cluster */
 slurmctld_config_t slurmctld_config;
-int bg_recover = DEFAULT_RECOVER;
-char *slurmctld_cluster_name = NULL; /* name of cluster */
-void *acct_db_conn = NULL;
-int accounting_enforce = 0;
-int association_based_accounting = 0;
-bool ping_nodes_now = false;
-uint32_t      cluster_cpus = 0;
-int   with_slurmdbd = 0;
-bool want_nodes_reboot = true;
-int   batch_sched_delay = 3;
-int   sched_interval = 60;
-int   slurmctld_primary = 1;
-
-/* Next used for stats/diagnostics */
 diag_stats_t slurmctld_diag_stats;
+int	slurmctld_primary = 1;
+bool	want_nodes_reboot = true;
+int	with_slurmdbd = 0;
 
 /* Local variables */
+static pthread_t assoc_cache_thread = (pthread_t) 0;
 static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
-static char	*debug_logfile = NULL;
-static bool     dump_core = false;
+static char *	debug_logfile = NULL;
+static bool	dump_core = false;
+static int      job_sched_cnt = 0;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
+static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
 static char	node_name[MAX_SLURM_NAME];
 static int	recover   = DEFAULT_RECOVER;
+static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
-static char    *slurm_conf_filename;
-static pthread_t assoc_cache_thread = (pthread_t) 0;
-static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int      job_sched_cnt = 0;
+static char *	slurm_conf_filename;
 
 /*
  * Static list of signals to block in this process
@@ -234,9 +234,6 @@ static void         _update_nice(void);
 inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
-
-time_t last_proc_req_start = 0;
-time_t next_stats_reset = 0;
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char *argv[])

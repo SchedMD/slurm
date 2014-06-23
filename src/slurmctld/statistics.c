@@ -44,13 +44,11 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/xstring.h"
-#include "src/common/list.h"
 
 extern int retry_list_size(void);
-
-extern time_t last_proc_req_start;
 
 /* Pack all scheduling statistics */
 extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
