@@ -3644,7 +3644,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 			build_cg_bitmap(job_ptr);
 			job_completion_logger(job_ptr, false);
 			deallocate_nodes(job_ptr, false, false, preempt);
-		} else if (flags & KILL_JOB_BATCH) {//
+		} else if (flags & KILL_JOB_BATCH) {
 			if (job_ptr->batch_flag)
 				_signal_batch_job(job_ptr, signal);
 			else
