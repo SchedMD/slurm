@@ -1891,12 +1891,12 @@ proc available_nodes { partition state } {
 		set partition [default_partition]
 	}
 
-	if {[string length state] == 0} {
+	if {[string length $state] == 0} {
 		set state "idle,alloc,comp"
 	}
 
 	set available -1
-	#send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
+	#send_user "$sinfo --noheader --partition $partition --state $state --format %D\n"
 	set fd [open "|$sinfo --noheader --partition $partition --state $state --format %D"]
 	gets $fd line
 	catch {close $fd}
