@@ -1423,12 +1423,12 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->topo_gres_cnt_avail =
 			xrealloc(gres_data->topo_gres_cnt_avail,
 				 set_cnt * sizeof(uint32_t));
-		for (i=0; i<gres_data->topo_cnt; i++)
+		for (i = 0; i < gres_data->topo_cnt; i++)
 			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
 		gres_data->topo_gres_bitmap =
 			xrealloc(gres_data->topo_gres_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
-		for (i=0; i<gres_data->topo_cnt; i++)
+		for (i = 0; i < gres_data->topo_cnt; i++)
 			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
 		gres_data->topo_cpus_bitmap =
 			xrealloc(gres_data->topo_cpus_bitmap,
@@ -2899,19 +2899,30 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
  * IN core_bitmap - bitmap of cores allocated to the job on this node
  * IN node_gres_ptr - GRES data for this node
  * IN gres_inx - index of GRES being considered for use
+ * IN gres_name - name of GRES (for errors)
+ * IN node_name - node name (for errors)
  * RET true if available to those core, false otherwise
  */
 static bool _cores_on_gres(bitstr_t *core_bitmap,
-			   gres_node_state_t *node_gres_ptr, int gres_inx)
+			   gres_node_state_t *node_gres_ptr, int gres_inx,
+			   char *gres_name, char *node_name)
 {
+	int i;
+
 	if ((core_bitmap == NULL) || (node_gres_ptr->topo_cnt == 0))
 		return true;
 
-	if (bit_size(node_gres_ptr->topo_cpus_bitmap[gres_inx]) !=
-	    bit_size(core_bitmap))
-		return false;
-	if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[gres_inx], core_bitmap))
-		return true;
+	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+		if (bit_size(node_gres_ptr->topo_gres_bitmap[i]) < gres_inx)
+			continue;
+		if (!bit_test(node_gres_ptr->topo_gres_bitmap[i], gres_inx))
+			continue;
+		if (bit_size(node_gres_ptr->topo_cpus_bitmap[i]) !=
+		    bit_size(core_bitmap))
+			break;
+		if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[i],core_bitmap))
+			return true;
+	}
 	return false;
 }
 
@@ -3010,7 +3021,8 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
-			if (!_cores_on_gres(core_bitmap, node_gres_ptr, i))
+			if (!_cores_on_gres(core_bitmap, node_gres_ptr, i,
+					    gres_name, node_name))
 				continue;
 			bit_set(node_gres_ptr->gres_bit_alloc, i);
 			bit_set(job_gres_ptr->gres_bit_alloc[node_offset], i);

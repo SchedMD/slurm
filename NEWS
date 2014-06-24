@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     across nodes is not even.
  -- Fix issue where association maxnodes wouldn't be evaluated correctly if a
     QOS had a GrpNodes set.
+ -- GRES fix with multiple files defined per line in gres.conf.
 
 * Changes in Slurm 14.03.4
 ==========================
