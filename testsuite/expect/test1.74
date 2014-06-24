@@ -70,17 +70,14 @@ expect {
 
 proc srun_test {exp_cnt account} {
 
-	global srun acct exit_code node_cnt number bin_echo
+	global srun acct exit_code node_cnt number bin_printenv
 
 	set job_id 0
 	set count 0
-	spawn $srun -v -l -t1 -A $account -N1-$node_cnt $bin_echo "my_test"
+	spawn $srun -l -t1 -A $account -N1-$node_cnt $bin_printenv SLURM_JOB_ID
 	expect {
-		-re "$number: my_test" {
+		-re "$number: ($number)" {
 			incr count
-			exp_continue
-		}
-		-re "jobid ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
