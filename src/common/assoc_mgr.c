@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  accounting_storage_slurmdbd.c - accounting interface to slurmdbd.
+ *  assoc_mgr.c - File to keep track of associations/QOS used by the daemons
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
