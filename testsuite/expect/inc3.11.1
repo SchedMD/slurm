@@ -35,7 +35,7 @@ proc inc3_11_1 {} {
 	global def_node user_name def_partition exit_code cluster_cpus res_name
 	global cons_res_actived def_node_name
 
-	set num_nodes [available_nodes $def_partition]
+	set num_nodes [available_nodes $def_partition ""]
 
 	# First setting core_res_num greater than cores per node (assuming symmetric nodes)
 	set core_res_num [ expr ($cluster_cpus / $num_nodes) + 1 ]

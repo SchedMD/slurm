@@ -40,9 +40,9 @@ set job_id      0
 
 print_header $test_id
 
-set node_cnt [available_nodes [default_partition]]
+set node_cnt [available_nodes $partition ""]
 if {$node_cnt < 2} {
-	send_user "WARNING: Not enough nodes in default partition ($node_cnt < 2)\n"
+	send_user "WARNING: Not enough nodes in partition ($node_cnt < 2)\n"
 	exit 0
 }
 

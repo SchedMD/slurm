@@ -45,7 +45,7 @@ set min_mem     1024
 
 print_header $test_id
 
-set available [available_nodes [default_partition]]
+set available [available_nodes $partition ""]
 if {$available < $node_cnt} {
 	send_user "\nWARNING: not enough nodes currently available"
 	send_user " ($available avail, $node_cnt needed)\n"

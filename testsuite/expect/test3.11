@@ -352,7 +352,7 @@ expect {
 }
 log_user 1
 set cores_per_node [expr $cores_per_socket * $sockets_per_node]
-set node_count [available_nodes $def_partition]
+set node_count [available_nodes $def_partition ""]
 set cluster_cpus [expr $cores_per_node * $node_count]
 
 #

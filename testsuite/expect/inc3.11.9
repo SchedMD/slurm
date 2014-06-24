@@ -52,7 +52,7 @@ proc inc3_11_9 {} {
 		exit $ret_code
 	}
 
-	set num_nodes [available_nodes $def_partition]
+	set num_nodes [available_nodes $def_partition ""]
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
 

@@ -34,7 +34,7 @@ source ./globals
 source ./globals_accounting
 
 set test_id     "1.74"
-set node_cnt    [available_nodes $partition]
+set node_cnt    [available_nodes $partition idle]
 set cluster     [get_cluster_name]
 set node_name   ""
 set user        ""

@@ -1884,16 +1884,20 @@ proc uint2hex {value} {
 #
 ################################################################
 
-proc available_nodes { partition } {
+proc available_nodes { partition state } {
 	global sinfo
 
 	if {[string length $partition] == 0} {
 		set partition [default_partition]
 	}
 
+	if {[string length state] == 0} {
+		set state "idle,alloc,comp"
+	}
+
 	set available -1
 	#send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
-	set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
+	set fd [open "|$sinfo --noheader --partition $partition --state $state --format %D"]
 	gets $fd line
 	catch {close $fd}
 	regexp {\d+} $line available
