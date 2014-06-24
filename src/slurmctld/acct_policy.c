@@ -559,6 +559,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 		qos_max_nodes_limit =
 			MIN(qos_ptr->grp_nodes, qos_ptr->max_nodes_pu);
+
 		if ((acct_policy_limit_set->max_nodes == ADMIN_SET_LIMIT)
 		    || (qos_max_nodes_limit == INFINITE)
 		    || (update_call && (job_desc->max_nodes == NO_VAL))) {
@@ -1928,54 +1929,58 @@ end_it:
 
 extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr)
 {
-	uint32_t max_nodes_limit = INFINITE;
+	uint32_t max_nodes_limit = INFINITE, qos_max_p_limit = INFINITE;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
+	slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
+	slurmdb_association_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+	bool parent = 0; /* flag to tell us if we are looking at the
+			  * parent or not
+			  */
+	bool grp_set = 0;
 
 	/* check to see if we are enforcing associations */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return max_nodes_limit;
 
 	assoc_mgr_lock(&locks);
-	if (job_ptr->qos_ptr) {
-		slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
+	if (qos_ptr) {
+		qos_max_p_limit = max_nodes_limit =
+			MIN(qos_ptr->max_nodes_pj, qos_ptr->max_nodes_pu);
 		max_nodes_limit =
-			MIN(qos_ptr->grp_nodes, qos_ptr->max_nodes_pu);
-		max_nodes_limit =
-			MIN(max_nodes_limit, qos_ptr->max_nodes_pj);
+			MIN(max_nodes_limit, qos_ptr->grp_nodes);
 	}
 
-	if (max_nodes_limit == INFINITE) {
-		slurmdb_association_rec_t *assoc_ptr = job_ptr->assoc_ptr;
-		bool parent = 0; /* flag to tell us if we are looking at the
-				  * parent or not
-				  */
-		bool grp_set = 0;
-
-		while (assoc_ptr) {
-			if (assoc_ptr->grp_nodes != INFINITE) {
-				max_nodes_limit = MIN(max_nodes_limit,
-						      assoc_ptr->grp_nodes);
-				grp_set = 1;
-			}
-
-			if (!parent && (assoc_ptr->max_nodes_pj != INFINITE))
-				max_nodes_limit = MIN(max_nodes_limit,
-						      assoc_ptr->max_nodes_pj);
-
-			/* only check the first grp set */
-			if (grp_set)
-				break;
-
-			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
-			parent = 1;
-			continue;
+	/* We have to traverse all the associations because QOS might
+	   not override a particular limit.
+	*/
+	while (assoc_ptr) {
+		if ((!qos_ptr || (qos_ptr->grp_nodes == INFINITE))
+		    && (assoc_ptr->grp_nodes != INFINITE)) {
+			max_nodes_limit = MIN(max_nodes_limit,
+					      assoc_ptr->grp_nodes);
+			grp_set = 1;
 		}
 
+		if (!parent
+		    && (qos_max_p_limit == INFINITE)
+		    && (assoc_ptr->max_nodes_pj != INFINITE))
+			max_nodes_limit = MIN(max_nodes_limit,
+					      assoc_ptr->max_nodes_pj);
+
+		/* only check the first grp set */
+		if (grp_set)
+			break;
+
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+		parent = 1;
+		continue;
 	}
+
 	assoc_mgr_unlock(&locks);
 	return max_nodes_limit;
 }
+
 /*
  * acct_policy_update_pending_job - Make sure the limits imposed on a job on
  *	submission are correct after an update to a qos or association.  If

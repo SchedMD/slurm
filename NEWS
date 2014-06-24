@@ -105,6 +105,10 @@ documents those changes that are of interest to users and admins.
  -- Print Slurm error string in scontrol update job and reset the Slurm errno
     before each call to the API.
  -- Fix task/cgroup to handle -mblock:fcyclic correctly
+ -- Fix for core-based advanced reservations where the distribution of cores
+    across nodes is not even.
+ -- Fix issue where association maxnodes wouldn't be evaluated correctly if a
+    QOS had a GrpNodes set.
 
 * Changes in Slurm 14.03.4
 ==========================
