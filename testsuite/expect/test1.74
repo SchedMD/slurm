@@ -124,6 +124,7 @@ proc add_child {parent child maxnode grpnode} {
 	set acct_req(maxnode) $maxnode
 	set acct_req(grpnode) $grpnode
 
+	set user_req(cluster) $cluster
 	set user_req(account) $child
 
 	if { [add_acct $child [array get acct_req]] } {
