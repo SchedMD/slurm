@@ -2899,13 +2899,10 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
  * IN core_bitmap - bitmap of cores allocated to the job on this node
  * IN node_gres_ptr - GRES data for this node
  * IN gres_inx - index of GRES being considered for use
- * IN gres_name - name of GRES (for errors)
- * IN node_name - node name (for errors)
  * RET true if available to those core, false otherwise
  */
 static bool _cores_on_gres(bitstr_t *core_bitmap,
-			   gres_node_state_t *node_gres_ptr, int gres_inx,
-			   char *gres_name, char *node_name)
+			   gres_node_state_t *node_gres_ptr, int gres_inx)
 {
 	int i;
 
@@ -3021,8 +3018,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
-			if (!_cores_on_gres(core_bitmap, node_gres_ptr, i,
-					    gres_name, node_name))
+			if (!_cores_on_gres(core_bitmap, node_gres_ptr, i))
 				continue;
 			bit_set(node_gres_ptr->gres_bit_alloc, i);
 			bit_set(job_gres_ptr->gres_bit_alloc[node_offset], i);
