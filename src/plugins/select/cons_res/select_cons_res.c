@@ -2618,7 +2618,7 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 {
 	bitstr_t *sp_avail_bitmap;
 	char str[300];
-	uint32_t cores_per_node = 0;
+	uint32_t cores_per_node = 0, extra_cores_needed = 0;
 	bitstr_t *tmpcore;
 	int total_core_cnt = 0;
 
@@ -2634,10 +2634,12 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	 */
 
 	if ((node_cnt) && (core_cnt)) {
-		debug2("reserving %u cores per node in %d nodes",
-			cores_per_node, node_cnt);
 		total_core_cnt = core_cnt[0];
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
+		debug2("Reserving %u cores across %d nodes",
+			total_core_cnt, node_cnt);
+		extra_cores_needed = total_core_cnt -
+				     (cores_per_node * node_cnt);
 	}
 	if ((!node_cnt) && (core_cnt)) {
 		int num_nodes = bit_set_count(avail_bitmap);
@@ -2718,7 +2720,9 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 					bit_set(*core_bitmap, coff + i);
 					total_core_cnt--;
 					cores_in_node++;
-					if ((cores_in_node == cores_per_node) ||
+					if (cores_in_node > cores_per_node)
+						extra_cores_needed--;
+					if ((extra_cores_needed == 0) ||
 					    (total_core_cnt == 0))
 						break;
 				}
