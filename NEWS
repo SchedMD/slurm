@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- When a job is requeued make sure accounting marks it as such.
  -- Print the state of requeued job as REQUEUED.
  -- Fix if a job's partition was taken away from it don't allow a requeue.
+ -- Make sure we lock on the conf when sending slurmd's conf to the slurmstepd.
 
 * Changes in Slurm 14.03.4
 ==========================
