@@ -2273,7 +2273,10 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 		req.job_state   = JOB_RESIZING;
 	} else {
 		req.end_time    = job_ptr->end_time;
-		req.job_state   = job_ptr->job_state & JOB_STATE_BASE;
+		if (IS_JOB_REQUEUED(job_ptr))
+			req.job_state   = JOB_REQUEUE;
+		else
+			req.job_state   = job_ptr->job_state & JOB_STATE_BASE;
 	}
 	req.req_uid     = job_ptr->requid;
 	req.nodes       = job_ptr->nodes;

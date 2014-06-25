@@ -734,7 +734,11 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			return SLURM_SUCCESS;
 		}
 		end_time = job_ptr->end_time;
-		job_state = job_ptr->job_state & JOB_STATE_BASE;
+
+		if (IS_JOB_REQUEUED(job_ptr))
+			job_state = JOB_REQUEUE;
+		else
+			job_state = job_ptr->job_state & JOB_STATE_BASE;
 	}
 
 	slurm_mutex_lock(&rollup_lock);

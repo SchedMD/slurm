@@ -11000,7 +11000,7 @@ extern int job_requeue(uid_t uid,
 		/* we can't have it as suspended when we call the
 		 * accounting stuff.
 		 */
-		job_ptr->job_state = JOB_CANCELLED;
+		job_ptr->job_state = JOB_REQUEUE;
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		job_ptr->job_state = suspend_job_state;
 		suspended = true;
@@ -11021,10 +11021,10 @@ extern int job_requeue(uid_t uid,
 	    || IS_JOB_RUNNING(job_ptr))
 		is_running = true;
 
-	/* We want this job to look like it was cancelled in the
+	/* We want this job to look like it was requeued in the
 	 * accounting logs. Set a new submit time so the restarted
 	 * job looks like a new job. */
-	job_ptr->job_state  = JOB_CANCELLED;
+	job_ptr->job_state  = JOB_REQUEUE;
 	build_cg_bitmap(job_ptr);
 	job_completion_logger(job_ptr, true);
 
