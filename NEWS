@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- Make sure we lock on the conf when sending slurmd's conf to the slurmstepd.
  -- Fix issue with sacctmgr 'load' not able to gracefully handle bad formatted
     file.
+ -- sched/backfill: Correct job start time estimate with advanced reservations.
 
 * Changes in Slurm 14.03.4
 ==========================

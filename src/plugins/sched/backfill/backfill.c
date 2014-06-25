@@ -612,7 +612,7 @@ static int _attempt_backfill(void)
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *non_cg_bitmap = NULL;
 	bitstr_t *previous_bitmap = NULL;
-	time_t now, sched_start, later_start, start_res, resv_end;
+	time_t now, sched_start, later_start, start_res, resv_end, window_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
 	int sched_timeout = 2, yield_sleep = 1;
@@ -684,7 +684,8 @@ static int _attempt_backfill(void)
 	node_space = xmalloc(sizeof(node_space_map_t) *
 			     (max_backfill_job_cnt * 2 + 1));
 	node_space[0].begin_time = sched_start;
-	node_space[0].end_time = sched_start + backfill_window;
+	window_end = sched_start + backfill_window;
+	node_space[0].end_time = window_end;
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
 	node_space[0].next = 0;
 	node_space_recs = 1;
@@ -987,7 +988,7 @@ static int _attempt_backfill(void)
 			if ((j = node_space[j].next) == 0)
 				break;
 		}
-		if ((resv_end++) &&
+		if (resv_end && (++resv_end < window_end) &&
 		    ((later_start == 0) || (resv_end < later_start))) {
 			later_start = resv_end;
 		}
