@@ -3859,15 +3859,16 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			if ((resv_ptr->full_nodes) ||
 			    (job_ptr->details->whole_node)) {
 #if _DEBUG
-				info("reservation uses full nodes or job will "
-				     "not share nodes");
+				info("reservation %s uses full nodes or job %u "
+				     "will not share nodes",
+				     resv_ptr->name, job_ptr->job_id);
 #endif
 				bit_not(resv_ptr->node_bitmap);
 				bit_and(*node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);
 			} else {
 #if _DEBUG
-				info("job_test_resv: %s reservation uses "
+				info("job_test_resv: reservation %s uses "
 				     "partial nodes", resv_ptr->name);
 #endif
 				if (*exc_core_bitmap == NULL) {
