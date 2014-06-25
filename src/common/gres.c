@@ -3409,24 +3409,27 @@ static bool _cores_on_gres(bitstr_t *core_bitmap,
 			   gres_node_state_t *node_gres_ptr, int gres_inx,
 			   gres_job_state_t *job_gres_ptr)
 {
-	if (node_gres_ptr->topo_cnt == 0)
+	int i;
+
+	if ((core_bitmap == NULL) || (node_gres_ptr->topo_cnt == 0))
 		return true;
 
-	if (job_gres_ptr->type_model &&
-	    (!node_gres_ptr->topo_model[gres_inx] ||
-	     strcmp(job_gres_ptr->type_model,
-		    node_gres_ptr->topo_model[gres_inx])))
-		return false;
-
-	if ((core_bitmap == NULL) ||
-	    (!node_gres_ptr->topo_cpus_bitmap[gres_inx]))
-		return true;
-
-	if (bit_size(node_gres_ptr->topo_cpus_bitmap[gres_inx]) !=
-	    bit_size(core_bitmap))
-		return false;
-	if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[gres_inx], core_bitmap))
-		return true;
+	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+		if (bit_size(node_gres_ptr->topo_gres_bitmap[i]) < gres_inx)
+			continue;
+		if (!bit_test(node_gres_ptr->topo_gres_bitmap[i], gres_inx))
+			continue;
+		if (job_gres_ptr->type_model &&
+		    (!node_gres_ptr->topo_model[i] ||
+		     strcmp(job_gres_ptr->type_model,
+			    node_gres_ptr->topo_model[i])))
+			continue;
+		if (bit_size(node_gres_ptr->topo_cpus_bitmap[i]) !=
+		    bit_size(core_bitmap))
+			break;
+		if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[i],core_bitmap))
+			return true;
+	}
 	return false;
 }
 
