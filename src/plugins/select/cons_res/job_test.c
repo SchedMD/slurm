@@ -1598,7 +1598,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * the former one
 		 */
 		if ((best_fit_inx == -1) ||
-		    (!switches_required[best_fit_inx] &&  switches_required[j]) ||
+		    (!switches_required[best_fit_inx] && switches_required[j]) ||
 		    (switch_record_table[j].level <
 		     switch_record_table[best_fit_inx].level) ||
 		    ((switch_record_table[j].level ==
@@ -1621,13 +1621,14 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 	if (best_fit_inx == -1) {
-		debug("job %u: best_fit topology failure : no switch "
-		      "satisfying the request found", job_ptr->job_id);
+		debug("job %u: best_fit topology failure: no switch currently "
+		      "has sufficient resource to satisfy the request",
+		      job_ptr->job_id);
 		rc = SLURM_ERROR;
 		goto fini;
 	}
 	if (!switches_required[best_fit_inx] && req_nodes_bitmap ) {
-		debug("job %u: best_fit topology failure : no switch "
+		debug("job %u: best_fit topology failure: no switch "
 		      "including requested nodes and satisfying the "
 		      "request found", job_ptr->job_id);
 		rc = SLURM_ERROR;
