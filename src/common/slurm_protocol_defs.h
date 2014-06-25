@@ -103,6 +103,8 @@
 	(IS_JOB_FINISHED(_X) && ((_X->job_state & JOB_COMPLETING) == 0))
 #define IS_JOB_RESIZING(_X)		\
 	(_X->job_state & JOB_RESIZING)
+#define IS_JOB_REQUEUED(_X)		\
+	(_X->job_state & JOB_REQUEUE)
 
 /* Defined node states */
 #define IS_NODE_UNKNOWN(_X)		\

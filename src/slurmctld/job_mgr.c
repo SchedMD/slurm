@@ -11006,7 +11006,12 @@ extern int job_requeue(uid_t uid,
 		goto reply;
 	}
 
-	if ((job_ptr->details == NULL) || (job_ptr->details->requeue == 0)) {
+	/* If the partition was removed don't allow the job to be
+	 * requeued.  If it doesn't have details then something is very
+	 * wrong and if the job doesn't want to be requeued don't.
+	 */
+	if (!job_ptr->part_ptr || !job_ptr->details
+	    || !job_ptr->details->requeue) {
 		rc = ESLURM_DISABLED;
 		goto reply;
 	}
@@ -11045,7 +11050,7 @@ extern int job_requeue(uid_t uid,
 		/* we can't have it as suspended when we call the
 		 * accounting stuff.
 		 */
-		job_ptr->job_state = JOB_CANCELLED;
+		job_ptr->job_state = JOB_REQUEUE;
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		job_ptr->job_state = suspend_job_state;
 		suspended = true;
@@ -11066,10 +11071,10 @@ extern int job_requeue(uid_t uid,
 	    || IS_JOB_RUNNING(job_ptr))
 		is_running = true;
 
-	/* We want this job to look like it was cancelled in the
+	/* We want this job to have the requeued state in the
 	 * accounting logs. Set a new submit time so the restarted
 	 * job looks like a new job. */
-	job_ptr->job_state  = JOB_CANCELLED;
+	job_ptr->job_state  = JOB_REQUEUE;
 	build_cg_bitmap(job_ptr);
 	job_completion_logger(job_ptr, true);
 
@@ -12234,7 +12239,7 @@ _set_job_requeue_exit_value(struct job_record *job_ptr)
 	}
 }
 
-/* Reset a job's end-time based upon it's end_time.
+/* Reset a job's end_time based upon it's start_time and time_limit.
  * NOTE: Do not reset the end_time if already being preempted */
 extern void job_end_time_reset(struct job_record  *job_ptr)
 {

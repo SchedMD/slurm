@@ -287,7 +287,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				fprintf(stderr, " Bad format on %s: "
 					"End your option with "
 					"an '=' sign\n", sub);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 			file_opts->name = xstrdup(option);
@@ -320,12 +319,12 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				g_qos_list, option);
 
 			if (file_opts->def_qos_id == NO_VAL) {
+				exit_code=1;
 				fprintf(stderr,
 					"You gave a bad qos '%s'.  "
 					"Use 'list qos' to get "
 					"complete list.\n",
 					option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "DefaultWCKey",
@@ -347,7 +346,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad FairShare value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "GrpCPUMins",
@@ -357,7 +355,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad GrpCPUMins value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "GrpCPUs", MAX(command_len, 7))) {
@@ -366,7 +363,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad GrpCPUs value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "GrpJobs", MAX(command_len, 4))) {
@@ -375,7 +371,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad GrpJobs value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "GrpMemory",
@@ -385,7 +380,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad GrpMemory value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "GrpNodes",
@@ -395,7 +389,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad GrpNodes value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "GrpSubmitJobs",
@@ -405,7 +398,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad GrpJobs value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "GrpWall", MAX(command_len, 4))) {
@@ -420,7 +412,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				fprintf(stderr,
 					" Bad GrpWall time format: %s\n",
 					option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxCPUMinsPerJob",
@@ -432,7 +423,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad MaxCPUMins value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxCPUsPerJob",
@@ -442,7 +432,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad MaxCPUs value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxJobs", MAX(command_len, 4))) {
@@ -451,7 +440,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad MaxJobs value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxNodesPerJob",
@@ -461,7 +449,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad MaxNodes value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxSubmitJobs",
@@ -471,7 +458,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				exit_code=1;
 				fprintf(stderr,
 					" Bad MaxJobs value: %s\n", option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxWallDurationPerJob",
@@ -487,7 +473,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				fprintf(stderr,
 					" Bad MaxWall time format: %s\n",
 					option);
-				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "Organization",
@@ -521,6 +506,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", sub);
+			break;
 		}
 
 		xfree(sub);
@@ -539,9 +525,9 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	if (!file_opts->name) {
 		exit_code=1;
 		fprintf(stderr, " No name given\n");
-		_destroy_sacctmgr_file_opts(file_opts);
-		file_opts = NULL;
-	} else if (exit_code) {
+	}
+
+	if (exit_code) {
 		_destroy_sacctmgr_file_opts(file_opts);
 		file_opts = NULL;
 	}
