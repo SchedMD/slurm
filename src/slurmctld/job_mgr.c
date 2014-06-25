@@ -10965,7 +10965,12 @@ extern int job_requeue(uid_t uid,
 		goto reply;
 	}
 
-	if ((job_ptr->details == NULL) || (job_ptr->details->requeue == 0)) {
+	/* If the partition was removed don't allow the job to be
+	 * requeued.  If it doesn't have details then something is very
+	 * wrong and if the job doesn't want to be requeued don't.
+	 */
+	if (!job_ptr->part_ptr || !job_ptr->details
+	    || !job_ptr->details->requeue) {
 		rc = ESLURM_DISABLED;
 		goto reply;
 	}
