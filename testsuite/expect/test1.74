@@ -52,6 +52,11 @@ set mod_acct_assoc_vals(qos) $qos
 
 print_header $test_id
 
+if { [test_using_slurmdbd] == 0 } {
+	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
+	exit 0
+}
+
 if {$node_cnt <= 1} {
 	send_user "\nWARNING: cluster has too few nodes\n"
 	exit $exit_code
