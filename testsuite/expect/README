@@ -167,23 +167,15 @@ test1.62   Test of gres/gpu plugin (if configured).
 test1.63   Test of srun --disable-status/-X option, SIGINT to be sent to tasks.
 test1.64   Test interruption of srun while waiting for resource allocation.
 test1.65   Test of srun --mpi=list option.
-test1.66   Test srun to make sure that the jobs are running on the correct node
-	    within a allocation.
-test1.67   Test that an srun program can move from the background to the
-	   foreground.
-test1.68   Test that an srun program can move from the foreground to the
-	   background.
-test1.69   Test that multiple srun programs execute simultaneously in the
-	   background.
+test1.66   Validates srun steps run on the correct node within a allocation.
+test1.67   Test srun program movement between background and foreground.
+test1.68   Test srun program movement between foreground and background.
+test1.69   Test multiple background srun programs execute simultaneously.
 test1.70   Validates that srun standard input and output work with binary files.
 test1.71   Validates that srun exit code matches that of a test program.
-test1.72   Validate that the JobAcctGatherFrequency value is enforced when
-	   used in srun.
-test1.73   Validate that the OverTimeLimit value set in the slurm.conf
-	   file is enforce when running a job with a timelimit.
-test1.74   Validate that srun -N uses the MaxNode and GrpNode limit
-	   in QoS and that the first limit on the GrpNode limit is used in
-	   an association.
+test1.72   Validate JobAcctGatherFrequency configuration parameter is enforced.
+test1.73   Validate OverTimeLimit configuration parameter is enforced.
+test1.74   Validate MaxNode and GrpNode limit enforcment with QoS & association.
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
 	   The test will print "WARNING" and terminate with an exit code of
