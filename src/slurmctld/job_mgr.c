@@ -11021,7 +11021,7 @@ extern int job_requeue(uid_t uid,
 	    || IS_JOB_RUNNING(job_ptr))
 		is_running = true;
 
-	/* We want this job to look like it was requeued in the
+	/* We want this job to have the requeued state in the
 	 * accounting logs. Set a new submit time so the restarted
 	 * job looks like a new job. */
 	job_ptr->job_state  = JOB_REQUEUE;
