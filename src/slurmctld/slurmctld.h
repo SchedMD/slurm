@@ -1063,7 +1063,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		int allocate, uid_t submit_uid, struct job_record **job_pptr,
 		char **err_msg);
 
-/* Reset a job's end-time based upon it's end_time.
+/* Reset a job's end_time based upon it's start_time and time_limit.
  * NOTE: Do not reset the end_time if already being preempted */
 extern void job_end_time_reset(struct job_record  *job_ptr);
 /*

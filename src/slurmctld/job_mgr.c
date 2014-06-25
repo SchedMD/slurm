@@ -12085,7 +12085,7 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	      job_ptr->state_reason, job_ptr->priority);
 }
 
-/* Reset a job's end-time based upon it's end_time.
+/* Reset a job's end_time based upon it's start_time and time_limit.
  * NOTE: Do not reset the end_time if already being preempted */
 extern void job_end_time_reset(struct job_record  *job_ptr)
 {
