@@ -586,10 +586,10 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 	ListIterator iter;
 	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS, resv_licenses;
-
+info("license_job_test: p1");
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
-
+info("license_job_test: p2");
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = (licenses_t *) list_next(iter))) {
@@ -615,7 +615,7 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 							  when);
 			if ((license_entry->total + match->used +
 			     resv_licenses) > match->total) {
-				rc = EAGAIN;
+				rc = EAGAIN;//SET HERE?
 				break;
 			}
 		}

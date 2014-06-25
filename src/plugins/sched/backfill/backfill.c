@@ -1082,12 +1082,12 @@ static int _attempt_backfill(void)
 				acct_policy_alter_job(job_ptr, comp_time_limit);
 				job_ptr->time_limit = comp_time_limit;
 				job_ptr->end_time = job_ptr->start_time +
-					(job_ptr->time_limit * 60);
+						    (job_ptr->time_limit * 60);
 			} else {
 				acct_policy_alter_job(job_ptr, orig_time_limit);
 				job_ptr->time_limit = orig_time_limit;
 				job_ptr->end_time = job_ptr->start_time +
-					(job_ptr->time_limit * 60);
+						    (job_ptr->time_limit * 60);
 			}
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				/* Unknown future start time, just skip job */
@@ -1146,6 +1146,9 @@ static int _attempt_backfill(void)
 
 		if (job_ptr->start_time > (sched_start + backfill_window)) {
 			/* Starts too far in the future to worry about */
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				_dump_job_sched(job_ptr, end_reserve,
+						avail_bitmap);
 			continue;
 		}
 
@@ -1171,12 +1174,12 @@ static int _attempt_backfill(void)
 		/*
 		 * Add reservation to scheduling table if appropriate
 		 */
+		if (debug_flags & DEBUG_FLAG_BACKFILL)
+			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
 		reject_array_job_id = 0;
 		reject_array_part   = NULL;
-		if (debug_flags & DEBUG_FLAG_BACKFILL)
-			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
 		bit_not(avail_bitmap);
 		_add_reservation(start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);
