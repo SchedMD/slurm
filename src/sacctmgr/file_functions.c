@@ -525,9 +525,9 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	if (!file_opts->name) {
 		exit_code=1;
 		fprintf(stderr, " No name given\n");
-		_destroy_sacctmgr_file_opts(file_opts);
-		file_opts = NULL;
-	} else if (exit_code) {
+	}
+
+	if (exit_code) {
 		_destroy_sacctmgr_file_opts(file_opts);
 		file_opts = NULL;
 	}
