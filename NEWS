@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     QOS had a GrpNodes set.
  -- GRES fix with multiple files defined per line in gres.conf.
  -- When a job is requeued make sure accounting marks it as such.
+ -- Print the state of requeued job as REQUEUED.
 
 * Changes in Slurm 14.03.4
 ==========================
