@@ -841,11 +841,8 @@ static int _attempt_backfill(void)
 		}
 		job_ptr->part_ptr = part_ptr;
 
-		if (debug_flags & DEBUG_FLAG_BACKFILL) {
-			info("backfill test for JobID=%u Prio=%u Partition=%s",
-			     job_ptr->job_id, job_ptr->priority,
-			     job_ptr->part_ptr->name);
-		}
+		if (debug_flags & DEBUG_FLAG_BACKFILL)
+			info("backfill test for job %u", job_ptr->job_id);
 
 		if (max_backfill_job_per_part) {
 			bool skip_job = false;
