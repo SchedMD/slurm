@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Fix issue with sacctmgr 'load' not able to gracefully handle bad formatted
     file.
  -- sched/backfill: Correct job start time estimate with advanced reservations.
+ -- Error message added when in proctrack/cgroup the step freezer path isn't
+    able to be destroyed for debug.
 
 * Changes in Slurm 14.03.4
 ==========================
