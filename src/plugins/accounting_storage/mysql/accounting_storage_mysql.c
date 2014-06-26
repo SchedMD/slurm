@@ -687,7 +687,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	if (mysql_db_create_table(mysql_conn, acct_coord_table,
 				  acct_coord_table_fields,
-				  ", primary key (acct(20), user(20)))")
+				  ", primary key (acct(20), user(20)), "
+				  "key user (user(20)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1122,8 +1123,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  assoc_table_fields,
 				  ", primary key (id_assoc), "
-				  " unique index (user(20), acct(20), "
-				  "`partition`(20)))")
+				  "unique index (user(20), acct(20), "
+				  "`partition`(20)), "
+				  "key lft (lft))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1219,6 +1221,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "unique index (id_job, "
 				  "id_assoc, time_submit), "
 				  "key rollup (time_eligible, time_end), "
+				  "key wckey (id_wckey), "
+				  "key qos (id_qos), "
+				  "key association (id_assoc), "
 				  "key sacct_def (id_user, time_start, "
 				  "time_end))")
 	    == SLURM_ERROR)
