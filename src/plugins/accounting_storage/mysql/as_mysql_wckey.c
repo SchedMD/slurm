@@ -133,9 +133,11 @@ static int _make_sure_users_have_default(
 			MYSQL_RES *result = NULL;
 			MYSQL_ROW row;
 			char *wckey = NULL;
+			/* only look at non * and non deleted ones */
 			query = xstrdup_printf(
 				"select distinct is_def, wckey_name from "
-				"\"%s_%s\" where user='%s' FOR UPDATE;",
+				"\"%s_%s\" where user='%s' and wckey_name "
+				"not like '*%%' and deleted=0 FOR UPDATE;",
 				cluster, wckey_table, user);
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -503,7 +505,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	while ((object = list_next(itr))) {
 		if (!object->cluster || !object->cluster[0]
 		    || !object->user || !object->user[0]
-		    || !object->name || !object->name[0]) {
+		    || !object->name) {
 			error("We need a wckey name, cluster, "
 			      "and user to add.");
 			rc = SLURM_ERROR;
