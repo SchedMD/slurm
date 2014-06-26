@@ -1179,6 +1179,39 @@ proc test_enforce_safe_set { } {
 	return $enforce_limits
 }
 
+
+################################################################
+#
+# Proc: test_enforce_qos_set
+#
+# Purpose: Determine if AccountingStorageEnforce=qos is set in the slurm.conf.
+#
+# Returns 1 if the system is running with safe limits, 0 otherwise
+#
+################################################################
+
+proc test_enforce_qos_set { } {
+	global alpha_numeric_comma scontrol
+
+	log_user 0
+	set enforce_limits 0
+	spawn $scontrol show config
+	expect {
+		-re "AccountingStorageEnforce *= ($alpha_numeric_comma)" {
+			if {[string first "qos" $expect_out(1,string)] != -1 } {
+				set enforce_limits 1
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $enforce_limits
+}
+
 ################################################################
 #
 # Proc: test_using_slurmdbd

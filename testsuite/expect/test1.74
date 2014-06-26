@@ -56,9 +56,17 @@ if { [test_using_slurmdbd] == 0 } {
 	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
 	exit 0
 }
+if { [test_enforce_limits] == 0 } {
+	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=limits\n"
+	exit 0
+}
+if { [test_enforce_qos_set] == 0 } {
+	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=qos\n"
+	exit 0
+}
 
 if {$node_cnt <= 1} {
-	send_user "\nWARNING: cluster has too few nodes\n"
+	send_user "\nWARNING: cluster has too few nodes ($node_cnt <= 1)\n"
 	exit $exit_code
 }
 
