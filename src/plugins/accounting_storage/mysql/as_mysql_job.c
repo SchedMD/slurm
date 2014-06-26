@@ -176,6 +176,9 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 					    NULL) != SLURM_SUCCESS) {
 			List wckey_list = NULL;
 			slurmdb_wckey_rec_t *wckey_ptr = NULL;
+			/* we have already checked to make
+			   sure this was the slurm user before
+			   calling this */
 
 			wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
@@ -187,9 +190,30 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			/* info("adding wckey '%s' '%s' '%s'", */
 			/* 	     wckey_ptr->name, wckey_ptr->user, */
 			/* 	     wckey_ptr->cluster); */
-			/* we have already checked to make
-			   sure this was the slurm user before
-			   calling this */
+
+			if (*name[0] == '*') {
+				/* make sure the non * wckey has been added */
+				wckey_rec.name = (*name)+1;
+				if (assoc_mgr_fill_in_wckey(
+					    mysql_conn, &wckey_rec,
+					    ACCOUNTING_ENFORCE_WCKEYS,
+					    NULL) != SLURM_SUCCESS) {
+					wckey_ptr = xmalloc(
+						sizeof(slurmdb_wckey_rec_t));
+					wckey_ptr->name =
+						xstrdup(wckey_rec.name);
+					wckey_ptr->user = xstrdup(user);
+					wckey_ptr->cluster = xstrdup(cluster);
+					list_prepend(wckey_list, wckey_ptr);
+					/* info("adding wckey '%s' '%s' " */
+					/*      "'%s'", */
+					/*      wckey_ptr->name, */
+					/*      wckey_ptr->user, */
+					/*      wckey_ptr->cluster); */
+				}
+				wckey_rec.name = (*name);
+			}
+
 			if (as_mysql_add_wckeys(mysql_conn,
 						slurm_get_slurm_user_id(),
 						wckey_list)

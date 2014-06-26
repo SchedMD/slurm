@@ -117,6 +117,14 @@ documents those changes that are of interest to users and admins.
  -- Fix issue with sacctmgr 'load' not able to gracefully handle bad formatted
     file.
  -- sched/backfill: Correct job start time estimate with advanced reservations.
+ -- Error message added when in proctrack/cgroup the step freezer path isn't
+    able to be destroyed for debug.
+ -- Added extra index's into the database for better performance when
+    deleting users.
+ -- Fix issue with wckeys when tracking wckeys, but not enforcing them,
+    you could get multiple '*' wckeys.
+ -- Fix bug which could report to squeue the wrong partition for a running job
+    that is submitted to multiple partitions.
 
 * Changes in Slurm 14.03.4
 ==========================
