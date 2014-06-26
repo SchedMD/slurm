@@ -25,8 +25,8 @@ documents those changes that are of interest to users and admins.
     able to be destroyed for debug.
  -- Added extra index's into the database for better performance when
     deleting users.
- -- Fix issue with wckeys when tracking wckeys but not enforcing them you could
-    get multiple '*' wckeys.
+ -- Fix issue with wckeys when tracking wckeys, but not enforcing them,
+    you could get multiple '*' wckeys.
 
 * Changes in Slurm 14.03.4
 ==========================
