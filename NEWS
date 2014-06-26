@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     deleting users.
  -- Fix issue with wckeys when tracking wckeys, but not enforcing them,
     you could get multiple '*' wckeys.
+ -- Fix bug which could report to squeue the wrong partition for a running job
+    that is submitted to multiple partitions.
 
 * Changes in Slurm 14.03.4
 ==========================
