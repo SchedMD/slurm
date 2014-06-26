@@ -544,9 +544,8 @@ int _print_job_user_name(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("USER", width, right, true);
 	else {
-		char *uname = uid_to_string((uid_t) job->user_id);
+		char *uname = uid_to_string_cached((uid_t) job->user_id);
 		_print_str(uname, width, right, true);
-		xfree(uname);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -1476,7 +1475,6 @@ int _print_step_user_name(job_step_info_t * step, int width, bool right,
 	else {
 		char *uname = uid_to_string((uid_t) step->user_id);
 		_print_str(uname, width, right, true);
-		xfree(uname);
 	}
 	if (suffix)
 		printf("%s", suffix);
