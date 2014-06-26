@@ -2255,6 +2255,7 @@ The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
 \fBThreadsPerCore\fR may optionally be configured and result in job
 allocations which have improved locality; however doing so will prevent
 more than one job being from being allocated on each core.
+.RE
 
 .TP
 \fBCR_CPU_Memory\fR
@@ -3357,6 +3358,8 @@ The front end configuration specifies the following information:
 \fBAllowGroups\fR
 Comma separated list of group names which may execute jobs on this front end
 node. By default, all groups may use this front end node.
+If \fBat least\fR one group associated with the user attempting to execute the
+job is in AllowGroups, he will be permitted to use this front end node.
 May not be used with the \fBDenyGroups\fR option.
 
 .TP
@@ -3493,7 +3496,7 @@ Also refer to DenyAccounts.
 .TP
 \fBAllowGroups\fR
 Comma separated list of group names which may execute jobs in the partition.
-If at least one group associated with the user attempting to execute the
+If \fBat least\fR one group associated with the user attempting to execute the
 job is in AllowGroups, he will be permitted to use this partition.
 Jobs executed as user root can use any partition without regard to
 the value of AllowGroups.
