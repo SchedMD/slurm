@@ -2648,7 +2648,8 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			total_core_cnt += core_cnt[i];
 	}
 
-	debug2("Reservations requires %d cores", total_core_cnt);
+	debug2("Reservations requires %d cores (%u each on %d nodes, plus %u)",
+	       total_core_cnt, cores_per_node, node_cnt, extra_cores_needed);
 
 	sp_avail_bitmap = bit_alloc(bit_size(avail_bitmap));
 	bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
@@ -2720,8 +2721,9 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 					cores_in_node++;
 					if (cores_in_node > cores_per_node)
 						extra_cores_needed--;
-					if ((extra_cores_needed == 0) ||
-					    (total_core_cnt == 0))
+					if ((total_core_cnt == 0) ||
+					    ((extra_cores_needed == 0) &&
+					     (cores_in_node >= cores_per_node)))
 						break;
 				}
 			}
