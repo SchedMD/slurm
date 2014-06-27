@@ -198,8 +198,9 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 	if (clear_start)
 		job_ptr->start_time = (time_t) 0;
 	if (job_ptr->priority == 0)	{ /* held */
-		if ((job_ptr->state_reason != WAIT_HELD) &&
-		    (job_ptr->state_reason != WAIT_HELD_USER)) {
+		if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
+		    && (job_ptr->state_reason != WAIT_HELD)
+		    && (job_ptr->state_reason != WAIT_HELD_USER)) {
 			job_ptr->state_reason = WAIT_HELD;
 			xfree(job_ptr->state_desc);
 			last_job_update = time(NULL);
@@ -1319,13 +1320,11 @@ next_part:			part_ptr = (struct part_record *)
 			     job_ptr->job_id, slurm_strerror(error_code));
 			if (!wiki_sched) {
 				last_job_update = now;
-				job_ptr->job_state = JOB_FAILED;
-				job_ptr->exit_code = 1;
+				job_ptr->job_state = JOB_PENDING;
 				job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 				xfree(job_ptr->state_desc);
 				job_ptr->start_time = job_ptr->end_time = now;
-				job_completion_logger(job_ptr, false);
-				delete_job_details(job_ptr);
+				job_ptr->priority = 0;
 			}
 		}
 

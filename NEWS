@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
     loop forever.
  -- Report correct CPU count allocated to job when allocated whole node even if
     not using all CPUs.
+ -- If job's constraints cannot be satisfied put it in pending state with reason
+    BadConstraints and don't remove it.
 
 * Changes in Slurm 14.03.4
 ==========================
