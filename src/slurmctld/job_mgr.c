@@ -2841,7 +2841,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, time_min;
 	long pn_min_cpus, pn_min_memory, pn_min_tmp_disk, min_cpus;
-	long time_limit, priority, contiguous;
+	long time_limit, priority, contiguous, nice;
 	long kill_on_node_fail, shared, immediate, wait_all_nodes;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
@@ -2973,10 +2973,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->num_tasks : -1L;
 	overcommit = (job_specs->overcommit != (uint8_t) NO_VAL) ?
 		(long) job_specs->overcommit : -1L;
-	debug3("   mail_type=%u mail_user=%s nice=%d num_tasks=%ld "
+	nice = (job_specs->nice != (uint16_t) NO_VAL) ?
+		(job_specs->nice - NICE_OFFSET) : 0;
+	debug3("   mail_type=%u mail_user=%s nice=%ld num_tasks=%ld "
 	       "open_mode=%u overcommit=%ld acctg_freq=%s",
-	       job_specs->mail_type, job_specs->mail_user,
-	       (int)job_specs->nice - NICE_OFFSET, num_tasks,
+	       job_specs->mail_type, job_specs->mail_user, nice, num_tasks,
 	       job_specs->open_mode, overcommit, job_specs->acctg_freq);
 
 	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
