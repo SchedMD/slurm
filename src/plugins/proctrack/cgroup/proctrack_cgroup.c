@@ -287,8 +287,11 @@ int _slurm_cgroup_destroy(void)
 		if (xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS) {
 			error("_slurm_cgroup_destroy: problem deleting step "
 			      "cgroup path %s: %m", step_freezer_cg.path);
+			/* Ignore the error since the cgroup will
+			 * be eventually cleaned up by the release
+			 * script.
+			 */
 			xcgroup_unlock(&freezer_cg);
-			return SLURM_ERROR;
 		}
 		xcgroup_destroy(&step_freezer_cg);
 	}
