@@ -1515,36 +1515,6 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 		*error_code = ESLURM_NODES_BUSY;
 }
 
-/* If a job can run in multiple partitions, when it is started we want to
- * put the name of the partition used _first_ in that list. When slurmctld
- * restarts, that will be used to set the job's part_ptr and that will be
- * reported to squeue. We leave all of the partitions in the list though,
- * so the job can be requeued and have access to them all. */
-static void _rebuild_job_partition(struct job_record *job_ptr)
-{
-	ListIterator part_iterator = NULL;
-	struct part_record *part_ptr;
-
-	if (!job_ptr->part_ptr_list)
-		return;
-	if (!job_ptr->part_ptr || !job_ptr->part_ptr->name) {
-		error("Job %u has NULL part_ptr or the partition name is NULL",
-		      job_ptr->job_id);
-		return;
-	}
-
-	xfree(job_ptr->partition);
-	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
-	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-		if (part_ptr == job_ptr->part_ptr || !part_ptr->name)
-			continue;
-		xstrcat(job_ptr->partition, ",");
-		xstrcat(job_ptr->partition, part_ptr->name);
-	}
-	list_iterator_destroy(part_iterator);
-}
-
 /*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_ptr - pointer to the job record
@@ -1828,7 +1798,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
 	build_node_details(job_ptr, true);
-	_rebuild_job_partition(job_ptr);
+	rebuild_job_part_list(job_ptr);
 
 	/* This could be set in the select plugin so we want to keep
 	   the flag. */

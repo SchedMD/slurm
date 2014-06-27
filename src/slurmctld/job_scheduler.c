@@ -3003,15 +3003,23 @@ static int _valid_node_feature(char *feature)
 	return rc;
 }
 
-/* If a job can run in multiple partitions, make sure that the one
- * actually used is first in the string. Needed for job state save/restore */
+/* If a job can run in multiple partitions, when it is started we want to
+ * put the name of the partition used _first_ in that list. When slurmctld
+ * restarts, that will be used to set the job's part_ptr and that will be
+ * reported to squeue. We leave all of the partitions in the list though,
+ * so the job can be requeued and have access to them all. */
 extern void rebuild_job_part_list(struct job_record *job_ptr)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
 
-	if ((job_ptr->part_ptr_list == NULL) || (job_ptr->part_ptr == NULL))
+	if (!job_ptr->part_ptr_list)
 		return;
+	if (!job_ptr->part_ptr || !job_ptr->part_ptr->name) {
+		error("Job %u has NULL part_ptr or the partition name is NULL",
+		      job_ptr->job_id);
+		return;
+	}
 
 	xfree(job_ptr->partition);
 	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
