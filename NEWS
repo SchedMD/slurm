@@ -29,8 +29,10 @@ documents those changes that are of interest to users and admins.
     you could get multiple '*' wckeys.
  -- Fix bug which could report to squeue the wrong partition for a running job
     that is submitted to multiple partitions.
- -- If failed to rmdir() a cgroup ignore the error preventing slurmstepd to
+ -- If failed to rmdir() a cgroup, ignore the error preventing slurmstepd from
     loop forever.
+ -- Report correct CPU count allocated to job when allocated whole node even if
+    not using all CPUs.
 
 * Changes in Slurm 14.03.4
 ==========================

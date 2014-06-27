@@ -1059,9 +1059,12 @@ static int _job_expand(struct job_record *from_job_ptr,
 				}
 			}
 		}
-
-		to_job_ptr->total_cpus += new_job_resrcs_ptr->
-					  cpus[new_node_offset];
+		if (to_job_ptr->details->whole_node) {
+			to_job_ptr->total_cpus += select_node_record[i].cpus;
+		} else {
+			to_job_ptr->total_cpus += new_job_resrcs_ptr->
+						  cpus[new_node_offset];
+		}
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
 	gres_plugin_job_merge(from_job_ptr->gres_list,
