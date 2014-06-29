@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
     not using all CPUs.
  -- If job's constraints cannot be satisfied put it in pending state with reason
     BadConstraints and don't remove it.
+ -- sched/backfill - If job started with infinite time limit, set its end_time
+    one year in the future.
 
 * Changes in Slurm 14.03.4
 ==========================
