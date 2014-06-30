@@ -52,7 +52,7 @@ set exit_code	0
 set acct        test_acct
 set user_name   ""
 set qosname     name
-set qostest     [format "%s %s" $test_id "qosTest"]
+set qostest     [format "%s_%s" $test_id "qosTest"]
 set grn         GrpNodes
 set grn_num     2
 set grcpu       GrpCpus
