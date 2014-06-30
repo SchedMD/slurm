@@ -2670,7 +2670,7 @@ alloc_job:
 
 	/* translate job_res->cpus array into format with rep count */
 	build_cnt = build_job_resources_cpu_array(job_res);
-	if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+	if (job_ptr->details->whole_node) {
 		int first, last = -1;
 		first = bit_ffs(job_res->node_bitmap);
 		if (first != -1)

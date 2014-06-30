@@ -1119,6 +1119,8 @@ static int _attempt_backfill(void)
 		}
 		if (job_ptr->start_time <= now) {	/* Can start now */
 			uint32_t save_time_limit = job_ptr->time_limit;
+			uint32_t hard_limit;
+			bool reset_time = false;
 			int rc = _start_job(job_ptr, resv_bitmap);
 			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
 				if (orig_time_limit == NO_VAL) {
@@ -1130,28 +1132,31 @@ static int _attempt_backfill(void)
 						job_ptr, orig_time_limit);
 					job_ptr->time_limit = orig_time_limit;
 				}
-				job_ptr->end_time = job_ptr->start_time +
-						    (job_ptr->time_limit * 60);
 			} else if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
 				/* Set time limit as high as possible */
 				acct_policy_alter_job(job_ptr, comp_time_limit);
 				job_ptr->time_limit = comp_time_limit;
-				job_ptr->end_time = job_ptr->start_time +
-						    (comp_time_limit * 60);
-				_reset_job_time_limit(job_ptr, now,
-						      node_space);
-				time_limit = job_ptr->time_limit;
+				reset_time = true;
 			} else if (orig_time_limit == NO_VAL) {
 				acct_policy_alter_job(job_ptr, comp_time_limit);
 				job_ptr->time_limit = comp_time_limit;
-				job_ptr->end_time = job_ptr->start_time +
-						    (job_ptr->time_limit * 60);
 			} else {
 				acct_policy_alter_job(job_ptr, orig_time_limit);
 				job_ptr->time_limit = orig_time_limit;
-				job_ptr->end_time = job_ptr->start_time +
-						    (job_ptr->time_limit * 60);
+
 			}
+			if (job_ptr->time_limit == INFINITE)
+				hard_limit = 365 * 24 * 60;	/* one year */
+			else
+				hard_limit = job_ptr->time_limit;
+			job_ptr->end_time = job_ptr->start_time +
+					    (hard_limit * 60);
+			if (reset_time) {
+				_reset_job_time_limit(job_ptr, now,
+						      node_space);
+				time_limit = job_ptr->time_limit;
+			}
+
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				/* Unknown future start time, just skip job */
 				job_ptr->start_time = 0;

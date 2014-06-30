@@ -2797,7 +2797,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, time_min;
 	long pn_min_cpus, pn_min_memory, pn_min_tmp_disk, min_cpus;
-	long time_limit, priority, contiguous;
+	long time_limit, priority, contiguous, nice;
 	long kill_on_node_fail, shared, immediate, wait_all_nodes;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
@@ -2929,10 +2929,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->num_tasks : -1L;
 	overcommit = (job_specs->overcommit != (uint8_t) NO_VAL) ?
 		(long) job_specs->overcommit : -1L;
-	debug3("   mail_type=%u mail_user=%s nice=%d num_tasks=%ld "
+	nice = (job_specs->nice != (uint16_t) NO_VAL) ?
+		(job_specs->nice - NICE_OFFSET) : 0;
+	debug3("   mail_type=%u mail_user=%s nice=%ld num_tasks=%ld "
 	       "open_mode=%u overcommit=%ld acctg_freq=%s",
-	       job_specs->mail_type, job_specs->mail_user,
-	       (int)job_specs->nice - NICE_OFFSET, num_tasks,
+	       job_specs->mail_type, job_specs->mail_user, nice, num_tasks,
 	       job_specs->open_mode, overcommit, job_specs->acctg_freq);
 
 	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
@@ -3304,12 +3305,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if (error_code) {
 		if (job_ptr && (immediate || will_run)) {
 			/* this should never really happen here */
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
+			job_ptr->job_state = JOB_PENDING;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
-			job_completion_logger(job_ptr, false);
+			job_ptr->priority = 0;
 		}
 		return error_code;
 	}
@@ -3359,12 +3359,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		top_prio = true;	/* don't bother testing,
 					 * it is not runable anyway */
 	if (immediate && (too_fragmented || (!top_prio) || (!independent))) {
-		job_ptr->job_state  = JOB_FAILED;
-		job_ptr->exit_code  = 1;
+		job_ptr->job_state  = JOB_PENDING;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = now;
-		job_completion_logger(job_ptr, false);
+		job_ptr->priority = 0;
 		if (!independent)
 			return ESLURM_DEPENDENCY;
 		else if (too_fragmented)
@@ -3408,12 +3407,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
-			job_ptr->job_state  = JOB_FAILED;
-			job_ptr->exit_code  = 1;
+			job_ptr->job_state  = JOB_PENDING;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
-			job_completion_logger(job_ptr, false);
+			job_ptr->priority = 0;
 		} else {	/* job remains queued */
 			_create_job_array(job_ptr, job_specs);
 			if ((error_code == ESLURM_NODES_BUSY) ||
@@ -3425,12 +3423,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	}
 
 	if (error_code) {	/* fundamental flaw in job request */
-		job_ptr->job_state  = JOB_FAILED;
-		job_ptr->exit_code  = 1;
+		job_ptr->job_state  = JOB_PENDING;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = now;
-		job_completion_logger(job_ptr, false);
+		job_ptr->priority = 0;
 		return error_code;
 	}
 
@@ -7664,8 +7661,9 @@ static bool _top_priority(struct job_record *job_ptr)
 
 	if ((!top) && detail_ptr) {	/* not top prio */
 		if (job_ptr->priority == 0) {		/* user/admin hold */
-			if ((job_ptr->state_reason != WAIT_HELD) &&
-			    (job_ptr->state_reason != WAIT_HELD_USER)) {
+			if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
+			    && (job_ptr->state_reason != WAIT_HELD)
+			    && (job_ptr->state_reason != WAIT_HELD_USER)) {
 				job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
 			}

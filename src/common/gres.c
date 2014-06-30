@@ -150,7 +150,7 @@ static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt);
 static int	_gres_find_id(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
-extern int	_job_alloc(void *job_gres_data, void *node_gres_data,
+static int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   int node_cnt, int node_offset, uint32_t cpu_cnt,
 			   char *gres_name, uint32_t job_id, char *node_name,
 			   bitstr_t *core_bitmap);
@@ -168,7 +168,7 @@ static void *	_job_state_dup(void *gres_data);
 static void *	_job_state_dup2(void *gres_data, int node_index);
 static int	_job_state_validate(char *config, void **gres_data,
 				    slurm_gres_context_t *gres_name);
-extern uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
+static uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name);
@@ -3038,7 +3038,7 @@ static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 	FREE_NULL_BITMAP(avail_cpu_bitmap);
 }
 
-extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
+static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name)
@@ -3433,7 +3433,36 @@ static bool _cores_on_gres(bitstr_t *core_bitmap,
 	return false;
 }
 
-extern int _job_alloc(void *job_gres_data, void *node_gres_data,
+/* Clear any vestigial job gres state. This may be needed on job requeue. */
+extern void gres_plugin_job_clear(List job_gres_list)
+{
+	int i;
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_state_ptr;
+
+	if (job_gres_list == NULL)
+		return;
+
+	(void) gres_plugin_init();
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		if (!job_gres_ptr)
+			continue;
+		job_state_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		for (i = 0; i < job_state_ptr->node_cnt; i++) {
+			FREE_NULL_BITMAP(job_state_ptr->gres_bit_alloc[i]);
+			FREE_NULL_BITMAP(job_state_ptr->gres_bit_step_alloc[i]);
+		}
+		xfree(job_state_ptr->gres_bit_alloc);
+		xfree(job_state_ptr->gres_bit_step_alloc);
+		xfree(job_state_ptr->gres_cnt_step_alloc);
+	}
+	job_state_ptr->node_cnt = 0;
+	list_iterator_destroy(job_gres_iter);
+}
+
+static int _job_alloc(void *job_gres_data, void *node_gres_data,
 		      int node_cnt, int node_offset, uint32_t cpu_cnt,
 		      char *gres_name, uint32_t job_id, char *node_name,
 		      bitstr_t *core_bitmap)

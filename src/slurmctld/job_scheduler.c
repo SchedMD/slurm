@@ -206,8 +206,9 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 	if (clear_start)
 		job_ptr->start_time = (time_t) 0;
 	if (job_ptr->priority == 0)	{ /* held */
-		if ((job_ptr->state_reason != WAIT_HELD) &&
-		    (job_ptr->state_reason != WAIT_HELD_USER)) {
+		if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
+		    && (job_ptr->state_reason != WAIT_HELD)
+		    && (job_ptr->state_reason != WAIT_HELD_USER)) {
 			job_ptr->state_reason = WAIT_HELD;
 			xfree(job_ptr->state_desc);
 			last_job_update = time(NULL);
@@ -1387,13 +1388,11 @@ next_part:			part_ptr = (struct part_record *)
 			     job_ptr->job_id, slurm_strerror(error_code));
 			if (!wiki_sched) {
 				last_job_update = now;
-				job_ptr->job_state = JOB_FAILED;
-				job_ptr->exit_code = 1;
+				job_ptr->job_state = JOB_PENDING;
 				job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 				xfree(job_ptr->state_desc);
 				job_ptr->start_time = job_ptr->end_time = now;
-				job_completion_logger(job_ptr, false);
-				delete_job_details(job_ptr);
+				job_ptr->priority = 0;
 			}
 		}
 
@@ -3200,15 +3199,23 @@ static int _valid_node_feature(char *feature)
 	return rc;
 }
 
-/* If a job can run in multiple partitions, make sure that the one
- * actually used is first in the string. Needed for job state save/restore */
+/* If a job can run in multiple partitions, when it is started we want to
+ * put the name of the partition used _first_ in that list. When slurmctld
+ * restarts, that will be used to set the job's part_ptr and that will be
+ * reported to squeue. We leave all of the partitions in the list though,
+ * so the job can be requeued and have access to them all. */
 extern void rebuild_job_part_list(struct job_record *job_ptr)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
 
-	if ((job_ptr->part_ptr_list == NULL) || (job_ptr->part_ptr == NULL))
+	if (!job_ptr->part_ptr_list)
 		return;
+	if (!job_ptr->part_ptr || !job_ptr->part_ptr->name) {
+		error("Job %u has NULL part_ptr or the partition name is NULL",
+		      job_ptr->job_id);
+		return;
+	}
 
 	xfree(job_ptr->partition);
 	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);

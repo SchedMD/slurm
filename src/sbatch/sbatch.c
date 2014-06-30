@@ -466,7 +466,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_limit = opt.time_limit;
 	if (opt.time_min  != NO_VAL)
 		desc->time_min = opt.time_min;
-	desc->shared = opt.shared;
+	if (opt.shared != (uint16_t) NO_VAL)
+		desc->shared = opt.shared;
 
 	desc->wait_all_nodes = opt.wait_all_nodes;
 	if (opt.warn_flags)
