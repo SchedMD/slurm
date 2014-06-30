@@ -568,7 +568,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 			}
 		}
 
-		/* Pass 3: Spread remainign tasks across all nodes */
+		/* Pass 3: Spread remaining tasks across all nodes */
 		while (task_id < step_layout->task_cnt) {
 			for (i = 0; ((i < step_layout->node_cnt) &&
 				     (task_id < step_layout->task_cnt)); i++) {
