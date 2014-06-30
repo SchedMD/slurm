@@ -449,6 +449,9 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 uint32_t cpu_cnt, uint32_t job_id,
 				 char *node_name, bitstr_t *core_bitmap);
 
+/* Clear any vestigial job gres state. This may be needed on job requeue. */
+extern void gres_plugin_job_clear(List job_gres_list);
+
 /*
  * Deallocate resource from a job and update node and job gres information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()

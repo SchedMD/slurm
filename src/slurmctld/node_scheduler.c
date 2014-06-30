@@ -200,7 +200,7 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 /*
  * _get_gres_config - Fill in the gres_alloc string field for a given
  *      job_record with the count of gres on each node (e.g. for whole node
- *	allocations.
+ *	allocations).
  * IN job_ptr - the job record whose "gres_alloc" field is to be constructed
  * RET Error number.  Currently not used (always set to 0).
  */

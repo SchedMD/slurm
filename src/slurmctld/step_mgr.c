@@ -241,9 +241,9 @@ extern void delete_step_records (struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	step_iterator = list_iterator_create (job_ptr->step_list);
 
 	last_job_update = time(NULL);
+	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		/* Only check if not a pending step */
 		if (step_ptr->step_id != INFINITE) {
@@ -259,8 +259,9 @@ extern void delete_step_records (struct job_record *job_ptr)
 		list_remove (step_iterator);
 		_free_step_rec(step_ptr);
 	}
+	list_iterator_destroy(step_iterator);
+	gres_plugin_job_clear(job_ptr->gres_list);
 
-	list_iterator_destroy (step_iterator);
 }
 
 /* _free_step_rec - delete a step record's data structures */

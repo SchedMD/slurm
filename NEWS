@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
     BadConstraints and don't remove it.
  -- sched/backfill - If job started with infinite time limit, set its end_time
     one year in the future.
+ -- Clear record of a job's gres when requeued.
 
 * Changes in Slurm 14.03.4
 ==========================
