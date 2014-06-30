@@ -134,6 +134,9 @@ documents those changes that are of interest to users and admins.
  -- sched/backfill - If job started with infinite time limit, set its end_time
     one year in the future.
  -- Clear record of a job's gres when requeued.
+ -- Clear QOS GrpUsedCPUs when resetting raw usage if QOS is not using any cpus.
+ -- Remove log message left over from debugging.
+ -- When using CR_PACK_NODES fix make --ntasks-per-node work correctly.
 
 * Changes in Slurm 14.03.4
 ==========================

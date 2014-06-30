@@ -437,6 +437,18 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			 *  cpus_per_task=3)  */
 			cpus[i] = 1;
 		}
+
+		if ((plane_size != (uint16_t)NO_VAL)
+		    && (task_dist != SLURM_DIST_PLANE)) {
+			/* plane_size when dist != plane is used to
+			   convey ntasks_per_node. Adjust the number
+			   of cpus to reflect that.
+			*/
+			uint16_t cpus_per_node = plane_size * cpus_per_task;
+			if (cpus[i] > cpus_per_node)
+				cpus[i] = cpus_per_node;
+		}
+
 		//info("got %d cpus", cpus[i]);
 		if ((++cpu_cnt) >= cpu_count_reps[cpu_inx]) {
 			/* move to next record */
@@ -568,7 +580,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 			}
 		}
 
-		/* Pass 3: Spread remainign tasks across all nodes */
+		/* Pass 3: Spread remaining tasks across all nodes */
 		while (task_id < step_layout->task_cnt) {
 			for (i = 0; ((i < step_layout->node_cnt) &&
 				     (task_id < step_layout->task_cnt)); i++) {

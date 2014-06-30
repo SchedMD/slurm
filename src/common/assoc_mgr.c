@@ -3779,6 +3779,8 @@ extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos)
 
 	qos->usage->usage_raw = 0;
 	qos->usage->grp_used_wall = 0;
+	if (!qos->usage->grp_used_cpus)
+		qos->usage->grp_used_cpu_run_secs = 0;
 }
 
 extern int dump_assoc_mgr_state(char *state_save_location)
