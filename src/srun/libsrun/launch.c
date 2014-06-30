@@ -243,6 +243,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	case SLURM_DIST_CYCLIC_CFULL:
 	case SLURM_DIST_BLOCK_CFULL:
 		job->ctx_params.task_dist = opt.distribution;
+		if (opt.ntasks_per_node != NO_VAL)
+			job->ctx_params.plane_size = opt.ntasks_per_node;
 		break;
 	case SLURM_DIST_PLANE:
 		job->ctx_params.task_dist = SLURM_DIST_PLANE;
@@ -252,6 +254,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		job->ctx_params.task_dist = (job->ctx_params.task_count <=
 					     job->ctx_params.min_nodes)
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		if (opt.ntasks_per_node != NO_VAL)
+			job->ctx_params.plane_size = opt.ntasks_per_node;
 		opt.distribution = job->ctx_params.task_dist;
 		break;
 
