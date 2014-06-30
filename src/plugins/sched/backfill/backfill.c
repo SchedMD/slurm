@@ -859,13 +859,13 @@ static int _attempt_backfill(void)
 			}
 			if (skip_job) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL)
-					debug("backfill: have already "
-					      "checked %u jobs for "
-					      "partition %s; skipping "
-					      "job %u",
-					      max_backfill_job_per_part,
-					      job_ptr->part_ptr->name,
-					      job_ptr->job_id);
+					info("backfill: have already "
+					     "checked %u jobs for "
+					     "partition %s; skipping "
+					     "job %u",
+					     max_backfill_job_per_part,
+					     job_ptr->part_ptr->name,
+					     job_ptr->job_id);
 				continue;
 			}
 		}
@@ -900,27 +900,34 @@ static int _attempt_backfill(void)
 				if (njobs[j] >= max_backfill_job_per_user) {
 					/* skip job */
 					if (debug_flags & DEBUG_FLAG_BACKFILL)
-						debug("backfill: have already "
-						      "checked %u jobs for "
-						      "user %u; skipping "
-						      "job %u",
-						      max_backfill_job_per_user,
-						      job_ptr->user_id,
-						      job_ptr->job_id);
+						info("backfill: have already "
+						     "checked %u jobs for "
+						     "user %u; skipping "
+						     "job %u",
+						     max_backfill_job_per_user,
+						     job_ptr->user_id,
+						     job_ptr->job_id);
 					continue;
 				}
 			}
 		}
 
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
-		    (part_ptr->node_bitmap == NULL))
-		 	continue;
-		if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && filter_root)
+		    (part_ptr->node_bitmap == NULL) ||
+		    ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && filter_root)) {
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: partition %s not usable",
+				     job_ptr->part_ptr->name);
 			continue;
+		}
 
 		if ((!job_independent(job_ptr, 0)) ||
-		    (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS))
+		    (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS)) {
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: job %u not runable now",
+				     job_ptr->job_id);
 			continue;
+		}
 
 		/* Determine minimum and maximum node counts */
 		min_nodes = MAX(job_ptr->details->min_nodes,
@@ -936,7 +943,9 @@ static int _attempt_backfill(void)
 		else
 			req_nodes = min_nodes;
 		if (min_nodes > max_nodes) {
-			/* job's min_nodes exceeds partition's max_nodes */
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: job %u node count too high",
+				     job_ptr->job_id);
 			continue;
 		}
 
@@ -1024,6 +1033,9 @@ static int _attempt_backfill(void)
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
 				  &exc_core_bitmap);
 		if (j != SLURM_SUCCESS) {
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: job %u reservation defer",
+				     job_ptr->job_id);
 			job_ptr->time_limit = orig_time_limit;
 			continue;
 		}
