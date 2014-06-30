@@ -39,6 +39,12 @@ set exit_code          0
 
 print_header $test_id
 
+set min_age [get_min_job_age]
+if {$min_age < 10} {
+	send_user "\nWARNING: MinJobAge too low for this test ($min_age < 10)\n"
+	exit 0
+}
+
 # Remove any vestigial scripts
 exec $bin_rm -f $complete_script $fail_script
 

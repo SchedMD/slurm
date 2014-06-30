@@ -38,6 +38,12 @@ set exit_code          0
 
 print_header $test_id
 
+set min_age [get_min_job_age]
+if {$min_age < 10} {
+	send_user "\nWARNING: MinJobAge too low for this test ($min_age < 10)\n"
+	exit 0
+}
+
 # Remove any vestigial scripts
 exec $bin_rm -f $script
 
@@ -55,7 +61,7 @@ proc check_hold { job } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE scontrol is not responding\n"
+			send_user "\nFAILURE: scontrol is not responding\n"
 			set exit_code 1
 		}
 		eof {
@@ -64,7 +70,7 @@ proc check_hold { job } {
 	}
 
 	if { $hold != 1 } {
-		send_user "\nFAILURE scontrol did not hold job after it was requeued\n"
+		send_user "\nFAILURE: scontrol did not hold job after it was requeued\n"
 		set exit_code 1
 	}
 }
@@ -128,8 +134,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE sbatch is not responding\n"
-		set exit_code 1
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1get_min_job_age
 	}
 	eof {
 		wait
@@ -146,7 +152,7 @@ wait_for_job $job_id DONE
 spawn $scontrol requeuehold $job_id
 expect {
 	timeout {
-		send_user "\nFAILURE scontrol is not responding\n"
+		send_user "\nFAILURE: scontrol is not responding\n"
 		set exit_code 1
 	}
 	eof {
