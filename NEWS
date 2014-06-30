@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
     one year in the future.
  -- Clear record of a job's gres when requeued.
  -- Clear QOS GrpUsedCPUs when resetting raw usage if QOS is not using any cpus.
+ -- Remove log message left over from debugging.
 
 * Changes in Slurm 14.03.4
 ==========================
