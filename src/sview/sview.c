@@ -638,6 +638,7 @@ static gboolean _delete(GtkWidget *widget,
 	if (cluster_list)
 		list_destroy(cluster_list);
 	xfree(orig_cluster_name);
+	uid_cache_clear();
 #endif
 	for (i = 0; i<debug_action_entries; i++) {
 		xfree(debug_actions[i].name);

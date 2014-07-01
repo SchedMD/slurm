@@ -84,8 +84,12 @@ int gid_from_string (char *name, gid_t *gidp);
  */
 char *uid_to_string (uid_t uid);
 
+/* Free any memory allocated by uid_to_string_cached() */
+extern void uid_cache_clear(void);
+
 /*
  * Translate uid to user name, using a cache.
+ * Call uid_cache_clear() to free memory.
  */
 extern char *uid_to_string_cached(uid_t uid);
 

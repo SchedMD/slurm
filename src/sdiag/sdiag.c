@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
 			_sort_rpc();
 			rc = _print_stats();
 #ifdef MEMORY_LEAK_DEBUG
+			uid_cache_clear();
 			slurm_free_stats_response_msg(buf);
 			xfree(rpc_type_ave_time);
 			xfree(rpc_user_ave_time);

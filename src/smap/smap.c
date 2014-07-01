@@ -354,6 +354,7 @@ static void _init_colors(void)
 static void _smap_exit(int rc)
 {
 #ifdef MEMORY_LEAK_DEBUG
+	uid_cache_clear();
 	free_grid();
 
 #ifdef HAVE_BG
