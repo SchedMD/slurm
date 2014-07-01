@@ -307,9 +307,11 @@ parse_command_line( int argc, char* argv[] )
 		}
 	}
 
-	if ( override_format_env == false ) {
-		if ( ( env_val = getenv("SQUEUE_FORMAT") ) )
+	if (!override_format_env) {
+		if ((env_val = getenv("SQUEUE_FORMAT")))
 			params.format = xstrdup(env_val);
+		else if ((env_val = getenv("SQUEUE_FORMAT2")))
+			params.format_long = xstrdup(env_val);
 	}
 
 	params.cluster_flags = slurmdb_setup_cluster_flags();
