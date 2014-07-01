@@ -186,7 +186,7 @@ static int _print_stats(void)
 			printf("\n");
 		printf("\t%-16s(%8u) count:%-6u "
 		       "ave_time:%-6u total_time:%"PRIu64"\n",
-		       uid_to_string((uid_t)buf->rpc_user_id[i]),
+		       uid_to_string_cached((uid_t)buf->rpc_user_id[i]),
 		       buf->rpc_user_id[i], buf->rpc_user_cnt[i],
 		       rpc_user_ave_time[i], buf->rpc_user_time[i]);
 	}

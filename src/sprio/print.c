@@ -434,9 +434,8 @@ int _print_job_user_name(priority_factors_object_t * job, int width,
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
 	else {
-		char *uname = uid_to_string((uid_t) job->user_id);
+		char *uname = uid_to_string_cached((uid_t) job->user_id);
 		_print_str(uname, width, right, true);
-		xfree(uname);
 	}
 	if (suffix)
 		printf("%s", suffix);

@@ -332,9 +332,8 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	private_data_string(private_data, tmp_str, sizeof(tmp_str));
 	add_display_treestore_line(update, treestore, &iter,
 				   "PrivateData", tmp_str);
-	user_name = uid_to_string(slurm_user_id);
+	user_name = uid_to_string_cached(slurm_user_id);
 	sprintf(tmp_str, "%s(%u)", user_name, slurm_user_id);
-	xfree(user_name);
 	add_display_treestore_line(update, treestore, &iter,
 				   "SlurmUserId", tmp_str);
 	add_display_treestore_line(update, treestore, &iter,

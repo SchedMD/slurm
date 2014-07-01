@@ -2038,7 +2038,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			assoc_cond.only_defs = 0;
 
 			/* make sure this person running is an admin */
-			user_name = uid_to_string(my_uid);
+			user_name = uid_to_string_cached(my_uid);
 			if (!(user = sacctmgr_find_user_from_list(
 				      curr_user_list, user_name))) {
 				exit_code=1;
@@ -2047,7 +2047,6 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					my_uid);
 				if (curr_user_list)
 					list_destroy(curr_user_list);
-				xfree(user_name);
 				return;
 
 			} else {
@@ -2062,7 +2061,6 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						"privileges to load files.\n");
 					if (curr_user_list)
 						list_destroy(curr_user_list);
-					xfree(user_name);
 					return;
 				}
 			}

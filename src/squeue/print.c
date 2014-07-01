@@ -1473,7 +1473,7 @@ int _print_step_user_name(job_step_info_t * step, int width, bool right,
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("USER", width, right, true);
 	else {
-		char *uname = uid_to_string((uid_t) step->user_id);
+		char *uname = uid_to_string_cached((uid_t) step->user_id);
 		_print_str(uname, width, right, true);
 	}
 	if (suffix)

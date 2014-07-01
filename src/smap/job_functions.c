@@ -345,10 +345,9 @@ static int _print_text_job(job_info_t * job_ptr)
 					  SELECT_PRINT_DATA));
 			main_xcord += 18;
 		}
-		uname = uid_to_string((uid_t) job_ptr->user_id);
+		uname = uid_to_string_cached((uid_t) job_ptr->user_id);
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.8s", uname);
-		xfree(uname);
 		main_xcord += 9;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.9s", job_ptr->name);
@@ -423,9 +422,8 @@ static int _print_text_job(job_info_t * job_ptr)
 				       job_ptr->select_jobinfo,
 				       time_buf, sizeof(time_buf),
 				       SELECT_PRINT_DATA));
-		uname = uid_to_string((uid_t) job_ptr->user_id);
+		uname = uid_to_string_cached((uid_t) job_ptr->user_id);
 		printf("%8.8s ", uname);
-		xfree(uname);
 		printf("%6.6s ", job_ptr->name);
 		printf("%2.2s ",
 		       job_state_string_compact(job_ptr->job_state));

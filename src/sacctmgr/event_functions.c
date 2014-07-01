@@ -720,11 +720,10 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 				break;
 			case PRINT_USER:
 				if (event->reason_uid != NO_VAL) {
-					tmp_char = uid_to_string(
+					tmp_char = uid_to_string_cached(
 						event->reason_uid);
 					snprintf(tmp, sizeof(tmp), "%s(%u)",
 						 tmp_char, event->reason_uid);
-					xfree(tmp_char);
 				} else
 					memset(tmp, 0, sizeof(tmp));
 				field->print_routine(field, tmp,

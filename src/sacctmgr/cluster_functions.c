@@ -1047,7 +1047,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	}
 
 	/* make sure this person running is an admin */
-	user_name = uid_to_string(my_uid);
+	user_name = uid_to_string_cached(my_uid);
 	if (!(user = sacctmgr_find_user_from_list(user_list, user_name))) {
 		exit_code = 1;
 		fprintf(stderr, " Your uid (%u) is not in the "
@@ -1056,7 +1056,6 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		xfree(cluster_name);
 		xfree(file_name);
 		FREE_NULL_LIST(user_list);
-		xfree(user_name);
 		return SLURM_ERROR;
 
 	} else {
@@ -1069,7 +1068,6 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 			xfree(cluster_name);
 			xfree(file_name);
 			FREE_NULL_LIST(user_list);
-			xfree(user_name);
 			return SLURM_ERROR;
 		}
 	}

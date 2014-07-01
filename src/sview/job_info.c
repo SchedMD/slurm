@@ -1939,11 +1939,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_TIME_SUSPEND),
 				   tmp_char);
 
-	uname = uid_to_string((uid_t)job_ptr->user_id);
+	uname = uid_to_string_cached((uid_t)job_ptr->user_id);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_USER_ID), uname);
-	xfree(uname);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2244,7 +2243,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		sprintf(tmp_rqswitch, "N/A");
 	}
 
-	tmp_uname = uid_to_string((uid_t)job_ptr->user_id);
+	tmp_uname = uid_to_string_cached((uid_t)job_ptr->user_id);
 
 	if ((handle_pending || check_task)
 	    && (job_ptr->array_task_id != NO_VAL)) {
@@ -2348,7 +2347,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_WORKDIR,      job_ptr->work_dir,
 				   -1);
 	}
-	xfree(tmp_uname);
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_NETWORK, job_ptr->network, -1);
@@ -2503,11 +2501,10 @@ static void _layout_step_record(GtkTreeView *treeview,
 						 SORTID_CPUS),
 				   tmp_char);
 
-	uname = uid_to_string((uid_t)step_ptr->user_id);
+	uname = uid_to_string_cached((uid_t)step_ptr->user_id);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_USER_ID), uname);
-	xfree(uname);
 
 	if (step_ptr->array_job_id) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u_%u.%u (%u.%u)",
@@ -2666,7 +2663,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 
 	snprintf(tmp_step_id, sizeof(tmp_step_id), "%u", step_ptr->step_id);
 
-	tmp_uname = uid_to_string((uid_t)step_ptr->user_id);
+	tmp_uname = uid_to_string_cached((uid_t)step_ptr->user_id);
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_ALLOC,        0,
@@ -2689,7 +2686,6 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_USER_ID,      tmp_uname,
 			   -1);
 
-	xfree(tmp_uname);
 
 	return;
 }
@@ -4036,10 +4032,9 @@ display_it:
 			case SEARCH_JOB_USER:
 				if (!search_info->gchar_data)
 					continue;
-				uname = uid_to_string(job_ptr->user_id);
+				uname = uid_to_string_cached(job_ptr->user_id);
 				name_diff = strcmp(uname,
 						   search_info->gchar_data);
-				xfree(uname);
 				if (name_diff)
 					continue;
 				break;
