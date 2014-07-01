@@ -41,6 +41,8 @@ documents those changes that are of interest to users and admins.
  -- Clear QOS GrpUsedCPUs when resetting raw usage if QOS is not using any cpus.
  -- Remove log message left over from debugging.
  -- When using CR_PACK_NODES fix make --ntasks-per-node work correctly.
+ -- Report correct partition associated with a step if the job is submitted to
+    multiple partitions.
 
 * Changes in Slurm 14.03.4
 ==========================
