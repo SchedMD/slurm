@@ -49,6 +49,14 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+typedef struct {
+    uid_t uid;
+    char *username;
+} uid_cache_entry_t;
+
+static uid_cache_entry_t *uid_cache;
+static int uid_cache_used = 0;
+
 static int _getpwnam_r (const char *name, struct passwd *pwd, char *buf,
 		size_t bufsiz, struct passwd **result)
 {
@@ -137,6 +145,33 @@ uid_to_string (uid_t uid)
 	else
 		ustring = xstrdup("nobody");
 	return ustring;
+}
+
+
+static int _uid_compare(const void *a, const void *b)
+{
+	uid_t ua = *(const uid_t *)a;
+	uid_t ub = *(const uid_t *)b;
+	return ua - ub;
+}
+
+extern char *uid_to_string_cached(uid_t uid)
+{
+	uid_cache_entry_t target = {uid, NULL};
+	uid_cache_entry_t *entry = bsearch(&target, uid_cache, uid_cache_used,
+					   sizeof(uid_cache_entry_t),
+					   _uid_compare);
+	if (entry == NULL) {
+		uid_cache_entry_t new_entry = {uid, uid_to_string(uid)};
+		uid_cache_used++;
+		uid_cache = realloc(uid_cache,
+				    sizeof(uid_cache_entry_t) * uid_cache_used);
+		uid_cache[uid_cache_used-1] = new_entry;
+		qsort(uid_cache, uid_cache_used, sizeof(uid_cache_entry_t),
+		      _uid_compare);
+		return new_entry.username;
+	}
+	return entry->username;
 }
 
 gid_t

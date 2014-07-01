@@ -758,11 +758,9 @@ static int _sort_job_by_user_name(void *void1, void *void2)
 
 	_get_job_info_from_void(&job1, &job2, void1, void2);
 
-	name1 = uid_to_string((uid_t) job1->user_id);
-	name2 = uid_to_string((uid_t) job2->user_id);
+	name1 = uid_to_string_cached((uid_t) job1->user_id);
+	name2 = uid_to_string_cached((uid_t) job2->user_id);
 	diff = strcmp(name1, name2);
-	xfree(name1);
-	xfree(name2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -979,11 +977,9 @@ static int _sort_step_by_user_name(void *void1, void *void2)
 
 	_get_step_info_from_void(&step1, &step2, void1, void2);
 
-	name1 = uid_to_string((uid_t) step1->user_id);
-	name2 = uid_to_string((uid_t) step2->user_id);
+	name1 = uid_to_string_cached((uid_t) step1->user_id);
+	name2 = uid_to_string_cached((uid_t) step2->user_id);
 	diff = strcmp(name1, name2);
-	xfree(name1);
-	xfree(name2);
 
 	if (reverse_order)
 		diff = -diff;

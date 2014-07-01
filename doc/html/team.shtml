@@ -88,6 +88,7 @@ Lead Slurm developers are:
 <li>Andriy Grytsenko (Massive Solutions Limited, Ukraine)</li>
 <li>Michael Gutteridge (Fred Hutchinson Cancer Research Center)</li>
 <br>
+<li>Anders Halager (Aarhus University, Denmark)</li>
 <li>Chris Harwell (D. E. Shaw Research)</li>
 <li>Takao Hatazaki (HP)</li>
 <li>Matthieu Hautreux (CEA, France)</li>
@@ -200,6 +201,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 25 April 2014</p>
+<p style="text-align:center;">Last modified 30 June 2014</p>
 
 <!--#include virtual="footer.txt"-->

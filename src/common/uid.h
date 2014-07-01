@@ -85,6 +85,11 @@ int gid_from_string (char *name, gid_t *gidp);
 char *uid_to_string (uid_t uid);
 
 /*
+ * Translate uid to user name, using a cache.
+ */
+extern char *uid_to_string_cached(uid_t uid);
+
+/*
  * Same as uid_to_string, but for group name.
  * NOTE: xfree the return value
  */
