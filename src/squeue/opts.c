@@ -83,6 +83,8 @@ static void  _help( void );
 static int   _parse_state( char* str, uint16_t* states );
 static void  _parse_token( char *token, char *field, int *field_size,
 			   bool *right_justify, char **suffix);
+static void _parse_long_token( char *token, char *sep, int *field_size,
+			       bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _usage( void );
 
@@ -100,6 +102,7 @@ parse_command_line( int argc, char* argv[] )
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
+		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
@@ -144,7 +147,7 @@ parse_command_line( int argc, char* argv[] )
 	}
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:ahi:j::lL:n:M:o:p:q:R:rs::S:t:u:U:vVw:",
+				       "A:ahi:j::lL:n:M:O:o:p:q:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -157,7 +160,7 @@ parse_command_line( int argc, char* argv[] )
 			params.accounts = xstrdup(optarg);
 			params.account_list =
 				_build_str_list( params.accounts );
-		break;
+			break;
 		case (int)'a':
 			params.all_flag = true;
 			break;
@@ -192,7 +195,7 @@ parse_command_line( int argc, char* argv[] )
 			if (params.clusters)
 				list_destroy(params.clusters);
 			if (!(params.clusters =
-			    slurmdb_get_info_cluster(optarg))) {
+			      slurmdb_get_info_cluster(optarg))) {
 				print_db_notok(optarg, 0);
 				exit(1);
 			}
@@ -203,9 +206,27 @@ parse_command_line( int argc, char* argv[] )
 			params.names = xstrdup(optarg);
 			params.name_list = _build_str_list( params.names );
 			break;
+		case (int) 'O':
+			xfree(params.format_long);
+			if (params.format == NULL) {
+				params.format_long = xstrdup(optarg);
+			} else {
+				error ("-O (--Format) is incompatable with -o "
+				       "(--format)");
+				exit(1);
+			}
+			override_format_env = true;
+			break;
+
 		case (int) 'o':
 			xfree(params.format);
-			params.format = xstrdup(optarg);
+			if (params.format_long == NULL) {
+				params.format = xstrdup(optarg);
+			} else {
+				error ("-o (--format) is incompatible with -O "
+				       "(--Format)");
+				exit(1);
+			}
 			override_format_env = true;
 
 			break;
@@ -442,7 +463,7 @@ _parse_state( char* str, uint16_t* states )
 		return SLURM_SUCCESS;
 	}
 
-	error ("Invalid job state specified: %s", str);
+	error("Invalid job state specified: %s", str);
 	state_names = xstrdup(job_state_string(0));
 	for (i=1; i<JOB_END; i++) {
 		xstrcat(state_names, ",");
@@ -456,7 +477,7 @@ _parse_state( char* str, uint16_t* states )
 	xstrcat(state_names, job_state_string(JOB_RESIZING));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_SPECIAL_EXIT));
-	error ("Valid job states include: %s\n", state_names);
+	error("Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	return SLURM_ERROR;
 }
@@ -485,12 +506,13 @@ extern int parse_format( char* format )
 
 	params.format_list = list_create( NULL );
 	if ((prefix = _get_prefix(format))) {
-		if (params.step_flag)
+		if (params.step_flag) {
 			step_format_add_prefix( params.format_list, 0, 0,
 						prefix);
-		else
+		} else {
 			job_format_add_prefix( params.format_list, 0, 0,
 					       prefix);
+		}
 	}
 
 	if (!strcasecmp(format, "%all")) {
@@ -526,9 +548,9 @@ extern int parse_format( char* format )
 						    right_justify, suffix );
 			else if (field[0] == 'j')
 				step_format_add_name( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+						      field_size,
+						      right_justify,
+						      suffix );
 			else if (field[0] == 'l')
 				step_format_add_time_limit( params.format_list,
 							    field_size,
@@ -536,9 +558,9 @@ extern int parse_format( char* format )
 							    suffix );
 			else if (field[0] == 'M')
 				step_format_add_time_used( params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
+							   field_size,
+							   right_justify,
+							   suffix );
 			else if (field[0] == 'N')
 				step_format_add_nodes( params.format_list,
 						       field_size,
@@ -572,9 +594,9 @@ extern int parse_format( char* format )
 				suffix = prefix;
 
 				step_format_add_invalid( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
+							 field_size,
+							 right_justify,
+							 suffix );
 				error ( "Invalid job step format "
 					"specification: %c",
 					field[0] );
@@ -611,10 +633,10 @@ extern int parse_format( char* format )
 							 suffix  );
 			else if (field[0] == 'd')
 				job_format_add_min_tmp_disk(
-							  params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix  );
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix  );
 			else if (field[0] == 'D')
 				job_format_add_num_nodes( params.format_list,
 							  field_size,
@@ -627,9 +649,9 @@ extern int parse_format( char* format )
 							 suffix );
 			else if (field[0] == 'E')
 				job_format_add_dependency( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+							   field_size,
+							   right_justify,
+							   suffix );
 			else if (field[0] == 'f')
 				job_format_add_features( params.format_list,
 							 field_size,
@@ -637,10 +659,10 @@ extern int parse_format( char* format )
 							 suffix );
 			else if (field[0] == 'F')
 				job_format_add_array_job_id(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 			else if (field[0] == 'g')
 				job_format_add_group_name( params.format_list,
 							   field_size,
@@ -686,10 +708,10 @@ extern int parse_format( char* format )
 							suffix );
 			else if (field[0] == 'K')
 				job_format_add_array_task_id(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 			else if (field[0] == 'l')
 				job_format_add_time_limit( params.format_list,
 							   field_size,
@@ -744,27 +766,27 @@ extern int parse_format( char* format )
 						    right_justify,
 						    suffix );
 			else if (field[0] == 'Q')
-				 job_format_add_priority_long(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+				job_format_add_priority_long(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 			else if (field[0] == 'r')
 				job_format_add_reason( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+						       field_size,
+						       right_justify,
+						       suffix );
 			else if (field[0] == 'R')
 				job_format_add_reason_list( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+							    field_size,
+							    right_justify,
+							    suffix );
 			else if (field[0] == 's')
 				job_format_add_select_jobinfo(
-							 params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 			else if (field[0] == 'S')
 				job_format_add_time_start( params.format_list,
 							   field_size,
@@ -772,10 +794,10 @@ extern int parse_format( char* format )
 							   suffix );
 			else if (field[0] == 't')
 				job_format_add_job_state_compact(
-							params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 			else if (field[0] == 'T')
 				job_format_add_job_state( params.format_list,
 							  field_size,
@@ -793,14 +815,14 @@ extern int parse_format( char* format )
 							  suffix );
 			else if (field[0] == 'v')
 				job_format_add_reservation( params.format_list,
-							field_size,
-							right_justify,
-							suffix );
+							    field_size,
+							    right_justify,
+							    suffix );
 			else if (field[0] == 'V')
 				job_format_add_time_submit( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
+							    field_size,
+							    right_justify,
+							    suffix );
 			else if (field[0] == 'w')
 				job_format_add_wckey( params.format_list,
 						      field_size,
@@ -808,8 +830,9 @@ extern int parse_format( char* format )
 						      suffix );
 			else if (field[0] == 'W')
 				job_format_add_licenses( params.format_list,
-						     field_size,
-						     right_justify, suffix );
+							 field_size,
+							 right_justify,
+							 suffix );
 			else if (field[0] == 'x')
 				job_format_add_exc_nodes( params.format_list,
 							  field_size,
@@ -831,9 +854,9 @@ extern int parse_format( char* format )
 							   suffix );
 			else if (field[0] == 'z')
 				job_format_add_num_sct( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
+							field_size,
+							right_justify,
+							suffix );
 			else if (field[0] == 'Z')
 				job_format_add_work_dir( params.format_list,
 							 field_size,
@@ -848,9 +871,9 @@ extern int parse_format( char* format )
 				suffix = prefix;
 
 				job_format_add_invalid( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
+							field_size,
+							right_justify,
+							suffix );
 				error( "Invalid job format specification: %c",
 				       field[0] );
 			}
@@ -861,6 +884,580 @@ extern int parse_format( char* format )
 	xfree( tmp_format );
 	return SLURM_SUCCESS;
 }
+
+extern int parse_long_format( char* format_long )
+{
+	int field_size;
+	bool right_justify;
+	char *tmp_format = NULL, *token = NULL, *str_tmp = NULL;
+	char *sep = NULL;
+	char* suffix = NULL;
+
+	if (format_long == NULL) {
+		error("Format long option lacks specification");
+		exit( 1 );
+	}
+
+	params.format_list = list_create(NULL);
+	tmp_format = xstrdup(format_long);
+	token = strtok_r(tmp_format, ",",&str_tmp);
+	while (token) {
+		_parse_long_token( token, sep, &field_size, &right_justify,
+				   &suffix);
+
+		if (params.step_flag) {
+
+			if (!strcasecmp(token, "numtask"))
+				step_format_add_num_tasks( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "gres"))
+				step_format_add_gres( params.format_list,
+						      field_size,
+						      right_justify, suffix );
+			else if (!strcasecmp(token, "stepid"))
+				step_format_add_id( params.format_list,
+						    field_size,
+						    right_justify, suffix );
+			else if (!strcasecmp(token, "stepname"))
+				step_format_add_name( params.format_list,
+						      field_size,
+						      right_justify,
+						      suffix );
+			else if (!strcasecmp(token, "timelimit"))
+				step_format_add_time_limit( params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!strcasecmp(token, "timeused"))
+				step_format_add_time_used( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "nodes"))
+				step_format_add_nodes( params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "partition"))
+				step_format_add_partition( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "starttime"))
+				step_format_add_time_start( params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!strcasecmp(token, "userid"))
+				step_format_add_user_id( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if  (!strcasecmp(token, "username"))
+				step_format_add_user_name( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "arrayjobid"))
+				step_format_add_array_job_id(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "arraytaskid"))
+				step_format_add_array_task_id(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "chptdir"))
+				step_format_add_chpt_dir( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if ( !strcasecmp(token, "chptinter"))
+				step_format_add_chpt_interval(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if ( !strcasecmp(token, "jobid"))
+				step_format_add_job_id( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if ( !strcasecmp(token, "network"))
+				step_format_add_network( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if ( !strcasecmp(token, "numcpus"))
+				step_format_add_num_cpus( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if ( !strcasecmp(token, "cpufreq"))
+				step_format_add_cpu_freq( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if ( !strcasecmp(token, "profile"))
+				step_format_add_profile( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if ( !strcasecmp(token, "resvports"))
+				step_format_add_resv_ports( params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if ( !strcasecmp(token, "stepstate"))
+				step_format_add_step_state( params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else {
+				step_format_add_invalid( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+				error ( "Invalid job step format "
+					"specification: %s",
+					token );
+			}
+
+		} else {
+
+			if (!strcasecmp(token,"account"))
+				job_format_add_account( params.format_list,
+							field_size,
+							right_justify,
+							suffix  );
+			else if (!strcasecmp(token, "jobid"))
+				job_format_add_job_id2(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "gres"))
+				job_format_add_gres(params.format_list,
+						    field_size, right_justify,
+						    suffix );
+			else if (!strcasecmp(token,"batchhost"))
+				job_format_add_batch_host(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token,"mincpus"))
+				job_format_add_min_cpus( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix  );
+			else if (!strcasecmp(token,"numcpus"))
+				job_format_add_num_cpus( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix  );
+			else if (!strcasecmp(token, "mintmpdisk"))
+				job_format_add_min_tmp_disk(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix  );
+			else if (!strcasecmp(token, "numnodes"))
+				job_format_add_num_nodes( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix  );
+			else if (!strcasecmp(token, "endtime"))
+				job_format_add_time_end( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+
+			else if (!strcasecmp(token, "dependency"))
+				job_format_add_dependency( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "feature"))
+				job_format_add_features( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token, "arrayjobid"))
+				job_format_add_array_job_id(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token,"groupname"))
+				job_format_add_group_name( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token,"groupid"))
+				job_format_add_group_id( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token,"shared"))
+				job_format_add_shared( params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+
+			else if (!strcasecmp(token, "sockets"))
+				job_format_add_sockets( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!strcasecmp(token,"jobarrayid"))
+				job_format_add_job_id( params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "cores"))
+				job_format_add_cores( params.format_list,
+						      field_size,
+						      right_justify, suffix );
+			else if (!strcasecmp(token, "name"))
+				job_format_add_name( params.format_list,
+						     field_size,
+						     right_justify, suffix );
+			else if (!strcasecmp(token, "threads"))
+				job_format_add_threads( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!strcasecmp(token, "comment"))
+				job_format_add_comment( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!strcasecmp(token, "arraytaskid"))
+				job_format_add_array_task_id(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "timelimit"))
+				job_format_add_time_limit( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "timeleft"))
+				job_format_add_time_left( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "minmemory"))
+				job_format_add_min_memory( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token,"timeused"))
+				job_format_add_time_used( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "reqnodes"))
+				job_format_add_req_nodes( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "nodelist"))
+				job_format_add_nodes( params.format_list,
+						      field_size,
+						      right_justify, suffix );
+			else if (!strcasecmp(token, "command"))
+				job_format_add_command( params.format_list,
+							field_size,
+							right_justify, suffix);
+			else if (!strcasecmp(token, "contiguous"))
+				job_format_add_contiguous( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "priority"))
+				job_format_add_priority( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token, "partition"))
+				job_format_add_partition( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "qos"))
+				job_format_add_qos( params.format_list,
+						    field_size,
+						    right_justify,
+						    suffix );
+			else if (!strcasecmp(token, "prioritylong"))
+				job_format_add_priority_long(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "reason"))
+				job_format_add_reason( params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "reasonlist"))
+				job_format_add_reason_list( params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!strcasecmp(token, "selectjobinfo"))
+				job_format_add_select_jobinfo(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "starttime"))
+				job_format_add_time_start( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "statecompact"))
+				job_format_add_job_state_compact(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "state"))
+				job_format_add_job_state( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "userid"))
+				job_format_add_user_id( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!strcasecmp(token, "username"))
+				job_format_add_user_name( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "reservation"))
+				job_format_add_reservation( params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!strcasecmp(token, "submittime"))
+				job_format_add_time_submit( params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!strcasecmp(token, "wckey"))
+				job_format_add_wckey( params.format_list,
+						      field_size,
+						      right_justify,
+						      suffix );
+			else if (!strcasecmp(token, "licenses"))
+				job_format_add_licenses( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token, "corespec"))
+				job_format_add_core_spec( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "nice"))
+				job_format_add_nice( params.format_list,
+						     field_size, right_justify,
+						     suffix );
+			else if (!strcasecmp(token, "schednodes"))
+				job_format_add_schednodes( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "sct"))
+				job_format_add_num_sct( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!strcasecmp(token, "workdir"))
+				job_format_add_work_dir( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+
+			else if (!strcasecmp(token, "allocnodes"))
+				job_format_add_alloc_nodes( params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!strcasecmp(token, "allocsid"))
+				job_format_add_alloc_sid(params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token,"associd"))
+				job_format_add_assoc_id(params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!strcasecmp(token, "batchflag"))
+				job_format_add_batch_flag(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "boardspernode"))
+				job_format_add_boards_per_node(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "cpuspertask"))
+				job_format_add_cpus_per_task(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
+
+			else if (!strcasecmp(token, "derivedec"))
+				job_format_add_derived_ec(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "eligibletime"))
+				job_format_add_eligible_time(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
+			else if (!strcasecmp(token, "exit_code"))
+				job_format_add_exit_code(params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token, "maxcpus"))
+				job_format_add_max_cpus(params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token, "maxnodes"))
+				job_format_add_max_nodes(params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token, "network"))
+				job_format_add_network(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "ntpercore"))
+				job_format_add_ntasks_per_core(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "ntpernode"))
+				job_format_add_ntasks_per_node(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "ntpersocket"))
+				job_format_add_ntasks_per_socket(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "ntperboard"))
+				job_format_add_ntasks_per_board(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "preempttime"))
+				job_format_add_preempt_time(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "profile"))
+				job_format_add_profile(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "reboot"))
+				job_format_add_reboot(params.format_list,
+						      field_size,
+						      right_justify,
+						      suffix );
+			else if (!strcasecmp(token, "reqswitch"))
+				job_format_add_req_switch(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!strcasecmp(token, "requeue"))
+				job_format_add_requeue(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "resizetime"))
+				job_format_add_resize_time(params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "restartcnt"))
+				job_format_add_restart_cnt(params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else if (!strcasecmp(token, "sperboard"))
+				job_format_add_sockets_per_board(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+			else if (!strcasecmp(token, "stderr"))
+				job_format_add_std_err(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "stdin"))
+				job_format_add_std_in(params.format_list,
+						      field_size,
+						      right_justify,
+						      suffix );
+			else if (!strcasecmp(token, "stdout"))
+				job_format_add_std_out(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+			else if (!strcasecmp(token, "mintime"))
+				job_format_add_min_time(params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!strcasecmp(token, "wait4switch"))
+				job_format_add_wait4switch(params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
+			else {
+				job_format_add_invalid( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+				error( "Invalid job format specification: %s",
+				       token );
+			}
+		}
+
+		token = strtok_r(NULL, ",", &str_tmp);
+	}
+
+	xfree(tmp_format);
+	return SLURM_SUCCESS;
+}
+
 
 /* Take a format specification and copy out it's prefix
  * IN/OUT token - input specification, everything before "%" is removed
@@ -886,6 +1483,7 @@ _get_prefix( char *token )
 	memmove(token, pos, (strlen(pos)+1));
 	return prefix;
 }
+
 
 /* Take a format specification and break it into its components
  * IN token - input specification without leading "%", eg. ".5u"
@@ -915,6 +1513,29 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 	field[0] = token[i++];
 
 	*suffix = xstrdup(&token[i]);
+}
+
+static void
+_parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
+		   char **suffix)
+{
+	char *ptr;
+
+	xassert(token);
+	ptr = strchr(token, ':');
+	if (ptr) {
+		ptr[0] = '\0';
+		if (ptr[1] == '.') {
+			*right_justify = true;
+			ptr++;
+		} else {
+			*right_justify = false;
+		}
+		*field_size = atoi(ptr + 1);
+	} else {
+		*right_justify = false;
+		*field_size = 20;
+	}
 }
 
 /* print the parameters specified */

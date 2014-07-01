@@ -50,11 +50,13 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
-#include "src/squeue/print.h"
-#include "src/squeue/squeue.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/squeue/print.h"
+#include "src/squeue/squeue.h"
 
 static int	_filter_job(job_info_t * job);
 static int	_filter_step(job_step_info_t * step);
@@ -257,15 +259,15 @@ int _print_secs(long time, int width, bool right, bool cut_output)
 	else if (days)
 		snprintf(str, FORMAT_STRING_SIZE,
 			 "%ld-%2.2ld:%2.2ld:%2.2ld",
-		         days, hours, minutes, seconds);
+			 days, hours, minutes, seconds);
 	else if (hours)
 		snprintf(str, FORMAT_STRING_SIZE,
 			 "%ld:%2.2ld:%2.2ld",
-		         hours, minutes, seconds);
+			 hours, minutes, seconds);
 	else
 		snprintf(str, FORMAT_STRING_SIZE,
 			 "%ld:%2.2ld",
-		         minutes, seconds);
+			 minutes, seconds);
 
 	_print_str(str, width, right, cut_output);
 	return SLURM_SUCCESS;
@@ -618,7 +620,7 @@ int _print_job_job_state_compact(job_info_t * job, int width, bool right,
 }
 
 int _print_job_time_left(job_info_t * job, int width, bool right,
-			  char* suffix)
+			 char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("TIME_LEFT", width, right, true);
@@ -639,7 +641,7 @@ int _print_job_time_limit(job_info_t * job, int width, bool right,
 			  char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("TIMELIMIT", width, right, true);
+		_print_str("TIME_LIMIT", width, right, true);
 	else if (job->time_limit == INFINITE)
 		_print_str("UNLIMITED", width, right, true);
 	else if (job->time_limit == NO_VAL)
@@ -685,15 +687,15 @@ long job_time_used(job_info_t * job_ptr)
 }
 
 int _print_job_time_submit(job_info_t * job, int width, bool right,
-                          char* suffix)
+			  char* suffix)
 {
-        if (job == NULL)        /* Print the Header instead */
-                _print_str("SUBMIT_TIME", width, right, true);
-        else
-                _print_time(job->submit_time, 0, width, right);
-        if (suffix)
-                printf("%s", suffix);
-        return SLURM_SUCCESS;
+	if (job == NULL)        /* Print the Header instead */
+		_print_str("SUBMIT_TIME", width, right, true);
+	else
+		_print_time(job->submit_time, 0, width, right);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
 }
 
 int _print_job_time_start(job_info_t * job, int width, bool right,
@@ -729,7 +731,7 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 		_print_str("PRIORITY", width, right, true);
 	else {
 		double prio = (double) job->priority /
-		              (double) ((uint32_t) 0xffffffff);
+			      (double) ((uint32_t) 0xffffffff);
 		sprintf(temp, "%16.14f", prio);
 		_print_str(temp, width, right, true);
 	}
@@ -1347,6 +1349,438 @@ int _print_job_nice(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_alloc_nodes(job_info_t * job, int width, bool right_justify,
+			   char* suffix)
+{
+	if (job == NULL)
+		_print_str("ALLOC_NODES", width, right_justify, true);
+	else
+		_print_str(job->alloc_node, width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_alloc_sid(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("ALLOC_SID", width, right_justify, true);
+	else
+		_print_int(job->alloc_sid, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_assoc_id(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("ASSOC_ID", width, right_justify, true);
+	else
+		_print_int(job->assoc_id, width, right_justify,true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_job_batch_flag(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("BATCH_FLAG", width, right_justify, true);
+	else
+		_print_int(job->batch_flag, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_boards_per_node(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("BOARDS_PER_NODE", width, right_justify, true);
+	else if (job->boards_per_node == (uint16_t) NO_VAL)
+		_print_str("N/A", width, right_justify, true);
+	else
+		_print_int(job->boards_per_node, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_cpus_per_task(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("CPUS_PER_TASK", width, right_justify, true);
+	else
+		_print_int(job->cpus_per_task, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_derived_ec(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("DERIVED_EC", width, right_justify, true);
+	else
+		_print_int(job->derived_ec, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_job_eligible_time(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("ELIGIBLE_TIME", width, right_justify, true);
+	else {
+		_print_time(job->eligible_time, 0, width, right_justify);
+	}
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("EXIT_CODE", width, right_justify, true);
+	else
+		_print_int(job->exit_code, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_max_cpus(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("MAX_CPUS", width, right_justify, true);
+	else if (job->max_cpus != 0)
+		_print_int(job->max_cpus, width, right_justify, true);
+	else
+		_print_int(job->num_cpus, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+
+
+}
+
+int _print_job_max_nodes(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("MAX_NODES", width, right_justify, true);
+	else if (job->max_nodes != 0)
+		_print_int(job->max_nodes, width, right_justify, true);
+	else
+		_print_int(_get_node_cnt(job), width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_network(job_info_t * job, int width, bool right_justify,
+		    char* suffix)
+{
+	if (job == NULL)
+		_print_str("NETWORK", width, right_justify, true);
+	else
+		_print_str(job->network, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_ntasks_per_core(job_info_t * job, int width, bool right_justify,
+			       char* suffix)
+{
+	if (job == NULL)
+		_print_str("NTASKS_PER_CORE", width, right_justify, true);
+	else if ((job->ntasks_per_core == (uint16_t) NO_VAL) ||
+		 (job->ntasks_per_core == (uint16_t) INFINITE))
+		_print_str("N/A", width, right_justify, true);
+	else
+		_print_int(job->ntasks_per_core, width, right_justify, true);
+
+	if(suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_ntasks_per_node(job_info_t * job, int width, bool right_justify,
+			       char* suffix)
+{
+	if (job == NULL)
+		_print_str("NTASKS_PER_NODE", width, right_justify, true);
+	else if ((job->ntasks_per_node == (uint16_t) NO_VAL) ||
+		 (job->ntasks_per_node == (uint16_t) INFINITE))
+		_print_str("N/A", width, right_justify, true);
+	else
+		_print_int(job->ntasks_per_node, width, right_justify, true);
+
+	if(suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_ntasks_per_socket(job_info_t * job, int width,
+				 bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("NTASKS_PER_SOCKET", width, right_justify, true);
+	else if ((job->ntasks_per_socket == (uint16_t) NO_VAL) ||
+		 (job->ntasks_per_socket == (uint16_t) INFINITE))
+		_print_str("N/A", width, right_justify, true);
+	else
+		_print_int(job->ntasks_per_socket, width, right_justify, true);
+
+	if(suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_ntasks_per_board(job_info_t * job, int width,
+				 bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("NTASKS_PER_BOARD", width, right_justify, true);
+	else if ((job->ntasks_per_board == (uint16_t) NO_VAL) ||
+		 (job->ntasks_per_board == (uint16_t) INFINITE))
+		_print_str("N/A", width, right_justify, true);
+	else
+		_print_int(job->ntasks_per_board, width, right_justify, true);
+
+	if(suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_preempt_time(job_info_t * job, int width,
+				 bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("PREEMPT_TIME", width, right_justify, true);
+	else if (job->preempt_time == INFINITE)
+		_print_str("UNLIMITED", width, right_justify, true);
+	else if (job->preempt_time == NO_VAL)
+		_print_str("NOT_SET", width, right_justify, true);
+	else
+		_print_time(job->preempt_time, 0, width, right_justify);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_job_profile(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("PROFILE", width, right_justify, true);
+	else
+		_print_str(acct_gather_profile_to_string(job->profile),
+			   width, right_justify, true);
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_reboot(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("REBOOT", width, right_justify, true);
+	else
+		_print_int(job->reboot, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_req_switch(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("REQ_SWITCH", width, right_justify, true);
+	else
+		_print_int(job->req_switch, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_requeue(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("REQUEUE", width, right_justify, true);
+	else
+		_print_int(job->requeue, width, right_justify, true);
+
+	if (suffix)
+		printf("%s",suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_job_resize_time(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("RESIZE_TIME", width, right_justify, true);
+	else if (job->resize_time)
+		_print_secs((job->resize_time*60), width, right_justify, true);
+	else
+		_print_str("N/A", width, right_justify, false);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_job_restart_cnt(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("RESTART_COUNT", width, right_justify, true);
+	else
+		_print_int(job->restart_cnt, width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_sockets_per_board(job_info_t * job, int width,
+				 bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("SOCKETS_PER_BOARD", width, right_justify, true);
+	else
+		_print_int(job->sockets_per_board, width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_job_std_err(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	char tmp_line[1024];
+
+	if (job == NULL)
+		_print_str("STDERR", width, right_justify, true);
+	else if (!job->batch_flag)
+		_print_str("N/A", width, right_justify, true);
+	else if (job->std_err)
+		_print_str(job->std_err, width, right_justify, true);
+	else if (job->std_out)
+		_print_str(job->std_out, width, right_justify, true);
+	else {
+		snprintf(tmp_line,sizeof(tmp_line), "%s/slurm-%u.out",
+			 job->work_dir, job->job_id);
+
+		_print_str(tmp_line, width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_std_in(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("STDIN", width, right_justify, true);
+	else
+		_print_str(job->std_in, width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_job_std_out(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	char tmp_line[1024];
+
+	if (job == NULL)
+		_print_str("STDOUT", width, right_justify, true);
+	else if (job->std_out)
+		_print_str(job->std_out, width, right_justify, true);
+	else {
+		snprintf(tmp_line,sizeof(tmp_line), "%s/slurm-%u.out",
+			 job->work_dir, job->job_id);
+
+		_print_str(tmp_line, width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_time(job_info_t * job, int width,
+		       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("TIME_MIN", width, right_justify, true);
+	else
+		_print_secs((job->time_min*60), width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_wait4switch(job_info_t * job, int width,
+			   bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("WAIT4SWITCH", width, right_justify, true);
+	else
+		_print_secs(job->wait4switch,
+			    width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 
 /*****************************************************************************
  * Job Step Print Functions
@@ -1485,7 +1919,7 @@ int _print_step_time_limit(job_step_info_t * step, int width, bool right,
 			   char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("LIMIT", width, false, true);
+		_print_str("TIME_LIMIT", width, right, true);
 	else if (step->time_limit == INFINITE)
 		_print_str("UNLIMITED", width, right, true);
 	else
@@ -1584,6 +2018,182 @@ int _print_step_gres(job_step_info_t * step, int width, bool right,
 		_print_str("GRES", width, right, true);
 	else
 		_print_str(step->gres, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_array_job_id(job_step_info_t * step, int width, bool right,
+			     char* suffix)
+{
+	if (step == NULL)
+		_print_str("ARRAY_JOB_ID", width, right, true);
+	else if (step->array_job_id != NO_VAL)
+		_print_int(step->array_job_id, width, right, true);
+	else
+		_print_int(step->job_id, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_array_task_id(job_step_info_t * step, int width, bool right,
+			      char* suffix)
+{
+	if (step == NULL)
+		_print_str("ARRAY_TASK_ID", width, right, true);
+	else if (step->array_task_id != NO_VAL)
+		_print_int(step->array_task_id, width, right, true);
+	else
+		_print_str("N/A", width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_step_chpt_dir(job_step_info_t * step, int width, bool right,
+			 char* suffix)
+{
+	if (step == NULL)
+		_print_str("CHECKPOINT_DIR", width, right, true);
+	else
+		_print_str(step->ckpt_dir, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_step_chpt_interval(job_step_info_t * step, int width, bool right,
+			      char* suffix)
+{
+	if (step == NULL)
+		_print_str("CHECKPOINT_INTERVAL", width, right, true);
+	else
+		_print_secs((step->ckpt_interval*60), width, width, right);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_job_id(job_step_info_t * step, int width, bool right,
+		       char* suffix)
+{
+	if (step == NULL)
+		_print_str("JOB_ID", width, right, true);
+	else
+		_print_int(step->job_id, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_network(job_step_info_t * step, int width, bool right,
+			char* suffix)
+{
+	if (step == NULL)
+		_print_str("NETWORK", width, right, true);
+	else
+		_print_str(step->network, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_node_inx(job_step_info_t * step, int width, bool right,
+			 char* suffix)
+{
+	if (step == NULL)
+		_print_str("NODE_INDEX", width, right, true);
+	else {
+		int *current = step->node_inx;
+		int curr_width = 0;
+		while (*current != -1 && curr_width < width) {
+			if (curr_width)
+				printf(",");
+			curr_width += _print_int(*current, width, right, true);
+			current++;
+		}
+		while (curr_width < width)
+			curr_width += printf(" ");
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_num_cpus(job_step_info_t * step, int width, bool right,
+			 char* suffix)
+{
+	if (step == NULL)
+		_print_str("NUM_CPUS", width, right, true);
+	else
+		_print_int(step->num_cpus, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
+			 char* suffix)
+{
+	if (step == NULL)
+		_print_str("CPU_FREQ", width, right, true);
+	else if (step->cpu_freq != NO_VAL)
+		_print_int(step->cpu_freq, width, right, true);
+	else
+		_print_str("N/A", width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_profile(job_step_info_t * step, int width, bool right,
+			char* suffix)
+{
+	if (step == NULL)
+		_print_str("PROFILE", width, right, true);
+	else
+		_print_str(acct_gather_profile_to_string(step->profile),
+			   width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+
+}
+
+int _print_step_resv_ports(job_step_info_t * step, int width, bool right,
+			   char* suffix)
+{
+	if (step == NULL)
+		_print_str("RESERVED_PORTS", width, right, true);
+	else
+		_print_str(step->resv_ports, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_state(job_step_info_t * step, int width, bool right,
+			char* suffix)
+{
+	if (step == NULL)
+		_print_str("STATE", width, right, true);
+	else
+		_print_str(job_state_string(step->state), width, right, true);
+
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

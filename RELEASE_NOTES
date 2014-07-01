@@ -88,7 +88,8 @@ COMMAND CHANGES (see man pages for details)
     pending job (in addition to expected start time, etc.).
  -- Add srun --cpu-freq options to set the CPU governor (OnDemand, Performance,
     PowerSave or UserSpace).
-
+ -- Added squeue -O/--Format option that makes all job and step fields available
+    for printing.
 
 OTHER CHANGES
 =============

@@ -222,11 +222,11 @@ _print_job ( bool clear_old )
 
 	if (params.verbose) {
 		printf ("last_update_time=%ld records=%u\n",
-		        (long) new_job_ptr->last_update,
+			(long) new_job_ptr->last_update,
 			new_job_ptr->record_count);
 	}
 
-	if (params.format == NULL) {
+	if (!params.format && !params.format_long) {
 		if (params.long_list) {
 			xstrcat(params.format,
 				"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R");
@@ -235,8 +235,13 @@ _print_job ( bool clear_old )
 				"%.18i %.9P %.8j %.8u %.2t %.10M %.6D %R");
 		}
 	}
-	if (params.format_list == NULL)
-		parse_format(params.format);
+
+	if (!params.format_list) {
+		if (params.format)
+			parse_format(params.format);
+		else if (params.format_long)
+			parse_long_format(params.format_long);
+	}
 
 	print_jobs_array(new_job_ptr->job_array, new_job_ptr->record_count,
 			 params.format_list) ;
@@ -281,14 +286,19 @@ _print_job_steps( bool clear_old )
 
 	if (params.verbose) {
 		printf ("last_update_time=%ld records=%u\n",
-		        (long) new_step_ptr->last_update,
+			(long) new_step_ptr->last_update,
 			new_step_ptr->job_step_count);
 	}
 
-	if (params.format == NULL)
+	if (!params.format && !params.format_long)
 		params.format = "%.15i %.8j %.9P %.8u %.9M %N";
-	if (params.format_list == NULL)
-		parse_format(params.format);
+
+	if (!params.format_list) {
+		if (params.format)
+			parse_format(params.format);
+		else if (params.format_long)
+			parse_long_format(params.format_long);
+	}
 
 	print_steps_array( new_step_ptr->job_steps,
 			   new_step_ptr->job_step_count,

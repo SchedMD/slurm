@@ -79,18 +79,20 @@ typedef struct job_step {
 struct squeue_parameters {
 	bool all_flag;
 	bool array_flag;
+	int  iterate;
 	bool job_flag;
 	bool start_flag;
 	bool step_flag;
+	bool long_format;
 	bool long_list;
 	bool no_header;
-	int  iterate;
 	int  verbose;
 
 	char* accounts;
 	List clusters;
 	uint32_t cluster_flags;
 	char* format;
+	char* format_long;
 	char* jobs;
 	char* names;
 	hostset_t nodes;
@@ -122,6 +124,7 @@ extern struct squeue_parameters params;
 
 extern void parse_command_line( int argc, char* argv[] );
 extern int  parse_format( char* format );
+extern int  parse_long_format( char* format_long);
 extern void sort_job_list( List job_list );
 extern void sort_jobs_by_start_time( List job_list );
 extern void sort_step_list( List step_list );
