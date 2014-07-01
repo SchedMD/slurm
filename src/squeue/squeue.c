@@ -50,6 +50,7 @@
 #include <termios.h>
 
 #include "src/common/read_config.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/squeue/squeue.h"
 
@@ -68,6 +69,43 @@ static void _print_date( void );
 static int  _multi_cluster(List clusters);
 static int  _print_job ( bool clear_old );
 static int  _print_job_steps( bool clear_old );
+
+typedef struct {
+    uid_t uid;
+    char *username;
+} uid_cache_entry_t;
+
+static uid_cache_entry_t *uid_cache;
+uint32_t uid_cache_allocated;
+uint32_t uid_cache_used;
+
+static int uid_compare(const void *a, const void *b) {
+    uid_t ua = *(const uid_t *)a;
+    uid_t ub = *(const uid_t *)b;
+    return ua - ub;
+}
+
+char *uid_to_string_cached(uid_t uid) {
+    uid_cache_entry_t target = {uid, NULL};
+    uid_cache_entry_t *entry = bsearch(
+            &target,
+            uid_cache,
+            uid_cache_used,
+            sizeof(uid_cache_entry_t),
+            uid_compare);
+    if (entry == NULL) {
+        uid_cache_used += 1;
+        uid_cache = realloc(uid_cache, sizeof(uid_cache_entry_t)*uid_cache_used);
+        uid_cache_entry_t new_entry = {uid, uid_to_string(uid)};
+        uid_cache[uid_cache_used-1] = new_entry;
+        qsort(uid_cache,
+                uid_cache_used,
+                sizeof(uid_cache_entry_t),
+                uid_compare);
+        return new_entry.username;
+    }
+    return entry->username;
+}
 
 int
 main (int argc, char *argv[])

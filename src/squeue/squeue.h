@@ -120,6 +120,8 @@ struct squeue_parameters {
 
 extern struct squeue_parameters params;
 
+extern char *uid_to_string_cached(uid_t);
+
 extern void parse_command_line( int argc, char* argv[] );
 extern int  parse_format( char* format );
 extern void sort_job_list( List job_list );
