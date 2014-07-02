@@ -138,6 +138,7 @@ static int32_t  *requeue_exit_hold;
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
 static void _add_job_array_hash(struct job_record *job_ptr);
+static void _build_array_str(job_array_struct_t *array_recs);
 static int  _checkpoint_job_record (struct job_record *job_ptr,
 				    char *image_dir);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
@@ -181,6 +182,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer,
 				      uint16_t protocol_version);
+static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max);
 static int  _purge_job_record(uint32_t job_id);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(char *file_name, char ***data,
@@ -869,6 +871,55 @@ unpack_error:
 	return SLURM_FAILURE;
 }
 
+/* For the job array data structure, build the string representation of the
+ * bitmap.
+ * NOTE: bit_fmt() does not handle failures well and a very large buffer
+ * might be required if the task ID are generated using a step function. */
+static void _build_array_str(job_array_struct_t *array_recs)
+{
+	int i, i_first, i_last, i_prev, i_step = 0;
+	int sz, len;
+
+	if (array_recs->task_id_str)
+		return;
+
+	/* Check first for a step function */
+	i_first = bit_ffs(array_recs->task_id_bitmap);
+	i_last  = bit_fls(array_recs->task_id_bitmap);
+	if (((i_last - i_first) > 100) &&
+	    !bit_test(array_recs->task_id_bitmap, i_first+1)) {
+		bool is_step = true;
+		i_prev = i_first;
+		for (i = i_first + 1; i <= i_last; i++) {
+			if (!bit_test(array_recs->task_id_bitmap, i))
+				continue;
+			if (i_step == 0) {
+				i_step = i - i_prev;
+			}else if ((i - i_prev) != i_step) {
+				is_step = false;
+				break;
+			}
+			i_prev = i;
+		}
+		if (is_step) {
+			xstrfmtcat(array_recs->task_id_str, "%d-%d:%d",
+				   i_first, i_last, i_step);
+			return;
+		}
+	}
+
+	sz = bit_size(array_recs->task_id_bitmap) * 4;
+	while (1) {
+		array_recs->task_id_str = xmalloc(sz);
+		bit_fmt(array_recs->task_id_str,sz,array_recs->task_id_bitmap);
+		len = strlen(array_recs->task_id_str);
+		if ((len > 0) && (len < (sz - 32)))
+			return;
+		xfree(array_recs->task_id_str);
+		sz *= 32;
+	}
+}
+
 /*
  * _dump_job_state - dump the state of a specific job, its details, and
  *	steps to a buffer
@@ -886,12 +937,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->array_job_id, buffer);
 	pack32(dump_job_ptr->array_task_id, buffer);
 	if (dump_job_ptr->array_recs) {
-		if (!dump_job_ptr->array_recs->task_id_str) {
-//MUST INSURE WE GET EVERYTHING
-			dump_job_ptr->array_recs->task_id_str = xmalloc(1024);
-			bit_fmt(dump_job_ptr->array_recs->task_id_str, 1024,
-				dump_job_ptr->array_recs->task_id_bitmap);
-		}
+		_build_array_str(dump_job_ptr->array_recs);
 		tmp_32 = bit_size(dump_job_ptr->array_recs->task_id_bitmap);
 		pack32(tmp_32, buffer);
 		if (tmp_32)
@@ -1682,7 +1728,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->array_recs=xmalloc(sizeof(job_array_struct_t));
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 		job_ptr->array_recs->task_id_bitmap = bit_alloc(task_id_size);
-		bit_unfmt(job_ptr->array_recs->task_id_bitmap, task_id_str);
+		_parse_array_tok(task_id_str,
+				 job_ptr->array_recs->task_id_bitmap,
+				 task_id_size);
 		xfree(job_ptr->array_recs->task_id_str);
 		job_ptr->array_recs->task_id_str = task_id_str;
 		task_id_str = NULL;
@@ -6388,13 +6436,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->array_job_id, buffer);
 		pack32(dump_job_ptr->array_task_id, buffer);
 		if (dump_job_ptr->array_recs) {
-			if (!dump_job_ptr->array_recs->task_id_str) {
-				dump_job_ptr->array_recs->task_id_str =
-					xmalloc(1024);
-				bit_fmt(dump_job_ptr->array_recs->task_id_str,
-					1024,
-					dump_job_ptr->array_recs->task_id_bitmap);
-			}
+			_build_array_str(dump_job_ptr->array_recs);
 			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
 		} else {
 			packnull(buffer);
