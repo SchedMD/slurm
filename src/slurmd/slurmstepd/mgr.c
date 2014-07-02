@@ -315,6 +315,11 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 		}
 		step_rc = MAX(step_complete.step_rc, job->task[i]->estatus);
 	}
+	/* If we killed all the tasks by cmd give at least one return
+	   code. */
+	if (step_rc == NO_VAL && job->task[0])
+		step_rc = job->task[0]->estatus;
+
 	return step_rc;
 }
 

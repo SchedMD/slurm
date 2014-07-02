@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
     and avoid to loop forever, give up after 120 seconds.
  -- If the sbatch command specifies the option --signal=B:signum sent the signal
     to the batch script only.
+ -- If we cancel a task and we have no other exit code send the signal and
+    exit code.
 
 * Changes in Slurm 14.03.4
 ==========================
