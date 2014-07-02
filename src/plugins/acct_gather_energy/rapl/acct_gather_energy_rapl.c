@@ -420,7 +420,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 
 	xassert(_run_in_daemon());
 
-	if (local_energy->current_watts == NO_VAL)
+	if (!local_energy || local_energy->current_watts == NO_VAL)
 		return rc;
 
 	_get_joules_task(local_energy);

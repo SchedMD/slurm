@@ -46,7 +46,7 @@ documents those changes that are of interest to users and admins.
     message and avoid to loop forever, give up after 120 seconds.
  -- Make srun obey POSIX convention and increase the exit code by 127 when the
     process terminated by a signal.
-
+ -- Sanity check for acct_gather_energy/rapl
 
 * Changes in Slurm 14.03.4
 ==========================
