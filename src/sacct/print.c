@@ -579,9 +579,11 @@ void print_fields(type_t type, void *object)
 			}
 			if (WIFSIGNALED(tmp_int))
 				tmp_int2 = WTERMSIG(tmp_int);
-
+			tmp_int = WEXITSTATUS(tmp_int);
+			if (tmp_int >= 128)
+				tmp_int -= 128;
 			snprintf(outbuf, sizeof(outbuf), "%d:%d",
-				 WEXITSTATUS(tmp_int), tmp_int2);
+				 tmp_int, tmp_int2);
 
 			field->print_routine(field,
 					     outbuf,
