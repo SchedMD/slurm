@@ -128,8 +128,6 @@ documents those changes that are of interest to users and admins.
     you could get multiple '*' wckeys.
  -- Fix bug which could report to squeue the wrong partition for a running job
     that is submitted to multiple partitions.
- -- If failed to rmdir() a cgroup, ignore the error preventing slurmstepd from
-    loop forever.
  -- Report correct CPU count allocated to job when allocated whole node even if
     not using all CPUs.
  -- If job's constraints cannot be satisfied put it in pending state with reason
@@ -142,6 +140,7 @@ documents those changes that are of interest to users and admins.
  -- When using CR_PACK_NODES fix make --ntasks-per-node work correctly.
  -- Report correct partition associated with a step if the job is submitted to
     multiple partitions.
+ -- Fix to allow removing of preemption from a QOS
 
 * Changes in Slurm 14.03.4
 ==========================
