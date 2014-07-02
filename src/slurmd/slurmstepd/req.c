@@ -670,8 +670,13 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	int target_node_id = 0;
 	stepd_step_task_info_t *task;
 	uint32_t i;
+	uint32_t flag;
+	uint32_t signal;
 
-	safe_read(fd, &sig, sizeof(int));
+	safe_read(fd, &signal, sizeof(int));
+	flag = signal >> 24;
+	sig = signal & 0xfff;
+
 	debug("_handle_signal_container for step=%u.%u uid=%d signal=%d",
 	      job->jobid, job->stepid, (int) uid, sig);
 	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
@@ -773,6 +778,31 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		int i;
 		for (i = 0; i < job->node_tasks; i++)
 			pdebug_wake_process(job, job->task[i]->pid);
+		pthread_mutex_unlock(&suspend_mutex);
+		goto done;
+	}
+
+	if (flag & KILL_JOB_BATCH
+	    && job->stepid == SLURM_BATCH_SCRIPT) {
+		/* We should only signal the batch script
+		 * and nothing else, the job pgid is the
+		 * equal to the pid of the batch script.
+		 */
+		if (kill(job->pgid, sig) < 0) {
+			error("%s: failed signal %d container pid"
+			      "%u job %u.%u %m",
+			      __func__, sig, job->pgid,
+			      job->jobid, job->stepid);
+			rc = SLURM_ERROR;
+			errnum = errno;
+			pthread_mutex_unlock(&suspend_mutex);
+			goto done;
+		}
+		rc = SLURM_SUCCESS;
+		errnum = 0;
+		verbose("%s: sent signal %d to container pid %u job %u.%u",
+			__func__, sig, job->pgid,
+			job->jobid, job->stepid);
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	}

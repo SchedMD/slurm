@@ -47,6 +47,10 @@ documents those changes that are of interest to users and admins.
  -- Make srun obey POSIX convention and increase the exit code by 127 when the
     process terminated by a signal.
  -- Sanity check for acct_gather_energy/rapl
+ -- If the proctrack plugins fail to destroy the job container print an error message
+    and avoid to loop forever, give up after 120 seconds.
+ -- If the sbatch command specifies the option --signal=B:signum sent the signal
+    to the batch script only.
 
 * Changes in Slurm 14.03.4
 ==========================
