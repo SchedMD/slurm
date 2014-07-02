@@ -880,10 +880,26 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	struct job_details *detail_ptr;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
+	uint32_t tmp_32;
 
 	/* Dump basic job info */
 	pack32(dump_job_ptr->array_job_id, buffer);
 	pack32(dump_job_ptr->array_task_id, buffer);
+	if (dump_job_ptr->array_recs) {
+		if (!dump_job_ptr->array_recs->task_id_str) {
+//MUST INSURE WE GET EVERYTHING
+			dump_job_ptr->array_recs->task_id_str = xmalloc(1024);
+			bit_fmt(dump_job_ptr->array_recs->task_id_str, 1024,
+				dump_job_ptr->array_recs->task_id_bitmap);
+		}
+		tmp_32 = bit_size(dump_job_ptr->array_recs->task_id_bitmap);
+		pack32(tmp_32, buffer);
+		if (tmp_32)
+			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
+	} else {
+		tmp_32 = 0;
+		pack32(tmp_32, buffer);
+	}
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
@@ -1032,6 +1048,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
+	char *task_id_str = NULL;
+	uint32_t task_id_size = 0;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
 	struct job_record *job_ptr = NULL;
@@ -1048,6 +1066,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
+		safe_unpack32(&task_id_size, buffer);
+		if (task_id_size)
+			safe_unpackstr_xmalloc(&task_id_str, &name_len, buffer);
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -1656,6 +1677,16 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->state_desc   = state_desc;
 	state_desc            = NULL;	/* reused, nothing left to free */
 	job_ptr->suspend_time = suspend_time;
+	if (task_id_str) {
+		if (!job_ptr->array_recs)
+			job_ptr->array_recs=xmalloc(sizeof(job_array_struct_t));
+		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
+		job_ptr->array_recs->task_id_bitmap = bit_alloc(task_id_size);
+		bit_unfmt(job_ptr->array_recs->task_id_bitmap, task_id_str);
+		xfree(job_ptr->array_recs->task_id_str);
+		job_ptr->array_recs->task_id_str = task_id_str;
+		task_id_str = NULL;
+	}
 	job_ptr->time_last_active = now;
 	job_ptr->time_limit   = time_limit;
 	job_ptr->time_min     = time_min;
@@ -1782,6 +1813,7 @@ unpack_error:
 		xfree(spank_job_env[i]);
 	xfree(spank_job_env);
 	xfree(state_desc);
+	xfree(task_id_str);
 	xfree(wckey);
 	select_g_select_jobinfo_free(select_jobinfo);
 	checkpoint_free_jobinfo(check_job);
@@ -3043,6 +3075,8 @@ static void _create_job_array(struct job_record *job_ptr,
 
 	job_ptr->array_job_id = job_ptr->job_id;
 	job_ptr->array_recs = xmalloc(sizeof(job_array_struct_t));
+	i_cnt = bit_fls(job_specs->array_bitmap) + 1;
+	bit_realloc(job_specs->array_bitmap, i_cnt);
 	job_ptr->array_recs->task_id_bitmap = job_specs->array_bitmap;
 	job_specs->array_bitmap = NULL;
 }
