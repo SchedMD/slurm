@@ -129,6 +129,7 @@ if {$matches != 2} {
 # Confirm the job record in the db has the same exit codes
 #
 if { [test_account_storage] == 1 } {
+	sleep 2
 	set matches 0
 	spawn $sacct -n -P -j $job_id -o ExitCode,DerivedExitCode,Comment
 	expect {
