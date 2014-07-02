@@ -516,8 +516,9 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 	uint32_t count = 0;
 	uint32_t tcount = 0;
 	int i;
+	uint16_t protocol_version;
 
-	fd = stepd_connect(NULL, node_name, jobid, stepid);
+	fd = stepd_connect(NULL, node_name, jobid, stepid, &protocol_version);
 	if (fd == -1) {
 		exit_code = 1;
 		if (errno == ENOENT) {
@@ -531,7 +532,7 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 		return;
 	}
 
-	stepd_task_info(fd, &task_info, &tcount);
+	stepd_task_info(fd, protocol_version, &task_info, &tcount);
 	for (i = 0; i < (int)tcount; i++) {
 		if (!task_info[i].exited) {
 			if (stepid == NO_VAL)
@@ -551,7 +552,7 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 		}
 	}
 
-	stepd_list_pids(fd, &pids, &count);
+	stepd_list_pids(fd, protocol_version, &pids, &count);
 	for (i = 0; i < count; i++) {
 		if (!_in_task_array((pid_t)pids[i], task_info, tcount)) {
 			if (stepid == NO_VAL)
@@ -562,7 +563,6 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 				       pids[i], jobid, stepid, "-", "-");
 		}
 	}
-
 
 	if (count > 0)
 		xfree(pids);

@@ -701,12 +701,15 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	while ((stepd = list_next(i))) {
 		int fd;
 		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid);
+				   stepd->jobid, stepd->stepid,
+				   &stepd->protocol_version);
 		if (fd == -1) {
 			--(msg->job_count);
 			continue;
 		}
-		if (stepd_state(fd) == SLURMSTEPD_NOT_RUNNING) {
+
+		if (stepd_state(fd, stepd->protocol_version)
+		    == SLURMSTEPD_NOT_RUNNING) {
 			debug("stale domain socket for stepd %u.%u ",
 			      stepd->jobid, stepd->stepid);
 			--(msg->job_count);
@@ -1033,10 +1036,13 @@ _reconfigure(void)
 	while ((stepd = list_next(i))) {
 		int fd;
 		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid);
+				   stepd->jobid, stepd->stepid,
+				   &stepd->protocol_version);
 		if (fd == -1)
 			continue;
-		if (stepd_reconfig(fd) != SLURM_SUCCESS)
+
+		if (stepd_reconfig(fd, stepd->protocol_version)
+		    != SLURM_SUCCESS)
 			debug("Reconfig jobid=%u.%u failed: %m",
 			      stepd->jobid, stepd->stepid);
 		close(fd);

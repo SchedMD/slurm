@@ -421,7 +421,7 @@ _handle_accept(void *arg)
 	g_slurm_auth_destroy(auth_cred);
 	free_buf(buffer);
 
-	rc = SLURM_SUCCESS;
+	rc = SLURM_PROTOCOL_VERSION;
 	safe_write(fd, &rc, sizeof(int));
 
 	while (1) {
