@@ -41,6 +41,7 @@ documents those changes that are of interest to users and admins.
  -- When using CR_PACK_NODES fix make --ntasks-per-node work correctly.
  -- Report correct partition associated with a step if the job is submitted to
     multiple partitions.
+ -- Fix to allow removing of preemption from a QOS
 
 * Changes in Slurm 14.03.4
 ==========================
