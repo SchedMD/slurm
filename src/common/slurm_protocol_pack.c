@@ -4612,11 +4612,13 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
+		safe_unpackstr_xmalloc(&job->array_task_str, &uint32_tmp,
+				       buffer);
 		safe_unpack32(&job->assoc_id, buffer);
-		safe_unpack32(&job->job_id, buffer);
-		safe_unpack32(&job->user_id, buffer);
+		safe_unpack32(&job->job_id,   buffer);
+		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->profile, buffer);
+		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack16(&job->job_state,    buffer);
 		safe_unpack16(&job->batch_flag,   buffer);
@@ -4627,7 +4629,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpack32(&job->alloc_sid,    buffer);
 		safe_unpack32(&job->time_limit,   buffer);
-		safe_unpack32(&job->time_min,   buffer);
+		safe_unpack32(&job->time_min,     buffer);
 
 		safe_unpack16(&job->nice, buffer);
 

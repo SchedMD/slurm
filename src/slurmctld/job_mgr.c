@@ -6353,11 +6353,23 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
 		pack32(dump_job_ptr->array_task_id, buffer);
+		if (dump_job_ptr->array_recs) {
+			if (!dump_job_ptr->array_recs->task_id_str) {
+				dump_job_ptr->array_recs->task_id_str =
+					xmalloc(1024);
+				bit_fmt(dump_job_ptr->array_recs->task_id_str,
+					1024,
+					dump_job_ptr->array_recs->task_id_bitmap);
+			}
+			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
+		} else {
+			packnull(buffer);
+		}
 		pack32(dump_job_ptr->assoc_id, buffer);
-		pack32(dump_job_ptr->job_id, buffer);
-		pack32(dump_job_ptr->user_id, buffer);
+		pack32(dump_job_ptr->job_id,   buffer);
+		pack32(dump_job_ptr->user_id,  buffer);
 		pack32(dump_job_ptr->group_id, buffer);
-		pack32(dump_job_ptr->profile, buffer);
+		pack32(dump_job_ptr->profile,  buffer);
 
 		pack16(dump_job_ptr->job_state,    buffer);
 		pack16(dump_job_ptr->batch_flag,   buffer);

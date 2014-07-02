@@ -1,8 +1,9 @@
 /*****************************************************************************\
  *  job_info.c - Functions related to job display mode of sview.
  *****************************************************************************
- *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Portions Copyright (C) 2011-2014 SchedMD LLC
  *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -1406,7 +1407,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   sizeof(tmp_char),
 						   SELECT_PRINT_DATA));
 
-	if (job_ptr->array_task_id != NO_VAL) {
+	if (job_ptr->array_task_str ||
+	    (job_ptr->array_task_id != NO_VAL)) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
 			 job_ptr->array_job_id);
 	} else {
@@ -1417,7 +1419,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_ARRAY_JOB_ID),
 				   tmp_char);
 
-	if (job_ptr->array_task_id != NO_VAL) {
+	if (job_ptr->array_task_str) {
+		snprintf(tmp_char, sizeof(tmp_char), "[%s]",
+			 job_ptr->array_task_str);
+	} else if (job_ptr->array_task_id != NO_VAL) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
 			 job_ptr->array_task_id);
 	} else {
@@ -1636,7 +1641,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   SELECT_PRINT_RAMDISK_IMAGE));
 	}
 
-	if (job_ptr->array_task_id != NO_VAL) {
+	if (job_ptr->array_task_str) {
+		snprintf(tmp_char, sizeof(tmp_char), "%u_[%s] (%u)",
+			 job_ptr->array_job_id, job_ptr->array_task_str,
+			 job_ptr->job_id);
+	} else if (job_ptr->array_task_id != NO_VAL) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u_%u (%u)",
 			 job_ptr->array_job_id, job_ptr->array_task_id,
 			 job_ptr->job_id);
@@ -2017,21 +2026,27 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			xstrdup(tmp_job_id);
 	}
 
-	if (handle_pending && (job_ptr->array_task_id != NO_VAL)) {
+	if (handle_pending &&
+	    (job_ptr->array_task_str || (job_ptr->array_task_id != NO_VAL))) {
 		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 			 sview_job_info_ptr->task_pending_hl_str);
-
 		snprintf(tmp_array_job_id,  sizeof(tmp_array_job_id),  "N/A");
 		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "%s",
 			 sview_job_info_ptr->task_pending_hl_str);
-	} else if (check_task && (job_ptr->array_task_id != NO_VAL)) {
+	} else if (check_task &&
+	    (job_ptr->array_task_str || (job_ptr->array_task_id != NO_VAL))) {
 		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 			 sview_job_info_ptr->task_hl_str);
-
 		snprintf(tmp_array_job_id,  sizeof(tmp_array_job_id),  "N/A");
 		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "%s",
 			 sview_job_info_ptr->task_hl_str);
-
+	} else if (job_ptr->array_task_str) {
+		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
+			 sview_job_info_ptr->job_id_str);
+		snprintf(tmp_array_job_id,  sizeof(tmp_array_job_id),  "%u",
+			 job_ptr->array_job_id);
+		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "[%s]",
+			 job_ptr->array_task_str);
 	} else if (job_ptr->array_task_id != NO_VAL) {
 		snprintf(tmp_job_id, sizeof(tmp_job_id),  "%s",
 			 sview_job_info_ptr->job_id_str);
@@ -2245,8 +2260,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	tmp_uname = uid_to_string_cached((uid_t)job_ptr->user_id);
 
-	if ((handle_pending || check_task)
-	    && (job_ptr->array_task_id != NO_VAL)) {
+	if ((handle_pending || check_task) &&
+	    (job_ptr->array_task_str || (job_ptr->array_task_id != NO_VAL))) {
 		gtk_tree_store_set(treestore, iter,
 				   SORTID_ACCOUNT,      job_ptr->account,
 				   SORTID_ALLOC,        1,
@@ -2420,7 +2435,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   -1);
 	}
 
-	if (check_task && (job_ptr->array_task_id != NO_VAL)) {
+	if (check_task &&
+	    (job_ptr->array_task_str || (job_ptr->array_task_id != NO_VAL))) {
 		if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 						 &step_iter,
 						 iter))
@@ -2431,7 +2447,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			_update_info_task(sview_job_info_ptr,
 					  GTK_TREE_MODEL(treestore), NULL,
 					  iter, false);
-	} else if (handle_pending && (job_ptr->array_task_id != NO_VAL)) {
+	} else if (handle_pending &&
+		   (job_ptr->array_task_str ||
+		    (job_ptr->array_task_id != NO_VAL))) {
 		if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 						 &step_iter,
 						 iter))
@@ -3086,13 +3104,19 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		sview_job_info_ptr->job_ptr = job_ptr;
 		sview_job_info_ptr->job_id = job_ptr->job_id;
 
-		if (job_ptr->array_task_id != NO_VAL) {
+		if (job_ptr->array_task_str ||
+		    (job_ptr->array_task_id != NO_VAL)) {
 			char task_str[16];
 			sview_job_info_t *first_job_info_ptr =
 				list_find_first(info_list,
 						_task_array_match, job_ptr);
-			snprintf(task_str, sizeof(task_str), "%u",
-				 job_ptr->array_task_id);
+			if (job_ptr->array_task_str) {
+				snprintf(task_str, sizeof(task_str), "[%s]",
+					 job_ptr->array_task_str);
+			} else {
+				snprintf(task_str, sizeof(task_str), "%u",
+					 job_ptr->array_task_id);
+			}
 
 			if (!first_job_info_ptr) {
 				sview_job_info_ptr->task_list =
@@ -3122,11 +3146,19 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 			} else if (!IS_JOB_COMPLETED(job_ptr))
 				list_append(first_job_info_ptr->task_list,
 					    sview_job_info_ptr);
-
-			sview_job_info_ptr->job_id_str =
-				xstrdup_printf("%u_%u (%u)",
-				 job_ptr->array_job_id, job_ptr->array_task_id,
-				 job_ptr->job_id);
+			if (job_ptr->array_task_str) {
+				sview_job_info_ptr->job_id_str =
+					xstrdup_printf("%u_[%s] (%u)",
+					 job_ptr->array_job_id,
+					 job_ptr->array_task_str,
+					 job_ptr->job_id);
+			} else {
+				sview_job_info_ptr->job_id_str =
+					xstrdup_printf("%u_%u (%u)",
+					 job_ptr->array_job_id,
+					 job_ptr->array_task_id,
+					 job_ptr->job_id);
+			}
 		} else
 			sview_job_info_ptr->job_id_str =
 				xstrdup_printf("%u", job_ptr->job_id);
