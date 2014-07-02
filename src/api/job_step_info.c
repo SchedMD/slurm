@@ -244,9 +244,9 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	}
 
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Nodes=%s Tasks=%u Name=%s Network=%s",
-		 tmp_node_cnt, job_step_ptr->num_tasks, job_step_ptr->name,
-		job_step_ptr->network);
+		"Nodes=%s CPUs=%u Tasks=%u Name=%s Network=%s",
+		 tmp_node_cnt, job_step_ptr->num_cpus, job_step_ptr->num_tasks,
+		 job_step_ptr->name, job_step_ptr->network);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

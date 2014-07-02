@@ -90,6 +90,12 @@ COMMAND CHANGES (see man pages for details)
     PowerSave or UserSpace).
  -- Added squeue -O/--Format option that makes all job and step fields available
     for printing.
+ -- Add "CPUs" count to output of "scontrol show step".
+ -- Add job "reboot" option for Linux clusters. This invokes the configured
+    RebootProgram to reboot nodes allocated to a job before it begins execution.
+ -- Added squeue -O/--Format option that makes all job and step fields available
+    for printing.
+ -- Add "CPUs" count to output of "scontrol show step".
 
 OTHER CHANGES
 =============

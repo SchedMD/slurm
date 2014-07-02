@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
  -- Added squeue -O/--Format option that makes all job and step fields available
     for printing.
  -- Improve database slurmctld entry speed dramatically.
+ -- Add "CPUs" count to output of "scontrol show step".
 
 * Changes in Slurm 14.11.0pre1
 ==============================
