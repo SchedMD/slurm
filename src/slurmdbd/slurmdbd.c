@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 	if (slurmdbd_conf->track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
-	db_conn = acct_storage_g_get_connection(NULL, 0, false, NULL);
+	db_conn = acct_storage_g_get_connection(NULL, 0, true, NULL);
 	if (assoc_mgr_init(db_conn, &assoc_init_arg, errno) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&db_conn);
@@ -576,6 +576,7 @@ static void *_rollup_handler(void *db_conn)
 		running_rollup = 1;
 		debug2("running rollup at %s", slurm_ctime(&start_time));
 		acct_storage_g_roll_usage(db_conn, 0, 0, 1);
+		acct_storage_g_commit(db_conn, 1);
 		running_rollup = 0;
 		slurm_mutex_unlock(&rollup_lock);
 
