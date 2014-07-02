@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
  -- Report correct partition associated with a step if the job is submitted to
     multiple partitions.
  -- Fix to allow removing of preemption from a QOS
+ -- If the proctrack plugins fail to destroy the job container print an error message
+    and avoid to loop forever, give up after 120 seconds.
 
 * Changes in Slurm 14.03.4
 ==========================

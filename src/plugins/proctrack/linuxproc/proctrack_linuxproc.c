@@ -153,25 +153,12 @@ extern bool proctrack_p_has_pid(uint64_t cont_id, pid_t pid)
 extern int
 proctrack_p_wait(uint64_t cont_id)
 {
-	int delay = 1;
-
 	if (cont_id == 0 || cont_id == 1) {
 		errno = EINVAL;
 		return SLURM_ERROR;
 	}
 
-	/* Spin until the container is successfully destroyed */
-	while (proctrack_p_destroy(cont_id) != SLURM_SUCCESS) {
-		proctrack_p_signal(cont_id, SIGKILL);
-		sleep(delay);
-		if (delay < 120) {
-			delay *= 2;
-		} else {
-			error("Unable to destroy container %"PRIu64"", cont_id);
-		}
-	}
-
-	return SLURM_SUCCESS;
+	return proctrack_p_destroy(cont_id);
 }
 
 extern int
