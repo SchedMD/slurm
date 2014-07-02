@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     RebootProgram to reboot nodes allocated to a job before it begins execution.
  -- Added squeue -O/--Format option that makes all job and step fields available
     for printing.
+ -- Improve database slurmctld entry speed dramatically.
 
 * Changes in Slurm 14.11.0pre1
 ==============================

@@ -473,8 +473,13 @@ extern void *acct_storage_p_get_connection(
 	if (!slurmdbd_auth_info)
 		init();
 
+	/* When dealing with rollbacks it turns out it is much faster
+	   to do the commit once or once in a while instead of
+	   autocommit.  The SlurmDBD will periodically do a commit to
+	   avoid such a slow down.
+	*/
 	if (slurm_open_slurmdbd_conn(slurmdbd_auth_info,
-				     callbacks, rollback) == SLURM_SUCCESS)
+				     callbacks, true) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
 	/* send something back to make sure we don't run this again */
 	return (void *)1;
