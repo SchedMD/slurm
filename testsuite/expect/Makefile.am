@@ -185,6 +185,7 @@ EXTRA_DIST = \
 	test5.6				\
 	test5.7				\
 	test5.8				\
+	test5.9				\
 	test6.1				\
 	test6.2				\
 	test6.3				\

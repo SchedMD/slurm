@@ -88,6 +88,9 @@ list consists of a comma separated list of job names.
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 Specify the information to be displayed, its size and position
 (right or left justified).
+Also see the \fB\-O <output_format>\fR, \fB\-\-Format=<output_format>\fR
+option described below (which supports less flexibility in formatting, but
+supports access to all fields).
 The default formats with various options are
 
 .RS
@@ -103,7 +106,7 @@ The default formats with various options are
 .RE
 
 .IP
-The format of each field is "%[.][size]type".
+The format of each field is "%{[.]size]type".
 .RS
 .TP 8
 \fIsize\fR
@@ -137,7 +140,7 @@ This reports the value of the \fBsrun \-\-ntasks\fR option.
 .TP
 \fB%A\fR
 Job id.
-This will have a unique value for each element  of job arrays.
+This will have a unique value for each element of job arrays.
 (Valid for jobs only)
 .TP
 \fB%b\fR
@@ -393,6 +396,455 @@ When (S:C:T) has not been set, "*" is displayed.
 .TP
 \fB%Z\fR
 The job's working directory.
+.RE
+
+
+.TP
+\fB\-O <output_format>\fR, \fB\-\-Format=<output_format>\fR
+Specify the information to be displayed.
+Also see the \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+option described below (which supports greater flexibility in formatting, but
+does not support access to all fields because we ran out of letters).
+Requests a comma separated list of job information to be displayed.
+
+.IP
+The format of each field is "type[:[.]size]"
+.RS
+.TP 8
+\fIsize\fR
+is the minimum field size.
+If no size is specified, 20 characters will be allocated to print the information.
+.TP
+\fI .\fR
+indicates the output should be right justified and size must be specified.
+By default, output is left justified.
+.RE
+
+.IP
+Note that many of these \fItype\fR specifications are valid
+only for jobs while others are valid only for job steps.
+Valid \fItype\fR specifications include:
+
+.RS
+.TP 6
+\fBaccount\fR
+Print the account associated with the job.
+(Valid for jobs only)
+.TP
+\fBallocnodes\fR
+Print the nodes allocated to the job.
+(Valid for jobs only)
+.TP
+\fBallocsid\fR
+Print the session ID used to submit the job.
+(Valid for jobs only)
+.TP
+\fBarrayjobid\fR
+Prints the job ID of the job array.
+(Valid for jobs and job steps)
+.TP
+\fBarraytaskid\fR
+Prints the task ID of the job array.
+(Valid for jobs and job steps)
+.TP
+\fBassocid\fR
+Prints the id of the job association.
+(Valid for jobs only)
+.TP
+\fBbatchflag\fR
+Prints whether the batch flag has been set.
+(Valid for jobs only)
+.TP
+\fBbatchhost\fR
+Executing (batch) host. For an allocated session, this is the host on which
+the session is executing (i.e. the node from which the the \fBsrun\fR or the
+\fBsalloc\fR command was executed). For a batch job, this is the node executing
+the batch script. In the case of a typical Linux cluster, this would be the
+compute node zero of the allocation. In the case of a BlueGene or a Cray/ALPS
+system, this would be the front\-end host whose slurmd daemon executes the job
+script.
+(Valid for jobs only)
+.TP
+\fBboardspernode\fR
+Prints the number of boards per node allocated to the job.
+(Valid for jobs only)
+.TP
+\fBchptdir\fR
+Prints the directory where the job checkpoint will be written to.
+(Valid for job steps only)
+.TP
+\fBchptinter\fR
+Prints the time interval of the checkpoint.
+(Valid for job steps only)
+.TP
+\fBcommand\fR
+The command to be executed.
+(Valid for jobs only)
+.TP
+\fBcomment\fR
+Comment associated with the job.
+(Valid for jobs only)
+.TP
+\fBcontiguous\fR
+Are contiguous nodes requested by the job.
+(Valid for jobs only)
+.TP
+\fBcores\fR
+Number of cores per socket requested by the job.
+This reports the value of the \fBsrun \-\-cores\-per\-socket\fR option.
+When \-\-cores\-per\-socket has not been set, "*" is displayed.
+(Valid for jobs only)
+.TP
+\fBcorespec\fR
+Count of cores reserved on each node for system use (core specialization).
+(Valid for jobs only)
+.TP
+\fBcpufreq\fR
+Prints the frequency of the allocated CPUs.
+(Valid for job steps only)
+.TP
+\fBcpuspertask\fR
+Prints the number of CPUs per tasks allocated to the job.
+(Valid for jobs only)
+.TP
+\fBdependency\fR
+Job dependency. This job will not begin execution until the dependent job
+completes.  A value of zero implies this job has no dependencies.
+(Valid for jobs only)
+.TP
+\fBderivedec\fR
+Derived exit code for the job, which is the highest exit code of any job step.
+(Valid for jobs only)
+.TP
+\fBeligiletime\fR
+Time the job is eligible for running.
+(Valid for jobs only)
+.TP
+\fBendtime\fR
+The time of job termination, actual or expected.
+(Valid for jobs only)
+.TP
+\fBexit_code\fR
+The exit code for the job.
+(Valid for jobs only)
+.TP
+\fBfeature\fR
+Features required by the job.
+(Valid for jobs only)
+.TP
+\fBgres\fR
+Generic resources (gres) required by the job or step.
+(Valid for jobs and job steps)
+.TP
+\fBgroupid\fR
+Group ID of the job.
+(Valid for jobs only)
+.TP
+\fBgroupname\fR
+Group name of the job.
+(Valid for jobs only)
+.TP
+\fBjobarrayid\fR
+Job array's job ID. This is the base job ID.
+For non\-array jobs, this is the job ID.
+(Valid for jobs only)
+.TP
+\fBjobid\fR
+Job id.
+This will have a unique value for each element of job arrays.
+(Valid for jobs only)
+.TP
+\fBlicenses\fR
+Licenses reserved for the job.
+(Valid for jobs only)
+.TP
+\fBmaxcpus\fR
+Prints the max number of CPUs allocated to the job.
+(Valid for jobs only)
+.TP
+\fBmaxnodes\fR
+Prints the max number of nodes allocated to the job.
+(Valid for jobs only)
+.TP
+\fBminmemory\fR
+Minimum size of memory (in MB) requested by the job.
+(Valid for jobs only)
+\fmintime\fR
+.TP
+\fBmintime\fR
+Minimum time limit of the job
+(Valid for jobs only)
+.TP
+\fBmintmpdisk\fR
+Minimum size of temporary disk space (in MB) requested by the job.
+(Valid for jobs only)
+.TP
+\fBmincpus\fR
+Minimum number of CPUs (processors) per node requested by the job.
+This reports the value of the \fBsrun \-\-mincpus\fR option with a
+default value of zero.
+(Valid for jobs only)
+.TP
+\fBname\fR
+Job or job step name.
+(Valid for jobs and job steps)
+.TP
+\fBnetwork\fR
+The network that the job is running on.
+(Valid for jobs and job steps)
+.TP
+\fBnice\fR
+Nice value (adjustment to a job's scheduling priority).
+(Valid for jobs only)
+.TP
+\fBnodes\fR
+List of nodes allocated to the job or job step. In the case of a
+\fICOMPLETING\fR job, the list of nodes will comprise only those
+nodes that have not yet been returned to service.
+(Valid job steps only)
+.TP
+\fBnodelist\fR
+List of nodes allocated to the job or job step. In the case of a
+\fICOMPLETING\fR job, the list of nodes will comprise only those
+nodes that have not yet been returned to service.
+(Valid for jobs only)
+.TP
+\fBntperboard\fR
+The number of tasks per board allocated to the job.
+(Valid for jobs only)
+.TP
+\fBntpercore\fR
+The number of tasks per core allocated to the job.
+(Valid for jobs only)
+.TP
+\fBntpernode\fR
+The number of task per node allocated to the job.
+(Valid for jobs only)
+.TP
+\fBntpersocket\fR
+The number of tasks per socket allocated to the job.
+(Valid for jobs only)
+.TP
+\fBnumcpus\fR
+Number of CPUs (processors) requested by the job or allocated to
+it if already running.  As a job is completing, this number will
+reflect the current number of CPUs allocated.
+(Valid for jobs and job steps)
+.TP
+\fBnumnodes\fR
+Number of nodes allocated to the job or the minimum number of nodes
+required by a pending job. The actual number of nodes allocated to a pending
+job may exceed this number if the job specified a node range count (e.g.
+minimum and maximum node counts) or the the job specifies a processor
+count instead of a node count and the cluster contains nodes with varying
+processor counts. As a job is completing this number will reflect the
+current number of nodes allocated.
+(Valid for jobs only)
+.TP
+\fBnumtask\fR
+Number of tasks created by a job step.
+This reports the value of the \fBsrun \-\-ntasks\fR option.
+(Valid for job steps only)
+.TP
+\fBpartition\fR
+Partition of the job or job step.
+(Valid for jobs and job steps)
+.TP
+\fBpriority\fR
+Priority of the job (converted to a floating point number between 0.0 and 1.0).
+Also see \fBprioritylong\fR.
+(Valid for jobs only)
+.TP
+\fBprioritylong\fR
+Priority of the job (generally a very large unsigned integer).
+Also see \fBpriority\fR.
+(Valid for jobs only)
+.TP
+\fBprofile\fR
+Profile of the job or job step.
+(Valid for jobs and job steps)
+.TP
+\fBpreemptime\fR
+The preempt time for the job.
+(Valid for jobs only)
+.TP
+\fBqos\fR
+Quality of service associated with the job.
+(Valid for jobs only)
+.TP
+\fBreason\fR
+The reason a job is in its current state.
+See the \fBJOB REASON CODES\fR section below for more information.
+(Valid for jobs only)
+.TP
+\fBreasonlist\fR
+For pending jobs: the reason a job is waiting for execution
+is printed within parenthesis.
+For terminated jobs with failure: an explanation as to why the
+job failed is printed within parenthesis.
+For all other job states: the list of allocate nodes.
+See the \fBJOB REASON CODES\fR section below for more information.
+(Valid for jobs only)
+.TP
+\fBreboot\fR
+Indicates if the allocated nodes should be rebooted before starting the job.
+(Valid on jobs only)
+.TP
+\fBreqnodes\fR
+List of node names (or base partitions on BlueGene systems) explicitly
+requested by the job.
+(Valid for jobs only)
+.TP
+\fBreqswitch\fR
+The max number of requested switches by for the job.
+(Valid for jobs only)
+.TP
+\fBrequeue\fR
+Prints whether the job will be requeued on failure.
+(Valid for jobs only)
+.TP
+\fBreservation\fR
+Reservation for the job.
+(Valid for jobs only)
+.TP
+\fBresizetime\fR
+The amount of time changed for the job to run.
+(Valid for jobs only)
+.TP
+\fBrestartcnt\fR
+The number of checkpoint restarts for the job.
+(Valid for jobs only)
+.TP
+\fBresvport\fR
+Reserved ports of the job.
+(Valid for job steps only)
+.TP
+\fBschednodes\fR
+For pending jobs, a list of the nodes expected to be used when the job is
+started.
+(Valid for jobs only)
+.TP
+\fBsct\fR
+Number of requested sockets, cores, and threads (S:C:T) per node for the job.
+When (S:C:T) has not been set, "*" is displayed.
+(Valid for jobs only)
+.TP
+\fBselectjobinfo\fR
+Node selection plugin specific data for a job. Possible data includes:
+Geometry requirement of resource allocation (X,Y,Z dimensions),
+Connection type (TORUS, MESH, or NAV == torus else mesh),
+Permit rotation of geometry (yes or no),
+Node use (VIRTUAL or COPROCESSOR), etc.
+(Valid for jobs only)
+.TP
+\fBshared\fR
+Can the nodes allocated to the job be shared with other jobs.
+(Valid for jobs only)
+.TP
+\fBsockets\fR
+Number of sockets per node requested by the job.
+This reports the value of the \fBsrun \-\-sockets\-per\-node\fR option.
+When \-\-sockets\-per\-node has not been set, "*" is displayed.
+(Valid for jobs only)
+.TP
+\fBsperboard\fR
+Number of sockets per board allocated to the job.
+(Valid for jobs only)
+.TP
+\fBstartime\fR
+Actual or expected start time of the job or job step.
+(Valid for jobs and job steps)
+.TP
+\fBstate\fR
+Job state, extended form:
+PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
+FAILED, TIMEOUT, PREEMPTED, NODE_FAIL and SPECIAL_EXIT.
+See the \fBJOB STATE CODES\fR section below for more information.
+(Valid for jobs only)
+.TP
+\fBstatecompact\fR
+Job state, compact form:
+PD (pending), R (running), CA (cancelled), CF(configuring),
+CG (completing), CD (completed),
+F (failed), TO (timeout), NF (node failure) and SE (special exit state).
+See the \fBJOB STATE CODES\fR section below for more information.
+(Valid for jobs only)
+.TP
+\fBstderr\fR
+The directory for standard error to output to.
+(Valid for jobs only)
+.TP
+\fBstdin\fR
+The directory for standard in.
+(Valid for jobs only)
+.TP
+\fBstdout\fR
+The directory for standard out to output to.
+(Valid for jobs only)
+.TP
+\fBstepid\fR
+Job or job step id.
+In the case of job arrays, the job ID format will be of the form
+"<base_job_id>_<index>".
+(Valid forjob steps only)
+.TP
+\fBstepname\fR
+job step name.
+(Valid for job steps only)
+.TP
+\fBstepstate\fR
+The state of the job step.
+(Valid for job steps only)
+.TP
+\fBsubmittime\fR
+The time that the job was submitted at.
+(Valid for jobs only)
+.TP
+\fBthreads\fR
+Number of threads per core requested by the job.
+This reports the value of the \fBsrun \-\-threads\-per\-core\fR option.
+When \-\-threads\-per\-core has not been set, "*" is displayed.
+(Valid for jobs only)
+.TP
+\fBtimeleft\fR
+Time left for the job to execute in days\-hours:minutes:seconds.
+This value is calculated by subtracting the job's time used from its time
+limit.
+The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
+(Valid for jobs only)
+.TP
+\fBtimelimit\fR
+Timelimit for the job or job step.
+(Valid for jobs and job steps)
+.TP
+\fBtimeused\fR
+Time used by the job or job step in days\-hours:minutes:seconds.
+The days and hours are printed only as needed.
+For job steps this field shows the elapsed time since execution began
+and thus will be inaccurate for job steps which have been suspended.
+Clock skew between nodes in the cluster will cause the time to be inaccurate.
+If the time is obviously wrong (e.g. negative), it displays as "INVALID".
+(Valid for jobs and job steps)
+.TP
+\fBuserid\fR
+User ID for a job or job step.
+(Valid for jobs and job steps)
+.TP
+\fBusername\fR
+User name for a job or job step.
+(Valid for jobs and job steps)
+.TP
+\fBwait4switch\fR
+The amount of time to wait for the desired number of switches.
+(Valid for jobs only)
+.TP
+\fBwckey\fR
+Workload Characterization Key (wckey).
+(Valid for jobs only)
+.TP
+\fBworkdir\fR
+The job's working directory.
+(Valid for jobs only)
 .RE
 
 .TP
@@ -692,6 +1144,9 @@ Another suggested value is "%a %T" for a day of week and time stamp (e.g.
 .TP
 \fBSQUEUE_FORMAT\fR
 \fB\-o <output_format>, \-\-format=<output_format>\fR
+.TP
+\fBSQUEUE_FORMAT2\fR
+\fB\-O <output_format>, \-\-Format=<output_format>\fR
 .TP
 \fBSQUEUE_LICENSES\fR
 \fB\-p-l <license_list>, \-\-license=<license_list>\fR
