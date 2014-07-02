@@ -3166,10 +3166,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->max_array_sz, "MaxArraySize", hashtbl))
 		conf->max_array_sz = DEFAULT_MAX_ARRAY_SIZE;
-	else if (conf->max_array_sz > 65533) {
-		/* Slurm really can not handle more job array elements
-		 * without adding a new job array data structure */
-		error("MaxArraySize value (%u) is greater than 65533",
+	else if (conf->max_array_sz > 1000001) {
+		error("MaxArraySize value (%u) is greater than 1000001",
 		      conf->max_array_sz);
 	}
 
