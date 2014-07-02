@@ -1670,6 +1670,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	} else {
 		/* Select resources for the job here */
+		job_array_pre_sched(job_ptr);
 		error_code = _get_req_features(node_set_ptr, node_set_size,
 					       &select_bitmap, job_ptr,
 					       part_ptr, min_nodes, max_nodes,
@@ -1812,8 +1813,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	build_node_details(job_ptr, true);
 	rebuild_job_part_list(job_ptr);
 
-	/* This could be set in the select plugin so we want to keep
-	   the flag. */
+	/* This could be set in the select plugin so we want to keep the flag */
 	configuring = IS_JOB_CONFIGURING(job_ptr);
 
 	job_ptr->job_state = JOB_RUNNING;
@@ -1879,6 +1879,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (error_code != SLURM_SUCCESS)
 		free_job_resources(&job_ptr->job_resrcs);
 #endif
+	job_array_post_sched(job_ptr);
 
 	return error_code;
 }

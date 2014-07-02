@@ -1090,6 +1090,12 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		int allocate, uid_t submit_uid, struct job_record **job_pptr,
 		char **err_msg);
 
+/* If this is a job array meta-job, prepare it for being scheduled */
+extern void job_array_pre_sched(struct job_record *job_ptr);
+
+/* If this is a job array meta-job, clean up after scheduling attempt */
+extern void job_array_post_sched(struct job_record *job_ptr);
+
 /* Reset a job's end_time based upon it's start_time and time_limit.
  * NOTE: Do not reset the end_time if already being preempted */
 extern void job_end_time_reset(struct job_record  *job_ptr);
