@@ -79,6 +79,8 @@ set sq_name(16)  username
 set sq_name(17)  reqswitch
 # partition
 set sq_name(18)  partition
+# comment
+set sq_name(19)  comment
 
 #####################
 # cpu count value
@@ -128,6 +130,8 @@ set sq_format(16)  ""
 set sq_format(17)  3
 # partition
 set sq_format(18)  [default_partition]
+# comment
+set sq_format(19)  1234567890
 
 print_header $test_id
 
@@ -205,7 +209,7 @@ spawn $sbatch -A$sq_format(7) -N$sq_format(4) -n$sq_format(numcpus) \
     -t$sq_format(5) -c$sq_format(ntpercore) --switch=$sq_format(17) \
     --network=$sq_format(9) --requeue --profile=$sq_format(11) \
     --ntasks-per-core=$sq_format(12) --ntasks-per-node=$sq_format(13) \
-    -o$sq_format(1) -e$sq_format(0) $sq_format(6)
+    -o$sq_format(1) --comment=$sq_format(19) -e$sq_format(0) $sq_format(6)
 expect {
 	-re "Submitted batch job ($number)" {
 		set sq_format(15) $expect_out(1,string)
@@ -223,8 +227,7 @@ expect {
 set match 0
 set cpu_match 0
 set numcpus [expr $sq_format(3) * $sq_format(8)]
-for {set i 0} {$i<=18} {incr i 1} {
-
+for {set i 0} {$i<=19} {incr i 1} {
 	spawn $squeue --job=$sq_format(15) --noheader -O$sq_name($i)
 	expect {
 		-re "$sq_format($i)" {
@@ -246,7 +249,30 @@ if {$match != $i} {
 	set exit_code 1
 }
 
-
+set match 0
+spawn $squeue --job=$sq_format(15) --noheader -O$sq_name(19):4
+expect {
+	-re "12345" {
+		send_user "\nFAILURE: field width control failure\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "1234" {
+		incr match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	send_user "\nFAILURE: not all squeue outputs match ($match != 1)\n"
+	set exit_code 1
+}
 ############################Step Format Test############################
 
 #####################
@@ -364,5 +390,7 @@ remove_acct [get_cluster_name] $sq_format(7)
 if {$exit_code == 0} {
 	exec $bin_rm -f $sq_format(6)
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
 }
 exit $exit_code
