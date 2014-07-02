@@ -496,6 +496,13 @@ struct job_details {
 	char *work_dir;			/* pathname of working directory */
 };
 
+typedef struct job_array_struct {
+	uint32_t task_cnt;		/* count of remaining task IDs */
+	bitstr_t *task_id_bitmap;	/* bitmap of remaining task IDs */
+	char *task_id_str;		/* string describing remaining task IDs,
+					 * needs to be recalcuated if NULL */
+} job_array_struct_t;
+
 struct job_record {
 	char    *account;		/* account number to charge */
 	char	*alias_list;		/* node name to address aliases */
@@ -504,6 +511,8 @@ struct job_record {
 	uint32_t alloc_sid;		/* local sid making resource alloc */
 	uint32_t array_job_id;		/* job_id of a job array or 0 if N/A */
 	uint32_t array_task_id;		/* task_id of a job array */
+	job_array_struct_t *array_recs;	/* job array details,
+					 * only in meta-job record */
 	uint32_t assoc_id;              /* used for accounting plugins */
 	void    *assoc_ptr;		/* job's association record ptr, it is
 					 * void* because of interdependencies

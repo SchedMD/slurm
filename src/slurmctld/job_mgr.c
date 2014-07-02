@@ -140,7 +140,6 @@ static void _add_job_hash(struct job_record *job_ptr);
 static void _add_job_array_hash(struct job_record *job_ptr);
 static int  _checkpoint_job_record (struct job_record *job_ptr,
 				    char *image_dir);
-static int  _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
 static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
@@ -3026,202 +3025,26 @@ extern void rehash_jobs(void)
 	}
 }
 
-/* Create an exact copy of an existing job record for a job array.
- * Assumes the job has no resource allocaiton */
-struct job_record *_job_rec_copy(struct job_record *job_ptr)
-{
-	struct job_record *job_ptr_new = NULL, *save_job_next;
-	struct job_details *job_details, *details_new, *save_details;
-	uint32_t save_job_id;
-	priority_factors_object_t *save_prio_factors;
-	List save_step_list;
-	int error_code = SLURM_SUCCESS;
-	int i;
-
-	job_ptr_new = create_job_record(&error_code);
-	if (!job_ptr_new)     /* MaxJobCount checked when job array submitted */
-		fatal("job array create_job_record error");
-	if (error_code != SLURM_SUCCESS)
-		return job_ptr_new;
-
-	/* Set job-specific ID and hash table */
-	if (_set_job_id(job_ptr_new) != SLURM_SUCCESS)
-		fatal("job array create_job_record error");
-	_add_job_hash(job_ptr_new);
-
-	/* Copy most of original job data.
-	 * This could be done in parallel, but performance was worse. */
-	save_job_id   = job_ptr_new->job_id;
-	save_job_next = job_ptr_new->job_next;
-	save_details  = job_ptr_new->details;
-	save_prio_factors = job_ptr_new->prio_factors;
-	save_step_list = job_ptr_new->step_list;
-	memcpy(job_ptr_new, job_ptr, sizeof(struct job_record));
-	job_ptr_new->job_id   = save_job_id;
-	job_ptr_new->job_next = save_job_next;
-	job_ptr_new->details  = save_details;
-	job_ptr_new->prio_factors = save_prio_factors;
-	job_ptr_new->step_list = save_step_list;
-
-	job_ptr_new->account = xstrdup(job_ptr->account);
-	job_ptr_new->alias_list = xstrdup(job_ptr->alias_list);
-	job_ptr_new->alloc_node = xstrdup(job_ptr->alloc_node);
-	job_ptr_new->batch_host = xstrdup(job_ptr->batch_host);
-	if (job_ptr->check_job) {
-		job_ptr_new->check_job =
-			checkpoint_copy_jobinfo(job_ptr->check_job);
-	}
-	job_ptr_new->comment = xstrdup(job_ptr->comment);
-	/* struct job_details *details;		*** NOTE: Copied below */
-	job_ptr_new->gres = xstrdup(job_ptr->gres);
-	if (job_ptr->gres_list) {
-		job_ptr_new->gres_list =
-			gres_plugin_job_state_dup(job_ptr->gres_list);
-	}
-	job_ptr_new->gres_alloc = xstrdup(job_ptr->gres_alloc);
-	job_ptr_new->gres_req = xstrdup(job_ptr->gres_req);
-	job_ptr_new->gres_used = xstrdup(job_ptr->gres_used);
-	job_ptr_new->licenses = xstrdup(job_ptr->licenses);
-	job_ptr_new->license_list = license_job_copy(job_ptr->license_list);
-	job_ptr_new->mail_user = xstrdup(job_ptr->mail_user);
-	job_ptr_new->name = xstrdup(job_ptr->name);
-	job_ptr_new->network = xstrdup(job_ptr->network);
-	job_ptr_new->nodes = xstrdup(job_ptr->nodes);
-	job_ptr_new->licenses = xstrdup(job_ptr->licenses);
-	if (job_ptr->node_cnt && job_ptr->node_addr) {
-		i = sizeof(slurm_addr_t) * job_ptr->node_cnt;
-		job_ptr_new->node_addr = xmalloc(i);
-		memcpy(job_ptr_new->node_addr, job_ptr->node_addr, i);
-	}
-	if (job_ptr->node_bitmap)
-		job_ptr_new->node_bitmap = bit_copy(job_ptr->node_bitmap);
-	if (job_ptr->node_bitmap_cg)
-		job_ptr_new->node_bitmap_cg = bit_copy(job_ptr->node_bitmap_cg);
-	job_ptr_new->nodes_completing = xstrdup(job_ptr->nodes_completing);
-	job_ptr_new->partition = xstrdup(job_ptr->partition);
-	job_ptr_new->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
-	/* On jobs that are held the priority_array isn't set up yet,
-	   so check to see if it exists before copying.
-	*/
-	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
-		i = list_count(job_ptr->part_ptr_list) * sizeof(uint32_t);
-		job_ptr_new->priority_array = xmalloc(i);
-		memcpy(job_ptr_new->priority_array, job_ptr->priority_array, i);
-	}
-	job_ptr_new->resv_name = xstrdup(job_ptr->resv_name);
-	job_ptr_new->resp_host = xstrdup(job_ptr->resp_host);
-	if (job_ptr->select_jobinfo) {
-		job_ptr_new->select_jobinfo =
-			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
-	}
-	if (job_ptr->spank_job_env_size) {
-		job_ptr_new->spank_job_env =
-			xmalloc(sizeof(char *) *
-			(job_ptr->spank_job_env_size + 1));
-		for (i = 0; i < job_ptr->spank_job_env_size; i++) {
-			job_ptr_new->spank_job_env[i] =
-				xstrdup(job_ptr->spank_job_env[i]);
-		}
-	}
-	job_ptr_new->state_desc = xstrdup(job_ptr->state_desc);
-	job_ptr_new->wckey = xstrdup(job_ptr->wckey);
-
-	job_details = job_ptr->details;
-	details_new = job_ptr_new->details;
-	memcpy(details_new, job_details, sizeof(struct job_details));
-	details_new->acctg_freq = xstrdup(job_details->acctg_freq);
-	if (job_details->argc) {
-		details_new->argv =
-			xmalloc(sizeof(char *) * (job_details->argc + 1));
-		for (i = 0; i < job_details->argc; i++) {
-			details_new->argv[i] = xstrdup(job_details->argv[i]);
-		}
-	}
-	details_new->ckpt_dir = xstrdup(job_details->ckpt_dir);
-	details_new->cpu_bind = xstrdup(job_details->cpu_bind);
-	details_new->depend_list = depended_list_copy(job_details->depend_list);
-	details_new->dependency = xstrdup(job_details->dependency);
-	details_new->orig_dependency = xstrdup(job_details->orig_dependency);
-	if (job_details->env_cnt) {
-		details_new->env_sup =
-			xmalloc(sizeof(char *) * (job_details->env_cnt + 1));
-		for (i = 0; i < job_details->env_cnt; i++) {
-			details_new->env_sup[i] =
-				xstrdup(job_details->env_sup[i]);
-		}
-	}
-	if (job_details->exc_node_bitmap) {
-		details_new->exc_node_bitmap =
-			bit_copy(job_details->exc_node_bitmap);
-	}
-	details_new->exc_nodes = xstrdup(job_details->exc_nodes);
-	details_new->feature_list =
-		feature_list_copy(job_details->feature_list);
-	details_new->features = xstrdup(job_details->features);
-	if (job_details->mc_ptr) {
-		i = sizeof(multi_core_data_t);
-		details_new->mc_ptr = xmalloc(i);
-		memcpy(details_new->mc_ptr, job_details->mc_ptr, i);
-	}
-	details_new->mem_bind = xstrdup(job_details->mem_bind);
-	if (job_details->req_node_bitmap) {
-		details_new->req_node_bitmap =
-			bit_copy(job_details->req_node_bitmap);
-	}
-	if (job_details->req_node_layout && job_details->req_node_bitmap) {
-		i = bit_set_count(job_details->req_node_bitmap) *
-		    sizeof(uint16_t);
-		details_new->req_node_layout = xmalloc(i);
-		memcpy(details_new->req_node_layout,
-		       job_details->req_node_layout, i);
-	}
-	details_new->req_nodes = xstrdup(job_details->req_nodes);
-	details_new->restart_dir = xstrdup(job_details->restart_dir);
-	details_new->std_err = xstrdup(job_details->std_err);
-	details_new->std_in = xstrdup(job_details->std_in);
-	details_new->std_out = xstrdup(job_details->std_out);
-	details_new->work_dir = xstrdup(job_details->work_dir);
-	if (_copy_job_desc_files(job_ptr->job_id, job_ptr_new->job_id)) {
-		_list_delete_job((void *) job_ptr_new);
-		return NULL;
-	}
-
-	return job_ptr_new;
-}
-
-/* Convert a single job record into an array of job records.
- * Job record validation is complete, so we only need to duplicate the record
- * and update job and array ID values */
+/* Add job array data stucture to the job record */
 static void _create_job_array(struct job_record *job_ptr,
 			      job_desc_msg_t *job_specs)
 {
-	struct job_record *job_ptr_new;
-	uint32_t i, i_first, i_last;
+	uint32_t i_cnt;
 
 	if (!job_specs->array_bitmap)
 		return;
-	i_first = bit_ffs(job_specs->array_bitmap);
-	if (i_first == -1) {
-		error("_create_job_array: job %u array_bitmap is empty",
-		      job_ptr->job_id);
+
+	i_cnt = bit_set_count(job_specs->array_bitmap);
+	if (i_cnt == 0) {
+		info("_create_job_array: job %u array_bitmap is empty",
+		     job_ptr->job_id);
 		return;
 	}
-	job_ptr->array_job_id  = job_ptr->job_id;
-	job_ptr->array_task_id = i_first;
-	_add_job_array_hash(job_ptr);
 
-	i_last = bit_fls(job_specs->array_bitmap);
-	for (i = (i_first + 1); i <= i_last; i++) {
-		if (!bit_test(job_specs->array_bitmap, i))
-			continue;
-		job_ptr_new = _job_rec_copy(job_ptr);
-		if (!job_ptr_new)
-			break;
-		job_ptr_new->array_job_id  = job_ptr->job_id;
-		job_ptr_new->array_task_id = i;
-		_add_job_array_hash(job_ptr_new);
-		acct_policy_add_job_submit(job_ptr);
-	}
+	job_ptr->array_job_id = job_ptr->job_id;
+	job_ptr->array_recs = xmalloc(sizeof(job_array_struct_t));
+	job_ptr->array_recs->task_id_bitmap = job_specs->array_bitmap;
+	job_specs->array_bitmap = NULL;
 }
 
 /*
@@ -5107,72 +4930,6 @@ static bool _dup_job_file_test(uint32_t job_id)
 	return false;
 }
 
-/* _copy_job_desc_files - create copies of a job script and environment files */
-static int
-_copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
-{
-	int error_code = SLURM_SUCCESS, hash;
-	char *dir_name_src, *dir_name_dest, job_dir[40];
-	char *file_name_src, *file_name_dest;
-
-	/* Create state_save_location directory */
-	dir_name_src  = slurm_get_state_save_location();
-	dir_name_dest = xstrdup(dir_name_src);
-
-	/* Create directory based upon job ID due to limitations on the number
-	 * of files possible in a directory on some file system types (e.g.
-	 * up to 64k files on a FAT32 file system). */
-	hash = job_id_dest % 10;
-	sprintf(job_dir, "/hash.%d", hash);
-	xstrcat(dir_name_dest, job_dir);
-	(void) mkdir(dir_name_dest, 0700);
-
-	/* Create job_id_dest specific directory */
-	sprintf(job_dir, "/job.%u", job_id_dest);
-	xstrcat(dir_name_dest, job_dir);
-	if (mkdir(dir_name_dest, 0700)) {
-		if (!slurmctld_primary && (errno == EEXIST)) {
-			error("Apparent duplicate job ID %u. Two primary "
-			      "slurmctld daemons might currently be active",
-			      job_id_dest);
-		}
-		error("mkdir(%s) error %m", dir_name_dest);
-		xfree(dir_name_src);
-		xfree(dir_name_dest);
-		return ESLURM_WRITING_TO_FILE;
-	}
-
-	/* Identify job_id_src specific directory */
-	hash = job_id_src % 10;
-	sprintf(job_dir, "/hash.%d", hash);
-	xstrcat(dir_name_src, job_dir);
-	(void) mkdir(dir_name_src, 0700);
-	sprintf(job_dir, "/job.%u", job_id_src);
-	xstrcat(dir_name_src, job_dir);
-
-	file_name_src  = xstrdup(dir_name_src);
-	file_name_dest = xstrdup(dir_name_dest);
-	xstrcat(file_name_src,  "/environment");
-	xstrcat(file_name_dest, "/environment");
-	error_code = link(file_name_src, file_name_dest);
-	xfree(file_name_src);
-	xfree(file_name_dest);
-
-	if (error_code == 0) {
-		file_name_src  = xstrdup(dir_name_src);
-		file_name_dest = xstrdup(dir_name_dest);
-		xstrcat(file_name_src,  "/script");
-		xstrcat(file_name_dest, "/script");
-		error_code = link(file_name_src, file_name_dest);
-		xfree(file_name_src);
-		xfree(file_name_dest);
-	}
-
-	xfree(dir_name_src);
-	xfree(dir_name_dest);
-	return error_code;
-}
-
 /*
  * Create file with specified name and write the supplied data array to it
  * IN file_name - file to create and write to
@@ -6266,14 +6023,15 @@ static void _list_delete_job(void *job_entry)
 		*job_pptr = job_ptr->job_array_next_t;
 	}
 
-/*
- * NOTE: Anything you free here also needs to be allocated memory copied
- * when a job array is created in _job_rec_copy() above
- */
 	delete_job_details(job_ptr);
 	xfree(job_ptr->account);
 	xfree(job_ptr->alias_list);
 	xfree(job_ptr->alloc_node);
+	if (job_ptr->array_recs) {
+		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
+		xfree(job_ptr->array_recs->task_id_str);
+		xfree(job_ptr->array_recs);
+	}
 	xfree(job_ptr->batch_host);
 	xfree(job_ptr->comment);
 	free_job_resources(&job_ptr->job_resrcs);
