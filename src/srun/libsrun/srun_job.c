@@ -683,6 +683,8 @@ cleanup:
 
 	if (WIFEXITED(*global_rc))
 		*global_rc = WEXITSTATUS(*global_rc);
+	else if (WIFSIGNALED(*global_rc))
+		*global_rc = 128 + WTERMSIG(*global_rc);
 
 	mpir_cleanup();
 	log_fini();

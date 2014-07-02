@@ -181,11 +181,17 @@ proctrack_p_wait(uint64_t cont_id)
 	/* Spin until the process group is gone. */
 	while (killpg(pgid, 0) == 0) {
 		proctrack_p_signal(cont_id, SIGKILL);
+		error("%s: Still active processes in container %"PRIu64" "
+                     "in pgid plugin, recheck in %d sec",
+                     __func__, cont_id, delay);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %"PRIu64"", cont_id);
+			error("%s: Unable to destroy container %"PRIu64" "
+			      "in pgid plugin, giving up after %d sec",
+			      __func__, cont_id, delay);
+			break;
 		}
 	}
 
