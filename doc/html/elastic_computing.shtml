@@ -14,13 +14,6 @@ cluster.
 Good responsiveness and throughput can be achieved while you only pay for the
 resources needed.</p>
 
-<p>The
-<a href="http://web.mit.edu/star/cluster/docs/latest/index.html">StarCluster</a>
-cloud computing toolkit has a
-<a href="https://github.com/jlafon/StarCluster">SLURM port available</a>.
-<a href="https://github.com/jlafon/StarCluster/wiki/Getting-started-with-SLURM-on-Amazon's-EC2">
-Instructions</a> for the SLURM port of StartCLuster are available online.</p>
-
 <p>The rest of this document describes details about SLURM's infrastructure that
 can be used to support Elastic Computing.</p>
 
