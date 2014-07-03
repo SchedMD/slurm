@@ -193,6 +193,7 @@ static int  _read_data_array_from_file(char *file_name, char ***data,
 static int  _read_data_from_file(char *file_name, char **data);
 static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
+static void _remove_job_hash(struct job_record *job_ptr);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
@@ -2209,13 +2210,35 @@ unpack_error:
  * IN job_ptr - pointer to job record
  * Globals: hash table updated
  */
-void _add_job_hash(struct job_record *job_ptr)
+static void _add_job_hash(struct job_record *job_ptr)
 {
 	int inx;
 
 	inx = JOB_HASH_INX(job_ptr->job_id);
 	job_ptr->job_next = job_hash[inx];
 	job_hash[inx] = job_ptr;
+}
+
+/* _remove_job_hash - remove a job hash entry for given job record, job_id must
+ *	already be set
+ * IN job_ptr - pointer to job record
+ * Globals: hash table updated
+ */
+static void _remove_job_hash(struct job_record *job_entry)
+{
+	struct job_record *job_ptr, **job_pptr;
+
+        job_pptr = &job_hash[JOB_HASH_INX(job_entry->job_id)];
+        while ((job_pptr != NULL) &&
+               ((job_ptr = *job_pptr) != job_entry)) {
+                job_pptr = &job_ptr->job_next;
+        }
+        if (job_pptr == NULL) {
+                fatal("job hash error");
+                return; /* Fix CLANG false positive error */
+        }
+        job_entry->job_next = NULL;
+
 }
 
 /* _add_job_array_hash - add a job hash entry for given job record,
@@ -3126,10 +3149,10 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	if (error_code != SLURM_SUCCESS)
 		return job_ptr_new;
 
-	/* Set job-specific ID and hash table */
-	if (_set_job_id(job_ptr_new) != SLURM_SUCCESS)
+	_remove_job_hash(job_ptr);
+	job_ptr_new->job_id = job_ptr->job_id;
+	if (_set_job_id(job_ptr) != SLURM_SUCCESS)
 		fatal("job array create_job_record error");
-	_add_job_hash(job_ptr_new);
 
 	/* Copy most of original job data.
 	 * This could be done in parallel, but performance was worse. */
@@ -3148,38 +3171,48 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	job_ptr_new->account = xstrdup(job_ptr->account);
 	job_ptr_new->alias_list = xstrdup(job_ptr->alias_list);
 	job_ptr_new->alloc_node = xstrdup(job_ptr->alloc_node);
-	job_ptr_new->batch_host = xstrdup(job_ptr->batch_host);
+
+	bit_clear(job_ptr_new->array_recs->task_id_bitmap,
+		  job_ptr_new->array_task_id);
+	xfree(job_ptr_new->array_recs->task_id_str);
+	job_ptr_new->array_recs->task_cnt--;
+	job_ptr->array_recs = NULL;
+
+	job_ptr_new->batch_host = NULL;
 	if (job_ptr->check_job) {
 		job_ptr_new->check_job =
 			checkpoint_copy_jobinfo(job_ptr->check_job);
 	}
 	job_ptr_new->comment = xstrdup(job_ptr->comment);
+	job_ptr_new->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
 	job_ptr_new->gres = xstrdup(job_ptr->gres);
 	if (job_ptr->gres_list) {
 		job_ptr_new->gres_list =
 			gres_plugin_job_state_dup(job_ptr->gres_list);
 	}
-	job_ptr_new->gres_alloc = xstrdup(job_ptr->gres_alloc);
-	job_ptr_new->gres_req = xstrdup(job_ptr->gres_req);
-	job_ptr_new->gres_used = xstrdup(job_ptr->gres_used);
+	job_ptr_new->gres_alloc = NULL;
+	job_ptr_new->gres_req = NULL;
+	job_ptr_new->gres_used = NULL;
+
+	_add_job_hash(job_ptr);		/* Sets job_next */
+	_add_job_hash(job_ptr_new);	/* Sets job_next */
+	job_ptr_new->job_resrcs = NULL;
+
 	job_ptr_new->licenses = xstrdup(job_ptr->licenses);
 	job_ptr_new->license_list = license_job_copy(job_ptr->license_list);
 	job_ptr_new->mail_user = xstrdup(job_ptr->mail_user);
 	job_ptr_new->name = xstrdup(job_ptr->name);
 	job_ptr_new->network = xstrdup(job_ptr->network);
 	job_ptr_new->nodes = xstrdup(job_ptr->nodes);
-	job_ptr_new->licenses = xstrdup(job_ptr->licenses);
 	if (job_ptr->node_cnt && job_ptr->node_addr) {
 		i = sizeof(slurm_addr_t) * job_ptr->node_cnt;
 		job_ptr_new->node_addr = xmalloc(i);
 		memcpy(job_ptr_new->node_addr, job_ptr->node_addr, i);
 	}
-	if (job_ptr->node_bitmap)
-		job_ptr_new->node_bitmap = bit_copy(job_ptr->node_bitmap);
-	if (job_ptr->node_bitmap_cg)
-		job_ptr_new->node_bitmap_cg = bit_copy(job_ptr->node_bitmap_cg);
-	job_ptr_new->nodes_completing = xstrdup(job_ptr->nodes_completing);
+	job_ptr_new->node_bitmap = NULL;
+	job_ptr_new->node_bitmap_cg = NULL;
+	job_ptr_new->nodes_completing = NULL;
 	job_ptr_new->partition = xstrdup(job_ptr->partition);
 	job_ptr_new->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
 	/* On jobs that are held the priority_array isn't set up yet,
@@ -3262,10 +3295,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);
 	details_new->work_dir = xstrdup(job_details->work_dir);
-	if (_copy_job_desc_files(job_ptr->job_id, job_ptr_new->job_id)) {
-		_list_delete_job((void *) job_ptr_new);
-		return NULL;
-	}
+	_copy_job_desc_files(job_ptr_new->job_id, job_ptr->job_id);
 
 	return job_ptr_new;
 }
@@ -12370,7 +12400,7 @@ trace_job(struct job_record *job_ptr, const char *func, const char *extra)
 /* If this is a job array meta-job, prepare it for being scheduled */
 extern void job_array_pre_sched(struct job_record *job_ptr)
 {
-	int i;
+	int32_t i;
 
 	if (!job_ptr->array_recs || !job_ptr->array_recs->task_id_bitmap)
 		return;
@@ -12390,7 +12420,6 @@ extern void job_array_pre_sched(struct job_record *job_ptr)
 extern void job_array_post_sched(struct job_record *job_ptr)
 {
 	struct job_record *new_job_ptr;
-	uint32_t job_id;
 
 	if (!job_ptr->array_recs || !job_ptr->array_recs->task_id_bitmap ||
 	    !IS_JOB_RUNNING(job_ptr))
@@ -12401,18 +12430,9 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		xfree(job_ptr->array_recs->task_id_str);
 		xfree(job_ptr->array_recs);
 	} else {
-/* FIXME: Move more of this logic to _job_rec_copy() */
-/* Hash tables? */
 /* DO we need to copy script/env files? */
+/* Set task array hash table */
 		new_job_ptr = _job_rec_copy(job_ptr);
-		job_id = new_job_ptr->job_id;
-		new_job_ptr->job_id = job_ptr->job_id;
-		job_ptr->job_id = job_id;
-		bit_clear(job_ptr->array_recs->task_id_bitmap,
-			  job_ptr->array_task_id);
-		xfree(job_ptr->array_recs->task_id_str);
-		job_ptr->array_recs->task_cnt--;
-		new_job_ptr->array_recs = job_ptr->array_recs;
-		job_ptr->array_recs = NULL;
+		new_job_ptr->job_state = JOB_PENDING;
 	}
 }
