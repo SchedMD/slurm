@@ -84,7 +84,7 @@ static int _local_send_recv_rc_msgs(const char *nodelist,
 }
 
 static int _signal_batch_script_step(const resource_allocation_response_msg_t
-				     *allocation, uint16_t signal)
+				     *allocation, uint32_t signal)
 {
 	slurm_msg_t msg;
 	kill_tasks_msg_t rpc;
@@ -98,7 +98,7 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	}
 	rpc.job_id = allocation->job_id;
 	rpc.job_step_id = SLURM_BATCH_SCRIPT;
-	rpc.signal = (uint32_t)signal;
+	rpc.signal = signal;
 
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_SIGNAL_TASKS;
@@ -243,7 +243,7 @@ fail1:
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int
-slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
+slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 {
 	resource_allocation_response_msg_t *alloc_info = NULL;
 	job_step_info_response_msg_t *step_info = NULL;

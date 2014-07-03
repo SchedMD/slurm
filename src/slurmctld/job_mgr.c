@@ -3632,7 +3632,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 	}
 
 	if (IS_JOB_RUNNING(job_ptr)) {
-		if (signal == SIGKILL) {
+		if (signal == SIGKILL
+		    && !(flags & KILL_JOB_BATCH)) {
 			/* No need to signal steps, deallocate kills them */
 			job_ptr->time_last_active	= now;
 			job_ptr->end_time		= now;

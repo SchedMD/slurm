@@ -2699,7 +2699,7 @@ extern int slurm_signal_job PARAMS((uint32_t job_id, uint16_t signal));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_signal_job_step PARAMS((uint32_t job_id, uint32_t step_id,
-					 uint16_t signal));
+					 uint32_t signal));
 
 
 /*****************************************************************************\

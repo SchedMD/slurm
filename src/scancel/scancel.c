@@ -546,7 +546,7 @@ _cancel_job_id (void *ci)
 	uint32_t job_id = cancel_info->job_id;
 	uint32_t array_job_id  = cancel_info->array_job_id;
 	uint32_t array_task_id = cancel_info->array_task_id;
-	uint16_t sig    = cancel_info->sig;
+	uint32_t sig    = cancel_info->sig;
 
 	if (sig == (uint16_t)-1) {
 		sig = SIGKILL;
@@ -578,6 +578,7 @@ _cancel_job_id (void *ci)
 			error_code = slurm_kill_job (job_id, sig, flags);
 		} else {
 			if (opt.batch) {
+				sig = sig|(KILL_JOB_BATCH << 24);
 				error_code = slurm_signal_job_step(job_id,
 						SLURM_BATCH_SCRIPT, sig);
 			} else {
