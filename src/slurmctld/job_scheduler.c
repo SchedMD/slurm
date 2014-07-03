@@ -1350,6 +1350,8 @@ next_task:
 			/* job initiated */
 			debug3("sched: JobId=%u initiated", job_ptr->job_id);
 			last_job_update = now;
+			reject_array_job_id = 0;
+			reject_array_part   = NULL;
 #ifdef HAVE_BG
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_IONODES,
@@ -1360,13 +1362,31 @@ next_task:
 			} else {
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
-			info("sched: Allocate JobId=%u MidplaneList=%s",
-			     job_ptr->job_id, tmp_char);
+			if (job_ptr->array_task_id != NO_VAL) {
+				info("sched: Allocate JobId=%u_%u (%u) "
+				     "MidplaneList=%s",
+				     job_ptr->array_job_id,
+				     job_ptr->array_task_id,
+				     job_ptr->job_id, tmp_char);
+			} else {
+				info("sched: Allocate JobId=%u MidplaneList=%s",
+				     job_ptr->job_id, tmp_char);
+			}
 			xfree(ionodes);
 #else
-			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
-			     job_ptr->job_id, job_ptr->nodes,
-			     job_ptr->total_cpus);
+			if (job_ptr->array_task_id != NO_VAL) {
+				info("sched: Allocate JobId=%u_%u (%u) "
+				     "NodeList=%s #CPUs=%u",
+				     job_ptr->array_job_id,
+				     job_ptr->array_task_id,
+				     job_ptr->job_id, job_ptr->nodes,
+				     job_ptr->total_cpus);
+			} else {
+				info("sched: Allocate JobId=%u NodeList=%s "
+				     "#CPUs=%u",
+				     job_ptr->job_id, job_ptr->nodes,
+				     job_ptr->total_cpus);
+			}
 #endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
