@@ -876,51 +876,13 @@ unpack_error:
 
 /* For the job array data structure, build the string representation of the
  * bitmap.
- * NOTE: bit_fmt() does not handle failures well and a very large buffer
- * might be required if the task ID are generated using a step function. */
+ * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
 static void _build_array_str(job_array_struct_t *array_recs)
 {
-	int i, i_first, i_last, i_prev, i_step = 0;
-	int sz, len;
-
 	if (array_recs->task_id_str)
 		return;
 
-	/* Check first for a step function */
-	i_first = bit_ffs(array_recs->task_id_bitmap);
-	i_last  = bit_fls(array_recs->task_id_bitmap);
-	if (((i_last - i_first) > 100) &&
-	    !bit_test(array_recs->task_id_bitmap, i_first+1)) {
-		bool is_step = true;
-		i_prev = i_first;
-		for (i = i_first + 1; i <= i_last; i++) {
-			if (!bit_test(array_recs->task_id_bitmap, i))
-				continue;
-			if (i_step == 0) {
-				i_step = i - i_prev;
-			}else if ((i - i_prev) != i_step) {
-				is_step = false;
-				break;
-			}
-			i_prev = i;
-		}
-		if (is_step) {
-			xstrfmtcat(array_recs->task_id_str, "%d-%d:%d",
-				   i_first, i_last, i_step);
-			return;
-		}
-	}
-
-	sz = bit_size(array_recs->task_id_bitmap) * 4;
-	while (1) {
-		array_recs->task_id_str = xmalloc(sz);
-		bit_fmt(array_recs->task_id_str,sz,array_recs->task_id_bitmap);
-		len = strlen(array_recs->task_id_str);
-		if ((len > 0) && (len < (sz - 32)))
-			return;
-		xfree(array_recs->task_id_str);
-		sz *= 32;
-	}
+	array_recs->task_id_str = bit_fmt_hexmask(array_recs->task_id_bitmap);
 }
 
 /*
@@ -1725,9 +1687,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->array_recs=xmalloc(sizeof(job_array_struct_t));
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 		job_ptr->array_recs->task_id_bitmap = bit_alloc(task_id_size);
-		_parse_array_tok(task_id_str,
-				 job_ptr->array_recs->task_id_bitmap,
-				 task_id_size);
+		bit_unfmt_hexmask(job_ptr->array_recs->task_id_bitmap,
+				  task_id_str);
 		xfree(job_ptr->array_recs->task_id_str);
 		job_ptr->array_recs->task_id_str = task_id_str;
 		job_ptr->array_recs->task_cnt =

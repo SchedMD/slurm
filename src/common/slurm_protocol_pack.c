@@ -4592,6 +4592,71 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/* Translate bitmap representation from hex to decimal format.
+ * Return value must be xfreed. */
+static char *_xlate_task_str(char *in_buf)
+{
+	int buf_size, len;
+	int i, i_first, i_last, i_prev, i_step = 0;
+	bitstr_t *task_bitmap;
+	char *out_buf = NULL;
+
+	i = strlen(in_buf);
+	task_bitmap = bit_alloc(i * 4);
+	bit_unfmt_hexmask(task_bitmap, in_buf);
+
+	/* Check first for a step function */
+	i_first = bit_ffs(task_bitmap);
+	i_last  = bit_fls(task_bitmap);
+	if (((i_last - i_first) > 10) &&
+	    !bit_test(task_bitmap, i_first + 1)) {
+		bool is_step = true;
+		i_prev = i_first;
+		for (i = i_first + 1; i <= i_last; i++) {
+			if (!bit_test(task_bitmap, i))
+				continue;
+			if (i_step == 0) {
+				i_step = i - i_prev;
+			} else if ((i - i_prev) != i_step) {
+				is_step = false;
+				break;
+			}
+			i_prev = i;
+		}
+		if (is_step) {
+			xstrfmtcat(out_buf, "%d-%d:%d",
+				   i_first, i_last, i_step);
+			return out_buf;
+		}
+	}
+
+#if 1
+	/* Capture the first 64 bytes of the bitmap's string representation */
+	buf_size = 64;
+	out_buf = xmalloc(buf_size);
+	bit_fmt(out_buf, buf_size, task_bitmap);
+	len = strlen(out_buf);
+	if (len > (buf_size - 3))
+	for (i = 0; i < 3; i++)
+		out_buf[buf_size - 2 - i] = '.';
+#else
+	/* Capture the full bitmap's string representation.
+	 * For huge bitmaps this can take roughly one minute,
+	 * so let the client do the work */
+	buf_size = bit_size(task_bitmap) * 8;
+	while (1) {
+		out_buf = xmalloc(buf_size);
+		bit_fmt(out_buf, buf_size, task_bitmap);
+		len = strlen(out_buf);
+		if ((len > 0) && (len < (buf_size - 32)))
+			break;
+		xfree(out_buf);
+		buf_size *= 2;
+	}
+#endif
+	return out_buf;
+}
+
 /* _unpack_job_info_members
  * unpacks a set of slurm job info for one job
  * OUT job - pointer to the job info buffer
@@ -4604,7 +4669,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 {
 	uint32_t uint32_tmp = 0;
 	uint16_t uint16_tmp = 0;
-	char *node_inx_str;
+	char *node_inx_str, *array_task_str;
 	multi_core_data_t *mc_ptr;
 
 	job->ntasks_per_node = (uint16_t)NO_VAL;
@@ -4612,8 +4677,15 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
+		/* The array_task_str value is stored in slurmctld and passed
+		 * here in hex format for best scalability. Its format needs
+		 * to be converted to human readable form by the client. */
 		safe_unpackstr_xmalloc(&job->array_task_str, &uint32_tmp,
 				       buffer);
+		array_task_str = _xlate_task_str(job->array_task_str);
+		xfree(job->array_task_str);
+		job->array_task_str = array_task_str;
+
 		safe_unpack32(&job->assoc_id, buffer);
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
