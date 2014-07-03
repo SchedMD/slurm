@@ -22989,13 +22989,23 @@ fi
 
 
 	x_ac_lua_pkg_name="lua"
+	#check for 5.2 if that fails check for 5.1
 	if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.2\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "lua5.2") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  x_ac_lua_pkg_name=lua5.2
+else
+  if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.1\""; } >&5
   ($PKG_CONFIG --exists --print-errors "lua5.1") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   x_ac_lua_pkg_name=lua5.1
+fi
 fi
 
 pkg_failed=no
@@ -23072,6 +23082,8 @@ fi
 	if test "x$x_ac_have_lua" = "xyes"; then
 	  saved_CFLAGS="$CFLAGS"
 	  saved_LIBS="$LIBS"
+	  # -DLUA_COMPAT_ALL is needed to support lua 5.2
+	  lua_CFLAGS="$lua_CFLAGS -DLUA_COMPAT_ALL"
 	  CFLAGS="$CFLAGS $lua_CFLAGS"
 	  LIBS="$LIBS $lua_LIBS"
 	  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for whether we can link to liblua" >&5
@@ -23099,8 +23111,8 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-	  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_have_lua" >&5
-$as_echo "$x_ac_have_lua" >&6; }
+	  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_have_lua $x_ac_lua_pkg_name" >&5
+$as_echo "$x_ac_have_lua $x_ac_lua_pkg_name" >&6; }
 	  CFLAGS="$saved_CFLAGS"
 	  LIBS="$saved_LIBS"
 	fi

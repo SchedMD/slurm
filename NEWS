@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     for printing.
  -- Improve database slurmctld entry speed dramatically.
  -- Add "CPUs" count to output of "scontrol show step".
+ -- Add support for lua5.2
 
 * Changes in Slurm 14.11.0pre1
 ==============================
