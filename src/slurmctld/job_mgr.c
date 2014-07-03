@@ -1138,8 +1138,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
-			_add_job_hash(job_ptr);
-			_add_job_array_hash(job_ptr);
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -1302,8 +1300,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
-			_add_job_hash(job_ptr);
-			_add_job_array_hash(job_ptr);
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -1468,8 +1464,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
-			_add_job_hash(job_ptr);
-			_add_job_array_hash(job_ptr);
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -1771,6 +1765,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	*/
 	job_ptr->best_switch     = true;
 	job_ptr->start_protocol_ver = start_protocol_ver;
+
+	_add_job_hash(job_ptr);
+	_add_job_array_hash(job_ptr);
 
 	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 
@@ -2252,6 +2249,8 @@ void _add_job_array_hash(struct job_record *job_ptr)
 
 	if (job_ptr->array_task_id == NO_VAL)
 		return;	/* Not a job array */
+	if (job_ptr->array_recs)
+		return;	/* Master job array record */
 
 	inx = JOB_HASH_INX(job_ptr->array_job_id);
 	job_ptr->job_array_next_j = job_array_hash_j[inx];
@@ -3177,6 +3176,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	xfree(job_ptr_new->array_recs->task_id_str);
 	job_ptr_new->array_recs->task_cnt--;
 	job_ptr->array_recs = NULL;
+	job_ptr_new->array_task_id = NO_VAL;
 
 	job_ptr_new->batch_host = NULL;
 	if (job_ptr->check_job) {
@@ -3197,6 +3197,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 
 	_add_job_hash(job_ptr);		/* Sets job_next */
 	_add_job_hash(job_ptr_new);	/* Sets job_next */
+	_add_job_array_hash(job_ptr);//LOOP SET HERE
 	job_ptr_new->job_resrcs = NULL;
 
 	job_ptr_new->licenses = xstrdup(job_ptr->licenses);
@@ -12427,10 +12428,16 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 
 	if (job_ptr->array_recs->task_cnt <= 1) {
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
+		if (job_ptr->array_recs->task_cnt) {
+			job_ptr->array_recs->task_cnt--;
+		} else {
+			error("job %u_%u array_recs task count underflow",
+			      job_ptr->array_job_id, job_ptr->array_task_id);
+		}
 		xfree(job_ptr->array_recs->task_id_str);
 		xfree(job_ptr->array_recs);
+		_add_job_array_hash(job_ptr);
 	} else {
-/* Set task array hash table */
 		new_job_ptr = _job_rec_copy(job_ptr);
 		new_job_ptr->job_state = JOB_PENDING;
 	}
