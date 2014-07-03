@@ -682,6 +682,8 @@ static int _attempt_backfill(void)
 	time_t config_update = slurmctld_conf.last_update;
 	time_t part_update = last_part_update;
 	struct timeval start_tv;
+	uint32_t test_array_job_id = 0;
+	uint32_t test_array_count = 0;
 
 	bf_last_yields = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -821,12 +823,13 @@ static int _attempt_backfill(void)
 		}
 		orig_time_limit = job_ptr->time_limit;
 		part_ptr = job_queue_rec->part_ptr;
+		xfree(job_queue_rec);
 
+next_task:
 		job_test_count++;
 		slurmctld_diag_stats.bf_last_depth++;
 		already_counted = false;
 
-		xfree(job_queue_rec);
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
 		if (!avail_front_end(job_ptr))
@@ -1204,6 +1207,13 @@ static int _attempt_backfill(void)
 					}
 					break;
 				}
+				if (job_ptr->array_task_id != NO_VAL) {
+					/* Try starting next task of job array */
+					job_ptr = find_job_record(job_ptr->
+								  array_job_id);
+					if (job_ptr && IS_JOB_PENDING(job_ptr))
+						goto next_task;
+				}
 				continue;
 			}
 		} else {
@@ -1269,6 +1279,17 @@ static int _attempt_backfill(void)
 				 avail_bitmap, node_space, &node_space_recs);
 		if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_node_space_table(node_space);
+		if ((job_ptr->array_task_id != NO_VAL) && job_ptr->array_recs) {
+			/* Try making reservation for next task of job array */
+			if (test_array_job_id != job_ptr->array_job_id) {
+				test_array_job_id = job_ptr->array_job_id;
+				test_array_count = 1;
+			} else {
+				test_array_count++;
+			}
+			if (test_array_count < job_ptr->array_recs->task_cnt)
+				goto next_task;
+		}
 	}
 	xfree(bf_part_jobs);
 	xfree(bf_part_ptr);
@@ -1320,8 +1341,14 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 	if (rc == SLURM_SUCCESS) {
 		/* job initiated */
 		last_job_update = time(NULL);
-		info("backfill: Started JobId=%u on %s",
-		     job_ptr->job_id, job_ptr->nodes);
+		if (job_ptr->array_task_id == NO_VAL) {
+			info("backfill: Started JobId=%u on %s",
+			     job_ptr->job_id, job_ptr->nodes);
+		} else {
+			info("backfill: Started JobId=%u_%u (%u) on %s",
+			     job_ptr->array_job_id, job_ptr->array_task_id,
+			     job_ptr->job_id, job_ptr->nodes);
+		}
 		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr->job_id);
 		else if ((job_ptr->details == NULL) ||

@@ -12430,7 +12430,6 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		xfree(job_ptr->array_recs->task_id_str);
 		xfree(job_ptr->array_recs);
 	} else {
-/* DO we need to copy script/env files? */
 /* Set task array hash table */
 		new_job_ptr = _job_rec_copy(job_ptr);
 		new_job_ptr->job_state = JOB_PENDING;
