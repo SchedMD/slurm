@@ -1067,6 +1067,8 @@ next_part:			part_ptr = (struct part_record *)
 				continue;  /* started in other partition */
 			job_ptr->part_ptr = part_ptr;
 		}
+
+next_task:
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
 			break;
@@ -1372,8 +1374,13 @@ next_part:			part_ptr = (struct part_record *)
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
-			reject_array_job_id = 0;
-			reject_array_part   = NULL;
+			if (job_ptr->array_task_id != NO_VAL) {
+				/* Try starting another task of the job array */
+				job_ptr = find_job_record(job_ptr->array_job_id);
+				if (job_ptr && IS_JOB_PENDING(job_ptr))
+					goto next_task;
+			}
+			continue;
 		} else if ((error_code ==
 			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			   job_ptr->part_ptr_list) {
