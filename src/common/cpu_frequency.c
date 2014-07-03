@@ -636,6 +636,9 @@ cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq)
 	if (strncasecmp(arg, "lo", 2) == 0) {
 		*cpu_freq = CPU_FREQ_LOW;
 		return 0;
+	} else if (strncasecmp(arg, "co", 2) == 0) {
+		*cpu_freq = CPU_FREQ_CONSERVATIVE;
+		return 0;
 	} else if (strncasecmp(arg, "him1", 4) == 0 ||
 		   strncasecmp(arg, "highm1", 6) == 0) {
 		*cpu_freq = CPU_FREQ_HIGHM1;
