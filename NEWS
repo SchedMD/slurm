@@ -53,6 +53,7 @@ documents those changes that are of interest to users and admins.
     to the batch script only.
  -- If we cancel a task and we have no other exit code send the signal and
     exit code.
+ -- Added note about InnoDB storage engine being used with MySQL.
 
 * Changes in Slurm 14.03.4
 ==========================
