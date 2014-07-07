@@ -241,13 +241,13 @@ int _print_time(time_t t, int level, int width, bool right)
 /*****************************************************************************
  * Job Print Functions
  *****************************************************************************/
-int print_job_from_format(job_info_t * job, List list)
+static int _print_one_job_from_format(job_info_t * job, List list)
 {
-	ListIterator i = list_iterator_create(list);
+	ListIterator iter = list_iterator_create(list);
 	job_format_t *current;
 	int total_width = 0;
 
-	while ((current = (job_format_t *) list_next(i)) != NULL) {
+	while ((current = (job_format_t *) list_next(iter)) != NULL) {
 		if (current->
 		    function(job, current->width, current->right_justify,
 			     current->suffix)
@@ -258,18 +258,40 @@ int print_job_from_format(job_info_t * job, List list)
 		else
 			total_width += 10;
 	}
-	list_iterator_destroy(i);
+	list_iterator_destroy(iter);
 
 	printf("\n");
-#if 0
-	if (job == NULL) {
-		int inx;
-		/* one-origin for no trailing space */
-		for (inx=1; inx<total_width; inx++)
-			printf("-");
-		printf("\n");
+	return SLURM_SUCCESS;
+}
+
+int print_job_from_format(job_info_t * job, List list)
+{
+	static int32_t max_array_size = -1;
+	int i, i_first, i_last;
+	bitstr_t *bitmap;
+
+	if (job && job->array_task_str && params.array_flag) {
+		if (max_array_size == -1)
+			max_array_size = slurm_get_max_array_size();
+		bitmap = bit_alloc(max_array_size);
+		bit_unfmt(bitmap, job->array_task_str);
+		xfree(job->array_task_str);
+		i_first = bit_ffs(bitmap);
+		if (i_first == -1)
+			i_last = -2;
+		else
+			i_last = bit_fls(bitmap);
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(bitmap, i))
+				continue;
+			job->array_task_id = i;
+			_print_one_job_from_format(job, list);
+		}
+		FREE_NULL_BITMAP(bitmap);
+	} else {
+		_print_one_job_from_format(job, list);
 	}
-#endif
+
 	return SLURM_SUCCESS;
 }
 
