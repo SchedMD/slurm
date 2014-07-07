@@ -37,6 +37,8 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
+set job_name1    "test$test_id.job1"
+set job_name2    "test$test_id.job2"
 
 print_header $test_id
 
@@ -48,7 +50,7 @@ make_bash_script $file_in "$srun $bin_sleep 10"
 #
 # Submit a couple of jobs so we have something to work with
 #
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --job-name=job1 -t1 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --job-name=$job_name1 -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -68,7 +70,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --job-name=job2 -t1 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --job-name=$job_name2 -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
@@ -95,7 +97,7 @@ exec $bin_rm -f $file_in
 #
 
 set matches  0
-spawn $scancel --name=job1 --interactive
+spawn $scancel --name=$job_name1 --interactive
 expect {
 	-re "Cancel job.*\? " {
 		send "y\r"
@@ -116,7 +118,7 @@ if {$matches != 1} {
 }
 
 set matches  0
-spawn $scancel --name=job2 --interactive
+spawn $scancel --name=$job_name2 --interactive
 expect {
 	-re "Cancel job.*\? " {
 		send "y\r"
@@ -138,6 +140,8 @@ if {$matches != 1} {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
 }
 exit $exit_code
 
