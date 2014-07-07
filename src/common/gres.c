@@ -2695,9 +2695,9 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 			if (gres_job_ptr->gres_bit_alloc) {
 				pack8((uint8_t) 1, buffer);
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
-					pack_bit_str(gres_job_ptr->
-						     gres_bit_alloc[i],
-						     buffer);
+					pack_bit_str_hex(gres_job_ptr->
+							 gres_bit_alloc[i],
+							 buffer);
 				}
 			} else {
 				pack8((uint8_t) 0, buffer);
@@ -2705,9 +2705,9 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 			if (details && gres_job_ptr->gres_bit_step_alloc) {
 				pack8((uint8_t) 1, buffer);
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
-					pack_bit_str(gres_job_ptr->
-						     gres_bit_step_alloc[i],
-						     buffer);
+					pack_bit_str_hex(gres_job_ptr->
+							 gres_bit_step_alloc[i],
+							 buffer);
 				}
 			} else {
 				pack8((uint8_t) 0, buffer);
@@ -2824,10 +2824,10 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 				gres_job_ptr->gres_bit_alloc =
 					xmalloc(sizeof(bitstr_t *) *
 						gres_job_ptr->node_cnt);
-				for (i=0; i<gres_job_ptr->node_cnt; i++) {
-					unpack_bit_str(&gres_job_ptr->
-						       gres_bit_alloc[i],
-						       buffer);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_job_ptr->
+							   gres_bit_alloc[i],
+							   buffer);
 				}
 			}
 			safe_unpack8(&has_more, buffer);
@@ -2835,10 +2835,10 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 				gres_job_ptr->gres_bit_step_alloc =
 					xmalloc(sizeof(bitstr_t *) *
 						gres_job_ptr->node_cnt);
-				for (i=0; i<gres_job_ptr->node_cnt; i++) {
-					unpack_bit_str(&gres_job_ptr->
-						       gres_bit_step_alloc[i],
-						       buffer);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_job_ptr->
+							   gres_bit_step_alloc[i],
+							   buffer);
 				}
 			}
 			safe_unpack8(&has_more, buffer);
@@ -4820,7 +4820,23 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+			pack32(magic, buffer);
+			pack32(gres_ptr->plugin_id, buffer);
+			pack32(gres_step_ptr->gres_cnt_alloc, buffer);
+			pack32(gres_step_ptr->node_cnt, buffer);
+			pack_bit_str_hex(gres_step_ptr->node_in_use, buffer);
+			if (gres_step_ptr->gres_bit_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i = 0; i < gres_step_ptr->node_cnt; i++)
+					pack_bit_str_hex(gres_step_ptr->
+							 gres_bit_alloc[i],
+							 buffer);
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
+			rec_cnt++;
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack32(gres_step_ptr->gres_cnt_alloc, buffer);
@@ -4886,7 +4902,27 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			break;
 		rec_cnt--;
 
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			gres_step_ptr = xmalloc(sizeof(gres_step_state_t));
+			safe_unpack32(&gres_step_ptr->gres_cnt_alloc, buffer);
+			safe_unpack32(&gres_step_ptr->node_cnt, buffer);
+			unpack_bit_str_hex(&gres_step_ptr->node_in_use, buffer);
+			safe_unpack8(&has_file, buffer);
+			if (has_file) {
+				gres_step_ptr->gres_bit_alloc =
+					xmalloc(sizeof(bitstr_t *) *
+						gres_step_ptr->node_cnt);
+				for (i = 0; i < gres_step_ptr->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_step_ptr->
+							   gres_bit_alloc[i],
+							   buffer);
+				}
+			}
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;

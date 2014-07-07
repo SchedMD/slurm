@@ -57,6 +57,7 @@
 #include <assert.h>
 #include <time.h>
 #include <string.h>
+#include "src/common/bitstring.h"
 
 #define BUF_MAGIC 0x42554545
 #define BUF_SIZE (16 * 1024)
@@ -271,7 +272,7 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 		uint32_t _size;				\
 		bit_fmt(_tmp_str,max_len,bitmap);	\
 		_size = strlen(_tmp_str)+1;		\
-		packmem(_tmp_str,_size,buf);	\
+		packmem(_tmp_str,_size,buf);		\
 	} else						\
 		packmem(NULL,(uint32_t)0,buf);		\
 } while (0)
@@ -308,19 +309,21 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	packmem(NULL, 0, buf); \
 } while (0)
 
-#define pack_bit_fmt(bitmap,buf) do {	\
+#define pack_bit_fmt(bitmap,buf) do {			\
 	assert(buf->magic == BUF_MAGIC);		\
 	if (bitmap) {					\
 		char _tmp_str[0xfffe];			\
 		uint32_t _size;				\
 		bit_fmt(_tmp_str,0xfffe,bitmap);	\
 		_size = strlen(_tmp_str)+1;		\
-		packmem(_tmp_str,_size,buf);	\
+		packmem(_tmp_str,_size,buf);		\
 	} else						\
 		packmem(NULL,(uint32_t)0,buf);		\
 } while (0)
 
-#define pack_bit_str(bitmap,buf) do {	\
+/* NOTE: un/pack_bit_str_hex() is much faster than un/pack_bit_str(),
+ * especially for larger and/or sparse bitmaps. */
+#define pack_bit_str(bitmap,buf) do {			\
 	assert(buf->magic == BUF_MAGIC);		\
 	if (bitmap) {					\
 		char _tmp_str[0xfffe];			\
@@ -334,19 +337,49 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 		pack32(NO_VAL, buf);                 	\
 } while (0)
 
-#define unpack_bit_str(bitmap,buf) do {	\
-	char *tmp_str = NULL;				\
-	uint32_t _size = NO_VAL;			\
-	assert(*bitmap == NULL);                        \
+#define unpack_bit_str(bitmap,buf) do {					\
+	char *tmp_str = NULL;						\
+	uint32_t _size = NO_VAL;					\
+	assert(*bitmap == NULL);					\
+	assert(buf->magic == BUF_MAGIC);				\
+	safe_unpack32(&_size, buf);					\
+	if (_size != NO_VAL) {						\
+		*bitmap = bit_alloc(_size);				\
+		safe_unpackstr_xmalloc(&tmp_str, &_size, buf);		\
+		bit_unfmt(*bitmap, tmp_str);				\
+		xfree(tmp_str);						\
+	} else								\
+		*bitmap = NULL;						\
+} while (0)
+
+#define pack_bit_str_hex(bitmap,buf) do {		\
 	assert(buf->magic == BUF_MAGIC);		\
-	safe_unpack32(&_size, buf);			\
-	if (_size != NO_VAL) {				\
-		*bitmap = bit_alloc(_size);			       \
-		safe_unpackstr_xmalloc(&tmp_str, &_size, buf);	       \
-		bit_unfmt(*bitmap, tmp_str);			       \
-		xfree(tmp_str);					       \
-	} else							       \
-		*bitmap = NULL;					       \
+	if (bitmap) {					\
+		char *_tmp_str;				\
+		uint32_t _size;				\
+		_tmp_str = bit_fmt_hexmask(bitmap);	\
+		_size = bit_size(bitmap);               \
+		pack32(_size, buf);              	\
+		_size = strlen(_tmp_str)+1;		\
+		packmem(_tmp_str,_size,buf);	        \
+		xfree(_tmp_str);			\
+	} else						\
+		pack32(NO_VAL, buf);                 	\
+} while (0)
+
+#define unpack_bit_str_hex(bitmap,buf) do {				\
+	char *tmp_str = NULL;						\
+	uint32_t _size = NO_VAL;					\
+	assert(*bitmap == NULL);					\
+	assert(buf->magic == BUF_MAGIC);				\
+	safe_unpack32(&_size, buf);					\
+	if (_size != NO_VAL) {						\
+		*bitmap = bit_alloc(_size);				\
+		safe_unpackstr_xmalloc(&tmp_str, &_size, buf);		\
+		bit_unfmt_hexmask(*bitmap, tmp_str);			\
+		xfree(tmp_str);						\
+	} else								\
+		*bitmap = NULL;						\
 } while (0)
 
 #define unpackstr_ptr		                        \
