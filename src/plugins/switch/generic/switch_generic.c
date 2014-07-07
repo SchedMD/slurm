@@ -326,7 +326,7 @@ static void _cache_node_info(sw_gen_node_info_t *new_node_info)
  */
 int init(void)
 {
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }

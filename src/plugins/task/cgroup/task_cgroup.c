@@ -134,7 +134,7 @@ extern int init (void)
 		      plugin_type);
 	}
 
-	verbose("%s: loaded", plugin_type);
+	debug("%s: loaded", plugin_type);
 	return SLURM_SUCCESS;
 }
 

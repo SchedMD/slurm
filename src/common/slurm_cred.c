@@ -1164,8 +1164,8 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 	else {
 		uint32_t i = cpus / (i_last_bit - i_first_bit);
 		if (i > 1) {
-			info("scaling CPU count by factor of %d (%u/(%u-%u)",
-			     i, cpus, i_last_bit, i_first_bit);
+			debug2("scaling CPU count by factor of %d (%u/(%u-%u)",
+			       i, cpus, i_last_bit, i_first_bit);
 			step_cpu_cnt *= i;
 			job_cpu_cnt *= i;
 		}

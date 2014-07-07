@@ -161,7 +161,7 @@ static int terminated = 0;
  */
 extern int init (void)
 {
-	verbose("%s loaded.", plugin_name);
+	debug("%s loaded.", plugin_name);
 
 #ifdef HAVE_NATIVE_CRAY
 	int rc;

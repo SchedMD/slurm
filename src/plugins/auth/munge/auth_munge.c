@@ -166,7 +166,7 @@ int init ( void )
 	else
 		bad_cred_test = 0;
 
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 

@@ -365,7 +365,7 @@ extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
 	if (!_run_in_daemon())
 		return;
 
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 	ofed_sens.update_time = time(NULL);
 }
 

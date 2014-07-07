@@ -140,7 +140,7 @@ uint32_t debug_flags = 0;
  */
 extern int init ( void )
 {
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 	debug_flags = slurm_get_debug_flags();
 
 	return SLURM_SUCCESS;

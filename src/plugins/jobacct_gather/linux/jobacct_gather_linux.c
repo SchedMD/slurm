@@ -155,7 +155,7 @@ extern int init (void)
 	if (_run_in_daemon()) {
 		jag_common_init(0);
 	}
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 
 	return SLURM_SUCCESS;
 }

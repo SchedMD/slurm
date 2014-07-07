@@ -543,7 +543,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 	if (result == 0)
 		local_energy->current_watts = NO_VAL;
 
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 
 	return;
 }

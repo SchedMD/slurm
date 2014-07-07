@@ -119,7 +119,7 @@ enum {
 
 int init( void )
 {
-	verbose( "authd authentication module initializing" );
+	debug( "authd authentication module initializing" );
 
 	return SLURM_SUCCESS;
 }

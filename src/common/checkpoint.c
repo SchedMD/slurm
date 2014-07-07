@@ -131,7 +131,7 @@ checkpoint_init(char *type)
 	}
 	init_run = true;
 
-	verbose("Checkpoint plugin loaded: %s", type);
+	debug("Checkpoint plugin loaded: %s", type);
 done:
 	slurm_mutex_unlock(&context_lock);
 	return retval;

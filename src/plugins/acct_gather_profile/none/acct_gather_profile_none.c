@@ -93,7 +93,7 @@ const uint32_t plugin_version = 100;
  */
 extern int init(void)
 {
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 

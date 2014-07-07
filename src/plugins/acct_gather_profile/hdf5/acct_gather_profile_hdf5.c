@@ -277,7 +277,7 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		fatal("No ProfileHDF5Dir in your acct_gather.conf file.  "
 		      "This is required to use the %s plugin", plugin_type);
 
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 }
 
 extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,

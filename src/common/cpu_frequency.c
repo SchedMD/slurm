@@ -110,7 +110,8 @@ cpu_freq_init(slurmd_conf_t *conf)
 				  sizeof(struct cpu_freq_data));
 	}
 
-	info("Gathering cpu frequency information for %u cpus", cpu_freq_count);
+	debug2("Gathering cpu frequency information for %u cpus",
+	       cpu_freq_count);
 	for (i = 0; i < cpu_freq_count; i++) {
 		snprintf(path, sizeof(path),
 			 PATH_TO_CPU
@@ -215,8 +216,8 @@ cpu_freq_recv_info(int fd)
 		}
 		safe_read(fd, cpufreq,
 			  (cpu_freq_count * sizeof(struct cpu_freq_data)));
-		info("Received CPU frequency information for %u CPUs",
-		     cpu_freq_count);
+		debug2("Received CPU frequency information for %u CPUs",
+		       cpu_freq_count);
 	}
 	return;
 rwfail:

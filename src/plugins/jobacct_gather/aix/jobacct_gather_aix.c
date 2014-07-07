@@ -269,7 +269,7 @@ extern int init ( void )
 		pagesize = getpagesize()/1024;
 	}
 
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 

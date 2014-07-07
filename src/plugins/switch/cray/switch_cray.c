@@ -107,7 +107,7 @@ const uint32_t plugin_version = 100;
  */
 int init(void)
 {
-	verbose("%s loaded.", plugin_name);
+	debug("%s loaded.", plugin_name);
 	debug_flags = slurm_get_debug_flags();
 #ifdef HAVE_NATIVE_CRAY
 	if (MAX_PORT < MIN_PORT) {
