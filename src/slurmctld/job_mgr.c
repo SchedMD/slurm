@@ -3809,8 +3809,11 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if (IS_JOB_FINISHED(job_ptr))
+	if (IS_JOB_FINISHED(job_ptr)) {
+		if (job_ptr->exit_code == 0)
+			job_ptr->exit_code = job_return_code;
 		return ESLURM_ALREADY_DONE;
+	}
 
 	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
 		error("Security violation, JOB_COMPLETE RPC for job %u "

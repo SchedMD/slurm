@@ -1924,9 +1924,9 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("_slurm_rpc_complete_batch_script JobId=%u: %s ",
-		     comp_msg->job_id,
-		     slurm_strerror(error_code));
+		debug2("_slurm_rpc_complete_batch_script JobId=%u: %s ",
+		       comp_msg->job_id,
+		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("_slurm_rpc_complete_batch_script JobId=%u %s",
