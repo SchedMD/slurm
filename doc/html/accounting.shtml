@@ -22,7 +22,7 @@ these plugins include:</p>
 <li><b>AccountingStorageType</b> controls how detailed job and job
 step information is recorded. You can store this information in a
 text file, <a href="http://www.mysql.com/">MySQL</a>
-or MariaDB database, optionally using SlurmDBD for added security.</li>
+or MariaDB database (using the InnoDB storage engine), optionally using SlurmDBD for added security.</li>
 <li><b>JobAcctGatherType</b> is operating system dependent and
 controls what mechanism is used to collect accounting information.
 Supported values are <i>jobacct_gather/aix</i>, <i>jobacct_gather/linux</i>
@@ -188,8 +188,11 @@ a configuration.
 <p><b>MySQL or MariaDB is the preferred database.</b>
 To enable this database support
 one only needs to have the development package for the database they
-wish to use on the system. The slurm configure script uses
-mysql_config and pg-config to find out the information it needs
+wish to use on the system. <b>Slurm uses the InnoDB storage
+engine in MySQL to make rollback possible.  This must be available on your
+MySQL installation or rollback will not work.</b>
+</p><p>The slurm configure
+script uses mysql_config to find out the information it needs
 about installed libraries and headers. You can specify where your
 mysql_config script is with the
 </i>--with-mysql_conf=/path/to/mysql_config</i> option when configuring your
@@ -440,6 +443,16 @@ system name:</p>
 mysql> grant all on slurm_acct_db.* TO 'slurm'@'system0'
     -> identified by 'some_pass' with grant option;
 where 'system0' is the localhost or database storage host.
+</pre>
+
+<p>Verify you have InnoDB support</p>
+<pre>
+mysql> SHOW VARIABLES LIKE 'have_innodb';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| have_innodb   | YES   |
++---------------+-------+
 </pre>
 
 <p>Then create the database:</p>

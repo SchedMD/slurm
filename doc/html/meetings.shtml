@@ -6,8 +6,8 @@
 23-24 September 2014<br>
 Lugano, Switzerland<br>
 Host: <a href="http://cscs.ch/">Swiss National Supercomputing Centre</a></p>
-<a href="slurm_ug_cfp.html">Call for Abstracts: Due 6 June 2014</a><br>
-<!--<a href="slurm_ug_agenda.html">Meeting agenda</a><br>-->
+<!--<a href="slurm_ug_cfp.html">Call for Abstracts: Due 6 June 2014</a><br>-->
+<a href="slurm_ug_agenda.html">Meeting agenda</a><br>
 <!--<a href="slurm_ug_registration.html">Registration information</a>--></p>
 
 <br>
@@ -33,6 +33,6 @@ Host: Bull</p>
 Paris, France<br>
 Host: CEA</p>
 
-<p style="text-align:center;">Last modified 31 March 2014</p>
+<p style="text-align:center;">Last modified 3 July 2014</p>
 
 <!--#include virtual="footer.txt"-->

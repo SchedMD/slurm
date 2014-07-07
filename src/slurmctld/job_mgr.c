@@ -3667,6 +3667,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	bitoff_t i;
 	kill_tasks_msg_t *kill_tasks_msg = NULL;
 	agent_arg_t *agent_args = NULL;
+	uint32_t z;
 
 	xassert(job_ptr);
 	xassert(job_ptr->batch_host);
@@ -3694,7 +3695,13 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = job_ptr->job_id;
 	kill_tasks_msg->job_step_id = NO_VAL;
-	kill_tasks_msg->signal      = signal;
+	/* Encode the KILL_JOB_BATCH flag for
+	 * stepd to know if has to signal only
+	 * the batch script. The job was submitted
+	 * using the --signal=B:sig sbatch option.
+	 */
+	z = KILL_JOB_BATCH << 24;
+	kill_tasks_msg->signal = z|signal;
 
 	agent_args->msg_args = kill_tasks_msg;
 	agent_args->node_count = 1;/* slurm/477 be sure to update node_count */
@@ -3769,8 +3776,11 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	     __func__, jobid2str(job_ptr, jbuf),
 	     WIFEXITED(job_return_code), WEXITSTATUS(job_return_code));
 
-	if (IS_JOB_FINISHED(job_ptr))
+	if (IS_JOB_FINISHED(job_ptr)) {
+		if (job_ptr->exit_code == 0)
+			job_ptr->exit_code = job_return_code;
 		return ESLURM_ALREADY_DONE;
+	}
 
 	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
 		error("%s: Security violation, JOB_COMPLETE RPC for job %u "

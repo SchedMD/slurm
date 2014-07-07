@@ -842,11 +842,11 @@ salloc: Relinquishing job allocation 65542
 SLURM? Why does the DAKOTA program not run with SLURM?</b></a><br>
 The SLURM library used to support MPIHCH2 or MVAPICH2 references a variety of
 symbols. If those symbols resolve to functions or variables in your program
-rather than the appropriate library, the application will fail. In the case of
-<a href="http://dakota.sandia.gov">DAKOTA</a>, it contains a function named
-<b>regcomp</b>, which will get used rather than the POSIX regex functions.
-Rename DAKOTA's function and references from regcomp to something else to make
-it work properly.</p>
+rather than the appropriate library, the application will fail. For example
+<a href="http://dakota.sandia.gov">DAKOTA</a>, versions 5.1 and
+older, contains a function named regcomp, which will get used rather
+than the POSIX regex functions. Rename DAKOTA's function and
+references from regcomp to something else to make it work properly.</p>
 
 <p><a name="estimated_start_time"><b>26. Why does squeue (and "scontrol show
 jobid") sometimes not display a job's  estimated start time?</b></a><br>

@@ -582,9 +582,6 @@ extern int proctrack_p_wait(uint64_t cont_id)
 	/* This indicates that all tasks have exited the container */
 	while (proctrack_p_destroy(cont_id) != SLURM_SUCCESS) {
 		proctrack_p_signal(cont_id, SIGKILL);
-		error("%s: Unable to destroy container %"PRIu64" "
-		      "in cgroup plugin, retry in %d sec",
-		      __func__, cont_id, delay);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;

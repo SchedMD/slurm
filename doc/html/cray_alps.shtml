@@ -238,24 +238,8 @@ default: # rpm -qa
 <ul>
 <li>expat-2.0.xxx</li>
 <li>libexpat-devel-2.0.xxx</li>
-<li>cray-MySQL-devel-enterprise-5.0.64 (this should be on the Cray ISO)</li>
+<li>mysql-devel (this should be on the Cray ISO)</li>
 </ul>
-
-<p>For example, loading MySQL can be done like this:</p>
-<pre>
-smw: # mkdir mnt
-smw: # mount -o loop, ro xe-sles11sp1-trunk.201107070231a03.iso mnt
-smw: # find mnt -name cray-MySQL-devel-enterprise\*
-mnt/craydist/xt-packages/cray-MySQL-devel-enterprise-5.0.64.1.0000.2899.19.2.x86_64.rpm
-smw: # scp mnt/craydist/xt-packages/cray-MySQL-devel-enterprise-5.0.64.1.0000.2899.19.2.x86_64
-</pre>
-
-<p>Then switch to boot node and run:</p>
-<pre>
-boot: # xtopview
-default: # rpm -ivh /software/cray-MySQL-devel-enterprise-5.0.64.1.0000.2899.19.2.x86_64.rpm
-default: # exit
-</pre>
 
 <p>All Cray-specific PrgEnv and compiler modules should be removed and root
 privileges will be required to install these files.</p>
