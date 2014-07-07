@@ -202,8 +202,7 @@ static bool _steps_completed_now(uint32_t jobid);
 static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
 			       uint16_t block_no, uint32_t *job_id);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
-static slurmstepd_info_t *_get_job_step_info(uint32_t jobid);
-static long _get_job_uid(uint32_t jobid);
+static uid_t _get_job_uid(uint32_t jobid);
 
 static gids_t *_gids_cache_lookup(char *user, gid_t gid);
 
@@ -1737,7 +1736,7 @@ _rpc_job_notify(slurm_msg_t *msg)
 {
 	job_notify_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	long job_uid;
+	uid_t job_uid;
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd = NULL;
@@ -1936,7 +1935,7 @@ _load_job_limits(void)
 	step_loc_t *stepd;
 	int fd;
 	job_mem_limits_t *job_limits_ptr;
-	slurmstepd_info_t *stepd_info;
+	slurmstepd_mem_info_t stepd_mem_info;
 
 	if (!job_limits_list)
 		job_limits_list = list_create(_job_limits_free);
@@ -1955,16 +1954,21 @@ _load_job_limits(void)
 		if (fd == -1)
 			continue;	/* step completed */
 
-		stepd_info = stepd_get_info(fd);
+		if (!stepd_get_mem_limits(fd, stepd->protocol_version,
+					  &stepd_mem_info))
+			continue;
 
-		if (stepd_info &&
-		    (stepd_info->job_mem_limit || stepd_info->step_mem_limit)) {
+
+		if ((stepd_mem_info.job_mem_limit
+		     || stepd_mem_info.step_mem_limit)) {
 			/* create entry for this job */
 			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
 			job_limits_ptr->job_id   = stepd->jobid;
 			job_limits_ptr->step_id  = stepd->stepid;
-			job_limits_ptr->job_mem  = stepd_info->job_mem_limit;
-			job_limits_ptr->step_mem = stepd_info->step_mem_limit;
+			job_limits_ptr->job_mem  =
+				stepd_mem_info.job_mem_limit;
+			job_limits_ptr->step_mem =
+				stepd_mem_info.step_mem_limit;
 #if _LIMIT_INFO
 			info("RecLim step:%u.%u job_mem:%u step_mem:%u",
 			     job_limits_ptr->job_id, job_limits_ptr->step_id,
@@ -1973,7 +1977,6 @@ _load_job_limits(void)
 #endif
 			list_append(job_limits_list, job_limits_ptr);
 		}
-		xfree(stepd_info);
 		close(fd);
 	}
 	list_iterator_destroy(step_iter);
@@ -2356,7 +2359,7 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		uint32_t signal)
 {
 	int               fd, rc = SLURM_SUCCESS;
-	slurmstepd_info_t *step;
+	uid_t uid;
 	uint16_t protocol_version;
 
 	fd = stepd_connect(conf->spooldir, conf->node_name, jobid, stepid,
@@ -2366,16 +2369,18 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		      jobid, stepid);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if ((step = stepd_get_info(fd)) == NULL) {
-		debug("signal for nonexistent job %u.%u requested",
+
+	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+		debug("_signal_jobstep: couldn't read from the "
+		      "step %u.%u: %m",
 		      jobid, stepid);
-		close(fd);
-		return ESLURM_INVALID_JOB_ID;
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done2;
 	}
 
-	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
+	if ((req_uid != uid) && (!_slurm_authorized_user(req_uid))) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		      (long) req_uid, jobid, stepid, (long) step->uid);
+		      (long) req_uid, jobid, stepid, (long) uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done2;
 	}
@@ -2400,7 +2405,6 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		rc = ESLURMD_JOB_NOTRUNNING;
 
 done2:
-	xfree(step);
 	close(fd);
 	return rc;
 }
@@ -2434,7 +2438,7 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	checkpoint_tasks_msg_t *req = (checkpoint_tasks_msg_t *) msg->data;
 	uint16_t protocol_version;
-	slurmstepd_info_t *stepd_info = NULL;
+	uid_t uid;
 
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id, &protocol_version);
@@ -2445,17 +2449,18 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if (!(stepd_info = stepd_get_info(fd))) {
-		debug("checkpoint couldn't read from the step %u.%u: %m",
+	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+		debug("_rpc_checkpoint_tasks: couldn't read from the "
+		      "step %u.%u: %m",
 		      req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
 	}
 
-	if ((req_uid != stepd_info->uid) && (!_slurm_authorized_user(req_uid))) {
+	if ((req_uid != uid) && (!_slurm_authorized_user(req_uid))) {
 		debug("checkpoint req from uid %ld for job %u.%u owned by "
 		      "uid %ld", (long) req_uid, req->job_id, req->job_step_id,
-		      (long) stepd_info->uid);
+		      (long) uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done2;
 	}
@@ -2466,7 +2471,6 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 		rc = ESLURMD_JOB_NOTRUNNING;
 
 done2:
-	xfree(stepd_info);
 	close(fd);
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -2478,8 +2482,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	int               rc = SLURM_SUCCESS;
 	int               fd;
-	uid_t             req_uid;
-	slurmstepd_info_t *stepd_info;
+	uid_t             req_uid, uid;
 	uint16_t protocol_version;
 
 	debug3("Entering _rpc_terminate_tasks");
@@ -2492,19 +2495,19 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if (!(stepd_info = stepd_get_info(fd))) {
-		debug("checkpoint couldn't read from the step %u.%u: %m",
+	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+		debug("terminate_tasks couldn't read from the step %u.%u: %m",
 		      req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
 	}
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	if ((req_uid != stepd_info->uid)
+	if ((req_uid != uid)
 	    && (!_slurm_authorized_user(req_uid))) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long) req_uid, req->job_id, req->job_step_id,
-		      (long) stepd_info->uid);
+		      (long) uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done2;
 	}
@@ -2514,7 +2517,6 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 		rc = ESLURMD_JOB_NOTRUNNING;
 
 done2:
-	xfree(stepd_info);
 	close(fd);
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -2648,9 +2650,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	slurm_msg_t        resp_msg;
 	job_step_stat_t *resp = NULL;
 	int fd;
-	uid_t req_uid;
-	long job_uid;
-	slurmstepd_info_t *stepd_info = NULL;
+	uid_t req_uid, uid;
 	uint16_t protocol_version;
 
 	debug3("Entering _rpc_stat_jobacct");
@@ -2667,35 +2667,22 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		return	ESLURM_INVALID_JOB_ID;
 	}
 
-	stepd_info = stepd_get_info(fd);
-	if (!stepd_info) {
-		error("stat_jobacct For invalid job_id: %u",
-		      req->job_id);
+	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+		debug("stat_jobacct couldn't read from the step %u.%u: %m",
+		      req->job_id, req->step_id);
 		close(fd);
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-		return  ESLURM_INVALID_JOB_ID;
-	}
-
-	job_uid = stepd_info->uid;
-	xfree(stepd_info);
-
-	if (job_uid < 0) {
-		error("stat_jobacct for invalid job_id: %u",
-		      req->job_id);
-		close(fd);
-		if (msg->conn_fd >= 0)
-			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-		return  ESLURM_INVALID_JOB_ID;
+		return	ESLURM_INVALID_JOB_ID;
 	}
 
 	/*
 	 * check that requesting user ID is the SLURM UID or root
 	 */
-	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
+	if ((req_uid != uid) && (!_slurm_authorized_user(req_uid))) {
 		error("stat_jobacct from uid %ld for job %u "
 		      "owned by uid %ld",
-		      (long) req_uid, req->job_id, job_uid);
+		      (long) req_uid, req->job_id, (long) uid);
 
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -2743,7 +2730,7 @@ _rpc_list_pids(slurm_msg_t *msg)
 	job_step_pids_t *resp = NULL;
 	int fd;
 	uid_t req_uid;
-	long job_uid;
+	uid_t job_uid;
 	uint16_t protocol_version = 0;
 
         debug3("Entering _rpc_list_pids");
@@ -2768,7 +2755,7 @@ _rpc_list_pids(slurm_msg_t *msg)
 	    && (!_slurm_authorized_user(req_uid))) {
                 error("stat_pid from uid %ld for job %u "
                       "owned by uid %ld",
-                      (long) req_uid, req->job_id, job_uid);
+                      (long) req_uid, req->job_id, (long) job_uid);
 
                 if (msg->conn_fd >= 0) {
                         slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -3161,9 +3148,9 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	uint32_t     len;
 	int               fd;
 	uid_t             req_uid;
-	slurmstepd_info_t *step = NULL;
 	slurm_addr_t *cli = &msg->orig_addr;
 	uint32_t nodeid = (uint32_t)NO_VAL;
+	uid_t uid = -1;
 	uint16_t protocol_version;
 
 	slurm_msg_t_copy(&resp_msg, msg);
@@ -3175,22 +3162,26 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
-	if ((step = stepd_get_info(fd)) == NULL) {
-		debug("reattach for nonexistent job %u.%u requested",
+
+	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+		debug("_rpc_reattach_tasks couldn't read from the "
+		      "step %u.%u: %m",
 		      req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
 	}
-	nodeid = step->nodeid;
+
+	nodeid = stepd_get_nodeid(fd, protocol_version);
+
 	debug2("_rpc_reattach_tasks: nodeid %d in the job step", nodeid);
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
+	if ((req_uid != uid) && (!_slurm_authorized_user(req_uid))) {
 		error("uid %ld attempt to attach to job %u.%u owned by %ld",
 		      (long) req_uid, req->job_id, req->job_step_id,
-		      (long) step->uid);
+		      (long) uid);
 		rc = EPERM;
-		goto done3;
+		goto done2;
 	}
 
 	memset(resp, 0, sizeof(reattach_tasks_response_msg_t));
@@ -3222,7 +3213,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	slurm_cred_get_signature(req->cred, (char **)(&job_cred_sig), &len);
 	if (len != SLURM_IO_KEY_SIZE) {
 		error("Incorrect slurm cred signature length");
-		goto done3;
+		goto done2;
 	}
 
 	resp->gtids = NULL;
@@ -3232,10 +3223,9 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 			  &resp_msg.address, job_cred_sig, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
-		goto done3;
+		goto done2;
 	}
-done3:
-	xfree(step);
+
 done2:
 	close(fd);
 done:
@@ -3250,12 +3240,12 @@ done:
 	slurm_free_reattach_tasks_response_msg(resp);
 }
 
-static slurmstepd_info_t *_get_job_step_info(uint32_t jobid)
+static uid_t _get_job_uid(uint32_t jobid)
 {
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd;
-	slurmstepd_info_t *stepd_info = NULL;
+	uid_t uid = -1;
 	int fd;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
@@ -3273,11 +3263,11 @@ static slurmstepd_info_t *_get_job_step_info(uint32_t jobid)
 			       stepd->jobid, stepd->stepid);
 			continue;
 		}
+		uid = stepd_get_uid(fd, stepd->protocol_version);
 
-		stepd_info = stepd_get_info(fd);
 		close(fd);
-		if (!stepd_info) {
-			debug("stepd_get_info failed %u.%u: %m",
+		if (uid < 0) {
+			debug("stepd_get_uid failed %u.%u: %m",
 			      stepd->jobid, stepd->stepid);
 			continue;
 		}
@@ -3285,20 +3275,6 @@ static slurmstepd_info_t *_get_job_step_info(uint32_t jobid)
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
-
-	return stepd_info;
-}
-
-static long
-_get_job_uid(uint32_t jobid)
-{
-	slurmstepd_info_t *stepd_info = NULL;
-	long uid = -1;
-
-	if ((stepd_info = _get_job_step_info(jobid))) {
-		uid = (long)stepd_info->uid;
-		xfree(stepd_info);
-	}
 
 	return uid;
 }
@@ -3546,7 +3522,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 {
 	signal_job_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	long job_uid;
+	uid_t job_uid;
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd = NULL;

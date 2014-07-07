@@ -55,7 +55,7 @@ typedef enum {
 	REQUEST_SIGNAL_TASK_GLOBAL,
 	REQUEST_SIGNAL_CONTAINER,
 	REQUEST_STATE,
-	REQUEST_INFO,
+	REQUEST_INFO,  /* Defunct, See REQUEST_STEP_MEM_LIMITS|UID|NODEID */
 	REQUEST_ATTACH,
 	REQUEST_PID_IN_CONTAINER,
 	REQUEST_DAEMON_PID,
@@ -68,6 +68,9 @@ typedef enum {
 	REQUEST_STEP_RECONFIGURE,
 	REQUEST_STEP_STAT,
 	REQUEST_STEP_COMPLETION_V2,
+	REQUEST_STEP_MEM_LIMITS,
+	REQUEST_STEP_UID,
+	REQUEST_STEP_NODEID
 } step_msg_t;
 
 typedef enum {
@@ -86,6 +89,12 @@ typedef struct {
 	uint32_t job_mem_limit;		/* job's memory limit, MB */
 	uint32_t step_mem_limit;	/* step's memory limit, MB */
 } slurmstepd_info_t;
+
+typedef struct {
+	uint32_t job_mem_limit;		/* job's memory limit, MB */
+	uint32_t nodeid;
+	uint32_t step_mem_limit;	/* step's memory limit, MB */
+} slurmstepd_mem_info_t;
 
 typedef struct {
 	int             id;	    /* local task id */
@@ -258,5 +267,23 @@ int stepd_task_info(int fd, uint16_t protocol_version,
 int stepd_list_pids(int fd, uint16_t protocol_version,
 		    uint32_t **pids_array, uint32_t *pids_count);
 
+/*
+ * Get the memory limits of the step
+ * Returns uid of the running step if successful.  On error returns -1.
+ */
+extern int stepd_get_mem_limits(int fd, uint16_t protocol_version,
+				slurmstepd_mem_info_t *stepd_mem_info);
+
+/*
+ * Get the uid of the step
+ * Returns uid of the running step if successful.  On error returns -1.
+ */
+extern uid_t stepd_get_uid(int fd, uint16_t protocol_version);
+
+/*
+ * Get the nodeid of the stepd
+ * Returns nodeid of the running stepd if successful.  On error returns NO_VAL.
+ */
+extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version);
 
 #endif /* _STEPD_API_H */

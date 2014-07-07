@@ -79,6 +79,9 @@ static void *_handle_accept(void *arg);
 static int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid);
 static int _handle_state(int fd, stepd_step_rec_t *job);
 static int _handle_info(int fd, stepd_step_rec_t *job);
+static int _handle_mem_limits(int fd, stepd_step_rec_t *job);
+static int _handle_uid(int fd, stepd_step_rec_t *job);
+static int _handle_nodeid(int fd, stepd_step_rec_t *job);
 static int _handle_signal_task_local(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -494,6 +497,18 @@ _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 		debug("Handling REQUEST_INFO");
 		rc = _handle_info(fd, job);
 		break;
+	case REQUEST_STEP_MEM_LIMITS:
+		debug("Handling REQUEST_STEP_MEM_LIMITS");
+		rc = _handle_mem_limits(fd, job);
+		break;
+	case REQUEST_STEP_UID:
+		debug("Handling REQUEST_STEP_UID");
+		rc = _handle_uid(fd, job);
+		break;
+	case REQUEST_STEP_NODEID:
+		debug("Handling REQUEST_STEP_NODEID");
+		rc = _handle_nodeid(fd, job);
+		break;
 	case REQUEST_ATTACH:
 		debug("Handling REQUEST_ATTACH");
 		rc = _handle_attach(fd, job, uid);
@@ -581,6 +596,37 @@ _handle_info(int fd, stepd_step_rec_t *job)
 	safe_write(fd, &job->nodeid, sizeof(uint32_t));
 	safe_write(fd, &job->job_mem, sizeof(uint32_t));
 	safe_write(fd, &job->step_mem, sizeof(uint32_t));
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_mem_limits(int fd, stepd_step_rec_t *job)
+{
+	safe_write(fd, &job->job_mem, sizeof(uint32_t));
+	safe_write(fd, &job->step_mem, sizeof(uint32_t));
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_uid(int fd, stepd_step_rec_t *job)
+{
+	safe_write(fd, &job->uid, sizeof(uid_t));
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_nodeid(int fd, stepd_step_rec_t *job)
+{
+	safe_write(fd, &job->nodeid, sizeof(uid_t));
 
 	return SLURM_SUCCESS;
 rwfail:
@@ -1293,7 +1339,6 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	char* buf;
 	int len;
 	Buf buffer;
-	int version;	/* For future use */
 	bool lock_set = false;
 
 	debug("_handle_completion for job %u.%u",
@@ -1311,7 +1356,6 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 		return SLURM_SUCCESS;
 	}
 
-	safe_read(fd, &version, sizeof(int));
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
 	safe_read(fd, &step_rc, sizeof(int));
