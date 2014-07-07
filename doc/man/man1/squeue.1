@@ -63,6 +63,9 @@ and not "\-j 1008".
 The job ID format is "job_id[_array_id]".
 Performance of the command can be measurably improved for systems with large
 numbers of jobs when a single job ID is specified.
+By default, this field size will be limited to 64 bytes.
+Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
+
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -137,7 +140,7 @@ This reports the value of the \fBsrun \-\-ntasks\fR option.
 .TP
 \fB%A\fR
 Job id.
-This will have a unique value for each element  of job arrays.
+This will have a unique value for each element of job arrays.
 (Valid for jobs only)
 .TP
 \fB%b\fR
@@ -219,6 +222,8 @@ When \-\-sockets\-per\-node has not been set, "*" is displayed.
 Job or job step id.
 In the case of job arrays, the job ID format will be of the form
 "<base_job_id>_<index>".
+By default, the job array index field size will be limited to 64 bytes.
+Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 (Valid for jobs and job steps)
 .TP
 \fB%I\fR
@@ -243,6 +248,8 @@ Comment associated with the job.
 .TP
 \fB%K\fR
 Job array index.
+By default, this field size will be limited to 64 bytes.
+Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 (Valid for jobs only)
 .TP
 \fB%l\fR
@@ -660,6 +667,13 @@ Some \fBsqueue\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed
 below. (Note: Commandline options will always override these settings.)
 .TP 20
+\fBSLURM_BITSTR_LEN\fR
+Specifies the string length to be used for holding a job array's task ID
+expression.
+The default value is 64 bytes.
+A value of 0 will print the full expression with any length required.
+Larger values may adversely impact the application performance.
+.TP
 \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-clusters\fR
 .TP

@@ -4596,10 +4596,14 @@ unpack_error:
  * Return value must be xfreed. */
 static char *_xlate_task_str(char *in_buf)
 {
+	static int bitstr_len = -1;
 	int buf_size, len;
 	int i, i_first, i_last, i_prev, i_step = 0;
 	bitstr_t *task_bitmap;
 	char *out_buf = NULL;
+
+	if (!in_buf)
+		return NULL;
 
 	i = strlen(in_buf);
 	task_bitmap = bit_alloc(i * 4);
@@ -4630,30 +4634,39 @@ static char *_xlate_task_str(char *in_buf)
 		}
 	}
 
-#if 1
-	/* Capture the first 64 bytes of the bitmap's string representation */
-	buf_size = 64;
-	out_buf = xmalloc(buf_size);
-	bit_fmt(out_buf, buf_size, task_bitmap);
-	len = strlen(out_buf);
-	if (len > (buf_size - 3))
-	for (i = 0; i < 3; i++)
-		out_buf[buf_size - 2 - i] = '.';
-#else
-	/* Capture the full bitmap's string representation.
-	 * For huge bitmaps this can take roughly one minute,
-	 * so let the client do the work */
-	buf_size = bit_size(task_bitmap) * 8;
-	while (1) {
+	if (bitstr_len == -1) {
+		char *bitstr_len_str = getenv("SLURM_BITSTR_LEN");
+		if (bitstr_len_str)
+			bitstr_len = atoi(bitstr_len_str);
+		if (bitstr_len < 0)
+			bitstr_len = 64;
+	}
+			
+	if (bitstr_len > 0) {
+		/* Print the first bitstr_len bytes of the bitmap string */
+		buf_size = bitstr_len;
 		out_buf = xmalloc(buf_size);
 		bit_fmt(out_buf, buf_size, task_bitmap);
 		len = strlen(out_buf);
-		if ((len > 0) && (len < (buf_size - 32)))
-			break;
-		xfree(out_buf);
-		buf_size *= 2;
+		if (len > (buf_size - 3))
+		for (i = 0; i < 3; i++)
+			out_buf[buf_size - 2 - i] = '.';
+	} else {
+		/* Print the full bitmap's string representation.
+		 * For huge bitmaps this can take roughly one minute,
+		 * so let the client do the work */
+		buf_size = bit_size(task_bitmap) * 8;
+		while (1) {
+			out_buf = xmalloc(buf_size);
+			bit_fmt(out_buf, buf_size, task_bitmap);
+			len = strlen(out_buf);
+			if ((len > 0) && (len < (buf_size - 32)))
+				break;
+			xfree(out_buf);
+			buf_size *= 2;
+		}
 	}
-#endif
+
 	return out_buf;
 }
 
