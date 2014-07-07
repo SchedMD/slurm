@@ -120,6 +120,7 @@ proc srun_test {exp_cnt account} {
 
 	if {$job_id == 0} {
 		send_user "\nFAILURE: did not get job id\n"
+		set exit_code 1
 		return -1
 	} else {
 		return $job_id
