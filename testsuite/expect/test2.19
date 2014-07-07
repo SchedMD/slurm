@@ -35,6 +35,7 @@ set test_id        "2.19"
 set user_name      ""
 set node_name      ""
 set host_name      ""
+set cluster_name   ""
 set acct1          "test${test_id}_acct_1"
 set acct2          "test${test_id}_acct_2"
 set qos_good       "test${test_id}_qos_good"
@@ -75,8 +76,21 @@ proc set_part_val {part_type part_val} {
 	}
 }
 
-proc delete_part { } {
-	global scontrol sacctmgr part_name qos_good qos_bad acct1 acct2 exit_code
+proc cleanup { } {
+	global scancel scontrol sacctmgr part_name qos_good qos_bad acct1 acct2 exit_code
+
+	spawn $scancel -p $part_name
+	expect {
+		timeout {
+			send_user "FAILURE: scancel is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	send_user "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored.\n"
 
 	spawn $scontrol delete partition=$part_name
 	expect {
@@ -131,7 +145,7 @@ proc delete_part { } {
 }
 
 proc create_qos { acct qos } {
-	global sacctmgr user_name exit_code
+	global sacctmgr user_name exit_code cluster_name
 
 	set create_qos 0
 	spawn $sacctmgr -i create qos $qos
@@ -150,7 +164,7 @@ proc create_qos { acct qos } {
 	}
 
 
-	spawn $sacctmgr -i create account $acct qos=$qos
+	spawn $sacctmgr -i create account $acct qos=$qos cluster=$cluster_name
 	expect {
 		-re "Adding Account" {
 			incr create_qos
@@ -166,7 +180,7 @@ proc create_qos { acct qos } {
 	}
 
 	set create_acct 0
-	spawn $sacctmgr -i create user $user_name account=$acct
+	spawn $sacctmgr -i create user $user_name account=$acct cluster=$cluster_name
 	expect {
 		timeout {
 			send_user "\nFAILURE: sacctmgr is not responding\n"
@@ -185,18 +199,13 @@ proc create_qos { acct qos } {
 
 
 proc test_part {acct qos part qos_con } {
-	global srun host_name part_name exit_code
+	global srun part_name exit_code
 
 	set sub_job 0
-	spawn $srun -I -A $acct --qos $qos -p $part hostname
+	spawn $srun -I -A $acct --qos $qos -p $part true
 	expect {
-		-re "$host_name" {
-			set sub_job 1
-			exp_continue
-		}
 		-re "error" {
-			set sub_job 2
-			if { $qos_con == 1 && $sub_job == 2} {
+			if { $qos_con == 1 } {
 				send_user "\nThis error is expected\n"
 			} else {
 				send_user "\nFAILURE: This error should not have occured\n"
@@ -215,7 +224,7 @@ proc test_part {acct qos part qos_con } {
 }
 
 # Delete any vestigial qos or accounts
-delete_part
+cleanup
 
 spawn $bin_id -un
 expect {
@@ -232,69 +241,8 @@ expect {
 	}
 }
 
-spawn hostname
-expect {
-
-	-re "($alpha_numeric_under)" {
-		set host_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: hostname is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-
-spawn $scontrol show node
-expect {
-	-re "NodeName=($alpha_numeric_under)" {
-		set node_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-# Create partition
-spawn $scontrol create partition=$part_name
-expect {
-	-re "error" {
-		send_user "\nFAILURE: partition was not created\n"
-		set exit_code 1
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not reponding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-# Add nodes to partition
-spawn $scontrol update partition=$part_name nodes=$node_name
-expect {
-	-re "error" {
-		send_user "\nFAILURE: partition was not created\n"
-		set exit_code 1
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not reponding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set node_name [ get_idle_node_in_part $partition ]
+set cluster_name [ get_cluster_name ]
 
 # NOTE: qos_good should always work and
 # qos_bad should always cause an error
@@ -308,6 +256,23 @@ create_qos $acct1 $qos_good
 # Create bad QOS
 #
 create_qos $acct2 $qos_bad
+
+
+# Create partition
+spawn $scontrol create partition=$part_name nodes=$node_name
+expect {
+	-re "error" {
+		send_user "\nFAILURE: partition was not created\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
 
 #
 # Set Allow Qos to good value
@@ -351,7 +316,8 @@ test_part $acct1 $qos_good $part_name 0
 #
 test_part $acct2 $qos_bad $part_name 1
 
-if {[delete_part] != 2} {
+sleep 5
+if {[cleanup] != 2} {
 	send_user "\nFAILURE: Qos/account was not deleted\n"
 	set exit_code 1
 }
