@@ -34,7 +34,7 @@ source ./globals
 set test_id        "2.18"
 set user_name      ""
 set node_name      ""
-set host_name      ""
+set cluster_name   ""
 set acct_good      "test${test_id}_acct_good"
 set acct_bad       "test${test_id}_acct_bad"
 set part_name      "test${test_id}_part"
@@ -73,24 +73,23 @@ proc set_part_val {part_type part_val} {
 	}
 }
 
-proc delete_part { } {
-	global scontrol sacctmgr part_name acct_good acct_bad exit_code
+proc cleanup { } {
+	global scancel scontrol sacctmgr part_name acct_good acct_bad exit_code
 
 	set del_part 0
-	spawn $sacctmgr -i delete account $acct_good $acct_bad
+
+	spawn $scancel -p $part_name
 	expect {
-		-re "Deleting accounts" {
-			set del_part 1
-			exp_continue
-		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
+			send_user "FAILURE: scancel is not responding\n"
 			set exit_code 1
 		}
 		eof {
 			wait
 		}
 	}
+
+	send_user "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored.\n"
 
 	spawn $scontrol delete partition=$part_name
 	expect {
@@ -109,16 +108,30 @@ proc delete_part { } {
 		}
 	}
 
-	return $del_part
+	spawn $sacctmgr -i delete account $acct_good $acct_bad
+	expect {
+		-re "Deleting accounts" {
+			set del_part 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
 
+	return $del_part
 }
 
 proc create_acct { acct } {
 
-	global sacctmgr exit_code user_name
+	global sacctmgr exit_code user_name cluster_name
 
 	set create_acct 0
-	spawn $sacctmgr -i create account $acct
+	spawn $sacctmgr -i create account $acct cluster=$cluster_name
 	expect {
 		-re "Adding Account" {
 			set create_acct 1
@@ -133,7 +146,7 @@ proc create_acct { acct } {
 		}
 	}
 
-	spawn $sacctmgr -i create user $user_name account=$acct
+	spawn $sacctmgr -i create user $user_name account=$acct cluster=$cluster_name
 	expect {
 		timeout {
 			send_user "\nFAILURE: sacctmgr is not responding\n"
@@ -154,19 +167,14 @@ proc create_acct { acct } {
 
 proc test_part { acct part acct_con } {
 
-	global srun host_name exit_code
+	global srun exit_code
 
 
 	set sub_job 0
-	spawn $srun -I -A $acct -p $part hostname
+	spawn $srun -I -A $acct -p $part true
 	expect {
-		-re "$host_name" {
-			set sub_job 1
-			exp_continue
-		}
 		-re "error" {
-			set sub_job 2
-			if { $acct_con == 1 && $sub_job == 2} {
+			if { $acct_con == 1 } {
 				send_user "\nThis error is expected\n"
 			} else {
 				send_user "\nFAILURE: This error should not have occured\n"
@@ -187,7 +195,7 @@ proc test_part { acct part acct_con } {
 }
 
 # Remove any vestigial accounts or partitions
-delete_part
+cleanup
 
 spawn $bin_id -un
 expect {
@@ -204,69 +212,8 @@ expect {
 	}
 }
 
-spawn hostname
-expect {
-
-	-re "($alpha_numeric_under)" {
-		set host_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: hostname is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-
-spawn $scontrol show node
-expect {
-	-re "NodeName=($alpha_numeric_under)" {
-		set node_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-# Create partition
-spawn $scontrol create partition=$part_name
-expect {
-	-re "error" {
-		send_user "\nFAILURE: partition was not created\n"
-		set exit_code 1
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not reponding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-# Add nodes to partition
-spawn $scontrol update partition=$part_name nodes=$node_name
-expect {
-	-re "error" {
-		send_user "\nFAILURE: partition was not created\n"
-		set exit_code 1
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not reponding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set node_name [ get_idle_node_in_part $partition ]
+set cluster_name [ get_cluster_name ]
 
 # NOTE: acct_good should always work and
 # acct_bad should always cause an error
@@ -280,6 +227,22 @@ create_acct $acct_good
 # Create bad account
 #
 create_acct $acct_bad
+
+# Create partition
+spawn $scontrol create partition=$part_name nodes=$node_name
+expect {
+	-re "error" {
+		send_user "\nFAILURE: partition was not created\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
 
 #
 # Set Allow Account to good values
@@ -325,9 +288,9 @@ test_part $acct_good $part_name 0
 test_part $acct_bad $part_name 1
 
 
-sleep 2
+sleep 5
 # Delete partition and accounts
-if {[delete_part] != 1} {
+if {[cleanup] != 1} {
 	send_user "\nFAILURE: Account was not deleted\n"
 	set exit_code 1
 }
