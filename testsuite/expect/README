@@ -555,6 +555,8 @@ test19.4   strigger --set --reconfig
 test19.5   strigger --set (job options)
 test19.6   strigger --clear and --get (with filtering)
 test19.7   strigger --set --idle
+test19.8   strigger --noheader
+test19.9   Validate that duplicate triggers cannot be submitted
 
 
 test20.#   Testing of PBS commands and Perl APIs.
