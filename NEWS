@@ -76,6 +76,7 @@ documents those changes that are of interest to users and admins.
     script running isn't guaranteed in this situation.
  -- Change message to note a NO_VAL for return code could of come from node
     failure as well as interactive user.
+ -- Modify test4.5 to only look at one partition instead of all of them.
 
 * Changes in Slurm 14.03.4
 ==========================
