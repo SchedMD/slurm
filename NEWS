@@ -150,15 +150,22 @@ documents those changes that are of interest to users and admins.
  -- Make srun obey POSIX convention and increase the exit code by 128 when the
     process terminated by a signal.
  -- Sanity check for acct_gather_energy/rapl
- -- If the proctrack plugins fail to destroy the job container print an error message
-    and avoid to loop forever, give up after 120 seconds.
+ -- If the proctrack plugins fail to destroy the job container print an error
+    message and avoid to loop forever, give up after 120 seconds.
  -- If the sbatch command specifies the option --signal=B:signum sent the signal
     to the batch script only.
  -- If we cancel a task and we have no other exit code send the signal and
     exit code.
  -- Added note about InnoDB storage engine being used with MySQL.
- -- Set the job exit code when the job is signaled and set the log level to debug2()
-    when processing an already completed job.
+ -- Set the job exit code when the job is signaled and set the log level to
+    debug2() when processing an already completed job.
+ -- Reset diagnostics time stamp when "sdiag --reset" is called.
+ -- squeue and scontrol to report a job's "shared" value based upon partition
+    options rather than reporting "unknown" if job submission does not use
+    --exclusive or --shared option.
+ -- task/cgroup - Fix cpuset binding for batch script.
+ -- sched/backfill - Fix anomaly that could result in jobs being scheduled out
+    of order.
 
 * Changes in Slurm 14.03.4
 ==========================

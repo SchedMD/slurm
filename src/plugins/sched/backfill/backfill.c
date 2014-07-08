@@ -667,7 +667,6 @@ static int _attempt_backfill(void)
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *non_cg_bitmap = NULL;
-	bitstr_t *previous_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
@@ -973,7 +972,6 @@ static int _attempt_backfill(void)
 
 		/* Determine impact of any resource reservations */
 		later_start = now;
-		FREE_NULL_BITMAP(previous_bitmap);
  TRY_LATER:
 		if (slurmctld_config.shutdown_time)
 			break;
@@ -1083,21 +1081,17 @@ static int _attempt_backfill(void)
 		    ((job_ptr->details->req_node_bitmap) &&
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
-		    (job_req_node_filter(job_ptr, avail_bitmap)) ||
-		    (previous_bitmap &&
-		     bit_equal(previous_bitmap, avail_bitmap))) {
+		    (job_req_node_filter(job_ptr, avail_bitmap))) {
 			if (later_start) {
 				job_ptr->start_time = 0;
 				goto TRY_LATER;
 			}
+
 			/* Job can not start until too far in the future */
 			job_ptr->time_limit = orig_time_limit;
 			job_ptr->start_time = sched_start + backfill_window;
 			continue;
 		}
-
-		FREE_NULL_BITMAP(previous_bitmap);
-		previous_bitmap = bit_copy(avail_bitmap);
 
 		/* Identify nodes which are definitely off limits */
 		FREE_NULL_BITMAP(resv_bitmap);
@@ -1278,7 +1272,6 @@ static int _attempt_backfill(void)
 	FREE_NULL_BITMAP(exc_core_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 	FREE_NULL_BITMAP(non_cg_bitmap);
-	FREE_NULL_BITMAP(previous_bitmap);
 
 	for (i=0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
