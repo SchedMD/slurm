@@ -61,6 +61,8 @@ documents those changes that are of interest to users and admins.
     options rather than reporting "unknown" if job submission does not use
     --exclusive or --shared option.
  -- task/cgroup - Fix cpuset binding for batch script.
+ -- sched/backfill - Fix anomaly that could result in jobs being scheduled out
+    of order.
 
 * Changes in Slurm 14.03.4
 ==========================
