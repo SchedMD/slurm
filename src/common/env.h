@@ -73,8 +73,8 @@ typedef struct env_options {
 	pid_t task_pid;
 	char *sgtids;		/* global ranks array of integers */
 	uint16_t pty_port;	/* used to communicate window size changes */
-	uint8_t ws_col;		/* window size, columns */
-	uint8_t ws_row;		/* window size, row count */
+	uint16_t ws_col;	/* window size, columns */
+	uint16_t ws_row;	/* window size, row count */
 	char *ckpt_dir;		/* --ckpt-dir=                 */
 	uint16_t restart_cnt;	/* count of job restarts	*/
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */

@@ -110,8 +110,8 @@ typedef struct srun_job {
 	pthread_t pty_id;	/* pthread to communicate window size changes */
 	int pty_fd;		/* file to communicate window size changes */
 	uint16_t pty_port;	/* used to communicate window size changes */
-	uint8_t ws_col;		/* window size, columns */
-	uint8_t ws_row;		/* window size, row count */
+	uint16_t ws_col;	/* window size, columns */
+	uint16_t ws_row;	/* window size, row count */
 	slurm_step_ctx_t *step_ctx;
 	slurm_step_ctx_params_t ctx_params;
 } srun_job_t;
