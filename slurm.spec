@@ -459,6 +459,8 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 %if %{slurm_with cray} || %{slurm_with cray_alps}
    %if %{slurm_with cray_alps}
       rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
+   %else
+      install -D -m644 contribs/cray/slurm.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.template
    %endif
    install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release}
    echo -e '#%Module\nset ModulesVersion "%{version}-%{release}"' > $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version
