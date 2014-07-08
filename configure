@@ -1700,7 +1700,7 @@ Optional Features:
   --disable-salloc-background
                           disable salloc execution in the background
   --enable-simulator      enable slurm simulator
-  --enable-dynamic-allocation, enable dynamic allocation requests from user programs (disabled)
+  --enable-dynamic-allocation, enable dynamic allocation requests from user programs for Hadoop (disabled)
 
   --enable-multiple-slurmd
                           enable multiple-slurmd support
@@ -22727,8 +22727,8 @@ _ACEOF
 
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dynamic allocation port to be enabled" >&5
-$as_echo_n "checking for dynamic allocation port to be enabled... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dynamic allocation port to be enabled for Hadoop" >&5
+$as_echo_n "checking for dynamic allocation port to be enabled for Hadoop... " >&6; }
   # Check whether --enable-dynamic-allocation was given.
 if test "${enable_dynamic_allocation+set}" = set; then :
   enableval=$enable_dynamic_allocation;
