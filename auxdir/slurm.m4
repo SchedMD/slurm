@@ -66,9 +66,9 @@ AC_DEFUN([X_AC_SLURM_PORTS],
                      [Define the default port count for slurmctld])
   AC_SUBST(SLURMCTLD_PORT_COUNT)
 
-  AC_MSG_CHECKING([for dynamic allocation port to be enabled])
+  AC_MSG_CHECKING([for dynamic allocation port to be enabled for Hadoop])
   AC_ARG_ENABLE([dynamic-allocation],
-    AS_HELP_STRING([--enable-dynamic-allocation, enable dynamic allocation requests from user programs ([disabled])]))
+    AS_HELP_STRING([--enable-dynamic-allocation, enable dynamic allocation requests from user programs for Hadoop ([disabled])]))
   if test "$enable_dynamic_allocation" = "yes"; then
     AC_MSG_RESULT([yes])
     slurm_enable_dynamic_allocation="yes"

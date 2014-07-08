@@ -166,6 +166,7 @@ documents those changes that are of interest to users and admins.
  -- task/cgroup - Fix cpuset binding for batch script.
  -- sched/backfill - Fix anomaly that could result in jobs being scheduled out
     of order.
+ -- Expand pseudo-terminal size data structure field sizes from 8 to 16 bits.
 
 * Changes in Slurm 14.03.4
 ==========================
