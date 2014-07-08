@@ -68,6 +68,8 @@ documents those changes that are of interest to users and admins.
     debug2().
     when processing an already completed job.
  -- Distinguish between two identical error messages.
+ -- If using accounting_storage/mysql directly without a DBD fix issue with
+    start of requeued jobs.
 
 * Changes in Slurm 14.03.4
 ==========================
