@@ -74,6 +74,8 @@ documents those changes that are of interest to users and admins.
     epilog complete message comes from that node do not process the batch step
     information since the job has already been requeued because the epilog
     script running isn't guaranteed in this situation.
+ -- Change message to note a NO_VAL for return code could of come from node
+    failure as well as interactive user.
 
 * Changes in Slurm 14.03.4
 ==========================

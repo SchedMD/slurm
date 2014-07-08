@@ -3834,7 +3834,8 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if ((job_return_code == NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr))) {
-		info("Job %u cancelled from interactive user", job_ptr->job_id);
+		info("Job %u cancelled from interactive user or node failure",
+		     job_ptr->job_id);
 	}
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
