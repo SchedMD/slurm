@@ -605,8 +605,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	if (agent_args->node_count == 0) {
 		if ((job_ptr->details->expanding_jobid == 0) &&
 		    (select_serial == 0)) {
-			error("Job %u allocated no nodes to be killed on",
-			      job_ptr->job_id);
+			error("%s: job %u allocated no nodes to be killed on",
+			      __func__, job_ptr->job_id);
 		}
 		slurm_free_kill_job_msg(kill_job);
 		hostlist_destroy(agent_args->hostlist);

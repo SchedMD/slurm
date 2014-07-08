@@ -168,6 +168,10 @@ documents those changes that are of interest to users and admins.
  -- sched/backfill - Fix anomaly that could result in jobs being scheduled out
     of order.
  -- Expand pseudo-terminal size data structure field sizes from 8 to 16 bits.
+ -- Set the job exit code when the job is signaled and set the log level to
+    debug2().
+    when processing an already completed job.
+ -- Distinguish between two identical error messages.
 
 * Changes in Slurm 14.03.4
 ==========================
