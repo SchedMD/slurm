@@ -57,6 +57,9 @@ documents those changes that are of interest to users and admins.
  -- Set the job exit code when the job is signaled and set the log level to
     debug2() when processing an already completed job.
  -- Reset diagnostics time stamp when "sdiag --reset" is called.
+ -- squeue and scontrol to report a job's "shared" value based upon partition
+    options rather than reporting "unknown" if job submission does not use
+    --exclusive or --shared option.
 
 * Changes in Slurm 14.03.4
 ==========================

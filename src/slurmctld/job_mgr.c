@@ -7004,6 +7004,26 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	char *cmd_line = NULL;
 	char *tmp = NULL;
 	uint32_t len = 0;
+	uint16_t shared = 0;
+
+	if (!detail_ptr)
+		shared = (uint16_t) NO_VAL;
+	else if (detail_ptr->share_res == 1)	/* User --share */
+		shared = 1;
+	else if ((detail_ptr->share_res == 0) ||
+		 (detail_ptr->whole_node == 1))	/* User --exclusive */
+		shared = 0;
+	else if (job_ptr->part_ptr) {
+		/* Report shared status based upon latest partition info */
+		if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
+		    ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
+			shared = 1;		/* Partition Shared=force */
+		else if (job_ptr->part_ptr->max_share == 0)
+			shared = 0;		/* Partition Shared=exclusive */
+		else
+			shared = 0;		/* Part Shared=yes or no */
+	} else
+		shared = (uint16_t) NO_VAL;	/* No user or partition info */
 
 	if (max_cpu_cnt == -1)
 		max_cpu_cnt = _find_node_max_cpu_cnt();
@@ -7074,6 +7094,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			}
 			pack16(detail_ptr->requeue,   buffer);
 			pack16(detail_ptr->ntasks_per_node, buffer);
+			pack16(shared, buffer);
 		} else {
 			packnull(buffer);
 			packnull(buffer);
@@ -7088,6 +7109,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 
 			pack32(job_ptr->node_cnt, buffer);
 			pack32((uint32_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
 		}
@@ -7145,6 +7167,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				pack32(detail_ptr->max_nodes, buffer);
 			}
 			pack16(detail_ptr->requeue,   buffer);
+			pack16(shared, buffer);
 		} else {
 			packnull(buffer);
 			packnull(buffer);
@@ -7160,6 +7183,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			pack32(job_ptr->node_cnt, buffer);
 			pack32((uint32_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
 		}
 	} else {
 		error("_pack_default_job_details: protocol_version "
@@ -7171,20 +7195,8 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
-	uint16_t shared = 0;
-
-	if (!detail_ptr)
-		shared = (uint16_t) NO_VAL;
-	else if (detail_ptr->share_res == 1)
-		shared = 1;
-	else if ((detail_ptr->share_res == 0) ||
-		 (detail_ptr->whole_node == 1))
-		shared = 0;
-	else
-		shared = (uint16_t) NO_VAL;
 	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (detail_ptr) {
-			pack16(shared, buffer);
 			pack16(detail_ptr->contiguous, buffer);
 			pack16(detail_ptr->core_spec, buffer);
 			pack16(detail_ptr->cpus_per_task, buffer);
@@ -7210,7 +7222,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
-			pack16((uint16_t) 0, buffer);
 
 			pack32((uint32_t) 0, buffer);
 			pack32((uint32_t) 0, buffer);
@@ -7228,7 +7239,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		}
 	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (detail_ptr) {
-			pack16(shared, buffer);
 			pack16(detail_ptr->contiguous, buffer);
 			pack16(detail_ptr->cpus_per_task, buffer);
 			pack16(detail_ptr->pn_min_cpus, buffer);
@@ -7245,7 +7255,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 			pack_multi_core_data(detail_ptr->mc_ptr, buffer,
 					     protocol_version);
 		} else {
-			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
