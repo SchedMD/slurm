@@ -700,6 +700,13 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 				}
 			} else {
 				storage_init = true;
+				if (mysql_conn->rollback)
+					mysql_autocommit(
+						mysql_conn->db_conn, 0);
+				rc = _mysql_query_internal(
+					mysql_conn->db_conn,
+					"SET session sql_mode='ANSI_QUOTES,"
+					"NO_ENGINE_SUBSTITUTION';");
 			}
 		}
 	}

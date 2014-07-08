@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- Add support for lua5.2
  -- scancel -b signals only the batch step neither any other step nor any
     children of the shell script.
+ -- MySQL - enforce NO_ENGINE_SUBSTITUTION
 
 * Changes in Slurm 14.11.0pre1
 ==============================

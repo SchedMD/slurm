@@ -836,19 +836,6 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 			error("unable to re-connect to as_mysql database");
 			errno = ESLURM_DB_CONNECTION;
 			return ESLURM_DB_CONNECTION;
-		} else {
-			int rc;
-			if (mysql_conn->rollback)
-				mysql_autocommit(mysql_conn->db_conn, 0);
-			rc = mysql_db_query(mysql_conn,
-					    "SET session "
-					    "sql_mode='ANSI_QUOTES';");
-			if (rc != SLURM_SUCCESS) {
-				error("couldn't set sql_mode on reconnect");
-				acct_storage_p_close_connection(&mysql_conn);
-				errno = ESLURM_DB_CONNECTION;
-				return ESLURM_DB_CONNECTION;
-			}
 		}
 	}
 
@@ -2123,7 +2110,7 @@ extern int init ( void )
 	mysql_db_name = acct_get_db_name();
 
 	debug2("mysql_connect() called for db %s", mysql_db_name);
-	mysql_conn = create_mysql_conn(0, 0, NULL);
+	mysql_conn = create_mysql_conn(0, 1, NULL);
 	while (mysql_db_get_db_connection(
 		       mysql_conn, mysql_db_name, mysql_db_info)
 	       != SLURM_SUCCESS) {
@@ -2132,12 +2119,7 @@ extern int init ( void )
 		sleep(5);
 	}
 
-	/* make it so this can be rolled back if failed */
-	mysql_autocommit(mysql_conn->db_conn, 0);
-	rc = mysql_db_query(mysql_conn,
-			    "SET session sql_mode='ANSI_QUOTES';");
-	if (rc == SLURM_SUCCESS)
-		rc = _as_mysql_acct_check_tables(mysql_conn);
+	rc = _as_mysql_acct_check_tables(mysql_conn);
 
 	if (rc == SLURM_SUCCESS) {
 		if (mysql_db_commit(mysql_conn)) {
@@ -2197,19 +2179,8 @@ extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
 	errno = SLURM_SUCCESS;
 	mysql_db_get_db_connection(mysql_conn, mysql_db_name, mysql_db_info);
 
-       	if (mysql_conn->db_conn) {
-		int rc;
-		if (rollback)
-			mysql_autocommit(mysql_conn->db_conn, 0);
-		rc = mysql_db_query(mysql_conn,
-				    "SET session sql_mode='ANSI_QUOTES';");
-		if (rc != SLURM_SUCCESS) {
-			error("couldn't set sql_mode");
-			acct_storage_p_close_connection(&mysql_conn);
-			errno = rc;
-		} else
-			errno = SLURM_SUCCESS;
-	}
+	if (mysql_conn->db_conn)
+		errno = SLURM_SUCCESS;
 
 	return (void *)mysql_conn;
 }
