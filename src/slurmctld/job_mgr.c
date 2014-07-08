@@ -9547,8 +9547,8 @@ static void _send_job_kill(struct job_record *job_ptr)
 	if (agent_args->node_count == 0) {
 		if ((job_ptr->details->expanding_jobid == 0) &&
 		    (select_serial == 0)) {
-			error("Job %u allocated no nodes to be killed on",
-			      job_ptr->job_id);
+			error("%s: job %u allocated no nodes to be killed on",
+			      __func__, job_ptr->job_id);
 		}
 		xfree(kill_job->nodes);
 		xfree(kill_job);
