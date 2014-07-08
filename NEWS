@@ -56,6 +56,7 @@ documents those changes that are of interest to users and admins.
  -- Added note about InnoDB storage engine being used with MySQL.
  -- Set the job exit code when the job is signaled and set the log level to debug2()
     when processing an already completed job.
+ -- Reset diagnostics time stamp when "sdiag --reset" is called.
 
 * Changes in Slurm 14.03.4
 ==========================
