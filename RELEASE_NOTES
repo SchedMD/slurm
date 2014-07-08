@@ -73,6 +73,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added HealthCheckNodeState option of "cycle" to cycle through the compute
     nodes over the course of HealthCheckInterval rather than running all at
     the same time.
+ -- Added CpuFreqDef configuration parameter in slurm.conf to specify the
+    default CPU frequency and governor to be set at job end.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

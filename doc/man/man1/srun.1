@@ -377,17 +377,33 @@ Show help message for cpu_bind
 Request that the job step initiated by this srun command be run at the
 requested frequency if possible, on the CPUs selected for the step on
 the compute node(s).
-In addition to specifying a numerical frequency in kilohertz, the request can
-specify \fILow\fR, \fIMedium\fR, \fIHighM1\fR or \fIHigh\fR for the frequency.
-"Low" will select the lowest available frequency.
-"High" will select the highest available frequency.
-"HighM1" (high minus one) will select the next highest available frequency.
-"Medium" attempts to set a frequency in the middle of the available range.
-If the numeric value specified does not exactly match a legal available
-frequency, SLURM will attempt to pick a legal frequency close to the request.
-The user may also specify one of the following CPU governors:
-\fIConservative\fR, \fIOnDemand\fR, \fIPerformance\fR, \fIPowerSave\fR or
-\fIUserSpace\fR.
+Acceptable values at present include:
+.RS
+.TP 14
+\fBLow\fR
+the lowest available frequency
+.TP
+\fBHigh\fR
+the highest available frequency
+.TP
+\fBHighM1\fR
+(high minus one) will select the next highest available frequency
+.TP
+\fBMedium\fR
+attempts to set a frequency in the middle of the available range
+.TP
+\fBConservative\fR
+attempts to use the Conservative CPU governor
+.TP
+\fBOnDemand\fR
+attempts to use the OnDemand CPU governor (the default value)
+.TP
+\fBPerformance\fR
+attempts to use the Performance CPU governor
+.TP
+\fBPowerSave\fR
+attempts to use the PowerSave CPU governor
+.RE
 
 The following informational environment variable is set in the job
 step when \fB\-\-cpu\-freq\fR option is requested.

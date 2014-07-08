@@ -48,6 +48,8 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/cpu_frequency.h"
+#include "src/common/list.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
@@ -56,7 +58,6 @@
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/list.h"
 
 /*
  * slurm_api_version - Return a single number reflecting the SLURM API's
@@ -315,6 +316,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CoreSpecPlugin");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->core_spec_plugin);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CpuFreqDef");
+	cpu_freq_to_string(tmp_str, sizeof(tmp_str),
+			   slurm_ctl_conf_ptr->cpu_freq_def);
+	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

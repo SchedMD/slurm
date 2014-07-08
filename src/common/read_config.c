@@ -67,6 +67,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -187,6 +188,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"CompleteWait", S_P_UINT16},
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
+	{"CpuFreqDef", S_P_STRING},
 	{"CryptoType", S_P_STRING},
 	{"DebugFlags", S_P_STRING},
 	{"DefaultStorageHost", S_P_STRING},
@@ -2935,6 +2937,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
 
 	s_p_get_string(&conf->chos_loc, "ChosLoc", hashtbl);
+
+	if (s_p_get_string(&temp_str, "CpuFreqDef", hashtbl)) {
+		if (cpu_freq_verify_param(temp_str, &conf->cpu_freq_def)) {
+			error("Ignoring invalid CpuFreqDef: %s", temp_str);
+			conf->cpu_freq_def = CPU_FREQ_ONDEMAND;
+		}
+	} else {
+		conf->cpu_freq_def = CPU_FREQ_ONDEMAND;
+	}
 
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);

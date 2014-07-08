@@ -196,6 +196,23 @@ uint16_t slurm_get_complete_wait(void)
 	return complete_wait;
 }
 
+/* slurm_get_cpu_freq_def
+ * RET CpuFreqDef value from slurm.conf
+ */
+uint32_t slurm_get_cpu_freq_def(void)
+{
+	uint32_t cpu_freq_def = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		cpu_freq_def = conf->cpu_freq_def;
+		slurm_conf_unlock();
+	}
+	return cpu_freq_def;
+}
+
 /* update internal configuration data structure as needed.
  *	exit with lock set */
 /* static inline void _lock_update_config() */

@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- scancel -b signals only the batch step neither any other step nor any
     children of the shell script.
  -- MySQL - enforce NO_ENGINE_SUBSTITUTION
+ -- Added CpuFreqDef configuration parameter in slurm.conf to specify the
+    default CPU frequency and governor to be set at job end.
 
 * Changes in Slurm 14.11.0pre1
 ==============================

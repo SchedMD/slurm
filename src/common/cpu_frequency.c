@@ -462,8 +462,10 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 				      "scaling_min_freq");
 				return;
 			}
+			if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE) {
+				strcpy(cpufreq[cpuidx].new_governor,
+				       "userspace");
 			break;
-
 
 		case CPU_FREQ_MEDIUM :
 		case CPU_FREQ_HIGHM1 :
@@ -505,8 +507,10 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 				cpufreq[cpuidx].new_frequency =
 					freq_list[m1_loc];
 			}
+			if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE)
+				strcpy(cpufreq[cpuidx].new_governor,
+				       "userspace");
 			break;
-
 
 		case CPU_FREQ_HIGH :
 			/* get the value from scale max freq */
@@ -523,6 +527,9 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 				error("cpu_freq_cgroup_valid: Could not read "
 				      "scaling_max_freq");
 			}
+			if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE)
+				strcpy(cpufreq[cpuidx].new_governor,
+				       "userspace");
 			break;
 
 		case CPU_FREQ_CONSERVATIVE:
@@ -600,6 +607,8 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 			}
 		}
 		fclose(fp);
+		if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE)
+			strcpy(cpufreq[cpuidx].new_governor, "userspace");
 	}
 
 	debug3("cpu_freq_cgroup_validate: CPU:%u, frequency:%u governor:%s",
@@ -680,6 +689,8 @@ cpu_freq_to_string(char *buf, int buf_size, uint32_t cpu_freq)
 		snprintf(buf, buf_size, "Highm1");
 	else if (cpu_freq == CPU_FREQ_HIGH)
 		snprintf(buf, buf_size, "High");
+	else if (cpu_freq == CPU_FREQ_CONSERVATIVE)
+		snprintf(buf, buf_size, "Conservative");
 	else if (cpu_freq == CPU_FREQ_PERFORMANCE)
 		snprintf(buf, buf_size, "Performance");
 	else if (cpu_freq == CPU_FREQ_POWERSAVE)
@@ -719,9 +730,6 @@ cpu_freq_set(stepd_step_rec_t *job)
 		if (cpufreq[i].new_governor[0] != '\0') {
 			snprintf(gov_value, LINE_LEN, "%s",
 				 cpufreq[i].new_governor);
-			updated = true;
-		} else if (cpufreq[i].new_frequency != 0) {
-			snprintf(gov_value, LINE_LEN, "userspace");
 			updated = true;
 		}
 		if (updated) {
@@ -769,55 +777,61 @@ cpu_freq_reset(stepd_step_rec_t *job)
 	FILE *fp;
 	char value[LINE_LEN];
 	unsigned int i, j;
+	uint32_t def_cpu_freq;
 
 	if ((!cpu_freq_count) || (!cpufreq))
 		return;
 
+	def_cpu_freq = slurm_get_cpu_freq_def();
 	j = 0;
 	for (i = 0; i < cpu_freq_count; i++) {
-		bool updated = false;
+		bool reset_freq = false;
+		bool reset_gov = false;
 
-		if (cpufreq[i].new_frequency != 0) {
+		if (cpufreq[i].new_frequency != 0)
+			reset_freq = true;
+		if (cpufreq[i].new_governor[0] != '\0')
+			reset_gov = true;
+		if (!reset_freq && !reset_gov)
+			continue;
+
+		cpufreq[i].new_frequency = 0;
+		cpufreq[i].new_governor[0] = '\0';
+		_cpu_freq_find_valid(def_cpu_freq, i);
+		if (cpufreq[i].new_frequency == 0)
+			cpufreq[i].new_frequency = cpufreq[i].orig_frequency;
+		if (cpufreq[i].new_governor[0] == '\0') {
+			strcpy(cpufreq[i].new_governor,
+			       cpufreq[i].orig_governor);
+		}
+
+		if (reset_freq) {
 			snprintf(path, sizeof(path),
 				 PATH_TO_CPU "cpu%u/cpufreq/scaling_setspeed",
 				 i);
 			snprintf(value, LINE_LEN, "%u",
-				 cpufreq[i].orig_frequency);
+				 cpufreq[i].new_frequency);
 			if ((fp = fopen(path, "w"))) {
 				fputs(value, fp);
 				fclose(fp);
 			}
-			updated = true;
 		}
 
-		/* We want to restore to "ondemand" governor to recover from
-		 * hard slurmd failures and for gang scheduling where one job's
-		 * initial state might reflect the state of a currently running
-		 * job that is sharing resources temporarily (until one of the
-		 * jobs is suspended). */
-		if ((cpufreq[i].new_governor[0] != '\0') &&
-		    (cpufreq[i].avail_governors & GOV_ONDEMAND)) {
-			strcpy(cpufreq[i].orig_governor, "ondemand");
-
-		}
-		if (cpufreq[i].new_governor[0] != '\0') {
+		if (reset_gov) {
 			snprintf(path, sizeof(path),
 				 PATH_TO_CPU "cpu%u/cpufreq/scaling_governor",
 				 i);
 			if ((fp = fopen(path, "w"))) {
-				fputs(cpufreq[i].orig_governor, fp);
+				fputs(cpufreq[i].new_governor, fp);
 				fputc('\n', fp);
 				fclose(fp);
 			}
-			updated = true;
 		}
 
-		if (updated) {
-			j++;
-			debug3("cpu_freq_reset: CPU:%u frequency:%u governor:%s",
-			       i, cpufreq[i].orig_frequency,
-			       cpufreq[i].orig_governor);
-		}
+		j++;
+		debug3("cpu_freq_reset: CPU:%u frequency:%u governor:%s",
+		       i, cpufreq[i].new_frequency,
+		       cpufreq[i].new_governor);
 	}
 	debug("cpu_freq_reset: #cpus reset = %u", j);
 }
