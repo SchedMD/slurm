@@ -3800,10 +3800,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	}
 
 	if ((job_return_code == NO_VAL) &&
-	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr))) {
-		info("%s: %s cancelled from interactive user",
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr)))
+		info("%s: %s cancelled from interactive user or node failure",
 		     __func__, jobid2str(job_ptr, jbuf));
-	}
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		enum job_states suspend_job_state = job_ptr->job_state;
@@ -10282,14 +10281,12 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(struct job_record  *job_ptr)
 {
-	time_t now;
-
 	if (IS_JOB_COMPLETING(job_ptr) ||
 	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
 		return;
 
 	info("requeue batch job %u", job_ptr->job_id);
-	now = time(NULL);
+
 	/* Clear everything so this appears to be a new job and then restart
 	 * it in accounting. */
 	job_ptr->start_time = 0;
@@ -10313,14 +10310,14 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	if (job_ptr->details) {
+		time_t now = time(NULL);
 		/* the time stamp on the new batch launch credential must be
 		 * larger than the time stamp on the revoke request. Also the
 		 * I/O must be all cleared out and the named socket purged,
 		 * so delay for at least ten seconds. */
 		if (job_ptr->details->begin_time <= now)
 			job_ptr->details->begin_time = now + 10;
-		if (!with_slurmdbd)
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
 		/* Since this could happen on a launch we need to make sure the
 		 * submit isn't the same as the last submit so put now + 1 so
 		 * we get different records in the database */
@@ -10332,6 +10329,8 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	/* Reset this after the batch step has finished or the batch step
 	 * information will be attributed to the next run of the job. */
 	job_ptr->db_index = 0;
+	if (!with_slurmdbd)
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 }
 
 

@@ -169,9 +169,17 @@ documents those changes that are of interest to users and admins.
     of order.
  -- Expand pseudo-terminal size data structure field sizes from 8 to 16 bits.
  -- Set the job exit code when the job is signaled and set the log level to
-    debug2().
-    when processing an already completed job.
+    debug2() when processing an already completed job.
  -- Distinguish between two identical error messages.
+ -- If using accounting_storage/mysql directly without a DBD fix issue with
+    start of requeued jobs.
+ -- If a job fails because of batch node failure and the job is requeued and an
+    epilog complete message comes from that node do not process the batch step
+    information since the job has already been requeued because the epilog
+    script running isn't guaranteed in this situation.
+ -- Change message to note a NO_VAL for return code could of come from node
+    failure as well as interactive user.
+ -- Modify test4.5 to only look at one partition instead of all of them.
 
 * Changes in Slurm 14.03.4
 ==========================

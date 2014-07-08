@@ -42,12 +42,14 @@ set node_name    ""
 set mismatches   0
 
 print_header $test_id
-
+if (![string compare $partition ""]) {
+	set partition [default_partition]
+}
 #
 # Check the sinfo long format looking for filtering options
 #
 
-spawn $sinfo --Node --long --exact
+spawn $sinfo --Node --long --exact -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
 		if (![string compare $node_name ""]) {
@@ -75,7 +77,7 @@ expect {
 # Use sinfo state filter
 #
 
-spawn $sinfo --Node --long --exact --state=$node_state
+spawn $sinfo --Node --long --exact --state=$node_state -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
 		if ([string compare $expect_out(5,string) $node_state]) {
@@ -104,7 +106,7 @@ expect {
 # Use sinfo node name filter
 #
 
-spawn $sinfo --Node --long --exact --nodes=$node_name
+spawn $sinfo --Node --long --exact --nodes=$node_name -p$partition
 expect {
 	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
 		if ([string compare $expect_out(2,string) $node_name]) {
