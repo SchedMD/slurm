@@ -10275,14 +10275,12 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(struct job_record  *job_ptr)
 {
-	time_t now;
-
 	if (IS_JOB_COMPLETING(job_ptr) ||
 	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
 		return;
 
 	info("requeue batch job %u", job_ptr->job_id);
-	now = time(NULL);
+
 	/* Clear everything so this appears to be a new job and then restart
 	 * it in accounting. */
 	job_ptr->start_time = 0;
@@ -10306,6 +10304,7 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	if (job_ptr->details) {
+		time_t now = time(NULL);
 		/* the time stamp on the new batch launch credential must be
 		 * larger than the time stamp on the revoke request. Also the
 		 * I/O must be all cleared out and the named socket purged,
