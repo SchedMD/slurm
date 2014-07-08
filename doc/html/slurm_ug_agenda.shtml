@@ -630,18 +630,18 @@ More information will be made available later.</p>
 
 <h3>Level-based job prioritization</h3>
 <p>Ryan Cox and Levi Morrison (Brigham Young University)</p>
-<p>I would like to present on our new LEVEL_BASED prioritization
-  mechanism.  It recurses through the account tree and calculates fair
-  share at each level.  It uses bitwise math to ensure that the effect
-  of usage and shares below the current level cannot affect
-  calculations at the current level.</p>
-<p>Basically, if accounts A and B both have users in the queue and
-  account A should have a higher fair share factor than account B,
-  users in account B cannot have a higher priority than users in
-  account A.  This is not guaranteed in other prioritization
-  methods. LEVEL_BASED was also carefully designed to avoid errors due
-  to precision loss and calculations as have previously been
-  described.</p>
+<p>We will present about our new LEVEL_BASED job prioritization mechanism.
+  The algorithm prioritizes users such that users in an under-served account
+  will always have a higher fair share factor than users in an over-served
+  account.  It recurses through the account tree, calculates fair share at
+  each level, then uses bitwise math to ensure that the effect of usage and
+  shares below the current level cannot affect calculations at the current
+  level.</p>
+<p>Basically, if accounts A and B have the same shares but A has higher usage
+  than B then children of account A will have a lower fair share factor than
+  children of account B. This is not guaranteed in other prioritization methods.
+  LEVEL_BASED was also designed to reduce the likelihood of errors due to
+  floating point precision loss.</p>
 
 <h3>Integrating Layouts Framework in SLURM</h3>
 <p>Thomas Cadeau (BULL), Yiannis Georgiou (BULL), Matthieu Hautreux (CEA)</p>
