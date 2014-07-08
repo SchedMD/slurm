@@ -65,8 +65,7 @@ documents those changes that are of interest to users and admins.
     of order.
  -- Expand pseudo-terminal size data structure field sizes from 8 to 16 bits.
  -- Set the job exit code when the job is signaled and set the log level to
-    debug2().
-    when processing an already completed job.
+    debug2() when processing an already completed job.
  -- Distinguish between two identical error messages.
  -- If using accounting_storage/mysql directly without a DBD fix issue with
     start of requeued jobs.
