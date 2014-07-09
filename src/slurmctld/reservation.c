@@ -1869,6 +1869,13 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		total_node_cnt = bit_set_count(node_bitmap);
 	}
 
+	if (resv_desc_ptr->core_cnt && !core_bitmap) {
+		info("Attempt to reserve cores not possible with current "
+		     "configuration");
+		rc = ESLURM_INVALID_CPU_COUNT;
+		goto bad_parse;
+	}
+
 	_generate_resv_id();
 	if (resv_desc_ptr->name) {
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
