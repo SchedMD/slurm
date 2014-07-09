@@ -24,8 +24,8 @@ opt_modulefiles_slurm: opt_modulefiles_slurm.in Makefile
 	sed -e 's|@prefix[@]|$(prefix)|g' \
 	    -e 's|@MUNGE_DIR[@]|$(MUNGE_DIR)|g' \
 	    -e 's|@libdir[@]|$(libdir)|g' \
-	    opt_modulefiles_slurm.in >opt_modulefiles_slurm
+	    ${abs_srcdir}/opt_modulefiles_slurm.in >opt_modulefiles_slurm
 
 slurmconfgen.py: slurmconfgen.py.in Makefile
 	sed -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
-	    slurmconfgen.py.in >slurmconfgen.py
+	    ${abs_srcdir}/slurmconfgen.py.in >slurmconfgen.py
