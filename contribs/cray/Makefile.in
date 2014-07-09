@@ -430,7 +430,7 @@ EXTRA_DIST = \
 	slurmconfgen.py.in
 
 @HAVE_NATIVE_CRAY_TRUE@sbin_SCRIPTS = slurmconfgen.py
-noinst_DATA = opt_modulefiles_slurm
+@HAVE_REAL_CRAY_TRUE@noinst_DATA = opt_modulefiles_slurm
 all: all-am
 
 .SUFFIXES:
@@ -570,8 +570,6 @@ install-strip:
 	fi
 mostlyclean-generic:
 
-clean-generic:
-
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
@@ -670,6 +668,9 @@ opt_modulefiles_slurm: opt_modulefiles_slurm.in Makefile
 slurmconfgen.py: slurmconfgen.py.in Makefile
 	sed -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
 	    ${abs_srcdir}/slurmconfgen.py.in >slurmconfgen.py
+
+clean-generic:
+	rm -f opt_modulefiles_slurm slurmconfgen.py
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
