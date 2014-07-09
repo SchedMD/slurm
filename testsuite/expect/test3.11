@@ -359,22 +359,15 @@ expect {
 
 set cons_res_actived 0
 if {$def_share_force == 0} {
-	spawn $scontrol show config
-	expect {
-		-re "select/cons_res" {
-			set cons_res_actived 1
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	set select_type [test_select_type]
+	if {![string compare $select_type "cons_res"]} {
+		set cons_res_actived 1
 	}
 }
 
-inc3_11_1
+if {$cons_res_actived == 1} {
+	inc3_11_1
+}
 inc3_11_2
 inc3_11_3
 inc3_11_4
