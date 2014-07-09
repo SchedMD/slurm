@@ -98,6 +98,9 @@ COMMAND CHANGES (see man pages for details)
  -- Added squeue -O/--Format option that makes all job and step fields available
     for printing.
  -- Add "CPUs" count to output of "scontrol show step".
+ -- Added support for job email triggers: TIME_LIMIT, TIME_LIMIT_90 (reached
+    90% of time limit), TIME_LIMIT_80 (reached 80% of time limit). Applies to
+    salloc, sbatch and srun commands.
 
 OTHER CHANGES
 =============

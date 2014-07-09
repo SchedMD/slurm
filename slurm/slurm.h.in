@@ -287,6 +287,9 @@ enum job_states {
 #define MAIL_JOB_END      0x0002	/* notify when job ends */
 #define MAIL_JOB_FAIL     0x0004	/* notify if job fails */
 #define MAIL_JOB_REQUEUE  0x0008	/* notify if job requeued */
+#define MAIL_JOB_TIME100  0x0010	/* notify on reaching 100% of time limit */
+#define MAIL_JOB_TIME90   0x0020	/* notify on reaching 90% of time limit */
+#define MAIL_JOB_TIME80   0x0040	/* notify on reaching 80% of time limit */
 
 #define NICE_OFFSET 10000	/* offset for job's nice value */
 

@@ -1499,6 +1499,12 @@ static char *_mail_type_str(uint16_t mail_type)
 		return "Failed";
 	if (mail_type == MAIL_JOB_REQUEUE)
 		return "Requeued";
+	if (mail_type == MAIL_JOB_TIME100)
+		return "Reached time limit";
+	if (mail_type == MAIL_JOB_TIME90)
+		return "Reached 90% of time limit";
+	if (mail_type == MAIL_JOB_TIME80)
+		return "Reached 80% of time limit";
 	return "unknown";
 }
 
@@ -1513,6 +1519,7 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 		interval = job_ptr->start_time - job_ptr->details->submit_time;
 		snprintf(buf, buf_len, ", Queued time ");
 		secs2time_str(interval, buf+14, buf_len-14);
+		return;
 	}
 
 	if (((mail_type == MAIL_JOB_END) || (mail_type == MAIL_JOB_FAIL) ||
@@ -1523,6 +1530,19 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 			interval += job_ptr->pre_sus_time;
 		} else
 			interval = job_ptr->end_time - job_ptr->start_time;
+		snprintf(buf, buf_len, ", Run time ");
+		secs2time_str(interval, buf+11, buf_len-11);
+		return;
+	}
+
+	if (((mail_type == MAIL_JOB_TIME100) ||
+	     (mail_type == MAIL_JOB_TIME90)  ||
+	     (mail_type == MAIL_JOB_TIME80)) && job_ptr->start_time) {
+		if (job_ptr->suspend_time) {
+			interval  = time(NULL) - job_ptr->suspend_time;
+			interval += job_ptr->pre_sus_time;
+		} else
+			interval = time(NULL) - job_ptr->start_time;
 		snprintf(buf, buf_len, ", Run time ");
 		secs2time_str(interval, buf+11, buf_len-11);
 	}

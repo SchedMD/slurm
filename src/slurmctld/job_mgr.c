@@ -5989,6 +5989,23 @@ void job_time_limit(void)
 				job_ptr->warn_signal = 0;
 				job_ptr->warn_time = 0;
 			}
+			if ((job_ptr->mail_type & MAIL_JOB_TIME100) &&
+			    (now >= job_ptr->end_time)) {
+				job_ptr->mail_type &= (~MAIL_JOB_TIME100);
+				mail_job_info(job_ptr, MAIL_JOB_TIME100);
+			}
+			if ((job_ptr->mail_type & MAIL_JOB_TIME90) &&
+			    (now + (job_ptr->time_limit * 60 * 0.1) >=
+			     job_ptr->end_time)) {
+				job_ptr->mail_type &= (~MAIL_JOB_TIME90);
+				mail_job_info(job_ptr, MAIL_JOB_TIME90);
+			}
+			if ((job_ptr->mail_type & MAIL_JOB_TIME80) &&
+			    (now + (job_ptr->time_limit * 60 * 0.2) >=
+			     job_ptr->end_time)) {
+				job_ptr->mail_type &= (~MAIL_JOB_TIME80);
+				mail_job_info(job_ptr, MAIL_JOB_TIME80);
+			}
 			if (job_ptr->end_time <= over_run) {
 				last_job_update = now;
 				info("Time limit exhausted for JobId=%u",

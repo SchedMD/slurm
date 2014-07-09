@@ -710,42 +710,84 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 
 uint16_t parse_mail_type(const char *arg)
 {
-	uint16_t rc;
+	char *buf, *tok, *save_ptr = NULL;
+	uint16_t rc = 0;
 
-	if (strcasecmp(arg, "BEGIN") == 0)
-		rc = MAIL_JOB_BEGIN;
-	else if  (strcasecmp(arg, "END") == 0)
-		rc = MAIL_JOB_END;
-	else if (strcasecmp(arg, "FAIL") == 0)
-		rc = MAIL_JOB_FAIL;
-	else if (strcasecmp(arg, "REQUEUE") == 0)
-		rc = MAIL_JOB_REQUEUE;
-	else if (strcasecmp(arg, "ALL") == 0)
-		rc = MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL |
-		     MAIL_JOB_REQUEUE;
-	else
-		rc = 0;		/* failure */
+	if (!arg)
+		return rc;
+
+	buf = xstrdup(arg);
+	tok = strtok_r(buf, ",", &save_ptr);
+	while (tok) {
+		if (strcasecmp(tok, "BEGIN") == 0)
+			rc |= MAIL_JOB_BEGIN;
+		else if  (strcasecmp(tok, "END") == 0)
+			rc |= MAIL_JOB_END;
+		else if (strcasecmp(tok, "FAIL") == 0)
+			rc |= MAIL_JOB_FAIL;
+		else if (strcasecmp(tok, "REQUEUE") == 0)
+			rc |= MAIL_JOB_REQUEUE;
+		else if (strcasecmp(tok, "ALL") == 0)
+			rc |= MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL |
+			      MAIL_JOB_REQUEUE;
+		else if (strcasecmp(tok, "TIME_LIMIT") == 0)
+			rc |= MAIL_JOB_TIME100;
+		else if (strcasecmp(tok, "TIME_LIMIT_90") == 0)
+			rc |= MAIL_JOB_TIME90;
+		else if (strcasecmp(tok, "TIME_LIMIT_80") == 0)
+			rc |= MAIL_JOB_TIME80;
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(buf);
 
 	return rc;
 }
 char *print_mail_type(const uint16_t type)
 {
+	static char buf[256];
+
+	buf[0] = '\0';
+
 	if (type == 0)
 		return "NONE";
 
-	if (type == MAIL_JOB_BEGIN)
-		return "BEGIN";
-	if (type == MAIL_JOB_END)
-		return "END";
-	if (type == MAIL_JOB_FAIL)
-		return "FAIL";
-	if (type == MAIL_JOB_REQUEUE)
-		return "REQUEUE";
-	if (type == (MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL |
-		     MAIL_JOB_REQUEUE))
-		return "ALL";
+	if (type & MAIL_JOB_BEGIN) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "BEGIN");
+	}
+	if (type & MAIL_JOB_END) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "END");
+	}
+	if (type & MAIL_JOB_FAIL) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "FAIL");
+	}
+	if (type & MAIL_JOB_REQUEUE) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "REQUEUE");
+	}
+	if (type & MAIL_JOB_TIME80) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "TIME_LIMIT_80");
+	}
+	if (type & MAIL_JOB_TIME90) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "TIME_LIMIT_90");
+	}
+	if (type & MAIL_JOB_TIME100) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "TIME_LIMIT");
+	}
 
-	return "MULTIPLE";
+	return buf;
 }
 
 static void
