@@ -892,7 +892,7 @@ Arbitrary parameters for the job account gather plugin
 Acceptable values at present include:
 .RS
 .TP 20
-fB\NoShared\fR
+\fBNoShared\fR
 Exclude shared memory from accounting.
 .RE
 
@@ -3396,7 +3396,7 @@ described above.
 
 .TP
 \fBAllowQos\fR
-Comma seperated list of Qos which may execute jobs in the partition.
+Comma separated list of Qos which may execute jobs in the partition.
 Jobs executed as user root can use any partition without regard to
 the value of AllowQos.
 The default value is "ALL".
@@ -3444,14 +3444,14 @@ not be stored, just collected).
 
 .TP
 \fBDenyAccount\fR
-Comma seperated list of accounts which may not execute jobs in the partition.
+Comma separated list of accounts which may not execute jobs in the partition.
 By default, no accounts are denied access
 \fBNOTE:\fR If AllowAccounts is used then DenyAccounts will not be enforced.
 Also refer to AllowAccount.
 
 .TP
 \fBDenyQos\fR
-Comma seperated list of Qos which may not execute jobs in the partition.
+Comma separated list of Qos which may not execute jobs in the partition.
 By default, no QOS are denied access
 \fBNOTE:\fR If AllowQos is used then DenyQos will not be enforced.
 Also refer AllowQos.
