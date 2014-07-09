@@ -299,7 +299,7 @@ static int _set_options(const int argc, char **argv)
 
 	_init_opts();
 
-	while ((cc = getopt_long(argc, argv, "d:Ehi:Ij:l:N:o:p:s:S:uUvV",
+	while ((cc = getopt_long(argc, argv, "d:Ehi:Ij:l:N:o:p:s:S:u:UvV",
 	                         long_options, &option_index)) != EOF) {
 		switch (cc) {
 			case 'd':
@@ -351,11 +351,11 @@ static int _set_options(const int argc, char **argv)
 				params.keepfiles = 1;
 				break;
 			case 'u':
-				u = atoi(optarg);
 				if (uid_from_string(optarg, &u) < 0) {
 					error("No such user --uid=\"%s\"", optarg);
 					return -1;
 				}
+				params.user = uid_to_string(u);
 				break;
 			case 'U':
 				_help_msg();
