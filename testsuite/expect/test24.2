@@ -32,10 +32,10 @@
 ############################################################################
 source ./globals
 
-set test_id     "24.2"
-set exit_code   0
-set timeout 60
-print_header $test_id
+set test_id	"24.2"
+set exit_code	0
+set timeout	60
+print_header	$test_id
 
 #
 # Check accounting config and bail if not found.
@@ -58,9 +58,8 @@ if { [test_account_storage] == 0 } {
 ################################################################
 
 proc sshare_opt { soption } {
-	global sshare number
+	global exit_code sshare number
 	set debug       1
-	set exit_code   0
 	set matches     0
 	set not_support 0
 	send_user "$sshare -$soption \n"
@@ -103,18 +102,14 @@ proc sshare_opt { soption } {
 
 		if {$not_support == 1} {
 			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			exit $exit_code
 		}
 
 		if {$not_support == 2} {
 			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit 0
+			exit $exit_code
 		}
 
-		if {$matches != 3} {
-			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
-			set exit_code 1
-		}
 		return $matches
 	}
 
@@ -146,18 +141,14 @@ proc sshare_opt { soption } {
 
 		if {$not_support == 1} {
 			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			exit $exit_code
 		}
 
 		if {$not_support == 2} {
 			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit 0
+			exit $exit_code
 		}
 
-		if {$matches != 0} {
-			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
-			set exit_code 1
-		}
 		return $matches
 	}
 
@@ -194,12 +185,9 @@ proc sshare_opt { soption } {
 
 		if {$not_support != 0} {
 			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			exit $exit_code
 		}
-		if {$matches != 2} {
-			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
-			set exit_code 1
-		}
+
 		return $matches
 	}
 
@@ -236,18 +224,14 @@ proc sshare_opt { soption } {
 
 		if {$not_support == 1} {
 			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			exit $exit_code
 		}
 
 		if {$not_support == 2} {
 			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit 0
+			exit $exit_code
 		}
 
-		if {$matches != 2} {
-			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
-			set exit_code 1
-		}
 		return $matches
 	}
 
@@ -273,11 +257,6 @@ proc sshare_opt { soption } {
 				incr matches
 				exp_continue
 			}
-			-re "sshare: .* loaded" {
-				if {$debug} {send_user "\nmatch10\n"}
-				incr matches
-				exp_continue
-			}
 			timeout {
 				send_user "\nFAILURE: sshare not responding\n"
 				set exit_code 1
@@ -289,18 +268,14 @@ proc sshare_opt { soption } {
 
 		if {$not_support == 1} {
 			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			exit $exit_code
 		}
 
 		if {$not_support == 2} {
 			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit 0
+			exit $exit_code
 		}
 
-		if {$matches != 3} {
-			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
-			set exit_code 1
-		}
 		return $matches
 	}
 
@@ -333,18 +308,14 @@ proc sshare_opt { soption } {
 
 		if {$not_support == 1} {
 			send_user "\nWARNING: can not test without accounting enabled\n"
-			exit 0
+			exit $exit_code
 		}
 
 		if {$not_support == 2} {
 			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
-			exit 0
+			exit $exit_code
 		}
 
-		if {$matches != 1} {
-			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
-			set exit_code 1
-		}
 		return $matches
 	}
 }
@@ -353,78 +324,82 @@ proc sshare_opt { soption } {
 
 set matches [sshare_opt -help ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sshare --help failed ($matches)\n"
+	send_user "\nFAILURE: sshare --help failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt -usage ]
 if {$matches != 3} {
-	send_user "\nFAILURE: sshare --usage failed ($matches)\n"
+	send_user "\nFAILURE: sshare --usage failed ($matches != 3)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt h ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sshare -n failed ($matches)\n"
+	send_user "\nFAILURE: sshare -n failed ($matches != 0)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt -noheader ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sshare --noheader failed ($matches)\n"
+	send_user "\nFAILURE: sshare --noheader failed ($matches != 0)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt p ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare -p failed ($matches)\n"
+	send_user "\nFAILURE: sshare -p failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt -parsable ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare --parsable failed ($matches)\n"
+	send_user "\nFAILURE: sshare --parsable failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt P ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare -P failed ($matches)\n"
+	send_user "\nFAILURE: sshare -P failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt -parsable2 ]
 if {$matches != 2} {
-	send_user "\nFAILURE: sshare --parsable2 failed ($matches)\n"
+	send_user "\nFAILURE: sshare --parsable2 failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt v ]
-if {$matches != 3} {
-	send_user "\nFAILURE: sshare -v failed ($matches)\n"
+if {$matches != 2} {
+	send_user "\nFAILURE: sshare -v failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt -verbose ]
-if {$matches != 3} {
-	send_user "\nFAILURE: sshare --verbose failed ($matches)\n"
+if {$matches != 2} {
+	send_user "\nFAILURE: sshare --verbose failed ($matches != 2)\n"
 	set exit_code 1
 }
 
 
 set matches [sshare_opt V ]
 if {$matches != 1} {
-	send_user "\nFAILURE: sshare -v failed ($matches)\n"
+	send_user "\nFAILURE: sshare -v failed ($matches != 1)\n"
 	set exit_code 1
 }
 
 set matches [sshare_opt -version ]
 if {$matches != 1} {
-	send_user "\nFAILURE: sshare --verbose failed ($matches)\n"
+	send_user "\nFAILURE: sshare --verbose failed ($matches != 1)\n"
 	set exit_code 1
 }
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE
+
+\n"
 }
 exit $exit_code
