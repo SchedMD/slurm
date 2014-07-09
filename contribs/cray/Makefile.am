@@ -14,12 +14,10 @@ EXTRA_DIST = \
 
 if HAVE_NATIVE_CRAY
 sbin_SCRIPTS = slurmconfgen.py
-noinst_DATA = opt_modulefiles_slurm
 endif
 
-if HAVE_CRAY_NETWORK
 noinst_DATA = opt_modulefiles_slurm
-endif
+
 
 # Don't rely on autoconf to replace variables outside of makefiles
 opt_modulefiles_slurm: opt_modulefiles_slurm.in Makefile

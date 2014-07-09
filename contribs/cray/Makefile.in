@@ -430,8 +430,7 @@ EXTRA_DIST = \
 	slurmconfgen.py.in
 
 @HAVE_NATIVE_CRAY_TRUE@sbin_SCRIPTS = slurmconfgen.py
-@HAVE_CRAY_NETWORK_TRUE@noinst_DATA = opt_modulefiles_slurm
-@HAVE_NATIVE_CRAY_TRUE@noinst_DATA = opt_modulefiles_slurm
+noinst_DATA = opt_modulefiles_slurm
 all: all-am
 
 .SUFFIXES:
