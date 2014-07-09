@@ -1150,17 +1150,15 @@ fail2:
 		_wait_for_io(job);
 
 	/*
-	 * Reset cpu frequency if it was changed
-	 */
-
-	if (job->cpu_freq != NO_VAL)
-		cpu_freq_reset(job);
-
-	/*
 	 * Warn task plugin that the user's step have terminated
 	 */
-
 	task_g_post_step(job);
+
+	/*
+	 * Reset cpu frequency if it was changed
+	 */
+	if (job->cpu_freq != NO_VAL)
+		cpu_freq_reset(job);
 
 	/*
 	 * This just cleans up all of the PAM state in case rc == 0
