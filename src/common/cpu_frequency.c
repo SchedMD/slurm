@@ -462,7 +462,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 				      "scaling_min_freq");
 				return;
 			}
-			if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE) {
+			if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE)
 				strcpy(cpufreq[cpuidx].new_governor,
 				       "userspace");
 			break;
@@ -502,7 +502,6 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 					if ((m1_loc == -1) ||
 					    (freq_list[j] > freq_list[m1_loc]))
 						m1_loc = j;
-
 				}
 				cpufreq[cpuidx].new_frequency =
 					freq_list[m1_loc];
