@@ -1003,8 +1003,9 @@ _process_command (int argc, char *argv[])
 					mode = 0;
 					break;
 				}
-				flags = debug_str2flags(&argv[i][1]);
-				if (flags == (uint64_t)NO_VAL)
+
+				if (debug_str2flags(&argv[i][1], &flags)
+				    != SLURM_SUCCESS)
 					break;
 				if (mode == 1)
 					debug_flags_plus  |= flags;

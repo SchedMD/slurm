@@ -529,10 +529,10 @@ extern uint16_t prolog_str2flags(char *prolog_flags);
 extern char *debug_flags2str(uint64_t debug_flags);
 
 /*
- * debug_str2flags - Convert a DebugFlags string to the equivalent uint32_t
- * Returns NO_VAL if invalid
+ * debug_str2flags - Convert a DebugFlags string to the equivalent uint64_t
+ * Returns SLURM_ERROR if invalid
  */
-extern uint64_t debug_str2flags(char *debug_flags);
+extern int debug_str2flags(char *debug_flags, uint64_t *flags_out);
 
 /*
  * reconfig_flags2str - convert a ReconfigFlags uint16_t to the equivalent string

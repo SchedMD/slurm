@@ -504,7 +504,7 @@ static void _get_current_debug(GtkRadioAction *action)
 
 static void _get_current_debug_flags(GtkToggleAction *action)
 {
-	static uint64_t debug_flags = 0;
+	static uint64_t debug_flags = 0, tmp_flags;
 	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
 	GtkAction *debug_action = NULL;
@@ -520,8 +520,13 @@ static void _get_current_debug_flags(GtkToggleAction *action)
 			menu_action_group, debug_actions[i].name);
 		toggle_action = GTK_TOGGLE_ACTION(debug_action);
 		orig_state = gtk_toggle_action_get_active(toggle_action);
-		new_state = debug_flags
-			& debug_str2flags((char *)debug_actions[i].name);
+		if (debug_str2flags((char *)debug_actions[i].name, &tmp_flags)
+		    != SLURM_SUCCESS) {
+			g_error("debug_str2flags no good: %s\n",
+				debug_actions[i].name);
+			continue;
+		}
+		new_state = debug_flags & tmp_flags;
 		if (orig_state != new_state)
 			gtk_toggle_action_set_active(toggle_action, new_state);
 	}
@@ -566,7 +571,8 @@ static void _set_flags(GtkToggleAction *action)
 	if (!name)
 		return;
 
-	flag = debug_str2flags((char *)name);
+	if (debug_str2flags((char *)name, &flag) != SLURM_SUCCESS)
+		return;
 
 	if (action && gtk_toggle_action_get_active(action))
 		debug_flags_plus  |= flag;

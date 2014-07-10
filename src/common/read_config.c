@@ -3015,8 +3015,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->def_mem_per_cpu = DEFAULT_MEM_PER_CPU;
 
 	if (s_p_get_string(&temp_str, "DebugFlags", hashtbl)) {
-		conf->debug_flags = debug_str2flags(temp_str);
-		if (conf->debug_flags == (uint64_t)NO_VAL) {
+		if (debug_str2flags(temp_str, &conf->debug_flags)
+		    != SLURM_SUCCESS) {
 			error("DebugFlags invalid: %s", temp_str);
 			return SLURM_ERROR;
 		}
@@ -4396,14 +4396,18 @@ extern char * debug_flags2str(uint64_t debug_flags)
 }
 
 /*
- * debug_str2flags - Convert a DebugFlags string to the equivalent uint32_t
+ * debug_str2flags - Convert a DebugFlags string to the equivalent uint64_t
  * Keep in sycn with debug_flags2str() above
- * Returns NO_VAL if invalid
+ * Returns SLURM_ERROR if invalid
  */
-extern uint64_t debug_str2flags(char *debug_flags)
+extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 {
-	uint64_t rc = 0;
+	int rc = SLURM_SUCCESS;
 	char *tmp_str, *tok, *last = NULL;
+
+	xassert(flags_out);
+
+	(*flags_out) = 0;
 
 	if (!debug_flags)
 		return rc;
@@ -4412,68 +4416,69 @@ extern uint64_t debug_str2flags(char *debug_flags)
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
 		if (strcasecmp(tok, "Backfill") == 0)
-			rc |= DEBUG_FLAG_BACKFILL;
+			(*flags_out) |= DEBUG_FLAG_BACKFILL;
 		else if (strcasecmp(tok, "BackfillMap") == 0)
-			rc |= DEBUG_FLAG_BACKFILL_MAP;
+			(*flags_out) |= DEBUG_FLAG_BACKFILL_MAP;
 		else if (strcasecmp(tok, "BGBlockAlgo") == 0)
-			rc |= DEBUG_FLAG_BG_ALGO;
+			(*flags_out) |= DEBUG_FLAG_BG_ALGO;
 		else if (strcasecmp(tok, "BGBlockAlgoDeep") == 0)
-			rc |= DEBUG_FLAG_BG_ALGO_DEEP;
+			(*flags_out) |= DEBUG_FLAG_BG_ALGO_DEEP;
 		else if (strcasecmp(tok, "BGBlockPick") == 0)
-			rc |= DEBUG_FLAG_BG_PICK;
+			(*flags_out) |= DEBUG_FLAG_BG_PICK;
 		else if (strcasecmp(tok, "BGBlockWires") == 0)
-			rc |= DEBUG_FLAG_BG_WIRES;
+			(*flags_out) |= DEBUG_FLAG_BG_WIRES;
 		else if (strcasecmp(tok, "CPU_Bind") == 0)
-			rc |= DEBUG_FLAG_CPU_BIND;
+			(*flags_out) |= DEBUG_FLAG_CPU_BIND;
 		else if (strcasecmp(tok, "Energy") == 0)
-			rc |= DEBUG_FLAG_ENERGY;
+			(*flags_out) |= DEBUG_FLAG_ENERGY;
 		else if (strcasecmp(tok, "ExtSensors") == 0)
-			rc |= DEBUG_FLAG_EXT_SENSORS;
+			(*flags_out) |= DEBUG_FLAG_EXT_SENSORS;
 		else if (strcasecmp(tok, "FrontEnd") == 0)
-			rc |= DEBUG_FLAG_FRONT_END;
+			(*flags_out) |= DEBUG_FLAG_FRONT_END;
 		else if (strcasecmp(tok, "Gang") == 0)
-			rc |= DEBUG_FLAG_GANG;
+			(*flags_out) |= DEBUG_FLAG_GANG;
 		else if (strcasecmp(tok, "Gres") == 0)
-			rc |= DEBUG_FLAG_GRES;
+			(*flags_out) |= DEBUG_FLAG_GRES;
 		else if (strcasecmp(tok, "Infiniband") == 0)
-			rc |= DEBUG_FLAG_INFINIBAND;
+			(*flags_out) |= DEBUG_FLAG_INFINIBAND;
 		else if (strcasecmp(tok, "Filesystem") == 0)
-			rc |= DEBUG_FLAG_FILESYSTEM;
+			(*flags_out) |= DEBUG_FLAG_FILESYSTEM;
 		else if (strcasecmp(tok, "JobContainer") == 0)
-			rc |= DEBUG_FLAG_JOB_CONT;
+			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
 		else if (strcasecmp(tok, "License") == 0)
-			rc |= DEBUG_FLAG_LICENSE;
+			(*flags_out) |= DEBUG_FLAG_LICENSE;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
-			rc |= DEBUG_FLAG_NO_CONF_HASH;
+			(*flags_out) |= DEBUG_FLAG_NO_CONF_HASH;
 		else if (strcasecmp(tok, "NoRealTime") == 0)
-			rc |= DEBUG_FLAG_NO_REALTIME;
+			(*flags_out) |= DEBUG_FLAG_NO_REALTIME;
 		else if (strcasecmp(tok, "Priority") == 0)
-			rc |= DEBUG_FLAG_PRIO;
+			(*flags_out) |= DEBUG_FLAG_PRIO;
 		else if (strcasecmp(tok, "Profile") == 0)
-			rc |= DEBUG_FLAG_PROFILE;
+			(*flags_out) |= DEBUG_FLAG_PROFILE;
 		else if (strcasecmp(tok, "Protocol") == 0)
-			rc |= DEBUG_FLAG_PROTOCOL;
+			(*flags_out) |= DEBUG_FLAG_PROTOCOL;
 		else if (strcasecmp(tok, "Reservation") == 0)
-			rc |= DEBUG_FLAG_RESERVATION;
+			(*flags_out) |= DEBUG_FLAG_RESERVATION;
 		else if (strcasecmp(tok, "SelectType") == 0)
-			rc |= DEBUG_FLAG_SELECT_TYPE;
+			(*flags_out) |= DEBUG_FLAG_SELECT_TYPE;
 		else if (strcasecmp(tok, "Steps") == 0)
-			rc |= DEBUG_FLAG_STEPS;
+			(*flags_out) |= DEBUG_FLAG_STEPS;
 		else if (strcasecmp(tok, "Switch") == 0)
-			rc |= DEBUG_FLAG_SWITCH;
+			(*flags_out) |= DEBUG_FLAG_SWITCH;
 		else if (strcasecmp(tok, "Task") == 0)
-			rc |= DEBUG_FLAG_TASK;
+			(*flags_out) |= DEBUG_FLAG_TASK;
 		else if (strcasecmp(tok, "TraceJobs") == 0)
-			rc |= DEBUG_FLAG_TRACE_JOBS;
+			(*flags_out) |= DEBUG_FLAG_TRACE_JOBS;
 		else if (strcasecmp(tok, "Trigger") == 0)
-			rc |= DEBUG_FLAG_TRIGGERS;
+			(*flags_out) |= DEBUG_FLAG_TRIGGERS;
 		else if (strcasecmp(tok, "Triggers") == 0)
-			rc |= DEBUG_FLAG_TRIGGERS;
+			(*flags_out) |= DEBUG_FLAG_TRIGGERS;
 		else if (strcasecmp(tok, "Wiki") == 0)
-			rc |= DEBUG_FLAG_WIKI;
+			(*flags_out) |= DEBUG_FLAG_WIKI;
 		else {
 			error("Invalid DebugFlag: %s", tok);
-			rc = (uint64_t)NO_VAL;
+			(*flags_out) = 0;
+			rc = SLURM_ERROR;
 			break;
 		}
 		tok = strtok_r(NULL, ",", &last);
