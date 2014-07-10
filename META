@@ -11,7 +11,8 @@
   Minor:	11
   Micro:	0
   Version:	14.11.0
-  Release:	pre2
+  Release:	0pre2
+# Include leading zero for all pre-releases
 
 ##
 #  When making a new Major/Minor version update
