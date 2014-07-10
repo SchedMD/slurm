@@ -1148,10 +1148,10 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	line = xstrdup_printf("Cluster - %s", cluster_name);
+	line = xstrdup_printf("Cluster - '%s'", cluster_name);
 
 	if (class_str)
-		xstrfmtcat(line, ":Classification=%s", class_str);
+		xstrfmtcat(line, ":Classification='%s'", class_str);
 
 	slurmdb_hierarchical_rec = list_peek(slurmdb_hierarchical_rec_list);
 	assoc = slurmdb_hierarchical_rec->assoc;
