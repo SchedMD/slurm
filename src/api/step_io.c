@@ -1089,6 +1089,7 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	int i;
 	uint32_t siglen;
 	char *sig;
+	uint16_t *ports;
 
 	cio = (client_io_t *)xmalloc(sizeof(client_io_t));
 	if (cio == NULL)
@@ -1127,12 +1128,20 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	pthread_mutex_init(&cio->ioservers_lock, NULL);
 
 	_init_stdio_eio_objs(fds, cio);
+	ports = slurm_get_srun_port_range();
 
 	for (i = 0; i < cio->num_listen; i++) {
 		eio_obj_t *obj;
+		int cc;
 
-		if (net_stream_listen(&cio->listensock[i],
-				      (short *)&cio->listenport[i]) < 0) {
+		if (ports)
+			cc = net_stream_listen_ports(&cio->listensock[i],
+						     &cio->listenport[i],
+						     ports);
+		else
+			cc = net_stream_listen(&cio->listensock[i],
+					       &cio->listenport[i]);
+		if (cc < 0) {
 			fatal("unable to initialize stdio listen socket: %m");
 		}
 		debug("initialized stdio listening socket, port %d",

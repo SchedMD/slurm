@@ -87,7 +87,7 @@
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
+#include "src/common/proc_args.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -158,6 +158,7 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			   const char *line, char **leftover);
 static int _validate_and_set_defaults(slurm_ctl_conf_t *conf,
 				      s_p_hashtbl_t *hashtbl);
+static uint16_t *_parse_srun_ports(const char *);
 
 s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageEnforce", S_P_STRING},
@@ -318,6 +319,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmSchedLogLevel", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
 	{"SrunProlog", S_P_STRING},
+	{"SrunPortRange", S_P_STRING},
 	{"StateSaveLocation", S_P_STRING},
 	{"SuspendExcNodes", S_P_STRING},
 	{"SuspendExcParts", S_P_STRING},
@@ -902,6 +904,53 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->reason);
 	xfree(n->state);
 	xfree(ptr);
+}
+
+/* _parse_srun_ports()
+ *
+ * Parse the srun port range specified like min-max.
+ *
+ */
+static uint16_t *
+_parse_srun_ports(const char *str)
+{
+	char *min;
+	char *max;
+	char *dash;
+	char *p;
+	uint16_t *v;
+
+	p = xstrdup(str);
+
+	min = p;
+	dash = strchr(p, '-');
+	if (dash == NULL) {
+		xfree(p);
+		return NULL;
+	}
+
+	*dash = 0;
+	max = dash + 1;
+
+	v = xmalloc(2 * sizeof(uint16_t));
+
+	if (parse_uint16(min, &v[0]))
+		goto hosed;
+	if (parse_uint16(max, &v[1]))
+		goto hosed;
+	if (v[1] <= v[0])
+		goto hosed;
+
+	xfree(p);
+
+	return v;
+hosed:
+	xfree(v[0]);
+	xfree(v[1]);
+	xfree(v);
+	xfree(p);
+
+	return NULL;
 }
 
 int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
@@ -2279,6 +2328,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	xfree (ctl_conf_ptr->slurmd_user_name);
 	xfree (ctl_conf_ptr->srun_epilog);
+	xfree (ctl_conf_ptr->srun_port_range);
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
@@ -3927,6 +3977,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
 	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
+	if (s_p_get_string(&temp_str, "SrunPortRange", hashtbl)) {
+		conf->srun_port_range = _parse_srun_ports(temp_str);
+		xfree(temp_str);
+	}
 	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);
 
 	if (!s_p_get_string(&conf->state_save_location,

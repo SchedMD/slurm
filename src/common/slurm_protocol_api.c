@@ -94,6 +94,7 @@ static char *_get_auth_info(void);
 static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
 static int   _unpack_msg_uid(Buf buffer);
+static bool  _is_port_ok(int, uint16_t);
 
 #if _DEBUG
 static void _print_data(char *data, int len);
@@ -2162,6 +2163,23 @@ char *slurm_get_task_prolog(void)
 	return task_prolog;
 }
 
+/*  slurm_get_srun_port_range()
+ */
+uint16_t *
+slurm_get_srun_port_range(void)
+{
+	uint16_t *ports;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		ports = conf->srun_port_range;
+		slurm_conf_unlock();
+	}
+	return ports;
+}
+
 /* slurm_get_task_plugin
  * RET task_plugin name, must be xfreed by caller */
 char *slurm_get_task_plugin(void)
@@ -2275,6 +2293,42 @@ eagain:
 		}
 	}
 	return cc;
+}
+
+/* slurm_init_msg_engine_ports()
+ */
+slurm_fd_t
+slurm_init_msg_engine_ports(uint16_t *ports)
+{
+	int cc;
+	int val;
+	int s;
+	uint16_t port;
+
+	s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (s < 0)
+		return -1;
+
+	val = 1;
+	cc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
+	if (cc < 0) {
+		close(s);
+		return -1;
+	}
+
+	port = sock_bind_range(s, ports);
+	if (port < 0) {
+		close(s);
+		return -1;
+	}
+
+	cc = listen(s, SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG);
+	if (cc < 0) {
+		close(s);
+		return -1;
+	}
+
+	return s;
 }
 
 /* In the socket implementation it creates a socket, binds to it, and
@@ -4231,7 +4285,64 @@ slurm_forward_data(char *nodelist, char *address, uint32_t len, char *data)
 	return rc;
 }
 
+/* sock_bind_range()
+ */
+int
+sock_bind_range(int s, uint16_t *range)
+{
+	uint32_t count;
+	uint32_t min;
+	uint32_t max;
+	uint32_t port;
+	uint32_t num;
 
+	min = range[0];
+	max = range[1];
+
+	srand(getpid());
+	num = max - min + 1;
+	port = min + (random() % num);
+	count = num;
+
+	do {
+		if (_is_port_ok(s, port))
+			return port;
+
+		if (port == max)
+			port = min;
+		else
+			++port;
+		--count;
+	} while (count > 0);
+
+	error("%s: ohmygosh all ports in range (%d, %d) exhausted",
+	      __func__, min, max);
+
+	return -1;
+}
+
+/* _is_port_ok()
+ *
+ * Check if we can bind() the socket s to port port.
+ */
+static bool
+_is_port_ok(int s, uint16_t port)
+{
+	struct sockaddr_in sin;
+
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	sin.sin_addr.s_addr = htonl(INADDR_ANY);
+	sin.sin_port = htons(port);
+
+	if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+		debug("%s: bind() failed port %d sock %d %m",
+		      __func__, port, s);
+		return false;
+	}
+
+	return true;
+}
 /*
  * vi: shiftwidth=8 tabstop=8 expandtab
  */

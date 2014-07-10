@@ -161,7 +161,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
 	int sock = -1;
-	short port = 0;
+	uint16_t port = 0;
 	int errnum = 0;
 
 	/* First copy the user's step_params into a step request struct */
@@ -220,8 +220,10 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	job_step_create_response_msg_t *step_resp = NULL;
 	int i, rc, time_left = timeout;
 	int sock = -1;
-	short port = 0;
+	uint16_t port = 0;
 	int errnum = 0;
+	int cc;
+	uint16_t *ports;
 
 	/* First copy the user's step_params into a step request struct */
 	step_req = _create_step_request(step_params);
@@ -230,7 +232,11 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
-	if (net_stream_listen(&sock, &port) < 0) {
+	if ((ports = slurm_get_srun_port_range()))
+		cc = net_stream_listen_ports(&sock, &port, ports);
+	else
+		cc = net_stream_listen(&sock, &port);
+	if (cc < 0) {
 		errnum = errno;
 		error("unable to initialize step context socket: %m");
 		slurm_free_job_step_create_request_msg(step_req);
@@ -304,7 +310,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
 	int sock = -1;
-	short port = 0;
+	uint16_t port = 0;
 	int errnum = 0;
 
 	/* First copy the user's step_params into a step request struct */

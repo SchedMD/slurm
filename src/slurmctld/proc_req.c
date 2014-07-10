@@ -581,7 +581,7 @@ static void _throttle_fini(int *active_rpc_cnt)
  *	this is done with locks set so the data can change at other times
  * OUT conf_ptr - place to copy configuration to
  */
-void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
+static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
 	char *licenses_used = get_licenses_used();  /* Do before config lock */
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
@@ -786,8 +786,18 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_user_id      = conf->slurmd_user_id;
 	conf_ptr->slurmd_user_name    = xstrdup(conf->slurmd_user_name);
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
-	conf_ptr->srun_prolog         = xstrdup(conf->srun_prolog);
 	conf_ptr->srun_epilog         = xstrdup(conf->srun_epilog);
+
+	conf_ptr->srun_port_range = xmalloc(2 * sizeof(uint16_t));
+	if (conf->srun_port_range) {
+		conf_ptr->srun_port_range[0] = conf->srun_port_range[0];
+		conf_ptr->srun_port_range[1] = conf->srun_port_range[1];
+	} else {
+		conf_ptr->srun_port_range[0] = 0;
+		conf_ptr->srun_port_range[1] = 0;
+	}
+
+	conf_ptr->srun_prolog         = xstrdup(conf->srun_prolog);
 	conf_ptr->state_save_location = xstrdup(conf->state_save_location);
 	conf_ptr->suspend_exc_nodes   = xstrdup(conf->suspend_exc_nodes);
 	conf_ptr->suspend_exc_parts   = xstrdup(conf->suspend_exc_parts);

@@ -2595,6 +2595,28 @@ executed, the \fBSrunEpilog\fR runs on the node where the "srun" is
 executing.
 
 .TP
+\fBSrunPortRange\fR
+The \fBsrun\fR creates a set of listening ports to communicate with the
+controller, the slurmstepd and to handle the application I/O.
+By default these ports are ephemeral meaning the port numbers are selected
+by the kernel. Using this parameter allow sites to configure a range of ports
+from which srun ports will be selected. This is useful if sites want to
+allow only certain port range on their network.
+\fBNote\fR. A sufficient number of ports must be configured based on the
+estimated number of srun on the submission nodes considering that srun opens
+3 listening ports plus 2 more for every 48 hosts. Example:
+.RS
+.TP 18
+\fBsrun \-N 48\fR will use 5 listening ports.
+
+.TP
+\fBsrun \-N 50\fR will use 7 listening ports.
+.TP
+
+\fBsrun \-N 200\fR will use 13 listening ports.
+.RE
+
+.TP
 \fBSrunProlog\fR
 Fully qualified pathname of an executable to be run by srun prior to
 the launch of a job step.  The command line arguments for the

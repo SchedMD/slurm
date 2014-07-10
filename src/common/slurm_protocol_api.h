@@ -704,6 +704,13 @@ char *slurm_get_srun_prolog(void);
  */
 char *slurm_get_srun_epilog(void);
 
+/* slurm_get_srun_port_range()
+ *
+ * Return the array with 2 members indicating the
+ * min and max ports that srun should use to listen to.
+ */
+uint16_t *slurm_get_srun_port_range(void);
+
 /* slurm_get_task_epilog
  * RET task_epilog name, must be xfreed by caller */
 char *slurm_get_task_epilog(void);
@@ -741,6 +748,21 @@ char *slurm_get_job_container_plugin(void);
  * RET slurm_fd		- file descriptor of the connection created
  */
 extern slurm_fd_t slurm_init_msg_engine_port(uint16_t port);
+
+/* Creates a TCP socket and binds to a port in the given
+ * range.
+ *
+ * IN ports - range of ports from which to select the one
+ *            to bind
+ * RET slurm_fd - file descriptor of the listening socket
+ */
+extern slurm_fd_t slurm_init_msg_engine_ports(uint16_t *);
+
+/* sock_bind_range()
+ *
+ * Try to bind() sock to any port in a given interval of ports
+ */
+extern int sock_bind_range(int, uint16_t *);
 
 /* In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.

@@ -5231,6 +5231,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->slurmd_spooldir, buffer);
 		pack16(build_ptr->slurmd_timeout, buffer);
 		packstr(build_ptr->srun_epilog, buffer);
+		pack16(build_ptr->srun_port_range[0], buffer);
+		pack16(build_ptr->srun_port_range[1], buffer);
 		packstr(build_ptr->srun_prolog, buffer);
 		packstr(build_ptr->state_save_location, buffer);
 		packstr(build_ptr->suspend_exc_nodes, buffer);
@@ -6072,6 +6074,11 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->srun_epilog,
 				       &uint32_tmp, buffer);
+
+		build_ptr->srun_port_range = xmalloc(2 * sizeof(uint16_t));
+		safe_unpack16(&build_ptr->srun_port_range[0], buffer);
+		safe_unpack16(&build_ptr->srun_port_range[1], buffer);
+
 		safe_unpackstr_xmalloc(&build_ptr->srun_prolog,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->state_save_location,

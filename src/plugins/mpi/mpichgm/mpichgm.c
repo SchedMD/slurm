@@ -332,7 +332,7 @@ gmpi_state_destroy(gmpi_state_t *st)
 extern gmpi_state_t *
 gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 {
-	short port;
+	uint16_t port;
 	pthread_attr_t attr;
 	gmpi_state_t *st = NULL;
 

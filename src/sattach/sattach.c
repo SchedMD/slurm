@@ -445,7 +445,7 @@ _estimate_nports(int nclients, int cli_per_port)
 static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 {
 	int sock = -1;
-	short port = -1;
+	uint16_t port;
 	eio_obj_t *obj;
 	int i;
 	message_thread_state_t *mts;

@@ -589,6 +589,7 @@ slurmctld_msg_init(void)
 	slurm_addr_t slurm_address;
 	uint16_t port;
 	static slurm_fd_t slurmctld_fd   = (slurm_fd_t) 0;
+	uint16_t *ports;
 
 	if (slurmctld_fd)	/* May set early for queued job allocation */
 		return slurmctld_fd;
@@ -596,10 +597,16 @@ slurmctld_msg_init(void)
 	slurmctld_fd = -1;
 	slurmctld_comm_addr.port = 0;
 
-	if ((slurmctld_fd = slurm_init_msg_engine_port(0)) < 0) {
+	if ((ports = slurm_get_srun_port_range()))
+		slurmctld_fd = slurm_init_msg_engine_ports(ports);
+	else
+		slurmctld_fd = slurm_init_msg_engine_port(0);
+
+	if (slurmctld_fd < 0) {
 		error("slurm_init_msg_engine_port error %m");
 		exit(error_exit);
 	}
+
 	if (slurm_get_stream_addr(slurmctld_fd, &slurm_address) < 0) {
 		error("slurm_get_stream_addr error %m");
 		exit(error_exit);
@@ -833,7 +840,7 @@ job_desc_msg_create_from_opts (void)
 		j->spank_job_env_size = opt.spank_job_env_size;
 	}
 
-	return (j);
+	return j;
 }
 
 void

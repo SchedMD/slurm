@@ -625,7 +625,7 @@ static int
 _setup_srun_socket(const mpi_plugin_client_info_t *job)
 {
 	if (net_stream_listen(&tree_sock,
-			      (short int *)&tree_info.pmi_port) < 0) {
+			      &tree_info.pmi_port) < 0) {
 		error("mpi/pmi2: Failed to create tree socket");
 		return SLURM_ERROR;
 	}

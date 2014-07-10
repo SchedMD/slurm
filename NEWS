@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     90% of time limit), TIME_LIMIT_80 (reached 80% of time limit), and
     TIME_LIMIT_50 (reached 50% of time limit). Applies to salloc, sbatch and
     srun commands.
+ -- In slurm.conf add the parameter SrunPortRange=min-max. If this is configured
+    then srun will use its dynamic ports only from the configured range.
 
 * Changes in Slurm 14.11.0pre1
 ==============================

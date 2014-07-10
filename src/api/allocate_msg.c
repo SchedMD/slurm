@@ -103,6 +103,8 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	int sock = -1;
 	eio_obj_t *obj;
 	struct allocation_msg_thread *msg_thr = NULL;
+	int cc;
+	uint16_t *ports;
 
 	debug("Entering slurm_allocation_msg_thr_create()");
 
@@ -121,7 +123,12 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 		       sizeof(slurm_allocation_callbacks_t));
 	}
 
-	if (net_stream_listen(&sock, (short *)port) < 0) {
+	ports = slurm_get_srun_port_range();
+	if (ports)
+		cc = net_stream_listen_ports(&sock, port, ports);
+	else
+		cc = net_stream_listen(&sock, port);
+	if (cc < 0) {
 		error("unable to initialize step launch listening socket: %m");
 		xfree(msg_thr);
 		return NULL;

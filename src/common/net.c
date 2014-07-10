@@ -101,7 +101,7 @@ static short _sock_bind_wild(int sockfd)
  * OUT fd - listening socket file descriptor number
  * OUT port - TCP port number in host byte order
  */
-int net_stream_listen(int *fd, short *port)
+int net_stream_listen(int *fd, uint16_t *port)
 {
 	int rc, val;
 
@@ -239,4 +239,39 @@ extern int net_set_keep_alive(int sock)
 #endif
 
 	return 0;
+}
+
+/* net_stream_listen_ports()
+ */
+int
+net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports)
+{
+	int cc;
+	int val;
+
+	if ((*fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+		return -1;
+
+	val = 1;
+	cc = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
+	if (cc < 0) {
+		close(*fd);
+		return -1;
+	}
+
+	cc = sock_bind_range(*fd, ports);
+	if (cc < 0) {
+		close(*fd);
+		return -1;
+	}
+	*port = cc;
+#undef SOMAXCONN
+#define SOMAXCONN	1024
+	cc = listen(*fd, NET_DEFAULT_BACKLOG);
+	if (cc < 0) {
+		close(*fd);
+		return -1;
+	}
+
+	return *fd;
 }
