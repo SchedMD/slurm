@@ -80,6 +80,7 @@ documents those changes that are of interest to users and admins.
     command.
  -- Corrections to man pages:salloc.1 sbatch.1 srun.1 nonstop.conf.5
     slurm.conf.5.
+ -- Restore srun --pty resize ability.
 
 * Changes in Slurm 14.03.4
 ==========================
