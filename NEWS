@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     srun commands.
  -- In slurm.conf add the parameter SrunPortRange=min-max. If this is configured
     then srun will use its dynamic ports only from the configured range.
+ -- Make debug_flags 64 bit to handle more flags.
 
 * Changes in Slurm 14.11.0pre1
 ==============================

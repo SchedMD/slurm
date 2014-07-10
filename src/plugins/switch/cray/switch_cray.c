@@ -68,7 +68,7 @@
 #define SWITCH_BUF_SIZE (PORT_CNT + 128)
 #define SWITCH_CRAY_STATE_VERSION "PROTOCOL_VERSION"
 
-uint32_t debug_flags = 0;
+uint64_t debug_flags = 0;
 
 /*
  * These variables are required by the generic plugin interface.  If they

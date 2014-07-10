@@ -628,8 +628,8 @@ typedef struct last_update_msg {
 } last_update_msg_t;
 
 typedef struct set_debug_flags_msg {
-	uint32_t debug_flags_minus;
-	uint32_t debug_flags_plus;
+	uint64_t debug_flags_minus;
+	uint64_t debug_flags_plus;
 } set_debug_flags_msg_t;
 
 typedef struct set_debug_level_msg {

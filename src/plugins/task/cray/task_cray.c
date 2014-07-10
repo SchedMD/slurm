@@ -65,7 +65,7 @@
 #ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_cn.h"
 
-static uint32_t debug_flags = 0;
+static uint64_t debug_flags = 0;
 #endif
 
 /*

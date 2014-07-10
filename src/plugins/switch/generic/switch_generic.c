@@ -130,7 +130,7 @@ const char plugin_name[]        = "switch generic plugin";
 const char plugin_type[]        = "switch/generic";
 const uint32_t plugin_version   = 110;
 
-uint32_t	debug_flags = 0;
+uint64_t debug_flags = 0;
 pthread_mutex_t	global_lock = PTHREAD_MUTEX_INITIALIZER;
 sw_gen_libstate_t *libstate = NULL;
 

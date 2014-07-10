@@ -81,7 +81,7 @@ enum {
 #define NRT_MAXADAPTERS 9
 #define NRT_LIBSTATE_LEN (1024 * 1024 * 1)
 
-extern uint32_t debug_flags;
+extern uint64_t debug_flags;
 
 extern bool nrt_adapter_name_check(char *token, hostlist_t hl);
 extern int nrt_clear_node_state(void);

@@ -188,7 +188,7 @@ static void _update_app(struct job_record *job_ptr,
 			alpsc_ev_app_state_e state);
 #endif
 
-static uint32_t debug_flags = 0;
+static uint64_t debug_flags = 0;
 
 /*
  * These variables are required by the generic plugin interface.  If they

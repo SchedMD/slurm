@@ -4452,7 +4452,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 		{ WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	set_debug_flags_msg_t *request_msg =
 		(set_debug_flags_msg_t *) msg->data;
-	uint32_t debug_flags;
+	uint64_t debug_flags;
 	char *flag_string;
 
 	debug2("Processing RPC: REQUEST_SET_DEBUG_FLAGS from uid=%d", uid);

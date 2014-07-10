@@ -3016,7 +3016,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (s_p_get_string(&temp_str, "DebugFlags", hashtbl)) {
 		conf->debug_flags = debug_str2flags(temp_str);
-		if (conf->debug_flags == NO_VAL) {
+		if (conf->debug_flags == (uint64_t)NO_VAL) {
 			error("DebugFlags invalid: %s", temp_str);
 			return SLURM_ERROR;
 		}
@@ -4235,10 +4235,10 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 }
 
 /*
- * debug_flags2str - convert a DebugFlags uint32_t to the equivalent string
+ * debug_flags2str - convert a DebugFlags uint64_t to the equivalent string
  * Keep in sync with debug_str2flags() below
  */
-extern char * debug_flags2str(uint32_t debug_flags)
+extern char * debug_flags2str(uint64_t debug_flags)
 {
 	char *rc = NULL;
 
@@ -4400,9 +4400,9 @@ extern char * debug_flags2str(uint32_t debug_flags)
  * Keep in sycn with debug_flags2str() above
  * Returns NO_VAL if invalid
  */
-extern uint32_t debug_str2flags(char *debug_flags)
+extern uint64_t debug_str2flags(char *debug_flags)
 {
-	uint32_t rc = 0;
+	uint64_t rc = 0;
 	char *tmp_str, *tok, *last = NULL;
 
 	if (!debug_flags)
@@ -4473,7 +4473,7 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_WIKI;
 		else {
 			error("Invalid DebugFlag: %s", tok);
-			rc = NO_VAL;
+			rc = (uint64_t)NO_VAL;
 			break;
 		}
 		tok = strtok_r(NULL, ",", &last);

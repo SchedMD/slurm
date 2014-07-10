@@ -113,7 +113,7 @@ static hid_t     gid_samples = -1;
 static hid_t     gid_totals = -1;
 static char      group_node[MAX_GROUP_NAME+1];
 static slurm_hdf5_conf_t hdf5_conf;
-static uint32_t debug_flags = 0;
+static uint64_t debug_flags = 0;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
 static stepd_step_rec_t *g_job = NULL;
 

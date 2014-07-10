@@ -59,7 +59,7 @@ uint16_t ba_deny_pass = 0;
 ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
 
 bool ba_initialized = false;
-uint32_t ba_debug_flags = 0;
+uint64_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
 bitstr_t *ba_main_mp_bitmap = NULL;
 pthread_mutex_t ba_system_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1647,7 +1647,7 @@ extern char *ba_switch_usage_str(uint16_t usage)
 	return "unknown";
 }
 
-extern void set_ba_debug_flags(uint32_t debug_flags)
+extern void set_ba_debug_flags(uint64_t debug_flags)
 {
 	ba_debug_flags = debug_flags;
 }

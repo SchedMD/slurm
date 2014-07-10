@@ -101,7 +101,7 @@ const char plugin_name[] = "ExtSensors rrd plugin";
 const char plugin_type[] = "ext_sensors/rrd";
 const uint32_t plugin_version = 100;
 
-static uint32_t debug_flags = 0;
+static uint64_t debug_flags = 0;
 static ext_sensors_conf_t ext_sensors_conf;
 static ext_sensors_conf_t *ext_sensors_cnf = &ext_sensors_conf;
 static time_t last_valid_time;

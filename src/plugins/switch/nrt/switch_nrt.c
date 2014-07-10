@@ -132,7 +132,7 @@ const char plugin_name[]        = "switch NRT plugin";
 const char plugin_type[]        = "switch/nrt";
 const uint32_t plugin_version   = 110;
 
-uint32_t debug_flags = 0;
+uint64_t debug_flags = 0;
 
 /*
  * init() is called when the plugin is loaded, before any other functions

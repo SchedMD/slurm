@@ -523,16 +523,16 @@ extern char *prolog_flags2str(uint16_t prolog_flags);
 extern uint16_t prolog_str2flags(char *prolog_flags);
 
 /*
- * debug_flags2str - convert a DebugFlags uint32_t to the equivalent string
+ * debug_flags2str - convert a DebugFlags uint64_t to the equivalent string
  * Returns an xmalloc()ed string which the caller must free with xfree().
  */
-extern char *debug_flags2str(uint32_t debug_flags);
+extern char *debug_flags2str(uint64_t debug_flags);
 
 /*
  * debug_str2flags - Convert a DebugFlags string to the equivalent uint32_t
  * Returns NO_VAL if invalid
  */
-extern uint32_t debug_str2flags(char *debug_flags);
+extern uint64_t debug_str2flags(char *debug_flags);
 
 /*
  * reconfig_flags2str - convert a ReconfigFlags uint16_t to the equivalent string

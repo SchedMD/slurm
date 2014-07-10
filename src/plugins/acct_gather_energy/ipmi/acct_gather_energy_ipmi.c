@@ -139,7 +139,7 @@ static time_t last_update_time = 0;
 static time_t previous_update_time = 0;
 static acct_gather_energy_t *local_energy = NULL;
 static slurm_ipmi_conf_t slurm_ipmi_conf;
-static uint32_t debug_flags = 0;
+static uint64_t debug_flags = 0;
 static bool flag_energy_accounting_shutdown = false;
 static bool flag_thread_started = false;
 static bool flag_init = false;

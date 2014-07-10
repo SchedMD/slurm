@@ -131,7 +131,7 @@ typedef struct slurmd_config {
 	uint16_t      log_fmt;          /* Log file timestamp format flag  */
 	int           debug_level;	/* logging detail level            */
 	uint16_t      debug_level_set;	/* debug_level set on command line */
-	uint32_t      debug_flags;	/* DebugFlags configured           */
+	uint64_t      debug_flags;	/* DebugFlags configured           */
 	int           daemonize:1;	/* daemonize flag		   */
 	int	      cleanstart:1;     /* clean start requested (-c)      */
 	int           mlock_pages:1;	/* mlock() slurmd  */

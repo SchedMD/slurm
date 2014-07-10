@@ -132,7 +132,7 @@ const char plugin_type[] = "acct_gather_energy/rapl";
 const uint32_t plugin_version = 100;
 
 static acct_gather_energy_t *local_energy = NULL;
-static uint32_t debug_flags = 0;
+static uint64_t debug_flags = 0;
 
 /* one cpu in the package */
 static int pkg2cpu[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};

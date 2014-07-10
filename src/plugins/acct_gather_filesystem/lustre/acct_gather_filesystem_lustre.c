@@ -116,7 +116,7 @@ typedef struct {
 
 static lustre_sens_t lustre_se = {0,0,0,0,0,0,0,0};
 
-static uint32_t debug_flags = 0;
+static uint64_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Default path to lustre stats */

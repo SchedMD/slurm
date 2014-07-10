@@ -5051,7 +5051,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->crypto_type, buffer);
 
 		pack32(build_ptr->def_mem_per_cpu, buffer);
-		pack32(build_ptr->debug_flags, buffer);
+		pack64(build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
 		pack16(build_ptr->dynalloc_port, buffer);
 
@@ -5314,7 +5314,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->crypto_type, buffer);
 
 		pack32(build_ptr->def_mem_per_cpu, buffer);
-		pack32(build_ptr->debug_flags, buffer);
+		pack32((uint32_t)build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
 		pack16(build_ptr->dynalloc_port, buffer);
 
@@ -5551,7 +5551,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->crypto_type, buffer);
 
 		pack32(build_ptr->def_mem_per_cpu, buffer);
-		pack32(build_ptr->debug_flags, buffer);
+		pack32((uint32_t)build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
 		pack16(build_ptr->dynalloc_port, buffer);
 
@@ -5834,7 +5834,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 
 		safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
-		safe_unpack32(&build_ptr->debug_flags, buffer);
+		safe_unpack64(&build_ptr->debug_flags, buffer);
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
 		safe_unpack16(&build_ptr->dynalloc_port, buffer);
 
@@ -6196,7 +6196,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 
 		safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
-		safe_unpack32(&build_ptr->debug_flags, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		build_ptr->debug_flags = (uint64_t)uint32_tmp;
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
 		safe_unpack16(&build_ptr->dynalloc_port, buffer);
 
@@ -6522,7 +6523,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 
 		safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
-		safe_unpack32(&build_ptr->debug_flags, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		build_ptr->debug_flags = (uint64_t)uint32_tmp;
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
 		safe_unpack16(&build_ptr->dynalloc_port, buffer);
 
@@ -11152,8 +11154,13 @@ static void
 _pack_set_debug_flags_msg(set_debug_flags_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
-	pack32(msg->debug_flags_minus, buffer);
-	pack32(msg->debug_flags_plus,  buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		pack64(msg->debug_flags_minus, buffer);
+		pack64(msg->debug_flags_plus,  buffer);
+	} else {
+		pack32((uint32_t)msg->debug_flags_minus, buffer);
+		pack32((uint32_t)msg->debug_flags_plus,  buffer);
+	}
 }
 
 static int
@@ -11165,8 +11172,17 @@ _unpack_set_debug_flags_msg(set_debug_flags_msg_t ** msg_ptr, Buf buffer,
 	msg = xmalloc(sizeof(set_debug_flags_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->debug_flags_minus, buffer);
-	safe_unpack32(&msg->debug_flags_plus,  buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack64(&msg->debug_flags_minus, buffer);
+		safe_unpack64(&msg->debug_flags_plus,  buffer);
+	} else {
+		uint32_t tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		msg->debug_flags_minus = tmp_uint32;
+		safe_unpack32(&tmp_uint32, buffer);
+		msg->debug_flags_plus = tmp_uint32;
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:

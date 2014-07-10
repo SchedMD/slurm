@@ -504,7 +504,7 @@ static void _get_current_debug(GtkRadioAction *action)
 
 static void _get_current_debug_flags(GtkToggleAction *action)
 {
-	static uint32_t debug_flags = 0;
+	static uint64_t debug_flags = 0;
 	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
 	GtkAction *debug_action = NULL;
@@ -555,8 +555,8 @@ static void _set_debug(GtkRadioAction *action,
 static void _set_flags(GtkToggleAction *action)
 {
 	char *temp = NULL;
-	uint32_t debug_flags_plus = 0, debug_flags_minus = 0;
-	uint32_t flag = NO_VAL;
+	uint64_t debug_flags_plus = 0, debug_flags_minus = 0;
+	uint64_t flag = (uint64_t)NO_VAL;
 	const char *name;
 
 	if (!action)
@@ -921,7 +921,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"debug_debug5", NULL, "debug5(9)", "", "Debug5 level", 9},
 	};
 
-	char *all_debug_flags = debug_flags2str(0xFFFFFFFF);
+	char *all_debug_flags = debug_flags2str(0xFFFFFFFFFFFFFFFF);
 	char *last = NULL;
 	char *tok = strtok_r(all_debug_flags, ",", &last);
 

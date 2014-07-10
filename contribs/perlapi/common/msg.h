@@ -289,6 +289,7 @@ inline static int hv_store_ptr(HV* hv, const char *key, void* ptr, const char *c
 
 #define SV2int(sv)      SvIV(sv)
 #define SV2int32_t(sv)  SvIV(sv)
+#define SV2uint64_t(sv) SvUV(sv)
 #define SV2uint32_t(sv) SvUV(sv)
 #define SV2uint16_t(sv) SvUV(sv)
 #define SV2uint8_t(sv)  SvUV(sv)

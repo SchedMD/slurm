@@ -100,7 +100,7 @@ struct node_use_record {
 	uint16_t node_state;		/* see node_cr_state comments */
 };
 
-extern uint32_t select_debug_flags;
+extern uint64_t select_debug_flags;
 extern uint16_t select_fast_schedule;
 
 extern struct part_res_record *select_part_record;

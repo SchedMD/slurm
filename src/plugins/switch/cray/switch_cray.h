@@ -161,7 +161,7 @@ extern pthread_mutex_t port_mutex;
 #endif
 
 // Debug flags
-extern uint32_t debug_flags;
+extern uint64_t debug_flags;
 
 /**********************************************************
  * Function declarations

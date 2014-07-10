@@ -991,8 +991,8 @@ _process_command (int argc, char *argv[])
 					tag);
 		} else {
 			int i, mode = 0;
-			uint32_t debug_flags_plus  = 0;
-			uint32_t debug_flags_minus = 0, flags;
+			uint64_t debug_flags_plus  = 0;
+			uint64_t debug_flags_minus = 0, flags;
 
 			for (i = 1; i < argc; i++) {
 				if (argv[i][0] == '+')
@@ -1004,7 +1004,7 @@ _process_command (int argc, char *argv[])
 					break;
 				}
 				flags = debug_str2flags(&argv[i][1]);
-				if (flags == NO_VAL)
+				if (flags == (uint64_t)NO_VAL)
 					break;
 				if (mode == 1)
 					debug_flags_plus  |= flags;

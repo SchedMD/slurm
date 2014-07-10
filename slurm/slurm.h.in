@@ -2003,40 +2003,50 @@ typedef struct reservation_name_msg {
 } reservation_name_msg_t;
 
 
-#define DEBUG_FLAG_SELECT_TYPE	0x00000001	/* SelectType plugin */
-#define DEBUG_FLAG_STEPS	0x00000002	/* slurmctld steps */
-#define DEBUG_FLAG_TRIGGERS	0x00000004	/* slurmctld triggers */
-#define DEBUG_FLAG_CPU_BIND	0x00000008	/* CPU binding */
-#define DEBUG_FLAG_WIKI		0x00000010	/* wiki communications */
-#define DEBUG_FLAG_NO_CONF_HASH	0x00000020	/* no warning about slurm.conf
-						 * files checksum mismatch */
-#define DEBUG_FLAG_GRES		0x00000040	/* Generic Resource info */
-#define DEBUG_FLAG_BG_PICK      0x00000080	/* debug for bluegene
-						 * picking blocks */
-#define DEBUG_FLAG_BG_WIRES	0x00000100	/* debug for bluegene wires */
-#define DEBUG_FLAG_BG_ALGO	0x00000200	/* debug for bluegene algo */
-#define DEBUG_FLAG_BG_ALGO_DEEP	0x00000400	/* debug for bluegene
-						 * algo deep */
-#define DEBUG_FLAG_PRIO 	0x00000800	/* debug for priority plugin */
-#define DEBUG_FLAG_BACKFILL	0x00001000	/* debug for sched/backfill */
-#define DEBUG_FLAG_GANG		0x00002000	/* debug gang scheduler */
-#define DEBUG_FLAG_RESERVATION	0x00004000	/* advanced reservations */
-#define DEBUG_FLAG_FRONT_END	0x00008000	/* front-end nodes */
-#define DEBUG_FLAG_NO_REALTIME	0x00010000	/* get debug when the
-						 * realtime server
-						 * dies on a bluegene system */
-#define DEBUG_FLAG_SWITCH	0x00020000	/* SwitchType plugin */
-#define DEBUG_FLAG_ENERGY	0x00040000	/* AcctGatherEnergy plugin */
-#define DEBUG_FLAG_EXT_SENSORS	0x00080000	/* ExtSensorsType plugin */
-#define DEBUG_FLAG_LICENSE	0x00100000	/* AcctGatherProfile plugin */
-#define DEBUG_FLAG_PROFILE	0x00200000	/* AcctGatherProfile plugin */
-#define DEBUG_FLAG_INFINIBAND	0x00400000	/* AcctGatherInfiniband plugin */
-#define DEBUG_FLAG_FILESYSTEM 	0x00800000      /* AcctGatherFilesystem plugin */
-#define DEBUG_FLAG_JOB_CONT 	0x01000000      /* JobContainer plugin */
-#define DEBUG_FLAG_TASK 	0x02000000      /* TaskType plugin */
-#define DEBUG_FLAG_PROTOCOL	0x04000000	/* Communication protocol */
-#define DEBUG_FLAG_BACKFILL_MAP	0x08000000	/* Backfill scheduler node map */
-#define DEBUG_FLAG_TRACE_JOBS   0x10000000      /* Trace jobs by id and state */
+#define DEBUG_FLAG_SELECT_TYPE	0x0000000000000001 /* SelectType plugin */
+#define DEBUG_FLAG_STEPS	0x0000000000000002 /* slurmctld steps */
+#define DEBUG_FLAG_TRIGGERS	0x0000000000000004 /* slurmctld triggers */
+#define DEBUG_FLAG_CPU_BIND	0x0000000000000008 /* CPU binding */
+#define DEBUG_FLAG_WIKI		0x0000000000000010 /* wiki communications */
+#define DEBUG_FLAG_NO_CONF_HASH	0x0000000000000020 /* no warning about
+						    * slurm.conf files checksum
+						    * mismatch */
+#define DEBUG_FLAG_GRES		0x0000000000000040 /* Generic Resource info */
+#define DEBUG_FLAG_BG_PICK      0x0000000000000080 /* debug for bluegene
+						    * picking blocks */
+#define DEBUG_FLAG_BG_WIRES	0x0000000000000100 /* debug for bluegene
+						    * wires */
+#define DEBUG_FLAG_BG_ALGO	0x0000000000000200 /* debug for bluegene algo */
+#define DEBUG_FLAG_BG_ALGO_DEEP	0x0000000000000400 /* debug for bluegene
+						    * algo deep */
+#define DEBUG_FLAG_PRIO 	0x0000000000000800 /* debug for priority
+						    * plugin */
+#define DEBUG_FLAG_BACKFILL	0x0000000000001000 /* debug for
+						    * sched/backfill */
+#define DEBUG_FLAG_GANG		0x0000000000002000 /* debug gang scheduler */
+#define DEBUG_FLAG_RESERVATION	0x0000000000004000 /* advanced reservations */
+#define DEBUG_FLAG_FRONT_END	0x0000000000008000 /* front-end nodes */
+#define DEBUG_FLAG_NO_REALTIME	0x0000000000010000 /* get debug when the
+						    * realtime server dies
+						    * on a bluegene system */
+#define DEBUG_FLAG_SWITCH	0x0000000000020000 /* SwitchType plugin */
+#define DEBUG_FLAG_ENERGY	0x0000000000040000 /* AcctGatherEnergy plugin */
+#define DEBUG_FLAG_EXT_SENSORS	0x0000000000080000 /* ExtSensorsType plugin */
+#define DEBUG_FLAG_LICENSE	0x0000000000100000 /* AcctGatherProfile
+						    * plugin */
+#define DEBUG_FLAG_PROFILE	0x0000000000200000 /* AcctGatherProfile
+						    * plugin */
+#define DEBUG_FLAG_INFINIBAND	0x0000000000400000 /* AcctGatherInfiniband
+						    * plugin */
+#define DEBUG_FLAG_FILESYSTEM 	0x0000000000800000 /* AcctGatherFilesystem
+						    * plugin */
+#define DEBUG_FLAG_JOB_CONT 	0x0000000001000000 /* JobContainer plugin */
+#define DEBUG_FLAG_TASK 	0x0000000002000000 /* TaskType plugin */
+#define DEBUG_FLAG_PROTOCOL	0x0000000004000000 /* Communication protocol */
+#define DEBUG_FLAG_BACKFILL_MAP	0x0000000008000000 /* Backfill scheduler node
+						    * map */
+#define DEBUG_FLAG_TRACE_JOBS   0x0000000010000000 /* Trace jobs by id
+						    * and state */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
@@ -2113,7 +2123,7 @@ typedef struct slurm_ctl_conf {
 	char *control_machine;	/* name of slurmctld primary server */
 	uint32_t cpu_freq_def;	/* default cpu frequency / governor */
 	char *crypto_type;	/* cryptographic signature plugin */
-	uint32_t debug_flags;	/* see DEBUG_FLAG_* above for values */
+	uint64_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
 	uint16_t dynalloc_port;  /* port for dynamic allocation connection */
@@ -3747,8 +3757,8 @@ extern int slurm_takeover PARAMS((void));
  * IN debug_flags_minus - debug flags to be removed
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_set_debugflags PARAMS((uint32_t debug_flags_plus,
-					uint32_t debug_flags_minus));
+extern int slurm_set_debugflags PARAMS((uint64_t debug_flags_plus,
+					uint64_t debug_flags_minus));
 
 /*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
