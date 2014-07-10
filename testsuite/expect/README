@@ -544,6 +544,7 @@ test17.32  Test of --overcommit option.
 test17.33  Test of --open-mode option.
 test17.34  Test of --core-spec option.
 test17.35  Test performance/timing of job submissions.
+test17.36  Test that the shared option in partitions is enforced.
 
 
 test19.#   Testing of strigger options.
