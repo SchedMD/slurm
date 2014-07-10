@@ -881,38 +881,43 @@ used, the start time of the job will be the specified
 the time will be the job's start time. The end time will be the specified \-E
 option if the job ends after the specifed time, otherwise it will be
 the jobs end time.
-.RS
-.PP
-.nf
-.ft 3
-# sacct \-T \-S2014\-07\-03\-11:50 \-E2014\-07\-03\-12:00 \-ojobid,jobname,user,start,end,state
-    JobID    JobName     User                 Start         		End		State
-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-
-2         job_sc2    nyee     2014\-07\-03T11:50:00   2014\-07\-03T11:59:01   COMPLETED
-3         job_sc3    nyee     2014\-07\-03T11:50:00   2014\-07\-03T12:00:00   RUNNING
-4         job_sc4    nyee     2014\-07\-03T11:50:00   2014\-07\-03T11:45:21   COMPLETED
-5         job_sc5    nyee     2014\-07\-03T11:51:01   2014\-07\-03T12:00:00   PENDING
 
-.ft 1
-.fi
-.RE
-.PP
-This example demonstrates the the use of \-S (\-\-starttime) and \-E
-(\-\-endtime) without the use of the \-T option. When the \-T (\-\-truncate)
-option is not specified the output of sacct will be all the jobs that ran
-between the specified start time and the specified end time, but the
-time displayed by sacct will be the start time and end time of the job.
+NOTE: If no \-s (\-\-state) option is given sacct will
+display jobs that ran durning the specified time, otherwise it returns
+jobs that were in the state requested durning that period of time.
+
+Without \-T (normal operation) sacct output would be like this.
 .RS
 .PP
 .nf
 .ft 3
-# sacct \-S2014\-07\-03\-11:50 \-E2014\-07\-03\-12:00 \-ojobid,jobname,user,start,end,state
+# sacct \-S2014\-07\-03\-11:40 \-E2014\-07\-03\-12:00 \-ojobid,jobname,user,start,end,state
     JobID    JobName     User                 Start         		End		State
 \-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-
 2         job_sc2    nyee     2014\-07\-03T11:33:16   2014\-07\-03T11:59:01   COMPLETED
 3         job_sc3    nyee     2014\-07\-03T11:35:21   Unknown               RUNNING
 4         job_sc4    nyee     2014\-07\-03T11:35:21   2014\-07\-03T11:45:21   COMPLETED
-5         job_sc5    nyee     2014\-07\-03T11:41:01   Unknown               PENDING
+5         job_sc5    nyee     2014\-07\-03T11:41:01   Unknown               RUNNING
+.ft 1
+.fi
+.RE
+.PP
+By adding the \-T option the job's start and end times are truncated
+to reflect only the time requested.  If a job started after the start
+time requested or finished before the end time requested those times
+are not altered.  The \-T option
+is useful when determining exact run times durning any given period.
+.RS
+.PP
+.nf
+.ft 3
+# sacct \-T \-S2014\-07\-03\-11:40 \-E2014\-07\-03\-12:00 \-ojobid,jobname,user,start,end,state
+    JobID    JobName     User                 Start         		End		State
+\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-
+2         job_sc2    nyee     2014\-07\-03T11:40:00   2014\-07\-03T11:59:01   COMPLETED
+3         job_sc3    nyee     2014\-07\-03T11:40:00   2014\-07\-03T12:00:00   RUNNING
+4         job_sc4    nyee     2014\-07\-03T11:40:00   2014\-07\-03T11:45:21   COMPLETED
+5         job_sc5    nyee     2014\-07\-03T11:41:01   2014\-07\-03T12:00:00   RUNNING
 
 
 .ft 1
@@ -924,7 +929,7 @@ Copyright (C) 2005\-2007 Copyright Hewlett\-Packard Development Company L.P.
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2014 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
