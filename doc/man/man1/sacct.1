@@ -892,7 +892,7 @@ Without \-T (normal operation) sacct output would be like this.
 .nf
 .ft 3
 # sacct \-S2014\-07\-03\-11:40 \-E2014\-07\-03\-12:00 \-ojobid,jobname,user,start,end,state
-    JobID    JobName     User                 Start         		End		State
+    JobID    JobName     User                 Start	              End   	 State
 \-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-
 2         job_sc2    nyee     2014\-07\-03T11:33:16   2014\-07\-03T11:59:01   COMPLETED
 3         job_sc3    nyee     2014\-07\-03T11:35:21   Unknown               RUNNING
@@ -912,7 +912,7 @@ is useful when determining exact run times durning any given period.
 .nf
 .ft 3
 # sacct \-T \-S2014\-07\-03\-11:40 \-E2014\-07\-03\-12:00 \-ojobid,jobname,user,start,end,state
-    JobID    JobName     User                 Start         		End		State
+    JobID    JobName     User                 Start	              End   	 State
 \-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-
 2         job_sc2    nyee     2014\-07\-03T11:40:00   2014\-07\-03T11:59:01   COMPLETED
 3         job_sc3    nyee     2014\-07\-03T11:40:00   2014\-07\-03T12:00:00   RUNNING
