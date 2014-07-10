@@ -6006,6 +6006,12 @@ void job_time_limit(void)
 				job_ptr->mail_type &= (~MAIL_JOB_TIME80);
 				mail_job_info(job_ptr, MAIL_JOB_TIME80);
 			}
+			if ((job_ptr->mail_type & MAIL_JOB_TIME50) &&
+			    (now + (job_ptr->time_limit * 60 * 0.5) >=
+			     job_ptr->end_time)) {
+				job_ptr->mail_type &= (~MAIL_JOB_TIME50);
+				mail_job_info(job_ptr, MAIL_JOB_TIME50);
+			}
 			if (job_ptr->end_time <= over_run) {
 				last_job_update = now;
 				info("Time limit exhausted for JobId=%u",

@@ -24,8 +24,9 @@ documents those changes that are of interest to users and admins.
  -- Added CpuFreqDef configuration parameter in slurm.conf to specify the
     default CPU frequency and governor to be set at job end.
  -- Added support for job email triggers: TIME_LIMIT, TIME_LIMIT_90 (reached
-    90% of time limit), TIME_LIMIT_80 (reached 80% of time limit). Applies to
-    salloc, sbatch and srun commands.
+    90% of time limit), TIME_LIMIT_80 (reached 80% of time limit), and
+    TIME_LIMIT_50 (reached 50% of time limit). Applies to salloc, sbatch and
+    srun commands.
 
 * Changes in Slurm 14.11.0pre1
 ==============================

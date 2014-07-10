@@ -736,6 +736,8 @@ uint16_t parse_mail_type(const char *arg)
 			rc |= MAIL_JOB_TIME90;
 		else if (strcasecmp(tok, "TIME_LIMIT_80") == 0)
 			rc |= MAIL_JOB_TIME80;
+		else if (strcasecmp(tok, "TIME_LIMIT_50") == 0)
+			rc |= MAIL_JOB_TIME50;
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(buf);
@@ -770,6 +772,11 @@ char *print_mail_type(const uint16_t type)
 		if (buf[0])
 			strcat(buf, ",");
 		strcat(buf, "REQUEUE");
+	}
+	if (type & MAIL_JOB_TIME50) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "TIME_LIMIT_50");
 	}
 	if (type & MAIL_JOB_TIME80) {
 		if (buf[0])

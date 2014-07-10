@@ -1505,6 +1505,8 @@ static char *_mail_type_str(uint16_t mail_type)
 		return "Reached 90% of time limit";
 	if (mail_type == MAIL_JOB_TIME80)
 		return "Reached 80% of time limit";
+	if (mail_type == MAIL_JOB_TIME50)
+		return "Reached 50% of time limit";
 	return "unknown";
 }
 
@@ -1537,7 +1539,8 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 
 	if (((mail_type == MAIL_JOB_TIME100) ||
 	     (mail_type == MAIL_JOB_TIME90)  ||
-	     (mail_type == MAIL_JOB_TIME80)) && job_ptr->start_time) {
+	     (mail_type == MAIL_JOB_TIME80)  ||
+	     (mail_type == MAIL_JOB_TIME50)) && job_ptr->start_time) {
 		if (job_ptr->suspend_time) {
 			interval  = time(NULL) - job_ptr->suspend_time;
 			interval += job_ptr->pre_sus_time;
