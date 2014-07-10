@@ -101,6 +101,7 @@ typedef struct allocation_info {
 
 static int shepard_fd = -1;
 static pthread_t signal_thread = (pthread_t) 0;
+static int pty_sigarray[] = { SIGWINCH, 0 };
 
 /*
  * Prototypes:
@@ -414,11 +415,12 @@ extern void init_srun(int ac, char **av,
 		      bool handle_signals)
 {
 	/* This must happen before we spawn any threads
-	 * which are not designed to handle them */
+	 * which are not designed to handle arbitrary signals */
 	if (handle_signals) {
 		if (xsignal_block(sig_array) < 0)
 			error("Unable to block signals");
 	}
+	xsignal_block(pty_sigarray);
 
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */

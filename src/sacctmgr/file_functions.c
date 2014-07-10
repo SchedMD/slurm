@@ -1601,7 +1601,7 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 				user_list,
 				slurmdb_hierarchical_rec->assoc->user);
 			line = xstrdup_printf(
-				"User - %s",
+				"User - '%s'",
 				slurmdb_hierarchical_rec->sort_name);
 			if (slurmdb_hierarchical_rec->assoc->partition)
 				xstrfmtcat(line, ":Partition='%s'",
@@ -1688,7 +1688,7 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 				acct_list,
 				slurmdb_hierarchical_rec->assoc->acct);
 			line = xstrdup_printf(
-				"Account - %s",
+				"Account - '%s'",
 				slurmdb_hierarchical_rec->sort_name);
 			if (acct_rec) {
 				xstrfmtcat(line, ":Description='%s'",
@@ -1808,12 +1808,12 @@ extern int print_file_slurmdb_hierarchical_rec_list(
 		     slurmdb_hierarchical_rec->assoc->user); */
 		if (!list_count(slurmdb_hierarchical_rec->children))
 			continue;
-		if (fprintf(fd, "Parent - %s\n",
+		if (fprintf(fd, "Parent - '%s'\n",
 			    slurmdb_hierarchical_rec->assoc->acct) < 0) {
 			error("Can't write to file");
 			return SLURM_ERROR;
 		}
-		info("%s - %s", "Parent",
+		info("%s - '%s'", "Parent",
 		     slurmdb_hierarchical_rec->assoc->acct);
 /* 		info("sending %d from %s", */
 /* 		     list_count(slurmdb_hierarchical_rec->children), */
