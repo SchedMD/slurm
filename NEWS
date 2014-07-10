@@ -119,6 +119,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.6
 ==========================
+ -- Added examples to demonstrate the use of the sacct -T option to the man
+    page.
 
 * Changes in Slurm 14.03.5
 ==========================

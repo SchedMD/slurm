@@ -6,7 +6,7 @@
 
 <h1>Agenda</h1>
 
-<p>The 2014 SLURM User Group Meeting will be held on September 23 and 24
+<p>The 2014 Slurm User Group Meeting will be held on September 23 and 24
 in Lugano, Switzerland.
 The meeting will include an assortment of tutorials, technical presentations,
 and site reports.
@@ -16,11 +16,10 @@ are shown below.</p>
 <h2>Meeting Information</h2>
 <p>The meeting will be held at the
 <a href="http://www.lugano-tourism.ch/en/129/default.aspx">
-Lugano Convention Centre</a>, Lugano, Switzerland.
-More information will be made available later.</p>
+Convention Centre Lugano</a>, Lugano, Switzerland.</p>
 
 <h2>Hotel Information</h2>
-<p>Hotels may be bookded through the Lugano Convention Centre (Palazzo dei Congressi).<br>
+<p>Hotels may be booked through the Lugano Convention Centre (Palazzo dei Congressi).<br>
 <a href="https://www.aec-internet.it/booking_engine/prenota_congresso.htm?graph_be=4&n_tappe=1&headvar=ok&lingua_int=eng&id_stile=7434&id_congresso=54&id_canale=704">Hotel booking</a>.
 
 <h2>Registration</h2>
@@ -30,277 +29,277 @@ More information will be made available later.</p>
 
 <h2>23 September 2014</h2>
 
-<table width="100%" border=1 cellspacing=0 cellpadding=0>
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
 
 <tr>
-  <th width="15%">Time</th>
+  <th width="10%">Time</th>
   <th width="15%">Theme</th>
-  <th width="25%">Speaker</th>
+  <th width="30%">Speaker</th>
   <th width="45%">Title</th>
  </tr>
 
 <tr>
-  <td width="15%" bgcolor="#F0F1C9">08:00 - 08:30</td>
-  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Registration </td>
+  <td bgcolor="#F0F1C9">08:00 - 08:30</td>
+  <td colspan="3" bgcolor="#F0F1C9">Registration </td>
  </tr>
 
 <tr>
-  <td width="15%">08:30 - 08:45</td>
-  <td width="15%">&nbsp;Welcome</td>
-  <td width="25%">&nbsp;TBD (CSCS)</td>
-  <td width="45%">&nbsp;Welcome to Slurm User Group Meeting</td>
+  <td>08:30 - 08:45</td>
+  <td>Welcome</td>
+  <td>TBD (CSCS)</td>
+  <td>Welcome to Slurm User Group Meeting</td>
 </tr>
 
 <tr>
-  <td width="15%">08:45 - 09:30</td>
-  <td width="15%">&nbsp;Keynote</td>
-  <td width="25%">&nbsp;TBD</td>
-  <td width="45%">&nbsp;TBD</td>
+  <td>08:45 - 09:30</td>
+  <td>Keynote</td>
+  <td>TBD</td>
+  <td>TBD</td>
 </tr>
 
 <tr>
-  <td width="15%" bgcolor="#F0F1C9">09:30 - 09:45</td>
-  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Break</td>
+  <td bgcolor="#F0F1C9">09:30 - 09:45</td>
+  <td colspan="3" bgcolor="#F0F1C9">Break</td>
 </tr>
 
 <tr>
-  <td width="15%">09:45 - 10:15</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Morris Jette (SchedMD), Yiannis Georgiou (Bull)</td>
-  <td width="45%">&nbsp;Overview of Slurm Versions 14.03 and 14.11</td>
+  <td>09:45 - 10:15</td>
+  <td>Technical</td>
+  <td>Morris Jette (SchedMD), Yiannis Georgiou (Bull)</td>
+  <td>Overview of Slurm Versions 14.03 and 14.11</td>
 </tr>
 <tr>
-  <td width="15%">10:15 - 10:45</td>
-  <td width="15%">&nbsp;Tutorial</td>
-  <td width="25%">&nbsp;Michael Jennings, Jacqueline Scoggins (LBL)</td>
-  <td width="45%">&nbsp;Warewulf Node Health Check</td>
+  <td>10:15 - 10:45</td>
+  <td>Tutorial</td>
+  <td>Michael Jennings, Jacqueline Scoggins (LBL)</td>
+  <td>Warewulf Node Health Check</td>
 </tr>
-  <td width="15%">10:45 - 11:15</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Yiannis Georgiou (BULL), David Glesser (BULL),
+  <td>10:45 - 11:15</td>
+  <td>Technical</td>
+  <td>Yiannis Georgiou (BULL), David Glesser (BULL),
   Matthieu Hautreux (CEA), Denis Trystram (Univ. Grenoble-Alpes)</td>
-  <td width="45%">&nbsp;SLURM processes isolation</td>
+  <td>SLURM processes isolation</td>
 </tr>
 <tr>
-  <td width="15%">11:15 - 11:45</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Rod Schultz (BULL), Martin Perry (BULL),
+  <td>11:15 - 11:45</td>
+  <td>Technical</td>
+  <td>Rod Schultz (BULL), Martin Perry (BULL),
   Yiannis Georgiou (BULL), Danny Auble (SchedMD), Morris Jette (SchedMD),
   Matthieu Hautreux (CEA)</td>
-  <td width="45%">&nbsp;Improving forwarding logic in SLURM</td>
+  <td>Improving forwarding logic in SLURM</td>
 </tr>
-  <td width="15%" bgcolor="#F0F1C9">11:45 - 12:45</td>
-  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Lunch
+  <td bgcolor="#F0F1C9">11:45 - 12:45</td>
+  <td colspan="3" bgcolor="#F0F1C9">Lunch
 </tr>
 
 <tr>
-  <td width="15%">12:45 - 13:45</td>
-  <td width="15%">&nbsp;Tutorial</td>
-  <td width="25%">&nbsp;Morris Jette (SchedMD)</td>
-  <td width="45%">&nbsp;Tuning Slurm Scheduling for Optimal
+  <td>12:45 - 13:45</td>
+  <td>Tutorial</td>
+  <td>Morris Jette (SchedMD)</td>
+  <td>Tuning Slurm Scheduling for Optimal
   Responsiveness and Utilization</td>
 </tr>
 <tr>
-  <td width="15%">13:45 - 14:15</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Carles Fenoy (BSC)</td>
-  <td width="45%">&nbsp;Improving HPC applications scheduling with
+  <td>13:45 - 14:15</td>
+  <td>Technical</td>
+  <td>Carles Fenoy (BSC)</td>
+  <td>Improving HPC applications scheduling with
   predictions based on automatically-collected historical data</td>
 <tr>
-  <td width="15%">14:15 - 14:45</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Filip Skalski, Krzysztof Rzadca (University of
+  <td>14:15 - 14:45</td>
+  <td>Technical</td>
+  <td>Filip Skalski, Krzysztof Rzadca (University of
   Warsaw)</td>
-  <td width="45%">&nbsp;Fair Scheduler for Burst Submissions of
+  <td>Fair Scheduler for Burst Submissions of
   Parallel Job</td>
 </tr>
 
 <tr>
-  <td width="15%" bgcolor="#F0F1C9">14:45 - 15:00</td>
-  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Break</td>
+  <td bgcolor="#F0F1C9">14:45 - 15:00</td>
+  <td colspan="3" bgcolor="#F0F1C9">Break</td>
 </tr>
 
 <tr>
-  <td width="15%">15:00 - 15:30</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Yiannis Georgiou (BULL), David Glesser (BULL),
+  <td>15:00 - 15:30</td>
+  <td>Technical</td>
+  <td>Yiannis Georgiou (BULL), David Glesser (BULL),
   Matthieu Hautreux (CEA), Denis Trystram (Univ. Grenoble-Alpes)</td>
-  <td width="45%">&nbsp;Introducing Power-capping in SLURM scheduling</td>
+  <td>Introducing Power-capping in SLURM scheduling</td>
 </tr>
 
 <tr>
-  <td width="15%">15:30 - 16:00</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;David Glesser (BULL), Yiannis Georgiou (BULL),
+  <td>15:30 - 16:00</td>
+  <td>Technical</td>
+  <td>David Glesser (BULL), Yiannis Georgiou (BULL),
   Denis Trystram (Univ. Grenoble-Alpes)</td>
-  <td width="45%">&nbsp;Introducing Energy based fair-share scheduling</td>
+  <td>Introducing Energy based fair-share scheduling</td>
 </tr>
 <tr>
-  <td width="15%">16:00 - 16:30</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Aamir Rashid (Terascala)</td>
-  <td width="45%">&nbsp;Data movement between Lustre and Enterprise
+  <td>16:00 - 16:30</td>
+  <td>Technical</td>
+  <td>Aamir Rashid (Terascala)</td>
+  <td>Data movement between Lustre and Enterprise
   storage systems</td>
 </tr>
 <tr>
-  <td width="15%">16:30 - 17:00</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Sergio Iserte, Adrian Castello, Rafael Mayo,
+  <td>16:30 - 17:00</td>
+  <td>Technical</td>
+  <td>Sergio Iserte, Adrian Castello, Rafael Mayo,
     Enrique S. Quintana-Ort (Universitat Jaume I de Castello),
     Federico Silla, Jose Duato (Universitat Politecnica de Valencia)</td>
-  <td width="45%">&nbsp;Extending SLURM with Support for Remote GPU
+  <td>Extending SLURM with Support for Remote GPU
   Virtualization</td>
 </tr>
 
 <tr>
-  <td width="15%" bgcolor="#F0F1C9">17:00 - </td>
-  <td width="15%" bgcolor="#F0F1C9">&nbsp;Dinner</td>
-  <td width="70%" colspan="2" bgcolor="#F0F1C9">&nbsp;TBD</td>
+  <td bgcolor="#F0F1C9">17:00 - </td>
+  <td bgcolor="#F0F1C9">Dinner</td>
+  <td colspan="2" bgcolor="#F0F1C9">TBD</td>
 </tr>
 </table>
 
 <h2>24 September 2014</h2>
 
-<table width="100%" border=1 cellspacing=0 cellpadding=0>
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
 
   <tr>
-    <th width="15%">Time</th>
+    <th width="10%">Time</th>
     <th width="15%">Theme</th>
-    <th width="25%">Speaker</th>
+    <th width="30%">Speaker</th>
     <th width="45%">Title</th>
   </tr>
 
   <tr>
-    <td width="15%" bgcolor="#F0F1C9">08:00 - 08:30</td>
-    <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Registration</td>
+    <td bgcolor="#F0F1C9">08:00 - 08:30</td>
+    <td colspan="3" bgcolor="#F0F1C9">Registration</td>
   </tr>
 
   <tr>
-    <td width="15%">08:30 - 09:00</td>
-    <td width="15%">&nbsp;Technical</td>
-    <td width="25%">&nbsp;Jacqueline Scoggins (Lawrence Berkeley
+    <td>08:30 - 09:00</td>
+    <td>Technical</td>
+    <td>Jacqueline Scoggins (Lawrence Berkeley
     National Lab)</td>
-    <td width="45%">&nbsp;Complex environment migration from
+    <td>Complex environment migration from
     Moab/Torque to Slurm</td>
   </tr>
   <tr>
-    <td width="15%">09:00 - 09:30</td>
-    <td width="15%">&nbsp;Technical</td>
-    <td width="25%">&nbsp;Huub Stoffers (SURFsara)</td>
-    <td width="45%">&nbsp;A budget checking / budget tracking plug-in
+    <td>09:00 - 09:30</td>
+    <td>Technical</td>
+    <td>Huub Stoffers (SURFsara)</td>
+    <td>A budget checking / budget tracking plug-in
     for SLURM</td>
   </tr>
 
   <tr>
-    <td width="15%">09:30 - 10:00</td>
-    <td width="15%">&nbsp;Technical</td>
-    <td width="25%">&nbsp;Ryan Cox, Levi Morrison (Brigham Young
+    <td>09:30 - 10:00</td>
+    <td>Technical</td>
+    <td>Ryan Cox, Levi Morrison (Brigham Young
     University)</td>
-    <td width="45%">&nbsp;Level-based job prioritization</td>
+    <td>Level-based job prioritization</td>
   </tr>
 
   <tr>
-    <td width="15%" bgcolor="#F0F1C9">10:00 - 10:15</td>
-    <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Break</td>
+    <td bgcolor="#F0F1C9">10:00 - 10:15</td>
+    <td colspan="3" bgcolor="#F0F1C9">Break</td>
   </tr>
 
   <tr>
-    <td width="15%">10:15 - 10:45</td>
-    <td width="15%">&nbsp;Technical</td>
-    <td width="25%">&nbsp;Thomas Cadeau (BULL), Yiannis Georgiou
+    <td>10:15 - 10:45</td>
+    <td>Technical</td>
+    <td>Thomas Cadeau (BULL), Yiannis Georgiou
     (BULL), Matthieu Hautreux (CEA)</td>
-    <td width="45%">&nbsp;Integrating Layouts Framework in SLURM</td>
+    <td>Integrating Layouts Framework in SLURM</td>
   </tr>
 
   <tr>
-    <td width="15%">10:45 - 11:15</td>
-    <td width="15%">&nbsp;Technical</td>
-    <td width="25%">&nbsp;Emmanuel Jeannot, Guillaume Mercier, Ad&egrave;le
+    <td>10:45 - 11:15</td>
+    <td>Technical</td>
+    <td>Emmanuel Jeannot, Guillaume Mercier, Ad&egrave;le
     Villiermet (INRIA)</td>
-    <td width="45%">&nbsp;Topology-aware Resource Selection with Slurm</td>
+    <td>Topology-aware Resource Selection with Slurm</td>
   </tr>
 
   <tr>
-    <td width="15%">11:15 - 11:45</td>
-    <td width="15%">&nbsp;Technical</td>
-    <td width="25%">&nbsp;Stephen Trofinoff (CSCS)</td>
-    <td width="45%">&nbsp;Exploring the implementation of several key
+    <td>11:15 - 11:45</td>
+    <td>Technical</td>
+    <td>Stephen Trofinoff (CSCS)</td>
+    <td>Exploring the implementation of several key
     Slurm Inter-cluster features</td>
   </tr>
   <tr>
-    <td width="15%">11:45 - 12:15</td>
-    <td width="15%">&nbsp;Technical</td>
-    <td width="25%">&nbsp;Danny Auble (SchedMD)</td>
-    <td width="45%">&nbsp;Slurm Native Workload Management on Cray Systems</td>
+    <td>11:45 - 12:15</td>
+    <td>Technical</td>
+    <td>Danny Auble (SchedMD)</td>
+    <td>Slurm Native Workload Management on Cray Systems</td>
   </tr>
   <tr>
-    <td width="15%" bgcolor="#F0F1C9">12:15 - 13:15</td>
-    <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Lunch</td>
+    <td bgcolor="#F0F1C9">12:15 - 13:15</td>
+    <td colspan="3" bgcolor="#F0F1C9">Lunch</td>
   </tr>
 
   <tr>
-    <td width="15%">13:15 - 13:45</td>
-    <td width="15%">&nbsp;Technical</td>
-    <td width="25%">&nbsp;Morris Jette (SchedMD), Yiannis Georgiou (Bull)</td>
-    <td width="45%">&nbsp;Slurm Roadmap</td>
+    <td>13:15 - 13:45</td>
+    <td>Technical</td>
+    <td>Morris Jette (SchedMD), Yiannis Georgiou (Bull)</td>
+    <td>Slurm Roadmap</td>
   </tr>
   <tr>
-    <td width="15%">13:45 - 14:05</td>
-    <td width="15%">&nbsp;Site Report</td>
-    <td width="25%">&nbsp;Magnus Jonsson (Umea University)</td>
-    <td width="45%">&nbsp;Umea University Site Report</td>
+    <td>13:45 - 14:05</td>
+    <td>Site Report</td>
+    <td>Magnus Jonsson (Umea University)</td>
+    <td>Umea University Site Report</td>
   </tr>
   <tr>
-    <td width="15%">14:05 - 14:25</td>
-    <td width="15%">&nbsp;Site Report</td>
-    <td width="25%">&nbsp;Marcin Stolarek (Interdisciplinary Centre
+    <td>14:05 - 14:25</td>
+    <td>Site Report</td>
+    <td>Marcin Stolarek (Interdisciplinary Centre
     for Mathematical and  Computational Modelling (ICM), University of
     Warsaw, Poland)</td>
-    <td width="45%">&nbsp;University of Warsaw Site Report</td>
+    <td>University of Warsaw Site Report</td>
   </tr>
   <tr>
-    <td width="15%">14:25 - 14:45</td>
-    <td width="15%">&nbsp;Site Report</td>
-    <td width="25%">&nbsp;Andrew Elwell (iVEC)</td>
-    <td width="45%">&nbsp;iVEC Site Report</td>
+    <td>14:25 - 14:45</td>
+    <td>Site Report</td>
+    <td>Andrew Elwell (iVEC)</td>
+    <td>iVEC Site Report</td>
   </tr>
   <tr>
-    <td width="15%">14:45 - 15:05</td>
-    <td width="15%">&nbsp;Site Report</td>
-    <td width="25%">&nbsp;Matthieu Hautreux (CEA)</td>
-    <td width="45%">&nbsp;CEA Site Report</td>
-  </tr>
-
-  <tr>
-    <td width="15%" bgcolor="#F0F1C9">15:05 - 15:20</td>
-    <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Break</td>
+    <td>14:45 - 15:05</td>
+    <td>Site Report</td>
+    <td>Matthieu Hautreux (CEA)</td>
+    <td>CEA Site Report</td>
   </tr>
 
   <tr>
-    <td width="15%">15:20 - 15:40</td>
-    <td width="15%">&nbsp;Site Report</td>
-    <td width="25%">&nbsp;Benini Massimo (CSCS)</td>
-    <td width="45%">&nbsp;CSCS Site Report</td>
+    <td bgcolor="#F0F1C9">15:05 - 15:20</td>
+    <td colspan="3" bgcolor="#F0F1C9">Break</td>
+  </tr>
+
+  <tr>
+    <td>15:20 - 15:40</td>
+    <td>Site Report</td>
+    <td>Benini Massimo (CSCS)</td>
+    <td>CSCS Site Report</td>
   </tr>
   <tr>
-    <td width="15%">15:40 - 16:00</td>
-    <td width="15%">&nbsp;Site Report</td>
-    <td width="25%">&nbsp;Janne Blomqvist, Ivan Degtyarenko, Mikko
+    <td>15:40 - 16:00</td>
+    <td>Site Report</td>
+    <td>Janne Blomqvist, Ivan Degtyarenko, Mikko
       Hakala (Aalto University)</td>
-    <td width="45%">&nbsp;Aalto University Site Report</td>
+    <td>Aalto University Site Report</td>
   </tr>
   <tr>
-    <td width="15%">16:00 - 16:20</td>
-    <td width="15%">&nbsp;Site Report</td>
-    <td width="25%">&nbsp;Tim Wickberg (George Washington University)</td>
-    <td width="45%">&nbsp;George Washington University Site Report</td>
+    <td>16:00 - 16:20</td>
+    <td>Site Report</td>
+    <td>Tim Wickberg (George Washington University)</td>
+    <td>George Washington University Site Report</td>
   </tr>
   <tr>
-    <td width="15%">16:20 - 16:30</td>
-    <td width="15%">&nbsp;Closing</td>
-    <td width="25%">&nbsp; Tim Wickberg (George Washington University),
+    <td>16:20 - 16:30</td>
+    <td>Closing</td>
+    <td> Tim Wickberg (George Washington University),
       Morris Jette (SchedMD)</td>
-    <td width="45%">&nbsp;Closing/Invitation to Slurm User Group
+    <td>Closing/Invitation to Slurm User Group
     Meeting 2015</td>
   </tr>
 
@@ -851,5 +850,6 @@ More information will be made available later.</p>
   scratch system.</p>
 
 <p style="text-align:center;">Last modified 9 July 2014</p>
+<p style="text-align:center;">Last modified 10 July 2014</p>
 
 <!--#include virtual="footer.txt"-->

@@ -873,13 +873,63 @@ on the command line.
 .ft 1
 .fi
 .RE
+.PP
+This example demonstrates the use of the \-T (\-\-truncate) option when
+used with \-S (\-\-starttime) and \-E (\-\-endtime). When the \-T option is
+used, the start time of the job will be the specified
+\-S value if the job was started before the specified time, otherwise
+the time will be the job's start time. The end time will be the specified \-E
+option if the job ends after the specifed time, otherwise it will be
+the jobs end time.
+
+NOTE: If no \-s (\-\-state) option is given sacct will
+display jobs that ran durning the specified time, otherwise it returns
+jobs that were in the state requested durning that period of time.
+
+Without \-T (normal operation) sacct output would be like this.
+.RS
+.PP
+.nf
+.ft 3
+# sacct \-S2014\-07\-03\-11:40 \-E2014\-07\-03\-12:00 \-X \-ojobid,start,end,state
+    JobID                 Start                  End        State
+\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-
+2         2014\-07\-03T11:33:16   2014\-07\-03T11:59:01   COMPLETED
+3         2014\-07\-03T11:35:21   Unknown               RUNNING
+4         2014\-07\-03T11:35:21   2014\-07\-03T11:45:21   COMPLETED
+5         2014\-07\-03T11:41:01   Unknown               RUNNING
+.ft 1
+.fi
+.RE
+.PP
+By adding the \-T option the job's start and end times are truncated
+to reflect only the time requested.  If a job started after the start
+time requested or finished before the end time requested those times
+are not altered.  The \-T option
+is useful when determining exact run times durning any given period.
+.RS
+.PP
+.nf
+.ft 3
+# sacct \-T \-S2014\-07\-03\-11:40 \-E2014\-07\-03\-12:00 \-X \-ojobid,jobname,user,start,end,state
+    JobID                 Start                  End        State
+\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-
+2         2014\-07\-03T11:40:00   2014\-07\-03T11:59:01   COMPLETED
+3         2014\-07\-03T11:40:00   2014\-07\-03T12:00:00   RUNNING
+4         2014\-07\-03T11:40:00   2014\-07\-03T11:45:21   COMPLETED
+5         2014\-07\-03T11:41:01   2014\-07\-03T12:00:00   RUNNING
+
+
+.ft 1
+.fi
+.RE
 .SH "COPYING"
 Copyright (C) 2005\-2007 Copyright Hewlett\-Packard Development Company L.P.
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2014 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
