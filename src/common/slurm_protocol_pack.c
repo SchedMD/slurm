@@ -4592,22 +4592,24 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* Translate bitmap representation from hex to decimal format.
- * Return value must be xfreed. */
-static char *_xlate_task_str(char *in_buf)
+/* Translate bitmap representation from hex to decimal format, replacing
+ * array_task_str and store the bitmap in job->array_bitmap. */
+static void _xlate_task_str(job_info_t *job_ptr)
 {
 	static int bitstr_len = -1;
 	int buf_size, len;
 	int i, i_first, i_last, i_prev, i_step = 0;
 	bitstr_t *task_bitmap;
+	char *in_buf = job_ptr->array_task_str;
 	char *out_buf = NULL;
 
 	if (!in_buf)
-		return NULL;
+		return;
 
 	i = strlen(in_buf);
 	task_bitmap = bit_alloc(i * 4);
 	bit_unfmt_hexmask(task_bitmap, in_buf);
+	job_ptr->array_bitmap = (void *) task_bitmap;
 
 	/* Check first for a step function */
 	i_first = bit_ffs(task_bitmap);
@@ -4630,7 +4632,6 @@ static char *_xlate_task_str(char *in_buf)
 		if (is_step) {
 			xstrfmtcat(out_buf, "%d-%d:%d",
 				   i_first, i_last, i_step);
-			return out_buf;
 		}
 	}
 
@@ -4667,7 +4668,8 @@ static char *_xlate_task_str(char *in_buf)
 		}
 	}
 
-	return out_buf;
+	xfree(job_ptr->array_task_str);
+	job_ptr->array_task_str = out_buf;
 }
 
 /* _unpack_job_info_members
@@ -4682,7 +4684,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 {
 	uint32_t uint32_tmp = 0;
 	uint16_t uint16_tmp = 0;
-	char *node_inx_str, *array_task_str;
+	char *node_inx_str;
 	multi_core_data_t *mc_ptr;
 
 	job->ntasks_per_node = (uint16_t)NO_VAL;
@@ -4695,9 +4697,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		 * to be converted to human readable form by the client. */
 		safe_unpackstr_xmalloc(&job->array_task_str, &uint32_tmp,
 				       buffer);
-		array_task_str = _xlate_task_str(job->array_task_str);
-		xfree(job->array_task_str);
-		job->array_task_str = array_task_str;
+		_xlate_task_str(job);
 
 		safe_unpack32(&job->assoc_id, buffer);
 		safe_unpack32(&job->job_id,   buffer);

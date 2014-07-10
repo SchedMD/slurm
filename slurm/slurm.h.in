@@ -1211,6 +1211,7 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	char    *alloc_node;	/* local node making resource alloc */
 	uint32_t alloc_sid;	/* local sid making resource alloc */
+	void *array_bitmap;	/* NOTE: set on unpack */
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
 	uint32_t array_task_id;	/* task_id of a job array */
 	char *array_task_str;	/* string expression of task IDs in this record */

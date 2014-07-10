@@ -528,6 +528,8 @@ extern void slurm_free_job_info_members(job_info_t * job)
 	if (job) {
 		xfree(job->account);
 		xfree(job->alloc_node);
+		if (job->array_bitmap)
+			bit_free((bitstr_t *) job->array_bitmap);
 		xfree(job->array_task_str);
 		xfree(job->batch_host);
 		xfree(job->batch_script);

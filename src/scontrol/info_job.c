@@ -41,6 +41,7 @@
 #include <fcntl.h>
 
 #include "scontrol.h"
+#include "src/common/bitstring.h"
 #include "src/common/stepd_api.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 
@@ -275,6 +276,26 @@ scontrol_get_job_state(uint32_t job_id)
 	return (uint16_t) NO_VAL;
 }
 
+static bool _task_id_in_job(job_info_t *job_ptr, uint32_t array_id)
+{
+	bitstr_t *array_bitmap;
+	uint32_t array_len;
+
+	if ((array_id == NO_VAL) ||
+	    (array_id == job_ptr->array_task_id))
+		return true;
+
+	array_bitmap = (bitstr_t *) job_ptr->array_bitmap;
+	if (array_bitmap == NULL)
+		return false;
+	array_len = bit_size(array_bitmap);
+	if (array_id >= array_len)
+		return false;
+	if (bit_test(array_bitmap, array_id))
+		return true;
+	return false;
+}
+
 /*
  * scontrol_print_job - print the specified job's information
  * IN job_id - job's id or NULL to print information about all jobs
@@ -312,10 +333,21 @@ scontrol_print_job (char * job_id_str)
 
 	for (i = 0, job_ptr = job_buffer_ptr->job_array;
 	     i < job_buffer_ptr->record_count; i++, job_ptr++) {
-		if ((array_id != NO_VAL) &&
-		    (array_id != job_ptr->array_task_id))
+		char *save_array_str = NULL;
+		uint32_t save_task_id = 0;
+		if (!_task_id_in_job(job_ptr, array_id))
 			continue;
+		if ((array_id != NO_VAL) && job_ptr->array_task_str) {
+			save_array_str = job_ptr->array_task_str;
+			job_ptr->array_task_str = NULL;
+			save_task_id = job_ptr->array_task_id;
+			job_ptr->array_task_id = array_id;
+		}
 		slurm_print_job_info(stdout, job_ptr, one_liner);
+		if (save_array_str) {
+			job_ptr->array_task_str = save_array_str;
+			job_ptr->array_task_id = save_task_id;
+		}
 		print_cnt++;
 	}
 
