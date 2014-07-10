@@ -110,6 +110,9 @@ documents those changes that are of interest to users and admins.
  -- When a job dependency can never be satisfied do not cancel the job but keep
     pending with reason WAIT_DEP_INVALID (DependencyNeverSatisfied).
 
+* Changes in Slurm 14.03.6
+==========================
+
 * Changes in Slurm 14.03.5
 ==========================
  -- If a srun runs in an exclusive allocation and doesn't use the entire
