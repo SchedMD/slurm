@@ -843,7 +843,9 @@ static void *_window_manager(void *arg)
 			break;
 		}
 		len = slurm_read_stream(win_info->pty_fd, buf, 4);
-		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
+		if ((len == -1) &&
+		    ((errno == EINTR) || (errno == EAGAIN) ||
+		     (errno == SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT)))
 			continue;
 		if (len < 4) {
 			error("read window size error: %m");
