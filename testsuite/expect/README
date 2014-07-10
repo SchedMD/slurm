@@ -332,7 +332,7 @@ test7.9    Test that no files are open in spawned tasks (except stdin,
 test7.10   Test if we can trick SLURM into using the wrong user ID
 	   through an LD_PRELOAD option.
 test7.11   Test of SPANK plugin.
-test7.12   Test of slurm_job_step_stat() API call.
+test7.12   Test of slurm_job_step_stat() and slurm_load_job() API calls.
 test7.13   Verify the correct setting of a job's ExitCode
 test7.14   Verify the ability to modify the Derived Exit Code/String fields
 	   of a job record in the database

@@ -1,6 +1,6 @@
 #!/usr/bin/expect
 ############################################################################
-# Purpose:  Test of slurm_job_step_stat() API call.
+# Purpose:  Test of slurm_job_step_stat() and slurm_load_job() API calls.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -9,9 +9,10 @@
 # Note:    This script generates and then deletes a file in the working
 #          directory named test7.12.prog
 ############################################################################
+# Portions Copyright (C) 2014 SchedMD LLC
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Morris Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette@schedmd.com>
 # CODE-OCEC-09-009. All rights reserved.
 #
 # This file is part of SLURM, a resource management program.
@@ -111,15 +112,21 @@ if {$debug} {
 	}
 }
 
-set matches 0
+set job_matches  0
+set pid_matches  0
+set step_matches 0
 spawn ./$test_prog $job_id
 expect {
-	-re "job_id:$job_id" {
-		incr matches
+	-re "job_id:$job_id step_id" {
+		incr step_matches
 		exp_continue
 	}
 	-re "pid:$number" {
-		incr matches
+		incr pid_matches
+		exp_continue
+	}
+	-re "job_id:$job_id name" {
+		incr job_matches
 		exp_continue
 	}
 	timeout {
@@ -132,13 +139,17 @@ expect {
 	}
 }
 
-if {$matches < 1} {
-	send_user "\nFAILURE: error running slurm_job_step_stat() program\n"
+if {$step_matches != 1} {
+	send_user "\nFAILURE: error running slurm_job_step_stat() program ($step_matches != 1)\n"
 	set exit_code 1
-} elseif {$matches != 2} {
-	send_user "\nWARNING: Failed to load PIDs associated with job step.\n"
+}
+if {$pid_matches != 1} {
+	send_user "\nWARNING: Failed to load PIDs associated with job step ($pid_matches != 1).\n"
 	send_user "         This is dependent upon the ProctrackType configured.\n"
 	send_user "         proctrack/pgid does NOT support this functionality.\n"
+}
+if {$job_matches != 1} {
+	send_user "\nFAILURE: Failed to load job info for this job ($job_matches != 1).\n"
 }
 
 cancel_job $job_id

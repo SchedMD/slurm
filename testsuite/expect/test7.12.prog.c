@@ -1,9 +1,10 @@
 /*****************************************************************************\
  *  test7.12.prog.c - Test of slurm_job_step_stat() API call.
  *****************************************************************************
+ *  Portions Copyright (C) 2014 SchedMD LLC
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette@schedmd.com>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -32,10 +33,12 @@
 main(int argc, char **argv)
 {
 	int i, rc = 0;
-	uint32_t job_id=0, step_id=0;
+	uint32_t job_id = 0, step_id = 0;
 	job_step_stat_response_msg_t *resp = NULL;
 	job_step_stat_t *step_stat = NULL;
 	ListIterator itr;
+	job_info_msg_t *job_info_msg;
+	slurm_job_info_t *job_ptr;
 
 	if (argc < 2) {
 		printf("Usage: job_id [step_id]\n");
@@ -54,10 +57,23 @@ main(int argc, char **argv)
 
 	itr = slurm_list_iterator_create(resp->stats_list);
 	while ((step_stat = slurm_list_next(itr))) {
-		for (i=0; i<step_stat->step_pids->pid_cnt; i++)
+		for (i = 0; i < step_stat->step_pids->pid_cnt; i++)
 			printf("pid:%u\n", step_stat->step_pids->pid[i]);
 	}
 	slurm_list_iterator_destroy(itr);
 	slurm_job_step_pids_response_msg_free(resp);
+
+	rc = slurm_load_job(&job_info_msg, job_id, SHOW_ALL);
+	if (rc != SLURM_SUCCESS) {
+		slurm_perror("slurm_load_job");
+		exit(1);
+	}
+	for (i = 0; i < job_info_msg->record_count; i++) {
+		job_ptr = job_info_msg->job_array + i;
+		printf("job_id:%u name:%s user_id:%u\n",
+		       job_ptr->job_id, job_ptr->name, job_ptr->user_id);
+	}
+	slurm_free_job_info_msg(job_info_msg);
+
 	exit(0);
 }
