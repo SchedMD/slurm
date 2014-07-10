@@ -555,9 +555,14 @@ proc wait_for_job { job_id desired_state } {
 		"DONE" {}
 		"RUNNING" {}
 		default {
-			send_user "Unsupported desired state: $desired_state\n"
+			send_user "FAILURE: wait_for_job with invalid state: $desired_state\n"
 			return 1
 		}
+	}
+
+	if {$job_id == 0} {
+		send_user "FAILURE: wait_for_job with invalid job ID: $job_id\n"
+		return 1
 	}
 
 	set sleep_time  1

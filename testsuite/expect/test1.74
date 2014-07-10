@@ -112,20 +112,17 @@ proc srun_test {exp_cnt account} {
 			wait
 		}
 	}
-
-	if {$count != $exp_cnt} {
-		send_user "\nFAILURE: incorrect number of jobs were ran $count != $exp_cnt\n"
-		set exit_code 1
-	}
-
 	if {$job_id == 0} {
-		send_user "\nFAILURE: did not get job id\n"
-		return -1
-	} else {
+		send_user "\nFAILURE: did not get job ID\n"
+		set exit_code 1
 		return $job_id
 	}
 
-
+	if {$count != $exp_cnt} {
+		send_user "\nFAILURE: incorrect number of tasks were run ($count != $exp_cnt)\n"
+		set exit_code 1
+	}
+	return $job_id
 }
 
 proc add_child {parent child maxnode grpnode} {
@@ -294,7 +291,8 @@ cleanup
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
 }
-
 exit $exit_code
 
