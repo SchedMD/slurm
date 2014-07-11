@@ -2186,21 +2186,17 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		}
 
 		if (!strcasecmp("Parent", object)) {
+			file_opts = _parse_options(line+start);
 			xfree(parent);
 
-			i = start;
-			while (line[i] != '\n' && i<len)
-				i++;
-
-			if (i >= len) {
+			if (!file_opts) {
 				exit_code=1;
-				fprintf(stderr, " No parent name "
-					"given line(%d)\n",
-					lc);
+				fprintf(stderr, " Problem with line(%d)\n", lc);
 				rc = SLURM_ERROR;
 				break;
 			}
-			parent = xstrndup(line+start, i-start);
+
+			parent = xstrdup(file_opts->name);
 			//info("got parent %s", parent);
 			if (!sacctmgr_find_account_base_assoc_from_list(
 				    curr_assoc_list, parent, cluster_name)
@@ -2213,6 +2209,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					lc, parent);
 				break;
 			}
+			_destroy_sacctmgr_file_opts(file_opts);
 			continue;
 		} else if (!parent) {
 			parent = xstrdup("root");

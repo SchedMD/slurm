@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ==========================
  -- Added examples to demonstrate the use of the sacct -T option to the man
     page.
+ -- Fix for regression in 14.03.5 with sacctmgr load when Parent has "'"
+    around it
 
 * Changes in Slurm 14.03.5
 ==========================
