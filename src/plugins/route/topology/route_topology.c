@@ -85,7 +85,7 @@ const char plugin_type[]        = "route/topology";
 const uint32_t plugin_version   = 101;
 
 /* Global data */
-static uint32_t debug_flags = 0;
+static uint64_t debug_flags = 0;
 
 /*****************************************************************************\
  *  Functions required of all plugins
