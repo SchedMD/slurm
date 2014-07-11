@@ -934,7 +934,9 @@ extern List feature_list_copy(List feature_list_src);
  * find_job_array_rec - return a pointer to the job record with the given
  *	array_job_id/array_task_id
  * IN job_id - requested job's id
- * IN array_task_id - requested job's task id (NO_VAL if none specified)
+ * IN array_task_id - requested job's task id,
+ *		      NO_VAL if none specified (i.e. not a job array)
+ *		      INFINITE return any task for specified job id
  * RET pointer to the job's record, NULL on error
  */
 extern struct job_record *find_job_array_rec(uint32_t array_job_id,
@@ -1238,6 +1240,19 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
  */
 extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 		uid_t uid, slurm_fd_t conn_fd, uint16_t protocol_version);
+
+/*
+ * job_str_signal - signal the specified job
+ * IN job_id_str - id of the job to be signaled, valid formats include "#"
+ *	"#_#" and "#_[expr]"
+ * IN signal - signal to send, SIGKILL == cancel the job
+ * IN flags  - see KILL_JOB_* flags in slurm.h
+ * IN uid - uid of requesting user
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
+			  uid_t uid, bool preempt);
 
 /*
  * job_suspend - perform some suspend/resume operation
