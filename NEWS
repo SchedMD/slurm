@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     page.
  -- Fix for regression in 14.03.5 with sacctmgr load when Parent has "'"
     around it
+ -- Update comments in sacctmgr dump header
 
 * Changes in Slurm 14.03.5
 ==========================
