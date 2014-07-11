@@ -33,14 +33,14 @@
 ############################################################################
 source ./globals_accounting
 
-set test_id     "test21.24"
-set file_in     "$test_id.input"
-set file_in2    "$test_id.input2"
-set file_in3    "$test_id.input3"
-set file_out    "$test_id.output"
-set file_out2   "$test_id.output2"
-set file_out3   "$test_id.output3"
-set file_out4   "$test_id.output4"
+set test_id     "21.24"
+set file_in     "test$test_id.input"
+set file_in2    "test$test_id.input2"
+set file_in3    "test$test_id.input3"
+set file_out    "test$test_id.output"
+set file_out2   "test$test_id.output2"
+set file_out3   "test$test_id.output3"
+set file_out4   "test$test_id.output4"
 set exit_code   0
 set lis		list
 set as		assoc
