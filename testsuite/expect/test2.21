@@ -58,7 +58,7 @@ proc check_state { id } {
 	set job_state 0
 	spawn $scontrol show job $id
 	expect {
-		-re "JobState=PENDING" {
+		-re "JobState=(PENDING|RUNNING)" {
 			set job_state 1
 			exp_continue
 		}
@@ -72,7 +72,7 @@ proc check_state { id } {
 	}
 
 	if {$job_state != 1} {
-		send_user "\nFAILURE: Job $id state was not PENDING after it was requeued\n"
+		send_user "\nFAILURE: Job $id state was not PENDING or RUNNING after it was requeued\n"
 		set exit_code 1
 	}
 }
