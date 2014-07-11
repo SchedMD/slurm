@@ -19,6 +19,7 @@ SUBDIRS = \
 	preempt			\
 	priority		\
 	proctrack		\
+	route			\
 	sched			\
 	select			\
 	slurmctld		\

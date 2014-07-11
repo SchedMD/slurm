@@ -53,13 +53,17 @@ struct switch_record {
 	char *name;			/* switch name */
 	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
 					 * this switch */
-	char *nodes;			/* name if direct descendent nodes */
-	char *switches;			/* name if direct descendent switches */
+	char *nodes;			/* name if direct descendant nodes */
+	uint16_t  num_switches;         /* number of descendant switches */
+	uint16_t  parent;		/* index of parent switch */
+	char *switches;			/* name of direct descendant switches */
+	uint16_t *switch_index;		/* indexes of child switches */
 	uint32_t temp;			/* temperature, in celsius */
 };
 
 extern struct switch_record *switch_record_table;  /* ptr to switch records */
 extern int switch_record_cnt;		/* size of switch_record_table */
+extern int switch_levels;               /* number of switch levels     */
 
 /*****************************************************************************\
  *  Slurm topology functions

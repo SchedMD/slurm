@@ -48,6 +48,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
+#include "src/common/node_conf.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
@@ -104,6 +105,7 @@ static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
 extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[]);
+static void _find_child_switches (int sw);
 static void _validate_switches(void);
 
 
@@ -221,13 +223,51 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * find_child_switches creates an array of indexes to the
+ * immediate descendants of switch sw.
+ */
+static void _find_child_switches (int sw)
+{
+	int i;
+	int cldx; /* index into array of child switches */
+	hostlist_iterator_t hi;
+	hostlist_t swlist;
+	char *swname;
+
+	swlist = hostlist_create(switch_record_table[sw].switches);
+	switch_record_table[sw].num_switches = hostlist_count(swlist);
+	switch_record_table[sw].switch_index =
+			xmalloc(switch_record_table[sw].num_switches
+				* sizeof(uint16_t));
+
+	hi = hostlist_iterator_create(swlist);
+	cldx = 0;
+	while (swname = hostlist_next(hi)) {
+		/* Find switch whose name is the name of this child.
+		 * and add its index to child index array */
+		for (i=0; i<switch_record_cnt; i++) {
+			if (strcmp(swname, switch_record_table[i].name) == 0) {
+				switch_record_table[sw].switch_index[cldx] = i;
+				switch_record_table[i].parent = sw;
+				cldx++;
+				break;
+			}
+		}
+		free(swname);
+	}
+	hostlist_iterator_destroy(hi);
+	hostlist_destroy(swlist);
+}
+
 static void _validate_switches(void)
 {
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int depth, i, j;
 	struct switch_record *switch_ptr, *prior_ptr;
 	hostlist_t hl, invalid_hl = NULL;
-	char *child;
+	char *child, *buf;
+	bool  have_root = false;
 	bitstr_t *multi_homed_bitmap = NULL;	/* nodes on >1 leaf switch */
 	bitstr_t *switches_bitmap = NULL;	/* nodes on any leaf switch */
 	bitstr_t *tmp_bitmap = NULL;
@@ -337,8 +377,10 @@ static void _validate_switches(void)
 			break;
 	}
 
+	switch_levels = 0;
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+		switch_levels = MAX(switch_levels, switch_ptr->level);
 		if (switch_ptr->node_bitmap == NULL)
 			error("switch %s has no nodes", switch_ptr->name);
 	}
@@ -356,7 +398,6 @@ static void _validate_switches(void)
 		fatal("switches contain no nodes");
 
 	if (invalid_hl) {
-		char *buf;
 		buf = hostlist_ranged_string_xmalloc(invalid_hl);
 		error("WARNING: Invalid hostnames in switch configuration: %s",
 		      buf);
@@ -375,6 +416,22 @@ static void _validate_switches(void)
 	}
 	FREE_NULL_BITMAP(multi_homed_bitmap);
 
+	/* Create array of indexes of children of each switch,
+	 * and see if any switch can reach all nodes */
+	for (i = 0; i < switch_record_cnt; i++) {
+		if (switch_record_table[i].level != 0) {
+			_find_child_switches (i);
+		}
+		if (node_record_count ==
+			bit_set_count(switch_record_table[i].node_bitmap)) {
+			have_root = true;
+		}
+	}
+	if (!have_root) {
+		info("TOPOLOGY: warning -- no switch can reach all nodes"
+				" through its descendants."
+				"Do not use route/topology");
+	}
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();
 }
@@ -421,10 +478,12 @@ static void _free_switch_record_table(void)
 			xfree(switch_record_table[i].name);
 			xfree(switch_record_table[i].nodes);
 			xfree(switch_record_table[i].switches);
+			xfree(switch_record_table[i].switch_index);
 			FREE_NULL_BITMAP(switch_record_table[i].node_bitmap);
 		}
 		xfree(switch_record_table);
 		switch_record_cnt = 0;
+		switch_levels = 0;
 	}
 }
 
@@ -445,6 +504,7 @@ extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 	conf_hashtbl = s_p_hashtbl_create(switch_options);
 	if (s_p_parse_file(conf_hashtbl, NULL, topo_conf, false) ==
 	    SLURM_ERROR) {
+		s_p_hashtbl_destroy(conf_hashtbl);
 		fatal("something wrong with opening/reading %s: %m",
 		      topo_conf);
 	}
