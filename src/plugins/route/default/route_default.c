@@ -126,9 +126,9 @@ extern int fini ( void )
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_p_split_hostlist(hostlist_t hl,
-				     uint16_t max_width,
-				     hostlist_t** sp_hl,
-				     int* count)
+				  uint16_t max_width,
+				  hostlist_t** sp_hl,
+				  int* count)
 {
 	return route_split_hostlist_treewidth(hl, max_width, sp_hl, count);
 }

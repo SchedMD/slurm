@@ -54,9 +54,9 @@
 /* ************************************************************************** */
 typedef struct slurm_route_ops {
 	int  (*split_hostlist)    (hostlist_t hl,
-				    uint16_t max_width,
-				    hostlist_t** sp_hl,
-				    int* count);
+				   uint16_t max_width,
+				   hostlist_t** sp_hl,
+				   int* count);
 } slurm_route_ops_t;
 
 /*
@@ -146,9 +146,9 @@ extern int route_g_fini ( void )
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_g_split_hostlist(hostlist_t hl,
-				     uint16_t max_width,
-				     hostlist_t** sp_hl,
-				     int* count)
+				  uint16_t max_width,
+				  hostlist_t** sp_hl,
+				  int* count)
 {
 	int rc;
 	int j, nnodes, nnodex;
@@ -176,8 +176,8 @@ extern int route_g_split_hostlist(hostlist_t hl,
 		}
 		if (nnodex != nnodes) {
 			info("ROUTE: number of nodes in split lists (%d)"
-			      " is not equal to number in input list (%d)",
-			      nnodex, nnodes);
+			     " is not equal to number in input list (%d)",
+			     nnodex, nnodes);
 		}
 	}
 	return rc;
@@ -207,9 +207,9 @@ extern int route_g_split_hostlist(hostlist_t hl,
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_split_hostlist_treewidth(hostlist_t hl,
-				     uint16_t max_width,
-				     hostlist_t** sp_hl,
-				     int* count)
+					  uint16_t max_width,
+					  hostlist_t** sp_hl,
+					  int* count)
 {
 	uint16_t tree_width;
 	int host_count;
