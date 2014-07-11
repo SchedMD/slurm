@@ -1,0 +1,110 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose:  Test of route/topology plugin
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+############################################################################
+#  Copyright (C) 2014 Bull S. A. S.
+#		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
+#  Written by Rod Schultz <Rod.Schultz@bull.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+# The test program calls the route_g_splithostlist api on testcases
+# in a testcase file.
+#
+# The test program is also given a path to a directory containing
+# a slurm.conf, topology.conf and testcase file that assumes those config.
+# These directories are named etc33.1.#
+#
+# The parser if the testcase file is very simple.
+# -- lines beginning with # are comments.
+# -- line beginning with a line feed ends a testcase.
+# -- The first line in the testcase is the node list expression to be split
+#    The followiing lines in the testcase are the expected resulting node lists.
+
+set test_id     "33.1"
+set exit_code   0
+set test_prog   "test$test_id.prog"
+
+print_header $test_id
+
+# Procedure to run a configuration
+proc run_config { test_config } {
+
+	global test_prog cfgcount cfgok wd
+
+	incr cfgcount
+	set cfgdir "$wd/$test_config"
+	set tc "$wd/$test_config/testcases"
+	send_user "${test_prog} --configdir=${cfgdir} --testcases=${tc}\n"
+	spawn ${test_prog} --configdir=${cfgdir} --testcases=${tc}
+	set local_ok 0
+	expect {
+		-re "Failed cases 0" {
+			incr cfgok
+			incr local_ok
+			exp_continue
+		}
+	}
+	if {$local_ok == 0} {
+		send_user "*** At least one testcase in $test_config failed!\n"
+	}
+}
+
+#
+# Delete left-over programs and rebuild them
+#
+file delete $test_prog
+
+if {[test_aix]} {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir}  ${build_dir}/src/api/libslurm.o -lhwloc -ldl\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir}  ${build_dir}/src/api/libslurm.o -lhwloc -ldl
+} elseif [file exists ${slurm_dir}/lib64/libslurm.so] {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir}  ${build_dir}/src/api/libslurm.o -lhwloc -ldl\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir}  ${build_dir}/src/api/libslurm.o -lhwloc -ldl
+} else {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir}  ${build_dir}/src/api/libslurm.o -lhwloc -ldl\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir}  ${build_dir}/src/api/libslurm.o -lhwloc -ldl
+}
+exec $bin_chmod 700 $test_prog
+
+log_user 0
+set cfgcount 0
+set cfgok 0
+set wd [pwd]
+
+run_config "etc.33.1.1"
+run_config "etc.33.1.2"
+run_config "etc.33.1.3"
+run_config "etc.33.1.4"
+
+if {$cfgok != $cfgcount} {
+	send_user "\n\nFAILURE\n"
+	set exit_code 1
+} else {
+	send_user "\nSUCCESS\n"
+}
+
+exit $exit_code
