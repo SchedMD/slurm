@@ -55,6 +55,7 @@
 #include <time.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket_common.h"
@@ -199,6 +200,15 @@ char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort);
 char * bitmap2node_name (bitstr_t *bitmap);
 
 /*
+ * bitmap2hostlist - given a bitmap, build a hostlist
+ * IN bitmap - bitmap pointer
+ * RET pointer to hostlist or NULL on error
+ * globals: node_record_table_ptr - pointer to node table
+ * NOTE: the caller must xfree the memory at node_list when no longer required
+ */
+hostlist_t bitmap2hostlist (bitstr_t *bitmap);
+
+/*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
@@ -269,6 +279,15 @@ extern void node_fini2 (void);
  */
 extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap);
+
+/*
+ * hostlist2bitmap - given a hostlist, build a bitmap representation
+ * IN hl          - hostlist
+ * IN best_effort - if set don't return an error on invalid node name entries
+ * OUT bitmap     - set to bitmap, may not have all bits set on error
+ * RET 0 if no error, otherwise EINVAL
+ */
+extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap);
 
 /* Purge the contents of a node record */
 extern void purge_node_rec (struct node_record *node_ptr);

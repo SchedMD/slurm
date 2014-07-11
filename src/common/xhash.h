@@ -41,7 +41,6 @@
 #include <pthread.h>
 
 /** Opaque definition of the hash table */
-struct xhash_st;
 typedef struct xhash_st xhash_t;
 
 /**
@@ -68,21 +67,27 @@ typedef const char* (*xhash_idfunc_t)(void* item);
 /* Currently not implementable with uthash */
 typedef unsigned (*xhash_hashfunc_t)(unsigned hashes_count, const char* id);
 
-/** @returns an item from a key searching through the hash table. NULL if not
- * found.
- */
-void* xhash_get(xhash_t* table, const char* key);
+/** This type of function is used to free data inserted into xhash table */
+typedef void (*xhash_freefunc_t)(void* item);
 
 /** Initialize the hash table.
  *
  * @param idfunc is used to calculate a string unique identifier from a user
  *               item.
+ * @param freefunc is used to free data insterted to the xhash table, use NULL
+ *		   to bypass it.
  *
  * @returns the newly allocated hash table. Must be freed with xhash_free.
  */
 xhash_t* xhash_init(xhash_idfunc_t idfunc,
+		    xhash_freefunc_t freefunc,
 		    xhash_hashfunc_t hashfunc, /* Currently: should be NULL */
 		    uint32_t table_size);      /* Currently: unused         */
+
+/** @returns an item from a key searching through the hash table. NULL if not
+ * found.
+ */
+void* xhash_get(xhash_t* table, const char* key);
 
 /** Add an item to the hash table.
  * @param table is the hash table you want to add the item to.
@@ -93,9 +98,14 @@ xhash_t* xhash_init(xhash_idfunc_t idfunc,
  */
 void* xhash_add(xhash_t* table, void* item);
 
-/** Remove an item associated with key from the hash table item is if found,
- * but do not free the item memory itself (the user is responsible for
- * managing item's memory).
+/** Remove an item associated with a key from the hash table but does not free
+ * memory associated with the item even if freefunc was not null at init time.
+ * @returns the removed item value.
+ */
+void* xhash_pop(xhash_t* table, const char* key);
+
+/** Remove an item associated with a key from the hash table.
+ * If found and freefunc at init time was not null, free the item's memory.
  */
 void xhash_delete(xhash_t* table, const char* key);
 
@@ -107,8 +117,12 @@ void xhash_walk(xhash_t* table,
         void (*callback)(void* item, void* arg),
         void* arg);
 
-/** This function frees the hash table, but does not free its stored items,
- * you can use xhash_walk to perform a free operation on all items if wanted.
+/** This function frees the hash table items. It frees items too if the
+ * freefunc was not null in the xhash_init function.
+ */
+void xhash_clear(xhash_t* table);
+
+/** This function frees the hash table, clearing it beforehand.
  * @parameter table is the hash table to free. The table pointer is invalid
  *                  after this call.
  */

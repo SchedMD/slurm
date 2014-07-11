@@ -67,10 +67,28 @@ typedef struct xhash_item_st {
 } xhash_item_t;
 
 struct xhash_st {
-	xhash_item_t*	ht;       /* hash table                          */
-	uint32_t	count;    /* user items count                    */
-	xhash_idfunc_t	identify; /* function returning a unique str key */
+	uint32_t		count;    /* user items count                */
+	xhash_freefunc_t	freefunc; /* function used to free items     */
+	xhash_item_t*		ht;       /* hash table                      */
+	xhash_idfunc_t		identify; /* function returning a unique str
+					     key */
 };
+
+xhash_t* xhash_init(xhash_idfunc_t idfunc,
+		    xhash_freefunc_t freefunc,
+		    xhash_hashfunc_t hashfunc,
+		    uint32_t table_size)
+{
+	xhash_t* table = NULL;
+	if (!idfunc)
+		return NULL;
+	table = (xhash_t*)xmalloc(sizeof(xhash_t));
+	table->ht = NULL; /* required by uthash */
+	table->count = 0;
+	table->identify = idfunc;
+	table->freefunc = freefunc;
+	return table;
+}
 
 static xhash_item_t* xhash_find(xhash_t* table, const char* key)
 {
@@ -92,20 +110,6 @@ void* xhash_get(xhash_t* table, const char* key)
 	return item->item;
 }
 
-xhash_t* xhash_init(xhash_idfunc_t idfunc,
-		    xhash_hashfunc_t hashfunc,
-		    uint32_t table_size)
-{
-	xhash_t* table = NULL;
-	if (!idfunc)
-		return NULL;
-	table = (xhash_t*)xmalloc(sizeof(xhash_t));
-	table->ht = NULL; /* required by uthash */
-	table->count = 0;
-	table->identify = idfunc;
-	return table;
-}
-
 void* xhash_add(xhash_t* table, void* item)
 {
 	xhash_item_t* hash_item = NULL;
@@ -121,14 +125,26 @@ void* xhash_add(xhash_t* table, void* item)
 	return hash_item->item;
 }
 
-void xhash_delete(xhash_t* table, const char* key)
+void* xhash_pop(xhash_t* table, const char* key)
 {
+	void* item_item;
 	xhash_item_t* item = xhash_find(table, key);
 	if (!item)
-		return;
+		return NULL;
+	item_item = item->item;
 	HASH_DELETE(hh, table->ht, item);
 	xfree(item);
 	--table->count;
+	return item_item;
+}
+
+void xhash_delete(xhash_t* table, const char* key)
+{
+	if (!table || !key)
+		return;
+	void* item_item = xhash_pop(table, key);
+	if (table->freefunc)
+		table->freefunc(item_item);
 }
 
 uint32_t xhash_count(xhash_t* table)
@@ -151,7 +167,7 @@ void xhash_walk(xhash_t* table,
 	}
 }
 
-void xhash_free(xhash_t* table)
+void xhash_clear(xhash_t* table)
 {
 	xhash_item_t* current_item = NULL;
 	xhash_item_t* tmp = NULL;
@@ -160,8 +176,19 @@ void xhash_free(xhash_t* table)
 		return;
 	HASH_ITER(hh, table->ht, current_item, tmp) {
 		  HASH_DEL(table->ht, current_item);
+		  if (table->freefunc)
+			  table->freefunc(current_item->item);
 		  xfree(current_item);
 	}
+
+	table->count = 0;
+}
+
+void xhash_free(xhash_t* table)
+{
+	if (!table)
+		return;
+	xhash_clear(table);
 	xfree(table);
 }
 
