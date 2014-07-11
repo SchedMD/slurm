@@ -53,6 +53,21 @@
 #include "src/common/slurm_topology.h"
 #include "src/common/xstring.h"
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+struct switch_record *switch_record_table __attribute__((weak_import)) = NULL;
+int switch_record_cnt __attribute__((weak_import)) = 0;
+int switch_levels __attribute__((weak_import)) = 0;
+#else
+struct switch_record *switch_record_table = NULL;
+int switch_record_cnt = 0;
+int switch_levels = 0;
+#endif
+
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
