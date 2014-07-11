@@ -217,7 +217,7 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
 	char *name = NULL;
 	char *buf;
 	int nhl = 0;
-	int i,j;
+	int j;
 	if (max_width != 0)
 		tree_width = max_width;
 	else

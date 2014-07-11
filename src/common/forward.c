@@ -566,7 +566,6 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 	pthread_cond_t notify;
 	int j = 0, count = 0;
 	List ret_list = NULL;
-	char *name = NULL;
 	int thr_count = 0;
 	int host_count = 0;
 	hostlist_t* sp_hl;

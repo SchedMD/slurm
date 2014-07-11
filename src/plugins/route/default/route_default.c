@@ -84,8 +84,6 @@ const char plugin_name[]        = "route default plugin";
 const char plugin_type[]        = "route/default";
 const uint32_t plugin_version   = 101;
 
-// Global data
-static uint32_t debug_flags = 0;
 
 /*****************************************************************************\
  *  Functions required of all plugins
@@ -96,7 +94,6 @@ static uint32_t debug_flags = 0;
  */
 extern int init ( void )
 {
-	debug_flags = slurm_get_debug_flags();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }

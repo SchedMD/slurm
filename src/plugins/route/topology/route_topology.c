@@ -138,9 +138,8 @@ extern int route_p_split_hostlist(hostlist_t hl,
 				     hostlist_t** sp_hl,
 				     int* count)
 {
-	int rc, i, j, k, f, hl_ndx, msg_count, sw_count, lst_count;
-	char *name, *buf;
-	uint16_t tree_width;
+	int i, j, k, hl_ndx, msg_count, sw_count, lst_count;
+	char  *buf;
 	bitstr_t *nodes_bitmap = NULL;		/* nodes in message list */
 	bitstr_t *fwd_bitmap = NULL;		/* nodes in forward list */
 
@@ -160,7 +159,6 @@ extern int route_p_split_hostlist(hostlist_t hl,
 			fatal("ROUTE: Failed to build topology config");
 		}
 	}
-	tree_width = slurm_get_tree_width();
 	*sp_hl = (hostlist_t*) xmalloc(switch_record_cnt * sizeof(hostlist_t));
 	/* create bitmap of nodes to send message too */
 	if (hostlist2bitmap (hl, false, &nodes_bitmap) != SLURM_SUCCESS) {
