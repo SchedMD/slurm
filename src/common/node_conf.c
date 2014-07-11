@@ -74,7 +74,6 @@
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/xassert.h"
-#include "src/common/xhash.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 

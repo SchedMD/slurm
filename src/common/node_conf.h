@@ -59,6 +59,7 @@
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket_common.h"
+#include "src/common/xhash.h"
 
 #define CONFIG_MAGIC	0xc065eded
 #define FEATURE_MAGIC	0x34dfd8b5
@@ -172,6 +173,7 @@ struct node_record {
 };
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */
+extern xhash_t* node_hash_table;	/* hash table for node records */
 extern time_t last_node_update;		/* time of last node record update */
 
 extern uint16_t *cr_node_num_cores;
@@ -258,6 +260,15 @@ extern struct node_record *create_node_record (
 extern struct node_record *find_node_record (char *name);
 
 /*
+ * hostlist2bitmap - given a hostlist, build a bitmap representation
+ * IN hl          - hostlist
+ * IN best_effort - if set don't return an error on invalid node name entries
+ * OUT bitmap     - set to bitmap, may not have all bits set on error
+ * RET 0 if no error, otherwise EINVAL
+ */
+extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap);
+
+/*
  * init_node_conf - initialize the node configuration tables and values.
  *	this should be called before creating any node or configuration
  *	entries.
@@ -279,15 +290,6 @@ extern void node_fini2 (void);
  */
 extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap);
-
-/*
- * hostlist2bitmap - given a hostlist, build a bitmap representation
- * IN hl          - hostlist
- * IN best_effort - if set don't return an error on invalid node name entries
- * OUT bitmap     - set to bitmap, may not have all bits set on error
- * RET 0 if no error, otherwise EINVAL
- */
-extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap);
 
 /* Purge the contents of a node record */
 extern void purge_node_rec (struct node_record *node_ptr);
