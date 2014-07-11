@@ -243,7 +243,7 @@ static void _find_child_switches (int sw)
 
 	hi = hostlist_iterator_create(swlist);
 	cldx = 0;
-	while (swname = hostlist_next(hi)) {
+	while ((swname = hostlist_next(hi))) {
 		/* Find switch whose name is the name of this child.
 		 * and add its index to child index array */
 		for (i=0; i<switch_record_cnt; i++) {
