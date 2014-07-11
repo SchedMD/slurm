@@ -7,6 +7,7 @@
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Portions Copyright (C) 2010-2013 SchedMD <http://www.schedmd.com>.
  *  Portions (boards) copyright (C) 2012 Bull, <rod.schultz@bull.com>
+ *  Portions (route) copyright (C) 2014 Bull, <rod.schultz@bull.com>
  *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
  *  Copyright (C) 2013 Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -291,6 +292,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ResvOverRun", S_P_UINT16},
 	{"ResvProlog", S_P_STRING},
 	{"ReturnToService", S_P_UINT16},
+	{"RoutePlugin", S_P_STRING},
 	{"SallocDefaultCommand", S_P_STRING},
 	{"SchedulerAuth", S_P_STRING, _defunct_option},
 	{"SchedulerParameters", S_P_STRING},
@@ -2310,6 +2312,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->resume_program);
 	xfree (ctl_conf_ptr->resv_epilog);
 	xfree (ctl_conf_ptr->resv_prolog);
+	xfree (ctl_conf_ptr->route_plugin);
 	xfree (ctl_conf_ptr->salloc_default_command);
 	xfree (ctl_conf_ptr->sched_logfile);
 	xfree (ctl_conf_ptr->sched_params);
@@ -2459,6 +2462,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->resv_over_run		= 0;
 	xfree (ctl_conf_ptr->resv_prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->route_plugin);
 	xfree( ctl_conf_ptr->salloc_default_command);
 	xfree( ctl_conf_ptr->sched_params );
 	ctl_conf_ptr->sched_time_slice		= (uint16_t) NO_VAL;
@@ -3771,6 +3775,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->reboot_program, "RebootProgram", hashtbl);
 
+	if (!s_p_get_string(&conf->route_plugin, "RoutePlugin", hashtbl))
+		conf->route_plugin = xstrdup(DEFAULT_ROUTE_PLUGIN);
+
 	s_p_get_string(&conf->salloc_default_command, "SallocDefaultCommand",
 			hashtbl);
 
@@ -4356,6 +4363,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Reservation");
 	}
+	if (debug_flags & DEBUG_FLAG_ROUTE) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Route");
+	}
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4459,6 +4471,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_PROTOCOL;
 		else if (strcasecmp(tok, "Reservation") == 0)
 			(*flags_out) |= DEBUG_FLAG_RESERVATION;
+		else if (strcasecmp(tok, "Route") == 0)
+			(*flags_out) |= DEBUG_FLAG_ROUTE;
 		else if (strcasecmp(tok, "SelectType") == 0)
 			(*flags_out) |= DEBUG_FLAG_SELECT_TYPE;
 		else if (strcasecmp(tok, "Steps") == 0)

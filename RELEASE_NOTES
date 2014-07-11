@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 14.11
-6 June 2014
+6 July 2014
 
 
 IMPORTANT NOTE:
@@ -32,6 +32,8 @@ HIGHLIGHTS
     any type).
  -- Added support for non-consumable generic resources that are limited, but
     can be shared between jobs.
+ -- Added a Route plugin to allow messages to be forwarded using switch
+    topology information.
 
 RPMBUILD CHANGES
 ================
@@ -75,6 +77,10 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     the same time.
  -- Added CpuFreqDef configuration parameter in slurm.conf to specify the
     default CPU frequency and governor to be set at job end.
+ -- Add RoutePlugin with route/default and route/topology implementations to
+    allow messages to be forwarded through the switch network defined in
+    the topology.conf file for TopologyPlugin=topology/tree.
+ -- Add DebugFlags=Route to allow debugging of RoutePlugin.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -128,10 +134,12 @@ Added the following struct definitions
     core_spec_cnt, cpu_spec_list, mem_spec_limit
  -- Added the following fields to struct slurm_ctl_conf:
     chos_loc, mem_limit_enforce, priority_params
-    requeue_exit, requeue_exit_hold
+    requeue_exit, requeue_exit_hold, route_plugin
+
 
 Changed the following enums and #defines
 ========================================
+-- Added #define DEBUG_FLAG_ROUTE to list of debug flags.
 
 
 Added the following API's

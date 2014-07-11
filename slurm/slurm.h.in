@@ -2047,6 +2047,7 @@ typedef struct reservation_name_msg {
 						    * map */
 #define DEBUG_FLAG_TRACE_JOBS   0x0000000010000000 /* Trace jobs by id
 						    * and state */
+#define DEBUG_FLAG_ROUTE 	0x0000000020000000 /* Route plugin */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
@@ -2243,6 +2244,7 @@ typedef struct slurm_ctl_conf {
 	char *resv_prolog;	/* path of reservation prolog run by slurmctld */
 	uint16_t ret2service;	/* 1 return DOWN node to service at
 				 * registration */
+	char *route_plugin;     /* route plugin */
 	char *salloc_default_command; /* default salloc command */
 	char *sched_logfile;    /* where slurm Scheduler log gets written */
 	uint16_t sched_log_level;  /* configured level of slurm Scheduler log */

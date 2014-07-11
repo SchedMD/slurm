@@ -1914,6 +1914,20 @@ etc. are equal to or greater than the values configured in slurm.conf.
 .RE
 
 .TP
+\fBRoutePlugin\fR
+Identifies the plugin to be used for defining which nodes will be used
+to forward a message.
+.RS
+.TP
+\fBroute/default\fR
+default, use TreeWidth.
+.TP
+\fBroute/topology\fR
+use the switch hierarchy defined in a \fItopology.conf\fR file.
+TopologyPlugin=topology/tree is required.
+.RE
+
+.TP
 \fBSallocDefaultCommand\fR
 Normally, \fBsalloc\fR(1) will run the user's default shell when
 a command to execute is not specified on the \fBsalloc\fR command line.

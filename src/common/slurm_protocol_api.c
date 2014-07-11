@@ -908,21 +908,23 @@ extern uint16_t slurm_get_fast_schedule(void)
 	return fast_val;
 }
 
-/* slurm_get_use_spec_resources
- * returns the value of use_spec_resources in slurmctld_conf object
+/* slurm_get_route_plugin
+ * returns the value of route_plugin in slurmctld_conf object
+ * RET char *    - route type, MUST be xfreed by caller
  */
-extern uint16_t slurm_get_use_spec_resources(void)
+extern char * slurm_get_route_plugin(void)
 {
-	uint16_t use_spec_val = 0;
+	char *route_plugin = NULL;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		use_spec_val = conf->use_spec_resources;
+
+		route_plugin = xstrdup(conf->route_plugin);
 		slurm_conf_unlock();
 	}
-	return use_spec_val;
+	return route_plugin;
 }
 
 /* slurm_get_track_wckey
@@ -941,6 +943,23 @@ extern uint16_t slurm_get_track_wckey(void)
 		slurm_conf_unlock();
 	}
 	return track_wckey;
+}
+
+/* slurm_get_use_spec_resources
+ * returns the value of use_spec_resources in slurmctld_conf object
+ */
+extern uint16_t slurm_get_use_spec_resources(void)
+{
+	uint16_t use_spec_val = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		use_spec_val = conf->use_spec_resources;
+		slurm_conf_unlock();
+	}
+	return use_spec_val;
 }
 
 /* slurm_set_tree_width
