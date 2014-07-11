@@ -252,7 +252,7 @@ Convention Centre Lugano</a>, Lugano, Switzerland.</p>
   <tr>
     <td>14:05 - 14:25</td>
     <td>Site Report</td>
-    <td>Marcin Stolarek (Interdisciplinary Centre
+    <td>Marcin Stolarek and Dominik Bartkiewicz (Interdisciplinary Centre
     for Mathematical and  Computational Modelling (ICM), University of
     Warsaw, Poland)</td>
     <td>University of Warsaw Site Report</td>
@@ -751,8 +751,8 @@ Convention Centre Lugano</a>, Lugano, Switzerland.</p>
   features of private namespace/mount --bind in Linux.</p>
 
 <h3>University of Warsaw Site Report</h3>
-<p>Marcin Stolarek (Interdisciplinary Centre for Mathematical and
-  Computational Modelling (ICM), University of Warsaw, Poland)</p>
+<p>Marcin Stolarek and Dominik Bartkiewicz (Interdisciplinary Centre for
+  Mathematical and Computational Modelling (ICM), University of Warsaw, Poland)</p>
 <ul>
   <li>Our own SPANK plugins using unshare system call limit lustre
     availability for job</li>
@@ -849,7 +849,6 @@ Convention Centre Lugano</a>, Lugano, Switzerland.</p>
   system to dynamically allocate disk space on our test high-IOPS SSD
   scratch system.</p>
 
-<p style="text-align:center;">Last modified 9 July 2014</p>
-<p style="text-align:center;">Last modified 10 July 2014</p>
+<p style="text-align:center;">Last modified 11 July 2014</p>
 
 <!--#include virtual="footer.txt"-->

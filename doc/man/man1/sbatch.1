@@ -1082,7 +1082,10 @@ NOTE: This option is not supported unless
 
 .TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
-Request the maximum \fIntasks\fR be invoked on each node.
+Request that \fIntasks\fR be invoked on each node.
+If used with the \fB\-\-ntasks\fR option, the \fB\-\-ntasks\fR option will take
+precedence and the \fB\-\-ntasks\-per\-node\fR will be treated as a
+\fImaximum\fR count of tasks per node.
 Meant to be used with the \fB\-\-nodes\fR option.
 This is related to \fB\-\-cpus\-per\-task\fR=\fIncpus\fR,
 but does not require knowledge of the actual number of cpus on
