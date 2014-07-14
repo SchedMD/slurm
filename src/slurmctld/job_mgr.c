@@ -3574,6 +3574,8 @@ extern int job_fail(uint32_t job_id, uint16_t job_state)
 
 }
 
+/* Signal a job based upon job pointer.
+ * Authentication and authorization checks must be performed before calling. */
 static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		       uint16_t flags, uid_t uid, bool preempt)
 {
@@ -3736,6 +3738,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	int rc = SLURM_SUCCESS, rc2;
+	int inx;
 
 	/* Jobs submitted using Moab command should be cancelled using
 	 * Moab command for accurate job records */
@@ -3767,10 +3770,23 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		job_ptr = find_job_array_rec(job_id, INFINITE);
 		if ((job_ptr->array_task_id == NO_VAL) &&
 		    (job_ptr->array_recs == NULL)) {
-			/* Regular job, not job array */
+			/* This is a regular job, not a job array */
 			return job_signal(job_id, signal, flags, uid, preempt);
 		}
-/* FIXME: Apply to full job array */
+
+		/* Signal all tasks of this job array */
+		inx = JOB_HASH_INX(job_id);
+		job_ptr = job_array_hash_j[inx];
+		while (job_ptr) {
+			if (job_ptr->array_job_id == job_id) {
+				rc2 = _job_signal(job_ptr, signal, flags, uid,
+						  preempt);
+				rc = MAX(rc, rc2);
+			}
+			job_ptr = job_ptr->job_array_next_j;
+		}
+		return rc;
+
 	}
 
 	array_bitmap = bit_alloc(max_array_size);
@@ -3811,8 +3827,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 					  job_ptr->account)) {
-		error("Security violation, JOB_CANCEL RPC for jobID %u from "
-		      "uid %d", job_ptr->job_id, uid);
+		error("Security violation, JOB_CANCEL RPC for jobID %s from "
+		      "uid %d", job_id_str, uid);
 		return ESLURM_ACCESS_DENIED;
 	}
 	if (!validate_slurm_user(uid) && (signal == SIGKILL) &&
