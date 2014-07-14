@@ -9692,8 +9692,11 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 				      reg_msg->job_id[i],
 				      reg_msg->step_id[i],
 				      reg_msg->node_name);
+				info("%s: job nodes %s count %d inx %d",
+				     __func__, job_ptr->nodes,
+				     job_ptr->node_cnt, node_inx);
 				abort_job_on_node(reg_msg->job_id[i], job_ptr,
-						node_ptr->name);
+						  node_ptr->name);
 			}
 		}
 

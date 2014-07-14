@@ -150,7 +150,8 @@ _step_connect(const char *directory, const char *nodename,
 	char *name = NULL;
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		debug("_step_connect: socket: %m");
+		error("%s: socket() failed dir %s node %s job %u step %d %m",
+		      __func__, directory, nodename, jobid, stepid);
 		return -1;
 	}
 
@@ -161,12 +162,12 @@ _step_connect(const char *directory, const char *nodename,
 	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
+		error("%s: connect() failed dir %s node %s job %u step %d %m",
+		      __func__, directory, nodename, jobid, stepid);
 		if (errno == ECONNREFUSED) {
 			_handle_stray_socket(name);
 			if (stepid == NO_VAL)
 				_handle_stray_script(directory, jobid);
-		} else {
-			debug("_step_connect: connect: %m");
 		}
 		xfree(name);
 		close(fd);
@@ -881,12 +882,12 @@ stepd_completion(int fd, step_complete_msg_t *sent)
 	safe_write(fd, &sent->range_last, sizeof(int));
 	safe_write(fd, &sent->step_rc, sizeof(int));
 	/*
-	 * We must not use setinfo over a pipe with slurmstepd here 
+	 * We must not use setinfo over a pipe with slurmstepd here
 	 * Indeed, slurmd does a large use of getinfo over a pipe
 	 * with slurmstepd and doing the reverse can result in a deadlock
-	 * scenario with slurmstepd : 
+	 * scenario with slurmstepd :
 	 * slurmd(lockforread,write)/slurmstepd(write,lockforread)
-	 * Do pack/unpack instead to be sure of independances of 
+	 * Do pack/unpack instead to be sure of independances of
 	 * slurmd and slurmstepd
 	 */
 	jobacctinfo_pack(sent->jobacct, SLURM_PROTOCOL_VERSION,

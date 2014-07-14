@@ -92,6 +92,8 @@ documents those changes that are of interest to users and admins.
  -- Restore srun --pty resize ability.
  -- Have sacctmgr dump cluster handle situations where users or such have
     special characters in their names like ':'
+ -- Add more debugging for information should the job ran on wrong node
+    and should there be problems accessing the state files.
 
 * Changes in Slurm 14.03.4
 ==========================
