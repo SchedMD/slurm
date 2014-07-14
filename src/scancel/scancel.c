@@ -732,7 +732,7 @@ _kill_job(void)
 {
 	int cc;
 
-	if (opt.signal == NO_VAL)
+	if (opt.signal == (uint16_t) - 1)
 		opt.signal = SIGKILL;
 
 	cc = slurm_kill_job2(opt.job_list, opt.signal, 0);
