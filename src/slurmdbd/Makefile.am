@@ -27,8 +27,7 @@ slurmdbd_SOURCES = 		\
 	slurmdbd.c  		\
 	slurmdbd.h
 
-slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(slurmdbd_LDADD) : force

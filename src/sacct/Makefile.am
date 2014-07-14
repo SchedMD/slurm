@@ -9,8 +9,7 @@ bin_PROGRAMS = sacct
 
 sacct_LDADD = 	$(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
 
-sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 noinst_HEADERS = sacct.c
 sacct_SOURCES =		\

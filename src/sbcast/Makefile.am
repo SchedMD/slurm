@@ -15,6 +15,5 @@ force:
 $(sbcast_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 

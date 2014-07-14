@@ -15,8 +15,7 @@ convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 srun_cr_LDADD = $(convenience_libs) $(BLCR_LIBS)
 
-srun_cr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BLCR_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+srun_cr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BLCR_LDFLAGS)
 
 force:
 $(convenience_libs) : force

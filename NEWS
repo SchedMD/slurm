@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.11.0pre3
 ==============================
+ -- Move xcpuinfo.[c|h] to the slurmd since it isn't needed anywhere else
+    and will avoid the need for all the daemons to link to libhwloc.
 
 * Changes in Slurm 14.11.0pre2
 ==============================

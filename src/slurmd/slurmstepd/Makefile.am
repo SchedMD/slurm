@@ -9,9 +9,9 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 slurmstepd_LDADD = 				   \
 	$(top_builddir)/src/common/libdaemonize.la \
+	../common/libslurmd_common.o $(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
-	$(PAM_LIBS) $(UTIL_LIBS) \
-	../common/libslurmd_common.la
+	$(PAM_LIBS) $(UTIL_LIBS)
 
 slurmstepd_SOURCES = 	        	\
 	slurmstepd.c slurmstepd.h	\
@@ -30,11 +30,9 @@ slurmstepd_SOURCES = 	        	\
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) -Wl,-bmaxdata:0x0
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
 else
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 endif
 
 force:

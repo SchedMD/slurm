@@ -18,7 +18,7 @@ sh5util_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
 	../libhdf5_api.la
 
 sh5util_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) $(HDF5_LDFLAGS) $(HDF5_LIBS)
+	$(HDF5_LDFLAGS) $(HDF5_LIBS)
 
 force:
 $(sh5util_LDADD) : force

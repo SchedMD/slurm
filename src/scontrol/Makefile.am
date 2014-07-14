@@ -28,8 +28,7 @@ scontrol_LDADD = \
 	$(convenience_libs) \
 	$(READLINE_LIBS)
 
-scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(convenience_libs) : force

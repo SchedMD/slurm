@@ -40,7 +40,6 @@
 \*****************************************************************************/
 
 #include "src/common/xcgroup.h"
-#include "src/common/xcpuinfo.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/xcgroup_read_config.h"
 

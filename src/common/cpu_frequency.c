@@ -49,7 +49,6 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/xcpuinfo.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 

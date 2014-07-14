@@ -28,8 +28,7 @@ sacctmgr_SOURCES =	\
 	wckey_functions.c	\
 	problem_functions.c
 
-sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(sacctmgr_LDADD) : force

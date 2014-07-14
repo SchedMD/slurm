@@ -61,10 +61,6 @@
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
 
-#ifdef HAVE_HWLOC
-#  include <hwloc.h>
-#endif /* HAVE_HWLOC */
-
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -28,8 +28,7 @@ wire_test_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
 
 total += ../libba_common.la $(top_builddir)/src/api/libslurm.o
 
-wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 
 force:
 $(total) : force

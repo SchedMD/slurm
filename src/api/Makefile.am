@@ -131,7 +131,7 @@ libslurm_la_LIBADD = $(convenience_libs)
 libslurm_la_LDFLAGS        = \
         $(LIB_LDFLAGS) \
         -version-info $(current):$(rev):$(age) \
-        $(OTHER_FLAGS) $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+        $(OTHER_FLAGS)
 #
 # The libpmi_la_LIBADD specification below causes libpmi.la to relink
 # when running "make install", but removing it prevents essential slurm

@@ -10,8 +10,7 @@ sbin_PROGRAMS = sfree
 sfree_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 sfree_SOURCES = sfree.c sfree.h opts.c
-sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 
 force:
 $(sfree_LDADD) : force

@@ -11,8 +11,7 @@ scancel_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 noinst_HEADERS  = scancel.h
 scancel_SOURCES = scancel.c opt.c
 
-scancel_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+scancel_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(scancel_LDADD) : force
