@@ -59,8 +59,6 @@
 
 #define MAX_LINES_IN_TEST 200
 #define MAX_LINE 100
-// TREE_WIDTH 0 to get it from slurm.conf
-#define TREE_WIDTH 0
 
 typedef struct {
 	char *testcases;
@@ -185,7 +183,7 @@ int _measure_api(char* measure_case)
 	nodes = measure_case;
 	hl = hostlist_create(nodes);
 	START_TIMER;
-	if (route_g_split_hostlist(hl, TREE_WIDTH, &sp_hl, &hl_count) ) {
+	if (route_g_split_hostlist(hl, &sp_hl, &hl_count) ) {
 		hostlist_destroy(hl);
 		fatal("unable to split forward hostlist");
 	}
@@ -230,7 +228,7 @@ int _run_test(char** testcase, int lines)
 	char *nodes;
 	nodes = testcase[0];
 	hostlist_t hl = hostlist_create(nodes);
-	if (route_g_split_hostlist(hl, TREE_WIDTH, &hll, &hl_count)) {
+	if (route_g_split_hostlist(hl, &hll, &hl_count)) {
 		info("Unable to split forward hostlist");
 		_print_test(testcase,lines);
 		rc = SLURM_FAILURE;
