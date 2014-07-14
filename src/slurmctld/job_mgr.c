@@ -3574,57 +3574,12 @@ extern int job_fail(uint32_t job_id, uint16_t job_state)
 
 }
 
-/*
- * job_signal - signal the specified job
- * IN job_id - id of the job to be signaled
- * IN signal - signal to send, SIGKILL == cancel the job
- * IN flags  - see KILL_JOB_* flags in slurm.h
- * IN uid - uid of requesting user
- * IN preempt - true if job being preempted
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
-		      uid_t uid, bool preempt)
+static int _job_signal(struct job_record *job_ptr, uint16_t signal,
+		       uint16_t flags, uid_t uid, bool preempt)
 {
-	struct job_record *job_ptr;
-	time_t now = time(NULL);
 	uint16_t job_term_state;
 	char jbuf[JBUFSIZ];
-
-	/* Jobs submitted using Moab command should be cancelled using
-	 * Moab command for accurate job records */
-	if (!wiki_sched_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/wiki") == 0)
-			wiki_sched  = true;
-		if (strcmp(sched_type, "sched/wiki2") == 0) {
-			wiki_sched  = true;
-			wiki2_sched = true;
-		}
-		xfree(sched_type);
-		wiki_sched_test = true;
-	}
-
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		info("job_signal: invalid job id %u", job_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
-
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
-		error("Security violation, JOB_CANCEL RPC for jobID %u from "
-		      "uid %d", job_ptr->job_id, uid);
-		return ESLURM_ACCESS_DENIED;
-	}
-	if (!validate_slurm_user(uid) && (signal == SIGKILL) &&
-	    job_ptr->part_ptr &&
-	    (job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY) && wiki2_sched) {
-		info("Attempt to cancel Moab job using Slurm command from "
-		     "uid %d", uid);
-		return ESLURM_ACCESS_DENIED;
-	}
+	time_t now = time(NULL);
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
@@ -3707,6 +3662,58 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 }
 
 /*
+ * job_signal - signal the specified job
+ * IN job_id - id of the job to be signaled
+ * IN signal - signal to send, SIGKILL == cancel the job
+ * IN flags  - see KILL_JOB_* flags in slurm.h
+ * IN uid - uid of requesting user
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
+		      uid_t uid, bool preempt)
+{
+	struct job_record *job_ptr;
+
+	/* Jobs submitted using Moab command should be cancelled using
+	 * Moab command for accurate job records */
+	if (!wiki_sched_test) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/wiki") == 0)
+			wiki_sched  = true;
+		if (strcmp(sched_type, "sched/wiki2") == 0) {
+			wiki_sched  = true;
+			wiki2_sched = true;
+		}
+		xfree(sched_type);
+		wiki_sched_test = true;
+	}
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		info("job_signal: invalid job id %u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account)) {
+		error("Security violation, JOB_CANCEL RPC for jobID %u from "
+		      "uid %d", job_ptr->job_id, uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+	if (!validate_slurm_user(uid) && (signal == SIGKILL) &&
+	    job_ptr->part_ptr &&
+	    (job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY) && wiki2_sched) {
+		info("Attempt to cancel Moab job using Slurm command from "
+		     "uid %d", uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	return _job_signal(job_ptr, signal, flags, uid, preempt);
+}
+
+/*
  * job_str_signal - signal the specified job
  * IN job_id_str - id of the job to be signaled, valid formats include "#"
  *	"#_#" and "#_[expr]"
@@ -3723,13 +3730,12 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	struct job_record *job_ptr;
 	uint32_t job_id;
 	time_t now = time(NULL);
-	uint16_t job_term_state;
 	char *end_ptr = NULL, *tok, *tmp;
 	long int long_id;
 	bitstr_t *array_bitmap, *tmp_bitmap;
 	bool valid = true;
 	int32_t i, i_first, i_last;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, rc2;
 
 	/* Jobs submitted using Moab command should be cancelled using
 	 * Moab command for accurate job records */
@@ -3869,95 +3875,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			continue;
 		}
 
-/* FIXME: Move below to function and add support for full job ID without tasks IDs / bitmap */
-		if (IS_JOB_FINISHED(job_ptr)) {
-			rc = ESLURM_ALREADY_DONE;
-			continue;
-		}
-
-		/* select plugin may do state-dependent signalling actions */
-		select_g_job_signal(job_ptr, signal);
-
-		/* save user ID of the one who requested the job be cancelled */
-		if (signal == SIGKILL)
-			job_ptr->requid = uid;
-
-		if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
-		    (signal == SIGKILL)) {
-			if ((job_ptr->job_state & JOB_STATE_BASE) ==
-			    JOB_PENDING) {
-				/* Prevent job requeue, otherwise keep state */
-				job_ptr->job_state = JOB_CANCELLED |
-						     JOB_COMPLETING;
-			}
-			/* build_cg_bitmap() not needed, job already completing */
-			verbose("job_signal of requeuing %u_%u successful",
-				job_id, i);
-			continue;
-		}
-
-		if (IS_JOB_PENDING(job_ptr) && (signal == SIGKILL)) {
-			last_job_update		= now;
-			job_ptr->job_state	= JOB_CANCELLED;
-			job_ptr->start_time	= now;
-			job_ptr->end_time	= now;
-			srun_allocate_abort(job_ptr);
-			job_completion_logger(job_ptr, false);
-			verbose("job_signal of pending %u_%u successful",
-				job_id, i);
-			continue;
-		}
-
-		if (preempt)
-			job_term_state = JOB_PREEMPTED;
-		else
-			job_term_state = JOB_CANCELLED;
-		if (IS_JOB_SUSPENDED(job_ptr) &&  (signal == SIGKILL)) {
-			last_job_update         = now;
-			job_ptr->end_time       = job_ptr->suspend_time;
-			job_ptr->tot_sus_time  +=
-					difftime(now, job_ptr->suspend_time);
-			job_ptr->job_state      = job_term_state|JOB_COMPLETING;
-			build_cg_bitmap(job_ptr);
-			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-			job_completion_logger(job_ptr, false);
-			deallocate_nodes(job_ptr, false, true, preempt);
-			verbose("job_signal %u of suspended %u_%u successful",
-				signal, job_id, i);
-			continue;
-		}
-
-		if (IS_JOB_RUNNING(job_ptr)) {
-			if (signal == SIGKILL) {
-				/* No need to signal steps,
-				 * deallocate kills them */
-				job_ptr->time_last_active	= now;
-				job_ptr->end_time		= now;
-				last_job_update			= now;
-				job_ptr->job_state = job_term_state |
-						     JOB_COMPLETING;
-				build_cg_bitmap(job_ptr);
-				job_completion_logger(job_ptr, false);
-				deallocate_nodes(job_ptr, false, false,preempt);
-			} else if (flags & KILL_JOB_BATCH) {
-				if (job_ptr->batch_flag) {
-					_signal_batch_job(job_ptr, signal);
-				} else {
-					rc = ESLURM_JOB_SCRIPT_MISSING;
-					continue;
-				}
-			} else {
-				_signal_job(job_ptr, signal);
-			}
-			verbose("job_signal %u of running %u_%u successful",
-				signal, job_id, i);
-			continue;
-		}
-
-		verbose("job_signal: %u_%u can't be sent signal %u from "
-			"state=%s", job_id, i,
-			signal, job_state_string(job_ptr->job_state));
-		rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
+		rc2 = _job_signal(job_ptr, signal, flags, uid, preempt);
+		rc = MAX(rc, rc2);
 	}
 
 	return rc;
