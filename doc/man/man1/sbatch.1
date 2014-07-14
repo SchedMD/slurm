@@ -305,7 +305,7 @@ To ensure that distinct CPUs are allocated to each job step, use the
 If the job step allocation includes an allocation with a number of
 sockets, cores, or threads equal to the number of tasks to be started
 then the tasks will by default be bound to the appropriate resources.
-Disable this mode of operation by explicitly setting "-\-cpu\-bind=none".
+Disable this mode of operation by explicitly setting "-\-cpu_bind=none".
 
 Note that a job step can be allocated different numbers of CPUs on each node
 or be allocated CPUs not starting at location zero. Therefore one of the
@@ -333,12 +333,15 @@ Do not bind tasks to CPUs (default)
 .TP
 .B rank
 Automatically bind by task rank.
-Task zero is bound to socket (or core or thread) zero, etc.
+The lowest numbered task on each node is bound to socket (or core or thread) zero, etc.
 Not supported unless the entire node is allocated to the job.
 .TP
 .B map_cpu:<list>
 Bind by mapping CPU IDs to tasks as specified
 where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
+The mapping is specified for a node and identical mapping is applied to the
+tasks on every node (i.e. the lowest task ID on each node is mapped to the
+first CPU ID specifed in the list, etc.).
 CPU IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they are interpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
@@ -346,6 +349,9 @@ Not supported unless the entire node is allocated to the job.
 .B mask_cpu:<list>
 Bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
+The mapping is specified for a node and identical mapping is applied to the
+tasks on every node (i.e. the lowest task ID on each node is mapped to the
+first mask specifed in the list, etc.).
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'. Not supported unless the entire node is
 allocated to the job.
