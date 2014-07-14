@@ -898,6 +898,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/proctrack_cgroup.so
 %{_libdir}/slurm/proctrack_linuxproc.so
 %{_libdir}/slurm/proctrack_pgid.so
+%{_libdir}/slurm/route_default.so
+%{_libdir}/slurm/route_topology.so
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so

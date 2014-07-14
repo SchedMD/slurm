@@ -403,6 +403,7 @@
 #include "src/common/read_config.h"
 #include "src/common/env.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_step_layout.h"
 #include "src/common/strlcpy.h"
 #include "src/common/switch.h"
 #include "src/common/working_cluster.h"
@@ -410,6 +411,5 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_step_layout.h"
 
 #endif /*__SLURM_XLATOR_H__*/

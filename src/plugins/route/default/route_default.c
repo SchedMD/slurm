@@ -45,13 +45,11 @@
 #include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
+#include "src/common/slurm_xlator.h"
 #include "src/common/forward.h"
-#include "src/common/log.h"
 #include "src/common/node_conf.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_route.h"
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
