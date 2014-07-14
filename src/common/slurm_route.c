@@ -86,7 +86,6 @@ extern int route_g_init ( void )
 	char *plugin_type = "route";
 	char *type = NULL;
 
-	debug_flags = slurm_get_debug_flags();
 	if (init_run && g_context)
 		return retval;
 
@@ -105,7 +104,9 @@ extern int route_g_init ( void )
 		retval = SLURM_ERROR;
 		goto done;
 	}
+
 	tree_width = slurm_get_tree_width();
+	debug_flags = slurm_get_debug_flags();
 	init_run = true;
 
 done:
@@ -196,11 +197,11 @@ extern int route_g_split_hostlist(hostlist_t hl,
  */
 extern int route_g_reconfigure ( void )
 {
-	debug_flags = slurm_get_debug_flags();
-	tree_width = slurm_get_tree_width();
-
 	if (route_g_init() < 0)
 		return SLURM_ERROR;
+
+	debug_flags = slurm_get_debug_flags();
+	tree_width = slurm_get_tree_width();
 
 	return (*(ops.reconfigure))();
 
