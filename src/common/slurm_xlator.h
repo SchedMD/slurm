@@ -387,13 +387,16 @@
 #define pack_slurm_step_layout          slurm_pack_slurm_step_layout
 #define unpack_slurm_step_layout        slurm_unpack_slurm_step_layout
 
+/* slurm_step_route.[ch] functions */
+#define route_split_hostlist_treewidth	slurm_route_split_hostlist_treewidth
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
 #include "src/common/arg_desc.h"
 #include "src/common/bitstring.h"
+#include "src/common/env.h"
 #include "src/common/hostlist.h"
-#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -401,8 +404,9 @@
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
 #include "src/common/read_config.h"
-#include "src/common/env.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_route.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/strlcpy.h"
 #include "src/common/switch.h"

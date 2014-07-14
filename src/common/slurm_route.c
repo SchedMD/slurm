@@ -48,6 +48,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+strong_alias(route_split_hostlist_treewidth,
+	     slurm_route_split_hostlist_treewidth);
 
 /* ************************************************************************** */
 /*  TAG(                        slurm_route_ops_t                          )  */
