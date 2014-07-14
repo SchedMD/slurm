@@ -2941,8 +2941,14 @@ extern void gres_plugin_job_clear(List job_gres_list)
 			continue;
 		job_state_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
 		for (i = 0; i < job_state_ptr->node_cnt; i++) {
-			FREE_NULL_BITMAP(job_state_ptr->gres_bit_alloc[i]);
-			FREE_NULL_BITMAP(job_state_ptr->gres_bit_step_alloc[i]);
+			if (job_state_ptr->gres_bit_alloc) {
+				FREE_NULL_BITMAP(job_state_ptr->
+						 gres_bit_alloc[i]);
+			}
+			if (job_state_ptr->gres_bit_step_alloc) {
+				FREE_NULL_BITMAP(job_state_ptr->
+						 gres_bit_step_alloc[i]);
+			}
 		}
 		xfree(job_state_ptr->gres_bit_alloc);
 		xfree(job_state_ptr->gres_bit_step_alloc);
