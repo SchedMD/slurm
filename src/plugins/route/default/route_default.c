@@ -89,7 +89,7 @@ const uint32_t plugin_version   = 101;
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -98,7 +98,7 @@ extern int init ( void )
  * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
  */
-extern int fini ( void )
+extern int fini(void)
 {
 	return SLURM_SUCCESS;
 }
@@ -133,7 +133,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
  *
  * RET: SLURM_SUCCESS - int
  */
-extern int route_p_reconfigure ( void )
+extern int route_p_reconfigure (void)
 {
 	return SLURM_SUCCESS;
 }

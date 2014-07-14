@@ -48,7 +48,7 @@
  *
  * Returns a SLURM errno.
  */
-extern int route_g_init( void );
+extern int route_g_init(void);
 
 /*
  * Terminate the route plugin.
@@ -77,15 +77,15 @@ extern int route_g_fini(void);
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_g_split_hostlist(hostlist_t hl,
-				     hostlist_t** sp_hl,
-				     int* count);
+				  hostlist_t** sp_hl,
+				  int* count);
 
 /*
  * route_g_reconfigure - reset during reconfigure
  *
  * RET: SLURM_SUCCESS - int
  */
-extern int route_g_reconfigure ( void );
+extern int route_g_reconfigure(void);
 
 /*****************************************************************************\
  *  Plugin Common Functions
@@ -111,7 +111,7 @@ extern int route_g_reconfigure ( void );
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_split_hostlist_treewidth(hostlist_t hl,
-				     hostlist_t** sp_hl,
-				     int* count);
+					  hostlist_t** sp_hl,
+					  int* count);
 
 #endif /*___SLURM_ROUTE_PLUGIN_API_H__*/

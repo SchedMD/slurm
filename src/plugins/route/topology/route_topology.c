@@ -107,7 +107,7 @@ static uint64_t debug_flags = 0;
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init(void)
 {
 	char *topotype;
 	topotype = slurm_get_topology_plugin();
@@ -123,7 +123,7 @@ extern int init ( void )
  * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
  */
-extern int fini ( void )
+extern int fini(void)
 {
 	return SLURM_SUCCESS;
 }
@@ -258,7 +258,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
  *
  * RET: SLURM_SUCCESS - int
  */
-extern int route_p_reconfigure ( void )
+extern int route_p_reconfigure (void)
 {
 	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;

@@ -58,7 +58,7 @@ typedef struct slurm_route_ops {
 	int  (*split_hostlist)    (hostlist_t hl,
 				   hostlist_t** sp_hl,
 				   int* count);
-	int  (*reconfigure)       ( void );
+	int  (*reconfigure)       (void);
 } slurm_route_ops_t;
 
 /*
@@ -80,7 +80,7 @@ static uint16_t tree_width;
 /* ************************************************************************** */
 /*  TAG(                        slurm_route_init                           )  */
 /* ************************************************************************** */
-extern int route_g_init ( void )
+extern int route_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "route";
@@ -118,7 +118,7 @@ done:
 /* ************************************************************************** */
 /*  TAG(                        slurm_route_fini                           )  */
 /* ************************************************************************** */
-extern int route_g_fini ( void )
+extern int route_g_fini(void)
 {
 	int rc;
 
@@ -195,7 +195,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
  *
  * RET: SLURM_SUCCESS - int
  */
-extern int route_g_reconfigure ( void )
+extern int route_g_reconfigure(void)
 {
 	if (route_g_init() < 0)
 		return SLURM_ERROR;
