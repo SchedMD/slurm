@@ -1313,7 +1313,10 @@ This is not compatible with \fBPreemptMode=OFF\fR or \fBPreemptMode=SUSPEND\fR
 \fBPriorityDecayHalfLife\fR
 This controls how long prior resource use is considered in determining
 how over\- or under\-serviced an association is (user, bank account and
-cluster) in determining job priority.  If set to 0 no decay will be applied.
+cluster) in determining job priority.
+The record of usage will be decayed over time, with half of the original value
+cleared at age \fBPriorityDecayHalfLife\fR.
+If set to 0 no decay will be applied.
 This is helpful if you want to enforce hard time limits per association.  If
 set to 0 \fBPriorityUsageResetPeriod\fR must be set to some interval.
 Applicable only if PriorityType=priority/multifactor.

@@ -229,7 +229,7 @@ Where:
 <DD> is a decay factor between zero and one that delivers the
   half-life decay based off the <i>PriorityDecayHalfLife</i> setting
   in the slurm.conf file.  Without accruing additional usage, a user's
-  U<sub>H</sub> usage will decay to 1/2 value after a time period
+  U<sub>H</sub> usage will decay to half its original value after a time period
   of <i>PriorityDecayHalfLife</i> seconds.
 </DL>
 
