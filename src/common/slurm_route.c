@@ -56,16 +56,17 @@ strong_alias(route_split_hostlist_treewidth,
 /* ************************************************************************** */
 typedef struct slurm_route_ops {
 	int  (*split_hostlist)    (hostlist_t hl,
-				   uint16_t max_width,
 				   hostlist_t** sp_hl,
 				   int* count);
+	int  (*reconfigure)       ( void );
 } slurm_route_ops_t;
 
 /*
  * Must be synchronized with slurm_route_ops_t above.
  */
 static const char *syms[] = {
-	"route_p_split_hostlist"
+	"route_p_split_hostlist",
+	"route_p_reconfigure"
 };
 
 static slurm_route_ops_t ops;
@@ -73,6 +74,7 @@ static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 static uint32_t debug_flags = 0;
+static uint16_t tree_width;
 
 
 /* ************************************************************************** */
@@ -103,6 +105,7 @@ extern int route_g_init ( void )
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	tree_width = slurm_get_tree_width();
 	init_run = true;
 
 done:
@@ -138,7 +141,6 @@ extern int route_g_fini ( void )
  * IN: hl        - hostlist_t   - list of every node to send message to
  *                                will be empty on return which is same behavior
  *                                as similar code replaced in forward.c
- * IN: max_width - uint16_t     - max number of hostlists to split into
  * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
  * OUT: count    - int*         - the count of created hostlists
  * RET: SLURM_SUCCESS - int
@@ -148,7 +150,6 @@ extern int route_g_fini ( void )
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_g_split_hostlist(hostlist_t hl,
-				  uint16_t max_width,
 				  hostlist_t** sp_hl,
 				  int* count)
 {
@@ -168,7 +169,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 		xfree(buf);
 	}
 
-	rc = (*(ops.split_hostlist))(hl, max_width, sp_hl, count);
+	rc = (*(ops.split_hostlist))(hl, sp_hl, count);
 	if (debug_flags & DEBUG_FLAG_ROUTE) {
 		/* Sanity check to make sure all nodes in msg list are in
 		 * a child list */
@@ -186,6 +187,27 @@ extern int route_g_split_hostlist(hostlist_t hl,
 }
 
 /* ************************************************************************** */
+/*  TAG(                      route_g_reconfigure                      )      */
+/* ************************************************************************** */
+/*
+ * route_g_reconfigure - reset during reconfigure
+ *
+ * RET: SLURM_SUCCESS - int
+ */
+extern int route_g_reconfigure ( void )
+{
+	debug_flags = slurm_get_debug_flags();
+	tree_width = slurm_get_tree_width();
+
+	if (route_g_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(ops.reconfigure))();
+
+}
+
+
+/* ************************************************************************** */
 /*  TAG(                      route_split_hostlist_treewidth               )  */
 /* ************************************************************************** */
 /*
@@ -199,7 +221,6 @@ extern int route_g_split_hostlist(hostlist_t hl,
  * IN: hl        - hostlist_t   - list of every node to send message to
  *                                will be empty on return which is same behavior
  *                                as similar code replaced in forward.c
- * IN: max_width - uint16_t     - max number of hostlists to split into
  * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
  * OUT: count    - int*         - the count of created hostlists
  * RET: SLURM_SUCCESS - int
@@ -209,21 +230,15 @@ extern int route_g_split_hostlist(hostlist_t hl,
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_split_hostlist_treewidth(hostlist_t hl,
-					  uint16_t max_width,
 					  hostlist_t** sp_hl,
 					  int* count)
 {
-	uint16_t tree_width;
 	int host_count;
 	int *span = NULL;
 	char *name = NULL;
 	char *buf;
 	int nhl = 0;
 	int j;
-	if (max_width != 0)
-		tree_width = max_width;
-	else
-		tree_width = slurm_get_tree_width();
 
 	host_count = hostlist_count(hl);
 	span = set_span(host_count, tree_width);

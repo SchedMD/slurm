@@ -137,7 +137,6 @@ extern int fini ( void )
  *
  * IN: hl        - hostlist_t   - list of every node to send message to
  *                                will be empty on return;
- * IN: max_width - uint16_t     - max number of hostlists to split into
  * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
  * OUT: count    - int*         - the count of created hostlists
  * RET: SLURM_SUCCESS - int
@@ -147,7 +146,6 @@ extern int fini ( void )
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_p_split_hostlist(hostlist_t hl,
-				  uint16_t max_width,
 				  hostlist_t** sp_hl,
 				  int* count)
 {
@@ -185,7 +183,8 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		for (j=0; j<switch_record_cnt; j++) {
 			if (switch_record_table[j].level == i) {
 				if (bit_super_set(nodes_bitmap,
-						  switch_record_table[j]. node_bitmap)) {
+						  switch_record_table[j].
+						  node_bitmap)) {
 					/* All nodes in message list are in
 					 * this switch */
 					break;
@@ -211,15 +210,13 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		}
 		FREE_NULL_BITMAP(nodes_bitmap);
 		xfree(*sp_hl);
-		return route_split_hostlist_treewidth(hl, max_width,
-						      sp_hl, count);
+		return route_split_hostlist_treewidth(hl, sp_hl, count);
 	}
 	if (switch_record_table[j].level == 0) {
 		/* This is a leaf switch. Construct list based on TreeWidth */
 		FREE_NULL_BITMAP(nodes_bitmap);
 		xfree(*sp_hl);
-		return route_split_hostlist_treewidth(hl, max_width,
-						      sp_hl, count);
+		return route_split_hostlist_treewidth(hl, sp_hl, count);
 	}
 	/* loop through children, construction a hostlist for each child switch
 	 * with nodes in the message list */
@@ -254,4 +251,15 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	*count = hl_ndx;
 	return SLURM_SUCCESS;
 
+}
+
+/*
+ * route_g_reconfigure - reset during reconfigure
+ *
+ * RET: SLURM_SUCCESS - int
+ */
+extern int route_p_reconfigure ( void )
+{
+	debug_flags = slurm_get_debug_flags();
+	return SLURM_SUCCESS;
 }

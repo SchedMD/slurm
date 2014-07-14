@@ -113,7 +113,6 @@ extern int fini ( void )
  *
  * IN: hl        - hostlist_t   - list of every node to send message to
  *                                will be empty on return;
- * IN: max_width - uint16_t     - max number of hostlists to split into
  * OUT: sp_hl    - hostlist_t** - the array of hostlist that will be malloced
  * OUT: count    - int*         - the count of created hostlist
  * RET: SLURM_SUCCESS - int
@@ -127,6 +126,16 @@ extern int route_p_split_hostlist(hostlist_t hl,
 				  hostlist_t** sp_hl,
 				  int* count)
 {
-	return route_split_hostlist_treewidth(hl, max_width, sp_hl, count);
+	return route_split_hostlist_treewidth(hl, sp_hl, count);
+}
+
+/*
+ * route_g_reconfigure - reset during reconfigure
+ *
+ * RET: SLURM_SUCCESS - int
+ */
+extern int route_p_reconfigure ( void )
+{
+	return SLURM_SUCCESS;
 }
 

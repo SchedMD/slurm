@@ -89,6 +89,7 @@
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_route.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
@@ -998,6 +999,7 @@ _reconfigure(void)
 	 */
 	slurm_topo_build_config();
 	_set_topo_info();
+	route_g_reconfigure();
 
 	/*
 	 * In case the administrator changed the cpu frequency set capabilities
@@ -1455,6 +1457,7 @@ _slurmd_init(void)
 	rehash_node();
 	slurm_topo_build_config();
 	_set_topo_info();
+	route_g_reconfigure();
 
 	/*
 	 * Check for cpu frequency set capabilities on this node

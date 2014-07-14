@@ -77,7 +77,6 @@ The system <span class="commandline">_init()</span> is called before the SLURM
 
 <p class="commandline">
 extern int route_g_split_hostlist(hostlist_t hl,
-				     uint16_t max_width,
 				     hostlist_t** sp_hl,
 				     int* count);
 <p style="margin-left:.2in"><b>Description</b>:<br>
@@ -85,14 +84,21 @@ Split an input hostlist into a set of hostlists to forward to.
 
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">hl (in) hostlist to split</span>
-<span class="commandline">max_width (in) max number of hostlists to split into
-</span>
 <span class="commandline">sp_hl (out) the array of hostlist that will be
 malloced</span>
 <span class="commandline">count (out) the count of created hostlist</span>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
+extern int route_g_reconfigure ( void );
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Reset internal state during reconfigure.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
 
 
 <h2>Versioning</h2>

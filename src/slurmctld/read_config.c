@@ -69,6 +69,7 @@
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_route.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/strnatcmp.h"
@@ -954,6 +955,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	rehash_node();
 	slurm_topo_build_config();
+	route_g_reconfigure();
 
 	rehash_jobs();
 	set_slurmd_addr();

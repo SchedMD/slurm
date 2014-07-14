@@ -68,7 +68,6 @@ extern int route_g_fini(void);
  * IN: hl        - hostlist_t   - list of every node to send message to
  *                                will be empty on return which is same behavior
  *                                as similar code replaced in forward.c
- * IN: max_width - uint16_t     - max number of hostlists to split into
  * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
  * OUT: count    - int*         - the count of created hostlists
  * RET: SLURM_SUCCESS - int
@@ -78,9 +77,15 @@ extern int route_g_fini(void);
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_g_split_hostlist(hostlist_t hl,
-				     uint16_t max_width,
 				     hostlist_t** sp_hl,
 				     int* count);
+
+/*
+ * route_g_reconfigure - reset during reconfigure
+ *
+ * RET: SLURM_SUCCESS - int
+ */
+extern int route_g_reconfigure ( void );
 
 /*****************************************************************************\
  *  Plugin Common Functions
@@ -97,7 +102,6 @@ extern int route_g_split_hostlist(hostlist_t hl,
  * IN: hl        - hostlist_t   - list of every node to send message to
  *                                will be empty on return which is same behavior
  *                                as similar code replaced in forward.c
- * IN: max_width - uint16_t     - max number of hostlists to split into
  * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
  * OUT: count    - int*         - the count of created hostlists
  * RET: SLURM_SUCCESS - int
@@ -107,7 +111,6 @@ extern int route_g_split_hostlist(hostlist_t hl,
  * Note: the hostlist_t array will have to be xfree.
  */
 extern int route_split_hostlist_treewidth(hostlist_t hl,
-				     uint16_t max_width,
 				     hostlist_t** sp_hl,
 				     int* count);
 

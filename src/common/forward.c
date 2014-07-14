@@ -485,7 +485,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	hl = hostlist_create(header->forward.nodelist);
 	hostlist_uniq(hl);
 
-	if ( route_g_split_hostlist(hl, 0, &sp_hl, &hl_count) ) {
+	if ( route_g_split_hostlist(hl, &sp_hl, &hl_count) ) {
 		error("unable to split forward hostlist");
 		hostlist_destroy(hl);
 		return SLURM_ERROR;
@@ -577,7 +577,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 	hostlist_uniq(hl);
 	host_count = hostlist_count(hl);
 
-	if ( route_g_split_hostlist(hl, 0, &sp_hl, &hl_count) ) {
+	if ( route_g_split_hostlist(hl, &sp_hl, &hl_count) ) {
 		error("unable to split forward hostlist");
 		return NULL;
 	}
