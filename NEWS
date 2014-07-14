@@ -122,8 +122,9 @@ documents those changes that are of interest to users and admins.
  -- Added examples to demonstrate the use of the sacct -T option to the man
     page.
  -- Fix for regression in 14.03.5 with sacctmgr load when Parent has "'"
-    around it
- -- Update comments in sacctmgr dump header
+    around it.
+ -- Update comments in sacctmgr dump header.
+ -- Fix for possible abort on change in GRES configuration.
 
 * Changes in Slurm 14.03.5
 ==========================
