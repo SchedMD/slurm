@@ -185,6 +185,7 @@ inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
+inline static void  _slurm_rpc_kill_job2(slurm_msg_t *msg);
 
 inline static void  _update_cred_key(void);
 
@@ -531,6 +532,10 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_LICENSE_INFO:
 		_slurm_rpc_dump_licenses(msg);
 		slurm_free_license_info_request_msg(msg->data);
+		break;
+	 case REQUEST_KILL_JOB:
+		 _slurm_rpc_kill_job2(msg);
+		 slurm_free_kill_job_msg2(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
@@ -4922,4 +4927,42 @@ extern void free_rpc_stats(void)
 	xfree(rpc_user_time);
 	rpc_user_size = 0;
 	slurm_mutex_unlock(&rpc_mutex);
+}
+
+/* _slurm_rpc_kill_job2()
+ */
+inline static void
+_slurm_rpc_kill_job2(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	job_kill_msg_t *kill;
+	slurmctld_lock_t lock = {READ_LOCK, WRITE_LOCK,
+				 WRITE_LOCK, NO_LOCK };
+	uid_t uid;
+	int cc;
+
+	kill = 	(job_kill_msg_t *)msg->data;
+	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug("%s: REQUEST_KILL_JOB job %s uid %d",
+	      __func__, kill->job_id, uid);
+
+	lock_slurmctld(lock);
+
+	cc = job_str_signal(kill->job_id,
+			    kill->signal,
+			    kill->flags,
+			    uid,
+			    0);
+	if (cc != SLURM_SUCCESS) {
+		error("%s: job_str_signal() job %s sig %d returned %s",
+		      __func__, kill->job_id,
+		      kill->signal, slurm_strerror(cc));
+	}
+
+	slurm_send_rc_msg(msg, cc);
+
+	unlock_slurmctld(lock);
+	END_TIMER2("_slurm_rpc_kill_job2");
 }

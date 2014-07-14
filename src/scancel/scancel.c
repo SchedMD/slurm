@@ -83,6 +83,7 @@ static void _load_job_records (void);
 static int  _multi_cluster(List clusters);
 static int  _proc_cluster(void);
 static int  _verify_job_ids (void);
+static int  _kill_job(void);
 
 static job_info_msg_t * job_buffer_ptr = NULL;
 
@@ -120,9 +121,9 @@ main (int argc, char *argv[])
 	if (opt.clusters)
 		rc = _multi_cluster(opt.clusters);
 	else
-		rc = _proc_cluster();
+		rc = _kill_job();
 
-	exit (rc);
+	exit(rc);
 }
 
 /* _multi_cluster - process job cancellation across a list of clusters */
@@ -722,4 +723,22 @@ _confirmation (int i, uint32_t step_id)
 			return 0;
 	}
 
+}
+
+/* _kill_job()
+ */
+static int
+_kill_job(void)
+{
+	int cc;
+
+	if (opt.signal == NO_VAL)
+		opt.signal = SIGKILL;
+
+	cc = slurm_kill_job2(opt.job_list, opt.signal, 0);
+	if (cc != SLURM_SUCCESS) {
+		error("slurm_kill_job2() failed %s", slurm_strerror(errno));
+		return -1;
+	}
+	return 0;
 }

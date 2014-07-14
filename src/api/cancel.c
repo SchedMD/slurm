@@ -48,6 +48,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xstring.h"
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
@@ -114,6 +115,37 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 
 	if (rc)
 		slurm_seterrno_ret(rc);
+
+	return SLURM_SUCCESS;
+}
+
+/* slurm_kill_job2()
+ */
+int
+slurm_kill_job2(const char *job_id, uint16_t sig, uint16_t batch_flag)
+{
+	int cc;
+	slurm_msg_t msg;
+	struct job_kill_msg kill;
+
+	if (job_id == NULL) {
+		errno = EINVAL;
+		return SLURM_FAILURE;
+	}
+
+	slurm_msg_t_init(&msg);
+
+	kill.job_id = xstrdup(job_id);
+	kill.signal = sig;
+	kill.flags  = batch_flag;
+	msg.msg_type = REQUEST_KILL_JOB;
+	msg.data = &kill;
+
+	if (slurm_send_recv_controller_rc_msg(&msg, &cc) < 0)
+		return SLURM_FAILURE;
+
+	if (cc)
+		slurm_seterrno_ret(cc);
 
 	return SLURM_SUCCESS;
 }

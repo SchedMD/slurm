@@ -2683,6 +2683,15 @@ extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal,
  */
 extern int slurm_kill_job_step PARAMS((uint32_t job_id, uint32_t step_id,
 				       uint16_t signal));
+/*
+ * slurm_kill_job2()
+ */
+extern int slurm_kill_job2 PARAMS((const char *, uint16_t, uint16_t));
+
+/*
+ * slurm_kill_job_step2()
+ */
+extern int slurm_kill_job_step2 PARAMS((const char *, uint16_t, uint16_t));
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job
