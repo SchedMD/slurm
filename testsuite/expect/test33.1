@@ -59,7 +59,7 @@ proc run_config { test_config } {
 	set cfgdir "$wd/$test_config"
 	set tc "$wd/$test_config/testcases"
 	send_user "${test_prog} --configdir=${cfgdir} --testcases=${tc}\n"
-	spawn ${test_prog} --configdir=${cfgdir} --testcases=${tc}
+	spawn ./${test_prog} --configdir=${cfgdir} --testcases=${tc}
 	set local_ok 0
 	expect {
 		-re "Failed cases 0" {
