@@ -34,7 +34,7 @@ source ./globals
 source ./globals_accounting
 
 set test_id     "1.74"
-set node_cnt    [available_nodes $partition idle]
+set node_cnt    0
 set cluster     [get_cluster_name]
 set node_name   ""
 set user        ""
@@ -63,11 +63,6 @@ if { [test_enforce_limits] == 0 } {
 if { [test_enforce_qos_set] == 0 } {
 	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=qos\n"
 	exit 0
-}
-
-if {$node_cnt <= 1} {
-	send_user "\nWARNING: cluster has too few nodes ($node_cnt <= 1)\n"
-	exit $exit_code
 }
 
 spawn $bin_id -u -n
@@ -155,6 +150,18 @@ proc add_child {parent child maxnode grpnode} {
 cleanup
 
 # Setup
+set node_cnt [available_nodes $partition "idle,alloc,comp"]
+if {$node_cnt < 3} {
+	send_user "\nWARNING: partition $partition has too few nodes ($node_cnt < 3)\n"
+	exit $exit_code
+}
+
+# Wait for 3 nodes to be in idle state
+if {[wait_for_node $partition idle 3]} {
+	send_user "\nWARNING: partition $partition lacks 3 idle nodes\n"
+	exit $exit_code
+}
+set node_cnt [available_nodes $partition idle]
 
 # Add parent account (off root)
 if {[add_child "root" $acct -1 -1]} {

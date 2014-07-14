@@ -2978,3 +2978,55 @@ proc slurmctld_plug_stack_nonstop { } {
 	log_user 1
 	return $nonstop_enforce
 }
+
+################################################################
+#
+# Proc: wait_for_node
+#
+# Purpose: Wait for a certain number of nodes in a partition to
+#          reach a certain state.
+#
+# Returns: 1 on failure.
+#
+################################################################
+proc wait_for_node {partition state num_nodes} {
+	set wait_time 0
+	set done      0
+	set cnt       0
+	set rt        0
+
+	global sinfo number
+
+	while {$done != 1 && $wait_time < 3} {
+
+		log_user 0
+		spawn $sinfo --noheader --partition $partition --state $state --format %D
+		expect {
+			-re "($number)" {
+				set cnt $expect_out(1,string)
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sinfo is not responding\n"
+				set rt 1
+			}
+			eof {
+				wait
+			}
+		}
+		log_user 1
+
+		if {$num_nodes <= $cnt} {
+			set done 1
+		} else {
+			send_user "partition $partition has $cnt nodes idle and we want $num_nodes\n"
+			sleep 3
+			incr wait_time 1
+		}
+	}
+	if {$done != 1} {
+		set rt 1
+	}
+
+	return $rt
+}
