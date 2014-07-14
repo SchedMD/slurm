@@ -73,6 +73,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added HealthCheckNodeState option of "cycle" to cycle through the compute
     nodes over the course of HealthCheckInterval rather than running all at
     the same time.
+ -- Added SchedulerParameters options of bf_max_job_array_resv to control how
+    many tasks of a job array should have resources reserved for them.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

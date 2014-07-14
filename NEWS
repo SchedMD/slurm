@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     RebootProgram to reboot nodes allocated to a job before it begins execution.
  -- Added squeue -O/--Format option that makes all job and step fields available
     for printing.
+ -- Added SchedulerParameters options of bf_max_job_array_resv to control how
+    many tasks of a job array should have resources reserved for them.
 
 * Changes in Slurm 14.11.0pre1
 ==============================

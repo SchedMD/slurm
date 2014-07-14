@@ -1936,6 +1936,17 @@ Higher values result in less overhead and better responsiveness.
 The default value is 30 seconds.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
+\fBbf_max_job_array_resv=#\fR
+The maximum number of tasks from a job array for which to reserve resources in
+the future.
+Since job arrays can potentially have millions of tasks, the overhead in
+reserving resources for all tasks can be prohibitive.
+In addition various limits may prevent all the jobs from starting at the
+expected times.
+This has no impact upon the number of tasks from a job array that can be
+started immediately, only those tasks expected to start at some future time.
+The default value is 20 tasks.
+.TP
 \fBbf_max_job_part=#\fR
 The maximum number of jobs per partition to attempt backfill scheduling for,
 not counting jobs which cannot be started due to an association resource

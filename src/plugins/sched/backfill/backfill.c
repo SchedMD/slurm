@@ -90,25 +90,11 @@
 #include "src/slurmctld/srun_comm.h"
 #include "backfill.h"
 
-#ifndef BACKFILL_INTERVAL
-#  define BACKFILL_INTERVAL	30
-#endif
-
-#ifndef BACKFILL_RESOLUTION
-#  define BACKFILL_RESOLUTION	60
-#endif
-
-/* Do not build job/resource/time record for more than this
- * far in the future, in seconds, currently one day */
-#ifndef BACKFILL_WINDOW
-#define   BACKFILL_WINDOW		(24 * 60 * 60)
-#endif
-
-/* Length of uid/njobs arrays used for limiting the number of jobs
- * per user considered in each backfill iteration */
-#ifndef BF_MAX_USERS
-#  define BF_MAX_USERS	1000
-#endif
+#define BACKFILL_INTERVAL	30
+#define BACKFILL_RESOLUTION	60
+#define BACKFILL_WINDOW		(24 * 60 * 60)
+#define BF_MAX_USERS		1000
+#define BF_MAX_JOB_ARRAY_RESV	20
 
 #define SLURMCTLD_THREAD_LIMIT	5
 #define SCHED_TIMEOUT		2000000	/* time in micro-seconds */
@@ -135,6 +121,7 @@ static uint32_t debug_flags = 0;
 static int backfill_interval = BACKFILL_INTERVAL;
 static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
+static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
@@ -482,16 +469,22 @@ static void _load_config(void)
 		      max_backfill_job_cnt);
 		max_backfill_job_cnt = 50;
 	}
-	/* "bf_res=" is vestigial from version 2.3 and can be removed later.
-	 * Only "bf_resolution=" is documented. */
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_res=")))
-		backfill_resolution = atoi(tmp_ptr + 7);
+
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_resolution=")))
 		backfill_resolution = atoi(tmp_ptr + 14);
 	if (backfill_resolution < 1) {
 		error("Invalid SchedulerParameters bf_resolution: %d",
 		      backfill_resolution);
 		backfill_resolution = BACKFILL_RESOLUTION;
+	}
+
+	if (sched_params &&
+	    (tmp_ptr=strstr(sched_params, "bf_max_job_array_resv=")))
+		bf_max_job_array_resv = atoi(tmp_ptr + 22);
+	if (bf_max_job_array_resv < 0) {
+		error("Invalid SchedulerParameters bf_max_job_array_resv: %d",
+		      bf_max_job_array_resv);
+		bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 	}
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_part=")))
@@ -1287,7 +1280,8 @@ next_task:
 			} else {
 				test_array_count++;
 			}
-			if (test_array_count < job_ptr->array_recs->task_cnt)
+			if ((test_array_count < bf_max_job_array_resv) &&
+			    (test_array_count < job_ptr->array_recs->task_cnt))
 				goto next_task;
 		}
 	}
