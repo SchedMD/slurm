@@ -3737,8 +3737,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	bitstr_t *array_bitmap, *tmp_bitmap;
 	bool valid = true;
 	int32_t i, i_first, i_last;
-	int rc = SLURM_SUCCESS, rc2;
-	int inx;
+	int rc = SLURM_SUCCESS, rc2, len;
 
 	/* Jobs submitted using Moab command should be cancelled using
 	 * Moab command for accurate job records */
@@ -3766,7 +3765,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		return ESLURM_INVALID_JOB_ID;
 	}
 	job_id = (uint32_t) long_id;
-	if (end_ptr[0] == '\0') {
+	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		job_ptr = find_job_array_rec(job_id, INFINITE);
 		if ((job_ptr->array_task_id == NO_VAL) &&
 		    (job_ptr->array_recs == NULL)) {
@@ -3775,8 +3774,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		}
 
 		/* Signal all tasks of this job array */
-		inx = JOB_HASH_INX(job_id);
-		job_ptr = job_array_hash_j[inx];
+		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
 		while (job_ptr) {
 			if (job_ptr->array_job_id == job_id) {
 				rc2 = _job_signal(job_ptr, signal, flags, uid,
@@ -3798,6 +3796,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		tok = strtok_r(NULL, ",", &end_ptr);
 	}
 	xfree(tmp);
+	if (valid) {
+		i_last = bit_fls(array_bitmap);
+		if (i_last < 0)
+			valid = false;
+	}
 	if (!valid) {
 		info("job_signal: invalid job id %s", job_id_str);
 		return ESLURM_INVALID_JOB_ID;
@@ -3806,16 +3809,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	/* Find some job record and validate the user cancelling the job */
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		i_first = bit_ffs(array_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(array_bitmap);
-		else
-			i_last = -2;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(array_bitmap, i))
-				continue;
-			if ((job_ptr = find_job_array_rec(job_id, i)))
+		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		while (job_ptr) {
+			if (job_ptr->array_job_id == job_id)
 				break;
+			job_ptr = job_ptr->job_array_next_j;
 		}
 	}
 	if ((job_ptr == NULL) || (job_ptr->array_task_id == NO_VAL) ||
@@ -3841,10 +3839,17 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	if (IS_JOB_PENDING(job_ptr) &&
 	    job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap) {
+		/* Ensure bitmap sizes match for AND operations */
+		len = bit_size(job_ptr->array_recs->task_id_bitmap);
+		i_last++;	/* last bit used in array_bitmap */
+		if (i_last < len)
+			bit_realloc(array_bitmap, len);
+		else if (i_last > len)
+			bit_realloc(job_ptr->array_recs->task_id_bitmap,i_last);
+
 		tmp_bitmap = bit_copy(job_ptr->array_recs->task_id_bitmap);
 		if (signal == SIGKILL) {
 			bit_not(array_bitmap);
-/* FIXME: bitmap sizes may differ */
 			bit_and(job_ptr->array_recs->task_id_bitmap,
 				array_bitmap);
 			xfree(job_ptr->array_recs->task_id_str);
