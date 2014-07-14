@@ -454,9 +454,7 @@ sstat_SOURCES = \
 	sstat.c		\
 	sstat.h
 
-sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
-
+sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:

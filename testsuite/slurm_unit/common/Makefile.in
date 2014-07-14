@@ -143,7 +143,7 @@ bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
 bitstring_test_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 bitstring_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -152,12 +152,12 @@ log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
 log_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1)
 pack_test_SOURCES = pack-test.c
 pack_test_OBJECTS = pack-test.$(OBJEXT)
 pack_test_LDADD = $(LDADD)
 pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1)
 xhash_test_SOURCES = xhash-test.c
 xhash_test_OBJECTS = xhash_test-xhash-test.$(OBJEXT)
 xhash_test_DEPENDENCIES =
@@ -674,8 +674,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
-LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) $(HWLOC_LIBS)
+AM_CPPFLAGS = -I$(top_srcdir)
+LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -ansi -pedantic \
 @HAVE_CHECK_TRUE@	-std=c99 -D_ISO99_SOURCE \
 @HAVE_CHECK_TRUE@	-Wunused-but-set-variable \

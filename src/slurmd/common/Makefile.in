@@ -16,6 +16,7 @@
 
 # Makefile.am for slurmd/common
 
+
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -81,6 +82,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+noinst_PROGRAMS = libslurmd_common.o$(EXEEXT)
 subdir = src/slurmd/common
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/auxdir/depcomp
@@ -136,16 +138,24 @@ libslurmd_common_la_LIBADD =
 am_libslurmd_common_la_OBJECTS = core_spec_plugin.lo \
 	job_container_plugin.lo proctrack.lo setproctitle.lo \
 	slurmd_cgroup.lo slurmstepd_init.lo run_script.lo \
-	task_plugin.lo set_oomadj.lo
+	task_plugin.lo set_oomadj.lo xcpuinfo.lo
 libslurmd_common_la_OBJECTS = $(am_libslurmd_common_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+libslurmd_common_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libslurmd_common_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 libslurmd_reverse_tree_math_la_LIBADD =
 am_libslurmd_reverse_tree_math_la_OBJECTS = reverse_tree_math.lo
 libslurmd_reverse_tree_math_la_OBJECTS =  \
 	$(am_libslurmd_reverse_tree_math_la_OBJECTS)
+PROGRAMS = $(noinst_PROGRAMS)
+am_libslurmd_common_o_OBJECTS =
+libslurmd_common_o_OBJECTS = $(am_libslurmd_common_o_OBJECTS)
+libslurmd_common_o_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -181,9 +191,11 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libslurmd_common_la_SOURCES) \
-	$(libslurmd_reverse_tree_math_la_SOURCES)
+	$(libslurmd_reverse_tree_math_la_SOURCES) \
+	$(libslurmd_common_o_SOURCES)
 DIST_SOURCES = $(libslurmd_common_la_SOURCES) \
-	$(libslurmd_reverse_tree_math_la_SOURCES)
+	$(libslurmd_reverse_tree_math_la_SOURCES) \
+	$(libslurmd_common_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -447,7 +459,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
 # making a .la
 noinst_LTLIBRARIES = libslurmd_common.la libslurmd_reverse_tree_math.la
@@ -461,8 +473,14 @@ libslurmd_common_la_SOURCES = \
 	run_script.c run_script.h \
 	task_plugin.c task_plugin.h \
 	set_oomadj.c set_oomadj.h \
-	reverse_tree.h
+	reverse_tree.h \
+	xcpuinfo.c xcpuinfo.h
 
+libslurmd_common_la_LDFLAGS = $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+
+# This was made so we could export all symbols from libslurm_common
+# Since the plugins loaded may need all the symbols here.
+libslurmd_common_o_SOURCES = 
 libslurmd_reverse_tree_math_la_SOURCES = \
 	reverse_tree_math.c \
 	reverse_tree_math.h
@@ -514,10 +532,19 @@ clean-noinstLTLIBRARIES:
 	}
 
 libslurmd_common.la: $(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_DEPENDENCIES) $(EXTRA_libslurmd_common_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libslurmd_common_la_LINK)  $(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_LIBADD) $(LIBS)
 
 libslurmd_reverse_tree_math.la: $(libslurmd_reverse_tree_math_la_OBJECTS) $(libslurmd_reverse_tree_math_la_DEPENDENCIES) $(EXTRA_libslurmd_reverse_tree_math_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libslurmd_reverse_tree_math_la_OBJECTS) $(libslurmd_reverse_tree_math_la_LIBADD) $(LIBS)
+
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -535,6 +562,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd_cgroup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_plugin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcpuinfo.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -647,7 +675,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -683,7 +711,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	mostlyclean-am
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -754,19 +782,22 @@ uninstall-am:
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLTLIBRARIES cscopelist-am ctags \
-	ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	clean-libtool clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am
 
+libslurmd_common.o$(EXEEXT) : \
+	$(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_DEPENDENCIES)
+	$(LINK)  $(libslurmd_common_la_OBJECTS)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

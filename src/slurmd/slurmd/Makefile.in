@@ -141,10 +141,9 @@ am_slurmd_OBJECTS = $(am__objects_1)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	../common/libslurmd_common.la \
-	../common/libslurmd_reverse_tree_math.la
+	../common/libslurmd_common.o $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1) ../common/libslurmd_reverse_tree_math.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -451,13 +450,12 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\" \
-	-I$(top_srcdir) $(HWLOC_CPPFLAGS)
+	-I$(top_srcdir)
 
 slurmd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
+	../common/libslurmd_common.o $(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)	   \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
-	../common/libslurmd_common.la \
 	../common/libslurmd_reverse_tree_math.la
 
 SLURMD_SOURCES = \
@@ -469,15 +467,11 @@ SLURMD_SOURCES = \
 	slurmd_plugstack.c slurmd_plugstack.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
-@HAVE_AIX_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-@HAVE_AIX_FALSE@	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
-
+@HAVE_AIX_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-@HAVE_AIX_TRUE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-@HAVE_AIX_TRUE@	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) -Wl,-bmaxdata:0x0
-
+@HAVE_AIX_TRUE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
 all: all-am
 
 .SUFFIXES:

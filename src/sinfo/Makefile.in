@@ -452,9 +452,7 @@ AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 sinfo_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 noinst_HEADERS = sinfo.h print.h
 sinfo_SOURCES = sinfo.c opts.c print.c sort.c
-sinfo_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
-
+sinfo_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
