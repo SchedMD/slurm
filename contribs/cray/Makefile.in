@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-#
 # Makefile for cray scripts
 #
 
@@ -84,11 +83,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_NATIVE_CRAY_FALSE@am__append_1 = slurmconfgen.py slurm.conf.template
 subdir = contribs/cray
-DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(srcdir)/opt_modulefiles_slurm.in \
-	$(srcdir)/slurmconfgen.py.in
+DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
@@ -134,7 +130,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
-CONFIG_CLEAN_FILES = opt_modulefiles_slurm slurmconfgen.py
+CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -163,7 +159,7 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(sysconfdir)"
+am__installdirs = "$(DESTDIR)$(sbindir)"
 SCRIPTS = $(sbin_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -184,7 +180,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-DATA = $(sysconf_DATA)
+DATA = $(noinst_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
@@ -424,10 +420,16 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-EXTRA_DIST = etc_sysconfig_slurm libalps_test_programs.tar.gz \
-	opt_modulefiles_slurm pam_job.c $(am__append_1)
+EXTRA_DIST = \
+	etc_sysconfig_slurm		\
+	libalps_test_programs.tar.gz	\
+	opt_modulefiles_slurm.in	\
+	pam_job.c 			\
+	slurm.conf.template		\
+	slurmconfgen.py.in
+
 @HAVE_NATIVE_CRAY_TRUE@sbin_SCRIPTS = slurmconfgen.py
-@HAVE_NATIVE_CRAY_TRUE@sysconf_DATA = slurm.conf.template
+@HAVE_REAL_CRAY_TRUE@noinst_DATA = opt_modulefiles_slurm
 all: all-am
 
 .SUFFIXES:
@@ -461,10 +463,6 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-opt_modulefiles_slurm: $(top_builddir)/config.status $(srcdir)/opt_modulefiles_slurm.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-slurmconfgen.py: $(top_builddir)/config.status $(srcdir)/slurmconfgen.py.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-sbinSCRIPTS: $(sbin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(sbin_SCRIPTS)'; test -n "$(sbindir)" || list=; \
@@ -506,27 +504,6 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-install-sysconfDATA: $(sysconf_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(sysconf_DATA)'; test -n "$(sysconfdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(sysconfdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(sysconfdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(sysconfdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(sysconfdir)" || exit $$?; \
-	done
-
-uninstall-sysconfDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(sysconf_DATA)'; test -n "$(sysconfdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(sysconfdir)'; $(am__uninstall_files_from_dir)
 tags TAGS:
 
 ctags CTAGS:
@@ -568,7 +545,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(sysconfdir)"; do \
+	for dir in "$(DESTDIR)$(sbindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -591,8 +568,6 @@ install-strip:
 	    "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'" install; \
 	fi
 mostlyclean-generic:
-
-clean-generic:
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -627,7 +602,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-sbinSCRIPTS install-sysconfDATA
+install-exec-am: install-sbinSCRIPTS
 
 install-html: install-html-am
 
@@ -665,7 +640,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-sbinSCRIPTS uninstall-sysconfDATA
+uninstall-am: uninstall-sbinSCRIPTS
 
 .MAKE: install-am install-strip
 
@@ -676,12 +651,25 @@ uninstall-am: uninstall-sbinSCRIPTS uninstall-sysconfDATA
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
 	install-pdf install-pdf-am install-ps install-ps-am \
-	install-sbinSCRIPTS install-strip install-sysconfDATA \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags-am uninstall \
-	uninstall-am uninstall-sbinSCRIPTS uninstall-sysconfDATA
+	install-sbinSCRIPTS install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
+	ps ps-am tags-am uninstall uninstall-am uninstall-sbinSCRIPTS
 
+
+# Don't rely on autoconf to replace variables outside of makefiles
+opt_modulefiles_slurm: opt_modulefiles_slurm.in Makefile
+	sed -e 's|@prefix[@]|$(prefix)|g' \
+	    -e 's|@MUNGE_DIR[@]|$(MUNGE_DIR)|g' \
+	    -e 's|@libdir[@]|$(libdir)|g' \
+	    ${abs_srcdir}/opt_modulefiles_slurm.in >opt_modulefiles_slurm
+
+slurmconfgen.py: slurmconfgen.py.in Makefile
+	sed -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
+	    ${abs_srcdir}/slurmconfgen.py.in >slurmconfgen.py
+
+clean-generic:
+	rm -f opt_modulefiles_slurm slurmconfgen.py
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
