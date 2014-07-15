@@ -2264,6 +2264,16 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 			}
 			job_ptr = job_ptr->job_array_next_t;
 		}
+		/* Look for job record with all of the pending tasks */
+		job_ptr = find_job_record(array_job_id);
+		if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap){
+			inx = bit_size(job_ptr->array_recs->task_id_bitmap);
+			if ((array_task_id < inx) &&
+			    bit_test(job_ptr->array_recs->task_id_bitmap,
+				     array_task_id)) {
+				return job_ptr;
+			}
+		}
 		return NULL;	/* None found */
 	}
 }

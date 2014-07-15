@@ -1889,8 +1889,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
-		if (dep_ptr->array_task_id == INFINITE) {
-			/* Advance to latest element of this job array */
+		if (dep_ptr->array_task_id != NO_VAL) {
 			dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
 							dep_ptr->array_task_id);
 		}
