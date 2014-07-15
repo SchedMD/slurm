@@ -61,8 +61,9 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#include "src/common/xcgroup_read_config.h"
-#include "src/common/xcgroup.h"
+#include "src/slurmd/common/xcgroup_read_config.h"
+#include "src/slurmd/common/xcgroup.h"
+
 #include "src/common/xstring.h"
 
 #include <sys/types.h>

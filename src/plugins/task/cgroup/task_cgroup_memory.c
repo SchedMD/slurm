@@ -47,8 +47,6 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/common/xstring.h"
-#include "src/common/xcgroup_read_config.h"
-#include "src/common/xcgroup.h"
 
 #include "task_cgroup.h"
 

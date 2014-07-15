@@ -50,13 +50,12 @@
 #include "slurm/slurm.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
+
 #include "src/common/cpu_frequency.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/bitstring.h"
 #include "src/common/proc_args.h"
 #include "src/common/xstring.h"
-#include "src/common/xcgroup_read_config.h"
-#include "src/common/xcgroup.h"
 
 #include "task_cgroup.h"
 

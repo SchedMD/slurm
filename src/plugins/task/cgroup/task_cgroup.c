@@ -44,11 +44,14 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/slurmd/slurmd/slurmd.h"
-#include "src/common/xcgroup.h"
 #include "src/common/xstring.h"
-#include "src/common/xcgroup_read_config.h"
+
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+#include "src/slurmd/slurmd/slurmd.h"
+
+#include "src/slurmd/common/xcgroup.h"
+#include "src/slurmd/common/xcgroup_read_config.h"
 
 #include "task_cgroup.h"
 #include "task_cgroup_cpuset.h"

@@ -42,8 +42,6 @@
 #   include "config.h"
 #endif
 
-#include "src/common/xcgroup_read_config.h"
-
 /* Initialize slurmd system cpuset cgroup */
 extern int init_system_cpuset_cgroup(void);
 

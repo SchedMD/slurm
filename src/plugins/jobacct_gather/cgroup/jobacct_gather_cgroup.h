@@ -39,9 +39,9 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "src/common/xcgroup.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/xcgroup_read_config.h"
+#include "src/slurmd/common/xcgroup.h"
+#include "src/slurmd/common/xcgroup_read_config.h"
 
 extern xcgroup_t task_memory_cg;
 extern xcgroup_t task_cpuacct_cg;

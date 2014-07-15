@@ -49,9 +49,6 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/common/xstring.h"
-#include "src/common/xcgroup_read_config.h"
-#include "src/common/xcgroup.h"
-
 #include "src/common/gres.h"
 #include "src/common/list.h"
 

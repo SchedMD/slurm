@@ -21,7 +21,10 @@ libslurmd_common_la_SOURCES =    \
 	task_plugin.c task_plugin.h \
 	set_oomadj.c set_oomadj.h \
 	reverse_tree.h \
-	xcpuinfo.c xcpuinfo.h
+	xcpuinfo.c xcpuinfo.h \
+	xcgroup_read_config.c xcgroup_read_config.h \
+	xcgroup.c xcgroup.h
+
 
 libslurmd_common_la_LDFLAGS  = $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
