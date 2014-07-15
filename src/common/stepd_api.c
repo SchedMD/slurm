@@ -150,7 +150,8 @@ _step_connect(const char *directory, const char *nodename,
 	char *name = NULL;
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		debug("_step_connect: socket: %m");
+		error("%s: socket() failed dir %s node %s job %u step %d %m",
+		      __func__, directory, nodename, jobid, stepid);
 		return -1;
 	}
 
@@ -163,12 +164,12 @@ _step_connect(const char *directory, const char *nodename,
 	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
+		error("%s: connect() failed dir %s node %s job %u step %d %m",
+		      __func__, directory, nodename, jobid, stepid);
 		if (errno == ECONNREFUSED) {
 			_handle_stray_socket(name);
 			if (stepid == NO_VAL)
 				_handle_stray_script(directory, jobid);
-		} else {
-			debug("_step_connect: connect: %m");
 		}
 		xfree(name);
 		close(fd);

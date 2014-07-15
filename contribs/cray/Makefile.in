@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-#
 # Makefile for cray scripts
 #
 

@@ -155,12 +155,12 @@ main (int argc, char *argv[])
 	 * and blocks until the step is complete */
 	rc = job_manager(job);
 
+	if (job->batch)
+		batch_finish(job, rc); /* sends batch complete message */
+
 	/* signal the message thread to shutdown, and wait for it */
 	eio_signal_shutdown(job->msg_handle);
 	pthread_join(job->msgid, NULL);
-
-	if (job->batch)
-		batch_finish(job, rc); /* sends batch complete message */
 
 ending:
 #ifdef MEMORY_LEAK_DEBUG

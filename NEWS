@@ -127,6 +127,9 @@ documents those changes that are of interest to users and admins.
     around it.
  -- Update comments in sacctmgr dump header.
  -- Fix for possible abort on change in GRES configuration.
+ -- CRAY - fix modules file, (backport from 14.11 commit 78fe86192b.
+ -- Fix race condition which could result in requeue if batch job exit and node
+    registration occur at the same time.
 
 * Changes in Slurm 14.03.5
 ==========================
@@ -210,6 +213,8 @@ documents those changes that are of interest to users and admins.
  -- Restore srun --pty resize ability.
  -- Have sacctmgr dump cluster handle situations where users or such have
     special characters in their names like ':'
+ -- Add more debugging for information should the job ran on wrong node
+    and should there be problems accessing the state files.
 
 * Changes in Slurm 14.03.4
 ==========================
