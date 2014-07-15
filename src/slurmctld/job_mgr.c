@@ -11109,6 +11109,92 @@ static int _job_resume_test(struct job_record *job_ptr)
 }
 
 /*
+ * _job_suspend - perform some suspend/resume operation
+ * job_ptr - job to operate upon
+ * op IN - operation: suspend/resume
+ * indf_susp IN - set if job is being suspended indefinitely by user or admin
+ *                and we should clear it's priority, otherwise suspended
+ *		  temporarily for gang scheduling
+ * RET 0 on success, otherwise ESLURM error code
+ */
+static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
+{
+	int rc = SLURM_SUCCESS;
+	time_t now = time(NULL);
+
+	if (IS_JOB_PENDING(job_ptr))
+		return ESLURM_JOB_PENDING;
+	if (IS_JOB_FINISHED(job_ptr))
+		return ESLURM_ALREADY_DONE;
+	if ((op == SUSPEND_JOB) &&
+	    (_job_suspend_switch_test(job_ptr) != SLURM_SUCCESS))
+		return ESLURM_NOT_SUPPORTED;
+	if ((op == RESUME_JOB) && (rc = _job_resume_test(job_ptr)))
+		return rc;
+
+	/* Notify salloc/srun of suspend/resume */
+	srun_job_suspend(job_ptr, op);
+
+	/* perform the operation */
+	if (op == SUSPEND_JOB) {
+		if (!IS_JOB_RUNNING(job_ptr))
+			return ESLURM_JOB_NOT_RUNNING;
+		rc = _suspend_job_nodes(job_ptr, indf_susp);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+		_suspend_job(job_ptr, op, indf_susp);
+		job_ptr->job_state = JOB_SUSPENDED;
+		if (indf_susp)
+			job_ptr->priority = 0;
+		if (job_ptr->suspend_time) {
+			job_ptr->pre_sus_time +=
+				difftime(now, job_ptr->suspend_time);
+		} else {
+			job_ptr->pre_sus_time +=
+				difftime(now, job_ptr->start_time);
+		}
+		suspend_job_step(job_ptr);
+	} else if (op == RESUME_JOB) {
+		if (!IS_JOB_SUSPENDED(job_ptr))
+			return ESLURM_JOB_NOT_SUSPENDED;
+		rc = _resume_job_nodes(job_ptr, indf_susp);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+		_suspend_job(job_ptr, op, indf_susp);
+		if (job_ptr->priority == 0)
+			set_job_prio(job_ptr);
+		job_ptr->job_state = JOB_RUNNING;
+		job_ptr->tot_sus_time +=
+			difftime(now, job_ptr->suspend_time);
+		if (!wiki_sched_test) {
+			char *sched_type = slurm_get_sched_type();
+			if (strcmp(sched_type, "sched/wiki") == 0)
+				wiki_sched  = true;
+			if (strcmp(sched_type, "sched/wiki2") == 0) {
+				wiki_sched  = true;
+				wiki2_sched = true;
+			}
+			xfree(sched_type);
+			wiki_sched_test = true;
+		}
+		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched) &&
+		    (!job_ptr->preempt_time)) {
+ 			debug3("Job %u resumed, updating end_time",
+ 			       job_ptr->job_id);
+			job_ptr->end_time = now + (job_ptr->time_limit * 60)
+				- job_ptr->pre_sus_time;
+		}
+		resume_job_step(job_ptr);
+	}
+
+	job_ptr->time_last_active = now;
+	job_ptr->suspend_time = now;
+	jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+
+	return rc;
+}
+
+/*
  * job_suspend - perform some suspend/resume operation
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
@@ -11125,7 +11211,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
-	time_t now = time(NULL);
 	struct job_record *job_ptr = NULL;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
@@ -11147,87 +11232,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
-	if (IS_JOB_PENDING(job_ptr)) {
-		rc = ESLURM_JOB_PENDING;
-		goto reply;
-	}
-	if (IS_JOB_FINISHED(job_ptr)) {
-		rc = ESLURM_ALREADY_DONE;
-		goto reply;
-	}
-	if ((sus_ptr->op == SUSPEND_JOB) &&
-	    (_job_suspend_switch_test(job_ptr) != SLURM_SUCCESS)) {
-		rc = ESLURM_NOT_SUPPORTED;
-		goto reply;
-	}
-	if ((sus_ptr->op == RESUME_JOB) && (rc = _job_resume_test(job_ptr)))
-		goto reply;
 
-	/* Notify salloc/srun of suspend/resume */
-	srun_job_suspend(job_ptr, sus_ptr->op);
-
-	/* perform the operation */
-	if (sus_ptr->op == SUSPEND_JOB) {
-		if (!IS_JOB_RUNNING(job_ptr)) {
-			rc = ESLURM_JOB_NOT_RUNNING;
-			goto reply;
-		}
-		rc = _suspend_job_nodes(job_ptr, indf_susp);
-		if (rc != SLURM_SUCCESS)
-			goto reply;
-		_suspend_job(job_ptr, sus_ptr->op, indf_susp);
-		job_ptr->job_state = JOB_SUSPENDED;
-		if (indf_susp)
-			job_ptr->priority = 0;
-		if (job_ptr->suspend_time) {
-			job_ptr->pre_sus_time +=
-				difftime(now,
-				job_ptr->suspend_time);
-		} else {
-			job_ptr->pre_sus_time +=
-				difftime(now,
-				job_ptr->start_time);
-		}
-		suspend_job_step(job_ptr);
-	} else if (sus_ptr->op == RESUME_JOB) {
-		if (!IS_JOB_SUSPENDED(job_ptr)) {
-			rc = ESLURM_JOB_NOT_SUSPENDED;
-			goto reply;
-		}
-		rc = _resume_job_nodes(job_ptr, indf_susp);
-		if (rc != SLURM_SUCCESS)
-			goto reply;
-		_suspend_job(job_ptr, sus_ptr->op, indf_susp);
-		if (job_ptr->priority == 0)
-			set_job_prio(job_ptr);
-		job_ptr->job_state = JOB_RUNNING;
-		job_ptr->tot_sus_time +=
-			difftime(now, job_ptr->suspend_time);
-		if (!wiki_sched_test) {
-			char *sched_type = slurm_get_sched_type();
-			if (strcmp(sched_type, "sched/wiki") == 0)
-				wiki_sched  = true;
-			if (strcmp(sched_type, "sched/wiki2") == 0) {
-				wiki_sched  = true;
-				wiki2_sched = true;
-			}
-			xfree(sched_type);
-			wiki_sched_test = true;
-		}
-		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched) &&
-		    (!job_ptr->preempt_time)) {
- 			debug3("Job %u resumed, updating end_time",
- 			       job_ptr->job_id);
-			job_ptr->end_time = now +
-				(job_ptr->time_limit * 60)
-				- job_ptr->pre_sus_time;
-		}
-		resume_job_step(job_ptr);
-	}
-
-	job_ptr->time_last_active = now;
-	job_ptr->suspend_time = now;
-	jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+	rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
 
     reply:
 	if (conn_fd >= 0) {
