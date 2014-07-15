@@ -3159,7 +3159,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 
 	_add_job_hash(job_ptr);		/* Sets job_next */
 	_add_job_hash(job_ptr_new);	/* Sets job_next */
-	_add_job_array_hash(job_ptr);//LOOP SET HERE
+	_add_job_array_hash(job_ptr);
 	job_ptr_new->job_resrcs = NULL;
 
 	job_ptr_new->licenses = xstrdup(job_ptr->licenses);
@@ -3766,17 +3766,29 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	}
 	job_id = (uint32_t) long_id;
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
-		job_ptr = find_job_array_rec(job_id, INFINITE);
-		if ((job_ptr->array_task_id == NO_VAL) &&
+		struct job_record *job_ptr_done = NULL;
+		job_ptr = find_job_record(job_id);
+		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 		    (job_ptr->array_recs == NULL)) {
 			/* This is a regular job, not a job array */
 			return job_signal(job_id, signal, flags, uid, preempt);
 		}
 
+		if (job_ptr && job_ptr->array_recs) {
+			/* This is a job array */
+			rc = _job_signal(job_ptr, signal, flags, uid, preempt);
+			job_ptr_done = job_ptr;
+		}
+
 		/* Signal all tasks of this job array */
 		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		if (!job_ptr && !job_ptr_done) {
+			info("job_signal: invalid job id %u", job_id);
+			return ESLURM_INVALID_JOB_ID;
+		}
 		while (job_ptr) {
-			if (job_ptr->array_job_id == job_id) {
+			if ((job_ptr->array_job_id == job_id) &&
+			    (job_ptr != job_ptr_done)) {
 				rc2 = _job_signal(job_ptr, signal, flags, uid,
 						  preempt);
 				rc = MAX(rc, rc2);
@@ -3816,8 +3828,9 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			job_ptr = job_ptr->job_array_next_j;
 		}
 	}
-	if ((job_ptr == NULL) || (job_ptr->array_task_id == NO_VAL) ||
-	    (job_ptr->array_recs == NULL)) {
+	if ((job_ptr == NULL) ||
+	    ((job_ptr->array_task_id == NO_VAL) &&
+	     (job_ptr->array_recs == NULL))) {
 		info("job_signal: invalid job id %s", job_id_str);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -3841,12 +3854,14 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	    job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap) {
 		/* Ensure bitmap sizes match for AND operations */
 		len = bit_size(job_ptr->array_recs->task_id_bitmap);
-		i_last++;	/* last bit used in array_bitmap */
-		if (i_last < len)
+		i_last++;
+		if (i_last < len) {
 			bit_realloc(array_bitmap, len);
-		else if (i_last > len)
+		} else {
+			len = bit_size(array_bitmap);
+			bit_realloc(array_bitmap, i_last);
 			bit_realloc(job_ptr->array_recs->task_id_bitmap,i_last);
-
+		}
 		tmp_bitmap = bit_copy(job_ptr->array_recs->task_id_bitmap);
 		if (signal == SIGKILL) {
 			bit_not(array_bitmap);
