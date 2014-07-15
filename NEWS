@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     around it.
  -- Update comments in sacctmgr dump header.
  -- Fix for possible abort on change in GRES configuration.
+ -- CRAY - fix modules file, (backport from 14.11 commit 78fe86192b.
 
 * Changes in Slurm 14.03.5
 ==========================
