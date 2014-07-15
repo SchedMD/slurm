@@ -1427,6 +1427,11 @@ typedef struct suspend_msg {
 	uint32_t job_id;        /* slurm job_id */
 } suspend_msg_t;
 
+typedef struct suspend_msg2 {
+	uint16_t op;		/* suspend operation, see enum suspend_opts */
+	char *job_id_str;	/* slurm job_id string */
+} suspend_msg2_t;
+
 typedef struct {
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	uint32_t cpu_count;	/* number of required processors */

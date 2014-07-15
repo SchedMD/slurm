@@ -11220,6 +11220,14 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	goto reply;
 #endif
 
+	/* validate the request */
+	if ((uid != 0) && (uid != getuid())) {
+		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
+		      (int) uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto reply;
+	}
+
 	/* find the job */
 	job_ptr = find_job_record (sus_ptr->job_id);
 	if (job_ptr == NULL) {
@@ -11227,13 +11235,147 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
+	rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
+
+    reply:
+	if (conn_fd >= 0) {
+		slurm_msg_t_init(&resp_msg);
+		resp_msg.protocol_version = protocol_version;
+		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		rc_msg.return_code = rc;
+		resp_msg.data      = &rc_msg;
+		slurm_send_node_msg(conn_fd, &resp_msg);
+	}
+	return rc;
+}
+
+/*
+ * job_suspend2 - perform some suspend/resume operation
+ * IN sus_ptr - suspend/resume request message
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply,
+ *              -1 if none
+ * indf_susp IN - set if job is being suspended indefinitely by user or admin
+ *                and we should clear it's priority, otherwise suspended
+ *		  temporarily for gang scheduling
+ * IN protocol_version - slurm protocol version of client
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_suspend2(suspend_msg2_t *sus_ptr, uid_t uid,
+			slurm_fd_t conn_fd, bool indf_susp,
+			uint16_t protocol_version)
+{
+	static uint32_t max_array_size = NO_VAL;
+	slurm_ctl_conf_t *conf;
+	int rc = SLURM_SUCCESS, rc2;
+	struct job_record *job_ptr = NULL;
+	long int long_id;
+	uint32_t job_id;
+	char *end_ptr = NULL, *tok, *tmp;
+	bitstr_t *array_bitmap;
+	bool valid = true;
+	int32_t i, i_first, i_last;
+	slurm_msg_t resp_msg;
+	return_code_msg_t rc_msg;
+
+#ifdef HAVE_BG
+	rc = ESLURM_NOT_SUPPORTED;
+	goto reply;
+#endif
+
+	if (max_array_size == NO_VAL) {
+		conf = slurm_conf_lock();
+		max_array_size = conf->max_array_sz;
+		slurm_conf_unlock();
+	}
+
 	/* validate the request */
 	if ((uid != 0) && (uid != getuid())) {
+		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
+		      (int) uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
 
-	rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
+	long_id = strtol(sus_ptr->job_id_str, &end_ptr, 10);
+	if ((long_id <= 0) || (long_id == LONG_MAX) ||
+	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
+		info("job_suspend2: invalid job id %s", sus_ptr->job_id_str);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	job_id = (uint32_t) long_id;
+	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
+		struct job_record *job_ptr_done = NULL;
+		job_ptr = find_job_record(job_id);
+		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		    (job_ptr->array_recs == NULL)) {
+			/* This is a regular job, not a job array */
+			rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
+			goto reply;
+		}
+
+		if (job_ptr && job_ptr->array_recs) {
+			/* This is a job array */
+			rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
+			job_ptr_done = job_ptr;
+		}
+
+		/* Suspend all tasks of this job array */
+		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		if (!job_ptr && !job_ptr_done) {
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		}
+		while (job_ptr) {
+			if ((job_ptr->array_job_id == job_id) &&
+			    (job_ptr != job_ptr_done)) {
+				rc2 = _job_suspend(job_ptr, sus_ptr->op,
+						   indf_susp);
+				rc = MAX(rc, rc2);
+			}
+			job_ptr = job_ptr->job_array_next_j;
+		}
+		goto reply;
+	}
+
+	array_bitmap = bit_alloc(max_array_size);
+	tmp = xstrdup(end_ptr + 1);
+	tok = strtok_r(tmp, ",", &end_ptr);
+	while (tok && valid) {
+		valid = _parse_array_tok(tok, array_bitmap,
+					 max_array_size);
+		tok = strtok_r(NULL, ",", &end_ptr);
+	}
+	xfree(tmp);
+	if (valid) {
+		i_last = bit_fls(array_bitmap);
+		if (i_last < 0)
+			valid = false;
+	}
+	if (!valid) {
+		info("job_suspend2: invalid job id %s", sus_ptr->job_id_str);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	i_first = bit_ffs(array_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(array_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(array_bitmap, i))
+			continue;
+		job_ptr = find_job_array_rec(job_id, i);
+		if (job_ptr == NULL) {
+			info("job_suspend2: invalid job id %u_%d", job_id, i);
+			rc = ESLURM_INVALID_JOB_ID;
+			continue;
+		}
+
+		rc2 = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
+		rc = MAX(rc, rc2);
+	}
 
     reply:
 	if (conn_fd >= 0) {
