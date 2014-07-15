@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Update comments in sacctmgr dump header.
  -- Fix for possible abort on change in GRES configuration.
  -- CRAY - fix modules file, (backport from 14.11 commit 78fe86192b.
+ -- Fix race condition which could result in requeue if batch job exit and node
+    registration occur at the same time.
 
 * Changes in Slurm 14.03.5
 ==========================

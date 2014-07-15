@@ -2323,6 +2323,13 @@ extern int validate_nodes_via_front_end(
 					  front_end_ptr->name);
 		}
 
+		else if (difftime(now, job_ptr->end_time) <
+			 slurm_get_msg_timeout()) {	/* Race condition */
+			debug("Registered newly completed job %u.%u on %s",
+				reg_msg->job_id[i], reg_msg->step_id[i],
+				front_end_ptr->name);
+		}
+
 		else {		/* else job is supposed to be done */
 			error("Registered job %u.%u in state %s on %s",
 				reg_msg->job_id[i], reg_msg->step_id[i],

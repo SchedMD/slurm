@@ -9718,6 +9718,13 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 					  job_ptr, node_ptr->name);
 		}
 
+		else if (difftime(now, job_ptr->end_time) <
+			 slurm_get_msg_timeout()) {	/* Race condition */
+			debug("Registered newly completed job %u.%u on %s",
+				reg_msg->job_id[i], reg_msg->step_id[i],
+				node_ptr->name);
+		}
+
 		else {		/* else job is supposed to be done */
 			error("Registered job %u.%u in state %s on node %s ",
 			      reg_msg->job_id[i], reg_msg->step_id[i],
