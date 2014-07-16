@@ -249,7 +249,7 @@ proc check_state { exp_state job_id } {
 	}
 }
 
-make_bash_script $file_in "sleep 10"
+make_bash_script $file_in "sleep 30"
 
 spawn $bin_id -un
 expect {

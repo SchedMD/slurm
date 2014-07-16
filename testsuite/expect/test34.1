@@ -249,7 +249,7 @@ proc clean_up { rc } {
 
 make_bash_script $file_in "sleep 5"
 make_bash_script $job1 "sleep 120"
-make_bash_script $job2 "sleep 20"
+make_bash_script $job2 "sleep 30"
 
 # Get a list of nodes that we can use
 spawn $sbatch -N1 -t1 -o/dev/null --exclusive $file_in
@@ -323,35 +323,37 @@ cancel_job $part_id_2
 cancel_job $part_id_1
 
 ###################### Test preempt suspend ######################
-send_user "\n*** TEST PREEMPT SUSPEND ***\n"
+if { [test_gang] == 1 } {
+	send_user "\n*** TEST PREEMPT SUSPEND ***\n"
 
-mod_part $part_name_1 suspend
-set part_id_1 [sub_job $part_name_1 $job1]
-if { [wait_for_job $part_id_1 RUNNING] != 0} {
-	send_user "\nFAILURE: job $part_id_1 failed to start\n"
-	clean_up 1
+	mod_part $part_name_1 suspend
+	set part_id_1 [sub_job $part_name_1 $job1]
+	if { [wait_for_job $part_id_1 RUNNING] != 0} {
+		send_user "\nFAILURE: job $part_id_1 failed to start\n"
+		clean_up 1
+	}
+
+	set part_id_2 [sub_job $part_name_2 $job2]
+	# Wait for the job to start
+	if { [wait_for_job $part_id_2 RUNNING] != 0} {
+		send_user "\nFAILURE: job $part_id_2 failed to start\n"
+		clean_up 1
+	}
+
+	check_state SUSPENDED $part_id_1
+
+	if { [wait_for_job $part_id_2 DONE] != 0} {
+		send_user "\nFAILURE: job $part_id_2 failed to complete\n"
+		clean_up 1
+	}
+	if { [wait_for_job $part_id_1 RUNNING] != 0} {
+		send_user "\nFAILURE: job $part_id_1 failed to start\n"
+		clean_up 1
+	}
+
+	cancel_job $part_id_1
+	cancel_job $part_id_2
 }
-
-set part_id_2 [sub_job $part_name_2 $job2]
-# Wait for the job to start
-if { [wait_for_job $part_id_2 RUNNING] != 0} {
-	send_user "\nFAILURE: job $part_id_2 failed to start\n"
-	clean_up 1
-}
-
-check_state SUSPENDED $part_id_1
-
-if { [wait_for_job $part_id_2 DONE] != 0} {
-	send_user "\nFAILURE: job $part_id_2 failed to complete\n"
-	clean_up 1
-}
-if { [wait_for_job $part_id_1 RUNNING] != 0} {
-	send_user "\nFAILURE: job $part_id_1 failed to start\n"
-	clean_up 1
-}
-
-cancel_job $part_id_1
-cancel_job $part_id_2
 
 ###################### Test preempt requeue ######################
 send_user "\n*** TEST PREEMPT REQUEUE ***\n"
