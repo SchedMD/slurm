@@ -737,6 +737,44 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 		(double)qos->priority / (double)g_qos_max_priority;
 }
 
+static uint32_t _get_children_level_shares(slurmdb_association_rec_t *assoc)
+{
+	List children = assoc->usage->children_list;
+	ListIterator itr = NULL;
+	slurmdb_association_rec_t *child;
+	uint32_t sum = 0;
+
+	if (!children || list_is_empty(children))
+		return 0;
+
+	itr = list_iterator_create(children);
+	while ((child = list_next(itr))) {
+		if (child->shares_raw != SLURMDB_FS_USE_PARENT)
+			sum += child->shares_raw;
+	}
+	list_iterator_destroy(itr);
+
+	return sum;
+}
+
+
+static void _set_children_level_shares(slurmdb_association_rec_t *assoc,
+				       uint32_t level_shares)
+{
+	List children = assoc->usage->children_list;
+	ListIterator itr = NULL;
+	slurmdb_association_rec_t *child;
+
+	if (!children || list_is_empty(children))
+		return;
+
+	itr = list_iterator_create(children);
+	while ((child = list_next(itr)))
+		child->usage->level_shares = level_shares;
+	list_iterator_destroy(itr);
+}
+
+
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
 /* locks should be put in place before calling this function
  * ASSOC_WRITE, USER_WRITE */
@@ -763,25 +801,17 @@ static int _post_association_list(void)
 	}
 
 	if (setup_children) {
-		slurmdb_association_rec_t *assoc2 = NULL;
-		ListIterator itr2 = NULL;
 		/* Now set the shares on each level */
 		list_iterator_reset(itr);
 		while ((assoc = list_next(itr))) {
-			int count = 0;
 			if (!assoc->usage->children_list
-			    || !list_count(assoc->usage->children_list))
+			    || list_is_empty(assoc->usage->children_list))
 				continue;
-			itr2 = list_iterator_create(
-				assoc->usage->children_list);
-			while ((assoc2 = list_next(itr2))) {
-				if (assoc2->shares_raw != SLURMDB_FS_USE_PARENT)
-					count += assoc2->shares_raw;
-			}
-			list_iterator_reset(itr2);
-			while ((assoc2 = list_next(itr2)))
-				assoc2->usage->level_shares = count;
-			list_iterator_destroy(itr2);
+
+			_set_children_level_shares(
+				assoc,
+				_get_children_level_shares(assoc)
+			);
 		}
 		/* Now normalize the static shares */
 		list_iterator_reset(itr);
@@ -2881,22 +2911,14 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 		list_iterator_reset(itr);
 		while ((object = list_next(itr))) {
 			if (setup_children) {
-				int count = 0;
-				ListIterator itr2 = NULL;
-				if (!object->usage->children_list ||
-				    !list_count(object->usage->children_list))
+				List children = object->usage->children_list;
+				if (!children || list_is_empty(children))
 					goto is_user;
-				itr2 = list_iterator_create(
-					object->usage->children_list);
-				while ((rec = list_next(itr2))) {
-					if (rec->shares_raw
-					    != SLURMDB_FS_USE_PARENT)
-						count += rec->shares_raw;
-				}
-				list_iterator_reset(itr2);
-				while ((rec = list_next(itr2)))
-					rec->usage->level_shares = count;
-				list_iterator_destroy(itr2);
+
+				_set_children_level_shares(
+					object,
+					_get_children_level_shares(object)
+				);
 			}
 		is_user:
 			if (!object->user)
