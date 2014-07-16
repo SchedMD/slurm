@@ -251,8 +251,6 @@ static void * _service_connection(void *arg)
 	}
 
 	if (conn->ctld_port) {
-		acct_storage_g_commit(conn->db_conn, 1);
-
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
 			ListIterator itr;
@@ -279,6 +277,8 @@ static void * _service_connection(void *arg)
 			list_iterator_destroy(itr);
 			slurm_mutex_unlock(&registered_lock);
 		}
+		/* needs to be the last thing done */
+		acct_storage_g_commit(conn->db_conn, 1);
 	}
 
 	acct_storage_g_close_connection(&conn->db_conn);
