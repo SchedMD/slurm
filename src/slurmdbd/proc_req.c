@@ -461,6 +461,14 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			error("CONN:%u Security violation, %s",
 			      slurmdbd_conn->newsockfd,
 			      slurmdbd_msg_type_2_str(msg_type, 1));
+		else if (slurmdbd_conn->ctld_port) {
+			/* If we are dealing with the slurmctld do the
+			   commit (SUCCESS or NOT) afterwards since we
+			   do transactions for performance reasons.
+			   (don't ever use autocommit with innodb)
+			*/
+			acct_storage_g_commit(slurmdbd_conn->db_conn, 1);
+		}
 	}
 
 	xfer_buf_data(in_buffer);	/* delete in_buffer struct without
@@ -470,23 +478,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 unpack_error:
 	free_buf(in_buffer);
 	return SLURM_ERROR;
-}
-
-static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
-{
-	ListIterator itr;
-	slurmdbd_conn_t *slurmdbd_conn;
-
-	slurm_mutex_lock(&registered_lock);
-	itr = list_iterator_create(registered_clusters);
-	while ((slurmdbd_conn = list_next(itr))) {
-		if (db_conn == slurmdbd_conn)
-			break;
-	}
-	list_iterator_destroy(itr);
-	if (!slurmdbd_conn)
-		list_append(registered_clusters, db_conn);
-	slurm_mutex_unlock(&registered_lock);
 }
 
 
@@ -1093,8 +1084,6 @@ end_it:
 		slurmdbd_conn->ctld_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
-
-		_add_registered_cluster(slurmdbd_conn);
 	}
 
 	slurmdbd_free_cluster_cpus_msg(cluster_cpus_msg);
@@ -1975,8 +1964,6 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 		slurmdbd_conn->ctld_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
-
-		_add_registered_cluster(slurmdbd_conn);
 	}
 
 end_it:
@@ -2871,8 +2858,6 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 		slurmdbd_conn->ctld_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
-
-		_add_registered_cluster(slurmdbd_conn);
 	}
 }
 
@@ -2982,11 +2967,8 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 
 end_it:
 
-	if (rc == SLURM_SUCCESS) {
+	if (rc == SLURM_SUCCESS)
 		slurmdbd_conn->ctld_port = register_ctld_msg->port;
-
-		_add_registered_cluster(slurmdbd_conn);
-	}
 
 	slurmdbd_free_register_ctld_msg(register_ctld_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
@@ -3791,8 +3773,6 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 		slurmdbd_conn->ctld_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
-
-		_add_registered_cluster(slurmdbd_conn);
 	}
 
 end_it:
@@ -3872,8 +3852,6 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 		slurmdbd_conn->ctld_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
-
-		_add_registered_cluster(slurmdbd_conn);
 	}
 
 end_it:

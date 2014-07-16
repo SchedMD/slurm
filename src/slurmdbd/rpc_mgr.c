@@ -253,8 +253,6 @@ static void * _service_connection(void *arg)
 	if (conn->ctld_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
-			ListIterator itr;
-			slurmdbd_conn_t *slurmdbd_conn;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
 			cluster_rec.name = conn->cluster_name;
 			cluster_rec.control_host = conn->ip;
@@ -265,17 +263,6 @@ static void * _service_connection(void *arg)
 
 			clusteracct_storage_g_fini_ctld(
 				conn->db_conn, &cluster_rec);
-
-			slurm_mutex_lock(&registered_lock);
-			itr = list_iterator_create(registered_clusters);
-			while ((slurmdbd_conn = list_next(itr))) {
-				if (conn == slurmdbd_conn) {
-					list_delete_item(itr);
-					break;
-				}
-			}
-			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&registered_lock);
 		}
 		/* needs to be the last thing done */
 		acct_storage_g_commit(conn->db_conn, 1);

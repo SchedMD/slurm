@@ -72,8 +72,6 @@
 
 /* Global variables */
 time_t shutdown_time = 0;		/* when shutdown request arrived */
-List registered_clusters = NULL;
-pthread_mutex_t registered_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Local variables */
 static int    dbd_sigarray[] = {	/* blocked signals for this process */
@@ -88,10 +86,8 @@ static int	 new_nice = 0;
 static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
 static pthread_t signal_handler_thread;	/* thread ID for signal hander */
 static pthread_t rollup_handler_thread;	/* thread ID for rollup hander */
-static pthread_t commit_handler_thread;	/* thread ID for commit hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_rollup = 0;
-static bool running_commit = 0;
 
 /* Local functions */
 static void  _become_slurm_user(void);
@@ -104,8 +100,6 @@ static void  _parse_commandline(int argc, char *argv[]);
 static void  _request_registrations(void *db_conn);
 static void  _rollup_handler_cancel();
 static void *_rollup_handler(void *no_data);
-static void  _commit_handler_cancel();
-static void *_commit_handler(void *no_data);
 static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
 static void  _set_work_dir(void);
 static void *_signal_handler(void *no_data);
@@ -167,14 +161,6 @@ int main(int argc, char *argv[])
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&signal_handler_thread, &thread_attr,
 			   _signal_handler, NULL))
-		fatal("pthread_create %m");
-	slurm_attr_destroy(&thread_attr);
-
-	registered_clusters = list_create(NULL);
-
-	slurm_attr_init(&thread_attr);
-	if (pthread_create(&commit_handler_thread, &thread_attr,
-			   _commit_handler, NULL))
 		fatal("pthread_create %m");
 	slurm_attr_destroy(&thread_attr);
 
@@ -271,8 +257,6 @@ end_it:
 
 	if (signal_handler_thread)
 		pthread_join(signal_handler_thread, NULL);
-	if (commit_handler_thread)
-		pthread_join(commit_handler_thread, NULL);
 
 	acct_storage_g_commit(db_conn, 1);
 	acct_storage_g_close_connection(&db_conn);
@@ -282,8 +266,6 @@ end_it:
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmdbd_conf->pid_file);
 	}
-
-	FREE_NULL_LIST(registered_clusters);
 
 	assoc_mgr_fini(NULL);
 	slurm_acct_storage_fini();
@@ -296,10 +278,6 @@ end_it:
 extern void shutdown_threads()
 {
 	shutdown_time = time(NULL);
-	/* End commit before rpc_mgr_wake.  It will do the final
-	   commit on the connection.
-	*/
-	_commit_handler_cancel();
 	rpc_mgr_wake();
 	_rollup_handler_cancel();
 }
@@ -607,48 +585,6 @@ static void *_rollup_handler(void *db_conn)
 		assoc_mgr_set_missing_uids();
 		/* repeat ;) */
 
-	}
-
-	return NULL;
-}
-
-static void _commit_handler_cancel()
-{
-	if (running_commit)
-		debug("Waiting for commit thread to finish.");
-	slurm_mutex_lock(&registered_lock);
-	if (commit_handler_thread)
-		pthread_cancel(commit_handler_thread);
-	slurm_mutex_unlock(&registered_lock);
-}
-
-/* _commit_handler - Process commit's of registered clusters */
-static void *_commit_handler(void *db_conn)
-{
-	ListIterator itr;
-	slurmdbd_conn_t *slurmdbd_conn;
-
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	while (!shutdown_time) {
-		/* run the roll up */
-		slurm_mutex_lock(&registered_lock);
-		running_commit = 1;
-		itr = list_iterator_create(registered_clusters);
-		while ((slurmdbd_conn = list_next(itr))) {
-			debug4("running commit for %s",
-			       slurmdbd_conn->cluster_name);
-			acct_storage_g_commit(slurmdbd_conn->db_conn, 1);
-		}
-		list_iterator_destroy(itr);
-		running_commit = 0;
-		slurm_mutex_unlock(&registered_lock);
-
-		/* This really doesn't need to be synconized so just
-		 * sleep for a bit and do it again.
-		 */
-		sleep(5);
 	}
 
 	return NULL;
