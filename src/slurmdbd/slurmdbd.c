@@ -651,6 +651,7 @@ static void *_signal_handler(void *no_data)
 			info("Reconfigure signal (SIGHUP) received");
 			read_slurmdbd_conf();
 			assoc_mgr_set_missing_uids();
+			acct_storage_g_reconfig(NULL);
 			_update_logging(false);
 			break;
 		case SIGINT:	/* kill -2  or <CTRL-C> */

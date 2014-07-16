@@ -469,6 +469,10 @@ extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list);
 extern int acct_storage_g_flush_jobs_on_cluster(
 	void *db_conn, time_t event_time);
 
+
+extern int acct_storage_g_reconfig(void *db_conn); /* reconfig the plugin */
+
+
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
 extern int clusteracct_storage_g_node_down(void *db_conn,

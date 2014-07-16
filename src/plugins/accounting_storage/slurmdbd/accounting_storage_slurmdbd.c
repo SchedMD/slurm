@@ -2668,3 +2668,8 @@ extern int acct_storage_p_flush_jobs_on_cluster(void *db_conn,
 
 	return SLURM_SUCCESS;
 }
+
+extern int acct_storage_p_reconfig(void *db_conn)
+{
+	return SLURM_SUCCESS;
+}

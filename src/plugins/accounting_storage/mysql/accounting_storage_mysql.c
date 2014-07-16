@@ -2825,3 +2825,9 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 {
 	return as_mysql_flush_jobs_on_cluster(mysql_conn, event_time);
 }
+
+extern int acct_storage_p_reconfig(mysql_conn_t *mysql_conn)
+{
+	debug_flags = slurm_get_debug_flags();
+	return SLURM_SUCCESS;
+}

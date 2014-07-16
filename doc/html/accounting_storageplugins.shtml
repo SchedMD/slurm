@@ -973,6 +973,17 @@ apply end to.<br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
+<p class="commandline">
+int acct_storage_p_reconfig(void *db_conn)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Reconfigure the plugin.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">db_conn</span> (input) connection to
+the storage type.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
 <p class="footer"><a href="#top">top</a>
 
 
