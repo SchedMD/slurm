@@ -3996,6 +3996,9 @@ static int _unload_job_table(slurm_nrt_jobinfo_t *jp)
 
 	unload_table.job_key = jp->job_key;
 	for (i = 0; i < jp->tables_per_task; i++) {
+		if (jp->tableinfo[i].adapter_type != NRT_HFI)
+			continue;
+
 		unload_table.context_id = jp->tableinfo[i].context_id;
 		unload_table.table_id   = jp->tableinfo[i].table_id;
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
