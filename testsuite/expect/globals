@@ -581,6 +581,7 @@ proc wait_for_job { job_id desired_state } {
 			"FAILED" -
 			"TIMEOUT" -
 			"NODE_FAIL" -
+			"PREEMPTED" -
 			"COMPLETED" {
 				if {[string compare $desired_state "DONE"] == 0} {
 					send_user "Job $job_id is DONE\n"
@@ -3029,4 +3030,60 @@ proc wait_for_node {partition state num_nodes} {
 	}
 
 	return $rt
+}
+
+#####################################################################
+#
+# Proc: test_preempttype_part
+#
+# Purpose: Determine if preempt mode partition_prio is configured
+#
+# Returns: 0 if none
+#
+#####################################################################
+proc test_preempttype_part { } {
+
+	global scontrol
+	log_user 0
+	set part_prio 0
+	spawn $scontrol show config
+	expect {
+		-re "PreemptType *= preempt/partition_prio" {
+			set part_prio 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $part_prio
+}
+
+#####################################################################
+#
+# Proc: test_preempttype_qos
+#
+# Purpose: Determine if preempt mode qos is configured
+#
+# Returns: 0 if none
+#
+#####################################################################
+proc test_preempttype_qos { } {
+
+	global scontrol
+	log_user 0
+	set qos 0
+	spawn $scontrol show config
+	expect {
+		-re "PreemptType *= preempt/qos" {
+			set qos 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $qos
 }

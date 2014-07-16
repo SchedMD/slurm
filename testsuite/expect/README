@@ -704,6 +704,11 @@ test32.11  Validates that sgather -v prints the output logging of the job.
 test32.12  Validates that sgather -t changes the timeout message.
 
 test33.#   Test of message forwarding.
-===============================================
+======================================
 test33.1   Validates the route_g_splithost api of the route plugin correctly
            splits hostlists.
+
+test34.*   Test of Slurm preemption.
+====================================
+test34.1   Validate that partition PreemptMode is enforced.
+test34.2   Validate that qos PreemptMode is enforced.
