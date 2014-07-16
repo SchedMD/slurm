@@ -1350,7 +1350,8 @@ _stepd_cleanup_batch_dirs(const char *directory, const char *nodename)
 				 "%s/%s", directory, ent->d_name);
 			snprintf(file_path, sizeof(file_path),
 				 "%s/slurm_script", dir_path);
-			info("Purging vestigial job script %s", file_path);
+			info("%s: Purging vestigial job script %s",
+			     __func__, file_path);
 			(void) unlink(file_path);
 			(void) rmdir(dir_path);
 		}
