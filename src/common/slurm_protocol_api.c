@@ -350,6 +350,7 @@ uint64_t slurm_get_debug_flags(void)
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
+		debug_flags = slurmdbd_conf->debug_flags;
 	} else {
 		conf = slurm_conf_lock();
 		debug_flags = conf->debug_flags;

@@ -93,6 +93,7 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->dbd_backup);
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
+		slurmdbd_conf->debug_flags = 0;
 		slurmdbd_conf->debug_level = 0;
 		xfree(slurmdbd_conf->default_qos);
 		xfree(slurmdbd_conf->log_file);
@@ -140,6 +141,7 @@ extern int read_slurmdbd_conf(void)
 		{"DbdBackupHost", S_P_STRING},
 		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
+		{"DebugFlags", S_P_STRING},
 		{"DebugLevel", S_P_STRING},
 		{"DefaultQOS", S_P_STRING},
 		{"JobPurge", S_P_UINT32},
@@ -218,6 +220,15 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
+
+		if (s_p_get_string(&temp_str, "DebugFlags", tbl)) {
+			if (debug_str2flags(temp_str,
+					    &slurmdbd_conf->debug_flags)
+			    != SLURM_SUCCESS)
+				fatal("DebugFlags invalid: %s", temp_str);
+			xfree(temp_str);
+		} else	/* Default: no DebugFlags */
+			slurmdbd_conf->debug_flags = 0;
 
 		if (s_p_get_string(&temp_str, "DebugLevel", tbl)) {
 			slurmdbd_conf->debug_level = log_string2num(temp_str);
@@ -526,6 +537,7 @@ extern int read_slurmdbd_conf(void)
 extern void log_config(void)
 {
 	char tmp_str[128];
+	char *tmp_ptr = NULL;
 
 	debug2("ArchiveDir        = %s", slurmdbd_conf->archive_dir);
 	debug2("ArchiveScript     = %s", slurmdbd_conf->archive_script);
@@ -535,6 +547,9 @@ extern void log_config(void)
 	debug2("DbdBackupHost     = %s", slurmdbd_conf->dbd_backup);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
+	tmp_ptr = debug_flags2str(slurmdbd_conf->debug_flags);
+	debug2("DebugFlags        = %s", tmp_ptr);
+	xfree(tmp_ptr);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
 	debug2("DefaultQOS        = %s", slurmdbd_conf->default_qos);
 
@@ -699,6 +714,11 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DbdPort");
 	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->dbd_port);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("DebugFlags");
+	key_pair->value = debug_flags2str(slurmdbd_conf->debug_flags);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

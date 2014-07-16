@@ -78,6 +78,7 @@ typedef struct slurm_dbd_conf {
 	char *		dbd_backup;	/* hostname of Slurm DBD backup */
 	char *		dbd_host;	/* hostname of Slurm DBD	*/
 	uint16_t	dbd_port;	/* port number for RPCs to DBD	*/
+	uint64_t	debug_flags;	/* Debug flags set              */
 	uint16_t	debug_level;	/* Debug level, default=3	*/
 	char *	 	default_qos;	/* default qos setting when
 					 * adding clusters              */
