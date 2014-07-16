@@ -181,8 +181,8 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		while ((object = list_next(itr))) {
 			xstrfmtcat(query, "select id_assoc from \"%s_%s\"%s",
 				   object, assoc_table, assoc_extra);
-			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if (debug_flags & DEBUG_FLAG_DB_QUERY)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 			if (!(result = mysql_db_query_ret(
 				      mysql_conn, query, 0))) {
 				xfree(query);
@@ -378,8 +378,8 @@ empty:
 
 	xfree(tmp);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_QUERY)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);

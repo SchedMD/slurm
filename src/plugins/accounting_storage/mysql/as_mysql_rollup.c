@@ -301,8 +301,8 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 			   "resv_cpu_secs=VALUES(resv_cpu_secs), "
 			   "consumed_energy=VALUES(consumed_energy)",
 			   now);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS)
@@ -360,8 +360,8 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 			       curr_end, curr_start);
 	xfree(event_str);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
@@ -578,8 +578,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		local_id_usage_t *a_usage = NULL;
 		local_id_usage_t *w_usage = NULL;
 
-		debug3("%s curr hour is now %ld-%ld",
-		       cluster_name, curr_start, curr_end);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn,
+				 "%s curr hour is now %ld-%ld",
+				 cluster_name, curr_start, curr_end);
 /* 		info("start %s", slurm_ctime(&curr_start)); */
 /* 		info("end %s", slurm_ctime(&curr_end)); */
 
@@ -602,10 +604,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       curr_end, curr_start,
 				       RESERVE_FLAG_IGN_JOBS);
 
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
-			     mysql_conn, query, 0))) {
+			      mysql_conn, query, 0))) {
 			xfree(query);
 			_destroy_local_cluster_usage(c_usage);
 			return SLURM_ERROR;
@@ -707,10 +709,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       cluster_name, step_table,
 				       curr_end, curr_start);
 
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
-			     mysql_conn, query, 0))) {
+			      mysql_conn, query, 0))) {
 			xfree(query);
 			_destroy_local_cluster_usage(c_usage);
 			return SLURM_ERROR;
@@ -765,8 +767,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       mysql_conn->conn, THIS_FILE,
 				       __LINE__, query);
 				if (!(result2 = mysql_db_query_ret(
-					     mysql_conn,
-					     query, 0))) {
+					      mysql_conn,
+					      query, 0))) {
 					xfree(query);
 					_destroy_local_cluster_usage(c_usage);
 					return SLURM_ERROR;
@@ -897,7 +899,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 							temp_end = r_usage->end;
 
 						if ((temp_end - temp_start)
-						   > 0) {
+						    > 0) {
 							r_usage->a_cpu +=
 								(temp_end
 								 - temp_start)
@@ -1053,8 +1055,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   "consumed_energy=VALUES(consumed_energy);",
 				   now);
 
-			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
@@ -1102,8 +1104,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   "consumed_energy=VALUES(consumed_energy);",
 				   now);
 
-			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
@@ -1175,7 +1177,10 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	curr_end = mktime(&start_tm);
 
 	while (curr_start < end) {
-		debug3("curr day is now %ld-%ld", curr_start, curr_end);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn,
+				 "curr day is now %ld-%ld",
+				 curr_start, curr_end);
 /* 		info("start %s", slurm_ctime(&curr_start)); */
 /* 		info("end %s", slurm_ctime(&curr_end)); */
 		query = xstrdup_printf(
@@ -1242,8 +1247,8 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 				   cluster_name, wckey_hour_table,
 				   curr_end, curr_start, now);
 		}
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -1300,7 +1305,10 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	curr_end = mktime(&start_tm);
 
 	while (curr_start < end) {
-		debug3("curr month is now %ld-%ld", curr_start, curr_end);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn,
+				 "curr month is now %ld-%ld",
+				 curr_start, curr_end);
 /* 		info("start %s", slurm_ctime(&curr_start)); */
 /* 		info("end %s", slurm_ctime(&curr_end)); */
 		query = xstrdup_printf(
@@ -1368,8 +1376,8 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 				   cluster_name, wckey_day_table,
 				   curr_end, curr_start, now);
 		}
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {

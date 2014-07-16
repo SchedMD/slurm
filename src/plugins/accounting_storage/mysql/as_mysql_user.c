@@ -69,8 +69,8 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	xstrfmtcat(query, "update %s set user='%s' where user='%s';",
 		   acct_coord_table, user->name, user->old_name);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
@@ -497,8 +497,8 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			   " on duplicate key update mod_time=%ld, "
 			   "deleted=0;%s",
 			   (long)now, txn_query);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		xfree(txn_query);
@@ -634,7 +634,9 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 no_user_table:
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		debug3("didn't effect anything\n%s", query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn,
+				 "didn't effect anything\n%s", query);
 		xfree(vals);
 		xfree(query);
 		return ret_list;
@@ -818,7 +820,9 @@ no_user_table:
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		debug3("didn't effect anything\n%s", query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn,
+				 "didn't effect anything\n%s", query);
 		xfree(query);
 		return ret_list;
 	}
@@ -993,7 +997,8 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!extra) {
 		errno = SLURM_ERROR;
-		debug3("No conditions given");
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "No conditions given");
 		return NULL;
 	}
 
@@ -1001,8 +1006,8 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		"select user, acct from %s where deleted=0 && %s order by user",
 		acct_coord_table, extra);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result =
 	      mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -1203,8 +1208,8 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);

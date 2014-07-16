@@ -239,8 +239,8 @@ extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 		   "insert into \"%s_%s\" (id_resv%s) values (%u%s) "
 		   "on duplicate key update deleted=0%s;",
 		   resv->cluster, resv_table, cols, resv->id, vals, extra);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_RESV)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
 	rc = mysql_db_query(mysql_conn, query);
 
@@ -434,8 +434,8 @@ try_again:
 			   vals, extra);
 	}
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_RESV)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
 	rc = mysql_db_query(mysql_conn, query);
 
@@ -483,8 +483,8 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 		   resv->cluster, resv_table, resv->time_start_prev,
 		   resv->id, resv->time_start);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_RESV)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
 	rc = mysql_db_query(mysql_conn, query);
 
@@ -604,8 +604,8 @@ empty:
 
 	xfree(tmp);
 	xfree(extra);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_RESV)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		if (local_cluster_list)

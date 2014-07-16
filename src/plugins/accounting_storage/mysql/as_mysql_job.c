@@ -327,8 +327,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 				       mysql_conn->cluster_name,
 				       job_table, job_ptr->job_id,
 				       submit_time, begin_time, start_time);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result =
 		      mysql_db_query_ret(mysql_conn, query, 0))) {
 			xfree(query);
@@ -379,8 +379,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 				       mysql_conn->cluster_name,
 				       last_ran_table, check_time,
 				       check_time, check_time);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	} else
@@ -537,8 +537,8 @@ no_rollup_change:
 		if (gres_alloc)
 			xstrfmtcat(query, ", gres_alloc='%s'", gres_alloc);
 
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	try_again:
 		if (!(job_ptr->db_index = mysql_db_insert_ret_id(
 			      mysql_conn, query))) {
@@ -589,8 +589,8 @@ no_rollup_change:
 			   job_ptr->array_task_id,
 			   begin_time, job_ptr->db_index);
 
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 	}
 
@@ -661,8 +661,8 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 			       job_cond->cluster, job_table,
 			       job_cond->job_id);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_JOB)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(vals);
 		xfree(query);
@@ -693,7 +693,10 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		mysql_free_result(result);
 	} else {
 		errno = ESLURM_INVALID_JOB_ID;
-		debug3("as_mysql_modify_job: Job not found\n%s", query);
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn,
+				 "as_mysql_modify_job: Job not found\n%s",
+				 query);
 		xfree(vals);
 		xfree(query);
 		mysql_free_result(result);
@@ -771,8 +774,8 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				       mysql_conn->cluster_name,
 				       last_ran_table, end_time,
 				       end_time, end_time);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	} else
@@ -827,8 +830,8 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		   job_ptr->exit_code, job_ptr->requid,
 		   job_ptr->db_index);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_JOB)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
@@ -977,8 +980,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		JOB_RUNNING, cpus, nodes, tasks, node_list, node_inx, task_dist,
 		step_ptr->cpu_freq, cpus, nodes, tasks, JOB_RUNNING,
 		node_list, node_inx, task_dist, step_ptr->cpu_freq);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_STEP)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	xfree(step_name);
@@ -1161,8 +1164,8 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		jobacct->act_cpufreq,
 		jobacct->energy.consumed_energy,
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_STEP)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
@@ -1244,8 +1247,8 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 			   "job_db_inx=%u && time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   (int)job_ptr->suspend_time, job_ptr->db_index);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_JOB)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
 	rc = mysql_db_query(mysql_conn, query);
 
@@ -1286,8 +1289,8 @@ extern int as_mysql_flush_jobs_on_cluster(
 		"select distinct t1.job_db_inx, t1.state from \"%s_%s\" "
 		"as t1 where t1.time_end=0;",
 		mysql_conn->cluster_name, job_table);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_JOB)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result =
 	      mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -1348,8 +1351,8 @@ extern int as_mysql_flush_jobs_on_cluster(
 	}
 
 	if (query) {
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);

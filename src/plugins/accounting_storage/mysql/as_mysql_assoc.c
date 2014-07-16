@@ -230,8 +230,8 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 			   "where (user='%s' && acct!='%s' && is_def=1);",
 			   assoc->cluster, assoc_table,
 			   assoc->user, assoc->acct);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, sel_query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", sel_query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, sel_query, 1))) {
 			xfree(sel_query);
@@ -327,8 +327,8 @@ static int _make_sure_users_have_default(
 				"user='%s' and acct='%s';",
 				cluster, assoc_table, user, acct);
 			xfree(acct);
-			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
@@ -363,8 +363,8 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	char *query = xstrdup_printf(
 		"SELECT lft from \"%s_%s\" where acct='%s' && user='';",
 		cluster, assoc_table, parent);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
@@ -382,8 +382,10 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	diff = ((par_left + 1) - *lft);
 
 	if (diff == 0) {
-		debug3("Trying to move association to the same position?  "
-		       "Nothing to do.");
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn,
+				 "Trying to move association to the same "
+				 "position?  Nothing to do.");
 		return ESLURM_SAME_PARENT_ACCOUNT;
 	}
 
@@ -433,8 +435,8 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	xstrfmtcat(query,
 		   "select lft, rgt from \"%s_%s\" where id_assoc = %s",
 		   cluster, assoc_table, id);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -477,8 +479,8 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 		"&& acct='%s' && user='' order by lft;",
 		cluster, assoc_table, *lft, *rgt,
 		new_parent);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result =
 	      mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -508,8 +510,8 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	query = xstrdup_printf(
 		"select lft, rgt from \"%s_%s\" where id_assoc=%s;",
 		cluster, assoc_table, id);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result =
 	      mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -787,8 +789,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       object, assoc->cluster, assoc_table,
 			       lft, rgt, acct, acct);
 	xfree(object);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result =
 	      mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -1806,8 +1808,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	}
 
 	if (reset_query) {
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, reset_query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", reset_query);
 		if ((rc = mysql_db_query(mysql_conn, reset_query))
 		    != SLURM_SUCCESS)
 			error("Couldn't update defaults");
@@ -1997,8 +1999,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			}
 			list_iterator_destroy(itr);
 		}
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(extra);
@@ -2044,8 +2046,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			       qos_extra, extra);
 	xfree(qos_extra);
 	xfree(extra);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
@@ -2193,7 +2195,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 
 				if (row2[ASSOC2_REQ_MNPJ])
 					parent_mnpj = slurm_atoul(
-							row2[ASSOC2_REQ_MNPJ]);
+						row2[ASSOC2_REQ_MNPJ]);
 				else
 					parent_mnpj = INFINITE;
 
@@ -2389,9 +2391,8 @@ extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 	char *query = xstrdup_printf(
 		"select id_assoc, lft from \"%s_%s\" where lft > %u",
 		cluster_name, assoc_table, start_lft);
-
-	debug3("%d(%d) query\n%s",
-	       mysql_conn->conn, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
@@ -2526,8 +2527,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "FOR UPDATE;",
 			   tmp_char, object->cluster, assoc_table, update);
 		xfree(tmp_char);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
@@ -2581,9 +2582,10 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						old_cluster, assoc_table,
 						incr, my_left,
 						old_cluster, assoc_table);
-					debug3("%d(%s:%d) query\n%s",
-					       mysql_conn->conn,
-					       THIS_FILE, __LINE__, up_query);
+					if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+						DB_DEBUG(mysql_conn->conn,
+							 "query\n%s",
+							 up_query);
 					rc = mysql_db_query(
 						mysql_conn,
 						up_query);
@@ -2599,8 +2601,9 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 					}
 				}
 
-				debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
-				       THIS_FILE, __LINE__, sel_query);
+				if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+					DB_DEBUG(mysql_conn->conn, "query\n%s",
+						 sel_query);
 				if (!(sel_result = mysql_db_query_ret(
 					      mysql_conn,
 					      sel_query, 0))) {
@@ -2712,8 +2715,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(cols);
 		xfree(vals);
 		xfree(update);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -2804,8 +2807,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			old_cluster, assoc_table, incr,
 			my_left,
 			old_cluster, assoc_table);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, up_query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", up_query);
 		rc = mysql_db_query(mysql_conn, up_query);
 		xfree(up_query);
 		if (rc != SLURM_SUCCESS)
@@ -2926,8 +2929,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	list_iterator_destroy(itr);
 	if (query) {
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS)
@@ -3118,8 +3121,8 @@ is_same_user:
 			   object, cluster_name,
 			   assoc_table, qos_extra, extra);
 		xfree(qos_extra);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
@@ -3160,7 +3163,8 @@ is_same_user:
 	} else if (!list_count(ret_list)) {
 		reset_mysql_conn(mysql_conn);
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		debug3("didn't effect anything");
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "didn't effect anything");
 		return ret_list;
 	}
 
@@ -3232,8 +3236,8 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				       cluster_name, assoc_table,
 				       qos_extra, extra);
 		xfree(qos_extra);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
@@ -3267,8 +3271,8 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				       "and deleted = 0 order by lft;",
 				       object,
 				       cluster_name, assoc_table, name_char);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
@@ -3304,7 +3308,8 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	} else if (!list_count(ret_list)) {
 		reset_mysql_conn(mysql_conn);
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		debug3("didn't effect anything");
+		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+			DB_DEBUG(mysql_conn->conn, "didn't effect anything");
 		return ret_list;
 	}
 	if (jobs_running)

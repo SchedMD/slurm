@@ -525,8 +525,8 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			   qos_table, cols, vals, extra);
 
 
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_QOS)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		object->id = mysql_db_insert_ret_id(mysql_conn, query);
 		xfree(query);
 		if (!object->id) {
@@ -788,7 +788,9 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		debug3("didn't effect anything\n%s", query);
+		if (debug_flags & DEBUG_FLAG_DB_QOS)
+			DB_DEBUG(mysql_conn->conn,
+				 "didn't effect anything\n%s", query);
 		xfree(vals);
 		xfree(query);
 		return ret_list;
@@ -929,7 +931,8 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		debug3("didn't effect anything\n%s", query);
+		if (debug_flags & DEBUG_FLAG_DB_QOS)
+			DB_DEBUG(mysql_conn->conn, "didn't effect anything\n%s", query);
 		xfree(query);
 		return ret_list;
 	}
@@ -939,8 +942,8 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	query = xstrdup_printf("update %s set mod_time=%ld %s where deleted=0;",
 			       assoc_table, now, extra);
 	xfree(extra);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_QOS)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	if (rc != SLURM_SUCCESS) {
@@ -1122,8 +1125,8 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_QOS)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);

@@ -378,8 +378,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			}
 			list_iterator_destroy(itr);
 		}
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(extra);
@@ -444,8 +444,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	*/
 	xstrcat(query, " group by id_job, time_submit desc");
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_JOB)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		rc = SLURM_ERROR;
@@ -802,15 +802,15 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			step->stats.disk_read_max =
 				atof(step_row[STEP_REQ_MAX_DISK_READ]);
 			step->stats.disk_read_max_taskid =
-				slurm_atoul(step_row[
-					STEP_REQ_MAX_DISK_READ_TASK]);
+				slurm_atoul(
+					step_row[STEP_REQ_MAX_DISK_READ_TASK]);
 			step->stats.disk_read_ave =
 				atof(step_row[STEP_REQ_AVE_DISK_READ]);
 			step->stats.disk_write_max =
 				atof(step_row[STEP_REQ_MAX_DISK_WRITE]);
 			step->stats.disk_write_max_taskid =
-				slurm_atoul(step_row[
-					STEP_REQ_MAX_DISK_WRITE_TASK]);
+				slurm_atoul(
+					step_row[STEP_REQ_MAX_DISK_WRITE_TASK]);
 			step->stats.disk_write_ave =
 				atof(step_row[STEP_REQ_AVE_DISK_WRITE]);
 			step->stats.vsize_max =
@@ -969,8 +969,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_JOB)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto no_hosts;
@@ -1168,8 +1168,8 @@ no_resv:
 					   (int)job_cond->usage_end);
 			}
 
-			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if (debug_flags & DEBUG_FLAG_DB_JOB)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 			result = mysql_db_query_ret(mysql_conn, query, 0);
 			xfree(query);
 			if (!result)

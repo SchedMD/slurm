@@ -1452,8 +1452,8 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	xfree(tmp);
 
 //	START_TIMER;
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -1581,8 +1581,8 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 	xfree(tmp);
 
 //	START_TIMER;
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -1761,8 +1761,8 @@ static uint32_t _archive_resvs(mysql_conn_t *mysql_conn, char *cluster_name,
 	xfree(tmp);
 
 //	START_TIMER;
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -1890,8 +1890,8 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 	xfree(tmp);
 
 //	START_TIMER;
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -2094,8 +2094,8 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 	xfree(tmp);
 
 //	START_TIMER;
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -2227,8 +2227,8 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf("delete from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0",
 				       cluster_name, event_table, curr_end);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -2264,8 +2264,8 @@ exit_events:
 		query = xstrdup_printf("delete from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0",
 				       cluster_name, suspend_table, curr_end);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -2302,8 +2302,8 @@ exit_suspend:
 		query = xstrdup_printf("delete from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0",
 				       cluster_name, step_table, curr_end);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -2340,8 +2340,8 @@ exit_steps:
 				       "where time_submit <= %ld "
 				       "&& time_end != 0",
 				       cluster_name, job_table, curr_end);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -2366,8 +2366,8 @@ exit_jobs:
 
 		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_resv)) {
 			rc = _archive_resvs(mysql_conn, cluster_name,
-					   curr_end, arch_cond->archive_dir,
-					   arch_cond->purge_resv);
+					    curr_end, arch_cond->archive_dir,
+					    arch_cond->purge_resv);
 			if (!rc)
 				goto exit_resvs;
 			else if (rc == SLURM_ERROR)
@@ -2378,8 +2378,8 @@ exit_jobs:
 				       "where time_start <= %ld "
 				       "&& time_end != 0",
 				       cluster_name, resv_table, curr_end);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
@@ -2500,7 +2500,9 @@ extern int as_mysql_jobacct_process_archive_load(
 	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
-	debug3("Version in assoc_mgr_state header is %u", ver);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn,
+			 "Version in assoc_mgr_state header is %u", ver);
 	/* Don't verify the lower limit as we should be keeping all
 	   older versions around here just to support super old
 	   archive files since they don't get regenerated all the
@@ -2554,8 +2556,8 @@ got_sql:
 		error("No data to load");
 		return SLURM_ERROR;
 	}
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, data);
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", data);
 	error_code = mysql_db_query_check_after(mysql_conn, data);
 	xfree(data);
 	if (error_code != SLURM_SUCCESS) {
