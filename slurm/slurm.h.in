@@ -2048,6 +2048,18 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_TRACE_JOBS   0x0000000010000000 /* Trace jobs by id
 						    * and state */
 #define DEBUG_FLAG_ROUTE 	0x0000000020000000 /* Route plugin */
+#define DEBUG_FLAG_DB_ASSOC     0x0000000040000000 /* Association debug */
+#define DEBUG_FLAG_DB_EVENT     0x0000000080000000 /* Event debug */
+#define DEBUG_FLAG_DB_JOB       0x0000000100000000 /* Database job debug */
+#define DEBUG_FLAG_DB_QOS       0x0000000200000000 /* QOS debug */
+#define DEBUG_FLAG_DB_QUERY     0x0000000400000000 /* Database query debug */
+#define DEBUG_FLAG_DB_RESV      0x0000000800000000 /* Reservation debug */
+#define DEBUG_FLAG_DB_RES       0x0000001000000000 /* Resource debug */
+#define DEBUG_FLAG_DB_STEP      0x0000002000000000 /* Database step debug */
+#define DEBUG_FLAG_DB_USAGE     0x0000004000000000 /* Usage/Rollup debug */
+#define DEBUG_FLAG_DB_WCKEY     0x0000008000000000 /* Database WCKey debug */
+
+
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to

@@ -4288,6 +4288,56 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "CPU_Bind");
 	}
+	if (debug_flags & DEBUG_FLAG_DB_ASSOC) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_Assoc");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_EVENT) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_Event");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_JOB) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_Job");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_QOS) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_QOS");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_QUERY) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_Query");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_RESV) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_Reservation");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_RES) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_Resource");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_STEP) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_Step");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_USAGE) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_Usage");
+	}
+	if (debug_flags & DEBUG_FLAG_DB_WCKEY) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_WCKey");
+	}
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4441,6 +4491,26 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_BG_WIRES;
 		else if (strcasecmp(tok, "CPU_Bind") == 0)
 			(*flags_out) |= DEBUG_FLAG_CPU_BIND;
+		else if (strcasecmp(tok, "DB_Assoc") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_ASSOC;
+		else if (strcasecmp(tok, "DB_Event") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_EVENT;
+		else if (strcasecmp(tok, "DB_Job") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_JOB;
+		else if (strcasecmp(tok, "DB_QOS") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_QOS;
+		else if (strcasecmp(tok, "DB_Query") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_QUERY;
+		else if (strcasecmp(tok, "DB_Reservation") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_RESV;
+		else if (strcasecmp(tok, "DB_Resource") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_RES;
+		else if (strcasecmp(tok, "DB_Step") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_STEP;
+		else if (strcasecmp(tok, "DB_Usage") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_USAGE;
+		else if (strcasecmp(tok, "DB_WCKey") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_WCKEY;
 		else if (strcasecmp(tok, "Energy") == 0)
 			(*flags_out) |= DEBUG_FLAG_ENERGY;
 		else if (strcasecmp(tok, "ExtSensors") == 0)
