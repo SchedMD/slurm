@@ -119,6 +119,9 @@ documents those changes that are of interest to users and admins.
  -- When a job dependency can never be satisfied do not cancel the job but keep
     pending with reason WAIT_DEP_INVALID (DependencyNeverSatisfied).
 
+* Changes in Slurm 14.03.7
+==========================
+
 * Changes in Slurm 14.03.6
 ==========================
  -- Added examples to demonstrate the use of the sacct -T option to the man
@@ -131,6 +134,11 @@ documents those changes that are of interest to users and admins.
  -- Fix race condition which could result in requeue if batch job exit and node
     registration occur at the same time.
  -- switch/nrt - Unload job tables (in addition to windows) in user space mode.
+ -- Differentiate between two identical debug messages about purging vestigial
+    job scripts.
+ -- If the socket used by slurmstepd to communicate with slurmd exist when
+    slurmstepd attempts to create it, for example left over from a previous
+    requeue or crash, delete it and recreate it.
 
 * Changes in Slurm 14.03.5
 ==========================

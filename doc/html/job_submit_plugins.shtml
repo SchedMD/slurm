@@ -93,7 +93,7 @@ not SLURM_SUCESS.<br>
 
 <p class="commandline">
 int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
-uint32_t submit_uid)
+uint32_t modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
 supplied by the scontrol or sview command. It can be used to log and/or
@@ -106,7 +106,7 @@ examine the available partitions, reservations, etc.
 <span class="commandline">job_ptr</span>
 (input/output) slurmctld daemon's current data structure for the job to
 be modified.<br>
-<span class="commandline">submit_uid</span>
+<span class="commandline">modify_uid</span>
 (input) user ID initiating the request.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
@@ -120,7 +120,7 @@ the Lua scripts is the same location as the SLURM configuration file,
 <i>slurm.conf</i>.</p>
 
 <p class="commandline">
-int job_submit(struct job_descriptor *job_desc, List part_list)
+int job_submit(struct job_descriptor *job_desc, List part_list, uint32_t submit_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job submission parameters
 supplied by the salloc, sbatch or srun command. It can be used to log and/or
@@ -132,6 +132,8 @@ to examine the available partitions, reservations, etc.
 (input/output) the job allocation request specifications.<br>
 <span class="commandline">part_list</span>
 (input) List of pointer to partitions which this user is authorized to use.<br>
+<span class="commandline">submit_uid</span>
+(input) user ID initiating the request.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">0</span> on success, or an
 errno on failure. SLURM specific error numbers from <i>slurm/slurm_errno.h</i>
@@ -140,7 +142,7 @@ appropriate error message printed for that errno.
 
 <p class="commandline">
 int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
-List part_list)
+List part_list, int modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
 supplied by the scontrol or sview command. It can be used to log and/or
@@ -155,6 +157,8 @@ examine the available partitions, reservations, etc.
 be modified.<br>
 <span class="commandline">part_list</span>
 (input) List of pointer to partitions which this user is authorized to use.<br>
+<span class="commandline">modify_uid</span>
+(input) user ID initiating the request.<br>
 <span class="commandline">0</span> on success, or an
 errno on failure. SLURM specific error numbers from <i>slurm/slurm_errno.h</i>
 may be used. On failure, the request will be rejected and the user will have an
@@ -166,6 +170,6 @@ appropriate error message printed for that errno.
 releases of SLURM may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 16 July 2014</p>
 
 <!--#include virtual="footer.txt"-->

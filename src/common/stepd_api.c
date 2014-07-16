@@ -135,7 +135,7 @@ static void _handle_stray_script(const char *directory, uint32_t job_id)
 
 	snprintf(dir_path, sizeof(dir_path), "%s/job%05u", directory, job_id);
 	snprintf(file_path, sizeof(file_path), "%s/slurm_script", dir_path);
-	info("Purging vestigial job script %s", file_path);
+	info("%s: Purging vestigial job script %s", __func__, file_path);
 	(void) unlink(file_path);
 	(void) rmdir(dir_path);
 }
