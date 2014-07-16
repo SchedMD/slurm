@@ -1111,9 +1111,11 @@ static void _gres_node_list_delete(void *list_element)
 	gres_ptr = (gres_state_t *) list_element;
 	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
 	FREE_NULL_BITMAP(gres_node_ptr->gres_bit_alloc);
-	for (i=0; i<gres_node_ptr->topo_cnt; i++) {
-		FREE_NULL_BITMAP(gres_node_ptr->topo_cpus_bitmap[i]);
-		FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
+	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
+		if (gres_node_ptr->topo_cpus_bitmap)
+			FREE_NULL_BITMAP(gres_node_ptr->topo_cpus_bitmap[i]);
+		if (gres_node_ptr->topo_gres_bitmap)
+			FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
 	}
 	xfree(gres_node_ptr->topo_cpus_bitmap);
 	xfree(gres_node_ptr->topo_gres_bitmap);
@@ -1406,9 +1408,15 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		/* Need to clear topology info */
 		xfree(gres_data->topo_gres_cnt_alloc);
 		xfree(gres_data->topo_gres_cnt_avail);
-		for (i=0; i<gres_data->topo_cnt; i++) {
-			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
-			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
+		for (i = 0; i < gres_data->topo_cnt; i++) {
+			if (gres_data->topo_gres_bitmap) {
+				FREE_NULL_BITMAP(gres_data->
+						 topo_gres_bitmap[i]);
+			}
+			if (gres_data->topo_cpus_bitmap) {
+				FREE_NULL_BITMAP(gres_data->
+						 topo_cpus_bitmap[i]);
+			}
 		}
 		xfree(gres_data->topo_gres_bitmap);
 		xfree(gres_data->topo_cpus_bitmap);
@@ -1423,13 +1431,21 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->topo_gres_cnt_avail =
 			xrealloc(gres_data->topo_gres_cnt_avail,
 				 set_cnt * sizeof(uint32_t));
-		for (i = 0; i < gres_data->topo_cnt; i++)
-			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
+		if (gres_data->topo_gres_bitmap) {
+			for (i = 0; i < gres_data->topo_cnt; i++) {
+				FREE_NULL_BITMAP(gres_data->
+						 topo_gres_bitmap[i]);
+			}
+		}
 		gres_data->topo_gres_bitmap =
 			xrealloc(gres_data->topo_gres_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
-		for (i = 0; i < gres_data->topo_cnt; i++)
-			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
+		if (gres_data->topo_cpus_bitmap) {
+			for (i = 0; i < gres_data->topo_cnt; i++) {
+				FREE_NULL_BITMAP(gres_data->
+						 topo_cpus_bitmap[i]);
+			}
+		}
 		gres_data->topo_cpus_bitmap =
 			xrealloc(gres_data->topo_cpus_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
@@ -1511,9 +1527,15 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		      context_ptr->gres_type, node_name,
 		      gres_data->gres_cnt_config, gres_data->gres_cnt_found);
 		if (gres_data->topo_cpus_bitmap) {
-			for (i=0; i<gres_data->topo_cnt; i++) {
-				FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
-				FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
+			for (i = 0; i < gres_data->topo_cnt; i++) {
+				if (gres_data->topo_cpus_bitmap) {
+					FREE_NULL_BITMAP(gres_data->
+							 topo_cpus_bitmap[i]);
+				}
+				if (gres_data->topo_gres_bitmap) {
+					FREE_NULL_BITMAP(gres_data->
+							 topo_gres_bitmap[i]);
+				}
 			}
 			xfree(gres_data->topo_cpus_bitmap);
 			xfree(gres_data->topo_gres_bitmap);
@@ -2053,7 +2075,7 @@ static void _job_state_delete(void *gres_data)
 	if (gres_ptr == NULL)
 		return;
 
-	for (i=0; i<gres_ptr->node_cnt; i++) {
+	for (i = 0; i < gres_ptr->node_cnt; i++) {
 		if (gres_ptr->gres_bit_alloc)
 			FREE_NULL_BITMAP(gres_ptr->gres_bit_alloc[i]);
 		if (gres_ptr->gres_bit_step_alloc)
@@ -2526,13 +2548,18 @@ static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 
 	if (node_gres_ptr->topo_cnt == 0)
 		return;
+	if (node_gres_ptr->topo_cpus_bitmap == NULL) {
+		error("Gres topo_cpus_bitmap is NULL on node %s", node_name);
+		return;
+	}
+
 	cpus_slurmd = bit_size(node_gres_ptr->topo_cpus_bitmap[0]);
 	if (cpus_slurmd == cpus_ctld)
 		return;
 
 	debug("Gres CPU count mismatch on node %s (%d != %d)",
 	      node_name, cpus_slurmd, cpus_ctld);
-	for (i=0; i<node_gres_ptr->topo_cnt; i++) {
+	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
 		if (i != 0) {
 			cpus_slurmd = bit_size(node_gres_ptr->
 					       topo_cpus_bitmap[i]);
@@ -3755,7 +3782,7 @@ static void _step_state_delete(void *gres_data)
 
 	FREE_NULL_BITMAP(gres_ptr->node_in_use);
 	if (gres_ptr->gres_bit_alloc) {
-		for (i=0; i<gres_ptr->node_cnt; i++)
+		for (i = 0; i < gres_ptr->node_cnt; i++)
 			FREE_NULL_BITMAP(gres_ptr->gres_bit_alloc[i]);
 		xfree(gres_ptr->gres_bit_alloc);
 	}
