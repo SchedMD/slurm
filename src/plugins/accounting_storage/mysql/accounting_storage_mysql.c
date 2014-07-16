@@ -146,6 +146,8 @@ char *wckey_hour_table = "wckey_usage_hour_table";
 char *wckey_month_table = "wckey_usage_month_table";
 char *wckey_table = "wckey_table";
 
+uint64_t debug_flags = 0;
+
 static char *default_qos_str = NULL;
 
 enum {
@@ -2097,6 +2099,8 @@ extern int init ( void )
 		return SLURM_SUCCESS;
 
 	first = 0;
+
+	debug_flags = slurm_get_debug_flags();
 
 	if (!slurmdbd_conf) {
 		char *cluster_name = NULL;

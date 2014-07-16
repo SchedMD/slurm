@@ -104,12 +104,16 @@ extern List as_mysql_cluster_list;
 extern List as_mysql_total_cluster_list;
 extern pthread_mutex_t as_mysql_cluster_list_lock;
 
+extern uint64_t debug_flags;
 
 typedef enum {
 	QOS_LEVEL_NONE,
 	QOS_LEVEL_SET,
 	QOS_LEVEL_MODIFY
 } qos_level_t;
+
+#define DB_DEBUG(conn, fmt, ...) \
+	info("%d(%s:%d) "fmt, conn, THIS_FILE, __LINE__, ##__VA_ARGS__);
 
 /*global functions */
 extern int check_connection(mysql_conn_t *mysql_conn);
