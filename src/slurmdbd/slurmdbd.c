@@ -203,6 +203,8 @@ int main(int argc, char *argv[])
 			info("slurmdbd running in background mode");
 			have_control = false;
 			backup = true;
+			/* make sure any locks are released */
+			acct_storage_g_commit(db_conn, 1);
 			run_dbd_backup();
 			if (!shutdown_time)
 				assoc_mgr_refresh_lists(db_conn);
@@ -247,6 +249,7 @@ int main(int argc, char *argv[])
 		}
 
 		_request_registrations(db_conn);
+		acct_storage_g_commit(db_conn, 1);
 
 		/* this is only ran if not backup */
 		if (rollup_handler_thread)
@@ -271,6 +274,7 @@ end_it:
 	if (commit_handler_thread)
 		pthread_join(commit_handler_thread, NULL);
 
+	acct_storage_g_commit(db_conn, 1);
 	acct_storage_g_close_connection(&db_conn);
 
 	if (slurmdbd_conf->pid_file &&
