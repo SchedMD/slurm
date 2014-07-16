@@ -184,15 +184,16 @@ _domain_socket_create(const char *dir, const char *nodename,
 	 */
 	if (stat(name, &stat_buf) == 0) {
 		/* Vestigial from a slurmd crash or job requeue that did not
-		 * happen properly (very rare conditions). Try another name */
-		xstrcat(name, ".ALT");
-		if (stat(name, &stat_buf) == 0) {
-			error("Socket %s already exists", name);
+		 * happen properly (very rare conditions). Unlink the file
+		 * and recreate it.
+		 */
+		if (unlink(name) != 0) {
+			error("%s: failed unlink(%s) job %u step %u %m",
+			      __func__, name, jobid, stepid);
 			xfree(name);
 			errno = ESLURMD_STEP_EXISTS;
 			return -1;
 		}
-		error("Using alternate socket name %s", name);
 	}
 
 	fd = _create_socket(name);
