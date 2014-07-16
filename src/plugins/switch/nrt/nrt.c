@@ -4078,7 +4078,7 @@ static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 extern int
 nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 {
-	int rc = SLURM_SUCCESS;
+	int rc, rc1, rc2;
 
 	if ((jp == NULL) || (jp->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
@@ -4093,10 +4093,13 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 		_print_jobinfo(jp);
 	}
 
-	if (jp->user_space)
-		rc = _unload_job_windows(jp);
-	else
+	if (jp->user_space) {
+		rc1 = _unload_job_windows(jp);
+		rc2 = _unload_job_table(jp);
+		rc  = MAX(rc1, rc2);
+	} else {
 		rc = _unload_job_table(jp);
+	}
 
 	return rc;
 }

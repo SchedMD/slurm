@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- CRAY - fix modules file, (backport from 14.11 commit 78fe86192b.
  -- Fix race condition which could result in requeue if batch job exit and node
     registration occur at the same time.
+ -- switch/nrt - Unload job tables (in addition to windows) in user space mode.
 
 * Changes in Slurm 14.03.5
 ==========================
