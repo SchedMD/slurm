@@ -35,6 +35,11 @@ source ./globals_accounting
 
 set test_id      "5.9"
 set exit_code     0
+set job_id        0
+set file_err      "/tmp/test${test_id}err"
+set file_in       "test$test_id\_script"
+set file_out      "/tmp/test${test_id}out"
+set test_acct     "test${test_id}acct"
 
 ############################Job Format Test############################
 
@@ -85,7 +90,7 @@ set sq_name(19)  comment
 #####################
 # cpu count value
 #####################
-set sq_format(numcpus)   4
+set sq_format(numcpus)   1
 set sq_format(ntpercore) 2
 set sq_format(totcpu)    [expr $sq_format(numcpus) * $sq_format(ntpercore)]
 
@@ -93,25 +98,25 @@ set sq_format(totcpu)    [expr $sq_format(numcpus) * $sq_format(ntpercore)]
 # Format value
 #######################
 # stderr
-set sq_format(0)   /dev/null
+set sq_format(0)   $file_err
 # stdout
-set sq_format(1)   /tmp/test$test_id\_tmp
+set sq_format(1)   $file_out
 # stdin
 set sq_format(2)   /dev/null
 # numcpus
 set sq_format(3)   $sq_format(totcpu)
 # numnodes
-set sq_format(4)   2
+set sq_format(4)   1
 # timelimit
 set sq_format(5)   2
 # job
-set sq_format(6)   "test$test_id\_script"
+set sq_format(6)   $file_in
 # account
-set sq_format(7)   "test$test_id\_acct"
+set sq_format(7)   $test_acct
 # cpus-per-task
 set sq_format(8)   2
 # network
-set sq_format(9)   "system"
+set sq_format(9)   "ip"
 # requeue
 set sq_format(10)  1
 # profile
@@ -125,9 +130,9 @@ set sq_format(14)  PD|R|CA|CR|CG|CD|F|TO|NF|SE
 # jobid
 set sq_format(15)  0
 # user
-set sq_format(16)  ""
+set sq_format(16)  "DUMMY"
 # switches
-set sq_format(17)  3
+set sq_format(17)  1
 # partition
 set sq_format(18)  [default_partition]
 # comment
@@ -145,7 +150,7 @@ if {$available < 2} {
     exit $exit_code
 }
 
-remove_acct [get_cluster_name] $sq_format(7)
+remove_acct [get_cluster_name] $test_acct
 
 spawn $bin_id -un
 expect {
@@ -159,7 +164,7 @@ expect {
 }
 
 set match 0
-spawn $sacctmgr add -i account $sq_format(7)
+spawn $sacctmgr add -i account $test_acct
 expect {
 	-re "Associations" {
 		set match 1
@@ -201,7 +206,7 @@ if {$match != 1} {
 #
 # Make a bash script
 #
-make_bash_script $sq_format(6) "$srun $bin_sleep 10000
+make_bash_script $file_in "$srun $bin_sleep 10000
 $srun $bin_sleep 200
 $srun $bin_sleep 100"
 
@@ -212,6 +217,7 @@ spawn $sbatch -A$sq_format(7) -N$sq_format(4) -n$sq_format(numcpus) \
     -o$sq_format(1) --comment=$sq_format(19) -e$sq_format(0) $sq_format(6)
 expect {
 	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
 		set sq_format(15) $expect_out(1,string)
 		exp_continue
 	}
@@ -228,7 +234,7 @@ set match 0
 set cpu_match 0
 set numcpus [expr $sq_format(3) * $sq_format(8)]
 for {set i 0} {$i<=19} {incr i 1} {
-	spawn $squeue --job=$sq_format(15) --noheader -O$sq_name($i)
+	spawn $squeue --job=$job_id --noheader -O$sq_name($i)
 	expect {
 		-re "$sq_format($i)" {
 #			send_user "Match $sq_name($i) with $sq_format($i)\n"
@@ -250,7 +256,7 @@ if {$match != $i} {
 }
 
 set match 0
-spawn $squeue --job=$sq_format(15) --noheader -O$sq_name(19):4
+spawn $squeue --job=$job_id --noheader -O$sq_name(19):4
 expect {
 	-re "12345" {
 		send_user "\nFAILURE: field width control failure\n"
@@ -303,15 +309,15 @@ set sq_step_name(9)   username
 # Format value
 #####################
 # jobid
-set sq_step_format(0)   $sq_format(15)
+set sq_step_format(0)   $job_id
 # stepid
-set sq_step_format(1)   $sq_format(15).0
+set sq_step_format(1)   $job_id.0
 # stepname
 set sq_step_format(2)   "sleep"
 # partition
-set sq_step_format(3)   ""
+set sq_step_format(3)   "DUMMY"
 # network
-set sq_step_format(4)   ""
+set sq_step_format(4)   "DUMMY"
 # gres
 set sq_step_format(5)   "(null)"
 # numcpus
@@ -319,15 +325,16 @@ set sq_step_format(6)   $sq_format(totcpu)
 # profile
 set sq_step_format(7)   "NotSet"
 # numtask
-set sq_step_format(8)   ""
+set sq_step_format(8)   "DUMMY"
 # username
 set sq_step_format(9)   $sq_format(16)
 
-# wait a bit
+# Wait a bit for the step to start
 sleep 2
 
 set match 0
-spawn $scontrol show step $sq_step_format(1)
+#spawn $scontrol show step $sq_step_format(1)
+spawn $scontrol show step
 expect {
 	-re "State=($alpha_under)" {
 		set sq_step_format(3) $expect_out(1,string)
@@ -383,12 +390,12 @@ if {$match != $i} {
 	set exit_code 1
 }
 
-cancel_job $sq_format(15)
+cancel_job $job_id
 sleep 2
-remove_acct [get_cluster_name] $sq_format(7)
+remove_acct [get_cluster_name] $test_acct
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $sq_format(6)
+	exec $bin_rm -f $file_err $file_out
 	send_user "\nSUCCESS\n"
 } else {
 	send_user "\nFAILURE\n"
