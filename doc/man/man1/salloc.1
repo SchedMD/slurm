@@ -316,7 +316,7 @@ Bind by mapping CPU IDs to tasks as specified
 where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 The mapping is specified for a node and identical mapping is applied to the
 tasks on every node (i.e. the lowest task ID on each node is mapped to the
-first CPU ID specifed in the list, etc.).
+first CPU ID specified in the list, etc.).
 CPU IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they are interpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
@@ -326,7 +326,7 @@ Bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 The mapping is specified for a node and identical mapping is applied to the
 tasks on every node (i.e. the lowest task ID on each node is mapped to the
-first mask specifed in the list, etc.).
+first mask specified in the list, etc.).
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'. Not supported unless the entire node is
 allocated to the job.
