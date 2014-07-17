@@ -193,8 +193,8 @@ static int _apply_decay(double real_decay)
 	xassert(assoc_mgr_qos_list);
 
 	itr = list_iterator_create(assoc_mgr_association_list);
-	/* We want to do this to all associations including
-	   root.  All usage_raws are calculated from the bottom up.
+	/* We want to do this to all associations including root.
+	   All usage_raws are calculated from the bottom up.
 	*/
 	while ((assoc = list_next(itr))) {
 		assoc->usage->usage_raw *= real_decay;
@@ -234,8 +234,8 @@ static int _reset_usage(void)
 	xassert(assoc_mgr_association_list);
 
 	itr = list_iterator_create(assoc_mgr_association_list);
-	/* We want to do this to all associations including
-	   root.  All usage_raws are calculated from the bottom up.
+	/* We want to do this to all associations including root.
+	 * All usage_raws are calculated from the bottom up.
 	*/
 	while ((assoc = list_next(itr))) {
 		assoc->usage->usage_raw = 0;
@@ -419,12 +419,11 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 }
 
 
-/* This should initially get the children list from
- * assoc_mgr_root_assoc.  Since our algorythm goes from top down we
- * calculate all the non-user associations now.  When a user submits a
- * job, that norm_fairshare is calculated.  Here we will set the
- * usage_efctv to NO_VAL for users to not have to calculate a bunch
- * of things that will never be used.
+/* This should initially get the children list from assoc_mgr_root_assoc.
+ * Since our algorithm goes from top down we calculate all the non-user
+ * associations now.  When a user submits a job, that norm_fairshare is
+ * calculated.  Here we will set the usage_efctv to NO_VAL for users to not
+ * have to calculate a bunch of things that will never be used.
  *
  * NOTE: acct_mgr_association_lock must be locked before this is called.
  */
@@ -505,8 +504,8 @@ static int _distribute_tickets(List children_list, uint32_t tickets)
 }
 
 
-/* job_ptr should already have the partition priority and such added
- * here before had we will be adding to it
+/* job_ptr should already have the partition priority and such added here
+ * before had we will be adding to it
  */
 static double _get_fairshare_priority( struct job_record *job_ptr)
 {
