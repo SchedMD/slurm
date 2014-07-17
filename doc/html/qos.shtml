@@ -176,6 +176,9 @@ Jobs submitted requesting more nodes than the QOS limit will pend
 until they conform (possibly indefinitely); to allow such jobs to run
 may require changing this limit with sacctmgr. See DenyOnLimits below
 to deny these jobs at submission.
+Each job's node allocation is counted separately
+(i.e. if a single node has resources allocated to two jobs, this is counted
+as two allocated nodes).
 </li>
 
 <li><b>MaxSubmitJobsPerUser</b>
