@@ -698,7 +698,7 @@ static void _set_priority_factors(time_t start_time, struct job_record *job_ptr)
 
 
 /* Returns the priority after applying the weight factors */
-static uint32_t _apply_priority_weights(time_t start_time,
+static uint32_t _get_priority_internal(time_t start_time,
 				       struct job_record *job_ptr)
 {
 	double priority	= 0.0;
@@ -714,6 +714,7 @@ static uint32_t _apply_priority_weights(time_t start_time,
 		return 0;
 	}
 
+	_set_priority_factors(start_time, job_ptr);
 	memcpy(&pre_factors, job_ptr->prio_factors,
 	       sizeof(priority_factors_object_t));
 
@@ -1212,9 +1213,7 @@ static void _ticket_based_decay(List job_list, time_t start_time)
 		if ((job_ptr->priority == 0) || !IS_JOB_PENDING(job_ptr))
 			continue;
 
-		_set_priority_factors(start_time, job_ptr);
-		job_ptr->priority =
-			_apply_priority_weights(start_time, job_ptr);
+		job_ptr->priority = _get_priority_internal(start_time, job_ptr);
 		last_job_update = time(NULL);
 		debug2("priority for job %u is now %u",
 		       job_ptr->job_id, job_ptr->priority);
@@ -1256,9 +1255,7 @@ static void _decay_thread_apply_weighted_factors(struct job_record *job_ptr,
 	     !(flags & PRIORITY_FLAGS_CALCULATE_RUNNING)))
 		return;
 
-	_set_priority_factors(*start_time_ptr, job_ptr);
-
-	job_ptr->priority = _apply_priority_weights(*start_time_ptr, job_ptr);
+	job_ptr->priority = _get_priority_internal(*start_time_ptr, job_ptr);
 	last_job_update = time(NULL);
 	debug2("priority for job %u is now %u",
 	       job_ptr->job_id, job_ptr->priority);
@@ -1636,9 +1633,7 @@ int fini ( void )
 
 extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 {
-	uint32_t priority = 0;
-	_set_priority_factors(time(NULL), job_ptr);
-	priority = _apply_priority_weights(time(NULL), job_ptr);
+	uint32_t priority = _get_priority_internal(time(NULL), job_ptr);
 
 	debug2("initial priority for job %u is %u", job_ptr->job_id, priority);
 
@@ -1769,14 +1764,15 @@ static void _depth_oblivious_set_usage_efctv(
 static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
 	/* Variable names taken from HTML documentation */
-	long double UAchild = assoc->usage->usage_norm;
-	long double UEparent =
+	long double ua_child = assoc->usage->usage_norm;
+	long double ue_parent =
 		 assoc->usage->parent_assoc_ptr->usage->usage_efctv;
-	uint32_t Schild = assoc->shares_raw;
-	uint32_t Sall_siblings = assoc->usage->level_shares;
+	uint32_t s_child = assoc->shares_raw;
+	uint32_t s_all_siblings = assoc->usage->level_shares;
 
-	assoc->usage->usage_efctv = UAchild +
-		(UEparent - UAchild) * (Schild / (long double) Sall_siblings);
+	assoc->usage->usage_efctv = ua_child +
+		(ue_parent - ua_child) *
+		(s_child / (long double) s_all_siblings);
 }
 
 
