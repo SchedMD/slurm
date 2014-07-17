@@ -704,13 +704,20 @@ static uint32_t _get_priority_internal(time_t start_time,
 	double priority	= 0.0;
 	priority_factors_object_t pre_factors;
 
-	if (job_ptr->direct_set_prio && (job_ptr->priority > 0))
+	if (job_ptr->direct_set_prio && (job_ptr->priority > 0)) {
+		if (job_ptr->prio_factors)
+			memset(job_ptr->prio_factors, 0,
+			       sizeof(priority_factors_object_t));
 		return job_ptr->priority;
+	}
 
 	if (!job_ptr->details) {
 		error("_get_priority_internal: job %u does not have a "
 		      "details symbol set, can't set priority",
 		      job_ptr->job_id);
+		if (job_ptr->prio_factors)
+			memset(job_ptr->prio_factors, 0,
+			       sizeof(priority_factors_object_t));
 		return 0;
 	}
 
