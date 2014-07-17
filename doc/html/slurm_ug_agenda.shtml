@@ -4,7 +4,8 @@
 
 <p>Hosted by the <a href="http:///www.cscs.ch">Swiss National Supercomputing Centre</a>
 
-<h1>Agenda</h1>
+
+<a name="agenda"><h1>Agenda</h1></a>
 
 <p>The 2014 Slurm User Group Meeting will be held on September 23 and 24
 in Lugano, Switzerland.
@@ -13,17 +14,23 @@ and site reports.
 The <a href="#schedule">Schedule</a>  amd <a href="#abstracts">Abstracts</a>
 are shown below.</p>
 
-<h2>Meeting Information</h2>
 <p>The meeting will be held at the
 <a href="http://www.lugano-tourism.ch/en/129/default.aspx">
 Convention Centre Lugano</a>, Lugano, Switzerland.</p>
 
-<h2>Hotel Information</h2>
-<p>Hotels may be booked through the Lugano Convention Centre (Palazzo dei Congressi).<br>
-<a href="https://www.aec-internet.it/booking_engine/prenota_congresso.htm?graph_be=4&n_tappe=1&headvar=ok&lingua_int=eng&id_stile=7434&id_congresso=54&id_canale=704">Hotel booking</a>.
 
-<h2>Registration</h2>
-<p>Information will be made available later.</p>
+<a name="registration"><h1>Registration</h1></a>
+<p>The conference cost is $350 per person for registration by 23 August and
+$400 per person for late registration.
+This includes presentations, tutorials, lunch and snacks on both days,
+plus dinner on Wednesday evening.<br>
+<a href="https://www.eventbrite.com/e/slurm-user-group-meeting-2014-tickets-12322056603">Register here</a>.</p>
+
+
+<a name="hotels"><h1>Hotel Information</h1></a>
+<p>Hotels may be booked through the Lugano Convention Centre (Palazzo dei Congressi).<br>
+<a href="https://www.aec-internet.it/booking_engine/prenota_congresso.htm?graph_be=4&n_tappe=1&headvar=ok&lingua_int=eng&id_stile=7434&id_congresso=54&id_canale=704">Hotel booking</a>.</p>
+
 
 <a name="schedule"><h1>Schedule</h1></a>
 
@@ -849,6 +856,6 @@ Convention Centre Lugano</a>, Lugano, Switzerland.</p>
   system to dynamically allocate disk space on our test high-IOPS SSD
   scratch system.</p>
 
-<p style="text-align:center;">Last modified 11 July 2014</p>
+<p style="text-align:center;">Last modified 17 July 2014</p>
 
 <!--#include virtual="footer.txt"-->
