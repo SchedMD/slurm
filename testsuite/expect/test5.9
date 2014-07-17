@@ -36,10 +36,10 @@ source ./globals_accounting
 set test_id      "5.9"
 set exit_code     0
 set job_id        0
-set file_err      "/tmp/test${test_id}err"
-set file_in       "test$test_id\_script"
-set file_out      "/tmp/test${test_id}out"
-set test_acct     "test${test_id}acct"
+set file_err      "/tmp/test${test_id}_err"
+set file_in       "test${test_id}_script"
+set file_out      "/tmp/test${test_id}_out"
+set test_acct     "test${test_id}_acct"
 
 ############################Job Format Test############################
 
@@ -230,15 +230,44 @@ expect {
 	}
 }
 
+if {[wait_for_job $job_id RUNNING] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	set exit_code 1
+}
+
+# The number of allocated CPUs can vary depending upon the allocation unit
+set match 0
+spawn $scontrol show job $job_id
+expect {
+	-re "NumCPUs=($number)" {
+		set sq_format(3) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	send_user "\nFAILURE: scontrol did not provide correct job values ($match != 1)\n"
+	set exit_code 1
+}
+
 set match 0
 set cpu_match 0
 set numcpus [expr $sq_format(3) * $sq_format(8)]
 for {set i 0} {$i<=19} {incr i 1} {
+	set this_match 0
 	spawn $squeue --job=$job_id --noheader -O$sq_name($i)
 	expect {
 		-re "$sq_format($i)" {
 #			send_user "Match $sq_name($i) with $sq_format($i)\n"
 			incr match 1
+			incr this_match 1
 			exp_continue
 		}
 		timeout {
@@ -248,6 +277,10 @@ for {set i 0} {$i<=19} {incr i 1} {
 		eof {
 			wait
 		}
+	}
+	if {$this_match == 0} {
+		send_user "\nFAILURE: failed to match $sq_name($i) with $sq_format($i)\n"
+		set exit_code 1
 	}
 }
 if {$match != $i} {
@@ -329,12 +362,8 @@ set sq_step_format(8)   "DUMMY"
 # username
 set sq_step_format(9)   $sq_format(16)
 
-# Wait a bit for the step to start
-sleep 2
-
 set match 0
-#spawn $scontrol show step $sq_step_format(1)
-spawn $scontrol show step
+spawn $scontrol show step $sq_step_format(1)
 expect {
 	-re "State=($alpha_under)" {
 		set sq_step_format(3) $expect_out(1,string)
@@ -352,14 +381,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
+		send_user "\nFAILURE: scontrol is not responding\n"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
-
 if {$match != 3} {
 	send_user "\nFAILURE: scontrol did not provide correct step values ($match != 3)\n"
 	set exit_code 1
@@ -368,11 +396,13 @@ if {$match != 3} {
 set match 0
 set cpu_match 0
 for {set i 0} {$i<=9} {incr i 1} {
+	set this_match 0
 	spawn $squeue --step=$sq_step_format(1) --noheader -O$sq_step_name($i)
 	expect {
 		-re "$sq_step_format($i)" {
 #			send_user "Match $sq_step_name($i) with $sq_step_format($i)\n"
 			incr match 1
+			incr this_match 1
 			exp_continue
 		}
 		timeout {
@@ -382,6 +412,10 @@ for {set i 0} {$i<=9} {incr i 1} {
 		eof {
 			wait
 		}
+	}
+	if {$this_match == 0} {
+		send_user "\nFAILURE: failed to match $sq_step_name($i) with $sq_step_format($i)\n"
+		set exit_code 1
 	}
 }
 
