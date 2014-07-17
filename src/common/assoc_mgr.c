@@ -810,8 +810,7 @@ static int _post_association_list(void)
 
 			_set_children_level_shares(
 				assoc,
-				_get_children_level_shares(assoc)
-			);
+				_get_children_level_shares(assoc));
 		}
 		/* Now normalize the static shares */
 		list_iterator_reset(itr);
@@ -2917,8 +2916,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 
 				_set_children_level_shares(
 					object,
-					_get_children_level_shares(object)
-				);
+					_get_children_level_shares(object));
 			}
 		is_user:
 			if (!object->user)
