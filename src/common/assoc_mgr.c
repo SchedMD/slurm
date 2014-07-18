@@ -289,7 +289,7 @@ static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
 	    && assoc->usage->fs_assoc_ptr) {
 		assoc->usage->shares_norm =
-			assoc->usage->parent_assoc_ptr->usage->shares_norm;
+			assoc->usage->fs_assoc_ptr->usage->shares_norm;
 		return;
 	}
 
