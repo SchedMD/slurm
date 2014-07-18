@@ -152,6 +152,14 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 			continue;	/* AllowGroups prevents use */
 		if (!top_prio_part ||
 		    (top_prio_part->priority < part_ptr->priority)) {
+			debug ("job_submit: partition: Considering part: %s with max_mem_per_cpu:%d and job cpus* pn_mim_memory: ",part_ptr->name,part_ptr->max_mem_per_cpu,job_desc->pn_min_cpus * job_desc->pn_min_memory);
+			/*Another job spec elements may be added here*/
+			if(part_ptr->max_mem_per_cpu && part_ptr->max_mem_per_cpu < job_desc->pn_min_memory * job_desc->pn_min_cpus )			{
+				debug("job_submit: partition: skiping partition because the job requires more memory than allowed in this partition ");
+				continue;
+			}
+
+
 			/* Found higher priority partition */
 			top_prio_part = part_ptr;
 		}
