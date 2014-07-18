@@ -2172,6 +2172,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		FREE_NULL_BITMAP(free_cores);
 		FREE_NULL_BITMAP(avail_cores);
 		xfree(cpu_count);
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 0 fail: "
+			     "waiting for switches");
+		}
 		return SLURM_ERROR;
 	}
 	if (cr_type == CR_MEMORY) {
