@@ -772,7 +772,9 @@ static uint32_t _get_children_level_shares(slurmdb_association_rec_t *assoc)
 
 	itr = list_iterator_create(children);
 	while ((child = list_next(itr))) {
-		if (child->shares_raw != SLURMDB_FS_USE_PARENT)
+		if (child->shares_raw == SLURMDB_FS_USE_PARENT)
+			sum += _get_children_level_shares(child);
+		else
 			sum += child->shares_raw;
 	}
 	list_iterator_destroy(itr);
