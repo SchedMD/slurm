@@ -288,6 +288,12 @@ static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
 	    && assoc->usage->fs_assoc_ptr) {
+		debug3("assoc %u(%s %s) normalize = %f from parent %u(%s %s)",
+		       assoc->id, assoc->acct, assoc->user,
+		       assoc->usage->fs_assoc_ptr->usage->shares_norm,
+		       assoc->usage->fs_assoc_ptr->id,
+		       assoc->usage->fs_assoc_ptr->acct,
+		       assoc->usage->fs_assoc_ptr->user);
 		assoc->usage->shares_norm =
 			assoc->usage->fs_assoc_ptr->usage->shares_norm;
 		return;
@@ -295,10 +301,21 @@ static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 
 	assoc2->usage->shares_norm = 1.0;
 	while (assoc->usage->parent_assoc_ptr) {
-		if (assoc->shares_raw != SLURMDB_FS_USE_PARENT)
+		if (assoc->shares_raw != SLURMDB_FS_USE_PARENT) {
 			assoc2->usage->shares_norm *=
 				(double)assoc->shares_raw /
 				(double)assoc->usage->level_shares;
+			debug3("assoc %u(%s %s) normalize = %f "
+			       "from %u(%s %s) %u / %u = %f",
+			       assoc2->id, assoc2->acct, assoc2->user,
+			       assoc2->usage->shares_norm,
+			       assoc->id, assoc->acct, assoc->user,
+			       assoc->shares_raw,
+			       assoc->usage->level_shares,
+			       (double)assoc->shares_raw /
+			       (double)assoc->usage->level_shares);
+		}
+
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 }
@@ -650,6 +667,10 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		assoc->usage = create_assoc_mgr_association_usage();
 
 	if (assoc->parent_id) {
+		/* Here we need the direct parent (parent_assoc_ptr)
+		 * and also the first parent that doesn't have
+		 * shares_raw == SLURMDB_FS_USE_PARENT (fs_assoc_ptr).
+		 */
 		assoc->usage->parent_assoc_ptr =
 			_find_assoc_parent(assoc, true);
 		if (!assoc->usage->parent_assoc_ptr)
@@ -792,10 +813,13 @@ static void _set_children_level_shares(slurmdb_association_rec_t *assoc,
 
 	if (!children || list_is_empty(children))
 		return;
-
+	//info("parent %d %s %s", assoc->id, assoc->acct, assoc->user);
 	itr = list_iterator_create(children);
-	while ((child = list_next(itr)))
+	while ((child = list_next(itr))) {
+		/* info("%d %s %s has %d shares", */
+		/*      child->id, child->acct, child->user, level_shares); */
 		child->usage->level_shares = level_shares;
+	}
 	list_iterator_destroy(itr);
 }
 
