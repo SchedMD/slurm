@@ -4593,6 +4593,10 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		node_ptr->node_state |= NODE_STATE_MAINT;
 		want_nodes_reboot = true;
 	}
+
+	if (want_nodes_reboot == true)
+		schedule_node_save();
+
 	unlock_slurmctld(node_write_lock);
 	FREE_NULL_BITMAP(bitmap);
 	rc = SLURM_SUCCESS;

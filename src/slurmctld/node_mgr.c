@@ -496,6 +496,8 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->real_memory   = real_memory;
 					node_ptr->tmp_disk      = tmp_disk;
 				}
+				if (node_state & NODE_STATE_MAINT)
+					node_ptr->node_state |= NODE_STATE_MAINT;
 				if (node_state & NODE_STATE_POWER_UP) {
 					if (power_save_mode) {
 						node_ptr->node_state |=

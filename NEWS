@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- When creating reservation with CoreCnt check that Slurm
     uses SelectType=select/cons_res otherwise don't send the
     request to slurmctld and return an error.
+ -- Save the state of scheduled node reboots so they will not be
+    lost should the slurmctld restart.
 
 * Changes in Slurm 14.03.6
 ==========================
