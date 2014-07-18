@@ -122,9 +122,16 @@ struct assoc_mgr_association_usage {
 	uint32_t level_shares;  /* number of shares on this level of
 				 * the tree (DON'T PACK) */
 
-	slurmdb_association_rec_t *parent_assoc_ptr; /* ptr to parent acct
+	slurmdb_association_rec_t *parent_assoc_ptr; /* ptr to direct
+						      * parent assoc
 						      * set in slurmctld
 						      * (DON'T PACK) */
+
+	slurmdb_association_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
+						     * assoc if fairshare
+						     * == SLURMDB_FS_USE_PARENT
+						     * set in slurmctld
+						     * (DON'T PACK) */
 
 	double shares_norm;     /* normalized shares (DON'T PACK) */
 

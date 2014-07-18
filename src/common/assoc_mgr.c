@@ -593,20 +593,53 @@ static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
 	}
 }
 
+/* Return first parent that is not SLURMDB_FS_USE_PARENT unless
+ * direct is set */
+static slurmdb_association_rec_t* _find_assoc_parent(
+	slurmdb_association_rec_t *assoc, bool direct)
+{
+	slurmdb_association_rec_t *parent = NULL;
+	xassert(assoc);
+
+	parent = assoc;
+
+	while (parent) {
+		if (!parent->parent_id)
+			break;
+
+		if (!(parent = _find_assoc_rec_id(parent->parent_id))) {
+			error("Can't find parent id %u for assoc %u, "
+			      "this should never happen.",
+			      parent->parent_id, parent->id);
+			break;
+		}
+		/* See if we need to look for the next parent up the
+		   tree */
+		if (direct || (assoc->shares_raw != SLURMDB_FS_USE_PARENT) ||
+		    (parent->shares_raw != SLURMDB_FS_USE_PARENT))
+			break;
+	}
+
+	if (parent)
+		debug2("assoc %u(%s, %s) has %s parent of %u(%s, %s)",
+		       assoc->id, assoc->acct, assoc->user,
+		       direct ? "direct" : "fs",
+		       parent->id, parent->acct, parent->user);
+	else
+		debug2("assoc %u(%s, %s) doesn't have a %s "
+		       "parent (probably root)",
+		       assoc->id, assoc->acct, assoc->user,
+		       direct ? "direct" : "fs");
+
+	return parent;
+}
+
 /* locks should be put in place before calling this function
  * ASSOC_WRITE, USER_WRITE */
 static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 				      int reset)
 {
-	static slurmdb_association_rec_t *last_acct_parent = NULL;
-	static slurmdb_association_rec_t *last_parent = NULL;
-
 	xassert(assoc_mgr_user_list);
-
-	if (reset) {
-		last_acct_parent = NULL;
-		last_parent = NULL;
-	}
 
 	if (!assoc || !assoc_mgr_association_list) {
 		error("you didn't give me an association");
@@ -617,50 +650,36 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		assoc->usage = create_assoc_mgr_association_usage();
 
 	if (assoc->parent_id) {
-		/* To speed things up we are first looking if we have
-		   a parent_id to look for.  If that doesn't work see
-		   if the last parent we had was what we are looking
-		   for.  Then if that isn't panning out look at the
-		   last account parent.  If still we don't have it we
-		   will look for it in the list.  If it isn't there we
-		   will just add it to the parent and call it good
-		*/
-		if (last_parent && assoc->parent_id == last_parent->id) {
-			assoc->usage->parent_assoc_ptr = last_parent;
-		} else if (last_acct_parent
-			   && assoc->parent_id == last_acct_parent->id) {
-			assoc->usage->parent_assoc_ptr = last_acct_parent;
-		} else {
-			slurmdb_association_rec_t *assoc2 =
-				_find_assoc_rec_id(assoc->parent_id);
-			if (!assoc2)
-				error("Can't find parent id %u for assoc %u, "
-				      "this should never happen.",
-				      assoc->parent_id, assoc->id);
-			else {
-				assoc->usage->parent_assoc_ptr = assoc2;
-				if (assoc->user)
-					last_parent = assoc2;
-				else
-					last_acct_parent = assoc2;
-			}
-		}
-		if (assoc->usage->parent_assoc_ptr && setup_children) {
-			if (!assoc->usage->parent_assoc_ptr->usage)
-				assoc->usage->parent_assoc_ptr->usage =
+		assoc->usage->parent_assoc_ptr =
+			_find_assoc_parent(assoc, true);
+		if (!assoc->usage->parent_assoc_ptr)
+			error("Can't find parent id %u for assoc %u, "
+			      "this should never happen.",
+			      assoc->parent_id, assoc->id);
+		else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+			assoc->usage->fs_assoc_ptr =
+				_find_assoc_parent(assoc, false);
+		else
+			assoc->usage->fs_assoc_ptr =
+				assoc->usage->parent_assoc_ptr;
+
+		if (assoc->usage->fs_assoc_ptr && setup_children) {
+			if (!assoc->usage->fs_assoc_ptr->usage)
+				assoc->usage->fs_assoc_ptr->usage =
 					create_assoc_mgr_association_usage();
 			if (!assoc->usage->
-			    parent_assoc_ptr->usage->children_list)
+			    fs_assoc_ptr->usage->children_list)
 				assoc->usage->
-					parent_assoc_ptr->usage->children_list =
+					fs_assoc_ptr->usage->children_list =
 					list_create(NULL);
 			list_append(assoc->usage->
-				    parent_assoc_ptr->usage->children_list,
+				    fs_assoc_ptr->usage->children_list,
 				    assoc);
 		}
 
 		if (assoc == assoc->usage->parent_assoc_ptr) {
 			assoc->usage->parent_assoc_ptr = NULL;
+			assoc->usage->fs_assoc_ptr = NULL;
 			error("association %u was pointing to "
 			      "itself as it's parent",
 			      assoc->id);

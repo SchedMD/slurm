@@ -400,11 +400,11 @@ static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc)
 	long double min_shares_norm;
 
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-	   && assoc->usage->parent_assoc_ptr) {
+	   && assoc->usage->fs_assoc_ptr) {
 		assoc->usage->shares_norm =
-			assoc->usage->parent_assoc_ptr->usage->shares_norm;
+			assoc->usage->fs_assoc_ptr->usage->shares_norm;
 		assoc->usage->usage_norm =
-			assoc->usage->parent_assoc_ptr->usage->usage_norm;
+			assoc->usage->fs_assoc_ptr->usage->usage_norm;
 	}
 
 	if (assoc->usage->level_shares) {
@@ -525,16 +525,13 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 		return 0;
 	}
 
-	fs_assoc = job_assoc;
+	/* Use values from parent when FairShare=SLURMDB_FS_USE_PARENT */
+	if (job_assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+		fs_assoc = job_assoc->usage->fs_assoc_ptr;
+	else
+		fs_assoc = job_assoc;
 
 	assoc_mgr_lock(&locks);
-
-	/* Use values from parent when FairShare=SLURMDB_FS_USE_PARENT */
-	while ((fs_assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-	       && fs_assoc->usage->parent_assoc_ptr
-	       && (fs_assoc != assoc_mgr_root_assoc)) {
-		fs_assoc = fs_assoc->usage->parent_assoc_ptr;
-	}
 
 	if (fuzzy_equal(fs_assoc->usage->usage_efctv, NO_VAL))
 		priority_p_set_assoc_usage(fs_assoc);
@@ -1702,7 +1699,7 @@ static void _depth_oblivious_set_usage_efctv(
 	f = 5.0; /* FIXME: This could be a tunable parameter
 		    (higher f means more impact when parent consumption
 		    is inadequate) */
-	parent_assoc =  assoc->usage->parent_assoc_ptr;
+	parent_assoc =  assoc->usage->fs_assoc_ptr;
 
 	if (assoc->usage->shares_norm &&
 	    parent_assoc->usage->shares_norm &&
@@ -1748,10 +1745,11 @@ static void _depth_oblivious_set_usage_efctv(
 #endif
 
 		if (priority_debug) {
-			info("Effective usage for %s %s off %s "
+			info("Effective usage for %s %s off %s(%s) "
 			     "(%Lf * %Lf ^ %Lf) * %f  = %Lf",
 			     child, child_str,
 			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->fs_assoc_ptr->acct,
 			     ratio_p, ratio_l, k,
 			     assoc->usage->shares_norm,
 			     assoc->usage->usage_efctv);
@@ -1759,9 +1757,10 @@ static void _depth_oblivious_set_usage_efctv(
 	} else {
 		assoc->usage->usage_efctv = assoc->usage->usage_norm;
 		if (priority_debug) {
-			info("Effective usage for %s %s off %s %Lf",
+			info("Effective usage for %s %s off %s(%s) %Lf",
 			     child, child_str,
 			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->fs_assoc_ptr->acct,
 			     assoc->usage->usage_efctv);
 		}
 	}
@@ -1773,7 +1772,7 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 	/* Variable names taken from HTML documentation */
 	long double ua_child = assoc->usage->usage_norm;
 	long double ue_parent =
-		 assoc->usage->parent_assoc_ptr->usage->usage_efctv;
+		 assoc->usage->fs_assoc_ptr->usage->usage_efctv;
 	uint32_t s_child = assoc->shares_raw;
 	uint32_t s_all_siblings = assoc->usage->level_shares;
 
@@ -1791,7 +1790,7 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 	xassert(assoc_mgr_root_assoc);
 	xassert(assoc);
 	xassert(assoc->usage);
-	xassert(assoc->usage->parent_assoc_ptr);
+	xassert(assoc->usage->fs_assoc_ptr);
 
 	if (assoc->user) {
 		child = "user";
@@ -1812,8 +1811,10 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 	}
 
 	if (priority_debug) {
-		info("Normalized usage for %s %s off %s %Lf / %Lf = %Lf",
-		     child, child_str, assoc->usage->parent_assoc_ptr->acct,
+		info("Normalized usage for %s %s off %s(%s) %Lf / %Lf = %Lf",
+		     child, child_str,
+		     assoc->usage->parent_assoc_ptr->acct,
+		     assoc->usage->fs_assoc_ptr->acct,
 		     assoc->usage->usage_raw,
 		     assoc_mgr_root_assoc->usage->usage_raw,
 		     assoc->usage->usage_norm);
@@ -1824,25 +1825,27 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 	if (assoc->usage->usage_norm > 1.0)
 		assoc->usage->usage_norm = 1.0;
 
-	if (assoc->usage->parent_assoc_ptr == assoc_mgr_root_assoc) {
+	if (assoc->usage->fs_assoc_ptr == assoc_mgr_root_assoc) {
 		assoc->usage->usage_efctv = assoc->usage->usage_norm;
 		if (priority_debug)
-			info("Effective usage for %s %s off %s %Lf %Lf",
+			info("Effective usage for %s %s off %s(%s) %Lf %Lf",
 			     child, child_str,
 			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->fs_assoc_ptr->acct,
 			     assoc->usage->usage_efctv,
 			     assoc->usage->usage_norm);
 	} else if (flags & PRIORITY_FLAGS_TICKET_BASED) {
 		_ticket_based_set_usage_efctv(assoc);
 		if (priority_debug) {
-			info("Effective usage for %s %s off %s = %Lf",
+			info("Effective usage for %s %s off %s(%s) = %Lf",
 			     child, child_str,
 			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->fs_assoc_ptr->acct,
 			     assoc->usage->usage_efctv);
 		}
 	} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
 		slurmdb_association_rec_t *parent_assoc =
-			assoc->usage->parent_assoc_ptr;
+			assoc->usage->fs_assoc_ptr;
 
 		assoc->usage->usage_efctv =
 			parent_assoc->usage->usage_efctv;
@@ -1857,12 +1860,13 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 	} else {
 		_set_usage_efctv(assoc);
 		if (priority_debug) {
-			info("Effective usage for %s %s off %s "
+			info("Effective usage for %s %s off %s(%s) "
 			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
 			     child, child_str,
 			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->fs_assoc_ptr->acct,
 			     assoc->usage->usage_norm,
-			     assoc->usage->parent_assoc_ptr->usage->usage_efctv,
+			     assoc->usage->fs_assoc_ptr->usage->usage_efctv,
 			     assoc->usage->usage_norm,
 			     assoc->shares_raw,
 			     assoc->usage->level_shares,
