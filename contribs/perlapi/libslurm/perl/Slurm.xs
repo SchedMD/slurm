@@ -52,7 +52,7 @@ slurm_t
 slurm_new(char *conf_file=NULL)
 	CODE:
 		if(conf_file) {
-			slurm_api_set_conf_file(conf_file);
+			slurm_conf_reinit(conf_file);
 		}
 		RETVAL = new_slurm();
 		if (RETVAL == NULL) {
