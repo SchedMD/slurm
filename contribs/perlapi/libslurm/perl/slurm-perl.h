@@ -16,7 +16,7 @@
 extern void slurm_xfree(void **, const char *, int, const char *);
 extern void *slurm_xmalloc(size_t, const char *, int, const char *);
 
-extern void slurm_api_set_conf_file(char *pathname);
+extern void slurm_conf_reinit(char *pathname);
 extern void slurm_api_clear_config(void);
 
 extern void slurm_list_iterator_destroy(ListIterator itr);

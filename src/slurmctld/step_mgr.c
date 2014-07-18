@@ -261,7 +261,6 @@ extern void delete_step_records (struct job_record *job_ptr)
 		_free_step_rec(step_ptr);
 	}
 	list_iterator_destroy(step_iterator);
-	gres_plugin_job_clear(job_ptr->gres_list);
 
 }
 

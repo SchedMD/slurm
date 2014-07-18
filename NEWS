@@ -122,6 +122,11 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 14.03.7
 ==========================
  -- Correct typos in man pages.
+ -- Add note to MaxNodesPerUser and multiple jobs running on the same node
+    counting as multiple nodes.
+ -- PerlAPI - fix renamed call from slurm_api_set_conf_file to
+    slurm_conf_reinit.
+ -- Fix gres race condition that could result in job deallocation error message.
 
 * Changes in Slurm 14.03.6
 ==========================

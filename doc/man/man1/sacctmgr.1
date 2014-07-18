@@ -318,6 +318,10 @@ Resource plugin.
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
+.P
+NOTE: Each job's node allocation is counted separately (i.e. if a
+single node has resources allocated to two jobs, this is counted as
+two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP=<max jobs>
@@ -610,6 +614,10 @@ this association and all associations which are children of this association.
 \fIGrpNodes\fP
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
+.P
+NOTE: Each job's node allocation is counted separately (i.e. if a
+single node has resources allocated to two jobs, this is counted as
+two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -1022,6 +1030,10 @@ Maximum number of running jobs in aggregate for this QOS.
 \fIGrpNodes\fP
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this QOS.
+.P
+NOTE: Each job's node allocation is counted separately (i.e. if a
+single node has resources allocated to two jobs, this is counted as
+two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -1060,6 +1072,10 @@ Maximum number of nodes each job is able to use.
 .TP
 \fIMaxNodesPerUser\fP
 Maximum number of nodes each user is able to use.
+.P
+NOTE: Each job's node allocation is counted separately (i.e. if a
+single node has resources allocated to two jobs, this is counted as
+two allocated nodes).
 
 .TP
 \fIMaxSubmitJobs\fP
@@ -1160,6 +1176,10 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
+.P
+NOTE: Each job's node allocation is counted separately (i.e. if a
+single node has resources allocated to two jobs, this is counted as
+two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -1212,6 +1232,10 @@ To clear a previously set value use the modify command with a new value of \-1.
 \fIMaxNodesPerUser\fP
 Maximum number of nodes each user is able to use.
 To clear a previously set value use the modify command with a new value of \-1.
+.P
+NOTE: Each job's node allocation is counted separately (i.e. if a
+single node has resources allocated to two jobs, this is counted as
+two allocated nodes).
 
 .TP
 \fIMaxSubmitJobs\fP
@@ -1613,6 +1637,10 @@ association and all associations which are children of this association.
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
+.P
+NOTE: Each job's node allocation is counted separately (i.e. if a
+single node has resources allocated to two jobs, this is counted as
+two allocated nodes).
 .TP
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
@@ -1689,6 +1717,10 @@ association and all associations which are children of this association.
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
+.P
+NOTE: Each job's node allocation is counted separately (i.e. if a
+single node has resources allocated to two jobs, this is counted as
+two allocated nodes).
 .TP
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
