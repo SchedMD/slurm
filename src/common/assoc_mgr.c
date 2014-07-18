@@ -287,7 +287,7 @@ static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 	slurmdb_association_rec_t *assoc2 = assoc;
 
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-	    && assoc->usage->parent_assoc_ptr) {
+	    && assoc->usage->fs_assoc_ptr) {
 		assoc->usage->shares_norm =
 			assoc->usage->parent_assoc_ptr->usage->shares_norm;
 		return;
@@ -659,6 +659,10 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
 			assoc->usage->fs_assoc_ptr =
 				_find_assoc_parent(assoc, false);
+		else if (assoc->usage->parent_assoc_ptr->shares_raw
+			 == SLURMDB_FS_USE_PARENT)
+			assoc->usage->fs_assoc_ptr = _find_assoc_parent(
+				assoc->usage->parent_assoc_ptr, false);
 		else
 			assoc->usage->fs_assoc_ptr =
 				assoc->usage->parent_assoc_ptr;
