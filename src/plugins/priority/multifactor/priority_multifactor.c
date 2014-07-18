@@ -398,24 +398,27 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
 	long double min_shares_norm;
+	slurmdb_association_rec_t *fs_assoc = assoc;
 
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
 	   && assoc->usage->fs_assoc_ptr) {
-		assoc->usage->shares_norm =
-			assoc->usage->fs_assoc_ptr->usage->shares_norm;
-		assoc->usage->usage_norm =
-			assoc->usage->fs_assoc_ptr->usage->usage_norm;
+		/* This function needs to find the fairshare parent because
+		 * shares_raw needs to be a useful value, not
+		 * SLURMDB_FS_USE_PARENT */
+		fs_assoc = assoc->usage->fs_assoc_ptr;
+		assoc->usage->shares_norm = fs_assoc->usage->shares_norm;
+		assoc->usage->usage_norm = fs_assoc->usage->usage_norm;
 	}
 
-	if (assoc->usage->level_shares) {
+	if (fs_assoc->usage->level_shares) {
 		min_shares_norm = (long double) MIN_USAGE_FACTOR
-			* assoc->shares_raw / assoc->usage->level_shares;
-		if (assoc->usage->usage_norm > min_shares_norm)
-			assoc->usage->usage_efctv = assoc->usage->usage_norm;
+			* fs_assoc->shares_raw / fs_assoc->usage->level_shares;
+		if (fs_assoc->usage->usage_norm > min_shares_norm)
+			assoc->usage->usage_efctv = fs_assoc->usage->usage_norm;
 		else
 			assoc->usage->usage_efctv = min_shares_norm;
 	} else
-		assoc->usage->usage_efctv = assoc->usage->usage_norm;
+		assoc->usage->usage_efctv = fs_assoc->usage->usage_norm;
 }
 
 
