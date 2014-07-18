@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Move xcpuinfo.[c|h] to the slurmd since it isn't needed anywhere else
     and will avoid the need for all the daemons to link to libhwloc.
+ -- Add memory test to job_submit/partition plugin.
 
 * Changes in Slurm 14.11.0pre2
 ==============================
