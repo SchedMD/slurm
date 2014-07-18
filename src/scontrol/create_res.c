@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 
@@ -76,7 +77,7 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 
 /*
  *  _parse_flags  is used to parse the Flags= option.  It handles
- *  daily, weekly, static_alloc, part_nodes, and maint, optionally 
+ *  daily, weekly, static_alloc, part_nodes, and maint, optionally
  *  preceded by + or -, separated by a comma but no spaces.
  */
 static uint32_t _parse_flags(const char *flagstr, const char *msg)
@@ -301,13 +302,13 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			   strncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
 
 			char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
-			char *type = NULL;
+			char *type;
 			int node_inx = 0;
 
 			type = slurm_get_select_type();
-			if (!strcasecmp(type, "select/linear")) {
-				error("Invalid to use CoreCnt or CPUCnt with "
-				      "SelectType=select/linear");
+			if (strcasestr(type, "cons_res") == NULL) {
+				error("CoreCnt or CPUCnt is only suported when "
+                                      "SelectType includes select/cons_res");
 				xfree(type);
 				return -1;
 			}
