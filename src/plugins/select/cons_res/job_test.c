@@ -1861,11 +1861,9 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		}
 	}
 
-	/* NOTE: details->min_cpus is 1 by default,
-	 * Only reset max_nodes if user explicitly sets a proc count */
-	if ((job_ptr->details->min_cpus > 1) &&
-	    (max_nodes > job_ptr->details->min_cpus))
-		max_nodes = job_ptr->details->min_cpus;
+	if ((job_ptr->details->num_tasks > 1) &&
+	    (max_nodes > job_ptr->details->num_tasks))
+		max_nodes = job_ptr->details->num_tasks;
 
 	origmap = bit_copy(node_map);
 
