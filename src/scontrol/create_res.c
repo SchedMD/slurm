@@ -301,8 +301,17 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			   strncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
 
 			char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
+			char *type = NULL;
 			int node_inx = 0;
 
+			type = slurm_get_select_type();
+			if (!strcasecmp(type, "select/linear")) {
+				error("Invalid to use CoreCnt or CPUCnt with "
+				      "SelectType=select/linear");
+				xfree(type);
+				return -1;
+			}
+			xfree(type);
 			core_cnt = xstrdup(val);
 			tok = strtok_r(core_cnt, ",", &ptrptr);
 			while (tok) {
