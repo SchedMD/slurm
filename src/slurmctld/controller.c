@@ -1300,6 +1300,10 @@ static void _queue_reboot_msg(void)
 			want_nodes_reboot = true;
 			continue;
 		}
+		if (IS_NODE_COMPLETING(node_ptr)) {
+			want_nodes_reboot = true;
+			continue;
+		}
 		if (IS_NODE_IDLE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_POWER_UP(node_ptr)) /* only active idle nodes */
 			want_reboot = true;
@@ -1322,6 +1326,7 @@ static void _queue_reboot_msg(void)
 		reboot_agent_args->node_count++;
 		node_ptr->node_state = NODE_STATE_FUTURE |
 				(node_ptr->node_state & NODE_STATE_FLAGS);
+		node_ptr->node_state &= ~NODE_STATE_MAINT;
 		bit_clear(avail_node_bitmap, i);
 		bit_clear(idle_node_bitmap, i);
 		node_ptr->last_response = now;
@@ -1334,6 +1339,7 @@ static void _queue_reboot_msg(void)
 		xfree(host_str);
 		agent_queue_request(reboot_agent_args);
 		last_node_update = now;
+		schedule_node_save();
 	}
 }
 
