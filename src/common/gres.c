@@ -2980,8 +2980,8 @@ extern void gres_plugin_job_clear(List job_gres_list)
 		xfree(job_state_ptr->gres_bit_alloc);
 		xfree(job_state_ptr->gres_bit_step_alloc);
 		xfree(job_state_ptr->gres_cnt_step_alloc);
+		job_state_ptr->node_cnt = 0;
 	}
-	job_state_ptr->node_cnt = 0;
 	list_iterator_destroy(job_gres_iter);
 }
 

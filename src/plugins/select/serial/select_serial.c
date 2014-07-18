@@ -1911,6 +1911,7 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 		return SLURM_SUCCESS;
 
+	gres_plugin_job_clear(job_ptr->gres_list);
 	rc = _add_job_to_res(job_ptr, 0);
 	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 
