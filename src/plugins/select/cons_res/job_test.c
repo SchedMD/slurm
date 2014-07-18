@@ -2660,6 +2660,8 @@ alloc_job:
 			last  = bit_fls(job_res->node_bitmap);
 		job_ptr->total_cpus = 0;
 		for (i = first; i <= last; i++) {
+			if (!bit_test(job_res->node_bitmap, i))
+				continue;
 			job_ptr->total_cpus += select_node_record[i].cpus;
 		}
 	} else if (build_cnt >= 0)

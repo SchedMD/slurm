@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- PerlAPI - fix renamed call from slurm_api_set_conf_file to
     slurm_conf_reinit.
  -- Fix gres race condition that could result in job deallocation error message.
+ -- Correct NumCPUs count for jobs with --exclusive option.
 
 * Changes in Slurm 14.03.6
 ==========================
