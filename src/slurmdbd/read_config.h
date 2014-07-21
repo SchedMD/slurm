@@ -72,8 +72,9 @@ typedef struct slurm_dbd_conf {
 	char *		archive_script;	/* script to archive old data	*/
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
-	uint16_t        control_timeout;/* how long to wait before
-					 * backup takes control         */
+	uint16_t        commit_delay;   /* On busy systems delay
+					 * commits from slurmctld this
+					 * many seconds                 */
 	char *		dbd_addr;	/* network address of Slurm DBD	*/
 	char *		dbd_backup;	/* hostname of Slurm DBD backup */
 	char *		dbd_host;	/* hostname of Slurm DBD	*/

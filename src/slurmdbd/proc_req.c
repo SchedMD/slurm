@@ -461,7 +461,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			error("CONN:%u Security violation, %s",
 			      slurmdbd_conn->newsockfd,
 			      slurmdbd_msg_type_2_str(msg_type, 1));
-		else if (slurmdbd_conn->ctld_port) {
+		else if (slurmdbd_conn->ctld_port
+			 && !slurmdbd_conf->commit_delay) {
 			/* If we are dealing with the slurmctld do the
 			   commit (SUCCESS or NOT) afterwards since we
 			   do transactions for performance reasons.
@@ -469,6 +470,7 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			*/
 			acct_storage_g_commit(slurmdbd_conn->db_conn, 1);
 		}
+
 	}
 
 	xfer_buf_data(in_buffer);	/* delete in_buffer struct without

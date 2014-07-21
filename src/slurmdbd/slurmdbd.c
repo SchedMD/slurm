@@ -633,6 +633,7 @@ static void *_commit_handler(void *db_conn)
 
 	while (!shutdown_time) {
 		/* Commit each slurmctld's info */
+		if (slurmdbd_conf->commit_delay) {
 			slurm_mutex_lock(&registered_lock);
 			running_commit = 1;
 			itr = list_iterator_create(registered_clusters);
@@ -645,6 +646,7 @@ static void *_commit_handler(void *db_conn)
 			list_iterator_destroy(itr);
 			running_commit = 0;
 			slurm_mutex_unlock(&registered_lock);
+		}
 
 		/* This really doesn't need to be synconized so just
 		 * sleep for a bit and do it again.
