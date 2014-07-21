@@ -463,7 +463,8 @@ typedef struct association_shares_object {
 	double usage_efctv;	/* effective, normalized usage */
 	double usage_norm;	/* normalized usage */
 	uint64_t usage_raw;	/* measure of resource usage */
-
+	uint64_t priority_fs_raw; /* LEVEL_BASED priority_fs before sorting */
+	uint64_t priority_fs_ranked; /* LEVEL_BASED priority_fs after sorting */
 	uint16_t user;          /* 1 if user association 0 if account
 				 * association */
 } association_shares_object_t;

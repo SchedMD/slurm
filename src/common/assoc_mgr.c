@@ -281,8 +281,25 @@ static void _delete_assoc_hash(void *assoc)
 	*assoc_pptr = assoc_ptr->assoc_next;
 }
 
+
+static void _normalize_assoc_shares_level_based(
+		slurmdb_association_rec_t *assoc)
+{
+	slurmdb_association_rec_t *assoc2 = assoc;
+	double shares_norm = 0.0;
+	if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+		assoc2 = find_real_parent(assoc);
+	if (assoc2->usage->level_shares)
+		shares_norm =
+			(double)assoc2->shares_raw /
+			(double)assoc2->usage->level_shares;
+	assoc->usage->shares_norm = shares_norm;
+}
+
+
 /* you should check for assoc == NULL before this function */
-static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
+static void _normalize_assoc_shares_traditional(
+		slurmdb_association_rec_t *assoc)
 {
 	slurmdb_association_rec_t *assoc2 = assoc;
 
@@ -319,6 +336,7 @@ static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 }
+
 
 static int _addto_used_info(slurmdb_association_rec_t *assoc1,
 			    slurmdb_association_rec_t *assoc2)
@@ -864,7 +882,7 @@ static int _post_association_list(void)
 		/* Now normalize the static shares */
 		list_iterator_reset(itr);
 		while ((assoc = list_next(itr)))
-			_normalize_assoc_shares(assoc);
+			assoc_mgr_normalize_assoc_shares(assoc);
 	}
 	list_iterator_destroy(itr);
 
@@ -2539,6 +2557,8 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 		share->grp_cpu_mins = assoc->grp_cpu_mins;
 		share->cpu_run_mins = assoc->usage->grp_used_cpu_run_secs / 60;
+		share->priority_fs_raw = assoc->usage->priority_fs_raw;
+		share->priority_fs_ranked = assoc->usage->priority_fs_ranked;
 
 		if (assoc->user) {
 			/* We only calculate user effective usage when
@@ -2988,7 +3008,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			/* Now normalize the static shares */
 			list_iterator_reset(itr);
 			while ((object = list_next(itr))) {
-				_normalize_assoc_shares(object);
+				assoc_mgr_normalize_assoc_shares(object);
 				log_assoc_rec(object, assoc_mgr_qos_list);
 			}
 		}
@@ -4580,3 +4600,18 @@ extern int assoc_mgr_set_missing_uids()
 
 	return SLURM_SUCCESS;
 }
+
+/* you should check for assoc == NULL before this function */
+extern void assoc_mgr_normalize_assoc_shares(slurmdb_association_rec_t *assoc)
+{
+	xassert(assoc);
+	/* Use slurmctld_conf.priority_flags directly instead of using a
+	 * global flags variable. assoc_mgr_init() would be the logical
+	 * place to set a global, but there is no great location for
+	 * resetting it when scontrol reconfigure is called */
+	if (slurmctld_conf.priority_flags & PRIORITY_FLAGS_LEVEL_BASED)
+		_normalize_assoc_shares_level_based(assoc);
+	else
+		_normalize_assoc_shares_traditional(assoc);
+}
+

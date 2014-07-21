@@ -1415,6 +1415,16 @@ or holds.
 If set, priorities will be recalculated not only for pending jobs, but also
 running and suspended jobs.
 .TP
+\fBLEVEL_BASED\fR
+If set, priority will be calculated at each level of accounts, with the
+priority at each level outweighing the effect of priority of lower levels. For
+example, consider a two-tiered system where each faculty member has an account
+and the users in that account are the faculty member and his/her students.
+Priority is first calculated at the account level. If account A has higher
+priority than account B, all users in account A will have a higher priority
+than users in account B. The number of levels is determined by
+\fBPriorityLevels\fR.
+.TP
 \fBDEPTH_OBLIVIOUS\fR
 If set, priority will be calculated based similar to the normal multifactor
 calculation, but depth of the associations in the tree do not adversely effect
@@ -1431,6 +1441,13 @@ If set, priority will be calculated based on the ticket system.
 .TP
 \fBPriorityParameters\fR
 Arbitrary string used by the PriorityType plugin.
+
+.TP
+\fBPriorityLevels\fR
+When using PriorityFlags=LEVEL_BASED, PriorityLevels determines how many
+levels of associations below the root are considered for priority purposes.
+Associations deeper than this number will inherit their parents' fair share
+priority. The number of levels must be between 1 and 16.
 
 .TP
 \fBPriorityMaxAge\fR

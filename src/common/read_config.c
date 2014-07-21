@@ -263,6 +263,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PriorityCalcPeriod", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
+	{"PriorityLevels", S_P_UINT16},
 	{"PriorityMaxAge", S_P_STRING},
 	{"PriorityParameters", S_P_STRING},
 	{"PriorityUsageResetPeriod", S_P_STRING},
@@ -3564,9 +3565,30 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->priority_flags |= PRIORITY_FLAGS_TICKET_BASED;
 		else if (slurm_strcasestr(temp_str, "DEPTH_OBLIVIOUS"))
 			conf->priority_flags |= PRIORITY_FLAGS_DEPTH_OBLIVIOUS;
+		else if (slurm_strcasestr(temp_str, "LEVEL_BASED")) {
+			conf->priority_flags |= PRIORITY_FLAGS_LEVEL_BASED;
+
+			if (!s_p_get_uint16(&conf->priority_levels,
+					   "PriorityLevels", hashtbl)
+			    || conf->priority_levels > 16
+			    || conf->priority_levels == 0
+			) {
+				/* Anything higher than 16 makes the bucket
+				 * width be smaller than 4 bits; this has too
+				 * much precision loss.
+				 */
+				error(
+					"LEVEL_BASED system requires "
+					"PriorityLevels to exist and "
+					"be between 1 and 16 inclusive"
+				);
+				return SLURM_ERROR;
+			}
+		}
 
 		xfree(temp_str);
 	}
+
 	if (s_p_get_string(&temp_str, "PriorityMaxAge", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
 		if ((max_time < 0) && (max_time != INFINITE)) {
@@ -3580,6 +3602,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->priority_max_age = DEFAULT_PRIORITY_DECAY;
 
 	s_p_get_string(&conf->priority_params, "PriorityParameters", hashtbl);
+
 
 	if (s_p_get_string(&temp_str, "PriorityUsageResetPeriod", hashtbl)) {
 		if (strcasecmp(temp_str, "none") == 0)
