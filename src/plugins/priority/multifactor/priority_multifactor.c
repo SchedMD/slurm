@@ -158,7 +158,7 @@ static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos;  /* weight for QOS factor */
 static uint32_t flags;       /* Priority Flags */
 static uint32_t prevflags;    /* Priority Flags before _internal_setup() resets
-			      * flags after a reconfigure */
+			       * flags after a reconfigure */
 static uint32_t max_tickets; /* Maximum number of tickets given to a
 			      * user. Protected by assoc_mgr lock. */
 static time_t g_last_ran = 0; /* when the last poll ran */
@@ -172,8 +172,8 @@ extern uint16_t part_max_priority;
 
 /* LEVEL_BASED */
 static void _level_based_calc_children_fs(List children_list,
-					    List users,
-					     uint16_t assoc_level);
+					  List users,
+					  uint16_t assoc_level);
 
 static uint16_t priority_levels;	/* How many levels to care about */
 static uint32_t bucket_width_in_bits;	/* How many bits available for
@@ -257,7 +257,7 @@ static int _reset_usage(void)
 	itr = list_iterator_create(assoc_mgr_association_list);
 	/* We want to do this to all associations including root.
 	 * All usage_raws are calculated from the bottom up.
-	*/
+	 */
 	while ((assoc = list_next(itr))) {
 		assoc->usage->usage_raw = 0;
 		assoc->usage->grp_used_wall = 0;
@@ -422,7 +422,7 @@ static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc)
 	slurmdb_association_rec_t *fs_assoc = assoc;
 
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-	   && assoc->usage->fs_assoc_ptr) {
+	    && assoc->usage->fs_assoc_ptr) {
 		/* This function needs to find the fairshare parent because
 		 * shares_raw needs to be a useful value, not
 		 * SLURMDB_FS_USE_PARENT */
@@ -571,7 +571,7 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 		if (fs_assoc->usage->active_seqno ==
 		    assoc_mgr_root_assoc->usage->active_seqno && max_tickets) {
 			priority_fs = (double) fs_assoc->usage->tickets /
-				      max_tickets;
+				max_tickets;
 		}
 		if (priority_debug) {
 			info("Fairshare priority of job %u for user %s in acct"
@@ -583,18 +583,17 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 		priority_fs = NORMALIZE_VALUE(
 			job_assoc->usage->priority_fs_ranked,
 			0, UINT64_MAX,
-			0.0L, 1.0L
-		);
+			0.0L, 1.0L);
 		if (priority_debug) {
 			info("Fairhare priority of job %u for user %s in acct"
-				" %s is %f (0x%016"PRIX64")",
+			     " %s is %f (0x%016"PRIX64")",
 			     job_ptr->job_id, job_assoc->user, job_assoc->acct,
 			     priority_fs, job_assoc->usage->priority_fs_ranked);
 		}
 	} else {
 		priority_fs = priority_p_calc_fs_factor(
-				fs_assoc->usage->usage_efctv,
-				(long double)fs_assoc->usage->shares_norm);
+			fs_assoc->usage->usage_efctv,
+			(long double)fs_assoc->usage->shares_norm);
 		if (priority_debug) {
 			info("Fairshare priority of job %u for user %s in acct"
 			     " %s is 2**(-%Lf/%f) = %f",
@@ -609,8 +608,8 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 }
 
 static void _set_priority_factors(
-		time_t start_time,
-		struct job_record *job_ptr)
+	time_t start_time,
+	struct job_record *job_ptr)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 
@@ -794,18 +793,18 @@ static uint32_t _get_priority_internal(time_t start_time,
 		}
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = (struct part_record *)
-				   list_next(part_iterator))) {
+			list_next(part_iterator))) {
 			priority_part = part_ptr->priority /
-					(double)part_max_priority *
-					(double)weight_part;
+				(double)part_max_priority *
+				(double)weight_part;
 			job_ptr->priority_array[i] = (uint32_t)
-					(job_ptr->prio_factors->priority_age
-					+ job_ptr->prio_factors->priority_fs
-					+ job_ptr->prio_factors->priority_js
-					+ priority_part
-					+ job_ptr->prio_factors->priority_qos
-					- (double)(job_ptr->prio_factors->nice
-					- NICE_OFFSET));
+				(job_ptr->prio_factors->priority_age
+				 + job_ptr->prio_factors->priority_fs
+				 + job_ptr->prio_factors->priority_js
+				 + priority_part
+				 + job_ptr->prio_factors->priority_qos
+				 - (double)(job_ptr->prio_factors->nice
+					    - NICE_OFFSET));
 			debug("Job %u has more than one partition (%s)(%u)",
 			      job_ptr->job_id, part_ptr->name,
 			      job_ptr->priority_array[i]);
@@ -1271,7 +1270,7 @@ static void _ticket_based_decay(List job_list, time_t start_time)
 
 
 static bool _decay_apply_new_usage(struct job_record *job_ptr,
-					  time_t *start_time_ptr)
+				   time_t *start_time_ptr)
 {
 
 	/* Don't need to handle finished jobs. */
@@ -1291,7 +1290,7 @@ static bool _decay_apply_new_usage(struct job_record *job_ptr,
 
 
 static void _decay_apply_weighted_factors(struct job_record *job_ptr,
-						 time_t *start_time_ptr)
+					  time_t *start_time_ptr)
 {
 	/*
 	 * Priority 0 is reserved for held
@@ -1312,8 +1311,8 @@ static void _decay_apply_weighted_factors(struct job_record *job_ptr,
 
 
 static void _decay_apply_new_usage_and_weighted_factors(
-					struct job_record *job_ptr,
-					time_t *start_time_ptr)
+	struct job_record *job_ptr,
+	time_t *start_time_ptr)
 {
 	if (!_decay_apply_new_usage(job_ptr, start_time_ptr))
 		return;
@@ -1324,8 +1323,8 @@ static void _decay_apply_new_usage_and_weighted_factors(
 
 /* Apply usage with decay factor. Call standard functions */
 static void _level_based_decay_apply_new_usage(
-					struct job_record *job_ptr,
-					time_t *start_time_ptr)
+	struct job_record *job_ptr,
+	time_t *start_time_ptr)
 {
 	if (!_decay_apply_new_usage(job_ptr, start_time_ptr))
 		return;
@@ -1342,36 +1341,33 @@ static void _level_based_decay_apply_new_usage(
 
 
 static void _level_based_calc_children_fs_priority_debug(
-		uint64_t priority_fs_raw,
-		uint64_t level_fs_raw,
-		slurmdb_association_rec_t *assoc,
-		uint16_t assoc_level)
+	uint64_t priority_fs_raw,
+	uint64_t level_fs_raw,
+	slurmdb_association_rec_t *assoc,
+	uint16_t assoc_level)
 {
-	int spaces = (assoc_level + 1) * 4;
-	char *name = assoc->user
-		? assoc->user
-		: assoc->acct;
+	int spaces;
+	char *name;
 
 	if (!priority_debug)
 		return;
 
-	debug2(
-		"%*s0x%016"PRIX64" | 0x%016"PRIX64" (%s)",
-		spaces,
-		"",
-		priority_fs_raw,
-		level_fs_raw,
-		name
-	);
+	spaces = (assoc_level + 1) * 4;
+	name = assoc->user ? assoc->user : assoc->acct;
+
+	debug2("%*s0x%016"PRIX64" | 0x%016"PRIX64" (%s)",
+	       spaces,
+	       "",
+	       priority_fs_raw,
+	       level_fs_raw,
+	       name);
 	if (assoc->user)
-		debug2(
-			"%*s%18s = 0x%016"PRIX64" (%s)",
-			spaces,
-			"",
-			"",
-			priority_fs_raw | level_fs_raw,
-			assoc->user
-		);
+		debug2("%*s%18s = 0x%016"PRIX64" (%s)",
+		       spaces,
+		       "",
+		       "",
+		       priority_fs_raw | level_fs_raw,
+		       assoc->user);
 
 }
 
@@ -1380,7 +1376,7 @@ static void _level_based_calc_children_fs_priority_debug(
  * depth in the association tree and the bucket size.
  */
 static uint64_t _level_based_calc_level_fs(slurmdb_association_rec_t *assoc,
-					  uint16_t assoc_level)
+					   uint16_t assoc_level)
 {
 	uint64_t level_fs = 0;
 	long double level_ratio = 0.0L;
@@ -1402,27 +1398,21 @@ static uint64_t _level_based_calc_level_fs(slurmdb_association_rec_t *assoc,
 		 * http://www.wolframalpha.com/input/?i=2%5E-%28u%2Fs%29%2C+u+from+0+to+1%2C+s+from+.2+to+1
 		 * http://www.wolframalpha.com/input/?i=2%5E-%28u%2Fs%29%2C+u+from+0+to+1%2C+s+from+0+to+1
 		 */
-		shares_adj = NORMALIZE_VALUE(
-			assoc->usage->shares_norm,
-			0.0l, 1.0l,
-			0.1L, 1.0L
-		);
+		shares_adj = NORMALIZE_VALUE(assoc->usage->shares_norm,
+					     0.0l, 1.0l,
+					     0.1L, 1.0L);
 		level_ratio = assoc->usage->usage_efctv / shares_adj;
 	}
 
 	/* reserve 0 for special casing */
-	level_fs = NORMALIZE_VALUE(
-		powl(2L, -level_ratio),
-		0.0L, 1.0L,
-		1, bucket_max
-	);
+	level_fs = NORMALIZE_VALUE(powl(2L, -level_ratio),
+				   0.0L, 1.0L,
+				   1, bucket_max);
 
 
-	level_fs <<= (
-		(priority_levels - assoc_level - 1)
-		* bucket_width_in_bits
-		+ unused_bucket_bits
-	);
+	level_fs <<= ((priority_levels - assoc_level - 1)
+		      * bucket_width_in_bits
+		      + unused_bucket_bits);
 	return level_fs;
 }
 
@@ -1432,9 +1422,9 @@ static uint64_t _level_based_calc_level_fs(slurmdb_association_rec_t *assoc,
  * This function calls and is called by _level_based_calc_children_fs().
  */
 static void _level_based_calc_assoc_fs(
-		List users,
-		slurmdb_association_rec_t *assoc,
-		uint16_t assoc_level)
+	List users,
+	slurmdb_association_rec_t *assoc,
+	uint16_t assoc_level)
 {
 	const uint64_t priority_fs_raw =
 		assoc->usage->parent_assoc_ptr->usage->priority_fs_raw;
@@ -1469,10 +1459,10 @@ static void _level_based_calc_assoc_fs(
 			assoc->usage->children_list, users, assoc_level);
 	else if (!assoc->user)
 		/* If this is an account, descend to child accounts */
-			_level_based_calc_children_fs(
-				assoc->usage->children_list,
-				users,
-				assoc_level + 1
+		_level_based_calc_children_fs(
+			assoc->usage->children_list,
+			users,
+			assoc_level + 1
 			);
 }
 
@@ -1482,8 +1472,8 @@ static void _level_based_calc_assoc_fs(
  * users), thus making it recursive.
  */
 static void _level_based_calc_children_fs(List children_list,
-					     List users,
-					     uint16_t assoc_level)
+					  List users,
+					  uint16_t assoc_level)
 {
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
@@ -1494,22 +1484,18 @@ static void _level_based_calc_children_fs(List children_list,
 	itr = list_iterator_create(children_list);
 	while ((assoc = list_next(itr)))
 		_level_based_calc_assoc_fs(
-			users,
-			assoc,
-			assoc_level
-		);
-	}
-
+			users, assoc, assoc_level);
 	list_iterator_destroy(itr);
 }
 
 
 /* Sort so that higher priority_fs_raw values are first in the list */
 int _level_based_sort_priority_fs(slurmdb_association_rec_t **x,
-				 slurmdb_association_rec_t **y)
+				  slurmdb_association_rec_t **y)
 {
 	uint64_t a = (*x)->usage->priority_fs_raw;
 	uint64_t b = (*y)->usage->priority_fs_raw;
+
 	if (a < b)
 		return 1;
 	else if (b < a)
@@ -1541,18 +1527,14 @@ void _level_based_apply_rank(List users)
 		 * rankings like 7,6,5,5,5,2,1,0 */
 		if(prev_priority_fs_raw != assoc->usage->priority_fs_raw)
 			rank = i;
-		assoc->usage->priority_fs_ranked = NORMALIZE_VALUE(
-			rank,
-			0.0, (long double) count,
-			0, UINT64_MAX
-		);
+		assoc->usage->priority_fs_ranked =
+			NORMALIZE_VALUE(rank, 0.0, (long double) count,
+					0, UINT64_MAX);
 		if (priority_debug)
-			info(
-				"Fairshare for user %s in acct %s: ranked "
-				"%d/%d (0x%016"PRIX64")",
-				assoc->user, assoc->acct, rank, count,
-				assoc->usage->priority_fs_ranked
-			);
+			info("Fairshare for user %s in acct %s: ranked "
+			     "%d/%d (0x%016"PRIX64")",
+			     assoc->user, assoc->acct, rank, count,
+			     assoc->usage->priority_fs_ranked);
 		i--;
 		prev_priority_fs_raw = assoc->usage->priority_fs_raw;
 	}
@@ -1580,8 +1562,7 @@ static void _level_based_apply_priority_fs(void)
 	_level_based_calc_children_fs(
 		assoc_mgr_root_assoc->usage->children_list,
 		users,
-		0
-	);
+		0);
 
 	/* sort users by priority_fs_raw */
 	list_sort(users, (ListCmpF) _level_based_sort_priority_fs);
@@ -1603,11 +1584,9 @@ static void _level_based_decay(List job_list, time_t start_time)
 
 	/* apply decayed usage */
 	lock_slurmctld(job_write_lock);
-	list_for_each(
-		job_list,
-		(ListForF) _level_based_decay_apply_new_usage,
-		&start_time
-	);
+	list_for_each(job_list,
+		      (ListForF) _level_based_decay_apply_new_usage,
+		      &start_time);
 	unlock_slurmctld(job_write_lock);
 
 	/* calculate priority for associations */
@@ -1617,11 +1596,9 @@ static void _level_based_decay(List job_list, time_t start_time)
 
 	/* assign job priorities */
 	lock_slurmctld(job_write_lock);
-	list_for_each(
-		job_list,
-		(ListForF) _decay_apply_weighted_factors,
-		&start_time
-	);
+	list_for_each(job_list,
+		      (ListForF) _decay_apply_weighted_factors,
+		      &start_time);
 	unlock_slurmctld(job_write_lock);
 }
 
@@ -2029,7 +2006,7 @@ static void _set_norm_shares(List children_list)
 extern void priority_p_reconfig(bool assoc_clear)
 {
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+				   NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 
 	reconfig = 1;
@@ -2061,9 +2038,9 @@ extern void priority_p_reconfig(bool assoc_clear)
 
 
 static void _depth_oblivious_set_usage_efctv(
-			slurmdb_association_rec_t *assoc,
-			char *child,
-			char *child_str)
+	slurmdb_association_rec_t *assoc,
+	char *child,
+	char *child_str)
 {
 	long double ratio_p, ratio_l, k, f, ratio_s;
 	slurmdb_association_rec_t *parent_assoc = NULL;
@@ -2103,7 +2080,7 @@ static void _depth_oblivious_set_usage_efctv(
 	    parent_assoc->usage->usage_efctv &&
 	    assoc->usage->usage_norm) {
 		ratio_p = (parent_assoc->usage->usage_efctv /
-		      parent_assoc->usage->shares_norm);
+			   parent_assoc->usage->shares_norm);
 
 		ratio_s = 0;
 		sib_itr = list_iterator_create(
@@ -2116,7 +2093,7 @@ static void _depth_oblivious_set_usage_efctv(
 		ratio_s /= parent_assoc->usage->shares_norm;
 
 		ratio_l = (assoc->usage->usage_norm /
-		      assoc->usage->shares_norm) / ratio_s;
+			   assoc->usage->shares_norm) / ratio_s;
 #if defined(__FreeBSD__)
 		if (!ratio_p || !ratio_l
 		    || log(ratio_p) * log(ratio_l) >= 0) {
@@ -2169,7 +2146,7 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 	/* Variable names taken from HTML documentation */
 	long double ua_child = assoc->usage->usage_norm;
 	long double ue_parent =
-		 assoc->usage->fs_assoc_ptr->usage->usage_efctv;
+		assoc->usage->fs_assoc_ptr->usage->usage_efctv;
 	uint32_t s_child = assoc->shares_raw;
 	uint32_t s_all_siblings = assoc->usage->level_shares;
 
@@ -2188,14 +2165,13 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 static double _level_based_calc_assoc_usage(slurmdb_association_rec_t *assoc)
 {
 	double norm = 0.0l;
-	slurmdb_association_rec_t *parent = find_real_parent(assoc);
+	slurmdb_association_rec_t *parent = assoc->usage->fs_assoc_ptr;
 
 	if (parent && parent->usage->usage_raw)
 		norm = NORMALIZE_VALUE(
 			assoc->usage->usage_raw,
 			0.0L, (long double) parent->usage->usage_raw,
-			0.0L, 1.0L
-		);
+			0.0L, 1.0L);
 
 	return norm;
 }
