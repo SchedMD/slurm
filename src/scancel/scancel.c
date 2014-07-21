@@ -83,7 +83,7 @@ static void _load_job_records (void);
 static int  _multi_cluster(List clusters);
 static int  _proc_cluster(void);
 static int  _verify_job_ids (void);
-static int  _kill_job(void);
+static int  _signal_job_by_str(void);
 
 static job_info_msg_t * job_buffer_ptr = NULL;
 
@@ -121,7 +121,7 @@ main (int argc, char *argv[])
 	if (opt.clusters)
 		rc = _multi_cluster(opt.clusters);
 	else
-		rc = _kill_job();
+		rc = _proc_cluster();
 
 	exit(rc);
 }
@@ -149,6 +149,8 @@ _proc_cluster(void)
 {
 	int filter_cnt = 0;
 	int rc;
+
+	_signal_job_by_str();
 
 	_load_job_records();
 	rc = _verify_job_ids();
@@ -725,10 +727,10 @@ _confirmation (int i, uint32_t step_id)
 
 }
 
-/* _kill_job()
+/* _signal_job_by_str()
  */
 static int
-_kill_job(void)
+_signal_job_by_str(void)
 {
 	int cc;
 
