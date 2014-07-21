@@ -8092,8 +8092,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else {
 			if (node_name2bitmap(job_specs->exc_nodes, false,
 					     &exc_bitmap)) {
-				error("sched: Invalid node list for "
-				      "job_update: %s",job_specs->exc_nodes);
+				error("sched: update_job: Invalid node list "
+				      "for update of job %u: %s",
+				      job_ptr->job_id, job_specs->exc_nodes);
 				FREE_NULL_BITMAP(exc_bitmap);
 				error_code = ESLURM_INVALID_NODE_NAME;
 			}
@@ -8105,7 +8106,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				detail_ptr->exc_node_bitmap = exc_bitmap;
 				info("sched: update_job: setting exc_nodes to "
 				     "%s for job_id %u", job_specs->exc_nodes,
-				     job_specs->job_id);
+				     job_ptr->job_id);
 				job_specs->exc_nodes = NULL;
 			}
 		}
@@ -8123,7 +8124,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		    !bit_super_set(req_bitmap, job_ptr->node_bitmap) ||
 		    job_ptr->details->expanding_jobid) {
 			info("sched: Invalid node list (%s) for job %u update",
-			     job_specs->req_nodes, job_specs->job_id);
+			     job_specs->req_nodes, job_ptr->job_id);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto fini;
 		} else if (req_bitmap) {
@@ -8131,7 +8132,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			struct node_record *node_ptr;
 			info("sched: update_job: setting nodes to %s for "
 			     "job_id %u",
-			     job_specs->req_nodes, job_specs->job_id);
+			     job_specs->req_nodes, job_ptr->job_id);
 			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
@@ -8179,7 +8180,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				detail_ptr->req_node_bitmap = req_bitmap;
 				info("sched: update_job: setting req_nodes to "
 				     "%s for job_id %u", job_specs->req_nodes,
-				     job_specs->job_id);
+				     job_ptr->job_id);
 				job_specs->req_nodes = NULL;
 			}
 		}
@@ -8201,7 +8202,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 #endif
 		info("Change of size for job %u not supported",
-		     job_specs->job_id);
+		     job_ptr->job_id);
 		error_code = ESLURM_NOT_SUPPORTED;
 		goto fini;
 	}
@@ -8209,12 +8210,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->req_switch != NO_VAL) {
 		job_ptr->req_switch = job_specs->req_switch;
 		info("Change of switches to %u job %u",
-		     job_specs->req_switch, job_specs->job_id);
+		     job_specs->req_switch, job_ptr->job_id);
 	}
 	if (job_specs->wait4switch != NO_VAL) {
 		job_ptr->wait4switch = _max_switch_wait(job_specs->wait4switch);
 		info("Change of switch wait to %u secs job %u",
-		     job_ptr->wait4switch, job_specs->job_id);
+		     job_ptr->wait4switch, job_ptr->job_id);
 	}
 
 	if (job_specs->partition
@@ -8311,7 +8312,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			part_ptr_list = NULL;	/* nothing to free */
 			info("update_job: setting partition to %s for "
 			     "job_id %u", job_specs->partition,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			update_accounting = true;
 		}
 		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */
@@ -8327,14 +8328,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->comment && wiki_sched && !validate_slurm_user(uid)) {
 		/* User must use Moab command to change job comment */
 		error("Attempt to change comment for job %u",
-		      job_specs->job_id);
+		      job_ptr->job_id);
 		error_code = ESLURM_ACCESS_DENIED;
 	} else if (job_specs->comment) {
 		xfree(job_ptr->comment);
 		job_ptr->comment = job_specs->comment;
 		job_specs->comment = NULL;	/* Nothing left to free */
 		info("update_job: setting comment to %s for job_id %u",
-		     job_ptr->comment, job_specs->job_id);
+		     job_ptr->comment, job_ptr->job_id);
 
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
 			if (!IS_JOB_PENDING(job_ptr))
@@ -8363,7 +8364,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				if (error_code == SLURM_SUCCESS) {
 					info("update_job: setting qos to %s "
 					     "for job_id %u",
-					     job_specs->qos, job_specs->job_id);
+					     job_specs->qos, job_ptr->job_id);
 					if (job_ptr->qos_id != qos_rec.id) {
 						job_ptr->qos_id = qos_rec.id;
 						job_ptr->qos_ptr = new_qos_ptr;
@@ -8411,7 +8412,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (error_code == SLURM_SUCCESS) {
 				info("update_job: setting qos to %s "
 				     "for job_id %u",
-				     job_specs->qos, job_specs->job_id);
+				     job_specs->qos, job_ptr->job_id);
 				if (job_ptr->qos_id != qos_rec.id) {
 					job_ptr->qos_id = qos_rec.id;
 					job_ptr->qos_ptr = new_qos_ptr;
@@ -8542,14 +8543,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 #endif
 		info("update_job: setting min_cpus from "
 		     "%u to %u for job_id %u",
-		     save_min_cpus, detail_ptr->min_cpus, job_specs->job_id);
+		     save_min_cpus, detail_ptr->min_cpus, job_ptr->job_id);
 		job_ptr->limit_set_min_cpus = acct_policy_limit_set.min_cpus;
 		update_accounting = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
 		info("update_job: setting max_cpus from "
 		     "%u to %u for job_id %u",
-		     save_max_cpus, detail_ptr->max_cpus, job_specs->job_id);
+		     save_max_cpus, detail_ptr->max_cpus, job_ptr->job_id);
 		/* Always use the acct_policy_limit_set.* since if set by a
 		 * super user it be set correctly */
 		job_ptr->limit_set_max_cpus = acct_policy_limit_set.max_cpus;
@@ -8566,10 +8567,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			detail_ptr->pn_min_cpus = job_specs->pn_min_cpus;
 			info("update_job: setting pn_min_cpus to %u for "
 			     "job_id %u", job_specs->pn_min_cpus,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		} else {
 			error("Attempt to increase pn_min_cpus for job %u",
-			      job_specs->job_id);
+			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -8595,7 +8596,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			detail_ptr->num_tasks = job_specs->num_tasks;
 			info("update_job: setting num_tasks to %u for "
 			     "job_id %u", job_specs->num_tasks,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			if (detail_ptr->cpus_per_task) {
 				uint32_t new_cpus = detail_ptr->num_tasks
 					/ detail_ptr->cpus_per_task;
@@ -8607,7 +8608,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					info("update_job: setting "
 					     "min_cpus to %u for "
 					     "job_id %u", detail_ptr->min_cpus,
-					     job_specs->job_id);
+					     job_ptr->job_id);
 					/* Always use the
 					 * acct_policy_limit_set.*
 					 * since if set by a
@@ -8631,7 +8632,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->min_nodes < 1) {
 			info("update_job: min_nodes < 1 for job %u",
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
 		} else {
 			/* Resize of pending job */
@@ -8651,7 +8652,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	    (detail_ptr->max_nodes < detail_ptr->min_nodes)) {
 		info("update_job: max_nodes < min_nodes (%u < %u) for job %u",
 		     detail_ptr->max_nodes, detail_ptr->min_nodes,
-		     job_specs->job_id);
+		     job_ptr->job_id);
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		if (save_min_nodes) {
 			detail_ptr->min_nodes = save_min_nodes;
@@ -8668,14 +8669,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (save_min_nodes && (save_min_nodes!= detail_ptr->min_nodes)) {
 		info("update_job: setting min_nodes from "
 		     "%u to %u for job_id %u",
-		     save_min_nodes, detail_ptr->min_nodes, job_specs->job_id);
+		     save_min_nodes, detail_ptr->min_nodes, job_ptr->job_id);
 		job_ptr->limit_set_min_nodes = acct_policy_limit_set.min_nodes;
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
 		info("update_job: setting max_nodes from "
 		     "%u to %u for job_id %u",
-		     save_max_nodes, detail_ptr->max_nodes, job_specs->job_id);
+		     save_max_nodes, detail_ptr->max_nodes, job_ptr->job_id);
 		/* Always use the acct_policy_limit_set.* since if set by a
 		 * super user it be set correctly */
 		job_ptr->limit_set_max_nodes = acct_policy_limit_set.max_nodes;
@@ -8687,7 +8688,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->time_limit == job_specs->time_limit) {
 			debug("sched: update_job: new time limit identical to "
-			      "old time limit %u", job_specs->job_id);
+			      "old time limit %u", job_ptr->job_id);
 		} else if (authorized ||
 			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
@@ -8719,7 +8720,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 			info("sched: update_job: setting time_limit to %u for "
 			     "job_id %u", job_specs->time_limit,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set_time = acct_policy_limit_set.time;
@@ -8730,14 +8731,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->time_limit = job_specs->time_limit;
 			info("sched: update_job: setting time_limit to %u for "
 			     "job_id %u", job_specs->time_limit,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set_time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
 			info("sched: Attempt to increase time limit for job %u",
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -8753,7 +8754,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else if (job_ptr->time_min != job_specs->time_min) {
 			job_ptr->time_min = job_specs->time_min;
 			info("update_job: setting TimeMin to %u for job_id %u",
-			     job_specs->time_min, job_specs->job_id);
+			     job_specs->time_min, job_ptr->job_id);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -8774,14 +8775,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->time_limit += (delta_t+30)/60; /* Sec->min */
 			info("sched: update_job: setting time_limit to %u for "
 			     "job_id %u", job_ptr->time_limit,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set_time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
 			info("sched: Attempt to extend end time for job %u",
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -8847,7 +8848,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if ((job_specs->requeue != (uint16_t) NO_VAL) && detail_ptr) {
 		detail_ptr->requeue = MIN(job_specs->requeue, 1);
 		info("sched: update_job: setting requeue to %u for job_id %u",
-		     job_specs->requeue, job_specs->job_id);
+		     job_specs->requeue, job_ptr->job_id);
 	}
 
 	if (job_specs->priority != NO_VAL) {
@@ -8875,14 +8876,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->direct_set_prio = 0;
 			set_job_prio(job_ptr);
 			info("sched: update_job: releasing hold for job_id %u",
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			job_ptr->state_reason = WAIT_NO_REASON;
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority != INFINITE)) {
 			info("ignore priority reset request on held job %u",
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
 			if (job_specs->priority != 0)
@@ -8896,7 +8897,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 			info("sched: update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
 				if ((job_ptr->user_id == uid) ||
@@ -8916,7 +8917,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			      __func__, job_ptr->job_id);
 		} else {
 			error("sched: Attempt to modify priority for job %u",
-			      job_specs->job_id);
+			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -8938,11 +8939,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->details->nice = job_specs->nice;
 			info("sched: update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			update_accounting = true;
 		} else {
 			error("sched: Attempt to modify nice for "
-			      "job %u", job_specs->job_id);
+			      "job %u", job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -8955,7 +8956,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (job_specs->pn_min_memory
 			 == detail_ptr->pn_min_memory)
 			debug("sched: update_job: new memory limit identical "
-			      "to old limit for job %u", job_specs->job_id);
+			      "to old limit for job %u", job_ptr->job_id);
 		else if (authorized) {
 			char *entity;
 			if (job_specs->pn_min_memory & MEM_PER_CPU)
@@ -8967,14 +8968,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: setting min_memory_%s to %u "
 			     "for job_id %u", entity,
 			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set_pn_min_memory =
 				acct_policy_limit_set.pn_min_memory;
 		} else {
 			error("sched: Attempt to modify pn_min_memory for "
-			      "job %u", job_specs->job_id);
+			      "job %u", job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -8991,12 +8992,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_specs->pn_min_tmp_disk;
 			info("sched: update_job: setting job_min_tmp_disk to "
 			     "%u for job_id %u", job_specs->pn_min_tmp_disk,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		} else {
 
 			error("sched: Attempt to modify pn_min_tmp_disk "
 			      "for job %u",
-			      job_specs->job_id);
+			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -9011,7 +9012,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			mc_ptr->sockets_per_node = job_specs->sockets_per_node;
 			info("sched: update_job: setting sockets_per_node to "
 			     "%u for job_id %u", job_specs->sockets_per_node,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		}
 	}
 
@@ -9023,7 +9024,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			mc_ptr->cores_per_socket = job_specs->cores_per_socket;
 			info("sched: update_job: setting cores_per_socket to "
 			     "%u for job_id %u", job_specs->cores_per_socket,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		}
 	}
 
@@ -9035,7 +9036,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			mc_ptr->threads_per_core = job_specs->threads_per_core;
 			info("sched: update_job: setting threads_per_core to "
 			     "%u for job_id %u", job_specs->threads_per_core,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		}
 	}
 
@@ -9044,7 +9045,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (!authorized) {
 			error("sched: Attempt to change sharing for job %u",
-			      job_specs->job_id);
+			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		} else {
 			if (job_specs->shared) {
@@ -9055,7 +9056,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 			info("sched: update_job: setting shared to %u for "
 			     "job_id %u",
-			     job_specs->shared, job_specs->job_id);
+			     job_specs->shared, job_ptr->job_id);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -9069,10 +9070,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			detail_ptr->contiguous = job_specs->contiguous;
 			info("sched: update_job: setting contiguous to %u "
 			     "for job_id %u", job_specs->contiguous,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		} else {
 			error("sched: Attempt to add contiguous for job %u",
-			      job_specs->job_id);
+			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -9089,10 +9090,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				detail_ptr->core_spec = job_specs->core_spec;
 			info("sched: update_job: setting core_spec to %u "
 			     "for job_id %u", detail_ptr->core_spec,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		} else {
 			error("sched: Attempt to modify core_spec for job %u",
-			      job_specs->job_id);
+			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -9110,7 +9111,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (build_feature_list(job_ptr)) {
 				info("sched: update_job: invalid features"
 			 	     "(%s) for job_id %u",
-				     job_specs->features, job_specs->job_id);
+				     job_specs->features, job_ptr->job_id);
 				if (detail_ptr->feature_list)
 					list_destroy(detail_ptr->feature_list);
 				detail_ptr->features = old_features;
@@ -9119,7 +9120,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			} else {
 				info("sched: update_job: setting features to "
 			 	     "%s for job_id %u",
-				     job_specs->features, job_specs->job_id);
+				     job_specs->features, job_ptr->job_id);
 				xfree(old_features);
 				if (old_list)
 					list_destroy(old_list);
@@ -9127,7 +9128,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		} else {
 			info("sched: update_job: cleared features for job %u",
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			xfree(detail_ptr->features);
 			if (detail_ptr->feature_list) {
 				list_destroy(detail_ptr->feature_list);
@@ -9145,19 +9146,19 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (job_specs->gres[0] == '\0') {
 			info("sched: update_job: cleared gres for job %u",
-			     job_specs->job_id);
+			     job_ptr->job_id);
 			xfree(job_ptr->gres);
 			FREE_NULL_LIST(job_ptr->gres_list);
 		} else if (gres_plugin_job_state_validate(job_specs->gres,
 							  &tmp_gres_list)) {
 			info("sched: update_job: invalid gres %s for job %u",
-			     job_specs->gres, job_specs->job_id);
+			     job_specs->gres, job_ptr->job_id);
 			error_code = ESLURM_INVALID_GRES;
 			FREE_NULL_LIST(tmp_gres_list);
 		} else {
 			info("sched: update_job: setting gres to "
 			     "%s for job_id %u",
-			     job_specs->gres, job_specs->job_id);
+			     job_specs->gres, job_ptr->job_id);
 			xfree(job_ptr->gres);
 			job_ptr->gres = job_specs->gres;
 			job_specs->gres = NULL;
@@ -9185,7 +9186,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_specs->name = NULL;
 
 			info("sched: update_job: setting name to %s for "
-			     "job_id %u", job_ptr->name, job_specs->job_id);
+			     "job_id %u", job_ptr->name, job_ptr->job_id);
 			update_accounting = true;
 		}
 	}
@@ -9239,7 +9240,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (expand_job_ptr == NULL) {
 				info("Invalid node count (%u) for job %u "
 				     "update, job %u to expand not found",
-				     job_specs->min_nodes, job_specs->job_id,
+				     job_specs->min_nodes, job_ptr->job_id,
 				     job_ptr->details->expanding_jobid);
 				error_code = ESLURM_INVALID_JOB_ID;
 				goto fini;
@@ -9256,13 +9257,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			    (list_count(job_ptr->step_list) != 0)) {
 				info("Attempt to merge job %u with active "
 				     "steps into job %u",
-				     job_specs->job_id,
+				     job_ptr->job_id,
 				     job_ptr->details->expanding_jobid);
 				error_code = ESLURMD_STEP_EXISTS;
 				goto fini;
 			}
 			info("sched: killing job %u and moving all resources "
-			     "to job %u", job_specs->job_id,
+			     "to job %u", job_ptr->job_id,
 			     expand_job_ptr->job_id);
 			job_pre_resize_acctg(job_ptr);
 			job_pre_resize_acctg(expand_job_ptr);
@@ -9292,18 +9293,18 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			   (job_specs->min_nodes > job_ptr->node_cnt) ||
 			   job_ptr->details->expanding_jobid) {
 			info("sched: Invalid node count (%u) for job %u update",
-			     job_specs->min_nodes, job_specs->job_id);
+			     job_specs->min_nodes, job_ptr->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
 			goto fini;
 		} else if (job_specs->min_nodes == job_ptr->node_cnt) {
 			debug2("No change in node count update for job %u",
-			       job_specs->job_id);
+			       job_ptr->job_id);
 		} else {
 			int i, i_first, i_last, total;
 			struct node_record *node_ptr;
 			info("sched: update_job: set node count to %u for "
 			     "job_id %u",
-			     job_specs->min_nodes, job_specs->job_id);
+			     job_specs->min_nodes, job_ptr->job_id);
 			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
@@ -9319,7 +9320,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_post_resize_acctg(job_ptr);
 			info("sched: update_job: set nodes to %s for "
 			     "job_id %u",
-			     job_ptr->nodes, job_specs->job_id);
+			     job_ptr->nodes, job_ptr->job_id);
 			/* Since job_post_resize_acctg will restart
 			 * things don't do it again. */
 			update_accounting = false;
@@ -9334,10 +9335,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_specs->ntasks_per_node;
 			info("sched: update_job: setting ntasks_per_node to %u"
 			     " for job_id %u", job_specs->ntasks_per_node,
-			     job_specs->job_id);
+			     job_ptr->job_id);
 		} else {
 			error("sched: Not super user: ignore ntasks_oper_node "
-			      "change for job %u", job_specs->job_id);
+			      "change for job %u", job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -9574,7 +9575,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			detail_ptr->min_nodes = tot;
 		} else {
 			error("sched: Attempt to change geometry for job %u",
-			      job_specs->job_id);
+			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
