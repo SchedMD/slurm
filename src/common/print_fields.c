@@ -281,7 +281,7 @@ extern void print_fields_hex064(print_field_t *field, uint64_t value, int last)
 		else if (field->len == abs_len)
 			printf("%0*llX ", abs_len, (long long unsigned) value);
 		else
-			printf("%-0*llX ", abs_len, (long long unsigned) value);
+			printf("%-*llX ", abs_len, (long long unsigned) value);
 	}
 }
 
