@@ -139,9 +139,11 @@ void *_forward_thread(void *arg)
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = buf;
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
-		/* info("sending %d forwards (%s) to %s", */
-/* 		     fwd_msg->header.forward.cnt, */
-/* 		     fwd_msg->header.forward.nodelist, name); */
+#if 0
+		info("sending %d forwards (%s) to %s",
+		     fwd_msg->header.forward.cnt,
+		     fwd_msg->header.forward.nodelist, name);
+#endif
 		if (fwd_msg->header.forward.nodelist[0]) {
 			debug3("forward: send to %s along with %s",
 			       name, fwd_msg->header.forward.nodelist);
