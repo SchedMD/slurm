@@ -1,0 +1,171 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate salloc --exclusive with -n will give all cpus on node
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        15.27
+set jobid          0
+set nodes          ""
+set cputot         0
+set scontrol_cpu   0
+set sacct_cpu      0
+set exit_code      0
+
+print_header $test_id
+
+proc check_alloc { } {
+
+	global scontrol salloc sacct nodes cputot scontrol_cpu sacct_cpu nodes
+	global jobid number alpha_numeric_nodelist
+
+	spawn $scontrol show job $jobid
+	expect {
+		-re "NumCPUs=($number)" {
+			set scontrol_cpu $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$scontrol_cpu == 0} {
+		send_user "\nFAILURE: number of cpus is invalid\n"
+		exit 1
+	}
+
+	# Wait a bit for sacct to populate
+	sleep 5
+
+	spawn $sacct --job=$jobid --allocation -oalloccpus --noheader
+	expect {
+		-re "($number)" {
+			set sacct_cpu $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$sacct_cpu == 0} {
+		send_user "\nFAILURE: number of cpus is invalid\n"
+		exit 1
+	}
+
+	spawn $scontrol show node $nodes
+	expect {
+		-re "CPUTot=($number)" {
+			set cputot $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$cputot != $scontrol_cpu} {
+		send_user "\nFAILURE: scontrol reported $scontrol_cpu cpus "
+		send_user "where used by job $job_id when it should have used "
+		send_user "$cputot cpus\n"
+		set exit_code 1
+	}
+
+	if {$cputot != $sacct_cpu} {
+		send_user "\nFAILURE: sacct reported $sacct_cpu cpus where "
+		send_user "used by job $job_id when it should have used $cputot"
+		send_user "cpus\n"
+		set exit_code 1
+	}
+}
+
+spawn $salloc -t1 -n1 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
+expect {
+	-re "Granted job allocation ($number)" {
+		set jobid $expect_out(1,string)
+		exp_continue
+	}
+	-re "($number): ($alpha_numeric_nodelist)" {
+		set nodes $expect_out(2,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+check_alloc
+
+spawn $salloc -t1 -n1 --mem-per-cpu=1000 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
+expect {
+	-re "Granted job allocation ($number)" {
+		set jobid $expect_out(1,string)
+		exp_continue
+	}
+	-re "($number): ($alpha_numeric_nodelist)" {
+		set nodes $expect_out(2,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+check_alloc
+
+if {$exit_code == 0} {
+	send_user "\nSUCCCESS\n"
+}
+exit $exit_code
+
+
+
+
+

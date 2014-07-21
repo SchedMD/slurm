@@ -482,6 +482,7 @@ test15.23  Test of environment variables that control salloc actions:
 test15.24  Test of --overcommit option.
 test15.25  Test of job account(--account option).
 test15.26  Test interruption of salloc while waiting for resource allocation.
+test15.27  Test salloc --exclusive allocates all cpus on node.
 
 test16.#   Testing of sattach options.
 ======================================
