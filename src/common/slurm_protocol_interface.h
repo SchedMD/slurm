@@ -112,26 +112,6 @@ slurm_fd_t _slurm_create_socket (slurm_socket_type_t type)  ;
 /* msg functions */
 /*****************/
 
-/* _slurm_init_msg_engine
- * In the socket implementation it creates a socket, binds to it, and
- *	listens for connections.
- * IN slurm_address - address to bind to
- * RET file descriptor
- */
-slurm_fd_t _slurm_init_msg_engine ( slurm_addr_t * slurm_address ) ;
-
-/* _slurm_open_msg_conn
- * In the bsd socket implementation it creates a SOCK_STREAM socket
- *	and calls connect on it a SOCK_DGRAM socket called with connect
- *	is defined to only receive messages from the address/port pair
- *	argument of the connect call slurm_address - for now it is
- *	really just a sockaddr_in
- * IN slurm_address - address to bind to
- * RET file descriptor
- */
-
-slurm_fd_t _slurm_open_msg_conn ( slurm_addr_t * slurm_address ) ;
-
 /* _slurm_msg_recvfrom
  * Get message over the given connection, default timeout value
  * IN  fd     - an open file descriptor
@@ -166,16 +146,6 @@ ssize_t _slurm_msg_sendto ( slurm_fd_t open_fd, char *buffer ,
 ssize_t _slurm_msg_sendto_timeout ( slurm_fd_t open_fd, char *buffer,
 				    size_t size, uint32_t flags, int timeout );
 
-/* _slurm_accept_msg_conn
- * In the bsd implmentation maps directly to a accept call
- * IN open_fd		- file descriptor to accept connection on
- * OUT slurm_address 	- slurm_addr_t of the accepted connection
- * RET slurm_fd		- file descriptor of the connection created
- */
-slurm_fd_t _slurm_accept_msg_conn ( slurm_fd_t open_fd ,
-				  slurm_addr_t * slurm_address ) ;
-
-
 /* _slurm_close_accepted_conn
  * In the bsd implmentation maps directly to a close call, to close
  *	the socket that was accepted
@@ -188,30 +158,30 @@ int _slurm_close_accepted_conn ( slurm_fd_t open_fd ) ;
 /* stream functions */
 /********************/
 
-/* _slurm_listen_stream
+/* slurm_init_msg_engine
  * opens a stream server and listens on it
  * IN slurm_address 	- slurm_addr_t to bind the server stream to
  * RET slurm_fd		- file descriptor of the stream created
  */
-slurm_fd_t _slurm_listen_stream ( slurm_addr_t * slurm_address ) ;
+slurm_fd_t slurm_init_msg_engine ( slurm_addr_t * slurm_address ) ;
 
-/* _slurm_accept_stream
+/* slurm_accept_msg_conn
  * accepts a incoming stream connection on a stream server slurm_fd
  * IN open_fd		- file descriptor to accept connection on
  * OUT slurm_address 	- slurm_addr_t of the accepted connection
  * RET slurm_fd		- file descriptor of the accepted connection
  */
-slurm_fd_t _slurm_accept_stream ( slurm_fd_t open_fd ,
+slurm_fd_t slurm_accept_msg_conn ( slurm_fd_t open_fd ,
 				slurm_addr_t * slurm_address ) ;
 
-/* _slurm_open_stream
+/* slurm_open_stream
  * opens a client connection to stream server
  * IN slurm_address 	- slurm_addr_t of the connection destination
  * IN retry             - if true, retry as needed with various ports
  *                        to avoid socket address collision
  * RET slurm_fd_t         - file descriptor of the connection created
  */
-slurm_fd_t _slurm_open_stream ( slurm_addr_t * slurm_address, bool retry ) ;
+slurm_fd_t slurm_open_stream ( slurm_addr_t * slurm_address, bool retry ) ;
 
 /* _slurm_get_stream_addr
  * esentially a encapsilated get_sockname

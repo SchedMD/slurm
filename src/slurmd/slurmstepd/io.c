@@ -1565,7 +1565,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 		debug4("connecting IO back to %s:%d", ip, ntohs(port));
 	}
 
-	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
+	if ((sock = (int) slurm_open_stream(&srun->ioaddr, true)) < 0) {
 		error("connect io: %m");
 		/* XXX retry or silently fail?
 		 *     fail for now.
@@ -1625,7 +1625,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 		debug4("connecting IO back to %s:%d", ip, ntohs(port));
 	}
 
-	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
+	if ((sock = (int) slurm_open_stream(&srun->ioaddr, true)) < 0) {
 		error("connect io: %m");
 		/* XXX retry or silently fail?
 		 *     fail for now.

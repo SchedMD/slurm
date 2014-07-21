@@ -305,14 +305,14 @@ static void _agent_proc_connect(slurm_fd_t fe_comm_socket,uint32_t fe_auth_key)
 	int i, offset = 0;
 
 	while (1) {
-		fe_comm_conn = slurm_accept_stream(fe_comm_socket, &be_addr);
+		fe_comm_conn = slurm_accept_msg_conn(fe_comm_socket, &be_addr);
 		if (fe_comm_conn != SLURM_SOCKET_ERROR) {
 			if (_validate_connect(fe_comm_conn, fe_auth_key))
 				be_connected = true;
 			break;
 		}
 		if (errno != EINTR) {
-			error("slurm_accept_stream: %m");
+			error("slurm_accept_msg_conn: %m");
 			break;
 		}
 	}
@@ -525,9 +525,9 @@ srun_job_t * _read_job_srun_agent(void)
 	resp_port = atoi(sep + 1);
 	slurm_set_addr(&resp_addr, resp_port, host);
 	xfree(host);
-	resp_socket = slurm_open_stream(&resp_addr);
+	resp_socket = slurm_open_stream(&resp_addr, true);
 	if (resp_socket < 0) {
-		error("slurm_open_msg_conn(%s): %m", sock_str);
+		error("slurm_open_stream(%s): %m", sock_str);
 		return NULL;
 	}
 

@@ -2322,7 +2322,7 @@ slurm_fd_t slurm_init_msg_engine_port(uint16_t port)
 	cnt = 0;
 eagain:
 	slurm_set_addr_any(&addr, port);
-	cc = _slurm_init_msg_engine(&addr);
+	cc = slurm_init_msg_engine(&addr);
 	if (cc < 0 && port == 0) {
 		++cnt;
 		if (cnt <= 5) {
@@ -2389,18 +2389,7 @@ slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 	slurm_set_addr_any(&addr, port);
 #endif
 
-	return _slurm_init_msg_engine(&addr);
-}
-
-/*
- *  Same as above, but initialize using a slurm address "addr"
- *
- * IN  addr     - slurm_addr_t to bind the msg server to
- * RET slurm_fd_t - file descriptor of the connection created
- */
-slurm_fd_t slurm_init_msg_engine(slurm_addr_t *addr)
-{
-	return _slurm_init_msg_engine(addr);
+	return slurm_init_msg_engine(&addr);
 }
 
 /*
@@ -2444,7 +2433,7 @@ int slurm_shutdown_msg_conn(slurm_fd_t fd)
  */
 slurm_fd_t slurm_open_msg_conn(slurm_addr_t * slurm_address)
 {
-	slurm_fd_t fd = _slurm_open_msg_conn(slurm_address);
+	slurm_fd_t fd = slurm_open_stream(slurm_address, false);
 	if (fd >= 0)
 		fd_set_close_on_exec(fd);
 	return fd;
@@ -2574,17 +2563,6 @@ void slurm_get_controller_addr_spec(enum controller_id dest, slurm_addr_t *addr)
 	addr = (dest == PRIMARY_CONTROLLER) ?
 		&proto_conf->primary_controller :
 		&proto_conf->secondary_controller;
-}
-
-/* In the bsd implmentation maps directly to a accept call
- * IN open_fd		- file descriptor to accept connection on
- * OUT slurm_address	- slurm_addr_t of the accepted connection
- * RET slurm_fd		- file descriptor of the connection created
- */
-slurm_fd_t slurm_accept_msg_conn(slurm_fd_t open_fd,
-			       slurm_addr_t * slurm_address)
-{
-	return _slurm_accept_msg_conn(open_fd, slurm_address);
 }
 
 /* In the bsd implmentation maps directly to a close call, to close
@@ -3310,38 +3288,6 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 /**********************************************************************\
  * stream functions
 \**********************************************************************/
-
-/* slurm_listen_stream
- * opens a stream server and listens on it
- * IN slurm_address	- slurm_addr_t to bind the server stream to
- * RET slurm_fd		- file descriptor of the stream created
- */
-slurm_fd_t slurm_listen_stream(slurm_addr_t * slurm_address)
-{
-	return _slurm_listen_stream(slurm_address);
-}
-
-/* slurm_accept_stream
- * accepts a incoming stream connection on a stream server slurm_fd
- * IN open_fd		- file descriptor to accept connection on
- * OUT slurm_address	- slurm_addr_t of the accepted connection
- * RET slurm_fd		- file descriptor of the accepted connection
- */
-slurm_fd_t slurm_accept_stream(slurm_fd_t open_fd, slurm_addr_t * slurm_address)
-{
-	return _slurm_accept_stream(open_fd, slurm_address);
-}
-
-/* slurm_open_stream
- * opens a client connection to stream server
- * IN slurm_address     - slurm_addr_t of the connection destination
- * RET slurm_fd	 - file descriptor of the connection created
- * NOTE: Retry with various ports as needed if connection is refused
- */
-slurm_fd_t slurm_open_stream(slurm_addr_t * slurm_address)
-{
-	return _slurm_open_stream(slurm_address, true);
-}
 
 /* slurm_write_stream
  * writes a buffer out a stream file descriptor

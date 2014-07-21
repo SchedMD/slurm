@@ -105,7 +105,7 @@ _handle_kvs_fence(int fd, Buf buf)
 	       seq);
 	if (seq != kvs_seq) {
 		error("mpi/pmi2: invalid kvs seq from node %u(%s) ignored, "
-		      "expect %u got %u", 
+		      "expect %u got %u",
 		      from_nodeid, from_node, kvs_seq, seq);
 		goto out;
 	}
@@ -115,7 +115,7 @@ _handle_kvs_fence(int fd, Buf buf)
 		goto out;
 	}
 	tree_info.children_kvs_seq[from_nodeid] = seq;
-	
+
 	if (tasks_to_wait == 0 && children_to_wait == 0) {
 		tasks_to_wait = job_info.ltasks;
 		children_to_wait = tree_info.num_children;
@@ -419,7 +419,7 @@ out:
 
 	debug3("mpi/pmi2: out _handle_name_publish");
 	return rc;
-	
+
 unpack_error:
 	rc = SLURM_ERROR;
 	goto out;
@@ -449,10 +449,10 @@ out:
 			       get_buf_offset(resp_buf),
 			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 	free_buf(resp_buf);
-	
+
 	debug3("mpi/pmi2: out _handle_name_unpublish");
 	return rc;
-	
+
 unpack_error:
 	rc = SLURM_ERROR;
 	goto out;
@@ -465,7 +465,7 @@ _handle_name_lookup(int fd, Buf buf)
 	uint32_t tmp32;
 	char *name = NULL, *port = NULL;
 	Buf resp_buf = NULL;
-	
+
 	debug3("mpi/pmi2: in _handle_name_lookup");
 
 	safe_unpackstr_xmalloc(&name, &tmp32, buf);
@@ -486,7 +486,7 @@ out:
 
 	debug3("mpi/pmi2: out _handle_name_lookup");
 	return rc;
-	
+
 unpack_error:
 	rc = SLURM_ERROR;
 	goto out;
@@ -535,7 +535,7 @@ tree_msg_to_srun(uint32_t len, char *msg)
 {
 	int fd, rc;
 
-	fd = _slurm_open_stream(tree_info.srun_addr, true);
+	fd = slurm_open_stream(tree_info.srun_addr, true);
 	if (fd < 0)
 		return SLURM_ERROR;
 	rc = _slurm_msg_sendto(fd, msg, len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
@@ -556,7 +556,7 @@ tree_msg_to_srun_with_resp(uint32_t len, char *msg, Buf *resp_ptr)
 
 	xassert(resp_ptr != NULL);
 
-	fd = _slurm_open_stream(tree_info.srun_addr, true);
+	fd = slurm_open_stream(tree_info.srun_addr, true);
 	if (fd < 0)
 		return SLURM_ERROR;
 	rc = _slurm_msg_sendto(fd, msg, len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
@@ -596,18 +596,18 @@ tree_msg_to_spawned_sruns(uint32_t len, char *msg)
 {
 	int i = 0, rc = SLURM_SUCCESS, fd = -1, sent=0;
 	slurm_addr_t srun_addr;
-	
+
 	for (i = 0; i < spawned_srun_ports_size; i ++) {
 		if (spawned_srun_ports[i] == 0)
 			continue;
 
 		slurm_set_addr(&srun_addr, spawned_srun_ports[i], "127.0.0.1");
-		fd = _slurm_open_stream(&srun_addr, true);
+		fd = slurm_open_stream(&srun_addr, true);
 		if (fd < 0)
 			return SLURM_ERROR;
 		sent = _slurm_msg_sendto(fd, msg, len,
 					 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
-		if (sent != len) 
+		if (sent != len)
 			rc = SLURM_ERROR;
 		close(fd);
 	}

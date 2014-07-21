@@ -64,6 +64,7 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_util.h"
+#include "src/common/slurm_protocol_interface.h"
 
 #define MIN_NOALLOC_JOBID ((uint32_t) 0xffff0000)
 #define MAX_NOALLOC_JOBID ((uint32_t) 0xfffffffd)
@@ -922,29 +923,6 @@ extern int slurm_shutdown_msg_conn(slurm_fd_t open_fd);
 /**********************************************************************\
  * stream functions
 \**********************************************************************/
-
-/* slurm_listen_stream
- * opens a stream server and listens on it
- * IN slurm_address 	- slurm_addr_t to bind the server stream to
- * RET slurm_fd		- file descriptor of the stream created
- */
-extern slurm_fd_t slurm_listen_stream(slurm_addr_t * slurm_address);
-
-/* slurm_accept_stream
- * accepts a incoming stream connection on a stream server slurm_fd
- * IN open_fd		- file descriptor to accept connection on
- * OUT slurm_address 	- slurm_addr_t of the accepted connection
- * RET slurm_fd		- file descriptor of the accepted connection
- */
-extern slurm_fd_t slurm_accept_stream(slurm_fd_t open_fd,
-				    slurm_addr_t * slurm_address);
-
-/* slurm_open_stream
- * opens a client connection to stream server
- * IN slurm_address 	- slurm_addr_t of the connection destination
- * RET slurm_fd_t         - file descriptor of the connection created
- */
-extern slurm_fd_t slurm_open_stream(slurm_addr_t * slurm_address);
 
 /* slurm_close_stream
  * closes either a server or client stream file_descriptor
