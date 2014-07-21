@@ -7980,22 +7980,14 @@ static void _merge_job_licenses(struct job_record *shrink_job_ptr,
 	return;
 }
 
-/*
- * update_job - update a job's parameters per the supplied specifications
- * IN job_specs - a job's specification
- * IN uid - uid of user issuing RPC
- * RET returns an error code from slurm_errno.h
- * global: job_list - global list of job entries
- *	last_job_update - time of last job table update
- */
-int update_job(job_desc_msg_t * job_specs, uid_t uid)
+static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
+		       uid_t uid)
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
 	bool authorized = false, admin = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
-	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
 	bitstr_t *exc_bitmap = NULL, *req_bitmap = NULL;
@@ -8020,18 +8012,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					&cpus_per_node);
 #endif
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
-
-	/* Make sure anything that may be put in the database will be
-	 * lower case */
-	xstrtolower(job_specs->account);
-	xstrtolower(job_specs->wckey);
-
-	job_ptr = find_job_record(job_specs->job_id);
-	if (job_ptr == NULL) {
-		error("update_job: job_id %u does not exist.",
-		      job_specs->job_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
 
 	error_code = job_submit_plugin_modify(job_specs, job_ptr,
 					      (uint32_t) uid);
@@ -9705,6 +9685,193 @@ fini:
 		set_job_prio(job_ptr);
 
 	return error_code;
+}
+
+/*
+ * update_job - update a job's parameters per the supplied specifications
+ * IN job_specs - a job's specification
+ * IN uid - uid of user issuing RPC
+ * RET returns an error code from slurm_errno.h
+ * global: job_list - global list of job entries
+ *	last_job_update - time of last job table update
+ */
+extern int update_job(job_desc_msg_t * job_specs, uid_t uid)
+{
+	struct job_record *job_ptr;
+
+	/* Make sure anything that may be put in the database will be
+	 * lower case */
+	xstrtolower(job_specs->account);
+	xstrtolower(job_specs->wckey);
+
+	job_ptr = find_job_record(job_specs->job_id);
+	if (job_ptr == NULL) {
+		error("update_job: job_id %u does not exist.",
+		      job_specs->job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+	return _update_job(job_ptr, job_specs, uid);
+}
+
+/*
+ * update_job_str - update a job's parameters per the supplied specifications
+ * IN job_specs - a job's specification
+ * IN uid - uid of user issuing RPC
+ * RET returns an error code from slurm_errno.h
+ * global: job_list - global list of job entries
+ *	last_job_update - time of last job table update
+ */
+extern int update_job_str(job_desc_msg_t * job_specs, uid_t uid)
+{
+	struct job_record *job_ptr, *new_job_ptr;
+	slurm_ctl_conf_t *conf;
+	long int long_id;
+	uint32_t job_id;
+	bitstr_t *array_bitmap, *tmp_bitmap;
+	bool valid = true;
+	int32_t i, i_first, i_last;
+	int len, rc, rc2;
+	char *end_ptr, *tok, *tmp;
+
+	if (max_array_size == NO_VAL) {
+		conf = slurm_conf_lock();
+		max_array_size = conf->max_array_sz;
+		slurm_conf_unlock();
+	}
+
+	/* Make sure anything that may be put in the database will be
+	 * lower case */
+	xstrtolower(job_specs->account);
+	xstrtolower(job_specs->wckey);
+
+	long_id = strtol(job_id_str, &end_ptr, 10);
+	if ((long_id <= 0) || (long_id == LONG_MAX) ||
+	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
+		info("update_job_str: invalid job id %s", job_id_str);
+		return ESLURM_INVALID_JOB_ID;
+	}
+	job_id = (uint32_t) long_id;
+	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
+		struct job_record *job_ptr_done = NULL;
+		job_ptr = find_job_record(job_id);
+		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		    (job_ptr->array_recs == NULL)) {
+			/* This is a regular job, not a job array */
+			return _update_job(job_ptr, job_specs, uid);
+		}
+
+		if (job_ptr && job_ptr->array_recs) {
+			/* This is a job array */
+			rc = _update_job(job_ptr, job_specs, uid);
+			job_ptr_done = job_ptr;
+		}
+
+		/* Update all tasks of this job array */
+		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		if (!job_ptr && !job_ptr_done) {
+			info("update_job_str: invalid job id %u", job_id);
+			return ESLURM_INVALID_JOB_ID;
+		}
+		while (job_ptr) {
+			if ((job_ptr->array_job_id == job_id) &&
+			    (job_ptr != job_ptr_done)) {
+				rc2 = _update_job(job_ptr, job_specs, uid);
+				rc = MAX(rc, rc2);
+			}
+			job_ptr = job_ptr->job_array_next_j;
+		}
+		return rc;
+
+	}
+
+	array_bitmap = bit_alloc(max_array_size);
+	tmp = xstrdup(end_ptr + 1);
+	tok = strtok_r(tmp, ",", &end_ptr);
+	while (tok && valid) {
+		valid = _parse_array_tok(tok, array_bitmap,
+					 max_array_size);
+		tok = strtok_r(NULL, ",", &end_ptr);
+	}
+	xfree(tmp);
+	if (valid) {
+		i_last = bit_fls(array_bitmap);
+		if (i_last < 0)
+			valid = false;
+	}
+	if (!valid) {
+		info("update_job_str: invalid job id %s", job_id_str);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr && IS_JOB_PENDING(job_ptr) &&
+	    job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap) {
+		/* Ensure bitmap sizes match for AND operations */
+		len = bit_size(job_ptr->array_recs->task_id_bitmap);
+		i_last++;
+		if (i_last < len) {
+			bit_realloc(array_bitmap, len);
+		} else {
+			len = bit_size(array_bitmap);
+			bit_realloc(array_bitmap, i_last);
+			bit_realloc(job_ptr->array_recs->task_id_bitmap,i_last);
+		}
+		if (!bit_overlap(job_ptr->array_recs->task_id_bitmap,
+				 array_bitmap)) {
+			/* Nothing to do with this job record */
+		} else if (bit_super_set(job_ptr->array_recs->task_id_bitmap,
+					 array_bitmap)) {
+			/* Update the record with all pending tasks */
+			rc = _update_job(job_ptr, job_specs, uid);
+			bit_not(job_ptr->array_recs->task_id_bitmap);
+			bit_and(array_bitmap,
+				job_ptr->array_recs->task_id_bitmap);
+			bit_not(job_ptr->array_recs->task_id_bitmap);
+		} else {
+			/* Need to split out tasks to separate job records */
+			tmp_bitmap = bit_copy(job_ptr->array_recs->
+					      task_id_bitmap);
+			bit_and(tmp_bitmap, array_bitmap);
+			i_first = bit_ffs(tmp_bitmap);
+			if (i_first >= 0)
+				i_last = bit_fls(tmp_bitmap);
+			else
+				i_last = -2;
+			for (i = i_first; i <= i_last; i++) {
+				if (!bit_test(array_bitmap, i))
+					continue;
+				job_ptr->array_task_id = i;
+				new_job_ptr = _job_rec_copy(job_ptr);
+				if (!new_job_ptr) {
+					error("update_job_str: Unable to copy "
+					      "record for job %u",
+					      job_ptr->job_id);
+				}
+			}
+			FREE_NULL_BITMAP(tmp_bitmap);
+		}
+	}
+
+	i_first = bit_ffs(array_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(array_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(array_bitmap, i))
+			continue;
+		job_ptr = find_job_array_rec(job_id, i);
+		if (job_ptr == NULL) {
+			info("update_job_str: invalid job id %u_%d", job_id, i);
+			rc = ESLURM_INVALID_JOB_ID;
+			continue;
+		}
+
+		rc2 = _update_job(job_ptr, job_specs, uid);
+		rc = MAX(rc, rc2);
+	}
+
+	return rc;
 }
 
 static void _send_job_kill(struct job_record *job_ptr)

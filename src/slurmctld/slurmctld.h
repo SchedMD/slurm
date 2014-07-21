@@ -1950,6 +1950,7 @@ extern int sync_job_files(void);
 /* After recovering job state, if using priority/basic then we increment the
  * priorities of all jobs to avoid decrementing the base down to zero */
 extern void sync_job_priorities(void);
+
 /*
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
@@ -1958,7 +1959,17 @@ extern void sync_job_priorities(void);
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job (job_desc_msg_t * job_specs, uid_t uid);
+extern int update_job(job_desc_msg_t * job_specs, uid_t uid);
+
+/*
+ * update_job_str - update a job's parameters per the supplied specifications
+ * IN job_specs - a job's specification
+ * IN uid - uid of user issuing RPC
+ * RET returns an error code from slurm_errno.h
+ * global: job_list - global list of job entries
+ *	last_job_update - time of last job table update
+ */
+extern int update_job_str(job_desc_msg_t * job_specs, uid_t uid);
 
 /*
  * Modify the account associated with a pending job
