@@ -563,7 +563,7 @@ bool slurm_get_priority_favor_small(void)
  */
 uint16_t slurm_get_priority_levels(void)
 {
-	uint16_t levels = NO_VAL;
+	uint16_t levels = (uint16_t)NO_VAL;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
