@@ -1492,7 +1492,7 @@ static void _level_based_calc_children_fs(List children_list,
 		return;
 
 	itr = list_iterator_create(children_list);
-	while (assoc = list_next(itr)) {
+	while ((assoc = list_next(itr)))
 		_level_based_calc_assoc_fs(
 			users,
 			assoc,
@@ -2016,7 +2016,7 @@ static void _set_norm_shares(List children_list)
 		return;
 
 	itr = list_iterator_create(children_list);
-	while (assoc = list_next(itr)) {
+	while ((assoc = list_next(itr))) {
 		assoc_mgr_normalize_assoc_shares(assoc);
 		if (!assoc->user)
 			_set_norm_shares(assoc->usage->children_list);
