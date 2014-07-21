@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     slurmctld restart.
  -- In select/cons_res plugin - Insure the node count does not exceed the task
     count.
+ -- switch/nrt - Do not explicitly unload windows for a job on termination,
+    only unload its table (which automatically unloads its windows).
 
 * Changes in Slurm 14.03.6
 ==========================

@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Copyright (C) 2011-2012 SchedMD LLC.
+ *  Copyright (C) 2011-2014 SchedMD LLC.
  *  Original switch/federation plugin written by Jason King <jking@llnl.gov>
  *  Largely re-written for NRT support by Morris Jette <jette@schedmd.com>
  *
@@ -311,9 +311,6 @@ static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf,
 				slurm_nrt_jobinfo_t *jp,
 				uint16_t protocol_version);
 static char *	_state_str(win_state_t state);
-static int	_unload_window(char *adapter_name, nrt_adapter_t adapter_type,
-			       nrt_job_key_t job_key,
-			       nrt_window_id_t window_id, int retry);
 static int	_unload_window_all_jobs(char *adapter_name,
 					nrt_adapter_t adapter_type,
 					nrt_window_id_t window_id);
@@ -3892,60 +3889,6 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 	return SLURM_SUCCESS;
 }
 
-/*
- * Try up to "retry" times to unload a window.
- */
-static int
-_unload_window(char *adapter_name, nrt_adapter_t adapter_type,
-	       nrt_job_key_t job_key, nrt_window_id_t window_id, int retry)
-{
-	int err, i;
-	nrt_cmd_clean_window_t  clean_window;
-	nrt_cmd_unload_window_t unload_window;
-
-	for (i = 0; i < retry; i++) {
-		if (i > 0) {
-			usleep(100000);
-		} else {
-			unload_window.adapter_name = adapter_name;
-			unload_window.adapter_type = adapter_type;
-			unload_window.job_key = job_key;
-			unload_window.window_id = window_id;
-		}
-		if (debug_flags & DEBUG_FLAG_SWITCH) {
-			info("nrt_cmd_wrap(unload_window, %s, %s, %u, %hu)",
-			      adapter_name, _adapter_type_str(adapter_type),
-			      job_key, window_id);
-		}
-
-		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_UNLOAD_WINDOW,
-				   &unload_window);
-		if (err == NRT_SUCCESS)
-			return SLURM_SUCCESS;
-		debug("Unable to unload window for job_key %u, "
-		      "nrt_unload_window(%s, %s): %s",
-		      job_key, adapter_name, _adapter_type_str(adapter_type),
-		      nrt_err_str(err));
-
-		if (i == 0) {
-			clean_window.adapter_name = adapter_name;
-			clean_window.adapter_type = adapter_type;
-			clean_window.leave_inuse_or_kill = KILL;
-			clean_window.window_id = window_id;
-		}
-		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_CLEAN_WINDOW,
-				   &clean_window);
-		if (err == NRT_SUCCESS)
-			return SLURM_SUCCESS;
-		error("Unable to clean window for job_key %u, "
-		      "nrt_clean_window(%s, %u): %s",
-		      job_key, adapter_name, adapter_type, nrt_err_str(err));
-		if (err != NRT_EAGAIN)
-			break;
-	}
-
-	return SLURM_FAILURE;
-}
 static int
 _unload_window_all_jobs(char *adapter_name, nrt_adapter_t adapter_type,
 			nrt_window_id_t window_id)
@@ -3996,9 +3939,6 @@ static int _unload_job_table(slurm_nrt_jobinfo_t *jp)
 
 	unload_table.job_key = jp->job_key;
 	for (i = 0; i < jp->tables_per_task; i++) {
-		if (jp->tableinfo[i].adapter_type != NRT_HFI)
-			continue;
-
 		unload_table.context_id = jp->tableinfo[i].context_id;
 		unload_table.table_id   = jp->tableinfo[i].table_id;
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -4020,59 +3960,6 @@ static int _unload_job_table(slurm_nrt_jobinfo_t *jp)
 	return rc;
 }
 
-static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
-{
-	nrt_window_id_t window_id = 0;
-	int err, i, j, rc = SLURM_SUCCESS;
-	int retry = 15;
-
-	if (!my_lpar_id_set && !my_network_id_set)
-		_get_my_id();
-
-	for (i = 0; i < jp->tables_per_task; i++) {
-		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
-			if (jp->tableinfo[i].adapter_type == NRT_IB) {
-				nrt_ib_task_info_t *ib_tbl_ptr;
-				ib_tbl_ptr = (nrt_ib_task_info_t *)
-					     jp->tableinfo[i].table;
-				ib_tbl_ptr += j;
-				if (ib_tbl_ptr->node_number != my_network_id)
-					continue;
-				window_id = ib_tbl_ptr->win_id;
-			} else if (jp->tableinfo[i].adapter_type == NRT_HFI) {
-				nrt_hfi_task_info_t *hfi_tbl_ptr;
-				hfi_tbl_ptr = (nrt_hfi_task_info_t *)
-					      jp->tableinfo[i].table;
-				hfi_tbl_ptr += j;
-				if (hfi_tbl_ptr->lpar_id != my_lpar_id)
-					continue;
-				window_id = hfi_tbl_ptr->win_id;
-			} else if ((jp->tableinfo[i].adapter_type==NRT_HPCE) ||
-			           (jp->tableinfo[i].adapter_type==NRT_KMUX)) {
-				nrt_hpce_task_info_t *hpce_tbl_ptr;
-				hpce_tbl_ptr = (nrt_hpce_task_info_t *)
-					       jp->tableinfo[i].table;
-				hpce_tbl_ptr += j;
-				if (hpce_tbl_ptr->node_number != my_network_id)
-					continue;
-				window_id = hpce_tbl_ptr->win_id;
-			} else {
-				fatal("nrt_unload_window: invalid adapter "
-				      "type: %s",
-				      _adapter_type_str(jp->tableinfo[i].
-							adapter_type));
-			}
-			err = _unload_window(jp->tableinfo[i].adapter_name,
-					     jp->tableinfo[i].adapter_type,
-					     jp->job_key,
-					     window_id, retry);
-			if (err != NRT_SUCCESS)
-				rc = SLURM_ERROR;
-		}
-	}
-	return rc;
-}
-
 /* Assumes that, on error, new switch state information will be
  * read from node.
  *
@@ -4081,8 +3968,6 @@ static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 extern int
 nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 {
-	int rc, rc1, rc2;
-
 	if ((jp == NULL) || (jp->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
 		       THIS_FILE, __LINE__, __FUNCTION__);
@@ -4096,15 +3981,7 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 		_print_jobinfo(jp);
 	}
 
-	if (jp->user_space) {
-		rc1 = _unload_job_windows(jp);
-		rc2 = _unload_job_table(jp);
-		rc  = MAX(rc1, rc2);
-	} else {
-		rc = _unload_job_table(jp);
-	}
-
-	return rc;
+	return _unload_job_table(jp);
 }
 
 extern int
