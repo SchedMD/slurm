@@ -150,7 +150,10 @@ _proc_cluster(void)
 	int filter_cnt = 0;
 	int rc;
 
-	_signal_job_by_str();
+	if (has_default_opt()) {
+		rc = _signal_job_by_str();
+		return rc;
+	}
 
 	_load_job_records();
 	rc = _verify_job_ids();
@@ -172,7 +175,9 @@ _proc_cluster(void)
 	return rc;
 }
 
-/* _load_job_records - load all job information for filtering and verification */
+/* _load_job_records - load all job information for filtering
+ * and verification
+ */
 static void
 _load_job_records (void)
 {
