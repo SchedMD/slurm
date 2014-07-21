@@ -306,11 +306,26 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			int node_inx = 0;
 
 			type = slurm_get_select_type();
-			if (strcasestr(type, "cons_res") == NULL) {
-				error("CoreCnt or CPUCnt is only suported when "
-                                      "SelectType includes select/cons_res");
-				xfree(type);
-				return -1;
+			if (strcasestr(type, "cray")) {
+				int param;
+				param = slurm_get_select_type_param();
+				if (! (param & CR_OTHER_CONS_RES)) {
+					error("CoreCnt or CPUCnt is only "
+					      "suported when "
+					      "SelectTypeParameters "
+					      "includes OTHER_CONS_RES");
+					xfree(type);
+					return -1;
+				}
+			} else {
+				if (strcasestr(type, "cons_res") == NULL) {
+					error("CoreCnt or CPUCnt is only "
+					      "suported when "
+					      "SelectType includes "
+					      "select/cons_res");
+					xfree(type);
+					return -1;
+				}
 			}
 			xfree(type);
 			core_cnt = xstrdup(val);

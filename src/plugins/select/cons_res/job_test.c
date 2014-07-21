@@ -1878,11 +1878,9 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		}
 	}
 
-	/* NOTE: details->min_cpus is 1 by default,
-	 * Only reset max_nodes if user explicitly sets a proc count */
-	if ((job_ptr->details->min_cpus > 1) &&
-	    (max_nodes > job_ptr->details->min_cpus))
-		max_nodes = job_ptr->details->min_cpus;
+	if ((job_ptr->details->num_tasks > 1) &&
+	    (max_nodes > job_ptr->details->num_tasks))
+		max_nodes = job_ptr->details->num_tasks;
 
 	origmap = bit_copy(node_map);
 
@@ -2189,6 +2187,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		FREE_NULL_BITMAP(free_cores);
 		FREE_NULL_BITMAP(avail_cores);
 		xfree(cpu_count);
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 0 fail: "
+			     "waiting for switches");
+		}
 		return SLURM_ERROR;
 	}
 	if (cr_type == CR_MEMORY) {

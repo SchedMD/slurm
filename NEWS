@@ -129,11 +129,15 @@ documents those changes that are of interest to users and admins.
     slurm_conf_reinit.
  -- Fix gres race condition that could result in job deallocation error message.
  -- Correct NumCPUs count for jobs with --exclusive option.
- -- When creating reservation with CoreCnt check that Slurm
-    uses SelectType=select/cons_res otherwise don't send the
-    request to slurmctld and return an error.
- -- Save the state of scheduled node reboots so they will not be
-    lost should the slurmctld restart.
+ -- When creating reservation with CoreCnt, check that Slurm uses
+    SelectType=select/cons_res, otherwise don't send the request to slurmctld
+    and return an error.
+ -- Save the state of scheduled node reboots so they will not be lost should the
+    slurmctld restart.
+ -- In select/cons_res plugin - Insure the node count does not exceed the task
+    count.
+ -- switch/nrt - Do not explicitly unload windows for a job on termination,
+    only unload its table (which automatically unloads its windows).
 
 * Changes in Slurm 14.03.6
 ==========================
