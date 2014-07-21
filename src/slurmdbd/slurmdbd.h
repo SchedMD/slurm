@@ -41,6 +41,8 @@
 #define _SLURM_DBD_H
 
 extern time_t shutdown_time;		/* when shutdown request arrived */
+extern pthread_mutex_t registered_lock;
+extern List registered_clusters;
 
 extern void shutdown_threads();
 
