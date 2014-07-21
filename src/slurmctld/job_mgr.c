@@ -3124,6 +3124,10 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	job_ptr_new->job_id = job_ptr->job_id;
 	if (_set_job_id(job_ptr) != SLURM_SUCCESS)
 		fatal("job array create_job_record error");
+	if (!job_ptr->array_recs) {
+		fatal("_job_rec_copy: job %u record lacks array structure",
+		      job_ptr->job_id);
+	}
 
 	/* Copy most of original job data.
 	 * This could be done in parallel, but performance was worse. */
