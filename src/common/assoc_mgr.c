@@ -283,16 +283,16 @@ static void _delete_assoc_hash(void *assoc)
 
 
 static void _normalize_assoc_shares_level_based(
-		slurmdb_association_rec_t *assoc)
+	slurmdb_association_rec_t *assoc)
 {
-	slurmdb_association_rec_t *assoc2 = assoc;
+	slurmdb_association_rec_t *fs_assoc = assoc;
 	double shares_norm = 0.0;
 	if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-		assoc2 = find_real_parent(assoc);
-	if (assoc2->usage->level_shares)
+		fs_assoc = assoc->usage->fs_assoc_ptr;
+	if (fs_assoc->usage->level_shares)
 		shares_norm =
-			(double)assoc2->shares_raw /
-			(double)assoc2->usage->level_shares;
+			(double)fs_assoc->shares_raw /
+			(double)fs_assoc->usage->level_shares;
 	assoc->usage->shares_norm = shares_norm;
 }
 
