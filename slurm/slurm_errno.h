@@ -201,6 +201,7 @@ enum {
 	ESLURM_JOB_NOT_SUSPENDED,
 	ESLURM_JOB_NOT_FINISHED,
 	ESLURM_TRIGGER_DUP,
+	ESLURM_INTERNAL =				2090,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

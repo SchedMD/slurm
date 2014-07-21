@@ -304,6 +304,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job is not finished"					},
 	{ ESLURM_TRIGGER_DUP,
 	  "Duplicate event trigger"				},
+	{ ESLURM_INTERNAL,
+	  "Slurm internal error, contact system administrator"	},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
