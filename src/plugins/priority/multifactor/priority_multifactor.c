@@ -1293,7 +1293,6 @@ static bool _decay_apply_new_usage(struct job_record *job_ptr,
 static void _decay_apply_weighted_factors(struct job_record *job_ptr,
 						 time_t *start_time_ptr)
 {
-	time_t start_time = *start_time_ptr;
 	/*
 	 * Priority 0 is reserved for held
 	 * jobs. Also skip priority
