@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
  -- switch/nrt - Unload tables rather than windows at job end, to release CAU.
  -- When HealthCheckNodeState is configured as IDLE don't run the
     HealthCheckProgram for nodes in any other states than IDLE.
+ -- Minor sanity check to verify the string sent in isn't NULL when using
+    bit_unfmt.
 
 * Changes in Slurm 14.03.6
 ==========================
