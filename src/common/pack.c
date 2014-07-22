@@ -112,7 +112,7 @@ Buf create_buf(char *data, int size)
 		return NULL;
 	}
 
-	my_buf = xmalloc(sizeof(struct slurm_buf));
+	my_buf = xmalloc_nz(sizeof(struct slurm_buf));
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
 	my_buf->processed = 0;
@@ -138,7 +138,7 @@ void grow_buf (Buf buffer, int size)
 	}
 
 	buffer->size += size;
-	xrealloc(buffer->head, buffer->size);
+	xrealloc_nz(buffer->head, buffer->size);
 }
 
 /* init_buf - create an empty buffer of the given size */
@@ -152,11 +152,11 @@ Buf init_buf(int size)
 	}
 	if (size <= 0)
 		size = BUF_SIZE;
-	my_buf = xmalloc(sizeof(struct slurm_buf));
+	my_buf = xmalloc_nz(sizeof(struct slurm_buf));
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
 	my_buf->processed = 0;
-	my_buf->head = xmalloc(sizeof(char)*size);
+	my_buf->head = xmalloc_nz(sizeof(char)*size);
 	return my_buf;
 }
 
@@ -186,7 +186,7 @@ void pack_time(time_t val, Buf buffer)
 			return;
 		}
 		buffer->size += BUF_SIZE;
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &n64, sizeof(n64));
@@ -230,7 +230,7 @@ void 	packdouble(double val, Buf buffer)
 			return;
 		}
 		buffer->size += BUF_SIZE;
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
@@ -276,7 +276,7 @@ void pack64(uint64_t val, Buf buffer)
 			return;
 		}
 		buffer->size += BUF_SIZE;
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
@@ -313,7 +313,7 @@ void pack32(uint32_t val, Buf buffer)
 			return;
 		}
 		buffer->size += BUF_SIZE;
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
@@ -356,8 +356,8 @@ int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-if (*size_val > 4000000) abort();
-	*valp = xmalloc((*size_val) * sizeof(uint16_t));
+
+	*valp = xmalloc_nz((*size_val) * sizeof(uint16_t));
 	for (i = 0; i < *size_val; i++) {
 		if (unpack16((*valp) + i, buffer))
 			return SLURM_ERROR;
@@ -386,7 +386,7 @@ int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
 
-	*valp = xmalloc((*size_val) * sizeof(uint32_t));
+	*valp = xmalloc_nz((*size_val) * sizeof(uint32_t));
 	for (i = 0; i < *size_val; i++) {
 		if (unpack32((*valp) + i, buffer))
 			return SLURM_ERROR;
@@ -415,7 +415,7 @@ int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
 
-	*valp = xmalloc((*size_val) * sizeof(uint64_t));
+	*valp = xmalloc_nz((*size_val) * sizeof(uint64_t));
 	for (i = 0; i < *size_val; i++) {
 		if (unpack64((*valp) + i, buffer))
 			return SLURM_ERROR;
@@ -437,7 +437,7 @@ void pack16(uint16_t val, Buf buffer)
 			return;
 		}
 		buffer->size += BUF_SIZE;
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
@@ -473,7 +473,7 @@ void pack8(uint8_t val, Buf buffer)
 			return;
 		}
 		buffer->size += BUF_SIZE;
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &val, sizeof(uint8_t));
@@ -509,7 +509,7 @@ void packmem(char *valp, uint32_t size_val, Buf buffer)
 			return;
 		}
 		buffer->size += (size_val + BUF_SIZE);
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
@@ -610,7 +610,7 @@ int unpackmem_xmalloc(char **valp, uint32_t * size_valp, Buf buffer)
 	else if (*size_valp > 0) {
 		if (remaining_buf(buffer) < *size_valp)
 			return SLURM_ERROR;
-		*valp = xmalloc(*size_valp);
+		*valp = xmalloc_nz(*size_valp);
 		memcpy(*valp, &buffer->head[buffer->processed],
 		       *size_valp);
 		buffer->processed += *size_valp;
@@ -672,7 +672,7 @@ void packstr_array(char **valp, uint32_t size_val, Buf buffer)
 			return;
 		}
 		buffer->size += BUF_SIZE;
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
@@ -708,7 +708,7 @@ int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 	if (*size_valp > MAX_PACK_ARRAY_LEN)
 		return SLURM_ERROR;
 	else if (*size_valp > 0) {
-		*valp = xmalloc(sizeof(char *) * (*size_valp + 1));
+		*valp = xmalloc_nz(sizeof(char *) * (*size_valp + 1));
 		for (i = 0; i < *size_valp; i++) {
 			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer))
 				return SLURM_ERROR;
@@ -732,7 +732,7 @@ void packmem_array(char *valp, uint32_t size_val, Buf buffer)
 			return;
 		}
 		buffer->size += (size_val + BUF_SIZE);
-		xrealloc(buffer->head, buffer->size);
+		xrealloc_nz(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], valp, size_val);
