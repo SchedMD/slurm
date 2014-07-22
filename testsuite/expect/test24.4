@@ -1,0 +1,188 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose:  Test of LEVEL_BASED multifactor
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes files in the working directory
+#          named test24.4.prog
+############################################################################
+# Modified by Brigham Young University
+#      Ryan Cox <ryan_cox@byu.edu> and Levi Morrison <levi_morrison@byu.edu>
+#
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "24.4"
+set exit_code   0
+set test_prog   "test$test_id.prog"
+set matches     0
+
+print_header $test_id
+
+set damp [get_fs_damping_factor]
+if {$damp != 1} {
+	send_user "Unable to run with FairShareDampeningFactor=$damp (must be 1)\n"
+	exit 0
+}
+
+#
+# Delete left-over programs and rebuild them
+#
+file delete $test_prog
+
+send_user "build_dir is $build_dir\n"
+if {[test_aix]} {
+	send_user "$bin_cc ${test_prog}.c -ldl -lm -lntbl -fno-gcse -fno-strict-aliasing -Wl,-brtl -Wl,-bgcbypass:1000 -Wl,-bexpfull -Wl,-bmaxdata:0x70000000 -Wl,-bhwloc -g -lpthreads -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o  ${build_dir}/src/sshare/process.o\n"
+	exec       $bin_cc ${test_prog}.c -ldl -lm -lntbl -fno-gcse -fno-strict-aliasing -Wl,-brtl -Wl,-bgcbypass:1000 -Wl,-bexpfull -Wl,-bmaxdata:0x70000000 -Wl,-bhwloc -g -lpthreads -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o  ${build_dir}/src/sshare/process.o
+} else {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o  ${build_dir}/src/sshare/process.o -ldl -lm -lhwloc -export-dynamic \n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o ${build_dir}/src/sshare/process.o -ldl -lm -lhwloc -export-dynamic
+}
+	exec $bin_chmod 700 $test_prog
+
+# Usage: test24.4.prog
+spawn ./$test_prog
+expect {
+	"No last decay" {
+		send_user "This error is expected.  No worries.\n"
+		exp_continue
+	}
+	"error: Can't save decay state" {
+		send_user "This error is expected.  No worries.\n"
+		exp_continue
+	}
+
+	"root|||0.000000|210||1.000000||0|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountA||40|0.266667|45|0.214286|0.214286||A564000000000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountB||30|0.750000|20|0.095238|0.444444||A564AC0700000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountB|User1|1|1.000000|20|0.095238|1.000000|0.666667|A564AC0780000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC||10|0.250000|25|0.119048|0.555556||A5644E4800000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC|User2|1|0.500000|25|0.119048|1.000000|0.500000|A5644E4848990000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC|User3|1|0.500000|0|0.000000|0.000000|0.583333|A5644E48FFFF0000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountD||60|0.400000|25|0.119048|0.119048||D5F5000000000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountE||25|0.416667|25|0.119048|1.000000||D5F53B7F00000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountE|User4|1|1.000000|25|0.119048|1.000000|0.750000|D5F53B7F80000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountF||35|0.583333|0|0.000000|0.000000||D5F5FFFF00000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountF|User5|1|1.000000|0|0.000000|0.000000|0.833333|D5F5FFFFFFFF0000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountG||0|0.000000|30|0.142857|0.142857||FFFF000000000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountG|User6|0|0.000000|30|0.142857|1.000000|0.916667|FFFFFFFF00000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountH||50|0.333333|110|0.523810|0.523810||6748000000000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountH|UHRA1|parent|0.333333|20|0.095238|0.181818|0.416667|6748FFFF00000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountH|UHRA2|40|0.235294|20|0.095238|0.181818|0.166667|6748AAE000000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountH|UHRA3|50|0.294118|25|0.119048|0.227273|0.083333|6748A63400000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountHTA||parent|0.333333|45|0.214286|0.409091||6748000000000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountHTA|UHTAStd1|parent|0.333333|10|0.047619|0.090909|0.416667|6748FFFF00000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountHTA|UHTAStd2|30|0.176471|10|0.047619|0.090909|0.250000|6748C8AD00000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountHTA|UHTAStd3|50|0.294118|25|0.119048|0.227273|0.083333|6748A63400000000|0|0|" {
+		incr matches
+		exp_continue
+	}
+
+	timeout {
+		send_user "\nFAILURE: spawn IO not responding\n"
+		cancel_job $job_id
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 22} {
+	send_user "\nFAILURE: we didn't get the correct priorities from the plugin ($matches != 13)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	file delete $test_prog
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
