@@ -372,6 +372,14 @@ extern void run_health_check(void)
 	char *host_str = NULL;
 	agent_arg_t *check_agent_args = NULL;
 
+	/* Sync plugin internal data with
+	 * node select_nodeinfo. This is important
+	 * after reconfig otherwise select_nodeinfo
+	 * will not return the correct number of
+	 * allocated cpus.
+	 */
+	select_g_select_nodeinfo_set_all();
+
 	check_agent_args = xmalloc (sizeof (agent_arg_t));
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
 	check_agent_args->retry = 0;
@@ -381,7 +389,8 @@ extern void run_health_check(void)
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
-		hostlist_push_host(check_agent_args->hostlist, front_end_ptr->name);
+		hostlist_push_host(check_agent_args->hostlist,
+				   front_end_ptr->name);
 		check_agent_args->node_count++;
 	}
 #else
@@ -410,8 +419,19 @@ extern void run_health_check(void)
 						NODE_STATE_ALLOCATED,
 						&cpus_used);
 			}
+			/* Here the node state is inferred from
+			 * the cpus allocated on it.
+			 * - cpus_used == 0
+			 *       means node is idle
+			 * - cpus_used < cpus_total
+			 *       means the node is in mixed state
+			 * else cpus_used == cpus_total
+			 *       means the node is allocated
+			 */
 			if (cpus_used == 0) {
 				if (!(node_states & HEALTH_CHECK_NODE_IDLE))
+					continue;
+				if (!IS_NODE_IDLE(node_ptr))
 					continue;
 			} else if (cpus_used < cpus_total) {
 				if (!(node_states & HEALTH_CHECK_NODE_MIXED))

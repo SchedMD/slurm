@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res plugin - Insure the node count does not exceed the task
     count.
  -- switch/nrt - Unload tables rather than windows at job end, to release CAU.
+ -- When HealthCheckNodeState is configured as IDLE don't run the
+    HealthCheckProgram for nodes in any other states than IDLE.
 
 * Changes in Slurm 14.03.6
 ==========================
