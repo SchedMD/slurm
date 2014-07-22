@@ -1680,7 +1680,7 @@ static int _grow_ranges(struct _range * *ranges,	/* in/out */
 	new_capacity = (*capacity) * 2 + 10;
 	if (new_capacity > max_capacity)
 		new_capacity = max_capacity;
-	xrealloc((*ranges), (sizeof(struct _range) * new_capacity));
+	xrealloc_nz((*ranges), (sizeof(struct _range) * new_capacity));
 	if ((*ranges) == NULL) {
 		errno = ENOMEM;
 		_error(__FILE__, __LINE__,
@@ -2616,14 +2616,14 @@ char *hostlist_deranged_string_malloc(hostlist_t hl)
 char *hostlist_deranged_string_xmalloc_dims(hostlist_t hl, int dims)
 {
 	int buf_size = 8192;
-	char *buf = xmalloc(buf_size);
+	char *buf = xmalloc_nz(buf_size);
 
 	if (!dims)
 		dims = slurmdb_setup_cluster_name_dims();
 
 	while (hostlist_deranged_string_dims(hl, buf_size, buf, dims) < 0) {
 		buf_size *= 2;
-		xrealloc(buf, buf_size);
+		xrealloc_nz(buf, buf_size);
 	}
 	return buf;
 }
@@ -3150,11 +3150,11 @@ char *hostlist_ranged_string_malloc(hostlist_t hl)
 char *hostlist_ranged_string_xmalloc_dims(hostlist_t hl, int dims, int brackets)
 {
 	int buf_size = 8192;
-	char *buf = xmalloc(buf_size);
+	char *buf = xmalloc_nz(buf_size);
 	while (hostlist_ranged_string_dims(
 		       hl, buf_size, buf, dims, brackets) < 0) {
 		buf_size *= 2;
-		xrealloc(buf, buf_size);
+		xrealloc_nz(buf, buf_size);
 	}
 	return buf;
 }
