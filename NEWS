@@ -140,6 +140,8 @@ documents those changes that are of interest to users and admins.
     count.
  -- switch/nrt - Do not explicitly unload windows for a job on termination,
     only unload its table (which automatically unloads its windows).
+ -- When HealthCheckNodeState is configured as IDLE don't run the
+    HealthCheckProgram for nodes in any other states than IDLE.
 
 * Changes in Slurm 14.03.6
 ==========================

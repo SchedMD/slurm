@@ -446,7 +446,7 @@ Slurm (without jobs). The procedure is as follows:</p>
 <li>Cancel all jobs.</li>
 <li>Change the dynamic window count on the compute nodes.</li>
 <li>Restart Slurm daemons without preserving state
-(e.g. "/etc/init.d/slurm/startclean" or initiate the daemons using the
+(e.g. "/etc/init.d/slurm startclean" or initiate the daemons using the
 "-c" option).</li>
 </ol>
 
@@ -487,10 +487,10 @@ These function provide sufficient information to release all resources
 In order to release CAU, it is necessary to cold start the Protocol Network
 Services Daemon (PNSD) on compute nodes following the sequence shown below.</p>
 <pre>
-Stop  Slurm daemons:       /etc/init.d/rc slurm stop
+Stop  Slurm daemons:       /etc/init.d/slurm stop
 Stop  PNSD:                stopsrc -s pnsd
 Start PNSD clean:          startsrc -s pnsd -a -c
-Start Slurm daemons clean: /etc/init.d/rc slurm startclean
+Start Slurm daemons clean: /etc/init.d/slurm startclean
 </pre>
 
 <h3>Design Notes</h3>
