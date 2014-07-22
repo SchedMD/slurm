@@ -2998,6 +2998,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			error("Ignoring invalid CpuFreqDef: %s", temp_str);
 			conf->cpu_freq_def = CPU_FREQ_ONDEMAND;
 		}
+		xfree(temp_str);
 	} else {
 		conf->cpu_freq_def = CPU_FREQ_ONDEMAND;
 	}
