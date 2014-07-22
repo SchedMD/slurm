@@ -476,6 +476,23 @@ Units (CAU) is disabled and an error message to that effect will be generated
 in response to such a request. In addition, version 1200 or higher of IBM's NRT
 API is required to support this functionality.</p>
 
+<h3>Cold Starting</h3>
+
+<p>If the slurmctld daemon is cold started (without saved state), then
+information about previously allocated network resources is lost.
+Slurm will release those resources to the best of its ability based upon
+information available from the Network Resource Table (NRT) library functions.
+These function provide sufficient information to release all resources
+<b>except</b> for CAU on a Torrent network (e.g. a PERCS system).
+In order to release CAU, it is necessary to cold start the Protocol Network
+Services Daemon (PNSD) on compute nodes following the sequence shown below.</p>
+<pre>
+Stop  Slurm daemons:       /etc/init.d/rc slurm stop
+Stop  PNSD:                stopsrc -s pnsd
+Start PNSD clean:          startsrc -s pnsd -a -c
+Start Slurm daemons clean: /etc/init.d/rc slurm startclean
+</pre>
+
 <h3>Design Notes</h3>
 
 <p>It is necessary for all nodes that can be used for scheduling a single job
@@ -550,6 +567,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 May 2013</p></td>
+<p style="text-align:center;">Last modified 22 July 2013</p></td>
 
 <!--#include virtual="footer.txt"-->
