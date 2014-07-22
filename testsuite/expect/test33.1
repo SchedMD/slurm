@@ -50,6 +50,11 @@ set test_prog   "test$test_id.prog"
 
 print_header $test_id
 
+if { [test_front_end] == 1 } {
+	send_user "\nWARNING: Test incompatible with front-end systems\n"
+	exit 0
+}
+
 # Procedure to run a configuration
 proc run_config { test_config } {
 
@@ -58,14 +63,17 @@ proc run_config { test_config } {
 	incr cfgcount
 	set cfgdir "$wd/$test_config"
 	set tc "$wd/$test_config/testcases"
-	send_user "${test_prog} --configdir=${cfgdir} --testcases=${tc}\n"
-	spawn ./${test_prog} --configdir=${cfgdir} --testcases=${tc}
 	set local_ok 0
+	send_user "\n./${test_prog} --configdir=${cfgdir} --testcases=${tc}\n"
+	spawn ./${test_prog} --configdir=${cfgdir} --testcases=${tc}
 	expect {
 		-re "Failed cases 0" {
 			incr cfgok
 			incr local_ok
 			exp_continue
+		}
+		eof {
+			wait
 		}
 	}
 	if {$local_ok == 0} {
@@ -105,6 +113,6 @@ if {$cfgok != $cfgcount} {
 	set exit_code 1
 } else {
 	send_user "\nSUCCESS\n"
+	file delete $test_prog
 }
-
 exit $exit_code
