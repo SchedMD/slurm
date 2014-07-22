@@ -95,7 +95,7 @@ void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
-	Buf buffer = init_buf(fwd_msg->buf_len);
+	Buf buffer = init_buf(BUF_SIZE);	/* probably enough for header */
 	List ret_list = NULL;
 	slurm_fd_t fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
@@ -153,8 +153,10 @@ void *_forward_thread(void *arg)
 
 		/* add forward data to buffer */
 		if (remaining_buf(buffer) < fwd_msg->buf_len) {
-			buffer->size += (fwd_msg->buf_len + BUF_SIZE);
-			xrealloc(buffer->head, buffer->size);
+			int new_size = buffer->processed + fwd_msg->buf_len;
+			new_size += 1024; /* padded for paranoia */
+			xrealloc_nz(buffer->head, new_size);
+			buffer->size = new_size;
 		}
 		if (fwd_msg->buf_len) {
 			memcpy(&buffer->head[buffer->processed],

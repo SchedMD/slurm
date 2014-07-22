@@ -122,6 +122,7 @@ Lead Slurm developers are:
 <li>Piotr Lesnicki (Bull)</li>
 <li>Bernard Li (Genome Sciences Centre, Canada)</li>
 <li>Eric Lin (Bull)</li>
+<li>David Linden (HP)</li>
 <li>Donald Lipari (Lawrence Livermore National Laboratory)</li>
 <br>
 <li>Komoto Masahiro</li>
@@ -201,6 +202,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 30 June 2014</p>
+<p style="text-align:center;">Last modified 22 July 2014</p>
 
 <!--#include virtual="footer.txt"-->
