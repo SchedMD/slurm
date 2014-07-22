@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     slurmctld restart.
  -- In select/cons_res plugin - Insure the node count does not exceed the task
     count.
+ -- switch/nrt - Unload tables rather than windows at job end, to release CAU.
 
 * Changes in Slurm 14.03.6
 ==========================
