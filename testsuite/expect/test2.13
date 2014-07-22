@@ -129,7 +129,7 @@ if {$orig_time != 5} {
 }
 
 #
-# Change that job's priority
+# Change that step's time limit
 #
 spawn $scontrol update StepId=$job_id TimeLimit=1
 expect {
@@ -168,6 +168,7 @@ if {$orig_time != 1} {
 # Wait for step to exit and check output file
 # Look for message generated before and after srun (job step) time limit
 #
+sleep 60
 if {[wait_for_job $job_id "DONE"] != 0} {
         send_user "\nFAILURE: waiting for job to terminate\n"
         exit 1
