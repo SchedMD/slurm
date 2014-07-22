@@ -221,6 +221,10 @@ if { [test_super_user] == 0 } {
 	send_user "WARNING: Test can only be run as SlurmUser\n"
 	exit $exit_code
 }
+if { [test_front_end] == 1 } {
+	send_user "WARNING: Test can not be run with front-end configuration\n"
+	exit $exit_code
+}
 
 set got_config 0
 log_user 0
@@ -287,6 +291,7 @@ change_pro_epi srun-task-epilog srun--task-epilog_$test_id 1 0
 update_conf
 
 set sub_job 0
+set invalid_node 0
 spawn $srun -t1 -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
 expect {
 	-re "$run_host" {
@@ -301,7 +306,6 @@ expect {
 		wait
 	}
 }
-
 if {$sub_job != 1} {
 	send_user "\nFAILURE: srun did not submit job\n"
 	set exit_code 1

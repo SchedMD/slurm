@@ -41,7 +41,6 @@ set exit_code      0
 print_header $test_id
 
 proc check_alloc { } {
-
 	global scontrol salloc sacct nodes cputot scontrol_cpu sacct_cpu nodes
 	global jobid number alpha_numeric_nodelist
 
@@ -116,6 +115,11 @@ proc check_alloc { } {
 		send_user "cpus\n"
 		set exit_code 1
 	}
+}
+
+if {[test_using_slurmdbd] == 0 } {
+	send_user "\nWARNING: Test invalid with slurmdbd\n"
+	exit 0
 }
 
 spawn $salloc -t1 -n1 --exclusive $srun -l $bin_printenv SLURMD_NODENAME

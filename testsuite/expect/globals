@@ -1220,6 +1220,36 @@ proc test_enforce_qos_set { } {
 
 ################################################################
 #
+# Proc: test_front_end
+#
+# Purpose: determine if running in front-end mode
+#
+# Returns 1 if the system is running with front end, 0 otherwise
+#
+################################################################
+
+proc test_front_end { } {
+	global scontrol
+
+	log_user 0
+	set front_end 0
+	spawn $scontrol show frontend
+	expect {
+		-re "FrontendName=" {
+			set front_end 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $front_end
+}
+
+################################################################
+#
 # Proc: test_using_slurmdbd
 #
 # Purpose: Since there is a lag at which the slurmdbd processes a job start
