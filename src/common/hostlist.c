@@ -1699,7 +1699,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	memset(coord, 0, sizeof(coord));
 	memset(coord2, 0, sizeof(coord2));
 
-	for(i = 0; i<dims; i++) {
+	for (i = 0; i < dims; i++) {
 		coord[i] = alpha_num[start[i]];
 		coord2[i] = alpha_num[end[i]];
 	}
@@ -3075,7 +3075,7 @@ _test_box(int *start, int *end, int dims)
 	if (!memcmp(start, end, dim_grid_size)) /* single node */
 		return false;
 
-	for (i = 0; i<dims; i++)
+	for (i = 0; i < dims; i++)
 		if (start[i] > end[i])
 			return false;
 
