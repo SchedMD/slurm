@@ -84,7 +84,10 @@
 #include "macros.h"
 
 #define xmalloc(__sz) \
-	slurm_xmalloc (__sz, __FILE__, __LINE__, __CURRENT_FUNC__)
+	slurm_xmalloc (__sz, true, __FILE__, __LINE__, __CURRENT_FUNC__)
+
+#define xmalloc_nz(__sz) \
+	slurm_xmalloc (__sz, false, __FILE__, __LINE__, __CURRENT_FUNC__)
 
 #define try_xmalloc(__sz) \
 	slurm_try_xmalloc(__sz, __FILE__, __LINE__, __CURRENT_FUNC__)
@@ -93,7 +96,11 @@
 	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __CURRENT_FUNC__)
 
 #define xrealloc(__p, __sz) \
-        slurm_xrealloc((void **)&(__p), __sz, \
+        slurm_xrealloc((void **)&(__p), __sz, true, \
+                       __FILE__, __LINE__, __CURRENT_FUNC__)
+
+#define xrealloc_nz(__p, __sz) \
+        slurm_xrealloc((void **)&(__p), __sz, false, \
                        __FILE__, __LINE__, __CURRENT_FUNC__)
 
 #define try_xrealloc(__p, __sz) \
@@ -103,10 +110,10 @@
 #define xsize(__p) \
 	slurm_xsize((void *)__p, __FILE__, __LINE__, __CURRENT_FUNC__)
 
-void *slurm_xmalloc(size_t, const char *, int, const char *);
+void *slurm_xmalloc(size_t, bool, const char *, int, const char *);
 void *slurm_try_xmalloc(size_t , const char *, int , const char *);
 void slurm_xfree(void **, const char *, int, const char *);
-void *slurm_xrealloc(void **, size_t, const char *, int, const char *);
+void *slurm_xrealloc(void **, size_t, bool, const char *, int, const char *);
 int  slurm_try_xrealloc(void **, size_t, const char *, int, const char *);
 size_t slurm_xsize(void *, const char *, int, const char *);
 

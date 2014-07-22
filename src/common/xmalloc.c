@@ -70,15 +70,20 @@ static void malloc_assert_failed(char *, const char *, int,
 /*
  * "Safe" version of malloc().
  *   size (IN)	number of bytes to malloc
+ *   clear (IN) initialize to zero
  *   RETURN	pointer to allocate heap space
  */
-void *slurm_xmalloc(size_t size, const char *file, int line, const char *func)
+void *slurm_xmalloc(size_t size, bool clear,
+		    const char *file, int line, const char *func)
 {
 	void *new;
 	size_t *p;
 	size_t total_size = size + 2 * sizeof(size_t);
 
-	p = calloc(1, total_size);
+	if (clear)
+		p = calloc(1, total_size);
+	else
+		p = malloc(total_size);
 	if (!p) {
 		/* out of memory */
 		log_oom(file, line, func);
@@ -117,9 +122,10 @@ void *slurm_try_xmalloc(size_t size, const char *file, int line,
  * the object to be realloced instead of the object itself.
  *   item (IN/OUT)	double-pointer to allocated space
  *   newsize (IN)	requested size
+ *   clear (IN)		initialize to zero
  */
-void * slurm_xrealloc(void **item, size_t newsize,
-	              const char *file, int line, const char *func)
+extern void * slurm_xrealloc(void **item, size_t newsize, bool clear,
+			     const char *file, int line, const char *func)
 {
 	size_t *p = NULL;
 
@@ -137,14 +143,18 @@ void * slurm_xrealloc(void **item, size_t newsize,
 
 		if (old_size < newsize) {
 			char *p_new = (char *)(&p[2]) + old_size;
-			memset(p_new, 0, (newsize-old_size));
+			if (clear)
+				memset(p_new, 0, (newsize-old_size));
 		}
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);
 
 	} else {
 		size_t total_size = newsize + 2 * sizeof(size_t);
 		/* Initalize new memory */
-		p = calloc(1, total_size);
+		if (clear)
+			p = calloc(1, total_size);
+		else
+			p = malloc(total_size);
 		if (p == NULL)
 			goto error;
 		p[0] = XMALLOC_MAGIC;
