@@ -9733,6 +9733,10 @@ extern int update_job_str(job_desc_msg_t * job_specs, uid_t uid)
 	int len, rc, rc2;
 	char *end_ptr, *tok, *tmp;
 
+/* For testing purposes only */
+char job_id_str[32];
+snprintf(job_id_str, sizeof(job_id_str), "%u", job_specs->job_id);
+
 	if (max_array_size == NO_VAL) {
 		conf = slurm_conf_lock();
 		max_array_size = conf->max_array_sz;
