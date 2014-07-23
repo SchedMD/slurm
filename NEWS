@@ -150,6 +150,11 @@ documents those changes that are of interest to users and admins.
  -- Remove all slurmctld locks prior to job_submit() being called in plugins.
     If any slurmctld data structures are read or modified, add locks directly
     in the plugin.
+ -- Minor sanity check to verify the string sent in isn't NULL when using
+    bit_unfmt.
+ -- CRAY NATIVE - Fix issue on heavy systems to only run the NHC once per
+    job/step completion.
+ -- Remove unneeded step cleanup for pending steps.
 
 * Changes in Slurm 14.03.6
 ==========================

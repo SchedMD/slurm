@@ -1026,7 +1026,7 @@ bit_unfmt(bitstr_t *b, char *str)
 	int rc = 0;
 
 	_assert_bitstr_valid(b);
-	if (str[0] == '\0')	/* no bits set */
+	if (!str || str[0] == '\0')	/* no bits set */
 		return rc;
 	intvec = bitfmt2int(str);
 	if (intvec == NULL)
