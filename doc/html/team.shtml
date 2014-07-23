@@ -50,6 +50,7 @@ Lead Slurm developers are:
 <li>Franco Broi (ION)</li>
 <li>Bill Brophy (Bull)</li>
 <li>John Brunelle (Harvard University FAS Research Computing)</li>
+<li>Andrew E. Bruno (University at Buffalo)</li>
 <br>
 <li>Luis Cabellos (Instituto de Fisica de Cantabria, Spain)</li>
 <li>Thomas Cadeau (Bull)</li>
@@ -124,6 +125,7 @@ Lead Slurm developers are:
 <li>Donald Lipari (Lawrence Livermore National Laboratory)</li>
 <br>
 <li>Komoto Masahiro</li>
+<li>L. Shawn Matott (University at Buffalo)</li>
 <li>Steven McDougall (SiCortex)</li>
 <li>Donna Mecozzi (Lawrence Livermore National Laboratory)</li>
 <li>Bj&oslash;rn-Helge Mevik (University of Oslo, Norway)</li>
@@ -199,6 +201,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 25 April 2014</p>
+<p style="text-align:center;">Last modified 23 July 2014</p>
 
 <!--#include virtual="footer.txt"-->

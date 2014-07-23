@@ -248,6 +248,70 @@ For more information, see
 <a href="http://ubmod.sourceforge.net/resource-manager-slurm.html">UDMod home page</a> and
 <a href="https://github.com/ubccr/ubmod">source code</a>.</li><br>
 
+<li><b>STUBL (Slurm Tools and UBiLities)</b><br>
+STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
+<a href="https://github.com/ubccr/stubl">STUBL home page</a>.<br><br>
+<dl>
+<dt>pbs2sbatch</dt>
+<dd>Converts PBS directives to equivalent Slurm sbatch directives. Accommodates
+    old UB CCR-specific PBS tags like IB1, IB2, etc.</dd>
+<dt>pbs2slurm</dt>
+<dd>A script that attempts to convert PBS scripts into corresponding sbatch
+    scripts. It will convert PBS directives as well as PBS environment variables
+    and will insert bash code to create a SLURM_NODEFILE that is consistent with
+    the PBS_NODEFILE.</dd>
+<dt>slurmbf</dt>
+<dd>Analogous to the PBS "showbf -S" command.</dd>
+<dt>snodes</dt>
+<dd>A customized version of sinfo. Displays node information in an
+   easy-to-interpet format. Filters can be applied to view (1) specific nodes,
+   (2) nodes in a specific partition, or (3) nodes in a specifc state.</dd>
+<dt>sqstat</dt>
+<dd>A customized version of squeue that produces output analogous to the PBS
+    qstat and xqstat commands (requires clush).</dd>
+<dt>fisbatch</dt>
+<dd>Friendly Interactive sbatch. A customized version of sbatch that provides a
+    user-friendly interface to an interactive job with X11 forwarding enabled.
+    It is analogous to the PBS "qsub -I -X" command. This code was adopted from
+    srun.x11 (requires clush).</dd>
+<dt>sranks</dt>
+<dd>A command that lists the overall priorities and associated priority
+    components of queued jobs in ascending order. Top-ranked jobs will be given
+    priority by the scheduler but lower ranked jobs may get slotted in first if
+    they fit into the scheduler's backfill window.</dd>
+<dt>sqelp</dt>
+<dd>A customized version of squeue that only prints a double-quote if the
+    information in a column is the same from row to row. Some users find this
+    type of formatting easier to visually digest.</dd>
+<dt>sjeff</dt>
+<dd>Determines the efficiency of one or more running jobs. Inefficient jobs are
+    high-lighted in red text (requires clush).</dd>
+<dt>sueff</dt>
+<dd>Determines the overall efficiency of the running jobs of one or more users.
+    Users that are inefficient are highlighted in red text (requires clush).</dd>
+<dt>yasqr</dt>
+<dd>Yet Another Squeue Replacement. Fixes squeue bugs in earlier versions of
+    Slurm.</dd>
+<dt>sgetscr</dt>
+<dd>Retrieves the Slurm/sbatch script and environment files for a job that is
+    queued or running.</dd>
+<dt>snacct</dt>
+<dd>Retrieves Slurm accounting information for a given node and for a given
+    period of time.</dd>
+<dt>suacct</dt>
+<dd>Retrieves Slurm accounting information for a given user's jobs for a given
+    period of time.</dd>
+<dt>slist</dt>
+<dd>Retrieves Slurm accounting and node information for a running or completed
+    job (requires clush).</dd>
+<dt>slogs</dt>
+<dd>Retrieves resource usage and accounting information for a user or list of
+    users. For each job that was run after the given start date, the following
+    information is gathered from the Slurm accounting logs: Number of CPUs,
+    Start Time, Elapsed Time, Amount of RAM Requested, Average RAM Used, and
+    Max RAM Used.</dd>
+</dl></li><br>
+
 <li><b>Slurmmon</b><br>
 Slurmmon is a system for gathering and plotting data about Slurm scheduling and
 job characteristics. It currently simply sends the data to ganglia, but it
@@ -272,6 +336,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 30 April 2014</p>
+<p style="text-align:center;">Last modified 23 July 2014</p>
 
 <!--#include virtual="footer.txt"-->
