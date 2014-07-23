@@ -1648,13 +1648,13 @@ proc test_select_type { } {
 ################################################################
 
 proc test_select_type_params { } {
-	global scontrol bin_bash bin_grep alpha_numeric_under
+	global scontrol bin_bash bin_grep alpha_numeric_comma
 
 	log_user 0
 	set params ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 	expect {
-		-re "SelectTypeParameters *= *($alpha_numeric_under)" {
+		-re "SelectTypeParameters *= *($alpha_numeric_comma)" {
 			set params $expect_out(1,string)
 			exp_continue
 		}
