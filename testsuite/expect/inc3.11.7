@@ -35,7 +35,7 @@ proc inc3_11_7 {} {
 	global bin_rm file_in bin_sleep sbatch number scontrol
 	global alpha_numeric_under scancel
 	global cluster_cpus cores_per_node def_partition
-	global res_name res_thread_cnt
+	global res_name res_thread_cnt wait_for_job
 
 	send_user "\n+++++ STARTING TEST 7 (Within: inc3.11.7) +++++\n"
 
@@ -91,31 +91,12 @@ proc inc3_11_7 {} {
 		exit 1
 	}
 
-	sleep 10
-	# Show the job, make sure reservation tag is right
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		-re "JobState=PENDING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	if {[wait_for_job $job_id RUNNING] != 0} {
+		send_user "\n\033\[31mFAILURE: Job $job_id failed to start (Within: inc3.11.7)\033\[m\n"
+		set exit_code 1
+	} else {
+		send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
 	}
-
-	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
-
 	cancel_job $job_id
 
 	sleep 1
@@ -141,31 +122,13 @@ proc inc3_11_7 {} {
 		exit 1
 	}
 
-	sleep 10
 	# Show the job, make sure reservation tag is right
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		-re "JobState=PENDING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	if {[wait_for_job $job_id RUNNING] != 0} {
+		send_user "\n\033\[31mFAILURE: Job $job_id failed to start (Within: inc3.11.7)\033\[m\n"
+		set exit_code 1
+	} else {
+		send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
 	}
-
-	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
-
 	cancel_job $job_id
 
 	sleep 1
@@ -191,31 +154,13 @@ proc inc3_11_7 {} {
 		exit 1
 	}
 
-	sleep 10
 	# Show the job, make sure reservation tag is right
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Invalid job id specified" {
-			send_user "\n\033\[31mFAILURE: Job $job_id not found (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		-re "JobState=PENDING" {
-			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scontrol not responding (Within: inc3.11.7)\033\[m\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	if {[wait_for_job $job_id RUNNING] != 0} {
+		send_user "\n\033\[31mFAILURE: Job $job_id failed to start (Within: inc3.11.7)\033\[m\n"
+		set exit_code 1
+	} else {
+		send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
 	}
-
-	send_user "\n\033\[32mJOB is running as expected (Within: inc3.11.7)\033\[m\n"
-
 	cancel_job $job_id
 
 	# (Fourth test) Submit a batch job: a job using more cores than allocated by the reservation

@@ -42,8 +42,6 @@ source ./inc3.11.7
 source ./inc3.11.8
 source ./inc3.11.9
 
-
-
 set test_id		"3.11"
 set file_in		"test$test_id.input"
 set exit_code		0
@@ -61,7 +59,6 @@ set def_node_inx_max	-1
 set ii			0
 
 print_header $test_id
-
 
 #
 # Procedure to create a new reservation and validate it.
@@ -264,10 +261,29 @@ proc delete_res { res_name } {
 			set ret_code 1
 			exp_continue
 		}
+		eof {
+			wait
+		}
 	}
 	return $ret_code
 }
 
+set have_resv 0
+spawn $scontrol show res $res_name
+expect {
+	-re "ReservationName=($alpha_numeric_under)" {
+		incr have_resv
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$have_resv != 0} {
+	send_user "*****************************************************************************************\n"
+	send_user "WARNING: $have_resv reservations exist at start of test which may interfere with the test\n"
+	send_user "*****************************************************************************************\n"
+}
 
 #
 # Identify usable nodes in default partition
