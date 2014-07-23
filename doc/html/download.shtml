@@ -1,21 +1,21 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Download</h1>
-<p>SLURM source can be downloaded from
+<p>Slurm source can be downloaded from
 <a href="http://www.schedmd.com/#repos">
 http://www.schedmd.com/#repos</a><br>
-SLURM has also been packaged for
+Slurm has also been packaged for
 <a href="http://packages.debian.org/src:slurm-llnl">Debian</a> and
 <a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
 (both named <i>slurm-llnl</i>).</p>
 
-<p>A <a href="http://www.bsc.es/marenostrum-support-services/services/slurm-simulator">SLURM simulator</a>
+<p>A <a href="http://www.bsc.es/marenostrum-support-services/services/slurm-simulator">Slurm simulator</a>
 is available to assess various scheduling policies.
 Under simulation jobs are not actually executed. Instead a job execution trace
 from a real system or a synthetic trace are used.</p>
 
 <!--
-SLURM interface to PHP
+Slurm interface to PHP
 https://github.com/jcftang/slurm/commits/php-slurm
 http://thammuz.tchpc.tcd.ie/mirrors/php-slurm/1.0/
 Development by Peter Vermeulen with help from staff of
@@ -31,7 +31,7 @@ a message.</li>
 <ul>
 <li><a href="http://www.theether.org/authd">authd</a></li>
 <li><b>MUNGE</b> (recommended)<br>
-In order to compile the "auth/munge" authentication plugin for SLURM,
+In order to compile the "auth/munge" authentication plugin for Slurm,
 you will need to build and install MUNGE, available from
 <a href="https://code.google.com/p/munge/">https://code.google.com/p/munge/</a> and
 <a href="http://packages.debian.org/src:munge">Debian</a> and
@@ -39,13 +39,13 @@ you will need to build and install MUNGE, available from
 <a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.</li>
 </ul><br>
 
-<li><b>Authentication</b> tools for users that work with SLURM.</li>
+<li><b>Authentication</b> tools for users that work with Slurm.</li>
 <ul>
 <li><a href="http://sourceforge.net/projects/auks/">AUKS</a><br>
 AUKS is an utility designed to ease Kerberos V credential support addition 
-to non-interactive applications, like batch systems (SLURM, LSF, Torque, etc.).
-It includes a plugin for the SLURM workload manager. AUKS is not used as
-an authentication plugin by the SLURM code itself, but provides a mechanism
+to non-interactive applications, like batch systems (Slurm, LSF, Torque, etc.).
+It includes a plugin for the Slurm workload manager. AUKS is not used as
+an authentication plugin by the Slurm code itself, but provides a mechanism
 for the application to manage Kerberos V credentials.</li>
 </ul><br>
 
@@ -85,17 +85,17 @@ Download it from <a href="http://www.openssl.org/">http://www.openssl.org/</a>.<
 </ul><br>
 
 <li><b>DRMAA (Distributed Resource Management Application API)</b><br>
-<a href="http://apps.man.poznan.pl/trac/slurm-drmaa">PSNC DRMAA</a> for SLURM
+<a href="http://apps.man.poznan.pl/trac/slurm-drmaa">PSNC DRMAA</a> for Slurm
 is an implementation of <a href="http://www.gridforum.org/">Open Grid Forum</a>
 <a href="http://www.drmaa.org/">DRMAA 1.0</a> (Distributed Resource Management Application API)
 <a href="http://www.ogf.org/documents/GFD.133.pdf">specification</a> for submission
-and control of jobs to <href="http://slurm.schedmd.com">SLURM</a>.
+and control of jobs to <href="http://slurm.schedmd.com">Slurm</a>.
 Using DRMAA, grid applications builders, portal developers and ISVs can use 
 the same high-level API to link their software with different cluster/resource
 management systems.</li><br>
 
 <li><b>Hostlist</b><br>
-A Python program used for manipulation of SLURM hostlists including
+A Python program used for manipulation of Slurm hostlists including
 functions such as intersection and difference. Download the code from:<br>
 <a href="http://www.nsc.liu.se/~kent/python-hostlist">
 http://www.nsc.liu.se/~kent/python-hostlist</a><br><br>
@@ -125,10 +125,10 @@ generated using the <b>ib2slurm</b> tool found here:
 <li><b>I/O Watchdog</b><br>
 A facility for monitoring user applications, most notably parallel jobs,
 for <i>hangs</i> which typically have a side-effect of ceasing all write
-activity. This faciltiy attempts to monitor all write activity of an
+activity. This facility attempts to monitor all write activity of an
 application and trigger a set of user-defined actions when write activity
 as ceased for a configurable period of time. A SPANK plugin is provided
-for use with SLURM. See the README and man page in the package for more
+for use with Slurm. See the README and man page in the package for more
 details. Download the latest source from:<br>
 <a href="http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2">
 http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
@@ -151,14 +151,14 @@ http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
 
 <li><b>PAM Module (pam_slurm)</b><br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes
-where SLURM performs workload management. Access to the node is restricted to
+where Slurm performs workload management. Access to the node is restricted to
 user root and users who have been allocated resources on that node.
-NOTE: pam_slurm is included within the SLURM distribution for version 2.1
+NOTE: pam_slurm is included within the Slurm distribution for version 2.1
 or higher.
-For earlier SLURM versions, pam_slurm is available for download from<br>
+For earlier Slurm versions, pam_slurm is available for download from<br>
 <a href="http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2">
 http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2</a><br>
-SLURM's PAM module has also been packaged for
+Slurm's PAM module has also been packaged for
 <a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and
 <a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
 (both named <i>libpam-slurm</i>).</li><br>
@@ -169,7 +169,7 @@ SLURM's PAM module has also been packaged for
 <a href="http://www.ogf.org/">Open Grid Forum</a> Advance Reservation API</li>
 <li><a href="http://web.mit.edu/star/cluster/docs/latest/index.html">StarCluster</a>
 cloud computing toolkit has a
-<a href="https://github.com/jlafon/StarCluster">SLURM port available</a>.
+<a href="https://github.com/jlafon/StarCluster">Slurm port available</a>.
 <li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
 <li><a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 Maui Scheduler</a></li>
@@ -184,11 +184,11 @@ https://github.com/pedmon/slurm_showq</a>.<br><br>
 
 <li><b>Scripting interfaces</b>
 <ul>
-<li>A <b>Perl</b> interface is included in the SLURM distribution in the
+<li>A <b>Perl</b> interface is included in the Slurm distribution in the
 <i>contribs/perlapi</i> directory and packaged in the <i>perapi</i> RPM.</li>
 
 <li><a href="http://www.gingergeeks.co.uk/pyslurm/">PySlurm</a> is a
-Python/Pyrex module to interface with SLURM. 
+Python/Pyrex module to interface with Slurm.
 There is also a Python module to expand and collect hostlist expressions 
 available at <a href="http://www.nsc.liu.se/~kent/python-hostlist/">
 http://www.nsc.liu.se/~kent/python-hostlist/</a>.</li>
@@ -201,20 +201,20 @@ SQL Alchemy bindings for your slurmdbd database.</li>
 -->
 
 <li><a href="http://www.lua.org/">Lua</a> may be used to implement a
-SLURM process tracking plugin.
+Slurm process tracking plugin.
 The Lua script available in <i>contribs/lua/protrack.lua</i> 
 implements containers using CPUSETs.
 </ul><br>
 
 <li><b>SPANK Plugins</b><br>
 SPANK provides a very generic interface for stackable plug-ins which
-may be used to dynamically modify the job launch code in SLURM. SPANK
-plugins may be built without access to SLURM source code. They need
-only be compiled against SLURM&lsquo;s spank.h header file, added to the
+may be used to dynamically modify the job launch code in Slurm. SPANK
+plugins may be built without access to Slurm source code. They need
+only be compiled against Slurm&lsquo;s spank.h header file, added to the
 SPANK config file plugstack.conf, and they will be loaded at runtime
 during the next job launch. Thus, the SPANK infrastructure provides
 administrators and other developers a low cost, low effort ability to
-dynamically modify the runtime behavior of SLURM job launch.
+dynamically modify the runtime behavior of Slurm job launch.
 As assortment of SPANK plugins are available from<br>
 <a href="http://code.google.com/p/slurm-spank-plugins/">
 http://code.google.com/p/slurm-spank-plugins/</a>.<br>
@@ -223,7 +223,7 @@ repository with the following command:<br>
 <i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/ slurm-plugins</i></li><br>
 
 <li><b>Sqlog</b><br>
-A set of scripts that leverages SLURM's job completion logging facility
+A set of scripts that leverages Slurm's job completion logging facility
 in provide information about what jobs were running at any point in the
 past as well as what resources they used. Download the code from:<br>
 <a href="http://sqlog.googlecode.com">http://sqlog.googlecode.com</a></li><br>
@@ -247,6 +247,70 @@ warehouse and provide a front end web interface for browsing the data.
 For more information, see
 <a href="http://ubmod.sourceforge.net/resource-manager-slurm.html">UDMod home page</a> and
 <a href="https://github.com/ubccr/ubmod">source code</a>.</li><br>
+
+<li><b>STUBL (Slurm Tools and UBiLities)</b><br>
+STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
+<a href="https://github.com/ubccr/stubl">STUBL home page</a>.<br><br>
+<dl>
+<dt>pbs2sbatch</dt>
+<dd>Converts PBS directives to equivalent Slurm sbatch directives. Accommodates
+    old UB CCR-specific PBS tags like IB1, IB2, etc.</dd>
+<dt>pbs2slurm</dt>
+<dd>A script that attempts to convert PBS scripts into corresponding sbatch
+    scripts. It will convert PBS directives as well as PBS environment variables
+    and will insert bash code to create a SLURM_NODEFILE that is consistent with
+    the PBS_NODEFILE.</dd>
+<dt>slurmbf</dt>
+<dd>Analogous to the PBS "showbf -S" command.</dd>
+<dt>snodes</dt>
+<dd>A customized version of sinfo. Displays node information in an
+   easy-to-interpet format. Filters can be applied to view (1) specific nodes,
+   (2) nodes in a specific partition, or (3) nodes in a specifc state.</dd>
+<dt>sqstat</dt>
+<dd>A customized version of squeue that produces output analogous to the PBS
+    qstat and xqstat commands (requires clush).</dd>
+<dt>fisbatch</dt>
+<dd>Friendly Interactive sbatch. A customized version of sbatch that provides a
+    user-friendly interface to an interactive job with X11 forwarding enabled.
+    It is analogous to the PBS "qsub -I -X" command. This code was adopted from
+    srun.x11 (requires clush).</dd>
+<dt>sranks</dt>
+<dd>A command that lists the overall priorities and associated priority
+    components of queued jobs in ascending order. Top-ranked jobs will be given
+    priority by the scheduler but lower ranked jobs may get slotted in first if
+    they fit into the scheduler's backfill window.</dd>
+<dt>sqelp</dt>
+<dd>A customized version of squeue that only prints a double-quote if the
+    information in a column is the same from row to row. Some users find this
+    type of formatting easier to visually digest.</dd>
+<dt>sjeff</dt>
+<dd>Determines the efficiency of one or more running jobs. Inefficient jobs are
+    high-lighted in red text (requires clush).</dd>
+<dt>sueff</dt>
+<dd>Determines the overall efficiency of the running jobs of one or more users.
+    Users that are inefficient are highlighted in red text (requires clush).</dd>
+<dt>yasqr</dt>
+<dd>Yet Another Squeue Replacement. Fixes squeue bugs in earlier versions of
+    Slurm.</dd>
+<dt>sgetscr</dt>
+<dd>Retrieves the Slurm/sbatch script and environment files for a job that is
+    queued or running.</dd>
+<dt>snacct</dt>
+<dd>Retrieves Slurm accounting information for a given node and for a given
+    period of time.</dd>
+<dt>suacct</dt>
+<dd>Retrieves Slurm accounting information for a given user's jobs for a given
+    period of time.</dd>
+<dt>slist</dt>
+<dd>Retrieves Slurm accounting and node information for a running or completed
+    job (requires clush).</dd>
+<dt>slogs</dt>
+<dd>Retrieves resource usage and accounting information for a user or list of
+    users. For each job that was run after the given start date, the following
+    information is gathered from the Slurm accounting logs: Number of CPUs,
+    Start Time, Elapsed Time, Amount of RAM Requested, Average RAM Used, and
+    Max RAM Used.</dd>
+</dl></li><br>
 
 <li><b>Slurmmon</b><br>
 Slurmmon is a system for gathering and plotting data about Slurm scheduling and
@@ -272,6 +336,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 30 April 2014</p>
+<p style="text-align:center;">Last modified 23 July 2014</p>
 
 <!--#include virtual="footer.txt"-->
