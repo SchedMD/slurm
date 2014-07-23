@@ -1,0 +1,209 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate --cpu-freq is enforced when using non-numeric values
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id      1.98
+set file_in      "test$test_id\_sc"
+set node         ""
+set threads      0
+set job_id       0
+set exit_code    0
+array set freq_lvl_1 {
+	low           0
+	high          0
+	highm1        0
+	medium        0
+
+}
+array set freq_lvl_2 {
+	conservative  0
+	ondemand      0
+	performance   0
+	powersave     0
+}
+
+print_header $test_id
+
+if {![string compare [test_proctrack] "linuxproc"]} {
+	send_user "\nWARNING: this test cannot run on proctracktype of "
+	send_user "linuxproc\n"
+	exit 0
+}
+if {[slurmd_user_root] == 0} {
+	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
+	exit 0
+}
+
+proc sub_job { freq } {
+
+	global srun sacct node threads job_id number wait_for_job float timeout exit_code
+	global alpha_numeric_under
+
+	set timeout 120
+	array set this_freq $freq
+
+	foreach option [array names this_freq] {
+
+		set job_id 0
+		set srun_pid [spawn $srun -v -t1 --cpu-freq=$option -n$threads -w$node sleep 5]
+		expect {
+			-re "launching ($number).0" {
+				set job_id $expect_out(1,string)
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: srun is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$job_id == 0} {
+			send_user "\nFAILURE: srun did not submit job\b"
+			exit 1
+		}
+
+		wait_for_job $job_id DONE
+
+		spawn $sacct -j$job_id -oavecpufreq --noheader
+		expect {
+			-re "($float)($alpha_numeric_under)" {
+				set this_freq($option) $expect_out(1,string)
+				set tmp $expect_out(2,string)
+				if {[string compare $tmp "M"] == 0} {
+					set this_freq($option) [expr $this_freq($option) / 1000.0]
+				}
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sacct is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$this_freq($option) == 0} {
+			send_user "\nFAILURE: did not get cpu frequency for $option\n"
+			set exit_code 1
+		}
+	}
+	return [array get this_freq]
+}
+
+make_bash_script $file_in "sleep 2"
+
+# Get a node that we can use
+spawn $sbatch -N1 -t1 -o/dev/null --exclusive $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+wait_for_job $job_id RUNNING
+
+set match 0
+spawn $scontrol show job $job_id
+expect {
+	-re "NodeList=($alpha_numeric_nodelist)" {
+		set node $expect_out(1,string)
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 1} {
+	send_user "\nFAILURE: was not able to get a usable node\n"
+	exit 1
+}
+
+spawn $scontrol show node $node
+expect {
+	-re "ThreadsPerCore=($number)" {
+		set threads $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+cancel_job $job_id
+
+array set freq_lvl_1 [sub_job [array get freq_lvl_1]]
+
+if {!(($freq_lvl_1(low) < $freq_lvl_1(medium)) && ($freq_lvl_1(medium) < $freq_lvl_1(high))
+      && ($freq_lvl_1(high) <= $freq_lvl_1(highm1)))} {
+	send_user "\nFAILURE: CPU frequencies are not correct\n"
+	set exit_code 1
+}
+
+array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
+
+if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) || ($freq_lvl_2(performance) == 0) ||
+    ($freq_lvl_2(powersave) == 0)} {
+	send_user "\nFAILURE: CPU frequencies are not correct\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCCESS\n"
+}
+exit $exit_code

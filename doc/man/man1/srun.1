@@ -438,6 +438,11 @@ configured, this parameter is ignored.
 selected CPU is reset to the configured \fBCpuFreqDef\fR value with a
 default value of the OnDemand CPU governor.
 
+\fBNOTE\fR: When submitting jobs with  the \fB\-\-cpu\-freq\fR option
+with linuxproc as the ProctrackType can cause jobs to run too quickly before
+Accounting is able to poll for job information. As a result not all of
+accounting information will be present.
+
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be

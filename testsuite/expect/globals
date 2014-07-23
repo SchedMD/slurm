@@ -1885,7 +1885,7 @@ proc dec2hex {value} {
 # Proc: uint2hex
 #
 # Purpose: Create a 32 bit hex number from an unsigned decimal
-# number. 
+# number.
 #
 # Returns: 32 bit hex version of input 'value'
 #
@@ -3086,4 +3086,34 @@ proc test_preempttype_qos { } {
 	}
 	log_user 1
 	return $qos
+}
+
+#####################################################################
+#
+# Proc: test_proctrack
+#
+# Purpose: Determine the ProctrackType
+#
+# Returns: the proctrack type
+#
+#####################################################################
+
+proc test_proctrack { } {
+
+	global scontrol alpha_numeric_under
+	log_user 0
+	set proctype ""
+	spawn $scontrol show config
+	expect {
+		-re "ProctrackType *=* proctrack/($alpha_numeric_under)" {
+			set proctype $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $proctype
 }
