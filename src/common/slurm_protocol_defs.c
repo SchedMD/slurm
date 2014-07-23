@@ -949,7 +949,10 @@ extern void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 }
 extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->job_id_str);
+		xfree(msg);
+	}
 }
 
 extern void

@@ -10441,22 +10441,34 @@ static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer,
 			      uint16_t protocol_version)
 {
 	xassert ( msg != NULL );
-
-	pack16(msg -> op, buffer);
-	pack32(msg->job_id,  buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		pack16(msg -> op, buffer);
+		pack32(msg->job_id,  buffer);
+		packstr(msg->job_id_str, buffer);
+	} else {
+		pack16(msg -> op, buffer);
+		pack32(msg->job_id,  buffer);
+	}
 }
 
 static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer,
 				uint16_t protocol_version)
 {
 	suspend_msg_t * msg;
+	uint32_t uint32_tmp = 0;
 	xassert ( msg_ptr != NULL );
 
 	msg = xmalloc ( sizeof (suspend_msg_t) );
 	*msg_ptr = msg ;
 
-	safe_unpack16(&msg->op,      buffer);
-	safe_unpack32(&msg->job_id , buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->op,      buffer);
+		safe_unpack32(&msg->job_id , buffer);
+		safe_unpackstr_xmalloc(&msg->job_id_str, &uint32_tmp, buffer);
+	} else {
+		safe_unpack16(&msg->op,      buffer);
+		safe_unpack32(&msg->job_id , buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

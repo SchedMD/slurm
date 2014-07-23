@@ -11389,6 +11389,9 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 
+	xfree(sus_ptr->job_id_str);
+	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
+
 #ifdef HAVE_BG
 	rc = ESLURM_NOT_SUPPORTED;
 	goto reply;
@@ -11435,7 +11438,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_suspend2(suspend_msg2_t *sus_ptr, uid_t uid,
+extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			slurm_fd_t conn_fd, bool indf_susp,
 			uint16_t protocol_version)
 {

@@ -3807,17 +3807,22 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	     op, (unsigned int) uid);
 
 	lock_slurmctld(job_write_lock);
-	error_code = job_suspend(sus_ptr, uid, msg->conn_fd, true,
-				 msg->protocol_version);
+	if (sus_ptr->job_id_str) {
+		error_code = job_suspend2(sus_ptr, uid, msg->conn_fd, true,
+					  msg->protocol_version);
+	} else {
+		error_code = job_suspend(sus_ptr, uid, msg->conn_fd, true,
+					 msg->protocol_version);
+	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_suspend");
 
 	if (error_code) {
-		info("_slurm_rpc_suspend(%s) %u: %s", op,
-		     sus_ptr->job_id, slurm_strerror(error_code));
+		info("_slurm_rpc_suspend(%s) for %s %s", op,
+		     sus_ptr->job_id_str, slurm_strerror(error_code));
 	} else {
-		info("_slurm_rpc_suspend(%s) for %u %s", op,
-		     sus_ptr->job_id, TIME_STR);
+		info("_slurm_rpc_suspend(%s) for %s %s", op,
+		     sus_ptr->job_id_str, TIME_STR);
 
 		schedule_job_save();	/* Has own locking */
 		if (sus_ptr->op == SUSPEND_JOB)

@@ -945,12 +945,7 @@ _process_command (int argc, char *argv[])
 					tag);
 		} else {
 			for (i = 1; i < argc; i++) {
-				error_code = scontrol_suspend(argv[0], argv[i]);
-				if (error_code) {
-					exit_code = 1;
-					if (quiet_flag != 1)
-						slurm_perror ("slurm_suspend error");
-				}
+				scontrol_suspend(argv[0], argv[i]);
 			}
 		}
 	}

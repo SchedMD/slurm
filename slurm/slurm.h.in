@@ -1422,15 +1422,12 @@ enum suspend_opts {
 	RESUME_JOB		/* Resume a job now */
 };
 
+/* NOTE: Set either job_id_str (NULL by default) or job_id */
 typedef struct suspend_msg {
-	uint16_t op;            /* suspend operation, see enum suspend_opts */
-	uint32_t job_id;        /* slurm job_id */
-} suspend_msg_t;
-
-typedef struct suspend_msg2 {
 	uint16_t op;		/* suspend operation, see enum suspend_opts */
-	char *job_id_str;	/* slurm job_id string */
-} suspend_msg2_t;
+	uint32_t job_id;	/* slurm job ID (number) */
+	char *   job_id_str;	/* slurm job ID (string) */
+} suspend_msg_t;
 
 typedef struct {
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
@@ -3786,11 +3783,25 @@ extern int slurm_set_schedlog_level PARAMS((uint32_t schedlog_level));
 extern int slurm_suspend PARAMS((uint32_t job_id));
 
 /*
+ * slurm_suspend2 - suspend execution of a job.
+ * IN job_id in string form  - job on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_suspend2 PARAMS((char *job_id));
+
+/*
  * slurm_resume - resume execution of a previously suspended job.
  * IN job_id  - job on which to perform operation
  * RET 0 or a slurm error code
  */
 extern int slurm_resume PARAMS((uint32_t job_id));
+
+/*
+ * slurm_resume2 - resume execution of a previously suspended job.
+ * IN job_id in string form  - job on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_resume2 PARAMS((char *job_id));
 
 /*
  * slurm_requeue - re-queue a batch job, if already running

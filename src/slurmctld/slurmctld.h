@@ -1269,7 +1269,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		       slurm_fd_t conn_fd, bool indf_susp,
 		       uint16_t protocol_version);
-extern int job_suspend2(suspend_msg2_t *sus_ptr, uid_t uid,
+extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			slurm_fd_t conn_fd, bool indf_susp,
 			uint16_t protocol_version);
 
