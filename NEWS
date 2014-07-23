@@ -24,6 +24,7 @@ documents those changes that are of interest to users and admins.
     bit_unfmt.
  -- CRAY NATIVE - Fix issue on heavy systems to only run the NHC once per
     job/step completion.
+ -- Remove unneeded step cleanup for pending steps.
 
 * Changes in Slurm 14.03.6
 ==========================

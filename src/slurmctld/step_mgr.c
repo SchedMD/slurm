@@ -273,9 +273,9 @@ extern void delete_step_records (struct job_record *job_ptr)
 						    &cleaning);
 			if (cleaning)	/* Step hasn't finished cleanup yet. */
 				continue;
+			_internal_step_complete(job_ptr, step_ptr, true);
 		}
 
-		_internal_step_complete(job_ptr, step_ptr, true);
 		list_remove (step_iterator);
 		_free_step_rec(step_ptr);
 	}
