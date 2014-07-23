@@ -1,0 +1,363 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test options --ntask-per-node and -c are enforced
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id      1.97
+set num_nodes    3
+set nodelist     ""
+set cputot       0
+set ntasks       0
+set ntaskpn      0
+set exit_code    0
+set sys_homo     0
+set file_in      "test$test_id\_sc"
+array set nodes {}
+array set tasks {}
+
+print_header $test_id
+
+if {![string match *CR_PACK_NODES* [test_select_type_params]]} {
+	send_user "\nWARNING: this test requirese "
+	send_user "SelectTypeParameters=CR_PACK_NODES\n"
+	exit 1
+}
+
+proc check_node_config { } {
+
+	global scontrol nodelist sys_homo number exit_code
+
+	set match 0
+	set low 0
+	set tmp 0
+	set same 0
+	log_user 0
+	spawn $scontrol show nodes $nodelist
+	expect {
+		-re "CPUTot=($number)" {
+			if {$match != 0} {
+				set tmp $expect_out(1,string)
+				if {$tmp < $low} {
+					set low $tmp
+				} elseif {$tmp == $low} {
+					incr same 1
+				}
+			} else {
+				set low $expect_out(1,string)
+			}
+			incr match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$match != 3} {
+		send_user "\nFAILURE: could not determine node config\n"
+		exit 1
+	} elseif {$same == 2} {
+		set sys_homo 1
+		return $low
+	} else {
+		return $low
+	}
+
+}
+
+proc check_tasks_all {ntaskspn tasks} {
+
+	global scontrol exit_code
+
+	array set ntasks $tasks
+	set match 0
+	for {set i 0} {$i<3} {incr i 1} {
+		if {$ntasks($i) == $ntaskspn} {
+			incr match 1
+		}
+	}
+
+	if {$match != 3} {
+		send_user "\nFAILURE: incorrect number of tasks were set\n"
+		set exit_code 1
+	}
+}
+
+proc check_tasks_off {ntaskspn tasks offset} {
+
+	global scontrol exit_code
+
+	array set ntasks $tasks
+	set match 0
+	for {set i 0} {$i<2} {incr i 1} {
+		if {$ntasks($i) == $ntaskspn} {
+			incr match 1
+		}
+	}
+
+	if {$ntasks($i) == [expr $ntaskspn - $offset]} {
+		incr match 1
+	}
+
+	if {$match != 3} {
+		send_user "\nFAILURE: incorrect number of tasks were set $match != 3\n"
+		set exit_code 1
+	}
+}
+
+proc check_cpu_all {nodes job_cpus ncpus} {
+
+	global scontrol exit_code
+
+	array set nnodes $nodes
+	array set jcpus $job_cpus
+	set match 0
+	for {set i 0} {$i<3} {incr i 1} {
+		spawn $scontrol show nodes $nnodes($i)
+		expect {
+			-re "CPUTot=[expr $jcpus($i) * $ncpus]" {
+				incr match 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: scontrol is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+	}
+
+	if {$match != 3} {
+		send_user "\nFAILURE: incorrect number of cpus were set\n"
+		set exit_code 1
+	}
+}
+
+proc check_cpu_off {nodes job_cpus ncpus} {
+
+	global scontrol exit_code
+
+	array set nnodes $nodes
+	array set jcpus $job_cpus
+	set match 0
+	for {set i 0} {$i<2} {incr i 1} {
+		spawn $scontrol show nodes $nnodes($i)
+		expect {
+			-re "CPUTot=[expr $jcpus($i) * $ncpus]" {
+				incr match 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: scontrol is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+	}
+
+	spawn $scontrol show nodes $nnodes($i)
+	expect {
+		-re "CPUTot=[expr ($jcpus($i) * $ncpus) + $ncpus]" {
+			incr match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 3} {
+		send_user "\nFAILURE: incorrect number of cpus were set $match != 3\n"
+		set exit_code 1
+	}
+}
+
+proc submit_cpu {ntasks ncpus} {
+
+	global srun bin_printenv nodelist exit_code num_nodes tasks nodes
+	global bin_bash number alpha_numeric_nodelist wait_for_job
+
+	# Wait awhile for the jobs to cleanup
+	sleep 2
+
+	set x 0
+	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks -w$nodelist -c$ncpus --exclusive $bin_printenv SLURMD_NODENAME | sort -n | uniq -c"
+	expect {
+		-re "($number) ($alpha_numeric_nodelist)" {
+			set tasks($x) $expect_out(1,string)
+			set nodes($x) $expect_out(2,string)
+			incr x 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$x != 3} {
+		send_user "\nFAILURE: srun did not submit the jobs correctly $x != 3\n"
+		exit 1
+	}
+}
+
+proc submit_tasks {ntasks ntaskpn} {
+
+	global srun bin_printenv nodelist exit_code num_nodes tasks nodes bin_bash
+	global number alpha_numeric_nodelist
+
+	# Wait awhile for the jobs to clean up
+	sleep 2
+
+	set x 0
+	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks --ntasks-per-node=$ntaskpn -w$nodelist --exclusive $bin_printenv SLURMD_NODENAME | sort -n | uniq -c"
+	expect {
+		-re "($number) ($alpha_numeric_nodelist)" {
+			set tasks($x) $expect_out(1,string)
+			set nodes($x) $expect_out(2,string)
+			incr x 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$x != 3} {
+		send_user "\nFAILURE: srun did not submit the jobs correctlty $x != 3\n"
+		exit 1
+	}
+}
+
+######################## Test Starts Here ########################
+
+make_bash_script $file_in "true"
+
+# Submit an exclusive job to get a nodelist
+set tmp_id 0
+spawn $sbatch -N3 -o/dev/null --exclusive $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set tmp_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+wait_for_job $tmp_id DONE
+
+spawn $scontrol show job $tmp_id
+expect {
+	-re "NodeList=($alpha_numeric_nodelist)" {
+		set nodelist $expect_out(1,string)
+		exp_continue
+	}
+	-re "NumCPUs=($number)" {
+		set cputot $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+############# Test by CPU #############
+send_user "====================Testing CPUs per Task====================\n\n"
+set ncpuspt [check_node_config]
+
+# Submit job with just one cpu per task
+submit_cpu $cputot 1
+check_cpu_all [array get nodes] [array get tasks] 1
+
+# Submit job with the lowest cpu count of the 3 nodes
+submit_cpu [expr $cputot/$ncpuspt] $ncpuspt
+check_cpu_all [array get nodes] [array get tasks] $ncpuspt
+
+if {!$sys_homo} {
+	# Submit job with lowest cpu count of the 3 nodes and set tasks to 1
+	# less the number of cpus (This test only works on heterogenous systems)
+	submit_cpu [expr ($cputot/$ncpuspt) - 1] $ncpuspt
+	check_cpu_off [array get nodes] [array get tasks] $ncpuspt
+}
+
+############# Test by node task #############
+send_user "====================Testing Tasks per Node====================\n\n"
+set ntask [expr $num_nodes * [check_node_config]]
+set ntaskpn [check_node_config]
+
+# Submit job with ntasks-per-node with the lost cpu count
+submit_tasks $ntask $ntaskpn
+check_tasks_all $ntaskpn [array get tasks]
+
+# Submit job with one less number of ntasks to see that task are spread
+# across all nodes
+submit_tasks [expr $ntask -1] $ntaskpn
+check_tasks_off $ntaskpn [array get tasks] 1
+
+# Submit job with two less number of ntasks to see that task are spread
+# across all nodes
+submit_tasks [expr $ntask -2] $ntaskpn
+check_tasks_off $ntaskpn [array get tasks] 2
+
+if {$exit_code == 0} {
+	exec $bin_rm $file_in
+	send_user "\nSUCCCESS\n"
+}
+exit $exit_code
