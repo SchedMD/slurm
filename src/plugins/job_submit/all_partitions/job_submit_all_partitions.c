@@ -66,6 +66,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -103,12 +104,16 @@ const uint32_t min_plug_version = 100;
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
+	/* Locks: Read partition */
+	slurmctld_lock_t part_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
 
 	if (job_desc->partition)	/* job already specified partition */
 		return SLURM_SUCCESS;
 
+	lock_slurmctld(part_read_lock);
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
@@ -118,6 +123,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 		xstrcat(job_desc->partition, part_ptr->name);
 	}
 	list_iterator_destroy(part_iterator);
+	unlock_slurmctld(part_read_lock);
 	//info("Set partition of submitted job to %s", job_desc->partition);
 
 	return SLURM_SUCCESS;

@@ -4517,11 +4517,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	user_submit_priority = job_desc->priority;
 
-	error_code = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid,
-					      err_msg);
-	if (error_code != SLURM_SUCCESS)
-		return error_code;
-
 	/* insure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
@@ -4980,9 +4975,19 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory
+ * IN job_desc   - user job submit request
+ * IN submit_uid - UID making job submit request
+ * OUT err_msg   - custom error message to return
  * RET 0 or error code */
-extern int validate_job_create_req(job_desc_msg_t * job_desc)
+extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
+				   char **err_msg)
 {
+	int rc;
+
+	rc = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid, err_msg);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
 	if (_test_strlen(job_desc->account, "account", 1024)		||
 	    _test_strlen(job_desc->alloc_node, "alloc_node", 1024)	||
 	    _test_strlen(job_desc->array_inx, "array_inx", 1024 * 4)	||

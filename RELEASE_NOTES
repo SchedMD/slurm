@@ -113,6 +113,9 @@ OTHER CHANGES
 =============
  -- Add job "reboot" option for Linux clusters. This invokes the configured
     RebootProgram to reboot nodes allocated to a job before it begins execution.
+ -- In the job_submit plugin: Remove all slurmctld locks prior to job_submit()
+    being called for improved performance. If any slurmctld data structures are
+    read or modified, add locks directly in the plugin.
 
 API CHANGES
 ===========

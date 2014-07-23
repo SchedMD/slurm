@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
     not initialize the allocated memory to zero for improved performance.
  -- Modify hostlist function to dynamically allocate buffer space for improved
     performance.
+ -- In the job_submit plugin: Remove all slurmctld locks prior to job_submit()
+    being called for improved performance. If any slurmctld data structures are
+    read or modified, add locks directly in the plugin.
 
 * Changes in Slurm 14.11.0pre2
 ==============================
@@ -144,6 +147,9 @@ documents those changes that are of interest to users and admins.
     only unload its table (which automatically unloads its windows).
  -- When HealthCheckNodeState is configured as IDLE don't run the
     HealthCheckProgram for nodes in any other states than IDLE.
+ -- Remove all slurmctld locks prior to job_submit() being called in plugins.
+    If any slurmctld data structures are read or modified, add locks directly
+    in the plugin.
 
 * Changes in Slurm 14.03.6
 ==========================
