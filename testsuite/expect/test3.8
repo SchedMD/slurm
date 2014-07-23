@@ -133,7 +133,7 @@ expect {
 # Wait for job to restart, then requeue it again
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to begin\n"
+	send_user "\nFAILURE: waiting for job to restart\n"
 	set exit_code 1
 }
 exec $bin_sleep 15
@@ -156,6 +156,10 @@ expect {
 #
 # Wait for job to complete and check for files
 #
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to restart\n"
+	set exit_code 1
+}
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
 	set exit_code 1
