@@ -209,13 +209,6 @@ static void _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer,
 static int _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 				uint16_t protocol_version);
 
-static void _pack_kill_job_msg2(job_kill_msg_t *msg,
-				Buf buffer,
-				uint16_t protocol_version);
-static int _unpack_kill_job_msg2(job_kill_msg_t **msg,
-				 Buf buffer,
-				 uint16_t protocol_version);
-
 static void _pack_signal_job_msg(signal_job_msg_t * msg, Buf buffer,
 				 uint16_t protocol_version);
 static int _unpack_signal_job_msg(signal_job_msg_t ** msg, Buf buffer,
@@ -978,6 +971,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					   msg->protocol_version);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
+	case REQUEST_KILL_JOB:
 	case SRUN_STEP_SIGNAL:
 		_pack_job_step_kill_msg((job_step_kill_msg_t *)
 					msg->data, buffer,
@@ -1325,11 +1319,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_LICENSE_INFO:
 		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
 		break;
-	case REQUEST_KILL_JOB:
-		_pack_kill_job_msg2((struct job_kill_msg *)msg->data,
-				    buffer,
-				    msg->protocol_version);
-		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1580,6 +1569,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						  msg->protocol_version);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
+	case REQUEST_KILL_JOB:
 	case SRUN_STEP_SIGNAL:
 		rc = _unpack_job_step_kill_msg((job_step_kill_msg_t **)
 					       & (msg->data), buffer,
@@ -1962,11 +1952,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		                                      &(msg->data),
 		                                      buffer,
 		                                      msg->protocol_version);
-		break;
-	case REQUEST_KILL_JOB:
-		rc = _unpack_kill_job_msg2((job_kill_msg_t **)&(msg->data),
-					   buffer,
-					   msg->protocol_version);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -8681,10 +8666,18 @@ static void
 _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer,
 			uint16_t protocol_version)
 {
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_step_id, buffer);
-	pack16((uint16_t)msg->signal, buffer);
-	pack16((uint16_t)msg->flags, buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		packstr(msg->sjob_id, buffer);
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack16((uint16_t)msg->signal, buffer);
+		pack16((uint16_t)msg->flags, buffer);
+	} else {
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack16((uint16_t)msg->signal, buffer);
+		pack16((uint16_t)msg->flags, buffer);
+	}
 }
 
 /* _unpack_job_step_kill_msg
@@ -8698,14 +8691,24 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer,
 			  uint16_t protocol_version)
 {
 	job_step_kill_msg_t *msg;
+	uint32_t cc;
 
 	msg = xmalloc(sizeof(job_step_kill_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->job_step_id, buffer);
-	safe_unpack16(&msg->signal, buffer);
-	safe_unpack16(&msg->flags, buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&(msg)->sjob_id, &cc, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack16(&msg->signal, buffer);
+		safe_unpack16(&msg->flags, buffer);
+	} else {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack16(&msg->signal, buffer);
+		safe_unpack16(&msg->flags, buffer);
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -11809,51 +11812,6 @@ _unpack_license_info_msg(license_info_msg_t **msg,
 
 unpack_error:
 	slurm_free_license_info_msg(*msg);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-
-/* _pack_kill_job_msg2()
- */
-static void
-_pack_kill_job_msg2(job_kill_msg_t * msg, Buf buffer, uint16_t protocol_version)
-{
-	xassert(msg != NULL);
-
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
-		packstr(msg->job_id, buffer);
-		pack16(msg->signal, buffer);
-		pack16(msg->signal, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-	}
-}
-
-static int
-_unpack_kill_job_msg2(job_kill_msg_t **msg,
-		      Buf buffer,
-		      uint16_t protocol_version)
-{
-	uint32_t cc;
-
-	xassert(msg);
-	*msg = xmalloc(sizeof(kill_job_msg_t));
-
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&(*msg)->job_id, &cc, buffer);
-		safe_unpack16(&(*msg)->signal, buffer);
-		safe_unpack16(&(*msg)->signal, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_kill_job_msg2(*msg);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

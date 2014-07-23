@@ -534,8 +534,8 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		slurm_free_license_info_request_msg(msg->data);
 		break;
 	 case REQUEST_KILL_JOB:
-		 _slurm_rpc_kill_job2(msg);
-		 slurm_free_kill_job_msg2(msg->data);
+		_slurm_rpc_job_step_kill(msg);
+		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
@@ -4940,29 +4940,29 @@ inline static void
 _slurm_rpc_kill_job2(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	job_kill_msg_t *kill;
+	job_step_kill_msg_t *kill;
 	slurmctld_lock_t lock = {READ_LOCK, WRITE_LOCK,
 				 WRITE_LOCK, NO_LOCK };
 	uid_t uid;
 	int cc;
 
-	kill = 	(job_kill_msg_t *)msg->data;
+	kill = 	(job_step_kill_msg_t *)msg->data;
 	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
 	debug("%s: REQUEST_KILL_JOB job %s uid %d",
-	      __func__, kill->job_id, uid);
+	      __func__, kill->sjob_id, uid);
 
 	lock_slurmctld(lock);
 
-	cc = job_str_signal(kill->job_id,
+	cc = job_str_signal(kill->sjob_id,
 			    kill->signal,
 			    kill->flags,
 			    uid,
 			    0);
 	if (cc != SLURM_SUCCESS) {
 		error("%s: job_str_signal() job %s sig %d returned %s",
-		      __func__, kill->job_id,
+		      __func__, kill->sjob_id,
 		      kill->signal, slurm_strerror(cc));
 	}
 

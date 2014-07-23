@@ -3597,6 +3597,8 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	char jbuf[JBUFSIZ];
 	time_t now = time(NULL);
 
+	trace_job(job_ptr, __func__, "enter");
+
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
@@ -3613,8 +3615,8 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
 		}
 		/* build_cg_bitmap() not needed, job already completing */
-		verbose("job_signal of requeuing %s successful",
-			jobid2str(job_ptr, jbuf));
+		verbose("%s: of requeuing %s successful",
+			__func__, jobid2str(job_ptr, jbuf));
 		return SLURM_SUCCESS;
 	}
 
@@ -3625,8 +3627,8 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		job_ptr->end_time	= now;
 		srun_allocate_abort(job_ptr);
 		job_completion_logger(job_ptr, false);
-		verbose("job_signal of pending %s successful",
-			jobid2str(job_ptr, jbuf));
+		verbose("%s: of pending %s successful",
+			__func__, jobid2str(job_ptr, jbuf));
 		return SLURM_SUCCESS;
 	}
 
@@ -3643,8 +3645,8 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, false, true, preempt);
-		verbose("job_signal %u of suspended %s successful",
-			signal, jobid2str(job_ptr, jbuf));
+		verbose("%s: %u of suspended %s successful",
+			__func__, signal, jobid2str(job_ptr, jbuf));
 		return SLURM_SUCCESS;
 	}
 
@@ -3666,14 +3668,17 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		} else {
 			_signal_job(job_ptr, signal);
 		}
-		verbose("job_signal %u of running %s successful",
-			signal, jobid2str(job_ptr, jbuf));
+		verbose("%s: %u of running %s successful",
+			__func__, signal, jobid2str(job_ptr, jbuf));
 		return SLURM_SUCCESS;
 	}
 
-	verbose("job_signal: %s can't be sent signal %u from state=%s",
-		jobid2str(job_ptr, jbuf), signal,
+	verbose("%s: %s can't be sent signal %u from state=%s",
+		__func__, jobid2str(job_ptr, jbuf), signal,
 		job_state_string(job_ptr->job_state));
+
+	trace_job(job_ptr, __func__, "return");
+
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 }
 
@@ -3775,7 +3780,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	long_id = strtol(job_id_str, &end_ptr, 10);
 	if ((long_id <= 0) || (long_id == LONG_MAX) ||
 	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
-		info("job_signal: invalid job id %s", job_id_str);
+		info("%s: 1 invalid job id %s", __func__, job_id_str);
 		return ESLURM_INVALID_JOB_ID;
 	}
 	job_id = (uint32_t) long_id;
@@ -3797,7 +3802,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		/* Signal all tasks of this job array */
 		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
 		if (!job_ptr && !job_ptr_done) {
-			info("job_signal: invalid job id %u", job_id);
+			info("%s: 2 invalid job id %u", __func__, job_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		while (job_ptr) {
@@ -3828,7 +3833,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			valid = false;
 	}
 	if (!valid) {
-		info("job_signal: invalid job id %s", job_id_str);
+		info("%s: 3 invalid job id %s", __func__, job_id_str);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -3845,22 +3850,22 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	if ((job_ptr == NULL) ||
 	    ((job_ptr->array_task_id == NO_VAL) &&
 	     (job_ptr->array_recs == NULL))) {
-		info("job_signal: invalid job id %s", job_id_str);
+		info("%s: 4 invalid job id %s", __func__, job_id_str);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 					  job_ptr->account)) {
-		error("Security violation, JOB_CANCEL RPC for jobID %s from "
-		      "uid %d", job_id_str, uid);
+		error("%s: Security violation JOB_CANCEL RPC for jobID %s from "
+		      "uid %d", __func__, job_id_str, uid);
 		return ESLURM_ACCESS_DENIED;
 	}
 	if (!validate_slurm_user(uid) && (signal == SIGKILL) &&
 	    job_ptr->part_ptr &&
 	    (job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY) && wiki2_sched) {
-		info("Attempt to cancel Moab job using Slurm command from "
-		     "uid %d", uid);
+		info("%s: Attempt to cancel Moab job using Slurm command from "
+		     "uid %d", __func__, uid);
 		return ESLURM_ACCESS_DENIED;
 	}
 
@@ -3918,7 +3923,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			continue;
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
-			info("job_signal: invalid job id %u_%d", job_id, i);
+			info("%s: 5 invalid job id %u_%d", __func__, job_id, i);
 			rc = ESLURM_INVALID_JOB_ID;
 			continue;
 		}

@@ -354,6 +354,7 @@ extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
 
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 {
+	xfree(msg->sjob_id);
 	xfree(msg);
 }
 
@@ -1114,16 +1115,6 @@ inline void slurm_free_forward_data_msg(forward_data_msg_t *msg)
 extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg)
 {
 	xfree(msg);
-}
-
-inline void slurm_free_kill_job_msg2(job_kill_msg_t *msg)
-{
-	if (msg != NULL)
-		return;
-
-	xfree(msg->job_id);
-	xfree(msg);
-
 }
 
 extern char *preempt_mode_string(uint16_t preempt_mode)
