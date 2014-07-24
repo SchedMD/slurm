@@ -143,8 +143,7 @@ const uint32_t plugin_version	= 100;
 static pthread_t decay_handler_thread;
 static pthread_t cleanup_handler_thread;
 static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool running_decay = 0, reconfig = 0,
-	calc_fairshare = 1, priority_debug = 0;
+static bool running_decay = 0, reconfig = 0, calc_fairshare = 1;
 static bool favor_small; /* favor small jobs over large */
 static uint16_t damp_factor = 1;  /* weight for age factor */
 static uint32_t max_age; /* time when not to add any more
@@ -163,6 +162,8 @@ static uint32_t max_tickets; /* Maximum number of tickets given to a
 static time_t g_last_ran = 0; /* when the last poll ran */
 static double decay_factor = 1; /* The decay factor when decaying time. */
 
+/* variables defined in prirority_multifactor.h */
+bool priority_debug = 0;
 /*void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
 double priority_p_calc_fs_factor(long double usage_efctv,
 				 long double shares_norm);*/

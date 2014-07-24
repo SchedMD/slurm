@@ -38,7 +38,7 @@
 
 #include "src/common/list.h"
 #include "src/common/slurm_priority.h"
-
+#include "priority_multifactor.h"
 
 extern void level_based_init(void);
 

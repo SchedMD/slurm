@@ -64,3 +64,6 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr);
 
 extern void decay_apply_weighted_factors(struct job_record *job_ptr,
 				         time_t *start_time_ptr);
+
+extern bool priority_debug;
+

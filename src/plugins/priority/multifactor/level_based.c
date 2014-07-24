@@ -56,8 +56,6 @@ static uint32_t unused_bucket_bits;
 /* Maximum value that can be stored in a bucket */
 static uint64_t bucket_max;
 
-static bool priority_debug;
-
 
 void _level_based_calc_children_fs(List children_list,
 				   List users,
@@ -75,10 +73,6 @@ extern void level_based_init(void) {
 	bucket_width_in_bits = 64 / priority_levels;
 	unused_bucket_bits = 64 % priority_levels;
 	bucket_max = UINT64_MAX >> (64 - bucket_width_in_bits);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO)
-		priority_debug = 1;
-	else
-		priority_debug = 0;
 }
 
 
