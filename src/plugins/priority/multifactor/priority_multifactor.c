@@ -164,7 +164,6 @@ bool priority_debug = 0;
 double priority_p_calc_fs_factor(long double usage_efctv,
 				 long double shares_norm);*/
 
-extern uint16_t part_max_priority;
 
 static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc);
 static double _get_fairshare_priority(struct job_record *job_ptr);
