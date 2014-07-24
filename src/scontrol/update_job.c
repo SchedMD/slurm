@@ -494,7 +494,7 @@ scontrol_requeue_hold(int argc, char **argv)
 			xstrfmtcat(this_job_id, "%u_%u",
 				   ids[i].array_job_id, ids[i].array_task_id);
 		} else {
-			xstrfmtcat(this_job_id, "%u", ids[i].array_job_id);
+			xstrfmtcat(this_job_id, "%u", ids[i].job_id);
 		}
 		rc = slurm_requeue2(this_job_id, state_flag);
 		if (rc != SLURM_SUCCESS)
