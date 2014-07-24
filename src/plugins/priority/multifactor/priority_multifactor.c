@@ -160,445 +160,6 @@ static double decay_factor = 1; /* The decay factor when decaying time. */
 
 /* variables defined in prirority_multifactor.h */
 bool priority_debug = 0;
-/*void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
-double priority_p_calc_fs_factor(long double usage_efctv,
-				 long double shares_norm);*/
-
-
-static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc);
-static double _get_fairshare_priority(struct job_record *job_ptr);
-static uint32_t _get_priority_internal(time_t start_time,
-				       struct job_record *job_ptr);
-static void _init_grp_used_cpu_run_secs(time_t last_ran);
-static int _apply_new_usage(struct job_record *job_ptr,
-			    time_t start_period, time_t end_period);
-static int _filter_job(struct job_record *job_ptr, List req_job_list,
-		       List req_user_list);
-static void _set_norm_shares(List children_list);
-static void _depth_oblivious_set_usage_efctv(
-	slurmdb_association_rec_t *assoc,
-	char *child,
-	char *child_str);
-static void _set_usage_efctv(slurmdb_association_rec_t *assoc);
-static void _internal_setup(void);
-
-
-extern void priority_p_reconfig(bool assoc_clear)
-{
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-
-
-	reconfig = 1;
-	prevflags = flags;
-	_internal_setup();
-
-	/* Since LEVEL_BASED uses a different shares calculation method, we
-	 * must reassign shares at reconfigure if the algorithm was switched to
-	 * or from LEVEL_BASED */
-	if ((flags & PRIORITY_FLAGS_LEVEL_BASED) !=
-	    (prevflags & PRIORITY_FLAGS_LEVEL_BASED)) {
-		assoc_mgr_lock(&locks);
-		_set_norm_shares(assoc_mgr_root_assoc->usage->children_list);
-		assoc_mgr_unlock(&locks);
-	}
-
-	/* Since the used_cpu_run_secs has been reset by the reconfig,
-	 * we need to remove the time that has past since the last
-	 * poll.  We can't just do the correct calculation in the
-	 * first place because it will mess up everything in the poll
-	 * since it is based off the g_last_ran time.
-	 */
-	if (assoc_clear)
-		_init_grp_used_cpu_run_secs(g_last_ran);
-	debug2("%s reconfigured", plugin_name);
-
-	return;
-}
-
-
-extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
-{
-	uint32_t priority = _get_priority_internal(time(NULL), job_ptr);
-
-	debug2("initial priority for job %u is %u", job_ptr->job_id, priority);
-
-	return priority;
-}
-
-
-extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
-{
-	char *child;
-	char *child_str;
-
-	xassert(assoc_mgr_root_assoc);
-	xassert(assoc);
-	xassert(assoc->usage);
-	xassert(assoc->usage->fs_assoc_ptr);
-
-	if (assoc->user) {
-		child = "user";
-		child_str = assoc->user;
-	} else {
-		child = "account";
-		child_str = assoc->acct;
-	}
-
-	if (assoc_mgr_root_assoc->usage->usage_raw) {
-		assoc->usage->usage_norm = assoc->usage->usage_raw
-			/ assoc_mgr_root_assoc->usage->usage_raw;
-	} else {
-		/* This should only happen when no usage has occured
-		 * at all so no big deal, the other usage should be 0
-		 * as well here. */
-		assoc->usage->usage_norm = 0;
-	}
-
-	if (priority_debug) {
-		info("Normalized usage for %s %s off %s(%s) %Lf / %Lf = %Lf",
-		     child, child_str,
-		     assoc->usage->parent_assoc_ptr->acct,
-		     assoc->usage->fs_assoc_ptr->acct,
-		     assoc->usage->usage_raw,
-		     assoc_mgr_root_assoc->usage->usage_raw,
-		     assoc->usage->usage_norm);
-	}
-	/* This is needed in case someone changes the half-life on the
-	 * fly and now we have used more time than is available under
-	 * the new config */
-	if (assoc->usage->usage_norm > 1.0)
-		assoc->usage->usage_norm = 1.0;
-
-	if (flags & PRIORITY_FLAGS_LEVEL_BASED)
-		assoc->usage->usage_efctv =
-			level_based_calc_assoc_usage(assoc);
-	else if (assoc->usage->fs_assoc_ptr == assoc_mgr_root_assoc) {
-		assoc->usage->usage_efctv = assoc->usage->usage_norm;
-		if (priority_debug)
-			info("Effective usage for %s %s off %s(%s) %Lf %Lf",
-			     child, child_str,
-			     assoc->usage->parent_assoc_ptr->acct,
-			     assoc->usage->fs_assoc_ptr->acct,
-			     assoc->usage->usage_efctv,
-			     assoc->usage->usage_norm);
-	} else if (flags & PRIORITY_FLAGS_TICKET_BASED) {
-		_ticket_based_set_usage_efctv(assoc);
-		if (priority_debug) {
-			info("Effective usage for %s %s off %s(%s) = %Lf",
-			     child, child_str,
-			     assoc->usage->parent_assoc_ptr->acct,
-			     assoc->usage->fs_assoc_ptr->acct,
-			     assoc->usage->usage_efctv);
-		}
-	} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
-		slurmdb_association_rec_t *parent_assoc =
-			assoc->usage->fs_assoc_ptr;
-
-		assoc->usage->usage_efctv =
-			parent_assoc->usage->usage_efctv;
-		if (priority_debug) {
-			info("Effective usage for %s %s off %s %Lf",
-			     child, child_str,
-			     parent_assoc->acct,
-			     parent_assoc->usage->usage_efctv);
-		}
-	} else if (flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS) {
-		_depth_oblivious_set_usage_efctv(assoc, child, child_str);
-	} else {
-		_set_usage_efctv(assoc);
-		if (priority_debug) {
-			info("Effective usage for %s %s off %s(%s) "
-			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
-			     child, child_str,
-			     assoc->usage->parent_assoc_ptr->acct,
-			     assoc->usage->fs_assoc_ptr->acct,
-			     assoc->usage->usage_norm,
-			     assoc->usage->fs_assoc_ptr->usage->usage_efctv,
-			     assoc->usage->usage_norm,
-			     assoc->shares_raw,
-			     assoc->usage->level_shares,
-			     assoc->usage->usage_efctv);
-		}
-	}
-}
-
-
-extern double priority_p_calc_fs_factor(long double usage_efctv,
-					long double shares_norm)
-{
-	double priority_fs = 0.0;
-
-	if (fuzzy_equal(usage_efctv, NO_VAL))
-		return priority_fs;
-
-	if (shares_norm <= 0)
-		return priority_fs;
-
-	if (flags & PRIORITY_FLAGS_TICKET_BASED) {
-		if (usage_efctv < MIN_USAGE_FACTOR * shares_norm)
-			usage_efctv = MIN_USAGE_FACTOR * shares_norm;
-		priority_fs = shares_norm / usage_efctv;
-	} else {
-		priority_fs =
-			pow(2.0, -((usage_efctv/shares_norm) / damp_factor));
-	}
-
-	return priority_fs;
-}
-
-extern List priority_p_get_priority_factors_list(
-	priority_factors_request_msg_t *req_msg, uid_t uid)
-{
-	List req_job_list;
-	List req_user_list;
-	List ret_list = NULL;
-	ListIterator itr;
-	priority_factors_object_t *obj = NULL;
-	struct job_record *job_ptr = NULL;
-	time_t start_time = time(NULL);
-
-	/* Read lock on jobs, nodes, and partitions */
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
-
-	xassert(req_msg);
-	req_job_list = req_msg->job_id_list;
-	req_user_list = req_msg->uid_list;
-
-	lock_slurmctld(job_read_lock);
-	if (job_list && list_count(job_list)) {
-		ret_list = list_create(slurm_destroy_priority_factors_object);
-		itr = list_iterator_create(job_list);
-		while ((job_ptr = list_next(itr))) {
-			if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
-			    !IS_JOB_PENDING(job_ptr))
-				continue;
-
-			/*
-			 * This means the job is not eligible yet
-			 */
-			if (!job_ptr->details->begin_time
-			    || (job_ptr->details->begin_time > start_time))
-				continue;
-
-			/*
-			 * 0 means the job is held
-			 */
-			if (job_ptr->priority == 0)
-				continue;
-
-			/*
-			 * Priority has been set elsewhere (e.g. by SlurmUser)
-			 */
-			if (job_ptr->direct_set_prio)
-				continue;
-
-			if (_filter_job(job_ptr, req_job_list, req_user_list))
-				continue;
-
-			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-			    && (job_ptr->user_id != uid)
-			    && !validate_operator(uid)
-			    && !assoc_mgr_is_user_acct_coord(
-				    acct_db_conn, uid,
-				    job_ptr->account))
-				continue;
-
-			obj = xmalloc(sizeof(priority_factors_object_t));
-			memcpy(obj, job_ptr->prio_factors,
-			       sizeof(priority_factors_object_t));
-			obj->job_id = job_ptr->job_id;
-			obj->user_id = job_ptr->user_id;
-			list_append(ret_list, obj);
-		}
-		list_iterator_destroy(itr);
-		if (!list_count(ret_list)) {
-			list_destroy(ret_list);
-			ret_list = NULL;
-		}
-	}
-	unlock_slurmctld(job_read_lock);
-
-	return ret_list;
-}
-
-/* at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
- * READ_LOCK, READ_LOCK }; should be locked before calling this */
-extern void priority_p_job_end(struct job_record *job_ptr)
-{
-	if (priority_debug)
-		info("priority_p_job_end: called for job %u", job_ptr->job_id);
-
-	_apply_new_usage(job_ptr, g_last_ran, time(NULL));
-}
-
-extern bool decay_apply_new_usage(struct job_record *job_ptr,
-				  time_t *start_time_ptr)
-{
-
-	/* Don't need to handle finished jobs. */
-	if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr))
-		return false;
-
-	/* apply new usage */
-	if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING) ||
-	     !IS_JOB_PENDING(job_ptr)) &&
-	    job_ptr->start_time && job_ptr->assoc_ptr) {
-		if (!_apply_new_usage(job_ptr, g_last_ran, *start_time_ptr))
-			return false;
-	}
-	return true;
-}
-
-
-extern void decay_apply_weighted_factors(struct job_record *job_ptr,
-					 time_t *start_time_ptr)
-{
-	/*
-	 * Priority 0 is reserved for held
-	 * jobs. Also skip priority
-	 * calculation for non-pending jobs.
-	 */
-	if ((job_ptr->priority == 0) ||
-	    (!IS_JOB_PENDING(job_ptr) &&
-	     !(flags & PRIORITY_FLAGS_CALCULATE_RUNNING)))
-		return;
-
-	job_ptr->priority = _get_priority_internal(*start_time_ptr, job_ptr);
-	last_job_update = time(NULL);
-	debug2("priority for job %u is now %u",
-	       job_ptr->job_id, job_ptr->priority);
-
-}
-
-
-extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
-{
-	slurmdb_qos_rec_t *qos_ptr = NULL;
-
-	xassert(job_ptr);
-
-	if (!job_ptr->prio_factors)
-		job_ptr->prio_factors =
-			xmalloc(sizeof(priority_factors_object_t));
-	else
-		memset(job_ptr->prio_factors, 0,
-		       sizeof(priority_factors_object_t));
-
-	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-
-	if (weight_age) {
-		uint32_t diff = 0;
-		time_t use_time;
-
-		if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
-			use_time = job_ptr->details->submit_time;
-		else
-			use_time = job_ptr->details->begin_time;
-
-		/* Only really add an age priority if the use_time is
-		   past the start_time.
-		*/
-		if (start_time > use_time)
-			diff = start_time - use_time;
-
-		if (job_ptr->details->begin_time
-		    || (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)) {
-			if (diff < max_age) {
-				job_ptr->prio_factors->priority_age =
-					(double)diff / (double)max_age;
-			} else
-				job_ptr->prio_factors->priority_age = 1.0;
-		}
-	}
-
-	if (job_ptr->assoc_ptr && weight_fs) {
-		job_ptr->prio_factors->priority_fs =
-			_get_fairshare_priority(job_ptr);
-	}
-
-	if (weight_js) {
-		uint32_t cpu_cnt = 0, min_nodes = 1;
-		/* On the initial run of this we don't have total_cpus
-		   so go off the requesting.  After the first shot
-		   total_cpus should be filled in.
-		*/
-		if (job_ptr->total_cpus)
-			cpu_cnt = job_ptr->total_cpus;
-		else if (job_ptr->details
-			 && (job_ptr->details->max_cpus != NO_VAL))
-			cpu_cnt = job_ptr->details->max_cpus;
-		else if (job_ptr->details && job_ptr->details->min_cpus)
-			cpu_cnt = job_ptr->details->min_cpus;
-		if (job_ptr->details)
-			min_nodes = job_ptr->details->min_nodes;
-
-		if (flags & PRIORITY_FLAGS_SIZE_RELATIVE) {
-			uint32_t time_limit = 1;
-			/* Job size in CPUs (based upon average CPUs/Node */
-			job_ptr->prio_factors->priority_js =
-				(double)min_nodes *
-				(double)cluster_cpus /
-				(double)node_record_count;
-			if (cpu_cnt > job_ptr->prio_factors->priority_js) {
-				job_ptr->prio_factors->priority_js =
-					(double)cpu_cnt;
-			}
-			/* Divide by job time limit */
-			if (job_ptr->time_limit != NO_VAL)
-				time_limit = job_ptr->time_limit;
-			else if (job_ptr->part_ptr)
-				time_limit = job_ptr->part_ptr->max_time;
-			job_ptr->prio_factors->priority_js /= time_limit;
-			/* Normalize to max value of 1.0 */
-			job_ptr->prio_factors->priority_js /= cluster_cpus;
-			if (favor_small) {
-				job_ptr->prio_factors->priority_js =
-					(double) 1.0 -
-					job_ptr->prio_factors->priority_js;
-			}
-		} else if (favor_small) {
-			job_ptr->prio_factors->priority_js =
-				(double)(node_record_count - min_nodes)
-				/ (double)node_record_count;
-			if (cpu_cnt) {
-				job_ptr->prio_factors->priority_js +=
-					(double)(cluster_cpus - cpu_cnt)
-					/ (double)cluster_cpus;
-				job_ptr->prio_factors->priority_js /= 2;
-			}
-		} else {	/* favor large */
-			job_ptr->prio_factors->priority_js =
-				(double)min_nodes / (double)node_record_count;
-			if (cpu_cnt) {
-				job_ptr->prio_factors->priority_js +=
-					(double)cpu_cnt / (double)cluster_cpus;
-				job_ptr->prio_factors->priority_js /= 2;
-			}
-		}
-		if (job_ptr->prio_factors->priority_js < .0)
-			job_ptr->prio_factors->priority_js = 0.0;
-		else if (job_ptr->prio_factors->priority_js > 1.0)
-			job_ptr->prio_factors->priority_js = 1.0;
-	}
-
-	if (job_ptr->part_ptr && job_ptr->part_ptr->priority && weight_part) {
-		job_ptr->prio_factors->priority_part =
-			job_ptr->part_ptr->norm_priority;
-	}
-
-	if (qos_ptr && qos_ptr->priority && weight_qos) {
-		job_ptr->prio_factors->priority_qos =
-			qos_ptr->usage->norm_priority;
-	}
-
-	if (job_ptr->details)
-		job_ptr->prio_factors->nice = job_ptr->details->nice;
-	else
-		job_ptr->prio_factors->nice = NICE_OFFSET;
-}
-
 
 /*
  * apply decay factor to all associations usage_raw
@@ -1844,93 +1405,6 @@ static void _internal_setup(void)
 	}
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-int init ( void )
-{
-	pthread_attr_t thread_attr;
-	char *temp = NULL;
-
-	/* This means we aren't running from the controller so skip setup. */
-	if (cluster_cpus == NO_VAL) {
-		damp_factor = (long double)slurm_get_fs_dampening_factor();
-		return SLURM_SUCCESS;
-	}
-
-	_internal_setup();
-
-	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_accounting_storage_type();
-	if (strcasecmp(temp, "accounting_storage/slurmdbd")
-	    && strcasecmp(temp, "accounting_storage/mysql")) {
-		error("You are not running a supported "
-		      "accounting_storage plugin\n(%s).\n"
-		      "Fairshare can only be calculated with either "
-		      "'accounting_storage/slurmdbd' "
-		      "or 'accounting_storage/mysql' enabled.  "
-		      "If you want multifactor priority without fairshare "
-		      "ignore this message.",
-		      temp);
-		calc_fairshare = 0;
-		weight_fs = 0;
-	} else if (assoc_mgr_root_assoc) {
-		if (!cluster_cpus)
-			fatal("We need to have a cluster cpu count "
-			      "before we can init the priority/multifactor "
-			      "plugin");
-		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
-		slurm_attr_init(&thread_attr);
-		if (pthread_create(&decay_handler_thread, &thread_attr,
-				   _decay_thread, NULL))
-			fatal("pthread_create error %m");
-
-		/* This is here to join the decay thread so we don't core
-		 * dump if in the sleep, since there is no other place to join
-		 * we have to create another thread to do it. */
-		slurm_attr_init(&thread_attr);
-		if (pthread_create(&cleanup_handler_thread, &thread_attr,
-				   _cleanup_thread, NULL))
-			fatal("pthread_create error %m");
-
-		slurm_attr_destroy(&thread_attr);
-	} else {
-		if (weight_fs) {
-			fatal("It appears you don't have any association "
-			      "data from your database.  "
-			      "The priority/multifactor plugin requires "
-			      "this information to run correctly.  Please "
-			      "check your database connection and try again.");
-		}
-		calc_fairshare = 0;
-	}
-
-	xfree(temp);
-
-	debug("%s loaded", plugin_name);
-	return SLURM_SUCCESS;
-}
-
-int fini ( void )
-{
-	/* Daemon termination handled here */
-	if (running_decay)
-		debug("Waiting for decay thread to finish.");
-
-	slurm_mutex_lock(&decay_lock);
-
-	/* cancel the decay thread and then join the cleanup thread */
-	if (decay_handler_thread)
-		pthread_cancel(decay_handler_thread);
-	if (cleanup_handler_thread)
-		pthread_join(cleanup_handler_thread, NULL);
-
-	slurm_mutex_unlock(&decay_lock);
-
-	return SLURM_SUCCESS;
-}
-
 
 /* Reursively call assoc_mgr_normalize_assoc_shares from assoc_mgr.c on
  * children of an association
@@ -2057,7 +1531,6 @@ static void _depth_oblivious_set_usage_efctv(
 	}
 }
 
-
 static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
 	/* Variable names taken from HTML documentation */
@@ -2072,3 +1545,504 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 		(s_child / (long double) s_all_siblings);
 }
 
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+int init ( void )
+{
+	pthread_attr_t thread_attr;
+	char *temp = NULL;
+
+	/* This means we aren't running from the controller so skip setup. */
+	if (cluster_cpus == NO_VAL) {
+		damp_factor = (long double)slurm_get_fs_dampening_factor();
+		return SLURM_SUCCESS;
+	}
+
+	_internal_setup();
+
+	/* Check to see if we are running a supported accounting plugin */
+	temp = slurm_get_accounting_storage_type();
+	if (strcasecmp(temp, "accounting_storage/slurmdbd")
+	    && strcasecmp(temp, "accounting_storage/mysql")) {
+		error("You are not running a supported "
+		      "accounting_storage plugin\n(%s).\n"
+		      "Fairshare can only be calculated with either "
+		      "'accounting_storage/slurmdbd' "
+		      "or 'accounting_storage/mysql' enabled.  "
+		      "If you want multifactor priority without fairshare "
+		      "ignore this message.",
+		      temp);
+		calc_fairshare = 0;
+		weight_fs = 0;
+	} else if (assoc_mgr_root_assoc) {
+		if (!cluster_cpus)
+			fatal("We need to have a cluster cpu count "
+			      "before we can init the priority/multifactor "
+			      "plugin");
+		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&decay_handler_thread, &thread_attr,
+				   _decay_thread, NULL))
+			fatal("pthread_create error %m");
+
+		/* This is here to join the decay thread so we don't core
+		 * dump if in the sleep, since there is no other place to join
+		 * we have to create another thread to do it. */
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&cleanup_handler_thread, &thread_attr,
+				   _cleanup_thread, NULL))
+			fatal("pthread_create error %m");
+
+		slurm_attr_destroy(&thread_attr);
+	} else {
+		if (weight_fs) {
+			fatal("It appears you don't have any association "
+			      "data from your database.  "
+			      "The priority/multifactor plugin requires "
+			      "this information to run correctly.  Please "
+			      "check your database connection and try again.");
+		}
+		calc_fairshare = 0;
+	}
+
+	xfree(temp);
+
+	debug("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+int fini ( void )
+{
+	/* Daemon termination handled here */
+	if (running_decay)
+		debug("Waiting for decay thread to finish.");
+
+	slurm_mutex_lock(&decay_lock);
+
+	/* cancel the decay thread and then join the cleanup thread */
+	if (decay_handler_thread)
+		pthread_cancel(decay_handler_thread);
+	if (cleanup_handler_thread)
+		pthread_join(cleanup_handler_thread, NULL);
+
+	slurm_mutex_unlock(&decay_lock);
+
+	return SLURM_SUCCESS;
+}
+
+extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
+{
+	uint32_t priority = _get_priority_internal(time(NULL), job_ptr);
+
+	debug2("initial priority for job %u is %u", job_ptr->job_id, priority);
+
+	return priority;
+}
+
+extern void priority_p_reconfig(bool assoc_clear)
+{
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+
+	reconfig = 1;
+	prevflags = flags;
+	_internal_setup();
+
+	/* Since LEVEL_BASED uses a different shares calculation method, we
+	 * must reassign shares at reconfigure if the algorithm was switched to
+	 * or from LEVEL_BASED */
+	if ((flags & PRIORITY_FLAGS_LEVEL_BASED) !=
+	    (prevflags & PRIORITY_FLAGS_LEVEL_BASED)) {
+		assoc_mgr_lock(&locks);
+		_set_norm_shares(assoc_mgr_root_assoc->usage->children_list);
+		assoc_mgr_unlock(&locks);
+	}
+
+	/* Since the used_cpu_run_secs has been reset by the reconfig,
+	 * we need to remove the time that has past since the last
+	 * poll.  We can't just do the correct calculation in the
+	 * first place because it will mess up everything in the poll
+	 * since it is based off the g_last_ran time.
+	 */
+	if (assoc_clear)
+		_init_grp_used_cpu_run_secs(g_last_ran);
+	debug2("%s reconfigured", plugin_name);
+
+	return;
+}
+
+extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
+{
+	char *child;
+	char *child_str;
+
+	xassert(assoc_mgr_root_assoc);
+	xassert(assoc);
+	xassert(assoc->usage);
+	xassert(assoc->usage->fs_assoc_ptr);
+
+	if (assoc->user) {
+		child = "user";
+		child_str = assoc->user;
+	} else {
+		child = "account";
+		child_str = assoc->acct;
+	}
+
+	if (assoc_mgr_root_assoc->usage->usage_raw) {
+		assoc->usage->usage_norm = assoc->usage->usage_raw
+			/ assoc_mgr_root_assoc->usage->usage_raw;
+	} else {
+		/* This should only happen when no usage has occured
+		 * at all so no big deal, the other usage should be 0
+		 * as well here. */
+		assoc->usage->usage_norm = 0;
+	}
+
+	if (priority_debug) {
+		info("Normalized usage for %s %s off %s(%s) %Lf / %Lf = %Lf",
+		     child, child_str,
+		     assoc->usage->parent_assoc_ptr->acct,
+		     assoc->usage->fs_assoc_ptr->acct,
+		     assoc->usage->usage_raw,
+		     assoc_mgr_root_assoc->usage->usage_raw,
+		     assoc->usage->usage_norm);
+	}
+	/* This is needed in case someone changes the half-life on the
+	 * fly and now we have used more time than is available under
+	 * the new config */
+	if (assoc->usage->usage_norm > 1.0)
+		assoc->usage->usage_norm = 1.0;
+
+	if (flags & PRIORITY_FLAGS_LEVEL_BASED)
+		assoc->usage->usage_efctv =
+			level_based_calc_assoc_usage(assoc);
+	else if (assoc->usage->fs_assoc_ptr == assoc_mgr_root_assoc) {
+		assoc->usage->usage_efctv = assoc->usage->usage_norm;
+		if (priority_debug)
+			info("Effective usage for %s %s off %s(%s) %Lf %Lf",
+			     child, child_str,
+			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->fs_assoc_ptr->acct,
+			     assoc->usage->usage_efctv,
+			     assoc->usage->usage_norm);
+	} else if (flags & PRIORITY_FLAGS_TICKET_BASED) {
+		_ticket_based_set_usage_efctv(assoc);
+		if (priority_debug) {
+			info("Effective usage for %s %s off %s(%s) = %Lf",
+			     child, child_str,
+			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->fs_assoc_ptr->acct,
+			     assoc->usage->usage_efctv);
+		}
+	} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
+		slurmdb_association_rec_t *parent_assoc =
+			assoc->usage->fs_assoc_ptr;
+
+		assoc->usage->usage_efctv =
+			parent_assoc->usage->usage_efctv;
+		if (priority_debug) {
+			info("Effective usage for %s %s off %s %Lf",
+			     child, child_str,
+			     parent_assoc->acct,
+			     parent_assoc->usage->usage_efctv);
+		}
+	} else if (flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS) {
+		_depth_oblivious_set_usage_efctv(assoc, child, child_str);
+	} else {
+		_set_usage_efctv(assoc);
+		if (priority_debug) {
+			info("Effective usage for %s %s off %s(%s) "
+			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
+			     child, child_str,
+			     assoc->usage->parent_assoc_ptr->acct,
+			     assoc->usage->fs_assoc_ptr->acct,
+			     assoc->usage->usage_norm,
+			     assoc->usage->fs_assoc_ptr->usage->usage_efctv,
+			     assoc->usage->usage_norm,
+			     assoc->shares_raw,
+			     assoc->usage->level_shares,
+			     assoc->usage->usage_efctv);
+		}
+	}
+}
+
+
+extern double priority_p_calc_fs_factor(long double usage_efctv,
+					long double shares_norm)
+{
+	double priority_fs = 0.0;
+
+	if (fuzzy_equal(usage_efctv, NO_VAL))
+		return priority_fs;
+
+	if (shares_norm <= 0)
+		return priority_fs;
+
+	if (flags & PRIORITY_FLAGS_TICKET_BASED) {
+		if (usage_efctv < MIN_USAGE_FACTOR * shares_norm)
+			usage_efctv = MIN_USAGE_FACTOR * shares_norm;
+		priority_fs = shares_norm / usage_efctv;
+	} else {
+		priority_fs =
+			pow(2.0, -((usage_efctv/shares_norm) / damp_factor));
+	}
+
+	return priority_fs;
+}
+
+extern List priority_p_get_priority_factors_list(
+	priority_factors_request_msg_t *req_msg, uid_t uid)
+{
+	List req_job_list;
+	List req_user_list;
+	List ret_list = NULL;
+	ListIterator itr;
+	priority_factors_object_t *obj = NULL;
+	struct job_record *job_ptr = NULL;
+	time_t start_time = time(NULL);
+
+	/* Read lock on jobs, nodes, and partitions */
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+
+	xassert(req_msg);
+	req_job_list = req_msg->job_id_list;
+	req_user_list = req_msg->uid_list;
+
+	lock_slurmctld(job_read_lock);
+	if (job_list && list_count(job_list)) {
+		ret_list = list_create(slurm_destroy_priority_factors_object);
+		itr = list_iterator_create(job_list);
+		while ((job_ptr = list_next(itr))) {
+			if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
+			    !IS_JOB_PENDING(job_ptr))
+				continue;
+
+			/*
+			 * This means the job is not eligible yet
+			 */
+			if (!job_ptr->details->begin_time
+			    || (job_ptr->details->begin_time > start_time))
+				continue;
+
+			/*
+			 * 0 means the job is held
+			 */
+			if (job_ptr->priority == 0)
+				continue;
+
+			/*
+			 * Priority has been set elsewhere (e.g. by SlurmUser)
+			 */
+			if (job_ptr->direct_set_prio)
+				continue;
+
+			if (_filter_job(job_ptr, req_job_list, req_user_list))
+				continue;
+
+			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
+			    && (job_ptr->user_id != uid)
+			    && !validate_operator(uid)
+			    && !assoc_mgr_is_user_acct_coord(
+				    acct_db_conn, uid,
+				    job_ptr->account))
+				continue;
+
+			obj = xmalloc(sizeof(priority_factors_object_t));
+			memcpy(obj, job_ptr->prio_factors,
+			       sizeof(priority_factors_object_t));
+			obj->job_id = job_ptr->job_id;
+			obj->user_id = job_ptr->user_id;
+			list_append(ret_list, obj);
+		}
+		list_iterator_destroy(itr);
+		if (!list_count(ret_list)) {
+			list_destroy(ret_list);
+			ret_list = NULL;
+		}
+	}
+	unlock_slurmctld(job_read_lock);
+
+	return ret_list;
+}
+
+/* at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
+ * READ_LOCK, READ_LOCK }; should be locked before calling this */
+extern void priority_p_job_end(struct job_record *job_ptr)
+{
+	if (priority_debug)
+		info("priority_p_job_end: called for job %u", job_ptr->job_id);
+
+	_apply_new_usage(job_ptr, g_last_ran, time(NULL));
+}
+
+extern bool decay_apply_new_usage(struct job_record *job_ptr,
+				  time_t *start_time_ptr)
+{
+
+	/* Don't need to handle finished jobs. */
+	if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr))
+		return false;
+
+	/* apply new usage */
+	if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING) ||
+	     !IS_JOB_PENDING(job_ptr)) &&
+	    job_ptr->start_time && job_ptr->assoc_ptr) {
+		if (!_apply_new_usage(job_ptr, g_last_ran, *start_time_ptr))
+			return false;
+	}
+	return true;
+}
+
+
+extern void decay_apply_weighted_factors(struct job_record *job_ptr,
+					 time_t *start_time_ptr)
+{
+	/*
+	 * Priority 0 is reserved for held
+	 * jobs. Also skip priority
+	 * calculation for non-pending jobs.
+	 */
+	if ((job_ptr->priority == 0) ||
+	    (!IS_JOB_PENDING(job_ptr) &&
+	     !(flags & PRIORITY_FLAGS_CALCULATE_RUNNING)))
+		return;
+
+	job_ptr->priority = _get_priority_internal(*start_time_ptr, job_ptr);
+	last_job_update = time(NULL);
+	debug2("priority for job %u is now %u",
+	       job_ptr->job_id, job_ptr->priority);
+
+}
+
+
+extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
+{
+	slurmdb_qos_rec_t *qos_ptr = NULL;
+
+	xassert(job_ptr);
+
+	if (!job_ptr->prio_factors)
+		job_ptr->prio_factors =
+			xmalloc(sizeof(priority_factors_object_t));
+	else
+		memset(job_ptr->prio_factors, 0,
+		       sizeof(priority_factors_object_t));
+
+	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+
+	if (weight_age) {
+		uint32_t diff = 0;
+		time_t use_time;
+
+		if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+			use_time = job_ptr->details->submit_time;
+		else
+			use_time = job_ptr->details->begin_time;
+
+		/* Only really add an age priority if the use_time is
+		   past the start_time.
+		*/
+		if (start_time > use_time)
+			diff = start_time - use_time;
+
+		if (job_ptr->details->begin_time
+		    || (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)) {
+			if (diff < max_age) {
+				job_ptr->prio_factors->priority_age =
+					(double)diff / (double)max_age;
+			} else
+				job_ptr->prio_factors->priority_age = 1.0;
+		}
+	}
+
+	if (job_ptr->assoc_ptr && weight_fs) {
+		job_ptr->prio_factors->priority_fs =
+			_get_fairshare_priority(job_ptr);
+	}
+
+	if (weight_js) {
+		uint32_t cpu_cnt = 0, min_nodes = 1;
+		/* On the initial run of this we don't have total_cpus
+		   so go off the requesting.  After the first shot
+		   total_cpus should be filled in.
+		*/
+		if (job_ptr->total_cpus)
+			cpu_cnt = job_ptr->total_cpus;
+		else if (job_ptr->details
+			 && (job_ptr->details->max_cpus != NO_VAL))
+			cpu_cnt = job_ptr->details->max_cpus;
+		else if (job_ptr->details && job_ptr->details->min_cpus)
+			cpu_cnt = job_ptr->details->min_cpus;
+		if (job_ptr->details)
+			min_nodes = job_ptr->details->min_nodes;
+
+		if (flags & PRIORITY_FLAGS_SIZE_RELATIVE) {
+			uint32_t time_limit = 1;
+			/* Job size in CPUs (based upon average CPUs/Node */
+			job_ptr->prio_factors->priority_js =
+				(double)min_nodes *
+				(double)cluster_cpus /
+				(double)node_record_count;
+			if (cpu_cnt > job_ptr->prio_factors->priority_js) {
+				job_ptr->prio_factors->priority_js =
+					(double)cpu_cnt;
+			}
+			/* Divide by job time limit */
+			if (job_ptr->time_limit != NO_VAL)
+				time_limit = job_ptr->time_limit;
+			else if (job_ptr->part_ptr)
+				time_limit = job_ptr->part_ptr->max_time;
+			job_ptr->prio_factors->priority_js /= time_limit;
+			/* Normalize to max value of 1.0 */
+			job_ptr->prio_factors->priority_js /= cluster_cpus;
+			if (favor_small) {
+				job_ptr->prio_factors->priority_js =
+					(double) 1.0 -
+					job_ptr->prio_factors->priority_js;
+			}
+		} else if (favor_small) {
+			job_ptr->prio_factors->priority_js =
+				(double)(node_record_count - min_nodes)
+				/ (double)node_record_count;
+			if (cpu_cnt) {
+				job_ptr->prio_factors->priority_js +=
+					(double)(cluster_cpus - cpu_cnt)
+					/ (double)cluster_cpus;
+				job_ptr->prio_factors->priority_js /= 2;
+			}
+		} else {	/* favor large */
+			job_ptr->prio_factors->priority_js =
+				(double)min_nodes / (double)node_record_count;
+			if (cpu_cnt) {
+				job_ptr->prio_factors->priority_js +=
+					(double)cpu_cnt / (double)cluster_cpus;
+				job_ptr->prio_factors->priority_js /= 2;
+			}
+		}
+		if (job_ptr->prio_factors->priority_js < .0)
+			job_ptr->prio_factors->priority_js = 0.0;
+		else if (job_ptr->prio_factors->priority_js > 1.0)
+			job_ptr->prio_factors->priority_js = 1.0;
+	}
+
+	if (job_ptr->part_ptr && job_ptr->part_ptr->priority && weight_part) {
+		job_ptr->prio_factors->priority_part =
+			job_ptr->part_ptr->norm_priority;
+	}
+
+	if (qos_ptr && qos_ptr->priority && weight_qos) {
+		job_ptr->prio_factors->priority_qos =
+			qos_ptr->usage->norm_priority;
+	}
+
+	if (job_ptr->details)
+		job_ptr->prio_factors->nice = job_ptr->details->nice;
+	else
+		job_ptr->prio_factors->nice = NICE_OFFSET;
+}
