@@ -161,6 +161,10 @@ static double decay_factor = 1; /* The decay factor when decaying time. */
 /* variables defined in prirority_multifactor.h */
 bool priority_debug = 0;
 
+extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
+extern double priority_p_calc_fs_factor(long double usage_efctv,
+					long double shares_norm);
+
 /*
  * apply decay factor to all associations usage_raw
  * IN: real_decay - decay to be applied to each associations' used
