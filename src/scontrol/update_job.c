@@ -1033,7 +1033,7 @@ scontrol_update_job (int argc, char *argv[])
 			xstrfmtcat(job_id_str, "%u_%u",
 				   ids[i].array_job_id, ids[i].array_task_id);
 		} else {
-			xstrfmtcat(job_id_str, "%u", ids[i].array_job_id);
+			xstrfmtcat(job_id_str, "%u", ids[i].job_id);
 		}
 
 		job_msg.job_id_str = job_id_str;
