@@ -9740,7 +9740,7 @@ extern int update_job(job_desc_msg_t * job_specs, uid_t uid)
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job_str(job_desc_msg_t * job_specs, uid_t uid)
+extern int update_job_str(job_desc_msg_t *job_specs, uid_t uid)
 {
 	struct job_record *job_ptr, *new_job_ptr;
 	slurm_ctl_conf_t *conf;
@@ -9752,9 +9752,9 @@ extern int update_job_str(job_desc_msg_t * job_specs, uid_t uid)
 	int len, rc, rc2;
 	char *end_ptr, *tok, *tmp;
 
-/* For testing purposes only */
-char job_id_str[32];
-snprintf(job_id_str, sizeof(job_id_str), "%u", job_specs->job_id);
+	/* For testing purposes only */
+	char job_id_str[32];
+	snprintf(job_id_str, sizeof(job_id_str), "%s", job_specs->job_id_str);
 
 	if (max_array_size == NO_VAL) {
 		conf = slurm_conf_lock();

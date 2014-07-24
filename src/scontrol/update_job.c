@@ -527,13 +527,14 @@ scontrol_update_job (int argc, char *argv[])
 	job_desc_msg_t job_msg;
 	job_ids_t *ids = NULL;
 	uint32_t num_ids = 0;
+	char *job_id_str;
 
 	slurm_init_job_desc_msg (&job_msg);
 
 	/* set current user, needed e.g., for AllowGroups checks */
 	job_msg.user_id = getuid();
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
@@ -1021,32 +1022,36 @@ scontrol_update_job (int argc, char *argv[])
 		_free_job_ids(ids, num_ids);
 		return 0;
 	}
+
+	job_id_str = NULL;
 	for (i = 0; i < num_ids; i++) {
-		job_msg.job_id = ids[i].job_id;
-		rc = 0;
-		if (slurm_update_job(&job_msg)) {
-			/* Save the errno in case one
-			 * or more array tasks are in
-			 * error.
-			 */
-			rc = slurm_get_errno();
-			if (ids[i].array_task_id == NO_VAL) {
-				error("Error updating job %u: %s",
-				      ids[i].job_id, slurm_strerror(rc));
-			} else {
-				error("Error updating job %u_%u (%u): %s",
-				      ids[i].array_job_id,
-				      ids[i].array_task_id,
-				      ids[i].job_id, slurm_strerror(rc));
-			}
-			/* Print the errno message for each
-			 * job array task.
-			 */
-			slurm_perror("slurm_update_job()");
+
+		if (ids[i].array_task_str) {
+			xstrfmtcat(job_id_str, "%u_%s",
+				   ids[i].array_job_id, ids[i].array_task_str);
+		} else if (ids[i].array_task_id != NO_VAL) {
+			xstrfmtcat(job_id_str, "%u_%u",
+				   ids[i].array_job_id, ids[i].array_task_id);
+		} else {
+			xstrfmtcat(job_id_str, "%u", ids[i].array_job_id);
 		}
+
+		job_msg.job_id_str = job_id_str;
+		rc = slurm_update_job(&job_msg);
+
+		if (rc != SLURM_SUCCESS)
+			exit_code = 1;
+		if ((rc != SLURM_SUCCESS) && (quiet_flag != 1)) {
+			fprintf(stderr, "%s for job %s\n",
+				slurm_strerror(slurm_get_errno()), job_id_str);
+		}
+
+		xfree(job_id_str);
 	}
+
 	if (update_size)	/* See check above for one job ID */
 		_update_job_size(job_msg.job_id);
+
 	_free_job_ids(ids, num_ids);
 
 	return rc;

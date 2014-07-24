@@ -3151,7 +3151,8 @@ fini:	xfree(err_msg);
 }
 
 /* _slurm_rpc_update_job - process RPC to update the configuration of a
- *	job (e.g. priority) */
+ * job (e.g. priority)
+ */
 static void _slurm_rpc_update_job(slurm_msg_t * msg)
 {
 	int error_code;
@@ -3168,7 +3169,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
 	lock_slurmctld(job_write_lock);
-	error_code = update_job(job_desc_msg, uid);
+	error_code = update_job_str(job_desc_msg, uid);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_update_job");
 
@@ -3179,7 +3180,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info("_slurm_rpc_update_job complete JobId=%u uid=%d %s",
-		       job_desc_msg->job_id, uid, TIME_STR);
+		     job_desc_msg->job_id, uid, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		/* Below functions provide their own locking */
 		schedule_job_save();
@@ -3841,6 +3842,7 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
+
 	info("%s: Processing RPC: REQUEST_JOB_REQUEUE from uid=%d", __func__,
 	     uid);
 
