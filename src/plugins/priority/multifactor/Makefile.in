@@ -161,7 +161,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 priority_multifactor_la_DEPENDENCIES =
-am_priority_multifactor_la_OBJECTS = priority_multifactor.lo
+am_priority_multifactor_la_OBJECTS = priority_multifactor.lo level_based.lo
 priority_multifactor_la_OBJECTS =  \
 	$(am_priority_multifactor_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -475,7 +475,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = priority_multifactor.la
 
 # Null priority logging plugin.
-priority_multifactor_la_SOURCES = priority_multifactor.c
+priority_multifactor_la_SOURCES = priority_multifactor.c level_based.c priority_multifactor.h level_based.h
 priority_multifactor_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 priority_multifactor_la_LIBADD = -lm
 all: all-am
