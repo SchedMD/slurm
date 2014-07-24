@@ -249,7 +249,7 @@ scontrol_hold(char *op, char *job_str)
 {
 	static uint32_t last_job_id = NO_VAL;
 	static job_info_msg_t *resp = NULL;
-	int i, rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS, rc2;
 	char *next_str;
 	job_desc_msg_t job_msg;
 	uint32_t job_id = 0;
@@ -323,12 +323,14 @@ scontrol_hold(char *op, char *job_str)
 			if (job_name)
 				continue;
 			slurm_seterrno(ESLURM_JOB_NOT_PENDING);
-			return ESLURM_JOB_NOT_PENDING;
+			rc = MAX(rc, ESLURM_JOB_NOT_PENDING);
 		}
 
 		job_msg.job_id = job_ptr->job_id;
-		if (slurm_update_job(&job_msg))
-			rc = slurm_get_errno();
+		if (slurm_update_job(&job_msg)) {
+			rc2 = slurm_get_errno();
+			rc = MAX(rc, rc2);
+		}
 
 		if (array_id != NO_VAL)
 			break;
