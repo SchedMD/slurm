@@ -2873,21 +2873,26 @@ extern void excise_node_from_job(struct job_record *job_ptr,
  */
 void dump_job_desc(job_desc_msg_t * job_specs)
 {
-	long job_id, time_min;
 	long pn_min_cpus, pn_min_memory, pn_min_tmp_disk, min_cpus;
-	long time_limit, priority, contiguous, nice;
+	long time_limit, priority, contiguous, nice, time_min;
 	long kill_on_node_fail, shared, immediate, wait_all_nodes;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
 	int core_spec;
-	char *mem_type, buf[100], *signal_flags;
+	char *mem_type, buf[100], *signal_flags, *job_id;
 
 	if (job_specs == NULL)
 		return;
 
-	job_id = (job_specs->job_id != NO_VAL) ?
-		(long) job_specs->job_id : -1L;
-	debug3("JobDesc: user_id=%u job_id=%ld partition=%s name=%s",
+	if (job_specs->job_id_str)
+		job_id = job_specs->job_id_str;
+	else if (job_specs->job_id == NO_VAL)
+		job_id = "N/A";
+	else {
+		snprintf(buf, sizeof(buf), "%u", job_specs->job_id);
+		job_id = buf;
+	}
+	debug3("JobDesc: user_id=%u job_id=%s partition=%s name=%s",
 	       job_specs->user_id, job_id,
 	       job_specs->partition, job_specs->name);
 
