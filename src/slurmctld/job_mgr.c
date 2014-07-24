@@ -9756,10 +9756,14 @@ extern int update_job_str(job_desc_msg_t *job_specs, uid_t uid)
 	int32_t i, i_first, i_last;
 	int len, rc, rc2;
 	char *end_ptr, *tok, *tmp;
+	char buf[32], *job_id_str;
 
-	/* For testing purposes only */
-	char job_id_str[32];
-	snprintf(job_id_str, sizeof(job_id_str), "%s", job_specs->job_id_str);
+	if (job_specs->job_id_str) {
+		job_id_str = job_specs->job_id_str;
+	} else {
+		snprintf(buf, sizeof(buf),"%u",job_specs->job_id);
+		job_id_str = buf;
+	}
 
 	if (max_array_size == NO_VAL) {
 		conf = slurm_conf_lock();
