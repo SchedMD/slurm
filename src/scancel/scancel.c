@@ -743,7 +743,7 @@ _signal_job_by_str(void)
 		opt.signal = SIGKILL;
 
 	cc = slurm_kill_job2(opt.job_list, opt.signal, 0);
-	if (cc != SLURM_SUCCESS) {
+	if ((cc != SLURM_SUCCESS) && (opt.verbose != -1)) {
 		error("slurm_kill_job2() failed %s", slurm_strerror(errno));
 		return -1;
 	}
