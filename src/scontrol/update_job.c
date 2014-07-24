@@ -253,8 +253,8 @@ scontrol_hold(char *op, char *job_str)
 	char *next_str;
 	job_desc_msg_t job_msg;
 	uint32_t job_id = 0;
-	uint32_t array_id;
 	char *job_name = NULL;
+	char *job_id_str = NULL;
 	slurm_job_info_t *job_ptr;
 
 	if (job_str && !strncasecmp(job_str, "JobID=", 6))
@@ -264,19 +264,31 @@ scontrol_hold(char *op, char *job_str)
 	if (job_str && !strncasecmp(job_str, "Job=", 4))
 		job_str += 4;
 
+	slurm_init_job_desc_msg (&job_msg);	job_msg.user_id = getuid();
+	if ((strncasecmp(op, "holdu", 5) == 0) ||
+	    (strncasecmp(op, "uhold", 5) == 0)) {
+		job_msg.priority = 0;
+		job_msg.alloc_sid = ALLOC_SID_USER_HOLD;
+	} else if (strncasecmp(op, "hold", 4) == 0) {
+		job_msg.priority = 0;
+		job_msg.alloc_sid = 0;
+	} else
+		job_msg.priority = INFINITE;
+
 	if (job_str && (job_str[0] >= '0') && (job_str[0] <= '9')) {
 		job_id = (uint32_t) strtol(job_str, &next_str, 10);
-		if (next_str[0] == '_')
-			array_id = strtol(next_str+1, &next_str, 10);
-		else
-			array_id = NO_VAL;
+		if (next_str[0] == '_') {
+			job_msg.job_id_str = job_str;
+			if (slurm_update_job(&job_msg))
+				rc = slurm_get_errno();
+			return rc;
+		}
 		if ((job_id == 0) || (next_str[0] != '\0')) {
 			fprintf(stderr, "Invalid job id specified (%s)\n",
 				job_str);
 			return 1;
 		}
 	} else if (job_str) {
-		array_id = NO_VAL;
 		job_id = 0;
 		job_name = job_str;
 		last_job_id = NO_VAL;
@@ -294,31 +306,16 @@ scontrol_hold(char *op, char *job_str)
 		last_job_id = job_id;
 	}
 
-	slurm_init_job_desc_msg (&job_msg);
 	/* set current user, needed e.g., for AllowGroups checks */
-	job_msg.user_id = getuid();
-	if ((strncasecmp(op, "holdu", 5) == 0) ||
-	    (strncasecmp(op, "uhold", 5) == 0)) {
-		job_msg.priority = 0;
-		job_msg.alloc_sid = ALLOC_SID_USER_HOLD;
-	} else if (strncasecmp(op, "hold", 4) == 0) {
-		job_msg.priority = 0;
-		job_msg.alloc_sid = 0;
-	} else
-		job_msg.priority = INFINITE;
 	for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
 	     i++, job_ptr++) {
-		if ((array_id != NO_VAL) &&
-		    (job_ptr->array_task_id != array_id))
-			continue;
 		if (job_name &&
 		    ((job_ptr->name == NULL) ||
 		     strcmp(job_name, job_ptr->name)))
 			continue;
 
 		if (!IS_JOB_PENDING(job_ptr)) {
-			if ((array_id == NO_VAL) &&
-			    (job_ptr->array_task_id != NO_VAL))
+			if (job_ptr->array_task_id != NO_VAL)
 				continue;
 			if (job_name)
 				continue;
@@ -326,14 +323,23 @@ scontrol_hold(char *op, char *job_str)
 			rc = MAX(rc, ESLURM_JOB_NOT_PENDING);
 		}
 
-		job_msg.job_id = job_ptr->job_id;
+		if (job_ptr->array_task_str) {
+			xstrfmtcat(job_id_str, "%u_%s",
+				   job_ptr->array_job_id,
+				   job_ptr->array_task_str);
+		} else if (job_ptr->array_task_id != NO_VAL) {
+			xstrfmtcat(job_id_str, "%u_%u",
+				   job_ptr->array_job_id,
+				   job_ptr->array_task_id);
+		} else {
+			xstrfmtcat(job_id_str, "%u", job_ptr->job_id);
+		}
+		job_msg.job_id_str = job_id_str;
 		if (slurm_update_job(&job_msg)) {
 			rc2 = slurm_get_errno();
 			rc = MAX(rc, rc2);
 		}
-
-		if (array_id != NO_VAL)
-			break;
+		xfree(job_id_str);
 	}
 
 	return rc;
