@@ -6824,14 +6824,15 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	pack_time(time(NULL), buffer);
 
 	job_ptr = find_job_record(job_id);
-	if (job_ptr && (job_ptr->array_task_id == NO_VAL)) {
+	if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+	    !job_ptr->array_recs) {
 		if (!_hide_job(job_ptr, uid)) {
 			pack_job(job_ptr, show_flags, buffer, protocol_version,
 				 uid);
 			jobs_packed++;
 		}
 	} else {
-		/* Job ID not found. It could reference a job array. */
+		/* Single job ID not found. It could reference a job array. */
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = (struct job_record *)
 				  list_next(job_iterator))) {
@@ -6842,7 +6843,6 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 
 			if (_hide_job(job_ptr, uid))
 				break;
-
 			pack_job(job_ptr, show_flags, buffer, protocol_version,
 				 uid);
 			jobs_packed++;
