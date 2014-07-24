@@ -107,6 +107,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches != 1} {
@@ -126,6 +127,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches != 0} {
