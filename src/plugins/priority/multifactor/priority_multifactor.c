@@ -73,12 +73,8 @@
 #include <math.h>
 #include "slurm/slurm_errno.h"
 
-#include "src/common/slurm_priority.h"
 #include "src/common/xstring.h"
-#include "src/common/assoc_mgr.h"
 #include "src/common/parse_time.h"
-
-#include "src/slurmctld/locks.h"
 
 #include "level_based.h"
 

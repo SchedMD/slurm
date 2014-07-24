@@ -43,27 +43,27 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef _PRIORITY_MULTIFACTOR_H
+#define _PRIORITY_MULTIFACTOR_H
 
-#include <time.h>
 #include "src/common/slurm_priority.h"
+#include "src/common/assoc_mgr.h"
 
+#include "src/slurmctld/locks.h"
 
 extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
-
 
 extern double priority_p_calc_fs_factor(long double usage_efctv,
 				        long double shares_norm);
 
-
 extern bool decay_apply_new_usage(struct job_record *job_ptr,
 				  time_t *start_time_ptr);
 
-
 extern void set_priority_factors(time_t start_time, struct job_record *job_ptr);
-
 
 extern void decay_apply_weighted_factors(struct job_record *job_ptr,
 				         time_t *start_time_ptr);
 
 extern bool priority_debug;
 
+#endif

@@ -37,12 +37,7 @@
 
 #include <math.h>
 
-#include "src/common/slurm_priority.h"
-#include "src/slurmctld/locks.h"
-#include "src/common/assoc_mgr.h"
 #include "level_based.h"
-#include "priority_multifactor.h"
-
 
 /* How many levels to care about */
 static uint16_t priority_levels;

@@ -35,17 +35,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef _PRIORITY_MULTIFACTOR_LEVEL_BASED_H
+#define _PRIORITY_MULTIFACTOR_LEVEL_BASED_H
 
-#include "src/common/list.h"
-#include "src/common/slurm_priority.h"
 #include "priority_multifactor.h"
 
 extern void level_based_init(void);
 
-
 /* LEVEL_BASED code called from the decay thread loop */
 extern void level_based_decay(List job_list, time_t start_time);
-
 
 /* Normalize the assoc's usage for use in usage_efctv:
  * from:  0.0 to parent->usage->usage_raw
@@ -55,3 +53,4 @@ extern void level_based_decay(List job_list, time_t start_time);
  */
 extern double level_based_calc_assoc_usage(slurmdb_association_rec_t *assoc);
 
+#endif
