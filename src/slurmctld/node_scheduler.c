@@ -1487,7 +1487,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			if (!kill_pending)
 				continue;
 			rc = job_requeue(0, job_ptr->job_id, -1,
-					 (uint16_t)NO_VAL, true);
+					 (uint16_t)NO_VAL, true, 0);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);

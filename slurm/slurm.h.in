@@ -3818,6 +3818,21 @@ extern int slurm_resume2 PARAMS((char *job_id));
  */
 extern int slurm_requeue PARAMS((uint32_t job_id, uint32_t state));
 
+/*
+ * slurm_requeue2 - re-queue a batch job, if already running
+ *	then terminate it first
+ * IN job_id in string form  - job on which to perform operation
+ * IN state - the state in which the job should be requeued
+ *            valid values are:
+ *            0 - if the job has to be requeued in JOB_PENDING state
+ *            JOB_SPECIAL_EXIT - if the job has to be requeued in
+ *            the special exit state and be held.
+ *            JOB_REQUEUE_HOLD - if the job has to be requeued in
+ *            JOB_PENDING and held state.
+ * RET 0 or a slurm error code
+ */
+extern int slurm_requeue2 PARAMS((char *job_id, uint32_t state));
+
 /*****************************************************************************\
  *      SLURM JOB CHECKPOINT FUNCTIONS
 \*****************************************************************************/

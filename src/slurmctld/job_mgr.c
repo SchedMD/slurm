@@ -11537,7 +11537,8 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	}
 	if (!valid) {
 		info("job_suspend2: invalid job id %s", sus_ptr->job_id_str);
-		return ESLURM_INVALID_JOB_ID;
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
 	}
 
 	i_first = bit_ffs(array_bitmap);
@@ -11572,41 +11573,24 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 }
 
 /*
- * job_requeue - Requeue a running or pending batch job
+ * _job_requeue - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
- * IN job_id - id of the job to be requeued
- * IN conn_fd - file descriptor on which to send reply
- * IN protocol_version - slurm protocol version of client
+ * IN job_ptr - job to be requeued
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue(uid_t uid,
-                       uint32_t job_id,
-                       slurm_fd_t conn_fd,
-                       uint16_t protocol_version,
-                       bool preempt)
+static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
+			uint32_t state)
 {
-	int rc = SLURM_SUCCESS;
-	struct job_record *job_ptr = NULL;
 	bool suspended = false;
-	slurm_msg_t resp_msg;
-	return_code_msg_t rc_msg;
 	time_t now = time(NULL);
 	bool is_running;
-
-	/* find the job */
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		rc = ESLURM_INVALID_JOB_ID;
-		goto reply;
-	}
 
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 					  job_ptr->account)) {
-		rc = ESLURM_ACCESS_DENIED;
-		goto reply;
+		return ESLURM_ACCESS_DENIED;
 	}
 
 	/* If the partition was removed don't allow the job to be
@@ -11615,8 +11599,7 @@ extern int job_requeue(uid_t uid,
 	 */
 	if (!job_ptr->part_ptr || !job_ptr->details
 	    || !job_ptr->details->requeue) {
-		rc = ESLURM_DISABLED;
-		goto reply;
+		return ESLURM_DISABLED;
 	}
 
 	/* In the job is in the process of completing
@@ -11628,21 +11611,18 @@ extern int job_requeue(uid_t uid,
 		uint32_t flags;
 		flags = job_ptr->job_state & JOB_STATE_FLAGS;
 		job_ptr->job_state = JOB_PENDING | flags;
-		goto reply;
+		return SLURM_SUCCESS;
 	}
 
 	/* If the job is already pending do nothing
 	 * and return  is well to the library.
 	 */
-	if (IS_JOB_PENDING(job_ptr)) {
-		rc = ESLURM_JOB_PENDING;
-		goto reply;
-	}
+	if (IS_JOB_PENDING(job_ptr))
+		return ESLURM_JOB_PENDING;
 
 	if (job_ptr->batch_flag == 0) {
 		debug("Job-requeue can only be done for batch jobs");
-		rc = ESLURM_BATCH_ONLY;
-		goto reply;
+		return ESLURM_BATCH_ONLY;
 	}
 
 	slurm_sched_g_requeue(job_ptr, "Job requeued by user/admin");
@@ -11670,8 +11650,7 @@ extern int job_requeue(uid_t uid,
 	 * running state.
 	 */
 	is_running = false;
-	if (IS_JOB_SUSPENDED(job_ptr)
-	    || IS_JOB_RUNNING(job_ptr))
+	if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr))
 		is_running = true;
 
 	/* We want this job to have the requeued state in the
@@ -11706,7 +11685,176 @@ extern int job_requeue(uid_t uid,
 	 * to add it again. */
 	acct_policy_add_job_submit(job_ptr);
 
-reply:
+	if (state & JOB_SPECIAL_EXIT) {
+		job_ptr->job_state |= JOB_SPECIAL_EXIT;
+		job_ptr->state_reason = WAIT_HELD_USER;
+		job_ptr->priority = 0;
+	}
+	if (state & JOB_REQUEUE_HOLD) {
+		job_ptr->state_reason = WAIT_HELD_USER;
+		job_ptr->priority = 0;
+	}
+
+	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
+	      job_ptr->job_id, job_ptr->job_state,
+	      job_ptr->state_reason, job_ptr->priority);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * job_requeue - Requeue a running or pending batch job
+ * IN uid - user id of user issuing the RPC
+ * IN job_id - id of the job to be requeued
+ * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
+ * IN preempt - true if job being preempted
+ * IN state - may be set to JOB_SPECIAL_EXIT and/or JOB_REQUEUE_HOLD
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_requeue(uid_t uid, uint32_t job_id,
+                       slurm_fd_t conn_fd, uint16_t protocol_version,
+                       bool preempt, uint32_t state)
+{
+	int rc = SLURM_SUCCESS;
+	struct job_record *job_ptr = NULL;
+	slurm_msg_t resp_msg;
+	return_code_msg_t rc_msg;
+
+	/* find the job */
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		rc = ESLURM_INVALID_JOB_ID;
+	} else {
+		rc = _job_requeue(uid, job_ptr, preempt, state);
+	}
+
+	if (conn_fd >= 0) {
+		slurm_msg_t_init(&resp_msg);
+		resp_msg.protocol_version = protocol_version;
+		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		rc_msg.return_code = rc;
+		resp_msg.data      = &rc_msg;
+		slurm_send_node_msg(conn_fd, &resp_msg);
+	}
+	return rc;
+}
+
+/*
+ * job_requeue2 - Requeue a running or pending batch job
+ * IN uid - user id of user issuing the RPC
+ * IN req_ptr - request including ID of the job to be requeued
+ * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
+                       slurm_fd_t conn_fd, uint16_t protocol_version,
+                       bool preempt)
+{
+	static uint32_t max_array_size = NO_VAL;
+	slurm_ctl_conf_t *conf;
+	int rc = SLURM_SUCCESS, rc2;
+	struct job_record *job_ptr = NULL;
+	long int long_id;
+	uint32_t job_id;
+	char *end_ptr = NULL, *tok, *tmp;
+	bitstr_t *array_bitmap;
+	bool valid = true;
+	int32_t i, i_first, i_last;
+	slurm_msg_t resp_msg;
+	return_code_msg_t rc_msg;
+	uint32_t state = req_ptr->state;
+	char *job_id_str = req_ptr->job_id_str;
+
+	if (max_array_size == NO_VAL) {
+		conf = slurm_conf_lock();
+		max_array_size = conf->max_array_sz;
+		slurm_conf_unlock();
+	}
+
+	long_id = strtol(job_id_str, &end_ptr, 10);
+	if ((long_id <= 0) || (long_id == LONG_MAX) ||
+	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
+		info("job_requeue2: invalid job id %s", job_id_str);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	job_id = (uint32_t) long_id;
+	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
+		struct job_record *job_ptr_done = NULL;
+		job_ptr = find_job_record(job_id);
+		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		    (job_ptr->array_recs == NULL)) {
+			/* This is a regular job, not a job array */
+			rc = _job_requeue(uid, job_ptr, preempt, state);
+			goto reply;
+		}
+
+		if (job_ptr && job_ptr->array_recs) {
+			/* This is a job array */
+			rc = _job_requeue(uid, job_ptr, preempt, state);
+			job_ptr_done = job_ptr;
+		}
+
+		/* Requeue all tasks of this job array */
+		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		if (!job_ptr && !job_ptr_done) {
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		}
+		while (job_ptr) {
+			if ((job_ptr->array_job_id == job_id) &&
+			    (job_ptr != job_ptr_done)) {
+				rc2 = _job_requeue(uid, job_ptr, preempt,state);
+				rc = MAX(rc, rc2);
+			}
+			job_ptr = job_ptr->job_array_next_j;
+		}
+		goto reply;
+	}
+
+	array_bitmap = bit_alloc(max_array_size);
+	tmp = xstrdup(end_ptr + 1);
+	tok = strtok_r(tmp, ",", &end_ptr);
+	while (tok && valid) {
+		valid = _parse_array_tok(tok, array_bitmap,
+					 max_array_size);
+		tok = strtok_r(NULL, ",", &end_ptr);
+	}
+	xfree(tmp);
+	if (valid) {
+		i_last = bit_fls(array_bitmap);
+		if (i_last < 0)
+			valid = false;
+	}
+	if (!valid) {
+		info("job_requeue2: invalid job id %s", job_id_str);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+
+	i_first = bit_ffs(array_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(array_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(array_bitmap, i))
+			continue;
+		job_ptr = find_job_array_rec(job_id, i);
+		if (job_ptr == NULL) {
+			info("job_requeue2: invalid job id %u_%d", job_id, i);
+			rc = ESLURM_INVALID_JOB_ID;
+			continue;
+		}
+
+		rc2 = _job_requeue(uid, job_ptr, preempt, state);
+		rc = MAX(rc, rc2);
+	}
+
+    reply:
 	if (conn_fd >= 0) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = protocol_version;

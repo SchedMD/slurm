@@ -10307,7 +10307,11 @@ _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 {
 	xassert(msg != NULL);
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buf);
+		packstr(msg->job_id_str, buf);
+		pack32(msg->state, buf);
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buf);
 		pack32(msg->state, buf);
 	} else {
@@ -10323,9 +10327,14 @@ _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 static int
 _unpack_job_requeue_msg(requeue_msg_t **msg, Buf buf, uint16_t protocol_version)
 {
+	uint32_t uint32_tmp = 0;
 	*msg = xmalloc(sizeof(requeue_msg_t));
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack32(&(*msg)->job_id, buf);
+		safe_unpackstr_xmalloc(&(*msg)->job_id_str, &uint32_tmp, buf);
+		safe_unpack32(&(*msg)->state, buf);
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack32(&(*msg)->job_id, buf);
 		safe_unpack32(&(*msg)->state, buf);
 	} else {

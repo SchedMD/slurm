@@ -959,7 +959,10 @@ extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 extern void
 slurm_free_requeue_msg(requeue_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->job_id_str);
+		xfree(msg);
+	}
 }
 
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)

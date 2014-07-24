@@ -372,7 +372,7 @@ scontrol_suspend(char *op, char *job_id_str)
 			xstrfmtcat(this_job_id, "%u_%u",
 				   ids[i].array_job_id, ids[i].array_task_id);
 		} else {
-			xstrfmtcat(this_job_id, "%u", ids[i].array_job_id);
+			xstrfmtcat(this_job_id, "%u", ids[i].job_id);
 		}
 		if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
 			cc = slurm_suspend2(this_job_id);
@@ -393,20 +393,19 @@ scontrol_suspend(char *op, char *job_id_str)
 /*
  * scontrol_requeue - requeue a pending or running batch job
  * IN job_id_str - a job id
- * RET 0 if no slurm error, errno otherwise. parsing error prints
- *              error message and returns 0
  */
-extern int
+extern void
 scontrol_requeue(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i;
 	job_ids_t *ids;
 	uint32_t num_ids = 0;
+	char *this_job_id = NULL;
 
-	if (! argv[0]) {
+	if (!argv[0]) {
 		exit_code = 1;
-		return 0;
+		return;
 	}
 
 	if (strncasecmp(argv[0], "jobid=", 6) == 0)
@@ -417,32 +416,33 @@ scontrol_requeue(int argc, char **argv)
 	ids = _get_job_ids(argv[0], &num_ids);
 	if (ids == NULL) {
 		exit_code = 1;
-		return 0;
+		return;
 	}
 
 	for (i = 0; i < num_ids; i++) {
-		rc = slurm_requeue(ids[i].job_id, 0);
-		if (rc != SLURM_SUCCESS) {
-			if (ids[i].array_task_id != NO_VAL) {
-				fprintf(stderr, "%s for job %u_%u (%u)\n",
-					slurm_strerror(slurm_get_errno()),
-					ids[i].array_job_id,
-					ids[i].array_task_id,
-					ids[i].job_id);
-			} else {
-				fprintf(stderr, "%s for job %u\n",
-					slurm_strerror(slurm_get_errno()),
-					ids[i].job_id);
-			}
+		if (ids[i].array_task_str) {
+			xstrfmtcat(this_job_id, "%u_%s",
+				   ids[i].array_job_id, ids[i].array_task_str);
+		} else if (ids[i].array_task_id != NO_VAL) {
+			xstrfmtcat(this_job_id, "%u_%u",
+				   ids[i].array_job_id, ids[i].array_task_id);
+		} else {
+			xstrfmtcat(this_job_id, "%u", ids[i].job_id);
 		}
+		rc = slurm_requeue2(this_job_id, 0);
+		if (rc != SLURM_SUCCESS)
+			exit_code = 1;
+		if ((rc != SLURM_SUCCESS) && (quiet_flag != 1)) {
+			fprintf(stderr, "%s for job %s\n",
+				slurm_strerror(slurm_get_errno()), this_job_id);
+		}
+		xfree(this_job_id);
 	}
 
 	_free_job_ids(ids, num_ids);
-
-	return rc;
 }
 
-extern int
+extern void
 scontrol_requeue_hold(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
@@ -450,7 +450,7 @@ scontrol_requeue_hold(int argc, char **argv)
 	uint32_t state_flag;
 	job_ids_t *ids;
 	uint32_t num_ids;
-	char *job_id_str;
+	char *job_id_str, *this_job_id = NULL;
 
 	state_flag = 0;
 
@@ -467,7 +467,7 @@ scontrol_requeue_hold(int argc, char **argv)
 	ids = _get_job_ids(job_id_str, &num_ids);
 	if (ids == NULL) {
 		exit_code = 1;
-		return 0;
+		return;
 	}
 
 	if (argc == 2) {
@@ -476,7 +476,7 @@ scontrol_requeue_hold(int argc, char **argv)
 			error("Invalid state specification %s", argv[0]);
 			exit_code = 1;
 			_free_job_ids(ids, num_ids);
-			return 0;
+			return;
 		}
 	}
 	state_flag |= JOB_REQUEUE_HOLD;
@@ -485,25 +485,26 @@ scontrol_requeue_hold(int argc, char **argv)
 	 * JOB_SPECIAL_EXIT or HELD state.
 	 */
 	for (i = 0; i < num_ids; i++) {
-		rc = slurm_requeue(ids[i].job_id, state_flag);
-		if (rc != SLURM_SUCCESS) {
-			if (ids[i].array_task_id != NO_VAL) {
-				fprintf(stderr, "%s for job %u_%u (%u)\n",
-					slurm_strerror(slurm_get_errno()),
-					ids[i].array_job_id,
-					ids[i].array_task_id,
-					ids[i].job_id);
-			} else {
-				fprintf(stderr, "%s for job %u\n",
-					slurm_strerror(slurm_get_errno()),
-					ids[i].job_id);
-			}
+		if (ids[i].array_task_str) {
+			xstrfmtcat(this_job_id, "%u_%s",
+				   ids[i].array_job_id, ids[i].array_task_str);
+		} else if (ids[i].array_task_id != NO_VAL) {
+			xstrfmtcat(this_job_id, "%u_%u",
+				   ids[i].array_job_id, ids[i].array_task_id);
+		} else {
+			xstrfmtcat(this_job_id, "%u", ids[i].array_job_id);
 		}
+		rc = slurm_requeue2(this_job_id, state_flag);
+		if (rc != SLURM_SUCCESS)
+			exit_code = 1;
+		if ((rc != SLURM_SUCCESS) && (quiet_flag != 1)) {
+			fprintf(stderr, "%s for job %s\n",
+				slurm_strerror(slurm_get_errno()), this_job_id);
+		}
+		xfree(this_job_id);
 	}
 
 	_free_job_ids(ids, num_ids);
-
-	return rc;
 }
 
 /*

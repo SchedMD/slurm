@@ -49,7 +49,6 @@
  * IN op         - operation to perform
  * IN job_id     - job on which to perform operation or NO_VAL
  * IN job_id_str - job on which to perform operation in string format or NULL
- * IN step_id    - job step on which to perform operation
  * RET 0 or a slurm error code
  * NOTE: Supply either job_id NO_VAL or job_id_str as NULL, not both
  */
@@ -113,14 +112,16 @@ extern int slurm_resume2(char *job_id)
 	return _suspend_op(RESUME_JOB, NO_VAL, job_id);
 }
 
+
 /*
- * slurm_requeue - re-queue a batch job, if already running
- *	then terminate it first
- * IN job_id  - job on which to perform operation
+ * _requeue_op   - perform a requeue operation for some job.
+ * IN state      - state in which to place the job
+ * IN job_id     - job on which to perform operation or NO_VAL
+ * IN job_id_str - job on which to perform operation in string format or NULL
  * RET 0 or a slurm error code
+ * NOTE: Supply either job_id NO_VAL or job_id_str as NULL, not both
  */
-extern int slurm_requeue(uint32_t job_id,
-                         uint32_t state)
+static int _requeue_op(uint32_t state, uint32_t job_id, char *job_id_str)
 {
 	int rc;
 	requeue_msg_t requeue_req;
@@ -129,7 +130,8 @@ extern int slurm_requeue(uint32_t job_id,
 	slurm_msg_t_init(&req_msg);
 
 	requeue_req.job_id	= job_id;
-	requeue_req.state = state;
+	requeue_req.job_id_str	= job_id_str;
+	requeue_req.state	= state;
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;
 
@@ -138,4 +140,28 @@ extern int slurm_requeue(uint32_t job_id,
 
 	slurm_seterrno(rc);
 	return rc;
+}
+
+/*
+ * slurm_requeue - re-queue a batch job, if already running
+ *	then terminate it first
+ * IN job_id     - job on which to perform operation
+ * IN state      - state in which to place the job
+ * RET 0 or a slurm error code
+ */
+extern int slurm_requeue(uint32_t job_id, uint32_t state)
+{
+	return _requeue_op(state, job_id, NULL);
+}
+
+/*
+ * slurm_requeue2 - re-queue a batch job, if already running
+ *	then terminate it first
+ * IN job_id_str - job on which to perform operation in string format or NULL
+ * IN state      - state in which to place the job
+ * RET 0 or a slurm error code
+ */
+extern int slurm_requeue2(char *job_id_str, uint32_t state)
+{
+	return _requeue_op(state, 0, job_id_str);
 }
