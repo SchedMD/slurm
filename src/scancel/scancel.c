@@ -742,6 +742,8 @@ _signal_job_by_str(void)
 	if (opt.signal == (uint16_t) - 1)
 		opt.signal = SIGKILL;
 
+	verbose("Terminating job %s", opt.job_list);
+
 	cc = slurm_kill_job2(opt.job_list, opt.signal, 0);
 	if ((cc != SLURM_SUCCESS) && (opt.verbose != -1)) {
 		error("slurm_kill_job2() failed %s", slurm_strerror(errno));
