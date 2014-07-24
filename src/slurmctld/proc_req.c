@@ -3844,7 +3844,6 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	info("%s: Processing RPC: REQUEST_JOB_REQUEUE from uid=%d", __func__,
 	     uid);
 
-info("Req:%u:%s:", req_ptr->job_id, req_ptr->job_id_str);
 	lock_slurmctld(job_write_lock);
 	if (req_ptr->job_id_str) {
 		error_code = job_requeue2(uid, req_ptr, msg->conn_fd,

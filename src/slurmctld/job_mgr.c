@@ -3786,6 +3786,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	}
 	job_id = (uint32_t) long_id;
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
+		int jobs_done = 0, jobs_signalled = 0;
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
 		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
@@ -3797,6 +3798,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			rc = _job_signal(job_ptr, signal, flags, uid, preempt);
+			jobs_signalled++;
+			if (rc == ESLURM_ALREADY_DONE) {
+				jobs_done++;
+				rc = SLURM_SUCCESS;
+			}
 			job_ptr_done = job_ptr;
 		}
 
@@ -3811,10 +3817,17 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _job_signal(job_ptr, signal, flags, uid,
 						  preempt);
-				rc = MAX(rc, rc2);
+				jobs_signalled++;
+				if (rc2 == ESLURM_ALREADY_DONE) {
+					jobs_done++;
+				} else {
+					rc = MAX(rc, rc2);
+				}
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
+		if ((rc == SLURM_SUCCESS) && (jobs_done == jobs_signalled))
+			return ESLURM_ALREADY_DONE;
 		return rc;
 
 	}
