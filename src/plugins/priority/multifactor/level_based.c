@@ -51,12 +51,11 @@ static uint32_t unused_bucket_bits;
 /* Maximum value that can be stored in a bucket */
 static uint64_t bucket_max;
 
-
-void _level_based_calc_children_fs(List children_list,
-				   List users,
-				   uint16_t assoc_level);
-uint64_t _level_based_calc_level_fs(slurmdb_association_rec_t *assoc,
-				    uint16_t assoc_level);
+static uint64_t _level_based_calc_level_fs(slurmdb_association_rec_t *assoc,
+					   uint16_t assoc_level);
+static void _level_based_calc_children_fs(List children_list,
+					  List users,
+					  uint16_t assoc_level);
 static void _level_based_decay_apply_new_usage(struct job_record *job_ptr,
 					       time_t *start_time_ptr);
 static void _level_based_apply_priority_fs(void);
@@ -175,7 +174,7 @@ static void _level_based_calc_children_fs_priority_debug(
 /* Calculate F=2**(-Ueff/S) at the current level. Shift the result based on
  * depth in the association tree and the bucket size.
  */
-uint64_t _level_based_calc_level_fs(slurmdb_association_rec_t *assoc,
+static uint64_t _level_based_calc_level_fs(slurmdb_association_rec_t *assoc,
 					   uint16_t assoc_level)
 {
 	uint64_t level_fs = 0;
@@ -262,8 +261,7 @@ static void _level_based_calc_assoc_fs(
 		_level_based_calc_children_fs(
 			assoc->usage->children_list,
 			users,
-			assoc_level + 1
-			);
+			assoc_level + 1);
 }
 
 
@@ -271,9 +269,9 @@ static void _level_based_calc_assoc_fs(
  * be called again by _level_based_calc_assoc_fs() for child accounts (not
  * users), thus making it recursive.
  */
-void _level_based_calc_children_fs(List children_list,
-				   List users,
-				   uint16_t assoc_level)
+static void _level_based_calc_children_fs(List children_list,
+					  List users,
+					  uint16_t assoc_level)
 {
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
@@ -290,8 +288,8 @@ void _level_based_calc_children_fs(List children_list,
 
 
 /* Sort so that higher priority_fs_raw values are first in the list */
-int _level_based_sort_priority_fs(slurmdb_association_rec_t **x,
-				  slurmdb_association_rec_t **y)
+static int _level_based_sort_priority_fs(slurmdb_association_rec_t **x,
+					 slurmdb_association_rec_t **y)
 {
 	uint64_t a = (*x)->usage->priority_fs_raw;
 	uint64_t b = (*y)->usage->priority_fs_raw;
@@ -309,7 +307,7 @@ int _level_based_sort_priority_fs(slurmdb_association_rec_t **x,
  * allowing for duplicate rankings if priority_fs_raw is equal for users
  * (i vs rank).
  */
-void _level_based_apply_rank(List users)
+static void _level_based_apply_rank(List users)
 {
 	ListIterator itr = list_iterator_create(users);
 	slurmdb_association_rec_t *assoc;
