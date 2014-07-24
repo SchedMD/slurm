@@ -534,7 +534,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		slurm_free_license_info_request_msg(msg->data);
 		break;
 	 case REQUEST_KILL_JOB:
-		_slurm_rpc_job_step_kill(msg);
+		_slurm_rpc_kill_job2(msg);
 		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	default:
