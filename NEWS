@@ -155,6 +155,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY NATIVE - Fix issue on heavy systems to only run the NHC once per
     job/step completion.
  -- Remove unneeded step cleanup for pending steps.
+ -- Fix issue where if a batch job was manually requeued the batch step
+    information wasn't stored in accounting.
 
 * Changes in Slurm 14.03.6
 ==========================
