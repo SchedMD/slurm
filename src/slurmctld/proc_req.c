@@ -1803,9 +1803,12 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	 * ran so we already finished the last instance of the job so
 	 * this would be put on the requeued instance which is
 	 * incorrect.
+	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
+	 * into account the COMPLETING FLAG which is valid, but not
+	 * always set yet when the step exits normally.
 	 */
 	if (association_based_accounting && job_ptr
-	    && !IS_JOB_PENDING(job_ptr)) {
+	    && (job_ptr->job_state != JOB_PENDING)) {
 		struct step_record batch_step;
 		memset(&batch_step, 0, sizeof(struct step_record));
 		batch_step.job_ptr = job_ptr;
