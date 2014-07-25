@@ -174,7 +174,7 @@ ssize_t _slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **pbuf, size_t *lenp,
 	/*
 	 *  Allocate memory on heap for message
 	 */
-	*pbuf = xmalloc(msglen);
+	*pbuf = xmalloc_nz(msglen);
 
 	if (_slurm_recv_timeout(fd, *pbuf, msglen, 0, tmout) != msglen) {
 		xfree(*pbuf);
