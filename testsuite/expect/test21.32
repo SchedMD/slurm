@@ -42,6 +42,15 @@ set qos_test(4)  "test$test_id\_qos_4"
 
 print_header $test_id
 
+set qos_names_str 0
+foreach inx [array names qos_test] {
+	if { $qos_names_str != 0 } {
+		set qos_names_str "$qos_names_str,$qos_test($inx)"
+	} else {
+		set qos_names_str "$qos_test($inx)"
+	}
+}
+
 proc check_vestigial { } {
 
 	global sacctmgr exit_code qos_test
@@ -148,13 +157,11 @@ proc check_pre { preempt_qos } {
 
 proc add_all_qos { } {
 
-	global qos_test
+	global qos_names_str
 
 	send_user "\nAdding QoS...\n"
 
-	for {set i 0} {$i<5} {incr i 1} {
-		set added [add_qos $qos_test($i)]
-	}
+	set added [add_qos $qos_names_str]
 
 	if {$added != 0} {
 		send_user "FAILURE: not all the QoSs were added\n"
@@ -165,13 +172,11 @@ proc add_all_qos { } {
 
 proc remove_all_qos { } {
 
-	global qos_test exit_code
+	global qos_names_str exit_code
 
 	send_user "\nRemoving QoS...\n"
 
-	for {set i 0} {$i<5} {incr i 1} {
-		set removed [remove_qos $qos_test($i)]
-	}
+	set removed [remove_qos $qos_names_str]
 
 	if {$removed != 0} {
 		send_user "\nFAILURE: QoS were not removed\n"
