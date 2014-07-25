@@ -560,6 +560,7 @@ static int _suspend_job(uint32_t job_id)
 	suspend_msg_t msg;
 
 	msg.job_id = job_id;
+	msg.job_id_str = NULL;
 	msg.op = SUSPEND_JOB;
 	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
@@ -580,6 +581,7 @@ static void _resume_job(uint32_t job_id)
 	suspend_msg_t msg;
 
 	msg.job_id = job_id;
+	msg.job_id_str = NULL;
 	msg.op = RESUME_JOB;
 	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	if (rc == SLURM_SUCCESS) {
