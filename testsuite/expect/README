@@ -610,6 +610,7 @@ test21.28  sacctmgr abort delete
 test21.29  sacctmgr clear (modify) QoS values
 test21.30  sacctmgr test if the QoS values are enforced
 test21.31  sacctmgr modify Resource values
+test21.32  Validate that mod qos =,+=,-= change the preempt value
 
 
 test22.#   Testing of sreport commands and options.

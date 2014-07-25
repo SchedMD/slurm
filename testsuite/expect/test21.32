@@ -1,0 +1,228 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that mod QoS modifies the preempt QoS when using =,+=,
+#          -=
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id      21.32
+set exit_code    0
+set qos_test(0)  "test$test_id\_qos_0"
+set qos_test(1)  "test$test_id\_qos_1"
+set qos_test(2)  "test$test_id\_qos_2"
+set qos_test(3)  "test$test_id\_qos_3"
+set qos_test(4)  "test$test_id\_qos_4"
+
+print_header $test_id
+
+proc check_vestigial { } {
+
+	global sacctmgr exit_code qos_test
+
+	set clean_up 0
+	spawn $sacctmgr show qos $qos_test(0) --noheader format=name%30
+	expect {
+		-re "$qos_test(0)" {
+			set clean_up 1
+			exp_continue
+
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $clean_up
+}
+
+proc reset_qos { } {
+
+	global sacctmgr qos_main exit_code qos_test
+
+	set removed 0
+	spawn $sacctmgr -i mod qos $qos_test(0) set preempt=''
+	expect {
+		"Modified qos" {
+			set removed 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$removed != 1} {
+		send_user "\nFAILURE: qos $qos_main\'s preempt qos were not "
+		send_user "removed\n"
+		set exit_code 1
+	}
+
+}
+
+proc mod_qos { preempt_qos } {
+
+	global sacctmgr exit_code qos_test
+
+	set mod 0
+	spawn $sacctmgr -i mod qos $qos_test(0) set preempt$preempt_qos
+	expect {
+		-re "Modified qos" {
+			set mod 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$mod != 1} {
+		send_user "\nFAILURE: QoS was not modified\n"
+		set exit_code 1
+	}
+}
+
+proc check_pre { preempt_qos } {
+
+	global sacctmgr exit_code alpha_numeric_under qos_test
+
+	set match 0
+	spawn $sacctmgr show qos $qos_test(0) format=preempt%80 --noheader
+	expect {
+		-re "$preempt_qos" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 1} {
+		send_user "\nFAILURE: preempted QoS do not match what is expected\n"
+		set exit_code 1
+	}
+}
+
+proc add_all_qos { } {
+
+	global qos_test
+
+	send_user "\nAdding QoS...\n"
+
+	for {set i 0} {$i<5} {incr i 1} {
+		set added [add_qos $qos_test($i)]
+	}
+
+	if {$added != 0} {
+		send_user "FAILURE: not all the QoSs were added\n"
+		exit 1
+	}
+
+}
+
+proc remove_all_qos { } {
+
+	global qos_test exit_code
+
+	send_user "\nRemoving QoS...\n"
+
+	for {set i 0} {$i<5} {incr i 1} {
+		set removed [remove_qos $qos_test($i)]
+	}
+
+	if {$removed != 0} {
+		send_user "\nFAILURE: QoS were not removed\n"
+		set exit_code 1
+	}
+}
+
+######################### Test Begins #########################
+
+if {[check_vestigial]} {
+	remove_all_qos
+}
+
+# Add a few QoS
+add_all_qos
+
+# Add a preempt qos with =
+mod_qos "=$qos_test(1)"
+check_pre $qos_test(1)
+
+# Now clear the preempt qos
+reset_qos
+check_pre " "
+
+# Add multiple QoSs with =
+mod_qos "=$qos_test(1),$qos_test(2)"
+check_pre "$qos_test(1),$qos_test(2)"
+reset_qos
+check_pre " "
+
+# Add multiple QoSs with +=
+mod_qos "=$qos_test(1)"
+mod_qos "+=$qos_test(2)"
+check_pre "$qos_test(1),$qos_test(2)"
+mod_qos "+=$qos_test(3),$qos_test(4)"
+check_pre "$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
+reset_qos
+check_pre " "
+
+# Remove some of the QoS with -=
+mod_qos "=$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
+check_pre "$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
+mod_qos "-=$qos_test(2)"
+check_pre "$qos_test(1),$qos_test(3),$qos_test(4)"
+mod_qos "-=$qos_test(4)"
+check_pre "$qos_test(1),$qos_test(3)"
+mod_qos "-=$qos_test(1),$qos_test(3)"
+check_pre " "
+
+remove_all_qos
+
+if {$exit_code == 0} {
+	send_user "\nSUCCCESS\n"
+}
