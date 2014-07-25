@@ -134,7 +134,7 @@ proc check_pre { preempt_qos } {
 	global sacctmgr exit_code alpha_numeric_under qos_test
 
 	set match 0
-	spawn $sacctmgr show qos $qos_test(0) format=preempt%80 --noheader
+	spawn $sacctmgr show qos $qos_test(0) format=preempt%-80 --noheader
 	expect {
 		-re "$preempt_qos" {
 			set match 1
