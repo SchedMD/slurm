@@ -139,7 +139,6 @@ spawn $strigger --clear -v --user=$uid
 expect {
 	timeout {
 		send_user "\nFAILURE: strigger is not responding\n"
-		slow_kill $strigger_pid
 		set exit_code 1
 	}
 	eof {
