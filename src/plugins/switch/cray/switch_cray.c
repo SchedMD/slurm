@@ -159,7 +159,7 @@ static void _state_read_buf(Buf buffer)
 		safe_unpack32(&last_alloc_port, buffer);
 		/* make sure we are NULL here */
 		FREE_NULL_BITMAP(port_resv);
-		unpack_bit_str(&port_resv, buffer);
+		unpack_bit_str_hex(&port_resv, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint8_t port_set = 0;
 		safe_unpack32(&min_port, buffer);
@@ -208,7 +208,7 @@ static void _state_write_buf(Buf buffer)
 	pthread_mutex_lock(&port_mutex);
 
 	pack32(last_alloc_port, buffer);
-	pack_bit_str(port_resv, buffer);
+	pack_bit_str_hex(port_resv, buffer);
 
 	pthread_mutex_unlock(&port_mutex);
 }

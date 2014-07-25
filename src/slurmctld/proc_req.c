@@ -185,6 +185,7 @@ inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
+inline static void  _slurm_rpc_kill_job2(slurm_msg_t *msg);
 
 inline static void  _update_cred_key(void);
 
@@ -446,7 +447,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_JOB_REQUEUE:
 		_slurm_rpc_requeue(msg);
-		slurm_free_job_id_msg(msg->data);
+		slurm_free_requeue_msg(msg->data);
 		break;
 	case REQUEST_JOB_READY:
 		_slurm_rpc_job_ready(msg);
@@ -531,6 +532,10 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_LICENSE_INFO:
 		_slurm_rpc_dump_licenses(msg);
 		slurm_free_license_info_request_msg(msg->data);
+		break;
+	 case REQUEST_KILL_JOB:
+		_slurm_rpc_kill_job2(msg);
+		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
@@ -3169,7 +3174,8 @@ fini:	xfree(err_msg);
 }
 
 /* _slurm_rpc_update_job - process RPC to update the configuration of a
- *	job (e.g. priority) */
+ * job (e.g. priority)
+ */
 static void _slurm_rpc_update_job(slurm_msg_t * msg)
 {
 	int error_code;
@@ -3186,7 +3192,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
 	lock_slurmctld(job_write_lock);
-	error_code = update_job(job_desc_msg, uid);
+	error_code = update_job_str(job_desc_msg, uid);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_update_job");
 
@@ -3197,7 +3203,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info("_slurm_rpc_update_job complete JobId=%u uid=%d %s",
-		       job_desc_msg->job_id, uid, TIME_STR);
+		     job_desc_msg->job_id, uid, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		/* Below functions provide their own locking */
 		schedule_job_save();
@@ -3825,17 +3831,22 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	     op, (unsigned int) uid);
 
 	lock_slurmctld(job_write_lock);
-	error_code = job_suspend(sus_ptr, uid, msg->conn_fd, true,
-				 msg->protocol_version);
+	if (sus_ptr->job_id_str) {
+		error_code = job_suspend2(sus_ptr, uid, msg->conn_fd, true,
+					  msg->protocol_version);
+	} else {
+		error_code = job_suspend(sus_ptr, uid, msg->conn_fd, true,
+					 msg->protocol_version);
+	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_suspend");
 
 	if (error_code) {
-		info("_slurm_rpc_suspend(%s) %u: %s", op,
-		     sus_ptr->job_id, slurm_strerror(error_code));
+		info("_slurm_rpc_suspend(%s) for %s %s", op,
+		     sus_ptr->job_id_str, slurm_strerror(error_code));
 	} else {
-		info("_slurm_rpc_suspend(%s) for %u %s", op,
-		     sus_ptr->job_id, TIME_STR);
+		info("_slurm_rpc_suspend(%s) for %s %s", op,
+		     sus_ptr->job_id_str, TIME_STR);
 
 		schedule_job_save();	/* Has own locking */
 		if (sus_ptr->op == SUSPEND_JOB)
@@ -3852,62 +3863,28 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	struct job_record *job_ptr;
 
 	START_TIMER;
-	info("%s: Processing RPC: REQUEST_REQUEUE from uid=%d", __func__, uid);
 
-	job_ptr = find_job_record(req_ptr->job_id);
-	if (job_ptr == NULL) {
-		slurm_msg_t resp_msg;
-		return_code_msg_t rc_msg;
-
-		info("%s: %u: %s", __func__, req_ptr->job_id,
-		     slurm_strerror(ESLURM_INVALID_JOB_ID));
-
-		slurm_msg_t_init(&resp_msg);
-		resp_msg.protocol_version = msg->protocol_version;
-		resp_msg.msg_type  = RESPONSE_SLURM_RC;
-		rc_msg.return_code = ESLURM_INVALID_JOB_ID;
-		resp_msg.data      = &rc_msg;
-		slurm_send_node_msg(msg->conn_fd, &resp_msg);
-
-		return;
-	}
+	info("%s: Processing RPC: REQUEST_JOB_REQUEUE from uid=%d", __func__,
+	     uid);
 
 	lock_slurmctld(job_write_lock);
-	error_code = job_requeue(uid,
-	                         req_ptr->job_id,
-	                         msg->conn_fd,
-	                         msg->protocol_version,
-	                         false);
+	if (req_ptr->job_id_str) {
+		error_code = job_requeue2(uid, req_ptr, msg->conn_fd,
+					  msg->protocol_version, false);
+	} else {
+		error_code = job_requeue(uid, req_ptr->job_id, msg->conn_fd,
+					 msg->protocol_version, false,
+					 req_ptr->state);
+	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_requeue");
 
 	if (error_code) {
 		info("%s: %u: %s", __func__, req_ptr->job_id,
 		     slurm_strerror(error_code));
-		return;
 	}
-
-	/* Requeue operation went all right, see if the user
-	 * wants to mark the job as special case or hold it.
-	 */
-	if (req_ptr->state & JOB_SPECIAL_EXIT) {
-		job_ptr->job_state |= JOB_SPECIAL_EXIT;
-		job_ptr->state_reason = WAIT_HELD_USER;
-		job_ptr->priority = 0;
-	}
-	if (req_ptr->state & JOB_REQUEUE_HOLD) {
-		job_ptr->state_reason = WAIT_HELD_USER;
-		job_ptr->priority = 0;
-	}
-
-	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
-	      job_ptr->job_id, job_ptr->job_state,
-	      job_ptr->state_reason, job_ptr->priority);
-
-	info("%s: %u: %s", __func__, req_ptr->job_id, TIME_STR);
 
 	/* Functions below provide their own locking
 	 */
@@ -4950,4 +4927,42 @@ extern void free_rpc_stats(void)
 	xfree(rpc_user_time);
 	rpc_user_size = 0;
 	slurm_mutex_unlock(&rpc_mutex);
+}
+
+/* _slurm_rpc_kill_job2()
+ */
+inline static void
+_slurm_rpc_kill_job2(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	job_step_kill_msg_t *kill;
+	slurmctld_lock_t lock = {READ_LOCK, WRITE_LOCK,
+				 WRITE_LOCK, NO_LOCK };
+	uid_t uid;
+	int cc;
+
+	kill = 	(job_step_kill_msg_t *)msg->data;
+	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug("%s: REQUEST_KILL_JOB job %s uid %d",
+	      __func__, kill->sjob_id, uid);
+
+	lock_slurmctld(lock);
+
+	cc = job_str_signal(kill->sjob_id,
+			    kill->signal,
+			    kill->flags,
+			    uid,
+			    0);
+	if (cc != SLURM_SUCCESS) {
+		error("%s: job_str_signal() job %s sig %d returned %s",
+		      __func__, kill->sjob_id,
+		      kill->signal, slurm_strerror(cc));
+	}
+
+	slurm_send_rc_msg(msg, cc);
+
+	unlock_slurmctld(lock);
+	END_TIMER2("_slurm_rpc_kill_job2");
 }

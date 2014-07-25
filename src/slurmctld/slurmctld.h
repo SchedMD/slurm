@@ -496,6 +496,13 @@ struct job_details {
 	char *work_dir;			/* pathname of working directory */
 };
 
+typedef struct job_array_struct {
+	uint32_t task_cnt;		/* count of remaining task IDs */
+	bitstr_t *task_id_bitmap;	/* bitmap of remaining task IDs */
+	char *task_id_str;		/* string describing remaining task IDs,
+					 * needs to be recalcuated if NULL */
+} job_array_struct_t;
+
 struct job_record {
 	char    *account;		/* account number to charge */
 	char	*alias_list;		/* node name to address aliases */
@@ -504,6 +511,8 @@ struct job_record {
 	uint32_t alloc_sid;		/* local sid making resource alloc */
 	uint32_t array_job_id;		/* job_id of a job array or 0 if N/A */
 	uint32_t array_task_id;		/* task_id of a job array */
+	job_array_struct_t *array_recs;	/* job array details,
+					 * only in meta-job record */
 	uint32_t assoc_id;              /* used for accounting plugins */
 	void    *assoc_ptr;		/* job's association record ptr, it is
 					 * void* because of interdependencies
@@ -925,7 +934,9 @@ extern List feature_list_copy(List feature_list_src);
  * find_job_array_rec - return a pointer to the job record with the given
  *	array_job_id/array_task_id
  * IN job_id - requested job's id
- * IN array_task_id - requested job's task id (NO_VAL if none specified)
+ * IN array_task_id - requested job's task id,
+ *		      NO_VAL if none specified (i.e. not a job array)
+ *		      INFINITE return any task for specified job id
  * RET pointer to the job's record, NULL on error
  */
 extern struct job_record *find_job_array_rec(uint32_t array_job_id,
@@ -1081,6 +1092,12 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		int allocate, uid_t submit_uid, struct job_record **job_pptr,
 		char **err_msg);
 
+/* If this is a job array meta-job, prepare it for being scheduled */
+extern void job_array_pre_sched(struct job_record *job_ptr);
+
+/* If this is a job array meta-job, clean up after scheduling attempt */
+extern void job_array_post_sched(struct job_record *job_ptr);
+
 /* Reset a job's end_time based upon it's start_time and time_limit.
  * NOTE: Do not reset the end_time if already being preempted */
 extern void job_end_time_reset(struct job_record  *job_ptr);
@@ -1225,6 +1242,19 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 		uid_t uid, slurm_fd_t conn_fd, uint16_t protocol_version);
 
 /*
+ * job_str_signal - signal the specified job
+ * IN job_id_str - id of the job to be signaled, valid formats include "#"
+ *	"#_#" and "#_[expr]"
+ * IN signal - signal to send, SIGKILL == cancel the job
+ * IN flags  - see KILL_JOB_* flags in slurm.h
+ * IN uid - uid of requesting user
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
+			  uid_t uid, bool preempt);
+
+/*
  * job_suspend - perform some suspend/resume operation
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
@@ -1239,6 +1269,9 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		       slurm_fd_t conn_fd, bool indf_susp,
 		       uint16_t protocol_version);
+extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
+			slurm_fd_t conn_fd, bool indf_susp,
+			uint16_t protocol_version);
 
 /*
  * job_complete - note the normal termination the specified job
@@ -1281,13 +1314,26 @@ extern int job_req_node_filter(struct job_record *job_ptr,
  * IN conn_fd - file descriptor on which to send reply
  * IN protocol_version - slurm protocol version of client
  * IN preempt - true if job being preempted
+ * IN state - may be set to JOB_SPECIAL_EXIT and/or JOB_REQUEUE_HOLD
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue(uid_t uid,
-                       uint32_t job_id,
-                       slurm_fd_t conn_fd,
-                       uint16_t protocol_version,
+extern int job_requeue(uid_t uid, uint32_t job_id,
+                       slurm_fd_t conn_fd, uint16_t protocol_version,
+                       bool preempt, uint32_t state);
+
+/*
+ * job_requeue2 - Requeue a running or pending batch job
+ * IN uid - user id of user issuing the RPC
+ * IN req_ptr - request including ID of the job to be requeued
+ * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
+                       slurm_fd_t conn_fd, uint16_t protocol_version,
                        bool preempt);
+
 /*
  * job_step_complete - note normal completion the specified job step
  * IN job_id - id of the job to be completed
@@ -1917,6 +1963,7 @@ extern int sync_job_files(void);
 /* After recovering job state, if using priority/basic then we increment the
  * priorities of all jobs to avoid decrementing the base down to zero */
 extern void sync_job_priorities(void);
+
 /*
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
@@ -1925,7 +1972,17 @@ extern void sync_job_priorities(void);
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job (job_desc_msg_t * job_specs, uid_t uid);
+extern int update_job(job_desc_msg_t * job_specs, uid_t uid);
+
+/*
+ * update_job_str - update a job's parameters per the supplied specifications
+ * IN job_specs - a job's specification
+ * IN uid - uid of user issuing RPC
+ * RET returns an error code from slurm_errno.h
+ * global: job_list - global list of job entries
+ *	last_job_update - time of last job table update
+ */
+extern int update_job_str(job_desc_msg_t * job_specs, uid_t uid);
 
 /*
  * Modify the account associated with a pending job

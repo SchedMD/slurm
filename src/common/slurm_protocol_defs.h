@@ -310,6 +310,8 @@ typedef enum {
 	REQUEST_FORWARD_DATA,
 	REQUEST_COMPLETE_BATCH_JOB,
 	REQUEST_SUSPEND_INT,
+	REQUEST_KILL_JOB,       /* 5032 */
+	REQUEST_KILL_JOBSTEP,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -503,6 +505,7 @@ typedef struct priority_factors_response_msg {
 
 typedef struct job_step_kill_msg {
 	uint32_t job_id;
+	char *sjob_id;
 	uint32_t job_step_id;
 	uint16_t signal;
 	uint16_t flags;
@@ -1045,7 +1048,8 @@ typedef struct slurm_node_registration_status_msg {
 } slurm_node_registration_status_msg_t;
 
 typedef struct requeue_msg {
-	uint32_t job_id;       /* slurm job_id */
+	uint32_t job_id;	/* slurm job ID (number) */
+	char *   job_id_str;	/* slurm job ID (string) */
 	uint32_t state;        /* JobExitRequeue | Hold */
 } requeue_msg_t;
 
@@ -1245,7 +1249,6 @@ extern void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg);
 extern void slurm_free_requeue_msg(requeue_msg_t *);
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
-
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 
 extern char *preempt_mode_string(uint16_t preempt_mode);

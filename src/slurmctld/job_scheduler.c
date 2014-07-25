@@ -1067,6 +1067,8 @@ next_part:			part_ptr = (struct part_record *)
 				continue;  /* started in other partition */
 			job_ptr->part_ptr = part_ptr;
 		}
+
+next_task:
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
 			break;
@@ -1348,6 +1350,8 @@ next_part:			part_ptr = (struct part_record *)
 			/* job initiated */
 			debug3("sched: JobId=%u initiated", job_ptr->job_id);
 			last_job_update = now;
+			reject_array_job_id = 0;
+			reject_array_part   = NULL;
 #ifdef HAVE_BG
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_IONODES,
@@ -1358,13 +1362,31 @@ next_part:			part_ptr = (struct part_record *)
 			} else {
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
-			info("sched: Allocate JobId=%u MidplaneList=%s",
-			     job_ptr->job_id, tmp_char);
+			if (job_ptr->array_task_id != NO_VAL) {
+				info("sched: Allocate JobId=%u_%u (%u) "
+				     "MidplaneList=%s",
+				     job_ptr->array_job_id,
+				     job_ptr->array_task_id,
+				     job_ptr->job_id, tmp_char);
+			} else {
+				info("sched: Allocate JobId=%u MidplaneList=%s",
+				     job_ptr->job_id, tmp_char);
+			}
 			xfree(ionodes);
 #else
-			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
-			     job_ptr->job_id, job_ptr->nodes,
-			     job_ptr->total_cpus);
+			if (job_ptr->array_task_id != NO_VAL) {
+				info("sched: Allocate JobId=%u_%u (%u) "
+				     "NodeList=%s #CPUs=%u",
+				     job_ptr->array_job_id,
+				     job_ptr->array_task_id,
+				     job_ptr->job_id, job_ptr->nodes,
+				     job_ptr->total_cpus);
+			} else {
+				info("sched: Allocate JobId=%u NodeList=%s "
+				     "#CPUs=%u",
+				     job_ptr->job_id, job_ptr->nodes,
+				     job_ptr->total_cpus);
+			}
 #endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
@@ -1372,8 +1394,13 @@ next_part:			part_ptr = (struct part_record *)
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
-			reject_array_job_id = 0;
-			reject_array_part   = NULL;
+			if (job_ptr->array_task_id != NO_VAL) {
+				/* Try starting another task of the job array */
+				job_ptr = find_job_record(job_ptr->array_job_id);
+				if (job_ptr && IS_JOB_PENDING(job_ptr))
+					goto next_task;
+			}
+			continue;
 		} else if ((error_code ==
 			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			   job_ptr->part_ptr_list) {
@@ -1862,8 +1889,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
-		if (dep_ptr->array_task_id == INFINITE) {
-			/* Advance to latest element of this job array */
+		if (dep_ptr->array_task_id != NO_VAL) {
 			dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
 							dep_ptr->array_task_id);
 		}
@@ -2064,7 +2090,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				}
 				if (dep_job_ptr &&
 				    (dep_job_ptr->array_job_id == job_id) &&
-				    (dep_job_ptr->array_task_id != NO_VAL)) {
+				    ((dep_job_ptr->array_task_id != NO_VAL) ||
+				     (dep_job_ptr->array_recs != NULL))) {
 					array_task_id = INFINITE;
 				}
 			} else {
@@ -2926,7 +2953,7 @@ static void *_run_prolog(void *arg)
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 		lock_slurmctld(job_write_lock);
 		if ((rc = job_requeue(0, job_id, -1, (uint16_t) NO_VAL,
-				      false))) {
+				      false, 0))) {
 			info("unable to requeue job %u: %m", job_id);
 			kill_job = true;
 		}

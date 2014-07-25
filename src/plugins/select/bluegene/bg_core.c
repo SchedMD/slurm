@@ -337,7 +337,7 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
 
 	if (!slurmctld_locked)
 		lock_slurmctld(job_write_lock);
-	if ((rc = job_requeue(0, job_id, -1, (uint16_t)NO_VAL, preempted))) {
+	if ((rc = job_requeue(0, job_id, -1, (uint16_t)NO_VAL, preempted, 0))) {
 		error("Couldn't requeue job %u, failing it: %s",
 		      job_id, slurm_strerror(rc));
 		job_fail(job_id, job_state);

@@ -44,25 +44,26 @@
 #include "slurm/slurm.h"
 #include "src/common/slurm_protocol_api.h"
 
-static int _suspend_op (uint16_t op, uint32_t job_id);
 /*
  * _suspend_op - perform a suspend/resume operation for some job.
- * IN op      - operation to perform
- * IN job_id  - job on which to perform operation
- * IN step_id - job step on which to perform operation
+ * IN op         - operation to perform
+ * IN job_id     - job on which to perform operation or NO_VAL
+ * IN job_id_str - job on which to perform operation in string format or NULL
  * RET 0 or a slurm error code
+ * NOTE: Supply either job_id NO_VAL or job_id_str as NULL, not both
  */
-static int _suspend_op (uint16_t op, uint32_t job_id)
+static int _suspend_op(uint16_t op, uint32_t job_id, char *job_id_str)
 {
 	int rc;
 	suspend_msg_t sus_req;
 	slurm_msg_t req_msg;
 
 	slurm_msg_t_init(&req_msg);
-	sus_req.op       = op;
-	sus_req.job_id   = job_id;
-	req_msg.msg_type = REQUEST_SUSPEND;
-	req_msg.data     = &sus_req;
+	sus_req.op         = op;
+	sus_req.job_id     = job_id;
+	sus_req.job_id_str = job_id_str;
+	req_msg.msg_type   = REQUEST_SUSPEND;
+	req_msg.data       = &sus_req;
 
 	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 		return SLURM_ERROR;
@@ -76,9 +77,19 @@ static int _suspend_op (uint16_t op, uint32_t job_id)
  * IN job_id  - job on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_suspend (uint32_t job_id)
+extern int slurm_suspend(uint32_t job_id)
 {
-	return _suspend_op (SUSPEND_JOB, job_id);
+	return _suspend_op (SUSPEND_JOB, job_id, NULL);
+}
+
+/*
+ * slurm_suspend2 - suspend execution of a job.
+ * IN job_id in string form  - job on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_suspend2(char *job_id)
+{
+	return _suspend_op(SUSPEND_JOB, NO_VAL, job_id);
 }
 
 /*
@@ -86,19 +97,31 @@ extern int slurm_suspend (uint32_t job_id)
  * IN job_id  - job on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_resume (uint32_t job_id)
+extern int slurm_resume(uint32_t job_id)
 {
-	return _suspend_op (RESUME_JOB, job_id);
+	return _suspend_op(RESUME_JOB, job_id, NULL);
 }
 
 /*
- * slurm_requeue - re-queue a batch job, if already running
- *	then terminate it first
- * IN job_id  - job on which to perform operation
+ * slurm_resume2 - resume execution of a previously suspended job.
+ * IN job_id in string form  - job on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue(uint32_t job_id,
-                         uint32_t state)
+extern int slurm_resume2(char *job_id)
+{
+	return _suspend_op(RESUME_JOB, NO_VAL, job_id);
+}
+
+
+/*
+ * _requeue_op   - perform a requeue operation for some job.
+ * IN state      - state in which to place the job
+ * IN job_id     - job on which to perform operation or NO_VAL
+ * IN job_id_str - job on which to perform operation in string format or NULL
+ * RET 0 or a slurm error code
+ * NOTE: Supply either job_id NO_VAL or job_id_str as NULL, not both
+ */
+static int _requeue_op(uint32_t state, uint32_t job_id, char *job_id_str)
 {
 	int rc;
 	requeue_msg_t requeue_req;
@@ -107,7 +130,8 @@ extern int slurm_requeue(uint32_t job_id,
 	slurm_msg_t_init(&req_msg);
 
 	requeue_req.job_id	= job_id;
-	requeue_req.state = state;
+	requeue_req.job_id_str	= job_id_str;
+	requeue_req.state	= state;
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;
 
@@ -116,4 +140,28 @@ extern int slurm_requeue(uint32_t job_id,
 
 	slurm_seterrno(rc);
 	return rc;
+}
+
+/*
+ * slurm_requeue - re-queue a batch job, if already running
+ *	then terminate it first
+ * IN job_id     - job on which to perform operation
+ * IN state      - state in which to place the job
+ * RET 0 or a slurm error code
+ */
+extern int slurm_requeue(uint32_t job_id, uint32_t state)
+{
+	return _requeue_op(state, job_id, NULL);
+}
+
+/*
+ * slurm_requeue2 - re-queue a batch job, if already running
+ *	then terminate it first
+ * IN job_id_str - job on which to perform operation in string format or NULL
+ * IN state      - state in which to place the job
+ * RET 0 or a slurm error code
+ */
+extern int slurm_requeue2(char *job_id_str, uint32_t state)
+{
+	return _requeue_op(state, 0, job_id_str);
 }

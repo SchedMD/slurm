@@ -971,6 +971,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					   msg->protocol_version);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
+	case REQUEST_KILL_JOB:
 	case SRUN_STEP_SIGNAL:
 		_pack_job_step_kill_msg((job_step_kill_msg_t *)
 					msg->data, buffer,
@@ -1568,6 +1569,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						  msg->protocol_version);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
+	case REQUEST_KILL_JOB:
 	case SRUN_STEP_SIGNAL:
 		rc = _unpack_job_step_kill_msg((job_step_kill_msg_t **)
 					       & (msg->data), buffer,
@@ -4602,6 +4604,86 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/* Translate bitmap representation from hex to decimal format, replacing
+ * array_task_str and store the bitmap in job->array_bitmap. */
+static void _xlate_task_str(job_info_t *job_ptr)
+{
+	static int bitstr_len = -1;
+	int buf_size, len;
+	int i, i_first, i_last, i_prev, i_step = 0;
+	bitstr_t *task_bitmap;
+	char *in_buf = job_ptr->array_task_str;
+	char *out_buf = NULL;
+
+	if (!in_buf)
+		return;
+
+	i = strlen(in_buf);
+	task_bitmap = bit_alloc(i * 4);
+	bit_unfmt_hexmask(task_bitmap, in_buf);
+	job_ptr->array_bitmap = (void *) task_bitmap;
+
+	/* Check first for a step function */
+	i_first = bit_ffs(task_bitmap);
+	i_last  = bit_fls(task_bitmap);
+	if (((i_last - i_first) > 10) &&
+	    !bit_test(task_bitmap, i_first + 1)) {
+		bool is_step = true;
+		i_prev = i_first;
+		for (i = i_first + 1; i <= i_last; i++) {
+			if (!bit_test(task_bitmap, i))
+				continue;
+			if (i_step == 0) {
+				i_step = i - i_prev;
+			} else if ((i - i_prev) != i_step) {
+				is_step = false;
+				break;
+			}
+			i_prev = i;
+		}
+		if (is_step) {
+			xstrfmtcat(out_buf, "%d-%d:%d",
+				   i_first, i_last, i_step);
+		}
+	}
+
+	if (bitstr_len == -1) {
+		char *bitstr_len_str = getenv("SLURM_BITSTR_LEN");
+		if (bitstr_len_str)
+			bitstr_len = atoi(bitstr_len_str);
+		if (bitstr_len < 0)
+			bitstr_len = 64;
+	}
+
+	if (bitstr_len > 0) {
+		/* Print the first bitstr_len bytes of the bitmap string */
+		buf_size = bitstr_len;
+		out_buf = xmalloc(buf_size);
+		bit_fmt(out_buf, buf_size, task_bitmap);
+		len = strlen(out_buf);
+		if (len > (buf_size - 3))
+		for (i = 0; i < 3; i++)
+			out_buf[buf_size - 2 - i] = '.';
+	} else {
+		/* Print the full bitmap's string representation.
+		 * For huge bitmaps this can take roughly one minute,
+		 * so let the client do the work */
+		buf_size = bit_size(task_bitmap) * 8;
+		while (1) {
+			out_buf = xmalloc(buf_size);
+			bit_fmt(out_buf, buf_size, task_bitmap);
+			len = strlen(out_buf);
+			if ((len > 0) && (len < (buf_size - 32)))
+				break;
+			xfree(out_buf);
+			buf_size *= 2;
+		}
+	}
+
+	xfree(job_ptr->array_task_str);
+	job_ptr->array_task_str = out_buf;
+}
+
 /* _unpack_job_info_members
  * unpacks a set of slurm job info for one job
  * OUT job - pointer to the job info buffer
@@ -4622,11 +4704,18 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
+		/* The array_task_str value is stored in slurmctld and passed
+		 * here in hex format for best scalability. Its format needs
+		 * to be converted to human readable form by the client. */
+		safe_unpackstr_xmalloc(&job->array_task_str, &uint32_tmp,
+				       buffer);
+		_xlate_task_str(job);
+
 		safe_unpack32(&job->assoc_id, buffer);
-		safe_unpack32(&job->job_id, buffer);
-		safe_unpack32(&job->user_id, buffer);
+		safe_unpack32(&job->job_id,   buffer);
+		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
-		safe_unpack32(&job->profile, buffer);
+		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack16(&job->job_state,    buffer);
 		safe_unpack16(&job->batch_flag,   buffer);
@@ -4637,7 +4726,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpack32(&job->alloc_sid,    buffer);
 		safe_unpack32(&job->time_limit,   buffer);
-		safe_unpack32(&job->time_min,   buffer);
+		safe_unpack32(&job->time_min,     buffer);
 
 		safe_unpack16(&job->nice, buffer);
 
@@ -6825,6 +6914,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->features, buffer);
 		packstr(job_desc_ptr->gres, buffer);
 		pack32(job_desc_ptr->job_id, buffer);
+		packstr(job_desc_ptr->job_id_str, buffer);
 		packstr(job_desc_ptr->name, buffer);
 
 		packstr(job_desc_ptr->alloc_node, buffer);
@@ -7299,6 +7389,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->gres, &uint32_tmp,buffer);
 		safe_unpack32(&job_desc_ptr->job_id, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->job_id_str,
+				       &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->name,
 				       &uint32_tmp, buffer);
 
@@ -8603,10 +8696,18 @@ static void
 _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer,
 			uint16_t protocol_version)
 {
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_step_id, buffer);
-	pack16((uint16_t)msg->signal, buffer);
-	pack16((uint16_t)msg->flags, buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		packstr(msg->sjob_id, buffer);
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack16((uint16_t)msg->signal, buffer);
+		pack16((uint16_t)msg->flags, buffer);
+	} else {
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack16((uint16_t)msg->signal, buffer);
+		pack16((uint16_t)msg->flags, buffer);
+	}
 }
 
 /* _unpack_job_step_kill_msg
@@ -8620,14 +8721,24 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer,
 			  uint16_t protocol_version)
 {
 	job_step_kill_msg_t *msg;
+	uint32_t cc;
 
 	msg = xmalloc(sizeof(job_step_kill_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->job_step_id, buffer);
-	safe_unpack16(&msg->signal, buffer);
-	safe_unpack16(&msg->flags, buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&(msg)->sjob_id, &cc, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack16(&msg->signal, buffer);
+		safe_unpack16(&msg->flags, buffer);
+	} else {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack16(&msg->signal, buffer);
+		safe_unpack16(&msg->flags, buffer);
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -10226,7 +10337,11 @@ _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 {
 	xassert(msg != NULL);
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buf);
+		packstr(msg->job_id_str, buf);
+		pack32(msg->state, buf);
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buf);
 		pack32(msg->state, buf);
 	} else {
@@ -10242,9 +10357,14 @@ _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 static int
 _unpack_job_requeue_msg(requeue_msg_t **msg, Buf buf, uint16_t protocol_version)
 {
+	uint32_t uint32_tmp = 0;
 	*msg = xmalloc(sizeof(requeue_msg_t));
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack32(&(*msg)->job_id, buf);
+		safe_unpackstr_xmalloc(&(*msg)->job_id_str, &uint32_tmp, buf);
+		safe_unpack32(&(*msg)->state, buf);
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack32(&(*msg)->job_id, buf);
 		safe_unpack32(&(*msg)->state, buf);
 	} else {
@@ -10363,22 +10483,34 @@ static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer,
 			      uint16_t protocol_version)
 {
 	xassert ( msg != NULL );
-
-	pack16(msg -> op, buffer);
-	pack32(msg->job_id,  buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		pack16(msg -> op, buffer);
+		pack32(msg->job_id,  buffer);
+		packstr(msg->job_id_str, buffer);
+	} else {
+		pack16(msg -> op, buffer);
+		pack32(msg->job_id,  buffer);
+	}
 }
 
 static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer,
 				uint16_t protocol_version)
 {
 	suspend_msg_t * msg;
+	uint32_t uint32_tmp = 0;
 	xassert ( msg_ptr != NULL );
 
 	msg = xmalloc ( sizeof (suspend_msg_t) );
 	*msg_ptr = msg ;
 
-	safe_unpack16(&msg->op,      buffer);
-	safe_unpack32(&msg->job_id , buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->op,      buffer);
+		safe_unpack32(&msg->job_id , buffer);
+		safe_unpackstr_xmalloc(&msg->job_id_str, &uint32_tmp, buffer);
+	} else {
+		safe_unpack16(&msg->op,      buffer);
+		safe_unpack32(&msg->job_id , buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -11736,7 +11868,6 @@ unpack_error:
 	*msg = NULL;
 	return SLURM_ERROR;
 }
-
 
 /* template
    void pack_ ( * msg , Buf buffer )

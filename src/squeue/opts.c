@@ -1582,7 +1582,7 @@ _print_options(void)
 		i = 0;
 		iterator = list_iterator_create( params.job_list );
 		while ( (job_step_id = list_next( iterator )) ) {
-			if (job_step_id->array_id == (uint16_t) NO_VAL) {
+			if (job_step_id->array_id == NO_VAL) {
 				printf( "job_list[%d] = %u\n", i++,
 					job_step_id->job_id );
 			} else {
@@ -1636,7 +1636,7 @@ _print_options(void)
 		i = 0;
 		iterator = list_iterator_create( params.step_list );
 		while ( (job_step_id = list_next( iterator )) ) {
-			if (job_step_id->array_id == (uint16_t) NO_VAL) {
+			if (job_step_id->array_id == NO_VAL) {
 				printf( "step_list[%d] = %u.%u\n", i++,
 					job_step_id->job_id,
 					job_step_id->step_id );
@@ -1674,7 +1674,7 @@ _build_job_list( char* str )
 	List my_list;
 	char *end_ptr = NULL, *job = NULL, *tmp_char = NULL;
 	char *my_job_list = NULL;
-	int job_id, array_id;
+	uint32_t job_id, array_id;
 	squeue_job_step_t *job_step_id;
 
 	if ( str == NULL )
@@ -1687,15 +1687,15 @@ _build_job_list( char* str )
 		if (end_ptr[0] == '_')
 			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
 		else
-			array_id = (uint16_t) NO_VAL;
+			array_id = NO_VAL;
 		if (job_id <= 0) {
 			error( "Invalid job id: %s", job );
 			exit( 1 );
 		}
 
 		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
-		job_step_id->job_id   = (uint32_t) job_id;
-		job_step_id->array_id = (uint16_t) array_id;
+		job_step_id->job_id   = job_id;
+		job_step_id->array_id = array_id;
 		list_append( my_list, job_step_id );
 		job = strtok_r (NULL, ",", &tmp_char);
 	}
@@ -1798,7 +1798,7 @@ _build_step_list( char* str )
 	List my_list;
 	char *end_ptr = NULL, *step = NULL, *tmp_char = NULL, *tmps_char = NULL;
 	char *job_name = NULL, *step_name = NULL, *my_step_list = NULL;
-	int job_id, array_id, step_id;
+	uint32_t job_id, array_id, step_id;
 	squeue_job_step_t *job_step_id = NULL;
 
 	if ( str == NULL)
@@ -1813,7 +1813,7 @@ _build_step_list( char* str )
 		if (end_ptr[0] == '_')
 			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
 		else
-			array_id = (uint16_t) NO_VAL;
+			array_id = NO_VAL;
 		if (step_name == NULL) {
 			error ( "Invalid job_step id: %s.??",
 				 job_name );
@@ -1826,9 +1826,9 @@ _build_step_list( char* str )
 			exit( 1 );
 		}
 		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
-		job_step_id->job_id   = (uint32_t) job_id;
-		job_step_id->array_id = (uint16_t) array_id;
-		job_step_id->step_id  = (uint32_t) step_id;
+		job_step_id->job_id   = job_id;
+		job_step_id->array_id = array_id;
+		job_step_id->step_id  = step_id;
 		list_append( my_list, job_step_id );
 		step = strtok_r( NULL, ",", &tmp_char);
 	}

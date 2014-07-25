@@ -367,9 +367,17 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	snprintf(tmp_line, sizeof(tmp_line), "JobId=%u ", job_ptr->job_id);
 	out = xstrdup(tmp_line);
 	if (job_ptr->array_job_id) {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "ArrayJobId=%u ArrayTaskId=%u ",
-			 job_ptr->array_job_id, job_ptr->array_task_id);
+		if (job_ptr->array_task_str) {
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "ArrayJobId=%u ArrayTaskId=%s ",
+				 job_ptr->array_job_id,
+				 job_ptr->array_task_str);
+		} else {
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "ArrayJobId=%u ArrayTaskId=%u ",
+				 job_ptr->array_job_id,
+				 job_ptr->array_task_id);
+		}
 		xstrcat(out, tmp_line);
 	}
 	snprintf(tmp_line, sizeof(tmp_line), "Name=%s", job_ptr->name);

@@ -67,6 +67,7 @@ typedef struct scancel_options {
 	uint32_t *step_id;	/* list of job step id's	*/
 	char *wckey;		/* --wckey			*/
 	char *nodelist;		/* --nodelist, -w		*/
+	char *job_list;         /* list of job ids as char *    */
 } opt_t;
 
 opt_t opt;
@@ -77,6 +78,6 @@ opt_t opt;
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int initialize_and_process_args(int argc, char *argv[]);
-
+extern int initialize_and_process_args(int argc, char *argv[]);
+extern bool has_default_opt(void);
 #endif	/* _HAVE_SCANCEL_H */

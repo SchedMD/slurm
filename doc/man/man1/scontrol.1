@@ -1457,6 +1457,13 @@ Commandline options will always override these settings.)
 \fBSCONTROL_ALL\fR
 \fB\-a, \-\-all\fR
 .TP
+\fBSLURM_BITSTR_LEN\fR
+Specifies the string length to be used for holding a job array's task ID
+expression.
+The default value is 64 bytes.
+A value of 0 will print the full expression with any length required.
+Larger values may adversely impact the application performance.
+.TP
 \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-clusters\fR
 .TP

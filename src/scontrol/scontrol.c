@@ -881,14 +881,8 @@ _process_command (int argc, char *argv[])
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			error_code = scontrol_requeue((argc - 1), &argv[1]);
-			if (error_code) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					slurm_perror ("slurm_requeue error");
-			}
+			scontrol_requeue((argc - 1), &argv[1]);
 		}
-
 	}
 	else if (strncasecmp(tag, "requeuehold", 11) == 0) {
 		if (argc > 3) {
@@ -904,12 +898,7 @@ _process_command (int argc, char *argv[])
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			error_code = scontrol_requeue_hold((argc - 1), &argv[1]);
-			if (error_code) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					slurm_perror ("slurm_requeue error");
-			}
+			scontrol_requeue_hold((argc - 1), &argv[1]);
 		}
 
 	}
@@ -945,12 +934,7 @@ _process_command (int argc, char *argv[])
 					tag);
 		} else {
 			for (i = 1; i < argc; i++) {
-				error_code = scontrol_suspend(argv[0], argv[i]);
-				if (error_code) {
-					exit_code = 1;
-					if (quiet_flag != 1)
-						slurm_perror ("slurm_suspend error");
-				}
+				scontrol_suspend(argv[0], argv[i]);
 			}
 		}
 	}

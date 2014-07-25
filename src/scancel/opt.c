@@ -151,6 +151,33 @@ int initialize_and_process_args(int argc, char *argv[])
 
 }
 
+/* has_default_opt()
+ *
+ * No getopt() options were specified, only the
+ * job ids is on the command line.
+ *
+ */
+bool
+has_default_opt(void)
+{
+	if (opt.account == NULL
+	    && opt.batch == false
+	    && opt.interactive == false
+	    && opt.job_name == NULL
+	    && opt.partition == NULL
+	    && opt.qos == NULL
+	    && opt.reservation == NULL
+	    && opt.signal == (uint16_t) - 1
+	    && opt.state == JOB_END
+	    && opt.user_id == 0
+	    && opt.user_name == NULL
+	    && opt.wckey == NULL
+	    && opt.nodelist == NULL) {
+		return true;
+	}
+	return false;
+}
+
 static uint16_t
 _xlate_state_name(const char *state_name, bool env_var)
 {
@@ -223,6 +250,7 @@ static void _opt_default(void)
 #endif
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
+	opt.job_list    = NULL;
 	opt.job_name	= NULL;
 	opt.nodelist	= NULL;
 	opt.partition	= NULL;
@@ -429,6 +457,7 @@ static void _opt_args(int argc, char **argv)
 
 	if (optind < argc) {
 		char **rest = argv + optind;
+		opt.job_list = xstrdup(*rest);
 		_xlate_job_step_ids(rest);
 	}
 

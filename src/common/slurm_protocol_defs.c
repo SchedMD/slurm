@@ -354,6 +354,7 @@ extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
 
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 {
+	xfree(msg->sjob_id);
 	xfree(msg);
 }
 
@@ -528,6 +529,9 @@ extern void slurm_free_job_info_members(job_info_t * job)
 	if (job) {
 		xfree(job->account);
 		xfree(job->alloc_node);
+		if (job->array_bitmap)
+			bit_free((bitstr_t *) job->array_bitmap);
+		xfree(job->array_task_str);
 		xfree(job->batch_host);
 		xfree(job->batch_script);
 		xfree(job->command);
@@ -946,13 +950,19 @@ extern void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 }
 extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->job_id_str);
+		xfree(msg);
+	}
 }
 
 extern void
 slurm_free_requeue_msg(requeue_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->job_id_str);
+		xfree(msg);
+	}
 }
 
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)

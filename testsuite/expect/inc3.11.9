@@ -182,7 +182,7 @@ proc inc3_11_9 {} {
 
 
 	if {$core_res_num < 2} {
-		send_user "\n\033\[32mWARNING: not enough cores for futher testing (Within: inc3.11.9)\033\[m\n"
+		send_user "\n\033\[32mWARNING: not enough cores for remaining tests (Within: inc3.11.9)\033\[m\n"
 		set ret_code [delete_res $res_name]
 		return
 	}
@@ -194,6 +194,7 @@ proc inc3_11_9 {} {
 	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,$total_core_res User=$user_name" 1]
 	if {$ret_code == 0} {
 		send_user "\n\033\[31mFAILURE: reservation was created when it should not (Within: inc3.11.9)\033\[m\n"
+		delete_res $res_name
 		set ret_code [delete_res $res_name1]
 		exit $ret_code
 	}

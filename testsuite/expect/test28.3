@@ -53,10 +53,9 @@ proc check_ids { job } {
 		set match 0
 		spawn $scontrol show job $job\_$index
 		expect {
-			-re "JobId=($number) ArrayJobId=$job ArrayTaskId=($number) " {
-				if {$job == [expr $expect_out(1,string) - $expect_out(2,string)]} {
-					incr match
-				}
+			-re "JobId=($number) ArrayJobId=$job ArrayTaskId=$index " {
+				incr match
+				exp_continue
 			}
 			timeout {
 				send_user "\nFAILURE: scontrol is not responding\n"

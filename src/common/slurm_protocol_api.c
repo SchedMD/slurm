@@ -424,6 +424,24 @@ extern int slurm_get_env_timeout(void)
 	return timeout;
 }
 
+/* slurm_get_max_array_size
+ * return MaxArraySize configuration parameter
+ */
+extern uint32_t slurm_get_max_array_size(void)
+{
+	int max_array_size = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		max_array_size = conf->max_array_sz;
+		slurm_conf_unlock();
+	}
+	return max_array_size;
+}
+
+
 /* slurm_get_mpi_default
  * get default mpi value from slurmctld_conf object
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller

@@ -72,7 +72,7 @@
 
 typedef struct job_step {
 	uint32_t job_id;
-	uint16_t array_id;
+	uint32_t array_id;
 	uint32_t step_id;
 } squeue_job_step_t;
 

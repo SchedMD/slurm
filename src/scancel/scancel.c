@@ -83,6 +83,7 @@ static void _load_job_records (void);
 static int  _multi_cluster(List clusters);
 static int  _proc_cluster(void);
 static int  _verify_job_ids (void);
+static int  _signal_job_by_str(void);
 
 static job_info_msg_t * job_buffer_ptr = NULL;
 
@@ -122,7 +123,7 @@ main (int argc, char *argv[])
 	else
 		rc = _proc_cluster();
 
-	exit (rc);
+	exit(rc);
 }
 
 /* _multi_cluster - process job cancellation across a list of clusters */
@@ -149,6 +150,11 @@ _proc_cluster(void)
 	int filter_cnt = 0;
 	int rc;
 
+	if (has_default_opt()) {
+		rc = _signal_job_by_str();
+		return rc;
+	}
+
 	_load_job_records();
 	rc = _verify_job_ids();
 	if ((opt.account) ||
@@ -169,7 +175,9 @@ _proc_cluster(void)
 	return rc;
 }
 
-/* _load_job_records - load all job information for filtering and verification */
+/* _load_job_records - load all job information for filtering
+ * and verification
+ */
 static void
 _load_job_records (void)
 {
@@ -723,4 +731,24 @@ _confirmation (int i, uint32_t step_id)
 			return 0;
 	}
 
+}
+
+/* _signal_job_by_str()
+ */
+static int
+_signal_job_by_str(void)
+{
+	int cc;
+
+	if (opt.signal == (uint16_t) - 1)
+		opt.signal = SIGKILL;
+
+	verbose("Terminating job %s", opt.job_list);
+
+	cc = slurm_kill_job2(opt.job_list, opt.signal, 0);
+	if ((cc != SLURM_SUCCESS) && (opt.verbose != -1)) {
+		error("slurm_kill_job2() failed %s", slurm_strerror(errno));
+		return -1;
+	}
+	return 0;
 }

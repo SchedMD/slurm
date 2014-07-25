@@ -1505,8 +1505,8 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 
 	if (details_ptr) {
 		if (job_ptr->details->share_res == 0) {
-			info("Clearing exclusive flag for job %u",
-			     job_ptr->job_id);
+			debug("Clearing exclusive flag for job %u",
+			      job_ptr->job_id);
 			job_ptr->details->share_res  = 1;
 			job_ptr->details->whole_node = 0;
 		}

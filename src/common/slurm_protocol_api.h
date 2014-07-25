@@ -170,6 +170,11 @@ uint32_t slurm_get_epilog_msg_time(void);
  */
 extern int slurm_get_env_timeout(void);
 
+/* slurm_get_max_array_size
+ * return MaxArraySize configuration parameter
+ */
+extern uint32_t slurm_get_max_array_size(void);
+
 /* slurm_get_mpi_default
  * get default mpi value from slurmctld_conf object
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
