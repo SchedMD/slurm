@@ -2090,7 +2090,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				}
 				if (dep_job_ptr &&
 				    (dep_job_ptr->array_job_id == job_id) &&
-				    (dep_job_ptr->array_task_id != NO_VAL)) {
+				    ((dep_job_ptr->array_task_id != NO_VAL) ||
+				     (dep_job_ptr->array_recs != NULL))) {
 					array_task_id = INFINITE;
 				}
 			} else {
