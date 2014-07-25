@@ -103,7 +103,7 @@ proc reset_qos { } {
 
 }
 
-proc mod_qos { preempt_qos } {
+proc _local_mod_qos { preempt_qos } {
 
 	global sacctmgr exit_code qos_test
 
@@ -194,7 +194,7 @@ if {[check_vestigial]} {
 add_all_qos
 
 # Add a preempt qos with =
-mod_qos "=$qos_test(1)"
+_local_mod_qos "=$qos_test(1)"
 check_pre $qos_test(1)
 
 # Now clear the preempt qos
@@ -202,28 +202,28 @@ reset_qos
 check_pre " "
 
 # Add multiple QoSs with =
-mod_qos "=$qos_test(1),$qos_test(2)"
+_local_mod_qos "=$qos_test(1),$qos_test(2)"
 check_pre "$qos_test(1),$qos_test(2)"
 reset_qos
 check_pre " "
 
 # Add multiple QoSs with +=
-mod_qos "=$qos_test(1)"
-mod_qos "+=$qos_test(2)"
+_local_mod_qos "=$qos_test(1)"
+_local_mod_qos "+=$qos_test(2)"
 check_pre "$qos_test(1),$qos_test(2)"
-mod_qos "+=$qos_test(3),$qos_test(4)"
+_local_mod_qos "+=$qos_test(3),$qos_test(4)"
 check_pre "$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
 reset_qos
 check_pre " "
 
 # Remove some of the QoS with -=
-mod_qos "=$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
+_local_mod_qos "=$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
 check_pre "$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
-mod_qos "-=$qos_test(2)"
+_local_mod_qos "-=$qos_test(2)"
 check_pre "$qos_test(1),$qos_test(3),$qos_test(4)"
-mod_qos "-=$qos_test(4)"
+_local_mod_qos "-=$qos_test(4)"
 check_pre "$qos_test(1),$qos_test(3)"
-mod_qos "-=$qos_test(1),$qos_test(3)"
+_local_mod_qos "-=$qos_test(1),$qos_test(3)"
 check_pre " "
 
 remove_all_qos
