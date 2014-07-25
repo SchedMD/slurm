@@ -49,9 +49,14 @@ proc check_update { job job_time } {
 
 	global scontrol number exit_code
 
+	set new_job_id 0
 	set time_match 0
 	spawn $scontrol show job $job
 	expect {
+		-re "JobId=($number) ArrayJobId" {
+			set new_job_id $expect_out(1,string)
+			exp_continue
+		}	
 		-re "TimeLimit=00:($number):00" {
 			if {$expect_out(1,string) == $job_time } {
 				incr time_match
@@ -66,10 +71,15 @@ proc check_update { job job_time } {
 			wait
 		}
 	}
+	if {$new_job_id == 0} {
+		send_user "\nFAILURE: failed to get new job id\n"
+		set exit_code 1
+	}
 	if {$time_match != 1} {
 		send_user "\nFAILURE: job $job was never updated\n"
 		set exit_code 1
 	}
+	return $new_job_id
 }
 
 proc update_job { job job_time } {
@@ -116,12 +126,15 @@ if {$job_id == 0} {
 }
 
 # Update a specific job using job array syntax
-update_job ${job_id}_$array_in 2 
-check_update ${job_id}_$array_in 2
+update_job ${job_id}_$array_in 2
+set new_job_id [check_update ${job_id}_$array_in 2]
 
 # Update a specific job using job ID syntax
-update_job [expr $job_id + 1] 4
-check_update ${job_id}_1 4
+update_job $new_job_id 4
+set new_job_id [check_update ${job_id}_2 4]
+
+# Make sure other tasks remain unchanged
+check_update ${job_id}_1 1
 
 cancel_job $job_id
 
