@@ -3231,8 +3231,15 @@ _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer,
 		safe_unpack32(&((*msg)->node_scaling), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
 
-		node = (*msg)->node_array =
-			xmalloc(sizeof(node_info_t) * (*msg)->record_count);
+		if (protocol_version == SLURM_PROTOCOL_VERSION) {
+			node = (*msg)->node_array =
+				xmalloc_nz(sizeof(node_info_t) *
+					   (*msg)->record_count);
+		} else {
+			node = (*msg)->node_array =
+				xmalloc(sizeof(node_info_t) *
+					(*msg)->record_count);
+		}
 
 		/* load individual job info */
 		for (i = 0; i < (*msg)->record_count; i++) {
@@ -4541,8 +4548,15 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t** msg,
 		safe_unpack_time(&(*msg)->last_update, buffer);
 		safe_unpack32(&(*msg)->job_step_count, buffer);
 
-		step = (*msg)->job_steps = xmalloc(sizeof(job_step_info_t)
-						   * (*msg)->job_step_count);
+		if (protocol_version == SLURM_PROTOCOL_VERSION) {
+			step = (*msg)->job_steps =
+				xmalloc_nz(sizeof(job_step_info_t) *
+					   (*msg)->job_step_count);
+		} else {
+			step = (*msg)->job_steps =
+				xmalloc(sizeof(job_step_info_t) *
+					(*msg)->job_step_count);
+		}
 
 		for (i = 0; i < (*msg)->job_step_count; i++)
 			if (_unpack_job_step_info_members(&step[i], buffer,
@@ -4582,9 +4596,16 @@ _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
-		job = (*msg)->job_array =
-			xmalloc(sizeof(job_info_t) * (*msg)->record_count);
 
+		if (protocol_version == SLURM_PROTOCOL_VERSION) {
+			job = (*msg)->job_array =
+				xmalloc_nz(sizeof(job_info_t) *
+					   (*msg)->record_count);
+		} else {
+			job = (*msg)->job_array =
+				xmalloc(sizeof(job_info_t) *
+					(*msg)->record_count);
+		}
 		/* load individual job info */
 		for (i = 0; i < (*msg)->record_count; i++) {
 			if (_unpack_job_info_members(&job[i], buffer,
@@ -9426,8 +9447,15 @@ extern int slurm_unpack_block_info_msg(
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(buf->record_count), buffer);
 		safe_unpack_time(&(buf->last_update), buffer);
-		buf->block_array = xmalloc(sizeof(block_info_t) *
-					   buf->record_count);
+
+		if (protocol_version == SLURM_PROTOCOL_VERSION) {
+			buf->block_array = xmalloc_nz(sizeof(block_info_t) *
+						      buf->record_count);
+		} else {
+			buf->block_array = xmalloc(sizeof(block_info_t) *
+						   buf->record_count);
+		}
+
 		for (i=0; i<buf->record_count; i++) {
 			if (slurm_unpack_block_info_members(
 				    &(buf->block_array[i]), buffer,
