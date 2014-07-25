@@ -20,9 +20,10 @@ documents those changes that are of interest to users and admins.
     being called for improved performance. If any slurmctld data structures are
     read or modified, add locks directly in the plugin.
  -- Added PriorityFlag LEVEL_BASED described in doc/html/level_based.shtml
- -- If an account's fairshare=parent this will flatten it's children into the
-    first account that fairshare!=parent.  Limits remain the same, only it's
-    fairshare value is affected.
+ -- If Fairshare=parent is set on an account, that account's children will be
+    effectively reparented for fairshare calculations to the first parent of
+    their parent that is not Fairshare=parent.  Limits remain the same,
+    only it's fairshare value is affected.
 
 * Changes in Slurm 14.11.0pre2
 ==============================

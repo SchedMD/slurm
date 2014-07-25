@@ -656,7 +656,12 @@ Limits</a> document.</p>
 <li><b>Fairshare=</b> Integer value used for determining priority.
   Essentially this is the amount of claim this association and it's
   children have to the above system. Can also be the string "parent",
-  this means that the parent association is used for fairshare.
+  when used on a user this means that the parent association is used
+  for fairshare.  If Fairshare=parent is set on an account, that
+  account's children will be effectively reparented for fairshare
+  calculations to the first parent of their parent that is not
+  Fairshare=parent.  Limits remain the same, only it's fairshare value
+  is affected.
 </li>
 
 <li><b>GrpCPUMins=</b> The total number of cpu minutes that can

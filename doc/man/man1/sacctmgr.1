@@ -248,8 +248,12 @@ when removing a QOS from a <= 2.1 sacctmgr.
 .TP
 \fIFairshare\fP=<fairshare number | parent>
 Number used in conjunction with other accounts to determine job
-priority. Can also be the string \fIparent\fR, this means that the
-parent association is used for fairshare. To clear a previously set
+priority. Can also be the string \fIparent\fR, when used on a user
+this means that the parent association is used for fairshare.  If
+Fairshare=parent is set on an account, that account's children will be
+effectively reparented for fairshare calculations to the first parent
+of their parent that is not Fairshare=parent.  Limits remain the same,
+only it's fairshare value is affected.  To clear a previously set
 value use the modify command with a new value of \-1.
 
 .TP
@@ -584,8 +588,12 @@ the QOS list mentioned below.
 .TP
 \fIFairshare\fP
 Number used in conjunction with other accounts to determine job
-priority. Can also be the string \fIparent\fR, this means that the
-parent association is used for fairshare.
+priority. Can also be the string \fIparent\fR, when used on a user
+this means that the parent association is used for fairshare.  If
+Fairshare=parent is set on an account, that account's children will be
+effectively reparented for fairshare calculations to the first parent
+of their parent that is not Fairshare=parent.  Limits remain the same,
+only it's fairshare value is affected.
 
 .TP
 \fIGrpCPUMins\fP
