@@ -39,6 +39,7 @@ set qos_test(1)  "test$test_id\_qos_1"
 set qos_test(2)  "test$test_id\_qos_2"
 set qos_test(3)  "test$test_id\_qos_3"
 set qos_test(4)  "test$test_id\_qos_4"
+set access_err  0
 
 print_header $test_id
 
@@ -49,30 +50,6 @@ foreach inx [array names qos_test] {
 	} else {
 		set qos_names_str "$qos_test($inx)"
 	}
-}
-
-proc check_vestigial { } {
-
-	global sacctmgr exit_code qos_test
-
-	set clean_up 0
-	spawn $sacctmgr show qos $qos_test(0) --noheader format=name%30
-	expect {
-		-re "$qos_test(0)" {
-			set clean_up 1
-			exp_continue
-
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	return $clean_up
 }
 
 proc reset_qos { } {
@@ -186,8 +163,11 @@ proc remove_all_qos { } {
 
 ######################### Test Begins #########################
 
-if {[check_vestigial]} {
-	remove_all_qos
+# clean it up (and check to make sure we can do this test
+remove_qos $qos_names_str
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
 }
 
 # Add a few QoS
