@@ -121,12 +121,14 @@ proc srun_test {exp_cnt account} {
 	if {$job_id == 0} {
 		send_user "\nFAILURE: did not get job id\n"
 		set exit_code 1
-		return -1
 	} else {
-		return $job_id
+		if {[wait_for_job $job_id DONE] != 0} {
+			send_user "\nFAILURE: waiting for job $job_id to complete\n"
+			set exit_code 1
+		}
+#		Wait briefly for database propagation
+		sleep 1
 	}
-
-
 }
 
 proc add_child {parent child maxnode grpnode} {
@@ -193,14 +195,14 @@ if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [ar
 	exit 1
 }
 # base line test
-wait_for_job [srun_test $node_cnt $acct] DONE
+srun_test $node_cnt $acct
 
 set mod_qos_vals(MaxNodes) [expr $node_cnt - 1]
 mod_qos $qos [array get mod_qos_vals]
 set mod_qos_vals(MaxNodes) -1
 # some times the message takes a little time for some reason
 sleep 1
-wait_for_job [srun_test [expr $node_cnt-1] $acct] DONE
+srun_test [expr $node_cnt-1] $acct
 
 # now make sure the maxnodes of the QOS overrides the association
 set mod_acct_assoc_vals(maxnodes) 1
@@ -209,7 +211,7 @@ if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [ar
 	cleanup
 	exit 1
 }
-wait_for_job [srun_test [expr $node_cnt-1] $acct] DONE
+srun_test [expr $node_cnt-1] $acct
 set mod_acct_assoc_vals(maxnodes) -1
 
 # Now run test using GrpNode limits of qos
@@ -217,7 +219,7 @@ set mod_qos_vals(GrpNodes) [expr $node_cnt - 1]
 
 mod_qos $qos [array get mod_qos_vals]
 
-wait_for_job [srun_test [expr $node_cnt-1] $acct] DONE
+srun_test [expr $node_cnt-1] $acct
 
 # now make sure the grpnodes of the QOS overrides the association
 set mod_acct_assoc_vals(grpnodes) 1
@@ -226,7 +228,7 @@ if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [ar
 	cleanup
 	exit 1
 }
-wait_for_job [srun_test [expr $node_cnt-1] $acct] DONE
+srun_test [expr $node_cnt-1] $acct
 
 # Now make sure maxnodes is the max of the association and grpnodes of the
 # QOS doesn't override it.
@@ -238,7 +240,7 @@ if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [ar
 	cleanup
 	exit 1
 }
-wait_for_job [srun_test 1 $acct] DONE
+srun_test 1 $acct
 set mod_acct_assoc_vals(maxnodes) -1
 
 
@@ -263,11 +265,11 @@ if {[mod_acct $acct  [array get mod_acct_desc_vals] [array get mod_acct_vals] [a
 }
 
 # Run srun test on parent and child accounts
-wait_for_job [srun_test $node_cnt $acct] DONE
+srun_test $node_cnt $acct
 
-wait_for_job [srun_test [expr $node_cnt - 1] $acct_c1] DONE
+srun_test [expr $node_cnt - 1] $acct_c1
 
-wait_for_job [srun_test [expr $node_cnt - 2] $acct_c2] DONE
+srun_test [expr $node_cnt - 2] $acct_c2
 
 #
 # GrpNodes Limit
@@ -285,11 +287,11 @@ set mod_acct_assoc_vals(GrpNode) [expr $node_cnt - 2]
 mod_acct $acct_c2 [array get mod_acct_desc] [array get mod_acct_vals] [array get mod_acct_assoc_vals]
 
 # Run srun test on parent and child accounts
-wait_for_job [srun_test $node_cnt $acct] DONE
+srun_test $node_cnt $acct
 
-wait_for_job [srun_test [expr $node_cnt - 1] $acct_c1] DONE
+srun_test [expr $node_cnt - 1] $acct_c1
 
-wait_for_job [srun_test [expr $node_cnt - 2] $acct_c2] DONE
+srun_test [expr $node_cnt - 2] $acct_c2
 
 cleanup
 
