@@ -132,35 +132,6 @@ proc check_pre { preempt_qos } {
 	}
 }
 
-proc add_all_qos { } {
-
-	global qos_names_str
-
-	send_user "\nAdding QoS...\n"
-
-	set added [add_qos $qos_names_str]
-
-	if {$added != 0} {
-		send_user "FAILURE: not all the QoSs were added\n"
-		exit 1
-	}
-
-}
-
-proc remove_all_qos { } {
-
-	global qos_names_str exit_code
-
-	send_user "\nRemoving QoS...\n"
-
-	set removed [remove_qos $qos_names_str]
-
-	if {$removed != 0} {
-		send_user "\nFAILURE: QoS were not removed\n"
-		set exit_code 1
-	}
-}
-
 ######################### Test Begins #########################
 
 # clean it up (and check to make sure we can do this test
@@ -171,7 +142,12 @@ if {$access_err != 0} {
 }
 
 # Add a few QoS
-add_all_qos
+add_qos $qos_names_str
+if { $exit_code } {
+	remove_qos $qos_names_str
+	send_user "\nFAILURE\n"
+	exit $exit_code
+}
 
 # Add a preempt qos with =
 _local_mod_qos "=$qos_test(1)"
@@ -206,8 +182,10 @@ check_pre "$qos_test(1),$qos_test(3)"
 _local_mod_qos "-=$qos_test(1),$qos_test(3)"
 check_pre " "
 
-remove_all_qos
+remove_qos $qos_names_str
 
 if {$exit_code == 0} {
 	send_user "\nSUCCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
 }
