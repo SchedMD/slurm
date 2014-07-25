@@ -1,7 +1,7 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in Slurm 14.11.0pre3
+* Changes in Slurm 14.11.0pre4
 ==============================
  -- Added job array data structure and removed 64k array size restriction.
  -- Added SchedulerParameters options of bf_max_job_array_resv to control how
@@ -19,6 +19,10 @@ documents those changes that are of interest to users and admins.
  -- In the job_submit plugin: Remove all slurmctld locks prior to job_submit()
     being called for improved performance. If any slurmctld data structures are
     read or modified, add locks directly in the plugin.
+ -- Added PriorityFlag LEVEL_BASED described in doc/html/level_based.shtml
+ -- If an account's fairshare=parent this will flatten it's children into the
+    first account that fairshare!=parent.  Limits remain the same, only it's
+    fairshare value is affected.
 
 * Changes in Slurm 14.11.0pre2
 ==============================
