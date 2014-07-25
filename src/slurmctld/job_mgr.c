@@ -6554,7 +6554,7 @@ _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 static void _list_delete_job(void *job_entry)
 {
 	struct job_record *job_ptr = (struct job_record *) job_entry;
-	struct job_record **job_pptr;
+	struct job_record **job_pptr, *tmp_ptr;
 	int i;
 
 	xassert(job_entry);
@@ -6564,8 +6564,9 @@ static void _list_delete_job(void *job_entry)
 	/* Remove the record from job hash table */
 	job_pptr = &job_hash[JOB_HASH_INX(job_ptr->job_id)];
 	while ((job_pptr != NULL) &&
-	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
-		job_pptr = &job_ptr->job_next;
+	       ((tmp_ptr = *job_pptr) != (struct job_record *) job_entry)) {
+		xassert(tmp_ptr->magic == JOB_MAGIC);
+		job_pptr = &tmp_ptr->job_next;
 	}
 	if (job_pptr == NULL) {
 		fatal("job hash error");
@@ -6578,9 +6579,10 @@ static void _list_delete_job(void *job_entry)
 		job_pptr = &job_array_hash_j[
 			JOB_HASH_INX(job_ptr->array_job_id)];
 		while ((job_pptr != NULL) &&
-		       ((job_ptr = *job_pptr) !=
+		       ((tmp_ptr = *job_pptr) !=
 			(struct job_record *) job_entry)) {
-			job_pptr = &job_ptr->job_array_next_j;
+			xassert(tmp_ptr->magic == JOB_MAGIC);
+			job_pptr = &tmp_ptr->job_array_next_j;
 		}
 		if (job_pptr == NULL) {
 			fatal("job array hash error");
@@ -6592,9 +6594,10 @@ static void _list_delete_job(void *job_entry)
 			JOB_ARRAY_HASH_INX(job_ptr->array_job_id,
 					   job_ptr->array_task_id)];
 		while ((job_pptr != NULL) &&
-		       ((job_ptr = *job_pptr) !=
+		       ((tmp_ptr = *job_pptr) !=
 			(struct job_record *) job_entry)) {
-			job_pptr = &job_ptr->job_array_next_t;
+			xassert(tmp_ptr->magic == JOB_MAGIC);
+			job_pptr = &tmp_ptr->job_array_next_t;
 		}
 		if (job_pptr == NULL) {
 			fatal("job array, task ID hash error");
