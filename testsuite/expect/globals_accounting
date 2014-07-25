@@ -1285,6 +1285,55 @@ proc add_qos {name} {
 }
 
 #
+# Modify QoS
+#
+proc mod_qos { qos_name qos_mod_val_in} {
+
+	global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set expected 0
+	set wcommand "where name=$qos_name"
+	set scommand "set"
+	array set qos_mod_vals $qos_mod_val_in
+
+	if { ![string length $qos_name] } {
+		send_user "FAILURE: we need a name to modify\n"
+		return 1
+	}
+
+	foreach desc [array names qos_mod_vals] {
+
+		if { ![string compare $qos_mod_vals($desc) " "] } {
+			set $qos_mod_vals($desc) "''"
+		}
+
+		set scommand "$scommand $desc=$qos_mod_vals($desc)"
+	}
+
+	set change_cnt 0
+	set my_pid [eval spawn $sacctmgr -i modify qos $wcommand $scommand]
+	expect {
+		-re "Modified qos" {
+			incr change_cnt
+		}
+		timeout {
+			send_user "\nFAILURE sacctmgr not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$change_cnt==0} {
+		send_user "\nFAILURE: sacctmgr did not change qos $qos_name\n"
+		set exit_code 1
+	}
+	return $exit_code
+}
+
+#
 # Use sacctmgr to remove the test QoS
 #
 proc remove_qos {name} {
