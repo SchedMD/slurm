@@ -119,15 +119,15 @@ proc srun_test {exp_cnt account} {
 	}
 
 	if {$job_id == 0} {
-		send_user "\nFAILURE: did not get job id\n"
-		set exit_code 1
+		if {$exp_cnt != 0} {
+			send_user "\nFAILURE: did not get job id\n"
+			set exit_code 1
+		}
 	} else {
 		if {[wait_for_job $job_id DONE] != 0} {
 			send_user "\nFAILURE: waiting for job $job_id to complete\n"
 			set exit_code 1
 		}
-#		Wait briefly for database propagation
-		sleep 1
 	}
 }
 
