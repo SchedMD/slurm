@@ -150,6 +150,7 @@ if { $exit_code } {
 }
 
 # Add a preempt qos with =
+send_user "Add a preempt qos with =\n"
 _local_mod_qos "=$qos_test(1)"
 check_pre $qos_test(1)
 
@@ -158,12 +159,14 @@ reset_qos
 check_pre " "
 
 # Add multiple QoSs with =
+send_user "Add multiple QoSs with =\n"
 _local_mod_qos "=$qos_test(1),$qos_test(2)"
 check_pre "$qos_test(1),$qos_test(2)"
 reset_qos
 check_pre " "
 
 # Add multiple QoSs with +=
+send_user "Add multiple QoSs with +=\n"
 _local_mod_qos "=$qos_test(1)"
 _local_mod_qos "+=$qos_test(2)"
 check_pre "$qos_test(1),$qos_test(2)"
@@ -173,6 +176,7 @@ reset_qos
 check_pre " "
 
 # Remove some of the QoS with -=
+send_user "Add multiple QoSs with -=\n"
 _local_mod_qos "=$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
 check_pre "$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
 _local_mod_qos "-=$qos_test(2)"
