@@ -1861,6 +1861,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		_launch_prolog(job_ptr);
 
       cleanup:
+	if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap &&
+	    !IS_JOB_RUNNING(job_ptr)) {
+		job_ptr->array_task_id = NO_VAL;
+	}
 	if (preemptee_job_list)
 		list_destroy(preemptee_job_list);
 	if (select_node_bitmap)
