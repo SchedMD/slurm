@@ -1817,7 +1817,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	configuring = IS_JOB_CONFIGURING(job_ptr);
 
 	job_ptr->job_state = JOB_RUNNING;
-	job_array_post_sched(job_ptr);//NEW
+	job_array_post_sched(job_ptr);
 	if (nonstop_ops.job_begin)
 		(nonstop_ops.job_begin)(job_ptr);
 
