@@ -50,8 +50,8 @@ print_header $test_id
 #
 # Checks if test is running on blue gene.
 #
-if {[test_bluegene]} {
-	send_user "\nWARNING: This test can't be run on a blue gene\n"
+if {[test_front_end]} {
+	send_user "\nWARNING: This test can't be run on a front end system\n"
 	exit $exit_code
 } elseif {[test_serial]} {
 	send_user "\nWARNING: This test is incompatible with serial systems\n"
@@ -190,7 +190,7 @@ expect {
 }
 if {$job_1_node_inx != 2} {
 	send_user "\nFAILURE: srun host count bad ($job_1_node_inx != 2)\n"
-	exit 1
+	set exit_code 1
 }
 
 #
@@ -218,7 +218,7 @@ expect {
 }
 if {$job_2_node_inx != 2} {
 	send_user "\nFAILURE: srun host count bad ($job_2_node_inx != 2)\n"
-	exit 1
+	set exit_code 1
 }
 
 #
@@ -246,7 +246,7 @@ expect {
 }
 if {$job_3_node_inx != 2} {
 	send_user "\nFAILURE: srun host count bad ($job_3_node_inx != 2)\n"
-	exit 1
+	set exit_code 1
 }
 
 #

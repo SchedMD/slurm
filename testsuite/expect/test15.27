@@ -31,7 +31,7 @@
 source ./globals
 
 set test_id        15.27
-set jobid          0
+set job_id         0
 set nodes          ""
 set cputot         0
 set scontrol_cpu   0
@@ -41,11 +41,16 @@ set exit_code      0
 print_header $test_id
 
 proc check_alloc { } {
-	global scontrol salloc sacct nodes cputot scontrol_cpu sacct_cpu nodes
-	global jobid number alpha_numeric_nodelist
+	global scontrol salloc sacct cputot scontrol_cpu sacct_cpu nodes
+	global job_id number alpha_numeric_nodelist
 
-	spawn $scontrol show job $jobid
+	set node_name $nodes
+	spawn $scontrol show job $job_id
 	expect {
+		-re "NodeList=($alpha_numeric_nodelist)" {
+			set node_name $expect_out(1,string)
+			exp_continue
+		}
 		-re "NumCPUs=($number)" {
 			set scontrol_cpu $expect_out(1,string)
 			exp_continue
@@ -67,7 +72,7 @@ proc check_alloc { } {
 	# Wait a bit for sacct to populate
 	sleep 5
 
-	spawn $sacct --job=$jobid --allocation -oalloccpus --noheader
+	spawn $sacct --job=$job_id --allocation -oalloccpus --noheader
 	expect {
 		-re "($number)" {
 			set sacct_cpu $expect_out(1,string)
@@ -87,7 +92,7 @@ proc check_alloc { } {
 		exit 1
 	}
 
-	spawn $scontrol show node $nodes
+	spawn $scontrol show node $node_name
 	expect {
 		-re "CPUTot=($number)" {
 			set cputot $expect_out(1,string)
@@ -125,7 +130,7 @@ if {[test_using_slurmdbd] == 0 } {
 spawn $salloc -t1 -n1 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
-		set jobid $expect_out(1,string)
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	-re "($number): ($alpha_numeric_nodelist)" {
@@ -146,7 +151,7 @@ check_alloc
 spawn $salloc -t1 -n1 --mem-per-cpu=1000 --exclusive $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
-		set jobid $expect_out(1,string)
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	-re "($number): ($alpha_numeric_nodelist)" {
@@ -168,8 +173,3 @@ if {$exit_code == 0} {
 	send_user "\nSUCCCESS\n"
 }
 exit $exit_code
-
-
-
-
-

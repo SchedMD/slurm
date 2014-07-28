@@ -370,6 +370,11 @@ expect {
 		incr match 1
 		exp_continue
 	}
+	-re "CPUs=($number)" {
+		set sq_step_format(6) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
 	-re "Tasks=($number)" {
 		set sq_step_format(8) $expect_out(1,string)
 		incr match 1
@@ -388,8 +393,8 @@ expect {
 		wait
 	}
 }
-if {$match != 3} {
-	send_user "\nFAILURE: scontrol did not provide correct step values ($match != 3)\n"
+if {$match != 4} {
+	send_user "\nFAILURE: scontrol did not provide correct step values ($match != 4)\n"
 	set exit_code 1
 }
 
