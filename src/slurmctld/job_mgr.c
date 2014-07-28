@@ -3692,8 +3692,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		} else {
 			_signal_job(job_ptr, signal);
 		}
-		verbose("job_signal %u of running job %u successful",
-			signal, job_id);
+		verbose("job_signal %u of running job %u successful 0x%x",
+			signal, job_id, job_ptr->job_state);
 		return SLURM_SUCCESS;
 	}
 
@@ -8678,6 +8678,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->job_id);
 			job_ptr->state_reason = WAIT_NO_REASON;
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
+			job_ptr->exit_code = 0;
 			xfree(job_ptr->state_desc);
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority != INFINITE)) {
