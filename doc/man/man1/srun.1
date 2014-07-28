@@ -1218,7 +1218,7 @@ SLURM build time.
 \fB\-o\fR, \fB\-\-output\fR=<\fImode\fR>
 Specify the mode for stdout redirection. By default in interactive mode,
 .B srun
-collects stdout from all tasks and line buffers this output to
+collects stdout from all tasks and sends this output via TCP/IP to
 the attached terminal. With \fB\-\-output\fR stdout may be redirected
 to a file, to one file per task, or to /dev/null. See section
 \fBIO Redirection\fR below for the various forms of \fImode\fR.
