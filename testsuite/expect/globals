@@ -2652,22 +2652,37 @@ proc get_node_cnt_in_part { partition } {
 ################################################################
 
 proc get_idle_node_in_part { partition } {
-	global sinfo alpha_numeric_under
+	global scontrol sinfo alpha_numeric_nodelist alpha_numeric_under
 
 	log_user 0
-	set node_name ""
-	set scon_pid [spawn -noecho $sinfo -oNAME=%n -h -p$partition --state=idle]
+	set host_list ""
+	spawn $sinfo -oNAME=%N -h -p$partition --state=idle
 	expect {
 		-re "not found" {
 			send_user "\nFAILURE: partition $partition doesn't exist\n"
 		}
-		-re "NAME=($alpha_numeric_under)" {
+		-re "NAME=($alpha_numeric_nodelist)" {
+			set host_list $expect_out(1,string)
+		}
+		timeout {
+			send_user "\nFAILURE: sinfo not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+
+	set node_name ""
+	spawn $scontrol show hostname $host_list
+	expect {
+		-re "($alpha_numeric_under)" {
 			set node_name $expect_out(1,string)
 		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
 		}
 		eof {
+			wait
 		}
 	}
 	log_user 1

@@ -94,8 +94,7 @@ proc cleanup { } {
 	spawn $scontrol delete partition=$part_name
 	expect {
 		-re "error" {
-			send_user "\nFAILURE: scontrol did not remove "
-			"partition\n"
+			send_user "\nFAILURE: scontrol did not remove partition $part_name\n"
 			set exit_code 1
 			exp_continue
 		}
@@ -211,6 +210,10 @@ expect {
 	eof {
 		wait
 	}
+}
+
+if { [string length $partition] == 0 } {
+	 set partition [default_partition]
 }
 
 set node_name [ get_idle_node_in_part $partition ]
