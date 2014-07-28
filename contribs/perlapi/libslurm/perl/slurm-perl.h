@@ -9,12 +9,14 @@
 
 
 /* these declaration are not in slurm.h */
-#define xmalloc(__sz) \
-		slurm_xmalloc (__sz, __FILE__, __LINE__, __FUNCTION__)
 #define xfree(__p) \
 	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __FUNCTION__)
+#define xmalloc(__sz) \
+	slurm_xmalloc (__sz, true, __FILE__, __LINE__, __FUNCTION__)
+
 extern void slurm_xfree(void **, const char *, int, const char *);
-extern void *slurm_xmalloc(size_t, const char *, int, const char *);
+extern void *slurm_xmalloc(size_t, bool, const char *, int, const char *);
+
 
 extern void slurm_conf_reinit(char *pathname);
 extern void slurm_api_clear_config(void);
