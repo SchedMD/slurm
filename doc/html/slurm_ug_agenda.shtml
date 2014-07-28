@@ -159,9 +159,12 @@ plus dinner on Wednesday evening.<br>
 </tr>
 
 <tr>
-  <td bgcolor="#F0F1C9">17:00 - </td>
+  <td bgcolor="#F0F1C9">19:00 - </td>
   <td bgcolor="#F0F1C9">Dinner</td>
-  <td colspan="2" bgcolor="#F0F1C9">TBD</td>
+  <td colspan="2" bgcolor="#F0F1C9">Restaurant Pizzeria Cantinone<br>
+Piazza Cioccaro 8<br>
+Lugano<br>
+tel +41(0)91 923 10 68</td>
 </tr>
 </table>
 
@@ -856,6 +859,6 @@ plus dinner on Wednesday evening.<br>
   system to dynamically allocate disk space on our test high-IOPS SSD
   scratch system.</p>
 
-<p style="text-align:center;">Last modified 17 July 2014</p>
+<p style="text-align:center;">Last modified 28 July 2014</p>
 
 <!--#include virtual="footer.txt"-->
