@@ -4636,8 +4636,10 @@ static void _xlate_task_str(job_info_t *job_ptr)
 	char *in_buf = job_ptr->array_task_str;
 	char *out_buf = NULL;
 
-	if (!in_buf)
+	if (!in_buf) {
+		job_ptr->array_bitmap = NULL;
 		return;
+	}
 
 	i = strlen(in_buf);
 	task_bitmap = bit_alloc(i * 4);
