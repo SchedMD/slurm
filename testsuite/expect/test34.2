@@ -55,6 +55,12 @@ if {[test_using_slurmdbd] == 0} {
 	exit $exit_code
 }
 
+set min_job_age [get_min_job_age]
+if {$min_job_age < 10} {
+	send_user "\nWARNING: MinJobAge configured too low for this test ($min_job_age < 10)\n"
+	exit $exit_code
+}
+
 proc acct_setup { acct_name qos_name pre_qos pre_type } {
 
 	global user nodes sacctmgr exit_code
