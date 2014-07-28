@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
     exit code.
  -- Correct the srun man page about how the output from the user application
     is sent to srun.
+ -- Increase the timeout of the main thread while waiting for the i/o thread.
+    Allow up to 180 seconds for the i/o thread to complete.
 
 * Changes in Slurm 14.03.6
 ==========================

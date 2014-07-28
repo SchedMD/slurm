@@ -1223,7 +1223,10 @@ client_io_handler_finish(client_io_t *cio)
 		return SLURM_SUCCESS;
 
 	eio_signal_shutdown(cio->eio);
-	_delay_kill_thread(cio->ioid, 60);
+	/* Make the thread timeout consistent with
+	 * EIO_SHUTDOWN_WAIT
+	 */
+	_delay_kill_thread(cio->ioid, 180);
 	if (pthread_join(cio->ioid, NULL) < 0) {
 		error("Waiting for client io pthread: %m");
 		return SLURM_ERROR;

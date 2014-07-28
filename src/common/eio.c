@@ -56,7 +56,7 @@
 
 /* How many seconds to wait after eio_signal_shutdown() is called before
  * terminating the job and abandoning any I/O remaining to be processed */
-#define EIO_SHUTDOWN_WAIT 60
+#define EIO_SHUTDOWN_WAIT 180
 
 /*
  * outside threads can stick new objects on the new_objs List and
