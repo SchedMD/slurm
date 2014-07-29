@@ -146,6 +146,9 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 				    time_str,
 				    sizeof(time_str));
 
+		job->elapsed_time = atoi(row[JOBCOMP_REQ_ENDTIME])
+			- atoi(row[JOBCOMP_REQ_STARTTIME]);
+
 		job->end_time = xstrdup(time_str);
 		if (row[JOBCOMP_REQ_UID])
 			job->uid = slurm_atoul(row[JOBCOMP_REQ_UID]);
