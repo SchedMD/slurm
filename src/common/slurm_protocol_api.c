@@ -2224,10 +2224,9 @@ char *slurm_get_task_prolog(void)
 uint16_t *
 slurm_get_srun_port_range(void)
 {
-	uint16_t *ports;
+	uint16_t *ports = NULL;
 	slurm_ctl_conf_t *conf;
 
-	*ports = 0;
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
