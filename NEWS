@@ -169,6 +169,10 @@ documents those changes that are of interest to users and admins.
  -- Remove unneeded step cleanup for pending steps.
  -- Fix issue where if a batch job was manually requeued the batch step
     information wasn't stored in accounting.
+ -- When job is release from a requeue hold state clean up its previous
+    exit code.
+ -- Correct the srun man page about how the output from the user application
+    is sent to srun.
 
 * Changes in Slurm 14.03.6
 ==========================

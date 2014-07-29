@@ -1768,6 +1768,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->sched_nodes);
+	job_ptr->exit_code = 0;
 
 	job_ptr->node_bitmap = select_bitmap;
 

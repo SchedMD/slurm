@@ -3679,8 +3679,9 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		} else {
 			_signal_job(job_ptr, signal);
 		}
-		verbose("%s: %u of running %s successful",
-			__func__, signal, jobid2str(job_ptr, jbuf));
+		verbose("%s: %u of running %s successful 0x%x",
+			__func__, signal, jobid2str(job_ptr, jbuf),
+			job_ptr->job_state);
 		return SLURM_SUCCESS;
 	}
 
@@ -8964,6 +8965,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->state_reason = WAIT_NO_REASON;
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
+			job_ptr->exit_code = 0;
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority != INFINITE)) {
 			info("ignore priority reset request on held job %u",

@@ -51,17 +51,17 @@ plus dinner on Wednesday evening.<br>
  </tr>
 
 <tr>
-  <td>08:30 - 08:45</td>
+  <td>08:30 - 08:40</td>
   <td>Welcome</td>
   <td>TBD (CSCS)</td>
   <td>Welcome to Slurm User Group Meeting</td>
 </tr>
 
 <tr>
-  <td>08:45 - 09:30</td>
+  <td>08:40 - 09:30</td>
   <td>Keynote</td>
-  <td>TBD</td>
-  <td>TBD</td>
+  <td>Prof. Felix Sch&uuml;rmann (EPFL)</td>
+  <td>European Human Brain Project</td>
 </tr>
 
 <tr>
@@ -159,9 +159,12 @@ plus dinner on Wednesday evening.<br>
 </tr>
 
 <tr>
-  <td bgcolor="#F0F1C9">17:00 - </td>
+  <td bgcolor="#F0F1C9">19:00 - </td>
   <td bgcolor="#F0F1C9">Dinner</td>
-  <td colspan="2" bgcolor="#F0F1C9">TBD</td>
+  <td colspan="2" bgcolor="#F0F1C9">Restaurant Pizzeria Cantinone<br>
+Piazza Cioccaro 8<br>
+Lugano<br>
+tel +41(0)91 923 10 68</td>
 </tr>
 </table>
 
@@ -317,8 +320,14 @@ plus dinner on Wednesday evening.<br>
 
 <h2>September 23, 2014</h2>
 
+<h3>Keynote</h3>
+<p>Prof. Felix Sch&uuml;rmann (Ecole Polytechnique F&eacute;d&eacute;rale de Lausanne)</p>
+<p>Dr. Felix Sch&uuml;rmann is adjunct professor at the Ecole Polytechnique
+F&eacute;d&eacute;rale de Lausanne, co-director of the Blue Brain Project
+and involved in several research challenges of the European Human Brain Project.</p>
+
 <h3>Overview of Slurm Versions 14.03 and 14.11</h3>
-<p> Morris Jette (SchedMD), Yiannis Georgiou (Bull)</p>
+<p>Morris Jette (SchedMD), Yiannis Georgiou (Bull)</p>
 <p>This presentation will describe new capabilities provided in Slurm
   versions 14.03 (released March 2014) and planned for version 14.11
   (to be released in November 2014). Major enhancements in version 14.03
@@ -856,6 +865,6 @@ plus dinner on Wednesday evening.<br>
   system to dynamically allocate disk space on our test high-IOPS SSD
   scratch system.</p>
 
-<p style="text-align:center;">Last modified 17 July 2014</p>
+<p style="text-align:center;">Last modified 29 July 2014</p>
 
 <!--#include virtual="footer.txt"-->
