@@ -1993,8 +1993,9 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	else if (depends)
 		results = 1;
 
-	if (job_ptr->array_task_id != NO_VAL) {
-		cache_job_id = job_ptr->job_id;
+	if ((job_ptr->array_task_id != NO_VAL) &&
+	    (job_ptr->array_recs == NULL)) {
+		cache_job_id  = job_ptr->job_id;
 		cache_job_ptr = job_ptr;
 		cache_results = results;
 		cache_time = now;
@@ -2169,7 +2170,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				}
 				if (dep_job_ptr &&
 				    (dep_job_ptr->array_job_id == job_id) &&
-				    (dep_job_ptr->array_task_id != NO_VAL)) {
+				    ((dep_job_ptr->array_task_id != NO_VAL) ||
+				     (dep_job_ptr->array_recs != NULL))) {
 					array_task_id = INFINITE;
 				}
 			} else {
