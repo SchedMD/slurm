@@ -158,6 +158,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 	int j, nnodes, nnodex;
 	char *buf;
 
+	nnodes = nnodex = 0;
 	if (route_g_init() < 0)
 		return SLURM_ERROR;
 

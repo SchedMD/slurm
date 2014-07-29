@@ -396,6 +396,7 @@ extern void run_health_check(void)
 		check_agent_args->node_count++;
 	}
 #else
+	node_limit = 0;
 	run_cyclic = slurmctld_conf.health_check_node_state &
 		     HEALTH_CHECK_CYCLE;
 	node_states = slurmctld_conf.health_check_node_state &
