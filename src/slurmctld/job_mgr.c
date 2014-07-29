@@ -908,8 +908,14 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 		pack32(tmp_32, buffer);
 		if (tmp_32)
 			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
+		pack32(dump_job_ptr->array_recs->array_flags,    buffer);
+		pack32(dump_job_ptr->array_recs->max_run_tasks,  buffer);
+		pack32(dump_job_ptr->array_recs->tot_run_tasks,  buffer);
+		pack32(dump_job_ptr->array_recs->min_exit_code,  buffer);
+		pack32(dump_job_ptr->array_recs->max_exit_code,  buffer);
+		pack32(dump_job_ptr->array_recs->tot_comp_tasks, buffer);
 	} else {
-		tmp_32 = 0;
+		tmp_32 = NO_VAL;
 		pack32(tmp_32, buffer);
 	}
 	pack32(dump_job_ptr->assoc_id, buffer);
@@ -1043,6 +1049,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	time_t resize_time = 0, now = time(NULL);
 	uint8_t reboot = 0;
 	uint32_t array_task_id = NO_VAL;
+	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
+	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
 	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
@@ -1061,7 +1069,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
 	char *task_id_str = NULL;
-	uint32_t task_id_size = 0;
+	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
 	struct job_record *job_ptr = NULL;
@@ -1078,9 +1086,19 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
+
+		/* Job Array record */
 		safe_unpack32(&task_id_size, buffer);
-		if (task_id_size)
+		if (task_id_size != NO_VAL) {
 			safe_unpackstr_xmalloc(&task_id_str, &name_len, buffer);
+			safe_unpack32(&array_flags,    buffer);
+			safe_unpack32(&max_run_tasks,  buffer);
+			safe_unpack32(&tot_run_tasks,  buffer);
+			safe_unpack32(&min_exit_code,  buffer);
+			safe_unpack32(&max_exit_code,  buffer);
+			safe_unpack32(&tot_comp_tasks, buffer);
+		}
+
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -1683,7 +1701,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->state_desc   = state_desc;
 	state_desc            = NULL;	/* reused, nothing left to free */
 	job_ptr->suspend_time = suspend_time;
-	if (task_id_str) {
+	if (task_id_size != NO_VAL) {
 		if (!job_ptr->array_recs)
 			job_ptr->array_recs=xmalloc(sizeof(job_array_struct_t));
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
@@ -1695,6 +1713,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_ptr->array_recs->task_cnt =
 			bit_set_count(job_ptr->array_recs->task_id_bitmap);
 		task_id_str = NULL;
+		job_ptr->array_recs->array_flags    = array_flags;
+		job_ptr->array_recs->max_run_tasks  = max_run_tasks;
+		job_ptr->array_recs->tot_run_tasks  = tot_run_tasks;
+		job_ptr->array_recs->min_exit_code  = min_exit_code;
+		job_ptr->array_recs->max_exit_code  = max_exit_code;
+		job_ptr->array_recs->tot_comp_tasks = tot_comp_tasks;
 	}
 	job_ptr->time_last_active = now;
 	job_ptr->time_limit   = time_limit;
