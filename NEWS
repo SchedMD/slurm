@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
     is sent to srun.
  -- Increase the timeout of the main thread while waiting for the i/o thread.
     Allow up to 180 seconds for the i/o thread to complete.
+ -- When using sacct -c to read the job completion data compute the correct
+    job elapsed time.
 
 * Changes in Slurm 14.03.6
 ==========================

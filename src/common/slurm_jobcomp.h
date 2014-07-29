@@ -61,6 +61,7 @@ typedef struct {
 	char *partition;
 	char *start_time;
 	char *end_time;
+	time_t elapsed_time;
 	uint32_t uid;
 	char *uid_name;
 	uint32_t gid;
