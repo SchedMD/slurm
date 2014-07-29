@@ -157,7 +157,10 @@ feature that every selected node must contain.</p>
 <p>On a smaller system, one might want to reserve cores rather than
 whole nodes. Slurm provides a core reservation capability in version 2.6.
 This capability permits the administrator to identify the core count to be
-reserved on each node as snown in the examples below.</p>
+reserved on each node as snown in the examples below.<br>
+<b>NOTE:</b> Core reservations are not available on IBM BlueGene or
+Cray/ALPS systems, nor when the system is configured to use the select/linear
+or select/serial plugins.</p>
 <pre>
 # Create a two core reservation for user alan
 $ scontrol create reservation StartTime=now Duration=60 \
@@ -318,7 +321,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 13 August 2013</p>
+<p style="text-align: center;">Last modified 29 July 2014</p>
 
 <!--#include virtual="footer.txt"-->
 
