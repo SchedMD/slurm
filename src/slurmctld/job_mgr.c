@@ -10969,6 +10969,29 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 		}
 	}
 
+	if (job_ptr->array_task_id != NO_VAL) {
+		struct job_record *base_job_ptr;
+		base_job_ptr = find_job_record(job_ptr->array_job_id);
+		if (base_job_ptr->array_recs) {
+			if (base_job_ptr->array_recs->tot_comp_tasks == 0) {
+				base_job_ptr->array_recs->min_exit_code =
+					job_ptr->exit_code;
+				base_job_ptr->array_recs->max_exit_code =
+					job_ptr->exit_code;
+			} else {
+				base_job_ptr->array_recs->min_exit_code =
+					MIN(job_ptr->exit_code, base_job_ptr->
+					    array_recs->min_exit_code);
+				base_job_ptr->array_recs->max_exit_code =
+					MAX(job_ptr->exit_code, base_job_ptr->
+					    array_recs->max_exit_code);
+			}
+			if (base_job_ptr->array_recs->tot_run_tasks)
+				base_job_ptr->array_recs->tot_run_tasks--;
+			base_job_ptr->array_recs->tot_comp_tasks++;
+		}
+	}
+
 	g_slurm_jobcomp_write(job_ptr);
 
 	/* When starting the resized job everything is taken care of
