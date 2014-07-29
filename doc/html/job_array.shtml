@@ -6,15 +6,17 @@
 
 <p>Support for job arrays was added in Slurm version 2.6.
 Job arrays offer a mechanism for submitting and managing collections of similar
-jobs quickly and easily; tens of thousands of jobs can be submitted in under
-one second.
+jobs quickly and easily; millions of thousands of jobs can be submitted in
+milliseconds (subject to configured size limits).
 All jobs must have the same initial options (e.g. size, time limit, etc.),
 however it is possible to change some of these options after the job has begun
 execution using the command specifying the <i>JobID</i> of the array or individual
-<i>ArrayJobID</i>.<br>
+<i>ArrayJobID</i>.</p>
 
-<i>scontrol update job=101 ...</i></p>
-<i>scontrol update job=101_1 ...</i></p>
+<pre>
+$ scontrol update job=101 ...
+$ scontrol update job=101_1 ...
+</pre>
 
 <p>Job arrays are only supported for batch jobs and the array index values are
 specified using the <i>--array</i> or <i>-a</i> option of the <i>sbatch</i>
@@ -159,83 +161,81 @@ $ squeue -s 1234_2.0,1234_3.0
 
 <h2>Scontrol Command Use</h2>
 
-<p>When a job array is submitted using the <i>sbatch</i> command an independent
-job is submitted for each element of the array, however substantial performance
-improvement is realized through the use of a single job submit request and only
-needing to validate the request options one time.
-Use of the <i>scontrol show job</i> option shows two new fields related to
+<p>Use of the <i>scontrol show job</i> option shows two new fields related to
 job array support.
 The <i>JobID</i> is a unique identifier for the job.
 The <i>ArrayJobID</i> is the <i>JobID</i> of the first element of the job
 array.
-The <i>ArrayTaskID</i> is the array index of this particular entry.
+The <i>ArrayTaskID</i> is the array index of this particular entry, either a
+single number of an expression identifying the entries represented by this
+job record (e.g. "5\-1024").
 Neither field is displayed if the job is not part of a job array.
 The optional job ID specified with the <i>scontrol show job</i> or
 <i>scontrol show step</i> commands can identify job array elements by
 using specifying two numbers with an underscore between the two:
-"&lt;job_id&gt;_&lt;array_id&gt;".
-<p>
-In order to modify a job always <i>ArrayJobID</i> specification, arrays can only
-be modified one element at the time. The scontrol command will accept a job
-array element specification for the update job command, but only operate on
-one job (or job array element).
-</p>
+"&lt;job_id&gt;_&lt;array_id&gt;".</p>
+
+<p>The scontrol command will operate on all elements of a job array if the
+job ID specified is <i>ArrayJobID</i>.
+Individual job array tasks can be modifed using the
+<i>ArrayJobID</i>_<i>ArrayTaskID</i> as shown below.</p>
 
 <pre>
-->sbatch --array=1-4 -J Array ./sleepme 86400
+$ sbatch --array=1-4 -J array ./sleepme 86400
 Submitted batch job 21845
 
-->squeue
- JOBID PARTITION     NAME     USER   ST  TIME NODES NODELIST
- 21845_1    canopo    Array    david  R  0:13  1     dario
- 21845_2    canopo    Array    david  R  0:13  1     dario
- 21845_3    canopo    Array    david  R  0:13  1     dario
- 21845_4    canopo    Array    david  R  0:13  1     dario
+$ squeue
+ JOBID   PARTITION     NAME     USER  ST  TIME NODES NODELIST
+ 21845_1    canopo    array    david  R  0:13  1     dario
+ 21845_2    canopo    array    david  R  0:13  1     dario
+ 21845_3    canopo    array    david  R  0:13  1     dario
+ 21845_4    canopo    array    david  R  0:13  1     dario
 
-->scontrol update job=21845_2 name=arturo
-->squeue
- JOBID PARTITION     NAME     USER   ST   TIME  NODES NODELIST
- 21845_1    canopo    Array    david  R   17:03   1    dario
+$ scontrol update JobID=21845_2 name=arturo
+$ squeue
+ JOBID   PARTITION     NAME     USER  ST   TIME  NODES NODELIST
+ 21845_1    canopo    array    david  R   17:03   1    dario
  21845_2    canopo   arturo    david  R   17:03   1    dario
- 21845_3    canopo    Array    david  R   17:03   1    dario
- 21845_4    canopo    Array    david  R   17:03   1    dario
+ 21845_3    canopo    array    david  R   17:03   1    dario
+ 21845_4    canopo    array    david  R   17:03   1    dario
 
 </pre>
 
 <p>
-The scontrol hold, holdu, release, requeue, requeuehold, suspend and resume commands
-will operate on all elements of a job array or individual elements as shown below.
+The scontrol hold, holdu, release, requeue, requeuehold, suspend and resume
+commands can also either operate on all elements of a job array or individual
+elements as shown below.
 </p>
 <pre>
-->scontrol suspend 21845
-->squeue
- JOBID PARTITION     NAME     USER  ST TIME  NODES NODELIST
-21845_1    canopo    Array    david  S 25:12  1     dario
+$ scontrol suspend 21845
+$ squeue
+ JOBID PARTITION      NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    array    david  S 25:12  1     dario
 21845_2    canopo   arturo    david  S 25:12  1     dario
-21845_3    canopo    Array    david  S 25:12  1     dario
-21845_4    canopo    Array    david  S 25:12  1     dario
-->scontrol resume 21845
-->squeue
- JOBID PARTITION     NAME     USER  ST TIME  NODES NODELIST
-21845_1    canopo    Array    david  R 25:14  1     dario
+21845_3    canopo    array    david  S 25:12  1     dario
+21845_4    canopo    array    david  S 25:12  1     dario
+$ scontrol resume 21845
+$ squeue
+ JOBID PARTITION      NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    array    david  R 25:14  1     dario
 21845_2    canopo   arturo    david  R 25:14  1     dario
-21845_3    canopo    Array    david  R 25:14  1     dario
-21845_4    canopo    Array    david  R 25:14  1     dario
+21845_3    canopo    array    david  R 25:14  1     dario
+21845_4    canopo    array    david  R 25:14  1     dario
 
 scontrol suspend 21845_3
-->squeue
- JOBID PARTITION     NAME     USER  ST TIME  NODES NODELIST
-21845_1    canopo    Array    david  R 25:14  1     dario
+$ squeue
+ JOBID PARTITION      NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    array    david  R 25:14  1     dario
 21845_2    canopo   arturo    david  R 25:14  1     dario
-21845_3    canopo    Array    david  S 25:14  1     dario
-21845_4    canopo    Array    david  R 25:14  1     dario
+21845_3    canopo    array    david  S 25:14  1     dario
+21845_4    canopo    array    david  R 25:14  1     dario
 scontrol resume 21845_3
-->squeue
- JOBID PARTITION     NAME     USER  ST TIME  NODES NODELIST
-21845_1    canopo    Array    david  R 25:14  1     dario
+$ squeue
+ JOBID PARTITION      NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    array    david  R 25:14  1     dario
 21845_2    canopo   arturo    david  R 25:14  1     dario
-21845_3    canopo    Array    david  R 25:14  1     dario
-21845_4    canopo    Array    david  R 25:14  1     dario
+21845_3    canopo    array    david  R 25:14  1     dario
+21845_4    canopo    array    david  R 25:14  1     dario
 
 </pre>
 
@@ -280,26 +280,13 @@ job arrays. Once one element of a job array is discovered to not be runable
 or impact the scheduling of pending jobs, the remaining elements of that job
 array will be quickly skipped.</p>
 
-<p>Slurm support for job arrays at this time does not use a meta-job data
-structure, but creates a separate job record for each element of the array.
-Two additional fields were added to Slurm's job record for managing job arrays.
-The first new field is internally called "array_job_id" and is the job ID of
-the first job in the array.
-Subsequent elements of the job array will have a unique Slurm "job_id", but
-all will have the same "array_job_id" value.
-Some Slurm commands interpret the array_job_id as representing all elements of
-the job array, while other commands use the unique job_id assigned to each.
-Support for Slurm job arrays can be expected to improve in later releases.
-The second new field is called "array_task_id" which is the job array index
-value of the job array element.</p>
+<p>Slurm creates a single job record when a job array is submitted.
+Additional job records are only created as needed, typically when a task
+of a job array is started, which provides a very scalable mechanism to
+manage large job counts.
+Each task of the job array will have a unique Slurm "job_id", but
+all will have the same "array_job_id" value.</p>
 
-<h2>Future Work</h2>
-
-<p>There are scalability and performance improvements possible if a job
-array data structure is added rather than the current logic that only
-adds a new field to the existing job data structure.
-It is not certain when that work will occur.</p>
-
-<p style="text-align:center;">Last modified 28 April 2014</p>
+<p style="text-align:center;">Last modified 29 July 2014</p>
 
 <!--#include virtual="footer.txt"-->
