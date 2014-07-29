@@ -122,8 +122,8 @@ static void *_safe_signal_while_allocating(void *in_data)
 
 	destroy_job = 1;
 	if (pending_job_id != 0) {
+		info("Job allocation %u has been revoked", pending_job_id);
 		slurm_complete_job(pending_job_id, NO_VAL);
-		info("Job allocation %u has been revoked.", pending_job_id);
 	}
 
 	return NULL;
