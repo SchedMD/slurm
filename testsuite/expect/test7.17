@@ -1,0 +1,70 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose:  Test GRES APIs.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "7.17"
+set exit_code   0
+set test_prog   "test$test_id.prog"
+
+print_header $test_id
+
+#
+# Delete left-over programs and rebuild them
+#
+file delete $test_prog
+
+if {[test_aix]} {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl
+} elseif [file exists ${slurm_dir}/lib64/libslurm.so] {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl
+} else {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl
+}
+exec $bin_chmod 700 $test_prog
+
+spawn ./$test_prog
+expect {
+	-re "FAILURE" {
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	file delete $test_prog
+}
+exit $exit_code
