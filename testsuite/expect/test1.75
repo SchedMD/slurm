@@ -30,7 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id      1.98
+set test_id      1.75
 set file_in      "test$test_id\_sc"
 set node         ""
 set threads      0

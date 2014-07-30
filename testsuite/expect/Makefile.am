@@ -95,6 +95,7 @@ EXTRA_DIST = \
 	test1.72			\
 	test1.73			\
 	test1.74			\
+	test1.75			\
 	test1.80			\
 	test1.81			\
 	test1.82			\
@@ -122,7 +123,6 @@ EXTRA_DIST = \
 	test1.96			\
 	test1.96.prog.c			\
 	test1.97			\
-	test1.98			\
 	test2.1				\
 	test2.2				\
 	test2.3				\
