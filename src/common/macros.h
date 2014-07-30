@@ -51,7 +51,9 @@
 #if HAVE_STDBOOL_H
 #  include <stdbool.h>
 #else
-typedef enum {false, true} bool;
+#  ifndef bool
+     typedef enum {false, true} bool;
+#  endif
 #endif /* !HAVE_STDBOOL_H */
 
 #if HAVE_PTHREAD_H
