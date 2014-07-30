@@ -576,6 +576,15 @@ following options should NOT be specified
 See \fBEXAMPLE\fR below.
 
 .TP
+\fB\-\-export\fR=<\fIenvironment variables | NONE\fR>
+Identify which environment variables are propagated to the laucnhed application.
+Multiple environment variable names should be comma separated.
+Environment variable names may be specified to propagate the current
+value of those variables (e.g. "\-\-export=EDITOR") or specific values
+for the variables may be exported (e.g.. "\-\-export=EDITOR=/bin/vi").
+By default all environment variables are propagated.
+
+.TP
 \fB\-\-gid\fR=<\fIgroup\fR>
 If \fBsrun\fR is run as root, and the \fB\-\-gid\fR option is used,
 submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR
@@ -1704,11 +1713,6 @@ For systems that allow a different connection type per dimension you
 can supply a comma separated list of connection types may be specified, one for
 each dimension (i.e. M,T,T,T will give you a torus connection is all
 dimensions expect the first).
-
-.TP
-\fB\-\-export\fR=\fINONE\fR
-When running on a BGQ only export the minimal set of environment
-variables needed to start a job, nothing else.
 
 .TP
 \fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR> | <\fIAxXxYxZ\fR>

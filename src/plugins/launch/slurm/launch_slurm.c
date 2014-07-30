@@ -102,6 +102,7 @@ static bool retry_step_begin = false;
 static int  retry_step_cnt = 0;
 
 extern int launch_p_step_terminate();
+extern char **environ;
 
 static char *_hostset_to_string(hostset_t hs)
 {
@@ -474,6 +475,34 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 					     destroy_job);
 }
 
+static char **_build_user_env(void)
+{
+	char **dest_array = NULL;
+	char *tmp_env, *tok, *save_ptr = NULL, *eq_ptr, *value;
+
+	env_array_merge_slurm(&dest_array, (const char **)environ);
+	tmp_env = xstrdup(opt.export_env);
+	tok = strtok_r(tmp_env, ",", &save_ptr);
+	while (tok) {
+		if (!strcasecmp(tok, "NONE"))
+			break;
+		eq_ptr = strchr(tok, '=');
+		if (eq_ptr) {
+			eq_ptr[0] = '\0';
+			value = eq_ptr + 1;
+			env_array_overwrite(&dest_array, tok, value);
+		} else {
+			value = getenv(tok);
+			if (value)
+				env_array_overwrite(&dest_array, tok, value);
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_env);
+
+	return dest_array;
+}
+
 extern int launch_p_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
 	slurm_step_launch_callbacks_t *step_callbacks)
@@ -531,6 +560,9 @@ extern int launch_p_step_launch(
 	launch_params.spank_job_env     = opt.spank_job_env;
 	launch_params.spank_job_env_size = opt.spank_job_env_size;
 	launch_params.user_managed_io   = opt.user_managed_io;
+
+	if (opt.export_env)
+		launch_params.env = _build_user_env();
 
 	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 

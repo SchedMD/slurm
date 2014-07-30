@@ -2505,7 +2505,7 @@ static void _usage(void)
 #ifdef HAVE_BG_L_P
 "            [--geometry=XxYxZ] "
 #else
-"            [--export=NONE] [--geometry=AxXxYxZ] "
+"            [--export=env_vars|NONE] [--geometry=AxXxYxZ] "
 #endif
 "[--conn-type=type] [--no-rotate]\n"
 #ifdef HAVE_BGL
@@ -2547,6 +2547,8 @@ static void _help(void)
 "      --comment=name          arbitrary comment\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --chdir=path            change remote current working directory\n"
+"      --export=env_vars|NONE  environment variables passed to launcher with\n"
+"                              optiional values or NONE (pass no variables)\n"
 "  -e, --error=err             location of stderr redirection\n"
 "      --epilog=program        run \"program\" after launching job step\n"
 "  -E, --preserve-env          env vars for node and task counts override\n"
@@ -2679,7 +2681,6 @@ static void _help(void)
 #ifdef HAVE_BG_L_P
 "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
 #else
-"      --export=NONE           do not pass environment variables to launcher\n"
 "  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
 "                              sub-block allocations can not be allocated\n"
 "                              with the geometry option\n"
