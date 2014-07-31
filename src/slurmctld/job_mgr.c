@@ -12119,6 +12119,8 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 	return_code_msg_t rc_msg;
 	uint32_t state = req_ptr->state;
 	char *job_id_str = req_ptr->job_id_str;
+	resp_array_struct_t *resp_array = NULL;
+	job_array_resp_msg_t *resp_array_msg;
 
 	if (max_array_size == NO_VAL) {
 		conf = slurm_conf_lock();
@@ -12137,16 +12139,20 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
-		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
-		    (job_ptr->array_recs == NULL)) {
-			/* This is a regular job, not a job array */
+		if (job_ptr &&
+		    (((job_ptr->array_task_id == NO_VAL) &&
+		      (job_ptr->array_recs == NULL)) ||
+		     ((job_ptr->array_task_id != NO_VAL) &&
+		      (job_ptr->array_job_id  != job_id)))) {
+			/* This is a regular job or single task of job array */
 			rc = _job_requeue(uid, job_ptr, preempt, state);
 			goto reply;
 		}
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
-			rc = _job_requeue(uid, job_ptr, preempt, state);
+			rc2 = _job_requeue(uid, job_ptr, preempt, state);
+			_resp_array_add(&resp_array, job_ptr, rc2);
 			job_ptr_done = job_ptr;
 		}
 
@@ -12160,7 +12166,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _job_requeue(uid, job_ptr, preempt,state);
-				rc = MAX(rc, rc2);
+				_resp_array_add(&resp_array, job_ptr, rc2);
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
@@ -12203,18 +12209,25 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 		}
 
 		rc2 = _job_requeue(uid, job_ptr, preempt, state);
-		rc = MAX(rc, rc2);
+		_resp_array_add(&resp_array, job_ptr, rc2);
 	}
 
     reply:
 	if (conn_fd >= 0) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = protocol_version;
-		resp_msg.msg_type  = RESPONSE_SLURM_RC;
-		rc_msg.return_code = rc;
-		resp_msg.data      = &rc_msg;
+		if (resp_array) {
+			resp_array_msg = _resp_array_xlate(resp_array, job_id);
+			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
+			resp_msg.data      = resp_array_msg;
+		} else {
+			resp_msg.msg_type  = RESPONSE_SLURM_RC;
+			rc_msg.return_code = rc;
+			resp_msg.data      = &rc_msg;
+		}
 		slurm_send_node_msg(conn_fd, &resp_msg);
 	}
+	_resp_array_free(resp_array);
 	return rc;
 }
 

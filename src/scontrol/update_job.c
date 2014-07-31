@@ -56,7 +56,6 @@ static int _parse_restart_args(int argc, char **argv,
 static void _update_job_size(uint32_t job_id);
 static int _parse_requeue_flags(char *, uint32_t *state_flags);
 static job_info_msg_t *_get_job_info(const char *jobid, uint32_t *task_id);
-static job_ids_t *_get_job_ids(const char *jobid,  uint32_t *num_ids);
 static job_ids_t *_get_job_ids2(const char *jobid,  uint32_t *num_ids);
 static void _free_job_ids(job_ids_t *job_ids, uint32_t num_ids);
 static int _parse_job_ids(const char *, uint32_t *, uint32_t *);
@@ -399,60 +398,52 @@ scontrol_suspend(char *op, char *job_id_str)
 extern void
 scontrol_requeue(int argc, char **argv)
 {
-	int rc = SLURM_SUCCESS;
-	int i;
-	job_ids_t *ids;
-	uint32_t num_ids = 0;
-	char *this_job_id = NULL;
+	char *job_id_str;
+	int cc, i;
+	job_array_resp_msg_t *resp = NULL;
 
 	if (!argv[0]) {
 		exit_code = 1;
 		return;
 	}
 
+	job_id_str = argv[0];
 	if (strncasecmp(argv[0], "jobid=", 6) == 0)
-		argv[0] += 6;
+		job_id_str += 6;
 	if (strncasecmp(argv[0], "job=", 4) == 0)
-		argv[0] += 4;
+		job_id_str += 4;
 
-	ids = _get_job_ids(argv[0], &num_ids);
-	if (ids == NULL) {
+	cc = slurm_requeue2(job_id_str, 0, &resp);
+
+	if (cc != SLURM_SUCCESS) {
 		exit_code = 1;
-		return;
-	}
-
-	for (i = 0; i < num_ids; i++) {
-		if (ids[i].array_task_str) {
-			xstrfmtcat(this_job_id, "%u_%s",
-				   ids[i].array_job_id, ids[i].array_task_str);
-		} else if (ids[i].array_task_id != NO_VAL) {
-			xstrfmtcat(this_job_id, "%u_%u",
-				   ids[i].array_job_id, ids[i].array_task_id);
-		} else {
-			xstrfmtcat(this_job_id, "%u", ids[i].job_id);
-		}
-		rc = slurm_requeue2(this_job_id, 0);
-		if (rc != SLURM_SUCCESS)
-			exit_code = 1;
-		if ((rc != SLURM_SUCCESS) && (quiet_flag != 1)) {
+		if (quiet_flag != 1) {
 			fprintf(stderr, "%s for job %s\n",
-				slurm_strerror(slurm_get_errno()), this_job_id);
+				slurm_strerror(slurm_get_errno()), job_id_str);
 		}
-		xfree(this_job_id);
+	} else if (resp) {
+		for (i = 0; i < resp->job_array_count; i++) {
+			if ((resp->error_code[i] == SLURM_SUCCESS) &&
+			    (resp->job_array_count == 1))
+				continue;
+			exit_code = 1;
+			if (quiet_flag == 1)
+				continue;
+			fprintf(stderr, "%s: %s\n",
+				resp->job_array_id[i],
+				slurm_strerror(resp->error_code[i]));
+		}
+		slurm_free_job_array_resp(resp);
 	}
-
-	_free_job_ids(ids, num_ids);
 }
 
 extern void
 scontrol_requeue_hold(int argc, char **argv)
 {
-	int rc = SLURM_SUCCESS;
-	int i;
+	int cc, i;
 	uint32_t state_flag;
-	job_ids_t *ids;
-	uint32_t num_ids;
-	char *job_id_str, *this_job_id = NULL;
+	char *job_id_str;
+	job_array_resp_msg_t *resp = NULL;
 
 	state_flag = 0;
 
@@ -466,47 +457,38 @@ scontrol_requeue_hold(int argc, char **argv)
 	if (strncasecmp(job_id_str, "job=", 4) == 0)
 		job_id_str += 4;
 
-	ids = _get_job_ids(job_id_str, &num_ids);
-	if (ids == NULL) {
-		exit_code = 1;
-		return;
-	}
-
 	if (argc == 2) {
-		rc = _parse_requeue_flags(argv[0], &state_flag);
-		if (rc < 0) {
+		if (_parse_requeue_flags(argv[0], &state_flag) < 0) {
 			error("Invalid state specification %s", argv[0]);
 			exit_code = 1;
-			_free_job_ids(ids, num_ids);
 			return;
 		}
 	}
 	state_flag |= JOB_REQUEUE_HOLD;
 
-	/* Go and requeue the state either in
-	 * JOB_SPECIAL_EXIT or HELD state.
-	 */
-	for (i = 0; i < num_ids; i++) {
-		if (ids[i].array_task_str) {
-			xstrfmtcat(this_job_id, "%u_%s",
-				   ids[i].array_job_id, ids[i].array_task_str);
-		} else if (ids[i].array_task_id != NO_VAL) {
-			xstrfmtcat(this_job_id, "%u_%u",
-				   ids[i].array_job_id, ids[i].array_task_id);
-		} else {
-			xstrfmtcat(this_job_id, "%u", ids[i].job_id);
-		}
-		rc = slurm_requeue2(this_job_id, state_flag);
-		if (rc != SLURM_SUCCESS)
-			exit_code = 1;
-		if ((rc != SLURM_SUCCESS) && (quiet_flag != 1)) {
-			fprintf(stderr, "%s for job %s\n",
-				slurm_strerror(slurm_get_errno()), this_job_id);
-		}
-		xfree(this_job_id);
-	}
+	/* Requeue the state either in JOB_SPECIAL_EXIT or HELD state */
+	cc = slurm_requeue2(job_id_str, state_flag, &resp);
 
-	_free_job_ids(ids, num_ids);
+	if (cc != SLURM_SUCCESS) {
+		exit_code = 1;
+		if (quiet_flag != 1) {
+			fprintf(stderr, "%s for job %s\n",
+				slurm_strerror(slurm_get_errno()), job_id_str);
+		}
+	} else if (resp) {
+		for (i = 0; i < resp->job_array_count; i++) {
+			if ((resp->error_code[i] == SLURM_SUCCESS) &&
+			    (resp->job_array_count == 1))
+				continue;
+			exit_code = 1;
+			if (quiet_flag == 1)
+				continue;
+			fprintf(stderr, "%s: %s\n",
+				resp->job_array_id[i],
+				slurm_strerror(resp->error_code[i]));
+		}
+		slurm_free_job_array_resp(resp);
+	}
 }
 
 /*
@@ -1233,94 +1215,6 @@ _get_job_info(const char *jobid, uint32_t *task_id)
 	}
 
 	return job_info;
-}
-
-/* _get_job_ids() - Return array of job record for all job states.
- * First the pending jobs, then all other jobs
- * NOTE: Call _free_job_ids() to free allocated memory
- */
-static job_ids_t *_get_job_ids(const char *jobid, uint32_t *num_ids)
-{
-	job_info_msg_t *job_info;
-	job_ids_t *job_ids;
-	uint32_t task_id;
-	int i;
-	int cc;
-
-	*num_ids = 0;
-	task_id = 0;
-	job_info = _get_job_info(jobid, &task_id);
-	if (job_info == NULL)
-		return NULL;
-
-	if (task_id != NO_VAL) {
-		job_ids = xmalloc(sizeof(job_ids_t));
-		*num_ids = 1;
-
-		/* Search for the job_id of the specified task. */
-		for (cc = 0; cc < job_info->record_count; cc++) {
-			if (task_id == job_info->job_array[cc].array_task_id) {
-				job_ids[0].array_job_id =
-					job_info->job_array[cc].array_job_id;
-				job_ids[0].array_task_id =
-					job_info->job_array[cc].array_task_id;
-				job_ids[0].job_id =
-					job_info->job_array[cc].job_id;
-				break;
-			}
-		}
-
-		slurm_free_job_info_msg(job_info);
-		return job_ids;
-	}
-
-	if (job_info->record_count == 1) {
-		job_ids = xmalloc(sizeof(job_ids_t));
-		*num_ids = 1;
-		job_ids[0].array_job_id = job_info->job_array[0].array_job_id;
-		job_ids[0].array_task_id = job_info->job_array[0].array_task_id;
-		job_ids[0].job_id = job_info->job_array[0].job_id;
-		slurm_free_job_info_msg(job_info);
-
-		return job_ids;
-	}
-
-	*num_ids = job_info->record_count;
-	job_ids = xmalloc((*num_ids) * sizeof(job_ids_t));
-	/* First save the pending jobs
-	 */
-	i = 0;
-	for (cc = 0; cc < job_info->record_count; cc++) {
-		if (job_info->job_array[cc].job_state == JOB_PENDING) {
-			job_ids[i].array_job_id =
-				job_info->job_array[cc].array_job_id;
-			job_ids[i].array_task_id =
-				job_info->job_array[cc].array_task_id;
-			job_ids[i].array_task_str =
-				xstrdup(job_info->job_array[cc].array_task_str);
-			job_ids[i].job_id = job_info->job_array[cc].job_id;
-			++i;
-		}
-	}
-	/* then the rest of the states
-	 */
-	for (cc = 0; cc < job_info->record_count; cc++) {
-		if (job_info->job_array[cc].job_state != JOB_PENDING) {
-			job_ids[i].array_job_id =
-				job_info->job_array[cc].array_job_id;
-			job_ids[i].array_task_id =
-				job_info->job_array[cc].array_task_id;
-			job_ids[i].array_task_str =
-				xstrdup(job_info->job_array[cc].array_task_str);
-			job_ids[i].job_id = job_info->job_array[cc].job_id;
-			++i;
-		}
-	}
-
-	xassert(i == *num_ids);
-	slurm_free_job_info_msg(job_info);
-
-	return job_ids;
 }
 
 /* _get_job_ids2() - Return array of job record for all incomplete jobs
