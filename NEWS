@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
     many tasks of a job array should have resources reserved for them.
  -- Added more validity checking of incoming job submit requests.
  -- Added srun --export option to set/export specific environment variables.
+ -- Scontrol modified to print separate error messages for job arrays with
+    different exit codes on the different tasks of the job array. Applies to
+    job suspend and resume operations. 
 
 * Changes in Slurm 14.11.0pre3
 ==============================

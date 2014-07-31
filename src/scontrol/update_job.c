@@ -358,45 +358,38 @@ extern void
 scontrol_suspend(char *op, char *job_id_str)
 {
 	int cc, i;
-	job_ids_t *ids;
-	uint32_t num_ids = 0;
-	char *this_job_id = NULL;
+	job_array_resp_msg_t *resp = NULL;
 
 	if (strncasecmp(job_id_str, "jobid=", 6) == 0)
 		job_id_str += 6;
 	if (strncasecmp(job_id_str, "job=", 4) == 0)
 		job_id_str += 4;
 
-	ids = _get_job_ids2(job_id_str, &num_ids);
-	if (ids == NULL) {
+	if (!strncasecmp(op, "suspend", MAX(strlen(op), 2)))
+		cc = slurm_suspend2(job_id_str, &resp);
+	else
+		cc = slurm_resume2(job_id_str, &resp);
+
+	if (cc != SLURM_SUCCESS) {
 		exit_code = 1;
-		return;
-	}
-
-	for (i = 0; i < num_ids; i++) {
-		if (ids[i].array_task_str) {
-			xstrfmtcat(this_job_id, "%u_%s",
-				   ids[i].array_job_id, ids[i].array_task_str);
-		} else if (ids[i].array_task_id != NO_VAL) {
-			xstrfmtcat(this_job_id, "%u_%u",
-				   ids[i].array_job_id, ids[i].array_task_id);
-		} else {
-			xstrfmtcat(this_job_id, "%u", ids[i].job_id);
-		}
-		if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
-			cc = slurm_suspend2(this_job_id);
-		else
-			cc = slurm_resume2(this_job_id);
-		if (cc != SLURM_SUCCESS)
-			exit_code = 1;
-		if ((cc != SLURM_SUCCESS) && (quiet_flag != 1)) {
+		if (quiet_flag != 1) {
 			fprintf(stderr, "%s for job %s\n",
-				slurm_strerror(slurm_get_errno()), this_job_id);
+				slurm_strerror(slurm_get_errno()), job_id_str);
 		}
-		xfree(this_job_id);
+	} else if (resp) {
+		for (i = 0; i < resp->job_array_count; i++) {
+			if ((resp->error_code[i] == SLURM_SUCCESS) &&
+			    (resp->job_array_count == 1))
+				continue;
+			exit_code = 1;
+			if (quiet_flag == 1)
+				continue;
+			fprintf(stderr, "%s: %s\n",
+				resp->job_array_id[i],
+				slurm_strerror(resp->error_code[i]));
+		}
+		slurm_free_job_array_resp(resp);
 	}
-
-	_free_job_ids(ids, num_ids);
 }
 
 /*

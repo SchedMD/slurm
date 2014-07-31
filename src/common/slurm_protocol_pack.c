@@ -669,14 +669,16 @@ static inline void _pack_license_info_msg(slurm_msg_t *msg, Buf buffer);
 static int _unpack_license_info_msg(license_info_msg_t **msg,
                                     Buf buffer,
                                     uint16_t protocol_version);
-static void
-_pack_job_requeue_msg(requeue_msg_t *msg,
-                      Buf buf,
-                      uint16_t protocol_version);
-static int
-_unpack_job_requeue_msg(requeue_msg_t **msg,
-                        Buf buf,
-                        uint16_t protocol_version);
+
+static void _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf,
+				  uint16_t protocol_version);
+static int  _unpack_job_requeue_msg(requeue_msg_t **msg, Buf buf,
+				    uint16_t protocol_version);
+
+static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, Buf buffer,
+				     uint16_t protocol_version);
+static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, Buf buffer,
+				       uint16_t protocol_version);
 
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
@@ -1319,6 +1321,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_LICENSE_INFO:
 		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
 		break;
+	case RESPONSE_JOB_ARRAY_ERRORS:
+		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
+					 buffer, msg->protocol_version);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1952,6 +1958,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		                                      &(msg->data),
 		                                      buffer,
 		                                      msg->protocol_version);
+		break;
+	case RESPONSE_JOB_ARRAY_ERRORS:
+		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
+						&(msg->data), buffer,
+						msg->protocol_version);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -10926,14 +10937,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_trigger_msg(trigger_info_msg_t *msg , Buf buffer,
+static void _pack_trigger_msg(trigger_info_msg_t *msg, Buf buffer,
 			      uint16_t protocol_version)
 {
 	int i;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->record_count, buffer);
-		for (i=0; i<msg->record_count; i++) {
+		for (i = 0; i < msg->record_count; i++) {
 			pack16 (msg->trigger_array[i].flags,     buffer);
 			pack32 (msg->trigger_array[i].trig_id,   buffer);
 			pack16 (msg->trigger_array[i].res_type,  buffer);
@@ -11895,6 +11906,46 @@ _unpack_license_info_msg(license_info_msg_t **msg,
 
 unpack_error:
 	slurm_free_license_info_msg(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, Buf buffer,
+				     uint16_t protocol_version)
+{
+	uint32_t i, cnt = 0;
+
+	if (!msg) {
+		pack32(cnt, buffer);
+		return;
+	}
+
+	pack32(msg->job_array_count, buffer);
+	for (i = 0; i < msg->job_array_count; i++) {
+		pack32(msg->error_code[i], buffer);
+  		packstr(msg->job_array_id[i], buffer);
+	}
+}
+static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, Buf buffer,
+				       uint16_t protocol_version)
+{
+	job_array_resp_msg_t *resp;
+	uint32_t i, uint32_tmp;
+
+	resp = xmalloc(sizeof(job_array_resp_msg_t));
+	safe_unpack32(&resp->job_array_count, buffer);
+	resp->error_code   = xmalloc(sizeof(uint32_t) * resp->job_array_count);
+	resp->job_array_id = xmalloc(sizeof(char *)   * resp->job_array_count);
+	for (i = 0; i < resp->job_array_count; i++) {
+		safe_unpack32(&resp->error_code[i], buffer);
+		safe_unpackstr_xmalloc(&resp->job_array_id[i], &uint32_tmp,
+				       buffer);
+	}
+	*msg = resp;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_job_array_resp(resp);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

@@ -97,6 +97,7 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
+#define ARRAY_ID_BUF_SIZE 32
 #define DETAILS_FLAG 0xdddd
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
@@ -111,6 +112,13 @@
 #define JOB_2_6_STATE_VERSION   "VER014"	/* SLURM version 2.6 */
 
 #define JOB_CKPT_VERSION      "PROTOCOL_VERSION"
+
+typedef struct {
+	int resp_array_cnt;
+	int resp_array_size;
+	uint32_t *resp_array_rc;
+	bitstr_t **resp_array_task_id;
+} resp_array_struct_t;
 
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
@@ -174,6 +182,7 @@ static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer,
 			      uint16_t protocol_version);
 static int  _load_job_state(Buf buffer,	uint16_t protocol_version);
+static int32_t *_make_requeue_array(char *conf_buf, uint32_t *num);
 static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
@@ -197,9 +206,15 @@ static void _remove_defunct_batch_dirs(List batch_dirs);
 static void _remove_job_hash(struct job_record *job_ptr);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
+static void _resp_array_add(resp_array_struct_t **resp,
+			    struct job_record *job_ptr, uint32_t rc);
+static void _resp_array_free(resp_array_struct_t *resp);
+static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
+					       uint32_t job_id);
 static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static void _send_job_kill(struct job_record *job_ptr);
 static int  _set_job_id(struct job_record *job_ptr);
+static void  _set_job_requeue_exit_value(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op,
@@ -216,15 +231,173 @@ static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
                                uid_t submit_uid, struct part_record *part_ptr,
                                List part_list);
 static void _validate_job_files(List batch_dirs);
+static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
+                                        struct part_record *,
+                                        List part_list);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
-static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
-                                        struct part_record *,
-                                        List part_list);
-static void  _set_job_requeue_exit_value(struct job_record *);
-static int32_t *_make_requeue_array(char *, uint32_t *);
+
+/*
+ * Functions used to manage job array responses with a separate return code
+ * possible for each task ID
+ */
+/* Add job record to resp_array_struct_t, free with _resp_array_free() */
+static void _resp_array_add(resp_array_struct_t **resp,
+			    struct job_record *job_ptr, uint32_t rc)
+{
+	resp_array_struct_t *loc_resp;
+	int array_size;
+	int i;
+
+	if ((job_ptr->array_task_id == NO_VAL) &&
+	    (job_ptr->array_recs == NULL)) {
+		error("_resp_array_add called for non-job array %u",
+		      job_ptr->job_id);
+		return;
+	}
+
+	xassert(resp);
+	if (*resp == NULL) {
+		/* Initialize the data structure */
+		loc_resp = xmalloc(sizeof(resp_array_struct_t));
+		loc_resp->resp_array_cnt  = 0;
+		loc_resp->resp_array_size = 10;
+		xrealloc(loc_resp->resp_array_rc,
+			 (sizeof(uint32_t) * loc_resp->resp_array_size));
+		xrealloc(loc_resp->resp_array_task_id,
+			 (sizeof(bitstr_t *) * loc_resp->resp_array_size));
+		*resp = loc_resp;
+	} else {
+		loc_resp = *resp;
+	}
+
+	for (i = 0; i < loc_resp->resp_array_cnt; i++) {
+		if (loc_resp->resp_array_rc[i] != rc)
+			continue;
+		/* Add to existing error code record */
+		if (job_ptr->array_task_id != NO_VAL) {
+			if (job_ptr->array_task_id <
+			    bit_size(loc_resp->resp_array_task_id[i])) {
+				bit_set(loc_resp->resp_array_task_id[i],
+					job_ptr->array_task_id);
+			} else {
+				error("_resp_array_add found invalid "
+				      "task id %u_%u",
+				      job_ptr->array_job_id,
+				      job_ptr->array_task_id);
+			}
+		} else if (job_ptr->array_recs &&
+			   job_ptr->array_recs->task_id_bitmap) {
+			array_size = bit_size(job_ptr->array_recs->
+					      task_id_bitmap);
+			if (bit_size(loc_resp->resp_array_task_id[i]) !=
+			    array_size) {
+				bit_realloc(loc_resp->resp_array_task_id[i],
+					    array_size);
+			}
+			bit_or(loc_resp->resp_array_task_id[i],
+			       job_ptr->array_recs->task_id_bitmap);
+		} else {
+			error("_resp_array_add found job %u without task ID "
+			      "or bitmap", job_ptr->job_id);
+		}
+		return;
+	}
+
+	/* Need to add a new record for this error code */
+	if (loc_resp->resp_array_cnt >= loc_resp->resp_array_size) {
+		/* Need to grow the table size */
+		loc_resp->resp_array_size += 10;
+		xrealloc(loc_resp->resp_array_rc,
+			 (sizeof(uint32_t) * loc_resp->resp_array_size));
+		xrealloc(loc_resp->resp_array_task_id,
+			 (sizeof(bitstr_t *) * loc_resp->resp_array_size));
+	}
+
+	loc_resp->resp_array_rc[loc_resp->resp_array_cnt] = rc;
+	if (job_ptr->array_task_id != NO_VAL) {
+		loc_resp->resp_array_task_id[loc_resp->resp_array_cnt] =
+				bit_alloc(max_array_size);
+		if (job_ptr->array_task_id <
+		    bit_size(loc_resp->resp_array_task_id
+			     [loc_resp->resp_array_cnt])) {
+			bit_set(loc_resp->resp_array_task_id
+				[loc_resp->resp_array_cnt],
+				job_ptr->array_task_id);
+		}
+	} else if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap) {
+		loc_resp->resp_array_task_id[loc_resp->resp_array_cnt] =
+			bit_copy(job_ptr->array_recs->task_id_bitmap);
+	} else {
+		error("_resp_array_add found job %u without task ID or bitmap",
+		      job_ptr->job_id);
+		loc_resp->resp_array_task_id[loc_resp->resp_array_cnt] =
+				bit_alloc(max_array_size);
+	}
+	loc_resp->resp_array_cnt++;
+	return;
+}
+
+/* Free resp_array_struct_t built by _resp_array_add() */
+static void _resp_array_free(resp_array_struct_t *resp)
+{
+	int i;
+
+	if (resp) {
+		for (i = 0; i < resp->resp_array_cnt; i++)
+			FREE_NULL_BITMAP(resp->resp_array_task_id[i]);
+		xfree(resp->resp_array_task_id);
+		xfree(resp->resp_array_rc);
+		xfree(resp);
+	}
+}
+
+/* Translate internal job array data structure into a response message */
+static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
+					       uint32_t job_id)
+{
+	job_array_resp_msg_t *msg;
+	char task_str[ARRAY_ID_BUF_SIZE];
+	int *ffs = NULL;
+	int i, j, low;
+
+	ffs   = xmalloc(sizeof(int) * resp->resp_array_cnt);
+	for (i = 0; i < resp->resp_array_cnt; i++) {
+		ffs[i] = bit_ffs(resp->resp_array_task_id[i]);
+	}
+
+	msg = xmalloc(sizeof(job_array_resp_msg_t));
+	msg->job_array_count = resp->resp_array_cnt;
+	msg->job_array_id    = xmalloc(sizeof(char *)   * resp->resp_array_cnt);
+	msg->error_code      = xmalloc(sizeof(uint32_t) * resp->resp_array_cnt);
+	for (i = 0; i < resp->resp_array_cnt; i++) {
+		low = -1;
+		for (j = 0; j < resp->resp_array_cnt; j++) {
+			if ((ffs[j] != -1) &&
+			    ((low == -1) || (ffs[j] < ffs[low])))
+				low = j;
+		}
+		if (low == -1)
+			break;
+		ffs[low] = -1;
+
+		msg->error_code[i] = resp->resp_array_rc[low];
+		bit_fmt(task_str, ARRAY_ID_BUF_SIZE,
+			resp->resp_array_task_id[low]);
+		if (strlen(task_str) >= ARRAY_ID_BUF_SIZE - 2) {
+			task_str[ARRAY_ID_BUF_SIZE - 4] = '.';
+			task_str[ARRAY_ID_BUF_SIZE - 3] = '.';
+			task_str[ARRAY_ID_BUF_SIZE - 2] = '.';
+			task_str[ARRAY_ID_BUF_SIZE - 0] = '\0';
+		}
+		xstrfmtcat(msg->job_array_id[i], "%u_%s", job_id, task_str);
+	}
+
+	xfree(ffs);
+	return msg;
+}
 
 /*
  * create_job_record - create an empty job_record including job_details.
@@ -11627,6 +11800,8 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	int32_t i, i_first, i_last;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
+	resp_array_struct_t *resp_array = NULL;
+	job_array_resp_msg_t *resp_array_msg;
 
 #ifdef HAVE_BG
 	rc = ESLURM_NOT_SUPPORTED;
@@ -11658,17 +11833,20 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
-		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
-		    (job_ptr->array_recs == NULL)) {
-			/* This is a regular job, not a job array */
+		if (job_ptr &&
+		    (((job_ptr->array_task_id == NO_VAL) &&
+		      (job_ptr->array_recs == NULL)) ||
+		     ((job_ptr->array_task_id != NO_VAL) &&
+		      (job_ptr->array_job_id  != job_id)))) {
+			/* This is a regular job or single task of job array */
 			rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
 			goto reply;
 		}
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
-			rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
-			job_ptr_done = job_ptr;
+			rc2 = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
+			_resp_array_add(&resp_array, job_ptr, rc2);
 		}
 
 		/* Suspend all tasks of this job array */
@@ -11682,7 +11860,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _job_suspend(job_ptr, sus_ptr->op,
 						   indf_susp);
-				rc = MAX(rc, rc2);
+				_resp_array_add(&resp_array, job_ptr, rc2);
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
@@ -11723,20 +11901,26 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			rc = ESLURM_INVALID_JOB_ID;
 			continue;
 		}
-
 		rc2 = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
-		rc = MAX(rc, rc2);
+		_resp_array_add(&resp_array, job_ptr, rc2);
 	}
 
     reply:
 	if (conn_fd >= 0) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = protocol_version;
-		resp_msg.msg_type  = RESPONSE_SLURM_RC;
-		rc_msg.return_code = rc;
-		resp_msg.data      = &rc_msg;
+		if (resp_array) {
+			resp_array_msg = _resp_array_xlate(resp_array, job_id);
+			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
+			resp_msg.data      = resp_array_msg;
+		} else {
+			resp_msg.msg_type  = RESPONSE_SLURM_RC;
+			rc_msg.return_code = rc;
+			resp_msg.data      = &rc_msg;
+		}
 		slurm_send_node_msg(conn_fd, &resp_msg);
 	}
+	_resp_array_free(resp_array);
 	return rc;
 }
 

@@ -1001,6 +1001,20 @@ extern void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg)
 	xfree(msg);
 }
 
+/* Free job array oriented response with individual return codes by task ID */
+extern void slurm_free_job_array_resp(job_array_resp_msg_t *msg)
+{
+	uint32_t i;
+
+	if (msg) {
+		for (i = 0; i < msg->job_array_count; i++)
+			xfree(msg->job_array_id[i]);
+		xfree(msg->job_array_id);
+		xfree(msg->error_code);
+		xfree(msg);
+	}
+}
+
 /* Given a job's reason for waiting, return a descriptive string */
 extern char *job_reason_string(enum job_state_reason inx)
 {
@@ -2931,6 +2945,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_PING_SLURMD:
 		slurm_free_ping_slurmd_resp(data);
+		break;
+	case RESPONSE_JOB_ARRAY_ERRORS:
+		slurm_free_job_array_resp(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);

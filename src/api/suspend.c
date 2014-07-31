@@ -43,16 +43,17 @@
 
 #include "slurm/slurm.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * _suspend_op - perform a suspend/resume operation for some job.
  * IN op         - operation to perform
  * IN job_id     - job on which to perform operation or NO_VAL
- * IN job_id_str - job on which to perform operation in string format or NULL
  * RET 0 or a slurm error code
  * NOTE: Supply either job_id NO_VAL or job_id_str as NULL, not both
  */
-static int _suspend_op(uint16_t op, uint32_t job_id, char *job_id_str)
+static int _suspend_op(uint16_t op, uint32_t job_id)
 {
 	int rc;
 	suspend_msg_t sus_req;
@@ -61,7 +62,7 @@ static int _suspend_op(uint16_t op, uint32_t job_id, char *job_id_str)
 	slurm_msg_t_init(&req_msg);
 	sus_req.op         = op;
 	sus_req.job_id     = job_id;
-	sus_req.job_id_str = job_id_str;
+	sus_req.job_id_str = NULL;
 	req_msg.msg_type   = REQUEST_SUSPEND;
 	req_msg.data       = &sus_req;
 
@@ -79,17 +80,7 @@ static int _suspend_op(uint16_t op, uint32_t job_id, char *job_id_str)
  */
 extern int slurm_suspend(uint32_t job_id)
 {
-	return _suspend_op (SUSPEND_JOB, job_id, NULL);
-}
-
-/*
- * slurm_suspend2 - suspend execution of a job.
- * IN job_id in string form  - job on which to perform operation
- * RET 0 or a slurm error code
- */
-extern int slurm_suspend2(char *job_id)
-{
-	return _suspend_op(SUSPEND_JOB, NO_VAL, job_id);
+	return _suspend_op (SUSPEND_JOB, job_id);
 }
 
 /*
@@ -99,19 +90,73 @@ extern int slurm_suspend2(char *job_id)
  */
 extern int slurm_resume(uint32_t job_id)
 {
-	return _suspend_op(RESUME_JOB, job_id, NULL);
+	return _suspend_op(RESUME_JOB, job_id);
 }
+
+/*
+ * _suspend_op2 - perform a suspend/resume operation for some job.
+ * IN op         - operation to perform
+ * IN job_id_str - job on which to perform operation in string format or NULL
+ * OUT resp      - slurm error codes by job array task ID
+ * RET 0 or a slurm error code
+ * NOTE: Supply either job_id NO_VAL or job_id_str as NULL, not both
+ */
+static int _suspend_op2(uint16_t op, char *job_id_str,
+			job_array_resp_msg_t **resp)
+{
+	int rc;
+	suspend_msg_t sus_req;
+	slurm_msg_t req_msg, resp_msg;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	sus_req.op         = op;
+	sus_req.job_id     = NO_VAL;
+	sus_req.job_id_str = job_id_str;
+	req_msg.msg_type   = REQUEST_SUSPEND;
+	req_msg.data       = &sus_req;
+
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_ARRAY_ERRORS:
+		*resp = (job_array_resp_msg_t *) resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		if (rc)
+			slurm_seterrno(rc);
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+	}
+
+	return rc;
+}
+
+/*
+ * slurm_suspend2 - suspend execution of a job.
+ * IN job_id in string form  - job on which to perform operation
+ * OUT resp - per task response to the request,
+ *	      free using slurm_free_job_array_resp()
+ * RET 0 or a slurm error code
+ */
+extern int slurm_suspend2(char *job_id, job_array_resp_msg_t **resp)
+{
+	return _suspend_op2(SUSPEND_JOB, job_id, resp);
+}
+
 
 /*
  * slurm_resume2 - resume execution of a previously suspended job.
  * IN job_id in string form  - job on which to perform operation
+ * OUT resp - per task response to the request,
+ *	      free using slurm_free_job_array_resp()
  * RET 0 or a slurm error code
  */
-extern int slurm_resume2(char *job_id)
+extern int slurm_resume2(char *job_id, job_array_resp_msg_t **resp)
 {
-	return _suspend_op(RESUME_JOB, NO_VAL, job_id);
+	return _suspend_op2(RESUME_JOB, job_id, resp);
 }
-
 
 /*
  * _requeue_op   - perform a requeue operation for some job.
