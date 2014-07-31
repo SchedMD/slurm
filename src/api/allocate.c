@@ -813,7 +813,8 @@ _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 	int timeout_ms;
 
 	if (listen == NULL) {
-		error("Resource allocation not found");
+		error("Listening port not found");
+		sleep(MAX(sleep_time, 1));
 		return SLURM_ERROR;
 	}
 

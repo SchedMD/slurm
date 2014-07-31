@@ -853,7 +853,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	_parse_line(f, (void **)&temp, len);
 
 	if (temp == NULL) {
-		error("Unknown proccess");
+		error("Unknown proccess terminated");
 		return;
 	}
 
