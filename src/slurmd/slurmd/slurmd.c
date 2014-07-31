@@ -743,7 +743,7 @@ static inline void
 _free_and_set(char **confvar, char *newval)
 {
 	xfree(*confvar);
-	*confvar = newval;
+	*confvar = newval;	/* CLANG false positive */
 }
 
 /*

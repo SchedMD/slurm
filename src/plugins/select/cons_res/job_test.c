@@ -2340,6 +2340,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	if (!jp_ptr) {
 		fatal("cons_res error: could not find partition for job %u",
 			job_ptr->job_id);
+		return SLURM_ERROR;	/* CLANG false positive */
 	}
 
 	/* remove existing allocations (jobs) from higher-priority partitions

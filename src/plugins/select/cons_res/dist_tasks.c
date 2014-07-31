@@ -800,6 +800,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			}
 			xfree(cpus_cnt);
 		} else if (job_ptr->details->cpus_per_task > 1) {
+			/* CLANG false positive */
 			/* Try to pack all CPUs of each tasks on one socket. */
 			uint32_t *cpus_cnt, cpus_per_task;
 

@@ -1891,6 +1891,12 @@ static int _build_node_spec_bitmap(struct node_record *node_ptr)
 	int *cpu_spec_array;
 	uint i, node_inx;
 
+	if (node_ptr->threads == 0) {
+		error("Node %s has invalid thread per core count (%u)",
+		      node_ptr->name, node_ptr->threads);
+		return SLURM_ERROR;
+	}
+
 	if (!node_ptr->cpu_spec_list)
 		return SLURM_SUCCESS;
 	node_inx = node_ptr - node_record_table_ptr;

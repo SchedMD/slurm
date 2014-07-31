@@ -1331,10 +1331,10 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
 			break;
-                case LONG_OPT_EXCLUSIVE:
-                        opt.shared = 0;
-                        break;
-                case LONG_OPT_CPU_BIND:
+		case LONG_OPT_EXCLUSIVE:
+			opt.shared = 0;
+			break;
+		case LONG_OPT_CPU_BIND:
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
@@ -1674,10 +1674,10 @@ static void _set_options(int argc, char **argv)
 			}
 			opt.req_switch = _get_int(optarg, "switches");
 			break;
-                case LONG_OPT_IGNORE_PBS:
+		case LONG_OPT_IGNORE_PBS:
 			/* Ignore here, needed to process earlier,
 			 * when the batch script was read. */
-                        break;
+			break;
 		case LONG_OPT_TEST_ONLY:
 			opt.test_only = true;
 			break;
@@ -1851,6 +1851,7 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'v':
 			if (opt.export_env)
 				sep = ",";
+			/* CLANG false positive */
 			xstrfmtcat(opt.export_env, "%s%s", sep, optarg);
 			break;
 		case 'V':
@@ -2332,7 +2333,7 @@ static bool _opt_verify(void)
 		}
 	}
 
-        /* Check to see if user has specified enough resources to
+	/* Check to see if user has specified enough resources to
 	 * satisfy the plane distribution with the specified
 	 * plane_size.
 	 * if (n/plane_size < N) and ((N-1) * plane_size >= n) -->
@@ -2955,7 +2956,7 @@ static void _help(void)
 {
 	slurm_ctl_conf_t *conf;
 
-        printf (
+	printf (
 "Usage: sbatch [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"

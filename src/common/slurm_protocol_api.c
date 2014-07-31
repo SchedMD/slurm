@@ -2233,7 +2233,7 @@ slurm_get_srun_port_range(void)
 		ports = conf->srun_port_range;
 		slurm_conf_unlock();
 	}
-	return ports;
+	return ports;	/* CLANG false positive */
 }
 
 /* slurm_get_task_plugin

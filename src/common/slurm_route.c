@@ -179,7 +179,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 		for (j = 0; j < *count; j++) {
 			nnodex += hostlist_count((*sp_hl)[j]);
 		}
-		if (nnodex != nnodes) {
+		if (nnodex != nnodes) {	/* CLANG false positive */
 			info("ROUTE: number of nodes in split lists (%d)"
 			     " is not equal to number in input list (%d)",
 			     nnodex, nnodes);

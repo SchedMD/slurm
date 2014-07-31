@@ -3686,6 +3686,7 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update)
 			if (object->type != SLURMDB_RESOURCE_NOTSET)
 				rec->type = object->type;
 
+			/* CLANG false positive */
 			if (object->clus_res_rec->percent_allowed !=
 			    (uint16_t)NO_VAL)
 				rec->clus_res_rec->percent_allowed =

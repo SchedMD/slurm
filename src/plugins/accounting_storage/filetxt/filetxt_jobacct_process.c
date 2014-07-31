@@ -851,6 +851,12 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	filetxt_job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
+
+	if (temp == NULL) {
+		error("Unknown proccess");
+		return;
+	}
+
 	job = _find_job_record(job_list, temp->header, JOB_TERMINATED);
 	if (!job) {	/* fake it for now */
 		job = _create_filetxt_job_rec(temp->header);

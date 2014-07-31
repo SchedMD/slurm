@@ -424,7 +424,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		if (adding_straight) {
 			xstrfmtcat(*vals, ", \'%s,\'", preempt_val);
 			xstrfmtcat(*extra, ", preempt=\'%s,\'", preempt_val);
-		} else if (preempt_val[0]) {
+		} else if (preempt_val[0]) { /* CLANG false positive */
 			xstrfmtcat(*vals, ", %s", preempt_val);
 			xstrfmtcat(*extra, ", preempt=if(%s=',', '', %s)",
 				   preempt_val, preempt_val);

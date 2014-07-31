@@ -812,6 +812,11 @@ _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 	int rc;
 	int timeout_ms;
 
+	if (listen == NULL) {
+		error("Resource allocation not found");
+		return SLURM_ERROR;
+	}
+
 	fds[0].fd = listen->fd;
 	fds[0].events = POLLIN;
 

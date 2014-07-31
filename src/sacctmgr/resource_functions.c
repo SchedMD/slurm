@@ -109,6 +109,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 			while ((cluster = list_next(clus_itr))) {
 				total += res->percent_used;
 
+				/* CLANG false positive */
 				fprintf(stderr,
 					"   Cluster - %s\t %u%%\n",
 					clus_res->cluster, res->percent_used);
