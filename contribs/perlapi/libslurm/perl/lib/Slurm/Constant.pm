@@ -174,9 +174,17 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * NODE_STATE_BASE       0x00ff
+=item * NODE_STATE_BASE       0x000f
 
-=item * NODE_STATE_FLAGS      0xff00
+=item * NODE_STATE_FLAGS      0xfff0
+
+=item * NODE_STATE_NET        0x0010
+
+=item * NODE_STATE_RES        0x0020
+
+=item * NODE_STATE_UNDRAIN    0x0040
+
+=item * NODE_STATE_CLOUD      0x0080
 
 =item * NODE_RESUME           0x0100
 

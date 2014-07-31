@@ -181,6 +181,7 @@ documents those changes that are of interest to users and admins.
     Allow up to 180 seconds for the i/o thread to complete.
  -- When using sacct -c to read the job completion data compute the correct
     job elapsed time.
+ -- Perl package: Define some missing node states.
 
 * Changes in Slurm 14.03.6
 ==========================
