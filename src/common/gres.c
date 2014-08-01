@@ -154,8 +154,6 @@ static int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   int node_cnt, int node_offset, uint32_t cpu_cnt,
 			   char *gres_name, uint32_t job_id, char *node_name,
 			   bitstr_t *core_bitmap);
-static gres_job_state_t *_job_config_validate(char *config,
-				slurm_gres_context_t *context_ptr);
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *cpu_bitmap,
 				 int cpu_start_bit, int cpu_end_bit,
@@ -200,8 +198,6 @@ static void	_set_gres_cnt(char *orig_config, char **new_config,
 static int	_step_alloc(void *step_gres_data, void *job_gres_data,
 			    int node_offset, int cpu_cnt, char *gres_name,
 			    uint32_t job_id, uint32_t step_id);
-static gres_step_state_t *_step_config_validate(char *config,
-				slurm_gres_context_t *context_ptr);
 static int	_step_dealloc(void *step_gres_data, void *job_gres_data,
 			      char *gres_name, uint32_t job_id,
 			      uint32_t step_id);
@@ -2461,8 +2457,8 @@ static void _gres_job_list_delete(void *list_element)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static gres_job_state_t *_job_config_validate(char *config,
-					      slurm_gres_context_t *context_ptr)
+static int _job_state_validate(char *config, void **gres_data,
+			       slurm_gres_context_t *context_ptr)
 {
 	gres_job_state_t *gres_ptr;
 	char *type = NULL, *num = NULL, *last_num = NULL;
@@ -2475,7 +2471,7 @@ static gres_job_state_t *_job_config_validate(char *config,
 		type = strchr(config, ':');
 		num = strrchr(config, ':');
 		if (!num)
-			return NULL;
+			return SLURM_ERROR;
 		cnt = strtol(num + 1, &last_num, 10);
 		if (last_num[0] == '\0')
 			;
@@ -2486,29 +2482,27 @@ static gres_job_state_t *_job_config_validate(char *config,
 		else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
 			cnt *= (1024 * 1024 * 1024);
 		else
-			return NULL;
-		if (cnt <= 0)
-			return NULL;
-	} else
-		return NULL;
-
-	gres_ptr = xmalloc(sizeof(gres_job_state_t));
-	gres_ptr->gres_cnt_alloc = (uint32_t) cnt;
-	if (type && num && (type != num)) {
-		type++;
-		num[0] = '\0';
-		gres_ptr->type_model = xstrdup(type);
+			return SLURM_ERROR;
+		if (cnt < 0)
+			return SLURM_ERROR;
+	} else {
+		return SLURM_ERROR;
 	}
-	return gres_ptr;
-}
 
-static int _job_state_validate(char *config, void **gres_data,
-			       slurm_gres_context_t *context_ptr)
-{
-	*gres_data = _job_config_validate(config, context_ptr);
-	if (*gres_data)
-		return SLURM_SUCCESS;
-	return SLURM_ERROR;
+	if (cnt == 0) {
+		*gres_data = NULL;
+	} else {
+		gres_ptr = xmalloc(sizeof(gres_job_state_t));
+		gres_ptr->gres_cnt_alloc = (uint32_t) cnt;
+		if (type && num && (type != num)) {
+			type++;
+			num[0] = '\0';
+			gres_ptr->type_model = xstrdup(type);
+		}
+		*gres_data = gres_ptr;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -2538,6 +2532,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc2 = SLURM_ERROR;
 		for (i = 0; i < gres_context_cnt; i++) {
+			job_gres_data = NULL;
 			rc2 = _job_state_validate(tok, &job_gres_data,
 						  &gres_context[i]);
 			if (rc2 != SLURM_SUCCESS)
@@ -4417,8 +4412,8 @@ static void _gres_step_list_delete(void *list_element)
 	xfree(gres_ptr);
 }
 
-static gres_step_state_t *_step_config_validate(char *config,
-					      slurm_gres_context_t *context_ptr)
+static int _step_state_validate(char *config, void **gres_data,
+				slurm_gres_context_t *context_ptr)
 {
 	gres_step_state_t *gres_ptr;
 	char *type = NULL, *num = NULL, *last_num = NULL;
@@ -4431,7 +4426,7 @@ static gres_step_state_t *_step_config_validate(char *config,
 		type = strchr(config, ':');
 		num = strrchr(config, ':');
 		if (!num)
-			return NULL;
+			return SLURM_ERROR;
 		cnt = strtol(num + 1, &last_num, 10);
 		if (last_num[0] == '\0')
 			;
@@ -4442,29 +4437,26 @@ static gres_step_state_t *_step_config_validate(char *config,
 		else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
 			cnt *= (1024 * 1024 * 1024);
 		else
-			return NULL;
-		if (cnt <= 0)
-			return NULL;
-	} else
-		return NULL;
-
-	gres_ptr = xmalloc(sizeof(gres_step_state_t));
-	gres_ptr->gres_cnt_alloc = (uint32_t) cnt;
-	if (type && num && (type != num)) {
-		type++;
-		num[0] = '\0';
-		gres_ptr->type_model = xstrdup(type);
+			return SLURM_ERROR;
+		if (cnt < 0)
+			return SLURM_ERROR;
+	} else {
+		return SLURM_ERROR;
 	}
-	return gres_ptr;
-}
 
-static int _step_state_validate(char *config, void **gres_data,
-				slurm_gres_context_t *context_ptr)
-{
-	*gres_data = _step_config_validate(config, context_ptr);
-	if (*gres_data)
-		return SLURM_SUCCESS;
-	return SLURM_ERROR;
+	if (cnt == 0) {
+		*gres_data = NULL;
+	} else {
+		gres_ptr = xmalloc(sizeof(gres_step_state_t));
+		gres_ptr->gres_cnt_alloc = (uint32_t) cnt;
+		if (type && num && (type != num)) {
+			type++;
+			num[0] = '\0';
+			gres_ptr->type_model = xstrdup(type);
+		}
+		*gres_data = gres_ptr;
+	}
+	return SLURM_SUCCESS;
 }
 
 static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
@@ -4567,7 +4559,8 @@ extern int gres_plugin_step_state_validate(char *req_config,
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc2 = SLURM_ERROR;
-		for (i=0; i<gres_context_cnt; i++) {
+		for (i = 0; i < gres_context_cnt; i++) {
+			step_gres_data = NULL;
 			rc2 = _step_state_validate(tok, &step_gres_data,
 						   &gres_context[i]);
 			if ((rc2 != SLURM_SUCCESS) || (step_gres_data == NULL))
