@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
  -- When using sacct -c to read the job completion data compute the correct
     job elapsed time.
  -- Perl package: Define some missing node states.
+ -- When using AccountingStorageType=accounting_storage/mysql zero out the
+    database index for the array elements avoiding duplicate database values.
 
 * Changes in Slurm 14.03.6
 ==========================

@@ -3259,6 +3259,11 @@ static void _create_job_array(struct job_record *job_ptr,
 		if (!bit_test(job_specs->array_bitmap, i))
 			continue;
 		job_ptr_new = _job_rec_copy(job_ptr);
+		/* Make sure the db_index is zero
+		 * for array elements in case the
+		 * first element had the index assigned.
+		 */
+		job_ptr_new->db_index = 0;
 		if (!job_ptr_new)
 			break;
 		job_ptr_new->array_job_id  = job_ptr->job_id;
