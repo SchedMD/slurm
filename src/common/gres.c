@@ -164,6 +164,8 @@ static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
 static void	_job_state_delete(void *gres_data);
 static void *	_job_state_dup(void *gres_data);
 static void *	_job_state_dup2(void *gres_data, int node_index);
+static void	_job_state_log(void *gres_data, uint32_t job_id,
+			       char *gres_name);
 static int	_job_state_validate(char *config, void **gres_data,
 				    slurm_gres_context_t *gres_name);
 static uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
@@ -203,6 +205,8 @@ static int	_step_dealloc(void *step_gres_data, void *job_gres_data,
 			      uint32_t step_id);
 static void *	_step_state_dup(void *gres_data);
 static void *	_step_state_dup2(void *gres_data, int node_index);
+static void	_step_state_log(void *gres_data, uint32_t job_id,
+				uint32_t step_id, char *gres_name);
 static int	_step_state_validate(char *config, void **gres_data,
 				     slurm_gres_context_t *context_ptr);
 static uint32_t	_step_test(void *step_gres_data, void *job_gres_data,
@@ -4546,6 +4550,8 @@ extern int gres_plugin_step_state_validate(char *req_config,
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
 	void *step_gres_data, *job_gres_data;
 	ListIterator job_gres_iter;
+	gres_step_state_t *step_gres_state;
+	gres_job_state_t *job_gres_state;
 
 	*step_gres_list = NULL;
 	if ((req_config == NULL) || (req_config[0] == '\0'))
@@ -4573,12 +4579,22 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			}
 			/* Now make sure the step's request isn't too big for
 			 * the job's gres allocation */
+			step_gres_state = (gres_step_state_t *) step_gres_data;
 			job_gres_iter = list_iterator_create(job_gres_list);
 			while ((job_gres_ptr = (gres_state_t *)
 					list_next(job_gres_iter))) {
-				if (job_gres_ptr->plugin_id ==
+				if (job_gres_ptr->plugin_id !=
 				    gres_context[i].plugin_id)
-					break;
+					continue;
+				if (!step_gres_state->type_model)
+					break;	/* match GRES name only */
+				job_gres_state = (gres_job_state_t *)
+						 job_gres_ptr->gres_data;
+				if (!job_gres_state->type_model ||
+				    strcmp(job_gres_state->type_model,
+					   step_gres_state->type_model))
+					continue;
+				break;	/* match GRES name and model */
 			}
 			list_iterator_destroy(job_gres_iter);
 			if (job_gres_ptr == NULL) {
