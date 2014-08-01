@@ -2943,7 +2943,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
 		if (default_storage_loc)
 			conf->job_comp_loc = xstrdup(default_storage_loc);
-		else if (!strcmp(conf->job_comp_type, "job_comp/mysql"))
+		else if (!strcmp(conf->job_comp_type, "jobcomp/mysql"))
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_DB);
 		else
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
