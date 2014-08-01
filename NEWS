@@ -38,6 +38,7 @@ documents those changes that are of interest to users and admins.
  -- Perl package: Define some missing node states.
  -- When using AccountingStorageType=accounting_storage/mysql zero out the
     database index for the array elements avoiding duplicate database values.
+ -- Reword the explanation of cputime and cputimeraw in the sacct man page.
 
 * Changes in Slurm 14.03.6
 ==========================
