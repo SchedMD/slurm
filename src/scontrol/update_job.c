@@ -221,9 +221,9 @@ extern int
 scontrol_hold(char *op, char *job_str)
 {
 	static uint32_t last_job_id = NO_VAL;
-	static job_info_msg_t *resp = NULL;
+	static job_info_msg_t *jobs = NULL;
+	job_array_resp_msg_t *resp = NULL;
 	int i, rc = SLURM_SUCCESS, rc2;
-	char *next_str;
 	job_desc_msg_t job_msg;
 	uint32_t job_id = 0;
 	char *job_name = NULL;
@@ -232,12 +232,11 @@ scontrol_hold(char *op, char *job_str)
 
 	if (job_str && !strncasecmp(job_str, "JobID=", 6))
 		job_str += 6;
-	if (job_str && !strncasecmp(job_str, "Name=", 5))
-		job_str += 5;
 	if (job_str && !strncasecmp(job_str, "Job=", 4))
 		job_str += 4;
 
-	slurm_init_job_desc_msg (&job_msg);	job_msg.user_id = getuid();
+	slurm_init_job_desc_msg (&job_msg);
+	job_msg.user_id = getuid();
 	if ((strncasecmp(op, "holdu", 5) == 0) ||
 	    (strncasecmp(op, "uhold", 5) == 0)) {
 		job_msg.priority = 0;
@@ -249,19 +248,35 @@ scontrol_hold(char *op, char *job_str)
 		job_msg.priority = INFINITE;
 
 	if (job_str && (job_str[0] >= '0') && (job_str[0] <= '9')) {
-		job_id = (uint32_t) strtol(job_str, &next_str, 10);
-		if (next_str[0] == '_') {
-			job_msg.job_id_str = job_str;
-			if (slurm_update_job(&job_msg))
-				rc = slurm_get_errno();
-			return rc;
+		job_msg.job_id_str = job_str;
+		rc2 = slurm_update_job2(&job_msg, &resp);
+		if (rc2 != SLURM_SUCCESS) {
+			rc2 = slurm_get_errno();
+			rc = MAX(rc, rc2);
+			exit_code = 1;
+			if (quiet_flag != 1) {
+				fprintf(stderr, "%s for job %s\n",
+					slurm_strerror(rc2),
+					job_msg.job_id_str);
+			}
+		} else if (resp) {
+			for (i = 0; i < resp->job_array_count; i++) {
+				if ((resp->error_code[i]==SLURM_SUCCESS) &&
+				    (resp->job_array_count == 1))
+					continue;
+				exit_code = 1;
+				if (quiet_flag == 1)
+					continue;
+				fprintf(stderr, "%s: %s\n",
+					resp->job_array_id[i],
+					slurm_strerror(resp->error_code[i]));
+			}
+			slurm_free_job_array_resp(resp);
 		}
-		if ((job_id == 0) || (next_str[0] != '\0')) {
-			fprintf(stderr, "Invalid job id specified (%s)\n",
-				job_str);
-			return 1;
-		}
+		return rc;
 	} else if (job_str) {
+		if (!strncasecmp(job_str, "Name=", 5))
+			job_str += 5;
 		job_id = 0;
 		job_name = job_str;
 		last_job_id = NO_VAL;
@@ -271,7 +286,7 @@ scontrol_hold(char *op, char *job_str)
 	}
 
 	if (last_job_id != job_id) {
-		if (scontrol_load_job(&resp, job_id)) {
+		if (scontrol_load_job(&jobs, job_id)) {
 			if (quiet_flag == -1)
 				slurm_perror ("slurm_load_job error");
 			return 1;
@@ -280,7 +295,7 @@ scontrol_hold(char *op, char *job_str)
 	}
 
 	/* set current user, needed e.g., for AllowGroups checks */
-	for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
+	for (i = 0, job_ptr = jobs->job_array; i < jobs->record_count;
 	     i++, job_ptr++) {
 		if (job_name &&
 		    ((job_ptr->name == NULL) ||
@@ -308,9 +323,29 @@ scontrol_hold(char *op, char *job_str)
 			xstrfmtcat(job_id_str, "%u", job_ptr->job_id);
 		}
 		job_msg.job_id_str = job_id_str;
-		if (slurm_update_job(&job_msg)) {
+		rc2 = slurm_update_job2(&job_msg, &resp);
+		if (rc2 != SLURM_SUCCESS) {
 			rc2 = slurm_get_errno();
 			rc = MAX(rc, rc2);
+			exit_code = 1;
+			if (quiet_flag != 1) {
+				fprintf(stderr, "%s for job %s\n",
+					slurm_strerror(rc2),
+					job_msg.job_id_str);
+			}
+		} else if (resp) {
+			for (i = 0; i < resp->job_array_count; i++) {
+				if ((resp->error_code[i] == SLURM_SUCCESS) &&
+				    (resp->job_array_count == 1))
+					continue;
+				exit_code = 1;
+				if (quiet_flag == 1)
+					continue;
+				fprintf(stderr, "%s: %s\n",
+					resp->job_array_id[i],
+					slurm_strerror(resp->error_code[i]));
+			}
+			slurm_free_job_array_resp(resp);
 		}
 		xfree(job_id_str);
 	}
