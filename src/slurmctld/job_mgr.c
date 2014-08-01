@@ -3387,6 +3387,11 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 			checkpoint_copy_jobinfo(job_ptr->check_job);
 	}
 	job_ptr_new->comment = xstrdup(job_ptr->comment);
+
+	/* Make sure the db_index is zero for array elements in case the
+	 * first element had an index already assigned. */
+	job_ptr_new->db_index = 0;
+
 	job_ptr_new->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
 	job_ptr_new->gres = xstrdup(job_ptr->gres);
