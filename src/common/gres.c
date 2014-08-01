@@ -3441,6 +3441,8 @@ static bool _cores_on_gres(bitstr_t *core_bitmap,
 		return true;
 
 	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+		if (!node_gres_ptr->topo_gres_bitmap[i])
+			continue;
 		if (bit_size(node_gres_ptr->topo_gres_bitmap[i]) < gres_inx)
 			continue;
 		if (!bit_test(node_gres_ptr->topo_gres_bitmap[i], gres_inx))
@@ -3450,6 +3452,8 @@ static bool _cores_on_gres(bitstr_t *core_bitmap,
 		     strcmp(job_gres_ptr->type_model,
 			    node_gres_ptr->topo_model[i])))
 			continue;
+		if (!node_gres_ptr->topo_cpus_bitmap[i])
+			return true;
 		if (bit_size(node_gres_ptr->topo_cpus_bitmap[i]) !=
 		    bit_size(core_bitmap))
 			break;
