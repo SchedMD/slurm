@@ -10059,7 +10059,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	struct job_record *job_ptr, *new_job_ptr;
 	slurm_ctl_conf_t *conf;
 	long int long_id;
-	uint32_t job_id;
+	uint32_t job_id = 0;
 	bitstr_t *array_bitmap, *tmp_bitmap;
 	bool valid = true;
 	int32_t i, i_first, i_last;
@@ -11836,7 +11836,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	int rc = SLURM_SUCCESS, rc2;
 	struct job_record *job_ptr = NULL;
 	long int long_id;
-	uint32_t job_id;
+	uint32_t job_id = 0;
 	char *end_ptr = NULL, *tok, *tmp;
 	bitstr_t *array_bitmap;
 	bool valid = true;
@@ -12155,7 +12155,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 	int rc = SLURM_SUCCESS, rc2;
 	struct job_record *job_ptr = NULL;
 	long int long_id;
-	uint32_t job_id;
+	uint32_t job_id = 0;
 	char *end_ptr = NULL, *tok, *tmp;
 	bitstr_t *array_bitmap;
 	bool valid = true;
