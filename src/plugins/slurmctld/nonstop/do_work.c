@@ -277,6 +277,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _update_job(job_desc_msg_t * job_specs, uid_t uid)
+{
+	slurm_msg_t msg;
+
+	msg.data= job_specs;
+	msg.conn_fd = -1;
+	return update_job(&msg, uid);
+}
+
 /*
  * Save all nonstop plugin state information
  */
@@ -1057,7 +1066,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 		job_alloc_req.job_id	= job_id;
 		job_alloc_req.req_nodes	= hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
-		rc = update_job(&job_alloc_req, cmd_uid);
+		rc = _update_job(&job_alloc_req, cmd_uid);
 		if (rc) {
 			info("slurmctld/nonstop: can remove failing node %s "
 			     "from job %u: %s",
@@ -1382,7 +1391,7 @@ merge:	new_node_name = strdup(new_job_ptr->nodes);
 	slurm_init_job_desc_msg(&job_alloc_req);
 	job_alloc_req.job_id	= new_job_ptr->job_id;
 	job_alloc_req.min_nodes	= 0;
-	rc = update_job(&job_alloc_req, cmd_uid);
+	rc = _update_job(&job_alloc_req, cmd_uid);
 
 	/* Without unlock, the job_fini_callback() function will deadlock.
 	 * Not a great solution, but perhaps the least bad solution. */
@@ -1405,7 +1414,7 @@ merge:	new_node_name = strdup(new_job_ptr->nodes);
 	slurm_init_job_desc_msg(&job_alloc_req);
 	job_alloc_req.job_id	= job_id;
 	job_alloc_req.min_nodes	= INFINITE;
-	rc = update_job(&job_alloc_req, cmd_uid);
+	rc = _update_job(&job_alloc_req, cmd_uid);
 	if (rc) {
 		info("slurmctld/nonstop: can not grow job %u: %s",
 		     job_id, slurm_strerror(rc));
@@ -1441,7 +1450,7 @@ merge:	new_node_name = strdup(new_job_ptr->nodes);
 		job_alloc_req.job_id	= job_id;
 		job_alloc_req.req_nodes	= hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
-		rc = update_job(&job_alloc_req, cmd_uid);
+		rc = _update_job(&job_alloc_req, cmd_uid);
 		if (rc) {
 			info("slurmctld/nonstop: can remove failing node %s "
 			     "from job %u: %s",
@@ -1674,7 +1683,7 @@ extern char *time_incr(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 		job_specs.job_id = job_id;
 		job_specs.time_limit  = job_fail_ptr->job_ptr->time_limit;
 		job_specs.time_limit += minutes;
-		rc = update_job(&job_specs, cmd_uid);
+		rc = _update_job(&job_specs, cmd_uid);
 	}
 	if (rc) {
 		xstrfmtcat(resp, "%s EJOBUPDATE %s", SLURM_VERSION_STRING,

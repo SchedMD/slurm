@@ -72,9 +72,50 @@ slurm_update_front_end (update_front_end_msg_t * front_end_msg)
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_update_job ( job_desc_msg_t * job_msg)
+slurm_update_job (job_desc_msg_t * job_msg)
 {
+	if (job_msg->job_id_str) {
+		error("Use slurm_update_job2() rather than slurm_update_job() "
+		      "with job_msg->job_id_str to get multiple error codes "
+		      "for various job array task and avoid memory leaks");
+	}
 	return _slurm_update ((void *) job_msg, REQUEST_UPDATE_JOB);
+}
+
+/*
+ * slurm_update_job2 - issue RPC to a job's configuration per request,
+ *	only usable by user root or (for some parameters) the job's owner
+ * IN job_msg - description of job updates
+ * OUT resp - per task response to the request,
+ *	      free using slurm_free_job_array_resp()
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int
+slurm_update_job2 (job_desc_msg_t * job_msg, job_array_resp_msg_t **resp)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_msg_t req_msg, resp_msg;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	req_msg.msg_type	= REQUEST_UPDATE_JOB;
+	req_msg.data		= job_msg;
+
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_ARRAY_ERRORS:
+		*resp = (job_array_resp_msg_t *) resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		if (rc)
+			slurm_seterrno(rc);
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+	}
+
+	return rc;
 }
 
 /*

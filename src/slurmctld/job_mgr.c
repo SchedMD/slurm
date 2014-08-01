@@ -208,6 +208,8 @@ static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static void _resp_array_add(resp_array_struct_t **resp,
 			    struct job_record *job_ptr, uint32_t rc);
+static void _resp_array_add_id(resp_array_struct_t **resp, uint32_t job_id,
+			       uint32_t task_id, uint32_t rc);
 static void _resp_array_free(resp_array_struct_t *resp);
 static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 					       uint32_t job_id);
@@ -338,6 +340,20 @@ static void _resp_array_add(resp_array_struct_t **resp,
 	}
 	loc_resp->resp_array_cnt++;
 	return;
+}
+/* Add record to resp_array_struct_t, free with _resp_array_free().
+ * This is a variant of _resp_array_add for the case where a job/task ID
+ * is not found, so we use a dummy job record based upon the input IDs. */
+static void _resp_array_add_id(resp_array_struct_t **resp, uint32_t job_id,
+			       uint32_t task_id, uint32_t rc)
+{
+	struct job_record job_ptr;
+
+	job_ptr.job_id = job_id;
+	job_ptr.array_job_id = job_id;
+	job_ptr.array_task_id = task_id;
+	job_ptr.array_recs = NULL;
+	_resp_array_add(resp, &job_ptr, rc);
 }
 
 /* Free resp_array_struct_t built by _resp_array_add() */
@@ -4013,13 +4029,13 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
+			job_ptr_done = job_ptr;
 			rc = _job_signal(job_ptr, signal, flags, uid, preempt);
 			jobs_signalled++;
 			if (rc == ESLURM_ALREADY_DONE) {
 				jobs_done++;
 				rc = SLURM_SUCCESS;
 			}
-			job_ptr_done = job_ptr;
 		}
 
 		/* Signal all tasks of this job array */
@@ -9998,40 +10014,43 @@ fini:
 
 /*
  * update_job - update a job's parameters per the supplied specifications
- * IN job_specs - a job's specification
+ * IN msg - RPC to update job, including change specification
  * IN uid - uid of user issuing RPC
  * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job(job_desc_msg_t * job_specs, uid_t uid)
+extern int update_job(slurm_msg_t *msg, uid_t uid)
 {
+	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	struct job_record *job_ptr;
-
-	/* Make sure anything that may be put in the database will be
-	 * lower case */
-	xstrtolower(job_specs->account);
-	xstrtolower(job_specs->wckey);
+	int rc;
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
 		error("update_job: job_id %u does not exist.",
 		      job_specs->job_id);
-		return ESLURM_INVALID_JOB_ID;
+		rc = ESLURM_INVALID_JOB_ID;
+	} else {
+		rc = _update_job(job_ptr, job_specs, uid);
 	}
-	return _update_job(job_ptr, job_specs, uid);
+
+	slurm_send_rc_msg(msg, rc);
+	return rc;
 }
 
 /*
- * update_job_str - update a job's parameters per the supplied specifications
+ * IN msg - RPC to update job, including change specification
  * IN job_specs - a job's specification
  * IN uid - uid of user issuing RPC
  * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job_str(job_desc_msg_t *job_specs, uid_t uid)
+extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 {
+	slurm_msg_t resp_msg;
+	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	struct job_record *job_ptr, *new_job_ptr;
 	slurm_ctl_conf_t *conf;
 	long int long_id;
@@ -10039,16 +10058,14 @@ extern int update_job_str(job_desc_msg_t *job_specs, uid_t uid)
 	bitstr_t *array_bitmap, *tmp_bitmap;
 	bool valid = true;
 	int32_t i, i_first, i_last;
-	int len, rc, rc2;
+	int len, rc = SLURM_SUCCESS, rc2;
 	char *end_ptr, *tok, *tmp;
-	char buf[32], *job_id_str;
+	char *job_id_str;
+	resp_array_struct_t *resp_array = NULL;
+	job_array_resp_msg_t *resp_array_msg;
+	return_code_msg_t rc_msg;
 
-	if (job_specs->job_id_str) {
-		job_id_str = job_specs->job_id_str;
-	} else {
-		snprintf(buf, sizeof(buf),"%u",job_specs->job_id);
-		job_id_str = buf;
-	}
+	job_id_str = job_specs->job_id_str;
 
 	if (max_array_size == NO_VAL) {
 		conf = slurm_conf_lock();
@@ -10056,49 +10073,50 @@ extern int update_job_str(job_desc_msg_t *job_specs, uid_t uid)
 		slurm_conf_unlock();
 	}
 
-	/* Make sure anything that may be put in the database will be
-	 * lower case */
-	xstrtolower(job_specs->account);
-	xstrtolower(job_specs->wckey);
-
 	long_id = strtol(job_id_str, &end_ptr, 10);
 	if ((long_id <= 0) || (long_id == LONG_MAX) ||
 	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
 		info("update_job_str: invalid job id %s", job_id_str);
-		return ESLURM_INVALID_JOB_ID;
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
 	}
 	job_id = (uint32_t) long_id;
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
-		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
-		    (job_ptr->array_recs == NULL)) {
-			/* This is a regular job, not a job array */
-			return _update_job(job_ptr, job_specs, uid);
+		if (job_ptr &&
+		    (((job_ptr->array_task_id == NO_VAL) &&
+		      (job_ptr->array_recs == NULL)) ||
+		     ((job_ptr->array_task_id != NO_VAL) &&
+		      (job_ptr->array_job_id  != job_id)))) {
+			/* This is a regular job or single task of job array */
+			rc = _update_job(job_ptr, job_specs, uid);
+			goto reply;
 		}
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
-			rc = _update_job(job_ptr, job_specs, uid);
 			job_ptr_done = job_ptr;
+			rc2 = _update_job(job_ptr, job_specs, uid);
+			_resp_array_add(&resp_array, job_ptr, rc2);
 		}
 
 		/* Update all tasks of this job array */
 		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
 		if (!job_ptr && !job_ptr_done) {
 			info("update_job_str: invalid job id %u", job_id);
-			return ESLURM_INVALID_JOB_ID;
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
 		}
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _update_job(job_ptr, job_specs, uid);
-				rc = MAX(rc, rc2);
+				_resp_array_add(&resp_array, job_ptr, rc2);
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
-		return rc;
-
+		goto reply;
 	}
 
 	array_bitmap = bit_alloc(max_array_size);
@@ -10117,7 +10135,8 @@ extern int update_job_str(job_desc_msg_t *job_specs, uid_t uid)
 	}
 	if (!valid) {
 		info("update_job_str: invalid job id %s", job_id_str);
-		return ESLURM_INVALID_JOB_ID;
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
 	}
 
 	job_ptr = find_job_record(job_id);
@@ -10139,7 +10158,8 @@ extern int update_job_str(job_desc_msg_t *job_specs, uid_t uid)
 		} else if (bit_super_set(job_ptr->array_recs->task_id_bitmap,
 					 array_bitmap)) {
 			/* Update the record with all pending tasks */
-			rc = _update_job(job_ptr, job_specs, uid);
+			rc2 = _update_job(job_ptr, job_specs, uid);
+			_resp_array_add(&resp_array, job_ptr, rc2);
 			bit_not(job_ptr->array_recs->task_id_bitmap);
 			bit_and(array_bitmap,
 				job_ptr->array_recs->task_id_bitmap);
@@ -10180,13 +10200,31 @@ extern int update_job_str(job_desc_msg_t *job_specs, uid_t uid)
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
 			info("update_job_str: invalid job id %u_%d", job_id, i);
-			rc = ESLURM_INVALID_JOB_ID;
+			_resp_array_add_id(&resp_array, job_id, i,
+					   ESLURM_INVALID_JOB_ID);
 			continue;
 		}
 
 		rc2 = _update_job(job_ptr, job_specs, uid);
-		rc = MAX(rc, rc2);
+		_resp_array_add(&resp_array, job_ptr, rc2);
 	}
+
+reply:
+        if (msg->conn_fd >= 0) {
+		slurm_msg_t_init(&resp_msg);
+		resp_msg.protocol_version = msg->protocol_version;
+		if (resp_array) {
+		        resp_array_msg = _resp_array_xlate(resp_array, job_id);
+		        resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
+		        resp_msg.data      = resp_array_msg;
+		} else {
+		        resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		        rc_msg.return_code = rc;
+		        resp_msg.data      = &rc_msg;
+		}
+		slurm_send_node_msg(msg->conn_fd, &resp_msg);
+        }
+        _resp_array_free(resp_array);
 
 	return rc;
 }
@@ -11845,6 +11883,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
+			job_ptr_done = job_ptr;
 			rc2 = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
 			_resp_array_add(&resp_array, job_ptr, rc2);
 		}
@@ -11898,7 +11937,8 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
 			info("job_suspend2: invalid job id %u_%d", job_id, i);
-			rc = ESLURM_INVALID_JOB_ID;
+			_resp_array_add_id(&resp_array, job_id, i,
+					   ESLURM_INVALID_JOB_ID);
 			continue;
 		}
 		rc2 = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
@@ -12151,9 +12191,9 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
+			job_ptr_done = job_ptr;
 			rc2 = _job_requeue(uid, job_ptr, preempt, state);
 			_resp_array_add(&resp_array, job_ptr, rc2);
-			job_ptr_done = job_ptr;
 		}
 
 		/* Requeue all tasks of this job array */
@@ -12204,7 +12244,8 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
 			info("job_requeue2: invalid job id %u_%d", job_id, i);
-			rc = ESLURM_INVALID_JOB_ID;
+			_resp_array_add_id(&resp_array, job_id, i,
+					   ESLURM_INVALID_JOB_ID);
 			continue;
 		}
 

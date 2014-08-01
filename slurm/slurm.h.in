@@ -3208,6 +3208,17 @@ extern char *slurm_sprint_job_info PARAMS((slurm_job_info_t * job_ptr,
 extern int slurm_update_job PARAMS((job_desc_msg_t * job_msg));
 
 /*
+ * slurm_update_job2 - issue RPC to a job's configuration per request,
+ *	only usable by user root or (for some parameters) the job's owner
+ * IN job_msg - description of job updates
+ * OUT resp - per task response to the request,
+ *	      free using slurm_free_job_array_resp()
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_update_job2 PARAMS((job_desc_msg_t * job_msg,
+				     job_array_resp_msg_t **resp));
+
+/*
  * slurm_xlate_job_id - Translate a Slurm job ID string into a slurm job ID
  *	number. If this job ID contains an array index, map this to the
  *	equivalent Slurm job ID number (e.g. "123_2" to 124)

@@ -3191,8 +3191,14 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
+	/* Insure everything that may be written to database is lower case */
+	xstrtolower(job_desc_msg->account);
+	xstrtolower(job_desc_msg->wckey);
 	lock_slurmctld(job_write_lock);
-	error_code = update_job_str(job_desc_msg, uid);
+	if (job_desc_msg->job_id_str)
+		error_code = update_job_str(msg, uid);
+	else
+		error_code = update_job(msg, uid);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_update_job");
 
@@ -3200,11 +3206,9 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	if (error_code) {
 		info("_slurm_rpc_update_job JobId=%u uid=%d: %s",
 		     job_desc_msg->job_id, uid, slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info("_slurm_rpc_update_job complete JobId=%u uid=%d %s",
 		     job_desc_msg->job_id, uid, TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		/* Below functions provide their own locking */
 		schedule_job_save();
 		schedule_node_save();
