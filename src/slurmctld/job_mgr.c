@@ -12049,11 +12049,13 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	build_cg_bitmap(job_ptr);
 	job_completion_logger(job_ptr, true);
 
-	/* Deallocate resources only if the job
-	 * has some.
-	 */
-	if (is_running)
+	/* Deallocate resources only if the job has some.
+	 * JOB_COMPLETING is needed to properly clean up steps. */
+	if (is_running) {
+		job_ptr->job_state |= JOB_COMPLETING;
 		deallocate_nodes(job_ptr, false, suspended, preempt);
+		job_ptr->job_state &= (~JOB_COMPLETING);
+	}
 
 	xfree(job_ptr->details->req_node_layout);
 
