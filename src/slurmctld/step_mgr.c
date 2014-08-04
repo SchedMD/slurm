@@ -210,24 +210,21 @@ static void _build_pending_step(struct job_record *job_ptr,
 }
 
 static void _internal_step_complete(struct job_record *job_ptr,
-				    struct step_record *step_ptr,
-				    bool terminated)
+				    struct step_record *step_ptr)
 {
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 	job_ptr->derived_ec = MAX(job_ptr->derived_ec,
 				  step_ptr->exit_code);
-	if (!terminated) {
-		/* These operations are not needed for
-		 * terminated jobs */
-		step_ptr->state = JOB_COMPLETING;
 
-		select_g_step_finish(step_ptr);
+	/* This operations are needed for Cray systems and also provide a
+	 * cleaner state for requeued jobs. */
+	step_ptr->state = JOB_COMPLETING;
+	select_g_step_finish(step_ptr);
 #if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-		/* On native Cray, post_job_step is called after NHC completes.
-		 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
-		post_job_step(step_ptr);
+	/* On native Cray, post_job_step is called after NHC completes.
+	 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
+	post_job_step(step_ptr);
 #endif
-	}
 }
 
 /*
@@ -253,9 +250,9 @@ extern void delete_step_records (struct job_record *job_ptr)
 			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 						    SELECT_JOBDATA_CLEANING,
 						    &cleaning);
-			if (cleaning)	/* Step hasn't finished cleanup yet. */
+			if (cleaning)	/* Step already in cleanup. */
 				continue;
-			_internal_step_complete(job_ptr, step_ptr, true);
+			_internal_step_complete(job_ptr, step_ptr);
 		}
 
 		list_remove (step_iterator);
@@ -649,6 +646,9 @@ static void _wake_pending_steps(struct job_record *job_ptr)
 	int start_count = 0;
 	time_t max_age = time(NULL) - 60;   /* Wake step after 60 seconds */
 
+	if (!IS_JOB_RUNNING(job_ptr))
+		return;
+
 	if (!job_ptr->step_list)
 		return;
 
@@ -720,7 +720,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		return SLURM_SUCCESS;
 	}
 
-	_internal_step_complete(job_ptr, step_ptr, false);
+	_internal_step_complete(job_ptr, step_ptr);
 
 	last_job_update = time(NULL);
 

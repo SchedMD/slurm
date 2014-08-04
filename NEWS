@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     different exit codes on the different tasks of the job array. Applies to
     job suspend and resume operations.
  -- Fix race condition in CPU frequency set with job preemption.
+ -- Always call select plugin on step termination, even if the job is also
+    complete.
 
 * Changes in Slurm 14.11.0pre3
 ==============================
