@@ -282,7 +282,28 @@ extern void delete_step_records (struct job_record *job_ptr)
 		_free_step_rec(step_ptr);
 	}
 	list_iterator_destroy(step_iterator);
+}
 
+/*
+ * step_list_purge - Simple purge of a job's step list records.
+ * IN job_ptr - pointer to job table entry to have step records removed
+ */
+extern void step_list_purge(struct job_record *job_ptr)
+{
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	xassert(job_ptr);
+	if (job_ptr->step_list == NULL)
+		return;
+
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		list_remove (step_iterator);
+		_free_step_rec(step_ptr);
+	}
+	list_iterator_destroy(step_iterator);
+	list_destroy(job_ptr->step_list);
 }
 
 /* _free_step_rec - delete a step record's data structures */

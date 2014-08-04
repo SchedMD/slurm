@@ -1928,6 +1928,12 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint16_t task_dist,
 					       uint16_t plane_size);
 
+/*
+ * step_list_purge - Simple purge of a job's step list records.
+ * IN job_ptr - pointer to job table entry to have step records removed
+ */
+extern void step_list_purge(struct job_record *job_ptr);
+
 /* start_power_mgr - Start power management thread as needed. The thread
  *	terminates automatically at slurmctld shutdown time.
  * IN thread_id - pointer to thread ID of the started pthread.
