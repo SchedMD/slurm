@@ -6728,14 +6728,11 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			return ESLURM_INVALID_JOB_ID;
 		}
 		dup_job_ptr = find_job_record((uint32_t) job_desc_msg->job_id);
-		if (dup_job_ptr &&
-		    (!(IS_JOB_COMPLETED(dup_job_ptr)))) {
+		if (dup_job_ptr) {
 			info("attempt re-use active job_id %u",
 			     job_desc_msg->job_id);
 			return ESLURM_DUPLICATE_JOB_ID;
 		}
-		if (dup_job_ptr)	/* Purge the record for re-use */
-			_purge_job_record(job_desc_msg->job_id);
 	}
 
 
