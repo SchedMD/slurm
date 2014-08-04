@@ -2705,8 +2705,8 @@ extern int kill_job_by_front_end_name(char *node_name)
 				   	      job_ptr->job_id);
 				}
 				if (job_ptr->node_cnt == 0) {
-					job_ptr->job_state &= (~JOB_COMPLETING);
 					delete_step_records(job_ptr);
+					job_ptr->job_state &= (~JOB_COMPLETING);
 					slurm_sched_g_schedule();
 				}
 				node_ptr = &node_record_table_ptr[i];
@@ -2935,8 +2935,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 			   	      job_ptr->job_id);
 			}
 			if (job_ptr->node_cnt == 0) {
-				job_ptr->job_state &= (~JOB_COMPLETING);
 				delete_step_records(job_ptr);
+				job_ptr->job_state &= (~JOB_COMPLETING);
 				slurm_sched_g_schedule();
 			}
 			if (node_ptr->comp_job_cnt)
@@ -6893,7 +6893,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
 	xfree(job_ptr->sched_nodes);
-	for (i=0; i<job_ptr->spank_job_env_size; i++)
+	for (i = 0; i < job_ptr->spank_job_env_size; i++)
 		xfree(job_ptr->spank_job_env[i]);
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
@@ -6901,8 +6901,8 @@ static void _list_delete_job(void *job_entry)
 		delete_step_records(job_ptr);
 		list_destroy(job_ptr->step_list);
 	}
-	/* select_jobinfo is used in delete_step_records so free it
-	   afterwards */
+	/* select_jobinfo is used by delete_step_records(), so free it
+	 * afterwards */
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->wckey);
 	job_count--;

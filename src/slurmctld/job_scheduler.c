@@ -3279,9 +3279,9 @@ cleanup_completing(struct job_record *job_ptr)
 		     __func__, job_ptr->job_id,(long) delay);
 	}
 
+	delete_step_records(job_ptr);
 	job_ptr->job_state &= (~JOB_COMPLETING);
 	job_hold_requeue(job_ptr);
 
-	delete_step_records(job_ptr);
 	slurm_sched_g_schedule();
 }

@@ -2084,7 +2084,8 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	xassert(step_ptr);
 
 
-	if (IS_JOB_COMPLETING(step_ptr->job_ptr)) {
+	if (IS_JOB_COMPLETING(step_ptr->job_ptr) ||
+	    IS_JOB_FINISHED(step_ptr->job_ptr)) {
 		debug("step completion %u.%u was received after job "
 		      "allocation is already completing, no cleanup needed",
 		      step_ptr->job_ptr->job_id, step_ptr->step_id);

@@ -1839,7 +1839,8 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	/* The NHC needs to be ran after each step even if the job is about to
 	 * run the NHC for the allocation.  The NHC developers feel this is
 	 * needed.  If it ever changes just use this below code. */
-	else if (IS_JOB_COMPLETING(step_ptr->job_ptr)) {
+	else if (IS_JOB_COMPLETING(step_ptr->job_ptr) ||
+		 IS_JOB_FINISHED(step_ptr->job_ptr)) {
 		debug3("step completion %u.%u was received after job "
 		      "allocation is already completing, no extra NHC needed.",
 		      step_ptr->job_ptr->job_id, step_ptr->step_id);
