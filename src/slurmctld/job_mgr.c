@@ -6894,12 +6894,7 @@ static void _list_delete_job(void *job_entry)
 		xfree(job_ptr->spank_job_env[i]);
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
-	if (job_ptr->step_list) {
-		delete_step_records(job_ptr);
-		list_destroy(job_ptr->step_list);
-	}
-	/* select_jobinfo is used by delete_step_records(), so free it
-	 * afterwards */
+	step_list_purge(job_ptr);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->wckey);
 	job_count--;
