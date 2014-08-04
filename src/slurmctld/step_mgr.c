@@ -252,8 +252,9 @@ static void _internal_step_complete(
 
 /*
  * delete_step_records - Delete step record for specified job_ptr.
- * This function is called when a job terminates abnormally, say when it's
- * allocated nodes go DOWN and active steps can not be properly terminated.
+ * This function is called when a step fails to run to completion. For example,
+ * when the job is killed due to reaching its time limit or allocated nodes
+ * go DOWN.
  * IN job_ptr - pointer to job table entry to have step records removed
  */
 extern void delete_step_records (struct job_record *job_ptr)

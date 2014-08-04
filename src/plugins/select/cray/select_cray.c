@@ -1834,27 +1834,27 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 		post_job_step(step_ptr);
 		return SLURM_SUCCESS;
 	}
-	/* The NHC needs to be ran after each step even if the job is
-	   about to run the NHC for the allocation.  The NHC
-	   developers feel this is needed.  If it ever changes just
-	   remove the below commented code.
-	*/
 
-	/*  else if (IS_JOB_COMPLETING(step_ptr->job_ptr)) { */
-	/* 	debug3("step completion %u.%u was received after job " */
-	/* 	      "allocation is already completing, no extra NHC needed.", */
-	/* 	      step_ptr->job_ptr->job_id, step_ptr->step_id); */
-	/* 	other_step_finish(step_ptr); */
-	/* 	/\* free resources on the job *\/ */
-	/* 	post_job_step(step_ptr); */
-	/* 	return SLURM_SUCCESS; */
-	/* } */
+#if 0
+	/* The NHC needs to be ran after each step even if the job is about to
+	 * run the NHC for the allocation.  The NHC developers feel this is
+	 * needed.  If it ever changes just use this below code. */
+	else if (IS_JOB_COMPLETING(step_ptr->job_ptr)) {
+		debug3("step completion %u.%u was received after job "
+		      "allocation is already completing, no extra NHC needed.",
+		      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		other_step_finish(step_ptr);
+		/* free resources on the job */
+		post_job_step(step_ptr);
+		return SLURM_SUCCESS;
+	}
+#endif
 
-	if (jobinfo->cleaning == 1)
+	if (jobinfo->cleaning == 1) {
 		error("Cleaning flag already set for job step %u.%u, "
 		      "this should never happen.",
 		      step_ptr->step_id, step_ptr->job_ptr->job_id);
-	else {
+	} else {
 		jobinfo->cleaning = 1;
 		_spawn_cleanup_thread(step_ptr, _step_fini);
 	}
