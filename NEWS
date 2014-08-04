@@ -10,7 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Added srun --export option to set/export specific environment variables.
  -- Scontrol modified to print separate error messages for job arrays with
     different exit codes on the different tasks of the job array. Applies to
-    job suspend and resume operations. 
+    job suspend and resume operations.
+ -- Fix race condition in CPU frequency set with job preemption.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

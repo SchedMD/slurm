@@ -1154,9 +1154,8 @@ fail2:
 	 */
 	task_g_post_step(job);
 
-	/*
-	 * Reset cpu frequency if it was changed
-	 */
+	/* Reset CPU frequency as needed on failure. It is normally reset in
+	 * _wait_for_all_tasks() before notifying srun of task completion. */
 	if (job->cpu_freq != NO_VAL)
 		cpu_freq_reset(job);
 
@@ -1900,6 +1899,14 @@ _wait_for_all_tasks(stepd_step_rec_t *job)
 				if (rc != -1)
 					i += rc;
 			}
+		}
+
+		if ((i == tasks_left) && (job->cpu_freq != NO_VAL)) {
+			/* Reset frequency before telling srun this job is
+			 * complete to prevent another job starting and causing
+			 * a race condition in setting CPU frequency. */
+			cpu_freq_reset(job);
+			job->cpu_freq = NO_VAL;
 		}
 
 		while (_send_pending_exit_msgs(job)) {;}
