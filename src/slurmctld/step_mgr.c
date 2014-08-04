@@ -209,30 +209,10 @@ static void _build_pending_step(struct job_record *job_ptr,
 	step_ptr->step_id   = INFINITE;
 }
 
-static void _internal_step_complete(
-	struct job_record *job_ptr,
-	struct step_record *step_ptr, bool terminated)
+static void _internal_step_complete(struct job_record *job_ptr,
+				    struct step_record *step_ptr,
+				    bool terminated)
 {
-	uint16_t cleaning = 0;
-
-	/* No reason to complete a step that hasn't started yet. */
-	if (step_ptr->step_id == INFINITE)
-		return;
-
-	/* If the job is already cleaning we have already been here
-	   before, so just return.
-	*/
-	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CLEANING,
-				    &cleaning);
-	if (cleaning) {	/* Step hasn't finished cleanup yet. */
-		debug("%s: Cleaning flag already set for "
-		      "job step %u.%u, no reason to cleanup again.",
-		      __func__, step_ptr->step_id,
-		      step_ptr->job_ptr->job_id);
-		return;
-	}
-
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 	job_ptr->derived_ec = MAX(job_ptr->derived_ec,
 				  step_ptr->exit_code);
@@ -707,6 +687,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
+	uint16_t cleaning = 0;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -723,6 +704,21 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
+
+	if (step_ptr->step_id == INFINITE)	/* batch step */
+		return SLURM_SUCCESS;
+
+	/* If the job is already cleaning we have already been here
+	 * before, so just return. */
+	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning) {	/* Step hasn't finished cleanup yet. */
+		debug("%s: Cleaning flag already set for "
+		      "job step %u.%u, no reason to cleanup again.",
+		      __func__, step_ptr->step_id, step_ptr->job_ptr->job_id);
+		return SLURM_SUCCESS;
+	}
 
 	_internal_step_complete(job_ptr, step_ptr, false);
 
