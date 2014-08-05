@@ -41,6 +41,7 @@ documents those changes that are of interest to users and admins.
  -- Reword the explanation of cputime and cputimeraw in the sacct man page.
  -- JobCompType allows "jobcomp/mysql" as valid name but the code used
     "job_comp/mysql" setting an incorrect default database.
+ --  Try to load libslurm.so only when necessary.
 
 * Changes in Slurm 14.03.6
 ==========================
