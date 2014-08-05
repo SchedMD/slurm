@@ -742,8 +742,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 			    (_node_is_hidden(node_ptr)))
 				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr) &&
-				 !IS_NODE_MAINT(node_ptr)) /* reboot req sent */
+			else if (IS_NODE_FUTURE(node_ptr))
 				hidden = true;
 			else if (IS_NODE_CLOUD(node_ptr) &&
 				 IS_NODE_POWER_SAVE(node_ptr))
@@ -830,8 +829,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 			    (_node_is_hidden(node_ptr)))
 				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr) &&
-				 !IS_NODE_MAINT(node_ptr)) /* reboot req sent */
+			else if (IS_NODE_FUTURE(node_ptr))
 				hidden = true;
 			else if (IS_NODE_CLOUD(node_ptr) &&
 				 IS_NODE_POWER_SAVE(node_ptr))
@@ -2203,10 +2201,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			}
 		} else if (IS_NODE_DOWN(node_ptr) &&
 			   ((slurmctld_conf.ret2service == 2) ||
+			    !xstrcmp(node_ptr->reason, "Scheduled reboot") ||
 			    ((slurmctld_conf.ret2service == 1) &&
-			     (node_ptr->reason != NULL) &&
-			     (strncmp(node_ptr->reason, "Not responding", 14)
-					== 0)))) {
+			     !xstrcmp(node_ptr->reason, "Not responding")))) {
 			if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 					node_flags;
@@ -2564,10 +2561,11 @@ extern int validate_nodes_via_front_end(
 				}
 			} else if (IS_NODE_DOWN(node_ptr) &&
 				   ((slurmctld_conf.ret2service == 2) ||
+				    !xstrcmp(node_ptr->reason,
+					     "Scheduled reboot") ||
 				    ((slurmctld_conf.ret2service == 1) &&
-				     (node_ptr->reason != NULL) &&
-				     (strncmp(node_ptr->reason,
-					      "Not responding", 14) == 0)))) {
+				     !xstrcmp(node_ptr->reason,
+					      "Not responding")))) {
 				update_node_state = true;
 				*newly_up = true;
 				if (node_ptr->run_job_cnt) {
@@ -2679,9 +2677,10 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
 	}
 	if (IS_NODE_DOWN(fe_ptr) &&
-	    (slurmctld_conf.ret2service == 1) &&
-	    (fe_ptr->reason != NULL) &&
-	    (strncmp(fe_ptr->reason, "Not responding", 14) == 0)) {
+	    ((slurmctld_conf.ret2service == 2) ||
+	     !xstrcmp(fe_ptr->reason, "Scheduled reboot") ||
+	     ((slurmctld_conf.ret2service == 1) &&
+	      !xstrcmp(fe_ptr->reason, "Not responding")))) {
 		last_front_end_update = now;
 		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service",
@@ -2730,9 +2729,10 @@ static void _node_did_resp(struct node_record *node_ptr)
 		}
 	}
 	if (IS_NODE_DOWN(node_ptr) &&
-	    (slurmctld_conf.ret2service == 1) &&
-	    (node_ptr->reason != NULL) &&
-	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
+	    ((slurmctld_conf.ret2service == 2) ||
+	     !xstrcmp(node_ptr->reason, "Scheduled reboot") ||
+	     ((slurmctld_conf.ret2service == 1) &&
+	      !xstrcmp(node_ptr->reason, "Not responding")))) {
 		node_ptr->last_idle = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service",

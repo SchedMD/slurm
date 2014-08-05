@@ -422,7 +422,9 @@ extern void libpam_slurm_init (void)
 			SLURM_API_REVISION, SLURM_API_AGE) >=
 			sizeof(libslurmname) ) {
 		_log_msg (LOG_ERR, "Unable to write libslurmname\n");
-	} else if (!(slurm_h = dlopen(libslurmname, RTLD_NOW|RTLD_GLOBAL))) {
+	} else if ((slurm_h = dlopen(libslurmname, RTLD_NOW|RTLD_GLOBAL))) {
+		return;
+	} else {
 		_log_msg (LOG_INFO, "Unable to dlopen %s: %s\n",
 			libslurmname, dlerror ());
 	}
@@ -430,7 +432,9 @@ extern void libpam_slurm_init (void)
 	if (snprintf(libslurmname, sizeof(libslurmname), "libslurm.so.%d",
 			SLURM_API_CURRENT) >= sizeof(libslurmname) ) {
 		_log_msg (LOG_ERR, "Unable to write libslurmname\n");
-	} else if (!(slurm_h = dlopen(libslurmname, RTLD_NOW|RTLD_GLOBAL))) {
+	} else if ((slurm_h = dlopen(libslurmname, RTLD_NOW|RTLD_GLOBAL))) {
+		return;
+	} else {
 		_log_msg (LOG_INFO, "Unable to dlopen %s: %s\n",
 			libslurmname, dlerror ());
 	}
