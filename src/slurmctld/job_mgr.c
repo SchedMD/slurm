@@ -7844,7 +7844,10 @@ void purge_old_job(void)
 
 
 /*
- * _purge_job_record - purge specific job record
+ * _purge_job_record - purge specific job record. No testing is performed to
+ *	insure the job records has no active references. Use only for job
+ *	records that were never fully operational (e.g. WILL_RUN test, failed
+ *	job load, failed job create, etc.).
  * IN job_id - job_id of job record to be purged
  * RET int - count of job's purged
  * global: job_list - global job table
