@@ -1302,9 +1302,10 @@ static void _queue_reboot_msg(void)
 		}
 		hostlist_push(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;
-		node_ptr->node_state = NODE_STATE_FUTURE |
-				(node_ptr->node_state & NODE_STATE_FLAGS);
 		node_ptr->node_state &= ~NODE_STATE_MAINT;
+		node_ptr->node_state &=  NODE_STATE_FLAGS;
+		node_ptr->node_state |=  NODE_STATE_DOWN;
+		node_ptr->reason = xstrdup("Scheduled reboot");
 		bit_clear(avail_node_bitmap, i);
 		bit_clear(idle_node_bitmap, i);
 		node_ptr->last_response = now;
