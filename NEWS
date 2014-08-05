@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Fix race condition in CPU frequency set with job preemption.
  -- Always call select plugin on step termination, even if the job is also
     complete.
+ -- Srun executable names beginning with "." will be resolved based upon the
+    working directory and path on the compute node rather than the submit node.
 
 * Changes in Slurm 14.11.0pre3
 ==============================
