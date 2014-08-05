@@ -252,11 +252,12 @@ extern void delete_step_records (struct job_record *job_ptr)
 						    &cleaning);
 			if (cleaning)	/* Step already in cleanup. */
 				continue;
+			/* _internal_step_complete() will purge step record */
 			_internal_step_complete(job_ptr, step_ptr);
+		} else {
+			list_remove (step_iterator);
+			_free_step_rec(step_ptr);
 		}
-
-		list_remove (step_iterator);
-		_free_step_rec(step_ptr);
 	}
 	list_iterator_destroy(step_iterator);
 }
