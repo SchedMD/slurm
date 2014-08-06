@@ -44,6 +44,11 @@ set job_id        0
 
 print_header $test_id
 
+if {[job_submit_all_partitions] != 0} {
+	send_user "\nWARNING: This test is incompatable with JobSubmitPlugins=all_partitions\n"
+	exit 0
+}
+
 #
 # Execute 'id' to determine my login name
 #
@@ -93,7 +98,6 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
 }
-exec $bin_rm -f $file_in
 
 #
 # Identify this job's parition
@@ -186,13 +190,13 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 0} {
 	send_user "\nFAILURE: scancel user filter failed\n"
 	set exit_code 1
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

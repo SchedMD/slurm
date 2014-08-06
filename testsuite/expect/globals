@@ -2997,6 +2997,43 @@ proc slurmctld_plug_stack_nonstop { } {
 
 ################################################################
 #
+# Proc: job_submit_all_partitions
+#
+# Purpose: Use scontrol to determine if the JobSubmitPlugins
+#          includes "all_partitions".
+#
+# Returns: 1 if the value is set to nonstop.
+#
+################################################################
+
+proc job_submit_all_partitions { } {
+	global scontrol alpha_numeric_comma
+
+	log_user 0
+	set all_partitions 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "JobSubmitPlugins *= ($alpha_numeric_comma)" {
+			if {[string first $expect_out(1,string) "all_partitions"] != -1} {
+				set all_partitions 1
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $all_partitions
+}
+
+################################################################
+#
 # Proc: wait_for_node
 #
 # Purpose: Wait for a certain number of nodes in a partition to
