@@ -1588,6 +1588,13 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		hostlist_destroy(hl);
 	}
 
+	/* Extend timeout based upon BatchStartTime to permit for a long
+	 * running Prolog */
+	if (timeout <= 0) {
+		timeout = (slurm_get_msg_timeout() +
+			   slurm_get_batch_start_timeout()) * 1000;
+	}
+
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;

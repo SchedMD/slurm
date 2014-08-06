@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
  -- Try to load libslurm.so only when necessary.
  -- When nodes scheduled for reboot, set state to DOWN rather than FUTURE so
     they are still visible to sinfo. State set to IDLE after reboot completes.
+ -- Apply BatchStartTimeout configuration to task launch and avoid aborting
+    srun commands due to long running Prolog scripts.
 
 * Changes in Slurm 14.03.6
 ==========================
