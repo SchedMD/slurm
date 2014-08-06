@@ -2397,8 +2397,8 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->gres_drain);
 		xfree(node->gres_used);
 		xfree(node->name);
-		xfree(node->node_hostname);
 		xfree(node->node_addr);
+		xfree(node->node_hostname);
 		xfree(node->os);
 		xfree(node->reason);
 		select_g_select_nodeinfo_free(node->select_nodeinfo);

@@ -2490,10 +2490,12 @@ display_it:
 				  MAKE_WHITE, true, 0);
 		xfree(color_inx);
 		xfree(color_set_flag);
-	} else
+	} else {
 		highlight_grid(GTK_TREE_VIEW(display_widget),
 			       SORTID_NODE_INX, SORTID_COLOR_INX,
 			       grid_button_list);
+		gtk_tree_path_free(path);
+	}
 
 	if (view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
