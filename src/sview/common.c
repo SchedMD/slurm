@@ -522,6 +522,9 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	} else
 		renderer = gtk_cell_renderer_text_new();
 
+	if (model)
+		g_object_unref(model);
+
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 
 	g_object_set_data(G_OBJECT(renderer), "column",
@@ -1379,9 +1382,6 @@ extern gboolean key_pressed(GtkTreeView *tree_view,
 			    GdkEventKey *event,
 			    const signal_params_t *signal_params)
 {
-	GtkTreePath *path = NULL;
-	GtkTreeViewColumn *column;
-
 	control_key_in_effect = FALSE;
 	enter_key_in_effect = FALSE;
 
@@ -1392,8 +1392,6 @@ extern gboolean key_pressed(GtkTreeView *tree_view,
 		each_t each;
 		GtkTreeSelection *selection = NULL;
 
-		gtk_tree_view_get_cursor(GTK_TREE_VIEW(tree_view),
-					 &path, &column);
 		selection = gtk_tree_view_get_selection(tree_view);
 		memset(&each, 0, sizeof(each_t));
 		each.tree_view = tree_view;
@@ -1882,6 +1880,9 @@ extern void set_for_update(GtkTreeModel *model, int updated)
 			}
 		}
 	}
+
+	if (path)
+		gtk_tree_path_free(path);
 }
 
 extern void remove_old(GtkTreeModel *model, int updated)

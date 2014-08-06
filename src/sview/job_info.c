@@ -3480,6 +3480,7 @@ display_it:
 		highlight_grid(GTK_TREE_VIEW(display_widget),
 			       SORTID_NODE_INX, SORTID_COLOR_INX,
 			       grid_button_list);
+		gtk_tree_path_free(path);
 	}
 
 	if (view == ERROR_VIEW && display_widget) {

@@ -47,6 +47,7 @@ documents those changes that are of interest to users and admins.
  -- Apply BatchStartTimeout configuration to task launch and avoid aborting
     srun commands due to long running Prolog scripts.
  -- Fix minor memory leaks when freeing node_info_t structure.
+ -- Fix various memory leaks in sview
 
 * Changes in Slurm 14.03.6
 ==========================
