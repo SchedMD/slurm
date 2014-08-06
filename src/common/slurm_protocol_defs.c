@@ -62,6 +62,7 @@
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 
@@ -2312,10 +2313,13 @@ extern void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->arch);
+		acct_gather_energy_destroy(node->energy);
+		ext_sensors_destroy(node->ext_sensors);
 		xfree(node->features);
+		xfree(node->gres);
 		xfree(node->name);
-		xfree(node->node_hostname);
 		xfree(node->node_addr);
+		xfree(node->node_hostname);
 		xfree(node->os);
 		xfree(node->reason);
 		select_g_select_nodeinfo_free(node->select_nodeinfo);
