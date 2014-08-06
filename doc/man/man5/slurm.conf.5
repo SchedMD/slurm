@@ -317,6 +317,13 @@ allocation. The default value is 10 (seconds). Larger values may be
 required if more time is required to execute the \fBProlog\fR, load
 user environment variables (for Moab spawned jobs), or if the slurmd
 daemon gets paged from memory.
+.br
+.br
+\fBNote\fR: The test for a job being succesfully launched is only performed when
+the Slurm daemon on the compute node registers state with the slurmctld daemon
+on the head node, which happens fairly rarely.
+Therefore a job will not necessarily be terminated if its start time exceeds
+\fBBatchStartTimeout\fR.
 
 .TP
 \fBCacheGroups\fR
