@@ -203,7 +203,7 @@ slurm_auth_create( void *argv[], char *opts )
 		info("Default Munge socket is %s", old_socket);
 }
 #endif
-	socket = _auth_opts_to_socket(opts);
+
 	if (opts) {
 		socket = _auth_opts_to_socket(opts);
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
