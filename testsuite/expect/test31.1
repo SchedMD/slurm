@@ -407,11 +407,11 @@ run_job taskepilog taskepilog_$test_id 0 0
 run_job prolog prolog_$test_id 0 0
 
 # Clean up vestigial files and restore original slurm.conf file
-exec $bin_mv $cwd/slurm.conf.orig $config_dir/slurm.conf
+exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
 update_conf
 
 if {$exit_code == 0} {
-	exec $bin_rm -fr $config_dir/$inc_slurm $config_dir/$pro_epi_prog
+	exec $bin_rm -fr $config_dir/$inc_slurm $config_dir/$pro_epi_prog $cwd/slurm.conf.orig
 	send_user "\nSUCCCESS\n"
 }
 exit $exit_code
