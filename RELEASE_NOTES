@@ -114,7 +114,12 @@ COMMAND CHANGES (see man pages for details)
  -- Added srun --export option to set/export specific environment variables.
  -- Scontrol modified to print separate error messages for job arrays with
     different exit codes on the different tasks of the job array. Applies to
-    job suspend and resume operations. 
+    job suspend and resume operations.
+ -- Add node state string suffix of "$" to identify nodes in maintenance
+    reservation or scheduled for reboot. This applies to scontrol, sinfo,
+    and sview commands.
+ -- Enable scontrol to clear a nodes's scheduled reboot by setting its state
+    to "RESUME".
 
 OTHER CHANGES
 =============

@@ -1249,6 +1249,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
+				node_ptr->node_state &= (~NODE_STATE_MAINT);
 				if (IS_NODE_DOWN(node_ptr)) {
 					state_val = NODE_STATE_IDLE;
 #ifndef HAVE_FRONT_END
@@ -1855,7 +1856,8 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 			if ((base_state == NODE_STATE_DOWN)   ||
 			    (base_state == NODE_STATE_FUTURE) ||
 			    (node_flags & NODE_STATE_DRAIN)   ||
-			    (node_flags & NODE_STATE_FAIL))
+			    (node_flags & NODE_STATE_FAIL)    ||
+			    (node_flags & NODE_STATE_MAINT))
 				return true;
 			break;
 

@@ -16,6 +16,11 @@ documents those changes that are of interest to users and admins.
     complete.
  -- Srun executable names beginning with "." will be resolved based upon the
     working directory and path on the compute node rather than the submit node.
+ -- Add node state string suffix of "$" to identify nodes in maintenance
+    reservation or scheduled for reboot. This applies to scontrol, sinfo,
+    and sview commands.
+ -- Enable scontrol to clear a nodes's scheduled reboot by setting its state
+    to "RESUME".
 
 * Changes in Slurm 14.11.0pre3
 ==============================

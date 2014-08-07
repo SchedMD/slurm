@@ -1665,6 +1665,8 @@ extern char *node_state_string(uint16_t inx)
 	}
 
 	if (base == NODE_STATE_ALLOCATED) {
+		if (maint_flag)
+			return "ALLOCATED$";
 		if (power_up_flag)
 			return "ALLOCATED#";
 		if (power_down_flag)
@@ -1681,6 +1683,8 @@ extern char *node_state_string(uint16_t inx)
 		return "COMPLETING";
 	}
 	if (base == NODE_STATE_IDLE) {
+		if (maint_flag)
+			return "IDLE$";
 		if (power_up_flag)
 			return "IDLE#";
 		if (power_down_flag)
@@ -1694,6 +1698,8 @@ extern char *node_state_string(uint16_t inx)
 		return "IDLE";
 	}
 	if (base == NODE_STATE_ERROR) {
+		if (maint_flag)
+			return "ERROR$";
 		if (power_up_flag)
 			return "ERROR#";
 		if (power_down_flag)
@@ -1703,6 +1709,8 @@ extern char *node_state_string(uint16_t inx)
 		return "ERROR";
 	}
 	if (base == NODE_STATE_MIXED) {
+		if (maint_flag)
+			return "MIXED$";
 		if (power_up_flag)
 			return "MIXED#";
 		if (power_down_flag)
@@ -1807,6 +1815,8 @@ extern char *node_state_string_compact(uint16_t inx)
 		return "COMP";
 	}
 	if (inx == NODE_STATE_IDLE) {
+		if (maint_flag)
+			return "IDLE$";
 		if (power_up_flag)
 			return "IDLE#";
 		if (power_down_flag)
@@ -1820,6 +1830,8 @@ extern char *node_state_string_compact(uint16_t inx)
 		return "IDLE";
 	}
 	if (inx == NODE_STATE_ERROR) {
+		if (maint_flag)
+			return "ERR$";
 		if (power_up_flag)
 			return "ERR#";
 		if (power_down_flag)
@@ -1829,6 +1841,8 @@ extern char *node_state_string_compact(uint16_t inx)
 		return "ERR";
 	}
 	if (inx == NODE_STATE_MIXED) {
+		if (maint_flag)
+			return "MIX$";
 		if (power_up_flag)
 			return "MIX#";
 		if (power_down_flag)
