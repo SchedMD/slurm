@@ -577,11 +577,13 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if (WIFSIGNALED(tmp_int))
-				tmp_int2 = WTERMSIG(tmp_int);
-			tmp_int = WEXITSTATUS(tmp_int);
-			if (tmp_int >= 128)
-				tmp_int -= 128;
+			if (tmp_int != NO_VAL) {
+				if (WIFSIGNALED(tmp_int))
+					tmp_int2 = WTERMSIG(tmp_int);
+				tmp_int = WEXITSTATUS(tmp_int);
+				if (tmp_int >= 128)
+					tmp_int -= 128;
+			}
 			snprintf(outbuf, sizeof(outbuf), "%d:%d",
 				 tmp_int, tmp_int2);
 

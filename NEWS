@@ -207,6 +207,10 @@ documents those changes that are of interest to users and admins.
     srun commands due to long running Prolog scripts.
  -- Fix minor memory leaks when freeing node_info_t structure.
  -- Fix various memory leaks in sview
+ -- If a batch script is requeued and running steps get correct exit code/signal
+    previous it was always -2.
+ -- If step exitcode hasn't been set display with sacct the -2 instead
+    of acting like it is a signal and exitcode.
 
 * Changes in Slurm 14.03.6
 ==========================
