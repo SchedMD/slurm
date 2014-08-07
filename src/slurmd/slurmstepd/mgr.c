@@ -399,7 +399,7 @@ batch_finish(stepd_step_rec_t *job, int rc)
 		   (job->stepid == SLURM_BATCH_SCRIPT)) {
 		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
 			job->jobid, rc, step_complete.step_rc);
-		_send_complete_batch_script_msg(job, rc, job->task[0]->estatus);
+		_send_complete_batch_script_msg(job, rc, step_complete.step_rc);
 	} else {
 		_wait_for_children_slurmstepd(job);
 		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d",
