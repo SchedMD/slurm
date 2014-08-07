@@ -728,6 +728,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	char *query = NULL, *nodes = NULL;
 	int rc = SLURM_SUCCESS, job_state;
 	time_t submit_time, end_time;
+	uint32_t exit_code = 0;
 
 	if (!job_ptr->db_index
 	    && ((!job_ptr->details || !job_ptr->details->submit_time)
@@ -832,9 +833,17 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		xfree(comment);
 	}
 
+	exit_code = job_ptr->exit_code;
+	if (exit_code == 1) {
+		/* This wasn't signalled, it was set by Slurm so don't
+		 * treat it like a signal.
+		 */
+		exit_code = 256;
+	}
+
 	xstrfmtcat(query,
 		   ", exit_code=%d, kill_requid=%d where job_db_inx=%d;",
-		   job_ptr->exit_code, job_ptr->requid,
+		   exit_code, job_ptr->requid,
 		   job_ptr->db_index);
 
 	debug3("%d(%s:%d) query\n%s",

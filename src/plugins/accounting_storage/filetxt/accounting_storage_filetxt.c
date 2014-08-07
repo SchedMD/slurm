@@ -650,6 +650,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	char buf[BUFFER_SIZE];
 	uint16_t job_state;
 	int duration;
+	uint32_t exit_code;
 
 	if (!storage_init) {
 		debug("jobacct init was not called or it failed");
@@ -675,11 +676,19 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 			duration = job_ptr->end_time - job_ptr->start_time;
 	}
 
+	exit_code = job_ptr->exit_code;
+	if (exit_code == 1) {
+		/* This wasn't signalled, it was set by Slurm so don't
+		 * treat it like a signal.
+		 */
+		exit_code = 256;
+	}
+
 	/* leave the requid as a %d since we want to see if it is -1
 	   in stats */
 	snprintf(buf, BUFFER_SIZE, "%d %d %u %u %u",
 		 JOB_TERMINATED, duration,
-		 job_state, job_ptr->requid, job_ptr->exit_code);
+		 job_state, job_ptr->requid, exit_code);
 
 	return  _print_record(job_ptr, job_ptr->end_time, buf);
 }
