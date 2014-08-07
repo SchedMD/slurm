@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
     specified in which case signal only the batch script.
  -- Modify AuthInfo configuration parameter to accept credential lifetime
     option.
+ -- Modify crypto/munge plugin to use socket and timeout specified in AuthInfo.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

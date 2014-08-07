@@ -113,6 +113,34 @@ enum local_error_code {
 
 static uid_t slurm_user = 0;
 
+/* Convert AuthInfo to a socket path. Accepts two input formats:
+ * 1) <path>		(Old format)
+ * 2) socket=<path>[,]	(New format)
+ * NOTE: Caller must xfree return value
+ */
+static char *_auth_opts_to_socket(void)
+{
+	char *socket = NULL, *sep, *tmp;
+	char *opts = slurm_get_auth_info();
+
+	if (!opts)
+		return NULL;
+
+	tmp = strstr(opts, "socket=");
+	if (tmp) {	/* New format */
+		socket = xstrdup(tmp + 7);
+		sep = strchr(socket, ',');
+		if (sep)
+			sep[0] = '\0';
+	} else if (strchr(opts, '=')) {
+		;	/* New format, but socket not specified */
+	} else {
+		socket = xstrdup(tmp);	/* Old format */
+	}
+
+	return socket;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -145,11 +173,28 @@ crypto_read_private_key(const char *path)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
+	char *socket;
+	int auth_ttl, rc;
 
 	if ((ctx = munge_ctx_create()) == NULL) {
 		error ("crypto_read_private_key: munge_ctx_create failed");
 		return (NULL);
 	}
+
+	socket = _auth_opts_to_socket();
+	if (socket) {
+		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
+		xfree(socket);
+		if (rc != EMUNGE_SUCCESS) {
+			error("munge_ctx_set failure");
+			munge_ctx_destroy(ctx);
+			return NULL;
+		}
+	}
+
+	auth_ttl = slurm_get_auth_ttl();
+	if (auth_ttl)
+		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
 	/*
 	 *   Only allow slurmd_user (usually root) to decode job
@@ -174,12 +219,33 @@ crypto_read_private_key(const char *path)
 extern void *
 crypto_read_public_key(const char *path)
 {
+	munge_ctx_t ctx;
+	char *socket;
+	int auth_ttl, rc;
+
 	/*
 	 * Get slurm user id once. We use it later to verify credentials.
 	 */
 	slurm_user = slurm_get_slurm_user_id();
 
-	return (void *) munge_ctx_create();
+	ctx = munge_ctx_create();
+
+	socket = _auth_opts_to_socket();
+	if (socket) {
+		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
+		xfree(socket);
+		if (rc != EMUNGE_SUCCESS) {
+			error("munge_ctx_set failure");
+			munge_ctx_destroy(ctx);
+			return NULL;
+		}
+	}
+
+	auth_ttl = slurm_get_auth_ttl();
+	if (auth_ttl)
+		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
+
+	return (void *) ctx;
 }
 
 extern const char *
