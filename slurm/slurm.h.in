@@ -2704,8 +2704,10 @@ extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
  *	JOB/STEP SIGNALING FUNCTIONS
 \*****************************************************************************/
 
+/* NOTE: Only 4 bits available in current data structure */
 #define KILL_JOB_BATCH	0x0001	/* signal batch shell only */
 #define KILL_JOB_ARRAY	0x0002	/* kill all elements of a job array */
+#define KILL_STEPS_ONLY	0x0004	/* Do not signal batch script */
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job

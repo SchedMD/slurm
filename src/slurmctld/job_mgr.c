@@ -217,7 +217,9 @@ static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static void _send_job_kill(struct job_record *job_ptr);
 static int  _set_job_id(struct job_record *job_ptr);
 static void  _set_job_requeue_exit_value(struct job_record *job_ptr);
-static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
+static void _signal_batch_job(struct job_record *job_ptr,
+			      uint16_t signal,
+			      uint16_t flags);
 static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 			 bool indf_susp);
@@ -3887,9 +3889,11 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	}
 
 	if (IS_JOB_RUNNING(job_ptr)) {
-		if (signal == SIGKILL
+		if ((signal == SIGKILL)
+		    && !(flags & KILL_STEPS_ONLY)
 		    && !(flags & KILL_JOB_BATCH)) {
-			/* No need to signal steps, deallocate kills them */
+			/* No need to signal steps, deallocate kills them
+			 */
 			job_ptr->time_last_active	= now;
 			job_ptr->end_time		= now;
 			last_job_update			= now;
@@ -3897,11 +3901,12 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 			build_cg_bitmap(job_ptr);
 			job_completion_logger(job_ptr, false);
 			deallocate_nodes(job_ptr, false, false, preempt);
-		} else if (flags & KILL_JOB_BATCH) {
-			if (job_ptr->batch_flag)
-				_signal_batch_job(job_ptr, signal);
-			else
-				return ESLURM_JOB_SCRIPT_MISSING;
+		} else if (job_ptr->batch_flag
+			   && (flags & KILL_STEPS_ONLY
+			       || flags & KILL_JOB_BATCH)) {
+			_signal_batch_job(job_ptr, signal, flags);
+		} else if ((flags & KILL_JOB_BATCH) && !job_ptr->batch_flag) {
+			return ESLURM_JOB_SCRIPT_MISSING;
 		} else {
 			_signal_job(job_ptr, signal);
 		}
@@ -4187,7 +4192,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 }
 
 static void
-_signal_batch_job(struct job_record *job_ptr, uint16_t signal)
+_signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 {
 	bitoff_t i;
 	kill_tasks_msg_t *kill_tasks_msg = NULL;
@@ -4198,8 +4203,18 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	xassert(job_ptr->batch_host);
 	i = bit_ffs(job_ptr->node_bitmap);
 	if (i < 0) {
-		error("_signal_batch_job JobId=%u lacks assigned nodes",
-		      job_ptr->job_id);
+		error("%s: JobId=%u lacks assigned nodes",
+		      __func__, job_ptr->job_id);
+		return;
+	}
+	if (flags > 0xf) {	/* Top 4 bits used for KILL_* flags */
+		error("%s: signal flags %u for job %u exceed limit",
+		      __func__, flags, job_ptr->job_id);
+		return;
+	}
+	if (signal > 0xfff) {	/* Top 4 bits used for KILL_* flags */
+		error("%s: signal value %u for job %u exceed limit",
+		      __func__, signal, job_ptr->job_id);
 		return;
 	}
 
@@ -4220,13 +4235,18 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = job_ptr->job_id;
 	kill_tasks_msg->job_step_id = NO_VAL;
-	/* Encode the KILL_JOB_BATCH flag for
-	 * stepd to know if has to signal only
-	 * the batch script. The job was submitted
-	 * using the --signal=B:sig sbatch option.
+
+	/* Encode the KILL_JOB_BATCH|KILL_STEPS_ONLY flags for stepd to know if
+	 * has to signal only the batch script or only the steps.
+	 * The job was submitted using the --signal=B:sig
+	 * or without B sbatch option.
 	 */
-	z = KILL_JOB_BATCH << 24;
-	kill_tasks_msg->signal = z|signal;
+	if (flags == KILL_JOB_BATCH)
+		z = KILL_JOB_BATCH << 24;
+	else if (flags == KILL_STEPS_ONLY)
+		z = KILL_STEPS_ONLY << 24;
+
+	kill_tasks_msg->signal = z | signal;
 
 	agent_args->msg_args = kill_tasks_msg;
 	agent_args->node_count = 1;/* slurm/477 be sure to update node_count */
@@ -6479,8 +6499,8 @@ void job_time_limit(void)
 					  power_node_bitmap) == 0) &&
 			     (bit_overlap(job_ptr->node_bitmap,
 					  avail_node_bitmap) == 0))) {
-				debug("Configuration for job %u is complete",
-				      job_ptr->job_id);
+				debug("%s: Configuration for job %u is complete",
+				      __func__, job_ptr->job_id);
 				job_ptr->job_state &= (~JOB_CONFIGURING);
 			}
 		}
@@ -6494,8 +6514,9 @@ void job_time_limit(void)
 			if ((job_ptr->warn_time) &&
 			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
 			     job_ptr->end_time)) {
-				debug("Warning signal %u to job %u ",
-				      job_ptr->warn_signal, job_ptr->job_id);
+				debug("%s: preempt warning signal %u to job %u ",
+				      __func__, job_ptr->warn_signal,
+				      job_ptr->job_id);
 				(void) job_signal(job_ptr->job_id,
 						  job_ptr->warn_signal,
 						  job_ptr->warn_flags, 0,
@@ -6505,8 +6526,8 @@ void job_time_limit(void)
 			}
 			if (job_ptr->end_time <= now) {
 				last_job_update = now;
-				info("Preemption GraceTime reached JobId=%u",
-				     job_ptr->job_id);
+				info("%s: Preemption GraceTime reached JobId=%u",
+				     __func__, job_ptr->job_id);
 				_job_timed_out(job_ptr);
 				job_ptr->job_state = JOB_PREEMPTED |
 						     JOB_COMPLETING;
@@ -6525,8 +6546,8 @@ void job_time_limit(void)
 		    (job_ptr->part_ptr) &&
 		    (!(job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY))) {
 			/* job inactive, kill it */
-			info("Inactivity time limit reached for JobId=%u",
-			     job_ptr->job_id);
+			info("%s: inactivity time limit reached for JobId=%u",
+			     __func__, job_ptr->job_id);
 			_job_timed_out(job_ptr);
 			job_ptr->state_reason = FAIL_INACTIVE_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -6536,8 +6557,17 @@ void job_time_limit(void)
 			if ((job_ptr->warn_time) &&
 			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
 			     job_ptr->end_time)) {
-				debug("Warning signal %u to job %u ",
-				      job_ptr->warn_signal, job_ptr->job_id);
+
+				/* If --signal B option was not specified,
+				 * signal only the steps but not the batch step.
+				 */
+				if (job_ptr->warn_flags == 0)
+					job_ptr->warn_flags = KILL_STEPS_ONLY;
+
+				debug("%s: warning signal %u to job %u ",
+				      __func__, job_ptr->warn_signal,
+				      job_ptr->job_id);
+
 				(void) job_signal(job_ptr->job_id,
 						  job_ptr->warn_signal,
 						  job_ptr->warn_flags, 0,

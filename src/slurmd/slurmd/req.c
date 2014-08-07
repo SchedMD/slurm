@@ -2415,6 +2415,8 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	int               rc = SLURM_SUCCESS;
 	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
+	uint32_t flag;
+	uint32_t sig;
 
 #ifdef HAVE_XCPU
 	if (!_slurm_authorized_user(req_uid)) {
@@ -2423,10 +2425,19 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	}
 #endif
 
-	debug("Sending signal %u to step %u.%u", req->signal, req->job_id,
-	      req->job_step_id);
-	rc = _signal_jobstep(req->job_id, req->job_step_id, req_uid,
-			     req->signal);
+	flag = req->signal >> 24;
+	sig  = req->signal & 0xfff;
+
+	if (flag & KILL_STEPS_ONLY) {
+		debug("%s: sending signal %u to all steps job %u flag %u",
+		      __func__, sig, req->job_id, flag);
+		_kill_all_active_steps(req->job_id, sig, false);
+	} else {
+		debug("%s: sending signal %u to step %u.%u", __func__,
+		      req->signal, req->job_id, req->job_step_id);
+		rc = _signal_jobstep(req->job_id, req->job_step_id, req_uid,
+				     req->signal);
+	}
 	slurm_send_rc_msg(msg, rc);
 }
 
