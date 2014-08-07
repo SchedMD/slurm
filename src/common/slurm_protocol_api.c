@@ -1441,6 +1441,9 @@ extern int slurm_get_auth_ttl(void)
 		return ttl;
 
 	auth_info = slurm_get_auth_info();
+        if (!auth_info)
+                return 0;
+
 	tmp = strstr(auth_info, "ttl=");
 	if (tmp) {
 		ttl = atoi(tmp + 4);
