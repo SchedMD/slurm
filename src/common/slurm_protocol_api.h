@@ -89,6 +89,20 @@ enum {
  * protocol configuration functions
 \**********************************************************************/
 
+/* slurm_get_auth_info
+ * returns the auth_info from slurmctld_conf object (AuthInfo parameter)
+ * cache value in local buffer for best performance
+ * RET char *    - auth info,  MUST be xfreed by caller
+ */
+char *slurm_get_auth_info(void);
+
+/* slurm_get_auth_ttl
+ * returns the credential Time To Live option from the AuthInfo parameter
+ * cache value in local buffer for best performance
+ * RET int - Time To Live in seconds or 0 if not specified
+ */
+int slurm_get_auth_ttl(void);
+
 /* slurm_set_api_config
  * sets the slurm_protocol_config object
  * IN protocol_conf		-  slurm_protocol_config object

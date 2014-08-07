@@ -90,7 +90,6 @@ static slurm_protocol_config_t *proto_conf = &proto_conf_default;
 static int message_timeout = -1;
 
 /* STATIC FUNCTIONS */
-static char *_get_auth_info(void);
 static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
 static int   _unpack_msg_uid(Buf buffer);
@@ -1406,12 +1405,12 @@ char *slurm_get_accounting_storage_pass(void)
 	return storage_pass;
 }
 
-/* _get_auth_info
- * returns the auth_info from slurmctld_conf object
+/* slurm_get_auth_info
+ * returns the auth_info from slurmctld_conf object (AuthInfo parameter)
  * cache value in local buffer for best performance
- * RET char *    - auth info
+ * RET char *    - auth info,  MUST be xfreed by caller
  */
-static char *_get_auth_info(void)
+extern char *slurm_get_auth_info(void)
 {
 	static bool loaded_auth_info = false;
 	static char *auth_info = NULL;
@@ -1426,6 +1425,32 @@ static char *_get_auth_info(void)
 
 	loaded_auth_info = true;
 	return auth_info;
+}
+
+/* slurm_get_auth_ttl
+ * returns the credential Time To Live option from the AuthInfo parameter
+ * cache value in local buffer for best performance
+ * RET int - Time To Live in seconds or 0 if not specified
+ */
+extern int slurm_get_auth_ttl(void)
+{
+	static int ttl = -1;
+	char *auth_info, *tmp;
+
+	if (ttl >= 0)
+		return ttl;
+
+	auth_info = slurm_get_auth_info();
+	tmp = strstr(auth_info, "ttl=");
+	if (tmp) {
+		ttl = atoi(tmp + 4);
+		if (ttl < 0)
+			ttl = 0;
+	} else {
+		ttl = 0;
+	}
+
+	return ttl;
 }
 
 /* _global_auth_key
@@ -2701,7 +2726,7 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 					  _global_auth_key() );
 	} else {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  _get_auth_info() );
+					  slurm_get_auth_info() );
 	}
 
 	if (rc != SLURM_SUCCESS) {
@@ -2878,7 +2903,7 @@ List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout)
 					  _global_auth_key() );
 	} else {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  _get_auth_info() );
+					  slurm_get_auth_info() );
 	}
 
 	if (rc != SLURM_SUCCESS) {
@@ -3120,7 +3145,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 					  _global_auth_key() );
 	} else {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  _get_auth_info() );
+					  slurm_get_auth_info() );
 	}
 
 	if (rc != SLURM_SUCCESS) {
@@ -3219,7 +3244,7 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY)
 		auth_cred = g_slurm_auth_create(NULL, 2, _global_auth_key());
 	else
-		auth_cred = g_slurm_auth_create(NULL, 2, _get_auth_info());
+		auth_cred = g_slurm_auth_create(NULL, 2, slurm_get_auth_info());
 
 	if (msg->forward.init != FORWARD_INIT) {
 		forward_init(&msg->forward, NULL);
@@ -3234,7 +3259,7 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 							_global_auth_key());
 		} else {
 			auth_cred = g_slurm_auth_create(NULL, 2,
-							_get_auth_info());
+							slurm_get_auth_info());
 		}
 	}
 	if (auth_cred == NULL) {

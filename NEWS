@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
  -- As per sbatch and srun documentation when the --signal option is used
     signal only the steps and unless, in the case, of a batch job B is
     specified in which case signal only the batch script.
+ -- Modify AuthInfo configuration parameter to accept credential lifetime
+    option.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

@@ -148,6 +148,7 @@ typedef struct munge_info {
 /* Static prototypes
  */
 
+static char *         _auth_opts_to_socket(char *opts);
 static munge_info_t * cred_info_alloc(void);
 static munge_info_t * cred_info_create(munge_ctx_t ctx);
 static void           cred_info_destroy(munge_info_t *);
@@ -177,13 +178,14 @@ int init ( void )
  * data at this time is implementation-dependent.
  */
 slurm_auth_credential_t *
-slurm_auth_create( void *argv[], char *socket )
+slurm_auth_create( void *argv[], char *opts )
 {
-	int retry = RETRY_COUNT;
+	int rc, retry = RETRY_COUNT, auth_ttl;
 	slurm_auth_credential_t *cred = NULL;
 	munge_err_t err = EMUNGE_SUCCESS;
 	munge_ctx_t ctx = munge_ctx_create();
 	SigFunc *ohandler;
+	char *socket;
 
 	if (ctx == NULL) {
 		error("munge_ctx_create failure");
@@ -201,19 +203,21 @@ slurm_auth_create( void *argv[], char *socket )
 		info("Default Munge socket is %s", old_socket);
 }
 #endif
-	if (socket &&
-	    (munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket) != EMUNGE_SUCCESS)) {
-		error("munge_ctx_set failure");
-		munge_ctx_destroy(ctx);
-		return NULL;
+	socket = _auth_opts_to_socket(opts);
+	if (opts) {
+		socket = _auth_opts_to_socket(opts);
+		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
+		xfree(socket);
+		if (rc != EMUNGE_SUCCESS) {
+			error("munge_ctx_set failure");
+			munge_ctx_destroy(ctx);
+			return NULL;
+		}
 	}
 
-#ifdef SLURM_MUNGE_TTL
-	/* Default munge credential lifetime is 5 minutes. Lower values can
-	 * improve performance of munged (less records to test for replay).
-	 * The value of SLURM_MUNGE_TTL should be in seconds. */
-	(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, SLURM_MUNGE_TTL);
-#endif
+	auth_ttl = slurm_get_auth_ttl();
+	if (auth_ttl)
+		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;
@@ -291,8 +295,11 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
 int
-slurm_auth_verify( slurm_auth_credential_t *c, char *socket )
+slurm_auth_verify( slurm_auth_credential_t *c, char *opts )
 {
+	int rc;
+	char *socket;
+
 	if (!c) {
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
@@ -303,7 +310,10 @@ slurm_auth_verify( slurm_auth_credential_t *c, char *socket )
 	if (c->verified)
 		return SLURM_SUCCESS;
 
-	if (_decode_cred(c, socket) < 0)
+	socket = _auth_opts_to_socket(opts);
+	rc = _decode_cred(c, socket);
+	xfree(socket);
+	if (rc < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -314,15 +324,22 @@ slurm_auth_verify( slurm_auth_credential_t *c, char *socket )
  * is not assured until slurm_auth_verify() has been called for it.
  */
 uid_t
-slurm_auth_get_uid( slurm_auth_credential_t *cred, char *socket )
+slurm_auth_get_uid( slurm_auth_credential_t *cred, char *opts )
 {
 	if (cred == NULL) {
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
-	if ((!cred->verified) && (_decode_cred(cred, socket) < 0)) {
-		cred->cr_errno = SLURM_AUTH_INVALID;
-		return SLURM_AUTH_NOBODY;
+
+	if (!cred->verified) {
+		int rc;
+		char *socket = _auth_opts_to_socket(opts);
+		rc = _decode_cred(cred, socket);
+		xfree(socket);
+		if (rc < 0) {
+			cred->cr_errno = SLURM_AUTH_INVALID;
+			return SLURM_AUTH_NOBODY;
+		}
 	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
@@ -335,15 +352,22 @@ slurm_auth_get_uid( slurm_auth_credential_t *cred, char *socket )
  * above for details on correct behavior.
  */
 gid_t
-slurm_auth_get_gid( slurm_auth_credential_t *cred, char *socket )
+slurm_auth_get_gid( slurm_auth_credential_t *cred, char *opts )
 {
 	if (cred == NULL) {
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
-	if ((!cred->verified) && (_decode_cred(cred, socket) < 0)) {
-		cred->cr_errno = SLURM_AUTH_INVALID;
-		return SLURM_AUTH_NOBODY;
+
+	if (!cred->verified) {
+		int rc;
+		char *socket = _auth_opts_to_socket(opts);
+		rc = _decode_cred(cred, socket);
+		xfree(socket);
+		if (rc < 0) {
+			cred->cr_errno = SLURM_AUTH_INVALID;
+			return SLURM_AUTH_NOBODY;
+		}
 	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
@@ -662,4 +686,31 @@ _print_cred(munge_ctx_t ctx)
 	munge_info_t *mi = cred_info_create(ctx);
 	_print_cred_info(mi);
 	cred_info_destroy(mi);
+}
+
+/* Convert AuthInfo to a socket path. Accepts two input formats:
+ * 1) <path>		(Old format)
+ * 2) socket=<path>[,]	(New format)
+ * NOTE: Caller must xfree return value
+ */
+static char *_auth_opts_to_socket(char *opts)
+{
+	char *socket = NULL, *sep, *tmp;
+
+	if (!opts)
+		return NULL;
+
+	tmp = strstr(opts, "socket=");
+	if (tmp) {	/* New format */
+		socket = xstrdup(tmp + 7);
+		sep = strchr(socket, ',');
+		if (sep)
+			sep[0] = '\0';
+	} else if (strchr(opts, '=')) {
+		;	/* New format, but socket not specified */
+	} else {
+		socket = xstrdup(tmp);	/* Old format */
+	}
+
+	return socket;
 }

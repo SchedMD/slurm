@@ -52,6 +52,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     subdirectory called "hash.#" based upon the last digit of the job ID.
  -- Added GRES type (e.g. model name) and "non_consume" fields for resources
     that are limited, but can be shared between jobs.
+ -- Modify AuthInfo configuration parameter to accept credential lifetime
+    option.
  -- Added ChosLoc configuration parameter in slurm.conf (Chroot OS tool
     location).
  -- Added MemLimitEnforce configuration parameter in slurm.conf (Used to disable

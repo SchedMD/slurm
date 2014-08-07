@@ -202,17 +202,14 @@ extern int
 crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 	    unsigned int *sig_size_p)
 {
-	int retry = RETRY_COUNT;
+	int retry = RETRY_COUNT, auth_ttl;
 	char *cred;
 	munge_err_t err;
 	munge_ctx_t ctx = (munge_ctx_t) key;
 
-#ifdef SLURM_MUNGE_TTL
-	/* Default munge credential lifetime is 5 minutes. Lower values can
-	 * improve performance of munged (less records to test for replay).
-	 * The value of SLURM_MUNGE_TTL should be in seconds. */
-	(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, SLURM_MUNGE_TTL);
-#endif
+	auth_ttl = slurm_get_auth_ttl();
+	if (auth_ttl)
+		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
     again:
 	err = munge_encode(&cred, ctx, buffer, buf_size);
