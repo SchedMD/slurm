@@ -3759,6 +3759,8 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 #endif
 	}
 
+	step_ptr->state = JOB_TIMEOUT;
+
 	if (notify_srun) {
 		srun_step_timeout(step_ptr, now);
 		return;

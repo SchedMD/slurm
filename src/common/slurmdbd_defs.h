@@ -370,10 +370,12 @@ typedef struct dbd_step_comp_msg {
 	uint32_t exit_code;	/* job exit code or signal */
 	jobacctinfo_t *jobacct; /* status info */
 	uint32_t job_id;	/* job ID */
-	uint32_t req_uid;	/* requester user ID */
-	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
+	uint32_t req_uid;	/* requester user ID */
+	time_t   start_time;	/* step start time */
+	uint16_t state;         /* current state of node.  Used to get
+				   flags on the state (i.e. maintenance) */
 	uint32_t step_id;	/* step ID */
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_comp_msg_t;

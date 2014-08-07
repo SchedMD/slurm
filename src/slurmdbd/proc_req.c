@@ -3782,8 +3782,9 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.job_id = step_comp_msg->job_id;
 	step.requid = step_comp_msg->req_uid;
 	job.start_time = step_comp_msg->start_time;
-	details.submit_time = step_comp_msg->job_submit_time;
+	step.state = step_comp_msg->state;
 	step.step_id = step_comp_msg->step_id;
+	details.submit_time = step_comp_msg->job_submit_time;
 	details.num_tasks = step_comp_msg->total_tasks;
 
 	job.details = &details;

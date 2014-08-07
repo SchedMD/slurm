@@ -2474,6 +2474,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		req.job_submit_time   = step_ptr->job_ptr->resize_time;
 	else if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
+	req.state       = step_ptr->state;
 	req.step_id     = step_ptr->step_id;
 	req.total_tasks = tasks;
 

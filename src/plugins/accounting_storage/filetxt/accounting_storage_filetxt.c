@@ -840,13 +840,16 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
 
 	exit_code = step_ptr->exit_code;
-	if (exit_code == NO_VAL) {
-		comp_status = JOB_CANCELLED;
-		exit_code = 0;
-	} else if (exit_code)
-		comp_status = JOB_FAILED;
-	else
-		comp_status = JOB_COMPLETE;
+	comp_status = step_ptr->state;
+	if (comp_status < JOB_COMPLETE) {
+		if (exit_code == NO_VAL) {
+			comp_status = JOB_CANCELLED;
+			exit_code = 0;
+		} else if (exit_code)
+			comp_status = JOB_FAILED;
+		else
+			comp_status = JOB_COMPLETE;
+	}
 
 #ifdef HAVE_BG
 	if (step_ptr->job_ptr->details)

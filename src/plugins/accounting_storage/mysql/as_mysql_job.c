@@ -1002,7 +1002,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 				  struct step_record *step_ptr)
 {
 	time_t now;
-	int comp_status;
+	uint16_t comp_status;
 	int tasks = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
@@ -1062,13 +1062,16 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	exit_code = step_ptr->exit_code;
-	if (WIFSIGNALED(exit_code)) {
-		comp_status = JOB_CANCELLED;
-	} else if (exit_code)
-		comp_status = JOB_FAILED;
-	else {
-		step_ptr->requid = -1;
-		comp_status = JOB_COMPLETE;
+	comp_status = step_ptr->state;
+	if (comp_status < JOB_COMPLETE) {
+		if (WIFSIGNALED(exit_code)) {
+			comp_status = JOB_CANCELLED;
+		} else if (exit_code)
+			comp_status = JOB_FAILED;
+		else {
+			step_ptr->requid = -1;
+			comp_status = JOB_COMPLETE;
+		}
 	}
 
 	/* figure out the ave of the totals sent */
@@ -1108,7 +1111,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 
 	/* The stepid could be -2 so use %d not %u */
 	query = xstrdup_printf(
-		"update \"%s_%s\" set time_end=%d, state=%d, "
+		"update \"%s_%s\" set time_end=%d, state=%u, "
 		"kill_requid=%d, exit_code=%d, "
 		"user_sec=%u, user_usec=%u, "
 		"sys_sec=%u, sys_usec=%u, "

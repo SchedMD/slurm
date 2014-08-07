@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
  -- Modify AuthInfo configuration parameter to accept credential lifetime
     option.
  -- Modify crypto/munge plugin to use socket and timeout specified in AuthInfo.
+ -- If we have a state for a step on completion put that in the database
+    instead of guessing off the exit_code.
 
 * Changes in Slurm 14.11.0pre3
 ==============================
