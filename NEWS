@@ -214,6 +214,10 @@ documents those changes that are of interest to users and admins.
     previous it was always -2.
  -- If step exitcode hasn't been set display with sacct the -2 instead
     of acting like it is a signal and exitcode.
+ -- Send calculated step_rc for batch step instead of raw status as
+    done for normal steps.
+ -- If a job times out put 1 for the exit code in accounting instead of the
+    signal 1.
 
 * Changes in Slurm 14.03.6
 ==========================
