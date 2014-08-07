@@ -14,30 +14,28 @@
 #include <time.h>
 #include <unistd.h>
 
-int sig_cnt = 0;
+static int sig_cnt;
 
 void sig_handler(int sig)
 {
-	switch (sig)
-	{
+	switch (sig) {
 		case SIGINT:
 			printf("Received SIGINT\n");
-			fflush(stdout);
 			sig_cnt++;
 			break;
 		default:
 			printf("Received unexpected signal %d\n", sig);
-			fflush(stdout);
 	}
 }
 
-main (int argc, char **argv)
+int
+main(int argc, char **argv)
 {
 	struct sigaction act;
 	time_t begin_time = time(NULL);
 
+	setbuf(stdout, NULL);
 	printf("Begin test\n");
-	fflush(stdout);
 
 	act.sa_handler = sig_handler;
 	sigemptyset(&act.sa_mask);
