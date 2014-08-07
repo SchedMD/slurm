@@ -3041,7 +3041,12 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		info("step_partial_comp: JobID=%u invalid", req->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if (IS_JOB_PENDING(job_ptr)) {
+
+	/* If we are requeuing the job the completing flag will be set
+	 * but the state will be Pending, so don't use IS_JOB_PENDING
+	 * which won't see the completing flag.
+	 */
+	if (job_ptr->job_state == JOB_PENDING) {
 		info("step_partial_comp: JobID=%u pending", req->job_id);
 		return ESLURM_JOB_PENDING;
 	}
