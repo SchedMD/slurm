@@ -40,11 +40,14 @@ if [ ! -x ./regression ]; then
 	echo "FAILURE: cd to 'testsuite/expect' before starting 'regression'"
 	exit 1
 fi
-if [ ! -x ./globals ]; then
+if [ ! -e ./globals ]; then
 	echo "FAILURE: 'globals' file not found"
 	exit 1
 fi
-
+if [ ! -x ./globals ]; then
+	echo "FAILURE: 'globals' file not executable"
+	exit 1
+fi
 
 # Remove any recently edited back-up files
 /bin/rm -f test*.*% test*input test*output test*error
