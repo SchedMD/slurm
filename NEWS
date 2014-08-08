@@ -54,7 +54,7 @@ documents those changes that are of interest to users and admins.
     of acting like it is a signal and exitcode.
  -- Send calculated step_rc for batch step instead of raw status as
     done for normal steps.
- -- If a job times out put 1 for the exit code in accounting instead of the
+ -- If a job times out, set the exit code in accounting to 1 instead of the
     signal 1.
 
 * Changes in Slurm 14.03.6
