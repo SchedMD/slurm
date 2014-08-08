@@ -814,18 +814,6 @@ extern void build_cg_bitmap(struct job_record *job_ptr);
 extern void  build_config_feature_list(struct config_record *config_ptr);
 
 /*
- * create_job_record - create an empty job_record including job_details.
- *	load its values with defaults (zeros, nulls, and magic cookie)
- * IN/OUT error_code - set to zero if no error, errno otherwise
- * RET pointer to the record or NULL if error
- * global: job_list - global job list
- *	job_count - number of jobs in the system
- *	last_job_update - time of last job table update
- * NOTE: allocates memory that should be xfreed with _list_delete_job
- */
-extern struct job_record * create_job_record (int *error_code);
-
-/*
  * create_part_record - create a partition record
  * RET a pointer to the record or NULL if error
  * global: default_part - default partition parameters

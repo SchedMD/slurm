@@ -1172,12 +1172,14 @@ The default value is 1001.
 
 .TP
 \fBMaxJobCount\fR
-The maximum number of jobs SLURM can have in its active database
+The maximum number of jobs Slurm can have in its active database
 at one time. Set the values of \fBMaxJobCount\fR and \fBMinJobAge\fR
 to insure the slurmctld daemon does not exhaust its memory or other
 resources. Once this limit is reached, requests to submit additional
 jobs will fail. The default value is 10000 jobs.
-Performance can suffer with more than a couple hundred thousand jobs.
+NOTE: Each task of a job array counts as one job even though they will not
+occupy separate job records until modified or initiated.
+Performance can suffer with more than a few hundred thousand jobs.
 Setting per MaxSubmitJobs per user is generally valuable to prevent a single
 user from filling the system with jobs.
 This is accomplished using Slurm's database and configuring enforcement of

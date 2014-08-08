@@ -160,6 +160,8 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 static job_desc_msg_t * _copy_job_record_to_job_desc(
 				struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
+static struct job_record *_create_job_record(int *error_code,
+					     uint32_t num_jobs);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
@@ -418,23 +420,27 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 }
 
 /*
- * create_job_record - create an empty job_record including job_details.
+ * _create_job_record - create an empty job_record including job_details.
  *	load its values with defaults (zeros, nulls, and magic cookie)
- * IN/OUT error_code - set to zero if no error, errno otherwise
+ * OUT error_code - set to zero if no error, errno otherwise
+ * IN num_jobs - number of jobs this record should represent
+ *    = 0 - split out a job array record to its own job record
+ *    = 1 - simple job OR job array with one task
+ *    > 1 - job array create with the task count as num_jobs
  * RET pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with _list_delete_job
  */
-struct job_record *create_job_record(int *error_code)
+static struct job_record *_create_job_record(int *error_code, uint32_t num_jobs)
 {
 	struct job_record  *job_ptr;
 	struct job_details *detail_ptr;
 
-	if (job_count >= slurmctld_conf.max_job_cnt) {
-		error("create_job_record: MaxJobCount reached (%u)",
+	if ((job_count + num_jobs) >= slurmctld_conf.max_job_cnt) {
+		error("_create_job_record: MaxJobCount reached (%u)",
 		      slurmctld_conf.max_job_cnt);
 	}
 
-	job_count++;
+	job_count += num_jobs;
 	*error_code = 0;
 	last_job_update = time(NULL);
 
@@ -1298,7 +1304,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
-			job_ptr = create_job_record(&error_code);
+			job_ptr = _create_job_record(&error_code, 1);
 			if (error_code) {
 				error("Create job entry failed for job_id %u",
 				      job_id);
@@ -1460,7 +1466,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
-			job_ptr = create_job_record(&error_code);
+			job_ptr = _create_job_record(&error_code, 1);
 			if (error_code) {
 				error("Create job entry failed for job_id %u",
 				      job_id);
@@ -1624,7 +1630,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
-			job_ptr = create_job_record(&error_code);
+			job_ptr = _create_job_record(&error_code, 1);
 			if (error_code) {
 				error("Create job entry failed for job_id %u",
 				      job_id);
@@ -1900,6 +1906,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_ptr->array_recs->task_id_str = task_id_str;
 		job_ptr->array_recs->task_cnt =
 			bit_set_count(job_ptr->array_recs->task_id_bitmap);
+		if (job_ptr->array_recs->task_cnt > 1)
+			job_count += (job_ptr->array_recs->task_cnt - 1);
 		task_id_str = NULL;
 		job_ptr->array_recs->array_flags    = array_flags;
 		job_ptr->array_recs->max_run_tasks  = max_run_tasks;
@@ -3340,16 +3348,16 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	int error_code = SLURM_SUCCESS;
 	int i;
 
-	job_ptr_new = create_job_record(&error_code);
+	job_ptr_new = _create_job_record(&error_code, 0);
 	if (!job_ptr_new)     /* MaxJobCount checked when job array submitted */
-		fatal("job array create_job_record error");
+		fatal("job array _create_job_record error");
 	if (error_code != SLURM_SUCCESS)
 		return job_ptr_new;
 
 	_remove_job_hash(job_ptr);
 	job_ptr_new->job_id = job_ptr->job_id;
 	if (_set_job_id(job_ptr) != SLURM_SUCCESS)
-		fatal("job array create_job_record error");
+		fatal("job array _set_job_id error");
 	if (!job_ptr->array_recs) {
 		fatal("_job_rec_copy: job %u record lacks array structure",
 		      job_ptr->job_id);
@@ -3532,6 +3540,8 @@ static void _create_job_array(struct job_record *job_ptr,
 	job_specs->array_bitmap = NULL;
 	job_ptr->array_recs->task_cnt =
 		bit_set_count(job_ptr->array_recs->task_id_bitmap);
+	if (job_ptr->array_recs->task_cnt > 1)
+		job_count += (job_ptr->array_recs->task_cnt - 1);
 }
 
 /*
@@ -4135,14 +4145,17 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		}
 		tmp_bitmap = bit_copy(job_ptr->array_recs->task_id_bitmap);
 		if (signal == SIGKILL) {
+			uint32_t orig_task_cnt, new_task_count;
 			bit_not(array_bitmap);
 			bit_and(job_ptr->array_recs->task_id_bitmap,
 				array_bitmap);
 			xfree(job_ptr->array_recs->task_id_str);
 			bit_not(array_bitmap);
-			job_ptr->array_recs->task_cnt =
-				bit_set_count(job_ptr->array_recs->
-					      task_id_bitmap);
+			orig_task_cnt = job_ptr->array_recs->task_cnt;
+			new_task_count = bit_set_count(job_ptr->array_recs->
+						       task_id_bitmap);
+			job_ptr->array_recs->task_cnt = new_task_count;
+			job_count -= (orig_task_cnt - new_task_count);
 			if (job_ptr->array_recs->task_cnt == 0) {
 				last_job_update		= now;
 				job_ptr->job_state	= JOB_CANCELLED;
@@ -5563,14 +5576,14 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	if (job_desc->array_bitmap) {
 		int i = bit_set_count(job_desc->array_bitmap);
 		if ((job_count + i) >= slurmctld_conf.max_job_cnt) {
-			error("create_job_record: job_count exceeds "
-			      "MaxJobCount limit configured (%d + %d >= %u)",
+			error("%s: job_count exceeds MaxJobCount limit "
+			      "configured (%d + %d >= %u)", __func__,
 			      job_count, i, slurmctld_conf.max_job_cnt);
 			return EAGAIN;
 		}
 	} else if (job_count >= slurmctld_conf.max_job_cnt) {
-		error("create_job_record: MaxJobCount limit reached (%u)",
-		      slurmctld_conf.max_job_cnt);
+		error("%s: MaxJobCount limit reached (%u)",
+		      __func__, slurmctld_conf.max_job_cnt);
 		return EAGAIN;
 	}
 
@@ -5586,7 +5599,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		hl = hostlist_create(job_desc->req_nodes);
 		if (hl == NULL) {
 			/* likely a badly formatted hostlist */
-			error("create_job_record: bad hostlist");
+			error("%s: bad hostlist", __func__);
 			return ESLURM_INVALID_NODE_NAME;
 		}
 		host_cnt = hostlist_count(hl);
@@ -6161,22 +6174,21 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 						    &wckey_ptr)) {
 				if (accounting_enforce &
 				    ACCOUNTING_ENFORCE_WCKEYS) {
-					error("_copy_job_desc_to_job_record: "
-					      "invalid wckey '%s' for user %u.",
-					      wckey_rec.name,
+					error("%s: invalid wckey '%s' for "
+					      "user %u.",
+					      __func__, wckey_rec.name,
 					      job_desc->user_id);
 					return ESLURM_INVALID_WCKEY;
 				}
 			}
 		} else if (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			/* This should never happen */
-			info("_copy_job_desc_to_job_record: no wckey was given "
-			     "for job submit.");
+			info("%s: no wckey was given for job submit", __func__);
 			return ESLURM_INVALID_WCKEY;
 		}
 	}
 
-	job_ptr = create_job_record(&error_code);
+	job_ptr = _create_job_record(&error_code, 1);
 	if (error_code)
 		return error_code;
 
