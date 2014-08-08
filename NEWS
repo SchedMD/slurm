@@ -56,6 +56,8 @@ documents those changes that are of interest to users and admins.
     done for normal steps.
  -- If a job times out, set the exit code in accounting to 1 instead of the
     signal 1.
+ -- Update the acct_gather.conf.5 man page removing the reference to
+    InfinibandOFEDFrequency.
 
 * Changes in Slurm 14.03.6
 ==========================
