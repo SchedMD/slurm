@@ -3532,7 +3532,6 @@ static void _create_job_array(struct job_record *job_ptr,
 	job_specs->array_bitmap = NULL;
 	job_ptr->array_recs->task_cnt =
 		bit_set_count(job_ptr->array_recs->task_id_bitmap);
-
 }
 
 /*
@@ -6832,7 +6831,7 @@ static void _list_delete_job(void *job_entry)
 {
 	struct job_record *job_ptr = (struct job_record *) job_entry;
 	struct job_record **job_pptr, *tmp_ptr;
-	int i;
+	int job_array_size, i;
 
 	xassert(job_entry);
 	xassert (job_ptr->magic == JOB_MAGIC);
@@ -6849,6 +6848,12 @@ static void _list_delete_job(void *job_entry)
 		error("job hash error");
 	else
 		*job_pptr = job_ptr->job_next;
+
+	if (job_ptr->array_recs) {
+		job_array_size = MAX(1, job_ptr->array_recs->task_cnt);
+	} else {
+		job_array_size = 1;
+	}
 
 	/* Remove the record from job array hash tables, if applicable */
 	if (job_ptr->array_task_id != NO_VAL) {
@@ -6921,7 +6926,12 @@ static void _list_delete_job(void *job_entry)
 	step_list_purge(job_ptr);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->wckey);
-	job_count--;
+	if (job_array_size > job_count) {
+		error("job_count underflow");
+		job_count = 0;
+	} else {
+		job_count -= job_array_size;
+	}
 	xfree(job_ptr);
 }
 
