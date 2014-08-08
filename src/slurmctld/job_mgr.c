@@ -422,9 +422,6 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
  *	load its values with defaults (zeros, nulls, and magic cookie)
  * IN/OUT error_code - set to zero if no error, errno otherwise
  * RET pointer to the record or NULL if error
- * global: job_list - global job list
- *	job_count - number of jobs in the system
- *	last_job_update - time of last job table update
  * NOTE: allocates memory that should be xfreed with _list_delete_job
  */
 struct job_record *create_job_record(int *error_code)
@@ -2566,7 +2563,7 @@ extern int kill_job_by_part_name(char *part_name)
 	ListIterator job_iterator, part_iterator;
 	struct job_record  *job_ptr;
 	struct part_record *part_ptr, *part2_ptr;
-	int job_count = 0;
+	int kill_job_cnt = 0;
 	time_t now = time(NULL);
 
 	part_ptr = find_part_record (part_name);
@@ -2617,7 +2614,7 @@ extern int kill_job_by_part_name(char *part_name)
 			suspended = true;
 		}
 		if (IS_JOB_RUNNING(job_ptr) || suspended) {
-			job_count++;
+			kill_job_cnt++;
 			info("Killing job_id %u on defunct partition %s",
 			     job_ptr->job_id, part_name);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
@@ -2636,7 +2633,7 @@ extern int kill_job_by_part_name(char *part_name)
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
 		} else if (pending) {
-			job_count++;
+			kill_job_cnt++;
 			info("Killing job_id %u on defunct partition %s",
 			     job_ptr->job_id, part_name);
 			job_ptr->job_state	= JOB_CANCELLED;
@@ -2650,9 +2647,9 @@ extern int kill_job_by_part_name(char *part_name)
 	}
 	list_iterator_destroy(job_iterator);
 
-	if (job_count)
+	if (kill_job_cnt)
 		last_job_update = now;
-	return job_count;
+	return kill_job_cnt;
 }
 
 /*
@@ -2669,7 +2666,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 	struct job_record  *job_ptr;
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
-	int i, job_count = 0;
+	int i, kill_job_cnt = 0;
 
 	if (node_name == NULL)
 		fatal("kill_job_by_front_end_name: node_name is NULL");
@@ -2696,7 +2693,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 			suspended = true;
 		}
 		if (IS_JOB_COMPLETING(job_ptr)) {
-			job_count++;
+			kill_job_cnt++;
 			while ((i = bit_ffs(job_ptr->node_bitmap_cg)) >= 0) {
 				bit_clear(job_ptr->node_bitmap_cg, i);
 				job_update_cpu_cnt(job_ptr, i);
@@ -2721,7 +2718,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 				}
 			}
 		} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
-			job_count++;
+			kill_job_cnt++;
 			if (job_ptr->batch_flag && job_ptr->details &&
 			    slurmctld_conf.job_requeue &&
 			    (job_ptr->details->requeue > 0)) {
@@ -2814,9 +2811,9 @@ extern int kill_job_by_front_end_name(char *node_name)
 	}
 	list_iterator_destroy(job_iterator);
 
-	if (job_count)
+	if (kill_job_cnt)
 		last_job_update = now;
-	return job_count;
+	return kill_job_cnt;
 #else
 	return 0;
 #endif
@@ -2897,7 +2894,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 	struct job_record *job_ptr;
 	struct node_record *node_ptr;
 	int bit_position;
-	int job_count = 0;
+	int kill_job_cnt = 0;
 	time_t now = time(NULL);
 
 	node_ptr = find_node_record(node_name);
@@ -2927,7 +2924,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 		if (IS_JOB_COMPLETING(job_ptr)) {
 			if (!bit_test(job_ptr->node_bitmap_cg, bit_position))
 				continue;
-			job_count++;
+			kill_job_cnt++;
 			bit_clear(job_ptr->node_bitmap_cg, bit_position);
 			job_update_cpu_cnt(job_ptr, bit_position);
 			if (job_ptr->node_cnt)
@@ -2949,7 +2946,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				      node_ptr->name, job_ptr->job_id);
 			}
 		} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
-			job_count++;
+			kill_job_cnt++;
 			if ((job_ptr->details) &&
 			    (job_ptr->kill_on_node_fail == 0) &&
 			    (job_ptr->node_cnt > 1)) {
@@ -3051,10 +3048,10 @@ extern int kill_running_job_by_node_name(char *node_name)
 
 	}
 	list_iterator_destroy(job_iterator);
-	if (job_count)
+	if (kill_job_cnt)
 		last_job_update = now;
 
-	return job_count;
+	return kill_job_cnt;
 }
 
 /* Remove one node from a job's allocation */
@@ -6830,9 +6827,6 @@ _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
  * _list_delete_job - delete a job record and its corresponding job_details,
  *	see common/list.h for documentation
  * IN job_entry - pointer to job_record to delete
- * global: job_list - pointer to global job list
- *	job_count - count of job list entries
- *	job_hash - hash table into job records
  */
 static void _list_delete_job(void *job_entry)
 {
