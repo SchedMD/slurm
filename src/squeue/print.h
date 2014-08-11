@@ -43,7 +43,6 @@
 #include "slurm/slurm.h"
 
 #include "src/common/list.h"
-#include "src/squeue/squeue.h"
 
 #define FORMAT_STRING_SIZE 32
 
