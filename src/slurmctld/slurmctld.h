@@ -647,7 +647,7 @@ struct job_record {
 	time_t start_time;		/* time execution begins,
 					 * actual or expected */
 	char *state_desc;		/* optional details for state_reason */
-	uint16_t state_reason;		/* reason job still pending or failed
+	uint32_t state_reason;		/* reason job still pending or failed
 					 * see slurm.h:enum job_wait_reason */
 	List step_list;			/* list of job's steps */
 	time_t suspend_time;		/* time job last suspended or resumed */

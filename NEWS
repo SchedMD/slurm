@@ -32,6 +32,10 @@ documents those changes that are of interest to users and admins.
  -- Added squeue -P/--priority option that can be used to display pending jobs
     in the same order as used by the Slurm scheduler even if jobs are submitted
     to multiple partitions (job is reported once per usable partition).
+ -- Improve the pending reason description for various QOS limits. For each
+    QOS limit that causes a job to be pending print its specific reason.
+    For example if job pends because of GrpCpus the squeue command will
+    print QOSGrpCpuLimit as pending reason.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

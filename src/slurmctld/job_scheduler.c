@@ -619,9 +619,10 @@ next_part:		part_ptr = (struct part_record *)
 			}
 		}
 
-		if ((job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
-		    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
-		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
+		if ((job_ptr->state_reason == WAIT_QOS_JOB_LIMIT)
+		    || (job_ptr->state_reason >= WAIT_QOS_GRP_CPU
+			&& job_ptr->state_reason <= WAIT_QOS_MAX_NODE_PER_USER)
+		    || (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
 			job_ptr->state_reason = WAIT_NO_REASON;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;

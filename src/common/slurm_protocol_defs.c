@@ -1097,6 +1097,34 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "AccountNotAllowed";
 	case WAIT_DEP_INVALID:
 		return "DependencyNeverSatisfied";
+	case WAIT_QOS_GRP_CPU:
+		return "QOSGrpCpuLimit";
+	case WAIT_QOS_GRP_CPU_MIN:
+		return "QOSGrpCPUMinsLimit";
+	case WAIT_QOS_GRP_CPU_RUN_MIN:
+		return "QOSGrpCPURunMinsLimit";
+	case WAIT_QOS_GRP_JOB:
+		return"QOSGrpJobsLimit";
+	case WAIT_QOS_GRP_MEMORY:
+		return "QOSGrpMemoryLimit";
+	case WAIT_QOS_GRP_NODES:
+		return "QOSGrpNodesLimit";
+	case WAIT_QOS_GRP_SUB_JOB:
+		return "QOSGrpSubmitJobsLimit";
+	case WAIT_QOS_GRP_WALL:
+		return "QOSGrpWallLimit";
+	case WAIT_QOS_MAX_CPUS_PER_JOB:
+		return "QOSMaxCpusPerJobLimit";
+	case WAIT_QOS_MAX_NODE_PER_JOB:
+		return "QOSMaxNodesPerJobLimit";
+	case WAIT_QOS_MAX_WALL_PER_JOB:
+		return "QOSMaxWallDurationPerJobLimit";
+	case WAIT_QOS_MAX_CPU_PER_USER:
+		return "QOSMaxCpusPerUserLimit";
+	case WAIT_QOS_MAX_JOB_PER_USER:
+		return "QOSMaxJobsPerUserLimit";
+	case WAIT_QOS_MAX_NODE_PER_USER:
+		return "QOSMaxNodesPerUserLimit";
 	default:
 		return "?";
 	}

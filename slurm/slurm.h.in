@@ -340,7 +340,23 @@ enum job_state_reason {
 	WAIT_PROLOG,		/* Prolog is running */
 	WAIT_QOS,	 	/* QOS not allowed */
 	WAIT_ACCOUNT,	 	/* Account not allowed */
-	WAIT_DEP_INVALID        /* Dependency condition invalid or never satisfied */
+	WAIT_DEP_INVALID,        /* Dependency condition invalid or never
+				  * satisfied
+				  */
+	WAIT_QOS_GRP_CPU,            /* QOS GrpCpus exceeded */
+	WAIT_QOS_GRP_CPU_MIN,        /* QOS GrpCPUMins exceeded */
+	WAIT_QOS_GRP_CPU_RUN_MIN,    /* QOS GrpCPURunMins exceeded */
+	WAIT_QOS_GRP_JOB,            /* QOS GrpJobs exceeded */
+	WAIT_QOS_GRP_MEMORY,         /* QOS GrpMemory exceeded */
+	WAIT_QOS_GRP_NODES,          /* QOS GrpNodes exceeded */
+	WAIT_QOS_GRP_SUB_JOB,        /* QOS GrpSubmitJobs exceeded */
+	WAIT_QOS_GRP_WALL,           /* QOS GrpWall exceeded */
+	WAIT_QOS_MAX_CPUS_PER_JOB,   /* QOS MaxCpusPerJob exceeded */
+	WAIT_QOS_MAX_NODE_PER_JOB,   /* QOS MaxNodesPerJob exceeded */
+	WAIT_QOS_MAX_WALL_PER_JOB,   /* QOS MaxWallDurationPerJob exceeded */
+	WAIT_QOS_MAX_CPU_PER_USER,   /* QOS MaxCpusPerUser exceeded */
+	WAIT_QOS_MAX_JOB_PER_USER,   /* QOS MaxJobsPerUser exceeded */
+	WAIT_QOS_MAX_NODE_PER_USER   /* QOS MaxNodesPerUser exceeded */
 };
 
 enum job_acct_types {
