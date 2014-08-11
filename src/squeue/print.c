@@ -61,8 +61,14 @@
 static int	_filter_job(job_info_t * job);
 static int	_filter_step(job_step_info_t * step);
 static int	_get_node_cnt(job_info_t * job);
+static void	_job_list_del(void *x);
 static int	_nodes_in_list(char *node_list);
+static uint32_t	_part_get_prio(char *part_name);
+static void	_part_state_free(void);
+static void	_part_state_load(void);
 static int	_print_str(char *str, int width, bool right, bool cut_output);
+
+static partition_info_msg_t *part_info_msg = NULL;
 
 /*****************************************************************************
  * Global Print Functions
@@ -86,19 +92,39 @@ int print_steps(List steps, List format)
 
 int print_jobs_array(job_info_t * jobs, int size, List format)
 {
+	squeue_job_rec_t *job_rec_ptr;
+	char *tmp, *tok, *save_ptr = NULL;
 	int i;
 	List l;
 
-	l = list_create(NULL);
+	l = list_create(_job_list_del);
 	if (!params.no_header)
 		print_job_from_format(NULL, format);
+	_part_state_load();
 
 	/* Filter out the jobs of interest */
 	for (i = 0; i < size; i++) {
 		if (_filter_job(&jobs[i]))
 			continue;
-		list_append(l, (void *) &jobs[i]);
+		if (params.priority_flag) {
+			tmp = xstrdup(jobs[i].partition);
+			tok = strtok_r(tmp, ",", &save_ptr);
+			while (tok) {
+				job_rec_ptr = xmalloc(sizeof(squeue_job_rec_t));
+				job_rec_ptr->job_ptr = jobs + i;
+				job_rec_ptr->part_name = xstrdup(tok);
+				job_rec_ptr->part_prio = _part_get_prio(tok);
+				list_append(l, (void *) job_rec_ptr);
+				tok = strtok_r(NULL, ",", &save_ptr);
+			}
+			xfree(tmp);
+		} else {
+			job_rec_ptr = xmalloc(sizeof(squeue_job_rec_t));
+			job_rec_ptr->job_ptr = jobs + i;
+			list_append(l, (void *) job_rec_ptr);
+		}
 	}
+	_part_state_free();
 	sort_jobs_by_start_time (l);
 	sort_job_list (l);
 
@@ -111,7 +137,6 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 
 int print_steps_array(job_step_info_t * steps, int size, List format)
 {
-
 	if (!params.no_header)
 		print_step_from_format(NULL, format);
 
@@ -142,6 +167,46 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static void _job_list_del(void *x)
+{
+	squeue_job_rec_t *job_rec_ptr = (squeue_job_rec_t *) x;
+	xfree(job_rec_ptr->part_name);
+	xfree(job_rec_ptr);
+}
+
+static uint32_t _part_get_prio(char *part_name)
+{
+	partition_info_t *part_ptr;
+	uint32_t part_prio = 1;	/* Default partition priority */
+	int i;
+
+	for (i = 0, part_ptr = part_info_msg->partition_array;
+	     i < part_info_msg->record_count; i++, part_ptr++) {
+		if (!strcmp(part_ptr->name, part_name)) {
+			part_prio = part_ptr->priority;
+			break;
+		}
+	}
+	return part_prio;
+}
+
+static void _part_state_free(void)
+{
+	if (part_info_msg) {
+		slurm_free_partition_info_msg(part_info_msg);
+		part_info_msg = NULL;
+	}
+}
+
+static void _part_state_load(void)
+{
+	int rc;
+
+	rc = slurm_load_partitions(0, &part_info_msg, SHOW_ALL);
+	if (rc != SLURM_SUCCESS)
+		slurm_perror ("slurm_load_partitions");
 }
 
 static int _print_str(char *str, int width, bool right, bool cut_output)
@@ -264,18 +329,29 @@ static int _print_one_job_from_format(job_info_t * job, List list)
 	return SLURM_SUCCESS;
 }
 
-int print_job_from_format(job_info_t * job, List list)
+int print_job_from_format(squeue_job_rec_t *job_rec_ptr, List list)
 {
 	static int32_t max_array_size = -1;
 	int i, i_first, i_last;
 	bitstr_t *bitmap;
 
-	if (job && job->array_task_str && params.array_flag) {
+	if (!job_rec_ptr) {
+		_print_one_job_from_format(NULL, list);
+		return SLURM_SUCCESS;
+	}
+
+	if (job_rec_ptr->part_name) {
+		xfree(job_rec_ptr->job_ptr->partition);
+		job_rec_ptr->job_ptr->partition = xstrdup(job_rec_ptr->
+							  part_name);
+		
+	}
+	if (job_rec_ptr->job_ptr->array_task_str && params.array_flag) {
 		if (max_array_size == -1)
 			max_array_size = slurm_get_max_array_size();
 		bitmap = bit_alloc(max_array_size);
-		bit_unfmt(bitmap, job->array_task_str);
-		xfree(job->array_task_str);
+		bit_unfmt(bitmap, job_rec_ptr->job_ptr->array_task_str);
+		xfree(job_rec_ptr->job_ptr->array_task_str);
 		i_first = bit_ffs(bitmap);
 		if (i_first == -1)
 			i_last = -2;
@@ -284,12 +360,12 @@ int print_job_from_format(job_info_t * job, List list)
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(bitmap, i))
 				continue;
-			job->array_task_id = i;
-			_print_one_job_from_format(job, list);
+			job_rec_ptr->job_ptr->array_task_id = i;
+			_print_one_job_from_format(job_rec_ptr->job_ptr, list);
 		}
 		FREE_NULL_BITMAP(bitmap);
 	} else {
-		_print_one_job_from_format(job, list);
+		_print_one_job_from_format(job_rec_ptr->job_ptr, list);
 	}
 
 	return SLURM_SUCCESS;

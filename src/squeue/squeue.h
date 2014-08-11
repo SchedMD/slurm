@@ -65,9 +65,9 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/slurmdb_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
-#include "src/common/slurmdb_defs.h"
 #include "src/squeue/print.h"
 
 typedef struct job_step {
@@ -86,6 +86,7 @@ struct squeue_parameters {
 	bool long_format;
 	bool long_list;
 	bool no_header;
+	bool priority_flag;
 	int  verbose;
 
 	char* accounts;

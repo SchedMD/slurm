@@ -122,6 +122,9 @@ COMMAND CHANGES (see man pages for details)
     and sview commands.
  -- Enable scontrol to clear a nodes's scheduled reboot by setting its state
     to "RESUME".
+ -- Added squeue -P/--priority option that can be used to display pending jobs
+    in the same order as used by the Slurm scheduler even if jobs are submitted
+    to multiple partitions (job is reported once per usable partition).
 
 OTHER CHANGES
 =============

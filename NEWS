@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
  -- Modify crypto/munge plugin to use socket and timeout specified in AuthInfo.
  -- If we have a state for a step on completion put that in the database
     instead of guessing off the exit_code.
+ -- Added squeue -P/--priority option that can be used to display pending jobs
+    in the same order as used by the Slurm scheduler even if jobs are submitted
+    to multiple partitions (job is reported once per usable partition).
 
 * Changes in Slurm 14.11.0pre3
 ==============================

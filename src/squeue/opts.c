@@ -118,6 +118,7 @@ parse_command_line( int argc, char* argv[] )
 		{"nodelist",   required_argument, 0, 'w'},
 		{"noheader",   no_argument,       0, 'h'},
 		{"partitions", required_argument, 0, 'p'},
+		{"priority",   no_argument,       0, 'P'},
 		{"qos",        required_argument, 0, 'q'},
 		{"reservation",required_argument, 0, 'R'},
 		{"sort",       required_argument, 0, 'S'},
@@ -145,9 +146,11 @@ parse_command_line( int argc, char* argv[] )
 		}
 		working_cluster_rec = list_peek(params.clusters);
 	}
+	if (getenv("SQUEUE_PRIORITY"))
+		params.priority_flag = true;
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:ahi:j::lL:n:M:O:o:p:q:R:rs::S:t:u:U:vVw:",
+				       "A:ahi:j::lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -228,7 +231,6 @@ parse_command_line( int argc, char* argv[] )
 				exit(1);
 			}
 			override_format_env = true;
-
 			break;
 		case (int) 'p':
 			xfree(params.partitions);
@@ -236,6 +238,9 @@ parse_command_line( int argc, char* argv[] )
 			params.part_list =
 				_build_str_list( params.partitions );
 			params.all_flag = true;
+			break;
+		case (int) 'P':
+			params.priority_flag = true;
 			break;
 		case (int) 'q':
 			xfree(params.qoss);
@@ -1569,6 +1574,7 @@ _print_options(void)
 	printf( "names       = %s\n", params.names );
 	printf( "nodes       = %s\n", hostlist ) ;
 	printf( "partitions  = %s\n", params.partitions ) ;
+	printf( "priority    = %s\n", params.priority_flag ? "true" : "false");
 	printf( "reservation = %s\n", params.reservation ) ;
 	printf( "sort        = %s\n", params.sort ) ;
 	printf( "start_flag  = %d\n", params.start_flag );

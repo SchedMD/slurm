@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "April 2014" "squeue 14.03" "Slurm components"
+.TH SQUEUE "1" "August 2014" "squeue 14.01" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -860,6 +860,14 @@ Specify the partitions of the jobs or steps to view. Accepts a comma separated
 list of partition names.
 
 .TP
+\fB\-P\fR, \fB\-\-priority\fR
+For pending jobs submitted to multiple partitions, list the job once per
+partition. In addition, if jobs are sorted by priority, consider both the
+partition and job priority. This option can be used to produce a list of
+pending in the same order considered for scheduling by Slurm with appropriate
+additional options (e.g. "\-\-sort=\-p,i \-\-states=PD").
+
+.TP
 \fB\-q <qos_list>\fR, \fB\-\-qos=<qos_list>\fR
 Specify the qos(s) of the jobs or steps to view. Accepts a comma
 separated list of qos's.
@@ -1167,6 +1175,9 @@ Another suggested value is "%a %T" for a day of week and time stamp (e.g.
 .TP
 \fBSQUEUE_PARTITION\fR
 \fB\-p <part_list>, \-\-partition=<part_list>\fR
+.TP
+\fBSQUEUE_PRIORITY\fR
+\fB\-P\fR, \fB\-\-priority\fR
 .TP
 \fBSQUEUE_QOS\fR
 \fB\-p <qos_list>, \-\-qos=<qos_list>\fR
