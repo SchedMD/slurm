@@ -3573,7 +3573,8 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			rc = select_nodes(job_ptr, test_only,
 					  select_node_bitmap, err_msg);
 			if ((rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
-			    (rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE))
+			    (rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+			    (rc != ESLURM_NODES_BUSY))
 				break;
 		}
 		list_iterator_destroy(iter);
