@@ -172,6 +172,12 @@ static spare_node_resv_t *_xlate_hot_spares(char *spare_str, int *spare_cnt)
 			node_cnt = atoi(sep + 1);
 			sep[0] = '\0';
 			part_ptr = find_part_record(part);
+			if ((*spare_cnt > 0) && (spare_ptr == NULL)) {
+				/* Avoid CLANG error */
+				fatal("%s: spare array is NULL with size=%d",
+				      __func__, *spare_cnt);
+				return spare_ptr;
+			}
 			for (i = 0; i < *spare_cnt; i++) {
 				if (spare_ptr[i].part_ptr != part_ptr)
 					continue;
