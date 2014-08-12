@@ -58,6 +58,7 @@ documents those changes that are of interest to users and admins.
     signal 1.
  -- Update the acct_gather.conf.5 man page removing the reference to
     InfinibandOFEDFrequency.
+ -- Fix gang scheduling for jobs submitted to multiple partitions.
 
 * Changes in Slurm 14.03.6
 ==========================

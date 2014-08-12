@@ -1043,6 +1043,7 @@ static void _scan_slurm_job_list(void)
 	struct gs_part *p_ptr;
 	int i;
 	ListIterator job_iterator;
+	char *part_name;
 
 	if (!job_list) {	/* no jobs */
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -1062,10 +1063,15 @@ static void _scan_slurm_job_list(void)
 		if (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority == 0))
 			continue;	/* not suspended by us */
 
+		if (job_ptr->part_ptr && job_ptr->part_ptr->name)
+			part_name = job_ptr->part_ptr->name;
+		else
+			part_name = job_ptr->partition;
+
 		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
 			/* are we tracking this job already? */
 			p_ptr = list_find_first(gs_part_list, _find_gs_part,
-						job_ptr->partition);
+						part_name);
 			if (!p_ptr) /* no partition */
 				continue;
 			i = _find_job_index(p_ptr, job_ptr->job_id);
@@ -1094,8 +1100,7 @@ static void _scan_slurm_job_list(void)
 		/* if the job is not pending, suspended, or running, then
 		 * it's completing or completed. Make sure we've released
 		 * this job */
-		p_ptr = list_find_first(gs_part_list, _find_gs_part,
-					job_ptr->partition);
+		p_ptr = list_find_first(gs_part_list, _find_gs_part, part_name);
 		if (!p_ptr) /* no partition */
 			continue;
 		_remove_job_from_part(job_ptr->job_id, p_ptr, false);
@@ -1216,13 +1221,17 @@ extern int gs_job_start(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
 	uint16_t job_state;
+	char *part_name;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_job_start for job %u", job_ptr->job_id);
 	/* add job to partition */
+	if (job_ptr->part_ptr && job_ptr->part_ptr->name)
+		part_name = job_ptr->part_ptr->name;
+	else
+		part_name = job_ptr->partition;
 	pthread_mutex_lock(&data_mutex);
-	p_ptr = list_find_first(gs_part_list, _find_gs_part,
-				job_ptr->partition);
+	p_ptr = list_find_first(gs_part_list, _find_gs_part, part_name);
 	if (p_ptr) {
 		job_state = _add_job_to_part(p_ptr, job_ptr);
 		/* if this job is running then check for preemption */
@@ -1236,7 +1245,7 @@ extern int gs_job_start(struct job_record *job_ptr)
 		 * uninterupted (what else can we do?)
 		 */
 		error("gang: could not find partition %s for job %u",
-		      job_ptr->partition, job_ptr->job_id);
+		      part_name, job_ptr->job_id);
 	}
 
 	_preempt_job_dequeue();	/* MUST BE OUTSIDE OF data_mutex lock */
@@ -1287,12 +1296,16 @@ extern void gs_wake_jobs(void)
 extern int gs_job_fini(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
+	char *part_name;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_job_fini for job %u", job_ptr->job_id);
+	if (job_ptr->part_ptr && job_ptr->part_ptr->name)
+		part_name = job_ptr->part_ptr->name;
+	else
+		part_name = job_ptr->partition;
 	pthread_mutex_lock(&data_mutex);
-	p_ptr = list_find_first(gs_part_list, _find_gs_part,
-				job_ptr->partition);
+	p_ptr = list_find_first(gs_part_list, _find_gs_part, part_name);
 	if (!p_ptr) {
 		pthread_mutex_unlock(&data_mutex);
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
