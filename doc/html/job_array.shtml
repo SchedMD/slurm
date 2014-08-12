@@ -4,10 +4,9 @@
 
 <h2>Overview</h2>
 
-<p>Support for job arrays was added in Slurm version 2.6.
-Job arrays offer a mechanism for submitting and managing collections of similar
-jobs quickly and easily; millions of thousands of jobs can be submitted in
-milliseconds (subject to configured size limits).
+<p>Job arrays offer a mechanism for submitting and managing collections of
+similar jobs quickly and easily; job arrays with millions of tasks can be
+submitted in milliseconds (subject to configured size limits).
 All jobs must have the same initial options (e.g. size, time limit, etc.),
 however it is possible to change some of these options after the job has begun
 execution using the command specifying the <i>JobID</i> of the array or individual
@@ -65,10 +64,17 @@ SLURM_ARRAY_TASK_ID=3<br>
 </p>
 
 <p>All Slurm commands and APIs recognize the SLURM_JOBID value.
-Some commands also recognize the SLURM_ARRAY_JOB_ID plus SLURM_ARRAY_TASK_ID
+Most commands also recognize the SLURM_ARRAY_JOB_ID plus SLURM_ARRAY_TASK_ID
 values separated by an underscore as identifying an element of a job array.
 Using the example above, "37" or "36_2" would be equivalent ways to identify
-the second array element of job 36.</p>
+the second array element of job 36.
+A set of APIs has been developed to operate on an entire job array or select
+tasks of a job array in a single function call.
+The function response consists of an array identifying the various error codes
+for various tasks of a job ID.
+For example the <i>job_resume2()</i> function might return an array of error
+codes indicating that tasks 1 and 2 have already completed; tasks 3 through 5
+are resumed successfully, and tasks 6 through 99 have not yet started.</p>
 
 <h2>File Names</h2>
 
@@ -80,9 +86,8 @@ and
 The default output file format for a job array is "slurm-%A_%a.out".
 An example of explicit use of the formatting is:<br>
 <i>sbatch -o slurm-%A_%a.out --array=1-3 -N1 tmp</i><br>
-which would generated
-output files names of this sort "slurm-36_1.out", "slurm-36_2.out" and
-"slurm-36_3.out".
+which would generate output files names of this sort
+"slurm-36_1.out", "slurm-36_2.out" and "slurm-36_3.out".
 If these file name options are used without being part of a job array then
 "%A" will be replaced by the current job ID and "%a" will be replaced by
 4,294,967,294 (equivalent to 0xfffffffe or NO_VAL).</p>
@@ -91,7 +96,7 @@ If these file name options are used without being part of a job array then
 
 <p>If the job ID of a job array is specified as input to the scancel command
 then all elements of that job array will be cancelled.
-Alternately a array ID, optionally using regular expressions may be specified
+Alternately a array ID, optionally using regular expressions, may be specified
 for job cancellation.</p>
 
 <pre>
@@ -114,8 +119,12 @@ fi
 
 <h2>Squeue Command Use</h2>
 
-<p>By default, the squeue command will combine all pending elements of a job
-array on one line and use a regular expression to indicate the
+<p>When a job array is submitted to Slurm, only one job record is created.
+Additional job records will only be created when the state of a task in the
+job array changes, typically when a task is allocated resources or its state
+is modified using the scontrol command.
+By default, the squeue command will report all of the tasks associated with
+a single job record on one line and use a regular expression to indicate the
 "array_task_id" values as shown below.</p>
 
 <pre>
@@ -168,7 +177,7 @@ The <i>ArrayJobID</i> is the <i>JobID</i> of the first element of the job
 array.
 The <i>ArrayTaskID</i> is the array index of this particular entry, either a
 single number of an expression identifying the entries represented by this
-job record (e.g. "5\-1024").
+job record (e.g. "5-1024").
 Neither field is displayed if the job is not part of a job array.
 The optional job ID specified with the <i>scontrol show job</i> or
 <i>scontrol show step</i> commands can identify job array elements by
@@ -253,13 +262,13 @@ Examples of use follow:</p>
 sbatch --depend=after:123_4 my.job
 sbatch --depend=afterok:123_4:123_8 my.job2
 
-# Wait for entire job array to complette
+# Wait for entire job array to complete
 sbatch --depend=after:123 my.job
 </pre>
 
 <p>The following Slurm commands do not currently recognize job arrays and their
 use requires the use of Slurm job IDs, which are unique for each array element:
-sacct, sbcast, smap, sreport, sshare, sstat, strigger, and sview.
+sacct, sbcast, smap, sreport, sshare, sstat, and strigger.
 The sattach, sprio and sstat commands have been modified to permit
 specification of either job IDs or job array elements.
 The sview command has been modified to permit display of a job's ArrayJobId
@@ -271,9 +280,12 @@ the job is not part of a job array.</p>
 <p>A new configuration parameter has been added to control the maximum
 job array size: <b>MaxArraySize</b>. The smallest index that can be specified
 by a user is zero and the maximum index is MaxArraySize minus one.
-The default value of MaxArraySize is 1001. Be mindful about the value of
-MaxArraySize as job arrays offer an easy way for users to submit large numbers
-of jobs very quickly.</p>
+The default value of MaxArraySize is 1001.
+The maximum MaxArraySize supported in Slurm version 14.03 and earlier is 65,533.
+Slurm version 14.11 has a new job array data structure, which can support
+job arrays with millions of tasks.
+ Be mindful about the value of MaxArraySize as job arrays offer an easy way
+for users to submit large numbers of jobs very quickly.</p>
 
 <p>The sched/backfill plugin has been modified to improve performance with
 job arrays. Once one element of a job array is discovered to not be runable
@@ -287,6 +299,6 @@ manage large job counts.
 Each task of the job array will have a unique Slurm "job_id", but
 all will have the same "array_job_id" value.</p>
 
-<p style="text-align:center;">Last modified 29 July 2014</p>
+<p style="text-align:center;">Last modified 12 August 2014</p>
 
 <!--#include virtual="footer.txt"-->
