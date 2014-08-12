@@ -1,8 +1,8 @@
-.TH "Slurm API" "3" "February 2010" "Morris Jette" "Slurm job and step update functions"
+.TH "Slurm API" "3" "August 2014" "Morris Jette" "Slurm job and step update functions"
 
 .SH "NAME"
 slurm_init_job_desc_msg, slurm_init_update_step_msg, 
-slurm_update_job, slurm_update_step
+slurm_update_job, slurm_update_job2, slurm_update_step
 \- Slurm job and step update functions
 
 .SH "SYNTAX"
@@ -27,9 +27,22 @@ int \fBslurm_update_job\fR (
 .br
 );
 .LP
+int \fBslurm_update_job2\fR (
+.br
+        job_desc_msg_t * \fIjob_msg\fP,
+        job_array_resp_msg_t **resp
+.br
+);
+.LP
 int \fBslurm_update_step\fR (
 .br
 	step_update_request_msg_t * \fIstep_msg\fP
+.br
+);
+.LP
+void \fBslurm_free_job_array_resp\fR (
+.br
+        job_array_resp_msg_t *resp
 .br
 );
 
@@ -43,26 +56,49 @@ See slurm.h for full details on the data structure's contents.
 \fIstep_msg\fP
 Specifies the pointer to a step descriptor.
 See slurm.h for full details on the data structure's contents.
+.TP
+\fIresp\fP
+Array of error codes and job IDs.
+Always use the \fBslurm_free_job_array_resp\fR function to release the memory
+allocated to hold the error codes.
 
 .SH "DESCRIPTION"
-.LP
-\fBslurm_init_job_desc_msg\fR Initialize the contents of a job descriptor with default values.
+.TP 18
+\fBslurm_init_job_desc_msg\fR
+Initialize the contents of a job descriptor with default values.
 Execute this function before issuing a request to submit or modify a job.
-.LP
-\fBslurm_init_update_step_msg\fR Initialize the contents of a job step update 
-descriptor with default values.
+.TP
+\fBslurm_init_update_step_msg\fR
+Initialize the contents of a job step update descriptor with default values.
 Execute this function before issuing a request to modify a job step.
-.LP
-\fBslurm_update_job\fR Update a job with the changes made to the data
-structure passed as an argument to the function.
-.LP
-\fBslurm_update_step\fR Update a job step with the changes made to the data
-structure passed as an argument to the function.
+.TP
+\fBslurm_update_job\fR
+Update a job with the changes made to the data structure passed as an argument
+to the function.
+.TP
+\fBslurm_update_job2\fR
+Update a job or job array with the changes made to the data structure passed
+as an argument to the function.
+Call the function \fBslurm_free_job_array_resp\fR to release memory allocated
+for the response array.
+.TP
+\fBslurm_update_step\fR
+Update a job step with the changes made to the data structure passed as an
+argument to the function.
+.TP
+\fBslurm_free_job_array_resp\fR
+Release memory allocated by the \fBslurm_suspend2\fR, \fBslurm_resume2\fR,
+\fBslurm_requeue2\fR, and \fBslurm_update_job2\fR functions.
 
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, \-1 is returned, and the Slurm error
-code is set appropriately.
+On success, zero is returned.
+On error, \-1 is returned, and the Slurm error code is set appropriately.
+The function \fBslurm_update_job2\fR returns zero if the \fIresp\fP array is
+filled, in which the that array should be examined to determine the error codes
+for individual tasks of a job array.
+Then call the function \fBslurm_free_job_array_resp\fR to release memory
+allocated for the response array.
 
 .SH "ERRORS"
 .LP
@@ -132,24 +168,27 @@ which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
-Copyright (C) 2009\-2010 Lawrence Livermore National Security.
+Portions copyright (C) 2014 SchedMD LLC.
+Portions copyright (C) 2009\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
 .LP
-\fBscontrol\fR(1), \fBslurm_get_errno\fR(3),
-\fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
+\fBscontrol\fR(1),
+\fBslurm_free_job_array_resp\fR(3),
+\fBslurm_get_errno\fR(3),
+\fBslurm_perror\fR(3), \fBslurm_strerror\fR(3),

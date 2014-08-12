@@ -448,6 +448,7 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_free_front_end_info_msg.3 \
 	slurm_free_job_info_msg.3 \
 	slurm_free_job_alloc_info_response_msg.3 \
+	slurm_free_job_array_resp.3 \
 	slurm_free_job_step_create_response_msg.3 \
 	slurm_free_job_step_info_response_msg.3 \
 	slurm_free_node_info.3 \
@@ -513,7 +514,9 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_read_hostfile.3 \
 	slurm_reconfigure.3 \
 	slurm_resume.3 \
+	slurm_resume2.3 \
 	slurm_requeue.3 \
+	slurm_requeue2.3 \
 	slurm_set_debug_level.3 \
 	slurm_set_trigger.3 \
 	slurm_shutdown.3 \
@@ -540,11 +543,13 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_strerror.3 \
 	slurm_submit_batch_job.3 \
 	slurm_suspend.3 \
+	slurm_suspend2.3 \
 	slurm_takeover.3 \
 	slurm_terminate_job.3 \
 	slurm_terminate_job_step.3 \
 	slurm_update_front_end.3 \
 	slurm_update_job.3 \
+	slurm_update_job2.3 \
 	slurm_update_node.3 \
 	slurm_update_partition.3 \
 	slurm_update_reservation.3 \

@@ -1,7 +1,8 @@
-.TH "Slurm API" "3" "May 2006" "Morris Jette" "Slurm suspend, resume and requeue functions"
+.TH "Slurm API" "3" "August 2014" "Morris Jette" "Slurm suspend, resume and requeue functions"
 
 .SH "NAME"
-slurm_suspend, slurm_resume, slurm_requeue \- Slurm suspend, resume and requeue functions
+slurm_suspend, slurm_suspend2, slurm_resume, slurm_resume2, slurm_requeue,
+slurm_requeue2, slurm_free_job_array_resp  \- Slurm suspend, resume and requeue functions
 
 .SH "SYNTAX"
 .LP
@@ -14,9 +15,23 @@ int \fBslurm_suspend\fR (
 .br
 );
 .LP
+int \fBslurm_suspend2\fR (
+.br
+        char * \fIjob_id_str\fP,
+        job_array_resp_msg_t **resp
+.br
+);
+.LP
 int \fBslurm_resume\fR (
 .br
 	uint32_t \fIjob_id\fP
+.br
+);
+.LP
+int \fBslurm_resume2\fR (
+.br
+        char * \fIjob_id_str\fP,
+        job_array_resp_msg_t **resp
 .br
 );
 .LP
@@ -26,16 +41,45 @@ int \fBslurm_requeue\fR (
         uint32_t \fIstate\fP
 .br
 );
+.LP
+int \fBslurm_requeue2\fR (
+.br
+	char * \fIjob_id_str\fP,
+        uint32_t \fIstate\fP,
+        job_array_resp_msg_t **resp
+.br
+);
+.LP
+void \fBslurm_free_job_array_resp\fR (
+.br
+        job_array_resp_msg_t *resp
+.br
+);
 
 .SH "ARGUMENTS"
 .LP
 .TP
 \fIjob_id\fP
-SLURM job ID to perform the operation upon.
+Slurm job ID to perform the operation upon in numeric form.
+.TP
+\fIjob_id_str\fP
+Slurm job ID to perform the operation upon in string form.
+This is intended to be a single job.
+For job arrays, the job ID may be followed by an underscore and task ID values.
+For example: "123", "123_4", "123_4\-6", "123_4,6,8", and "123_4\-6,18".
+The functions using this option are designed primarily for use with job
+arrays so that separate error codes can be returned for each task of the
+job array.
+.TP
+\fIresp\fP
+Array of error codes and job IDs.
+Always use the \fBslurm_free_job_array_resp\fR function to release the memory
+allocated to hold the error codes.
 .TP
 \fIstate\fP
 The state in which the job should be requeued valid values are:
-.TP
+.RS
+.TP 20
 \fI"0"\fP
 If the job has to be requeued in JOB_PENDING state.
 .TP
@@ -44,25 +88,52 @@ If the job has to be requeued in the special exit state and be held.
 .TP
 \fI"JOB_REQUEUE_HOLD"\fP
 If the job has to be requeued in "JOB_PENDING" and held state.
-.LP
+.RE
 
 .SH "DESCRIPTION"
-.LP
+.TP 18
 \fBslurm_suspend\fR
 Suspend the specified job.
-.LP
+.TP
+\fBslurm_suspend2\fR
+Suspend the specified job or job array.
+Call the function \fBslurm_free_job_array_resp\fR to release memory allocated
+for the response array.
+.TP
 \fBslurm_resume\fR
 Resume execution of a previously suspended job.
-.LP
+.TP
+\fBslurm_resume2\fR
+Resume execution of a previously suspended job or job array.
+Call the function \fBslurm_free_job_array_resp\fR to release memory allocated
+for the response array.
+.TP
 \fBslurm_requeue\fR
-Requeue a running or pending SLURM batch job.
+Requeue a running or pending Slurm batch job.
 The job script will be restarted from its beginning,
 ignoring any previous checkpoint.
+.TP
+\fBslurm_requeue2\fR
+Requeue a running or pending Slurm batch job or job array.
+The job script will be restarted from its beginning,
+ignoring any previous checkpoint.
+Call the function \fBslurm_free_job_array_resp\fR to release memory allocated
+for the response array.
+.TP
+\fBslurm_free_job_array_resp\fR
+Release memory allocated by the \fBslurm_suspend2\fR, \fBslurm_resume2\fR,
+\fBslurm_requeue2\fR, and \fBslurm_update_job2\fR functions.
 
 .SH "RETURN VALUE"
 .LP
 Zero is returned upon success.
 On error, \-1 is returned, and the Slurm error code is set appropriately.
+Functions \fBslurm_suspend2\fR, \fBslurm_resume2\fR, and \fBslurm_requeue2\fR
+return zero if the \fIresp\fP array is filled, in which the that array should
+be examined to determine the error codes for individual tasks of a job array.
+Then call the function \fBslurm_free_job_array_resp\fR to release memory
+allocated for the response array.
+
 .SH "ERRORS"
 .LP
 \fBESLURM_DISABLED\fR the operation is currently disabled
@@ -87,19 +158,20 @@ which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
-Copyright (C) 2005\-2006 The Regents of the University of California.
+Portions copyright (C) 2014 SchedMD LLC.
+Portions copyright (C) 2005\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
