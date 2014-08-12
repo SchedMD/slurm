@@ -1556,7 +1556,7 @@ enable user login, etc.  By default there is no prolog. Any configured script
 is expected to complete execution quickly (in less time than
 \fBMessageTimeout\fR).
 If the prolog fails (returns a non\-zero exit code), this will result in the
-node being set to a DOWN state and the job requeued to executed on another node.
+node being set to a DRAIN state and the job requeued to executed on another node.
 See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
@@ -1822,8 +1822,8 @@ and resumes communications).
 \fB1\fR
 A DOWN node will become available for use upon registration with a
 valid configuration only if it was set DOWN due to being non\-responsive.
-If the node was set DOWN for any other reason (low memory, prolog failure,
-epilog failure, unexpected reboot, etc.), its state will not automatically
+If the node was set DOWN for any other reason (low memory,
+unexpected reboot, etc.), its state will not automatically
 be changed.
 .TP
 \fB2\fR
@@ -3751,11 +3751,11 @@ allocation.  The Epilog, on the other hand, always runs on every node of an
 allocation when the allocation is released.
 
 If the Epilog fails (returns a non\-zero exit code), this will result in the
-node being set to a DOWN state.
+node being set to a DRAIN state.
 If the EpilogSlurmctld fails (returns a non\-zero exit code), this will only
 be logged.
 If the Prolog fails (returns a non\-zero exit code), this will result in the
-node being set to a DOWN state and the job requeued to executed on another node.
+node being set to a DRAIN state and the job requeued to executed on another node.
 If the PrologSlurmctld fails (returns a non\-zero exit code), this will result
 in the job requeued to executed on another node if possible. Only batch jobs
 can be requeued. Interactive jobs (salloc and srun) will be cancelled if the
