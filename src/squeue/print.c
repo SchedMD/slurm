@@ -59,6 +59,7 @@
 #include "src/squeue/squeue.h"
 
 static int	_filter_job(job_info_t * job);
+static int	_filter_job_part(char *part_name);
 static int	_filter_step(job_step_info_t * step);
 static int	_get_node_cnt(job_info_t * job);
 static void	_job_list_del(void *x);
@@ -110,15 +111,21 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 			tmp = xstrdup(jobs[i].partition);
 			tok = strtok_r(tmp, ",", &save_ptr);
 			while (tok) {
-				job_rec_ptr = xmalloc(sizeof(squeue_job_rec_t));
-				job_rec_ptr->job_ptr = jobs + i;
-				job_rec_ptr->part_name = xstrdup(tok);
-				job_rec_ptr->part_prio = _part_get_prio(tok);
-				list_append(l, (void *) job_rec_ptr);
+				if (_filter_job_part(tok) == 0) {
+					job_rec_ptr = xmalloc(
+						      sizeof(squeue_job_rec_t));
+					job_rec_ptr->job_ptr = jobs + i;
+					job_rec_ptr->part_name = xstrdup(tok);
+					job_rec_ptr->part_prio =
+						_part_get_prio(tok);
+					list_append(l, (void *) job_rec_ptr);
+				}
 				tok = strtok_r(NULL, ",", &save_ptr);
 			}
 			xfree(tmp);
 		} else {
+			if (_filter_job_part(jobs[i].partition))
+				continue;
 			job_rec_ptr = xmalloc(sizeof(squeue_job_rec_t));
 			job_rec_ptr->job_ptr = jobs + i;
 			list_append(l, (void *) job_rec_ptr);
@@ -2242,7 +2249,7 @@ static int _filter_job(job_info_t * job)
 	ListIterator iterator;
 	uint32_t *user;
 	uint16_t *state_id;
-	char *account, *license, *part, *qos, *name;
+	char *account, *license, *qos, *name;
 	squeue_job_step_t *job_step_id;
 
 	if (params.job_list) {
@@ -2261,30 +2268,6 @@ static int _filter_job(job_info_t * job)
 		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 1;
-	}
-
-	if (params.part_list) {
-		char *token = NULL, *last = NULL, *tmp_name = NULL;
-
-		filter = 1;
-		if (job->partition) {
-			tmp_name = xstrdup(job->partition);
-			token = strtok_r(tmp_name, ",", &last);
-		}
-		while (token && filter) {
-			iterator = list_iterator_create(params.part_list);
-			while ((part = list_next(iterator))) {
-				if (strcmp(part, token) == 0) {
-					filter = 0;
-					break;
-				}
-			}
-			list_iterator_destroy(iterator);
-			token = strtok_r(NULL, ",", &last);
-		}
-		xfree(tmp_name);
-		if (filter == 1)
-			return 2;
 	}
 
 	if (params.licenses_list) {
@@ -2411,6 +2394,36 @@ static int _filter_job(job_info_t * job)
 	}
 
 	return 0;
+}
+
+/* Return 0 if supplied partition name is to be printed, otherwise return 2 */
+static int _filter_job_part(char *part_name)
+{
+	char *token = NULL, *last = NULL, *tmp_name = NULL, *part;
+	ListIterator iterator;
+	int rc = 2;
+
+	if (!params.part_list)
+		return 0;
+
+	if (part_name) {
+		tmp_name = xstrdup(part_name);
+		token = strtok_r(tmp_name, ",", &last);
+	}
+	while (token && (rc != 0)) {
+		iterator = list_iterator_create(params.part_list);
+		while ((part = list_next(iterator))) {
+			if (strcmp(part, token) == 0) {
+				rc = 0;
+				break;
+			}
+		}
+		list_iterator_destroy(iterator);
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_name);
+
+	return rc;
 }
 
 /* filter step records per input specifications,
