@@ -1,17 +1,17 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM MPI Plugin API</a></h1>
+<h1><a name="top">Slurm MPI Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM MPI selection plugins and the API that defines
+<p> This document describes Slurm MPI selection plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
 node selection plugins. This is version 0 of the API.</p>
 
-<p>SLURM mpi selection plugins are SLURM plugins that implement the which version of
-mpi is used during execution of the new SLURM job. API described herein. They are
+<p>Slurm mpi selection plugins are Slurm plugins that implement the which version of
+mpi is used during execution of the new Slurm job. API described herein. They are
 intended to provide a mechanism for both selecting mpi versions for pending jobs and
 performing any mpi-specific tasks for job launch or termination. The plugins must
-conform to the SLURM Plugin API with the following specifications:</p>
+conform to the Slurm Plugin API with the following specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;mpi.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
@@ -28,7 +28,7 @@ abbreviation for the type of node selection algorithm. We recommend, for example
 </ul>
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
-symbols required by the SLURM Plugin API require no specialization for node selection support.
+symbols required by the Slurm Plugin API require no specialization for node selection support.
 Note carefully, however, the versioning discussion below.</p>
 
 <p>A simplified flow of logic follows:
@@ -138,9 +138,9 @@ the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
-<p> This document describes version 0 of the SLURM node selection API. Future
-releases of SLURM may revise this API. A node selection plugin conveys its ability
-to implement a particular API version using the mechanism outlined for SLURM plugins.
+<p> This document describes version 0 of the Slurm node selection API. Future
+releases of Slurm may revise this API. A node selection plugin conveys its ability
+to implement a particular API version using the mechanism outlined for Slurm plugins.
 In addition, the credential is transmitted along with the version number of the
 plugin that transmitted it. It is at the discretion of the plugin author whether
 to maintain data format compatibility across different versions of the plugin.</p>

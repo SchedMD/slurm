@@ -54,8 +54,8 @@ be called multiple times (when it assumes control functions and then when it
 reliquishes them to the primary slurmctld daemon).</p>
 
 <h2>Versioning</h2>
-<p> This document describes version 100 of the SLURM Job Submission API. Future
-releases of SLURM may revise this API.
+<p> This document describes version 100 of the Slurm Job Submission API. Future
+releases of Slurm may revise this API.
 <p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 8 May 2014</p>

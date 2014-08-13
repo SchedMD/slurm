@@ -1,18 +1,18 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Topology Plugin Programmer Guide</a></h1>
+<h1><a name="top">Slurm Topology Plugin Programmer Guide</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM topology plugin and the API that
+<p> This document describes Slurm topology plugin and the API that
 defines them.
 It is intended as a resource to programmers wishing to write their own
 SLURM topology plugin.
 This is version 101 of the API.</p>
 
-<p>SLURM topology plugins are SLURM plugins that implement
-convey system topology information so that SLURM is able to
+<p>Slurm topology plugins are Slurm plugins that implement
+convey system topology information so that Slurm is able to
 optimize resource allocations and minimize communication overhead.
-The plugins must conform to the SLURM Plugin API with the following
+The plugins must conform to the Slurm Plugin API with the following
 specifications:</p>
 
 <p><span class="commandline">const char plugin_type[]</span><br>
@@ -28,7 +28,7 @@ switches.</li>
 
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
-symbols required by the SLURM Plugin API require no specialization for
+symbols required by the Slurm Plugin API require no specialization for
 topology support.
 The actions performed by these plugins vary widely.
 In the case of <b>3d_torus</b>, the nodes in configuration file
@@ -41,7 +41,7 @@ Note carefully, however, the versioning discussion below.</p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
-enumerated <span class="commandline">errno</span> to allow SLURM to discover
+enumerated <span class="commandline">errno</span> to allow Slurm to discover
 as practically as possible the reason for any failed API call.
 Plugin-specific enumerated integer values may be used when appropriate.
 
@@ -97,7 +97,7 @@ false otherwise.</p>
 <b>node_name</b> (input) name of the targeted node<br>
 <b>paddr</b> (output) returns the topology address of the node and connected
 switches. If there are multiple switches at some level in the hierarchy, they
-will be represented using SLURM's hostlist expression (e.g. "s0" and "s1" are
+will be represented using Slurm's hostlist expression (e.g. "s0" and "s1" are
 reported as "s[0-1]").  Each level in the hierarchy is separated by a period.
 The last element will always be the node's name (i.e. "s0.s10.nodename")<br>
 <b>ppatt</b> (output) returns the pattern of the topology address. Each level
@@ -107,8 +107,8 @@ in the hierarchy is separated by a period. The final element will always be
 SLURM_ERROR on failure.</p>
 
 <h2>Versioning</h2>
-<p> This document describes version 101 of the SLURM topology API.
-Future releases of SLURM may revise this API.</p>
+<p> This document describes version 101 of the Slurm topology API.
+Future releases of Slurm may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 8 May 2014</p>

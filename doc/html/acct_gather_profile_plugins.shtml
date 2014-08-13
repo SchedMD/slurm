@@ -2,13 +2,13 @@
 <!--  Copyright (C) 2013 Bull S. A. S.
       Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois. -->
 
-<h1><a name="top">SLURM Profile Accounting Plugin API (AcctGatherProfileType)
+<h1><a name="top">Slurm Profile Accounting Plugin API (AcctGatherProfileType)
 </a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM profile accounting plugins and the API that
+<p> This document describes Slurm profile accounting plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
-their own SLURM profile accounting plugins.
+their own Slurm profile accounting plugins.
 
 <p>A profiling plugin allows more detailed information on the execution of jobs
 than can reasonably be kept in the accounting database. (All jobs may also not
@@ -48,7 +48,7 @@ for import into other analysis tools like spreadsheets.
 
 <p>This plugin is incompatible with --enable-front-end. It you need to
 simulate a large configuration, please use --enable-multiple-slurmd.
-<p>SLURM profile accounting plugins must conform to the SLURM Plugin API with
+<p>Slurm profile accounting plugins must conform to the Slurm Plugin API with
 the following specifications:
 <p><span class="commandline">const char
 plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
@@ -70,7 +70,7 @@ for the type of profile accounting. We currently use
 <span class="commandline">
 src/plugins/acct_gather_profile/acct_gather_profile_hdf5.c</span> and
 <span class="commandline">src/common/slurm_acct_gather_profile.c</span>
-for a sample implementation of a SLURM profile accounting plugin.
+for a sample implementation of a Slurm profile accounting plugin.
 <p class="footer"><a href="#top">top</a>
 
 <h2>API Functions</h2>
@@ -175,7 +175,7 @@ Provides an opportunity to gather beginning values from node counters
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">job -- slumd_job_t structure containing information
 about the step. </span>
-<br /><span class="commandline">taskid -- SLURM taskid. </span>
+<br /><span class="commandline">taskid -- Slurm taskid. </span>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -363,10 +363,10 @@ the appropriate object.
 </li>
 </ul>
 <h2>Versioning</h2>
-<p>This document describes version 1 of the SLURM Profile Accounting API.
-Future releases of SLURM may revise this API. A profile accounting plugin
+<p>This document describes version 1 of the Slurm Profile Accounting API.
+Future releases of Slurm may revise this API. A profile accounting plugin
 conveys its ability to implement a particular API version using the mechanism
-outlined for SLURM plugins.</p>
+outlined for Slurm plugins.</p>
 
 <p class="footer"><a href="#top">top</a>
 

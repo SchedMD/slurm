@@ -11,7 +11,7 @@ administrators, plus some material for Slurm programmers:
 <p>Introduction to the Slurm Resource Manager for users and system
 administrators. Tutorial covers Slurm architecture, daemons and commands.
 Learn how to use a basic set of commands.
-Learn how to build, configure, and install SLURM.</p>
+Learn how to build, configure, and install Slurm.</p>
 
 <ul>
 <li>Introduction to Slurm video on <a href="http://www.youtube.com">YouTube</a> (in eight parts)</a></li>

@@ -93,7 +93,7 @@ plus dinner on Wednesday evening.<br>
   <td>Rod Schultz (BULL), Martin Perry (BULL),
   Yiannis Georgiou (BULL), Danny Auble (SchedMD), Morris Jette (SchedMD),
   Matthieu Hautreux (CEA)</td>
-  <td>Improving forwarding logic in SLURM</td>
+  <td>Improving forwarding logic in Slurm</td>
 </tr>
   <td bgcolor="#F0F1C9">11:45 - 12:45</td>
   <td colspan="3" bgcolor="#F0F1C9">Lunch
@@ -131,7 +131,7 @@ plus dinner on Wednesday evening.<br>
   <td>Technical</td>
   <td>Yiannis Georgiou (BULL), David Glesser (BULL),
   Matthieu Hautreux (CEA), Denis Trystram (Univ. Grenoble-Alpes)</td>
-  <td>Introducing Power-capping in SLURM scheduling</td>
+  <td>Introducing Power-capping in Slurm scheduling</td>
 </tr>
 
 <tr>
@@ -154,7 +154,7 @@ plus dinner on Wednesday evening.<br>
   <td>Sergio Iserte, Adrian Castello, Rafael Mayo,
     Enrique S. Quintana-Ort (Universitat Jaume I de Castello),
     Federico Silla, Jose Duato (Universitat Politecnica de Valencia)</td>
-  <td>Extending SLURM with Support for Remote GPU
+  <td>Extending Slurm with Support for Remote GPU
   Virtualization</td>
 </tr>
 
@@ -218,7 +218,7 @@ tel +41(0)91 923 10 68</td>
     <td>Technical</td>
     <td>Thomas Cadeau (BULL), Yiannis Georgiou
     (BULL), Matthieu Hautreux (CEA)</td>
-    <td>Integrating Layouts Framework in SLURM</td>
+    <td>Integrating Layouts Framework in Slurm</td>
   </tr>
 
   <tr>
@@ -368,8 +368,8 @@ and involved in several research challenges of the European Human Brain Project.
 
 <p>In this talk, we'll discuss what makes Warewulf NHC such a unique
   and robust solution to the problem of compute node health, look at
-  the feature set of NHC and its integration with SLURM, examine LBNL's
-  configuration and utilization of SLURM and NHC with tips on how to
+  the feature set of NHC and its integration with Slurm, examine LBNL's
+  configuration and utilization of Slurm and NHC with tips on how to
   quickly deploy it in your environment, and survey many of the
   available checks that are supplied out-of-the-box. Time permitting, a
   brief introduction to writing custom or site-specific checks may also
@@ -390,7 +390,7 @@ and involved in several research challenges of the European Human Brain Project.
   applications. We present the design choices along with the developed
   code and we provide experiments and observations.</p>
 
-<h3>Improving forwarding logic in SLURM</h3>
+<h3>Improving forwarding logic in Slurm</h3>
 <p>Rod Schultz (BULL), Martin Perry (BULL), Yiannis Georgiou (BULL),
   Danny Auble (SchedMD), Morris Jette (SchedMD), Matthieu Hautreux (CEA)</p>
 <p>In this presentation we describe the motivations and design of the
@@ -399,7 +399,7 @@ and involved in several research challenges of the European Human Brain Project.
   goals of these developments are to:</p>
 <ul>
   <li>Better handle the mapping between the trees of communication
-    used by SLURM and the existing physical network connections in
+    used by Slurm and the existing physical network connections in
     order to improve performance.</li>
   <li> Provide the ability to aggregate messages directed to the
     controller in order to limit the amount of RPC that have to be
@@ -442,7 +442,7 @@ and involved in several research challenges of the European Human Brain Project.
   utilization rate. This method was fine when each user had just a few
   jobs. However, modern workloads are often composed of campaigns:
   many jobs submitted by the same user at roughly the same time (e.g.
-  bag-of-tasks or SLURM's job arrays). For such workloads, fair-share
+  bag-of-tasks or Slurm's job arrays). For such workloads, fair-share
   is not optimal because users frequently have similar utilization
   metrics and, in such situations, the schedule switches between
   users, executing just a few jobs of each one of them.  However, it
@@ -458,11 +458,11 @@ and involved in several research challenges of the European Human Brain Project.
   slowdowns while maintaining equal system utilization. Moreover,
   OStrich plugin uses normalized shares similarly to the multifactor
   plugin, therefore it doesn't require any administrative changes other
-  than a simple change to the SLURM configuration file. We think that
+  than a simple change to the Slurm configuration file. We think that
   OStrich is a viable alternative to fair-share in supercomputers with
   campaign-like workloads.</p>
 
-<h3>Introducing Power-capping in SLURM scheduling</h3>
+<h3>Introducing Power-capping in Slurm scheduling</h3>
 <p>Yiannis Georgiou (BULL), David Glesser (BULL), Matthieu Hautreux
   (CEA), Denis Trystram (Univ. Grenoble-Alpes)</p>
 <p>The last decades have been characterized by an ever growing
@@ -490,11 +490,11 @@ and involved in several research challenges of the European Human Brain Project.
   widely used technique in job schedulers to prioritize jobs,
   depending to past users allocations. In practice this technique is
   mainly based on CPU-Time usage. Since power is managed as a new type
-  of resources by SLURM and energy consumption can be charged
+  of resources by Slurm and energy consumption can be charged
   independently, there is a real need for fairness in terms of energy
   consumption.</p>
 <p>This presentation will introduce fair-share scheduling based on
-  past energy usage in SLURM. The new technique will allow users that
+  past energy usage in Slurm. The new technique will allow users that
   have optimized their codes to be more energy efficient or make better
   usage of DVFS techniques to improve the stretch times of their
   workload.</p>
@@ -518,7 +518,7 @@ and involved in several research challenges of the European Human Brain Project.
   important in a user driven data management solution and highlight
   lessons learned.</p>
 
-<h3>Extending SLURM with Support for Remote GPU Virtualization</h3>
+<h3>Extending Slurm with Support for Remote GPU Virtualization</h3>
 <p>Sergio Iserte, Adrian Castello, Rafael Mayo, Enrique
   S. Quintana-Ort (Universitat Jaume I de Castello) Federico Silla, Jose Duato
   (Universitat Politecnica de Valencia)</p>
@@ -532,18 +532,18 @@ and involved in several research challenges of the European Human Brain Project.
   applications are mapped to are equipped with a GPU or not. In this
   manner the amount of these accelerators can be reduced, and their
   utilization rate can be significantly improved.</p>
-<p>SLURM can use a generic resource plug-in (GRes) to manage
+<p>Slurm can use a generic resource plug-in (GRes) to manage
   GPUs. With this solution the hardware accelerators, like the GPUs,
   can only be accessed by the job that is in execution on the node to
   which the GPU is attached. This is a serious constraint for remote
   GPU virtualization technologies, which aim to provide a completely
   user-transparent access to all GPUs in cluster, independently of the
   specific locations of the application node and the GPU node.</p>
-<p>In this work we introduce a new type of resource in SLURM, the
+<p>In this work we introduce a new type of resource in Slurm, the
   remote GPU (rGPU), in order to gain access from any application node
   to any GPU node in the cluster using rCUDA as the remote GPU
   virtualization solution. With this new resource, users can access
-  all GPUs needed for their jobs, as SLURM schedules the task taking
+  all GPUs needed for their jobs, a. Slurm schedules the task taking
   into account all the GPUs available in the whole cluster. In other
   words, introducing GPU-virtualization aware mechanism into SLURM
   allow applications to execute CUDA kernels in all GPUs,
@@ -565,8 +565,8 @@ and involved in several research challenges of the European Human Brain Project.
   common infrastructure to leverage a uniform support architecture and
   scavenge unused CPU cycles and expand into a condo-cluster model
   using one scheduler.  We previously did this using Moab/Torque for
-  several  years but recently migrated to SLURM.  The challenge was
-  how to make  SLURM meet the exceedingly arduous needs of our
+  several  years but recently migrated to Slurm.  The challenge was
+  how to make. Slurm meet the exceedingly arduous needs of our
   environment –  Accounting, backfill, reservations, fairshare, QOS,
   Partitions,  Multifactor job prioritization and the ability to have
   limits set on a  user/group level bases so that the individual and
@@ -581,7 +581,7 @@ and involved in several research challenges of the European Human Brain Project.
 
 <h3>A budget checking / budget tracking plug-in for SLURM</h3>
 <p>Huub Stoffers (SURFsara)</p>
-<p>We propose to design and implement a plug-in for the SLURM control
+<p>We propose to design and implement a plug-in for the Slurm control
   daemon that is capable of calculating “job cost” on the basis of job
   resource usage and that keeps track of budgets, registered per
   account, as they are spent by running jobs. SLURM does a good job
@@ -634,7 +634,7 @@ and involved in several research challenges of the European Human Brain Project.
   e.g. between the core hours on nodes with or without GPU support, or
   with lesser or larger quantities of memory per core. Other
   consumable resources, such as the time that particular software
-  licenses are checked out by a job, may be accounted too. In SLURM it
+  licenses are checked out by a job, may be accounted too. In Slurm it
   is customary to use partitions to differentiate between
   heterogeneously equipped nodes. Clearly, the relative pricing of
   core hours of different partitions should be a configurable in the
@@ -659,7 +659,7 @@ and involved in several research challenges of the European Human Brain Project.
   LEVEL_BASED was also designed to reduce the likelihood of errors due to
   floating point precision loss.</p>
 
-<h3>Integrating Layouts Framework in SLURM</h3>
+<h3>Integrating Layouts Framework in Slurm</h3>
 <p>Thomas Cadeau (BULL), Yiannis Georgiou (BULL), Matthieu Hautreux (CEA)</p>
 <p>Supercomputers become more powerful but more complicated to
   manage. Resources  hide information that can be taken into account
@@ -692,18 +692,18 @@ and involved in several research challenges of the European Human Brain Project.
   applications are mapped to are equipped with a GPU or not. In this
   manner the amount of these accelerators can be reduced, and their
   utilization rate can be significantly improved.</p>
-<p>SLURM can use a generic resource plug-in (GRes) to manage
+<p>Slurm can use a generic resource plug-in (GRes) to manage
   GPUs. With this solution the hardware accelerators, like the GPUs,
   can only be accessed by the job that is in execution on the node to
   which the GPU is attached. This is a serious constraint for remote
   GPU virtualization technologies, which aim to provide a completely
   user-transparent access to all GPUs in cluster, independently of the
   specific locations of the application node and the GPU node.</p>
-<p>In this work we introduce a new type of resource in SLURM, the
+<p>In this work we introduce a new type of resource in Slurm, the
   remote GPU (rGPU), in order to gain access from any application node
   to any GPU node in the cluster using rCUDA as the remote GPU
   virtualization solution. With this new resource, users can access
-  all GPUs needed for their jobs, as SLURM schedules the task taking
+  all GPUs needed for their jobs, a. Slurm schedules the task taking
   into account all the GPUs available in the whole cluster. In other
   words, introducing GPU-virtualization aware mechanism into SLURM
   allow applications to execute CUDA kernels in all GPUs, independently of their
@@ -790,9 +790,9 @@ and involved in several research challenges of the European Human Brain Project.
   several Cray XC30 systems as well as 6TB SGI UV2000, all connected
   via infiniband to multi-petabyte disk storage systems.</p>
 <p>Although initially deployed with PBS Pro, senior management
-  indicated that moving to SLURM as a unified centre-wide scheduler
+  indicated that moving to Slurm as a unified centre-wide scheduler
   would be a good idea. This site report describes the issues faced by
-  an operations team new to SLURM and the configuration choices that
+  an operations team new to Slurm and the configuration choices that
   were made within the site.</p>
 <p>Pawsey infrastructure runs with a single slurmdbd instance on KVM,
   with five different clusters using this as the accounting
@@ -808,7 +808,7 @@ and involved in several research challenges of the European Human Brain Project.
   <li>Pawsey, used as a generic cluster to support 'copyq'
     partitions.</li>
 </ul>
-<p>Because of the interaction between SLURM and ALPS/BASIL (the Cray
+<p>Because of the interaction between Slurm and ALPS/BASIL (the Cray
   node alllocation system) the cray-aware slurm binaries were compiled
   separately to the rest of the site (which uses a mixture of SLES and
   CentOS) with a patched 2.6.6 and 2.6.9 being deployed. Linux cgroups

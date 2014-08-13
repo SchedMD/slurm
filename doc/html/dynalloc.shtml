@@ -3,11 +3,11 @@
 <h1><a name="top">Dynamic Resource Allocation (dynalloc)</a></h1>
 
 <h2>Overview</h2>
-<p>This document describes SLURM resource dynamic allocation (dynalloc)
+<p>This document describe. Slurm resource dynamic allocation (dynalloc)
 and the manual how to enable it.</p>
 
-<p>SLURM dynamic resource allocation (dynalloc) works as a optional running
-thread when SLURM's control daemon (slurmctld) starts up. After spawned, the
+<p>Slurm dynamic resource allocation (dynalloc) works as a optional running
+thread when Slurm's control daemon (slurmctld) starts up. After spawned, the
 dynalloc thread runs as a socket server to accept requests such as resource
 query, allocation, and deallocation. After receiving such requests, the 
 dynalloc parses message, performs actions, and then responds to the request.</p>
@@ -15,12 +15,12 @@ dynalloc parses message, performs actions, and then responds to the request.</p>
 
 <h2>Configuration</h2>
 
-<p>To enable the dynalloc, some configurations should be made in SLURM side.</p>
+<p>To enable the dynalloc, some configurations should be made in Slurm side.</p>
 
-<h3>SLURM Configuration</h3>
+<h3>Slurm Configuration</h3>
 
 <h4>configure</h4>
-<p>When building from the SLURM source code, add <i>--enable-dynamic-allocation</i>
+<p>When building from the Slurm source code, add <i>--enable-dynamic-allocation</i>
 to the execute line of <i>./configure</i>.</p>
 
 <h4>slurm.conf</h4>
@@ -39,7 +39,7 @@ DynAllocPort=6820
 
 <h3>Resource Query</h3>
 <p>The client might send messages to query how many nodes and slots either 
-in total or available in SLURM.</p>
+in total or available in Slurm.</p>
 
 <h4>Get Total Nodes and Slots</h4>
 <p>the request message from client: "get total nodes and slots"<br>
@@ -50,7 +50,7 @@ the response message could be like: "total_nodes=4 total_slots=16"</p>
 the response message could be like: "avail_nodes=4 avail_slots=16"</p>
 
 <h3>Resource Allocation</h3>
-<p>The client might send request to SLURM for allocating resources.</p> 
+<p>The client might send request to Slurm for allocating resources.</p> 
 <p>An allocation request message will consist of two part:</p>
 <ol>
 <li>Job part, like "jobid=100 return=all timeout=10"</li>
@@ -108,7 +108,7 @@ returned for later operation, e.g., process launch, resource deallocation, etc.
 
 <h3>Resource Deallocation</h3>
 
-<p>After job execution, the client might release resources to SLURM.</p>
+<p>After job execution, the client might release resources to Slurm.</p>
 <p>A resource deallocation request message from client can be like: 
 "<b>deallocate</b> slurm_jobid=744 job_return_code=0:slurm_jobid=745 
 job_return_code=-1". Note that it is possible to release a number of 

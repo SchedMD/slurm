@@ -1,10 +1,10 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Elastic Computing</a></h1>
+<h1><a name="top">Slurm Elastic Computing</a></h1>
 
 <h2>Overview</h2>
 
-<p>SLURM version 2.4 has the ability to support a cluster that grows and
+<p>Slurm version 2.4 has the ability to support a cluster that grows and
 shrinks on demand, typically relying upon a service such as
 <a href="http://aws.amazon.com/ec2/">Amazon Elastic Computing Cloud (Amazon EC2)</a>
 for resources.
@@ -14,35 +14,35 @@ cluster.
 Good responsiveness and throughput can be achieved while you only pay for the
 resources needed.</p>
 
-<p>The rest of this document describes details about SLURM's infrastructure that
+<p>The rest of this document describes details abou. Slurm's infrastructure that
 can be used to support Elastic Computing.</p>
 
-<p>SLURM's Elastic Computing logic relies heavily upon the existing power save
+<p>Slurm's Elastic Computing logic relies heavily upon the existing power save
 logic.
-Review of SLURM's <a href="power_save.html">Power Saving Guide</a> is strongly
+Review of Slurm's <a href="power_save.html">Power Saving Guide</a> is strongly
 recommended.
 This logic initiates programs when nodes are required for use and another
 program when those nodes are no longer required.
 For Elastic Computing, these programs will need to provision the resources
-from the cloud and notify SLURM of the node's name and network address and
+from the cloud and notify Slurm of the node's name and network address and
 later relinquish the nodes back to the cloud.
-Most of the SLURM changes to support Elastic Computing were changes to
+Most of the Slurm changes to support Elastic Computing were changes to
 support node addressing that can change.</p>
 
-<h2>SLURM Configuration</h2>
+<h2>Slurm Configuration</h2>
 
-<p>There are many ways to configure SLURM's use of resources.
+<p>There are many ways to configure Slurm's use of resources.
 See the slurm.conf man page for more details about these options.
-Some general SLURM configuration parameters that are of interest include:
+Some general Slurm configuration parameters that are of interest include:
 <dl>
 <dt><b>ResumeProgram</b>
 <dd>The program executed when a node has been allocated and should be made
 available for use.
 <dt><b>SelectType</b>
 <dd>Generally must be "select/linear".
-If SLURM is configured to allocate individual CPUs to jobs rather than whole
+If Slurm is configured to allocate individual CPUs to jobs rather than whole
 nodes (e.g. SelectType=select/cons_res rather than SelectType=select/linear),
-then SLURM maintains bitmaps to track the state of every CPU in the system.
+then Slurm maintains bitmaps to track the state of every CPU in the system.
 If the number of CPUs to be allocated on each node is not known when the
 slurmctld daemon is started, one must allocate whole nodes to jobs rather
 than individual processors.
@@ -75,12 +75,12 @@ The value may not exceed 65533.
 user jobs can specify their preference for resource use with the "--constraint"
 option.
 <dt><b>NodeName</b>
-<dd>This is the name by which SLURM refers to the node. A name containing a
+<dd>This is the name by which Slurm refers to the node. A name containing a
 numeric suffix is recommended for convenience. The NodeAddr and NodeHostname
 should not be set, but will be configured later using scripts.
 <dt><b>State</b>
 <dd>Nodes which are to be be added on demand should have a state of "CLOUD".
-These nodes will not actually appear in SLURM commands until after they are
+These nodes will not actually appear in Slurm commands until after they are
 configured for use.
 <dt><b>Weight</b>
 <dd>Each node can be configured with a weight indicating the desirability of
@@ -89,7 +89,7 @@ weights.
 </dl>
 </p>
 
-<p>Nodes to be acquired on demand can be placed into their own SLURM partition.
+<p>Nodes to be acquired on demand can be placed into their own Slurm partition.
 This mode of operation can be used to use these nodes only if so requested by
 the user. Note that jobs can be submitted to multiple partitions and will use
 resources from whichever partition permits faster initiation.
@@ -99,7 +99,7 @@ resources from the cloud by using the "--constraint" option.
 </p>
 
 <pre>
-# SLURM configuration
+. Slurm configuration
 # Excerpt of slurm.conf
 SelectType=select/linear
 
@@ -124,7 +124,7 @@ allocated, the <i>ResumeProgram</i> is executed and should do the following:</p>
 <ol>
 <li>Boot the node</li>
 <li>Configure and start Munge (depends upon configuration)</li>
-<li>Install the SLURM configuration file, slurm.conf, on the node.
+<li>Install the Slurm configuration file, slurm.conf, on the node.
 Note that configuration file will generally be identical on all nodes and not
 include NodeAddr or NodeHostname configuration parameters for any nodes in the
 cloud.
@@ -160,7 +160,7 @@ SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2,123.45.67.9:bar</p>
 <li>The SLURM_NODE_ALIASES environment variable needs to change if a job
 expands (adds resources).</li>
 <li>Some MPI implementations will not work due to the node naming.</li>
-<li>Some tests in SLURM's test suite fail.</li>
+<li>Some tests in Slurm's test suite fail.</li>
 </ul>
 
 <p class="footer"><a href="#top">top</a></p>

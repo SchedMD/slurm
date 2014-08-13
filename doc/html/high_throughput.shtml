@@ -2,16 +2,16 @@
 
 <h1>High Throughput Computing Administration Guide</h1>
 
-<p>This document contains SLURM administrator information specifically
+<p>This document contains Slurm administrator information specifically
 for high throughput computing, namely the execution of many short jobs.
 Getting optimal performance for high throughput computing does require
 some tuning and this document should help you off to a good start.
-A working knowledge of SLURM should be considered a prerequisite
+A working knowledge of Slurm should be considered a prerequisite
 for this material.</p>
 
 <h2>Performance Results</h2>
 
-<p>SLURM has also been validated to execute 500 simple batch jobs per second
+<p>Slurm has also been validated to execute 500 simple batch jobs per second
 on a sustained basis with short bursts of activity at a much higher level.
 Actual performance depends upon the jobs to be executed plus the hardware and
 configuration used.</p>
@@ -56,12 +56,12 @@ threads for high throughput support (e.g. <i>"munged --num-threads 10"</i>).</p>
 <p>The <b>ulimit</b> values in effect for the <b>slurmctld</b> daemon should
 be set quite high for memory size, open file count and stack size.</p>
 
-<h2>SLURM Configuration</h2>
+<h2>Slurm Configuration</h2>
 
-<p>NOTE: Substantial changes were made in SLURM version 2.4 to support higher
+<p>NOTE: Substantial changes were made in Slurm version 2.4 to support higher
 throughput rates. Version 2.5 includes more enhancements.</p>
 
-<p>Several SLURM configuration parameters should be adjusted to
+<p>Several Slurm configuration parameters should be adjusted to
 reflect the needs of high throughput computing. The changes described below
 will not be possible in all environments, but these are the configuration
 options that you may want to consider for higher throughput.</p>

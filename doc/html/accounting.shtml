@@ -16,7 +16,7 @@ The <b>sreport</b> can be used to generate reports based upon all jobs
 executed in a particular time interval.</p>
 
 <p>There are three distinct plugin types associated with resource accounting.
-The SLURM configuration parameters (in <i>slurm.conf</i>) associated with
+The Slurm configuration parameters (in <i>slurm.conf</i>) associated with
 these plugins include:</p>
 <ul>
 <li><b>AccountingStorageType</b> controls how detailed job and job
@@ -59,22 +59,22 @@ Send a SIGHUP signal to the <i>slurmctld</i> daemon
 after moving the files, but before compressing them so
 that new log files will be created.</p>
 
-<p>Storing the data directly into a database from SLURM may seem
+<p>Storing the data directly into a database from Slurm may seem
 attractive, but requires the availability of user name and
-password data not only for the SLURM control daemon (slurmctld),
+password data not only for the Slurm control daemon (slurmctld),
 but also user commands which need to access the data (sacct, sreport, and
 sacctmgr).
 Making possibly sensitive information available to all users makes
 database security more difficult to provide, sending the data through
 an intermediate daemon can provide better security and performance
 (through caching data) and SlurmDBD provides such services.
-SlurmDBD (SLURM Database Daemon) is written in C, multi-threaded,
+SlurmDBD (Slurm Database Daemon) is written in C, multi-threaded,
 secure and fast.
 The configuration required to use SlurmDBD will be described below.
 Storing information directly into database would be similar.</p>
 
-<p>Note that SlurmDBD relies upon existing SLURM plugins
-for authentication and SLURM sql for database use, but the other SLURM
+<p>Note that SlurmDBD relies upon existing Slurm plugins
+for authentication and Slurm sql for database use, but the other SLURM
 commands and daemons are not required on the host where
 SlurmDBD is installed. Install the <i>slurmdbd</i>,
 <i>slurm-plugins</i>, and <i>slurm-sql</i> RPMs on the computer when SlurmDBD
@@ -118,7 +118,7 @@ users should have consistent names and IDs.</p>
 <p>The best way to insure security of the data is by authenticating
 communications to the SlurmDBD and we recommend
 <a href="https://code.google.com/p/munge/">MUNGE</a> for that purpose.
-If you have one cluster managed by SLURM and execute the SlurmDBD
+If you have one cluster managed by Slurm and execute the SlurmDBD
 on that one cluster, the normal MUNGE configuration will suffice.
 Otherwise MUNGE should then be installed on all nodes of all
 SLURM managed clusters, plus the machine where SlurmDBD executes.
@@ -178,7 +178,7 @@ Only needed if using a database. User name to connect to
 the database with.</li>
 </ul>
 
-<h2>SLURM Accounting Configuration Before Build</h2>
+<h2>Slurm Accounting Configuration Before Build</h2>
 
 <p>While the SlurmDBD will work with a flat text file for recording
 job completions and such this configuration will not allow
@@ -210,13 +210,13 @@ megabytes. You can accomplish this by adding the line:<br>
 under the [mysqld] reference in the my.cnf file and restarting the mysqld.
 This is needed when converting large tables over to the new database schema.</p>
 
-<h2>SLURM Accounting Configuration After Build</h2>
+<h2>Slurm Accounting Configuration After Build</h2>
 
 <p>For simplicity sake we are going to reference everything as if you
 are running with the SlurmDBD. You can communicate with a storage plugin
 directly, but that offers minimal security. </p>
 
-<p>Several SLURM configuration parameters must be set to support
+<p>Several Slurm configuration parameters must be set to support
 archiving information in SlurmDBD. SlurmDBD has a separate configuration
 file which is documented in a separate section.
 Note that you can write accounting information to SlurmDBD
@@ -273,11 +273,11 @@ prevent users from accessing invalid accounts.
 user names and optional partition name.)
 <br>
 <b>Without AccountingStorageEnforce being set (the default behavior)
-jobs will be executed based upon policies configured in SLURM on each
+jobs will be executed based upon policies configured in Slurm on each
 cluster.</b>
 <br>
 It is advisable to run without the option 'limits' set when running a
-scheduler on top of SLURM like Moab that does not update in real
+scheduler on top of Slurm like Moab that does not update in real
 time their limits per association.</li>
 
 <li><b>AccountingStorageHost</b>: The name or address of the host where
@@ -345,7 +345,7 @@ logs are written.
 The default value is none (performs logging via syslog).</li>
 
 <li><b>PluginDir</b>:
-Identifies the places in which to look for SLURM plugins.
+Identifies the places in which to look for Slurm plugins.
 This is a colon-separated list of directories, like the PATH
 environment variable.
 The default value is the prefix given at configure time + "/lib/slurm".</li>
@@ -392,7 +392,7 @@ with to store the job accounting data.</li>
 
 <h2>MySQL Configuration</h2>
 
-<p>While SLURM will create the database tables automatically you will need to
+<p>While Slurm will create the database tables automatically you will need to
 make sure the StorageUser is given permissions in the MySQL or MariaDB database
 to do so.
 As the <i>mysql</i> user grant privileges to that user using a
@@ -463,7 +463,7 @@ mysql> create database slurm_acct_db;
 <p>This will grant user 'slurm' access to do what it needs to do on the local
 host or the storage host system.  This must be done before the SlurmDBD will
 work properly. After you grant permission to the user 'slurm' in mysql then
-you can start SlurmDBD and the other SLURM daemons. You start SlurmDBD by
+you can start SlurmDBD and the other Slurm daemons. You start SlurmDBD by
 typing its pathname '/usr/sbin/slurmdbd' or '/etc/init.d/slurmdbd start'. You
 can verify that SlurmDBD is running by typing 'ps aux | grep
 slurmdbd'.
@@ -629,7 +629,7 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 <li><b>Name=</b> User name</li>
 
-<li><b>Partition=</b> Name of SLURM partition this association applies to</li>
+<li><b>Partition=</b> Name of Slurm partition this association applies to</li>
 
 </ul>
 

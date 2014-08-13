@@ -3,11 +3,11 @@
 <h1><a name="top">Core Specialization Plugin Programmer Guide</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM core specialization plugins and the API that
+<p> This document describe. Slurm core specialization plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
-their own SLURM core specialization plugins. This is version 100 of the API.
+their own Slurm core specialization plugins. This is version 100 of the API.
 
-<p>SLURM core specialization plugins must conform to the
+<p>Slurm core specialization plugins must conform to the
 SLURM Plugin API with the following specifications:
 
 <p><span class="commandline">const char
@@ -21,13 +21,13 @@ plugin_type[]="<i>major/minor</i>"</span><br>
 The major type must be &quot;core_spec&quot;.
 The minor type can be any suitable name for the type of core specialization
 package.
-The following core specialization plugins are included in the SLURM distribution
+The following core specialization plugins are included in the Slurm distribution
 <ul>
 <li><b>cray</b>&#151;Use Cray APIs to enforce core specialization.</li>
 <li><b>none</b>&#151;Can be configured to log calls to its functions, but
 otherwise does nothing.</li>
 </ul>
-<p>SLURM can be configured to use multiple core specialization plugins if desired.</p>
+<p>Slurm can be configured to use multiple core specialization plugins if desired.</p>
 
 <p><b>NOTE:</b> These functions all accept as an argument the job step's
 container ID (as set by the proctrack plugin).
@@ -134,8 +134,8 @@ node.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <h2>Versioning</h2>
-<p> This document describes version 100 of the SLURM core specialization API.
-Future releases of SLURM may revise this API.
+<p> This document describes version 100 of the Slurm core specialization API.
+Future releases of Slurm may revise this API.
 <p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 12 May 2014</p>

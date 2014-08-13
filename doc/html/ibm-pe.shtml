@@ -10,10 +10,10 @@ User and Administrator Guide</h1>
 
 <h2><a name="overview">Overview</a></h2>
 
-<p>This document describes the unique features of SLURM on the
+<p>This document describes the unique features of Slurm on the
 IBM computers with the
 <a href="http://www-03.ibm.com/systems/software/parallel/">Parallel Environment (PE)</a>
-software. You should be familiar with the SLURM's mode of operation on Linux
+software. You should be familiar with the Slurm's mode of operation on Linux
 clusters before studying the relatively few differences in operation on systems
 with PE, which are described in this document.</p>
 
@@ -24,9 +24,9 @@ a library that emulates LoadLeveler functionality.</p>
 
 <h2><a name="user">User Tools</a></h2>
 
-<p>The normal set of SLURM user tools: srun, scancel, sinfo, squeue, scontrol,
+<p>The normal set of Slurm user tools: srun, scancel, sinfo, squeue, scontrol,
 etc. provide all of the expected services.
-The only SLURM command not supported is sattach.
+The onl. Slurm command not supported is sattach.
 Job steps are launched using the
 srun command, which translates its options and invokes IBM's poe command. The
 poe command actually launches the tasks. The poe command may also be invoked
@@ -35,17 +35,17 @@ directly if desired. The actual task launch process is as follows:</p>
 <li>Invoke srun command with desired options.</li>
 <li>The srun command creates a job allocation (if necessary).</li>
 <li>The srun command translates its options and invokes the poe command.</li>
-<li>The poe command loads a SLURM library that provides various resource
+<li>The poe command loads a Slurm library that provides various resource
 management functionality.</li>
-<li>The poe command, through the SLURM library, creates a SLURM step
+<li>The poe command, through the Slurm library, creates a Slurm step
 allocation and launches a process named
 "pmdv12" on the appropriate compute nodes. Note that the "v12" on the end of
 the process name represents the version number of the "pmd" process and is
 subject to change.</li>
 <li>The poe command interacts with the pmdv12 process to launch the application
 tasks, handle their I/O, etc. Since the task launch procedure occurs outside of
-SLURM's control, none of the normal task-level SLURM support is available.</li>
-<li>The poe command, through the SLURM library, reports the completion of the
+SLURM's control, none of the normal task-level Slurm support is available.</li>
+<li>The poe command, through the Slurm library, reports the completion of the
 job step.</li>
 </ol>
 
@@ -160,13 +160,13 @@ command directly. In order to facilitate the direct use of poe, srun's
 <br><b>--launch-cmd</b> option may be used with the options normally used.
 srun will then print the equivalent poe command line, which
 can subsequently be used with the debugger. The poe options must be explicitly
-set even if the command is executed from within an existing SLURM allocation
+set even if the command is executed from within an existing Slurm allocation
 (i.e. from within an allocation created by the salloc or sbatch command).</p>
 
 <h3>Checkpoint</h3>
 
 <p>Checkpoint/restart is only supported with LoadLeveler.
-The <b>checkpoint/poe</b> plugin is based SLURM support for checkpoint support
+The <b>checkpoint/poe</b> plugin is based Slurm support for checkpoint support
 of poe in in the 2005 time frame and does not work with the current versions
 of poe.</p>
 
@@ -190,7 +190,7 @@ use the command: <br>
 
 <h3>Unsupported Options</h3>
 
-<p>Some SLURM options can not be supported by PE and the following srun options
+<p>Some Slurm options can not be supported by PE and the following srun options
 are silently ignored:</p>
 <ul>
 <li>-D, --chdir (set working directory)</li>
@@ -212,11 +212,11 @@ are silently ignored:</p>
 
 <p>A limited subset of srun's --cpu-bind options are supported as shown
 below. If the --cpus-per-task option is not specified, a value of one is used
-by default. Note that SLURM's mask_cpu and map_cpu options are not supported,
+by default. Note tha. Slurm's mask_cpu and map_cpu options are not supported,
 nor are options to bind to sockets or boards.</p>
 <table border=1 cellspacing=0 cellpadding=4>
 <tr>
-    <td><b>SLURM option</b></td>
+    <td><b>Slurm option</b></td>
     <td><b>POE equivalent</b></td>
 </tr>
 <tr>
@@ -245,7 +245,7 @@ This effects the following options:</p>
 
 <p>For the srun command's --multi-prog option (Multiple Program,
 Multiple Data configurations), the command file will be translated from
-SLURM's format to a POE format. POE does not support SLURM expressions
+SLURM's format to a POE format. POE does not suppor. Slurm expressions
 in the MPMD configuration file (e.g. "%t" will not be replaced with the task's
 number and "%o" will not be replaced with the task's offset within
 this range). The command file will be stored in a temporary file
@@ -265,7 +265,7 @@ tasks are identical, they are combined on a single line with the prefix
 identifying which task(s) generated the output. In addition, there is a colon
 but no space between the task IDs and output. For example:</p>
 <pre>
-# SLURM OUTPUT
+# Slurm OUTPUT
 0: foo
 1: foo
 2: foo
@@ -283,7 +283,7 @@ but no space between the task IDs and output. For example:</p>
 Multiple Data configurations) is used with the -L/--label option then a job
 step ID, colon and space will precede the task ID and colon. For example:</p>
 <pre>
-# SLURM OUTPUT
+# Slurm OUTPUT
 0: zero
 1: one
 2: two
@@ -296,11 +296,11 @@ step ID, colon and space will precede the task ID and colon. For example:</p>
 
 <p>The srun command is not able to report task status upon receipt of a SIGINT
 signal (ctrl-c interrupt from keyboard), however two SIGINT signals within a
-one second interval will terminate the job as on other SLURM configurations.</p>
+one second interval will terminate the job as on other Slurm configurations.</p>
 
 <h3>Environment Variables</h3>
 
-<p>Since SLURM is not directly launching user tasks, the following environment
+<p>Since Slurm is not directly launching user tasks, the following environment
 variables are NOT available with POE:</p>
 <ul>
 <li>SLURM_CPU_BIND_LIST</li>
@@ -324,7 +324,7 @@ variables are NOT available with POE:</p>
 </ul>
 
 <p>Note that POE sets a variety of environment variables that provide similar
-information to some the missing SLURM environment variables. Particularly
+information to some the missing Slurm environment variables. Particularly
 note the following environment variables:</p>
 <ul>
 <li>MP_I_UPMD_HOSTNAME (local hostname)</li>
@@ -333,7 +333,7 @@ note the following environment variables:</p>
 
 <h3>Gang Scheduling</h3>
 
-<p>SLURM can be configured to gang schedule (time slice) parallel jobs by
+<p>Slurm can be configured to gang schedule (time slice) parallel jobs by
 alternately suspending and resuming them. Depending upon the the number of
 jobs configured to time slice and the time slice interval (as specified in
 the <i>slurm.conf</i> file using the <b>Shared</b> and <b>SchedulerTimeSlice</b>
@@ -350,7 +350,7 @@ export MP_TIMEOUT=600
 <p>POE can not support a step ID of zero. In POE installations, a job's
 first step ID will be 1 rather than 0.</p>
 
-<p>Since the SLURM step launches the PE PMD process instead of the
+<p>Since the Slurm step launches the PE PMD process instead of the
 users tasks the exit code stored in accounting will be that of the PMD
 instead of the users tasks.  The exit code of the job allocation if
 started with srun will be correct as we will grab the exit code from
@@ -364,7 +364,7 @@ directory), the resd option must be set to yes (e.g. "-resd yes" option or
 
 <h2><a name="admin">System Administration</a></h2>
 
-<p>There are several critical SLURM configuration parameters for use with PE.
+<p>There are several critical Slurm configuration parameters for use with PE.
 These configuration parameters should be set in your <b>slurm.conf</b> file.
 <b>LaunchType</b> defines the task launch mechanism to be used and must be set
 to <b>launch/poe</b>. This configuration means that poe will be used to launch
@@ -375,7 +375,7 @@ interface on ALL nodes in the cluster (only a few of them will actually interact
 with IBM's NRT library, but all need to work with the NRT data structures).
 Task launch is slower in this environment than with a typical Linux cluster
 and the <b>MessageTimeout</b> must be configured to a sufficiently large value
-so that large parallel jobs can be launched without SLURM's job step
+so that large parallel jobs can be launched withou. Slurm's job step
 credentials expiring.
 When switch resources are allocated to a job, all processes spawned by that job
 must be terminated before the switch resources can be released for use by another
@@ -398,14 +398,14 @@ ProctrackType=proctrack/cgroup
 
 <p>In order for these plugins to be built, the locations of the POE Resource
 Manager header file (permapi.h) the NRT header file (nrt.h) and NRT library
-(libnrt.so) must be identified at the time the SLURM is built.
+(libnrt.so) must be identified at the time the Slurm is built.
 The header files are needed at build time to get NRT data structures, function
 return codes, etc.
 The NRT library location is needed to identify where the library is to be
 loaded from by Slurm's switch/nrt plugin, but the library is only actually
 when needed and only by the slurmd daemon.</p>
 
-<p>SLURM searches for the header files in the /usr/include directory by default.
+<p>Slurm searches for the header files in the /usr/include directory by default.
 If the files are not installed there, you can specify a different location using
 the <b>--with-nrth=PATH</b> option to the configure program, where "PATH" is
 the fully qualified pathname of the parent directory(ies) of the nrt.h and
@@ -422,20 +422,20 @@ For example:</p>
 %_with_libnrt    "/opt/ibmhpc/pecurrent/base/intel/lib64"
 </pre>
 
-<p><b>IMPORTANT:</b>The poe command interacts with SLURM by loading a
-  SLURM library providing a variety of functions for its use. The
+<p><b>IMPORTANT:</b>The poe command interacts with Slurm by loading a
+  Slurm library providing a variety of functions for its use. The
   library name is <i>"libpermapi.so"</i> and it is in installed with the
-  other SLURM libraries in the subdirectory "lib/slurm". You must
+  other Slurm libraries in the subdirectory "lib/slurm". You must
   modify the link of /usr/lib64/libpermapi.so to point to the location
   of the slurm version of this library.</p>
 <p>Modifying the "/etc/poe.limits" file is <b>not</b> enough. The poe
   command is loading and using the libpermapi.so library initially
   from the /usr/lib64 directory. It later reads the /etc/poe.limits
   file and loads the library listed there.  In order for poe to work
-  with SLURM, it needs to use the "libpermapi.so" generated by SLURM
+  with Slurm, it needs to use the "libpermapi.so" generated by SLURM
   for all of its functions.  Until poe is modified to only load the
   correct library, it is necessary for /usr/lib64/libpermapi.so to
-  contain SLURM's library or a link to it.</p>
+  contain Slurm's library or a link to it.</p>
 <p>If you are having problems running on more than 32 nodes this is
   most likely your issue.</p>
 
@@ -452,7 +452,7 @@ Slurm (without jobs). The procedure is as follows:</p>
 
 <h3>Job Scheduling</h3>
 
-<p>SLURM can be configured to gang schedule (time slice) parallel jobs by
+<p>Slurm can be configured to gang schedule (time slice) parallel jobs by
 alternately suspending and resuming them. Depending upon the the number of
 jobs configured to time slice and the time slice interval (as specified in
 the <i>slurm.conf</i> file using the <b>Shared</b> and <b>SchedulerTimeSlice</b>
@@ -464,11 +464,11 @@ value. Note that the default timeout is 150 seconds. See
 export MP_TIMEOUT=600
 </pre>
 
-<p>SLURM also can support long term job preemption with IBM's Parallel
+<p>Slurm also can support long term job preemption with IBM's Parallel
 Environment. Job's can be explicitly preempted and later resumed using the
 <b>scontrol suspend &lt;jobid&gt;</b> and <b>scontrol resume &lt;jobid&gt;</b>
 commands. This functionality relies upon NRT functions to suspend/resume
-programs and reset MPI timeouts. Note that SLURM supports the preemption only
+programs and reset MPI timeouts. Note tha. Slurm supports the preemption only
 of whole jobs rather than individual job steps. A suspended job will relinquish
 CPU resources, but retain memory and switch window resources. Note that the
 long term suspension of jobs with any allocated Collective Acceleration
@@ -504,12 +504,12 @@ Without this restriction, a job may allocated adapter resources on one node
 and be unable to allocate the corresponding adapter resources on another
 node.</p>
 
-<p>It is possible to configure SLURM and LoadLeveler to simultaneously exist
+<p>It is possible to configure Slurm and LoadLeveler to simultaneously exist
 on a cluster, however each scheduler must be configured to manage different
 compute nodes (e.g. LoadLeveler can manage compute nodes "tux[1-8]" and SLURM
 can manage compute nodes "tux[9-16]" on the same cluster). In addition, the
 /etc/poe.limits file on each node must identify the MP_PE_RMLIB appropriate
-for that node (e.g. IBM's or SLURM's libpermapi.so).
+for that node (e.g. IBM's or Slurm's libpermapi.so).
 If Slurm and LoadLeveler are configured to simultaneously manage the same
 nodes, you should expect both resource managers to try assigning the same
 resources. This will result in job failures.</p>
@@ -521,7 +521,7 @@ compute nodes, so two launch plugins are actually used.</p>
 <p>Depending upon job size and network options, allocating and deallocating
 switch resources can take multiple seconds per node and the process of launching
 applications on multiple nodes is not well parallelized.
-This is outside of SLURM's control.</p>
+This is outside of Slurm's control.</p>
 
 <p>The two figures below show a high-level overview of the switch/nrt and
 launch/poe plugins. A typical Slurm installation with IBM PE would make

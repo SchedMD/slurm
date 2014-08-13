@@ -2,7 +2,7 @@
 
 <h1>Prolog and Epilog Guide</h1>
 
-<p>SLURM supports a multitude of prolog and epilog programs.
+<p>Slurm supports a multitude of prolog and epilog programs.
 The first table below identifies what prologs and epilogs are available for job
 allocations, when and where they run.</p>
 

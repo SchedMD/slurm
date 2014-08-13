@@ -152,7 +152,7 @@ clarify how a node is used when it is configured in more than one partition and
 the partitions have different "Shared" policies:
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
-<TR><TH>SLURM configuration</TH>
+<TR><TH>Slurm configuration</TH>
 <TH>Resulting Behavior</TH>
 </TR><TR>
 <TD>Two <CODE>Shared=NO</CODE> partitions assigned the same set of nodes</TD>

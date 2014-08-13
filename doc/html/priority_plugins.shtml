@@ -1,14 +1,14 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Priority Plugin API</a></h1>
+<h1><a name="top">Slurm Priority Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM priority plugins and the API that defines
+<p> This document describes Slurm priority plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own
 SLURM priority plugins. This is version 100 of the API.</p>
 
-<p>SLURM priority plugins are SLURM plugins that implement the SLURM priority
-API described herein. They must conform to the SLURM Plugin API with the
+<p>Slurm priority plugins are Slurm plugins that implement the Slurm priority
+API described herein. They must conform to the Slurm Plugin API with the
 following specifications:</p>
 
 <p><span class="commandline">const char
@@ -30,13 +30,13 @@ Note carefully, however, the versioning discussion below.</p>
 
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/priority/basic/priority_basic.c</span>
-for an example implementation of a SLURM priority plugin.</p>
+for an example implementation of a Slurm priority plugin.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
-enumerated <b>errno</b> to allow SLURM to discover as practically as possible
+enumerated <b>errno</b> to allow Slurm to discover as practically as possible
 the reason for any failed API call.  Plugin-specific enumerated integer values
 may be used when appropriate.</p>
 
@@ -139,8 +139,8 @@ containing the requested job priority factors</p>
 
 
 <h2>Versioning</h2>
-<p> This document describes version 101 of the SLURM Priority API. Future
-releases of SLURM may revise this API. A priority plugin conveys its ability
+<p> This document describes version 101 of the Slurm Priority API. Future
+releases of Slurm may revise this API. A priority plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM
 plugins.</p>
 

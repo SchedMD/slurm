@@ -2,11 +2,11 @@
 
 <h1>Resource Limits</h1>
 
-<p>Familiarity with SLURM's <a href="accounting.html">Accounting</a> web page
+<p>Familiarity with Slurm's <a href="accounting.html">Accounting</a> web page
 is strongly recommended before use of this document.</p>
 
 <p><b>Note for users of Maui or Moab schedulers:</b><br>
-Maui and Moab are not integrated with SLURM's resource limits,
+Maui and Moab are not integrated with Slurm's resource limits,
 but should use their own resource limits mechanisms.</p>
 
 <h2>Hierachy</h2>
@@ -25,15 +25,15 @@ in the <b>slurm.conf</b> configuration file.
 Information can be recorded in a <a href="http://www.mysql.com/">MySQL</a> or
 <a href="https://mariadb.org/">MariaDB</a></li> database.
 For security and performance reasons, the use of
-SlurmDBD (SLURM Database Daemon) as a front-end to the
+SlurmDBD (Slurm Database Daemon) as a front-end to the
 database is strongly recommended.
-SlurmDBD uses a SLURM authentication plugin (e.g. MUNGE).
-SlurmDBD also uses an existing SLURM accounting storage plugin
+SlurmDBD uses a Slurm authentication plugin (e.g. MUNGE).
+SlurmDBD also uses an existing Slurm accounting storage plugin
 to maximize code reuse.
 SlurmDBD uses data caching and prioritization of pending requests
 in order to optimize performance.
-While SlurmDBD relies upon existing SLURM plugins for authentication
-and database use, the other SLURM commands and daemons are not required
+While SlurmDBD relies upon existing Slurm plugins for authentication
+and database use, the other Slurm commands and daemons are not required
 on the host where SlurmDBD is installed.
 Only the <i>slurmdbd</i> and <i>slurm-plugins</i> RPMs are required
 for SlurmDBD execution.</p>
@@ -78,11 +78,11 @@ each association in the database.  By setting this option, the
 user names and optional partition name.)
 <br>
 Without AccountingStorageEnforce being set (the default behavior)
-jobs will be executed based upon policies configured in SLURM on each
+jobs will be executed based upon policies configured in Slurm on each
 cluster.
 <br>
 It is advisable to run without the option 'limits' set when running a
-scheduler on top of SLURM, like Moab, that does not update in real
+scheduler on top of Slurm, like Moab, that does not update in real
 time their limits per association.
 </p>
 
@@ -97,7 +97,7 @@ its use.</p>
 <p>A web interface with graphical output is currently under development.</p>
 
 <p>Changes made to the scheduling policy are uploaded to
-the SLURM control daemons on the various clusters and take effect
+the Slurm control daemons on the various clusters and take effect
 immediately. When an association is deleted, all running or pending
 jobs which belong to that association are immediately canceled.
 When limits are lowered, running jobs will not be canceled to
@@ -212,12 +212,12 @@ specified then no limit will apply.</p>
 <p>The <b>MaxNodes</b> and <b>MaxWall</b> options already exist in
 SLURM's configuration on a per-partition basis, but the above options
 provide the ability to impose limits on a per-user basis.  The
-<b>MaxJobs</b> option provides an entirely new mechanism for SLURM to
+<b>MaxJobs</b> option provides an entirely new mechanism for Slurm to
 control the workload any individual may place on a cluster in order to
 achieve some balance between users.</p>
 
 <p>Fair-share scheduling is based upon the hierarchical bank account
-data maintained in the SLURM database.  More information can be found
+data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 

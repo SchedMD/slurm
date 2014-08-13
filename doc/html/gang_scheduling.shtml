@@ -40,7 +40,7 @@ gang scheduling:
 </P>
 <UL>
 <LI>
-<B>SelectType</B>: The SLURM gang scheduler supports
+<B>SelectType</B>: The Slurm gang scheduler supports
 nodes allocated by the <I>select/linear</I> plugin,
 socket/core/CPU resources allocated by the <I>select/cons_res</I> plugin or
 <I>select/cray</I> for Cray systems without ALPS.
@@ -103,8 +103,8 @@ not recommended.
 </UL>
 <P>
 In order to enable gang scheduling after making the configuration changes
-described above, restart SLURM if it is already running. Any change to the
-plugin settings in SLURM requires a full restart of the daemons. If you
+described above, restart Slurm if it is already running. Any change to the
+plugin settings in Slurm requires a full restart of the daemons. If you
 just change the partition <I>Shared</I> setting, this can be updated with
 <I>scontrol reconfig</I>.
 </P>
@@ -114,7 +114,7 @@ just change the partition <I>Shared</I> setting, this can be updated with
 <P>
 When enabled, the gang scheduler keeps track of the resources
 allocated to all jobs. For each partition an "active bitmap" is maintained that
-tracks all concurrently running jobs in the SLURM cluster. Each time a new
+tracks all concurrently running jobs in the Slurm cluster. Each time a new
 job is allocated to resources in a partition, the gang scheduler
 compares these newly allocated resources with the resources already maintained
 in the "active bitmap".
@@ -491,7 +491,7 @@ Note that the runtime of all 6 jobs is roughly equal. Jobs 51-54 ran first so
 they're slightly ahead, but so far all jobs have run for at least 3 minutes.
 </P>
 <P>
-At the core level this means that SLURM relies on the Linux kernel to move
+At the core level this means tha. Slurm relies on the Linux kernel to move
 jobs around on the cores to maximize performance.
 This is different than when <I>CR_Core_Memory</I> was configured and the jobs
 would effectively remain "pinned" to their specific cores for the duration of

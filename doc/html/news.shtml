@@ -10,7 +10,7 @@
 </ul>
 
 <h2><a name="1403">Major Updates in Slurm Version 14.03</a></h2>
-<p>SLURM Version 14.03 was released in March 2014.
+<p>Slurm Version 14.03 was released in March 2014.
 Major enhancements include:
 <ul>
 <li>Added support for native Slurm operation on Cray systems (without ALPS).</li>
@@ -30,7 +30,7 @@ Major enhancements include:
 </p>
 
 <h2><a name="1411">Major Updates in Slurm Version 14.11</a></h2>
-<p>SLURM Version 14.11 is scheduled for release in November 2014.
+<p>Slurm Version 14.11 is scheduled for release in November 2014.
 Major enhancements include:
 <ul>
 <li>Communication gateway nodes to improve scalability.</li>
@@ -48,8 +48,8 @@ Major enhancements include:
 
 
 <h2><a name="1508">Major Updates in Slurm Version 15.08 and beyond</a></h2>
-<p> Detailed plans for release dates and contents of additional SLURM releases
-have not been finalized. Anyone desiring to perform SLURM development should
+<p> Detailed plans for release dates and contents of additional Slurm releases
+have not been finalized. Anyone desiring to perform Slurm development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
 to coordinate activities. Future development plans includes:
 <ul>
@@ -79,7 +79,7 @@ to coordinate activities. Future development plans includes:
 <li>Add Kerberos credential support including credential forwarding
     and refresh.</li>
 <li>Improved support for provisioning and virtualization.</li> 
-<li>Provide a web-based SLURM administration tool.</li>
+<li>Provide a web-based Slurm administration tool.</li>
 </ul>
 
 <p style="text-align:center;">Last modified 29 May 2014</p>

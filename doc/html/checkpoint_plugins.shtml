@@ -1,15 +1,15 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Job Checkpoint Plugin Programmer Guide</a></h1>
+<h1><a name="top">Slurm Job Checkpoint Plugin Programmer Guide</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM job checkpoint plugins and the API that defines
+<p> This document describes Slurm job checkpoint plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
 job checkpoint plugins. This is version 100 of the API.</p>
 
-<p>SLURM job checkpoint plugins are SLURM plugins that implement the SLURM
+<p>Slurm job checkpoint plugins are Slurm plugins that implement the SLURM
 API for checkpointing and restarting jobs.
-The plugins must conform to the SLURM Plugin API with the following specifications:</p>
+The plugins must conform to the Slurm Plugin API with the following specifications:</p>
 
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;checkpoint.&quot; The minor type can be any recognizable
@@ -26,18 +26,18 @@ Berkeley Lab Checkpoint/Restart (BLCR)</a></li>
 
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
-symbols required by the SLURM Plugin API require no specialization for
+symbols required by the Slurm Plugin API require no specialization for
 job checkpoint support.
 Note carefully, however, the versioning discussion below.</p>
 
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/checkpoint/checkpoint_aix.c</span>
-for a sample implementation of a SLURM job checkpoint plugin.</p>
+for a sample implementation of a Slurm job checkpoint plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
-enumerated <span class="commandline">errno</span> to allow SLURM to discover
+enumerated <span class="commandline">errno</span> to allow Slurm to discover
 as practically as possible the reason for any failed API call. Plugin-specific enumerated
 integer values may be used when appropriate.
 
@@ -210,10 +210,10 @@ and error_msg to an appropriate value to indicate the reason for failure.</p>
 
 
 <h2>Versioning</h2>
-<p> This document describes version 100 of the SLURM checkpoint API.
-Future releases of SLURM may revise this API.
+<p> This document describes version 100 of the Slurm checkpoint API.
+Future releases of Slurm may revise this API.
 A checkpoint plugin conveys its ability to implement a particular API
-version using the mechanism outlined for SLURM plugins.</p>
+version using the mechanism outlined for Slurm plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 8 May 2014</p>

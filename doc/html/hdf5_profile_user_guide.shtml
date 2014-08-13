@@ -15,10 +15,10 @@
 
 <a id="Overview"></a>
 <h2>Overview</h2>
-<p>The AcctGatherProfileType/hdf5 plugin allows SLURM to coordinate collecting
+<p>The AcctGatherProfileType/hdf5 plugin allows Slurm to coordinate collecting
 data on jobs it runs on a cluster that is more detailed than is practical to
 include in its database. The data comes from periodically sampling various
-performance data either collected by SLURM, the operating system, or
+performance data either collected by Slurm, the operating system, or
 component software. The plugin will record the data from each source
 as a <b>Time Series</b> and also accumulate totals for each statistic for
 the job.</p>
@@ -33,7 +33,7 @@ Data from other sources may be added in the future.</p>
 <p>The data is collected into a file on a shared file system for each step on
 each allocated node of a job and then merged into a HDF5 file.
 Individual files on a shared file system was chosen because it is possible
-that the data is voluminous so solutions that pass data to the SLURM control
+that the data is voluminous so solutions that pass data to the Slurm control
 daemon via RPC may not scale to very large clusters or jobs with
 many allocated nodes.</p>
 

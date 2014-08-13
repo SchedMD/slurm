@@ -4,13 +4,13 @@
 
 <h2>Overview</h2>
 
-<p>This document describes the unique features of SLURM on
+<p>This document describes the unique features of Slurm on
 Sun Constellation computers.
-You should be familiar with the SLURM's mode of operation on Linux clusters
+You should be familiar with the Slurm's mode of operation on Linux clusters
 before studying the relatively few differences in Sun Constellation system
 operation described in this document.</p>
 
-<p>SLURM's primary mode of operation is designed for use on clusters with
+<p>Slurm's primary mode of operation is designed for use on clusters with
 nodes configured in a one-dimensional space.
 A topology plugin was developed to optimize resource allocations in
 three dimensions.
@@ -58,14 +58,14 @@ block with endpoints at "tux0000" and "tux0111" (tux0000, tux0001, tux0010,
 tux0011, tux0100, tux0101, tux0110 and tux0111).
 Viewed another way, these eight nodes have sequence numbers 0 or 1
 and have four distinct coordinates (000, 001, 010 and 011).
-While node names of this form are required for SLURM's internal use,
+While node names of this form are required for Slurm's internal use,
 it need not be the name returned by the <i>hostlist -s</i> command.
 See <i>man slurm.conf</i> for details on how to use the <i>NodeName</i>,
 <i>NodeAddr</i> and <i>NodeHostName</i> configuration parameters
 for flexibility in this matter.</p>
 
 <p>Next you need to select from two options for the resource selection
-plugin (the <i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration
+plugin (the <i>SelectType</i> option in Slurm's <i>slurm.conf</i> configuration
 file):
 <ol>
 <li><b>select/cons_res</b> - Performs a best-fit algorithm based upon a
@@ -77,14 +77,14 @@ one-dimensional space to allocate whole nodes to jobs.</li>
 
 <p>In order for <i>select/cons_res</i> or <i>select/linear</i> to
 allocate resources physically nearby in four-dimensional space, the
-nodes be specified in SLURM's <i>slurm.conf</i> configuration file in
+nodes be specified in Slurm's <i>slurm.conf</i> configuration file in
 such a fashion that those nearby in <i>slurm.conf</i> (managed
-internal to SLURM as a one-dimensional space) are also nearby in
+internal to Slurm as a one-dimensional space) are also nearby in
 the physical four-dimensional space.</p>
 
-<p>SLURM can automatically perform that conversion using a
+<p>Slurm can automatically perform that conversion using a
 <a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>.
-Set <i>TopologyPlugin=topology/3d_torus</i> in SLURM's <i>slurm.conf</i>
+Set <i>TopologyPlugin=topology/3d_torus</i> in Slurm's <i>slurm.conf</i>
 configuration file for nodes to be reordered appropriately.
 First a three-dimensional Hilbert curve is constructed through all
 coordinates in the system such that every coordinate in the order list
@@ -101,10 +101,10 @@ plugin to function properly.<p>
 construct your own node ordering sequence as desired in <i>slurm.conf</i>.
 Note that each node must be listed exactly once and consecutive
 nodes should be nearby in three-dimensional space.
-The open source code used by SLURM to generate the Hilbert curve is
+The open source code used by Slurm to generate the Hilbert curve is
 included in the distribution at <i>contribs/skilling.c</i> in the event
 that you wish to experiment with it to generate your own node ordering.
-Two examples of SLURM configuration files are shown below:</p>
+Two examples of Slurm configuration files are shown below:</p>
 
 <pre>
 # slurm.conf for Sun Constellation system of size 4x4x4
@@ -148,8 +148,8 @@ determined.
 In order to locate specific nodes with the <i>sview</i> command, select
 <i>Actions</i>, <i>Search</i> and <i>Node(s) Name</i> then enter the desired
 node names.
-The output of other SLURM commands (e.g. <i>sinfo</i> and <i>squeue</i>)
-will use a SLURM hostlist expression with the node names numerically ordered).
+The output of other Slurm commands (e.g. <i>sinfo</i> and <i>squeue</i>)
+will use a Slurm hostlist expression with the node names numerically ordered).
 SLURM partitions should contain nodes which are defined sequentially
 by that ordering for optimal performance.</p>
 

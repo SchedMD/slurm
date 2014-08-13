@@ -1,13 +1,13 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Accounting Storage Plugin API</a></h1>
+<h1><a name="top">Slurm Accounting Storage Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM Accounting Storage plugins and the API that
+<p> This document describes Slurm Accounting Storage plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
-their own SLURM Job Accounting Storage plugins. This is version 1 of the API.
+their own Slurm Job Accounting Storage plugins. This is version 1 of the API.
 
-<p>SLURM Accounting Storage plugins must conform to the
+<p>Slurm Accounting Storage plugins must conform to the
 SLURM Plugin API with the following specifications:
 
 <p><span class="commandline">const char
@@ -31,7 +31,7 @@ for the type of accounting package. We currently use
 </ul>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/accounting_storage/mysql</span>
-for a sample implementation of a SLURM Accounting Storage plugin.
+for a sample implementation of a Slurm Accounting Storage plugin.
 <p> The Accounting Storage plugin was written to be a interface
 to storage data collected by the Job Accounting Gather plugin.  When
 adding a new database you may want to add common functions in a common
@@ -1013,10 +1013,10 @@ database with.
 </dl>
 
 <h2>Versioning</h2>
-<p> This document describes version 1 of the SLURM Accounting Storage API. Future
-releases of SLURM may revise this API. An Accounting Storage plugin conveys its
+<p> This document describes version 1 of the Slurm Accounting Storage API. Future
+releases of Slurm may revise this API. An Accounting Storage plugin conveys its
 ability to implement a particular API version using the mechanism outlined
-for SLURM plugins.
+for Slurm plugins.
 <p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 8 May 2014</p>

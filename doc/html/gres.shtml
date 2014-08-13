@@ -9,7 +9,7 @@ and Intel&reg; Many Integrated Core (MIC) processors.</P>
 <!-------------------------------------------------------------------------->
 <h2>Configuration</h2>
 
-<P>SLURM supports no generic resources in the default configuration.
+<P>Slurm supports no generic resources in the default configuration.
 One must explicitly specify which resources are to be managed in the
 <I>slurm.conf</I> configuration file. The configuration parameters of
 interest are:</P>
@@ -70,7 +70,7 @@ Multiple CPUs may be specified using a comma delimited list or a range may be
 specified using a "-" separator (e.g. "0,1,2,3" or "0-3").
 If not specified, then any CPU can be used with the resources.
 If any CPU can be used with the resources, then do not specify the
-CPUs option for improved speed in the SLURM scheduling logic.
+CPUs option for improved speed in the Slurm scheduling logic.
 
 <LI><B>File</B> Fully qualified pathname of the device files associated with a
 resource.
@@ -88,8 +88,8 @@ If File is specified then Count must be either set to the number
 of file names specified or not set (the default value is the number of files
 specified).
 NOTE: If you specify the File parameter for a resource on some node,
-the option must be specified on all nodes and SLURM will track the assignment
-of each specific resource on each node. Otherwise SLURM will only track a
+the option must be specified on all nodes and Slurm will track the assignment
+of each specific resource on each node. Otherwise Slurm will only track a
 count of allocated resources rather than the state of each individual device
 file.</LI>
 
@@ -156,7 +156,7 @@ wait
 <!-------------------------------------------------------------------------->
 <h2>GPU Management</h2>
 
-<P>In the case of SLURM's GRES plugin for GPUs, the environment variable
+<P>In the case of Slurm's GRES plugin for GPUs, the environment variable
 CUDA_VISIBLE_DEVICES is set for each job step to determine which GPUs are
 available for its use on each node. This environment variable is only set
 when tasks are launched on a specific compute node (no global environment
@@ -181,7 +181,7 @@ file and insure they are in the increasing numeric order.</P>
 <!-------------------------------------------------------------------------->
 <h2>MIC Management</h2>
 
-<P>SLURM can be used to provide resource management for systems with the
+<P>Slurm can be used to provide resource management for systems with the
 Intel&reg; Many Integrated Core (MIC) processor.
 SLURM sets an OFFLOAD_DEVICES environment variable, which controls the
 selection of MICs available to a job step.

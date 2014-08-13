@@ -6,7 +6,7 @@
 <p>For a comprehensive description of Linux Control Groups (cgroups) see the
 <a href="http://www.kernel.org/doc/Documentation/cgroups/cgroups.txt">
 cgroups documentation</A> at kernel.org. Detailed knowledge of cgroups is not
-required to use cgroups in SLURM, but a basic understanding of the
+required to use cgroups in Slurm, but a basic understanding of the
 following features of cgroups is helpful:</p>
 <ul>
 <li><b>Cgroup</b> - a container for a set of processes subject to common
@@ -43,8 +43,8 @@ This can usually be placed in /etc/default/grub inside the
 be run after updating the file.
 </ul>
 
-<h2>Use of Cgroups in SLURM</h2>
-<p>SLURM provides cgroup versions of a number of plugins.</p>
+<h2>Use of Cgroups in Slurm</h2>
+<p>Slurm provides cgroup versions of a number of plugins.</p>
 <ul>
 <li>proctrack (process tracking)</li>
 <li>task (task management)</li>
@@ -52,10 +52,10 @@ be run after updating the file.
 The cgroup plugins can provide a number of benefits over the
 other more standard plugins, as described below.
 </ul>
-<p>SLURM also uses cgroups for resource specialization.</p>
+<p>Slurm also uses cgroups for resource specialization.</p>
 
-<h2>SLURM Cgroups Configuration Overview</h2>
-<p>There are several sets of configuration options for SLURM cgroups:</p>
+<h2>Slurm Cgroups Configuration Overview</h2>
+<p>There are several sets of configuration options for Slurm cgroups:</p>
 <ul>
 <li><a href="slurm.conf.html">slurm.conf</a> provides options to enable the
 cgroup plugins. Each plugin may be enabled or disabled independently
@@ -67,7 +67,7 @@ specific plugins.</li>
 parameters.</li>
 <li>Additional configuration is required to enable automatic removal of SLURM
 cgroups when they are no longer in use.
-See <a href="#cleanup">Cleanup of SLURM Cgroups</a> below for details.</li>
+See <a href="#cleanup">Cleanup of Slurm Cgroups</a> below for details.</li>
 </ul>
 <a name="available"></a>
 
@@ -127,15 +127,15 @@ details.</p>
 
 <h2>Use of Cgroups for Resource Specialization</h2>
 <p>Resource Specialization may be used to reserve a subset of cores on each compute 
-node for exclusive use by SLURM compute node daemons (slurmd, slurmstepd). It 
+node for exclusive use b. Slurm compute node daemons (slurmd, slurmstepd). It 
 may also be used to apply a real memory limit to the daemons. The daemons are 
 confined to the reserved cores using a special <i>system</i> cgroup in the 
 cpuset hierarchy. The memory limit is enforced using a <i>system</i> cgroup 
 in the memory hierarchy. System-level resource specialization is enabled with 
 special node configuration parameters in 
 <a href="slurm.conf.html">slurm.conf</a>.</p>
-<h2>Organization of SLURM Cgroups</h2>
-<p>SLURM cgroups are organized as follows.  A base directory (mount point) is
+<h2>Organization of Slurm Cgroups</h2>
+<p>Slurm cgroups are organized as follows.  A base directory (mount point) is
 created at /cgroup, or as configured by the <i>CgroupMountpoint</I> option in
 <a href="cgroup.conf.html">cgroup.conf</a>. All cgroup
 hierarchies are created below this base directory. A separate hierarchy is
@@ -143,7 +143,7 @@ created for each cgroup subsystem in use. The name of the root cgroup in each
 hierarchy is the subsystem name. A cgroup named <i>slurm</i> is created below
 the root cgroup in each hierarchy. Below each <i>slurm</i> cgroup, cgroups for
 SLURM users, jobs, steps and tasks are created dynamically as needed. The names
-of these cgroups consist of a prefix identifying the SLURM entity (user, job,
+of these cgroups consist of a prefix identifying the Slurm entity (user, job,
 step or task), followed by the relevant numeric id. The following example shows
 the path of the task cgroup in the cpuset hierarchy for taskid#2 of stepid#0 of
 jobid#123 for userid#100, using the default base directory (/cgroup):
@@ -156,15 +156,15 @@ hierarchies:</p>
 <p>Note that all these structures apply to a specific compute node. Jobs that 
 use more than one node will have a cgroup structure on each node.</p>
 
-<a name="cleanup"><h2>Cleanup of SLURM Cgroups</h2></a>
+<a name="cleanup"><h2>Cleanup of Slurm Cgroups</h2></a>
 <p>Linux provides a mechanism for the automatic removal of a cgroup when its
 state changes from non-empty to empty.  A cgroup is empty when no processes are
-attached to it and it has no child cgroups.  The SLURM cgroups implementation
+attached to it and it has no child cgroups.  The Slurm cgroups implementation
 allows this mechanism to be used to automatically remove the relevant SLURM
 cgroups when tasks, steps and jobs terminate. To enable this automatic removal
 feature, follow these steps:</p>
 <ul>
-<li>If desired, configure the location of the SLURM Cgroup release agent
+<li>If desired, configure the location of the Slurm Cgroup release agent
 directory. This is done using the <i>CgroupReleaseAgentDir</i> option in
 <a href="cgroup.conf.html">cgroup.conf</a>.
 The default location is /etc/slurm/cgroup.</li>

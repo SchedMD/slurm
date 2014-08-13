@@ -4,7 +4,7 @@
 
 <h2> Overview</h2>
 <p> This document describes the launch plugin that is responsible for
-  launching a parallel task in SLURM and the API that defines them. It
+  launching a parallel task in Slurm and the API that defines them. It
   is intended as a resource to programmers wishing to write their own
   launch plugin.
 
@@ -23,11 +23,11 @@ systems with ALPS installed.</li>
   IBM's parallel environment (PE) installed.</li>
 <li><b>runjob</b>&#151;Use IBM's runjob command to launch tasks - used on
   BlueGene/Q systems.</li>
-<li><b>slurm</b>&#151;Use SLURM's default launching infrastructure</li>
+<li><b>slurm</b>&#151;Use Slurm's default launching infrastructure</li>
 </ul>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/launch/slurm/launch_slurm.c</span>
-for a sample implementation of a SLURM launch plugin.
+for a sample implementation of a Slurm launch plugin.
 <p class="footer"><a href="#top">top</a>
 
 <h2>API Functions</h2>

@@ -238,7 +238,7 @@ in the priority/multifactor plugin. It is worth mentioning that the
 <i>PriorityWeightFairshare</i> can be usefully set to a much smaller value than
 usual, possibly as low as 1 or 2 times the number of user associations.
 </li>
-<li>LEVEL_BASED requires the <a href="accounting.html">SLURM Accounting
+<li>LEVEL_BASED requires the <a href="accounting.html">Slurm Accounting
 Database</a> to provide the assigned shares and the consumed,
 computing resources described below.
 </li>

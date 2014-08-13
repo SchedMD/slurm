@@ -1,9 +1,9 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Checkpoint/Restart with BLCR</a></h1>
+<h1><a name="top">Slurm Checkpoint/Restart with BLCR</a></h1>
 
 <h2>Overview</h2>
-<p>SLURM is integrated with
+<p>Slurm is integrated with
 <a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
 Berkeley Lab Checkpoint/Restart (BLCR)</a> in order to provide automatic
 job checkpoint/restart support.
@@ -36,8 +36,8 @@ Some other MPI implementations should also work.</p>
 
 <h2>User Commands</h2>
 
-<p>The following documents SLURM changes specific to BLCR support.
-Basic familiarity with SLURM commands is assumed.</p>
+<p>The following document. Slurm changes specific to BLCR support.
+Basic familiarity with Slurm commands is assumed.</p>
 
 <h3>srun</h3>
 
@@ -71,12 +71,12 @@ logic to interact with the <b>srun_cr</b> command.</p>
 
 <h3>srun_cr</h3>
 
-<p>This is a wrapper program for use with SLURM's <b>checkpoint/blcr</b>
+<p>This is a wrapper program for use with Slurm's <b>checkpoint/blcr</b>
 plugin to checkpoint/restart tasks launched by srun.
 The design of <b>srun_cr</b> is inspired by <b>mpiexec_cr</b> from MVAPICH2 and
 <b>cr_restart</b> form BLCR.
 It is a wrapper around the <b>srun</b> command to enable batch job
-checkpoint/restart support when used with SLURM's <b>checkpoint/blcr</b> plugin.
+checkpoint/restart support when used with Slurm's <b>checkpoint/blcr</b> plugin.
 
 <p>The <b>srun_cr</b> execute line options are identical to those of the
 <b>srun</b> command.
@@ -93,7 +93,7 @@ SIGCHLD will be captured to mimic the exit status of <b>srun</b> when it exits.
 Then <b>srun_cr</b> loops waiting for termination of tasks being launched
 from <b>srun</b>.</p>
 
-<p>The step launch logic of SLURM is augmented to check if <b>srun</b> is
+<p>The step launch logic of Slurm is augmented to check if <b>srun</b> is
 running under <b>srun_cr</b>.
 If true, the environment variable <b>SURN_SRUN_CR_SOCKET</b> should be present,
 the value of which is the address of a Unix domain socket created and listened
@@ -103,7 +103,7 @@ the job ID, step ID and the nodes allocated to the step to <b>srun_cr</b>.</p>
 
 <p>Upon checkpoint, </b>srun_cr</b> checks to see if the tasks have been launched.
 If not </b>srun_cr</b> first forwards the checkpoint request to the tasks by
-calling the SLURM API <b>slurm_checkpoint_tasks()</b> before dumping its process
+calling the Slurm API <b>slurm_checkpoint_tasks()</b> before dumping its process
 context.</p>
 
 <p>Upon restart, <b>srun_cr</b> checks to see if the tasks have been previously
@@ -179,7 +179,7 @@ same set of nodes from which it was previously checkpointed.</li>
 
 <h2>Configuration</h2>
 
-<p>The following SLURM configuration parameter has been added:</p>
+<p>The following Slurm configuration parameter has been added:</p>
 <ul>
 <li><b>JobCheckpointDir</b>
 Specifies the default directory for storing or reading job checkpoint

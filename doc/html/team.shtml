@@ -104,6 +104,7 @@ Lead Slurm developers are:
 <br>
 <li>David Jackson (Adaptive Computing)</li>
 <li>Alec Jensen (SchedMD)</li>
+<li>Jacob Jenson (SchedMD)</li>
 <li>Klaus Joas (University Karlsruhe, Germany)</li>
 <li>Greg Johnson (Los Alamos National Laboratory)</li>
 <li>Magnus Jonsson (Ume&aring; University, Sweden)</li>
@@ -204,6 +205,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 23 July 2014</p>
+<p style="text-align:center;">Last modified 13 August 2014</p>
 
 <!--#include virtual="footer.txt"-->

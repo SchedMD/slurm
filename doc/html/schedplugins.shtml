@@ -1,14 +1,14 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Scheduler Plugin API</a></h1>
+<h1><a name="top">Slurm Scheduler Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM scheduler plugins and the API that defines
+<p> This document describe. Slurm scheduler plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
 scheduler plugins. This describes version 110 of the API.</p>
 
 <p>It is noteworthy that two different models are used for job scheduling.
-The <b>backfill</b> scheduler lets SLURM establish the initial job priority
+The <b>backfill</b> scheduler let. Slurm establish the initial job priority
 and can periodically alter job priorities to change their order within the queue.
 The <b>wiki</b> scheduler establishes an initial priority of zero (held) for
 all jobs. These jobs only begin execution when the <b>wiki</b> scheduler
@@ -17,8 +17,8 @@ Developers may use the model that best fits their needs.
 Note that a separate <a href="selectplugins.html">node selection plugin</a>
 is available for controlling that aspect of scheduling.</p>
 
-<p>SLURM scheduler plugins are SLURM plugins that implement the SLURM scheduler
-API described herein. They must conform to the SLURM Plugin API with the following
+<p>Slurm scheduler plugins are Slurm plugins that implement the Slurm scheduler
+API described herein. They must conform to the Slurm Plugin API with the following
 specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;sched.&quot; The minor type can be any recognizable
@@ -31,27 +31,27 @@ without any delay in the expected initiation time of any higher priority job.</l
 <li><b>wiki</b>&#151;Uses
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 The Maui Scheduler</a> (Wiki version)
-as an external entity to control SLURM job scheduling.</li>
+as an external entity to control Slurm job scheduling.</li>
 <li><b>wiki2</b>&#151;Uses
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a> as an external entity to control SLURM job scheduling.
+Moab Cluster Suite</a> as an external entity to control Slurm job scheduling.
 Note that wiki2 is an expanded version of the wiki plugin with additional
 functions supported specifically for Moab.</li>
 
 </ul>
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
-symbols required by the SLURM Plugin API require no specialization for scheduler support.
+symbols required by the Slurm Plugin API require no specialization for scheduler support.
 Note carefully, however, the versioning discussion below.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/sched/backfill</span> and
 <span class="commandline">src/plugins/sched/builtin</span>
-for sample implementations of a SLURM scheduler plugin.</p>
+for sample implementations of a Slurm scheduler plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
-enumerated <span class="commandline">errno</span>  to allow SLURM to discover
+enumerated <span class="commandline">errno</span>  to allow Slurm to discover
 as practically as possible the reason for any failed API call. Plugin-specific enumerated
 integer values should be used when appropriate. It is desirable that these values
 be mapped into the range ESLURM_SCHED_MIN and ESLURM_SCHED_MAX
@@ -182,9 +182,9 @@ or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
-<p> This document describes version 110 of the SLURM Scheduler API. Future
-releases of SLURM may revise this API. A scheduler plugin conveys its ability
-to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
+<p> This document describes version 110 of the Slurm Scheduler API. Future
+releases of Slurm may revise this API. A scheduler plugin conveys its ability
+to implement a particular API version using the mechanism outlined for Slurm plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 8 May 2014</p>

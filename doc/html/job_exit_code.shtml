@@ -3,7 +3,7 @@
 <h1>Job Exit Codes</h1>
 
 <p>A job's exit code (aka exit status, return code and completion
-code) is captured by SLURM and saved as part of the job record.  For
+code) is captured by Slurm and saved as part of the job record.  For
 sbatch jobs, the exit code that is captured is the output of the batch
 script.  For salloc jobs, the exit code will be the return value of
 the exit call that terminates the salloc session.  For srun, the exit
@@ -31,8 +31,8 @@ record.</p>
 
 <h2>Displaying Exit Codes and Signals</h2>
 
-<p>SLURM displays a job's exit code in the output of the <b>scontrol
-show job</b> and the <b>sview</b> utility.  SLURM displays job step
+<p>Slurm displays a job's exit code in the output of the <b>scontrol
+show job</b> and the <b>sview</b> utility.  Slurm displays job step
 exit codes in the output of the <b>scontrol show step</b> and the
 <b>sview</b> utility.
 
@@ -41,9 +41,9 @@ signal number will be displayed after the exit code, delineated by a
 colon(:).</p>
 
 <h2>Database Job/Step Records</h2>
-<p>The SLURM control daemon sends job and step records to the SLURM
-database when the SLURM accounting_storage plugin is installed.  Job
-and step records sent to the SLURM db can be viewed using the
+<p>The Slurm control daemon sends job and step records to the SLURM
+database when the Slurm accounting_storage plugin is installed.  Job
+and step records sent to the Slurm db can be viewed using the
 <b>sacct</b> command.  The default <b>sacct</b> output contains an
 ExitCode field whose format mirrors the output of <b>scontrol</b> and
 <b>sview</b> described above.</p>
@@ -58,9 +58,9 @@ cases, a user may not be able to ascertain the success or failure of a
 job until after they have examined the job's output files.</p>
 
 <p>A new job field, the "derived exit code", has been added to the job
-record in SLURM 2.2.  It is initially set to the value of the highest
+record in Slurm 2.2.  It is initially set to the value of the highest
 exit code returned by all of the job's steps (srun invocations).  The
-job's derived exit code is determined by the SLURM control daemon
+job's derived exit code is determined by the Slurm control daemon
 and sent to the database when the accounting_storage plugin is
 enabled.</p>
 
@@ -84,7 +84,7 @@ have failed but actually succeeded.</p>
 <h2>The sjobexitmod command</h2>
 
 <p>The sjobexitmod command is available to display and update the
-two derived exit fields of the SLURM db's job record.
+two derived exit fields of the Slurm db's job record.
 <b>sjobexitmod</b> can first be used to display the existing exit code
 / string for a job:</p>
 

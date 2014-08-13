@@ -53,10 +53,10 @@ following allocation of the task ids:
 
 <h2>Assumptions and Limitations</h2>
 
-<p>SLURM assumes that the number of tasks divided by the plane_size is
+<p>Slurm assumes that the number of tasks divided by the plane_size is
 greater or equal to the number of nodes specified.
 
-<p>In other words if the following is true SLURM will generate an
+<p>In other words if the following is true Slurm will generate an
 error message:
 <pre>
 if ((n/plane_size < min_nodes) ((N-1)*plane_size >= n))
@@ -77,7 +77,7 @@ node. We then schedule within each plane first and then across planes.
 
 <p>We ensure that the processes are located correctly by setting the
 process affinity to the specified/appropriate logical processor. Process
-affinity is available in SLURM when the task affinity plug-in is
+affinity is available in Slurm when the task affinity plug-in is
 enabled.
 
 <p>On a dual-processor node with quad-core processors (see figure 4)

@@ -15,15 +15,15 @@
 <p><b>If you have a Cray XC you might want to
   consider running <a href='cray.html'>Slurm Natively</a>.</b>
 </p>
-<p>This document describes the unique features of SLURM on Cray
+<p>This document describes the unique features of Slurm on Cray
 computers on top of ALPS.
-You should be familiar with the SLURM's mode of operation on Linux clusters
+You should be familiar with the Slurm's mode of operation on Linux clusters
 before studying the differences in Cray system operation described in this
 document.</p>
 
-<p>Since version 2.3, SLURM is designed to operate as a job scheduler over
+<p>Since version 2.3, Slurm is designed to operate as a job scheduler over
 Cray's Application Level Placement Scheduler (ALPS).
-Use SLURM's <i>sbatch</i> or <i>salloc</i> commands to create a resource
+Use Slurm's <i>sbatch</i> or <i>salloc</i> commands to create a resource
 allocation in ALPS.
 Then use ALPS' <i>aprun</i> command to launch parallel jobs within the resource
 allocation.
@@ -37,14 +37,14 @@ The <i>srun</i> option <i>--launcher-opts=</i> can be used
 to specify <i>aprun</i> options which lack an equivalent within <i>srun</i>.
 For example, <i>srun --launcher-opts="-a xt" -n 4 a.out</i>.
 Since <i>aprun</i> is used to launch tasks (the equivalent of a SLURM
-job step), the job steps will not be visible using SLURM commands.
-Other than SLURM's <i>srun</i> command being replaced by <i>aprun</i>
-and the job steps not being visible, all other SLURM commands will operate
+job step), the job steps will not be visible using Slurm commands.
+Other than Slurm's <i>srun</i> command being replaced by <i>aprun</i>
+and the job steps not being visible, all other Slurm commands will operate
 as expected. <i>srun</i> can also print the translated <i>aprun</i>
 line as well with the <i>--launch-cmd</i> option.</p>
 
 <h3>Node naming and node geometry on Cray XT/XE systems</h3>
-<p>SLURM node names will be of the form "nid#####" where "#####" is a five-digit sequence number.
+<p>Slurm node names will be of the form "nid#####" where "#####" is a five-digit sequence number.
    Other information available about the node are it's XYZ coordinate in the node's <i>NodeAddr</i>
    field and it's component label in the <i>HostNodeName</i> field.
    The format of the component label is "c#-#c#s#n#" where the "#" fields represent in order:
@@ -56,7 +56,7 @@ line as well with the <i>--launch-cmd</i> option.</p>
    (nodes 0/1 and 2/3 on each blade) share one network interface each. This causes the same Y coordinate to
    be  assigned to those nodes, so that the number of distinct torus coordinates is half the number of total
    nodes.</p>
-<p>The SLURM <i>smap</i> and <i>sview</i> tools can visualize node torus positions. Clicking on a particular
+<p>The Slurm <i>smap</i> and <i>sview</i> tools can visualize node torus positions. Clicking on a particular
    node shows its <i>NodeAddr</i> field, which is its (X,Y,Z) torus coordinate base-36 encoded as a 3-character
    string. For example, a NodeAddr of '07A' corresponds to the coordinates X = 0, Y = 7, Z = 10.
    The <i>NodeAddr</i> of a node can also be shown using 'scontrol show node nid#####'.</p>
@@ -68,7 +68,7 @@ line as well with the <i>--launch-cmd</i> option.</p>
 <h3>Specifying thread depth</h3>
 <p>For threaded applications, use the <i>--cpus-per-task</i>/<i>-c</i> parameter of sbatch/salloc to set
    the thread depth per node. This corresponds to mppdepth in PBS and to the aprun -d parameter. Please
-   note that SLURM does not set the OMP_NUM_THREADS environment variable. Hence, if an application spawns
+   note that Slurm does not set the OMP_NUM_THREADS environment variable. Hence, if an application spawns
    4 threads, an example script would look like</p>
 <pre>
  #SBATCH --comment="illustrate the use of thread depth and OMP_NUM_THREADS"
@@ -79,7 +79,7 @@ line as well with the <i>--launch-cmd</i> option.</p>
 </pre>
 
 <h3>Specifying number of tasks per node</h3>
-<p>SLURM uses the same default as ALPS, assigning each task to a single core/CPU. In order to
+<p>Slurm uses the same default as ALPS, assigning each task to a single core/CPU. In order to
    make more resources available per task, you can reduce the number of processing elements
    per node (<i>aprun -N</i> parameter, <i>mppnppn</i> in PBS) with the
    <i>--ntasks-per-node</i> option of <i>sbatch/salloc</i>.
@@ -137,14 +137,14 @@ line as well with the <i>--launch-cmd</i> option.</p>
    on CLE 3.x systems for details.</p>
 
 <h3>Node ordering options</h3>
-<p>SLURM honors the node ordering policy set for Cray's Application Level Placement Scheduler (ALPS). Node
+<p>Slurm honors the node ordering policy set for Cray's Application Level Placement Scheduler (ALPS). Node
    ordering is a configurable system option (ALPS_NIDORDER in /etc/sysconfig/alps). The current
    setting is reported by '<i>apstat -svv</i>'  (look for the line starting with "nid ordering option") and
    can not be changed at  runtime. The resulting, effective node ordering is revealed by '<i>apstat -no</i>'
    (if no special node ordering has been configured, 'apstat -no' shows the
    same order as '<i>apstat -n</i>').</p>
 
-<p>SLURM uses exactly the same order as '<i>apstat -no</i>' when selecting
+<p>Slurm uses exactly the same order as '<i>apstat -no</i>' when selecting
    nodes for a job. With the <i>--contiguous</i> option to <i>sbatch/salloc</i>
    you can request a contiguous (relative to the current ALPS nid ordering) set
    of nodes. Note that on a busy system there is typically more fragmentation,
@@ -177,7 +177,7 @@ batch job with a node count specification of zero.</p>
 sbatch -N0 pre_process.bash
 </pre>
 <p><b>Note</b>: Support for Cray job allocations with zero compute nodes was
-added to SLURM version 2.4. Earlier versions of SLURM will return an error for
+added to Slurm version 2.4. Earlier versions of Slurm will return an error for
 zero compute node job requests.</p>
 <p><b>Note</b>: Job allocations with zero compute nodes can only be made in
 SLURM partitions explicitly configured with <b>MinNodes=0</b> (the default
@@ -251,7 +251,7 @@ somewhat from that described in the
 <a href="http://code.google.com/p/munge/wiki/InstallationGuide">
 MUNGE Installation Guide</a>.</p>
 
-<p>Munge is the authentication daemon and needed by SLURM. You can get
+<p>Munge is the authentication daemon and needed by Slurm. You can get
 Munge RPMs from Cray. Use the below method to install and test it. The
 Cray Munge RPM installs Munge in /opt/munge.</p>
 
@@ -336,13 +336,13 @@ node/31:# emacs -nw /etc/pam.d/common-session
 (uncomment/add the pam_job.so line as shown above)
 </pre>
 
-<h3>Install and Configure SLURM</h3>
+<h3>Install and Configure Slurm</h3>
 
-<p>SLURM can be built and installed as on any other computer as described
+<p>Slurm can be built and installed as on any other computer as described
 <a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
-You can also get current SLURM RPMs from Cray.  An installation
+You can also get current Slurm RPMs from Cray.  An installation
 process for the RPMs is described below.  The
-Cray SLURM RPMs install in /opt/slurm.</p>
+Cray Slurm RPMs install in /opt/slurm.</p>
 
 <p><b>NOTE:</b> By default neither the <i>salloc</i> command or <i>srun</i>
 command can be executed as a background process. This is done for two
@@ -384,7 +384,7 @@ default: # rpm -ivh /software/slurm-*.x86_64.rpm
 default: # exit
 </pre>
 
-<p>When building SLURM's <i>slurm.conf</i> configuration file, use the
+<p>When building Slurm's <i>slurm.conf</i> configuration file, use the
 <i>NodeName</i> parameter to specify all batch nodes to be scheduled.
 If nodes are defined in ALPS, but not defined in the <i>slurm.conf</i> file, a
 complete list of all batch nodes configured in ALPS will be logged by
@@ -392,8 +392,8 @@ the <i>slurmctld</i> daemon when it starts.
 One would typically use this information to modify the <i>slurm.conf</i> file
 and restart the <i>slurmctld</i> daemon.
 Note that the <i>NodeAddr</i> and <i>NodeHostName</i> fields should not be
-configured, but will be set by SLURM using data from ALPS.
-<i>NodeAddr</i> be set to the node's XYZ coordinate and be used by SLURM's
+configured, but will be set by Slurm using data from ALPS.
+<i>NodeAddr</i> be set to the node's XYZ coordinate and be used b. Slurm's
 <i>smap</i> and <i>sview</i> commands.
 <i>NodeHostName</i> will be set to the node's component label.
 The format of the component label is "c#-#c#s#n#" where the "#" fields
@@ -408,14 +408,14 @@ This is specified in the <i>slurm.conf</i> file by using the
 <i>FrontendName</i> and optionally the <i>FrontEndAddr</i> fields
 as seen in the examples below.</p>
 
-<p>Note that SLURM will by default kill running jobs when a node goes DOWN,
+<p>Note tha. Slurm will by default kill running jobs when a node goes DOWN,
 while a DOWN node in ALPS only prevents new jobs from being scheduled on the
 node. To help avoid confusion, we recommend that <i>SlurmdTimeout</i> in the
 <i>slurm.conf</i> file be set to the same value as the <i>suspectend</i>
 parameter in ALPS' <i>nodehealth.conf</i> file.</p>
 
 <p>You need to specify the appropriate resource selection plugin (the
-<i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration file).
+<i>SelectType</i> option in Slurm's <i>slurm.conf</i> configuration file).
 Configure <i>SelectType</i> to <i>select/alps</i> The <i>select/alps</i>
 plugin provides an interface to ALPS plus issues calls to the
 <i>select/linear</i>, which selects resources for jobs using a best-fit
@@ -432,9 +432,9 @@ use on a Cray systems follow:</p>
 
 <pre>
 #---------------------------------------------------------------------
-# SLURM USER
+# Slurm USER
 #---------------------------------------------------------------------
-# SLURM user on cray systems must be root
+# Slurm user on cray systems must be root
 # This requirement derives from Cray ALPS:
 # - ALPS reservations can only be created by the job owner or root
 #   (confirmation may be done by other non-privileged users)
@@ -458,7 +458,7 @@ SchedulerType=sched/backfill
 #
 # Add CR_memory as parameter to support --mem/--mem-per-cpu.
 # GPU memory allocation supported as generic resource.
-# NOTE: No gres/gpu_mem plugin is required, only generic SLURM GRES logic.
+# NOTE: No gres/gpu_mem plugin is required, only generic Slurm GRES logic.
 SelectType=select/alps
 SelectTypeParameters=CR_Memory
 GresTypes=gpu_mem
@@ -559,7 +559,7 @@ PartitionName=usup Hidden=YES Priority=10 MaxTime=720 AllowGroups=staff
 PartitionName=day Default=YES Priority=1 MaxTime=01:00:00
 </pre>
 
-<p>SLURM supports an optional <i>cray.conf</i> file containing Cray-specific
+<p>Slurm supports an optional <i>cray.conf</i> file containing Cray-specific
 configuration parameters. <b>This file is NOT needed for production systems</b>,
 but is provided for advanced configurations. If used, <i>cray.conf</i> must be
 located in the same directory as the <i>slurm.conf</i> file. Configuration
@@ -625,8 +625,8 @@ below.</p>
 # /etc/sysconfig/slurm for Cray XT/XE systems
 #
 # Cray is SuSe-based, which means that ulimits from
-# /etc/security/limits.conf will get picked up any time SLURM is
-# restarted e.g. via pdsh/ssh. Since SLURM respects configured limits,
+# /etc/security/limits.conf will get picked up any time Slurm is
+# restarted e.g. via pdsh/ssh. Since Slurm respects configured limits,
 # this can mean that for instance batch jobs get killed as a result
 # of configuring CPU time limits. Set sane start limits here.
 #
@@ -635,7 +635,7 @@ ulimit -t unlimited	# max amount of CPU time in seconds
 ulimit -d unlimited	# max size of a process's data segment in KB
 </pre>
 
-<p>SLURM will ignore any interactive jobs or nodes in interactive mode
+<p>Slurm will ignore any interactive jobs or nodes in interactive mode
 so set all your nodes to batch from any service node. Dropping the
 -n option will make all nodes batch.</p>
 
@@ -659,7 +659,7 @@ login: # /etc/init.d/slurm start
 
 <h3>Cluster Compatibility Mode</h3>
 
-<p>It is possible to use SLURM to allocate resources for jobs
+<p>It is possible to use Slurm to allocate resources for jobs
 that run in Cray's Cluster Compatibility Mode (CCM). In order
 to set this up, first install the CCM packages according to Cray
 documentation. As part of the CCM packages, a prologue and epilogue
@@ -672,7 +672,7 @@ Prolog=/opt/cray/ccm/default/etc/slurm.prolog.frontend
 Epilog=/opt/cray/ccm/default/etc/slurm.epilog.frontend
 </pre>
 
-<p>To run jobs in CCM, a SLURM partition should be created in slurm.conf.
+<p>To run jobs in CCM, a Slurm partition should be created in slurm.conf.
 The name of that partition should be put into the CCM_QUEUES variable in
 this file: /etc/opt/cray/ccm/ccm.conf</p>
 

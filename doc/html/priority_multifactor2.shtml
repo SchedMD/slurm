@@ -22,7 +22,7 @@ and only the differences are documented here.</p>
 <h2>Fair-share Factor</h2></a>
 
 <p><b>Note:</b> Computing the fair-share factor requires the installation
-and operation of the <a href="accounting.html">SLURM Accounting
+and operation of the <a href="accounting.html">Slurm Accounting
 Database</a> to provide the assigned shares and the consumed,
 computing resources described below.</p>
 

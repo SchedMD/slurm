@@ -2,9 +2,9 @@
 
 <h1><a name="top">Overview</a></h1>
 
-<p>The Simple Linux Utility for Resource Management (SLURM) is an open source,
+<p>The Simple Linux Utility for Resource Management (Slurm) is an open source,
 fault-tolerant, and highly scalable cluster management and job scheduling system
-for large and small Linux clusters. SLURM requires no kernel modifications for
+for large and small Linux clusters. Slurm requires no kernel modifications for
 its operation and is relatively self-contained. As a cluster workload manager,
 SLURM has three key functions. First, it allocates exclusive and/or non-exclusive
 access to resources (compute nodes) to users for some duration of time so they
@@ -23,7 +23,7 @@ and sophisticated <a href="priority_multifactor.html"> multifactor job
 prioritization</a> algorithms.
 
 <h2>Architecture</h2>
-<p>SLURM has a centralized manager, <b>slurmctld</b>, to monitor resources and
+<p>Slurm has a centralized manager, <b>slurmctld</b>, to monitor resources and
 work. There may also be a backup manager to assume those responsibilities in the
 event of failure. Each compute server (node) has a <b>slurmd</b> daemon, which
 can be compared to a remote shell: it waits for work, executes that work, returns
@@ -47,11 +47,11 @@ APIs are available for all functions.</p>
 
 <div class="figure">
   <img src="arch.gif" width="550"><br>
-  Figure 1. SLURM components
+  Figure 1. Slurm components
 </div>
 
-<p>SLURM has a general-purpose plugin mechanism available to easily support various
-infrastructures. This permits a wide variety of SLURM configurations using a
+<p>Slurm has a general-purpose plugin mechanism available to easily support various
+infrastructures. This permits a wide variety of Slurm configurations using a
 building block approach. These plugins presently include:
 <ul>
 <li><a href="accounting_storageplugins.html">Accounting Storage</a>:
@@ -155,8 +155,8 @@ building block approach. These plugins presently include:
 
 </ul>
 
-<p>The entities managed by these SLURM daemons, shown in Figure 2, include <b>nodes</b>,
-the compute resource in SLURM, <b>partitions</b>, which group nodes into logical
+<p>The entities managed by these Slurm daemons, shown in Figure 2, include <b>nodes</b>,
+the compute resource in Slurm, <b>partitions</b>, which group nodes into logical
 sets, <b>jobs</b>, or allocations of resources assigned to a user for
 a specified amount of time, and <b>job steps</b>, which are sets of (possibly
 parallel) tasks within a job.
@@ -174,7 +174,7 @@ there are available resources within the job's allocation.</p>
 
 <div class="figure">
   <img src="entities.gif" width="550"><br>
-  Figure 2. SLURM entities
+  Figure 2. Slurm entities
 </div>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -192,7 +192,7 @@ priority (important if nodes are in multiple partitions) and shared node access 
 with optional over-subscription level for gang scheduling (e.g. YES, NO or FORCE:2).
 Bit maps are used to represent nodes and scheduling
 decisions can be made by performing a small number of comparisons and a series
-of fast bit map manipulations. A sample (partial) SLURM configuration file follows.</p>
+of fast bit map manipulations. A sample (partial. Slurm configuration file follows.</p>
 <pre>
 #
 # Sample /etc/slurm.conf

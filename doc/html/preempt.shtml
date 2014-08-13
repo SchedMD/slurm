@@ -5,7 +5,7 @@
 <P>
 SLURM supports job preemption, the act of stopping one or more "low-priority"
 jobs to let a "high-priority" job run uninterrupted until it completes.
-Job preemption is implemented as a variation of SLURM's
+Job preemption is implemented as a variation of Slurm's
 <a href="gang_scheduling.html">Gang Scheduling</a> logic.
 When a high-priority job has been allocated resources that have already been
 allocated to one or more low priority jobs, the low priority job(s) are
@@ -28,7 +28,7 @@ There are several important configuration parameters relating to preemption:
 </P>
 <UL>
 <LI>
-<B>SelectType</B>: SLURM job preemption logic supports
+<B>SelectType</B>: Slurm job preemption logic supports
 nodes allocated by the <I>select/linear</I> plugin,
 socket/core/CPU resources allocated by the <I>select/cons_res</I> plugin or
 <I>select/cray</I> for Cray systems without ALPS.
@@ -155,7 +155,7 @@ allocated to a common resource (and gang scheduled), set
 </UL>
 <P>
 To enable preemption after making the configuration changes described above,
-restart SLURM if it is already running. Any change to the plugin settings in
+restart Slurm if it is already running. Any change to the plugin settings in
 SLURM requires a full restart of the daemons. If you just change the partition
 <I>Priority</I> or <I>Shared</I> setting, this can be updated with
 <I>scontrol reconfig</I>.
@@ -213,7 +213,7 @@ tuning parameters.
 When enabled, the gang scheduling logic (which is also supports job
 preemption) keeps track of the resources allocated to all jobs.
 For each partition an "active bitmap" is maintained that tracks all
-concurrently running jobs in the SLURM cluster.
+concurrently running jobs in the Slurm cluster.
 Each partition also maintains a job list for that partition, and a list of
 "shadow" jobs.
 The "shadow" jobs are high priority job allocations that "cast shadows" on the
@@ -366,7 +366,7 @@ $ squeue
 <P>
 <B>More intelligence in the select plugins</B>: This implementation of
 preemption relies on intelligent job placement by the <I>select</I> plugins.
-In SLURM version 2.0 preemptive placement support was added to the
+In Slurm version 2.0 preemptive placement support was added to the
 SelectType plugins, but there is still room for improvement.
 </P><P>
 Take the following example:

@@ -2,13 +2,13 @@
 
 <h1>Legal Notices</h1>
 
-<p>SLURM is free software; you can redistribute it and/or modify it under
+<p>Slurm is free software; you can redistribute it and/or modify it under
 the terms of the <a href="http://www.gnu.org/licenses/gpl.html">GNU General
 Public License</a> as published by the <a href="http://fsf/org/">Free
 Software Foundation</a>; either version 2 of the License, or (at your option)
 any later version.</p>
 
-<p>SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+<p>Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the <a href="//www.gnu.org/licenses/gpl.html">
 GNU General Public License</a> for more details.</p>
@@ -38,9 +38,9 @@ POSSIBILITY OF SUCH DAMAGES.</p>
 
 <h1>Copyright Notice</h1>
 
-<p>SLURM represents the collaborative efforts of roughly 130 people representing
+<p>Slurm represents the collaborative efforts of roughly 130 people representing
 roughtly 40 different organizations world-wide. A current list of contributors
-can be found at the <a href="team.html">SLURM Team</a> web page.</p>
+can be found at the <a href="team.html">Slurm Team</a> web page.</p>
 
 <p>While many organizations contributed code and/or documentation without
 including a copyright notice, the following copyright notices are found in

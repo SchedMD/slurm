@@ -1,16 +1,16 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Task Plugin Programmer Guide</a></h1>
+<h1><a name="top">Slurm Task Plugin Programmer Guide</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM task management plugins and the API
+<p> This document describes Slurm task management plugins and the API
 that defines them. It is intended as a resource to programmers wishing
-to write their own SLURM scheduler plugins. This is version 2 of the API.</p>
+to write their own Slurm scheduler plugins. This is version 2 of the API.</p>
 
-<p>SLURM task management plugins are SLURM plugins that implement the
+<p>Slurm task management plugins are Slurm plugins that implement the
 SLURM task management API described herein. They would typically be
 used to control task affinity (i.e. binding tasks to processors).
-They must conform to the SLURM Plugin API with the following
+They must conform to the Slurm Plugin API with the following
 specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;task.&quot; The minor type can be any recognizable
@@ -18,7 +18,7 @@ abbreviation for the type of task management. We recommend, for example:</p>
 <ul>
 <li><b>affinity</b>&#151;A plugin that implements task binding to processors.
 The actual mechanism used to task binding is dependent upon the available
-infrastructure as determined by the "configure" program when SLURM is built
+infrastructure as determined by the "configure" program when Slurm is built
 and the value of the <b>TaskPluginParam</b> as defined in the <b>slurm.conf</b>
 (SLURM configuration file).</li>
 <li><b>cgroup</b>&#151;Use Linux cgroups for binding tasks to resources.</li>
@@ -28,7 +28,7 @@ services. This is the default behavior and provides no task binding.</li>
 
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
-symbols required by the SLURM Plugin API require no specialization
+symbols required by the Slurm Plugin API require no specialization
 for task support.
 Note carefully, however, the versioning discussion below.</p>
 
@@ -36,7 +36,7 @@ Note carefully, however, the versioning discussion below.</p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
-enumerated <span class="commandline">errno</span>  to allow SLURM to discover
+enumerated <span class="commandline">errno</span>  to allow Slurm to discover
 as practically as possible the reason for any failed API call.
 These values must not be used as return values in integer-valued functions
 in the API. The proper error return value from integer-valued functions is
@@ -230,8 +230,8 @@ On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
 <h2>Versioning</h2>
-<p> This document describes version 2 of the SLURM Task Plugin API.
-Future releases of SLURM may revise this API.</p>
+<p> This document describes version 2 of the Slurm Task Plugin API.
+Future releases of Slurm may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 8 May 2014</p>

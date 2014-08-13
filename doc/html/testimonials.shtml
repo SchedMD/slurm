@@ -3,9 +3,9 @@
 <h1>Customer Testimonials</h1>
 
 <i>
-"In 2010, when we embarked upon our mission to port SLURM to our Cray XT and XE
+"In 2010, when we embarked upon our mission to port Slurm to our Cray XT and XE
 systems, we discovered first-hand the high quality software engineering that
-has gone into the creation of this product. From its very core SLURM has been
+has gone into the creation of this product. From its very core Slurm has been
 designed to be extensible and flexible. Moreover, as our work progressed, we
 discovered the high level of technical expertise possessed by SchedMD who was
 very quick to respond to our questions with insightful advice, suggestions and
@@ -15,16 +15,16 @@ science systems to Slurm, including our 20 cabinet Cray XT5 system. The ease
 with which we have made this transition is testament to the robustness and
 high quality of the product but also to the no-fuss installation and
 configuration procedure and the high quality documentation. We have no qualms
-about recommending SLURM to any facility, large or small, who wish to make the
+about recommending Slurm to any facility, large or small, who wish to make the
 break from the various commercial options available today"<br><br>
 Colin McMurtrie, Head of Systems, Swiss National Supercomputing Centre
 </i>
 <HR SIZE=4>
 
 <i>
-"Thank you for SLURM! It is one of the nicest pieces of free software
+"Thank you for Slurm! It is one of the nicest pieces of free software
 for managing HPC clusters we have come across in a long time.
-Both of our Blue Genes are running SLURM and it works fantastically
+Both of our Blue Genes are running Slurm and it works fantastically
 well.
 It's the most flexible, useful scheduling tool I've ever run
 across."<br><br>
@@ -36,7 +36,7 @@ Rensselaer Polytechnic Institute
 <i>
 "Awesome! I just read the manual, set it up and it works great.
 I tell you, I've used Sun Grid Engine, Torque, PBS Pro and there's
-nothing like SLURM."<br><br>
+nothing like Slurm."<br><br>
 Aaron Knister, Environmental Protection Agency
 </i>
 <HR SIZE=4>
@@ -48,10 +48,10 @@ This decision reduces large job launch times from tens of minutes to seconds.
 This effectively provides
 us with millions of dollars with of additional compute resources without
 additional cost.  It also allows our computational scientists to use their
-time more effectively.  SLURM is scalable to very large numbers of processors,
+time more effectively.  Slurm is scalable to very large numbers of processors,
 another essential ingredient for use at LLNL. This means larger computer
 systems can be used than otherwise possible with a commensurate increase in
-the scale of problems that can be solved. SLURM's scalability has eliminated
+the scale of problems that can be solved. Slurm's scalability has eliminated
 resource management from being a concern for computers of any foreseeable
 size. It is one of the best things to happen to massively parallel computing."
 <br><br>
@@ -60,7 +60,7 @@ Dona Crawford, Associate Directory Lawrence Livermore National Laboratory
 <HR SIZE=4>
 
 <i>
-"We are extremely pleased with SLURM and strongly recommend it to others
+"We are extremely pleased with Slurm and strongly recommend it to others
 because it is mature, the developers are highly responsive and
 it just works."<br><br>
 Jeffrey M. Squyres, Pervasive Technology Labs at Indiana University
@@ -68,7 +68,7 @@ Jeffrey M. Squyres, Pervasive Technology Labs at Indiana University
 <HR SIZE=4>
 
 <i>
-"We adopted SLURM as our resource manager over two years ago when it was at
+"We adopted Slurm as our resource manager over two years ago when it was at
 the 0.3.x release level. Since then it has become an integral and important
 component of our production research services. Its stability, flexibility
 and performance has allowed us to significantly increase the quality of
@@ -98,7 +98,7 @@ Oak Ridge National Laboratory
 <i>
 "SLURM is under active development, is easy to use, works quite well,
 and most important to your harried author, it hasn't been a nightmare
-to configure or manage. (Strong praise, that.) I would range SLURM as
+to configure or manage. (Strong praise, that.) I would range Slurm as
 the best of the three open source batching systems available, by rather
 a large margin." <br><br>
 Bryan O'Sullivan, Pathscale
@@ -121,7 +121,7 @@ job management system on top of it which could be tailored precisely
 to our needs, and which at the same time is very simple to use for
 our customers.
 In general, we are impressed with the stability, scalability, and performance
-of SLURM. Furthermore, SLURM is very easy to configure and use. The fact that
+of Slurm. Furthermore, Slurm is very easy to configure and use. The fact that
 SLURM is open-source software with a free license is also advantageous for us
 in terms of cost-benefit considerations." <br><br>
 Dr. Wilfried Juling, Direktor, Scientific Supercomputing Center,
@@ -130,8 +130,8 @@ University of Karlsruhe
 <HR SIZE=4>
 
 <i>
-"I had missed SLURM initially when looking for software for a cluster and
-ended up installing Torque. When I found out about SLURM later, it took
+"I had missed Slurm initially when looking for software for a cluster and
+ended up installing Torque. When I found out abou. Slurm later, it took
 me only a couple of days to go from knowing nothing about it to having a
 SLURM cluster than ran better than the Torque one. I just wanted to say that
 your focus on more "secondary" stuff in cluster software, like security,
@@ -142,7 +142,7 @@ Christian Hudson, ApSTAT Technologies
 
 <i>
 "SLURM has been adopted as the parallel allocation infrastructure used
-in HP's premier cluster stack, XC System Software. SLURM has permitted
+in HP's premier cluster stack, XC System Software. Slurm has permitted
 easy scaling of parallel applications on cluster systems with thousands
 of processors, and has also proven itself to be highly portable and
 efficient between interconnects including Quadrics, QsNet, Myrinet,

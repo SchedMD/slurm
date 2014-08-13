@@ -2,17 +2,17 @@
 
 <h1>Power Saving Guide</h1>
 
-<p>SLURM provides an integrated power saving mechanism for idle nodes.
+<p>Slurm provides an integrated power saving mechanism for idle nodes.
 Nodes that remain idle for a configurable period of time can be placed
 in a power saving mode.
 The nodes will be restored to normal operation once work is assigned to them.
 Beginning with version 2.0.0, nodes can be fully powered down.
-Earlier releases of SLURM do not support the powering down of nodes,
+Earlier releases of Slurm do not support the powering down of nodes,
 only support of reducing their performance and thus their power consumption.
 For example, power saving can be accomplished using a <i>cpufreq</i> governor
 that can change CPU frequency and voltage (note that the <i>cpufreq</i> driver
 must be enabled in the Linux kernel configuration).
-Of particular note, SLURM can power nodes up or down
+Of particular note, Slurm can power nodes up or down
 at a configurable rate to prevent rapid changes in power demands.
 For example, starting a 1000 node job on an idle cluster could result
 in an instantaneous surge in power demand of multiple megawatts without
@@ -23,7 +23,7 @@ SLURM's support to increase power demands in a gradual fashion.</p>
 
 <p>A great deal of flexibility is offered in terms of when and
 how idle nodes are put into or removed from power save mode.
-Note that the SLURM control daemon, <i>slurmctld</i>, must be
+Note that the Slurm control daemon, <i>slurmctld</i>, must be
 restarted to initially enable power saving mode.
 Changes in the configuration parameters (e.g. <i>SuspendTime</i>)
 will take effect after modifying the <i>slurm.conf</i> configuration
@@ -57,7 +57,7 @@ Program to be executed to place nodes into power saving mode.
 The program executes as <i>SlurmUser</i> (as configured in
 <i>slurm.conf</i>).
 The argument to the program will be the names of nodes to
-be placed into power savings mode (using SLURM's hostlist
+be placed into power savings mode (using Slurm's hostlist
 expression format).</li>
 
 <li><b>ResumeProgram</b>:
@@ -65,7 +65,7 @@ Program to be executed to remove nodes from power saving mode.
 The program executes as <i>SlurmUser</i> (as configured in
 <i>slurm.conf</i>).
 The argument to the program will be the names of nodes to
-be removed from power savings mode (using SLURM's hostlist
+be removed from power savings mode (using Slurm's hostlist
 expression format).
 This program may use the <i>scontrol show node</i> command
 to insure that a node has booted and the <i>slurmd</i>
@@ -94,7 +94,7 @@ The default value is 60 seconds.</li>
 
 <li><b>SuspendExcNodes</b>:
 List of nodes to never place in power saving mode.
-Use SLURM's hostlist expression format.
+Use Slurm's hostlist expression format.
 By default, no nodes are excluded.</li>
 
 <li><b>SuspendExcParts</b>:
@@ -114,7 +114,7 @@ be increased above its default value of 10 seconds.</li>
 (primary and backup server nodes).
 Use of <i>sudo</i> may be required for <i>SlurmUser</i>to power down
 and restart nodes.
-If you need to convert SLURM's hostlist expression into individual node
+If you need to conver. Slurm's hostlist expression into individual node
 names, the <i>scontrol show hostnames</i> command may prove useful.
 The commands used to boot or shut down nodes will depend upon your
 cluster management tools.</p>
@@ -177,9 +177,9 @@ nodes are in power save mode using messages of this sort:
 [May 02 15:51:28] Power save mode 22 nodes
 </pre>
 
-<p>Using these logs you can easily see the effect of SLURM's power saving
+<p>Using these logs you can easily see the effect of Slurm's power saving
 support.
-You can also configure SLURM with programs that perform no action as
+You can also configure Slurm with programs that perform no action as
 <b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential
 impact of power saving mode before enabling it.</p>
 
@@ -204,14 +204,14 @@ on the system.
 Insure that the <i>Prolog</i> code is zero to avoid draining the node
 (do not use the scontrol exit code to avoid draining the node on error,
 for example if the job is explicitly cancelled during startup).
-Note that the <i>scontrol wait_job</i> command was added to SLURM version 2.2.
-When using earlier versions of SLURM, one may execute "<i>srun /bin/true</i>"
+Note that the <i>scontrol wait_job</i> command was added to Slurm version 2.2.
+When using earlier versions of Slurm, one may execute "<i>srun /bin/true</i>"
 or some other command first to insure that all nodes are booted and ready
 for use.</p>
 
 <p>The <i>salloc</i> and <i>srun</i> commands which create a resource
-allocation automatically wait for the nodes to power up in SLURM version 2.2.
-When using earlier versions of SLURM, <i>salloc</i> will return immediately
+allocation automatically wait for the nodes to power up in Slurm version 2.2.
+When using earlier versions of Slurm, <i>salloc</i> will return immediately
 after a resource allocation is made, and one can execute "<i>srun /bin/true</i>"
 to ensure that all nodes are booted and ready for use.</p>
 
@@ -251,7 +251,7 @@ the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
 
 <h2>Booting Different Images</h2>
 
-<p>SLURM's <b>PrologSlurmctld</b> configuration parameter can identify a
+<p>Slurm's <b>PrologSlurmctld</b> configuration parameter can identify a
 program to boot different operating system images for each job based upon it's
 constraint field (or possibly comment).
 If you want <b>ResumeProgram</b> to boot a various images according to

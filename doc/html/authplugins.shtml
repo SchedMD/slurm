@@ -1,13 +1,13 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Authentication Plugin API</a></h1>
+<h1><a name="top">Slurm Authentication Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM authentication plugins and the API that defines
+<p> This document describes Slurm authentication plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
 authentication plugins. This is version 100 of the API.</p>
-<p>SLURM authentication plugins are SLURM plugins that implement the SLURM authentication
-API described herein. They must conform to the SLURM Plugin API with the following
+<p>Slurm authentication plugins are Slurm plugins that implement the Slurm authentication
+API described herein. They must conform to the Slurm Plugin API with the following
 specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;auth.&quot; The minor type can be any recognizable
@@ -20,18 +20,18 @@ production use due to lack of effective security.</li>
 <li><b>munge</b>&#151;LLNL's Munge protocol (recommended plugin for production use).</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and <span class="commandline">plugin_version</span>
-symbols required by the SLURM Plugin API require no specialization for authentication.
+symbols required by the Slurm Plugin API require no specialization for authentication.
 Note carefully, however, the versioning discussion below.</p>
 <p>The programmer is urged to study <span class="commandline">src/plugins/auth/none/auth_none.c</span>
-for an example implementation of a SLURM authentication plugin.</p>
+for an example implementation of a Slurm authentication plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 <h2>Data Objects</h2>
 <p> The implementation must support an opaque class, which it defines, to be used
 as an authentication &quot;credential.&quot; This class must encapsulate all user-specific
 information necessary for the operation of the API specification below. The credential
-is referred to in SLURM code by an anonymous pointer (void *).</p>
+is referred to in Slurm code by an anonymous pointer (void *).</p>
 <p>The implementation must maintain (though not necessarily directly export) an
-enumerated <b>errno</b> to allow SLURM to discover as practically as possible
+enumerated <b>errno</b> to allow Slurm to discover as practically as possible
 the reason for any failed API call. The following enumerated integer values (declared
 in <span class="commandline">src/common/slurm_auth.h</span>) must be used when
 appropriate.</p>
@@ -91,7 +91,7 @@ The system <span class="commandline">_init()</span> is called before the SLURM
 <p style="margin-left:.2in"><b>Description</b>: Allocates from the free store
 an anonymous credential object and returns a pointer to it. The pointer should
 be valid until passed to <span class="commandline">slurm_auth_destroy()</span> for
-disposal. SLURM will not pass
+disposal. Slurm will not pass
 credentials to the API which have not been allocated by this function.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">argv</span> &nbsp;&nbsp;(input) plugin specific
@@ -138,7 +138,7 @@ its errno to an appropriate value to indicate the reason for failure.</p>
 <p class="commandline">uid_t slurm_auth_get_uid (void *cr, char *auth_info);<br>
 gid_t slurm_auth_get_gid (void *cr, char *auth_info);</p>
 <p style="margin-left:.2in"><b>Description</b>: Extracts the numerical UID (GID)
-of the user corresponding to the given credential. SLURM considers this value
+of the user corresponding to the given credential. Slurm considers this value
 trustworthy only if the credential has been successfully verified using
 <span class="commandline">slurm_auth_verify()</span>.
 An unverified credential does not immediately give rise to an error condition
@@ -158,7 +158,7 @@ returned and errno set appropriately to indicate the cause of the failure.</p>
 
 <p class="commandline">int slurm_auth_pack (void *cr, Buf buf);</p>
 <p style="margin-left:.2in"><b>Description</b>: Marshals a credential into a buffer
-for transmission according to the SLURM packing protocol. All authentication plugins
+for transmission according to the Slurm packing protocol. All authentication plugins
 must first pack the plugin_type and then the plugin_version data before any plugin-specific
 data elements are packed. slurm_auth_pack() and slurm_auth_pack() are strictly
 reciprocal. The esult of a packing followed by an unpacking must be a functionally
@@ -174,7 +174,7 @@ the plugin should return SLURM_ERROR and set the errno to indicate the reason
 for the failure.</p>
 <p class="commandline">int slurm_auth_unpack (void *cr, Buf buf);</p>
 <p style="margin-left:.2in"><b>Description</b>: Unmarshals a credential from a
-buffer according to the SLURM packing protocol into a supplied (and presumed empty)
+buffer according to the Slurm packing protocol into a supplied (and presumed empty)
 credential object. The unmarshalled credential is not assumed to be activated
 or verified. The <span class="commandline">plugin_type</span> and <span class="commandline">plugin_version</span>
 data should first be unpacked from the buffer and verified for applicability.
@@ -225,9 +225,9 @@ This function must always return a pointer to a string, even if the string is
 empty or ambiguous such as &quot;unknown error.&quot;</p>
 
 <h2>Versioning</h2>
-<p> This document describes version 0 of the SLURM Authentication API. Future
-releases of SLURM may revise this API. An authentication plugin conveys its ability
-to implement a particular API version using the mechanism outlined for SLURM plugins.
+<p> This document describes version 0 of the Slurm Authentication API. Future
+releases of Slurm may revise this API. An authentication plugin conveys its ability
+to implement a particular API version using the mechanism outlined for Slurm plugins.
 In addition, the credential is transmitted along with the version number of the
 plugin that transmitted it. It is at the discretion of the plugin author whether
 to maintain data format compatibility across different versions of the plugin.</p>

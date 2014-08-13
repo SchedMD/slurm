@@ -3,7 +3,7 @@
 <h1>Quality of Service (QOS)</h1>
 
 <P>One can specify a Quality of Service (QOS) for each job submitted
-to SLURM.  The quality of service associated with a job will affect
+to Slurm.  The quality of service associated with a job will affect
 the job in three ways:
 
 <ul>
@@ -13,7 +13,7 @@ the job in three ways:
 <li> <a href=#qos_other>Other QOS Options</a>
 </ul>
 
-<P> The QOS's are defined in the SLURM database using the <i>sacctmgr</i>
+<P> The QOS's are defined in the Slurm database using the <i>sacctmgr</i>
 utility.
 
 <P> Jobs request a QOS using the "--qos=" option to the
@@ -45,7 +45,7 @@ multi-factor plugin is loaded.</P>
 <a name=preemption>
 <h2>Job Preemption</h2></a>
 
-<P> SLURM offers two ways for a queued job to preempt a running job,
+<P> Slurm offers two ways for a queued job to preempt a running job,
 free-up the running job's resources and allocate them to the queued
 job.  See the <a href="preempt.html"> Preemption description</a> for
 details.
@@ -242,7 +242,7 @@ shares on the system.
 <h2>Configuration</h2>
 
 <P> To summarize the above, the QOS's and their associated limits are
-defined in the SLURM database using the <i>sacctmgr</i> utility.  The
+defined in the Slurm database using the <i>sacctmgr</i> utility.  The
 QOS will only influence job scheduling priority when the multi-factor
 priority plugin is loaded and a non-zero "PriorityWeightQOS" has been
 defined in the slurm.conf file.  The QOS will only determine job

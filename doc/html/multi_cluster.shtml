@@ -3,7 +3,7 @@
 <h1>Multi-Cluster Operation</h1>
 
 <p>A cluster is comprised of all the nodes managed by a single slurmctld
-daemon.  SLURM version 2.2 offers the ability to target commands to other
+daemon.  Slurm version 2.2 offers the ability to target commands to other
 clusters instead of, or in addition to, the local cluster on which the
 command is invoked.  When this behavior is enabled, users can submit
 jobs to one or many clusters and receive status from those remote
@@ -27,7 +27,7 @@ JOBID PARTITION   NAME   USER  ST   TIME NODES BP_LIST(REASON)
 11945    pdebug   aJob  juser   R   6:36   128 dusk000[16-31]
 </PRE>
 
-<p>The following SLURM client commands now offer the "-M, --clusters="
+<p>The following Slurm client commands now offer the "-M, --clusters="
 option which provides the ability to communicate to and from a comma
 separated list of clusters:
 <ol><b>sacct, sbatch, scancel, scontrol, sinfo, smap, sprio, squeue,
@@ -36,9 +36,9 @@ sshare,</b> and <b>sstrigger</b></ol>
 <b>salloc, srun,</b> and <b>sstat</b> are cluster specific commands
 and do not offer the "-M, --clusters=" option.</p>
 
-<p>When <b>sbatch</b> is invoked with a cluster list, SLURM will
+<p>When <b>sbatch</b> is invoked with a cluster list, Slurm will
 immediately submit the job to the cluster that offers the earliest
-start time subject its queue of pending and running jobs.  SLURM will
+start time subject its queue of pending and running jobs.  Slurm will
 make no subsequent effort to migrate the job to a different cluster
 (from the list) whose resources become available when running jobs
 finish before their scheduled end times.</p>
@@ -52,7 +52,7 @@ slurmDBD.  Note that MUNGE can be configured to use different keys for
 communications within a cluster and across clusters if desired.
 See <a href="accounting.html">accounting</a> for details.</p>
 
-<p>Once configured, SLURM commands specifying the "-M, --clusters="
+<p>Once configured, Slurm commands specifying the "-M, --clusters="
 option will become active for all of the clusters listed by the
 <b>"sacctmgr show clusters"</b> command.</p>
 

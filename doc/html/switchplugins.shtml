@@ -1,9 +1,9 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Switch Plugin API</a></h1>
+<h1><a name="top">Slurm Switch Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM switch (interconnect) plugins and the API that defines
+<p> This document describe. Slurm switch (interconnect) plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
 switch plugins. This is version 110 of the API.
 Note that many of the API functions are used only by one of the daemons. For
@@ -13,8 +13,8 @@ slurmd daemon enables and disables that credential for the job step's
 tasks on a particular node(<span class="commandline">switch_p_job_init</span>,
 etc.). </p>
 
-<p>SLURM switch plugins are SLURM plugins that implement the SLURM switch or interconnect
-API described herein. They must conform to the SLURM Plugin API with the following
+<p>Slurm switch plugins are Slurm plugins that implement the Slurm switch or interconnect
+API described herein. They must conform to the Slurm Plugin API with the following
 specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;switch.&quot; The minor type can be any recognizable
@@ -26,12 +26,12 @@ switch service. This is the case for Ethernet and Myrinet interconnects.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
-symbols required by the SLURM Plugin API require no specialization for switch support.
+symbols required by the Slurm Plugin API require no specialization for switch support.
 Note carefully, however, the versioning discussion below.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/switch/switch_nrt.c</span> and
 <span class="commandline">src/plugins/switch/switch_none.c</span>
-for sample implementations of a SLURM switch plugin.</p>
+for sample implementations of a Slurm switch plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
@@ -40,11 +40,11 @@ One is used as an job step's switch &quot;credential.&quot;
 This class must encapsulate all job step specific information necessary
 for the operation of the API specification below.
 The second is a node's switch state record.
-Both data classes are referred to in SLURM code using an anonymous
+Both data classes are referred to in Slurm code using an anonymous
 pointer (void *).</p>
 
 <p>The implementation must maintain (though not necessarily directly export) an
-enumerated <span class="commandline">errno</span>  to allow SLURM to discover
+enumerated <span class="commandline">errno</span>  to allow Slurm to discover
 as practically as possible the reason for any failed API call. Plugin-specific enumerated
 integer values should be used when appropriate. It is desirable that these values
 be mapped into the range ESLURM_SWITCH_MIN and ESLURM_SWITCH_MAX
@@ -594,9 +594,9 @@ or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
-<p> This document describes version 0 of the SLURM Switch API. Future
-releases of SLURM may revise this API. A switch plugin conveys its ability
-to implement a particular API version using the mechanism outlined for SLURM plugins.
+<p> This document describes version 0 of the Slurm Switch API. Future
+releases of Slurm may revise this API. A switch plugin conveys its ability
+to implement a particular API version using the mechanism outlined for Slurm plugins.
 In addition, the credential is transmitted along with the version number of the
 plugin that transmitted it. It is at the discretion of the plugin author whether
 to maintain data format compatibility across different versions of the plugin.</p>

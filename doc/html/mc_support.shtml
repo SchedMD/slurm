@@ -15,7 +15,7 @@
 <h2>Definitions</h2></a>
 
 <P> <b>Socket/Core/Thread</b> - Figure 1 illustrates the notion of
-Socket, Core and Thread as it is defined in SLURM's multi-core/multi-thread
+Socket, Core and Thread as it is defined in Slurm's multi-core/multi-thread
 support documentation.</p>
 
 <center>
@@ -383,7 +383,7 @@ core memory bandwidth. For communication intensive applications,
 using in-core multi-threading (e.g. hyperthreading, SMT, or TMT)
 may also improve performance.
 The following command line flags can be used to communicate these
-types of application hints to the SLURM multi-core support:</p>
+types of application hints to the Slurm multi-core support:</p>
 
 <PRE>
 --hint=             Bind tasks according to application hints
@@ -441,7 +441,7 @@ wanted layout using 1) the new high-level flags and 2) --cpubind</p>
 
 <h3>High-Level flags</h3>
 
-<p>Using SLURM's new high-level flag, users can obtain the above layout with:</p>
+<p>Using Slurm's new high-level flag, users can obtain the above layout with:</p>
 
 <DL>
 <DL>
@@ -486,12 +486,12 @@ will be set when using multi-core supporting flags. </p>
 
 <h3>Low-level flag --cpu_bind</h3>
 
-<p>Using SLURM's --cpu_bind flag, users must compute the CPU IDs or
+<p>Using Slurm's --cpu_bind flag, users must compute the CPU IDs or
 masks as well as make sure they understand the core numbering on their
 system. Another problem arises when core numbering is not the same on all
 nodes. The --cpu_bind option only allows users to specify a single
-mask for all the nodes. Using SLURM high-level flags remove this limitation
-since SLURM will correctly generate the appropriate masks for each requested nodes.</p>
+mask for all the nodes. Using Slurm high-level flags remove this limitation
+since Slurm will correctly generate the appropriate masks for each requested nodes.</p>
 
 <h3>On a four dual-socket dual-core node cluster with core block numbering </h3>
 
@@ -672,7 +672,7 @@ trivial and that it assumes that users are experts.</p>
 <a name=utilities>
 <h2>Extensions to sinfo/squeue/scontrol</h2></a>
 
-<p>Several extensions have also been made to the other SLURM utilities to
+<p>Several extensions have also been made to the other Slurm utilities to
 make working with multi-core/multi-threaded systems easier.</p>
 
 <!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
@@ -864,7 +864,7 @@ TaskPlugin=task/affinity          # enable task affinity
 # TaskPlugin=task/affinity                    # default is task/none
 </PRE>
 
-<p>SLURM will automatically detect the architecture of the nodes used
+<p>Slurm will automatically detect the architecture of the nodes used
 by examining /proc/cpuinfo.  If, for some reason, the administrator
 wishes to override the automatically selected architecture, the
 NodeName parameter can be used in combination with FastSchedule:
@@ -882,7 +882,7 @@ using NodeName:
 #  o Node configuration
 #
 #    The configuration information of nodes (or machines) to be managed
-#    by SLURM is described here. The only required value in this section
+#    by Slurm is described here. The only required value in this section
 #    of the config file is the "NodeName" field, which specifies the
 #    hostnames of the node or nodes to manage. It is recommended, however,
 #    that baseline values for the node configuration be established

@@ -8,7 +8,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <p>Also see <a href="tutorials.html">Tutorials</a> and
 <a href="publications.html">Publications and Presentations</a>.</p>
 
-<h2>SLURM Users</h2>
+<h2>Slurm Users</h2>
 <ul>
 <li><a href="quickstart.html">Quick Start User Guide</a></li>
 <li><a href="man_index.html">Man Pages</a></li>
@@ -20,7 +20,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="multi_cluster.html">Multi-Cluster Operation</a></li>
 <li><a href="hdf5_profile_user_guide.html">Profiling Using HDF5 User Guide</a></li>
 <li><a href="nonstop.html">Failure Management Support</a></li>
-<li><a href="checkpoint_blcr.html">SLURM Checkpoint/Restart with BLCR</a></li>
+<li><a href="checkpoint_blcr.html">Slurm Checkpoint/Restart with BLCR</a></li>
 <li><a href="job_exit_code.html">Job Exit Codes</a></li>
 <li>Specific Systems</li>
 <ul>
@@ -32,7 +32,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </ul>
 </ul>
 
-<h2>SLURM Administrators</h2>
+<h2>Slurm Administrators</h2>
 <ul>
 <li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
 <li><a href="accounting.html">Accounting</a></li>
@@ -52,7 +52,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="priority_multifactor3.html">Depth-Oblivious Fair-share Factor</a></li>
 <li><a href="level_based.html">Level-Based Multifactor</a></li>
 </ul>
-<li>SLURM Scheduling</li>
+<li>Slurm Scheduling</li>
 <ul>
 <li><a href="sched_config.html">Scheduling Configuration Guide</a></li>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
@@ -86,7 +86,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </ul>
 </ul>
 
-<h2>SLURM Developers</h2>
+<h2>Slurm Developers</h2>
 <ul>
 <li><a href="contributor.html">Contributor Agreement</a></li>
 <li><a href="programmer_guide.html">Programmer Guide</a></li>

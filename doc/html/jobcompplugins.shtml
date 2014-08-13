@@ -1,14 +1,14 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Job Completion Logging Plugin API</a></h1>
+<h1><a name="top">Slurm Job Completion Logging Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p>This document describes SLURM job completion logging plugins and the API that defines
+<p>This document describes Slurm job completion logging plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
 job completion logging plugins. This is version 100 of the API.</p>
-<p>SLURM job completion logging plugins are SLURM plugins that implement the SLURM
+<p>Slurm job completion logging plugins are Slurm plugins that implement the SLURM
 API for logging job information upon their completion. This may be used to log job information
-to a text file, database, etc. The plugins must conform to the SLURM Plugin API with the following
+to a text file, database, etc. The plugins must conform to the Slurm Plugin API with the following
 specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;jobcomp.&quot; The minor type can be any recognizable
@@ -23,18 +23,18 @@ The <b>sacct</b> program with option <b>-c</b> can be used to display
 gathered data from database and filetxt plugins.
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
-symbols required by the SLURM Plugin API require no specialization for
+symbols required by the Slurm Plugin API require no specialization for
 job completion logging support.
 Note carefully, however, the versioning discussion below.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/jobcomp/filetxt/jobcomp_filetxt.c</span> and
 <span class="commandline">src/plugins/jobcomp/none/jobcomp_none.c</span>
-for sample implementations of a SLURM job completion logging plugin.</p>
+for sample implementations of a Slurm job completion logging plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
-enumerated <span class="commandline">errno</span>  to allow SLURM to discover
+enumerated <span class="commandline">errno</span>  to allow Slurm to discover
 as practically as possible the reason for any failed API call. Plugin-specific enumerated
 integer values should be used when appropriate. It is desirable that these values
 be mapped into the range ESLURM_JOBCOMP_MIN and ESLURM_JOBCOMP_MAX
@@ -147,9 +147,9 @@ void slurm_jobcomp_archive(List selected_parts, void *params)
 
 
 <h2>Versioning</h2>
-<p> This document describes version 100 of the SLURM job completion API. Future
-releases of SLURM may revise this API. A job completion plugin conveys its ability
-to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
+<p> This document describes version 100 of the Slurm job completion API. Future
+releases of Slurm may revise this API. A job completion plugin conveys its ability
+to implement a particular API version using the mechanism outlined for Slurm plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 8 May 2014</p>

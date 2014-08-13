@@ -21,7 +21,7 @@
 <a name=intro>
 <h2>Introduction</h2></a>
 
-<P> By default, SLURM assigns job priority on a First In, First Out (FIFO) basis.  FIFO scheduling should be configured when SLURM is controlled by an external scheduler.</P>
+<P> By default, Slurm assigns job priority on a First In, First Out (FIFO) basis.  FIFO scheduling should be configured when Slurm is controlled by an external scheduler.</P>
 
 <P> The <i>PriorityType</i> parameter in the slurm.conf file selects the priority plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</P>
 
@@ -136,7 +136,7 @@ priority of all the QOS's to become the QOS factor.</P>
 <h2>Fair-share Factor</h2></a>
 
 <P><b>Note:</b> Computing the fair-share factor requires the installation
-and operation of the <a href="accounting.html">SLURM Accounting
+and operation of the <a href="accounting.html">Slurm Accounting
 Database</a> to provide the assigned shares and the consumed,
 computing resources described below.</P>
 
@@ -144,7 +144,7 @@ computing resources described below.</P>
 
 <P> Instead, the fair-share factor serves to prioritize queued jobs such that those jobs charging accounts that are under-serviced are scheduled first, while jobs charging accounts that are over-serviced are scheduled when the machine would otherwise go idle.</P>
 
-<P> SLURM's fair-share factor is a floating point number between 0.0 and 1.0 that reflects the shares of a computing resource that a user has been allocated and the amount of computing resources the user's jobs have consumed.  The higher the value, the higher is the placement in the queue of jobs waiting to be scheduled.</P>
+<P> Slurm's fair-share factor is a floating point number between 0.0 and 1.0 that reflects the shares of a computing resource that a user has been allocated and the amount of computing resources the user's jobs have consumed.  The higher the value, the higher is the placement in the queue of jobs waiting to be scheduled.</P>
 
 <P> The computing resource is currently defined to be computing cycles delivered by a machine in the units of processor*seconds.  Future versions of the fair-share factor may additionally include a memory integral component.</P>
 
@@ -205,9 +205,9 @@ Where:
 <DD> is the total number of processor*seconds utilized across the cluster during that same time period
 </DL>
 
-<P> However, significant real-world usage quantities span multiple time periods.  Rather than treating usage over a number of weeks or months with equal importance, SLURM's fair-share priority calculation places more importance on the most recent resource usage and less importance on usage from the distant past.</P>
+<P> However, significant real-world usage quantities span multiple time periods.  Rather than treating usage over a number of weeks or months with equal importance, Slurm's fair-share priority calculation places more importance on the most recent resource usage and less importance on usage from the distant past.</P>
 
-<P> The SLURM usage metric is based off a half-life formula that favors the most recent usage statistics.  Usage statistics from the past decrease in importance based on a single decay factor, D:</P>
+<P> The Slurm usage metric is based off a half-life formula that favors the most recent usage statistics.  Usage statistics from the past decrease in importance based on a single decay factor, D:</P>
 
 <PRE>
 	U<sub>H</sub> = U<sub>current_period</sub> +
@@ -307,9 +307,9 @@ Where:
   Figure 2. Usage Example
 </div>
 
-<h3>The SLURM Fair-Share Formula</h3>
+<h3>The Slurm Fair-Share Formula</h3>
 
-<P> The SLURM fair-share formula has been designed to provide fair scheduling to users based on the allocation and usage of every account.</P>
+<P> The Slurm fair-share formula has been designed to provide fair scheduling to users based on the allocation and usage of every account.</P>
 
 <P> The actual formula used is a refinement of the formula presented above:</P>
 
@@ -417,7 +417,7 @@ Account A's effective usage is therefore equal to .45.  Account D's effective us
 <LI> User 5 effective usage: 0.0 + ((.1458 - 0.0) * 1 / 1) =  0.1458
 </UL>
 
-<P> Using the SLURM fair-share formula,</P>
+<P> Using the Slurm fair-share formula,</P>
 
 <PRE>
 	F = 2**(-U<sub>E</sub>/S)
