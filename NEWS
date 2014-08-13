@@ -46,6 +46,8 @@ documents those changes that are of interest to users and admins.
  -- Implemented a new QOS limit MinCPUs. Users running under a QOS must
     request a minimum number of CPUs which is at least MinCPUs otherwise
     their job will pend.
+ -- Introduced a new pending reason WAIT_QOS_MIN_CPUS to reflect the new QOS
+    limit.
 
 * Changes in Slurm 14.11.0pre3
 ==============================
