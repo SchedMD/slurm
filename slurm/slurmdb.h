@@ -676,6 +676,8 @@ typedef struct {
 					submit with this qos at once */
 	uint32_t max_wall_pj; /* longest time this
 			       * qos can run a job */
+	uint32_t min_cpus_pj; /* min number of cpus a job can
+			       * allocate with this qos */
 
 	char *name;
 	bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */

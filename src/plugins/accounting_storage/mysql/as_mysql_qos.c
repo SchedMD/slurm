@@ -128,6 +128,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
 			qos->max_wall_pj = INFINITE;
+		if (qos->min_cpus_pj == NO_VAL)
+			qos->min_cpus_pj = 1;
 		if (qos->preempt_mode == (uint16_t)NO_VAL)
 			qos->preempt_mode = 0;
 		if (qos->priority == NO_VAL)
@@ -375,6 +377,17 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", max_wall_duration_per_job");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
+	}
+
+	if (qos->min_cpus_pj == INFINITE) {
+		xstrcat(*cols, ", min_cpus_per_job");
+		xstrcat(*vals, ", 1");
+		xstrcat(*extra, ", min_cpus_per_job=1");
+	} else if ((qos->min_cpus_pj != NO_VAL)
+		   && ((int32_t)qos->min_cpus_pj >= 0)) {
+		xstrcat(*cols, ", min_cpus_per_job");
+		xstrfmtcat(*vals, ", %u", qos->min_cpus_pj);
+		xstrfmtcat(*extra, ", min_cpus_per_job=%u", qos->min_cpus_pj);
 	}
 
 	if (qos->preempt_list && list_count(qos->preempt_list)) {
@@ -728,6 +741,8 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
 		qos_rec->max_wall_pj = qos->max_wall_pj;
 
+		qos_rec->min_cpus_pj = qos->min_cpus_pj;
+
 		qos_rec->preempt_mode = qos->preempt_mode;
 		qos_rec->priority = qos->priority;
 
@@ -1022,6 +1037,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"priority",
 		"usage_factor",
 		"usage_thres",
+		"min_cpus_per_job",
 	};
 	enum {
 		QOS_REQ_NAME,
@@ -1051,6 +1067,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_PRIO,
 		QOS_REQ_UF,
 		QOS_REQ_UT,
+		QOS_REQ_MICPJ,
 		QOS_REQ_COUNT
 	};
 
@@ -1242,6 +1259,9 @@ empty:
 			qos->usage_thres = atof(row[QOS_REQ_UT]);
 		else
 			qos->usage_thres = (double)INFINITE;
+
+		if (row[QOS_REQ_MICPJ])
+			qos->min_cpus_pj = slurm_atoul(row[QOS_REQ_MICPJ]);
 
 	}
 	mysql_free_result(result);

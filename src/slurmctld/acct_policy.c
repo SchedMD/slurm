@@ -729,6 +729,21 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				goto end_it;
 			}
 		}
+
+		if (strict_checking && (qos_ptr->min_cpus_pj != INFINITE)
+		    && (job_desc->min_cpus < qos_ptr->min_cpus_pj)) {
+			if (reason) 
+				*reason = WAIT_QOS_RESOURCE_LIMIT;
+			debug2("job submit for user %s(%u): "
+			       "min cpus %u below "
+			       "qos min %u",
+			       user_name,
+			       job_desc->user_id,
+			       job_desc->min_cpus,
+			      qos_ptr->min_cpus_pj);
+			rc = false;
+			goto end_it;
+		}
 	}
 
 	while (assoc_ptr) {
@@ -1045,6 +1060,8 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 		/* we don't need to check max_cpu_mins_pj here */
 
 		/* we don't need to check max_cpus_pj here */
+
+		/* we don't need to check min_cpus_pj here */
 
 		/* we don't need to check max_cpus_pu here */
 
@@ -1529,6 +1546,23 @@ extern bool acct_policy_job_runnable_post_select(
 				       job_ptr->job_id,
 				       cpu_cnt,
 				       qos_ptr->max_cpus_pj);
+				rc = false;
+				goto end_it;
+			}
+		}
+
+		if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
+		    && qos_ptr->min_cpus_pj != INFINITE) {
+			if (cpu_cnt < qos_ptr->min_cpus_pj) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason =
+					WAIT_QOS_RESOURCE_LIMIT;
+				debug2("job %u being held, "
+				       "min cpu limit %u below "
+				       "qos per-job min %u",
+				       job_ptr->job_id,
+				       cpu_cnt,
+				       qos_ptr->min_cpus_pj);
 				rc = false;
 				goto end_it;
 			}

@@ -421,6 +421,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxWall");
 		field->len = 11;
 		field->print_routine = print_fields_time;
+	} else if (!strncasecmp("MinCPUsPerJob", object, MAX(command_len, 7))) {
+		field->type = PRINT_MINC;
+		field->name = xstrdup("MinCPUs");
+		field->len = 8;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("Name", object, MAX(command_len, 2))) {
 		field->type = PRINT_NAME;
 		field->name = xstrdup("Name");
@@ -1690,6 +1695,11 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 			      time_buf, sizeof(time_buf));
 		printf("  MaxWall        = %s\n", time_buf);
 	}
+
+	if (qos->min_cpus_pj == INFINITE)
+		printf("  MinCPUs        = NONE\n");
+	else if (qos->min_cpus_pj != NO_VAL)
+		printf("  MinCPUs        = %u\n", qos->min_cpus_pj);
 
 	if (qos->preempt_list) {
 		char *temp_char = get_qos_complete_str(g_qos_list,

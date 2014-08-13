@@ -1207,6 +1207,8 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 	qos->max_submit_jobs_pu = NO_VAL;
 	qos->max_wall_pj = NO_VAL;
 
+	qos->min_cpus_pj = NO_VAL;
+
 	qos->usage_factor = (double)NO_VAL;
 	qos->usage_thres = (double)NO_VAL;
 }

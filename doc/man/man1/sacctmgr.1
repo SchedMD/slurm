@@ -1078,6 +1078,10 @@ Maximum number of jobs each user is allowed to run at one time.
 Maximum number of nodes each job is able to use.
 
 .TP
+\fIMinCPUs\fP
+Minimum number of CPUs each job is allowed to use.
+
+.TP
 \fIMaxNodesPerUser\fP
 Maximum number of nodes each user is able to use.
 .P
@@ -1257,6 +1261,12 @@ Maximum wall clock time each job is able to use.
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMinCPUs\fP
+Minimum number of CPUs each job is allowed to use.
+To clear a previously set value use the modify command with a new
+value of \-1.
 
 .TP
 \fIName\fP

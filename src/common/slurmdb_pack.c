@@ -1151,6 +1151,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 
 			packnull(buffer);
 
@@ -1188,6 +1189,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->max_nodes_pu, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
 		pack32(object->max_wall_pj, buffer);
+		pack32(object->min_cpus_pj, buffer);
 
 		packstr(object->name, buffer);
 
@@ -1341,6 +1343,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
+		safe_unpack32(&object_ptr->min_cpus_pj, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 

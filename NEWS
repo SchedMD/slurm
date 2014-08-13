@@ -43,6 +43,9 @@ documents those changes that are of interest to users and admins.
     with reason JobHoldMaxRequeue.
  -- Add sbatch job array option to limit the number of simultaneously running
     tasks from a job array (e.g. "--array=0-15%4").
+ -- Implemented a new QOS limit MinCPUs. Users running under a QOS must
+    request a minimum number of CPUs which is at least MinCPUs otherwise
+    their job will pend.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

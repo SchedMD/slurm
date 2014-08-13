@@ -433,6 +433,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad MaxWall time format: %s\n",
 					argv[i]);
 			}
+		} else if (!strncasecmp (argv[i], "MinCPUsPerJob",
+					 MAX(command_len, 7))) {
+			if (!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->min_cpus_pj,
+			    "MinCPUs") == SLURM_SUCCESS)
+				set = 1;
 		} else if (!strncasecmp (argv[i], "PreemptMode",
 					 MAX(command_len, 8))) {
 			if (!qos)
@@ -674,6 +681,8 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			qos->max_submit_jobs_pu = start_qos->max_submit_jobs_pu;
 			qos->max_wall_pj = start_qos->max_wall_pj;
 
+			qos->min_cpus_pj = start_qos->min_cpus_pj;
+
 			qos->preempt_list =
 				copy_char_list(start_qos->preempt_list);
 			qos->preempt_mode = start_qos->preempt_mode;
@@ -780,7 +789,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 				      "MaxCPUs,MaxCPUMins,MaxN,MaxW,"
 				      "MaxCPUsPerUser,"
 				      "MaxJobsPerUser,MaxNodesPerUser,"
-				      "MaxSubmitJobsPerUser");
+				      "MaxSubmitJobsPerUser,MinCPUs");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -930,6 +939,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 					field,
 					qos->max_wall_pj,
 					(curr_inx == field_count));
+				break;
+			case PRINT_MINC:
+				field->print_routine(field,
+						     qos->min_cpus_pj,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_NAME:
 				field->print_routine(

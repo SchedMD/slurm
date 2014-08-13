@@ -2140,6 +2140,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
 	qos->max_wall_pj     = found_qos->max_wall_pj;
 
+	qos->min_cpus_pj     = found_qos->min_cpus_pj;
+
 	if (!qos->name)
 		qos->name = found_qos->name;
 
@@ -3425,6 +3427,9 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				update_jobs = true;
 				rec->max_wall_pj = object->max_wall_pj;
 			}
+
+			if (object->min_cpus_pj != NO_VAL) 
+				rec->min_cpus_pj = object->min_cpus_pj;
 
 			if (object->preempt_bitstr) {
 				if (rec->preempt_bitstr)
