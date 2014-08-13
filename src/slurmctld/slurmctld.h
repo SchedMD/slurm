@@ -1099,6 +1099,12 @@ extern void job_array_pre_sched(struct job_record *job_ptr);
 /* If this is a job array meta-job, clean up after scheduling attempt */
 extern void job_array_post_sched(struct job_record *job_ptr);
 
+/* Record the start of one job array task */
+extern void job_array_start(struct job_record *job_ptr);
+
+/* Return true if a job array task can be started */
+extern bool job_array_start_test(struct job_record *job_ptr);
+
 /* Reset a job's end_time based upon it's start_time and time_limit.
  * NOTE: Do not reset the end_time if already being preempted */
 extern void job_end_time_reset(struct job_record  *job_ptr);

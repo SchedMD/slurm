@@ -46,6 +46,10 @@ a range of values with a "\-" separator. For example, "\-\-array=0\-15" or
 "\-\-array=0,6,16\-32".
 A step function can also be specified with a suffix containing a colon and
 number. For example, "\-\-array=0\-15:4" is equivalent to "\-\-array=0,4,8,12".
+A maximum number of simultaneously running tasks from the job array may be
+specified using a "%" separator.
+For example "\-\-array=0\-15%4" will limit the number of simultaneously
+running tasks from this job array to 4.
 The minimum index value is 0.
 the maximum value is one less than the configuration parameter MaxArraySize.
 

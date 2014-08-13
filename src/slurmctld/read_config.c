@@ -1914,7 +1914,7 @@ static void _validate_node_proc_count(void)
 
 /*
  * _restore_job_dependencies - Build depend_list and license_list for every job
- *	also reset the runing job count for scheduling policy
+ *	also reset the running job count for scheduling policy
  */
 static int _restore_job_dependencies(void)
 {
@@ -1928,7 +1928,16 @@ static int _restore_job_dependencies(void)
 	assoc_mgr_clear_used_info();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->array_recs)
+			job_ptr->array_recs->tot_run_tasks = 0;
+	}
+
+	list_iterator_reset(job_iterator);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		(void) build_feature_list(job_ptr);
+
+		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+			job_array_start(job_ptr);
 
 		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
 			if (!IS_JOB_FINISHED(job_ptr))

@@ -1076,7 +1076,7 @@ next_task:
 			break;
 		}
 
-		if (job_ptr->array_task_id != NO_VAL) {
+		if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
 			if ((reject_array_job_id == job_ptr->array_job_id) &&
 			    (reject_array_part   == job_ptr->part_ptr)) {
 				xfree(job_ptr->state_desc);
@@ -1087,6 +1087,13 @@ next_task:
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job_id = job_ptr->array_job_id;
 			reject_array_part   = job_ptr->part_ptr;
+
+			if (!job_array_start_test(job_ptr)) {
+				xfree(job_ptr->state_desc);
+				reject_state_reason = WAIT_ARRAY_TASK_LIMIT;
+				job_ptr->state_reason = reject_state_reason;
+				continue;
+			}
 		}
 		if (max_jobs_per_part) {
 			bool skip_job = false;

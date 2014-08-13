@@ -41,6 +41,8 @@ documents those changes that are of interest to users and admins.
  -- Introduce a MAX_BATCH_REQUEUE define that indicates how many times a job
     can be requeued. When the number is reached the job is put on hold
     with reason JobHoldMaxRequeue.
+ -- Add sbatch job array option to limit the number of simultaneously running
+    tasks from a job array (e.g. "--array=0-15%4").
 
 * Changes in Slurm 14.11.0pre3
 ==============================

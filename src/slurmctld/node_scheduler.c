@@ -1812,6 +1812,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
+	job_array_start(job_ptr);
 	build_node_details(job_ptr, true);
 	rebuild_job_part_list(job_ptr);
 

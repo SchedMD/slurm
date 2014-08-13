@@ -125,6 +125,8 @@ COMMAND CHANGES (see man pages for details)
  -- Added squeue -P/--priority option that can be used to display pending jobs
     in the same order as used by the Slurm scheduler even if jobs are submitted
     to multiple partitions (job is reported once per usable partition).
+ -- Add sbatch job array option to limit the number of simultaneously running
+    tasks from a job array (e.g. "--array=0-15%4").
 
 OTHER CHANGES
 =============

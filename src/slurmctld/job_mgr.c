@@ -3520,6 +3520,8 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 static void _create_job_array(struct job_record *job_ptr,
 			      job_desc_msg_t *job_specs)
 {
+	char *sep = NULL;
+	int max_run_tasks;
 	uint32_t i_cnt;
 
 	if (!job_specs->array_bitmap)
@@ -3542,6 +3544,14 @@ static void _create_job_array(struct job_record *job_ptr,
 		bit_set_count(job_ptr->array_recs->task_id_bitmap);
 	if (job_ptr->array_recs->task_cnt > 1)
 		job_count += (job_ptr->array_recs->task_cnt - 1);
+
+	if (job_specs->array_inx)
+		sep = strchr(job_specs->array_inx, '%');
+	if (sep) {
+		max_run_tasks = atoi(sep + 1);
+		if (max_run_tasks > 0)
+			job_ptr->array_recs->max_run_tasks = max_run_tasks;
+	}
 }
 
 /*
@@ -5461,16 +5471,16 @@ static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
 		last = strtol(end_ptr + 1, &end_ptr, 10);
 		if (end_ptr[0] == ':') {
 			step = strtol(end_ptr + 1, &end_ptr, 10);
-			if (end_ptr[0] != '\0')
+			if ((end_ptr[0] != '\0') && (end_ptr[0] != '%'))
 				return false;
 			if (step <= 0)
 				return false;
-		} else if (end_ptr[0] != '\0') {
+		} else if ((end_ptr[0] != '\0') && (end_ptr[0] != '%')) {
 			return false;
 		}
 		if (last < first)
 			return false;
-	} else if (end_ptr[0] != '\0') {
+	} else if ((end_ptr[0] != '\0') && (end_ptr[0] != '%')) {
 		return false;
 	} else {
 		last = first;
@@ -11189,8 +11199,65 @@ void job_fini (void)
 	xfree(job_array_hash_t);
 }
 
+/* Record the start of one job array task */
+extern void job_array_start(struct job_record *job_ptr)
+{
+	struct job_record *base_job_ptr;
+
+	if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
+		base_job_ptr = find_job_record(job_ptr->array_job_id);
+		if (base_job_ptr && base_job_ptr->array_recs) {
+			base_job_ptr->array_recs->tot_run_tasks++;
+		}
+	}
+}
+
+/* Return true if a job array task can be started */
+extern bool job_array_start_test(struct job_record *job_ptr)
+{
+	struct job_record *base_job_ptr;
+
+	if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
+		base_job_ptr = find_job_record(job_ptr->array_job_id);
+		if (base_job_ptr && base_job_ptr->array_recs &&
+		    (base_job_ptr->array_recs->max_run_tasks != 0) &&
+		    (base_job_ptr->array_recs->tot_run_tasks >=
+		     base_job_ptr->array_recs->max_run_tasks)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+static void _job_array_comp(struct job_record *job_ptr)
+{
+	struct job_record *base_job_ptr;
+
+	if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
+		base_job_ptr = find_job_record(job_ptr->array_job_id);
+		if (base_job_ptr && base_job_ptr->array_recs) {
+			if (base_job_ptr->array_recs->tot_comp_tasks == 0) {
+				base_job_ptr->array_recs->min_exit_code =
+					job_ptr->exit_code;
+				base_job_ptr->array_recs->max_exit_code =
+					job_ptr->exit_code;
+			} else {
+				base_job_ptr->array_recs->min_exit_code =
+					MIN(job_ptr->exit_code, base_job_ptr->
+					    array_recs->min_exit_code);
+				base_job_ptr->array_recs->max_exit_code =
+					MAX(job_ptr->exit_code, base_job_ptr->
+					    array_recs->max_exit_code);
+			}
+			if (base_job_ptr->array_recs->tot_run_tasks)
+				base_job_ptr->array_recs->tot_run_tasks--;
+			base_job_ptr->array_recs->tot_comp_tasks++;
+		}
+	}
+}
+
 /* log the completion of the specified job */
-extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
+extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 {
 	int base_state;
 
@@ -11229,28 +11296,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 		}
 	}
 
-	if (job_ptr->array_task_id != NO_VAL) {
-		struct job_record *base_job_ptr;
-		base_job_ptr = find_job_record(job_ptr->array_job_id);
-		if (base_job_ptr->array_recs) {
-			if (base_job_ptr->array_recs->tot_comp_tasks == 0) {
-				base_job_ptr->array_recs->min_exit_code =
-					job_ptr->exit_code;
-				base_job_ptr->array_recs->max_exit_code =
-					job_ptr->exit_code;
-			} else {
-				base_job_ptr->array_recs->min_exit_code =
-					MIN(job_ptr->exit_code, base_job_ptr->
-					    array_recs->min_exit_code);
-				base_job_ptr->array_recs->max_exit_code =
-					MAX(job_ptr->exit_code, base_job_ptr->
-					    array_recs->max_exit_code);
-			}
-			if (base_job_ptr->array_recs->tot_run_tasks)
-				base_job_ptr->array_recs->tot_run_tasks--;
-			base_job_ptr->array_recs->tot_comp_tasks++;
-		}
-	}
+	_job_array_comp(job_ptr);
 
 	g_slurm_jobcomp_write(job_ptr);
 

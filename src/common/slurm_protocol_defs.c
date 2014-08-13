@@ -1018,6 +1018,8 @@ extern void slurm_free_job_array_resp(job_array_resp_msg_t *msg)
 /* Given a job's reason for waiting, return a descriptive string */
 extern char *job_reason_string(enum job_state_reason inx)
 {
+	static char val[32];
+
 	switch (inx) {
 	case WAIT_NO_REASON:
 		return "None";
@@ -1127,8 +1129,11 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSMaxNodesPerUserLimit";
 	case WAIT_MAX_REQUEUE:
 		return "JobHoldMaxRequeue";
+	case WAIT_ARRAY_TASK_LIMIT:
+		return "JobArrayTaskLimit";
 	default:
-		return "?";
+		snprintf(val, sizeof(val), "%d", inx);
+		return val;
 	}
 }
 
