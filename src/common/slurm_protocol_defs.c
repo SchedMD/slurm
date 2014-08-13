@@ -1127,6 +1127,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSMaxJobsPerUserLimit";
 	case WAIT_QOS_MAX_NODE_PER_USER:
 		return "QOSMaxNodesPerUserLimit";
+	case WAIT_QOS_MIN_CPUS:
+		return "QOSMinCPUsNotSatisfied";
 	case WAIT_MAX_REQUEUE:
 		return "JobHoldMaxRequeue";
 	case WAIT_ARRAY_TASK_LIMIT:

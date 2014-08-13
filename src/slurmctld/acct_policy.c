@@ -732,7 +732,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 		if (strict_checking && (qos_ptr->min_cpus_pj != INFINITE)
 		    && (job_desc->min_cpus < qos_ptr->min_cpus_pj)) {
-			if (reason) 
+			if (reason)
 				*reason = WAIT_QOS_RESOURCE_LIMIT;
 			debug2("job submit for user %s(%u): "
 			       "min cpus %u below "
@@ -1556,11 +1556,11 @@ extern bool acct_policy_job_runnable_post_select(
 			if (cpu_cnt < qos_ptr->min_cpus_pj) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
-					WAIT_QOS_RESOURCE_LIMIT;
-				debug2("job %u being held, "
+					WAIT_QOS_MIN_CPUS;
+				debug2("%s job %u being held, "
 				       "min cpu limit %u below "
 				       "qos per-job min %u",
-				       job_ptr->job_id,
+				       __func__, job_ptr->job_id,
 				       cpu_cnt,
 				       qos_ptr->min_cpus_pj);
 				rc = false;
