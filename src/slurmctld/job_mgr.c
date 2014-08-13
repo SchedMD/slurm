@@ -7241,8 +7241,10 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		if (dump_job_ptr->array_recs) {
 			_build_array_str(dump_job_ptr->array_recs);
 			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
+			pack32(dump_job_ptr->array_recs->max_run_tasks, buffer);
 		} else {
 			packnull(buffer);
+			pack32((uint32_t) 0, buffer);
 		}
 		pack32(dump_job_ptr->assoc_id, buffer);
 		pack32(dump_job_ptr->job_id,   buffer);

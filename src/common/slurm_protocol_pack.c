@@ -4714,6 +4714,9 @@ static void _xlate_task_str(job_info_t *job_ptr)
 		}
 	}
 
+	if (job_ptr->array_max_tasks)
+		xstrfmtcat(out_buf, "%c%u", '%', job_ptr->array_max_tasks);
+
 	xfree(job_ptr->array_task_str);
 	job_ptr->array_task_str = out_buf;
 }
@@ -4743,6 +4746,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		 * to be converted to human readable form by the client. */
 		safe_unpackstr_xmalloc(&job->array_task_str, &uint32_tmp,
 				       buffer);
+		safe_unpack32(&job->array_max_tasks, buffer);
 		_xlate_task_str(job);
 
 		safe_unpack32(&job->assoc_id, buffer);

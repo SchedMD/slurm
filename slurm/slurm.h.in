@@ -1239,6 +1239,7 @@ typedef struct job_info {
 	void *array_bitmap;	/* NOTE: set on unpack */
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
 	uint32_t array_task_id;	/* task_id of a job array */
+	uint32_t array_max_tasks; /* Maximum number of running tasks */
 	char *array_task_str;	/* string expression of task IDs in this record */
 	uint32_t assoc_id;	/* association id for job */
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
