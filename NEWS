@@ -38,6 +38,9 @@ documents those changes that are of interest to users and admins.
     print QOSGrpCpuLimit as pending reason.
  -- sched/backfill - Set expected start time of job submitted to multiple
     partitions to the earliest start time on any of the partitions.
+ -- Introduce a MAX_BATCH_REQUEUE define that indicates how many times a job
+    can be requeued. When the number is reached the job is put on hold
+    with reason JobHoldMaxRequeue.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

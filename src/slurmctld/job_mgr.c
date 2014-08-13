@@ -1783,7 +1783,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	}
 
 	if (((job_state & JOB_STATE_BASE) >= JOB_END) ||
-	    (batch_flag > 2)) {
+	    (batch_flag > MAX_BATCH_REQUEUE)) {
 		error("Invalid data for job %u: "
 		      "job_state=%u batch_flag=%u",
 		      job_id, job_state, batch_flag);
@@ -4371,15 +4371,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		suspended = true;
 	}
 
-	if (requeue && (job_ptr->batch_flag > 1)) {
-		/* Failed one requeue, just kill it */
-		requeue = 0;
-		if (job_return_code == 0)
-			job_return_code = 1;
-		info("%s: batch %s launch failure",
-		     __func__, jobid2str(job_ptr, jbuf));
-	}
-
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
 		/* We want this job to look like it
 		 * was terminated in the accounting logs.
@@ -4405,6 +4396,15 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		} else {
 			info("%s: requeue %s per user/system request",
 			     __func__, jobid2str(job_ptr, jbuf));
+		}
+		/* We have reached the maximum number of requeue
+		 * attempts hold the job with HoldMaxRequeue reason.
+		 */
+		if (job_ptr->batch_flag > MAX_BATCH_REQUEUE) {
+			job_ptr->job_state |= JOB_REQUEUE_HOLD;
+			job_ptr->state_reason = WAIT_MAX_REQUEUE;
+			job_ptr->batch_flag = 1;
+			job_ptr->priority = 0;
 		}
 	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details &&
 		   job_ptr->batch_flag) {
@@ -8311,7 +8311,8 @@ static bool _top_priority(struct job_record *job_ptr)
 		if (job_ptr->priority == 0) {		/* user/admin hold */
 			if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
 			    && (job_ptr->state_reason != WAIT_HELD)
-			    && (job_ptr->state_reason != WAIT_HELD_USER)) {
+			    && (job_ptr->state_reason != WAIT_HELD_USER)
+			    && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
 				job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
 			}
@@ -9811,8 +9812,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			xfree(job_ptr->state_desc);
 		}
 		return error_code;
-	} else if ((job_ptr->state_reason != WAIT_HELD) &&
-		   (job_ptr->state_reason != WAIT_HELD_USER)) {
+	} else if ((job_ptr->state_reason != WAIT_HELD)
+		   && (job_ptr->state_reason != WAIT_HELD_USER)
+		   && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
 
@@ -11295,8 +11297,9 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	time_t now = time(NULL);
 	int depend_rc;
 
-	if ((job_ptr->state_reason == WAIT_HELD) ||
-	    (job_ptr->state_reason == WAIT_HELD_USER))
+	if ((job_ptr->state_reason == WAIT_HELD)
+	    || (job_ptr->state_reason == WAIT_HELD_USER)
+	    || job_ptr->state_reason == WAIT_MAX_REQUEUE)
 		return false;
 
 	/* Test dependencies first so we can cancel jobs before dependent

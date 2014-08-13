@@ -208,7 +208,8 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 	if (job_ptr->priority == 0)	{ /* held */
 		if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
 		    && (job_ptr->state_reason != WAIT_HELD)
-		    && (job_ptr->state_reason != WAIT_HELD_USER)) {
+		    && (job_ptr->state_reason != WAIT_HELD_USER)
+		    && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
 			job_ptr->state_reason = WAIT_HELD;
 			xfree(job_ptr->state_desc);
 			last_job_update = time(NULL);

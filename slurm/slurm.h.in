@@ -356,7 +356,8 @@ enum job_state_reason {
 	WAIT_QOS_MAX_WALL_PER_JOB,   /* QOS MaxWallDurationPerJob exceeded */
 	WAIT_QOS_MAX_CPU_PER_USER,   /* QOS MaxCpusPerUser exceeded */
 	WAIT_QOS_MAX_JOB_PER_USER,   /* QOS MaxJobsPerUser exceeded */
-	WAIT_QOS_MAX_NODE_PER_USER   /* QOS MaxNodesPerUser exceeded */
+	WAIT_QOS_MAX_NODE_PER_USER,  /* QOS MaxNodesPerUser exceeded */
+	WAIT_MAX_REQUEUE             /* MAX_BATCH_REQUEUE reached */
 };
 
 enum job_acct_types {
