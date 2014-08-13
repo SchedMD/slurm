@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
     QOS limit that causes a job to be pending print its specific reason.
     For example if job pends because of GrpCpus the squeue command will
     print QOSGrpCpuLimit as pending reason.
+ -- sched/backfill - Set expected start time of job submitted to multiple
+    partitions to the earliest start time on any of the partitions.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

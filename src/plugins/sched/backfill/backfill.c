@@ -137,6 +137,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
 static int  _attempt_backfill(void);
+static void _clear_job_start_times(void);
 static int  _delta_tv(struct timeval *tv);
 static bool _job_is_completing(void);
 static void _load_config(void);
@@ -619,6 +620,21 @@ extern void *backfill_agent(void *args)
 	return NULL;
 }
 
+/* Clear the start_time for all jobs. This is used to insure that a job which
+ * can run in multiple partitions has its start_time set to the smallest
+ * value in any of those partitions. */
+static void _clear_job_start_times(void)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
+		job_ptr->start_time = 0;
+	}
+	list_iterator_destroy(job_iterator);
+}
+
 /* Return non-zero to break the backfill loop if change in job, node or
  * partition state or the backfill scheduler needs to be stopped. */
 static int _yield_locks(int usec)
@@ -661,6 +677,7 @@ static int _attempt_backfill(void)
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *non_cg_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
+	time_t orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
 	int rc = 0;
@@ -718,6 +735,9 @@ static int _attempt_backfill(void)
 		list_destroy(job_queue);
 		return 0;
 	}
+
+	if (backfill_continue)
+		_clear_job_start_times();
 
 	gettimeofday(&bf_time1, NULL);
 
@@ -813,6 +833,8 @@ static int _attempt_backfill(void)
 			xfree(job_queue_rec);
 			continue;
 		}
+		if (backfill_continue)
+			orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
 		part_ptr = job_queue_rec->part_ptr;
 		xfree(job_queue_rec);
@@ -1086,6 +1108,11 @@ next_task:
 			/* Job can not start until too far in the future */
 			job_ptr->time_limit = orig_time_limit;
 			job_ptr->start_time = sched_start + backfill_window;
+			if ((orig_start_time != 0) &&
+			    (orig_start_time < job_ptr->start_time)) {
+				/* Can start earlier in different partition */
+				job_ptr->start_time = orig_start_time;
+			}
 			continue;
 		}
 
@@ -1111,8 +1138,11 @@ next_task:
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;
-			job_ptr->start_time = 0;
-			continue;	/* not runable */
+			if (orig_start_time != 0)  /* Can start in other part */
+				job_ptr->start_time = orig_start_time;
+			else
+				job_ptr->start_time = 0;
+			continue;	/* not runable in this partition */
 		}
 
 		if (start_res > job_ptr->start_time) {
@@ -1161,7 +1191,11 @@ next_task:
 
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				/* Unknown future start time, just skip job */
-				job_ptr->start_time = 0;
+				if (orig_start_time != 0) {
+					/* Can start in different partition */
+					job_ptr->start_time = orig_start_time;
+				} else
+					job_ptr->start_time = 0;
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
@@ -1226,6 +1260,11 @@ next_task:
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
 				_dump_job_sched(job_ptr, end_reserve,
 						avail_bitmap);
+			if ((orig_start_time != 0) &&
+			    (orig_start_time < job_ptr->start_time)) {
+				/* Can start earlier in different partition */
+				job_ptr->start_time = orig_start_time;
+			}
 			continue;
 		}
 
@@ -1257,8 +1296,6 @@ next_task:
 			continue;
 		reject_array_job_id = 0;
 		reject_array_part   = NULL;
-		if (debug_flags & DEBUG_FLAG_BACKFILL)
-			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
 		xfree(job_ptr->sched_nodes);
 		job_ptr->sched_nodes = bitmap2node_name(avail_bitmap);
 		bit_not(avail_bitmap);
@@ -1266,6 +1303,11 @@ next_task:
 				 avail_bitmap, node_space, &node_space_recs);
 		if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_node_space_table(node_space);
+		if ((orig_start_time != 0) &&
+		    (orig_start_time < job_ptr->start_time)) {
+			/* Can start earlier in different partition */
+			job_ptr->start_time = orig_start_time;
+		}
 		if ((job_ptr->array_task_id != NO_VAL) && job_ptr->array_recs) {
 			/* Try making reservation for next task of job array */
 			if (test_array_job_id != job_ptr->array_job_id) {
