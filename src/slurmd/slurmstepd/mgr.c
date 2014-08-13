@@ -1154,10 +1154,12 @@ fail2:
 	 */
 	task_g_post_step(job);
 
-	/* Reset CPU frequency as needed on failure. It is normally reset in
-	 * _wait_for_all_tasks() before notifying srun of task completion. */
 	if (job->cpu_freq != NO_VAL)
 		cpu_freq_reset(job);
+
+	/* Notify srun of completion AFTER frequency reset to avoid race
+	 * condition starting another job on these CPUs. */
+	while (_send_pending_exit_msgs(job)) {;}
 
 	/*
 	 * This just cleans up all of the PAM state in case rc == 0
@@ -1901,15 +1903,12 @@ _wait_for_all_tasks(stepd_step_rec_t *job)
 			}
 		}
 
-		if ((i == tasks_left) && (job->cpu_freq != NO_VAL)) {
-			/* Reset frequency before telling srun this job is
-			 * complete to prevent another job starting and causing
-			 * a race condition in setting CPU frequency. */
-			cpu_freq_reset(job);
-			job->cpu_freq = NO_VAL;
+		if (i < tasks_left) {
+			/* Send partial completion message only.
+			 * The full completion message can only be sent
+			 * after resetting CPU frequencies */
+			while (_send_pending_exit_msgs(job)) {;}
 		}
-
-		while (_send_pending_exit_msgs(job)) {;}
 	}
 }
 
