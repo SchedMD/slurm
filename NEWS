@@ -233,6 +233,8 @@ documents those changes that are of interest to users and admins.
     InfinibandOFEDFrequency.
  -- Fix gang scheduling for jobs submitted to multiple partitions.
  -- Enable srun to submit job to multiple partitions.
+ -- Update slurm.conf man page. When Epilog or Prolog fail the node state
+    is set ro DRAIN.
 
 * Changes in Slurm 14.03.6
 ==========================
