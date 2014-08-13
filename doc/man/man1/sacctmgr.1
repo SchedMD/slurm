@@ -1079,7 +1079,8 @@ Maximum number of nodes each job is able to use.
 
 .TP
 \fIMinCPUs\fP
-Minimum number of CPUs each job is allowed to use.
+Minimum number of CPUs each job running under this QOS must request.
+Otherwise the job will pend until modified.
 
 .TP
 \fIMaxNodesPerUser\fP
@@ -1264,7 +1265,8 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIMinCPUs\fP
-Minimum number of CPUs each job is allowed to use.
+Minimum number of CPUs each job running under this QOS must request.
+Otherwise the job will pend until modified.
 To clear a previously set value use the modify command with a new
 value of \-1.
 

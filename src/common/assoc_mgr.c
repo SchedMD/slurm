@@ -3428,7 +3428,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				rec->max_wall_pj = object->max_wall_pj;
 			}
 
-			if (object->min_cpus_pj != NO_VAL) 
+			if (object->min_cpus_pj != NO_VAL)
 				rec->min_cpus_pj = object->min_cpus_pj;
 
 			if (object->preempt_bitstr) {
