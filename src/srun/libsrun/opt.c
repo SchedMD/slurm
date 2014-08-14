@@ -2100,12 +2100,6 @@ static bool _opt_verify(void)
 		      MAX_THREADS);
 	}
 
-	if (opt.labelio && opt.unbuffered) {
-		error("Do not specify both -l (--label) and "
-		      "-u (--unbuffered)");
-		exit(error_exit);
-	}
-
 	/*
 	 * --wait always overrides hidden max_exit_timeout
 	 */

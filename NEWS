@@ -54,6 +54,8 @@ documents those changes that are of interest to users and admins.
     and after requires all tasks to at least be started).
  -- The srun -u/--unbuffered options set the stdout of the task launched
     by srun to be line buffered.
+ -- The srun options -/--label and -u/--unbuffered can be specified together.
+    This limitation has been removed.
 
 * Changes in Slurm 14.11.0pre3
 ==============================
