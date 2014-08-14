@@ -1966,6 +1966,15 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(struct job_record *job_ptr);
 
+/* Return true if ALL tasks of specific array job ID are complete */
+extern bool test_job_array_complete(uint32_t array_job_id);
+
+/* Return true if ALL tasks of specific array job ID are completed */
+extern bool test_job_array_completed(uint32_t array_job_id);
+
+/* Return true if ANY tasks of specific array job ID are pending */
+extern bool test_job_array_pending(uint32_t array_job_id);
+
 /*
  * Synchronize the batch job in the system with their files.
  * All pending batch jobs must have script and environment files

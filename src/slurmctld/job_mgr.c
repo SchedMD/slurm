@@ -2443,6 +2443,89 @@ void _add_job_array_hash(struct job_record *job_ptr)
 	job_array_hash_t[inx] = job_ptr;
 }
 
+/* Return true if ALL tasks of specific array job ID are complete */
+extern bool test_job_array_complete(uint32_t array_job_id)
+{
+	struct job_record *job_ptr;
+	int inx;
+
+	job_ptr = find_job_record(array_job_id);
+	if (job_ptr) {
+		if (!IS_JOB_COMPLETE(job_ptr))
+			return false;
+		if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
+			return false;
+		if (job_ptr->array_recs && job_ptr->array_recs->max_exit_code)
+			return false;
+	}
+
+	/* Need to test individual job array records */
+	inx = JOB_HASH_INX(array_job_id);
+	job_ptr = job_array_hash_j[inx];
+	while (job_ptr) {
+		if (job_ptr->array_job_id == array_job_id) {
+			if (!IS_JOB_COMPLETE(job_ptr))
+				return false;
+		}
+		job_ptr = job_ptr->job_array_next_j;
+	}
+	return true;
+}
+
+/* Return true if ALL tasks of specific array job ID are completed */
+extern bool test_job_array_completed(uint32_t array_job_id)
+{
+	struct job_record *job_ptr;
+	int inx;
+
+	job_ptr = find_job_record(array_job_id);
+	if (job_ptr) {
+		if (!IS_JOB_COMPLETED(job_ptr))
+			return false;
+		if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
+			return false;
+	}
+
+	/* Need to test individual job array records */
+	inx = JOB_HASH_INX(array_job_id);
+	job_ptr = job_array_hash_j[inx];
+	while (job_ptr) {
+		if (job_ptr->array_job_id == array_job_id) {
+			if (!IS_JOB_COMPLETED(job_ptr))
+				return false;
+		}
+		job_ptr = job_ptr->job_array_next_j;
+	}
+	return true;
+}
+
+/* Return true if ANY tasks of specific array job ID are pending */
+extern bool test_job_array_pending(uint32_t array_job_id)
+{
+	struct job_record *job_ptr;
+	int inx;
+
+	job_ptr = find_job_record(array_job_id);
+	if (job_ptr) {
+		if (IS_JOB_PENDING(job_ptr))
+			return true;
+		if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
+			return true;
+	}
+
+	/* Need to test individual job array records */
+	inx = JOB_HASH_INX(array_job_id);
+	job_ptr = job_array_hash_j[inx];
+	while (job_ptr) {
+		if (job_ptr->array_job_id == array_job_id) {
+			if (IS_JOB_PENDING(job_ptr))
+				return true;
+		}
+		job_ptr = job_ptr->job_array_next_j;
+	}
+	return false;
+}
+
 /*
  * find_job_array_rec - return a pointer to the job record with the given
  *	array_job_id/array_task_id
