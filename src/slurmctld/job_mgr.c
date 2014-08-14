@@ -2431,8 +2431,6 @@ void _add_job_array_hash(struct job_record *job_ptr)
 
 	if (job_ptr->array_task_id == NO_VAL)
 		return;	/* Not a job array */
-	if (job_ptr->array_recs)
-		return;	/* Master job array record */
 
 	inx = JOB_HASH_INX(job_ptr->array_job_id);
 	job_ptr->job_array_next_j = job_array_hash_j[inx];
@@ -7095,8 +7093,17 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (job_ptr->step_list && list_count(job_ptr->step_list)) {
 		debug("Job %u still has %d active steps",
 		      job_ptr->job_id, list_count(job_ptr->step_list));
-		return 0; /* steps are still active */
+		return 0;	/* steps are still active */
 	}
+
+	if (job_ptr->array_recs) {
+		if (job_ptr->array_recs->tot_run_tasks ||
+		    !test_job_array_completed(job_ptr->array_job_id)) {
+			/* Some tasks from this job array still active */
+			return 0;
+		}
+	}
+
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CLEANING,
 				    &cleaning);
@@ -11317,21 +11324,28 @@ extern bool job_array_start_test(struct job_record *job_ptr)
 static void _job_array_comp(struct job_record *job_ptr)
 {
 	struct job_record *base_job_ptr;
+	uint32_t status;
 
 	if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
+		status = job_ptr->exit_code;
+		if ((status == 0) && !IS_JOB_COMPLETE(job_ptr)) {
+			/* Avoid max_exit_code == 0 if task did not run to
+			 * successful completion (e.g. Cancelled, NodeFail) */
+			status = 9;
+		}
 		base_job_ptr = find_job_record(job_ptr->array_job_id);
 		if (base_job_ptr && base_job_ptr->array_recs) {
 			if (base_job_ptr->array_recs->tot_comp_tasks == 0) {
 				base_job_ptr->array_recs->min_exit_code =
-					job_ptr->exit_code;
+					status;
 				base_job_ptr->array_recs->max_exit_code =
-					job_ptr->exit_code;
+					status;
 			} else {
 				base_job_ptr->array_recs->min_exit_code =
-					MIN(job_ptr->exit_code, base_job_ptr->
+					MIN(status, base_job_ptr->
 					    array_recs->min_exit_code);
 				base_job_ptr->array_recs->max_exit_code =
-					MAX(job_ptr->exit_code, base_job_ptr->
+					MAX(status, base_job_ptr->
 					    array_recs->max_exit_code);
 			}
 			if (base_job_ptr->array_recs->tot_run_tasks)
@@ -13659,7 +13673,6 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		return;
 
 	if (job_ptr->array_recs->task_cnt <= 1) {
-		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 		if (job_ptr->array_recs->task_cnt) {
 			job_ptr->array_recs->task_cnt--;
 		} else {
@@ -13667,7 +13680,7 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 			      job_ptr->array_job_id, job_ptr->array_task_id);
 		}
 		xfree(job_ptr->array_recs->task_id_str);
-		xfree(job_ptr->array_recs);
+		/* Preserve array_recs for min/max exit codes for job array */
 		_add_job_array_hash(job_ptr);
 	} else {
 		new_job_ptr = _job_rec_copy(job_ptr);
