@@ -488,8 +488,7 @@ sacct [<OPTION>]                                                            \n\
                              state,exitcode,avecpufreq,consumedenergy,      \n\
                              maxdiskread,maxdiskreadnode,maxdiskreadtask,   \n\
                              avediskread,maxdiskwrite,maxdiskwritenode,     \n\
-                             maxdiskwritetask,avediskread,allocgres,reqgres,\n\
-			     usedgres'                                      \n\
+                             maxdiskwritetask,avediskread,allocgres,reqgres \n\
      -L, --allclusters:                                                     \n\
 	           Display jobs ran on all clusters. By default, only jobs  \n\
                    ran on the cluster from where sacct is called are        \n\

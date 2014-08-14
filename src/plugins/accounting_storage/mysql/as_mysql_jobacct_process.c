@@ -667,10 +667,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->req_mem = slurm_atoul(row[JOB_REQ_REQ_MEM]);
 		job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
-		if (row[JOB_REQ_GRES_USED])
-			job->used_gres = xstrdup(row[JOB_REQ_GRES_USED]);
-		else
-			job->used_gres = xstrdup("");
 		job->show_full = 1;
 
 		if (only_pending || (job_cond && job_cond->without_steps))

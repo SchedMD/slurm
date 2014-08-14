@@ -69,7 +69,7 @@
 #define BRIEF_COMP_FIELDS "jobid,uid,state"
 #define DEFAULT_FIELDS "jobid,jobname,partition,account,alloccpus,state,exitcode"
 #define DEFAULT_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodelist,state,end"
-#define LONG_FIELDS "jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode,avecpufreq,reqcpufreq,reqmem,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,allocgres,reqgres,usedgres"
+#define LONG_FIELDS "jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode,avecpufreq,reqcpufreq,reqmem,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,allocgres,reqgres"
 
 #define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodelist,state,start,end,timelimit"
 
@@ -161,7 +161,6 @@ typedef enum {
 		PRINT_TIMELIMIT,
 		PRINT_TOTALCPU,
 		PRINT_UID,
-		PRINT_USED_GRES,
 		PRINT_USER,
 		PRINT_USERCPU,
 		PRINT_WCKEY,

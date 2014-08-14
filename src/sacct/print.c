@@ -1650,23 +1650,6 @@ void print_fields(type_t type, void *object)
 					     tmp_int,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_USED_GRES:
-			switch(type) {
-			case JOB:
-				tmp_char = job->used_gres;
-				break;
-			case JOBSTEP:
-				tmp_char = step->job_ptr->used_gres;
-				break;
-			case JOBCOMP:
-			default:
-				tmp_char = NULL;
-				break;
-			}
-			field->print_routine(field,
-					     tmp_char,
-					     (curr_inx == field_count));
-			break;
 		case PRINT_USER:
 			switch(type) {
 			case JOB:

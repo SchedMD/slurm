@@ -115,7 +115,6 @@ print_field_t fields[] = {
 	{10, "Timelimit", print_fields_str, PRINT_TIMELIMIT},
 	{10, "TotalCPU", print_fields_str, PRINT_TOTALCPU},
 	{6,  "UID", print_fields_uint, PRINT_UID},
-	{12, "UsedGRES", print_fields_str, PRINT_USED_GRES},
 	{9,  "User", print_fields_str, PRINT_USER},
 	{10, "UserCPU", print_fields_str, PRINT_USERCPU},
 	{10, "WCKey", print_fields_str, PRINT_WCKEY},

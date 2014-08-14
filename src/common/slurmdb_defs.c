@@ -544,7 +544,6 @@ extern void slurmdb_destroy_job_rec(void *object)
 			list_destroy(job->steps);
 			job->steps = NULL;
 		}
-		xfree(job->used_gres);
 		xfree(job->user);
 		xfree(job->wckey);
 		xfree(job);
