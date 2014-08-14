@@ -317,7 +317,7 @@ static void _task_finish(task_exit_msg_t *msg)
 			_handle_openmpi_port_error(tasks, hosts,
 						   local_srun_job->step_ctx);
 		} else {
-			if (reduce_task_exit_msg == 0 || 
+			if (reduce_task_exit_msg == 0 ||
 			    msg_printed == 0 ||
 			    msg->return_code != last_task_exit_rc) {
 				error("%s: %s %s: Exited with exit code %d",
@@ -531,7 +531,7 @@ extern int launch_p_step_launch(
 	launch_params.multi_prog = opt.multi_prog ? true : false;
 	launch_params.cwd = opt.cwd;
 	launch_params.slurmd_debug = opt.slurmd_debug;
-	launch_params.buffered_stdio = !opt.unbuffered;
+	launch_params.buffered_stdio = opt.unbuffered;
 	launch_params.labelio = opt.labelio ? true : false;
 	launch_params.remote_output_filename =fname_remote_string(job->ofname);
 	launch_params.remote_input_filename = fname_remote_string(job->ifname);

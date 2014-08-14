@@ -1601,9 +1601,9 @@ Specify a minimum amount of temporary disk space.
 
 .TP
 \fB\-u\fR, \fB\-\-unbuffered\fR
-Do not line buffer stdout from remote tasks. This option cannot be used
-with \fI\-\-label\fR.
-
+By default the task launched by srun uses the buffering of its runtime
+environment, e.g. in glibc the stdout is line buffered and stderr is unbuffered.
+This option causes the stdout of the task to be line buffered.
 .TP
 \fB\-\-usage\fR
 Display brief help message and exit.

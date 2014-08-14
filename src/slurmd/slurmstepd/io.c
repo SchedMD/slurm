@@ -1013,6 +1013,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	} else {
 		/* create pipe and eio object */
 		int pin[2];
+
 		debug5("  stdin uses an eio object");
 		if (pipe(pin) < 0) {
 			error("stdin pipe: %m");
@@ -1072,11 +1073,26 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	} else {
 		/* create pipe and eio object */
 		int pout[2];
+#if HAVE_PTY_H
+		if (job->buffered_stdio) {
+			if (openpty(pout, pout + 1, NULL, NULL, NULL) < 0) {
+				error("%s: stdout openpty: %m", __func__);
+				return SLURM_ERROR;
+			}
+		} else {
+			debug5("  stdout uses an eio object");
+			if (pipe(pout) < 0) {
+				error("stdout pipe: %m");
+				return SLURM_ERROR;
+			}
+		}
+#else
 		debug5("  stdout uses an eio object");
 		if (pipe(pout) < 0) {
 			error("stdout pipe: %m");
 			return SLURM_ERROR;
 		}
+#endif
 		task->stdout_fd = pout[1];
 		fd_set_close_on_exec(task->stdout_fd);
 		task->from_stdout = pout[0];
