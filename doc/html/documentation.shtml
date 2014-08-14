@@ -65,7 +65,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="preempt.html">Preemption</a></li>
 <li><a href="qos.html">Quality of Service (QOS)</a></li>
 <li><a href="resource_limits.html">Resource Limits</a></li>
-<li><a href="reservations.html">Resource Reservation Gude</a></li>
+<li><a href="reservations.html">Resource Reservation Guide</a></li>
 <li><a href="cons_res_share.html">Sharing Consumable Resources</a></li>
 <li><a href="topology.html">Topology</a></li>
 </ul>

@@ -61,7 +61,7 @@ building block approach. These plugins presently include:
 </li>
 
 <li><a href="acct_gather_energy_plugins.html">Account Gather Energy</a>:
-  Gather energy comsumption data per job or nodes in the system.
+  Gather energy consumption data per job or nodes in the system.
   This plugin is integrated with the
   <a href="accounting_storageplugins.html">Accounting Storage</a> and
   <a href="jobacct_gatherplugins.html"> Job Account Gather</a> plugins.
@@ -81,13 +81,13 @@ building block approach. These plugins presently include:
   that job step is authorized to execute on specific nodes.
   This is distinct from the plugin used for
   <a href="authplugins.html">Authentication</a> since the job step
-  request is send from the user's srun command rather than directly from the
+  request is sent from the user's srun command rather than directly from the
   slurmctld daemon, which generates the job step credential and its
-  digitial signature.
+  digital signature.
 </li>
 
 <li><a href="gres.html">Generic Resources</a>: Provide interface to
-  control generic reources like Processing Units (GPUs) and Intel&reg;
+  control generic resources like Processing Units (GPUs) and Intel&reg;
   Many Integrated Core (MIC) processors.
 </li>
 
@@ -127,7 +127,7 @@ building block approach. These plugins presently include:
 
 <li><a href="proctrack_plugins.html">Process tracking (for signaling)</a>:
   Provides a mechanism for identifying the processes associated with each job.
-  Used for job accounting and signalling.
+  Used for job accounting and signaling.
 </li>
 
 <li><a href="schedplugins.html">Scheduler</a>:

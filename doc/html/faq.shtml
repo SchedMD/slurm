@@ -88,7 +88,7 @@ jobid") sometimes not display a job's estimated start time?</a></li>
   controller?</a></li>
 <li><a href="#multi_slurm">Can multiple Slurm systems be run in
   parallel for testing purposes?</a></li>
-<li><a href="#multi_slurmd">Can slurm emulate a larger cluster?</a></li>
+<li><a href="#multi_slurmd">Can Slurm emulate a larger cluster?</a></li>
 <li><a href="#extra_procs">Can Slurm emulate nodes with more
   resources than physically exist on the node?</a></li>
 <li><a href="#credential_replayed">What does a
@@ -630,7 +630,7 @@ A line of this sort near the beginning of your script should suffice:<br>
 <p><a name="arbitrary"><b>20. How do I run specific tasks on certain nodes
 in my allocation?</b></a><br>
 One of the distribution methods for srun '<b>-m</b>
-or <b>--distribution</b>' is 'arbitrary'.  This means you can tell slurm to
+or <b>--distribution</b>' is 'arbitrary'.  This means you can tell Slurm to
 layout your tasks in any fashion you want.  For instance if I had an
 allocation of 2 nodes and wanted to run 4 tasks on the first node and
 1 task on the second and my nodes allocated from SLURM_NODELIST
@@ -881,7 +881,7 @@ $ srun -n <tasks> ./fluent-srun.sh
 
 <p><a name="mic"><b>28. How can I run programs with on an Intel Phi (MIC)
 processor?</b></a><br>
-Two programming models are suported, offloading and native mode.
+Two programming models are supported, offloading and native mode.
 For a good description of how to build and run applications, please see
 <a href="https://confluence.csc.fi/display/HPCproto/HPC+Prototypes#HPCPrototypes-Nativeprogrammingmodel">CSC MIC documentation</a>.
 Note that some of the information presented in this document is configuration
@@ -922,7 +922,7 @@ To compile OpenMP code natively, you can use the -mmicflag.</p>
 $ module load intel
 $ icc -mmic -openmp hello.c -o hello.mic
 </pre>
-<p>To run, use the srun command. You may need to explicity specify a Slurm partitiion containing MIC processors, for example:</p>
+<p>To run, use the srun command. You may need to explicitly specify a Slurm partition containing MIC processors, for example:</p>
 <pre>
 $ srun -p mic ./hello.mic
 </pre>
@@ -1196,7 +1196,7 @@ a different set of nodes for the differen. Slurm systems.
 That will permit both systems to allocate switch windows without
 conflicts.
 
-<p><a name="multi_slurmd"><b>14. Can slurm emulate a larger cluster?</b></a><br>
+<p><a name="multi_slurmd"><b>14. Can Slurm emulate a larger cluster?</b></a><br>
 Yes, this can be useful for testing purposes.
 It has also been used to partition "fat" nodes into multiple Slurm nodes.
 There are two ways to do this.
@@ -1346,7 +1346,7 @@ SLURM supports lightweight core files by setting environment variables
 based upon the <i>srun --core</i> option. Of particular note, it
 sets the <i>LD_PRELOAD</i> environment variable to load new functions
 used to process a core dump.
->First you will need to acquire and install a shared object
+First you will need to acquire and install a shared object
 library with the appropriate functions.
 Then edit the Slurm code in <i>src/srun/core-format.c</i> to
 specify a name for the core file type,
@@ -1459,11 +1459,11 @@ slurmdbd.
 connection to the database.</li>
 <li>Off loading processing from the controller.  With the slurmdbd there is no
 slow down to the controller due to a slow or overloaded database.</li>
-<li>Keeping enterprise wide accounting from all slurm clusters in one database.
+<li>Keeping enterprise wide accounting from all Slurm clusters in one database.
 The slurmdbd is multi-threaded and designed to handle all the
 accounting for the entire enterprise.</li>
 <li>With the new database plugins 1.3+ you can query with sacct
-accounting stats from any node slurm is installed on.  With the
+accounting stats from any node Slurm is installed on.  With the
 slurmdbd you can also query any cluster using the slurmdbd from any
 other cluster's nodes.</li>
 </ol>
@@ -1522,10 +1522,10 @@ the submitted program. The <i>slurmd</i> daemon executing on each compute
 node will periodically report to the <i>slurmctld</i> what programs it
 is executing. If a batch program is expected to be running on some
 node (i.e. node zero of the job's allocation) and is not found, the
-message above will be logged and the job cancelled. This typically is
+message above will be logged and the job canceled. This typically is
 associated with exhausting memory on the node or some other critical
 failure that cannot be recovered from. The equivalent message in
-earlier releases of slurm is
+earlier releases of Slurm is
 &quot;Master node lost JobId=#, killing it&quot;.
 
 <p><a name="accept_again"><b>33. What does the message
@@ -1830,7 +1830,7 @@ Execute:
 <pre>
 SET session sql_mode='ANSI_QUOTES';
 </pre>
-<p>This will allow double quotes in querries like this:</p>
+<p>This will allow double quotes in queries like this:</p>
 <pre>
 show columns from "tux_assoc_table" where Field='is_def';
 </pre>
