@@ -253,23 +253,42 @@ $ squeue
 
 </pre>
 
-<h2>Other Command Use</h2>
+<h2>Job Dependencies</h2>
 
 <p>Job dependencies for individual job array elements are supported in Slurm
 version 2.6.4 and later.
-A job which is to be dependent upon an entire job array, should specify
-itself dependent upon the ArrayJobID. Since each array element can have a
-different exit code, the interpretation of the afterok and afternotok clauses
-will be based upon the last element of the job array to exit.
-Examples of use follow:</p>
+A job which is to be dependent upon an entire job array should specify
+itself dependent upon the ArrayJobID.
+Since each array element can have a different exit code, the interpretation of
+the <i>afterok</i> and <i>afternotok</i> clauses will be based upon the highest
+exit code from any task in the job array.</p>
+
+<p>When a job dependency specifies the job ID of a job array:<br>
+The <i>after</i> clause is satisfied after all tasks in the job array start.<br>
+The <i>afterany</i> clause is satisfied after all tasks in the job array
+complete.<br>
+The <i>afterok</i> clause is satisfied after all tasks in the job array
+complete successfully.<br>
+The <i>afternotok</i> clause is satisfied after all tasks in the job array
+complete with at least one tasks not completing successfully.</p>
+
+<p>Examples of use are shown below:</p>
 <pre>
 # Wait for specific job array elements
 sbatch --depend=after:123_4 my.job
 sbatch --depend=afterok:123_4:123_8 my.job2
 
 # Wait for entire job array to complete
-sbatch --depend=after:123 my.job
+sbatch --depend=afterany:123 my.job
+
+# Wait for entire job array to complete successfully
+sbatch --depend=afterok:123 my.job
+
+# Wait for entire job array to complete and at least one task fails
+sbatch --depend=afternotok:123 my.job
 </pre>
+
+<h2>Other Command Use</h2>
 
 <p>The following Slurm commands do not currently recognize job arrays and their
 use requires the use of Slurm job IDs, which are unique for each array element:
@@ -304,6 +323,6 @@ manage large job counts.
 Each task of the job array will have a unique Slurm "job_id", but
 all will have the same "array_job_id" value.</p>
 
-<p style="text-align:center;">Last modified 13 August 2014</p>
+<p style="text-align:center;">Last modified 14 August 2014</p>
 
 <!--#include virtual="footer.txt"-->

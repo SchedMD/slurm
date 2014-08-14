@@ -1898,7 +1898,9 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
-		if (dep_ptr->array_task_id != NO_VAL) {
+		if (dep_ptr->array_task_id == INFINITE) {
+			dep_ptr->job_ptr = find_job_record(dep_ptr->job_id);
+		} else if (dep_ptr->array_task_id != NO_VAL) {
 			dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
 							dep_ptr->array_task_id);
 		}
@@ -1935,54 +1937,95 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			    (djob_ptr->array_job_id != dep_ptr->job_id))) {
 			/* job is gone, dependency lifted */
 			clear_dep = true;
+		} else if ((djob_ptr->array_task_id == INFINITE) &&
+			   (djob_ptr->array_recs != NULL)) {
+			bool array_complete, array_completed, array_pending;
+			array_complete=test_job_array_complete(dep_ptr->job_id);
+			array_completed=test_job_array_completed(dep_ptr->job_id);
+			array_pending  =test_job_array_pending(dep_ptr->job_id);
+			/* Special case, apply test to job array as a whole */
+			if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
+				if (!array_pending)
+					clear_dep = true;
+				else
+					depends = true;
+			} else if (dep_ptr->depend_type ==
+				   SLURM_DEPEND_AFTER_ANY) {
+				if (array_completed)
+					clear_dep = true;
+				else
+					depends = true;
+			} else if (dep_ptr->depend_type ==
+				   SLURM_DEPEND_AFTER_NOT_OK) {
+				if (dep_ptr->job_ptr->job_state &
+				    JOB_SPECIAL_EXIT)
+					clear_dep = true;
+				else if (!array_completed)
+					depends = true;
+				else if (!array_complete)
+					clear_dep = true;
+				else {
+					failure = true;
+					break;
+				}
+			} else if (dep_ptr->depend_type ==
+				   SLURM_DEPEND_AFTER_OK) {
+				if (!array_completed)
+					depends = true;
+				else if (array_complete)
+					clear_dep = true;
+				else {
+					failure = true;
+					break;
+				}
+			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
-			if (!IS_JOB_PENDING(dep_ptr->job_ptr)) {
+			if (!IS_JOB_PENDING(djob_ptr))
 				clear_dep = true;
-			} else
+			else
 				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
-			if (IS_JOB_COMPLETED(dep_ptr->job_ptr)) {
+			if (IS_JOB_COMPLETED(djob_ptr))
 				clear_dep = true;
-			} else
+			else
 				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
-			if (dep_ptr->job_ptr->job_state & JOB_SPECIAL_EXIT) {
+			if (djob_ptr->job_state & JOB_SPECIAL_EXIT)
 				clear_dep = true;
-			} else if (!IS_JOB_COMPLETED(dep_ptr->job_ptr)) {
+			else if (!IS_JOB_COMPLETED(djob_ptr))
 				depends = true;
-			} else if (!IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
+			else if (!IS_JOB_COMPLETE(djob_ptr))
 				clear_dep = true;
-			} else {
+			else {
 				failure = true;
 				break;
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
-			if (!IS_JOB_COMPLETED(dep_ptr->job_ptr))
+			if (!IS_JOB_COMPLETED(djob_ptr))
 				depends = true;
-			else if (IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
+			else if (IS_JOB_COMPLETE(djob_ptr))
 				clear_dep = true;
-			} else {
+			else {
 				failure = true;
 				break;
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND) {
 			time_t now = time(NULL);
-			if (IS_JOB_PENDING(dep_ptr->job_ptr)) {
+			if (IS_JOB_PENDING(djob_ptr)) {
 				depends = true;
-			} else if (IS_JOB_COMPLETED(dep_ptr->job_ptr)) {
+			} else if (IS_JOB_COMPLETED(djob_ptr)) {
 				failure = true;
 				break;
-			} else if ((dep_ptr->job_ptr->end_time != 0) &&
-				   (dep_ptr->job_ptr->end_time > now)) {
-				job_ptr->time_limit = dep_ptr->job_ptr->
-						      end_time - now;
+			} else if ((djob_ptr->end_time != 0) &&
+				   (djob_ptr->end_time > now)) {
+				job_ptr->time_limit = djob_ptr->end_time - now;
 				job_ptr->time_limit /= 60;  /* sec to min */
 			}
-			if (job_ptr->details && dep_ptr->job_ptr->details) {
+			if (job_ptr->details && djob_ptr->details) {
 				job_ptr->details->share_res =
-					dep_ptr->job_ptr->details->share_res;
+					djob_ptr->details->share_res;
 				job_ptr->details->whole_node =
-					dep_ptr->job_ptr->details->whole_node;
+					djob_ptr->details->whole_node;
 			}
 		} else
 			failure = true;
