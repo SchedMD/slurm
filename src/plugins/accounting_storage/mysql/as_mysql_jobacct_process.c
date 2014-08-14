@@ -88,6 +88,9 @@ char *job_req_inx[] = {
 	"t1.timelimit",
 	"t1.track_steps",
 	"t1.wckey",
+	"t1.gres_alloc",
+	"t1.gres_req",
+	"t1.gres_used",
 	"t2.acct",
 	"t2.lft",
 	"t2.user"
@@ -128,6 +131,9 @@ enum {
 	JOB_REQ_TIMELIMIT,
 	JOB_REQ_TRACKSTEPS,
 	JOB_REQ_WCKEY,
+	JOB_REQ_GRES_ALLOC,
+	JOB_REQ_GRES_REQ,
+	JOB_REQ_GRES_USED,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
 	JOB_REQ_USER_NAME,
@@ -502,6 +508,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		last_id = curr_id;
 
 		job->alloc_cpus = slurm_atoul(row[JOB_REQ_ALLOC_CPUS]);
+		if (row[JOB_REQ_GRES_ALLOC])
+			job->alloc_gres = xstrdup(row[JOB_REQ_GRES_ALLOC]);
+		else
+			job->alloc_gres = xstrdup("");
 		job->alloc_nodes = slurm_atoul(row[JOB_REQ_ALLOC_NODES]);
 		job->associd = slurm_atoul(row[JOB_REQ_ASSOCID]);
 		job->array_job_id = slurm_atoul(row[JOB_REQ_ARRAYJOBID]);
@@ -650,9 +660,17 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->track_steps = slurm_atoul(row[JOB_REQ_TRACKSTEPS]);
 		job->priority = slurm_atoul(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = slurm_atoul(row[JOB_REQ_REQ_CPUS]);
+		if (row[JOB_REQ_GRES_REQ])
+			job->req_gres = xstrdup(row[JOB_REQ_GRES_REQ]);
+		else
+			job->req_gres = xstrdup("");
 		job->req_mem = slurm_atoul(row[JOB_REQ_REQ_MEM]);
 		job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
+		if (row[JOB_REQ_GRES_USED])
+			job->used_gres = xstrdup(row[JOB_REQ_GRES_USED]);
+		else
+			job->used_gres = xstrdup("");
 		job->show_full = 1;
 
 		if (only_pending || (job_cond && job_cond->without_steps))

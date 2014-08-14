@@ -587,6 +587,7 @@ typedef struct {
 typedef struct {
 	char    *account;
 	uint32_t alloc_cpus;
+	char	*alloc_gres;
 	uint32_t alloc_nodes;
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
 	uint32_t array_task_id;	/* task_id of a job array of NO_VAL
@@ -610,6 +611,7 @@ typedef struct {
 	uint32_t priority;
 	uint32_t qosid;
 	uint32_t req_cpus;
+	char	*req_gres;
 	uint32_t req_mem;
 	uint32_t requid;
 	uint32_t resvid;
@@ -627,6 +629,7 @@ typedef struct {
 	uint32_t tot_cpu_usec;
 	uint16_t track_steps;
 	uint32_t uid;
+	char 	*used_gres;
 	char    *user;
 	uint32_t user_cpu_sec;
 	uint32_t user_cpu_usec;

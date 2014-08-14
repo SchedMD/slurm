@@ -176,6 +176,23 @@ void print_fields(type_t type, void *object)
 					     tmp_int,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_ALLOC_GRES:
+			switch(type) {
+			case JOB:
+				tmp_char = job->alloc_gres;
+				break;
+			case JOBSTEP:
+				tmp_char = step->job_ptr->alloc_gres;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_ACCOUNT:
 			switch(type) {
 			case JOB:
@@ -1325,6 +1342,23 @@ void print_fields(type_t type, void *object)
 					     tmp_int,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_REQ_GRES:
+			switch(type) {
+			case JOB:
+				tmp_char = job->req_gres;
+				break;
+			case JOBSTEP:
+				tmp_char = step->job_ptr->req_gres;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_REQ_MEM:
 			switch(type) {
 			case JOB:
@@ -1614,6 +1648,23 @@ void print_fields(type_t type, void *object)
 
 			field->print_routine(field,
 					     tmp_int,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_USED_GRES:
+			switch(type) {
+			case JOB:
+				tmp_char = job->used_gres;
+				break;
+			case JOBSTEP:
+				tmp_char = step->job_ptr->used_gres;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_USER:

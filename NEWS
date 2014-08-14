@@ -56,6 +56,7 @@ documents those changes that are of interest to users and admins.
     by srun to be line buffered.
  -- The srun options -/--label and -u/--unbuffered can be specified together.
     This limitation has been removed.
+ -- Provide sacct display of gres accounting information per job.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

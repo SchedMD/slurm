@@ -3559,6 +3559,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		packstr(job->account, buffer);
 		pack32(job->alloc_cpus, buffer);
+		packstr(job->alloc_gres, buffer);
 		pack32(job->alloc_nodes, buffer);
 		pack32(job->array_job_id, buffer);
 		pack32(job->array_task_id, buffer);
@@ -3583,6 +3584,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
 		pack32(job->req_cpus, buffer);
+		packstr(job->req_gres, buffer);
 		pack32(job->req_mem, buffer);
 		pack32(job->requid, buffer);
 		pack32(job->resvid, buffer);
@@ -3610,6 +3612,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack32(job->tot_cpu_usec, buffer);
 		pack16(job->track_steps, buffer);
 		pack32(job->uid, buffer);
+		packstr(job->used_gres, buffer);
 		packstr(job->user, buffer);
 		pack32(job->user_cpu_sec, buffer);
 		pack32(job->user_cpu_usec, buffer);
@@ -3692,6 +3695,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->alloc_cpus, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->alloc_gres, &uint32_tmp,
+				       buffer);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
 		safe_unpack32(&job_ptr->array_job_id, buffer);
 		safe_unpack32(&job_ptr->array_task_id, buffer);
@@ -3717,6 +3722,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->priority, buffer);
 		safe_unpack32(&job_ptr->qosid, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->req_gres, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->req_mem, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
 		safe_unpack32(&job_ptr->resvid, buffer);
@@ -3750,6 +3756,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
 		safe_unpack16(&job_ptr->track_steps, buffer);
 		safe_unpack32(&job_ptr->uid, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->used_gres, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
 		safe_unpack32(&job_ptr->user_cpu_usec, buffer);

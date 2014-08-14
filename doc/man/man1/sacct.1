@@ -213,7 +213,8 @@ Equivalent to specifying:
 avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,
 maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,
 alloccpus,elapsed,state,exitcode,maxdiskread,maxdiskreadnode,maxdiskreadtask,
-avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite
+avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,
+allocgres,reqgres,usedgres
 .ad
 
 .TP
@@ -417,6 +418,10 @@ Print all fields listed below.
 .TP
 \f3AllocCPUs\fP
 Count of allocated CPUs. Equivalant to \f3NCPUs\fP.
+
+.TP
+\f3AllocGRES\fP
+Names and counts of generic resources allocated.
 
 .TP
 \f3account\fP
@@ -704,6 +709,10 @@ Note: This value applies only to a job step. No value is reported for the job.
 Required CPUs.
 
 .TP
+\f3ReqGRES\fP
+Names and counts of generic resources requested.
+
+.TP
 \f3ReqMem\fP
 Minimum required memory for the job, in MB. A 'c' at the end of
 number represents Memory Per CPU, a 'n' represents Memory Per Node.
@@ -780,6 +789,10 @@ The user identifier of the user who ran the job.
 .TP
 \f3user\fP
 The user name of the user who ran the job.
+
+.TP
+\f3UsedGRES\fP
+Names and counts of generic resources used.
 
 .TP
 \f3UserCPU\fP

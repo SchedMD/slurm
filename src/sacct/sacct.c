@@ -45,6 +45,7 @@ void invalidSwitchCombo(char *good, char *bad);
 sacct_parameters_t params;
 print_field_t fields[] = {
 	{10, "AllocCPUS", print_fields_uint, PRINT_ALLOC_CPUS},
+	{12, "AllocGRES", print_fields_str, PRINT_ALLOC_GRES},
 	{10, "Account", print_fields_str, PRINT_ACCOUNT},
 	{7,  "AssocID", print_fields_uint, PRINT_ASSOCID},
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU},
@@ -101,6 +102,7 @@ print_field_t fields[] = {
 	{6,  "QOSRAW", print_fields_uint, PRINT_QOSRAW},
 	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ},
 	{8,  "ReqCPUS", print_fields_uint, PRINT_REQ_CPUS},
+	{12, "ReqGRES", print_fields_str, PRINT_REQ_GRES},
 	{10, "ReqMem", print_fields_str, PRINT_REQ_MEM},
 	{10, "Reserved", print_fields_time_from_secs, PRINT_RESV},
 	{10, "ResvCPU", print_fields_time_from_secs, PRINT_RESV_CPU},
@@ -113,6 +115,7 @@ print_field_t fields[] = {
 	{10, "Timelimit", print_fields_str, PRINT_TIMELIMIT},
 	{10, "TotalCPU", print_fields_str, PRINT_TOTALCPU},
 	{6,  "UID", print_fields_uint, PRINT_UID},
+	{12, "UsedGRES", print_fields_str, PRINT_USED_GRES},
 	{9,  "User", print_fields_str, PRINT_USER},
 	{10, "UserCPU", print_fields_str, PRINT_USERCPU},
 	{10, "WCKey", print_fields_str, PRINT_WCKEY},
