@@ -391,7 +391,7 @@ if {$def_share_force == 0} {
 		set cons_res_actived 1
 	}
 }
-
+set exclusive [default_part_exclusive]
 if {$cons_res_actived == 1} {
 	inc3_11_1
 }
@@ -400,7 +400,7 @@ inc3_11_3
 inc3_11_4
 inc3_11_5
 inc3_11_6
-if {$cons_res_actived == 1 && $core_spec == 0} {
+if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0} {
 	inc3_11_7
 	inc3_11_8
 	inc3_11_9

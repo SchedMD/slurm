@@ -2021,6 +2021,27 @@ proc default_partition {} {
 
 ################################################################
 #
+# Proc: default_part_exclusive
+#
+# Purpose: Use scontrol to determine if the default partition
+#          allocates whole nodes to jobs
+#
+# Returns: Name of the current default partition
+#
+################################################################
+
+proc default_part_exclusive {} {
+	set def_part [default_partition]
+	set shared [partition_shared $def_part]
+	if {[string compare $shared "EXCLUSIVE"] == 0} {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+################################################################
+#
 # Proc: switch_type
 #
 # Purpose: Use scontrol to determine the switch type
