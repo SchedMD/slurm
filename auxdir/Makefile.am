@@ -7,6 +7,7 @@
 EXTRA_DIST = \
     acx_pthread.m4 \
     slurm.m4 \
+    test-driver \
     type_socklen_t.m4 \
     x_ac__system_configuration.m4 \
     x_ac_affinity.m4 \
