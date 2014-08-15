@@ -1806,53 +1806,25 @@ _task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cb
 	struct io_buf *msg;
 	char *ptr;
 	Buf packbuf;
-	bool must_truncate = false;
-	int avail;
 	struct slurm_io_header header;
 	int n;
 
-	debug4("Entering _task_build_message");
+	debug4("%s: Entering...", __func__);
+
 	if (_outgoing_buf_free(job)) {
 		msg = list_dequeue(job->free_outgoing);
 	} else {
 		return NULL;
 	}
+
 	ptr = msg->data + io_hdr_packed_size();
-
-	if (job->buffered_stdio) {
-		avail = cbuf_peek_line(cbuf, ptr, MAX_MSG_LEN, 1);
-		if (avail >= MAX_MSG_LEN)
-			must_truncate = true;
-		else if (avail == 0 && cbuf_used(cbuf) >= MAX_MSG_LEN)
-			must_truncate = true;
-	}
-
-	debug5("  buffered_stdio is %s", job->buffered_stdio ? "true" : "false");
-	debug5("  must_truncate  is %s", must_truncate ? "true" : "false");
-
-	/*
-	 * If eof has been read from a tasks stdout or stderr, we need to
-	 * ignore normal line buffering and send the buffer immediately.
-	 * Hence the "|| out->eof".
-	 */
-	if (must_truncate || !job->buffered_stdio || out->eof) {
-		n = cbuf_read(cbuf, ptr, MAX_MSG_LEN);
-	} else {
-		n = cbuf_read_line(cbuf, ptr, MAX_MSG_LEN, -1);
-		if (n == 0) {
-			debug5("  partial line in buffer, ignoring");
-			debug4("Leaving  _task_build_message");
-			list_enqueue(job->free_outgoing, msg);
-			return NULL;
-		}
-	}
-
+	n = cbuf_read(cbuf, ptr, MAX_MSG_LEN);
 	header.type = out->type;
 	header.ltaskid = out->ltaskid;
 	header.gtaskid = out->gtaskid;
 	header.length = n;
 
-	debug5("  header.length = %d", n);
+	debug4("%s: header.length %d", __func__, n);
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
 	if (!packbuf) {
 		fatal("Failure to allocate memory for a message header");
@@ -1866,7 +1838,7 @@ _task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cb
 	packbuf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(packbuf);
 
-	debug4("Leaving  _task_build_message");
+	debug4("%s: Leaving...", __func__);
 	return msg;
 }
 
