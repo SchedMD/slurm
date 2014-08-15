@@ -440,7 +440,7 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 	char path[SYSFS_PATH_MAX];
 	FILE *fp = NULL;
 
-	if (cpu_freq == NO_VAL) {	/* Default configuration */
+	if ((cpu_freq == NO_VAL) || (cpu_freq == 0)) {	/* Default config */
 		;
 	} else if (cpu_freq & CPU_FREQ_RANGE_FLAG) {	/* Named values */
 		switch(cpu_freq)
@@ -451,14 +451,14 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 				 PATH_TO_CPU
 				 "cpu%u/cpufreq/scaling_min_freq", cpuidx);
 			if ( ( fp = fopen(path, "r") ) == NULL ) {
-				error("cpu_freq_cgroup_valid: Could not open "
-				      "scaling_min_freq");
+				error("%s: Could not open scaling_min_freq",
+				      __func__);
 				return;
 			}
 			if (fscanf (fp, "%u",
 				    &cpufreq[cpuidx].new_frequency) < 1) {
-				error("cpu_freq_cgroup_valid: Could not read "
-				      "scaling_min_freq");
+				error("%s: Could not read scaling_min_freq",
+				      __func__);
 				return;
 			}
 			if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE)
@@ -473,8 +473,9 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 				 "cpu%u/cpufreq/scaling_available_frequencies",
 				 cpuidx);
 			if ( ( fp = fopen(path, "r") ) == NULL ) {
-				error("cpu_freq_cgroup_valid: Could not open "
-				      "scaling_available_frequencies");
+				error("%s: Could not open "
+				      "scaling_available_frequencies",
+				      __func__);
 				return;
 			}
 			for (j = 0; j < FREQ_LIST_MAX; j++) {
@@ -516,14 +517,14 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 				 PATH_TO_CPU "cpu%u/cpufreq/scaling_max_freq",
 				 cpuidx);
 			if ( ( fp = fopen(path, "r") ) == NULL ) {
-				error("cpu_freq_cgroup_valid: Could not open "
-				      "scaling_max_freq");
+				error("%s: Could not open scaling_max_freq",
+				      __func__);
 				return;
 			}
 			if (fscanf (fp, "%u",
 				    &cpufreq[cpuidx].new_frequency) < 1) {
-				error("cpu_freq_cgroup_valid: Could not read "
-				      "scaling_max_freq");
+				error("%s: Could not read scaling_max_freq",
+				      __func__);
 			}
 			if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE)
 				strcpy(cpufreq[cpuidx].new_governor,
@@ -559,10 +560,9 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 				       "userspace");
 			break;
 
-
 		default :
-			error("cpu_freq_cgroup_valid: "
-			      "invalid cpu_freq value %u", cpu_freq);
+			error("%s: invalid cpu_freq value %u",
+			      __func__, cpu_freq);
 			return;
 		}
 
@@ -609,8 +609,8 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
 			strcpy(cpufreq[cpuidx].new_governor, "userspace");
 	}
 
-	debug3("cpu_freq_cgroup_validate: CPU:%u, frequency:%u governor:%s",
-	       cpuidx, cpufreq[cpuidx].new_frequency,
+	debug3("%s: CPU:%u, frequency:%u governor:%s",
+	       __func__, cpuidx, cpufreq[cpuidx].new_frequency,
 	       cpufreq[cpuidx].new_governor);
 
 	return;
@@ -742,7 +742,8 @@ cpu_freq_set(stepd_step_rec_t *job)
 		}
 
 		if (cpufreq[i].new_frequency == 0) {
-			freq_value[0] = '\0';
+			if (updated)
+				strcpy(freq_value, "N/A");
 		} else {
 			snprintf(path, sizeof(path),
 				 PATH_TO_CPU "cpu%u/cpufreq/scaling_setspeed",
@@ -757,11 +758,11 @@ cpu_freq_set(stepd_step_rec_t *job)
 
 		if (updated) {
 			j++;
-			debug3("cpu_freq_set: CPU:%u frequency:%s governor:%s",
-			       i, freq_value, gov_value);
+			debug3("%s: CPU:%u frequency:%s governor:%s",
+			       __func__, i, freq_value, gov_value);
 		}
 	}
-	debug("cpu_freq_set: #cpus set = %u", j);
+	debug("%s: #cpus set = %u", __func__, j);
 }
 
 /*
@@ -827,9 +828,9 @@ cpu_freq_reset(stepd_step_rec_t *job)
 		}
 
 		j++;
-		debug3("cpu_freq_reset: CPU:%u frequency:%u governor:%s",
-		       i, cpufreq[i].new_frequency,
+		debug3("%s: CPU:%u frequency:%u governor:%s",
+		       __func__, i, cpufreq[i].new_frequency,
 		       cpufreq[i].new_governor);
 	}
-	debug("cpu_freq_reset: #cpus reset = %u", j);
+	debug("%s: #cpus reset = %u", __func__, j);
 }
