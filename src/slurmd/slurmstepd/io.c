@@ -1075,10 +1075,19 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		int pout[2];
 #if HAVE_PTY_H
 		if (job->buffered_stdio) {
+#if HAVE_SETRESUID
+			if (setresuid(geteuid(), geteuid(), 0) < 0)
+				error("%s: %d setresuid() %m",
+				      __func__, geteuid());
+#endif
 			if (openpty(pout, pout + 1, NULL, NULL, NULL) < 0) {
 				error("%s: stdout openpty: %m", __func__);
 				return SLURM_ERROR;
 			}
+#if HAVE_SETRESUID
+			if (setresuid(0, getuid(), 0) < 0)
+				error("%s 0 setresuid() %m", __func__);
+#endif
 		} else {
 			debug5("  stdout uses an eio object");
 			if (pipe(pout) < 0) {
