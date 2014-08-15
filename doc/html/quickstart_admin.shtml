@@ -10,8 +10,8 @@ computer platforms.</p>
 
 <h2>Super Quick Start</h2>
 <ol>
-<li>Make sure that you have synchronized clocks plus consistent users and groups
-(UIDs and GIDs) across the cluster.</li>
+<li>Make sure the clocks, users and groups (UIDs and GIDs) are synchronized
+across the cluster.</li>
 <li>Install <a href="https://code.google.com/p/munge/">MUNGE</a> for
 authentication. Make sure that all nodes in your cluster have the
 same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>
@@ -187,7 +187,7 @@ backup controller) or is restarted.</p>
 This user must exist on all nodes of the cluster for authentication
 of communications.
 Note that files and directories used by <b>slurmctld</b> will need to be
-readable or writable by the user <b>SlurmUser</b> (the slurm configuration
+readable or writable by the user <b>SlurmUser</b> (the Slurm configuration
 files must be readable; the log file directory and state save directory
 must be writable).</p>
 
@@ -724,7 +724,7 @@ versions (e.g. 2.5.0-pre1 to 2.5.0-pre2).
 We'll try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
-<p>The libslurm.so version is increasaed every major release.
+<p>The libslurm.so version is increased every major release.
 So things like MPI libraries with Slurm integration should be recompiled.
 Sometimes it works to just symlink the old so name(s) to the new one, but this
 has no guarantee of working.</p>
@@ -759,7 +759,7 @@ See the RELEASE_NOTES file for details.</p>
 
 <a name="FreeBSD"><h2>FreeBSD</h2></a>
 
-<p>FreeBSD administrators can install the latest stable slurm as a binary
+<p>FreeBSD administrators can install the latest stable Slurm as a binary
 package using:</p>
 <pre>
 pkg install slurm-hpc
@@ -770,7 +770,7 @@ pkg install slurm-hpc
 cd /usr/ports/sysutils/slurm-hpc && make install
 </pre>
 
-<p>The binary package installs a minimal slurm configuration suitable for
+<p>The binary package installs a minimal Slurm configuration suitable for
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
