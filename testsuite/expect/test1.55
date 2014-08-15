@@ -69,6 +69,7 @@ make_bash_script $test_script {
 set timeout $max_job_delay
 set jobid  0
 set stepid 0
+set job_running 0
 set srun_pid [spawn $srun --unbuffered -v -n1 -t1 ./$test_script]
 expect {
 	-re "launching (($number)\.$step_id)" {
@@ -76,14 +77,19 @@ expect {
 		set jobid $expect_out(2,string)
 		exp_continue
 	}
-	"Running" {}
+	"Running" {
+		set job_running 1
+	}
 	timeout {
 		send_user "\nFAILURE: Failed to launch test program through srun\n"
 		slow_kill $srun_pid
 		exit 1
 	}
+	wait {
+		eof
+	}
 }
-if {$jobid == 0} {
+if {$jobid == 0 || $job_running == 0} {
 	send_user "\nFAILURE: Failed to launch test program through srun\n"
 	exit 1
 }
