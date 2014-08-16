@@ -769,6 +769,10 @@ char *slurm_get_core_spec_plugin(void);
  * RET job_container plugin name, must be xfreed by caller */
 char *slurm_get_job_container_plugin(void);
 
+/* slurm_get_slurmd_spooldir
+ * RET slurmd_spooldir name, must be xfreed by caller */
+char *slurm_get_slurmd_spooldir(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

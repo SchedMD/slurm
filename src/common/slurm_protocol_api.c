@@ -2333,6 +2333,22 @@ char *slurm_get_job_container_plugin(void)
 	return job_container_plugin;
 }
 
+/* slurm_get_slurmd_spooldir
+ * RET slurmd_spooldir name, must be xfreed by caller */
+char *slurm_get_slurmd_spooldir(void)
+{
+	char *slurmd_spooldir = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmd_spooldir = xstrdup(conf->slurmd_spooldir);
+		slurm_conf_unlock();
+	}
+	return slurmd_spooldir;
+}
+
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {
