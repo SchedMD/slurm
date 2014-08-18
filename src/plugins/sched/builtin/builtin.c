@@ -95,8 +95,11 @@ extern void stop_builtin_agent(void)
 static void _my_sleep(int secs)
 {
 	struct timespec ts = {0, 0};
+	struct timeval now;
 
-	ts.tv_sec = time(NULL) + secs;
+	gettimeofday(&now, NULL);
+	ts.tv_sec = now.tv_sec + secs;
+	ts.tv_nsec = now.tv_usec * 1000;
 	pthread_mutex_lock(&term_lock);
 	if (!stop_builtin)
 		pthread_cond_timedwait(&term_cond, &term_lock, &ts);

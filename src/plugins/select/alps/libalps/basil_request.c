@@ -191,15 +191,16 @@ static void *_timer_func(void *raw_data)
 	pid_t child = *(pid_t *)raw_data;
 	int time_out;
 	struct timespec ts;
+	struct timeval now;
 
 	time_out = cray_conf->apbasil_timeout;
 	debug2("This is a timer thread for process: %d (slurmctld)--"
 	       "timeout: %d, apbasil pid: %d\n", getpid(), time_out, child);
 
 	pthread_mutex_lock(&timer_lock);
-	ts.tv_sec  = time(NULL);
-	ts.tv_nsec = 0;
-	ts.tv_sec += time_out;
+	gettimeofday(&now, NULL);
+	ts.tv_sec = now.tv_sec + time_outs;
+	ts.tv_nsec = now.tv_usec * 1000;
 	if (pthread_cond_timedwait(&timer_cond, &timer_lock, &ts) == ETIMEDOUT){
 		info("Apbasil taking too long--terminating apbasil pid: %d",
 		     child);

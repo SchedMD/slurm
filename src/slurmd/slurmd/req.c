@@ -4791,20 +4791,22 @@ _run_prolog(job_env_t *job_env)
 static void *_prolog_timer(void *x)
 {
 	int delay_time, rc = SLURM_SUCCESS;
-	struct timespec abs_time;
+	struct timespec ts;
+	struct timeval now;
 	slurm_msg_t msg;
 	job_notify_msg_t notify_req;
 	char srun_msg[128];
 	timer_struct_t *timer_struct = (timer_struct_t *) x;
 
 	delay_time = MAX(2, (timer_struct->msg_timeout - 2));
-	abs_time.tv_sec  = time(NULL) + delay_time;
-	abs_time.tv_nsec = 0;
+	gettimeofday(&now, NULL);
+	ts.tv_sec = now.tv_sec + delay_time;
+	ts.tv_nsec = now.tv_usec * 1000;
 	slurm_mutex_lock(timer_struct->timer_mutex);
 	if (!timer_struct->prolog_fini) {
 		rc = pthread_cond_timedwait(timer_struct->timer_cond,
 					    timer_struct->timer_mutex,
-					    &abs_time);
+					    &ts);
 	}
 	slurm_mutex_unlock(timer_struct->timer_mutex);
 

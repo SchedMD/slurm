@@ -1568,8 +1568,11 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 static void _slice_sleep(void)
 {
 	struct timespec ts = {0, 0};
+	struct timeval now;
 
-	ts.tv_sec = time(NULL) + timeslicer_seconds;
+	gettimeofday(&now, NULL);
+	ts.tv_sec = now.tv_sec + timeslicer_seconds;
+	ts.tv_nsec = now.tv_usec * 1000;
 	pthread_mutex_lock(&term_lock);
 	if (!thread_shutdown)
 		pthread_cond_timedwait(&term_cond, &term_lock, &ts);

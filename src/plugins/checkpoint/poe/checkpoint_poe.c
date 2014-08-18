@@ -493,8 +493,11 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 static void _my_sleep(int secs)
 {
 	struct timespec ts = {0, 0};
+	struct timeval now;
 
-	ts.tv_sec = time(NULL) + secs;
+	gettimeofday(&now, NULL);
+	ts.tv_sec = now.tv_sec + secs;
+	ts.tv_nsec = now.tv_usec * 1000;
 	pthread_mutex_lock(&ckpt_agent_mutex);
 	if (!ckpt_agent_stop)
 		pthread_cond_timedwait(&ckpt_agent_cond,&ckpt_agent_mutex,&ts);
