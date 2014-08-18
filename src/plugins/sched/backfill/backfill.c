@@ -845,7 +845,9 @@ next_task:
 		already_counted = false;
 
 		if (!IS_JOB_PENDING(job_ptr))
-			continue;	/* started in other partition */
+			continue;	/* started in another partition */
+		if (job_ptr->preempt_in_progress)
+			continue; 	/* scheduled in another partition */
 		if (!avail_front_end(job_ptr))
 			continue;	/* No available frontend for this job */
 		if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {

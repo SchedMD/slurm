@@ -3667,6 +3667,9 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			    (rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			    (rc != ESLURM_NODES_BUSY))
 				break;
+			if ((job_ptr->preempt_in_progress) &&
+			    (rc != ESLURM_NODES_BUSY))
+				break;
 		}
 		list_iterator_destroy(iter);
 	} else {
