@@ -379,9 +379,11 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->user_id, step_spec->job_id,
 	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count);
-	debug3("   cpu_freq=%u num_tasks=%u relative=%u task_dist=%u node_list=%s",
+	debug3("   cpu_freq=%u num_tasks=%u relative=%u task_dist=%u plane=%u",
 	       step_spec->cpu_freq, step_spec->num_tasks, step_spec->relative,
-	       step_spec->task_dist, step_spec->node_list);
+	       step_spec->task_dist, step_spec->plane_size);
+	debug3("   node_list=%s  constraints=%s",
+	       step_spec->node_list, step_spec->features);
 	debug3("   host=%s port=%u name=%s network=%s exclusive=%u",
 	       step_spec->host, step_spec->port, step_spec->name,
 	       step_spec->network, step_spec->exclusive);
@@ -390,9 +392,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   mem_per_%s=%u resv_port_cnt=%u immediate=%u no_kill=%u",
 	       mem_type, mem_value, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
-	debug3("   overcommit=%d time_limit=%u gres=%s constraints=%s",
-	       step_spec->overcommit, step_spec->time_limit, step_spec->gres,
-	       step_spec->features);
+	debug3("   overcommit=%d time_limit=%u gres=%s",
+	       step_spec->overcommit, step_spec->time_limit, step_spec->gres);
 }
 
 
