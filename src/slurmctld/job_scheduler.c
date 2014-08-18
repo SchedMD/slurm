@@ -950,7 +950,7 @@ extern int schedule(uint32_t job_limit)
 	while (1) {
 		if (fifo_sched) {
 			if (job_ptr && part_iterator &&
-			    IS_JOB_PENDING(job_ptr)) /*started in other part?*/
+			    IS_JOB_PENDING(job_ptr)) /* test job in next part */
 				goto next_part;
 			job_ptr = (struct job_record *) list_next(job_iterator);
 			if (!job_ptr)
