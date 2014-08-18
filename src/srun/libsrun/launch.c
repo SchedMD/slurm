@@ -210,14 +210,20 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	else
 		job->ctx_params.gres = getenv("SLURM_STEP_GRES");
 
-	if (use_all_cpus)
-		job->ctx_params.cpu_count = job->cpu_count;
-	else if (opt.overcommit)
-		job->ctx_params.cpu_count = job->ctx_params.min_nodes;
-	else if (opt.cpus_set)
+	if (opt.overcommit) {
+		if (use_all_cpus)	/* job allocation created by srun */
+			job->ctx_params.cpu_count = job->cpu_count;
+		else
+			job->ctx_params.cpu_count = job->ctx_params.min_nodes;
+	} else if (opt.cpus_set) {
 		job->ctx_params.cpu_count = opt.ntasks * opt.cpus_per_task;
-	else
+	} else if (opt.ntasks_set) {
 		job->ctx_params.cpu_count = opt.ntasks;
+	} else if (use_all_cpus) {	/* job allocation created by srun */
+		job->ctx_params.cpu_count = job->cpu_count;
+	} else {
+		job->ctx_params.cpu_count = opt.ntasks;
+	}
 
 	job->ctx_params.cpu_freq = opt.cpu_freq;
 	job->ctx_params.relative = (uint16_t)opt.relative;

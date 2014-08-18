@@ -67,6 +67,8 @@ documents those changes that are of interest to users and admins.
     priority partition. Previous logic would preempt lower priority jobs, but
     then might start the job in a lower priority partition and not use the
     resources released by the preempted jobs.
+ -- Fix SelectTypeParameters=CR_PACK_NODES for srun making both job and step
+    resource allocation.
 
 * Changes in Slurm 14.03.6
 ==========================
