@@ -41,6 +41,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -76,9 +77,26 @@ static struct cpu_freq_data {
 } * cpufreq = NULL;
 char *slurmd_spooldir = NULL;
 
-static void _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx);
-static uint16_t _cpu_freq_next_cpu(char **core_range, uint16_t *cpuidx,
+static void	_cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx);
+static uint16_t	_cpu_freq_next_cpu(char **core_range, uint16_t *cpuidx,
 				   uint16_t *start, uint16_t *end);
+static int	_fd_lock_retry(int fd);
+
+static int _fd_lock_retry(int fd)
+{
+	int i, rc;
+
+	for (i = 0; i < 10; i++) {
+		if (i)
+			usleep(1000);	/* 1000 usec */
+		rc = fd_get_write_lock(fd);
+		if (rc == 0)
+			break;
+		if ((errno != EACCES) && (errno != EAGAIN))
+			break;	/* Lock held by other job */
+	}
+	return rc;
+}
 
 /* This set of locks it designed to prevent race conditions when changing
  * CPU frequency or govorner. Specifically, when a job ends it should only
@@ -89,7 +107,6 @@ static uint16_t _cpu_freq_next_cpu(char **core_range, uint16_t *cpuidx,
  *	locked on exit
  * _test_cpu_owner_lock - test if the specified job owns the CPU, this CPU is
  *	locked on return with true
- * _cpu_owner_unlock    - unlock this CPU
  */
 static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
@@ -107,7 +124,7 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		error("%s: open: %m", __func__);
 		return fd;
 	}
-	if (fd_get_write_lock(fd) < 0)
+	if (_fd_lock_retry(fd) < 0)
 		error("%s: fd_get_write_lock: %m", __func__);
 	sz = sizeof(uint32_t);
 	if (fd_write_n(fd, (void *) &job_id, sz) != sz)
@@ -133,7 +150,7 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		error("%s: open: %m", __func__);
 		return fd;
 	}
-	if (fd_get_write_lock(fd) < 0) {
+	if (_fd_lock_retry(fd) < 0) {
 		error("%s: fd_get_write_lock: %m", __func__);
 		close(fd);
 		return -1;
@@ -155,17 +172,6 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	      __func__, cpu_id, job_id);
 
 	return fd;
-}
-
-static void _cpu_owner_unlock(int fd)
-{
-	if (fd < 0)
-		error("%s: fd invalid", __func__);
-	else {
-		if (fd_release_lock(fd) < 0)
-			error("%s: fd_release_lock: %m", __func__);
-		close(fd);
-	}
 }
 
 /*
@@ -815,38 +821,54 @@ cpu_freq_set(stepd_step_rec_t *job)
 
 	j = 0;
 	for (i = 0; i < cpu_freq_count; i++) {
-		if (cpufreq[i].new_governor[0] != '\0') {
-			fd = _set_cpu_owner_lock(i, job->jobid);
+		bool reset_freq = false;
+		bool reset_gov = false;
+
+		if (cpufreq[i].new_frequency != 0)
+			reset_freq = true;
+		if (cpufreq[i].new_governor[0] != '\0')
+			reset_gov = true;
+		if (!reset_freq && !reset_gov)
+			continue;
+
+		fd = _set_cpu_owner_lock(i, job->jobid);
+		if (reset_gov) {
 			snprintf(gov_value, LINE_LEN, "%s",
 				 cpufreq[i].new_governor);
 			snprintf(path, sizeof(path),
 				 PATH_TO_CPU "cpu%u/cpufreq/scaling_governor",
 				 i);
-			if ((fp = fopen(path, "w")) == NULL)
-				continue;
-			fputs(gov_value, fp);
-			fputc('\n', fp);
-			fclose(fp);
+			if ((fp = fopen(path, "w"))) {
+				fputs(gov_value, fp);
+				fputc('\n', fp);
+				fclose(fp);
+			} else {
+				error("%s: Can not set CPU governor: %m",
+				      __func__);
+			}
+		}
 
-			if (cpufreq[i].new_frequency != 0) {
-				snprintf(path, sizeof(path),
-					 PATH_TO_CPU
-					 "cpu%u/cpufreq/scaling_setspeed", i);
-				snprintf(freq_value, LINE_LEN, "%u",
-					 cpufreq[i].new_frequency);
-				if ((fp = fopen(path, "w")) == NULL)
-					continue;
+		if (reset_freq) {
+			snprintf(path, sizeof(path),
+				 PATH_TO_CPU "cpu%u/cpufreq/scaling_setspeed",
+				 i);
+			snprintf(freq_value, LINE_LEN, "%u",
+				 cpufreq[i].new_frequency);
+			if ((fp = fopen(path, "w"))) {
 				fputs(freq_value, fp);
 				fclose(fp);
 			} else {
-				strcpy(freq_value, "N/A");
+				error("%s: Can not set CPU frequency: %m",
+				      __func__);
 			}
-			_cpu_owner_unlock(fd);
-
-			j++;
-			debug3("%s: CPU:%u frequency:%s governor:%s",
-			       __func__, i, freq_value, gov_value);
+		} else {
+			strcpy(freq_value, "N/A");
 		}
+		(void) close(fd);
+
+		j++;
+		debug3("%s: CPU:%u frequency:%s governor:%s",
+		       __func__, i, freq_value, gov_value);
 	}
 	debug("%s: #cpus set = %u", __func__, j);
 }
@@ -903,6 +925,9 @@ cpu_freq_reset(stepd_step_rec_t *job)
 			if ((fp = fopen(path, "w"))) {
 				fputs(value, fp);
 				fclose(fp);
+			} else {
+				error("%s: Can not set CPU frequency: %m",
+				      __func__);
 			}
 		}
 
@@ -914,9 +939,12 @@ cpu_freq_reset(stepd_step_rec_t *job)
 				fputs(cpufreq[i].new_governor, fp);
 				fputc('\n', fp);
 				fclose(fp);
+			} else {
+				error("%s: Can not set CPU governor: %m",
+				      __func__);
 			}
 		}
-		_cpu_owner_unlock(fd);
+		(void) close(fd);
 
 		j++;
 		debug3("%s: CPU:%u frequency:%u governor:%s",
