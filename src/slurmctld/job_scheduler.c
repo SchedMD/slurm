@@ -266,6 +266,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	job_queue = list_create(_job_queue_rec_del);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		job_ptr->preempt_in_progress = false;	/* initialize */
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
 
@@ -996,9 +997,11 @@ next_part:			part_ptr = (struct part_record *)
 				continue;
 			}
 			if (!IS_JOB_PENDING(job_ptr))
-				continue;  /* started in other partition */
+				continue;  /* started in another partition */
 			job_ptr->part_ptr = part_ptr;
 		}
+		if (job_ptr->preempt_in_progress)
+			continue;	/* scheduled in another partition */
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
 			break;

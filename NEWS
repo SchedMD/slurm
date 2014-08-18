@@ -62,6 +62,11 @@ documents those changes that are of interest to users and admins.
  -- Enable srun to submit job to multiple partitions.
  -- Update slurm.conf man page. When Epilog or Prolog fail the node state
     is set ro DRAIN.
+ -- Start a job in the highest priority partition possible, even if it requires
+    preempting other jobs and delaying initiation, rather than using a lower
+    priority partition. Previous logic would preempt lower priority jobs, but
+    then might start the job in a lower priority partition and not use the
+    resources released by the preempted jobs.
 
 * Changes in Slurm 14.03.6
 ==========================

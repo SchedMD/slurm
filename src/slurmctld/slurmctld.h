@@ -595,6 +595,9 @@ struct job_record {
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	time_t preempt_time;		/* job preemption signal time */
+	bool preempt_in_progress;	/* Premption of other jobs in progress
+					 * in order to start this job,
+					 * (Internal use only, don't save) */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
 	uint32_t *priority_array;	/* partition based priority */

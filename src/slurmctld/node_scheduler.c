@@ -1710,6 +1710,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		if ((error_code == ESLURM_NODES_BUSY) &&
 		    (detail_ptr->preempt_start_time == 0)) {
   			detail_ptr->preempt_start_time = now;
+			job_ptr->preempt_in_progress = true;
 		}
 	}
 	if (error_code) {
