@@ -263,3 +263,26 @@ extern int route_p_reconfigure (void)
 	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
+
+
+/*
+ * route_p_next_collector - return address of next collector
+ *
+ * IN: is_collector - bool* - flag indication if this node is a collector
+ *
+ * RET: slurm_addr_t* - address of node to send messages to be aggregated.
+ */
+extern slurm_addr_t* route_p_next_collector ( bool *is_collector )
+{
+	return route_next_collector(is_collector);
+}
+
+/*
+ * route_g_next_collector_backup
+ *
+ * RET: slurm_addr_t* - address of backup node to send messages to be aggregated.
+ */
+extern slurm_addr_t* route_p_next_collector_backup ( void )
+{
+	return route_next_collector_backup();
+}
