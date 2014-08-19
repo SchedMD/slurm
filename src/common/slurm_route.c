@@ -405,7 +405,7 @@ extern int route_g_reconfigure(void)
  *
  * RET: slurm_addr_t* - address of node to send messages to be aggregated.
  */
-extern slurm_addr_t* route_g_next_collector ( bool *is_collector )
+extern slurm_addr_t* route_g_next_collector(bool *is_collector)
 {
 	if (route_g_init(NULL) != SLURM_SUCCESS)
 		return NULL;
@@ -421,7 +421,7 @@ extern slurm_addr_t* route_g_next_collector ( bool *is_collector )
  *
  * RET: slurm_addr_t* - address of backup node to send messages to be aggregated.
  */
-extern slurm_addr_t* route_g_next_collector_backup ( void )
+extern slurm_addr_t* route_g_next_collector_backup(void)
 {
 	if (route_g_init(NULL) != SLURM_SUCCESS)
 		return NULL;
@@ -501,7 +501,7 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
  *
  * RET: slurm_addr_t* - address of node to send messages to be aggregated.
  */
-extern slurm_addr_t* route_next_collector ( bool *is_collector )
+extern slurm_addr_t* route_next_collector(bool *is_collector)
 {
 	*is_collector = this_is_collector;
 	return msg_collect_node;
@@ -516,7 +516,7 @@ extern slurm_addr_t* route_next_collector ( bool *is_collector )
  *
  * RET: slurm_addr_t* - address of backup node to send messages to be aggregated
  */
-extern slurm_addr_t* route_next_collector_backup ( void )
+extern slurm_addr_t* route_next_collector_backup(void)
 {
 	return msg_collect_backup;
 }
