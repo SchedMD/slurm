@@ -3811,7 +3811,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
 			info("job_test_resv: job:%u reservation:%s nodes:%s",
-			     job_ptr->job_id, nodes, job_ptr->resv_name);
+			     job_ptr->job_id, job_ptr->resv_name, nodes);
 			xfree(nodes);
 		}
 
