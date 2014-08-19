@@ -71,6 +71,7 @@ documents those changes that are of interest to users and admins.
     resource allocation.
  -- BGQ - Make it possible to pack multiple tasks on a core when not using
     the entire cnode.
+ -- MYSQL - if unable to connect to mysqld close connection that was inited.
 
 * Changes in Slurm 14.03.6
 ==========================

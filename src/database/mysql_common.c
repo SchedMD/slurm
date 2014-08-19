@@ -696,6 +696,8 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 					}
 
 					rc = ESLURM_DB_CONNECTION;
+					mysql_close(mysql_conn->db_conn);
+					mysql_conn->db_conn = NULL;
 					break;
 				}
 			} else {
