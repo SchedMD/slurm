@@ -69,6 +69,8 @@ documents those changes that are of interest to users and admins.
     resources released by the preempted jobs.
  -- Fix SelectTypeParameters=CR_PACK_NODES for srun making both job and step
     resource allocation.
+ -- BGQ - Make it possible to pack multiple tasks on a core when not using
+    the entire cnode.
 
 * Changes in Slurm 14.03.6
 ==========================
