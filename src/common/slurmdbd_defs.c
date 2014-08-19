@@ -1565,12 +1565,14 @@ static int _send_init_msg()
 		return rc;
 	}
 
-	/* Add 5 seconds here to make sure the DBD has enough time to
-	   process the request.  If we don't add extra time we could
-	   fall into a race condition since it could time out at the
+	/* Add 35 seconds here to make sure the DBD has enough time to
+	   process the request.  30 seconds is defined in
+	   src/database/mysql_common.c in mysql_db_get_db_connection
+	   as the time to wait for a mysql connection and 5 seconds to
+	   avoid a race condition since it could time out at the
 	   same rate and not leave any time to send the response back.
 	*/
-	read_timeout = (slurm_get_msg_timeout() + 5) * 1000;
+	read_timeout = (slurm_get_msg_timeout() + 35) * 1000;
 	rc = _get_return_code(SLURM_PROTOCOL_VERSION, read_timeout);
 	if (tmp_errno)
 		errno = tmp_errno;
