@@ -1122,11 +1122,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			FREE_NULL_BITMAP(selected_nodes);
 			/* Add resources for non-selected nodes as needed */
 			for (i = i_first; i <= i_last; i++) {
-				if (tasks_picked_cnt >= step_spec->num_tasks)
+				if ((nodes_picked_cnt >= step_spec->min_nodes)&&
+				    (tasks_picked_cnt >= step_spec->num_tasks))
 					break;
 				if (!bit_test(non_selected_nodes, i))
 					continue;
 				bit_set(nodes_avail, i);
+				nodes_picked_cnt++;
 				tasks_picked_cnt += non_selected_tasks[i];
 			}
 			FREE_NULL_BITMAP(non_selected_nodes);
