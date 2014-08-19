@@ -82,6 +82,27 @@ proc check_step { num } {
 	}
 }
 
+proc check_sacct_states { states } {
+	global job_id sacct
+
+	set state_num 0
+	spawn $sacct --job=$job_id -D --noheader --format=state -P
+	expect {
+		-re ($states) {
+			incr state_num 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $state_num
+}
+
 make_bash_script $file_in "sleep 2"
 
 # Start a batch job to get a  usable node
@@ -170,27 +191,7 @@ mod_state "resume"
 check_step 0
 
 # Check the job state
-set state_num 0
-spawn $sacct --job=$job_id -D --noheader --format=state
-expect {
-	-re "NODE_FAIL" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "PENDING" {
-		incr state_num 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$state_num != 2} {
+if {[check_sacct_states "NODE_FAIL|PENDING"] != 2} {
 	send_user "\nFAILURE: jobs state should be NODE_FAIL and PENDING\n"
 	set exit_code 1
 }
@@ -200,27 +201,7 @@ wait_for_job $job_id RUNNING
 # Check the number of steps after job is running
 check_step 0
 
-set state_num 0
-spawn $sacct --job=$job_id -D --noheader --format=state
-expect {
-	-re "NODE_FAIL" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "RUNNING" {
-		incr state_num 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$state_num != 2} {
+if {[check_sacct_states "NODE_FAIL|RUNNING"] != 2} {
 	send_user "\nFAILURE: jobs state should be NODE_FAIL and RUNNING\n"
 	set exit_code 1
 }
@@ -240,35 +221,7 @@ expect {
 # Wait a bit for the job to be requeued then check its state
 sleep 8
 
-set state_num 0
-spawn $sacct --job=$job_id -D --noheader --format=state
-expect {
-	-re "NODE_FAIL" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "REQUEUE" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "CANCELLED" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "PENDING" {
-		incr state_num 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$state_num != 4} {
+if {[check_sacct_states "NODE_FAIL|REQUEUE|CANCELLED|PENDING"] != 4} {
 	send_user "\nFAILURE: states are not as expected\n"
 	set exit_code 1
 }
@@ -278,35 +231,7 @@ wait_for_job $job_id RUNNING
 # Check for steps after requeue
 check_step 1
 
-set state_num 0
-spawn $sacct --job=$job_id -D --noheader --format=state
-expect {
-	-re "NODE_FAIL" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "REQUEUE" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "CANCELLED" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "RUNNING" {
-		incr state_num 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$state_num != 4} {
+if {[check_sacct_states "NODE_FAIL|REQUEUE|CANCELLED|RUNNING"] != 4} {
 	send_user "\nFAILURE: states not as expected\n"
 	set exit_code 1
 }
@@ -316,40 +241,8 @@ wait_for_job $job_id DONE
 # Check steps after job has completed
 check_step 2
 
-# Check all job states and steps
-set state_num 0
-spawn $sacct --job=$job_id -D --noheader --format=state
-expect {
-	-re "NODE_FAIL" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "REQUEUE" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "CANCELLED" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "COMPLETED" {
-		incr state_num 1
-		exp_continue
-	}
-	-re "COMPLETED" {
-		incr state_num 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$state_num != 5} {
+# COMPLETED will show up 2 times, that is why we are checking for 5
+if {[check_sacct_states "NODE_FAIL|REQUEUE|CANCELLED|COMPLETED"] != 5} {
 	send_user "\nFAILURE: job states are not as expected\n"
 	set exit_code 1
 }
