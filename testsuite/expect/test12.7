@@ -60,7 +60,7 @@ proc check_step { num } {
 	global sacct job_id exit_code
 
 	set steps 0
-	spawn $sacct --job=$job_id\.batch -D --noheader --format=jobid%30
+	spawn $sacct --job=$job_id\.batch -D --noheader --format=jobid%30 -P
 	expect {
 		-re "batch" {
 			incr steps 1
