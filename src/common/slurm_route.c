@@ -89,7 +89,7 @@ static bool this_is_collector = false; /* this node is a collector node */
 static slurm_addr_t *msg_collect_node = NULL; /* address of node to aggregate
 						 messages from this node */
 static slurm_addr_t *msg_collect_backup = NULL; /* address of backup node to
-					   aggregate messages from this node */
+						   aggregate messages from this node */
 
 
 /* _get_all_nodes creates a hostlist containing all the nodes in the
@@ -163,7 +163,7 @@ static void _set_collectors( void )
 		}
 		if (i == hl_count) {
 			fatal("ROUTE -- %s not found in node_record_table",
-						this_node_name);
+			      this_node_name);
 		}
 		if (f == 0) {
 			/* we are a forwarded to node,
@@ -180,34 +180,34 @@ static void _set_collectors( void )
 			}
 			if (debug_flags & DEBUG_FLAG_ROUTE) {
 				slurm_print_slurm_addr(msg_collect_node,
-						addrbuf, 32);
+						       addrbuf, 32);
 				info("ROUTE -- message collector address is %s",
-						addrbuf);
+				     addrbuf);
 			}
 			xfree(msg_collect_backup);
 			if (backup) {
 				msg_collect_backup =
-						xmalloc(sizeof(slurm_addr_t));
+					xmalloc(sizeof(slurm_addr_t));
 				if (ctldparent) {
 					slurm_set_addr(msg_collect_backup,
-						port, backup);
+						       port, backup);
 				} else {
 					slurm_conf_get_addr(backup,
-							msg_collect_backup);
+							    msg_collect_backup);
 					msg_collect_backup->sin_port =
-								htons(port);
+						htons(port);
 				}
 				if (debug_flags & DEBUG_FLAG_ROUTE) {
 					slurm_print_slurm_addr(
 						msg_collect_backup,
 						addrbuf, 32);
 					info("ROUTE -- message collector backup"
-						" address is %s", addrbuf);
+					     " address is %s", addrbuf);
 				}
 			} else {
 				if (debug_flags & DEBUG_FLAG_ROUTE) {
 					info("ROUTE -- no message collector "
-							"backup");
+					     "backup");
 				}
 
 			}
