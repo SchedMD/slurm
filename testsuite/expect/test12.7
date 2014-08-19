@@ -1,0 +1,363 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that sacct -D shows correct job steps and states
+#          when a job is requeued
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id    12.7
+set exit_code  0
+set job_id     0
+set node       ""
+set file_in    "test$test_id\_sc"
+
+print_header $test_id
+
+proc mod_state { state } {
+
+	global scontrol node exit_code
+
+	spawn $scontrol update nodename=$node state=$state
+	expect {
+		timeout {
+			send_user "\nFAILURE:  scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc check_step { num } {
+
+	global sacct job_id exit_code
+
+	set steps 0
+	spawn $sacct --job=$job_id\.batch -D --noheader --format=jobid%30
+	expect {
+		-re "batch" {
+			incr steps 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+
+	}
+	if {$num != $steps} {
+		send_user "\nFAILURE: found $steps step(s) when expecting "
+		send_user "$num steps\n"
+		set exit_code 1
+	}
+}
+
+make_bash_script $file_in "sleep 2"
+
+# Start a batch job to get a  usable node
+spawn $sbatch -t1 --exclusive -o/dev/null $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+wait_for_job $job_id RUNNING
+
+set found 0
+spawn $scontrol show job $job_id
+expect {
+	-re "NodeList=($alpha_numeric_nodelist)" {
+		set node $expect_out(1,string)
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$found != 1} {
+	send_user "\nFAILURE: was not able to get usable node\n"
+	exit 1
+}
+
+cancel_job $job_id
+
+make_bash_script $file_in "sleep 20"
+
+# Submit job to be requeued
+set job_id 0
+spawn $sbatch -N1 -w$node --exclusive -o/dev/null --requeue $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+wait_for_job $job_id RUNNING
+
+# Set the node that the job is running on to down
+mod_state "down"
+
+# Wait alittle bit for node state to change
+sleep 5
+
+# Set the node back to resume
+mod_state "resume"
+
+# Check the number of steps
+check_step 0
+
+# Check the job state
+set state_num 0
+spawn $sacct --job=$job_id -D --noheader --format=state
+expect {
+	-re "NODE_FAIL" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "PENDING" {
+		incr state_num 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$state_num != 2} {
+	send_user "\nFAILURE: jobs state should be NODE_FAIL and PENDING\n"
+	set exit_code 1
+}
+
+wait_for_job $job_id RUNNING
+
+# Check the number of steps after job is running
+check_step 0
+
+set state_num 0
+spawn $sacct --job=$job_id -D --noheader --format=state
+expect {
+	-re "NODE_FAIL" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "RUNNING" {
+		incr state_num 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$state_num != 2} {
+	send_user "\nFAILURE: jobs state should be NODE_FAIL and RUNNING\n"
+	set exit_code 1
+}
+
+# Requeue the job
+spawn $scontrol requeue $job_id
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Wait a bit for the job to be requeued then check its state
+sleep 5
+
+set state_num 0
+spawn $sacct --job=$job_id -D --noheader --format=state
+expect {
+	-re "NODE_FAIL" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "REQUEUE" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "CANCELLED" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "PENDING" {
+		incr state_num 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$state_num != 4} {
+	send_user "\nFAILURE: states are not as expected\n"
+	set exit_code 1
+}
+
+wait_for_job $job_id RUNNING
+
+# Check for steps after requeue
+check_step 1
+
+set state_num 0
+spawn $sacct --job=$job_id -D --noheader --format=state
+expect {
+	-re "NODE_FAIL" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "REQUEUE" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "CANCELLED" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "RUNNING" {
+		incr state_num 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$state_num != 4} {
+	send_user "\nFAILURE: states not as expected\n"
+	set exit_code 1
+}
+
+wait_for_job $job_id DONE
+
+# Check steps after job has completed
+check_step 2
+
+# Check all job states and steps
+set state_num 0
+spawn $sacct --job=$job_id -D --noheader --format=state
+expect {
+	-re "NODE_FAIL" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "REQUEUE" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "CANCELLED" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "COMPLETED" {
+		incr state_num 1
+		exp_continue
+	}
+	-re "COMPLETED" {
+		incr state_num 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$state_num != 5} {
+	send_user "\nFAILURE: job states are not as expected\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+
+if {$exit_code == 0} {
+	exec $bin_rm $file_in
+	send_user "\nSUCCCESS\n"
+}
+exit $exit_code
