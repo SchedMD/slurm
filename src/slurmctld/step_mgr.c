@@ -1003,7 +1003,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		node_inx = -1;
 		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
-		for (i=i_first; i<=i_last; i++) {
+		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
 			node_inx++;
