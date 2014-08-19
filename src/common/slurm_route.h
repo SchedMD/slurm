@@ -46,9 +46,11 @@
 /*
  * Initialize the route plugin.
  *
+ * IN - the name of the node this is running on.  Only needed on the slurmd.
+ *
  * Returns a SLURM errno.
  */
-extern int route_g_init(void);
+extern int route_g_init(char *node_name);
 
 /*
  * Terminate the route plugin.

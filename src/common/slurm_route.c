@@ -121,12 +121,12 @@ static hostlist_t _get_all_nodes( void )
  * which this node is a forwarding node. If found, we set the collector and
  * backup, else this process is repeated.
  */
-static void _set_collectors( void )
+static void _set_collectors(char *this_node_name)
 {
 	slurm_ctl_conf_t *conf;
 	hostlist_t  nodes;
 	hostlist_t* hll = NULL;
-	char *this_node_name = NULL, *parent = NULL, *backup = NULL;
+	char *parent = NULL, *backup = NULL;
 	char addrbuf[32];
 	int i, j, f;
 	int hl_count = 0;
@@ -140,7 +140,8 @@ static void _set_collectors( void )
 
 	/* Set the initial iteration, collector is controller,
 	 * full list is split */
-	this_node_name = slurm_conf_get_aliased_nodename();
+	xassert(this_node_name);
+
 	slurmd_port = slurm_get_slurmd_port();
 	conf = slurm_conf_lock();
 	nodes = _get_all_nodes();
@@ -259,13 +260,12 @@ clean:
 		hostlist_destroy(hll[i]);
 	}
 	xfree(hll);
-	xfree(this_node_name);
 }
 
 /* ************************************************************************** */
 /*  TAG(                        slurm_route_init                           )  */
 /* ************************************************************************** */
-extern int route_g_init(void)
+extern int route_g_init(char *node_name)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "route";
@@ -292,8 +292,9 @@ extern int route_g_init(void)
 
 	tree_width = slurm_get_tree_width();
 	debug_flags = slurm_get_debug_flags();
+
 	init_run = true;
-	_set_collectors();
+	_set_collectors(node_name);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -347,7 +348,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 	char *buf;
 
 	nnodes = nnodex = 0;
-	if (route_g_init() < 0)
+	if (route_g_init(NULL) < 0)
 		return SLURM_ERROR;
 
 	if (debug_flags & DEBUG_FLAG_ROUTE) {
@@ -386,7 +387,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
  */
 extern int route_g_reconfigure(void)
 {
-	if (route_g_init() < 0)
+	if (route_g_init(NULL) < 0)
 		return SLURM_ERROR;
 	debug_flags = slurm_get_debug_flags();
 	tree_width = slurm_get_tree_width();
@@ -406,7 +407,7 @@ extern int route_g_reconfigure(void)
  */
 extern slurm_addr_t* route_g_next_collector ( bool *is_collector )
 {
-	if (route_g_init() < 0)
+	if (route_g_init(NULL) < 0)
 		return NULL;
 
 	return (*(ops.next_collector))(is_collector);
@@ -422,7 +423,7 @@ extern slurm_addr_t* route_g_next_collector ( bool *is_collector )
  */
 extern slurm_addr_t* route_g_next_collector_backup ( void )
 {
-	if (route_g_init() < 0)
+	if (route_g_init(NULL) < 0)
 		return NULL;
 
 	return (*(ops.next_collector_backup))();
