@@ -261,6 +261,13 @@ documents those changes that are of interest to users and admins.
     resources released by the preempted jobs.
  -- Fix SelectTypeParameters=CR_PACK_NODES for srun making both job and step
     resource allocation.
+ -- BGQ - Make it possible to pack multiple tasks on a core when not using
+    the entire cnode.
+ -- MYSQL - if unable to connect to mysqld close connection that was inited.
+ -- DBD - when connecting make sure we wait MessageTimeout + 5 since the
+    timeout when talking to the Database is the same timeout so a race
+    condition could occur in the requesting client when receiving the response
+    if the database is unresponsive.
 
 * Changes in Slurm 14.03.6
 ==========================

@@ -664,6 +664,11 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 		fatal("mysql_init failed: %s",
 		      mysql_error(mysql_conn->db_conn));
 	} else {
+		/* If this ever changes you will need to alter
+		 * src/common/slurmdbd_defs.c function _send_init_msg to
+		 * handle a different timeout when polling for the
+		 * response.
+		 */
 		unsigned int my_timeout = 30;
 #ifdef MYSQL_OPT_RECONNECT
 		my_bool reconnect = 1;
@@ -696,6 +701,8 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 					}
 
 					rc = ESLURM_DB_CONNECTION;
+					mysql_close(mysql_conn->db_conn);
+					mysql_conn->db_conn = NULL;
 					break;
 				}
 			} else {

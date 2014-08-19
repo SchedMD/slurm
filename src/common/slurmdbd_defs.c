@@ -1564,7 +1564,14 @@ static int _send_init_msg()
 		return rc;
 	}
 
-	read_timeout = slurm_get_msg_timeout() * 1000;
+	/* Add 35 seconds here to make sure the DBD has enough time to
+	   process the request.  30 seconds is defined in
+	   src/database/mysql_common.c in mysql_db_get_db_connection
+	   as the time to wait for a mysql connection and 5 seconds to
+	   avoid a race condition since it could time out at the
+	   same rate and not leave any time to send the response back.
+	*/
+	read_timeout = (slurm_get_msg_timeout() + 35) * 1000;
 	rc = _get_return_code(SLURM_PROTOCOL_VERSION, read_timeout);
 	if (tmp_errno)
 		errno = tmp_errno;
@@ -2124,12 +2131,12 @@ static void *_agent(void *x)
 						break;
 				}
 				list_iterator_destroy(agent_itr);
-				buffer = pack_slurmdbd_msg(&list_req,
-							   SLURM_PROTOCOL_VERSION);
+				buffer = pack_slurmdbd_msg(
+					&list_req, SLURM_PROTOCOL_VERSION);
 			} else if (cnt > 1) {
 				list_msg.my_list = agent_list;
-				buffer = pack_slurmdbd_msg(&list_req,
-							   SLURM_PROTOCOL_VERSION);
+				buffer = pack_slurmdbd_msg(
+					&list_req, SLURM_PROTOCOL_VERSION);
 			} else
 				buffer = (Buf) list_peek(agent_list);
 		} else
@@ -2160,7 +2167,8 @@ static void *_agent(void *x)
 			rc = _handle_mult_rc_ret(SLURM_PROTOCOL_VERSION,
 						 read_timeout);
 		} else {
-			rc = _get_return_code(SLURM_PROTOCOL_VERSION, read_timeout);
+			rc = _get_return_code(SLURM_PROTOCOL_VERSION,
+					      read_timeout);
 			if (rc == EAGAIN) {
 				if (agent_shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);
