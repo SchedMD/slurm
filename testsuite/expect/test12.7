@@ -238,7 +238,7 @@ expect {
 }
 
 # Wait a bit for the job to be requeued then check its state
-sleep 5
+sleep 8
 
 set state_num 0
 spawn $sacct --job=$job_id -D --noheader --format=state
