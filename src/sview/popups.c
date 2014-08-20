@@ -697,7 +697,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		};
 
 		sview_search_info.search_type = SEARCH_JOB_STATE;
-		entry = create_pulldown_combo(pulldown_display_data, JOB_END);
+		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
 	} else if (!strcmp(name, "partition_name")) {
 		sview_search_info.search_type = SEARCH_PARTITION_NAME;
@@ -713,7 +713,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		};
 
 		sview_search_info.search_type = SEARCH_PARTITION_STATE;
-		entry = create_pulldown_combo(pulldown_display_data, 5);
+		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
 	} else if (!strcmp(name, "node_name")) {
 		sview_search_info.search_type = SEARCH_NODE_NAME;
@@ -758,7 +758,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		};
 
 		sview_search_info.search_type = SEARCH_NODE_STATE;
-		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
+		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
 	} else if ((cluster_flags & CLUSTER_FLAG_BG)
 		   && !strcmp(name, "bg_block_name")) {
@@ -808,7 +808,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			}
 		}
 		sview_search_info.search_type = SEARCH_BLOCK_STATE;
-		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
+		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
 	} else if (!strcmp(name, "reservation_name")) {
 		sview_search_info.search_type = SEARCH_RESERVATION_NAME;

@@ -622,8 +622,7 @@ extern gboolean delete_popups(void);
 extern void *popup_thr(popup_info_t *popup_win);
 extern void set_for_update(GtkTreeModel *model, int updated);
 extern void remove_old(GtkTreeModel *model, int updated);
-extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
-					int count);
+extern GtkWidget *create_pulldown_combo(display_data_t *display_data);
 extern char *str_tolower(char *upper_str);
 extern char *get_reason(void);
 extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,

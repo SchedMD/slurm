@@ -1911,8 +1911,7 @@ extern void remove_old(GtkTreeModel *model, int updated)
 	gtk_tree_path_free(path);
 }
 
-extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
-					int count)
+extern GtkWidget *create_pulldown_combo(display_data_t *display_data)
 {
 	GtkListStore *store = NULL;
 	GtkWidget *combo = NULL;
@@ -1921,12 +1920,11 @@ extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 	int i=0;
 
 	store = gtk_list_store_new(2, G_TYPE_INT, G_TYPE_STRING);
-	for(i=0; i<count; i++) {
-		if (display_data[i].id == -1)
-			break;
+	while (display_data[i].id != -1) {
 		gtk_list_store_append(store, &iter);
 		gtk_list_store_set(store, &iter, 0, display_data[i].id,
 				   1, display_data[i].name, -1);
+		i++;
 	}
 	combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
 
