@@ -1214,7 +1214,7 @@ static void _set_options(const int argc, char **argv)
                         break;
 		case LONG_OPT_EXPORT:
 			xfree(opt.export_env);
-			if (!strcasecmp(opt.export_env, "ALL"))
+			if (!strcasecmp(optarg, "ALL"))
 				; /* Ignore "ALL", it is the default */
 			else
 				opt.export_env = xstrdup(optarg);
