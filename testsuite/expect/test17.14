@@ -39,7 +39,6 @@ set exit_code        0
 set file_in         "test$test_id.input"
 set file_out        "test$test_id.output"
 set job_id           0
-set matches          0
 
 global env
 set env($test_env_name) $test_env_val
@@ -58,6 +57,68 @@ make_bash_script $file_in "
 #
 # Spawn a job via sbatch to print environment variables
 #
+set matches 0
+spawn $sbatch -N1 -t1 --export=$test_env_name=$test_env_val --output=$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
+
+#
+# Check for desired output
+#
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: Output file $file_out is missing\n"
+	exit 1
+}
+spawn $bin_cat $file_out
+expect {
+	-re "$test_env_name=($number)" {
+		if {$expect_out(1,string) == $test_env_val} {
+			incr matches
+		} else {
+			send_user "\nNO MATCHX${expect_out(1,string)}X${test_env_val}X\n"
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+# Match to "SLURM_EXPORT_ENV=TEST_ENV_17.14=123" and "TEST_ENV_17.14=123"
+if {$matches != 2} {
+	send_user "\nFAILURE: Environment variables not propagated from command line ($matches != 2)\n"
+	exit 1
+}
+
+#
+# Spawn a job via sbatch to print environment variables
+#
+exec $bin_rm -f $file_out
+set matches 0
 set env($test_env_name) $test_env_val
 spawn $sbatch -N1 -t1 --output=$file_out $file_in
 expect {
@@ -107,10 +168,127 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated\n"
+	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
+	exit 1
+}
+
+#
+# Spawn a job via sbatch to print environment variables with --export=ALL
+#
+exec $bin_rm -f $file_out
+set matches 0
+set env($test_env_name) $test_env_val
+spawn $sbatch -N1 -t1 --export=ALL --output=$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id
 	set exit_code 1
+}
+
+#
+# Check for desired output
+#
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: Output file $file_out is missing\n"
+	exit 1
+}
+spawn $bin_cat $file_out
+expect {
+	-re "$test_env_name=($number)" {
+		if {$expect_out(1,string) == $test_env_val} {
+			incr matches
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
+	exit 1
+}
+
+#
+# Spawn a job via sbatch to print environment variables with --export=NONE
+#
+exec $bin_rm -f $file_out
+set matches 0
+set env($test_env_name) $test_env_val
+spawn $sbatch -N1 -t1 --export=NONE --output=$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
+
+#
+# Check for desired output
+#
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: Output file $file_out is missing\n"
+	exit 1
+}
+spawn $bin_cat $file_out
+expect {
+	-re "$test_env_name=($number)" {
+		if {$expect_out(1,string) == $test_env_val} {
+			incr matches
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 0} {
+	send_user "\nFAILURE: Environment variables were propagated ($matches != 0)\n"
+	exit 1
 }
 
 if {$exit_code == 0} {

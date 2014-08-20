@@ -38,16 +38,40 @@ set test_env_val     123
 set exit_code        0
 set matches          0
 
-global env
-set env($test_env_name) $test_env_val
-
 print_header $test_id
 
 #
 # Spawn a job via srun to print environment variables
 #
 set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 --export=$test_env_name=$test_env_val -t1 $bin_env]
+expect {
+	-re "$test_env_name=($number)" {
+		if {$expect_out(1,string) == $test_env_val} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
+	exit 1
+}
+
+#
+# Spawn a job via srun to print environment variables
+#
+global env
 set env($test_env_name) $test_env_val
+set matches 0
 set srun_pid [spawn $srun -N1 -t1 $bin_env]
 expect {
 	-re "$test_env_name=($number)" {
@@ -65,10 +89,61 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 1} {
-	send_user "\nFAILURE: Environment variables not propagated\n"
-	set exit_code 1
+	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
+	exit 1
+}
+
+#
+# Spawn a job via srun to print environment variables with --export=ALL
+#
+set matches 0
+set srun_pid [spawn $srun -N1 -t1 --export=ALL $bin_env]
+expect {
+	-re "$test_env_name=($number)" {
+		if {$expect_out(1,string) == $test_env_val} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: Environment variables not propagated ($matches != 1)\n"
+	exit 1
+}
+
+#
+# Spawn a job via srun to print environment variables with --export=NONE
+#
+set matches 0
+set srun_pid [spawn $srun -N1 -t1 --export=NONE $bin_env]
+expect {
+	-re "$test_env_name=($number)" {
+		if {$expect_out(1,string) == $test_env_val} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 0} {
+	send_user "\nFAILURE: Environment variables not propagated ($matches != 0)\n"
+	exit 1
 }
 
 if {$exit_code == 0} {
