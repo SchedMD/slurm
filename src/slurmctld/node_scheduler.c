@@ -2674,7 +2674,7 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
 		/* No nodes allocated, we're done... */
 		job_ptr->node_cnt = 0;
-		job_ptr->node_addr = NULL;
+		xfree(job_ptr->node_addr);
 		return;
 	}
 

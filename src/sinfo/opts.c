@@ -409,11 +409,14 @@ _node_state_list (void)
 		xstrcat (all_states, node_state_string(i));
 	}
 
-	xstrcat(all_states, ",DRAIN,DRAINED,DRAINING,NO_RESPOND");
+	xstrcat(all_states,
+		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PERFCTRS");
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_COMPLETING));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_POWER_SAVE));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_POWER_UP));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_FAIL));
 	xstrcat(all_states, ",");
@@ -460,6 +463,12 @@ _node_state_id (char *str)
 		return NODE_STATE_DRAIN | NODE_STATE_IDLE;
 	if (strncasecmp("ERROR", str, len) == 0)
 		return NODE_STATE_ERROR;
+	if ((strncasecmp("RESV", str, len) == 0) ||
+	    (strncasecmp("RESERVED", str, len) == 0))
+		return NODE_STATE_RES;
+	if ((strncasecmp("PERFCTRS", str, len) == 0) ||
+	    (strncasecmp("NPC", str, len) == 0))
+		return NODE_STATE_NET;
 	if ((strncasecmp("DRAINING", str, len) == 0) ||
 	    (strncasecmp("DRNG", str, len) == 0))
 		return NODE_STATE_DRAIN | NODE_STATE_ALLOCATED;
@@ -469,6 +478,8 @@ _node_state_id (char *str)
 		return NODE_STATE_NO_RESPOND;
 	if (_node_state_equal (NODE_STATE_POWER_SAVE, str))
 		return NODE_STATE_POWER_SAVE;
+	if (_node_state_equal (NODE_STATE_POWER_UP, str))
+		return NODE_STATE_POWER_UP;
 	if (_node_state_equal (NODE_STATE_FAIL, str))
 		return NODE_STATE_FAIL;
 	if (_node_state_equal (NODE_STATE_MAINT, str))
