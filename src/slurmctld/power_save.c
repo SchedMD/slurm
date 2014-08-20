@@ -113,7 +113,7 @@ static void _do_power_work(time_t now)
 	static time_t last_log = 0, last_work_scan = 0;
 	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
 	time_t delta_t;
-	uint16_t susp_state;
+	uint32_t susp_state;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
 	bool run_suspend = false;

@@ -985,9 +985,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				    (idle_cpus != node_ptr->cpus))) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
 				if (err_cpus)
-					node_ptr->node_state
-						|= NODE_STATE_ERROR;
-
+					node_ptr->node_state |= NODE_STATE_ERROR;
 				node_ptr->node_state |= NODE_STATE_MIXED;
 			} else if (err_cpus) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;

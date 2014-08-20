@@ -2767,7 +2767,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		node_state_msg->new_state = DBD_NODE_STATE_UP;
 
 	if (node_state_msg->new_state == DBD_NODE_STATE_UP) {
-		debug3("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%ld",
+		debug2("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%ld",
 		       node_state_msg->hostlist,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason,

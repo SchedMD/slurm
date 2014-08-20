@@ -49,7 +49,7 @@ node_info_to_hv(node_info_t *node_info, uint16_t node_scaling, HV *hv)
 		Perl_warn (aTHX_ "node name missing in node_info_t");
 		return -1;
 	}
-	STORE_FIELD(hv, node_info, node_state, uint16_t);
+	STORE_FIELD(hv, node_info, node_state, uint32_t);
 	if(node_info->os)
 		STORE_FIELD(hv, node_info, os, charp);
 	STORE_FIELD(hv, node_info, real_memory, uint32_t);
@@ -108,7 +108,7 @@ hv_to_node_info(HV *hv, node_info_t *node_info)
 	FETCH_FIELD(hv, node_info, features, charp, FALSE);
 	FETCH_FIELD(hv, node_info, gres, charp, FALSE);
 	FETCH_FIELD(hv, node_info, name, charp, TRUE);
-	FETCH_FIELD(hv, node_info, node_state, uint16_t, TRUE);
+	FETCH_FIELD(hv, node_info, node_state, uint32_t, TRUE);
 	FETCH_FIELD(hv, node_info, os, charp, FALSE);
 	FETCH_FIELD(hv, node_info, real_memory, uint32_t, TRUE);
 	FETCH_FIELD(hv, node_info, reason, charp, FALSE);
@@ -206,7 +206,7 @@ hv_to_update_node_msg(HV *hv, update_node_msg_t *update_msg)
 	FETCH_FIELD(hv, update_msg, node_addr, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, node_hostname, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, node_names, charp, TRUE);
-	FETCH_FIELD(hv, update_msg, node_state, uint16_t, FALSE);
+	FETCH_FIELD(hv, update_msg, node_state, uint32_t, FALSE);
 	FETCH_FIELD(hv, update_msg, reason, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, features, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, weight, uint32_t, FALSE);

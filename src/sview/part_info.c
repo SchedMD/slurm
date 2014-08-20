@@ -47,7 +47,7 @@ typedef struct {
 	uint32_t mem_total;
 	uint32_t node_cnt;
 	List node_ptr_list;
-	uint16_t node_state;
+	uint32_t node_state;
 	partition_info_t* part_ptr;
 	char *reason;
 } sview_part_sub_t;

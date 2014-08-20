@@ -60,7 +60,7 @@
 
 /*
  * SLURMDBD_VERSION in 14.03 this was changed to be the same as
- * SLURM_PROTOCOL_VERSION in 15.03 we can remove all instances of
+ * SLURM_PROTOCOL_VERSION in 14.03 we can remove all instances of
  * SLURMDBD_*VERSION* SLURMDBD_VERSION was already replaced.
  *
  * SLURMDBD_VERSION_MIN is the minimum protocol version which slurmdbd
@@ -346,7 +346,7 @@ typedef struct dbd_node_state_msg {
 	char *reason;		/* explanation for the node's state */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
 				 * no reason is set. */
-	uint16_t state;         /* current state of node.  Used to get
+	uint32_t state;         /* current state of node.  Used to get
 				   flags on the state (i.e. maintenance) */
 } dbd_node_state_msg_t;
 

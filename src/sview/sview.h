@@ -284,7 +284,7 @@ typedef struct {
 	int inx;
 	GtkStateType last_state;
 	char *node_name;
-	int state;
+	uint32_t state;
 	GtkTable *table;
 	int table_x;
 	int table_y;

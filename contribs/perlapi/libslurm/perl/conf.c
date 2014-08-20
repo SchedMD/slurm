@@ -11,7 +11,7 @@
 
 
 /*
- * convert slurm_ctl_conf_t into perl HV 
+ * convert slurm_ctl_conf_t into perl HV
  */
 int
 slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
@@ -52,7 +52,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->cluster_name)
 		STORE_FIELD(hv, conf, cluster_name, charp);
 	STORE_FIELD(hv, conf, complete_wait, uint16_t);
-	
+
 	if (conf->control_addr)
 		STORE_FIELD(hv, conf, control_addr, charp);
 	if (conf->control_machine)
@@ -81,7 +81,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, group_info, uint16_t);
 	STORE_FIELD(hv, conf, hash_val, uint32_t);
 	STORE_FIELD(hv, conf, health_check_interval, uint16_t);
-	STORE_FIELD(hv, conf, health_check_node_state, uint16_t);
+	STORE_FIELD(hv, conf, health_check_node_state, uint32_t);
 	if (conf->health_check_program)
 		STORE_FIELD(hv, conf, health_check_program, charp);
 	STORE_FIELD(hv, conf, inactive_limit, uint16_t);
@@ -106,8 +106,8 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, job_credential_private_key, charp);
 	if (conf->job_credential_public_certificate)
 		STORE_FIELD(hv, conf, job_credential_public_certificate, charp);
-	STORE_FIELD(hv, conf, job_file_append, uint16_t); 
-	STORE_FIELD(hv, conf, job_requeue, uint16_t); 
+	STORE_FIELD(hv, conf, job_file_append, uint16_t);
+	STORE_FIELD(hv, conf, job_requeue, uint16_t);
 	if (conf->job_submit_plugins)
 		STORE_FIELD(hv, conf, job_submit_plugins, charp);
 
@@ -320,7 +320,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, group_info, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, hash_val, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, health_check_interval, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, health_check_node_state, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, health_check_node_state, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, health_check_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, inactive_limit, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, job_acct_gather_freq, charp, TRUE);
@@ -431,7 +431,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, suspend_rate, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, suspend_time, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, suspend_timeout, uint16_t, TRUE);
-	
+
 	FETCH_FIELD(hv, conf, switch_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, task_epilog, charp, FALSE);
 	FETCH_FIELD(hv, conf, task_plugin, charp, FALSE);

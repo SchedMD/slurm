@@ -112,7 +112,7 @@ static void	_update_config_ptr(bitstr_t *bitmap,
 static int	_update_node_features(char *node_names, char *features);
 static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
-static bool 	_valid_node_state_change(uint16_t old, uint16_t new);
+static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
 
 
 /* dump_all_node_state - save the state of all nodes to file */
@@ -215,7 +215,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	packstr (dump_node_ptr->features, buffer);
 	packstr (dump_node_ptr->gres, buffer);
 	packstr (dump_node_ptr->cpu_spec_list, buffer);
-	pack16  (dump_node_ptr->node_state, buffer);
+	pack32  (dump_node_ptr->node_state, buffer);
 	pack16  (dump_node_ptr->cpus, buffer);
 	pack16  (dump_node_ptr->boards, buffer);
 	pack16  (dump_node_ptr->sockets, buffer);
@@ -277,7 +277,8 @@ extern int load_all_node_state ( bool state_only )
 	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
 	char *features = NULL, *gres = NULL, *cpu_spec_list = NULL;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
-	uint16_t node_state, core_spec_cnt = 0;
+	uint16_t node_state2, core_spec_cnt = 0;
+	uint32_t node_state;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint32_t real_memory, tmp_disk, data_size = 0, name_len;
 	uint32_t reason_uid = NO_VAL, mem_spec_limit = 0;
@@ -350,7 +351,9 @@ extern int load_all_node_state ( bool state_only )
 	safe_unpack_time (&time_stamp, buffer);
 
 	while (remaining_buf (buffer) > 0) {
-		uint16_t base_state, obj_protocol_version = (uint16_t)NO_VAL;
+		uint32_t base_state;
+		uint16_t base_state2;
+		uint16_t obj_protocol_version = (uint16_t)NO_VAL;
 		if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
@@ -361,7 +364,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
 			safe_unpackstr_xmalloc (&cpu_spec_list,
 							    &name_len, buffer);
-			safe_unpack16 (&node_state,  buffer);
+			safe_unpack32 (&node_state,  buffer);
 			safe_unpack16 (&cpus,        buffer);
 			safe_unpack16 (&boards,     buffer);
 			safe_unpack16 (&sockets,     buffer);
@@ -387,7 +390,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
 			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
-			safe_unpack16 (&node_state,  buffer);
+			safe_unpack16 (&node_state2,  buffer);
 			safe_unpack16 (&cpus,        buffer);
 			safe_unpack16 (&boards,     buffer);
 			safe_unpack16 (&sockets,     buffer);
@@ -402,7 +405,12 @@ extern int load_all_node_state ( bool state_only )
 				    &gres_list, buffer, node_name,
 				    protocol_version) != SLURM_SUCCESS)
 				goto unpack_error;
-			base_state = node_state & NODE_STATE_BASE;
+			base_state2 = node_state2 & NODE_STATE_BASE;
+			/* First decode the quantities as 16 bit
+			 * then assign to 32 bit.
+			 */
+			node_state = node_state2;
+			base_state = base_state2;
 		} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
@@ -411,7 +419,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
 			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
-			safe_unpack16 (&node_state,  buffer);
+			safe_unpack16 (&node_state2,  buffer);
 			safe_unpack16 (&cpus,        buffer);
 			safe_unpack16 (&boards,     buffer);
 			safe_unpack16 (&sockets,     buffer);
@@ -425,7 +433,12 @@ extern int load_all_node_state ( bool state_only )
 				    &gres_list, buffer, node_name,
 				    protocol_version) != SLURM_SUCCESS)
 				goto unpack_error;
-			base_state = node_state & NODE_STATE_BASE;
+			base_state2 = node_state2 & NODE_STATE_BASE;
+			/* First decode the quantities as 16 bit
+			 * then assign to 32 bit.
+			 */
+			node_state = node_state2;
+			base_state = base_state2;
 		} else {
 			error("load_all_node_state: protocol_version "
 			      "%hu not supported", protocol_version);
@@ -455,7 +468,7 @@ extern int load_all_node_state ( bool state_only )
 			error ("Node %s has vanished from configuration",
 			       node_name);
 		} else if (state_only) {
-			uint16_t orig_flags;
+			uint32_t orig_flags;
 			if (IS_NODE_CLOUD(node_ptr)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWER_SAVE) ||
@@ -497,7 +510,7 @@ extern int load_all_node_state ( bool state_only )
 					if (power_save_mode &&
 					    IS_NODE_UNKNOWN(node_ptr)) {
 						orig_flags = node_ptr->
-							     node_state &
+							node_state &
 							     NODE_STATE_FLAGS;
 						node_ptr->node_state =
 							NODE_STATE_IDLE |
@@ -879,11 +892,11 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		packstr (dump_node_ptr->name, buffer);
 		packstr (dump_node_ptr->node_hostname, buffer);
 		packstr (dump_node_ptr->comm_name, buffer);
-		pack16  (dump_node_ptr->node_state, buffer);
+		pack32(dump_node_ptr->node_state, buffer);
 		packstr (dump_node_ptr->version, buffer);
 		/* On a bluegene system always use the regular node
 		* infomation not what is in the config_ptr. */
-	#ifndef HAVE_BG
+#ifndef HAVE_BG
 		if (slurmctld_conf.fast_schedule) {
 			/* Only data from config_record used for scheduling */
 			pack16(dump_node_ptr->config_ptr->cpus, buffer);
@@ -894,7 +907,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 		} else {
-	#endif
+#endif
 			/* Individual node data used for scheduling */
 			pack16(dump_node_ptr->cpus, buffer);
 			pack16(dump_node_ptr->boards, buffer);
@@ -903,9 +916,9 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack16(dump_node_ptr->threads, buffer);
 			pack32(dump_node_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->tmp_disk, buffer);
-	#ifndef HAVE_BG
+#ifndef HAVE_BG
 		}
-	#endif
+#endif
 		pack16(dump_node_ptr->core_spec_cnt, buffer);
 		pack32(dump_node_ptr->mem_spec_limit, buffer);
 		packstr(dump_node_ptr->cpu_spec_list, buffer);
@@ -955,7 +968,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		/* On a bluegene system always use the regular node
 		* infomation not what is in the config_ptr.
 		*/
-	#ifndef HAVE_BG
+#ifndef HAVE_BG
 		if (slurmctld_conf.fast_schedule) {
 			/* Only data from config_record used for scheduling */
 			pack16(dump_node_ptr->config_ptr->cpus, buffer);
@@ -966,7 +979,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 		} else {
-	#endif
+#endif
 			/* Individual node data used for scheduling */
 			pack16(dump_node_ptr->cpus, buffer);
 			pack16(dump_node_ptr->boards, buffer);
@@ -975,9 +988,9 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack16(dump_node_ptr->threads, buffer);
 			pack32(dump_node_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->tmp_disk, buffer);
-	#ifndef HAVE_BG
+#ifndef HAVE_BG
 		}
-	#endif
+#endif
 		pack32(dump_node_ptr->cpu_load, buffer);
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
@@ -1009,7 +1022,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		/* On a bluegene system always use the regular node
 		* infomation not what is in the config_ptr.
 		*/
-	#ifndef HAVE_BG
+#ifndef HAVE_BG
 		if (slurmctld_conf.fast_schedule) {
 			/* Only data from config_record used for scheduling */
 			pack16(dump_node_ptr->config_ptr->cpus, buffer);
@@ -1020,7 +1033,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 		} else {
-	#endif
+#endif
 			/* Individual node data used for scheduling */
 			pack16(dump_node_ptr->cpus, buffer);
 			pack16(dump_node_ptr->boards, buffer);
@@ -1029,9 +1042,9 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack16(dump_node_ptr->threads, buffer);
 			pack32(dump_node_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->tmp_disk, buffer);
-	#ifndef HAVE_BG
+#ifndef HAVE_BG
 		}
-	#endif
+#endif
 		pack32(dump_node_ptr->cpu_load, buffer);
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
@@ -1114,7 +1127,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	struct node_record *node_ptr = NULL;
 	char  *this_node_name = NULL;
 	hostlist_t host_list, hostaddr_list = NULL, hostname_list = NULL;
-	uint16_t base_state = 0, node_flags, state_val;
+	uint32_t base_state = 0, node_flags, state_val;
 	time_t now = time(NULL);
 
 	if (update_node_msg->node_names == NULL ) {
@@ -1222,7 +1235,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				this_node_name, node_ptr->reason);
 		}
 
-		if (state_val != (uint16_t) NO_VAL) {
+		if (state_val != (uint32_t) NO_VAL) {
 			base_state = node_ptr->node_state;
 			if (!_valid_node_state_change(base_state, state_val)) {
 				info("Invalid node state transition requested "
@@ -1230,13 +1243,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 				     this_node_name,
 				     node_state_string(base_state),
 				     node_state_string(state_val));
-				state_val = (uint16_t) NO_VAL;
+				state_val = (uint32_t) NO_VAL;
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
 			base_state &= NODE_STATE_BASE;
 		}
 
-		if (state_val != (uint16_t) NO_VAL) {
+		if (state_val != (uint32_t) NO_VAL) {
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (state_val == NODE_RESUME) {
 				if (IS_NODE_IDLE(node_ptr) &&
@@ -1337,7 +1350,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (idle_node_bitmap, node_inx);
 			} else if ((state_val == NODE_STATE_DRAIN) ||
 				   (state_val == NODE_STATE_FAIL)) {
-				uint16_t new_state = state_val;
+				uint32_t new_state = state_val;
 				bit_clear (avail_node_bitmap, node_inx);
 				state_val = node_ptr->node_state |= state_val;
 				if ((node_ptr->run_job_cnt  == 0) &&
@@ -1833,9 +1846,9 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid )
 	return error_code;
 }
 /* Return true if admin request to change node state from old to new is valid */
-static bool _valid_node_state_change(uint16_t old, uint16_t new)
+static bool _valid_node_state_change(uint32_t old, uint32_t new)
 {
-	uint16_t base_state, node_flags;
+	uint32_t base_state, node_flags;
 
 	if (old == new)
 		return true;
@@ -1950,7 +1963,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	char *reason_down = NULL;
-	uint16_t node_flags;
+	uint32_t node_flags;
 	time_t now = time(NULL);
 	bool gang_flag = false;
 	bool orig_node_avail;
@@ -2294,7 +2307,7 @@ static front_end_record_t * _front_end_reg(
 		slurm_node_registration_status_msg_t *reg_msg)
 {
 	front_end_record_t *front_end_ptr;
-	uint16_t state_base, state_flags;
+	uint32_t state_base, state_flags;
 	time_t now = time(NULL);
 
 	debug2("name:%s boot_time:%u up_time:%u",
@@ -2364,7 +2377,7 @@ extern int validate_nodes_via_front_end(
 	ListIterator job_iterator;
 	hostlist_t reg_hostlist = NULL;
 	char *host_str = NULL, *reason_down = NULL;
-	uint16_t node_flags;
+	uint32_t node_flags;
 	front_end_record_t *front_end_ptr;
 
 	if (reg_msg->up_time > now) {
@@ -2661,7 +2674,7 @@ static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 #ifdef HAVE_FRONT_END
 static void _node_did_resp(front_end_record_t *fe_ptr)
 {
-	uint16_t node_flags;
+	uint32_t node_flags;
 	time_t now = time(NULL);
 
 	fe_ptr->last_response = now;
@@ -2700,7 +2713,7 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 static void _node_did_resp(struct node_record *node_ptr)
 {
 	int node_inx;
-	uint16_t node_flags;
+	uint32_t node_flags;
 	time_t now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
@@ -3055,7 +3068,7 @@ extern void make_node_alloc(struct node_record *node_ptr,
 			    struct job_record *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
-	uint16_t node_flags;
+	uint32_t node_flags;
 
 	(node_ptr->run_job_cnt)++;
 	bit_clear(idle_node_bitmap, inx);
@@ -3082,7 +3095,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 			   struct job_record *job_ptr, bool suspended)
 {
 	int inx = node_ptr - node_record_table_ptr;
-	uint16_t node_flags;
+	uint32_t node_flags;
 	time_t now = time(NULL);
 
 	xassert(node_ptr);
@@ -3146,7 +3159,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 static void _make_node_down(struct node_record *node_ptr, time_t event_time)
 {
 	int inx = node_ptr - node_record_table_ptr;
-	uint16_t node_flags;
+	uint32_t node_flags;
 
 	xassert(node_ptr);
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
@@ -3174,7 +3187,7 @@ void make_node_idle(struct node_record *node_ptr,
 		    struct job_record *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
-	uint16_t node_flags;
+	uint32_t node_flags;
 	time_t now = time(NULL);
 	bitstr_t *node_bitmap = NULL;
 	char jbuf[JBUFSIZ];

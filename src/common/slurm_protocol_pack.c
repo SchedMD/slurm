@@ -2466,7 +2466,18 @@ _pack_update_node_msg(update_node_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
 	xassert(msg != NULL);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		packstr(msg->node_addr, buffer);
+		packstr(msg->node_hostname, buffer);
+		packstr(msg->node_names, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->gres, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->weight, buffer);
+		pack32(msg->reason_uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->node_addr, buffer);
 		packstr(msg->node_hostname, buffer);
 		packstr(msg->node_names, buffer);
@@ -2488,25 +2499,40 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 {
 	uint32_t uint32_tmp;
 	update_node_msg_t *tmp_ptr;
+	uint16_t tmp_state;
 
 	/* alloc memory for structure */
 	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(update_node_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->node_addr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->node_hostname,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->node_names,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&tmp_ptr->node_state, buffer);
+		safe_unpack32(&tmp_ptr->node_state, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->weight, buffer);
 		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->node_addr,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->node_hostname,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->node_names,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&tmp_state, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->weight, buffer);
+		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+		tmp_ptr->node_state = tmp_state;
 	} else {
 		error("_unpack_update_node_msg: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -3276,15 +3302,18 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 			  uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
+	uint16_t tmp_state;
 
 	xassert(node != NULL);
+
+	tmp_state = node->node_state;
 
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
-		safe_unpack16(&node->node_state, buffer);
+		safe_unpack32(&node->node_state, buffer);
 		safe_unpackstr_xmalloc(&node->version, &uint32_tmp, buffer);
 
 		safe_unpack16(&node->cpus, buffer);
@@ -3332,7 +3361,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
-		safe_unpack16(&node->node_state, buffer);
+		safe_unpack16(&tmp_state, buffer);
 		safe_unpackstr_xmalloc(&node->version, &uint32_tmp, buffer);
 
 		safe_unpack16(&node->cpus, buffer);
@@ -3372,7 +3401,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
-		safe_unpack16(&node->node_state, buffer);
+		safe_unpack16(&tmp_state, buffer);
 		safe_unpack16(&node->cpus, buffer);
 		safe_unpack16(&node->boards, buffer);
 		safe_unpack16(&node->sockets, buffer);

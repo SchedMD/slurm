@@ -72,7 +72,7 @@
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
-	uint16_t node_state;
+	uint32_t node_state;
 
 	uint32_t nodes_alloc;
 	uint32_t nodes_idle;

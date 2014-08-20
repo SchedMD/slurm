@@ -11126,7 +11126,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	if ((IS_JOB_PENDING(job_ptr) && (!IS_JOB_COMPLETING(job_ptr))) ||
 	    (job_ptr->node_bitmap == NULL)) {
 #ifndef HAVE_FRONT_END
-		uint16_t base_state = NODE_STATE_UNKNOWN;
+		uint32_t base_state = NODE_STATE_UNKNOWN;
 		node_ptr = find_node_record(node_name);
 		if (node_ptr)
 			base_state = node_ptr->node_state & NODE_STATE_BASE;
@@ -11716,7 +11716,7 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
 {
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
-	uint16_t node_flags;
+	uint32_t node_flags;
 	time_t now = time(NULL);
 
 	if ((rc = select_g_job_suspend(job_ptr, indf_susp)) != SLURM_SUCCESS)
@@ -11773,7 +11773,7 @@ static int _resume_job_nodes(struct job_record *job_ptr, bool indf_susp)
 {
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
-	uint16_t node_flags;
+	uint32_t node_flags;
 
 	if ((rc = select_g_job_resume(job_ptr, indf_susp)) != SLURM_SUCCESS)
 		return rc;

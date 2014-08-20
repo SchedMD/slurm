@@ -628,7 +628,7 @@ static bool _filter_out(node_info_t *node_ptr)
 	if (params.state_list) {
 		int *node_state;
 		bool match = false;
-		uint16_t base_state;
+		uint32_t base_state;
 		ListIterator iterator;
 		uint16_t cpus = 0;
 		node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
@@ -879,7 +879,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			  uint32_t node_scaling)
 {
-	uint16_t base_state;
+	uint32_t base_state;
 	uint16_t used_cpus = 0, error_cpus = 0;
 	int total_cpus = 0, total_nodes = 0;
 	/* since node_scaling could be less here, we need to use the

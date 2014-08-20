@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
  -- The srun options -/--label and -u/--unbuffered can be specified together.
     This limitation has been removed.
  -- Provide sacct display of gres accounting information per job.
+ -- Change the node status size from uin16_t to uint32_t.
 
 * Changes in Slurm 14.11.0pre3
 ==============================

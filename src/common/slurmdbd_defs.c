@@ -3758,7 +3758,15 @@ extern void
 slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
 			     uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		pack32(msg->cpu_count, buffer);
+		packstr(msg->hostlist, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->reason_uid, buffer);
+		pack16(msg->new_state, buffer);
+		pack_time(msg->event_time, buffer);
+		pack32(msg->state, buffer);
+	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		pack32(msg->cpu_count, buffer);
 		packstr(msg->hostlist, buffer);
 		packstr(msg->reason, buffer);
@@ -3775,20 +3783,30 @@ slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 {
 	dbd_node_state_msg_t *msg_ptr;
 	uint32_t uint32_tmp;
+	uint16_t tmp_state;
 
 	msg_ptr = xmalloc(sizeof(dbd_node_state_msg_t));
 	*msg = msg_ptr;
 
 	msg_ptr->reason_uid = NO_VAL;
 
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->cpu_count, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->reason_uid, buffer);
 		safe_unpack16(&msg_ptr->new_state, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
-		safe_unpack16(&msg_ptr->state, buffer);
+		safe_unpack32(&msg_ptr->state, buffer);
+	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+		safe_unpack32(&msg_ptr->cpu_count, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->reason_uid, buffer);
+		safe_unpack16(&msg_ptr->new_state, buffer);
+		safe_unpack_time(&msg_ptr->event_time, buffer);
+		safe_unpack16(&tmp_state, buffer);
+		msg_ptr->state = tmp_state;
 	}
 
 	return SLURM_SUCCESS;

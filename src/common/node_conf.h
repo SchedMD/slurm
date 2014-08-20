@@ -99,7 +99,7 @@ struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *name;			/* name of the node. NULL==defunct */
 	char *node_hostname;		/* hostname of the node */
-	uint16_t node_state;		/* enum node_states, ORed with
+	uint32_t node_state;		/* enum node_states, ORed with
 					 * NODE_STATE_NO_RESPOND if not
 					 * responding */
 	bool not_responding;		/* set if fails to respond,

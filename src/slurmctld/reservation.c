@@ -4192,7 +4192,7 @@ extern int set_node_maint_mode(bool reset_all)
 	if (reset_all) {
 		int i;
 		struct node_record *node_ptr;
-		uint16_t flags = (NODE_STATE_RES | NODE_STATE_MAINT);
+		uint32_t flags = (NODE_STATE_RES | NODE_STATE_MAINT);
 
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i <= node_record_count;
@@ -4202,7 +4202,7 @@ extern int set_node_maint_mode(bool reset_all)
 	}
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		uint16_t flags = NODE_STATE_RES;
+		uint32_t flags = NODE_STATE_RES;
 		if (reset_all)
 			resv_ptr->flags_set_node = false;
 		if (resv_ptr->flags & RESERVE_FLAG_MAINT)

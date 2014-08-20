@@ -1441,7 +1441,7 @@ extern char *trigger_res_type(uint16_t res_type)
 
 /* Convert HealthCheckNodeState numeric value to a string.
  * Caller must xfree() the return value */
-extern char *health_check_node_state_str(uint16_t node_state)
+extern char *health_check_node_state_str(uint32_t node_state)
 {
 	char *state_str = NULL;
 
@@ -1637,7 +1637,7 @@ extern char *priority_flags_string(uint16_t priority_flags)
 	return flag_str;
 }
 
-extern char *node_state_string(uint16_t inx)
+extern char *node_state_string(uint32_t inx)
 {
 	int  base            = (inx & NODE_STATE_BASE);
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
@@ -1771,7 +1771,7 @@ extern char *node_state_string(uint16_t inx)
 	return "?";
 }
 
-extern char *node_state_string_compact(uint16_t inx)
+extern char *node_state_string_compact(uint32_t inx)
 {
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
@@ -1784,7 +1784,7 @@ extern char *node_state_string_compact(uint16_t inx)
 	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
 
-	inx = (uint16_t) (inx & NODE_STATE_BASE);
+	inx = (inx & NODE_STATE_BASE);
 
 	if (maint_flag) {
 		if ((inx == NODE_STATE_ALLOCATED) || (inx == NODE_STATE_MIXED))

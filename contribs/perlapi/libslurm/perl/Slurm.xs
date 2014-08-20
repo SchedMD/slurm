@@ -227,7 +227,7 @@ slurm_reservation_flags_string(slurm_t self, uint16_t flags)
 		RETVAL
 
 char *
-slurm_node_state_string(slurm_t self, uint16_t inx)
+slurm_node_state_string(slurm_t self, uint32_t inx)
 	PREINIT:
 		char *tmp_str;
 		int len;
@@ -246,7 +246,7 @@ slurm_node_state_string(slurm_t self, uint16_t inx)
 		RETVAL
 
 char *
-slurm_node_state_string_compact(slurm_t self, uint16_t inx)
+slurm_node_state_string_compact(slurm_t self, uint32_t inx)
 	PREINIT:
 		char *tmp_str;
 		int len;

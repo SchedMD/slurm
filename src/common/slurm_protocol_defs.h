@@ -1260,14 +1260,14 @@ extern uint16_t log_string2num(char *name);
 
 /* Convert HealthCheckNodeState numeric value to a string.
  * Caller must xfree() the return value */
-extern char *health_check_node_state_str(uint16_t node_state);
+extern char *health_check_node_state_str(uint32_t node_state);
 
 extern char *job_reason_string(enum job_state_reason inx);
 extern char *job_state_string(uint16_t inx);
 extern char *job_state_string_compact(uint16_t inx);
 extern int   job_state_num(const char *state_name);
-extern char *node_state_string(uint16_t inx);
-extern char *node_state_string_compact(uint16_t inx);
+extern char *node_state_string(uint32_t inx);
+extern char *node_state_string_compact(uint32_t inx);
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 extern void  accounting_enforce_string(uint16_t enforce,
 				       char *str, int str_len);

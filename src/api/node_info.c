@@ -125,7 +125,7 @@ char *
 slurm_sprint_node_table (node_info_t * node_ptr,
 			 int node_scaling, int one_liner )
 {
-	uint16_t my_state = node_ptr->node_state;
+	uint32_t my_state = node_ptr->node_state;
 	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";
 	char load_str[32], tmp_line[512], time_str[32];
 	char *out = NULL, *reason_str = NULL, *select_reason_str = NULL;

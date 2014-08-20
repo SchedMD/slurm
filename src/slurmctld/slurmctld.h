@@ -279,7 +279,7 @@ typedef struct front_end_record {
 	time_t last_response;		/* Time of last communication */
 	uint32_t magic;			/* magic cookie to test data integrity */
 	char *name;			/* frontend node name */
-	uint16_t node_state;		/* enum node_states, ORed with
+	uint32_t node_state;		/* enum node_states, ORed with
 					 * NODE_STATE_NO_RESPOND if not
 					 * responding */
 	bool not_responding;		/* set if fails to respond,

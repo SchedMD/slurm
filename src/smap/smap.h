@@ -155,7 +155,7 @@ typedef struct {
 	int index;
 	/* letter used in smap */
 	char letter;
-	int state;
+	uint32_t state;
 	/* set if using this midplane in a block */
 	uint16_t used;
 } smap_node_t;

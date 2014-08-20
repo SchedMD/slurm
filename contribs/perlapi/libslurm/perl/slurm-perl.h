@@ -30,8 +30,8 @@ extern char *slurm_job_reason_string(enum job_state_reason inx);
 extern char *slurm_job_state_string(uint16_t inx);
 extern char *slurm_job_state_string_compact(uint16_t inx);
 extern int   slurm_job_state_num(const char *state_name);
-extern char *slurm_node_state_string(uint16_t inx);
-extern char *slurm_node_state_string_compact(uint16_t inx);
+extern char *slurm_node_state_string(uint32_t inx);
+extern char *slurm_node_state_string_compact(uint32_t inx);
 extern char *slurm_reservation_flags_string(uint16_t inx);
 extern void  slurm_private_data_string(uint16_t private_data,
 				       char *str, int str_len);

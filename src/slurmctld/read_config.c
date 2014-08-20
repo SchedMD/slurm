@@ -363,7 +363,7 @@ static int _build_bitmaps(void)
 	 * their configuration, resync DRAINED vs. DRAINING state */
 	for (i=0, node_ptr=node_record_table_ptr;
 	     i<node_record_count; i++, node_ptr++) {
-		uint16_t drain_flag, job_cnt;
+		uint32_t drain_flag, job_cnt;
 
 		if (node_ptr->name[0] == '\0')
 			continue;	/* defunct */
@@ -1140,7 +1140,7 @@ static int _restore_node_state(int recover,
 
 	for (i=0, old_node_ptr=old_node_table_ptr; i<old_node_record_count;
 	     i++, old_node_ptr++) {
-		uint16_t drain_flag = false, down_flag = false;
+		uint32_t drain_flag = false, down_flag = false;
 		node_ptr  = find_node_record(old_node_ptr->name);
 		if (node_ptr == NULL)
 			continue;
@@ -1787,7 +1787,7 @@ static int _sync_nodes_to_comp_job(void)
 static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 {
 	int i, cnt = 0;
-	uint16_t node_flags;
+	uint32_t node_flags;
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	if (job_ptr->node_bitmap_cg) /* job completing */
