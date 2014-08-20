@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.0pre5
 ==============================
+ -- Fix sbatch --export=ALL, it was treated by srun as a request to explicitly
+    export only the environment variable named "ALL".
 
 * Changes in Slurm 14.11.0pre4
 ==============================
