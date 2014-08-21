@@ -538,7 +538,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 				      front_end_ptr->name);
 			}
 			if (front_end_ptr->job_cnt_run == 0) {
-				uint16_t state_flags;
+				uint32_t state_flags;
 				state_flags = front_end_ptr->node_state &
 					      NODE_STATE_FLAGS;
 				front_end_ptr->node_state = NODE_STATE_IDLE |

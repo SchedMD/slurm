@@ -168,7 +168,7 @@ void slurm_init_update_front_end_msg (update_front_end_msg_t *
 				      update_front_end_msg)
 {
 	memset(update_front_end_msg, 0, sizeof(update_front_end_msg_t));
-	update_front_end_msg->node_state = (uint16_t) NO_VAL;
+	update_front_end_msg->node_state = (uint32_t)NO_VAL;
 }
 
 /*

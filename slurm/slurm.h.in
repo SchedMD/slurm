@@ -1694,7 +1694,7 @@ typedef struct front_end_info {
 	char *deny_groups;		/* denied group string */
 	char *deny_users;		/* denied user string */
 	char *name;			/* node name */
-	uint16_t node_state;		/* see enum node_states */
+	uint32_t node_state;		/* see enum node_states */
 	char *reason;			/* reason for node being DOWN or
 					 * DRAINING */
 	time_t reason_time;		/* Time stamp when reason was set,
@@ -2400,7 +2400,7 @@ typedef struct slurm_update_node_msg {
 
 typedef struct slurm_update_front_end_msg {
 	char *name;		/* comma separated list of front end nodes */
-	uint16_t node_state;	/* see enum node_states */
+	uint32_t node_state;	/* see enum node_states */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t reason_uid;	/* user ID of sending (needed if user
 				 * root is sending message) */

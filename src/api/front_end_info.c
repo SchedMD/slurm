@@ -120,7 +120,7 @@ char *
 slurm_sprint_front_end_table (front_end_info_t * front_end_ptr,
 			      int one_liner)
 {
-	uint16_t my_state = front_end_ptr->node_state;
+	uint32_t my_state = front_end_ptr->node_state;
 	char *drain_str = "";
 	char tmp_line[512], time_str[32];
 	char *out = NULL;

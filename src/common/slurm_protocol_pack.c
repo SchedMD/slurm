@@ -2419,7 +2419,13 @@ _pack_update_front_end_msg(update_front_end_msg_t * msg, Buf buffer,
 			   uint16_t protocol_version)
 {
 	xassert(msg != NULL);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		packstr(msg->name, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->reason_uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
 		pack16(msg->node_state, buffer);
 		packstr(msg->reason, buffer);
@@ -2436,18 +2442,26 @@ _unpack_update_front_end_msg(update_front_end_msg_t ** msg, Buf buffer,
 {
 	uint32_t uint32_tmp;
 	update_front_end_msg_t *tmp_ptr;
+	uint16_t tmp_state;
 
 	/* alloc memory for structure */
 	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(update_front_end_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->name,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&tmp_ptr->node_state, buffer);
+		safe_unpack32(&tmp_ptr->node_state, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->name,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&tmp_state, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+		tmp_ptr->node_state = tmp_state;
 	} else {
 		error("_unpack_update_front_end_msg: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -9691,10 +9705,11 @@ _unpack_front_end_info_members(front_end_info_t *front_end, Buf buffer,
 			       uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
+	uint16_t tmp_state;
 
 	xassert(front_end != NULL);
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&front_end->allow_groups, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&front_end->allow_users, &uint32_tmp,
@@ -9705,7 +9720,7 @@ _unpack_front_end_info_members(front_end_info_t *front_end, Buf buffer,
 		safe_unpackstr_xmalloc(&front_end->deny_users, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&front_end->name, &uint32_tmp, buffer);
-		safe_unpack16(&front_end->node_state, buffer);
+		safe_unpack32(&front_end->node_state, buffer);
 		safe_unpackstr_xmalloc(&front_end->version, &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&front_end->reason, &uint32_tmp, buffer);
@@ -9713,6 +9728,28 @@ _unpack_front_end_info_members(front_end_info_t *front_end, Buf buffer,
 		safe_unpack32(&front_end->reason_uid, buffer);
 
 		safe_unpack_time(&front_end->slurmd_start_time, buffer);
+
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&front_end->allow_groups, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->allow_users, &uint32_tmp,
+				       buffer);
+		safe_unpack_time(&front_end->boot_time, buffer);
+		safe_unpackstr_xmalloc(&front_end->deny_groups, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->deny_users, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->name, &uint32_tmp, buffer);
+		safe_unpack16(&tmp_state, buffer);
+		safe_unpackstr_xmalloc(&front_end->version, &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&front_end->reason, &uint32_tmp, buffer);
+		safe_unpack_time(&front_end->reason_time, buffer);
+		safe_unpack32(&front_end->reason_uid, buffer);
+
+		safe_unpack_time(&front_end->slurmd_start_time, buffer);
+		front_end->node_state = tmp_state;
+
 	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&front_end->allow_groups, &uint32_tmp,
 				       buffer);
@@ -9724,13 +9761,14 @@ _unpack_front_end_info_members(front_end_info_t *front_end, Buf buffer,
 		safe_unpackstr_xmalloc(&front_end->deny_users, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&front_end->name, &uint32_tmp, buffer);
-		safe_unpack16(&front_end->node_state, buffer);
+		safe_unpack16(&tmp_state, buffer);
 
 		safe_unpackstr_xmalloc(&front_end->reason, &uint32_tmp, buffer);
 		safe_unpack_time(&front_end->reason_time, buffer);
 		safe_unpack32(&front_end->reason_uid, buffer);
 
 		safe_unpack_time(&front_end->slurmd_start_time, buffer);
+		front_end->node_state = tmp_state;
 	} else {
 		error("_unpack_front_end_info_members: protocol_version "
 		      "%hu not supported", protocol_version);
