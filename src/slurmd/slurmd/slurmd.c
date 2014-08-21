@@ -1457,8 +1457,10 @@ _slurmd_init(void)
 	rehash_node();
 	slurm_topo_build_config();
 	_set_topo_info();
-	route_g_init(conf->node_name);
 
+#if !defined(HAVE_FRONT_END)
+		route_g_init(conf->node_name);
+#endif
 	/*
 	 * Check for cpu frequency set capabilities on this node
 	 */
