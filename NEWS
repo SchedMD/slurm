@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     has finished)
  -- Fix sinfo/sview to be able to query against nodes in reserved and other
     states.
+ -- Make sbatch read in (SLURM|SBATCH)_HINT in order to handle sruns in the
+    script that will use it.
 
 * Changes in Slurm 14.03.7
 ==========================
