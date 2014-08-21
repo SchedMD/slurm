@@ -120,6 +120,7 @@
 #define OPT_CORE_SPEC     0x1a
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
+#define OPT_HINT	  0x22
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -438,6 +439,8 @@ env_vars_t env_vars[] = {
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
+  {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
+  {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL          },
   {"SBATCH_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL          },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL          },
@@ -545,6 +548,18 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
 					  &opt.cpu_bind_type))
 			exit(error_exit);
+		break;
+
+	case OPT_HINT:
+		/* Keep after other options filled in */
+		if (verify_hint(val,
+				&opt.sockets_per_node,
+				&opt.cores_per_socket,
+				&opt.threads_per_core,
+				&opt.ntasks_per_core,
+				&opt.cpu_bind_type)) {
+			exit(error_exit);
+		}
 		break;
 
 	case OPT_MEM_BIND:
