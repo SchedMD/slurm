@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     states.
  -- Make sbatch read in (SLURM|SBATCH)_HINT in order to handle sruns in the
     script that will use it.
+ -- srun properly interprets a leading "." in the executable name based upon
+    the working directory of the compute node rather than the submit host.
 
 * Changes in Slurm 14.03.7
 ==========================

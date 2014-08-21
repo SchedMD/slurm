@@ -795,13 +795,8 @@ search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
-	if (  (cmd[0] == '.' || cmd[0] == '/')
-	   && (access(cmd, access_mode) == 0 ) ) {
-		if (cmd[0] == '.')
-			xstrfmtcat(fullpath, "%s/", cwd);
-		xstrcat(fullpath, cmd);
-		goto done;
-	}
+	if ((cmd[0] == '.') || (cmd[0] == '/'))
+		return NULL;
 
 	l = _create_path_list();
 	if (l == NULL)

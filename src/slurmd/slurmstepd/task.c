@@ -300,6 +300,15 @@ _build_path(char* fname, char **prog_env)
 	/* check if already absolute path */
 	if (file_name[0] == '/')
 		return file_name;
+	if (file_name[0] == '.') {
+		file_path = (char *)xmalloc(len);
+		dir = (char *)xmalloc(len);
+		(void) getcwd(dir, len);
+		snprintf(file_path, len, "%s/%s", dir, file_name);
+		xfree(file_name);
+		xfree(dir);
+		return file_path;
+	}
 
 	/* search for the file using PATH environment variable */
 	for (i=0; ; i++) {
