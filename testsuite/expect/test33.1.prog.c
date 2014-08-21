@@ -52,6 +52,8 @@
 
 #include "src/common/getopt.h"
 #include "src/common/hostlist.h"
+#include "src/common/macros.h"
+#include "src/common/slurm_protocol_socket_common.h"
 #include "src/common/slurm_route.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
