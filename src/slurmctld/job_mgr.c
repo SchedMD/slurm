@@ -7248,7 +7248,6 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			uint32_t job_id, uint16_t show_flags, uid_t uid,
 			uint16_t protocol_version)
 {
-	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
 	Buf buffer;
@@ -7272,22 +7271,31 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			jobs_packed++;
 		}
 	} else {
-		/* Single job ID not found. It could reference a job array. */
-		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = (struct job_record *)
-				  list_next(job_iterator))) {
-			if ((job_ptr->job_id != job_id) &&
-			    ((job_ptr->array_task_id ==  NO_VAL) ||
-			     (job_ptr->array_job_id  != job_id)))
-				continue;
+		bool packed_head = false;
 
-			if (_hide_job(job_ptr, uid))
-				break;
-			pack_job(job_ptr, show_flags, buffer, protocol_version,
-				 uid);
-			jobs_packed++;
+		/* Either the job is not found or it is a job array */
+		if (job_ptr) {
+			packed_head = true;
+			if (!_hide_job(job_ptr, uid)) {
+				pack_job(job_ptr, show_flags, buffer,
+					 protocol_version, uid);
+				jobs_packed++;
+			}
 		}
-		list_iterator_destroy(job_iterator);
+
+		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		while (job_ptr) {
+			if ((job_ptr->job_id == job_id) && packed_head) {
+				;	/* Already packed */
+			} else if (job_ptr->array_job_id == job_id) {
+				if (_hide_job(job_ptr, uid))
+					break;
+				pack_job(job_ptr, show_flags, buffer,
+					 protocol_version, uid);
+				jobs_packed++;
+			}
+			job_ptr = job_ptr->job_array_next_j;
+ 		}
 	}
 
 	if (jobs_packed == 0) {
