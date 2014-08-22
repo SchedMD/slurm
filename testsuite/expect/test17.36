@@ -198,7 +198,7 @@ proc check_job { exp_num_jobs } {
 	global squeue job_id num_jobs file_in exit_code
 
 	# Wait a bit for the job to start
-	wait_for_job $job_id RUNNING
+	wait_for_job ${job_id}_0 RUNNING
 
 	set job_cnt 0
 	# If gang scheduling is configured, some jobs will be suspended
@@ -217,9 +217,9 @@ proc check_job { exp_num_jobs } {
 		}
 	}
 
-	if { $exp_num_jobs != $job_cnt } {
+	if { $job_cnt != $exp_num_jobs } {
 		send_user "\nFAILURE: the number of possible jobs that could "
-		send_user "run were not reached ($exp_num_jobs != $job_cnt).\n"
+		send_user "run were not reached ($job_cnt != $exp_num_jobs).\n"
 		send_user "This could be due to memory or other limits.\n"
 		set exit_code 1
 	}
