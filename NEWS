@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- srun properly interprets a leading "." in the executable name based upon
     the working directory of the compute node rather than the submit host.
  -- Fix Lustre misspellings in hdf5 guide
+ -- Fix wrong reference in slurm.conf man page to what --profile option should
+    be used for AcctGatherFilesystemType.
 
 * Changes in Slurm 14.03.7
 ==========================
