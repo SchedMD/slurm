@@ -4301,7 +4301,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 	bitoff_t i;
 	kill_tasks_msg_t *kill_tasks_msg = NULL;
 	agent_arg_t *agent_args = NULL;
-	uint32_t z;
+	uint32_t z = 0;
 
 	xassert(job_ptr);
 	xassert(job_ptr->batch_host);

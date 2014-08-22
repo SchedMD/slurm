@@ -121,6 +121,11 @@ static void _print_small_double(
 
 void print_fields(type_t type, void *object)
 {
+	if (!object) {
+		fatal ("Job or step record is NULL");
+		return;
+	}
+
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
 	jobcomp_job_rec_t *job_comp = (jobcomp_job_rec_t *)object;

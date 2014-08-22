@@ -1723,14 +1723,20 @@ static void _get_all_task_series(FILE *fp, bool hd, hid_t jgid_step, int stepx)
 	nnodes = get_int_attribute(jgid_step, ATTR_NNODES);
 	// allocate node arrays
 	series_smp = (uint64_t*) xmalloc(ntasks*(sizeof(uint64_t)));
-	if (series_smp == NULL)
+	if (series_smp == NULL) {
 		fatal("Failed to get memory for node_samples");
+		return; /* Fix for CLANG false positive */
+	}
 	series_name = (char**) xmalloc(ntasks*(sizeof(char*)));
-	if (series_name == NULL)
+	if (series_name == NULL) {
 		fatal("Failed to get memory for series_name");
+		return; /* Fix for CLANG false positive */
+	}
 	all_series = (double**) xmalloc(ntasks*(sizeof(double*)));
-	if (all_series == NULL)
+	if (all_series == NULL) {
 		fatal("Failed to get memory for all_series");
+		return; /* Fix for CLANG false positive */
+	}
 
 	for (ndx=0; ndx<nnodes; ndx++) {
 

@@ -742,6 +742,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 static inline void
 _free_and_set(char **confvar, char *newval)
 {
+
 	xfree(*confvar);
 	*confvar = newval;	/* CLANG false positive */
 }

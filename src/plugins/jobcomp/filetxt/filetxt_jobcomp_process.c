@@ -93,8 +93,8 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
 	jobcomp_job_rec_t *job = xmalloc(sizeof(jobcomp_job_rec_t));
 	char *temp = NULL;
-	time_t start_time;
-	time_t end_time;
+	time_t start_time = 0;
+	time_t end_time = 0;
 
 	itr = list_iterator_create(job_info_list);
 	while((jobcomp_info = list_next(itr))) {

@@ -121,7 +121,7 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
  * NOTE: Not reentrant */
 extern char *select_type_param_string(uint16_t select_type_param)
 {
-	static char select_str[128];
+	static char select_str[1024];
 
 	select_str[0] = '\0';
 	if ((select_type_param & CR_CPU) &&

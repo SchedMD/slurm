@@ -219,7 +219,7 @@ void *agent(void *args)
 {
 	int i, delay, rc, retries = 0;
 	pthread_attr_t attr_wdog;
-	pthread_t thread_wdog;
+	pthread_t thread_wdog = 0;
 	agent_arg_t *agent_arg_ptr = args;
 	agent_info_t *agent_info_ptr = NULL;
 	thd_t *thread_ptr;

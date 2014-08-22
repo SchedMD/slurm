@@ -586,7 +586,7 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 {
 	bool tmp_val,ret_val;
 	int i,j;
-	int max_sockets = 0, max_cores, max_threads;
+	int max_sockets = 0, max_cores = 0, max_threads = 0;
 	const char *cur_ptr = arg;
 	char buf[3][48]; /* each can hold INT64_MAX - INT64_MAX */
 	buf[0][0] = '\0';
@@ -628,14 +628,13 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 		*min_sockets = NO_VAL;	/* Use full range of values */
 	ret_val = ret_val && tmp_val;
 
-	/* CLANG false positive */
+
 	tmp_val = get_resource_arg_range(&buf[1][0], "second arg of -B",
 					 min_cores, &max_cores, true);
 	if ((*min_cores == 1) && (max_cores == INT_MAX))
 		*min_cores = NO_VAL;	/* Use full range of values */
 	ret_val = ret_val && tmp_val;
 
-	/* CLANG false positive */
 	tmp_val = get_resource_arg_range(&buf[2][0], "third arg of -B",
 					 min_threads, &max_threads, true);
 	if ((*min_threads == 1) && (max_threads == INT_MAX))
