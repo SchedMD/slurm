@@ -201,7 +201,7 @@ static int  _purge_job_record(uint32_t job_id);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(char *file_name, char ***data,
 				       uint32_t * size,
- 				       struct job_record *job_ptr);
+				       struct job_record *job_ptr);
 static int  _read_data_from_file(char *file_name, char **data);
 static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
@@ -2790,7 +2790,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 					(job_ptr->node_cnt)--;
 				else {
 					error("node_cnt underflow on JobId=%u",
-				   	      job_ptr->job_id);
+					      job_ptr->job_id);
 				}
 				if (job_ptr->node_cnt == 0) {
 					delete_step_records(job_ptr);
@@ -3020,7 +3020,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				(job_ptr->node_cnt)--;
 			else {
 				error("node_cnt underflow on JobId=%u",
-			   	      job_ptr->job_id);
+				      job_ptr->job_id);
 			}
 			if (job_ptr->node_cnt == 0) {
 				delete_step_records(job_ptr);
@@ -4590,7 +4590,7 @@ static int _alt_part_test(struct part_record *part_ptr,
 		if (alt_name == NULL) {
 			info("_alt_part_test: no valid alternate partition is "
 			     "available");
-	    		return ESLURM_PARTITION_NOT_AVAIL;
+			return ESLURM_PARTITION_NOT_AVAIL;
 		}
 		*part_ptr_new = alt_part_ptr;
 	}
@@ -5059,7 +5059,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	} else if ((time_check != NO_VAL) &&
 		   (time_check > part_ptr->max_time) &&
 		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-		 			     QOS_FLAG_PART_TIME_LIMIT)))) {
+					     QOS_FLAG_PART_TIME_LIMIT)))) {
 		info("Job %u exceeds partition time limit (%u > %u)",
 		       job_ptr->job_id, time_check, part_ptr->max_time);
 		fail_reason = WAIT_PART_TIME_LIMIT;
@@ -6368,8 +6368,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_cpus   = job_desc->min_cpus;
- 	detail_ptr->max_cpus   = job_desc->max_cpus;
-   	detail_ptr->min_nodes  = job_desc->min_nodes;
+	detail_ptr->max_cpus   = job_desc->max_cpus;
+	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
 	if (job_desc->req_nodes) {
 		detail_ptr->req_nodes =
@@ -7295,7 +7295,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 				jobs_packed++;
 			}
 			job_ptr = job_ptr->job_array_next_j;
- 		}
+		}
 	}
 
 	if (jobs_packed == 0) {
@@ -8068,7 +8068,7 @@ void reset_job_bitmaps(void)
 			}
 			if (part_ptr == NULL) {
 				error("Invalid partition (%s) for job %u",
-		    		      job_ptr->partition, job_ptr->job_id);
+				      job_ptr->partition, job_ptr->job_id);
 				job_fail = true;
 			}
 		}
@@ -8093,7 +8093,7 @@ void reset_job_bitmaps(void)
 		    node_name2bitmap(job_ptr->nodes, false,
 				     &job_ptr->node_bitmap) && !job_fail) {
 			error("Invalid nodes (%s) for job_id %u",
-		    	      job_ptr->nodes, job_ptr->job_id);
+			      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
 		if (reset_node_bitmap(job_ptr->job_resrcs, job_ptr->job_id))
@@ -8178,7 +8178,7 @@ static int _reset_detail_bitmaps(struct job_record *job_ptr)
 	    (node_name2bitmap(job_ptr->details->req_nodes, false,
 			      &job_ptr->details->req_node_bitmap))) {
 		error("Invalid req_nodes (%s) for job_id %u",
-	    	      job_ptr->details->req_nodes, job_ptr->job_id);
+		      job_ptr->details->req_nodes, job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -8187,7 +8187,7 @@ static int _reset_detail_bitmaps(struct job_record *job_ptr)
 	    (node_name2bitmap(job_ptr->details->exc_nodes, true,
 			      &job_ptr->details->exc_node_bitmap))) {
 		error("Invalid exc_nodes (%s) for job_id %u",
-	    	      job_ptr->details->exc_nodes, job_ptr->job_id);
+		      job_ptr->details->exc_nodes, job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -8209,7 +8209,7 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 		    (node_name2bitmap(step_ptr->step_layout->node_list, false,
 				      &step_ptr->step_node_bitmap))) {
 			error("Invalid step_node_list (%s) for step_id %u.%u",
-	   	 	      step_ptr->step_layout->node_list,
+			      step_ptr->step_layout->node_list,
 			      job_ptr->job_id, step_ptr->step_id);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
@@ -9578,7 +9578,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->feature_list = NULL;
 			if (build_feature_list(job_ptr)) {
 				info("sched: update_job: invalid features"
-			 	     "(%s) for job_id %u",
+				     "(%s) for job_id %u",
 				     job_specs->features, job_ptr->job_id);
 				if (detail_ptr->feature_list)
 					list_destroy(detail_ptr->feature_list);
@@ -9587,7 +9587,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				error_code = ESLURM_INVALID_FEATURE;
 			} else {
 				info("sched: update_job: setting features to "
-			 	     "%s for job_id %u",
+				     "%s for job_id %u",
 				     job_specs->features, job_ptr->job_id);
 				xfree(old_features);
 				if (old_list)
@@ -11943,8 +11943,8 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 		}
 		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched) &&
 		    (!job_ptr->preempt_time)) {
- 			debug3("Job %u resumed, updating end_time",
- 			       job_ptr->job_id);
+			debug3("Job %u resumed, updating end_time",
+			       job_ptr->job_id);
 			job_ptr->end_time = now + (job_ptr->time_limit * 60)
 				- job_ptr->pre_sus_time;
 		}
@@ -13339,7 +13339,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd
 	rc = job_allocate(job_desc,
 			  0,		/* immediate */
 			  0,		/* will_run */
-			  NULL, 	/* resp */
+			  NULL,		/* resp */
 			  0,		/* allocate */
 			  0,		/* submit_uid. set to 0 to set job_id */
 			  &job_ptr, NULL);
