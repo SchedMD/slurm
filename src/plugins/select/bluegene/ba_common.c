@@ -1278,7 +1278,7 @@ extern void ba_node_map_set_range(bitstr_t *node_bitmap,
 				  int *start_offset, int *end_offset,
 				  ba_geo_system_t *my_geo_system)
 {
-	uint16_t coords[HIGHEST_DIMENSIONS];
+	uint16_t coords[HIGHEST_DIMENSIONS] = {};
 
 	_ba_node_map_set_range_internal(0, coords, start_offset, end_offset,
 					node_bitmap, my_geo_system);
@@ -1487,8 +1487,15 @@ extern int ba_node_xlate_to_1d(uint16_t *full_offset,
 {
 	int i, map_offset;
 
-	xassert(full_offset);
-	xassert(my_geo_system);
+	if (full_offset == NULL) {
+		fatal("%s: full_offset is NULL", __func__);
+		return SLURM_ERROR;
+	}
+	if (my_geo_system == NULL) {
+		fatal("%s: my_geo_system is NULL", __func__);
+		return SLURM_ERROR;
+	}
+
 	i = my_geo_system->dim_count - 1;
 	map_offset = full_offset[i];
 	for (i-- ; i >= 0; i--) {

@@ -484,7 +484,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			for (comb_brd_idx = 0; comb_brd_idx < b_min;
 				comb_brd_idx++) {
 				board_num = board_combs[(comb_idx * b_min)
-				                        + comb_brd_idx];
+							+ comb_brd_idx];
 				count += boards_cpu_cnt[board_num];
 			}
 			if (count >= req_cpus) {
@@ -511,7 +511,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			for (comb_brd_idx = 0; comb_brd_idx < b_min;
 							comb_brd_idx++) {
 				board_num = board_combs[(comb_idx * b_min)
-				                        + comb_brd_idx];
+							+ comb_brd_idx];
 				sock_list_idx = (elig_idx * sock_per_comb) +
 					(comb_brd_idx * sock_per_brd);
 				for (sock_idx = 0; sock_idx < sock_per_brd;
@@ -541,7 +541,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			 */
 			if ((b < s_min) ||
 				(b == s_min && elig_cpu_cnt[elig_idx]
-				                            <= cpu_min)) {
+							    <= cpu_min)) {
 				s_min = b;
 				comb_min = elig_idx;
 				cpu_min = elig_cpu_cnt[elig_idx];
@@ -699,7 +699,8 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	uint16_t ntasks_per_core = 0xffff, ntasks_per_socket = 0xffff;
 	int error_code = SLURM_SUCCESS;
 
-	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
+	if ((job_res == NULL) || (job_res->core_bitmap == NULL) ||
+	    (job_ptr->details == NULL))
 		return error_code;
 
 	if (cr_type & CR_CORE)
@@ -712,7 +713,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			alloc_cores = true;
 	}
 	core_map = job_res->core_bitmap;
-	if (job_ptr->details && job_ptr->details->mc_ptr) {
+	if (job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 		if (mc_ptr->ntasks_per_core) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;

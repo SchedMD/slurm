@@ -1065,12 +1065,12 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =
 		xmalloc(sizeof(slurmdb_account_cond_t));
-	int i=0;
+	int i = 0;
 	List ret_list = NULL, local_assoc_list = NULL;
 	ListIterator itr = NULL;
 	int cond_set = 0, prev_set = 0;
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
@@ -1080,7 +1080,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	}
 
 	if (!cond_set) {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr,
 			" No conditions given to remove, not executing.\n");
 		slurmdb_destroy_account_cond(acct_cond);
@@ -1091,6 +1091,13 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		slurmdb_destroy_account_cond(acct_cond);
 		return SLURM_ERROR;
 	}
+
+	if (!acct_cond->assoc_cond) {
+		error("%s: Association condition is NULL", __func__);
+		slurmdb_destroy_account_cond(acct_cond);
+		return SLURM_ERROR;
+	}
+
 	/* check to see if person is trying to remove root account.  This is
 	 * bad, and should not be allowed outside of deleting a cluster.
 	 */
@@ -1099,7 +1106,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	   && list_count(acct_cond->assoc_cond->acct_list)) {
 		char *tmp_char = NULL;
 		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
-		while((tmp_char = list_next(itr))) {
+		while ((tmp_char = list_next(itr))) {
 			if (!strcasecmp(tmp_char, "root"))
 				break;
 		}

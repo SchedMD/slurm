@@ -227,7 +227,7 @@ extern uint32_t slurm_xlate_job_id(char *job_id_str)
 	char *next_str;
 	uint32_t i, job_id;
 	uint16_t array_id;
-	job_info_msg_t *resp;
+	job_info_msg_t *resp = NULL;
 	slurm_job_info_t *job_ptr;
 
 	job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
@@ -238,7 +238,7 @@ extern uint32_t slurm_xlate_job_id(char *job_id_str)
 	array_id = (uint16_t) strtol(next_str + 1, &next_str, 10);
 	if (next_str[0] != '\0')
 		return (uint32_t) 0;
-	if (slurm_load_job(&resp, job_id, SHOW_ALL) != 0)
+	if ((slurm_load_job(&resp, job_id, SHOW_ALL) != 0) || (resp == NULL))
 		return (uint32_t) 0;
 	job_id = 0;
 	for (i = 0, job_ptr = resp->job_array; i < resp->record_count;

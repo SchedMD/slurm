@@ -282,14 +282,14 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 {
 	char *str = NULL, *value;
 	va_list ap;
-	int rc;
+	int size, rc;
 
 	value = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
-	vsnprintf (value, ENV_BUFSIZE, fmt, ap);
+	vsnprintf(value, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
 
-	int size = strlen(name) + strlen(value) + 2;
+	size = strlen(name) + strlen(value) + 2;
 	if (size >= MAX_ENV_STRLEN) {
 		error("environment variable %s is too long", name);
 		return ENOMEM;
@@ -307,7 +307,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		 * external api's like perl will crap out when they
 		 * try to free it.
 		 */
-		str = malloc(size);
+		str = malloc(size);	/* CLANG false positive */
 		snprintf(str, size, "%s=%s", name, value);
 		rc = putenv(str);
 	}

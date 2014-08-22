@@ -1385,7 +1385,12 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	xfree(job_alloc_req.reservation);
 	xfree(job_alloc_req.wckey);
 
-merge:	new_node_name = strdup(new_job_ptr->nodes);
+merge:
+	if (!new_job_ptr) {	/* Fix for CLANG false positive */
+		error("%s: New job is NULL", __func__);
+		return resp;
+	}
+	new_node_name = strdup(new_job_ptr->nodes);
 
 	/* Shrink the size of the new job to zero */
 	slurm_init_job_desc_msg(&job_alloc_req);

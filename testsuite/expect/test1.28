@@ -33,6 +33,7 @@
 source ./globals
 
 set test_id          "1.28"
+set file_in          "test$test_id.input"
 set test_env_name    "TEST_ENV_$test_id"
 set test_env_val     123
 set exit_code        0
@@ -40,11 +41,13 @@ set matches          0
 
 print_header $test_id
 
+make_bash_script $file_in "env"
+
 #
 # Spawn a job via srun to print environment variables
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 --export=$test_env_name=$test_env_val -t1 $bin_env]
+set srun_pid [spawn $srun -N1 --export=$test_env_name=$test_env_val -t1 ./$file_in]
 expect {
 	-re "$test_env_name=($number)" {
 		if {$expect_out(1,string) == $test_env_val} {
@@ -72,7 +75,7 @@ if {$matches != 1} {
 global env
 set env($test_env_name) $test_env_val
 set matches 0
-set srun_pid [spawn $srun -N1 -t1 $bin_env]
+set srun_pid [spawn $srun -N1 -t1 ./$file_in]
 expect {
 	-re "$test_env_name=($number)" {
 		if {$expect_out(1,string) == $test_env_val} {
@@ -98,7 +101,7 @@ if {$matches != 1} {
 # Spawn a job via srun to print environment variables with --export=ALL
 #
 set matches 0
-set srun_pid [spawn $srun -N1 -t1 --export=ALL $bin_env]
+set srun_pid [spawn $srun -N1 -t1 --export=ALL ./$file_in]
 expect {
 	-re "$test_env_name=($number)" {
 		if {$expect_out(1,string) == $test_env_val} {
@@ -124,7 +127,7 @@ if {$matches != 1} {
 # Spawn a job via srun to print environment variables with --export=NONE
 #
 set matches 0
-set srun_pid [spawn $srun -N1 -t1 --export=NONE $bin_env]
+set srun_pid [spawn $srun -N1 -t1 --export=NONE ./$file_in]
 expect {
 	-re "$test_env_name=($number)" {
 		if {$expect_out(1,string) == $test_env_val} {
@@ -147,6 +150,7 @@ if {$matches != 0} {
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

@@ -361,6 +361,11 @@ _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
 	unsigned int  nfds = 0;
 	bool          readable, writable;
 
+	if (!pfds) {	/* Fix for CLANG false positive */
+		fatal("pollfd data structure is null");
+		return nfds;
+	}
+
 	while ((obj = list_next(i))) {
 		writable = _is_writable(obj);
 		readable = _is_readable(obj);

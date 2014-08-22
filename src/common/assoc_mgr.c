@@ -633,7 +633,7 @@ static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
 static slurmdb_association_rec_t* _find_assoc_parent(
 	slurmdb_association_rec_t *assoc, bool direct)
 {
-	slurmdb_association_rec_t *parent = NULL;
+	slurmdb_association_rec_t *parent = NULL, *prev_parent;
 	xassert(assoc);
 
 	parent = assoc;
@@ -642,14 +642,14 @@ static slurmdb_association_rec_t* _find_assoc_parent(
 		if (!parent->parent_id)
 			break;
 
-		if (!(parent = _find_assoc_rec_id(parent->parent_id))) {
+		prev_parent = parent;
+		if (!(parent = _find_assoc_rec_id(prev_parent->parent_id))) {
 			error("Can't find parent id %u for assoc %u, "
 			      "this should never happen.",
-			      parent->parent_id, parent->id);
+			      prev_parent->parent_id, prev_parent->id);
 			break;
 		}
-		/* See if we need to look for the next parent up the
-		   tree */
+		/* See if we need to look for the next parent up the tree */
 		if (direct || (assoc->shares_raw != SLURMDB_FS_USE_PARENT) ||
 		    (parent->shares_raw != SLURMDB_FS_USE_PARENT))
 			break;
@@ -3672,6 +3672,12 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+			if (!object->clus_res_rec) {
+				error("trying to Modify resource without a "
+				      "clus_res_rec!  This should never "
+				      "happen.");
+				break;
+			}
 
 			if (!(object->flags & SLURMDB_RES_FLAG_NOTSET)) {
 				uint32_t base_flags = (object->flags &
@@ -3691,7 +3697,6 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update)
 			if (object->type != SLURMDB_RESOURCE_NOTSET)
 				rec->type = object->type;
 
-			/* CLANG false positive */
 			if (object->clus_res_rec->percent_allowed !=
 			    (uint16_t)NO_VAL)
 				rec->clus_res_rec->percent_allowed =
