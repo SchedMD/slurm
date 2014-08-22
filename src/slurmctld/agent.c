@@ -270,9 +270,10 @@ void *agent(void *args)
 
 	/* start the watchdog thread */
 	if (getenv("SLURM_NO_WDOG")) {
-		/* Development don't want threads be interrupted
-		 * by sigusr1. Remove later.
-		 */
+		/* Test purposes only. Do not want threads to be interrupted
+		 * by SIGUSR1. Breaks normal operation */
+		error("%s: Watchdog thread disabled", __func__);
+	} else {
 		slurm_attr_init(&attr_wdog);
 		if (pthread_attr_setdetachstate
 		    (&attr_wdog, PTHREAD_CREATE_JOINABLE))
@@ -332,12 +333,10 @@ void *agent(void *args)
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 	}
 
-	/* wait for termination of remaining threads */
-
-	if (getenv("SLURM_NO_WDOG")) {
-		/* Development don't want threads be interrupted
-		 * by sigusr1. Remove later.
-		 */
+	/* Wait for termination of remaining threads */
+	if (!getenv("SLURM_NO_WDOG")) {
+		/* Test purposes only. Do not want threads to be interrupted
+		 * by SIGUSR1 */
 		pthread_join(thread_wdog, NULL);
 	}
 
