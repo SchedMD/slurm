@@ -82,11 +82,16 @@ proc check_step { num } {
 	}
 }
 
-proc check_sacct_states { states } {
+proc check_sacct_states { states log_it } {
 	global job_id sacct
 
+	log_user $log_it
 	set state_num 0
-	spawn $sacct --job=$job_id -D --noheader --format=state -P
+	if { $log_it == 1 } {
+		spawn $sacct --job=$job_id --duplicates --parsable2
+	} else {
+		spawn $sacct --job=$job_id --duplicates --parsable2 --noheader --format=state
+	}
 	expect {
 		-re ($states) {
 			incr state_num 1
@@ -100,6 +105,8 @@ proc check_sacct_states { states } {
 			wait
 		}
 	}
+	log_user 1
+
 	return $state_num
 }
 
@@ -181,7 +188,7 @@ wait_for_job $job_id RUNNING
 # Set the node that the job is running on to down
 mod_state "down"
 
-# Wait alittle bit for node state to change
+# Wait a little bit for node state to change
 sleep 5
 
 # Set the node back to resume
@@ -191,19 +198,38 @@ mod_state "resume"
 check_step 0
 
 # Check the job state
-if {[check_sacct_states "NODE_FAIL|PENDING"] != 2} {
-	send_user "\nFAILURE: jobs state should be NODE_FAIL and PENDING\n"
+send_user "\n\nTest 1\n"
+set fail_count [check_sacct_states "NODE_FAIL" 1]
+if {$fail_count != 1} {
+	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
 	set exit_code 1
+}
+set pend_count [check_sacct_states "PENDING" 0]
+if {$pend_count != 1} {
+	send_user "\nFAILURE: Bad PENDING count ($pend_count != 1)\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	send_user "So far, so good\n\n"
 }
 
 wait_for_job $job_id RUNNING
 
 # Check the number of steps after job is running
 check_step 0
-
-if {[check_sacct_states "NODE_FAIL|RUNNING"] != 2} {
-	send_user "\nFAILURE: jobs state should be NODE_FAIL and RUNNING\n"
+send_user "\n\nTest 2\n"
+set fail_count [check_sacct_states "NODE_FAIL" 1]
+if {$fail_count != 1} {
+	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
 	set exit_code 1
+}
+set run_count [check_sacct_states "RUNNING" 0]
+if {$run_count != 1} {
+	send_user "\nFAILURE: Bad RUNNING count ($run_count != 1)\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	send_user "So far, so good\n\n"
 }
 
 # Requeue the job
@@ -220,31 +246,87 @@ expect {
 
 # Wait a bit for the job to be requeued then check its state
 sleep 8
-
-if {[check_sacct_states "NODE_FAIL|REQUEUE|CANCELLED|PENDING"] != 4} {
-	send_user "\nFAILURE: states are not as expected\n"
+send_user "\n\nTest 3\n"
+set fail_count [check_sacct_states "NODE_FAIL" 1]
+if {$fail_count != 1} {
+	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
 	set exit_code 1
+}
+set req_count [check_sacct_states "REQUEUE" 0]
+if {$req_count != 1} {
+	send_user "\nFAILURE: Bad REQUEUE count ($req_count != 1)\n"
+	set exit_code 1
+}
+set canc_count [check_sacct_states "CANCELLED" 0]
+if {$canc_count != 1} {
+	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
+	set exit_code 1
+}
+set pend_count [check_sacct_states "PENDING" 0]
+if {$pend_count != 1} {
+	send_user "\nFAILURE: Bad PENDING count ($pend_count != 1)\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	send_user "So far, so good\n\n"
 }
 
 wait_for_job $job_id RUNNING
 
 # Check for steps after requeue
 check_step 1
-
-if {[check_sacct_states "NODE_FAIL|REQUEUE|CANCELLED|RUNNING"] != 4} {
-	send_user "\nFAILURE: states not as expected\n"
+send_user "\n\nTest 4\n"
+set fail_count [check_sacct_states "NODE_FAIL" 1]
+if {$fail_count != 1} {
+	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
 	set exit_code 1
+}
+set req_count [check_sacct_states "REQUEUE" 0]
+if {$req_count != 1} {
+	send_user "\nFAILURE: Bad REQUEUE count ($req_count != 1)\n"
+	set exit_code 1
+}
+set canc_count [check_sacct_states "CANCELLED" 0]
+if {$canc_count != 1} {
+	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
+	set exit_code 1
+}
+set run_count [check_sacct_states "RUNNING" 0]
+if {$run_count != 1} {
+	send_user "\nFAILURE: Bad RUNNING count ($run_count != 1)\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	send_user "So far, so good\n\n"
 }
 
 wait_for_job $job_id DONE
 
 # Check steps after job has completed
 check_step 2
-
-# COMPLETED will show up 2 times, that is why we are checking for 5
-if {[check_sacct_states "NODE_FAIL|REQUEUE|CANCELLED|COMPLETED"] != 5} {
-	send_user "\nFAILURE: job states are not as expected\n"
+send_user "\n\nTest 5\n"
+set fail_count [check_sacct_states "NODE_FAIL" 1]
+if {$fail_count != 1} {
+	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
 	set exit_code 1
+}
+set req_count [check_sacct_states "REQUEUE" 0]
+if {$req_count != 1} {
+	send_user "\nFAILURE: Bad REQUEUE count ($req_count != 1)\n"
+	set exit_code 1
+}
+set canc_count [check_sacct_states "CANCELLED" 0]
+if {$canc_count != 1} {
+	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
+	set exit_code 1
+}
+set comp_count [check_sacct_states "COMPLETED" 0]
+if {$comp_count != 2} {
+	send_user "\nFAILURE: Bad COMPLETED count ($comp_count != 2)\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	send_user "So far, so good\n\n"
 }
 
 cancel_job $job_id
