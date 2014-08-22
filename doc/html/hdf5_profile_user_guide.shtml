@@ -114,7 +114,7 @@ have a default polling frequency specified in slurm.conf in the
 JobAcctGatherFrequency parameter. The polling frequency can be overridden
 using the --acctg-freq
 <a href="srun.html">srun</a> parameter.
-They are both of the form task=sec,energy=sec,luster=sec,network=sec.<p>
+They are both of the form task=sec,energy=sec,lustre=sec,network=sec.<p>
 
 <p>The IPMI energy plugin also needs the EnergyIPMIFrequency value set
 in the acct_gather.conf file. This sets the rate at which the plugin samples
@@ -262,10 +262,10 @@ correlate activity with other sources such as logs.</DD></DT>
 <DD>CPU Frequency at time of sample in kilohertz.</DD></DT>
 </DL>
 
-<h3>Luster Data</h3>
+<h3>Lustre Data</h3>
 <p><b>AcctGatherFilesystemType</b>=acct_gather_filesystem/lustre<p>
 is required in slurm.conf to collect task data.
-Appropriately set luster=freq in either JobAcctGatherFrequency in slurm.conf
+Appropriately set lustre=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
 
 <p>Each data sample in the Lustre Time Series contains the following data items.
