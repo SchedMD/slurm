@@ -152,10 +152,10 @@ am__libcommon_la_SOURCES_DIST = cpu_frequency.c cpu_frequency.h \
 	list.h xtree.c xtree.h xhash.c xhash.h net.c net.h log.c log.h \
 	cbuf.c cbuf.h safeopen.c safeopen.h bitstring.c bitstring.h \
 	mpi.c mpi.h pack.c pack.h parse_config.c parse_config.h \
-	parse_spec.c parse_spec.h plugin.c plugin.h plugrack.c \
-	plugrack.h print_fields.c print_fields.h read_config.c \
-	read_config.h node_select.c node_select.h env.c env.h fd.c \
-	fd.h slurm_cred.h slurm_cred.c slurm_errno.c \
+	parse_value.c parse_value.h parse_spec.c parse_spec.h plugin.c \
+	plugin.h plugrack.c plugrack.h print_fields.c print_fields.h \
+	read_config.c read_config.h node_select.c node_select.h env.c \
+	env.h fd.c fd.h slurm_cred.h slurm_cred.c slurm_errno.c \
 	slurm_ext_sensors.c slurm_ext_sensors.h slurm_priority.c \
 	slurm_priority.h slurm_protocol_api.c slurm_protocol_api.h \
 	slurm_protocol_pack.c slurm_protocol_pack.h \
@@ -192,10 +192,10 @@ am_libcommon_la_OBJECTS = cpu_frequency.lo assoc_mgr.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo strnatcmp.lo forward.lo \
 	strlcpy.lo list.lo xtree.lo xhash.lo net.lo log.lo cbuf.lo \
 	safeopen.lo bitstring.lo mpi.lo pack.lo parse_config.lo \
-	parse_spec.lo plugin.lo plugrack.lo print_fields.lo \
-	read_config.lo node_select.lo env.lo fd.lo slurm_cred.lo \
-	slurm_errno.lo slurm_ext_sensors.lo slurm_priority.lo \
-	slurm_protocol_api.lo slurm_protocol_pack.lo \
+	parse_value.lo parse_spec.lo plugin.lo plugrack.lo \
+	print_fields.lo read_config.lo node_select.lo env.lo fd.lo \
+	slurm_cred.lo slurm_errno.lo slurm_ext_sensors.lo \
+	slurm_priority.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo working_cluster.lo uid.lo \
@@ -578,6 +578,7 @@ libcommon_la_SOURCES = \
 	mpi.c mpi.h                     \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
+	parse_value.c parse_value.h	\
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
@@ -786,6 +787,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_spec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_value.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugstack.Plo@am__quote@

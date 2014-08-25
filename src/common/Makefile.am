@@ -51,6 +51,7 @@ libcommon_la_SOURCES = 			\
 	mpi.c mpi.h                     \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
+	parse_value.c parse_value.h	\
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
