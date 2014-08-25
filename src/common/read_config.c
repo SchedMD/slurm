@@ -240,6 +240,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
 	{"LaunchType", S_P_STRING},
+	{"Layouts", S_P_STRING},
 	{"Licenses", S_P_STRING},
 	{"LogTimeFormat", S_P_STRING},
 	{"MailProg", S_P_STRING},
@@ -350,7 +351,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
 	 _destroy_partitionname},
 	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
-	{"Layouts", S_P_STRING},
 
 	{NULL}
 };
@@ -2292,6 +2292,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->job_submit_plugins);
 	xfree (ctl_conf_ptr->launch_type);
+	xfree (ctl_conf_ptr->layouts);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->licenses_used);
 	xfree (ctl_conf_ptr->mail_prog);
@@ -2348,7 +2349,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->unkillable_program);
 	xfree (ctl_conf_ptr->version);
 	xfree (ctl_conf_ptr->z_char);
-	xfree (ctl_conf_ptr->layouts);
 
 	if (purge_node_hash)
 		_free_name_hashtbl();
@@ -2424,8 +2424,10 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_requeue		= (uint16_t) NO_VAL;
 	xfree(ctl_conf_ptr->job_submit_plugins);
 	ctl_conf_ptr->keep_alive_time		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->kill_on_bad_exit		= 0;
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->launch_type);
+	xfree (ctl_conf_ptr->layouts);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_array_sz		= (uint32_t) NO_VAL;
@@ -2517,8 +2519,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->use_spec_resources	= 0;
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
-	ctl_conf_ptr->kill_on_bad_exit	= 0;
-	xfree (ctl_conf_ptr->layouts);
 
 	_free_name_hashtbl();
 	_init_name_hashtbl();

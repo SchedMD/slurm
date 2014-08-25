@@ -52,16 +52,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-/* #include "src/common/slurm_protocol_defs.h" */
+#include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/parse_config.h"
+#include "src/common/parse_value.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
-#include "src/common/parse_value.h"
-/* #include "src/common/slurm_rlimits_info.h" */
-#include "src/common/parse_config.h"
-#include "src/common/hostlist.h"
 
 #include "slurm/slurm.h"
 

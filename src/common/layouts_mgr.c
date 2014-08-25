@@ -47,15 +47,15 @@
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
+#include "src/common/node_conf.h"
+#include "src/common/plugin.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xstring.h"
 #include "src/common/xtree.h"
 #include "src/common/xmalloc.h"
-#include "src/common/plugin.h"
-#include "src/common/xstring.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/read_config.h"
-#include "src/common/node_conf.h"
-#include "src/common/hostlist.h"
 
 #define PATHLEN 256
 
@@ -1055,7 +1055,7 @@ static void _dump_layouts(void* item, void* arg)
  *                             SLURM LAYOUTS API                             *
 \*****************************************************************************/
 
-int slurm_layouts_init()
+int slurm_layouts_init(void)
 {
 	int i = 0;
 	uint32_t layouts_count;
@@ -1100,7 +1100,7 @@ int slurm_layouts_init()
 		SLURM_SUCCESS : SLURM_ERROR;
 }
 
-int slurm_layouts_fini()
+int slurm_layouts_fini(void)
 {
 	int i;
 
@@ -1123,7 +1123,7 @@ int slurm_layouts_fini()
 	return SLURM_SUCCESS;
 }
 
-int slurm_layouts_load_config()
+int slurm_layouts_load_config(void)
 {
 	int i, rc, inx;
 	struct node_record *node_ptr;
@@ -1176,7 +1176,7 @@ int slurm_layouts_load_config()
 		}
 
 		/* add to the base layout (storing a callback ref to the
-		   layout node pointing to it) */
+		 * layout node pointing to it) */
 		ptr = xtree_add_child(layout->tree, layout->tree->root,
 				      (void*)entity, XTREE_APPEND);
 		if (!ptr) {

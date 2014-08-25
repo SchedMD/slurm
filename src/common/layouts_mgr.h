@@ -115,13 +115,13 @@ typedef struct layouts_plugin_spec_st {
  * slurm_layouts_load_config()
  *
  */
-int slurm_layouts_init();
+int slurm_layouts_init(void);
 
 /*
  * slurm_layouts_fini - uninitialize the layouts mgr and free the internal
  *        hash tables.
  */
-int slurm_layouts_fini();
+int slurm_layouts_fini(void);
 
 /*
  * slurm_layouts_load_config - use the layouts plugins details loaded during
@@ -132,7 +132,7 @@ int slurm_layouts_fini();
  * Return SLURM_SUCCESS or SLURM_ERROR if all the required layouts were not
  * loaded correctly.
  */
-int slurm_layouts_load_config();
+int slurm_layouts_load_config(void);
 
 /*
  * slurm_layouts_get_layout - return the layout from a given type
