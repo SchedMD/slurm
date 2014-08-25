@@ -1333,7 +1333,8 @@ next_task:
 					job_ptr->part_ptr->node_bitmap);
 				bit_not(job_ptr->part_ptr->node_bitmap);
 			}
-		} else if (error_code == ESLURM_RESERVATION_NOT_USABLE) {
+		} else if ((error_code == ESLURM_RESERVATION_BUSY) ||
+			   (error_code == ESLURM_RESERVATION_NOT_USABLE)) {
 			if (job_ptr->resv_ptr &&
 			    job_ptr->resv_ptr->node_bitmap) {
 				debug3("sched: JobId=%u. State=%s. "
@@ -2435,6 +2436,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
 	List preemptee_candidates = NULL, preemptee_job_list = NULL;
+	bool resv_overlap = false;
 
 	job_ptr = find_job_record(job_desc_msg->job_id);
 	if (job_ptr == NULL)
@@ -2484,7 +2486,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	else
 		start_res = now;
 	i = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-			  &exc_core_bitmap);
+			  &exc_core_bitmap, &resv_overlap);
 	if (i != SLURM_SUCCESS)
 		return i;
 	bit_and(avail_bitmap, resv_bitmap);

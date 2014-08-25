@@ -157,6 +157,7 @@ static void _compute_start_times(void)
 	bitstr_t *exc_core_bitmap = NULL;
 	uint32_t max_nodes, min_nodes, req_nodes, time_limit;
 	time_t now = time(NULL), sched_start, last_job_alloc;
+	bool resv_overlap = false;
 
 	sched_start = now;
 	last_job_alloc = now - 1;
@@ -201,7 +202,7 @@ static void _compute_start_times(void)
 		}
 
 		j = job_test_resv(job_ptr, &now, true, &avail_bitmap,
-				  &exc_core_bitmap);
+				  &exc_core_bitmap, &resv_overlap);
 		if (j != SLURM_SUCCESS) {
 			FREE_NULL_BITMAP(avail_bitmap);
 			FREE_NULL_BITMAP(exc_core_bitmap);

@@ -144,7 +144,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
-			 bitstr_t **exc_core_bitmap);
+			 bitstr_t **exc_core_bitmap, bool *resv_overlap);
 
 /*
  * Determine the time of the first reservation to end after some time.

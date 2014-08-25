@@ -3732,7 +3732,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
-			 bitstr_t **exc_core_bitmap)
+			 bitstr_t **exc_core_bitmap, bool *resv_overlap)
 {
 	slurmctld_resv_t * resv_ptr, *res2_ptr;
 	time_t job_start_time, job_end_time, lic_resv_time;
@@ -3799,9 +3799,12 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    (res2_ptr->end_time   <= job_start_time) ||
 			    (!res2_ptr->full_nodes))
 				continue;
-			bit_not(res2_ptr->node_bitmap);
-			bit_and(*node_bitmap, res2_ptr->node_bitmap);
-			bit_not(res2_ptr->node_bitmap);
+			if (bit_overlap(*node_bitmap, res2_ptr->node_bitmap)) {
+				*resv_overlap = true;
+				bit_not(res2_ptr->node_bitmap);
+				bit_and(*node_bitmap, res2_ptr->node_bitmap);
+				bit_not(res2_ptr->node_bitmap);
+			}
 		}
 		list_iterator_destroy(iter);
 

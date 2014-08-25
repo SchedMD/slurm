@@ -693,6 +693,7 @@ static int _attempt_backfill(void)
 	struct timeval start_tv;
 	uint32_t test_array_job_id = 0;
 	uint32_t test_array_count = 0;
+	bool resv_overlap = false;
 
 	bf_last_yields = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -1056,7 +1057,7 @@ next_task:
 		start_res   = later_start;
 		later_start = 0;
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
-				  &exc_core_bitmap);
+				  &exc_core_bitmap, &resv_overlap);
 		if (j != SLURM_SUCCESS) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
 				info("backfill: job %u reservation defer",
@@ -1198,7 +1199,8 @@ next_task:
 				time_limit = job_ptr->time_limit;
 			}
 
-			if (rc == ESLURM_ACCOUNTING_POLICY) {
+			if ((rc == ESLURM_ACCOUNTING_POLICY) ||
+			    (rc == ESLURM_RESERVATION_BUSY)) {
 				/* Unknown future start time, just skip job */
 				if (orig_start_time != 0) {
 					/* Can start in different partition */

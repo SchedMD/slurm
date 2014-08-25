@@ -125,7 +125,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    uint32_t req_nodes, bool test_only,
 			    List preemptee_candidates,
 			    List *preemptee_job_list, bool has_xand,
-			    bitstr_t *exc_node_bitmap);
+			    bitstr_t *exc_node_bitmap, bool resv_overlap);
 static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
 			 bool job_mc_ok, char **err_msg);
 static bool _valid_feature_counts(struct job_details *detail_ptr,
@@ -757,6 +757,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *exc_core_bitmap = NULL;
 	List preemptee_candidates = NULL;
 	bool has_xand = false;
+	bool resv_overlap = false;
 
 	/* Mark nodes reserved for other jobs as off limit for this job.
 	 * If the job has a reservation, we've already limited the contents
@@ -764,7 +765,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (job_ptr->resv_name == NULL) {
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				   &exc_core_bitmap);
+				   &exc_core_bitmap, &resv_overlap);
 		if (rc == ESLURM_NODES_BUSY) {
 			save_avail_node_bitmap = avail_node_bitmap;
 			avail_node_bitmap = bit_alloc(node_record_count);
@@ -787,7 +788,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	} else {
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				   &exc_core_bitmap);
+				   &exc_core_bitmap, &resv_overlap);
 		FREE_NULL_BITMAP(resv_bitmap);
 		/* We do not care about return value.
 		 * We are just interested in exc_core_bitmap creation */
@@ -864,7 +865,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					max_nodes, req_nodes, test_only,
 					preemptee_candidates,
 					preemptee_job_list, false,
-					exc_core_bitmap);
+					exc_core_bitmap, resv_overlap);
 #if 0
 {
 			char *tmp_str = bitmap2node_name(feature_bitmap);
@@ -956,7 +957,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				select_bitmap, job_ptr, part_ptr, min_nodes,
 				max_nodes, req_nodes, test_only,
 				preemptee_candidates, preemptee_job_list,
-				has_xand, exc_core_bitmap);
+				has_xand, exc_core_bitmap, resv_overlap);
 	}
 #if 0
 {
@@ -1002,13 +1003,15 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
  *	NULL on first entry
  * IN has_xand - set of the constraint list includes XAND operators *and*
  *		 we have already satisfied them all
+ * in resv_overlap - designated reservation overlaps another reservation
  * RET SLURM_SUCCESS on success,
  *	ESLURM_NODES_BUSY if request can not be satisfied now,
  *	ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE if request can never
- *	be satisfied ,
+ *	be satisfied,
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE if the job can not be
  *	initiated until the parition's configuration changes or
  *	ESLURM_NODE_NOT_AVAIL if required nodes are DOWN or DRAINED
+ *	ESLURM_RESERVATION_BUSY if requested reservation overlaps another
  * NOTE: the caller must FREE_NULL_BITMAP memory pointed to by select_bitmap
  * Notes: The algorithm is
  *	1) If required node list is specified, determine implicitly required
@@ -1032,7 +1035,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
 		 bool test_only, List preemptee_candidates,
 		 List *preemptee_job_list, bool has_xand,
-		 bitstr_t *exc_core_bitmap)
+		 bitstr_t *exc_core_bitmap, bool resv_overlap)
 {
 	struct node_record *node_ptr;
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
@@ -1422,6 +1425,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* The job is not able to start right now, return a
 	 * value indicating when the job can start */
+	if (!runable_ever && resv_overlap) {
+		error_code = ESLURM_RESERVATION_BUSY;
+		return error_code;
+	}
 	if (!runable_ever) {
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job %u never runnable",
@@ -1743,7 +1750,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
-		} else if (error_code == ESLURM_RESERVATION_NOT_USABLE) {
+		} else if ((error_code == ESLURM_RESERVATION_NOT_USABLE) ||
+			   (error_code == ESLURM_RESERVATION_BUSY)) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);
 		} else if ((job_ptr->state_reason == WAIT_BLOCK_MAX_ERR) ||
@@ -2277,12 +2285,13 @@ static int _build_node_list(struct job_record *job_ptr,
 	bitstr_t *tmp_feature;
 	uint32_t max_weight = 0;
 	bool has_xor = false;
+	bool resv_overlap = false;
 
 	if (job_ptr->resv_name) {
 		/* Limit node selection to those in selected reservation */
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false,
-				   &usable_node_mask, NULL);
+				   &usable_node_mask, NULL, &resv_overlap);
 		if (rc != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);

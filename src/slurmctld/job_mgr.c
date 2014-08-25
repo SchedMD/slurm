@@ -3665,6 +3665,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 					  select_node_bitmap, err_msg);
 			if ((rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			    (rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+			    (rc != ESLURM_RESERVATION_BUSY) &&
 			    (rc != ESLURM_NODES_BUSY))
 				break;
 			if ((job_ptr->preempt_in_progress) &&
@@ -3816,6 +3817,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	acct_policy_add_job_submit(job_ptr);
 
 	if ((error_code == ESLURM_NODES_BUSY) ||
+	    (error_code == ESLURM_RESERVATION_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
 	    (error_code == ESLURM_NODE_NOT_AVAIL) ||
 	    (error_code == ESLURM_QOS_THRES) ||
@@ -3833,6 +3835,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		} else {	/* job remains queued */
 			_create_job_array(job_ptr, job_specs);
 			if ((error_code == ESLURM_NODES_BUSY) ||
+			    (error_code == ESLURM_RESERVATION_BUSY) ||
 			    (error_code == ESLURM_ACCOUNTING_POLICY)) {
 				error_code = SLURM_SUCCESS;
 			}
