@@ -1135,10 +1135,11 @@ int slurm_layouts_load_config(void)
 	info("layouts: loading entities/relations information");
 	rc = SLURM_SUCCESS;
 
-	if (mgr && mgr->plugins_count)
-		slurm_layouts_fini();
-
 	slurm_mutex_lock(&mgr->lock);
+	if (xhash_count(layouts_mgr.entities)) {
+		slurm_mutex_unlock(&mgr->lock);
+		return rc;
+	}
 
 	/*
 	 * create a base layout to contain the configured nodes
