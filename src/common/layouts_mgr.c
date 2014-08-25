@@ -1135,6 +1135,9 @@ int slurm_layouts_load_config(void)
 	info("layouts: loading entities/relations information");
 	rc = SLURM_SUCCESS;
 
+	if (mgr && mgr->plugins_count)
+		slurm_layouts_fini();
+
 	slurm_mutex_lock(&mgr->lock);
 
 	/*
