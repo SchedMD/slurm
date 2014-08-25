@@ -1193,7 +1193,7 @@ int slurm_layouts_load_config(void)
 			entity_add_node(entity, layout, ptr);
 
 	}
-	debug("layouts: %d/%d nodes in hash table, rc=%d", 
+	debug("layouts: %d/%d nodes in hash table, rc=%d",
 	      xhash_count(layouts_mgr.entities), node_record_count, rc);
 
 	if (rc != SLURM_SUCCESS)
@@ -1217,7 +1217,7 @@ int slurm_layouts_load_config(void)
 	layouts_count = xhash_count(layouts_mgr.layouts);
 	if ( layouts_count != mgr->plugins_count + 1) {
 		error("layouts: %d/%d layouts added to hashtable, aborting",
-		      layouts_count,mgr->plugins_count+1);
+		      layouts_count, mgr->plugins_count+1);
 		rc = SLURM_ERROR;
 	}
 
