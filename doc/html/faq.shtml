@@ -171,6 +171,8 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#reqspec">How can a job which has exited with a specific exit code
    be requeued?</a></li>
 <li><a href="#user_account">Can a user's account be changed in the database?</a></li>
+<li><a href="#mpi_perf">What might account for MPI performance being below the
+  expected level?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1929,8 +1931,14 @@ sacctmgr create user name=adam cluster=tux account=physics
 sacctmgr delete user name=adam cluster=tux account=chemistry
 </pre>
 
+<p><a name="mpi_perf"><b>59. What might account for MPI performance being below
+  the expected level?</b></a><br>
+Starting the slurmd daemons with limited locked memory can account for this.
+Adding the line "ulimit -l unlimited" to <i>/etc/sysconfig/slurm</i> file can
+fix this.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 June 2014</p>
+<p style="text-align:center;">Last modified 25 August 2014</p>
 
 <!--#include virtual="footer.txt"-->
