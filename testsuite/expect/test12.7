@@ -111,6 +111,11 @@ proc check_sacct_states { states log_it } {
 	return $state_num
 }
 
+if {[test_using_slurmdbd] != 1} {
+	send_user "\nWARNING: not using accounting_storage/slurmdbd\n"
+	exit 0
+}
+
 make_bash_script $file_in "sleep 2"
 
 # Start a batch job to get a  usable node
