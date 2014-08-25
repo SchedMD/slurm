@@ -458,10 +458,8 @@ See the \fB\-\-input\fR option for filename specification options.
 .TP
 \fB\-\-exclusive\fR
 The job allocation can not share nodes with other running jobs.
-This is the opposite of \-\-share, whichever option is seen last
-on the command line will be used. The default shared/exclusive
-behavior depends on system configuration and the partition's \fBShared\fR
-option takes precedence over the job's option.
+The default shared/exclusive behavior depends on system configuration and the
+partition's \fBShared\fR option takes precedence over the job's option.
 
 .TP
 \fB\-\-export\fR=<\fIenvironment variables | ALL | NONE\fR>
@@ -1259,14 +1257,15 @@ Allocate resources for the job from the named reservation.
 
 .TP
 \fB\-s\fR, \fB\-\-share\fR
-The job allocation can share nodes with other running jobs.
-This is the opposite of \-\-exclusive, whichever option is seen last
-on the command line will be used. The default shared/exclusive
-behavior depends on system configuration and the partition's \fBShared\fR
-option takes precedence over the job's option.
+The job allocation can share resources with other running jobs.
+The resources to be shared can be nodes, sockets, cores, or hyperthreads
+depending upon configuration.
+The default shared behavior depends on system configuration and the partition's
+\fBShared\fR option takes precedence over the job's option.
 This option may result the allocation being granted sooner than if the \-\-share
 option was not set and allow higher system utilization, but application
-performance will likely suffer due to competition for resources within a node.
+performance will likely suffer due to competition for resources.
+Also see the \-\-exclusive option.
 
 .TP
 \fB\-S\fR, \fB\-\-core\-spec\fR=<\fInum\fR>

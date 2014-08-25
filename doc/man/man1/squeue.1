@@ -206,7 +206,11 @@ Group ID of the job.
 (Valid for jobs only)
 .TP
 \fB%h\fR
-Can the nodes allocated to the job be shared with other jobs.
+Can the resources allocated to the job be shared with other jobs.
+The resources to be shared can be nodes, sockets, cores, or hyperthreads
+depending upon configuration.
+The value will be "yes" if the job was submitted with the shared option or
+the partition is configured with Shared=Force.
 (Valid for jobs only)
 .TP
 \fB%H\fR
