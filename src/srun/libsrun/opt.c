@@ -591,7 +591,7 @@ env_vars_t env_vars[] = {
 {"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
-{"SLURM_NETWORK",       OPT_STRING,     &opt.network,       NULL             },
+{"SLURM_NETWORK",       OPT_STRING,     &opt.network,    &opt.network_set_env},
 {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL             },
 {"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL             },
 {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL             },
@@ -1375,6 +1375,7 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
 			setenv("SLURM_NETWORK", opt.network, 1);
+			opt.network_set_env = false;
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(opt.propagate);

@@ -194,6 +194,7 @@ typedef struct srun_options {
 				 * to the external launcher command if
 				 * not SLURM */
 	char *network;		/* --network=			*/
+	bool network_set_env;	/* true if network set by env var */
 
 	/* BLUEGENE SPECIFIC */
 	uint16_t geometry[HIGHEST_DIMENSIONS]; /* --geometry, -g */
