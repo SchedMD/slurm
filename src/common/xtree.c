@@ -64,7 +64,7 @@ static void xtree_free_childs(xtree_t* tree, xtree_node_t* node)
 		}
 		current_node = current_node->parent;
 		if (tree->free)
-			tree->free(free_later->data);
+			tree->free(free_later);
 		xfree(free_later);
 		--tree->count;
 	}
@@ -80,7 +80,7 @@ void xtree_free(xtree_t* tree)
 	xtree_free_childs(tree, tree->root);
 
 	if (tree->free)
-		tree->free(tree->root->data);
+		tree->free(tree->root);
 	xfree(tree->root);
 
 	xtree_init(tree, tree->free);
@@ -315,6 +315,14 @@ xtree_node_t* xtree_walk(xtree_t* tree,
 
 	current_node = node;
 	while (current_node) {
+
+		if (level >= min_level && !action(current_node,
+						  XTREE_GROWING,
+						  level,
+						  arg)) {
+			return current_node;
+		}
+
 		/* go down and continue counting */
 		if (current_node->start) {
 			if (level >= min_level && !action(current_node,
@@ -426,7 +434,7 @@ xtree_node_t* xtree_delete(xtree_t* tree, xtree_node_t* node)
 
 	xtree_free_childs(tree, node);
 	if (tree->free)
-		tree->free(node->data);
+		tree->free(node);
 	xfree(node);
 	--tree->count;
 

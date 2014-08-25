@@ -38,9 +38,6 @@
 
 #include <stdint.h>
 
-/* function prototype to deallocate data stored in tree nodes */
-typedef void (*xtree_free_data_function_t)(void* data);
-
 /**
  * The root node's parent must always be NULL (or browsing algorithm which
  * stops at root when going up, will either crash or go to an infinite loop).
@@ -54,6 +51,9 @@ typedef struct xtree_node_st {
         struct xtree_node_st* previous; /* previous node, same level */
 } xtree_node_t;
 
+/* function prototype to deallocate data stored in tree nodes */
+typedef void (*xtree_free_data_function_t)(xtree_node_t* node);
+
 typedef struct xtree_st {
         xtree_node_t*              root;  /* root node of the tree    */
         xtree_free_data_function_t free;  /* frees nodes data or null */
@@ -65,7 +65,7 @@ typedef struct xtree_st {
 /* free a complete tree whatever the `tree` entry point, it can be a leaf for
  * example.
  *
- * The tree itself is freed but the `xtree_t` structure is not free (since it
+ * The tree itself is freed but the `xtree_t` structure is not freed (since it
  * can be stored on the stack).
  *
  * During freeing operation the tree is in a invalid state.
@@ -78,7 +78,10 @@ void xtree_free(xtree_t* tree);
  * initialize a xtree_t structure with an empty tree
  *
  * @param freefunc is the function which will be used to free data associated
- *                 with tree's nodes or NULL
+ *                 with tree's nodes or NULL, freefunc must only desallocate
+ *                 node->data not the node itself, node is passed as a
+ *                 parameter if the user wants to do some processing according
+ *                 to the being-to-be-freed address of the node.
  * @param tree is the structure to initialize
  *
  */
@@ -100,6 +103,10 @@ void xtree_set_freefunc(xtree_t* tree, xtree_free_data_function_t freefunc);
 
 /** convenient function to get the parent of a node */
 xtree_node_t* xtree_get_parent(xtree_t* tree, xtree_node_t* node);
+
+#define xtree_node_get_data(node) ((node) ? (node)->data : NULL)
+
+#define xtree_get_root(tree) ((tree) ? (tree)->root : NULL)
 
 /** convenient function to get node count
  * @returns the count of node inside the tree, constant time, or UINT32_MAX
@@ -179,6 +186,7 @@ uint32_t xtree_node_depth(const xtree_node_t* node);
 #define XTREE_INORDER  2
 #define XTREE_ENDORDER 4
 #define XTREE_LEAF     8
+#define XTREE_GROWING  16
 
 #define XTREE_LEVEL_MAX UINT32_MAX
 
@@ -191,6 +199,10 @@ uint32_t xtree_node_depth(const xtree_node_t* node);
  *        each children (if more than one), and after visiting the children.
  *        XTREE_LEAF indicates the node being visited is a leaf and receive
  *        consequently only one visit.
+ *
+ *        XTREE_GROWING is called before any other calls, allowing a node to
+ *        add childs.
+ *
  * @param level is the current level, 0 being the root node.
  * @param arg is the data assigned to xtree_walk then calling it.
  * @returns 0 to indicate that xtree_walk do not need to continue to go
