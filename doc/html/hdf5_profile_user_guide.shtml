@@ -53,8 +53,15 @@ the job ends, the merge process is launched and the node-step files
 are combined into one HDF5 file for the job.</p>
 
 <p>The root of the directory structure is declared in the <b>ProfileHDF5Dir</b>
-option in the acct_gather.conf file. The directory will be created by SLURM
-if it doesn't exist.</p>
+option in the acct_gather.conf file. The directory will be created by
+Slurm if it doesn't exist.  Each user will have
+their own directory created in the ProfileHDF5Dir which contains
+the HDF5 files.  All the directories and files are created by the
+SlurmdUser which is usually root. The user specific directories as well
+as the files inside are chowned to the user running the job so they
+can access the files.  Since user root is usually creating these
+files/directories a root squashed file system will not work for
+the ProfileHDF5Dir.</p>
 
 <p>Each user that creates a profile will have a subdirector to the profile
 directory that has read/write permission only for the user.</p>

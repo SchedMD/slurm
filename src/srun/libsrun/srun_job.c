@@ -527,9 +527,16 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		}
 #ifdef HAVE_NATIVE_CRAY
 		if (opt.network) {
-			error("Ignoring --network value for a job step "
-			      "within an existing job. Set network options "
-			      "at job allocation time.");
+			if (opt.network_set_env)
+				debug2("Ignoring SLURM_NETWORK value for a "
+				       "job step within an existing job. "
+				       "Using what was set at job "
+				       "allocation time.  Most likely this "
+				       "variable was set by sbatch or salloc.");
+			else
+				error("Ignoring --network value for a job step "
+				      "within an existing job. Set network "
+				      "options at job allocation time.");
 		}
 #endif
 		if (opt.alloc_nodelist == NULL)

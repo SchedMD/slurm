@@ -240,6 +240,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 		req->cpu_bind_type = CPU_BIND_MASK;
 		if (conf->task_plugin_param & CPU_BIND_VERBOSE)
 			req->cpu_bind_type |= CPU_BIND_VERBOSE;
+		xfree(req->cpu_bind);
 		req->cpu_bind = (char *)bit_fmt_hexmask(hw_map);
 		info("task/affinity: job %u CPU input mask for node: %s",
 		     req->job_id, req->cpu_bind);
