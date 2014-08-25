@@ -545,10 +545,9 @@ the Epilog parameter in slurm.conf.
 This option has two slightly different meanings for job and job step
 allocations.
 When used to initiate a job, the job allocation cannot share nodes with
-other running jobs.  This is the opposite of \-\-share, whichever option
-is seen last on the command line will win. The default shared/exclusive
-behavior depends on system configuration and the partition's \fBShared\fR
-option takes precedence over the job's option.
+other running jobs.
+The default shared/exclusive behavior depends on system configuration and the
+partition's \fBShared\fR option takes precedence over the job's option.
 
 This option can also be used when initiating more than one job step within
 an existing resource allocation, where you want separate processors to
@@ -1435,14 +1434,15 @@ be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 
 .TP
 \fB\-s\fR, \fB\-\-share\fR
-The job allocation can share nodes with other running jobs.
-This is the opposite of \-\-exclusive, whichever option is seen last
-on the command line will be used. The default shared/exclusive
-behavior depends on system configuration and the partition's \fBShared\fR
-option takes precedence over the job's option.
+The job allocation can share resources with other running jobs.
+The resources to be shared can be nodes, sockets, cores, or hyperthreads
+depending upon configuration.
+The default shared behavior depends on system configuration and the partition's
+\fBShared\fR option takes precedence over the job's option.
 This option may result the allocation being granted sooner than if the \-\-share
 option was not set and allow higher system utilization, but application
-performance will likely suffer due to competition for resources within a node.
+performance will likely suffer due to competition for resources.
+Also see the \-\-exclusive option.
 
 .TP
 \fB\-S\fR, \fB\-\-core\-spec\fR=<\fInum\fR>
