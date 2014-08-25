@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Fix Lustre misspellings in hdf5 guide
  -- Fix wrong reference in slurm.conf man page to what --profile option should
     be used for AcctGatherFilesystemType.
+ -- Update HDF5 document to point out the SlurmdUser is who creates the
+    ProfileHDF5Dir directory as well as all it's sub-directories and files.
 
 * Changes in Slurm 14.03.7
 ==========================
