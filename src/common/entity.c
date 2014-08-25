@@ -146,7 +146,6 @@ void entity_delete_node(entity_t* entity, void* node)
 	ListIterator i;
 	void* result;
 	i = list_iterator_create(entity->nodes);
-	list_iterator_reset(i);
 	result = list_find(i, _entity_node_find, node);
 	do {
 		if (result == NULL)
@@ -167,7 +166,6 @@ int entity_has_node(entity_t* entity, void* node)
 	ListIterator i;
 	void* result;
 	i = list_iterator_create(entity->nodes);
-	list_iterator_reset(i);
 	result = list_find(i, _entity_node_find, node);
 	list_iterator_destroy(i);
 	return result != NULL;
