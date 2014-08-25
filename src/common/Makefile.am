@@ -122,7 +122,10 @@ libcommon_la_SOURCES = 			\
 	proc_args.c proc_args.h		\
 	slurm_strcasestr.c slurm_strcasestr.h \
 	node_conf.h node_conf.c		\
-	gres.h gres.c
+	gres.h gres.c			\
+	entity.h entity.c		\
+	layout.h layout.c		\
+	layouts_mgr.h layouts_mgr.c
 
 EXTRA_libcommon_la_SOURCES = 		\
 	$(extra_unsetenv_src)		\
