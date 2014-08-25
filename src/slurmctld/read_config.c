@@ -61,6 +61,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
+#include "src/common/layouts_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -899,6 +900,9 @@ int read_slurm_conf(int recover, bool reconfig)
 		return error_code;
 	}
 
+	if (slurm_layouts_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize the layouts framework");
+
 	if (slurm_topo_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize topology plugin");
 
@@ -961,6 +965,10 @@ int read_slurm_conf(int recover, bool reconfig)
 	set_slurmd_addr();
 
 	_stat_slurm_dirs();
+
+	if (slurm_layouts_load_config() != SLURM_SUCCESS)
+		fatal("Failed to load the layouts framework configuration");
+
 	if (reconfig) {		/* Preserve state from memory */
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");

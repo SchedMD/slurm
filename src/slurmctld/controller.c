@@ -67,6 +67,7 @@
 #include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
+#include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -605,6 +606,8 @@ int main(int argc, char *argv[])
 
 		recover = 2;
 	}
+
+	slurm_layouts_fini();
 
 	/* Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to
