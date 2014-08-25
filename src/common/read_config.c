@@ -350,6 +350,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
 	 _destroy_partitionname},
 	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
+	{"Layouts", S_P_STRING},
 
 	{NULL}
 };
@@ -2347,6 +2348,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->unkillable_program);
 	xfree (ctl_conf_ptr->version);
 	xfree (ctl_conf_ptr->z_char);
+	xfree (ctl_conf_ptr->layouts);
 
 	if (purge_node_hash)
 		_free_name_hashtbl();
@@ -2516,6 +2518,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_on_bad_exit	= 0;
+	xfree (ctl_conf_ptr->layouts);
 
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -4176,6 +4179,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 */
 	s_p_get_string(&conf->requeue_exit, "RequeueExit", hashtbl);
 	s_p_get_string(&conf->requeue_exit_hold, "RequeueExitHold", hashtbl);
+
+	if (!s_p_get_string(&conf->layouts, "Layouts", hashtbl))
+		conf->layouts = xstrdup("");
 
 	xfree(default_storage_type);
 	xfree(default_storage_loc);

@@ -773,6 +773,11 @@ char *slurm_get_job_container_plugin(void);
  * RET slurmd_spooldir name, must be xfreed by caller */
 char *slurm_get_slurmd_spooldir(void);
 
+/* slurm_get_layouts
+ * RET comma seperated list of layouts in a string, must be xfreed by caller
+ */
+char *slurm_get_layouts(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

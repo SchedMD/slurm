@@ -2349,6 +2349,23 @@ char *slurm_get_slurmd_spooldir(void)
 	return slurmd_spooldir;
 }
 
+/* slurm_get_layouts
+ * RET comma seperated list of layouts in a string, must be xfreed by caller */
+char *slurm_get_layouts(void)
+{
+	char* layouts = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+		layouts = xstrdup("");
+	} else {
+		conf = slurm_conf_lock();
+		layouts = xstrdup(conf->layouts);
+		slurm_conf_unlock();
+	}
+	return layouts;
+}
+
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {
