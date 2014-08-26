@@ -469,9 +469,9 @@ extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list);
 extern int acct_storage_g_flush_jobs_on_cluster(
 	void *db_conn, time_t event_time);
 
+ /* Reconfig the plugin, if dbd is true forward reconfig to the DBD */
 
-extern int acct_storage_g_reconfig(void *db_conn); /* reconfig the plugin */
-
+extern int acct_storage_g_reconfig(void *db_conn, bool dbd);
 
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 

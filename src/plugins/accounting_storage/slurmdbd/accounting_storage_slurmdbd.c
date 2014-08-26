@@ -2670,7 +2670,18 @@ extern int acct_storage_p_flush_jobs_on_cluster(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_reconfig(void *db_conn)
+extern int acct_storage_p_reconfig(void *db_conn, bool dbd)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t msg;
+	int rc = SLURM_SUCCESS;
+
+	if (!dbd)
+		return SLURM_SUCCESS;
+
+	memset(&msg, 0, sizeof(slurmdbd_msg_t));
+
+	msg.msg_type = DBD_RECONFIG;
+	slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
+
+	return rc;
 }

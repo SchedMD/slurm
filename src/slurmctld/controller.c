@@ -787,7 +787,7 @@ static void _reconfigure_slurm(void)
 	slurm_sched_g_partition_change();	/* notify sched plugin */
 	unlock_slurmctld(config_write_lock);
 	assoc_mgr_set_missing_uids();
-	acct_storage_g_reconfig(acct_db_conn);
+	acct_storage_g_reconfig(acct_db_conn, 0);
 	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();
 	priority_g_reconfig(true);	/* notify priority plugin too */

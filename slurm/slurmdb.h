@@ -1217,6 +1217,13 @@ extern List slurmdb_coord_remove(void *db_conn, List acct_list,
 /************** extra get functions **************/
 
 /*
+ * reconfigure the slurmdbd
+ * RET: List of config_key_pairs_t *
+ * note List needs to be freed when called
+ */
+extern int slurmdb_reconfig(void *db_conn);
+
+/*
  * get info from the storage
  * RET: List of config_key_pair_t *
  * note List needs to be freed with slurm_list_destroy() when called

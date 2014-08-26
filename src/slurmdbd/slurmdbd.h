@@ -46,4 +46,6 @@ extern List registered_clusters;
 
 extern void shutdown_threads();
 
+extern void reconfig();
+
 #endif /* !_SLURM_DBD_H */

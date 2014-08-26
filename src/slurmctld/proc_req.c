@@ -2715,7 +2715,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		info("_slurm_rpc_reconfigure_controller: completed %s",
 		     TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		acct_storage_g_reconfig(acct_db_conn);
+		acct_storage_g_reconfig(acct_db_conn, 0);
 		priority_g_reconfig(false);	/* notify priority plugin too */
 		save_all_state();		/* has its own locks */
 		queue_job_scheduler();
@@ -4461,7 +4461,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	log_set_debug_flags();
 	gs_reconfig();
 	gres_plugin_reconfig(NULL);
-	acct_storage_g_reconfig(acct_db_conn);
+	acct_storage_g_reconfig(acct_db_conn, 0);
 	priority_g_reconfig(false);
 	select_g_reconfigure();
 	(void) slurm_sched_g_reconfig();

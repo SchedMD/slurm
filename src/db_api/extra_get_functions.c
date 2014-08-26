@@ -49,6 +49,16 @@
 #include "src/common/slurm_accounting_storage.h"
 
 /*
+ * reconfigure the slurmdbd
+ * RET: List of config_key_pairs_t *
+ * note List needs to be freed when called
+ */
+extern int slurmdb_reconfig(void *db_conn)
+{
+	return acct_storage_g_reconfig(db_conn, 1);
+}
+
+/*
  * get info from the storage
  * RET: List of config_key_pairs_t *
  * note List needs to be freed when called

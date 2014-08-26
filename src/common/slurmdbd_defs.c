@@ -663,8 +663,8 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_GET_CONFIG:
 		packstr((char *)req->data, buffer);
 		break;
-	case DBD_GET_JOBS:
-		/* Defunct RPC */
+	case DBD_RECONFIG:
+		break;
 	default:
 		error("slurmdbd: Invalid message type pack %u(%s:%u)",
 		      req->msg_type,
@@ -848,10 +848,10 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 			resp->msg_type, buffer);
 		break;
 	case DBD_GET_CONFIG:
+		/* (handled in src/slurmdbd/proc_req.c) */
+	case DBD_RECONFIG:
 		/* No message to unpack */
 		break;
-	case DBD_GET_JOBS:
-		/* Defunct RPC */
 	default:
 		error("slurmdbd: Invalid message type unpack %u(%s)",
 		      resp->msg_type,
@@ -900,8 +900,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_CLUSTER_USAGE;
 	} else if (!strcasecmp(msg_type, "Get Events")) {
 		return DBD_GET_EVENTS;
-	} else if (!strcasecmp(msg_type, "Get Jobs")) {
-		return DBD_GET_JOBS;
+	} else if (!strcasecmp(msg_type, "Reconfigure")) {
+		return DBD_RECONFIG;
 	} else if (!strcasecmp(msg_type, "Get Problems")) {
 		return DBD_GET_PROBS;
 	} else if (!strcasecmp(msg_type, "Get Resources")) {
@@ -1134,11 +1134,11 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Get Events";
 		break;
-	case DBD_GET_JOBS:
+	case DBD_RECONFIG:
 		if (get_enum) {
-			return "DBD_GET_JOBS";
+			return "DBD_RECONFIG";
 		} else
-			return "Get Jobs";
+			return "Reconfigure";
 		break;
 	case DBD_GET_PROBS:
 		if (get_enum) {

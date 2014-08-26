@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     export only the environment variable named "ALL".
  -- Improve scheduling of jobs in reservations that overlaps other reservations.
  -- Modify sgather to make global file systems easier to configure.
+ -- Added sacctmgr reconfig to reread the slurmdbd.conf in the slurmdbd.
 
 * Changes in Slurm 14.11.0pre4
 ==============================

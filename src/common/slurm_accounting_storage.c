@@ -199,7 +199,7 @@ typedef struct slurm_acct_storage_ops {
 				    List shares_used);
 	int (*flush_jobs)          (void *db_conn,
 				    time_t event_time);
-	int (*reconfig)            (void *db_conn);
+	int (*reconfig)            (void *db_conn, bool dbd);
 } slurm_acct_storage_ops_t;
 /*
  * Must be synchronized with slurm_acct_storage_ops_t above.
@@ -957,10 +957,10 @@ extern int acct_storage_g_flush_jobs_on_cluster(
  * When a reconfigure happens this should be called.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_reconfig(void *db_conn)
+extern int acct_storage_g_reconfig(void *db_conn, bool dbd)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(ops.reconfig))(db_conn);
+	return (*(ops.reconfig))(db_conn, dbd);
 
 }

@@ -101,7 +101,7 @@ typedef enum {
 	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information  	*/
 	DBD_GET_CLUSTERS,	/* Get account information		*/
 	DBD_GET_CLUSTER_USAGE, 	/* Get cluster usage information	*/
-	DBD_GET_JOBS,		/* VESTIGIAL / DEFUNCT RPC		*/
+	DBD_RECONFIG,   	/* Reread the slurmdbd.conf     	*/
 	DBD_GET_USERS,  	/* Get account information		*/
 	DBD_GOT_ACCOUNTS,	/* Response to DBD_GET_ACCOUNTS		*/
 	DBD_GOT_ASSOCS, 	/* Response to DBD_GET_ASSOCS   	*/

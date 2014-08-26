@@ -293,6 +293,14 @@ end_it:
 	exit(0);
 }
 
+extern void reconfig()
+{
+	read_slurmdbd_conf();
+	assoc_mgr_set_missing_uids();
+	acct_storage_g_reconfig(NULL, 0);
+	_update_logging(false);
+}
+
 extern void shutdown_threads()
 {
 	shutdown_time = time(NULL);
@@ -717,10 +725,7 @@ static void *_signal_handler(void *no_data)
 		switch (sig) {
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
-			read_slurmdbd_conf();
-			assoc_mgr_set_missing_uids();
-			acct_storage_g_reconfig(NULL);
-			_update_logging(false);
+			reconfig();
 			break;
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */

@@ -465,6 +465,16 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		readonly_flag = 1;
+	} else if (strncasecmp (argv[0], "reconfigure",
+				MAX(command_len, 4)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for %s keyword\n",
+				 argv[0]);
+		}
+
+		slurmdb_reconfig(db_conn);
 	} else if (strncasecmp (argv[0], "rollup", MAX(command_len, 2)) == 0) {
 		time_t my_start = 0;
 		time_t my_end = 0;
@@ -828,6 +838,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
      readonly                 makes it so no modification can happen.      \n\
+     reconfigure              reread the slurmdbd.conf on the DBD.         \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\

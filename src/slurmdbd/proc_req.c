@@ -141,6 +141,8 @@ static char *_node_state_string(uint16_t node_state);
 static void  _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 				dbd_job_start_msg_t *job_start_msg,
 				dbd_id_rc_msg_t *id_rc_msg);
+static int   _reconfig(slurmdbd_conn_t *slurmdbd_conn,
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
@@ -385,6 +387,11 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _node_state(slurmdbd_conn,
 					 in_buffer, out_buffer, uid);
 			break;
+		case DBD_RECONFIG:
+			/* handle reconfig */
+			rc = _reconfig(slurmdbd_conn,
+				       in_buffer, out_buffer, uid);
+			break;
 		case DBD_REGISTER_CTLD:
 			rc = _register_ctld(slurmdbd_conn, in_buffer,
 					    out_buffer, uid);
@@ -445,8 +452,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _step_start(slurmdbd_conn,
 					 in_buffer, out_buffer, uid);
 			break;
-		case DBD_GET_JOBS:
-			/* Defunct RPC */
 		default:
 			comment = "Invalid RPC";
 			error("CONN:%u %s msg_type=%d",
@@ -2884,6 +2889,33 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
+}
+
+static int   _reconfig(slurmdbd_conn_t *slurmdbd_conn,
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
+
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
+	    < SLURMDB_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      ESLURM_ACCESS_DENIED,
+					      comment, DBD_MODIFY_WCKEYS);
+
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	info("Reconfigure request received");
+	reconfig();
+
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+				      rc, comment, DBD_RECONFIG);
+	return rc;
+
 }
 
 static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
