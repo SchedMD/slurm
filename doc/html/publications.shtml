@@ -379,6 +379,12 @@ Morris Jette, Lawrence Livermore National Laboratory
 Yiannis Georgiou, et. al.
 (ICDCN 2014, January 2014)</li>
 
+
+<li><a href="http://www.cs.huji.ac.il/~feit/parsched/jsspp12/p8-georgiou.pdf">
+Evaluating scalability and efficiency of the Resource and Job Management System on large HPC Clusters</b></a>,
+Yiannis Georgiou (BULL S.A.S, France); Matthieu Hautreux (CEA-DAM, France)
+(16th Workshop on Job Scheduling Strategies for Parallel Processing, May 2012)</li>
+
 <li>GreenSlot: Scheduling Energy Consumption in Green Datacenters,
 Inigo Goiri, et. al.
 (SuperComputing 2011, November 2011)</li>
@@ -427,6 +433,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 3 December 2013</p>
+<p style="text-align:center;">Last modified 25 August 2014</p>
 
 <!--#include virtual="footer.txt"-->
