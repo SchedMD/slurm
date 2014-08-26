@@ -453,6 +453,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	bool admin_set_memory_limit = false;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
+	bool strict_checking;
 
 	xassert(acct_policy_limit_set);
 
@@ -494,7 +495,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 	if (qos_ptr) {
 		slurmdb_used_limits_t *used_limits = NULL;
-		bool strict_checking =
+		strict_checking =
 			(reason || (qos_ptr->flags & QOS_FLAG_DENY_LIMIT));
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_cpu_mins.
@@ -746,7 +747,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			rc = false;
 			goto end_it;
 		}
-	}
+	} else if (!reason)
+		strict_checking = reason ? true : false;
 
 	while (assoc_ptr) {
 		/* for validation we don't need to look at
@@ -758,7 +760,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (assoc_ptr->grp_cpus == INFINITE)
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
 			/* no need to check/set */
-		} else if ((job_desc->min_cpus != NO_VAL)
+		} else if (strict_checking && (job_desc->min_cpus != NO_VAL)
 			   && (job_desc->min_cpus > assoc_ptr->grp_cpus)) {
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_CPU;
@@ -777,7 +779,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		/* for validation we don't need to look at
 		 * assoc_ptr->grp_jobs.
 		 */
-		if (!admin_set_memory_limit
+		if (strict_checking && !admin_set_memory_limit
 		    && (!qos_ptr || (qos_ptr->grp_mem == INFINITE))
 		    && (assoc_ptr->grp_mem != INFINITE)
 		    && (job_memory > assoc_ptr->grp_mem)) {
@@ -800,7 +802,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (assoc_ptr->grp_nodes == INFINITE)
 		    || (update_call && (job_desc->max_nodes == NO_VAL))) {
 			/* no need to check/set */
-		} else if ((job_desc->min_nodes != NO_VAL)
+		} else if (strict_checking && (job_desc->min_nodes != NO_VAL)
 			   && (job_desc->min_nodes > assoc_ptr->grp_nodes)) {
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_NODES;
@@ -857,7 +859,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (assoc_ptr->max_cpus_pj == INFINITE)
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
 			/* no need to check/set */
-		} else if ((job_desc->min_cpus != NO_VAL)
+		} else if (strict_checking && (job_desc->min_cpus != NO_VAL)
 			   && (job_desc->min_cpus > assoc_ptr->max_cpus_pj)) {
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_CPUS_PER_JOB;
@@ -881,7 +883,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (assoc_ptr->max_nodes_pj == INFINITE)
 		    || (update_call && (job_desc->max_nodes == NO_VAL))) {
 			/* no need to check/set */
-		} else if ((job_desc->min_nodes != NO_VAL)
+		} else if (strict_checking && (job_desc->min_nodes != NO_VAL)
 			   && (job_desc->min_nodes > assoc_ptr->max_nodes_pj)) {
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_NODE_PER_JOB;
@@ -930,7 +932,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			} else if (acct_policy_limit_set->time &&
 				   job_desc->time_limit > time_limit) {
 				job_desc->time_limit = time_limit;
-			} else if (job_desc->time_limit > time_limit) {
+			} else if (strict_checking &&
+				   (job_desc->time_limit > time_limit)) {
 				if (reason)
 					*reason = WAIT_ASSOC_MAX_WALL_PER_JOB;
 				debug2("job submit for user %s(%u): "
