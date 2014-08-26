@@ -213,6 +213,8 @@ documents those changes that are of interest to users and administrators.
     ProfileHDF5Dir directory as well as all it's sub-directories and files.
  -- CRAY NATIVE - Remove error message for srun's ran inside an salloc that
     had --network= specified.
+ -- Defer job step initiation of required GRES are in use by other steps rather
+    than immediately returning an error.
 
 * Changes in Slurm 14.03.7
 ==========================
