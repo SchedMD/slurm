@@ -3845,9 +3845,12 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 	}
 
 	if (job_gres_ptr->gres_cnt_step_alloc) {
-		if (step_gres_ptr->gres_cnt_alloc >
-		    (job_gres_ptr->gres_cnt_alloc -
-		     job_gres_ptr->gres_cnt_step_alloc[node_offset]))
+		uint32_t job_gres_avail = job_gres_ptr->gres_cnt_alloc;
+		if (!ignore_alloc) {
+			job_gres_avail -= job_gres_ptr->
+					  gres_cnt_step_alloc[node_offset];
+		}
+		if (step_gres_ptr->gres_cnt_alloc > job_gres_avail)
 			return 0;
 	} else {
 		error("gres/%s: step_test %u.%u gres_cnt_step_alloc is NULL",
