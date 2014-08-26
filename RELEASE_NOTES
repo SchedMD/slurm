@@ -89,7 +89,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
-
+ -- Added DebugFlags
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
