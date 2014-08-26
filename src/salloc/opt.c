@@ -544,6 +544,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.overcommit = true;
 		break;
 	case OPT_CPU_BIND:
+		verbose("The --cpu_bind option has been deprecated in "
+			"salloc, --cpu_bind is for srun only going "
+			"forward.");
 		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
 					  &opt.cpu_bind_type))
 			exit(error_exit);
@@ -1151,6 +1154,9 @@ void set_options(const int argc, char **argv)
 			opt.network = xstrdup(optarg);
 			break;
 		case LONG_OPT_CPU_BIND:
+			verbose("The --cpu_bind option has been deprecated in "
+				"salloc, --cpu_bind is for srun only going "
+				"forward.");
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
