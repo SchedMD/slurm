@@ -1350,6 +1350,9 @@ static void _set_options(int argc, char **argv)
 			opt.shared = 0;
 			break;
 		case LONG_OPT_CPU_BIND:
+			verbose("The --cpu_bind option has been deprecated in "
+				"sbatch, --cpu_bind is for srun only going "
+				"forward.");
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
@@ -2916,8 +2919,6 @@ static void _opt_list(void)
 	info("ntasks-per-node   : %d", opt.ntasks_per_node);
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
-	info("cpu_bind          : %s",
-	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind          : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	info("plane_size        : %u", opt.plane_size);
@@ -2963,7 +2964,7 @@ static void _usage(void)
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
-"              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
+"              [--mem_bind=...] [--reservation=name]\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
 "              [--core-spec=cores] [--reboot]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
@@ -3071,8 +3072,6 @@ static void _help(void)
 	if (conf->task_plugin != NULL
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
-"      --cpu_bind=             Bind tasks to CPUs\n"
-"                              (see \"--cpu_bind=help\" for options)\n"
 "      --hint=                 Bind tasks according to application hints\n"
 "                              (see \"--hint=help\" for options)\n"
 "      --mem_bind=             Bind memory to locality domains (ldom)\n"

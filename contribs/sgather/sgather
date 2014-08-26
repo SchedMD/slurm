@@ -241,8 +241,7 @@ if [ -z "$_SGATHER_SPAWNED" ]; then
   # ... or in multiple steps with regard to $_SGATHER_FANOUT
   #
   else
-    nodelist=$($SRUN --ntasks=$SLURM_NNODES --ntasks-per-node=1 -l hostname) || exit $?
-    nodelist=$(echo "$nodelist" | cut -d ' ' -f 2 | sort)
+    nodelist=$($SCONTROL show hostnames $SLURM_NODELIST | sort)
     set $nodelist
     nodesublist=""
     nodesubcnt=0

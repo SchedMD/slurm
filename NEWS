@@ -215,6 +215,10 @@ documents those changes that are of interest to users and administrators.
     had --network= specified.
  -- Defer job step initiation of required GRES are in use by other steps rather
     than immediately returning an error.
+ -- Deprecate --cpu_bind from sbatch and salloc.  These never worked correctly
+    and only caused confusion since the cpu_bind options mostly refer to a
+    step we opted to only allow srun to set them in future versions.
+ -- Modify sgather to work if Nodename and NodeHostname differ.
 
 * Changes in Slurm 14.03.7
 ==========================

@@ -544,6 +544,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.overcommit = true;
 		break;
 	case OPT_CPU_BIND:
+		verbose("The --cpu_bind option has been deprecated in "
+			"salloc, --cpu_bind is for srun only going "
+			"forward.");
 		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
 					  &opt.cpu_bind_type))
 			exit(error_exit);
@@ -1151,6 +1154,9 @@ void set_options(const int argc, char **argv)
 			opt.network = xstrdup(optarg);
 			break;
 		case LONG_OPT_CPU_BIND:
+			verbose("The --cpu_bind option has been deprecated in "
+				"salloc, --cpu_bind is for srun only going "
+				"forward.");
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
@@ -1857,8 +1863,6 @@ static void _opt_list(void)
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
-	info("cpu_bind          : %s",
-	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind          : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	str = print_commandline(command_argc, command_argv);
@@ -1899,7 +1903,7 @@ static void _usage(void)
 "              [--bell] [--no-bell] [--kill-command[=signal]]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
-"              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
+"              [--mem_bind=...] [--reservation=name]\n"
 "              [--time-min=minutes] [--gres=list] [--profile=...]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores]  [--reboot]\n"
@@ -1993,8 +1997,6 @@ static void _help(void)
 	if (conf->task_plugin != NULL
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
-"      --cpu_bind=             Bind tasks to CPUs\n"
-"                              (see \"--cpu_bind=help\" for options)\n"
 "      --hint=                 Bind tasks according to application hints\n"
 "                              (see \"--hint=help\" for options)\n"
 "      --mem_bind=             Bind memory to locality domains (ldom)\n"

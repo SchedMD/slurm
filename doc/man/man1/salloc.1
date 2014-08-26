@@ -114,10 +114,6 @@ options if desired:
     \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
     \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 .fi
-If task/affinity plugin is enabled, then specifying an allocation in this
-manner also sets a default \fB\-\-cpu_bind\fR option of \fIthreads\fR
-if the \fB\-B\fR option specifies a thread count, otherwise an option of
-\fIcores\fR if a core count is specified, otherwise an option of \fIsockets\fR.
 If SelectType is configured to select/cons_res, it must have a parameter of
 CR_Core, CR_Core_Memory, CR_Socket, or CR_Socket_Memory for this option
 to be honored.
@@ -242,125 +238,6 @@ plugins, both of which can modify the node ordering.
 Restrict node selection to nodes with at least the specified number of
 cores per socket.  See additional information under \fB\-B\fR option
 above when task/affinity plugin is enabled.
-
-.TP
-\fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
-Bind tasks to CPUs.
-Used only when the task/affinity or task/cgroup plugin is enabled.
-The configuration parameter \fBTaskPluginParam\fR may override these options.
-For example, if \fBTaskPluginParam\fR is configured to bind to cores,
-your job will not be able to bind tasks to sockets.
-NOTE: To have SLURM always report on the selected CPU binding for all
-commands executed in a shell, you can enable verbose mode by setting
-the SLURM_CPU_BIND environment variable value to "verbose".
-
-The following informational environment variables are set when \fB\-\-cpu_bind\fR
-is in use:
-.nf
-	SLURM_CPU_BIND_VERBOSE
-	SLURM_CPU_BIND_TYPE
-	SLURM_CPU_BIND_LIST
-.fi
-
-See the \fBENVIRONMENT VARIABLE\fR section for a more detailed description
-of the individual SLURM_CPU_BIND* variables.
-
-When using \fB\-\-cpus\-per\-task\fR to run multithreaded tasks, be aware that
-CPU binding is inherited from the parent of the process.  This means that
-the multithreaded task should either specify or clear the CPU binding
-itself to avoid having all threads of the multithreaded task use the same
-mask/CPU as the parent.  Alternatively, fat masks (masks which specify more
-than one allowed CPU) could be used for the tasks in order to provide
-multiple CPUs for the multithreaded tasks.
-
-By default, a job step has access to every CPU allocated to the job.
-To ensure that distinct CPUs are allocated to each job step, use the
-\fB\-\-exclusive\fR option.
-
-If the job step allocation includes an allocation with a number of
-sockets, cores, or threads equal to the number of tasks to be started
-then the tasks will by default be bound to the appropriate resources.
-Disable this mode of operation by explicitly setting "-\-cpu_bind=none".
-
-Note that a job step can be allocated different numbers of CPUs on each node
-or be allocated CPUs not starting at location zero. Therefore one of the
-options which automatically generate the task binding is recommended.
-Explicitly specified masks or bindings are only honored when the job step
-has been allocated every available CPU on the node.
-
-Binding a task to a NUMA locality domain means to bind the task to the set of
-CPUs that belong to the NUMA locality domain or "NUMA node".
-If NUMA locality domain options are used on systems with no NUMA support, then
-each socket is considered a locality domain.
-
-Supported options include:
-.PD 1
-.RS
-.TP
-.B q[uiet]
-Quietly bind before task runs (default)
-.TP
-.B v[erbose]
-Verbosely report binding before task runs
-.TP
-.B no[ne]
-Do not bind tasks to CPUs (default)
-.TP
-.B rank
-Automatically bind by task rank.
-The lowest numbered task on each node is bound to socket (or core or thread) zero, etc.
-Not supported unless the entire node is allocated to the job.
-.TP
-.B map_cpu:<list>
-Bind by mapping CPU IDs to tasks as specified
-where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
-The mapping is specified for a node and identical mapping is applied to the
-tasks on every node (i.e. the lowest task ID on each node is mapped to the
-first CPU ID specified in the list, etc.).
-CPU IDs are interpreted as decimal values unless they are preceded
-with '0x' in which case they are interpreted as hexadecimal values.
-Not supported unless the entire node is allocated to the job.
-.TP
-.B mask_cpu:<list>
-Bind by setting CPU masks on tasks as specified
-where <list> is <mask1>,<mask2>,...<maskN>.
-The mapping is specified for a node and identical mapping is applied to the
-tasks on every node (i.e. the lowest task ID on each node is mapped to the
-first mask specified in the list, etc.).
-CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
-preceded with an optional '0x'. Not supported unless the entire node is
-allocated to the job.
-.TP
-.B sockets
-Automatically generate masks binding tasks to sockets.
-Only the CPUs on the socket which have been allocated to the job will be used.
-If the number of tasks differs from the number of allocated sockets
-this can result in sub\-optimal binding.
-.TP
-.B cores
-Automatically generate masks binding tasks to cores.
-If the number of tasks differs from the number of allocated cores
-this can result in sub\-optimal binding.
-.TP
-.B threads
-Automatically generate masks binding tasks to threads.
-If the number of tasks differs from the number of allocated threads
-this can result in sub\-optimal binding.
-.TP
-.B ldoms
-Automatically generate masks binding tasks to NUMA locality domains.
-If the number of tasks differs from the number of allocated locality domains
-this can result in sub\-optimal binding.
-.TP
-.B boards
-Automatically generate masks binding tasks to boards.
-If the number of tasks differs from the number of allocated boards
-this can result in sub\-optimal binding. This option is supported by the
-task/cgroup plugin only.
-.TP
-.B help
-Show this help message
-.RE
 
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
@@ -719,7 +596,7 @@ be performed at the level of nodes, where the definition of "nodes"
 may differ from system to system. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 If you want greater control, try running a simple test code with the
-options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine
+options "\-\-mem_bind=verbose,none" to determine
 the specific configuration.
 
 NOTE: To have SLURM always report on the selected memory binding for
@@ -969,9 +846,7 @@ ignored if \fISchedulerType=sched/wiki\fR or
 Request the maximum \fIntasks\fR be invoked on each core.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
-instead of the node level.  Masks will automatically be generated
-to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
-is specified.
+instead of the node level.
 NOTE: This option is not supported unless
 \fISelectTypeParameters=CR_Core\fR or
 \fISelectTypeParameters=CR_Core_Memory\fR is configured.
@@ -981,9 +856,7 @@ NOTE: This option is not supported unless
 Request the maximum \fIntasks\fR be invoked on each socket.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
-instead of the node level.  Masks will automatically be generated
-to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
-is specified.
+instead of the node level.
 NOTE: This option is not supported unless
 \fISelectTypeParameters=CR_Socket\fR or
 \fISelectTypeParameters=CR_Socket_Memory\fR is configured.
@@ -1361,9 +1234,6 @@ Same as \fB\-\-conn\-type\fR
 \fBSALLOC_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
 .TP
-\fBSALLOC_CPU_BIND\fR
-Same as \fB\-\-cpu_bind\fR
-.TP
 \fBSALLOC_DEBUG\fR
 Same as \fB\-v, \-\-verbose\fR
 .TP
@@ -1453,15 +1323,6 @@ the executed program:
 .TP
 \fBBASIL_RESERVATION_ID\fR
 The reservation ID on Cray systems running ALPS/BASIL only.
-.TP
-\fBSLURM_CPU_BIND\fR
-Set to value of the \-\-cpu_bind\fR option.
-.TP
-\fBSLURM_CPU_BIND_LIST\fR
-\-\-cpu_bind map or mask list (list of SLURM CPU IDs or masks for this node,
-CPU_ID = Board_ID x threads_per_board +
-Socket_ID x threads_per_socket +
-Core_ID x threads_per_core + Thread_ID).
 .TP
 \fBSLURM_DISTRIBUTION\fR
 Same as \fB\-m, \-\-distribution\fR
