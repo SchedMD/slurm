@@ -635,10 +635,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.dependency)
 		desc->dependency = xstrdup(opt.dependency);
 
-	if (opt.cpu_bind)
-		desc->cpu_bind       = opt.cpu_bind;
-	if (opt.cpu_bind_type)
-		desc->cpu_bind_type  = opt.cpu_bind_type;
 	if (opt.mem_bind)
 		desc->mem_bind       = opt.mem_bind;
 	if (opt.mem_bind_type)

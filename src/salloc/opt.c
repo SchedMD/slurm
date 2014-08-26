@@ -108,7 +108,7 @@
 #define OPT_EXCLUSIVE   0x0d
 #define OPT_OVERCOMMIT  0x0e
 #define OPT_ACCTG_FREQ  0x0f
-#define OPT_CPU_BIND    0x10
+
 #define OPT_MEM_BIND    0x11
 #define OPT_IMMEDIATE   0x12
 #define OPT_WCKEY       0x14
@@ -119,7 +119,7 @@
 #define OPT_CORE_SPEC   0x19
 
 /* generic getopt_long flags, integers and *not* valid characters */
-#define LONG_OPT_CPU_BIND    0x101
+
 #define LONG_OPT_MEM_BIND    0x102
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
@@ -301,8 +301,6 @@ static void _opt_default()
 	opt.ntasks_per_node      = 0;  /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
-	opt.cpu_bind_type = 0;
-	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.core_spec = (uint16_t) NO_VAL;
@@ -399,7 +397,6 @@ env_vars_t env_vars[] = {
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
-  {"SALLOC_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL          },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
@@ -543,14 +540,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
 		break;
-	case OPT_CPU_BIND:
-		verbose("The --cpu_bind option has been deprecated in "
-			"salloc, --cpu_bind is for srun only going "
-			"forward.");
-		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
-					  &opt.cpu_bind_type))
-			exit(error_exit);
-		break;
 	case OPT_MEM_BIND:
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
 					  &opt.mem_bind_type))
@@ -660,7 +649,6 @@ void set_options(const int argc, char **argv)
 		{"conn-type",     required_argument, 0, LONG_OPT_CONNTYPE},
 		{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-		{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
 		{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -737,7 +725,7 @@ void set_options(const int argc, char **argv)
 						&opt.sockets_per_node,
 						&opt.cores_per_socket,
 						&opt.threads_per_core,
-						&opt.cpu_bind_type);
+						NULL);
 
 			if (opt.extra_set == false) {
 				error("invalid resource allocation -B `%s'",
@@ -1106,7 +1094,7 @@ void set_options(const int argc, char **argv)
 					&opt.cores_per_socket,
 					&opt.threads_per_core,
 					&opt.ntasks_per_core,
-					&opt.cpu_bind_type)) {
+					NULL)) {
 				exit(error_exit);
 			}
 			break;
@@ -1152,14 +1140,6 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-			break;
-		case LONG_OPT_CPU_BIND:
-			verbose("The --cpu_bind option has been deprecated in "
-				"salloc, --cpu_bind is for srun only going "
-				"forward.");
-			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
-						  &opt.cpu_bind_type))
-				exit(error_exit);
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
@@ -1463,28 +1443,6 @@ static bool _opt_verify(void)
 		}
 	}
 
-	/* bound threads/cores from ntasks_cores/sockets */
-	if (opt.ntasks_per_core > 0) {
-		/* if cpu_bind_type doesn't already have a auto pref,
-		 * choose the level based on the level of ntasks
-		 */
-		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
-					   CPU_BIND_TO_CORES |
-					   CPU_BIND_TO_THREADS))) {
-			opt.cpu_bind_type |= CPU_BIND_TO_CORES;
-		}
-	}
-	if (opt.ntasks_per_socket > 0) {
-		/* if cpu_bind_type doesn't already have a auto pref,
-		 * choose the level based on the level of ntasks
-		 */
-		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
-					   CPU_BIND_TO_CORES |
-					   CPU_BIND_TO_THREADS))) {
-			opt.cpu_bind_type |= CPU_BIND_TO_SOCKETS;
-		}
-	}
-
 	/* massage the numbers */
 	if ((opt.nodes_set || opt.extra_set)				&&
 	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&&
@@ -1599,19 +1557,6 @@ static bool _opt_verify(void)
 		      "to your request.");
 #endif
 
-	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
-				  &opt.cpu_bind_type))
-		exit(error_exit);
-	if (opt.cpu_bind_type && (getenv("SLURM_CPU_BIND") == NULL)) {
-		char tmp[64];
-		slurm_sprint_cpu_bind_type(tmp, opt.cpu_bind_type);
-		if (opt.cpu_bind) {
-			setenvf(NULL, "SLURM_CPU_BIND", "%s:%s",
-				tmp, opt.cpu_bind);
-		} else {
-			setenvf(NULL, "SLURM_CPU_BIND", "%s", tmp);
-		}
-	}
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND") == NULL)) {
 		char tmp[64];
 		slurm_sprint_mem_bind_type(tmp, opt.mem_bind_type);

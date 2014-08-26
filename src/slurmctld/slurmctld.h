@@ -439,8 +439,14 @@ struct job_details {
 					 * images */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	uint16_t core_spec;		/* specialized core count */
-	char *cpu_bind;			/* binding map for map/mask_cpu */
-	uint16_t cpu_bind_type;		/* see cpu_bind_type_t */
+	char *cpu_bind;			/* binding map for map/mask_cpu - This
+					 * currently does not matter to the
+					 * job allocation, setting this does
+					 * not do anything for steps. */
+	uint16_t cpu_bind_type;		/* see cpu_bind_type_t - This
+					 * currently does not matter to the
+					 * job allocation, setting this does
+					 * not do anything for steps. */
 	uint16_t cpus_per_task;		/* number of processors required for
 					 * each task */
 	List depend_list;		/* list of job_ptr:state pairs */

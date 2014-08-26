@@ -3360,8 +3360,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       "ntasks_per_core=%ld",
 	       ntasks_per_node, ntasks_per_socket, ntasks_per_core);
 
-	debug3("   cpus_bind=%u:%s mem_bind=%u:%s plane_size:%u",
-	       job_specs->cpu_bind_type, job_specs->cpu_bind,
+	debug3("   mem_bind=%u:%s plane_size:%u",
 	       job_specs->mem_bind_type, job_specs->mem_bind,
 	       job_specs->plane_size);
 	debug3("   array_inx=%s", job_specs->array_inx);
@@ -3550,6 +3549,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	}
 	details_new->ckpt_dir = xstrdup(job_details->ckpt_dir);
 	details_new->cpu_bind = xstrdup(job_details->cpu_bind);
+	details_new->cpu_bind_type = job_details->cpu_bind_type;
 	details_new->depend_list = depended_list_copy(job_details->depend_list);
 	details_new->dependency = xstrdup(job_details->dependency);
 	details_new->orig_dependency = xstrdup(job_details->orig_dependency);
@@ -3575,6 +3575,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 		memcpy(details_new->mc_ptr, job_details->mc_ptr, i);
 	}
 	details_new->mem_bind = xstrdup(job_details->mem_bind);
+	details_new->mem_bind_type = job_details->mem_bind_type;
 	if (job_details->req_node_bitmap) {
 		details_new->req_node_bitmap =
 			bit_copy(job_details->req_node_bitmap);

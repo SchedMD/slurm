@@ -127,6 +127,9 @@ COMMAND CHANGES (see man pages for details)
     to multiple partitions (job is reported once per usable partition).
  -- Add sbatch job array option to limit the number of simultaneously running
     tasks from a job array (e.g. "--array=0-15%4").
+ -- Removed --cpu_bind from sbatch and salloc.  It just seemed to cause
+    confusion and wasn't ever handled in the allocation.  A user can now only
+    specify the option with srun.
 
 OTHER CHANGES
 =============
