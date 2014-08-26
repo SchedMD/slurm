@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
  -- Improve scheduling of jobs in reservations that overlaps other reservations.
  -- Modify sgather to make global file systems easier to configure.
  -- Added sacctmgr reconfig to reread the slurmdbd.conf in the slurmdbd.
+ -- Modify scontrol job operations to accept comma delimited list of job IDs.
+    Applies to job update, hold, release, suspend, resume, requeue, and
+    requeuehold operations.
 
 * Changes in Slurm 14.11.0pre4
 ==============================

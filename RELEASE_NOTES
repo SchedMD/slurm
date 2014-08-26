@@ -130,6 +130,9 @@ COMMAND CHANGES (see man pages for details)
  -- Removed --cpu_bind from sbatch and salloc.  It just seemed to cause
     confusion and wasn't ever handled in the allocation.  A user can now only
     specify the option with srun.
+ -- Modify scontrol job operations to accept comma delimited list of job IDs.
+    Applies to job update, hold, release, suspend, resume, requeue, and
+    requeuehold operations.
 
 OTHER CHANGES
 =============
