@@ -1117,6 +1117,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSGrpWallLimit";
 	case WAIT_QOS_MAX_CPUS_PER_JOB:
 		return "QOSMaxCpusPerJobLimit";
+	case WAIT_QOS_MAX_CPU_MINS_PER_JOB:
+		return "QOSMaxCpusMinsPerJobLimit";
 	case WAIT_QOS_MAX_NODE_PER_JOB:
 		return "QOSMaxNodesPerJobLimit";
 	case WAIT_QOS_MAX_WALL_PER_JOB:
@@ -1127,8 +1129,38 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSMaxJobsPerUserLimit";
 	case WAIT_QOS_MAX_NODE_PER_USER:
 		return "QOSMaxNodesPerUserLimit";
+	case WAIT_QOS_MAX_SUB_JOB:
+		return "QOSMaxSubmitJobPerUserLimit";
 	case WAIT_QOS_MIN_CPUS:
 		return "QOSMinCPUsNotSatisfied";
+	case WAIT_ASSOC_GRP_CPU:
+		return "AssocGrpCpuLimit";
+	case WAIT_ASSOC_GRP_CPU_MIN:
+		return "AssocGrpCPUMinsLimit";
+	case WAIT_ASSOC_GRP_CPU_RUN_MIN:
+		return "AssocGrpCPURunMinsLimit";
+	case WAIT_ASSOC_GRP_JOB:
+		return"AssocGrpJobsLimit";
+	case WAIT_ASSOC_GRP_MEMORY:
+		return "AssocGrpMemoryLimit";
+	case WAIT_ASSOC_GRP_NODES:
+		return "AssocGrpNodesLimit";
+	case WAIT_ASSOC_GRP_SUB_JOB:
+		return "AssocGrpSubmitJobsLimit";
+	case WAIT_ASSOC_GRP_WALL:
+		return "AssocGrpWallLimit";
+	case WAIT_ASSOC_MAX_JOBS:
+		return "AssocMaxJobsLimit";
+	case WAIT_ASSOC_MAX_CPUS_PER_JOB:
+		return "AssocMaxCpusPerJobLimit";
+	case WAIT_ASSOC_MAX_CPU_MINS_PER_JOB:
+		return "AssocMaxCpusMinsPerJobLimit";
+	case WAIT_ASSOC_MAX_NODE_PER_JOB:
+		return "AssocMaxNodesPerJobLimit";
+	case WAIT_ASSOC_MAX_WALL_PER_JOB:
+		return "AssocMaxWallDurationPerJobLimit";
+	case WAIT_ASSOC_MAX_SUB_JOB:
+		return "AssocMaxSubmitJobLimit";
 	case WAIT_MAX_REQUEUE:
 		return "JobHoldMaxRequeue";
 	case WAIT_ARRAY_TASK_LIMIT:

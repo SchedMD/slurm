@@ -352,12 +352,30 @@ enum job_state_reason {
 	WAIT_QOS_GRP_SUB_JOB,        /* QOS GrpSubmitJobs exceeded */
 	WAIT_QOS_GRP_WALL,           /* QOS GrpWall exceeded */
 	WAIT_QOS_MAX_CPUS_PER_JOB,   /* QOS MaxCpusPerJob exceeded */
+	WAIT_QOS_MAX_CPU_MINS_PER_JOB,/* QOS MaxCpusMinsPerJob exceeded */
 	WAIT_QOS_MAX_NODE_PER_JOB,   /* QOS MaxNodesPerJob exceeded */
 	WAIT_QOS_MAX_WALL_PER_JOB,   /* QOS MaxWallDurationPerJob exceeded */
 	WAIT_QOS_MAX_CPU_PER_USER,   /* QOS MaxCpusPerUser exceeded */
 	WAIT_QOS_MAX_JOB_PER_USER,   /* QOS MaxJobsPerUser exceeded */
 	WAIT_QOS_MAX_NODE_PER_USER,  /* QOS MaxNodesPerUser exceeded */
-	WAIT_QOS_MIN_CPUS,           /* QOS MinCPUs not reached */
+	WAIT_QOS_MAX_SUB_JOB,        /* QOS MaxSubmitJobsPerUser exceeded */
+	WAIT_QOS_MIN_CPUS,           /* QOS MinCPUsPerJob not reached */
+	WAIT_ASSOC_GRP_CPU,          /* ASSOC GrpCpus exceeded */
+	WAIT_ASSOC_GRP_CPU_MIN,      /* ASSOC GrpCPUMins exceeded */
+	WAIT_ASSOC_GRP_CPU_RUN_MIN,  /* ASSOC GrpCPURunMins exceeded */
+	WAIT_ASSOC_GRP_JOB,          /* ASSOC GrpJobs exceeded */
+	WAIT_ASSOC_GRP_MEMORY,       /* ASSOC GrpMemory exceeded */
+	WAIT_ASSOC_GRP_NODES,        /* ASSOC GrpNodes exceeded */
+	WAIT_ASSOC_GRP_SUB_JOB,      /* ASSOC GrpSubmitJobs exceeded */
+	WAIT_ASSOC_GRP_WALL,         /* ASSOC GrpWall exceeded */
+	WAIT_ASSOC_MAX_JOBS,         /* ASSOC MaxJobs exceeded */
+	WAIT_ASSOC_MAX_CPUS_PER_JOB, /* ASSOC MaxCpusPerJob exceeded */
+	WAIT_ASSOC_MAX_CPU_MINS_PER_JOB,/* ASSOC MaxCpusMinsPerJob exceeded */
+	WAIT_ASSOC_MAX_NODE_PER_JOB, /* ASSOC MaxNodesPerJob exceeded */
+	WAIT_ASSOC_MAX_WALL_PER_JOB, /* ASSOC MaxWallDurationPerJob
+				      * exceeded */
+	WAIT_ASSOC_MAX_SUB_JOB,      /* ASSOC MaxSubmitJobsPerUser exceeded */
+
 	WAIT_MAX_REQUEUE,            /* MAX_BATCH_REQUEUE reached */
 	WAIT_ARRAY_TASK_LIMIT        /* job array running task limit */
 };
