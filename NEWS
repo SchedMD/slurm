@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sbatch --export=ALL, it was treated by srun as a request to explicitly
     export only the environment variable named "ALL".
  -- Improve scheduling of jobs in reservations that overlaps other reservations.
+ -- Modify sgather to make global file systems easier to configure.
 
 * Changes in Slurm 14.11.0pre4
 ==============================

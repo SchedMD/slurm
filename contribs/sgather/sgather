@@ -22,6 +22,10 @@ SRUN="srun"
 SCP="scp"
 RM="rm"
 VERSION="1.0"
+# Define node-global file systems for which a remote copy is not required
+# Specify any number of file system paths as desired here
+GLOBAL_FILE[0]="/home/*"
+GLOBAL_FILE[1]="/scratch/*"
 
 #
 # show_help - display help message
@@ -201,11 +205,16 @@ if [ -z "$_SGATHER_SPAWNED" ]; then
   # check whether the destination file is node-global
   # (->no remote copying is necessary)
   #
-  case $_SGATHER_DEST in
-    /scratch/* | /home/*)
-      _SGATHER_REMOTE_COPY=false
-      ;;
-  esac
+  inx=0
+  while [ $inx -lt ${#GLOBAL_FILE[@]} ]
+  do
+    case $_SGATHER_DEST in
+      ${GLOBAL_FILE[$inx]})
+        _SGATHER_REMOTE_COPY=false
+        ;;
+    esac
+    inx=$((inx+1))
+  done
 
   verbose 1 "remote copy = $_SGATHER_REMOTE_COPY"
 
