@@ -62,7 +62,6 @@ static void	_update_job_size(uint32_t job_id);
 
 /* Local variables for managing job IDs */
 static char *local_job_str = NULL;
-static char *save_ptr = NULL;
 
 /* Confirm that contents of job_str is valid comma delimited list of job IDs */
 static bool _is_job_id(char *job_str)
@@ -87,7 +86,8 @@ static bool _is_job_id(char *job_str)
 		} else if (local_job_str[i] == '-') {
 			if ((bracket_cnt == 0) && !have_under)
 				goto fail;	/* stray '-' */
-		} else if (local_job_str[i] == ',') {
+		} else if ((local_job_str[i] == ',') ||
+			   (local_job_str[i] == ' ')) {
 			if (bracket_cnt == 0) {
 				local_job_str[i] = '^';	/* New separator */
 				have_under = false;
@@ -108,34 +108,99 @@ fail:	xfree(local_job_str);
 /* Get the next job ID from local variables set up by _is_job_id() */
 static char *_next_job_id(void)
 {
-	char *job_id_str = NULL, *under_ptr;
+	static hostlist_t hl = NULL;
+	static char *save_ptr = NULL;
+	static char *next_job_id = NULL;
+	static char *task_id_spec = NULL;
+	char *job_id_str = NULL, *bracket_ptr, *under_ptr;
+	char *tmp_str, *end_job_str;
 	int i;
 
-	if (local_job_str && !save_ptr)
-		job_id_str = strtok_r(local_job_str, "^", &save_ptr);
-	else if (save_ptr)
-		job_id_str = strtok_r(NULL, "^", &save_ptr);
+	/* Clean up from previous calls */
+	xfree(next_job_id);
 
-	if (!job_id_str) {
-		xfree(local_job_str);
-		save_ptr = NULL;
-		return job_id_str;
+	if (hl) {
+		/* Process job ID regular expression using previously
+		 * established hostlist data structure */
+		tmp_str = hostlist_shift(hl);
+		if (tmp_str) {
+			next_job_id = xstrdup(tmp_str);
+			free(tmp_str);
+			if (task_id_spec) {
+				xstrcat(next_job_id, "_");
+				xstrcat(next_job_id, task_id_spec);
+			}
+			return next_job_id;
+		}
+		hostlist_destroy(hl);
+		hl = NULL;
 	}
 
+	/* Get next token */
+	xfree(task_id_spec);
+	if (local_job_str && !save_ptr)	/* Get first token */
+		job_id_str = strtok_r(local_job_str, "^", &save_ptr);
+	else if (save_ptr)		/* Get next token */
+		job_id_str = strtok_r(NULL, "^", &save_ptr);
+
+	if (!job_id_str)	/* No more tokens */
+		goto fini;
+
 	under_ptr = strchr(job_id_str, '_');
-	if (under_ptr && (under_ptr[1] == '[')) {
-		/* Strip brackets from job array task ID specification */
-		for (i = 1; under_ptr[i]; i++) {
-			if (under_ptr[i+1] == ']') {
-				under_ptr[i] = '\0';
-				break;
+	if (under_ptr) {
+		if (under_ptr[1] == '[') {
+			/* Strip brackets from job array task ID spec */
+			task_id_spec = xstrdup(under_ptr + 2);
+			for (i = 0; task_id_spec[i]; i++) {
+				if (task_id_spec[i] == ']') {
+					task_id_spec[i] = '\0';
+					break;
+				}
 			}
-			under_ptr[i] = under_ptr[i+1];
+		} else {
+			task_id_spec = xstrdup(under_ptr + 1);
 		}
 	}
 
-info("next_id:%s:", job_id_str);
-	return job_id_str;
+	bracket_ptr = strchr(job_id_str, '[');
+	if (bracket_ptr && (!under_ptr || (bracket_ptr < under_ptr))) {
+		/* Job ID specification uses regular expression */
+		tmp_str = xstrdup(job_id_str);
+		if ((end_job_str = strchr(tmp_str, '_')))
+			end_job_str[0] = '\0';
+		hl = hostlist_create(tmp_str);
+		if (!hl) {
+			error("Invalid job id: %s", job_id_str);
+			xfree(tmp_str);
+			goto fini;
+		}
+		xfree(tmp_str);
+		tmp_str = hostlist_shift(hl);
+		if (!tmp_str) {
+			error("Invalid job id: %s", job_id_str);
+			hostlist_destroy(hl);
+			goto fini;
+		}
+		next_job_id = xstrdup(tmp_str);
+		free(tmp_str);
+	} else if (under_ptr) {
+		under_ptr[0] = '\0';
+		next_job_id = xstrdup(job_id_str);
+		under_ptr[0] = '_';
+	} else {
+		next_job_id = xstrdup(job_id_str);
+	}
+
+	if (task_id_spec) {
+		xstrcat(next_job_id, "_");
+		xstrcat(next_job_id, task_id_spec);
+	}
+
+	return next_job_id;
+
+fini:	xfree(local_job_str);
+	save_ptr = NULL;
+	return NULL;
 }
 
 /*

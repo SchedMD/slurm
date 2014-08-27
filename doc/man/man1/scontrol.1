@@ -187,7 +187,7 @@ This is the default behavior.
 \fBhold\fP \fIjob_list\fP
 Prevent a pending job from beginning started (sets it's priority to 0).
 Use the \fIrelease\fP command to permit the job to be scheduled.
-The job_list argument is a space separated list of job IDs or job names.
+The job_list argument is a comma separated list of job IDs or job names.
 Note that when a job is held by a system administrator using the \fBhold\fP
 command, only a system administrator may release the job for execution (also
 see the \fBuhold\fP command). When the job is held by its owner, it may also
@@ -271,19 +271,21 @@ or removed from the cluster.
 .TP
 \fBrelease\fP \fIjob_list\fP
 Release a previously held job to begin execution.
-The job_list argument is a space separated list of job IDs or job names.
+The job_list argument is a comma separated list of job IDs or job names.
 Also see \fBhold\fR.
 
 .TP
-\fBrequeue\fP \fIjob_id\fP
+\fBrequeue\fP \fIjob_list\fP
 Requeue a running, suspended or finished SLURM batch job into pending state.
+The job_list argument is a comma separated list of job IDs.
 
 .TP
-\fBrequeuehold\fP \fIjob_id\fP
+\fBrequeuehold\fP \fIjob_list\fP
 Requeue a running, suspended or finished SLURM batch job into pending state,
-moreover the job is put in held state (priority zero). A held job can be
-release using scontrol to reset its priority (e.g. "scontrol release <job_id>").
-The command accepts the following option:
+moreover the job is put in held state (priority zero).
+The job_list argument is a comma separated list of job IDs.
+A held job can be release using scontrol to reset its priority (e.g.
+"scontrol release <job_id>"). The command accepts the following option:
 .RS
 .TP 12
 \fIState=SpecialExit\fP
@@ -293,9 +295,9 @@ The "scontrol show job" command will display the JobState as
 \fBSPECIAL_EXIT\fP, while the "squeue" command as \fBSE\fP.
 .RE
 
-\fBresume\fP \fIjob_id_list\fP
+\fBresume\fP \fIjob_list\fP
 Resume a previously suspended job.
-Multiple job ID values may be specified separated by spaces.
+The job_list argument is a comma separated list of job IDs.
 Also see \fBsuspend\fR.
 
 .TP
@@ -390,9 +392,9 @@ only the slurmctld daemon being shutdown and the slurmd daemons
 remaining active.
 
 .TP
-\fBsuspend\fP \fIjob_id_list\fP
+\fBsuspend\fP \fIjob_list\fP
 Suspend a running job.
-Multiple job ID values may be specified separated by spaces.
+The job_list argument is a comma separated list of job IDs.
 Use the \fIresume\fP command to resume its execution.
 User processes must stop on receipt of SIGSTOP signal and resume
 upon receipt of SIGCONT for this operation to be effective.
@@ -555,8 +557,10 @@ command will exit if the option argument is "help".
 Examples of use include "Gres=gpus:2*cpu,disk=40G" and "Gres=help".
 
 .TP
-\fIJobId\fP=<id>
-Identify the job to be updated. This specification is required.
+\fIJobId\fP=<job_list>
+Identify the job(s) to be updated.
+The job_list may be a comma separated list of job IDs.
+This specification is required.
 .TP
 \fILicenses\fP=<name>
 Specification of licenses (or other resources available on all nodes
