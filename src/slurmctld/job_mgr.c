@@ -3452,6 +3452,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	save_prio_factors = job_ptr_new->prio_factors;
 	save_step_list = job_ptr_new->step_list;
 	memcpy(job_ptr_new, job_ptr, sizeof(struct job_record));
+
 	job_ptr_new->job_id   = save_job_id;
 	job_ptr_new->job_next = save_job_next;
 	job_ptr_new->details  = save_details;
@@ -3476,10 +3477,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	}
 	job_ptr_new->comment = xstrdup(job_ptr->comment);
 
-	/* Make sure the db_index is zero for array elements in case the
-	 * first element had an index already assigned. */
-	job_ptr_new->db_index = 0;
-
+	info("setting 0 to job %u %u", job_ptr->job_id, job_ptr->array_task_id);
 	job_ptr_new->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
 	job_ptr_new->gres = xstrdup(job_ptr->gres);
@@ -8277,6 +8275,11 @@ static int _set_job_id(struct job_record *job_ptr)
 		if (_dup_job_file_test(new_id))
 			continue;
 		job_ptr->job_id = new_id;
+		/* When we get a new job id might as well make sure
+		 * the db_index is 0 since there is no way it will be
+		 * correct otherwise :).
+		 */
+		job_ptr->db_index = 0;
 		return SLURM_SUCCESS;
 	}
 	error("We have exhausted our supply of valid job id values. "
