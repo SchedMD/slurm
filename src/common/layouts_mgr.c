@@ -1165,7 +1165,6 @@ int slurm_layouts_load_config(void)
 	     inx++, node_ptr++) {
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
-		debug("layouts: loading node %s",node_ptr->name);
 
 		/* init entity structure on the heap */
 		entity = (entity_t*) xmalloc(sizeof(struct entity_st));
@@ -1193,9 +1192,10 @@ int slurm_layouts_load_config(void)
 			xfree(entity);
 			rc = SLURM_ERROR;
 			break;
-		} else
+		} else {
+			debug3("layouts: loading node %s", node_ptr->name);
 			entity_add_node(entity, layout, ptr);
-
+		}
 	}
 	debug("layouts: %d/%d nodes in hash table, rc=%d",
 	      xhash_count(layouts_mgr.entities), node_record_count, rc);
