@@ -3417,7 +3417,8 @@ extern void rehash_jobs(void)
 	}
 }
 
-/* Create an exact copy of an existing job record for a job array */
+/* Create an exact copy of an existing job record for a job array.
+ * The array_recs structure is moved to the new job record copy */
 struct job_record *_job_rec_copy(struct job_record *job_ptr)
 {
 	struct job_record *job_ptr_new = NULL, *save_job_next;
@@ -10349,6 +10350,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 					error("update_job_str: Unable to copy "
 					      "record for job %u",
 					      job_ptr->job_id);
+				} else {
+					/* The array_recs structure is moved
+					 * to the new job record copy */
+					job_ptr = new_job_ptr;
 				}
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);
