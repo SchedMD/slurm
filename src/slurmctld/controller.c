@@ -80,6 +80,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_route.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
@@ -665,6 +666,7 @@ int main(int argc, char *argv[])
 	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();
+	route_g_fini();
 
 	/* purge remaining data structures */
 	license_free();

@@ -1669,6 +1669,7 @@ _slurmd_fini(void)
 	job_container_fini();
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
+	route_g_fini();
 
 	return SLURM_SUCCESS;
 }
@@ -2038,6 +2039,7 @@ static int _core_spec_init(void)
 	info("Resource spec: Reserved abstract CPU IDs: %s", res_abs_cpus);
 	info("Resource spec: Reserved machine CPU IDs: %s", res_mac_cpus);
 	_resource_spec_fini();
+
 	return SLURM_SUCCESS;
 }
 
