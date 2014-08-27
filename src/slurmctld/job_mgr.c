@@ -3423,7 +3423,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 {
 	struct job_record *job_ptr_pend = NULL, *save_job_next;
 	struct job_details *job_details, *details_new, *save_details;
-	uint32_t save_job_id;
+	uint32_t save_job_id, save_db_index = job_ptr->db_index;
 	priority_factors_object_t *save_prio_factors;
 	List save_step_list;
 	int error_code = SLURM_SUCCESS;
@@ -3458,6 +3458,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	job_ptr_pend->details  = save_details;
 	job_ptr_pend->prio_factors = save_prio_factors;
 	job_ptr_pend->step_list = save_step_list;
+	job_ptr_pend->db_index = save_db_index;
 
 	job_ptr_pend->account = xstrdup(job_ptr->account);
 	job_ptr_pend->alias_list = xstrdup(job_ptr->alias_list);
@@ -8274,6 +8275,7 @@ static int _set_job_id(struct job_record *job_ptr)
 			continue;
 		if (_dup_job_file_test(new_id))
 			continue;
+
 		job_ptr->job_id = new_id;
 		/* When we get a new job id might as well make sure
 		 * the db_index is 0 since there is no way it will be
