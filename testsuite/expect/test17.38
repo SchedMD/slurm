@@ -1,0 +1,185 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test for sbatch --signal
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id    "17.38"
+set exit_code   0
+set file_in     "test$test_id\_sc"
+set file_out    "test$test_id\_output"
+set file_prog   "test$test_id.prog"
+set elps_time   0
+set job_id      0
+
+print_header $test_id
+
+#
+# Delete left-over programs and rebuild them.
+#
+exec $bin_rm -f $file_prog $file_in $file_out
+# We will be using test1.53.prog.c since it is exactly what we need
+exec $bin_cc -o $file_prog test1.53.prog.c
+
+make_bash_script $file_in "
+function gettime \{
+	printf \"Elapsed time: %s secs\n\" \"$\[\$(date +\"%s\") - T]\"
+}\
+
+echo \"starting...\"
+T=\"$\(date +%s)\"
+trap \"echo Got SIGINT 2; gettime; exit 1\" 2
+$srun $file_prog &
+while :
+do
+	:
+done
+"
+
+################Run sbatch with --signal=################
+send_user "\nStart --signal test to signal steps\n"
+
+spawn $sbatch -t3 --signal=2@60 -o$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+wait_for_job $job_id DONE
+
+set sig 0
+spawn $bin_cat $file_out
+expect {
+	-re "Received SIGINT" {
+		incr sig 1
+		exp_continue
+	}
+	-re "Job ran for ($number) secs" {
+		set elps_time $expect_out(1,string)
+		incr sig 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: cat is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$sig != 2} {
+	send_user "\nFAILURE: sbatch did not sent signal properly\n"
+	set exit_code 1
+}
+
+if {$elps_time < 59 || $elps_time > 121} {
+	send_user "\nFAILURE: sbatch sent signal at the wrong time\n"
+	set exit_code 1
+}
+
+# Remove output file so we do not get it mixed up with the new one
+exec $bin_rm -f $file_out
+
+################Run sbatch with --signal=B:################
+send_user "\nStart --signal test to signal bash script\n"
+
+spawn $sbatch -t3 --signal=B:2@60 -o$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+wait_for_job $job_id DONE
+
+set sig 0
+spawn $bin_cat $file_out
+expect {
+	-re "Got SIGINT 2" {
+		incr sig 1
+		exp_continue
+	}
+	-re "Elapsed time: ($number) secs" {
+		set elps_time $expect_out(1,string)
+		incr sig 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: cat is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$sig != 2} {
+	send_user "\nFAILURE: sbatch did not sent signal properly\n"
+	set exit_code 1
+}
+
+if {$elps_time < 59 || $elps_time >121} {
+	send_user "\nFAILURE: sbatch sent signal at the wrong time\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec rm -f $file_prog $file_in $file_out
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
