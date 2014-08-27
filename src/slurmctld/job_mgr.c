@@ -3421,7 +3421,7 @@ extern void rehash_jobs(void)
  * The array_recs structure is moved to the new job record copy */
 struct job_record *_job_rec_copy(struct job_record *job_ptr)
 {
-	struct job_record *job_ptr_new = NULL, *save_job_next;
+	struct job_record *job_ptr_pend = NULL, *save_job_next;
 	struct job_details *job_details, *details_new, *save_details;
 	uint32_t save_job_id;
 	priority_factors_object_t *save_prio_factors;
@@ -3429,14 +3429,14 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	int error_code = SLURM_SUCCESS;
 	int i;
 
-	job_ptr_new = _create_job_record(&error_code, 0);
-	if (!job_ptr_new)     /* MaxJobCount checked when job array submitted */
+	job_ptr_pend = _create_job_record(&error_code, 0);
+	if (!job_ptr_pend)     /* MaxJobCount checked when job array submitted */
 		fatal("job array _create_job_record error");
 	if (error_code != SLURM_SUCCESS)
-		return job_ptr_new;
+		return job_ptr_pend;
 
 	_remove_job_hash(job_ptr);
-	job_ptr_new->job_id = job_ptr->job_id;
+	job_ptr_pend->job_id = job_ptr->job_id;
 	if (_set_job_id(job_ptr) != SLURM_SUCCESS)
 		fatal("job array _set_job_id error");
 	if (!job_ptr->array_recs) {
@@ -3446,97 +3446,97 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 
 	/* Copy most of original job data.
 	 * This could be done in parallel, but performance was worse. */
-	save_job_id   = job_ptr_new->job_id;
-	save_job_next = job_ptr_new->job_next;
-	save_details  = job_ptr_new->details;
-	save_prio_factors = job_ptr_new->prio_factors;
-	save_step_list = job_ptr_new->step_list;
-	memcpy(job_ptr_new, job_ptr, sizeof(struct job_record));
+	save_job_id   = job_ptr_pend->job_id;
+	save_job_next = job_ptr_pend->job_next;
+	save_details  = job_ptr_pend->details;
+	save_prio_factors = job_ptr_pend->prio_factors;
+	save_step_list = job_ptr_pend->step_list;
+	memcpy(job_ptr_pend, job_ptr, sizeof(struct job_record));
 
-	job_ptr_new->job_id   = save_job_id;
-	job_ptr_new->job_next = save_job_next;
-	job_ptr_new->details  = save_details;
-	job_ptr_new->prio_factors = save_prio_factors;
-	job_ptr_new->step_list = save_step_list;
+	job_ptr_pend->job_id   = save_job_id;
+	job_ptr_pend->job_next = save_job_next;
+	job_ptr_pend->details  = save_details;
+	job_ptr_pend->prio_factors = save_prio_factors;
+	job_ptr_pend->step_list = save_step_list;
 
-	job_ptr_new->account = xstrdup(job_ptr->account);
-	job_ptr_new->alias_list = xstrdup(job_ptr->alias_list);
-	job_ptr_new->alloc_node = xstrdup(job_ptr->alloc_node);
+	job_ptr_pend->account = xstrdup(job_ptr->account);
+	job_ptr_pend->alias_list = xstrdup(job_ptr->alias_list);
+	job_ptr_pend->alloc_node = xstrdup(job_ptr->alloc_node);
 
-	bit_clear(job_ptr_new->array_recs->task_id_bitmap,
-		  job_ptr_new->array_task_id);
-	xfree(job_ptr_new->array_recs->task_id_str);
-	job_ptr_new->array_recs->task_cnt--;
+	bit_clear(job_ptr_pend->array_recs->task_id_bitmap,
+		  job_ptr_pend->array_task_id);
+	xfree(job_ptr_pend->array_recs->task_id_str);
+	job_ptr_pend->array_recs->task_cnt--;
 	job_ptr->array_recs = NULL;
-	job_ptr_new->array_task_id = NO_VAL;
+	job_ptr_pend->array_task_id = NO_VAL;
 
-	job_ptr_new->batch_host = NULL;
+	job_ptr_pend->batch_host = NULL;
 	if (job_ptr->check_job) {
-		job_ptr_new->check_job =
+		job_ptr_pend->check_job =
 			checkpoint_copy_jobinfo(job_ptr->check_job);
 	}
-	job_ptr_new->comment = xstrdup(job_ptr->comment);
+	job_ptr_pend->comment = xstrdup(job_ptr->comment);
 
-	info("setting 0 to job %u %u", job_ptr->job_id, job_ptr->array_task_id);
-	job_ptr_new->front_end_ptr = NULL;
+	job_ptr_pend->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
-	job_ptr_new->gres = xstrdup(job_ptr->gres);
+	job_ptr_pend->gres = xstrdup(job_ptr->gres);
 	if (job_ptr->gres_list) {
-		job_ptr_new->gres_list =
+		job_ptr_pend->gres_list =
 			gres_plugin_job_state_dup(job_ptr->gres_list);
 	}
-	job_ptr_new->gres_alloc = NULL;
-	job_ptr_new->gres_req = NULL;
-	job_ptr_new->gres_used = NULL;
+	job_ptr_pend->gres_alloc = NULL;
+	job_ptr_pend->gres_req = NULL;
+	job_ptr_pend->gres_used = NULL;
 
 	_add_job_hash(job_ptr);		/* Sets job_next */
-	_add_job_hash(job_ptr_new);	/* Sets job_next */
+	_add_job_hash(job_ptr_pend);	/* Sets job_next */
 	_add_job_array_hash(job_ptr);
-	job_ptr_new->job_resrcs = NULL;
+	job_ptr_pend->job_resrcs = NULL;
 
-	job_ptr_new->licenses = xstrdup(job_ptr->licenses);
-	job_ptr_new->license_list = license_job_copy(job_ptr->license_list);
-	job_ptr_new->mail_user = xstrdup(job_ptr->mail_user);
-	job_ptr_new->name = xstrdup(job_ptr->name);
-	job_ptr_new->network = xstrdup(job_ptr->network);
-	job_ptr_new->nodes = xstrdup(job_ptr->nodes);
+	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
+	job_ptr_pend->license_list = license_job_copy(job_ptr->license_list);
+	job_ptr_pend->mail_user = xstrdup(job_ptr->mail_user);
+	job_ptr_pend->name = xstrdup(job_ptr->name);
+	job_ptr_pend->network = xstrdup(job_ptr->network);
+	job_ptr_pend->nodes = xstrdup(job_ptr->nodes);
 	if (job_ptr->node_cnt && job_ptr->node_addr) {
 		i = sizeof(slurm_addr_t) * job_ptr->node_cnt;
-		job_ptr_new->node_addr = xmalloc(i);
-		memcpy(job_ptr_new->node_addr, job_ptr->node_addr, i);
+		job_ptr_pend->node_addr = xmalloc(i);
+		memcpy(job_ptr_pend->node_addr, job_ptr->node_addr, i);
 	}
-	job_ptr_new->node_bitmap = NULL;
-	job_ptr_new->node_bitmap_cg = NULL;
-	job_ptr_new->nodes_completing = NULL;
-	job_ptr_new->partition = xstrdup(job_ptr->partition);
-	job_ptr_new->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
+	job_ptr_pend->node_bitmap = NULL;
+	job_ptr_pend->node_bitmap_cg = NULL;
+	job_ptr_pend->nodes_completing = NULL;
+	job_ptr_pend->partition = xstrdup(job_ptr->partition);
+	job_ptr_pend->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
 	/* On jobs that are held the priority_array isn't set up yet,
 	 * so check to see if it exists before copying. */
 	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
 		i = list_count(job_ptr->part_ptr_list) * sizeof(uint32_t);
-		job_ptr_new->priority_array = xmalloc(i);
-		memcpy(job_ptr_new->priority_array, job_ptr->priority_array, i);
+		job_ptr_pend->priority_array = xmalloc(i);
+		memcpy(job_ptr_pend->priority_array,
+		       job_ptr->priority_array, i);
 	}
-	job_ptr_new->resv_name = xstrdup(job_ptr->resv_name);
-	job_ptr_new->resp_host = xstrdup(job_ptr->resp_host);
+	job_ptr_pend->resv_name = xstrdup(job_ptr->resv_name);
+	job_ptr_pend->resp_host = xstrdup(job_ptr->resp_host);
 	if (job_ptr->select_jobinfo) {
-		job_ptr_new->select_jobinfo =
+		job_ptr_pend->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	}
 	if (job_ptr->spank_job_env_size) {
-		job_ptr_new->spank_job_env =
+		job_ptr_pend->spank_job_env =
 			xmalloc(sizeof(char *) *
 			(job_ptr->spank_job_env_size + 1));
 		for (i = 0; i < job_ptr->spank_job_env_size; i++) {
-			job_ptr_new->spank_job_env[i] =
+			job_ptr_pend->spank_job_env[i] =
 				xstrdup(job_ptr->spank_job_env[i]);
 		}
 	}
-	job_ptr_new->state_desc = xstrdup(job_ptr->state_desc);
-	job_ptr_new->wckey = xstrdup(job_ptr->wckey);
+	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
+	job_ptr_pend->wckey = xstrdup(job_ptr->wckey);
 
 	job_details = job_ptr->details;
-	details_new = job_ptr_new->details;
+	details_new = job_ptr_pend->details;
 	memcpy(details_new, job_details, sizeof(struct job_details));
 	details_new->acctg_freq = xstrdup(job_details->acctg_freq);
 	if (job_details->argc) {
@@ -3592,9 +3592,9 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);
 	details_new->work_dir = xstrdup(job_details->work_dir);
-	_copy_job_desc_files(job_ptr_new->job_id, job_ptr->job_id);
+	_copy_job_desc_files(job_ptr_pend->job_id, job_ptr->job_id);
 
-	return job_ptr_new;
+	return job_ptr_pend;
 }
 
 /* Add job array data stucture to the job record */
