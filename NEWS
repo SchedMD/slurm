@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
  -- Changed use of JobContainerPlugin where it should be JobContainerType.
  -- Fix for possible error if job has GRES, but the step explicitly requests a
     GRES count of zero.
+ -- Make "srun --gres=none ..." work when executed without a job allocation.
 
 * Changes in Slurm 14.03.7
 ==========================
