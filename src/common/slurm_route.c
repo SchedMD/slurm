@@ -269,7 +269,7 @@ clean:
 /* ************************************************************************** */
 /*  TAG(                        slurm_route_init                           )  */
 /* ************************************************************************** */
-extern int route_g_init(char *node_name)
+extern int route_init(char *node_name)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "route";
@@ -309,7 +309,7 @@ done:
 /* ************************************************************************** */
 /*  TAG(                        slurm_route_fini                           )  */
 /* ************************************************************************** */
-extern int route_g_fini(void)
+extern int route_fini(void)
 {
 	int rc;
 
@@ -352,7 +352,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 	char *buf;
 
 	nnodes = nnodex = 0;
-	if (route_g_init(NULL) != SLURM_SUCCESS)
+	if (route_init(NULL) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	if (debug_flags & DEBUG_FLAG_ROUTE) {
@@ -391,7 +391,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
  */
 extern int route_g_reconfigure(void)
 {
-	if (route_g_init(NULL) != SLURM_SUCCESS)
+	if (route_init(NULL) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	debug_flags = slurm_get_debug_flags();
 	tree_width = slurm_get_tree_width();
@@ -411,7 +411,7 @@ extern int route_g_reconfigure(void)
  */
 extern slurm_addr_t* route_g_next_collector(bool *is_collector)
 {
-	if (route_g_init(NULL) != SLURM_SUCCESS)
+	if (route_init(NULL) != SLURM_SUCCESS)
 		return NULL;
 
 	return (*(ops.next_collector))(is_collector);
@@ -427,7 +427,7 @@ extern slurm_addr_t* route_g_next_collector(bool *is_collector)
  */
 extern slurm_addr_t* route_g_next_collector_backup(void)
 {
-	if (route_g_init(NULL) != SLURM_SUCCESS)
+	if (route_init(NULL) != SLURM_SUCCESS)
 		return NULL;
 
 	return (*(ops.next_collector_backup))();

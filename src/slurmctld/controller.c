@@ -666,7 +666,7 @@ int main(int argc, char *argv[])
 	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();
-	route_g_fini();
+	route_fini();
 
 	/* purge remaining data structures */
 	license_free();

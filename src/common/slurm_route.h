@@ -50,14 +50,14 @@
  *
  * Returns a SLURM errno.
  */
-extern int route_g_init(char *node_name);
+extern int route_init(char *node_name);
 
 /*
  * Terminate the route plugin.
  *
  * Returns a SLURM errno.
  */
-extern int route_g_fini(void);
+extern int route_fini(void);
 
 /*****************************************************************************\
  *  Plugin API Declarations

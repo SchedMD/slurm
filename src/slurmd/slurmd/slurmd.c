@@ -1459,7 +1459,7 @@ _slurmd_init(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 
-	route_g_init(conf->node_name);
+	route_init(conf->node_name);
 
 	/*
 	 * Check for cpu frequency set capabilities on this node
@@ -1669,7 +1669,7 @@ _slurmd_fini(void)
 	job_container_fini();
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
-	route_g_fini();
+	route_fini();
 
 	return SLURM_SUCCESS;
 }
