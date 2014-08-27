@@ -347,19 +347,19 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 
 		if (job_ptr->start_time)
-			debug("Need to reroll usage from %sJob %u "
+			debug("Need to reroll usage from %s Job %u "
 			      "from %s started then and we are just "
 			      "now hearing about it.",
 			      slurm_ctime(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 		else if (begin_time)
-			debug("Need to reroll usage from %sJob %u "
+			debug("Need to reroll usage from %s Job %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
 			      slurm_ctime(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 		else
-			debug("Need to reroll usage from %sJob %u "
+			debug("Need to reroll usage from %s Job %u "
 			      "from %s was submitted then and we are just "
 			      "now hearing about it.",
 			      slurm_ctime(&check_time),
