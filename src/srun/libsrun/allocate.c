@@ -656,7 +656,8 @@ job_desc_msg_create_from_opts (void)
 	if (opt.core_spec != (uint16_t) NO_VAL)
 		j->core_spec      = opt.core_spec;
 	j->features       = opt.constraints;
-	j->gres           = opt.gres;
+	if (opt.gres && strcasecmp(opt.gres, "NONE"))
+		j->gres   = opt.gres;
 	if (opt.immediate == 1)
 		j->immediate = opt.immediate;
 	if (opt.job_name)

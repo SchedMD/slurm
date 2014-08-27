@@ -1784,7 +1784,23 @@ static void _opt_args(int argc, char **argv)
 	}
 	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
+#if defined HAVE_BG && !defined HAVE_BG_L_P
+	/* BGQ's runjob command required a fully qualified path */
+	if (!launch_g_handle_multi_prog_verify(command_pos) &&
+	    (opt.argc > command_pos)) {
+		char *fullpath;
+
+		if ((fullpath = search_path(opt.cwd,
+					    opt.argv[command_pos],
+					    false, X_OK))) {
+			xfree(opt.argv[command_pos]);
+			opt.argv[command_pos] = fullpath;
+		}
+	}
+#else
 	(void) launch_g_handle_multi_prog_verify(command_pos);
+#endif
+
 #if 0
 	for (i=0; i<opt.argc; i++)
 		info("%d is '%s'", i, opt.argv[i]);

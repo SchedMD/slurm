@@ -224,6 +224,10 @@ documents those changes that are of interest to users and administrators.
     and only caused confusion since the cpu_bind options mostly refer to a
     step we opted to only allow srun to set them in future versions.
  -- Modify sgather to work if Nodename and NodeHostname differ.
+ -- Changed use of JobContainerPlugin where it should be JobContainerType.
+ -- Fix for possible error if job has GRES, but the step explicitly requests a
+    GRES count of zero.
+ -- Make "srun --gres=none ..." work when executed without a job allocation.
 
 * Changes in Slurm 14.03.7
 ==========================

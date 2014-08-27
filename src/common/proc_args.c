@@ -852,8 +852,19 @@ search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
+#if defined HAVE_BG && !defined HAVE_BG_L_P
+	/* BGQ's runjob command required a fully qualified path */
+	if ( (cmd[0] == '.' || cmd[0] == '/') &&
+	     (access(cmd, access_mode) == 0 ) ) {
+		if (cmd[0] == '.')
+			xstrfmtcat(fullpath, "%s/", cwd);
+		xstrcat(fullpath, cmd);
+		goto done;
+	}
+#else
 	if ((cmd[0] == '.') || (cmd[0] == '/'))
 		return NULL;
+#endif
 
 	l = _create_path_list();
 	if (l == NULL)
