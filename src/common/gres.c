@@ -3925,8 +3925,10 @@ extern int gres_plugin_step_state_validate(char *req_config,
 		for (i=0; i<gres_context_cnt; i++) {
 			rc2 = _step_state_validate(tok, &step_gres_data,
 						   &gres_context[i]);
-			if ((rc2 != SLURM_SUCCESS) || (step_gres_data == NULL))
+			if (rc2 != SLURM_SUCCESS)
 				continue;
+			if (step_gres_data == NULL)    /* Name match, count=0 */
+				break;
 			if (job_gres_list == NULL) {
 				info("step %u.%u has gres spec, job has none",
 				     job_id, step_id);
