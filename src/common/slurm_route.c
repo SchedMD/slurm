@@ -135,6 +135,10 @@ static void _set_collectors(char *this_node_name)
 	bool found = false;
 	bool ctldparent = true;
 
+#ifdef HAVE_FRONT_END
+	return; /* on a FrontEnd system this would never be useful. */
+#endif
+
 	if (!run_in_daemon("slurmd"))
 		return; /* Only compute nodes have collectors */
 

@@ -999,9 +999,7 @@ _reconfigure(void)
 	 */
 	slurm_topo_build_config();
 	_set_topo_info();
-#if !defined(HAVE_FRONT_END)
 	route_g_reconfigure();
-#endif
 
 	/*
 	 * In case the administrator changed the cpu frequency set capabilities
@@ -1461,9 +1459,8 @@ _slurmd_init(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 
-#if !defined(HAVE_FRONT_END)
-		route_g_init(conf->node_name);
-#endif
+	route_g_init(conf->node_name);
+
 	/*
 	 * Check for cpu frequency set capabilities on this node
 	 */
