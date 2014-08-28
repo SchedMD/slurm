@@ -1074,7 +1074,7 @@ unpack_error:
  * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
 static void _build_array_str(job_array_struct_t *array_recs)
 {
-	if (array_recs->task_id_str)
+	if (array_recs->task_id_str || (array_recs->task_cnt <= 1))
 		return;
 
 	array_recs->task_id_str = bit_fmt_hexmask(array_recs->task_id_bitmap);
