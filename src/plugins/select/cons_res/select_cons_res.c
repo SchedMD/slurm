@@ -2700,8 +2700,11 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 			bit_clear(avail_bitmap, inx);
 
-			if (local_cores < cores_per_node)
+			if (local_cores < cores_per_node) {
+				debug2("Skip node %d (local: %d, needed: %d)",
+					inx, local_cores, cores_per_node);
 				continue;
+			}
 
 			cores_in_node = 0;
 
@@ -2711,8 +2714,11 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				if (bit_test(tmpcore, coff + i))
 					cores_in_node++;
 			}
-			if (cores_in_node < cores_per_node)
+			if (cores_in_node < cores_per_node) {
+				debug2("Skip node %d (avail: %d, needed: %d)",
+					inx, cores_in_node, cores_per_node);
 				continue;
+			}
 
 			debug2("Using node %d (avail: %d, needed: %d)",
 				inx, cores_in_node, cores_per_node);
@@ -2754,7 +2760,6 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		info("sequential pick using coremap: %s", str);
 
 	} else { /* Reservation is using full nodes */
-
 		while (node_cnt) {
 			int inx;
 
@@ -2845,7 +2850,16 @@ bitstr_t *_pick_first_cores(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	return sp_avail_bitmap;
 }
 
-static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node)
+/* Test that sufficient cores are available on the specified node for use
+ * IN/OUT core_bitmap - cores which are NOT available for use (i.e. specialized
+ *		cores or those already reserved), all cores/bits for the
+ *		specified node will be cleared if the available count is too low
+ * IN node - index of node to test
+ * IN cores_per_node - minimum number of nodes which should be available
+ * RET count of cores available on this node
+ */
+static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node,
+				   int cores_per_node)
 {
 	int coff;
 	int total_cores;
@@ -2863,7 +2877,11 @@ static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node)
 			avail++;
 	}
 
-	return avail;
+	if (avail >= cores_per_node)
+		return avail;
+
+	bit_nclear(core_bitmap, coff, coff + total_cores - 1);
+	return 0;
 }
 
 /*
@@ -2891,7 +2909,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t *sp_avail_bitmap;
 	int rem_nodes, rem_cores = 0;		/* remaining resources desired */
-	int i, j;
+	int c, i, j, n;
 	int best_fit_inx, first, last;
 	int best_fit_nodes;
 	int best_fit_location = 0, best_fit_sufficient;
@@ -2937,7 +2955,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_required = xmalloc(sizeof(int)        * switch_record_cnt);
 
-	for (i=0; i<switch_record_cnt; i++) {
+	for (i = 0; i < switch_record_cnt; i++) {
 		char str[100];
 		switches_bitmap[i] = bit_copy(switch_record_table[i].
 						  node_bitmap);
@@ -2961,19 +2979,29 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		       i, switches_node_cnt[i], switches_cpu_cnt[i]);
 	}
 
-	/* Let's check nodes with less avail cores than needed */
+	/* Skip nodes with less available cores than needed */
+	if (core_cnt) {
+		n = 0;
+		for (j = 0; j < switch_record_cnt; j++) {
+			first = bit_ffs(switches_bitmap[j]);
+			if (first >= 0)
+				last = bit_fls(switches_bitmap[j]);
+			else
+				last = first - 1;
+			for (i = first; i <= last; i++) {
+				if (!bit_test(switches_bitmap[j], i))
+					continue;
 
-	for (j=0; j<switch_record_cnt; j++) {
-		first = bit_ffs(switches_bitmap[j]);
-		last  = bit_fls(switches_bitmap[j]);
-		for (i=first; ((i<=last) && (first>=0)); i++) {
-			int c;
-			if (!bit_test(switches_bitmap[j], i))
-				continue;
-
-			c = _get_avail_core_in_node(*core_bitmap, i);
-			if (c < cores_per_node)
-				switches_node_cnt[j] -= c;
+				c = _get_avail_core_in_node(*core_bitmap, i,
+							    cores_per_node);
+				if (c < core_cnt[n]) {
+					bit_clear(switches_bitmap[j], i);
+					switches_node_cnt[j]--;
+					switches_cpu_cnt[j] -= c;
+				} else if (core_cnt[n]) {
+					n++;
+				}
+			}
 		}
 	}
 

@@ -229,6 +229,8 @@ documents those changes that are of interest to users and administrators.
     GRES count of zero.
  -- Make "srun --gres=none ..." work when executed without a job allocation.
  -- Change the global eio_shutdown_time to a field in eio handle.
+ -- Advanced reservation fixes for heterogeneous systems, especially when
+    reserving cores.
 
 * Changes in Slurm 14.03.7
 ==========================
