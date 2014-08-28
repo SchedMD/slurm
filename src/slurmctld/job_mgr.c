@@ -147,7 +147,6 @@ static int32_t  *requeue_exit_hold;
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
 static void _add_job_array_hash(struct job_record *job_ptr);
-static void _build_array_str(job_array_struct_t *array_recs);
 static int  _checkpoint_job_record (struct job_record *job_ptr,
 				    char *image_dir);
 static int  _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest);
@@ -1069,17 +1068,6 @@ unpack_error:
 	return SLURM_FAILURE;
 }
 
-/* For the job array data structure, build the string representation of the
- * bitmap.
- * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
-static void _build_array_str(job_array_struct_t *array_recs)
-{
-	if (array_recs->task_id_str || (array_recs->task_cnt <= 1))
-		return;
-
-	array_recs->task_id_str = bit_fmt_hexmask(array_recs->task_id_bitmap);
-}
-
 /*
  * _dump_job_state - dump the state of a specific job, its details, and
  *	steps to a buffer
@@ -1097,7 +1085,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->array_job_id, buffer);
 	pack32(dump_job_ptr->array_task_id, buffer);
 	if (dump_job_ptr->array_recs) {
-		_build_array_str(dump_job_ptr->array_recs);
+		build_array_str(dump_job_ptr);
 		tmp_32 = bit_size(dump_job_ptr->array_recs->task_id_bitmap);
 		pack32(tmp_32, buffer);
 		if (tmp_32)
@@ -2443,6 +2431,25 @@ void _add_job_array_hash(struct job_record *job_ptr)
 	inx = JOB_ARRAY_HASH_INX(job_ptr->array_job_id,job_ptr->array_task_id);
 	job_ptr->job_array_next_t = job_array_hash_t[inx];
 	job_array_hash_t[inx] = job_ptr;
+}
+
+/* For the job array data structure, build the string representation of the
+ * bitmap.
+ * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
+extern void build_array_str(struct job_record *job_ptr)
+{
+	job_array_struct_t *array_recs = job_ptr->array_recs;
+
+	if (!array_recs || array_recs->task_id_str || !array_recs->task_cnt)
+		return;
+
+	array_recs->task_id_str = bit_fmt_hexmask(array_recs->task_id_bitmap);
+	/* Here we set the db_index to 0 so we resend the start of the
+	 * job updating the array task string and count of pending
+	 * jobs.  This is faster than sending the start again since
+	 * this could happen many times instead of just ever so often.
+	 */
+	job_ptr->db_index = 0;
 }
 
 /* Return true if ALL tasks of specific array job ID are complete */
@@ -7348,7 +7355,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->array_job_id, buffer);
 		pack32(dump_job_ptr->array_task_id, buffer);
 		if (dump_job_ptr->array_recs) {
-			_build_array_str(dump_job_ptr->array_recs);
+			build_array_str(dump_job_ptr);
 			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
 			pack32(dump_job_ptr->array_recs->max_run_tasks, buffer);
 		} else {
@@ -13711,6 +13718,8 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		xfree(job_ptr->array_recs->task_id_str);
 		/* Preserve array_recs for min/max exit codes for job array */
 		_add_job_array_hash(job_ptr);
+		/* Send new task id str to accounting */
+		job_ptr->db_index = 0;
 	} else {
 		new_job_ptr = _job_rec_copy(job_ptr);
 		new_job_ptr->job_state = JOB_PENDING;

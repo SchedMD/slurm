@@ -1975,6 +1975,11 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(struct job_record *job_ptr);
 
+/* For the job array data structure, build the string representation of the
+ * bitmap.
+ * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
+extern void build_array_str(struct job_record *job_ptr);
+
 /* Return true if ALL tasks of specific array job ID are complete */
 extern bool test_job_array_complete(uint32_t array_job_id);
 

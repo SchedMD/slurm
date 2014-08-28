@@ -129,6 +129,7 @@ static void _partial_free_dbd_job_start(void *object)
 	dbd_job_start_msg_t *req = (dbd_job_start_msg_t *)object;
 	if (req) {
 		xfree(req->account);
+		xfree(req->array_task_str);
 		xfree(req->block_id);
 		xfree(req->name);
 		xfree(req->nodes);
@@ -188,8 +189,14 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->array_job_id  = job_ptr->array_job_id;
 	req->array_task_id = job_ptr->array_task_id;
 
-	req->db_index      = job_ptr->db_index;
+	build_array_str(job_ptr);
+	if (job_ptr->array_recs && job_ptr->array_recs->task_id_str) {
+		req->array_task_str = xstrdup(job_ptr->array_recs->task_id_str);
+		req->array_max_tasks = job_ptr->array_recs->max_run_tasks;
+		req->array_task_pending = job_ptr->array_recs->task_cnt;
+	}
 
+	req->db_index      = job_ptr->db_index;
 	req->job_state     = job_ptr->job_state;
 	req->name          = xstrdup(job_ptr->name);
 	req->nodes         = xstrdup(job_ptr->nodes);
