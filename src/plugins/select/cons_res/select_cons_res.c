@@ -2701,8 +2701,11 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 			bit_clear(avail_bitmap, inx);
 
-			if (local_cores < cores_per_node)
+			if (local_cores < cores_per_node) {
+				debug2("Skip node %d (local: %d, needed: %d)",
+					inx, local_cores, cores_per_node);
 				continue;
+			}
 
 			cores_in_node = 0;
 
@@ -2712,8 +2715,11 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				if (bit_test(tmpcore, coff + i))
 					cores_in_node++;
 			}
-			if (cores_in_node < cores_per_node)
+			if (cores_in_node < cores_per_node) {
+				debug2("Skip node %d (avail: %d, needed: %d)",
+					inx, cores_in_node, cores_per_node);
 				continue;
+			}
 
 			debug2("Using node %d (avail: %d, needed: %d)",
 				inx, cores_in_node, cores_per_node);
@@ -2755,7 +2761,6 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		info("sequential pick using coremap: %s", str);
 
 	} else { /* Reservation is using full nodes */
-
 		while (node_cnt) {
 			int inx;
 
@@ -2938,7 +2943,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_required = xmalloc(sizeof(int)        * switch_record_cnt);
 
-	for (i=0; i<switch_record_cnt; i++) {
+	for (i = 0; i < switch_record_cnt; i++) {
 		char str[100];
 		switches_bitmap[i] = bit_copy(switch_record_table[i].
 						  node_bitmap);
