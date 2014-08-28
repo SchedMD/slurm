@@ -34,11 +34,12 @@ source ./globals
 source ./globals_accounting
 
 set test_id      "5.9"
+set cwd           "[$bin_pwd]"
 set exit_code     0
 set job_id        0
-set file_err      "/tmp/test${test_id}_err"
+set file_err      "${cwd}/test${test_id}_err"
 set file_in       "test${test_id}_script"
-set file_out      "/tmp/test${test_id}_out"
+set file_out      "${cwd}/test${test_id}_out"
 set test_acct     "test${test_id}_acct"
 
 ############################Job Format Test############################
@@ -262,7 +263,7 @@ set cpu_match 0
 set numcpus [expr $sq_format(3) * $sq_format(8)]
 for {set i 0} {$i<=19} {incr i 1} {
 	set this_match 0
-	spawn $squeue --job=$job_id --noheader -O$sq_name($i)
+	spawn $squeue --job=$job_id --noheader -O$sq_name($i):99
 	expect {
 		-re "$sq_format($i)" {
 #			send_user "Match $sq_name($i) with $sq_format($i)\n"
