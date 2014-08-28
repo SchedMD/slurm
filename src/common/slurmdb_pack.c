@@ -3562,7 +3562,9 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		packstr(job->alloc_gres, buffer);
 		pack32(job->alloc_nodes, buffer);
 		pack32(job->array_job_id, buffer);
+		pack32(job->array_max_tasks, buffer);
 		pack32(job->array_task_id, buffer);
+		packstr(job->array_task_str, buffer);
 		pack32(job->associd, buffer);
 		packstr(job->blockid, buffer);
 		packstr(job->cluster, buffer);
@@ -3698,7 +3700,10 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 				       buffer);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
 		safe_unpack32(&job_ptr->array_job_id, buffer);
+		safe_unpack32(&job_ptr->array_max_tasks, buffer);
 		safe_unpack32(&job_ptr->array_task_id, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->array_task_str,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->associd, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);

@@ -250,6 +250,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	uint32_t wckeyid = 0;
 	int job_state, node_cnt = 0;
 	uint32_t job_db_inx = job_ptr->db_index;
+	job_array_struct_t *array_recs = job_ptr->array_recs;
 
 	if ((!job_ptr->details || !job_ptr->details->submit_time)
 	    && !job_ptr->resize_time) {
@@ -471,6 +472,11 @@ no_rollup_change:
 			xstrcat(query, ", gres_req");
 		if (gres_alloc)
 			xstrcat(query, ", gres_alloc");
+		if (array_recs && array_recs->task_id_str)
+			xstrcat(query, ", array_task_str, array_max_tasks, "
+				"array_task_pending");
+		else
+			xstrcat(query, ", array_task_str, array_task_pending");
 
 		xstrfmtcat(query,
 			   ") values (%u, %u, %u, %u, %u, %u, %u, %u, "
@@ -501,6 +507,13 @@ no_rollup_change:
 			xstrfmtcat(query, ", '%s'", gres_req);
 		if (gres_alloc)
 			xstrfmtcat(query, ", '%s'", gres_alloc);
+		if (array_recs && array_recs->task_id_str)
+			xstrfmtcat(query, ", '%s', %u, %u",
+				   array_recs->task_id_str,
+				   array_recs->max_run_tasks,
+				   array_recs->task_cnt);
+		else
+			xstrcat(query, ", NULL, 0");
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -536,6 +549,15 @@ no_rollup_change:
 			xstrfmtcat(query, ", gres_req='%s'", gres_req);
 		if (gres_alloc)
 			xstrfmtcat(query, ", gres_alloc='%s'", gres_alloc);
+		if (array_recs && array_recs->task_id_str)
+			xstrfmtcat(query, ", array_task_str='%s', "
+				   "array_max_tasks=%u, array_task_pending=%u",
+				   array_recs->task_id_str,
+				   array_recs->max_run_tasks,
+				   array_recs->task_cnt);
+		else
+			xstrfmtcat(query, ", array_task_str=NULL, "
+				   "array_task_pending=0");
 
 		if (debug_flags & DEBUG_FLAG_DB_JOB)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -573,6 +595,16 @@ no_rollup_change:
 			xstrfmtcat(query, "gres_req='%s', ", gres_req);
 		if (gres_alloc)
 			xstrfmtcat(query, "gres_alloc='%s', ", gres_alloc);
+		if (array_recs && array_recs->task_id_str)
+			xstrfmtcat(query, "array_task_str='%s', "
+				   "array_max_tasks=%u, "
+				   "array_task_pending=%u, ",
+				   array_recs->task_id_str,
+				   array_recs->max_run_tasks,
+				   array_recs->task_cnt);
+		else
+			xstrfmtcat(query, "array_task_str=NULL, "
+				   "array_task_pending=0, ");
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "cpus_alloc=%u, nodes_alloc=%u, id_qos=%u, "

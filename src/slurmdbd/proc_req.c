@@ -2820,9 +2820,11 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 {
 	struct job_record job, *job_ptr;
 	struct job_details details;
+	job_array_struct_t array_recs;
 
 	memset(&job, 0, sizeof(struct job_record));
 	memset(&details, 0, sizeof(struct job_details));
+	memset(&array_recs, 0, sizeof(job_array_struct_t));
 	memset(id_rc_msg, 0, sizeof(dbd_id_rc_msg_t));
 
 	job.total_cpus = job_start_msg->alloc_cpus;
@@ -2830,6 +2832,9 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.account = _replace_double_quotes(job_start_msg->account);
 	job.array_job_id = job_start_msg->array_job_id;
 	job.array_task_id = job_start_msg->array_task_id;
+	array_recs.task_id_str = job_start_msg->array_task_str;
+	array_recs.max_run_tasks = job_start_msg->array_max_tasks;
+	array_recs.task_cnt = job_start_msg->array_task_pending;
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;
 	if (job_start_msg->db_index != NO_VAL)
@@ -2856,6 +2861,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.wckey = _replace_double_quotes(job_start_msg->wckey);
 	details.submit_time = job_start_msg->submit_time;
 
+	job.array_recs = &array_recs;
 	job.details = &details;
 	job_ptr = &job;
 

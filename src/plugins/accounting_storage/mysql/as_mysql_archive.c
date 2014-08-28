@@ -65,6 +65,7 @@ typedef struct {
 	char *alloc_nodes;
 	char *associd;
 	char *array_jobid;
+	char *array_max_tasks;
 	char *array_taskid;
 	char *blockid;
 	char *derived_ec;
@@ -193,6 +194,7 @@ enum {
  * enum below */
 static char *job_req_inx[] = {
 	"account",
+	"array_max_tasks",
 	"cpus_alloc",
 	"nodes_alloc",
 	"id_assoc",
@@ -230,6 +232,7 @@ static char *job_req_inx[] = {
 
 enum {
 	JOB_REQ_ACCOUNT,
+	JOB_REQ_ARRAY_MAX,
 	JOB_REQ_ALLOC_CPUS,
 	JOB_REQ_ALLOC_NODES,
 	JOB_REQ_ASSOCID,
@@ -453,6 +456,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->alloc_nodes, buffer);
 	packstr(object->associd, buffer);
 	packstr(object->array_jobid, buffer);
+	packstr(object->array_max_tasks, buffer);
 	packstr(object->array_taskid, buffer);
 	packstr(object->blockid, buffer);
 	packstr(object->derived_ec, buffer);
@@ -497,6 +501,7 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
 		unpackstr_ptr(&object->associd, &tmp32, buffer);
 		unpackstr_ptr(&object->array_jobid, &tmp32, buffer);
+		unpackstr_ptr(&object->array_max_tasks, &tmp32, buffer);
 		unpackstr_ptr(&object->array_taskid, &tmp32, buffer);
 		unpackstr_ptr(&object->blockid, &tmp32, buffer);
 		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
@@ -1612,6 +1617,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 		job.alloc_nodes = row[JOB_REQ_ALLOC_NODES];
 		job.associd = row[JOB_REQ_ASSOCID];
 		job.array_jobid = row[JOB_REQ_ARRAYJOBID];
+		job.array_max_tasks = row[JOB_REQ_ARRAY_MAX];
 		job.array_taskid = row[JOB_REQ_ARRAYTASKID];
 		job.blockid = row[JOB_REQ_BLOCKID];
 		job.derived_ec = row[JOB_REQ_DERIVED_EC];
@@ -1695,6 +1701,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.alloc_nodes,
 			   object.associd,
 			   object.array_jobid,
+			   object.array_max_tasks,
 			   object.array_taskid,
 			   object.blockid,
 			   object.derived_ec,

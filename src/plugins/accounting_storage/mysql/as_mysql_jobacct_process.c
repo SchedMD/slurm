@@ -55,6 +55,8 @@ typedef struct {
  * enum below also t1 is job_table */
 char *job_req_inx[] = {
 	"t1.account",
+	"t1.array_max_tasks",
+	"t1.array_task_str",
 	"t1.cpus_alloc",
 	"t1.cpus_req",
 	"t1.derived_ec",
@@ -98,6 +100,8 @@ char *job_req_inx[] = {
 
 enum {
 	JOB_REQ_ACCOUNT1,
+	JOB_REQ_ARRAY_MAX,
+	JOB_REQ_ARRAY_STR,
 	JOB_REQ_ALLOC_CPUS,
 	JOB_REQ_REQ_CPUS,
 	JOB_REQ_DERIVED_EC,
@@ -538,6 +542,13 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
 		else if (row[JOB_REQ_ACCOUNT1] && row[JOB_REQ_ACCOUNT1][0])
 			job->account = xstrdup(row[JOB_REQ_ACCOUNT1]);
+
+		if (row[JOB_REQ_ARRAY_STR] && row[JOB_REQ_ARRAY_STR][0])
+			job->array_task_str = xstrdup(row[JOB_REQ_ARRAY_STR]);
+
+		if (row[JOB_REQ_ARRAY_MAX])
+			job->array_max_tasks =
+				slurm_atoul(row[JOB_REQ_ARRAY_MAX]);
 
 		if (row[JOB_REQ_BLOCKID])
 			job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);

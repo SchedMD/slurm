@@ -590,8 +590,14 @@ typedef struct {
 	char	*alloc_gres;
 	uint32_t alloc_nodes;
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
+	uint32_t array_max_tasks; /* How many tasks of the array can be
+				     running at one time.
+				  */
 	uint32_t array_task_id;	/* task_id of a job array of NO_VAL
 				 * if N/A */
+	char    *array_task_str; /* If pending these are the array
+				    tasks this record represents.
+				 */
 	uint32_t associd;
 	char	*blockid;
 	char    *cluster;

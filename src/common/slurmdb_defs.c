@@ -533,6 +533,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 	if (job) {
 		xfree(job->account);
 		xfree(job->alloc_gres);
+		xfree(job->array_task_str);
 		xfree(job->blockid);
 		xfree(job->cluster);
 		xfree(job->derived_es);

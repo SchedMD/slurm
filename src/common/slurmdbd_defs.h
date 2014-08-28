@@ -272,8 +272,11 @@ typedef struct dbd_job_start_msg {
 	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t alloc_nodes;   /* how many nodes used in job */
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
+	uint32_t array_max_tasks;/* max number of tasks able to run at once */
 	uint32_t array_task_id;	/* task_id of a job array of NO_VAL
 				 * if N/A */
+	char *   array_task_str;/* hex string of unstarted tasks */
+	uint32_t array_task_pending;/* number of tasks still pending */
 	uint32_t assoc_id;	/* accounting association id */
 	char *   block_id;      /* Bluegene block id */
 	uint32_t db_index;	/* index into the db for this job */

@@ -2639,6 +2639,7 @@ extern void slurmdbd_free_job_start_msg(void *in)
 	dbd_job_start_msg_t *msg = (dbd_job_start_msg_t *)in;
 	if (msg) {
 		xfree(msg->account);
+		xfree(msg->array_task_str);
 		xfree(msg->block_id);
 		xfree(msg->gres_alloc);
 		xfree(msg->gres_req);
@@ -3232,7 +3233,10 @@ slurmdbd_pack_job_start_msg(void *in,
 		pack32(msg->alloc_cpus, buffer);
 		pack32(msg->alloc_nodes, buffer);
 		pack32(msg->array_job_id, buffer);
+		pack32(msg->array_max_tasks, buffer);
 		pack32(msg->array_task_id, buffer);
+		packstr(msg->array_task_str, buffer);
+		pack32(msg->array_task_pending, buffer);
 		pack32(msg->assoc_id, buffer);
 		packstr(msg->block_id, buffer);
 		pack32(msg->db_index, buffer);
@@ -3304,7 +3308,11 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
 		safe_unpack32(&msg_ptr->array_job_id, buffer);
+		safe_unpack32(&msg_ptr->array_max_tasks, buffer);
 		safe_unpack32(&msg_ptr->array_task_id, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->array_task_str,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->array_task_pending, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
