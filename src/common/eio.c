@@ -69,6 +69,7 @@ struct eio_handle_components {
 	int  magic;
 #endif
 	int  fds[2];
+	time_t shutdown_time;
 	List obj_list;
 	List new_objs;
 };
@@ -77,14 +78,14 @@ struct eio_handle_components {
 /* Function prototypes
  */
 
-static int          _poll_internal(struct pollfd *pfds, unsigned int nfds);
+static int          _poll_internal(struct pollfd *pfds, unsigned int nfds,
+				   time_t shutdown_time);
 static unsigned int _poll_setup_pollfds(struct pollfd *, eio_obj_t **, List);
 static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
 		                   List objList);
 static void         _poll_handle_event(short revents, eio_obj_t *obj,
 		                       List objList);
 
-static time_t eio_shutdown_time = (time_t) 0;
 
 eio_handle_t *eio_handle_create(void)
 {
@@ -208,7 +209,7 @@ int eio_signal_shutdown(eio_handle_t *eio)
 {
 	char c = 1;
 
-	eio_shutdown_time = time(NULL);
+	eio->shutdown_time = time(NULL);
 	if (eio && (write(eio->fds[1], &c, sizeof(char)) != 1))
 		return error("eio_handle_signal_shutdown: write; %m");
 	return 0;
@@ -293,7 +294,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 
 		xassert(nfds <= maxnfds + 1);
 
-		if (_poll_internal(pollfds, nfds) < 0)
+		if (_poll_internal(pollfds, nfds, eio->shutdown_time) < 0)
 			goto error;
 
 		if (pollfds[nfds-1].revents & POLLIN)
@@ -301,8 +302,8 @@ int eio_handle_mainloop(eio_handle_t *eio)
 
 		_poll_dispatch(pollfds, nfds-1, map, eio->obj_list);
 
-		if (eio_shutdown_time &&
-		    (difftime(time(NULL), eio_shutdown_time) >=
+		if (eio->shutdown_time &&
+		    (difftime(time(NULL), eio->shutdown_time) >=
 		     EIO_SHUTDOWN_WAIT)) {
 			error("Abandoning IO %d secs after job shutdown "
 			      "initiated", EIO_SHUTDOWN_WAIT);
@@ -318,11 +319,11 @@ int eio_handle_mainloop(eio_handle_t *eio)
 }
 
 static int
-_poll_internal(struct pollfd *pfds, unsigned int nfds)
+_poll_internal(struct pollfd *pfds, unsigned int nfds, time_t shutdown_time)
 {
 	int n, timeout;
 
-	if (eio_shutdown_time)
+	if (shutdown_time)
 		timeout = 1000;	/* Return every 1000 msec during shutdown */
 	else
 		timeout = -1;
