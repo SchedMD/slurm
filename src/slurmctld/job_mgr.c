@@ -1900,15 +1900,19 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->array_recs=xmalloc(sizeof(job_array_struct_t));
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 		job_ptr->array_recs->task_id_bitmap = bit_alloc(task_id_size);
-		bit_unfmt_hexmask(job_ptr->array_recs->task_id_bitmap,
-				  task_id_str);
 		xfree(job_ptr->array_recs->task_id_str);
-		job_ptr->array_recs->task_id_str = task_id_str;
+		if (task_id_str) {
+			bit_unfmt_hexmask(job_ptr->array_recs->task_id_bitmap,
+					  task_id_str);
+			job_ptr->array_recs->task_id_str = task_id_str;
+			task_id_str = NULL;
+		}
 		job_ptr->array_recs->task_cnt =
 			bit_set_count(job_ptr->array_recs->task_id_bitmap);
+
 		if (job_ptr->array_recs->task_cnt > 1)
 			job_count += (job_ptr->array_recs->task_cnt - 1);
-		task_id_str = NULL;
+
 		job_ptr->array_recs->array_flags    = array_flags;
 		job_ptr->array_recs->max_run_tasks  = max_run_tasks;
 		job_ptr->array_recs->tot_run_tasks  = tot_run_tasks;
