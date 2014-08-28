@@ -238,6 +238,12 @@ For memory leaks (for AIX use zerofault, zf; for linux use valgrind)
  - Shutdown the daemons using "scontrol shutdown"
  - Examine the end of the log files for leaks. pthread_create() and dlopen()
    have small memory leaks on some systems, which do not grow over time
+ - Functions in the plugins will not have their symbols preserved when the
+   plugin is unloaded and the function names will appear as "???" in the
+   valgrind backtrace after shutdown. Rebuilding the daemons without the
+   configure option of "--enable-memory-leak-debug" typically prevents the
+   plugin from being unloaded so the symbols will be properly reported. However
+   many memory leaks will be reported due to not unloading plugins.
 
 Job profiling:
  - "export CFLAGS=-pg", then run "configure" and "make install" as usual.
