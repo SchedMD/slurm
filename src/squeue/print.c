@@ -2200,21 +2200,6 @@ int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-int _print_step_profile(job_step_info_t * step, int width, bool right,
-			char* suffix)
-{
-	if (step == NULL)
-		_print_str("PROFILE", width, right, true);
-	else
-		_print_str(acct_gather_profile_to_string(step->profile),
-			   width, right, true);
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-
-}
-
 int _print_step_resv_ports(job_step_info_t * step, int width, bool right,
 			   char* suffix)
 {

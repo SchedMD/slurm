@@ -1613,7 +1613,6 @@ typedef struct {
 	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint32_t num_tasks;	/* number of tasks */
 	char *partition;	/* name of assigned partition */
-	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *resv_ports;	/* ports allocated for MPI */
 	time_t run_time;	/* net run time (factor out time suspended) */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,

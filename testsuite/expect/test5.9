@@ -332,12 +332,10 @@ set sq_step_name(4)   network
 set sq_step_name(5)   gres
 # numcpus
 set sq_step_name(6)   numcpus
-# profile
-set sq_step_name(7)   profile
 # numtask
-set sq_step_name(8)   numtask
+set sq_step_name(7)   numtask
 # username
-set sq_step_name(9)   username
+set sq_step_name(8)   username
 
 #####################
 # Format value
@@ -356,12 +354,10 @@ set sq_step_format(4)   "DUMMY"
 set sq_step_format(5)   "(null)"
 # numcpus
 set sq_step_format(6)   $sq_format(totcpu)
-# profile
-set sq_step_format(7)   "NotSet"
 # numtask
-set sq_step_format(8)   "DUMMY"
+set sq_step_format(7)   "DUMMY"
 # username
-set sq_step_format(9)   $sq_format(16)
+set sq_step_format(8)   $sq_format(16)
 
 set match 0
 spawn $scontrol show step $sq_step_format(1)
@@ -377,7 +373,7 @@ expect {
 		exp_continue
 	}
 	-re "Tasks=($number)" {
-		set sq_step_format(8) $expect_out(1,string)
+		set sq_step_format(7) $expect_out(1,string)
 		incr match 1
 		exp_continue
 	}
@@ -401,7 +397,7 @@ if {$match != 4} {
 
 set match 0
 set cpu_match 0
-for {set i 0} {$i<=9} {incr i 1} {
+for {set i 0} {$i<=8} {incr i 1} {
 	set this_match 0
 	spawn $squeue --step=$sq_step_format(1) --noheader -O$sq_step_name($i)
 	expect {

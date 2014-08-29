@@ -507,8 +507,6 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_num_cpus)
 #define step_format_add_cpu_freq(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_cpu_freq)
-#define step_format_add_profile(list,wid,right,suffix) \
-	step_format_add_function(list,wid,right,suffix,_print_step_profile)
 #define step_format_add_resv_ports(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_resv_ports)
 #define step_format_add_step_state(list,wid,right,suffix) \
@@ -563,8 +561,6 @@ int _print_step_num_cpus(job_step_info_t * step, int width, bool right,
 			 char* suffix);
 int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
 			 char* suffix);
-int _print_step_profile(job_step_info_t * step, int width, bool right,
-			char* suffix);
 int _print_step_resv_ports(job_step_info_t * step, int width, bool right,
 			   char* suffix);
 int _print_step_state(job_step_info_t * step, int width, bool right,

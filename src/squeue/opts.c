@@ -1010,11 +1010,6 @@ extern int parse_long_format( char* format_long )
 							  field_size,
 							  right_justify,
 							  suffix );
-			else if ( !strcasecmp(token, "profile"))
-				step_format_add_profile( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
 			else if ( !strcasecmp(token, "resvports"))
 				step_format_add_resv_ports( params.format_list,
 							    field_size,
