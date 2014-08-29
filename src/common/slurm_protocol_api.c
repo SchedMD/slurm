@@ -2685,13 +2685,12 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 		timeout  = slurm_get_msg_timeout() * 1000;
 
 	else if (timeout > (slurm_get_msg_timeout() * 10000)) {
-		debug("You are receiving a message with very long "
-		      "timeout of %d seconds", (timeout/1000));
+		debug("%s: You are receiving a message with very long "
+		      "timeout of %d seconds", __func__, (timeout/1000));
 	} else if (timeout < 1000) {
-		error("You are receiving a message with a very short "
-		      "timeout of %d msecs", timeout);
+		error("%s: You are receiving a message with a very short "
+		      "timeout of %d msecs", __func__, timeout);
 	}
-
 
 	/*
 	 * Receive a msg. slurm_msg_recvfrom() will read the message
@@ -2723,11 +2722,11 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 		if (!slurm_get_peer_addr(fd, &resp_addr)) {
 			slurm_print_slurm_addr(
 				&resp_addr, addr_str, sizeof(addr_str));
-			error("Invalid Protocol Version %u from uid=%d at %s",
-			      header.version, uid, addr_str);
+			error("%s: Invalid Protocol Version %u from uid=%d at %s",
+			      __func__, header.version, uid, addr_str);
 		} else {
-			error("Invalid Protocol Version %u from uid=%d from "
-			      "problem connection: %m",
+			error("%s: Invalid Protocol Version %u from uid=%d from "
+			      "problem connection: %m", __func__,
 			      header.version, uid);
 		}
 
@@ -2737,8 +2736,8 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 	}
 	//info("ret_cnt = %d",header.ret_cnt);
 	if (header.ret_cnt > 0) {
-		error("we received more than one message back use "
-		      "slurm_receive_msgs instead");
+		error("%s: we received more than one message back use "
+		      "slurm_receive_msgs instead", __func__);
 		header.ret_cnt = 0;
 		list_destroy(header.ret_list);
 		header.ret_list = NULL;
@@ -2746,12 +2745,12 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
-		error("We need to forward this to other nodes use "
-		      "slurm_receive_msg_and_forward instead");
+		error("%s: We need to forward this to other nodes use "
+		      "slurm_receive_msg_and_forward instead", __func__);
 	}
 
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
-		error( "authentication: %s ",
+		error("%s: authentication: %s ", __func__,
 		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
@@ -2766,8 +2765,9 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		error( "authentication: %s ",
-		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		error("%s: %s has authentication error: %s ", __func__,
+		      rpc_num2string(header.msg_type),
+		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		(void) g_slurm_auth_destroy(auth_cred);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
@@ -2800,7 +2800,7 @@ total_return:
 	slurm_seterrno(rc);
 	if (rc != SLURM_SUCCESS) {
 		msg->auth_cred = (void *) NULL;
-		error("slurm_receive_msg: %s", slurm_strerror(rc));
+		error("%s: %s", __func__, slurm_strerror(rc));
 		rc = -1;
 		usleep(10000);	/* Discourage brute force attack */
 	} else {
