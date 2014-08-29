@@ -13707,6 +13707,7 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		return;
 
 	if (job_ptr->array_recs->task_cnt <= 1) {
+		/* Preserve array_recs for min/max exit codes for job array */
 		if (job_ptr->array_recs->task_cnt) {
 			job_ptr->array_recs->task_cnt--;
 		} else {
@@ -13714,12 +13715,19 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 			      job_ptr->array_job_id, job_ptr->array_task_id);
 		}
 		xfree(job_ptr->array_recs->task_id_str);
-		/* Preserve array_recs for min/max exit codes for job array */
-		_add_job_array_hash(job_ptr);
-		/* Send new task id str to accounting */
+		/* Most efficient way to update new task_id_str to accounting
+		 * for pending tasks. */
 		job_ptr->db_index = 0;
+
+		/* If job is requeued, it will already be in the hash table */
+		if (!find_job_array_rec(job_ptr->array_job_id,
+					job_ptr->array_task_id)) {
+			_add_job_array_hash(job_ptr);
+		}
 	} else {
 		new_job_ptr = _job_rec_copy(job_ptr);
 		new_job_ptr->job_state = JOB_PENDING;
+		/* Do NOT clear db_index here, it is handled when task_id_str
+		 * is created elsewhere */
 	}
 }
