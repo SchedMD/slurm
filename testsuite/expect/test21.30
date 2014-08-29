@@ -54,9 +54,9 @@ set user_name   ""
 set qosname     name
 set qostest     "$test_id\_qostest"
 set grn         GrpNodes
-set grn_num     2
+set grn_num     0
 set grcpu       GrpCpus
-set grcpu_num   10
+set grcpu_num   0
 set grpcpumin   GrpCPUMins
 set grpcpumin_num  4
 # Set grpcpurunmin_num to multiple of CPUs per core to work with most configurations
@@ -72,7 +72,7 @@ set grsub_num   2
 set grpwall     GrpWall
 set grpwall_num 1
 set maxcpu      MaxCpus
-set maxcpu_num  10
+set maxcpu_num  0
 # Set maxcpumin_num to multiple of CPUs per core to work with most configurations
 set maxcpumin   MaxCPUMins
 set maxcpumin_num 2
@@ -81,9 +81,9 @@ set maxwall_num 2
 set maxcpuspu   MaxCPUSPerUser
 set maxcpuspu_num 2
 set maxnodes    MaxNodes
-set maxnode_num 10
+set maxnode_num 0
 set maxnodespu  MaxNodesPerUser
-set maxnodespu_num 2
+set maxnodespu_num 0
 set maxjobs     MaxJobs
 set maxjobs_num 2
 set maxjobsub   MaxSubmitJobs
@@ -112,6 +112,33 @@ array set mod_qos_vals {
 
 print_header $test_id
 
+# Check to see that there are enough resources in the default partition
+set tmpc 0
+set tmpn 0
+spawn $scontrol show part $partition
+expect {
+	-re "TotalCPUs=($number)" {
+		set tmpc [expr $expect_out(1,string) - 1]
+		exp_continue
+	}
+	-re "TotalNodes=($number)" {
+		set tmpn [expr $expect_out(1,string) - 1]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$tmpc == 0 || $tmpn == 0} {
+	send_user "\nWARNING: not enough Nodes and/or CPUs\n"
+	exit 0
+}
+
 # Checks the state of the job
 proc check_state { job } {
 
@@ -138,6 +165,61 @@ proc check_state { job } {
 	}
 
 }
+
+# Get the number of cpus on a node
+set num_cpus 0
+spawn $scontrol show partition $partition
+expect {
+	-re "TotalCPUs=($number)" {
+		set num_cpus [expr $expect_out(1,string) - 1]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$num_cpus == 0} {
+	send_user "\nFAILURE: no cpus where found\n"
+	exit 1
+} else {
+	# Set QoS CPU values
+	set grcpu_num $num_cpus
+	set maxcpu_num $num_cpus
+
+}
+
+# Get the number of nodes in the default partition
+set num_nodes 0
+spawn $scontrol show partition $partition
+expect {
+	-re "TotalNodes=($number)" {
+		set num_nodes [expr $expect_out(1,string) - 1]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$num_nodes == 0} {
+	send_user "\nFAILURE: no cpus where found\n"
+	exit 1
+} else {
+	# Set QoS node values
+	set grn_num     $num_nodes
+	set maxnode_num $num_nodes
+	set maxnodespu_num $num_nodes
+}
+
 
 proc endit { } {
 	global sacctmgr qostest acct test_id exit_code
@@ -332,7 +414,6 @@ if {$exit_code != 0} {
 	endit
 }
 set mod_qos_vals(GrpCpus) "-1"
-
 
 #
 # test GrpJob limits

@@ -46,6 +46,10 @@ proc inc21_30_10 { } {
 			send_user "\nFAILURE: Job should be running, but is not. (Within: inc21.30.10)\n"
 			set exit_code 1
 		}
+		-re "error" {
+			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.10)\n"
+			set exit_code 1
+		}
 		timeout {
 			send_user "\nFAILURE: salloc not responding. (Within: inc21.30.10)\n"
 			set exit_code 1

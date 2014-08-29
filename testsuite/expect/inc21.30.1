@@ -45,6 +45,10 @@ proc inc21_30_1 {} {
 			set job_id1 $expect_out(1,string)
 			set exit_code 1
 		}
+		-re "error" {
+			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.1)\n"
+			set exit_code 1
+		}
 		timeout {
 			send_user "\nFAILURE: salloc is not reponding. (Within: inc21.30.1)\n"
 			set exit_code 1
