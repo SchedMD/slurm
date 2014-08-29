@@ -11481,6 +11481,25 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	    || job_ptr->state_reason == WAIT_MAX_REQUEUE)
 		return false;
 
+	/* Check for maximum number of running tasks in a job array */
+	if (job_ptr->array_recs && job_ptr->array_recs->max_run_tasks &&
+	    (job_ptr->array_recs->tot_run_tasks >=
+	     job_ptr->array_recs->max_run_tasks)) {
+		job_ptr->state_reason = WAIT_ARRAY_TASK_LIMIT;
+		return false;
+	}
+	if (job_ptr->array_task_id != NO_VAL) {
+		struct job_record *base_job_ptr;
+		base_job_ptr = find_job_record(job_ptr->array_job_id);
+		if (base_job_ptr && base_job_ptr->array_recs &&
+		    (base_job_ptr->array_recs->max_run_tasks != 0) &&
+		    (base_job_ptr->array_recs->tot_run_tasks >=
+		     base_job_ptr->array_recs->max_run_tasks)) {
+			job_ptr->state_reason = WAIT_ARRAY_TASK_LIMIT;
+			return false;
+		}
+	}
+
 	/* Test dependencies first so we can cancel jobs before dependent
 	 * job records get purged (e.g. afterok, afternotok) */
 	depend_rc = test_job_dependency(job_ptr);
