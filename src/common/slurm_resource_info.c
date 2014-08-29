@@ -303,6 +303,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		} else if ((strcasecmp(tok, "v") == 0) ||
 			   (strcasecmp(tok, "verbose") == 0)) {
 		        *flags |= CPU_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "one_thread") == 0)) {
+		        *flags |= CPU_BIND_ONE_THREAD_PER_CORE;
 		} else if ((strcasecmp(tok, "no") == 0) ||
 			   (strcasecmp(tok, "none") == 0)) {
 			_clear_then_set((int *)flags, bind_bits, CPU_BIND_NONE);
