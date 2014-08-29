@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
  -- Change the global eio_shutdown_time to a field in eio handle.
  -- Advanced reservation fixes for heterogeneous systems, especially when
     reserving cores.
+ -- If --hint=nomultithread is used in a job allocation make sure any srun's
+    ran inside the allocation can read the environment correctly.
 
 * Changes in Slurm 14.03.7
 ==========================
