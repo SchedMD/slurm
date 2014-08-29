@@ -69,15 +69,14 @@ then
     esac
 fi
 
+# try to extract the uid cgroup from the input one
+# ( extract /uid_% from /uid%/job_*...)
+uidcg=${rmcg%/job_*}
+
 # kernel call
 if [[ $# -eq 1 ]]
 then
 
-    rmcg=${mountdir}$@
-
-    # try to extract the uid cgroup from the input one
-    # ( extract /uid_% from /uid%/job_*...)
-    uidcg=${rmcg%/job_*}
     if [[ ${uidcg} == ${rmcg} ]]
     then
 	# not a slurm job pattern, perhaps the uidcg, just remove
@@ -97,10 +96,6 @@ then
 # that no one is manipulating the hierarchy, i.e. PAM, SLURM, ...)
 elif [[ $# -eq 2 ]] && [[ $1 == "sync" ]]
 then
-
-    shift
-    rmcg=${mountdir}$@
-    uidcg=${rmcg%/job_*}
 
     # remove this cgroup
     if [[ -d ${rmcg} ]]
