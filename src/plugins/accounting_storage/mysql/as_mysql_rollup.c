@@ -487,6 +487,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		"job.id_job",
 		"job.id_assoc",
 		"job.id_wckey",
+		"job.array_task_pending",
 		"job.time_eligible",
 		"job.time_start",
 		"job.time_end",
@@ -502,6 +503,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		JOB_REQ_JOBID,
 		JOB_REQ_ASSOCID,
 		JOB_REQ_WCKEYID,
+		JOB_REQ_ARRAY_PENDING,
 		JOB_REQ_ELG,
 		JOB_REQ_START,
 		JOB_REQ_END,
@@ -723,6 +725,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			uint32_t job_id = slurm_atoul(row[JOB_REQ_JOBID]);
 			uint32_t assoc_id = slurm_atoul(row[JOB_REQ_ASSOCID]);
 			uint32_t wckey_id = slurm_atoul(row[JOB_REQ_WCKEYID]);
+			uint32_t array_pending =
+				slurm_atoul(row[JOB_REQ_ARRAY_PENDING]);
 			uint32_t resv_id = slurm_atoul(row[JOB_REQ_RESVID]);
 			time_t row_eligible = slurm_atoul(row[JOB_REQ_ELG]);
 			time_t row_start = slurm_atoul(row[JOB_REQ_START]);
@@ -943,16 +947,27 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					temp_end = c_usage->end;
 				loc_seconds = (temp_end - temp_start);
 				if (loc_seconds > 0) {
+					/* If we have pending jobs in
+					   an array they haven't been
+					   inserted into the database
+					   yet as proper job records,
+					   so handle them here.
+					*/
+					if (array_pending)
+						loc_seconds *= array_pending;
+
 					/* info("%d assoc %d reserved " */
-					/*      "(%d)(%d-%d) * %d = %d " */
+					/*      "(%d)(%d-%d) * %d * %d = %d " */
 					/*      "to %d", */
 					/*      job_id, */
 					/*      assoc_id, */
-					/*      seconds, */
+					/*      temp_end - temp_start, */
 					/*      temp_end, temp_start, */
 					/*      row_rcpu, */
-					/*      seconds * row_rcpu, */
+					/*      array_pending, */
+					/*      loc_seconds, */
 					/*      row_rcpu); */
+
 					c_usage->r_cpu +=
 						loc_seconds * row_rcpu;
 				}
