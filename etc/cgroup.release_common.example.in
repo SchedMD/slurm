@@ -23,7 +23,7 @@ get_mount_dir()
         $lssubsys -m $subsystem | awk '{print $2}'
     else
         if [ -f @sysconfdir@/cgroup.conf ]; then
-            grep -i "^CgroupMountpoint=" @sysconfdir@/cgroup.conf | sed s/.*=// | head -n 1
+            grep -i "^CgroupMountpoint=" @sysconfdir@/cgroup.conf | sed "s/.*=\(.*\)/\1\/${subsystem}/" | head -n 1
         else
             echo "/cgroup/$subsystem"
         fi
