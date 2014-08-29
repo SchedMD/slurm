@@ -3464,6 +3464,15 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	save_step_list = job_ptr_pend->step_list;
 	memcpy(job_ptr_pend, job_ptr, sizeof(struct job_record));
 
+	/* This means the job was once limited by the number
+	 * of tasks it was able to run so the eligible time of
+	 * the job needs to be set to NOW.
+	 */
+	if (job_ptr->array_recs && job_ptr->array_recs->max_run_tasks &&
+	    (job_ptr->array_recs->tot_run_tasks >=
+	     job_ptr->array_recs->max_run_tasks))
+		job_ptr->details->begin_time = time(NULL);
+
 	job_ptr_pend->job_id   = save_job_id;
 	job_ptr_pend->job_next = save_job_next;
 	job_ptr_pend->details  = save_details;
@@ -13726,6 +13735,15 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		return;
 
 	if (job_ptr->array_recs->task_cnt <= 1) {
+		/* This means the job was once limited by the number
+		 * of tasks it was able to run so the eligible time of
+		 * the job needs to be set to NOW.
+		 */
+		if (job_ptr->array_recs && job_ptr->array_recs->max_run_tasks &&
+		    (job_ptr->array_recs->tot_run_tasks >=
+		     job_ptr->array_recs->max_run_tasks))
+			job_ptr->details->begin_time = time(NULL);
+
 		/* Preserve array_recs for min/max exit codes for job array */
 		if (job_ptr->array_recs->task_cnt) {
 			job_ptr->array_recs->task_cnt--;

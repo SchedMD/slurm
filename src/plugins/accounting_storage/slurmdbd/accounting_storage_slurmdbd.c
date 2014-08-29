@@ -183,6 +183,14 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 		req->submit_time   = job_ptr->details->submit_time;
 	}
 
+	/* If the reason is WAIT_ARRAY_TASK_LIMIT we don't want to
+	 * give the pending jobs an eligible time since it will add
+	 * time to accounting where as these jobs aren't able to run
+	 * until later so mark it as such.
+	 */
+	if (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT)
+		req->eligible_time = INFINITE;
+
 	req->start_time    = job_ptr->start_time;
 	req->gid           = job_ptr->group_id;
 	req->job_id        = job_ptr->job_id;

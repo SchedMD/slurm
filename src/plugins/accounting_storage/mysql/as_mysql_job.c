@@ -276,6 +276,14 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		start_time  = job_ptr->start_time;
 	}
 
+	/* If the reason is WAIT_ARRAY_TASK_LIMIT we don't want to
+	 * give the pending jobs an eligible time since it will add
+	 * time to accounting where as these jobs aren't able to run
+	 * until later so mark it as such.
+	 */
+	if (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT)
+		begin_time = INFINITE;
+
 	/* Since we need a new db_inx make sure the old db_inx
 	 * removed. This is most likely the only time we are going to
 	 * be notified of the change also so make the state without
@@ -520,14 +528,15 @@ no_rollup_change:
 			   "job_db_inx=LAST_INSERT_ID(job_db_inx), "
 			   "id_wckey=%u, id_user=%u, id_group=%u, "
 			   "nodelist='%s', id_resv=%u, timelimit=%u, "
-			   "time_submit=%ld, time_start=%ld, "
+			   "time_submit=%ld, time_eligible=%ld, "
+			   "time_start=%ld, "
 			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, cpus_alloc=%u, nodes_alloc=%u, "
 			   "mem_req=%u, id_array_job=%u, id_array_task=%u",
 			   wckeyid, job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
-			   submit_time, start_time,
+			   submit_time, begin_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
 			   job_ptr->total_cpus, node_cnt,
