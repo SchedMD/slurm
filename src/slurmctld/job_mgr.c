@@ -4274,8 +4274,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 				job_ptr->requid		= uid;
 				srun_allocate_abort(job_ptr);
 				job_completion_logger(job_ptr, false);
-				FREE_NULL_BITMAP(array_bitmap);
-				FREE_NULL_BITMAP(tmp_bitmap);
 			}
 			bit_not(tmp_bitmap);
 			bit_and(array_bitmap, tmp_bitmap);
