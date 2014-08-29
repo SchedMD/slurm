@@ -585,12 +585,33 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	return 0;
 }
 
+/* Make sure that specified file name exists, wait up to 20 seconds or generate
+ * fatal error and exit. */
 static void _my_stat(char *file_name)
 {
 	struct stat config_stat;
+	bool sent_msg = false;
+	int i;
 
-	if (stat(file_name, &config_stat) < 0)
-		fatal("can't stat gres.conf file %s: %m", file_name);
+	for (i = 0; i < 20; i++) {
+		if (i)
+			sleep(1);
+		if (stat(file_name, &config_stat) == 0) {
+			if (sent_msg)
+				info("gres.conf file %s now exists", file_name);
+			return;
+		}
+
+		if (errno != ENOENT)
+			break;
+
+		if (!sent_msg) {
+			error("Waiting for gres.conf file %s", file_name);
+			sent_msg = true;
+		}
+	}
+	fatal("can't stat gres.conf file %s: %m", file_name);
+	return;
 }
 
 static int _validate_file(char *path_name, char *gres_name)
