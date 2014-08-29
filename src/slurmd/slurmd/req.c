@@ -1957,7 +1957,7 @@ _load_job_limits(void)
 		if (!stepd_get_mem_limits(fd, stepd->protocol_version,
 					  &stepd_mem_info)) {
 			error("Error reading step %u.%u memory limits",
-			      job_limits_ptr->job_id, job_limits_ptr->step_id);
+			      stepd_ptr->job_id, stepd_ptr->step_id);
 			close(fd);
 			continue;
 		}
