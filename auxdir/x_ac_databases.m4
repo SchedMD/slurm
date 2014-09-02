@@ -46,7 +46,7 @@ AC_DEFUN([X_AC_DATABASES],
 		else
 		# mysql_config puts -I on the front of the dir.  We don't
 		# want that so we remove it.
-			MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
+			MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --include`
 			MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs_r`
 			save_CFLAGS="$CFLAGS"
 			save_LIBS="$LIBS"
@@ -67,7 +67,7 @@ AC_DEFUN([X_AC_DATABASES],
 				AC_SUBST(MYSQL_CFLAGS)
 				AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
 			else
-				MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
+				MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --include`
 				MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
 				save_CFLAGS="$CFLAGS"
 				save_LIBS="$LIBS"
