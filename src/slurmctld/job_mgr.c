@@ -3464,15 +3464,6 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	save_step_list = job_ptr_pend->step_list;
 	memcpy(job_ptr_pend, job_ptr, sizeof(struct job_record));
 
-	/* This means the job was once limited by the number
-	 * of tasks it was able to run so the eligible time of
-	 * the job needs to be set to NOW.
-	 */
-	if (job_ptr->array_recs && job_ptr->array_recs->max_run_tasks &&
-	    (job_ptr->array_recs->tot_run_tasks >=
-	     job_ptr->array_recs->max_run_tasks))
-		job_ptr->details->begin_time = time(NULL);
-
 	job_ptr_pend->job_id   = save_job_id;
 	job_ptr_pend->job_next = save_job_next;
 	job_ptr_pend->details  = save_details;
@@ -10184,8 +10175,7 @@ fini:
 	if (update_accounting) {
 		info("updating accounting");
 		if (job_ptr->details && job_ptr->details->begin_time) {
-			/* Update job record in accounting to reflect
-			 * changes */
+			/* Update job record in accounting to reflect changes */
 			jobacct_storage_g_job_start(acct_db_conn,
 						    job_ptr);
 		}
@@ -11351,6 +11341,7 @@ extern void job_array_start(struct job_record *job_ptr)
 extern bool job_array_start_test(struct job_record *job_ptr)
 {
 	struct job_record *base_job_ptr;
+	time_t now = time(NULL);
 
 	if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
 		base_job_ptr = find_job_record(job_ptr->array_job_id);
@@ -11358,9 +11349,14 @@ extern bool job_array_start_test(struct job_record *job_ptr)
 		    (base_job_ptr->array_recs->max_run_tasks != 0) &&
 		    (base_job_ptr->array_recs->tot_run_tasks >=
 		     base_job_ptr->array_recs->max_run_tasks)) {
+			if (job_ptr->details &&
+			    (job_ptr->details->begin_time < now))
+				job_ptr->details->begin_time = 0;
 			return false;
 		}
 	}
+	if (job_ptr->details && (job_ptr->details->begin_time == 0))
+		job_ptr->details->begin_time = now;
 	return true;
 }
 
@@ -13735,15 +13731,6 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		return;
 
 	if (job_ptr->array_recs->task_cnt <= 1) {
-		/* This means the job was once limited by the number
-		 * of tasks it was able to run so the eligible time of
-		 * the job needs to be set to NOW.
-		 */
-		if (job_ptr->array_recs && job_ptr->array_recs->max_run_tasks &&
-		    (job_ptr->array_recs->tot_run_tasks >=
-		     job_ptr->array_recs->max_run_tasks))
-			job_ptr->details->begin_time = time(NULL);
-
 		/* Preserve array_recs for min/max exit codes for job array */
 		if (job_ptr->array_recs->task_cnt) {
 			job_ptr->array_recs->task_cnt--;
