@@ -46,7 +46,6 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 	STORE_FIELD(hv, step_info, num_tasks, uint32_t);
 	if(step_info->partition)
 		STORE_FIELD(hv, step_info, partition, charp);
-	STORE_FIELD(hv, step_info, profile, uint32_t);
 	if(step_info->resv_ports)
 		STORE_FIELD(hv, step_info, resv_ports, charp);
 	STORE_FIELD(hv, step_info, run_time, time_t);
@@ -96,7 +95,6 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	FETCH_FIELD(hv, step_info, num_cpus, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, num_tasks, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, partition, charp, FALSE);
-	FETCH_FIELD(hv, step_info, profile, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, resv_ports, charp, FALSE);
 	FETCH_FIELD(hv, step_info, run_time, time_t, TRUE);
 	FETCH_FIELD(hv, step_info, start_time, time_t, TRUE);
