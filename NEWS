@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
     ran inside the allocation can read the environment correctly.
  -- If batchdir can't be made set errno correctly so the slurmctld is notified
     correctly.
+ -- Remove repeated batch complete if batch directory isn't able to be made
+    since the slurmd will send the same message.
 
 * Changes in Slurm 14.03.7
 ==========================
