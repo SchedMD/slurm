@@ -58,7 +58,7 @@ set step_mem_opt "--comment=no_mem"
 spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 expect {
 	-re "MEMORY" {
-		set job_mem_opt  "--mem-per-cpu=64"
+		set job_mem_opt  "--mem-per-cpu=256"
 		set step_mem_opt "--mem-per-cpu=2"
 		exp_continue
 	}
@@ -102,7 +102,7 @@ if { [test_xcpu] } {
 set srun_pid [spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 $job_mem_opt $file_in]
 expect {
 	-re "Requested node configuration is not available" {
-		send_user "\nFAILURE: Memory is allocated, but your nodes don't have even 32MB configured\n"
+		send_user "\nFAILURE: Memory is allocated, but your nodes don't have even 256MB configured\n"
 		set exit_code 1
 	}
 	-re "Submitted batch job ($number)" {

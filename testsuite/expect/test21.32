@@ -134,6 +134,14 @@ proc check_pre { preempt_qos } {
 
 ######################### Test Begins #########################
 
+#
+# Check that current user is root or SlurmUser
+#
+if {[test_super_user] == 0} {
+	send_user "\nWARNING: Test can only be ran as SlurmUser\n"
+	exit 0
+}
+
 if {[test_using_slurmdbd] != 1} {
 	send_user "\nWARNING: not using accounting_storage/slurmdbd\n"
 	exit $exit_code
