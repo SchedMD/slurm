@@ -42,10 +42,13 @@ proc inc22_1_1 {} {
 	global exit_code wc_key_track wckey1 sql_rem
 
 	# Mon Dec 31 23:00:00 2007
-	set period_start 1199170800
+	set start_time "Mon Dec 31 23:00:00 2007"
+	set period_start [exec date +%s --date=$start_time]
 
 	# Tue Jan 1 00:00:00 2008
-	set period_end  1199174400
+	set end_time "Tue Jan 1 00:00:00 2008"
+	set period_end [exec date +%s --date=$end_time]
+
 	set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
 	set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
 	set reported [expr ($period_end - $period_start) * $cluster_cpus]
