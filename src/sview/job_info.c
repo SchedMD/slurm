@@ -3242,7 +3242,7 @@ void _display_info_job(List info_list, popup_info_t *popup_win)
 	job_step_info_t *step_ptr;
 	specific_info_t *spec_info = popup_win->spec_info;
 	ListIterator itr = NULL, itr2 = NULL;
-	sview_job_info_t *sview_job_info = NULL;
+	sview_job_info_t *sview_job_info = NULL, *sview_job_info2 = NULL;
 	int found = 0;
 	GtkTreeView *treeview = NULL;
 	int update = 0;
@@ -3271,26 +3271,30 @@ need_refresh:
 			break;
 		if (sview_job_info->task_list) {
 			itr2 = list_iterator_create(sview_job_info->task_list);
-			while ((sview_job_info = list_next(itr2))) {
-				if (sview_job_info->job_ptr->job_id ==
+			while ((sview_job_info2 = list_next(itr2))) {
+				if (sview_job_info2->job_ptr->job_id ==
 				    spec_info->search_info->int_data)
 					break;
 			}
 			list_iterator_destroy(itr2);
-			if (sview_job_info)
+			if (sview_job_info2) {
+				sview_job_info = sview_job_info2;
 				break;
+			}
 		}
 		if (sview_job_info->task_pending_list) {
 			itr2 = list_iterator_create(
 				sview_job_info->task_pending_list);
-			while ((sview_job_info = list_next(itr2))) {
-				if (sview_job_info->job_ptr->job_id ==
+			while ((sview_job_info2 = list_next(itr2))) {
+				if (sview_job_info2->job_ptr->job_id ==
 				    spec_info->search_info->int_data)
 					break;
 			}
 			list_iterator_destroy(itr2);
-			if (sview_job_info)
+			if (sview_job_info2) {
+				sview_job_info = sview_job_info2;
 				break;
+			}
 		}
 	}
 	list_iterator_destroy(itr);
