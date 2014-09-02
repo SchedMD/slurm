@@ -1589,3 +1589,19 @@ done:
 rwfail:
 	return SLURM_FAILURE;
 }
+
+extern void wait_for_resumed(uint16_t msg_type)
+{
+	int i;
+
+	for (i = 0; ; i++) {
+		if (i)
+			sleep(1);
+		if (!suspended)
+			return;
+		if (i == 0) {
+			info("defer sending msg_type %u to suspended job",
+			     msg_type);
+		}
+	}
+}

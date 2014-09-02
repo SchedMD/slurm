@@ -260,6 +260,10 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 	int rc, retry = 0, max_retry = 0;
 	unsigned long delay = 100000;
 
+	/* NOTE: Wait until suspended job step is resumed or the RPC
+	 * authentication credential from Munge may expire by the time
+	 * it is resumed */
+	wait_for_resumed(resp_msg->msg_type);
 	while (1) {
 		rc = slurm_send_only_node_msg(resp_msg);
 		if ((rc == SLURM_SUCCESS) || (errno != ETIMEDOUT))
