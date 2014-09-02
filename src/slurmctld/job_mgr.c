@@ -13753,6 +13753,7 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 	} else {
 		new_job_ptr = _job_rec_copy(job_ptr);
 		new_job_ptr->job_state = JOB_PENDING;
+		new_job_ptr->start_time = (time_t) 0;
 		/* Do NOT clear db_index here, it is handled when task_id_str
 		 * is created elsewhere */
 	}
