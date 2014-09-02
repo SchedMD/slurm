@@ -271,12 +271,12 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 		if (retry > max_retry)
 			break;
 
-		debug3("_send_srun_resp_msg: failed to send msg type %u: %m",
-			resp_msg->msg_type);
+		debug3("%s: failed to send msg type %u: %m",
+			__func__, resp_msg->msg_type);
 		usleep(delay);
 		if (delay < 800000)
 			delay *= 2;
-		retry ++;
+		retry++;
 	}
 	return rc;
 }
