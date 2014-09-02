@@ -47,14 +47,14 @@
 #  include <inttypes.h>
 #endif
 
-#include <stdio.h>
-
-#include <sys/types.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <dlfcn.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -104,6 +104,7 @@ const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/job_submit.lua";
+static time_t lua_script_last_loaded = (time_t) 0;
 static lua_State *L = NULL;
 static char *user_msg = NULL;
 
@@ -1061,25 +1062,25 @@ static int _check_lua_script_functions(void)
 	return (rc);
 }
 
-/*
- *  NOTE: The init callback should never be called multiple times,
- *   let alone called from multiple threads. Therefore, locking
- *   is unnecessary here.
- */
-int init (void)
+static int _load_script(void)
 {
 	int rc = SLURM_SUCCESS;
+	struct stat st;
+	lua_State *L_orig = L;
 
-	/*
-	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to
-	 *   ensure symbols from liblua are available to libs opened
-	 *   by any lua scripts.
-	 */
-	if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)) {
-		return (error("Failed to open liblua.so: %s", dlerror()));
+	if (stat(lua_script_path, &st) != 0) {
+		if (L_orig) {
+			(void) error("Unable to stat %s, "
+			             "using old script: %s",
+			             lua_script_path, strerror(errno));
+			return SLURM_SUCCESS;
+		}
+		return error("Unable to stat %s: %s",
+		             lua_script_path, strerror(errno));
+	}
+	
+	if (st.st_mtime <= lua_script_last_loaded) {
+		return SLURM_SUCCESS;
 	}
 
 	/*
@@ -1088,8 +1089,17 @@ int init (void)
 	L = luaL_newstate();
 	luaL_openlibs(L);
 	if (luaL_loadfile(L, lua_script_path)) {
-		return error("lua: %s: %s", lua_script_path,
-			     lua_tostring(L, -1));
+		if (L_orig) {
+			(void) error("lua: %s: %s, using previous script",
+			             lua_script_path, lua_tostring(L, -1));
+			lua_close(L);
+			L = L_orig;
+			return SLURM_SUCCESS;
+		}
+		rc = error("lua: %s: %s", lua_script_path,
+		           lua_tostring(L, -1));
+		lua_pop(L, 1);
+		return rc;
 	}
 
 	/*
@@ -1103,25 +1113,83 @@ int init (void)
 	 *  Run the user script:
 	 */
 	if (lua_pcall(L, 0, 1, 0) != 0) {
-		return error("job_submit/lua: %s: %s",
-			     lua_script_path, lua_tostring (L, -1));
+		if (L_orig) {
+			(void) error("job_submit/lua: %s: %s, "
+			             "using previous script",
+			             lua_script_path, lua_tostring(L, -1));
+			lua_close(L);
+			L = L_orig;
+			return SLURM_SUCCESS;
+		}
+		rc = error("job_submit/lua: %s: %s",
+		           lua_script_path, lua_tostring(L, -1));
+		lua_pop(L, 1);
+		return rc;
 	}
 
 	/*
 	 *  Get any return code from the lua script
 	 */
 	rc = (int) lua_tonumber(L, -1);
-	lua_pop (L, 1);
-	if (rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS) {
+		if (L_orig) {
+			(void) error("job_submit/lua: %s: returned %d "
+			             "on load, using previous script",
+			             lua_script_path, rc);
+			lua_close(L);
+			L = L_orig;
+			return SLURM_SUCCESS;
+		}
+		(void) error("job_submit/lua: %s: returned %d on load",
+		             lua_script_path, rc);
+		lua_pop (L, 1);
 		return rc;
+	}
 
 	/*
 	 *  Check for required lua script functions:
 	 */
-	return (_check_lua_script_functions());
+	rc = _check_lua_script_functions();
+	if (rc != SLURM_SUCCESS) {
+		if (L_orig) {
+			(void) error("job_submit/lua: %s: "
+			             "required function(s) not present, "
+			             "using previous script",
+			             lua_script_path);
+			lua_close(L);
+			L = L_orig;
+			return SLURM_SUCCESS;
+		}
+		return rc;
+	}
+
+	lua_script_last_loaded = time(NULL);
+	return SLURM_SUCCESS;
 }
 
-int fini (void)
+/*
+ *  NOTE: The init callback should never be called multiple times,
+ *   let alone called from multiple threads. Therefore, locking
+ *   is unnecessary here.
+ */
+int init(void)
+{
+	/*
+	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to
+	 *   ensure symbols from liblua are available to libs opened
+	 *   by any lua scripts.
+	 */
+	if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)) {
+		return error("Failed to open liblua.so: %s", dlerror());
+	}
+
+	return _load_script();
+}
+
+int fini(void)
 {
 	lua_close (L);
 	return SLURM_SUCCESS;
@@ -1134,6 +1202,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 {
 	int rc = SLURM_ERROR;
 	slurm_mutex_lock (&lua_lock);
+
+	(void) _load_script();
 
 	/*
 	 *  All lua script functions should have been verified during
