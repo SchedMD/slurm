@@ -471,6 +471,8 @@ cleanup:
 		error("rmdir(%s): %m",  job->batchdir);
 	xfree(job->batchdir);
 
+	errno = ESLURMD_CREATE_BATCH_DIR_ERROR;
+
 	return NULL;
 }
 

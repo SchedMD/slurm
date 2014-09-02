@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
     reserving cores.
  -- If --hint=nomultithread is used in a job allocation make sure any srun's
     ran inside the allocation can read the environment correctly.
+ -- If batchdir can't be made set errno correctly so the slurmctld is notified
+    correctly.
 
 * Changes in Slurm 14.03.7
 ==========================
