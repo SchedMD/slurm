@@ -1092,9 +1092,7 @@ next_task:
 			reject_array_part   = job_ptr->part_ptr;
 
 			if (!job_array_start_test(job_ptr)) {
-				xfree(job_ptr->state_desc);
-				reject_state_reason = WAIT_ARRAY_TASK_LIMIT;
-				job_ptr->state_reason = reject_state_reason;
+				reject_state_reason = job_ptr->state_reason;
 				continue;
 			}
 		}

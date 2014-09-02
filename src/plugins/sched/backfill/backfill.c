@@ -860,11 +860,8 @@ next_task:
 			reject_array_job_id = job_ptr->array_job_id;
 			reject_array_part   = part_ptr;
 
-			if (!job_array_start_test(job_ptr)) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_ARRAY_TASK_LIMIT;
+			if (!job_array_start_test(job_ptr))
 				continue;
-			}
 		}
 		job_ptr->part_ptr = part_ptr;
 
