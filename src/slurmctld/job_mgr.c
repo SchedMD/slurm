@@ -3510,14 +3510,10 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	job_ptr_pend->mail_user = xstrdup(job_ptr->mail_user);
 	job_ptr_pend->name = xstrdup(job_ptr->name);
 	job_ptr_pend->network = xstrdup(job_ptr->network);
-	job_ptr_pend->nodes = xstrdup(job_ptr->nodes);
-	if (job_ptr->node_cnt && job_ptr->node_addr) {
-		i = sizeof(slurm_addr_t) * job_ptr->node_cnt;
-		job_ptr_pend->node_addr = xmalloc(i);
-		memcpy(job_ptr_pend->node_addr, job_ptr->node_addr, i);
-	}
+	job_ptr_pend->node_addr = NULL;
 	job_ptr_pend->node_bitmap = NULL;
 	job_ptr_pend->node_bitmap_cg = NULL;
+	job_ptr_pend->nodes = NULL;
 	job_ptr_pend->nodes_completing = NULL;
 	job_ptr_pend->partition = xstrdup(job_ptr->partition);
 	job_ptr_pend->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
