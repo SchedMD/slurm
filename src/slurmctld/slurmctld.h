@@ -406,6 +406,9 @@ typedef struct slurmctld_resv {
 	bool user_not;		/* user_list users NOT permitted to use	*/
 } slurmctld_resv_t;
 
+extern List resv_list;		/* list of slurmctld_resv entries */
+extern time_t last_resv_update;	/* time of last resv_list update */
+
 /*****************************************************************************\
  *  JOB parameters and data structures
 \*****************************************************************************/
