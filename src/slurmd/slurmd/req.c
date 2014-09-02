@@ -1783,7 +1783,7 @@ _abort_job(uint32_t job_id, uint32_t slurm_rc)
 	int rc;		/* Note: we are ignoring return code */
 
 	resp.job_id       = job_id;
-	resp.job_rc       = 1;
+	resp.job_rc       = INFINITE;
 	resp.slurm_rc     = slurm_rc;
 	resp.node_name    = conf->node_name;
 	resp.jobacct      = NULL;       /* unused */
