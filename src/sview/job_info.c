@@ -144,6 +144,7 @@ enum {
 	SORTID_IMAGE_MLOADER,
 #endif
 	SORTID_JOBID,
+	SORTID_JOBID_FORMATTED,
 	SORTID_LICENSES,
 	SORTID_CPU_REQ,
 	SORTID_MEM_MIN,
@@ -221,6 +222,8 @@ static display_data_t display_data_job[] = {
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_JOBID, "JobID", FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_JOBID_FORMATTED, NULL, FALSE, EDIT_NONE,
+	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ACTION, "Action", FALSE,
@@ -2280,6 +2283,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_COMMENT,      job_ptr->comment,
 				   SORTID_CONTIGUOUS,   tmp_cont,
 				   SORTID_JOBID,        tmp_job_id,
+				   SORTID_JOBID_FORMATTED, tmp_job_id,
 				   SORTID_PARTITION,    job_ptr->partition,
 				   SORTID_UPDATED,      1,
 				   SORTID_USER_ID,      tmp_uname,
@@ -2319,6 +2323,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_GRES,         job_ptr->gres,
 				   SORTID_GROUP_ID,     tmp_group_id,
 				   SORTID_JOBID,        tmp_job_id,
+				   SORTID_JOBID_FORMATTED, tmp_job_id,
 				   SORTID_LICENSES,     job_ptr->licenses,
 				   SORTID_MEM_MIN,      tmp_mem_min,
 				   SORTID_NAME,         job_ptr->name,
@@ -2630,7 +2635,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	char tmp_nodes[50];
 	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
 	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
-	char tmp_step_id[40];
+	char tmp_step_id[40], tmp_job_id[400];
 	time_t now_time = time(NULL);
 	enum job_states state;
 	int color_inx = step_ptr->step_id % sview_colors_cnt;
@@ -2682,6 +2687,15 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			    sizeof(tmp_time_start));
 
 	snprintf(tmp_step_id, sizeof(tmp_step_id), "%u", step_ptr->step_id);
+	if (step_ptr->array_job_id) {
+		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u_%u.%u (%u.%u)",
+			 step_ptr->array_job_id, step_ptr->array_task_id,
+			 step_ptr->step_id,
+			 step_ptr->job_id, step_ptr->step_id);
+	} else {
+		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u.%u",
+			 step_ptr->job_id, step_ptr->step_id);
+	}
 
 	tmp_uname = uid_to_string_cached((uid_t)step_ptr->user_id);
 
@@ -2692,6 +2706,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_CPUS,         tmp_cpu_min,
 			   SORTID_GRES,         step_ptr->gres,
 			   SORTID_JOBID,        tmp_step_id,
+			   SORTID_JOBID_FORMATTED, tmp_job_id,
 			   SORTID_NAME,         step_ptr->name,
 			   SORTID_NODE_INX,     step_ptr->node_inx,
 			   SORTID_NODELIST,     tmp_nodes,
@@ -4251,6 +4266,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		offset = tmp_jobid;
 	jobid = atoi(offset);
 	g_free(tmp_jobid);
+	gtk_tree_model_get(model, iter, SORTID_JOBID_FORMATTED, &tmp_jobid, -1);
 
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
 
@@ -4264,43 +4280,48 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	switch(id) {
 	case PART_PAGE:
 		if (stepid == NO_VAL)
-			snprintf(title, 100, "Partition with job %d", jobid);
+			snprintf(title, 100, "Partition with job %s",
+				 tmp_jobid);
 		else
-			snprintf(title, 100, "Partition with job step %d.%d",
-				 jobid, stepid);
+			snprintf(title, 100, "Partition with job step %s",
+				 tmp_jobid);
 		break;
 	case RESV_PAGE:
 		if (stepid == NO_VAL)
-			snprintf(title, 100, "Reservation with job %d", jobid);
+			snprintf(title, 100, "Reservation with job %s",
+				 tmp_jobid);
 		else
-			snprintf(title, 100, "Reservation with job step %d.%d",
-				 jobid, stepid);
+			snprintf(title, 100, "Reservation with job step %s",
+				 tmp_jobid);
 		break;
 	case NODE_PAGE:
 		if (stepid == NO_VAL)
 			snprintf(title, 100,
-				 "%s(s) running job %d", type, jobid);
+				 "%s(s) running job %s", type, tmp_jobid);
 		else
-			snprintf(title, 100, "%s(s) running job step %d.%d",
-				 type, jobid, stepid);
+			snprintf(title, 100, "%s(s) running job step %s",
+				 type, tmp_jobid);
 		break;
 	case BLOCK_PAGE:
 		if (stepid == NO_VAL)
-			snprintf(title, 100, "Block with job %d", jobid);
+			snprintf(title, 100, "Block with job %s", tmp_jobid);
 		else
-			snprintf(title, 100, "Block with job step %d.%d",
-				 jobid, stepid);
+			snprintf(title, 100, "Block with job step %s",
+				 tmp_jobid);
 		break;
 	case INFO_PAGE:
 		if (stepid == NO_VAL)
-			snprintf(title, 100, "Full info for job %d", jobid);
+			snprintf(title, 100, "Full info for job %s", tmp_jobid);
 		else
-			snprintf(title, 100, "Full info for job step %d.%d",
-				 jobid, stepid);
+			snprintf(title, 100, "Full info for job step %s",
+				 tmp_jobid);
 		break;
 	default:
 		g_print("jobs got id %d\n", id);
 	}
+
+	if (tmp_jobid)
+		g_free(tmp_jobid);
 
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
