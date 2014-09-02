@@ -1360,7 +1360,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if (!treestore)
 		return;
 
-	if (!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
+	if (!job_ptr->nodes || IS_JOB_PENDING(job_ptr) ||
+	    !strcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(running_char,"00:00:00");
 		nodes = "waiting...";
 	} else {
@@ -2169,7 +2170,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	sprintf(tmp_nice, "%u", job_ptr->nice - NICE_OFFSET);
 
-	if (!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
+	if (!job_ptr->nodes || IS_JOB_PENDING(job_ptr) ||
+	    !strcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(tmp_time_run,"00:00:00");
 		tmp_nodes = "waiting...";
 	} else {
