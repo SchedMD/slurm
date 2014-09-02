@@ -206,6 +206,10 @@ if { [test_limits_enforced] == 0 } {
 	send_user "\nWARNING: This test can't be run without enforcing limits\n"
 	exit 0
 }
+if {[test_super_user] == 0} {
+	send_user "\nWARNING Test can only be ran as SlurmUser\n"
+	exit 0
+}
 
 #
 # Some tests will not work properly when allocating whole nodes to jobs

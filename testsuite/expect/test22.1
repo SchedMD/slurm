@@ -69,12 +69,16 @@ set timeout 120
 print_header $test_id
 
 # Fri Thu Jan 31 00:00:00 2008 - Needed only for the 00:00:00 for timing purposes
-set midnight 1201766400
-
+set midnight_time "Thu Jan 31 00:00:00 2008"
+set midnight [exec date +%s --date=$midnight_time]
+ 
 # Mon Dec 31 23:00:00 2007
-set period_start 1199170800
+set start_date "Mon Dec 31 23:00:00 2007"
+set period_start [exec date +%s --date=$start_date]
+
 # Thu Jan 31 23:59:59 2008
-set period_end 1201852799
+set end_date "Thu Jan 31 23:59:59 2008"
+set period_end [exec date +%s --date=$end_date]
 
 set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
 set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]

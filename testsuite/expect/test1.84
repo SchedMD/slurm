@@ -121,7 +121,7 @@ sleep 2
 set fd [open "|$scontrol --oneliner show node $def_hostlist"]
 exp_internal 1
 while {[gets $fd line] != -1} {
-	if {[regexp {NodeName=(\w+).*CPUTot=(\d+)(K?).*State=IDLE ThreadsPerCore=(\d+)} $line frag host cpu_cnt units threads_per_core] == 1} {
+	if {[regexp {NodeName=([^\s]+).*CPUTot=(\d+)(K?).*State=IDLE ThreadsPerCore=(\d+)} $line frag host cpu_cnt units threads_per_core] == 1} {
 		break
 	}
 }

@@ -134,6 +134,14 @@ proc check_pre { preempt_qos } {
 
 ######################### Test Begins #########################
 
+#
+# Check that current user is root or SlurmUser
+#
+if {[test_super_user] == 0} {
+	send_user "\nWARNING: Test can only be ran as SlurmUser\n"
+	exit 0
+}
+
 # clean it up (and check to make sure we can do this test
 remove_qos $qos_names_str
 if {$access_err != 0} {
