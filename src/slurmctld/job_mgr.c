@@ -11351,11 +11351,13 @@ extern bool job_array_start_test(struct job_record *job_ptr)
 		     base_job_ptr->array_recs->max_run_tasks)) {
 			if (job_ptr->details &&
 			    (job_ptr->details->begin_time < now))
-				job_ptr->details->begin_time = 0;
+				job_ptr->details->begin_time = (time_t)INFINITE;
 			return false;
 		}
 	}
-	if (job_ptr->details && (job_ptr->details->begin_time == 0))
+	if (job_ptr->details &&
+	    ((job_ptr->details->begin_time == 0) ||
+	     (job_ptr->details->begin_time == (time_t)INFINITE)))
 		job_ptr->details->begin_time = now;
 	return true;
 }
