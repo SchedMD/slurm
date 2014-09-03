@@ -1163,6 +1163,8 @@ static int _load_script(void)
 		return rc;
 	}
 
+	if (L_orig)
+		lua_close(L_orig);
 	lua_script_last_loaded = time(NULL);
 	return SLURM_SUCCESS;
 }
