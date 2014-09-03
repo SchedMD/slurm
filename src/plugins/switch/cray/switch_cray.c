@@ -109,10 +109,11 @@ int init(void)
 {
 	debug("%s loaded.", plugin_name);
 	debug_flags = slurm_get_debug_flags();
-#ifdef HAVE_NATIVE_CRAY
-	if (MAX_PORT < MIN_PORT) {
-		CRAY_ERR("MAX_PORT: %d < MIN_PORT: %d", MAX_PORT, MIN_PORT);
-		return SLURM_ERROR;
+
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
+	// Start lease extender in the slurmctld
+	if (run_in_daemon("slurmctld")) {
+		start_lease_extender();
 	}
 #endif
 	return SLURM_SUCCESS;
@@ -376,13 +377,9 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			   slurm_step_layout_t *step_layout, char *network)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	int i, rc, cnt = 0;
+	int rc, cnt = 0;
 	uint32_t port = 0;
-	int num_cookies = 2;
-	char *err_msg = NULL;
-	char **cookies = NULL, **s_cookies = NULL;
-	int32_t *nodes = NULL, *cookie_ids = NULL;
-	uint32_t *s_cookie_ids = NULL;
+	int32_t *nodes = NULL;
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
@@ -392,8 +389,8 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 
 	xassert(job->magic == CRAY_JOBINFO_MAGIC);
 
+	// Get the list of nodes used for the cookie lease
 	rc = list_str_to_array(step_layout->node_list, &cnt, &nodes);
-
 	if (rc < 0) {
 		CRAY_ERR("list_str_to_array failed");
 		return SLURM_ERROR;
@@ -404,60 +401,12 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			 cnt, step_layout->node_cnt);
 	}
 
-	/*
-	 * Get cookies for network configuration
-	 *
-	 * TODO: I could specify a lease time if I knew the wall-clock limit of
-	 * the job.  However, if the job got suspended, then all bets are off.
-	 * An infinite release time seems safest for now.
-	 *
-	 * TODO: I'm hard-coding the number of cookies for now to two.
-	 * Maybe we'll have a dynamic way to ascertain the number of
-	 * cookies later.
-	 *
-	 * TODO: I could ensure that the nodes list was sorted either by doing
-	 * some research to see if it comes in sorted or calling a sort
-	 * routine.
-	 */
-	rc = alpsc_lease_cookies(&err_msg, "SLURM", job->apid,
-				 ALPSC_INFINITE_LEASE, nodes,
-				 step_layout->node_cnt, num_cookies,
-				 &cookies, &cookie_ids);
-	ALPSC_SN_DEBUG("alpsc_lease_cookies");
+	// Get cookies for network configuration
+	rc = lease_cookies(job, nodes, step_layout->node_cnt);
 	xfree(nodes);
-	if (rc != 0) {
-		return SLURM_ERROR;
+	if (rc != SLURM_SUCCESS) {
+		return rc;
 	}
-
-	/*
-	 * Cookie ID safety check: The cookie_ids should be positive numbers.
-	 */
-	for (i = 0; i < num_cookies; i++) {
-		if (cookie_ids[i] < 0) {
-			CRAY_ERR("alpsc_lease_cookies returned a cookie ID "
-				 "number %d with a negative value: %d",
-				 i, cookie_ids[i]);
-			return SLURM_ERROR;
-		}
-	}
-
-	/*
-	 * xmalloc the space for the cookies and cookie_ids, so it can be freed
-	 * with xfree later, which is consistent with SLURM practices and how
-	 * the rest of the structure will be freed.
-	 * We must free() the ALPS Common library allocated memory using free(),
-	 * not xfree().
-	 */
-	s_cookie_ids = (uint32_t *) xmalloc(sizeof(uint32_t) * num_cookies);
-	memcpy(s_cookie_ids, cookie_ids, sizeof(uint32_t) * num_cookies);
-	free(cookie_ids);
-
-	s_cookies = (char **) xmalloc(sizeof(char **) * num_cookies);
-	for (i = 0; i < num_cookies; i++) {
-		s_cookies[i] = xstrdup(cookies[i]);
-		free(cookies[i]);
-	}
-	free(cookies);
 
 #ifdef HAVE_NATIVE_CRAY
 	/*
@@ -472,9 +421,6 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	/*
 	 * Populate the switch_jobinfo_t struct
 	 */
-	job->num_cookies = num_cookies;
-	job->cookies = s_cookies;
-	job->cookie_ids = s_cookie_ids;
 	job->port = port;
 
 #endif
@@ -603,6 +549,15 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		goto unpack_error;
 	}
 	safe_unpack32(&job->port, buffer);
+
+	/*
+	 * On recovery, we want to keep extending the life of
+	 * cookies still in use. So lets track these cookies
+	 * with the lease extender. Duplicate cookies are ignored.
+	 */
+	if (run_in_daemon("slurmctld")) {
+		track_cookies(job);
+	}
 
 #ifndef HAVE_CRAY_NETWORK
 	/* If the libstate save/restore failed, at least make sure that we
@@ -1122,7 +1077,6 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) jobinfo;
-	char *err_msg = NULL;
 	int rc = 0;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
@@ -1135,12 +1089,9 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	}
 
 	/* Release the cookies */
-	rc = alpsc_release_cookies(&err_msg, (int32_t *) job->cookie_ids,
-				   (int32_t) job->num_cookies);
-	ALPSC_SN_DEBUG("alpsc_release_cookies");
-	if (rc != 0) {
-		return SLURM_ERROR;
-
+	rc = release_cookies(job);
+	if (rc != SLURM_SUCCESS) {
+		return rc;
 	}
 #ifdef HAVE_NATIVE_CRAY
 	/*
