@@ -205,6 +205,10 @@ int fini(void)
 	pthread_mutex_unlock(&port_mutex);
 #endif
 
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
+	cleanup_lease_extender();
+#endif
+
 	return SLURM_SUCCESS;
 }
 

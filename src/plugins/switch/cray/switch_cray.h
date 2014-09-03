@@ -206,6 +206,7 @@ extern void unlink_iaa_file(slurm_cray_jobinfo_t *job);
 
 // Implemented in cookies.c
 extern int start_lease_extender(void);
+extern int cleanup_lease_extender(void);
 extern int lease_cookies(slurm_cray_jobinfo_t *job, int32_t *nodes,
 			 int32_t num_nodes);
 extern int track_cookies(slurm_cray_jobinfo_t *job);

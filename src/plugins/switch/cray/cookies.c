@@ -69,6 +69,10 @@ static size_t cookie_id_list_capacity = 0;
 // Mutex for the cookie id list
 static pthread_mutex_t cookie_id_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+
+// If we are running the lease_extender
+static bool lease_extender_running = false;
+
 // Static function declarations
 static void _add_cookie(int32_t cookie_id);
 static void _remove_cookie(int32_t cookie_id);
@@ -108,6 +112,26 @@ extern int start_lease_extender(void)
 		usleep(1000);	/* sleep and retry */
 	}
 	slurm_attr_destroy(&attr_agent);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * cleanup the lease_extender
+ */
+extern int cleanup_lease_extender(void)
+{
+	// Cleanup lease extender in the slurmctld
+	if (!_in_slurmctld())
+		return SLURM_SUCCESS;
+
+	lease_extender_running = false;
+
+	pthread_mutex_lock(&cookie_id_mutex);
+	xfree(cookie_id_list);
+	cookie_id_list_size = 0;
+	cookie_id_list_capacity = 0;
+	pthread_mutex_unlock(&cookie_id_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -298,7 +322,9 @@ static void *_lease_extender(void *args)
 	CRAY_INFO("Leasing cookies for %ds, renewing every %ds",
 		  COOKIE_LEASE_TIME, COOKIE_LEASE_INTERVAL);
 
-	while (1) {
+	lease_extender_running = true;
+
+	while (lease_extender_running) {
 		// Lock the mutex
 		pthread_mutex_lock(&cookie_id_mutex);
 
@@ -322,12 +348,6 @@ static void *_lease_extender(void *args)
 		// Wait until we want to extend leases again
 		sleep(COOKIE_LEASE_INTERVAL);
 	}
-
-	// We should never get here, but do cleanup anyway
-	xfree(cookie_id_list);
-	cookie_id_list = NULL;
-	cookie_id_list_size = 0;
-	cookie_id_list_capacity = 0;
 	return NULL;
 }
 
