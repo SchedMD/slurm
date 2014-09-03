@@ -319,8 +319,10 @@ extern int route_fini(void)
 	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
+
 	xfree(msg_collect_node);
-	msg_collect_node = NULL;
+	xfree(msg_collect_backup);
+
 	return rc;
 }
 
