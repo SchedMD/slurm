@@ -15,6 +15,7 @@ Makefile
 /contribs/phpext/slurm_php/config.m4
 /doc/html/*.html
 !/doc/html/review_release.html
+/etc/cgroup.release_common.example
 /etc/init.d.slurm
 /etc/init.d.slurmdbd
 /libtool
