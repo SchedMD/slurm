@@ -5226,6 +5226,8 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 		xfree(file_name_dest);
 	}
 
+	xfree(dir_name_src);
+	xfree(dir_name_dest);
 	return error_code;
 }
 
