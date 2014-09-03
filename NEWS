@@ -40,6 +40,9 @@ documents those changes that are of interest to users and admins.
  -- sacctmgr fix default format for list transactions.
  -- BLUEGENE - Fix backfill issue with backfilling jobs on blocks already
     reserved for higher priority jobs.
+ -- When creating job arrays the job specification files for each elements
+    are hard links to the first element specification files. If the controller
+    fails to make the links the files are copied instead.
 
 * Changes in Slurm 14.03.7
 ==========================

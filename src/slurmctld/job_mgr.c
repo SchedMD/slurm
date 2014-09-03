@@ -218,6 +218,7 @@ static void _xmit_new_end_time(struct job_record *job_ptr);
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
                                         struct part_record *,
                                         List part_list);
+static int _copy_job_file(const char *src, const char *dst);
 
 /*
  * create_job_record - create an empty job_record including job_details.
@@ -5187,6 +5188,15 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 	xstrcat(file_name_src,  "/environment");
 	xstrcat(file_name_dest, "/environment");
 	error_code = link(file_name_src, file_name_dest);
+	if (error_code < 0) {
+		error("%s: link() failed %m copy files src %s dest %s",
+		      __func__, file_name_src, file_name_dest);
+		error_code = _copy_job_file(file_name_src, file_name_dest);
+		if (error_code < 0) {
+			error("%s: failed copy files %m src %s dst %s",
+			      __func__, file_name_src, file_name_dest);
+		}
+	}
 	xfree(file_name_src);
 	xfree(file_name_dest);
 
@@ -5196,12 +5206,19 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 		xstrcat(file_name_src,  "/script");
 		xstrcat(file_name_dest, "/script");
 		error_code = link(file_name_src, file_name_dest);
+		if (error_code < 0) {
+			error("%s: link() failed %m copy files src %s dest %s",
+			      __func__, file_name_src, file_name_dest);
+			error_code = _copy_job_file(file_name_src, file_name_dest);
+			if (error_code < 0) {
+				error("%s: failed copy files %m src %s dst %s",
+				      __func__, file_name_src, file_name_dest);
+			}
+		}
 		xfree(file_name_src);
 		xfree(file_name_dest);
 	}
 
-	xfree(dir_name_src);
-	xfree(dir_name_dest);
 	return error_code;
 }
 
@@ -12139,4 +12156,56 @@ extern void job_end_time_reset(struct job_record  *job_ptr)
 		job_ptr->end_time = job_ptr->start_time +
 				    (job_ptr->time_limit * 60);	/* secs */
 	}
+}
+
+/* _copy_job_files()
+ *
+ * This function is invoked in case the controller fails
+ * to link the job array job files. If the link fails the
+ * controller tries to copy the files instead.
+ *
+ */
+static int
+_copy_job_file(const char *src, const char *dst)
+{
+	struct stat stat_buf;
+	int fsrc;
+	int fdst;
+	int cc;
+	char buf[BUFSIZ];
+
+	if (stat(src, &stat_buf) < 0)
+		return -1;
+
+	fsrc = open(src, O_RDONLY);
+	if (fsrc < 0)
+		return -1;
+
+
+	fdst = creat(dst, stat_buf.st_mode);
+	if (fdst < 0) {
+		close(fsrc);
+		return -1;
+	}
+
+	while (1) {
+		cc = read(fsrc, buf, BUFSIZ);
+		if (cc == 0)
+			break;
+		if (cc < 0) {
+			close(fsrc);
+			close(fdst);
+			return -1;
+		}
+		if (write(fdst, buf, cc) != cc) {
+			close(fsrc);
+			close(fdst);
+			return -1;
+		}
+	}
+
+	close(fsrc);
+	close(fdst);
+
+	return 0;
 }
