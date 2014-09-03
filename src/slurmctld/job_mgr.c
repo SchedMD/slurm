@@ -161,6 +161,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
+static struct job_record *_job_rec_copy(struct job_record *job_ptr,
+					uint32_t array_task_id);
 static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
@@ -3073,7 +3075,8 @@ extern void rehash_jobs(void)
 
 /* Create an exact copy of an existing job record for a job array.
  * Assumes the job has no resource allocaiton */
-struct job_record *_job_rec_copy(struct job_record *job_ptr)
+static struct job_record *_job_rec_copy(struct job_record *job_ptr,
+					uint32_t array_task_id)
 {
 	struct job_record *job_ptr_new = NULL, *save_job_next;
 	struct job_details *job_details, *details_new, *save_details;
@@ -3087,11 +3090,17 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	if (!job_ptr_new)     /* MaxJobCount checked when job array submitted */
 		fatal("job array create_job_record error");
 	if (error_code != SLURM_SUCCESS)
-		return job_ptr_new;
+		return NULL;
 
 	/* Set job-specific ID and hash table */
 	if (_set_job_id(job_ptr_new) != SLURM_SUCCESS)
 		fatal("job array create_job_record error");
+	if (_copy_job_desc_files(job_ptr->job_id, job_ptr_new->job_id)) {
+		error("%s: failed to create task %u for job %u",
+		      __func__, array_task_id, job_ptr->job_id);
+		(void) _purge_job_record(job_ptr_new->job_id);
+		return NULL;
+	}
 	_add_job_hash(job_ptr_new);
 
 	/* Copy most of original job data.
@@ -3107,6 +3116,10 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	job_ptr_new->details  = save_details;
 	job_ptr_new->prio_factors = save_prio_factors;
 	job_ptr_new->step_list = save_step_list;
+
+	job_ptr_new->array_job_id  = job_ptr->job_id;
+	job_ptr_new->array_task_id = array_task_id;
+	_add_job_array_hash(job_ptr_new);
 
 	job_ptr_new->account = xstrdup(job_ptr->account);
 	job_ptr_new->alias_list = xstrdup(job_ptr->alias_list);
@@ -3226,10 +3239,6 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);
 	details_new->work_dir = xstrdup(job_details->work_dir);
-	if (_copy_job_desc_files(job_ptr->job_id, job_ptr_new->job_id)) {
-		_list_delete_job((void *) job_ptr_new);
-		return NULL;
-	}
 
 	return job_ptr_new;
 }
@@ -3241,7 +3250,8 @@ static void _create_job_array(struct job_record *job_ptr,
 			      job_desc_msg_t *job_specs)
 {
 	struct job_record *job_ptr_new;
-	uint32_t i, i_first, i_last;
+	uint32_t i;
+	int i_first, i_last;
 
 	if (!job_specs->array_bitmap)
 		return;
@@ -3259,17 +3269,14 @@ static void _create_job_array(struct job_record *job_ptr,
 	for (i = (i_first + 1); i <= i_last; i++) {
 		if (!bit_test(job_specs->array_bitmap, i))
 			continue;
-		job_ptr_new = _job_rec_copy(job_ptr);
+		job_ptr_new = _job_rec_copy(job_ptr, i);
+		if (!job_ptr_new)
+			break;
 		/* Make sure the db_index is zero
 		 * for array elements in case the
 		 * first element had the index assigned.
 		 */
 		job_ptr_new->db_index = 0;
-		if (!job_ptr_new)
-			break;
-		job_ptr_new->array_job_id  = job_ptr->job_id;
-		job_ptr_new->array_task_id = i;
-		_add_job_array_hash(job_ptr_new);
 		acct_policy_add_job_submit(job_ptr);
 	}
 }
@@ -6252,7 +6259,7 @@ static void _list_delete_job(void *job_entry)
 
 	/* Remove the record from job hash table */
 	job_pptr = &job_hash[JOB_HASH_INX(job_ptr->job_id)];
-	while ((job_pptr != NULL) &&
+	while ((*job_pptr != NULL) &&
 	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
 		job_pptr = &job_ptr->job_next;
 	}
@@ -6266,7 +6273,7 @@ static void _list_delete_job(void *job_entry)
 	if (job_ptr->array_task_id != NO_VAL) {
 		job_pptr = &job_array_hash_j[
 			JOB_HASH_INX(job_ptr->array_job_id)];
-		while ((job_pptr != NULL) &&
+		while ((*job_pptr != NULL) &&
 		       ((job_ptr = *job_pptr) !=
 			(struct job_record *) job_entry)) {
 			job_pptr = &job_ptr->job_array_next_j;
@@ -6280,7 +6287,7 @@ static void _list_delete_job(void *job_entry)
 		job_pptr = &job_array_hash_t[
 			JOB_ARRAY_HASH_INX(job_ptr->array_job_id,
 					   job_ptr->array_task_id)];
-		while ((job_pptr != NULL) &&
+		while ((*job_pptr != NULL) &&
 		       ((job_ptr = *job_pptr) !=
 			(struct job_record *) job_entry)) {
 			job_pptr = &job_ptr->job_array_next_t;

@@ -43,6 +43,8 @@ documents those changes that are of interest to users and admins.
  -- When creating job arrays the job specification files for each elements
     are hard links to the first element specification files. If the controller
     fails to make the links the files are copied instead.
+ -- Fix error handling for job array create failure due to inability to copy
+    job files (script and environment).
 
 * Changes in Slurm 14.03.7
 ==========================
