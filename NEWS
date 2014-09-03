@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- Remove repeated batch complete if batch directory isn't able to be made
     since the slurmd will send the same message.
  -- sacctmgr fix default format for list transactions.
+ -- BLUEGENE - Fix backfill issue with backfilling jobs on blocks already
+    reserved for higher priority jobs.
 
 * Changes in Slurm 14.03.7
 ==========================
