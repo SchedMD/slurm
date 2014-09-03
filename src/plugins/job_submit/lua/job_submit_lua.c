@@ -330,7 +330,7 @@ static int _job_rec_field_index(lua_State *L)
 }
 
 /* Get the list of existing slurmctld job records. */
-static void _update_jobs_global()
+static void _update_jobs_global(void)
 {
 	char job_id_buf[11]; /* Big enough for a uint32_t */
 	ListIterator iter;
@@ -433,7 +433,7 @@ static int _resv_field_index(lua_State *L)
 }
 
 /* Get the list of existing slurmctld reservation records. */
-static void _update_resvs_global()
+static void _update_resvs_global(void)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
