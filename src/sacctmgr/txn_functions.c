@@ -190,7 +190,8 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	}
 
 	if (!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "T,Action,Actor,Where,Info");
+		slurm_addto_char_list(format_list,
+				      "Time,Action,Actor,Where,Info");
 		if (txn_cond->with_assoc_info)
 			slurm_addto_char_list(format_list,
 					      "User,Account,Cluster");

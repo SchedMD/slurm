@@ -463,11 +463,6 @@ cleanup:
 
 	if (job->aborted)
 		verbose("job %u abort complete", job->jobid);
-	else if (msg->step_id == SLURM_BATCH_SCRIPT) {
-		_send_complete_batch_script_msg(
-			job, ESLURMD_CREATE_BATCH_DIR_ERROR, -1);
-	} else
-		_send_step_complete_msgs(job);
 
 	/* Do not purge directory until slurmctld is notified of batch job
 	 * completion to avoid race condition with slurmd registering missing
@@ -475,6 +470,8 @@ cleanup:
 	if (job->batchdir && (rmdir(job->batchdir) < 0))
 		error("rmdir(%s): %m",  job->batchdir);
 	xfree(job->batchdir);
+
+	errno = ESLURMD_CREATE_BATCH_DIR_ERROR;
 
 	return NULL;
 }

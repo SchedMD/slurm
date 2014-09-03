@@ -66,6 +66,7 @@ extern List copy_bg_list(List in_list);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 extern int bg_record_cmpf_inc(void *, void *);
 extern int bg_record_sort_aval_inc(void *, void *);
+extern int bg_record_sort_aval_time_inc(void *r1, void *r2);
 extern void setup_subblock_structs(bg_record_t *bg_record);
 
 /* change username of a block bg_record_t target_name needs to be
