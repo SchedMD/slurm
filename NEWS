@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     is available directly using names slurm.reservations, slurm.jobs,
     slurm.log_info, etc. Also, the job_submit.lua script is reloaded when
     updated without restarting the slurmctld daemon.
+ -- Allow users to specify --resv_ports to have value 0.
 
 * Changes in Slurm 14.11.0pre4
 ==============================
