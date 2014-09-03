@@ -202,7 +202,6 @@ extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 extern int write_iaa_file(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job,
 		   int *ptags, int num_ptags, alpsc_peInfo_t *alpsc_pe_info);
 extern void unlink_iaa_file(slurm_cray_jobinfo_t *job);
-#endif /* HAVE_NATIVE_CRAY_GA || HAVE_CRAY_NETWORK */
 
 // Implemented in cookies.c
 extern int start_lease_extender(void);
@@ -211,6 +210,7 @@ extern int lease_cookies(slurm_cray_jobinfo_t *job, int32_t *nodes,
 			 int32_t num_nodes);
 extern int track_cookies(slurm_cray_jobinfo_t *job);
 extern int release_cookies(slurm_cray_jobinfo_t *job);
+#endif /* HAVE_NATIVE_CRAY_GA || HAVE_CRAY_NETWORK */
 
 /**********************************************************
  * Macros
