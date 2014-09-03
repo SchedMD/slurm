@@ -77,7 +77,7 @@ static void *_lease_extender(void *args);
 /*
  * Start the thread to extend cookie leases.
  */
-int start_lease_extender(void)
+extern int start_lease_extender(void)
 {
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
@@ -110,7 +110,8 @@ int start_lease_extender(void)
  * Lease cookies for this job, filling in the information in *job.
  * Leased cookies will periodically have their lease extended.
  */
-int lease_cookies(slurm_cray_jobinfo_t *job, int32_t *nodes, int32_t num_nodes)
+extern int lease_cookies(slurm_cray_jobinfo_t *job, int32_t *nodes,
+			 int32_t num_nodes)
 {
 	int rc;
 	uint32_t i;
@@ -165,7 +166,7 @@ int lease_cookies(slurm_cray_jobinfo_t *job, int32_t *nodes, int32_t num_nodes)
  * have their lease extended periodically. Useful for when slurmctld is
  * restarted, to track cookies leased before it was shut down.
  */
-int track_cookies(slurm_cray_jobinfo_t *job)
+extern int track_cookies(slurm_cray_jobinfo_t *job)
 {
 	uint32_t i;
 
@@ -179,7 +180,7 @@ int track_cookies(slurm_cray_jobinfo_t *job)
 /*
  * Release cookies which have been leased.
  */
-int release_cookies(slurm_cray_jobinfo_t *job)
+extern int release_cookies(slurm_cray_jobinfo_t *job)
 {
 	uint32_t i;
 	int rc;
