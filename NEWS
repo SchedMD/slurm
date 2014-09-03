@@ -11,6 +11,11 @@ documents those changes that are of interest to users and administrators.
  -- Modify scontrol job operations to accept comma delimited list of job IDs.
     Applies to job update, hold, release, suspend, resume, requeue, and
     requeuehold operations.
+ -- Refactor job_submit/lua interface. LUA FUNCTION ARGUMENTS HAVE CHANGED! The
+    lua script no longer needs to explicitly load meta-tables, but information
+    is available directly using names slurm.reservations, slurm.jobs,
+    slurm.log_info, etc. Also, the job_submit.lua script is reloaded when
+    updated without restarting the slurmctld daemon.
 
 * Changes in Slurm 14.11.0pre4
 ==============================
