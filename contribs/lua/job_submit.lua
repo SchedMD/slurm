@@ -15,8 +15,8 @@
 function slurm_job_submit(job_desc, part_list, submit_uid)
 	if job_desc.account == nil then
 		local account = "***TEST_ACCOUNT***"
-		slurm.log_info("slurm_job_submit: job from uid %d, setting default account value: %s",
-			 submit_uid, account)
+		slurm.log_info("slurm_job_submit: job from uid %u, setting default account value: %s",
+				submit_uid, account)
 		job_desc.account = account
 	end
 --	If no default partition, set the partition to the highest
@@ -25,8 +25,10 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 		local new_partition = nil
 		local top_priority  = -1
 		local last_priority = -1
+		local inx = 0
 		for name, part in pairs(part_list) do
---			slurm.log_info("part name[%d]:%s", i, part.name)
+			slurm.log_info("part name[%d]:%s", inx, part.name)
+			inx = inx + 1
 			if part.flag_default ~= 0 then
 				top_priority = -1
 				break
@@ -38,8 +40,8 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 			end
 		end
 		if top_priority >= 0 then
-			slurm.log_info("slurm_job_submit: job from uid %d, setting default partition value: %s",
-				 job_desc.user_id, new_partition)
+			slurm.log_info("slurm_job_submit: job from uid %u, setting default partition value: %s",
+					job_desc.user_id, new_partition)
 			job_desc.partition = new_partition
 		end
 	end
@@ -50,8 +52,8 @@ end
 function slurm_job_modify(job_desc, job_rec, part_list, modify_uid)
 	if job_desc.comment == nil then
 		local comment = "***TEST_COMMENT***"
-		slurm.log_info("slurm_job_modify: for job %u from uid %d, setting default comment value: %s",
-			 job_rec.job_id, modify_uid, comment)
+		slurm.log_info("slurm_job_modify: for job %u from uid %u, setting default comment value: %s",
+				job_rec.job_id, modify_uid, comment)
 		job_desc.comment = comment
 	end
 
