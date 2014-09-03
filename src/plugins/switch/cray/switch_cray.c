@@ -101,41 +101,6 @@ const char plugin_name[] = "switch CRAY plugin";
 const char plugin_type[] = "switch/cray";
 const uint32_t plugin_version = 100;
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-int init(void)
-{
-	debug("%s loaded.", plugin_name);
-	debug_flags = slurm_get_debug_flags();
-
-#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	// Start lease extender in the slurmctld
-	if (run_in_daemon("slurmctld")) {
-		start_lease_extender();
-	}
-#endif
-	return SLURM_SUCCESS;
-}
-
-int fini(void)
-{
-
-#ifdef HAVE_NATIVE_CRAY
-	pthread_mutex_lock(&port_mutex);
-	FREE_NULL_BITMAP(port_resv);
-	pthread_mutex_unlock(&port_mutex);
-#endif
-
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_reconfig(void)
-{
-	return SLURM_SUCCESS;
-}
-
 #ifdef HAVE_NATIVE_CRAY
 static void _state_read_buf(Buf buffer)
 {
@@ -214,10 +179,46 @@ static void _state_write_buf(Buf buffer)
 	pthread_mutex_unlock(&port_mutex);
 }
 #endif
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+int init(void)
+{
+	debug("%s loaded.", plugin_name);
+	debug_flags = slurm_get_debug_flags();
+
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
+	// Start lease extender in the slurmctld
+	if (run_in_daemon("slurmctld")) {
+		start_lease_extender();
+	}
+#endif
+	return SLURM_SUCCESS;
+}
+
+int fini(void)
+{
+
+#ifdef HAVE_NATIVE_CRAY
+	pthread_mutex_lock(&port_mutex);
+	FREE_NULL_BITMAP(port_resv);
+	pthread_mutex_unlock(&port_mutex);
+#endif
+
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_reconfig(void)
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * switch functions for global state save/restore
  */
-int switch_p_libstate_save(char *dir_name)
+extern int switch_p_libstate_save(char *dir_name)
 {
 #ifdef HAVE_NATIVE_CRAY
 	Buf buffer;
@@ -270,7 +271,7 @@ int switch_p_libstate_save(char *dir_name)
 #endif
 }
 
-int switch_p_libstate_restore(char *dir_name, bool recover)
+extern int switch_p_libstate_restore(char *dir_name, bool recover)
 {
 #ifdef HAVE_NATIVE_CRAY
 	char *data = NULL, *file_name;
@@ -333,7 +334,7 @@ int switch_p_libstate_restore(char *dir_name, bool recover)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_libstate_clear(void)
+extern int switch_p_libstate_clear(void)
 {
 #ifdef HAVE_NATIVE_CRAY
 	pthread_mutex_lock(&port_mutex);
@@ -349,8 +350,8 @@ int switch_p_libstate_clear(void)
 /*
  * switch functions for job step specific credential
  */
-int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
-			   uint32_t step_id)
+extern int switch_p_alloc_jobinfo(
+	switch_jobinfo_t **switch_job, uint32_t job_id, uint32_t step_id)
 {
 	slurm_cray_jobinfo_t *new;
 
@@ -373,8 +374,9 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 	return SLURM_SUCCESS;
 }
 
-int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
-			   slurm_step_layout_t *step_layout, char *network)
+extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
+				  slurm_step_layout_t *step_layout,
+				  char *network)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	int rc, cnt = 0;
@@ -430,7 +432,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 /*
  *
  */
-void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
+extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
 	int i;
@@ -478,8 +480,8 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	return;
 }
 
-int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
-			  uint16_t protocol_version)
+extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+				 uint16_t protocol_version)
 {
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
 
@@ -510,8 +512,8 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	return 0;
 }
 
-int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
-			    uint16_t protocol_version)
+extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+				   uint16_t protocol_version)
 {
 	uint32_t num_cookies;
 	slurm_cray_jobinfo_t *job;
@@ -605,13 +607,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
+extern void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 {
 	return;
 }
 
-char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
-			      size_t size)
+extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
+				     char *buf, size_t size)
 {
 	if (buf && size) {
 		buf[0] = '\0';
@@ -624,17 +626,17 @@ char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 /*
  * switch functions for job initiation
  */
-int switch_p_node_init(void)
+extern int switch_p_node_init(void)
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_node_fini(void)
+extern int switch_p_node_fini(void)
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
+extern int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
 {
 	return SLURM_SUCCESS;
 }
@@ -888,7 +890,7 @@ extern int switch_p_job_resume(void *suspend_info, int max_wait)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_fini(switch_jobinfo_t *jobinfo)
+extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) jobinfo;
@@ -937,7 +939,7 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini(stepd_step_rec_t *job)
+extern int switch_p_job_postfini(stepd_step_rec_t *job)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	int rc;
@@ -998,9 +1000,10 @@ int switch_p_job_postfini(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env, uint32_t nodeid,
-			uint32_t procid, uint32_t nnodes, uint32_t nprocs,
-			uint32_t rank)
+extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
+			       uint32_t nodeid, uint32_t procid,
+			       uint32_t nnodes, uint32_t nprocs,
+			       uint32_t rank)
 {
 	return SLURM_SUCCESS;
 }
