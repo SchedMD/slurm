@@ -178,6 +178,7 @@ static void _state_write_buf(Buf buffer)
 
 	pthread_mutex_unlock(&port_mutex);
 }
+
 #endif
 
 /*
@@ -190,10 +191,7 @@ int init(void)
 	debug_flags = slurm_get_debug_flags();
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	// Start lease extender in the slurmctld
-	if (run_in_daemon("slurmctld")) {
-		start_lease_extender();
-	}
+	start_lease_extender();
 #endif
 	return SLURM_SUCCESS;
 }
@@ -552,14 +550,14 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	}
 	safe_unpack32(&job->port, buffer);
 
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	/*
 	 * On recovery, we want to keep extending the life of
 	 * cookies still in use. So lets track these cookies
 	 * with the lease extender. Duplicate cookies are ignored.
 	 */
-	if (run_in_daemon("slurmctld")) {
-		track_cookies(job);
-	}
+	track_cookies(job);
+#endif
 
 #ifndef HAVE_CRAY_NETWORK
 	/* If the libstate save/restore failed, at least make sure that we

@@ -73,6 +73,7 @@ static pthread_mutex_t cookie_id_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void _add_cookie(int32_t cookie_id);
 static void _remove_cookie(int32_t cookie_id);
 static void *_lease_extender(void *args);
+static void _in_slurmctld(void);
 
 /*
  * Start the thread to extend cookie leases.
@@ -82,6 +83,10 @@ extern int start_lease_extender(void)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int retries = 0;
+
+	// Start lease extender in the slurmctld
+	if (!_in_slurmctld())
+		return SLURM_SUCCESS;
 
 	/* spawn an agent */
 	slurm_attr_init(&attr_agent);
@@ -118,6 +123,9 @@ extern int lease_cookies(slurm_cray_jobinfo_t *job, int32_t *nodes,
 	char *err_msg = NULL;
 	int32_t *cookie_ids = NULL;
 	char **cookies = NULL;
+
+	if (!_in_slurmctld())
+		return SLURM_SUCCESS;
 
 	/*
 	 * Lease some cookies
@@ -170,6 +178,9 @@ extern int track_cookies(slurm_cray_jobinfo_t *job)
 {
 	uint32_t i;
 
+	if (!_in_slurmctld())
+		return SLURM_SUCCESS;
+
 	// Add cookies to the list
 	for (i = 0; i < job->num_cookies; i++) {
 		_add_cookie(job->cookie_ids[i]);
@@ -185,6 +196,9 @@ extern int release_cookies(slurm_cray_jobinfo_t *job)
 	uint32_t i;
 	int rc;
 	char *err_msg = NULL;
+
+	if (!_in_slurmctld())
+		return SLURM_SUCCESS;
 
 	// Remove cookies from the list
 	for (i = 0; i < job->num_cookies; i++) {
@@ -315,6 +329,19 @@ static void *_lease_extender(void *args)
 	cookie_id_list_size = 0;
 	cookie_id_list_capacity = 0;
 	return NULL;
+}
+
+static bool _in_slurmctld(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmctld");
+	}
+
+	return run;
 }
 
 #endif
