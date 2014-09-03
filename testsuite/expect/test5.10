@@ -1,0 +1,337 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that squeue --priority lists each job per partition
+#          if the job is pending and submitted to multiple partitions.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id       5.10
+set file_in       "test$test_id\_sc"
+set job_id        0
+set nodes         ""
+set test_part_1   "test$test_id\_part1"
+set test_part_2   "test$test_id\_part2"
+set exit_code     0
+
+print_header $test_id
+
+if {[test_super_user] == 0} {
+	send_user "\nWARNING: can not test more unless SlurmUser\n"
+	exit $exit_code
+}
+
+proc create_part { name prio } {
+	global scontrol nodes exit_code
+
+	spawn $scontrol create partitionname=$name priority=$prio nodes=$nodes
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set found 0
+	spawn $scontrol show partitionname=$name
+	expect {
+		-re "PartitionName=$name" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$found == 0} {
+		send_user"\nFAILURE: scontrol did not create partition $name\n"
+		exit 0
+	}
+}
+
+proc change_prio { name prio } {
+	global scontrol nodes exit_code
+
+	spawn $scontrol update partitionname=$name priority=$prio
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc delete_part { name } {
+	global scontrol exit_code
+
+	log_user 0
+	spawn $scontrol delete partition=$name
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Double check that the partition has been deleted
+	set deleted 0
+	spawn $scontrol show partitionname=$name
+	expect {
+		-re "not found" {
+			set deleted 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$deleted != 1} {
+		send_user "\nFAILURE: partition $name was not deleted\n"
+		set exit_code 1
+	}
+}
+
+proc sub_job { } {
+
+	global sbatch test_part_1 test_part_2 file_in job_id exit_code
+	global number
+
+	set job_id 0
+	spawn $sbatch -N1 -o/dev/null -t1 --begin=now+1hour \
+	    -p$test_part_1,$test_part_2 $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$job_id == 0} {
+		send_user "\nFAILURE: sbatch did not submit job\n"
+		exit 0
+	}
+
+	# Wait a bit for the job to start if it does
+	sleep 2
+}
+
+# Remove any vestigial partitions
+delete_part $test_part_1
+delete_part $test_part_2
+
+set def_part [default_partition]
+if {[string length $def_part] == 0} {
+	send_user "\nWARNING: This test can not run without a default partition\n"
+	exit $exit_code
+}
+
+# Get a list of nodes
+spawn $bin_bash -c "exec $srun -N[available_nodes $def_part idle] $bin_printenv | $bin_grep NODE"
+expect {
+	-re "SLURM_NODELIST=($alpha_numeric_nodelist)" {
+		set nodes $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[string length $nodes] == 0} {
+	send_user "\nFAILURE: did not get a valid node list\n"
+	exit 0
+}
+
+# Create 2 test partitions
+create_part $test_part_1 1
+create_part $test_part_2 2
+
+# Submit a job to check priority
+send_user "\n\nTest 1\n"
+make_bash_script $file_in "sleep 20"
+sub_job
+
+# Check partition
+set part_chk 0
+spawn $squeue --priority --sort=p,i --noheader -j$job_id -Opartition,state --state=PD
+expect {
+	-re "$test_part_1" {
+		incr part_chk 1
+		exp_continue
+	}
+	-re "$test_part_2" {
+		incr part_chk 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$part_chk != 2} {
+	send_user "\nFAILURE: --priority option did not list "
+	send_user "priority properly ($part_chk != 2)\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+
+# Switch up the partition priority to make sure the sort works
+change_prio $test_part_1 2
+change_prio $test_part_2 1
+
+# Submit another job to check priority
+send_user "\n\nTest 2\n"
+sub_job
+
+# Check partition
+set part_chk 0
+spawn $squeue --priority --noheader --sort=p,i -j$job_id -Opartition,state --state=PD
+expect {
+	-re "$test_part_2" {
+		incr part_chk 1
+		exp_continue
+	}
+	-re "$test_part_1" {
+		incr part_chk 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$part_chk != 2} {
+	send_user "\nFAILURE: --priority option did not list "
+	send_user "priority properly ($part_chk != 2)\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+
+# Submit a job that will run now to check that the --priority option for
+# squeue will only list the job running on the partition
+send_user "\n\nTest 3\n"
+set job_id 0
+spawn $sbatch -N1 -o/dev/null -t1 --begin=now -p$test_part_1,$test_part_2 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 0
+}
+if {[wait_for_job $job_id RUNNING] != 0} {
+	send_user "\nJob $job_id failed to start\n"
+	set exit_code 1
+}
+
+# Check partition
+set part_chk 0
+spawn $squeue --priority --noheader --sort=p,i -j$job_id -Opartition,state
+expect {
+	-re "$test_part_1 *RUNNING" {
+		incr part_chk 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$part_chk != 1} {
+	send_user "\nFAILURE: Job $job_id should be RUNNING in partition $test_part_1 and is not\n"
+	set exit_code 1
+} else {
+	send_user "\nJob $job_id is RUNNING in partition $test_part_1 as expected\n"
+}
+
+cancel_job $job_id
+
+# Delete test partitions
+delete_part $test_part_1
+delete_part $test_part_2
+
+if {$exit_code == 0} {
+	exec $bin_rm $file_in
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code
