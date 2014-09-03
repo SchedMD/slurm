@@ -35,7 +35,7 @@ HIGHLIGHTS
     can be shared between jobs.
  -- Added a Route plugin to allow messages to be forwarded using switch
     topology information.
- -- Refactor job_submit/lua interface. LUA FUNCTION ARGUMENTS HAVE CHANGED. The
+ -- Refactor job_submit/lua interface. LUA FUNCTIONS NEED TO CHANGE! The
     lua script no longer needs to explicitly load meta-tables, but information
     is available directly using names slurm.reservations, slurm.jobs,
     slurm.log_info, etc. Also, the job_submit.lua script is reloaded when

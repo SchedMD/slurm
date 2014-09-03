@@ -51,7 +51,6 @@ end
 function slurm_job_modify ( job_desc, job_rec, part_list, modify_uid )
 	local bad_license_count = 0
 
---      *** YOUR LOGIC GOES BELOW ***
 	bad_license_count = _limit_license_cnt(job_desc.licenses, "lscratcha", 1)
 	bad_license_count = _limit_license_cnt(job_desc.licenses, "lscratchb", 1) + bad_license_count
 	bad_license_count = _limit_license_cnt(job_desc.licenses, "lscratchc", 1) + bad_license_count
