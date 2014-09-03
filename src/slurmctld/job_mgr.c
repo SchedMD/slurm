@@ -156,6 +156,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct job_record **job_ptr,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
+static int _copy_job_file(const char *src, const char *dst);
 static job_desc_msg_t * _copy_job_record_to_job_desc(
 				struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
@@ -172,7 +173,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
-struct job_record *_job_rec_copy(struct job_record *job_ptr);
+static struct job_record *_job_rec_copy(struct job_record *job_ptr);
 static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
@@ -3442,17 +3443,22 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 
 	job_ptr_pend = _create_job_record(&error_code, 0);
 	if (!job_ptr_pend)     /* MaxJobCount checked when job array submitted */
-		fatal("job array _create_job_record error");
+		fatal("%s: _create_job_record error", __func__);
 	if (error_code != SLURM_SUCCESS)
-		return job_ptr_pend;
+		return NULL;
 
 	_remove_job_hash(job_ptr);
 	job_ptr_pend->job_id = job_ptr->job_id;
 	if (_set_job_id(job_ptr) != SLURM_SUCCESS)
-		fatal("job array _set_job_id error");
+		fatal("%s: _set_job_id error", __func__);
 	if (!job_ptr->array_recs) {
-		fatal("_job_rec_copy: job %u record lacks array structure",
-		      job_ptr->job_id);
+		fatal("%s: job %u record lacks array structure",
+		      __func__, job_ptr->job_id);
+	}
+	if (_copy_job_desc_files(job_ptr_pend->job_id, job_ptr->job_id)) {
+		/* Need to quit here to preserve job record integrity */
+		fatal("%s: failed to copy enviroment/script files for job %u",
+		      __func__, job_ptr->job_id);
 	}
 
 	/* Copy most of original job data.
@@ -3600,7 +3606,6 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);
 	details_new->work_dir = xstrdup(job_details->work_dir);
-	_copy_job_desc_files(job_ptr_pend->job_id, job_ptr->job_id);
 
 	return job_ptr_pend;
 }
@@ -5858,6 +5863,15 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 	xstrcat(file_name_src,  "/environment");
 	xstrcat(file_name_dest, "/environment");
 	error_code = link(file_name_src, file_name_dest);
+	if (error_code < 0) {
+		error("%s: link() failed %m copy files src %s dest %s",
+		      __func__, file_name_src, file_name_dest);
+		error_code = _copy_job_file(file_name_src, file_name_dest);
+		if (error_code < 0) {
+			error("%s: failed copy files %m src %s dst %s",
+			      __func__, file_name_src, file_name_dest);
+		}
+	}
 	xfree(file_name_src);
 	xfree(file_name_dest);
 
@@ -5867,6 +5881,16 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 		xstrcat(file_name_src,  "/script");
 		xstrcat(file_name_dest, "/script");
 		error_code = link(file_name_src, file_name_dest);
+		if (error_code < 0) {
+			error("%s: link() failed %m copy files src %s dest %s",
+			      __func__, file_name_src, file_name_dest);
+			error_code = _copy_job_file(file_name_src,
+						    file_name_dest);
+			if (error_code < 0) {
+				error("%s: failed copy files %m src %s dst %s",
+				      __func__, file_name_src, file_name_dest);
+			}
+		}
 		xfree(file_name_src);
 		xfree(file_name_dest);
 	}
@@ -13733,9 +13757,63 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		}
 	} else {
 		new_job_ptr = _job_rec_copy(job_ptr);
-		new_job_ptr->job_state = JOB_PENDING;
-		new_job_ptr->start_time = (time_t) 0;
-		/* Do NOT clear db_index here, it is handled when task_id_str
-		 * is created elsewhere */
+		if (new_job_ptr) {
+			new_job_ptr->job_state = JOB_PENDING;
+			new_job_ptr->start_time = (time_t) 0;
+			/* Do NOT clear db_index here, it is handled when
+			 * task_id_str is created elsewhere */
+		}
 	}
+}
+
+/* _copy_job_file()
+ *
+ * This function is invoked in case the controller fails
+ * to link the job array job files. If the link fails the
+ * controller tries to copy the files instead.
+ *
+ */
+static int
+_copy_job_file(const char *src, const char *dst)
+{
+	struct stat stat_buf;
+	int fsrc;
+	int fdst;
+	int cc;
+	char buf[BUFSIZ];
+
+	if (stat(src, &stat_buf) < 0)
+		return -1;
+
+	fsrc = open(src, O_RDONLY);
+	if (fsrc < 0)
+		return -1;
+
+
+	fdst = creat(dst, stat_buf.st_mode);
+	if (fdst < 0) {
+		close(fsrc);
+		return -1;
+	}
+
+	while (1) {
+		cc = read(fsrc, buf, BUFSIZ);
+		if (cc == 0)
+			break;
+		if (cc < 0) {
+			close(fsrc);
+			close(fdst);
+			return -1;
+		}
+		if (write(fdst, buf, cc) != cc) {
+			close(fsrc);
+			close(fdst);
+			return -1;
+		}
+	}
+
+	close(fsrc);
+	close(fdst);
+
+	return 0;
 }
