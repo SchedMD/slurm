@@ -34,8 +34,8 @@ index febfac0..eea50f1 100644
 +  if (getenv("SLURM_JOB_ID")) {
 +    unsigned int i, argc=4;
 +    for (i=0; argv[i] != NULL ; i++) argc++;
-+    argx = (char**) xmalloc( sizeof(char*)*( argc  ));
-+    argx[0] = "srun"; 
++    argx = (char**) malloc( sizeof(char*)*( argc  ));
++    argx[0] = "srun";
 +    argx[1] = "-N1";
 +    argx[2] = "-n1";
 +    for (i=0; argv[i] != NULL ; i++) {
