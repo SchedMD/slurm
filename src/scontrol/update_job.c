@@ -52,6 +52,7 @@ typedef struct job_ids {
 static uint32_t	_get_job_time(const char *job_id_str);
 static bool	_is_job_id(char *job_str);
 static bool	_is_single_job(char *job_id_str);
+static char *	_job_name2id(char *job_name);
 static char *	_next_job_id(void);
 static int	_parse_checkpoint_args(int argc, char **argv,
 				       uint16_t *max_wait, char **image_dir);
@@ -964,7 +965,8 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.reservation = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "Name", MAX(taglen, 2)) == 0) {
+		else if (!strncasecmp(tag, "Name", MAX(taglen, 2)) ||
+			 !strncasecmp(tag, "JobName", MAX(taglen, 4))) {
 			job_msg.name = val;
 			update_cnt++;
 		}
@@ -1159,6 +1161,11 @@ scontrol_update_job (int argc, char *argv[])
 		exit_code = 1;
 		fprintf (stderr, "No changes specified\n");
 		return 0;
+	}
+
+	if (!job_msg.job_id_str && job_msg.name) {
+		/* Translate name to job ID string */
+		job_msg.job_id_str = _job_name2id(job_msg.name);
 	}
 
 	if (!job_msg.job_id_str) {
@@ -1479,4 +1486,44 @@ static bool _is_single_job(char *job_id_str)
 	}
 
 	return is_single;
+}
+
+/* Translate a job name to relevant job IDs
+ * NOTE: xfree the return value to avoid memory leak */
+static char * _job_name2id(char *job_name)
+{
+	int i, rc;
+	job_info_msg_t *resp;
+	slurm_job_info_t *job_ptr;
+	char *job_id_str = NULL, *sep = "";
+
+	xassert(job_name);
+
+	rc = scontrol_load_job(&resp, 0);
+	if (rc == SLURM_SUCCESS) {
+		if (resp->record_count == 0) {
+			error("JobName %s not found", job_name);
+			slurm_free_job_info_msg(resp);
+			return job_id_str;
+		}
+		for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
+		     i++, job_ptr++) {
+			if (!job_ptr->name || strcmp(job_name, job_ptr->name))
+				continue;
+			if (job_ptr->array_task_id != NO_VAL) {
+				xstrfmtcat(job_id_str, "%s%u_%u", sep,
+					   job_ptr->array_job_id,
+					   job_ptr->array_task_id);
+			} else {
+				xstrfmtcat(job_id_str, "%s%u", sep,
+					   job_ptr->job_id);
+			}
+			sep = ",";
+		}
+	} else {
+		error("Could not load state information for JobName %s: %m",
+		      job_name);
+	}
+
+	return job_id_str;
 }

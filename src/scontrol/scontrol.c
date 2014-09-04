@@ -1491,14 +1491,15 @@ _update_it (int argc, char *argv[])
 		} else if (!strncasecmp(tag, "PartitionName",
 					MAX(tag_len, 3))) {
 			part_tag = 1;
-		} else if (!strncasecmp(tag, "JobId", MAX(tag_len, 3))) {
+		} else if (!strncasecmp(tag, "JobId", MAX(tag_len, 3)) ||
+			   !strncasecmp(tag, "JobNAME", MAX(tag_len, 3))) {
 			job_tag = 1;
 		} else if (!strncasecmp(tag, "StepId", MAX(tag_len, 4))) {
 			step_tag = 1;
 		} else if (!strncasecmp(tag, "BlockName", MAX(tag_len, 3))) {
 			block_tag = 1;
-		} else if (!strncasecmp(tag, "SubBPName", MAX(tag_len, 3))
-			   || !strncasecmp(tag, "SubMPName", MAX(tag_len, 3))) {
+		} else if (!strncasecmp(tag, "SubBPName", MAX(tag_len, 3)) ||
+			   !strncasecmp(tag, "SubMPName", MAX(tag_len, 3))) {
 			sub_tag = 1;
 		} else if (!strncasecmp(tag, "FrontendName",
 					MAX(tag_len, 2))) {
@@ -1508,7 +1509,7 @@ _update_it (int argc, char *argv[])
 			res_tag = 1;
 		} else if (!strncasecmp(tag, "SlurmctldDebug",
 					MAX(tag_len, 2))) {
-			debug_tag= 1;
+			debug_tag = 1;
 		}
 	}
 

@@ -560,7 +560,7 @@ Examples of use include "Gres=gpus:2*cpu,disk=40G" and "Gres=help".
 \fIJobId\fP=<job_list>
 Identify the job(s) to be updated.
 The job_list may be a comma separated list of job IDs.
-This specification is required.
+Either \fIJobId\fP or \fIJobName\fP is required.
 .TP
 \fILicenses\fP=<name>
 Specification of licenses (or other resources available on all nodes
@@ -584,8 +584,9 @@ Only the Slurm administrator or root can change this parameter.
 Set the job's minimum temporary disk space required per node to the specified value.
 Only the Slurm administrator or root can change this parameter.
 .TP
-\fIName\fP=<name>
+\fIJobName\fP=<name>
 Set the job's name to the specified value.
+Either \fIJobId\fP or \fIJobName\fP is required.
 .TP
 \fINice\fP[=delta]
 Adjust job's priority by the specified value. Default value is 100.

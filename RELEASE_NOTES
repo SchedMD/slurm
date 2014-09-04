@@ -138,6 +138,7 @@ COMMAND CHANGES (see man pages for details)
  -- Modify scontrol job operations to accept comma delimited list of job IDs.
     Applies to job update, hold, release, suspend, resume, requeue, and
     requeuehold operations.
+ -- Added ability for "scontrol update" to references jobs by JobName.
 
 OTHER CHANGES
 =============

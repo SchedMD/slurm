@@ -380,7 +380,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		}
 		xstrcat(out, tmp_line);
 	}
-	snprintf(tmp_line, sizeof(tmp_line), "Name=%s", job_ptr->name);
+	snprintf(tmp_line, sizeof(tmp_line), "JobName=%s", job_ptr->name);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
