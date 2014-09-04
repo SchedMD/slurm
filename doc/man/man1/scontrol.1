@@ -585,7 +585,10 @@ Set the job's minimum temporary disk space required per node to the specified va
 Only the Slurm administrator or root can change this parameter.
 .TP
 \fIJobName\fP=<name>
-Set the job's name to the specified value.
+Identify the name of jobs to be modified or set the job's name to the
+specified value.
+When used to identify jobs to be modified, only jobs belonging to the user
+issuing the command are updated.
 Either \fIJobId\fP or \fIJobName\fP is required.
 .TP
 \fINice\fP[=delta]
