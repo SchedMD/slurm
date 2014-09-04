@@ -347,7 +347,8 @@ _update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
 }
 
 static int
-_validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, bitstr_t *task_mask)
+_validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
+		bitstr_t *task_mask)
 {
 	static bool has_asterisk = false;
 	char *range = NULL, *p = NULL;
@@ -359,12 +360,18 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, bitstr_t *task_mask)
 		high_num = *ntasks - 1;
 		*ntasks_set = true;	/* do not allow to change later */
 		has_asterisk = true;	/* must be last MPMD spec line */
+		(*ncmds)++;
 		return _update_task_mask(low_num, high_num, ntasks, ntasks_set,
 					 task_mask, true);
 	}
 
 	for (range = strtok_r(ranks, ",", &ptrptr); range != NULL;
 			range = strtok_r(NULL, ",", &ptrptr)) {
+		/*
+		 * Non-contiguous tasks are split into multiple commands
+		 * in the mpmd_set so count each token separately
+		 */
+		(*ncmds)++;
 		p = range;
 		while (*p != '\0' && isdigit (*p))
 			p ++;
@@ -405,10 +412,12 @@ _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, bitstr_t *task_mask)
  * IN config_name - MPMD configuration file name
  * IN/OUT ntasks - number of tasks to launch
  * IN/OUT ntasks_set - true if task count explicitly set by user
+ * OUT ncmds - number of commands
  * RET 0 on success, -1 otherwise
  */
 extern int
-verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set)
+verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
+		  int32_t *ncmds)
 {
 	FILE *config_fd;
 	char line[256];
@@ -420,6 +429,8 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set)
 		error("Invalid task count %d", *ntasks);
 		return -1;
 	}
+
+	*ncmds = 0;
 
 	config_fd = fopen(config_fname, "r");
 	if (config_fd == NULL) {
@@ -454,7 +465,8 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set)
 			rc = -1;
 			goto fini;
 		}
-		if (_validate_ranks(ranks, ntasks, ntasks_set, task_mask)) {
+		if (_validate_ranks(ranks, ntasks, ntasks_set, ncmds,
+				    task_mask)) {
 			error("Line %d of configuration file %s invalid",
 				line_num, config_fname);
 			rc = -1;

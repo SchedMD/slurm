@@ -46,10 +46,11 @@ uint32_t last_alloc_port = 0;
 pthread_mutex_t port_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
- * Function: assign_port
+ * Function: assign_ports
  * Description:
- *  Looks for and assigns the next free port.   This port is used by Cray's
- *  PMI for its communications to manage its control tree.
+ *  Looks for and assigns the next contiguous block of num_ports ports.
+ *  These ports are used by Cray's PMI for its communications to
+ *  manage its control tree.
  *
  *  To avoid port conflicts, this function selects a large range of
  *  ports within the middle of the port range where it assumes no
@@ -60,93 +61,107 @@ pthread_mutex_t port_mutex = PTHREAD_MUTEX_INITIALIZER;
  *  If there are no free ports, then it loops through the entire table
  *  ATTEMPTS number of times before declaring a failure.
  *
+ *  real_port is an output variable that on success holds the port
+ *  number of the first port in the block of ports.
+ *
  * Returns:
  *  0 on success and -1 on failure.
  */
-int assign_port(uint32_t *real_port)
+int assign_ports(uint32_t *real_port, int num_ports)
 {
-	int port, tmp, attempts = 0;
+	int port, attempts = 0, block_size;
 
-	if (!real_port) {
-		CRAY_ERR("real_port address was NULL.");
+	// Sanity check arguments
+	if (real_port == NULL) {
+		CRAY_ERR("real_port address was NULL");
+		return -1;
+	} else if (num_ports < 1) {
+		CRAY_ERR("Asking for %d < 1 port", num_ports);
+		return -1;
+	} else if (num_ports > PORT_CNT) {
+		CRAY_ERR("Asking for %d > %d ports", num_ports, PORT_CNT);
 		return -1;
 	}
-
-	/*
-	 * Ports is an index into the reserved port table.
-	 * The ports range from 0 up to PORT_CNT.
-	 */
-	pthread_mutex_lock(&port_mutex);
-	port = ++last_alloc_port % PORT_CNT;
 
 	/*
 	 * Find an unreserved port to assign.
 	 * Abandon the attempt if we've been through the available ports ATTEMPT
 	 * number of times
 	 */
-	while (bit_test(port_resv, port)) {
-		tmp = ++port % PORT_CNT;
-		port = tmp;
-		attempts++;
-		if ((attempts / PORT_CNT) >= ATTEMPTS) {
-			CRAY_ERR("No free ports among %d ports. "
-				 "Went through entire port list %d times",
-				 PORT_CNT, ATTEMPTS);
+	pthread_mutex_lock(&port_mutex);
+	port = (last_alloc_port + 1) % PORT_CNT;
+	block_size = 0;
+	for (attempts = 0; attempts < (PORT_CNT + 1) * ATTEMPTS;
+	     attempts++, port++) {
+		// Give some other threads a chance
+		if (attempts > 0 && attempts % PORT_CNT == 0) {
+			CRAY_INFO("Unable to find free port block, retrying");
 			pthread_mutex_unlock(&port_mutex);
-			return -1;
-		} else if ((attempts % PORT_CNT) == 0) {
-			/*
-			 * Each time through give other threads a chance
-			 * to release ports
-			 */
-			pthread_mutex_unlock(&port_mutex);
-			sleep(1);
+			usleep(100000);
 			pthread_mutex_lock(&port_mutex);
 		}
-	}
 
-	bit_set(port_resv, port);
-	last_alloc_port = port;
+		// If we've overflowed, reset
+		if (port > PORT_CNT) {
+			port = -1;
+			block_size = 0;
+			continue;
+		}
+
+		// If this is allocated, continue
+		if (bit_test(port_resv, port)) {
+			block_size = 0;
+			continue;
+		}
+
+		// This port is free, expand the current block
+		block_size++;
+
+		// If the current block is large enough, reserve it
+		if (block_size >= num_ports) {
+			bit_nset(port_resv, port - block_size + 1, port);
+			last_alloc_port = port;
+			pthread_mutex_unlock(&port_mutex);
+			*real_port = (port + MIN_PORT);
+			return 0;
+		}
+	}
 	pthread_mutex_unlock(&port_mutex);
 
-	/*
-	 * The port index must be scaled up by the MIN_PORT.
-	 */
-	*real_port = (port + MIN_PORT);
-	return 0;
+	CRAY_ERR("Couldn't find an open port block");
+	return -1;
 }
 
 /*
- * Function: release_port
+ * Function: release_ports
  * Description:
- *  Release the port.
+ *  Release the block of ports starting at real_port.
  *
  * Returns:
  *  0 on success and -1 on failure.
  */
-int release_port(uint32_t real_port)
+int release_ports(uint32_t real_port, int num_ports)
 {
-
 	uint32_t port;
 
-	if ((real_port < MIN_PORT) || (real_port >= MAX_PORT)) {
-		CRAY_ERR("Port %" PRIu32 " outside of valid range %" PRIu32
-			 " : %" PRIu32, real_port, MIN_PORT, MAX_PORT);
+	if (real_port < MIN_PORT || real_port + num_ports - 1 >= MAX_PORT) {
+		if (num_ports == 1) {
+			CRAY_ERR("Port %"PRIu32" outside of valid range %"PRIu32
+			 "-%"PRIu32, real_port, MIN_PORT, MAX_PORT);
+		} else {
+			CRAY_ERR("Port block %"PRIu32"-%"PRIu32" outside of"
+				 "valid range %"PRIu32"-%"PRIu32,
+				 real_port, real_port + num_ports - 1,
+				 MIN_PORT, MAX_PORT);
+		}
 		return -1;
 	}
 
 	port = real_port - MIN_PORT;
 
 	pthread_mutex_lock(&port_mutex);
-	if (bit_test(port_resv, port)) {
-		bit_clear(port_resv, port);
-		pthread_mutex_unlock(&port_mutex);
-	} else {
-		CRAY_ERR("Attempting to release port %d,"
-			 " but it was not reserved.", real_port);
-		pthread_mutex_unlock(&port_mutex);
-		return -1;
-	}
+	bit_nclear(port_resv, port, port + num_ports - 1);
+	pthread_mutex_unlock(&port_mutex);
 	return 0;
 }
 

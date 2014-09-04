@@ -42,171 +42,295 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info);
-static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
-			 uint32_t **host_to_task_map, int32_t *first_pe);
+// Static functions
+static int _get_first_pe(stepd_step_rec_t *job);
+static int _get_cmd_index(stepd_step_rec_t *job);
+static int *_get_cmd_map(stepd_step_rec_t *job);
+static int *_get_node_cpu_map(stepd_step_rec_t *job);
+static int *_get_pe_nid_map(stepd_step_rec_t *job);
+static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info, int cmd_index);
 
 /*
  * Fill in an alpsc_peInfo_t structure
  */
 int build_alpsc_pe_info(stepd_step_rec_t *job,
-			slurm_cray_jobinfo_t *sw_job,
-			alpsc_peInfo_t *alpsc_pe_info)
+			alpsc_peInfo_t *alpsc_pe_info, int *cmd_index)
 {
-	int rc, i, j, cnt = 0;
-	int32_t *task_to_nodes_map = NULL;
-	int32_t *nodes = NULL;
-	int32_t first_pe_here;
-	uint32_t task;
-	size_t size;
-
-	alpsc_pe_info->totalPEs = job->ntasks;
-	alpsc_pe_info->pesHere = job->node_tasks;
-	alpsc_pe_info->peDepth = job->cpus_per_task;
-
-	/*
-	 * Fill in alpsc_pe_info->firstPeHere
-	 */
-	rc = _get_first_pe(job->nodeid, job->node_tasks,
-			   job->msg->global_task_ids,
-			   &first_pe_here);
-	if (rc < 0) {
-		CRAY_ERR("get_first_pe failed");
+	// Sanity check everything here so we don't need to
+	// do it everywhere else
+	if (job == NULL) {
+		CRAY_ERR("NULL job pointer");
 		return SLURM_ERROR;
-	}
-	alpsc_pe_info->firstPeHere = first_pe_here;
-
-	/*
-	 * Fill in alpsc_pe_info->peNidArray
-	 *
-	 * The peNidArray maps tasks to nodes.
-	 * Basically, reverse the tids variable which maps nodes to tasks.
-	 */
-	rc = list_str_to_array(job->msg->complete_nodelist, &cnt, &nodes);
-	if (rc < 0) {
-		CRAY_ERR("list_str_to_array failed");
+	} else if (job->ntasks < 1) {
+		CRAY_ERR("Not enough tasks %d", job->ntasks);
 		return SLURM_ERROR;
-	}
-	if (cnt == 0) {
-		CRAY_ERR("list_str_to_array returned a node count of zero");
+	} else if (alpsc_pe_info == NULL) {
+		CRAY_ERR("NULL alpsc_pe_info");
 		return SLURM_ERROR;
-	}
-	if (job->msg->nnodes != cnt) {
-		CRAY_ERR("list_str_to_array returned count %"
-			 PRIu32 "does not match expected count %d",
-			 cnt, job->msg->nnodes);
-	}
-
-	task_to_nodes_map = xmalloc(job->msg->ntasks * sizeof(int32_t));
-
-	for (i = 0; i < job->msg->nnodes; i++) {
-		for (j = 0; j < job->msg->tasks_to_launch[i]; j++) {
-			task = job->msg->global_task_ids[i][j];
-			task_to_nodes_map[task] = nodes[i];
+	} else if (cmd_index == NULL) {
+		CRAY_ERR("NULL cmd_index");
+		return SLURM_ERROR;
+	} else if (job->multi_prog) {
+		if (job->mpmd_set == NULL) {
+			CRAY_ERR("MPMD launch but no mpmd_set");
+			return SLURM_ERROR;
+		} else if (job->mpmd_set->first_pe == NULL) {
+			CRAY_ERR("NULL first_pe");
+			return SLURM_ERROR;
+		} else if (job->mpmd_set->start_pe == NULL) {
+			CRAY_ERR("NULL start_pe");
+			return SLURM_ERROR;
+		} else if (job->mpmd_set->total_pe == NULL) {
+			CRAY_ERR("NULL total_pe");
+			return SLURM_ERROR;
+		} else if (job->mpmd_set->placement == NULL) {
+			CRAY_ERR("NULL placement");
+			return SLURM_ERROR;
+		} else if (job->mpmd_set->num_cmds < 1) {
+			CRAY_ERR("Not enough commands %d",
+				 job->mpmd_set->num_cmds);
+			return SLURM_ERROR;
 		}
 	}
-	alpsc_pe_info->peNidArray = task_to_nodes_map;
-	xfree(nodes);
 
-	/*
-	 * Fill in alpsc_pe_info->peCmdMapArray
-	 *
-	 * If the job is an SPMD job, then the command index (cmd_index) is 0.
-	 * Otherwise, if the job is an MPMD job, then the command index
-	 * (cmd_index) is equal to the number of executables in the job minus 1.
-	 *
-	 * TODO: Add MPMD support once SchedMD provides the needed MPMD data.
-	 */
+	// Fill in the structure
+	alpsc_pe_info->totalPEs = job->ntasks;
+	alpsc_pe_info->firstPeHere = _get_first_pe(job);
+	alpsc_pe_info->pesHere = job->node_tasks;
+	alpsc_pe_info->peDepth = job->cpus_per_task;
+	alpsc_pe_info->peNidArray = _get_pe_nid_map(job);
+	alpsc_pe_info->peCmdMapArray = _get_cmd_map(job);
+	alpsc_pe_info->nodeCpuArray = _get_node_cpu_map(job);
 
-	if (!job->multi_prog) {
-		/* SPMD Launch */
-		size = alpsc_pe_info->totalPEs * sizeof(int);
-		alpsc_pe_info->peCmdMapArray = xmalloc(size);
-		memset(alpsc_pe_info->peCmdMapArray, 0, size);
-	} else {
-		/* MPMD Launch */
-		CRAY_ERR("MPMD Applications are not currently supported.");
-		goto error_free_alpsc_pe_info_t;
+	// Get the command index
+	*cmd_index = _get_cmd_index(job);
+
+	// Check results
+	if (alpsc_pe_info->peNidArray == NULL ||
+	    alpsc_pe_info->peCmdMapArray == NULL ||
+	    alpsc_pe_info->nodeCpuArray == NULL || *cmd_index == -1) {
+		free_alpsc_pe_info(alpsc_pe_info);
+		return SLURM_ERROR;
 	}
 
-	/*
-	 * Fill in alpsc_pe_info->nodeCpuArray
-	 * I don't know how to get this information from SLURM.
-	 * Cray's PMI does not need the information.
-	 * It may be used by debuggers like ATP or lgdb.  If so, then it will
-	 * have to be filled in when support for them is added.
-	 * Currently, it's all zeros.
-	 */
-	size = job->msg->nnodes * sizeof(int);
-	alpsc_pe_info->nodeCpuArray = xmalloc(size);
-	memset(alpsc_pe_info->nodeCpuArray, 0, size);
-
+	// Print pe info if debug flag is set
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		_print_alpsc_pe_info(alpsc_pe_info);
+		_print_alpsc_pe_info(alpsc_pe_info, *cmd_index);
 	}
 
 	return SLURM_SUCCESS;
+}
 
-error_free_alpsc_pe_info_t:
-	free_alpsc_pe_info(alpsc_pe_info);
-	return SLURM_ERROR;
+/*
+ * Get the first PE placed on this node, or -1 if not found
+ */
+static int _get_first_pe(stepd_step_rec_t *job)
+{
+	int first_pe, pe;
+
+	first_pe = job->msg->global_task_ids[job->nodeid][0];
+	for (pe = 1; pe < job->node_tasks; pe++) {
+		if (job->msg->global_task_ids[job->nodeid][pe] < first_pe) {
+			first_pe = job->msg->global_task_ids[job->nodeid][pe];
+		}
+	}
+	return first_pe;
+}
+
+/*
+ * Get a peCmdMapArray, or NULL on error
+ */
+static int *_get_cmd_map(stepd_step_rec_t *job)
+{
+	size_t size;
+	int cmd_index, i, pe;
+	int *cmd_map = NULL;
+
+	size = job->ntasks * sizeof(int);
+	cmd_map = xmalloc(size);
+	if (job->mpmd_set) {
+		// Multiple programs, fill in from mpmd_set information
+		for (i = 0; i < job->ntasks; i++) {
+			cmd_map[i] = -1;
+		}
+
+		// Loop over the MPMD commands
+		for (cmd_index = 0;
+		     cmd_index < job->mpmd_set->num_cmds; cmd_index++) {
+
+			// Fill in start_pe to start_pe+total_pe
+			for (i = 0, pe = job->mpmd_set->start_pe[cmd_index];
+			     i < job->mpmd_set->total_pe[cmd_index];
+			     i++, pe++) {
+				if (pe >= job->ntasks) {
+					CRAY_ERR("PE index %d too large", pe);
+					xfree(cmd_map);
+					return NULL;
+				}
+				cmd_map[pe] = cmd_index;
+			}
+		}
+
+		// Verify the entire array was filled
+		for (pe = 0; pe < job->ntasks; pe++) {
+			if (cmd_map[pe] == -1) {
+				CRAY_ERR("No command on PE index %d", pe);
+				xfree(cmd_map);
+				return NULL;
+			}
+		}
+	} else {
+		// Only one program, index 0
+		memset(cmd_map, 0, size);
+	}
+
+	return cmd_map;
+}
+
+/*
+ * Get the pe to nid map, or NULL on error
+ */
+static int *_get_pe_nid_map(stepd_step_rec_t *job)
+{
+	size_t size;
+	int *pe_nid_map = NULL;
+	int cnt = 0, task, i, j, rc;
+	int32_t *nodes = NULL;
+	int tasks_to_launch_sum, nid;
+
+	size = job->ntasks * sizeof(int);
+	pe_nid_map = xmalloc(size);
+
+	// If we have it, just copy the mpmd set information
+	if (job->mpmd_set && job->mpmd_set->placement) {
+		// mpmd_set->placement is an int * too so this works
+		memcpy(pe_nid_map, job->mpmd_set->placement, size);
+	} else {
+		// Initialize to -1 so we can tell if we missed any
+		for (i = 0; i < job->ntasks; i++) {
+			pe_nid_map[i] = -1;
+		}
+
+		// Convert the node list to an array of nids
+		rc = list_str_to_array(job->msg->complete_nodelist, &cnt,
+				       &nodes);
+		if (rc < 0) {
+			xfree(pe_nid_map);
+			return NULL;
+		} else if (job->nnodes != cnt) {
+			CRAY_ERR("list_str_to_array cnt %d expected %u",
+				 cnt, job->nnodes);
+			xfree(pe_nid_map);
+			xfree(nodes);
+			return NULL;
+		}
+
+		// Search the task id map for the values we need
+		tasks_to_launch_sum = 0;
+		for (i = 0; i < job->nnodes; i++) {
+			tasks_to_launch_sum += job->msg->tasks_to_launch[i];
+			for (j = 0; j < job->msg->tasks_to_launch[i]; j++) {
+				task = job->msg->global_task_ids[i][j];
+				pe_nid_map[task] = nodes[i];
+			}
+		}
+
+		// If this is LAM/MPI only one task per node is launched,
+		// NOT job->ntasks. So fill in the rest of the tasks
+		// assuming a block distribution
+		if (tasks_to_launch_sum == job->nnodes
+			&& job->nnodes < job->ntasks) {
+			nid = nodes[0]; // failsafe value
+			for (i = 0; i < job->ntasks; i++) {
+				if (pe_nid_map[i] > -1) {
+					nid = pe_nid_map[i];
+				} else {
+					pe_nid_map[i] = nid;
+				}
+			}
+		}
+		xfree(nodes);
+
+		// Make sure we didn't miss any tasks
+		for (i = 0; i < job->ntasks; i++) {
+			if (pe_nid_map[i] == -1) {
+				CRAY_ERR("No NID for PE index %d", i);
+				xfree(pe_nid_map);
+				return NULL;
+			}
+		}
+	}
+	return pe_nid_map;
+}
+
+/*
+ * Get number of cpus per node, or NULL on error
+ */
+static int *_get_node_cpu_map(stepd_step_rec_t *job)
+{
+	int *node_cpu_map;
+	int nodeid;
+
+	node_cpu_map = xmalloc(job->nnodes * sizeof(int));
+	for (nodeid = 0; nodeid < job->nnodes; nodeid++) {
+		node_cpu_map[nodeid] = (job->msg->tasks_to_launch[nodeid]
+					* job->cpus_per_task);
+	}
+
+	return node_cpu_map;
+}
+
+/*
+ * Get the command index. Note this is incompatible with MPMD so for now
+ * we'll just return one of the command indices on this node.
+ * Returns -1 if no command is found on this node.
+ */
+static int _get_cmd_index(stepd_step_rec_t *job)
+{
+	int cmd_index;
+
+	if (job->mpmd_set && job->mpmd_set->first_pe) {
+		// Use the first index found in the list
+		for (cmd_index = 0; cmd_index < job->mpmd_set->num_cmds;
+		     cmd_index++) {
+			if (job->mpmd_set->first_pe[cmd_index] != -1) {
+				return cmd_index;
+			}
+		}
+		// If we've made it here we didn't find any on this node
+		CRAY_ERR("No command found on this node");
+		return -1;
+	}
+
+	// Not an MPMD job, the one command has index 0
+	return 0;
 }
 
 /*
  * Print information about an alpsc_peInfo_t structure
  */
-static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info)
+static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info, int cmd_index)
 {
-	int i;
-	info("alpsc_peInfo totalPEs: %d firstPeHere: %d pesHere: %d peDepth: %d",
+	int i, nid_index = 0;
+	info("peInfo totalPEs: %d firstPeHere: %d pesHere: %d peDepth: %d"
+	     " cmdIndex: %d",
 	     alps_info->totalPEs, alps_info->firstPeHere, alps_info->pesHere,
-	     alps_info->peDepth);
+	     alps_info->peDepth, cmd_index);
 	for (i = 0; i < alps_info->totalPEs; i++) {
-		debug3("Task: %d\tNode: %d", i, alps_info->peNidArray[i]);
-	}
-}
-
-/*
- * Function: get_first_pe
- * Description:
- * Returns the first (i.e. lowest) PE on the node.
- *
- * IN:
- * nodeid -- Index of the node in the host_to_task_map
- * task_count -- Number of tasks on the node
- * host_to_task_map -- 2D array mapping the host to its tasks
- *
- * OUT:
- * first_pe -- The first (i.e. lowest) PE on the node
- *
- * RETURN
- * 0 on success and -1 on error
- */
-static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
-			 uint32_t **host_to_task_map, int32_t *first_pe)
-{
-
-	int i, ret = 0;
-
-	if (task_count == 0) {
-		CRAY_ERR("task_count == 0");
-		return -1;
-	}
-	if (!host_to_task_map) {
-		CRAY_ERR("host_to_task_map == NULL");
-		return -1;
-	}
-	*first_pe = host_to_task_map[nodeid][0];
-	for (i = 0; i < task_count; i++) {
-		if (host_to_task_map[nodeid][i] < *first_pe) {
-			*first_pe = host_to_task_map[nodeid][i];
+		info("Task: %d Node: %d MPMD index: %d",
+		     i, alps_info->peNidArray[i], alps_info->peCmdMapArray[i]);
+		if (i == alps_info->totalPEs - 1 ||
+		    alps_info->peNidArray[i] != alps_info->peNidArray[i + 1]) {
+			info("Node: %d CPUs: %d",
+			     alps_info->peNidArray[i],
+			     alps_info->nodeCpuArray[nid_index]);
+			nid_index++;
 		}
 	}
-	return ret;
 }
 
 /*
- * Function: _free_alpsc_pe_info
+ * Function: free_alpsc_pe_info
  * Description:
  * 	Frees any allocated members of alpsc_pe_info.
  * Parameters:
@@ -217,16 +341,9 @@ static int _get_first_pe(uint32_t nodeid, uint32_t task_count,
  */
 void free_alpsc_pe_info(alpsc_peInfo_t *alpsc_pe_info)
 {
-	if (alpsc_pe_info->peNidArray) {
-		xfree(alpsc_pe_info->peNidArray);
-	}
-	if (alpsc_pe_info->peCmdMapArray) {
-		xfree(alpsc_pe_info->peCmdMapArray);
-	}
-	if (alpsc_pe_info->nodeCpuArray) {
-		xfree(alpsc_pe_info->nodeCpuArray);
-	}
-	return;
+	xfree(alpsc_pe_info->peNidArray);
+	xfree(alpsc_pe_info->peCmdMapArray);
+	xfree(alpsc_pe_info->nodeCpuArray);
 }
 
 #endif

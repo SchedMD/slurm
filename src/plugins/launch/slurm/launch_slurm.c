@@ -362,7 +362,7 @@ static void _task_finish(task_exit_msg_t *msg)
 
 	if (task_state_first_abnormal_exit(task_state)
 	    && _kill_on_bad_exit())
-  		launch_p_step_terminate();
+		launch_p_step_terminate();
 
 	if (task_state_first_exit(task_state) && (opt.max_wait > 0))
 		_setup_max_wait_timer();
@@ -455,7 +455,7 @@ extern int launch_p_handle_multi_prog_verify(int command_pos)
 		}
 		_load_multi(&opt.argc, opt.argv);
 		if (verify_multi_name(opt.argv[command_pos], &opt.ntasks,
-				      &opt.ntasks_set))
+				      &opt.ntasks_set, &opt.multi_prog_cmds))
 			exit(error_exit);
 		return 1;
 	} else
