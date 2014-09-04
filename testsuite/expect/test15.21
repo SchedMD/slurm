@@ -43,6 +43,32 @@ set exit_code   0
 
 print_header $test_id
 
+proc get_host_num { host } {
+	global number bin_echo exit_code
+
+	log_user 0
+	set num -1
+	spawn $bin_echo $host
+	expect {
+		-re "($number)\r\n" {
+			set num $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: echo is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	# Change host number to integer in case it looks like octal
+	scan $num %d num
+	log_user 1
+
+	return $num
+}
+
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit 0
@@ -88,32 +114,19 @@ expect {
 		send_user "\nWARNING: can't test salloc task distribution\n"
 		exit $exit_code
 	}
-	-re "($number): *($alpha_numeric_under)($number)" {
-		set task_id $expect_out(1,string)
-		if {$task_id == 0} {
-			set host_0_name $expect_out(2,string)
-			set host_0_num  $expect_out(3,string)
-		}
-		if {$task_id == 1} {
-			set host_1_name $expect_out(2,string)
-			set host_1_num  $expect_out(3,string)
-		}
-		if {$task_id == 2} {
-			set host_2_name $expect_out(2,string)
-			set host_2_num  $expect_out(3,string)
-		}
-		exp_continue
-	}
 	-re "($number): *($alpha_numeric_under)" {
 		set task_id $expect_out(1,string)
 		if {$task_id == 0} {
 			set host_0_name $expect_out(2,string)
+			set host_0_num [get_host_num $expect_out(2,string)]
 		}
 		if {$task_id == 1} {
 			set host_1_name $expect_out(2,string)
+			set host_1_num [get_host_num $expect_out(2,string)]
 		}
 		if {$task_id == 2} {
 			set host_2_name $expect_out(2,string)
+			set host_2_num [get_host_num $expect_out(2,string)]
 		}
 		exp_continue
 	}
@@ -154,13 +167,17 @@ if {[string compare $host_2_name ""] == 0} {
 #
 # Verify node sequence number
 #
-if {$host_1_num != [expr $host_0_num + 1]} {
-	send_user "\nFAILURE: node sequence number not contiguous\n"
-	set exit_code   1
-}
-if {$host_2_num != [expr $host_1_num + 1]} {
-	send_user "\nFAILURE: node sequence number not contiguous\n"
-	set exit_code   1
+if {$host_1_num == -1 || $host_1_num == -1 || $host_2_num == -1} {
+	send_user "\nWARNING: node names do not have trailing numbers as needed for this test\n"
+} else {
+	if {$host_1_num != [expr $host_0_num + 1]} {
+		send_user "\nFAILURE: node sequence number not contiguous\n"
+		set exit_code   1
+	}
+	if {$host_2_num != [expr $host_1_num + 1]} {
+		send_user "\nFAILURE: node sequence number not contiguous\n"
+		set exit_code   1
+	}
 }
 
 if {$exit_code == 0} {
