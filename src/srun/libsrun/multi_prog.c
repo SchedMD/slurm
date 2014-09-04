@@ -348,7 +348,7 @@ _update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
 
 static int
 _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
-	bitstr_t *task_mask)
+		bitstr_t *task_mask)
 {
 	static bool has_asterisk = false;
 	char *range = NULL, *p = NULL;

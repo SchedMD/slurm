@@ -360,6 +360,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job, uint32_t job_id,
 	new->cookies = NULL;
 	new->cookie_ids = NULL;
 	new->apid = SLURM_ID_HASH(job_id, step_id);
+	new->num_ports = 1;
 	*switch_job = (switch_jobinfo_t *) new;
 	return SLURM_SUCCESS;
 }
@@ -571,13 +572,22 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		print_jobinfo(job);
 	}
 
-	pack32(job->magic, buffer);
-	pack32(job->num_cookies, buffer);
-	packstr_array(job->cookies, job->num_cookies, buffer);
-	pack32_array(job->cookie_ids, job->num_cookies, buffer);
-	pack32(job->port, buffer);
-	pack32(job->num_ports, buffer);
-	pack64(job->apid, buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		pack32(job->magic, buffer);
+		pack32(job->num_cookies, buffer);
+		packstr_array(job->cookies, job->num_cookies, buffer);
+		pack32_array(job->cookie_ids, job->num_cookies, buffer);
+		pack32(job->port, buffer);
+		pack32(job->num_ports, buffer);
+		pack64(job->apid, buffer);
+	} else {
+		pack32(job->magic, buffer);
+		pack32(job->num_cookies, buffer);
+		packstr_array(job->cookies, job->num_cookies, buffer);
+		pack32_array(job->cookie_ids, job->num_cookies, buffer);
+		pack32(job->port, buffer);
+	}
+
 	return 0;
 }
 
@@ -596,45 +606,93 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 
 	job = (slurm_cray_jobinfo_t *) switch_job;
 
-	safe_unpack32(&job->magic, buffer);
+	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack32(&job->magic, buffer);
 
-	if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
-		CRAY_DEBUG("Nothing to unpack");
-		return SLURM_SUCCESS;
-	}
+		if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
+			CRAY_DEBUG("Nothing to unpack");
+			return SLURM_SUCCESS;
+		}
 
-	xassert(job->magic == CRAY_JOBINFO_MAGIC);
-	safe_unpack32(&(job->num_cookies), buffer);
-	safe_unpackstr_array(&(job->cookies), &num_cookies, buffer);
-	if (num_cookies != job->num_cookies) {
-		CRAY_ERR("Wrong number of cookies received."
-			 " Expected: %" PRIu32 "Received: %" PRIu32,
-			 job->num_cookies, num_cookies);
-		goto unpack_error;
-	}
-	safe_unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
-	if (num_cookies != job->num_cookies) {
-		CRAY_ERR("Wrong number of cookie IDs received."
-			 " Expected: %" PRIu32 "Received: %" PRIu32,
-			 job->num_cookies, num_cookies);
-		goto unpack_error;
-	}
-	safe_unpack32(&job->port, buffer);
-	safe_unpack32(&job->num_ports, buffer);
-	safe_unpack64(&job->apid, buffer);
+		xassert(job->magic == CRAY_JOBINFO_MAGIC);
+		safe_unpack32(&(job->num_cookies), buffer);
+		safe_unpackstr_array(&(job->cookies), &num_cookies, buffer);
+		if (num_cookies != job->num_cookies) {
+			CRAY_ERR("Wrong number of cookies received."
+				 " Expected: %" PRIu32 "Received: %" PRIu32,
+				 job->num_cookies, num_cookies);
+			goto unpack_error;
+		}
+		safe_unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
+		if (num_cookies != job->num_cookies) {
+			CRAY_ERR("Wrong number of cookie IDs received."
+				 " Expected: %" PRIu32 "Received: %" PRIu32,
+				 job->num_cookies, num_cookies);
+			goto unpack_error;
+		}
+		safe_unpack32(&job->port, buffer);
+		safe_unpack32(&job->num_ports, buffer);
+		safe_unpack64(&job->apid, buffer);
 
 #ifndef HAVE_CRAY_NETWORK
-	/* If the libstate save/restore failed, at least make sure that we
-	 * do not re-allocate ports assigned to job steps that we
-	 * recover.
-	 *
-	 * NOTE: port_resv is NULL when unpacking things in srun.
-	 */
-	pthread_mutex_lock(&port_mutex);
-	if (port_resv && (job->port >= MIN_PORT) && (job->port <= MAX_PORT))
-		bit_set(port_resv, job->port - MIN_PORT);
-	pthread_mutex_unlock(&port_mutex);
+		/* If the libstate save/restore failed, at least make sure that
+		 * we do not re-allocate ports assigned to job steps that we
+		 * recover.
+		 *
+		 * NOTE: port_resv is NULL when unpacking things in srun.
+		 */
+		pthread_mutex_lock(&port_mutex);
+		if (port_resv && (job->port >= MIN_PORT)
+		    && (job->port <= MAX_PORT))
+			bit_set(port_resv, job->port - MIN_PORT);
+		pthread_mutex_unlock(&port_mutex);
 #endif
+	} else {
+		safe_unpack32(&job->magic, buffer);
+
+		if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
+			CRAY_DEBUG("Nothing to unpack");
+			return SLURM_SUCCESS;
+		}
+
+		xassert(job->magic == CRAY_JOBINFO_MAGIC);
+		safe_unpack32(&(job->num_cookies), buffer);
+		safe_unpackstr_array(&(job->cookies), &num_cookies, buffer);
+		if (num_cookies != job->num_cookies) {
+			CRAY_ERR("Wrong number of cookies received."
+				 " Expected: %" PRIu32 "Received: %" PRIu32,
+				 job->num_cookies, num_cookies);
+			goto unpack_error;
+		}
+		safe_unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
+		if (num_cookies != job->num_cookies) {
+			CRAY_ERR("Wrong number of cookie IDs received."
+				 " Expected: %" PRIu32 "Received: %" PRIu32,
+				 job->num_cookies, num_cookies);
+			goto unpack_error;
+		}
+		safe_unpack32(&job->port, buffer);
+#if 0
+		/* We rely upon switch_p_alloc_jobinfo() to initialize these
+		 * since the values do not exist in older data structures. */
+		job->num_ports = 1;
+		job->apid = SLURM_ID_HASH(jobid, stepid);
+#endif
+
+#ifndef HAVE_CRAY_NETWORK
+		/* If the libstate save/restore failed, at least make sure that
+		 * we do not re-allocate ports assigned to job steps that we
+		 * recover.
+		 *
+		 * NOTE: port_resv is NULL when unpacking things in srun.
+		 */
+		pthread_mutex_lock(&port_mutex);
+		if (port_resv && (job->port >= MIN_PORT)
+		    && (job->port <= MAX_PORT))
+			bit_set(port_resv, job->port - MIN_PORT);
+		pthread_mutex_unlock(&port_mutex);
+#endif
+	}
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		CRAY_INFO("Unpacked jobinfo");
@@ -768,7 +826,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 */
 	rc = build_alpsc_pe_info(job, &alpsc_pe_info, &cmd_index);
 	if (rc != SLURM_SUCCESS) {
-	    return rc;
+		return rc;
 	}
 
 	/*

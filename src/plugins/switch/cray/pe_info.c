@@ -43,12 +43,12 @@
 #include <stdlib.h>
 
 // Static functions
-static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info, int cmd_index);
 static int _get_first_pe(stepd_step_rec_t *job);
-static int *_get_cmd_map(stepd_step_rec_t *job);
-static int *_get_pe_nid_map(stepd_step_rec_t *job);
-static int *_get_node_cpu_map(stepd_step_rec_t *job);
 static int _get_cmd_index(stepd_step_rec_t *job);
+static int *_get_cmd_map(stepd_step_rec_t *job);
+static int *_get_node_cpu_map(stepd_step_rec_t *job);
+static int *_get_pe_nid_map(stepd_step_rec_t *job);
+static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info, int cmd_index);
 
 /*
  * Fill in an alpsc_peInfo_t structure
@@ -131,7 +131,7 @@ static int _get_first_pe(stepd_step_rec_t *job)
 	first_pe = job->msg->global_task_ids[job->nodeid][0];
 	for (pe = 1; pe < job->node_tasks; pe++) {
 		if (job->msg->global_task_ids[job->nodeid][pe] < first_pe) {
-	                first_pe = job->msg->global_task_ids[job->nodeid][pe];
+			first_pe = job->msg->global_task_ids[job->nodeid][pe];
 		}
 	}
 	return first_pe;
@@ -212,12 +212,13 @@ static int *_get_pe_nid_map(stepd_step_rec_t *job)
 		}
 
 		// Convert the node list to an array of nids
-		rc = list_str_to_array(job->msg->complete_nodelist, &cnt, &nodes);
-	        if (rc < 0) {
+		rc = list_str_to_array(job->msg->complete_nodelist, &cnt,
+				       &nodes);
+		if (rc < 0) {
 			xfree(pe_nid_map);
 			return NULL;
 		} else if (job->nnodes != cnt) {
-			CRAY_ERR("list_str_to_array cnt %d expected %d",
+			CRAY_ERR("list_str_to_array cnt %d expected %u",
 				 cnt, job->nnodes);
 			xfree(pe_nid_map);
 			xfree(nodes);
@@ -226,13 +227,13 @@ static int *_get_pe_nid_map(stepd_step_rec_t *job)
 
 		// Search the task id map for the values we need
 		tasks_to_launch_sum = 0;
-	        for (i = 0; i < job->nnodes; i++) {
+		for (i = 0; i < job->nnodes; i++) {
 			tasks_to_launch_sum += job->msg->tasks_to_launch[i];
 			for (j = 0; j < job->msg->tasks_to_launch[i]; j++) {
 				task = job->msg->global_task_ids[i][j];
 				pe_nid_map[task] = nodes[i];
-                        }
-                }
+			}
+		}
 
 		// If this is LAM/MPI only one task per node is launched,
 		// NOT job->ntasks. So fill in the rest of the tasks
@@ -340,16 +341,9 @@ static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info, int cmd_index)
  */
 void free_alpsc_pe_info(alpsc_peInfo_t *alpsc_pe_info)
 {
-	if (alpsc_pe_info->peNidArray) {
-		xfree(alpsc_pe_info->peNidArray);
-	}
-	if (alpsc_pe_info->peCmdMapArray) {
-		xfree(alpsc_pe_info->peCmdMapArray);
-	}
-	if (alpsc_pe_info->nodeCpuArray) {
-		xfree(alpsc_pe_info->nodeCpuArray);
-	}
-	return;
+	xfree(alpsc_pe_info->peNidArray);
+	xfree(alpsc_pe_info->peCmdMapArray);
+	xfree(alpsc_pe_info->nodeCpuArray);
 }
 
 #endif
