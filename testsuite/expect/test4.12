@@ -296,6 +296,22 @@ print_header $test_id
 set def_part [default_partition]
 
 # find the nodes in the default partition
+set def_node_name ""
+spawn $sinfo -h -o "=%N=" -p $def_part
+expect {
+	-re "=($alpha_numeric).($number)-($number).=" {
+		set def_node_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $def_node_name ""] == 0} {
+	send_user "\nWARNING: Node name format not supported for this test\n"
+	exit $exit_code
+}
+
 log_user 0
 set def_hostlist ""
 set part_exclusive 0
