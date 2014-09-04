@@ -167,7 +167,7 @@ if {[string compare $host_2_name ""] == 0} {
 #
 # Verify node sequence number
 #
-if {$host_1_num == -1 || $host_1_num == -1 || $host_2_num == -1} {
+if {$host_0_num == -1 || $host_1_num == -1 || $host_2_num == -1} {
 	send_user "\nWARNING: node names do not have trailing numbers as needed for this test\n"
 } else {
 	if {$host_1_num != [expr $host_0_num + 1]} {
