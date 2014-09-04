@@ -1496,6 +1496,7 @@ static char * _job_name2id(char *job_name)
 	job_info_msg_t *resp;
 	slurm_job_info_t *job_ptr;
 	char *job_id_str = NULL, *sep = "";
+	uid_t my_uid = getuid();
 
 	xassert(job_name);
 
@@ -1508,6 +1509,8 @@ static char * _job_name2id(char *job_name)
 		}
 		for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
 		     i++, job_ptr++) {
+			if (my_uid != job_ptr->user_id)
+				continue;
 			if (!job_ptr->name || strcmp(job_name, job_ptr->name))
 				continue;
 			if (job_ptr->array_task_id != NO_VAL) {
