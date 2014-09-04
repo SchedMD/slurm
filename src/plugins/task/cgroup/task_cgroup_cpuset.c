@@ -833,8 +833,12 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	char* cpus = NULL;
 	size_t cpus_size;
 
-	char* slurm_cgpath ;
+	char* slurm_cgpath;
 	xcgroup_t slurm_cg;
+
+#ifdef HAVE_NATIVE_CRAY
+	char expected_usage[32];
+#endif
 
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = task_cgroup_create_slurm_cg(&cpuset_ns);
@@ -1042,6 +1046,17 @@ again:
 		goto error;
 	}
 	xcgroup_set_param(&step_cpuset_cg, cpuset_meta, step_alloc_cores);
+
+	/*
+	 * on Cray systems, set the expected usage in bytes.
+	 * This is used by the Cray OOM killer
+	 */
+#ifdef HAVE_NATIVE_CRAY
+	snprintf(expected_usage, sizeof(expected_usage), "%"PRIu64,
+		 (uint64_t)job->step_mem * 1024 * 1024);
+	xcgroup_set_param(&step_cpuset_cg, "expected_usage_in_bytes",
+			  expected_usage);
+#endif
 
 	/* attach the slurmstepd to the step cpuset cgroup */
 	pid_t pid = getpid();
