@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #include "src/common/xstring.h"
+#include "src/common/read_config.h"
 
 // Default lease time 1 week
 #define COOKIE_LEASE_TIME 60*60*24*7
@@ -77,7 +78,7 @@ static bool lease_extender_running = false;
 static void _add_cookie(int32_t cookie_id);
 static void _remove_cookie(int32_t cookie_id);
 static void *_lease_extender(void *args);
-static void _in_slurmctld(void);
+static bool _in_slurmctld(void);
 
 /*
  * Start the thread to extend cookie leases.

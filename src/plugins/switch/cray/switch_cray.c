@@ -374,14 +374,9 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				  char *network)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	int i, rc, cnt = 0;
+	int rc, cnt = 0;
 	uint32_t port = 0, num_ports = 0;
-	int num_cookies = 2;
-	char *err_msg = NULL;
-	char **cookies = NULL, **s_cookies = NULL;
-	int32_t *nodes = NULL, *cookie_ids = NULL;
-	uint32_t *s_cookie_ids = NULL;
-
+	int32_t *nodes = NULL;
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
