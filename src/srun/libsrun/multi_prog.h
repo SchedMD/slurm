@@ -55,9 +55,11 @@ extern void mpir_dump_proctable(void);
  * IN config_name - MPMD configuration file name
  * IN/OUT ntasks - number of tasks to launch
  * IN/OUT ntasks_set - true if task count explicitly set by user
+ * OUT ncmds - number of commands
  * RET 0 on success, -1 otherwise
  */
-extern int verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set);
+extern int verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
+			     int32_t *ncmds);
 
 #endif
 

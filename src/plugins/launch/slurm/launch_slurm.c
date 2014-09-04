@@ -455,7 +455,7 @@ extern int launch_p_handle_multi_prog_verify(int command_pos)
 		}
 		_load_multi(&opt.argc, opt.argv);
 		if (verify_multi_name(opt.argv[command_pos], &opt.ntasks,
-				      &opt.ntasks_set))
+				      &opt.ntasks_set, &opt.multi_prog_cmds))
 			exit(error_exit);
 		return 1;
 	} else

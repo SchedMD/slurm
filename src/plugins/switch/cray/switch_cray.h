@@ -86,14 +86,12 @@
 #define MIN_PORT		20000
 
 // Maximum PMI port to allocate
-#define MAX_PORT		60000
+// The dynamic port range starts at 32768, so stop here to avoid conflicts
+// with services using them (e.g. debuggers)
+#define MAX_PORT		32767
 
 // Number of ports to allocate
 #define PORT_CNT		(MAX_PORT - MIN_PORT + 1)
-
-// Length of bitmap in bytes (see _bitstr_words in src/common/bitstring.c)
-#define PORT_BITMAP_LEN	((((PORT_CNT + BITSTR_MAXPOS) >> BITSTR_SHIFT) \
-			 + BITSTR_OVERHEAD) * sizeof(bitstr_t))
 
 // Number of times to attempt allocating a port when none are available
 #define ATTEMPTS		2
@@ -109,6 +107,12 @@
 
 // alpsc_pre_suspend() timeout
 #define SUSPEND_TIMEOUT_MSEC	(10*1000)
+
+// Environment variables set for each task
+#define CRAY_NUM_COOKIES_ENV	"CRAY_NUM_COOKIES"
+#define CRAY_COOKIES_ENV	"CRAY_COOKIES"
+#define PMI_CONTROL_PORT_ENV	"PMI_CONTROL_PORT"
+#define PMI_CRAY_NO_SMP_ENV	"PMI_CRAY_NO_SMP_ORDER"
 
 /**********************************************************
  * Type definitions
@@ -136,11 +140,8 @@ typedef struct slurm_cray_jobinfo {
 	// Port for PMI communications
 	uint32_t port;
 
-	// Slurm job id
-	uint32_t jobid;
-
-	// Slurm step id
-	uint32_t stepid;
+	// Number of PMI ports reserved
+	uint32_t num_ports;
 
 	// Cray Application ID (Slurm hash)
 	uint64_t apid;
@@ -167,14 +168,13 @@ extern uint64_t debug_flags;
  * Function declarations
  **********************************************************/
 // Implemented in ports.c
-extern int assign_port(uint32_t *ret_port);
-extern int release_port(uint32_t real_port);
+extern int assign_ports(uint32_t *ret_port, int num_ports);
+extern int release_ports(uint32_t real_port, int num_ports);
 
 // Implemented in pe_info.c
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 extern int build_alpsc_pe_info(stepd_step_rec_t *job,
-			       slurm_cray_jobinfo_t *sw_job,
-			       alpsc_peInfo_t *alpsc_pe_info);
+			       alpsc_peInfo_t *alpsc_pe_info, int *cmd_index);
 extern void free_alpsc_pe_info(alpsc_peInfo_t *alpsc_pe_info);
 #endif
 

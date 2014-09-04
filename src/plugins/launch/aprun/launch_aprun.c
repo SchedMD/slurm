@@ -233,7 +233,8 @@ static void _handle_multi_prog(char *in_file, int *command_pos)
 	FILE *fp;
 	int count = 0;
 
-	if (verify_multi_name(in_file, &opt.ntasks, &opt.ntasks_set))
+	if (verify_multi_name(in_file, &opt.ntasks, &opt.ntasks_set,
+			      &opt.multi_prog_cmds))
 		exit(error_exit);
 
 	fp = fopen(in_file, "r");

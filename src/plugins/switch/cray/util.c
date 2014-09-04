@@ -44,6 +44,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "slurm/slurm.h"
+#include "src/common/slurm_step_layout.h"
 #include "src/common/xstring.h"
 #include "switch_cray.h"
 
@@ -82,16 +84,16 @@ int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid)
  */
 int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 {
-	int rc, i;
+	int rc, i, non_smp;
 	char *buff = NULL;
 
 	/*
 	 * Write the CRAY_NUM_COOKIES and CRAY_COOKIES variables out
 	 */
-	rc = env_array_overwrite_fmt(&job->env, "CRAY_NUM_COOKIES", "%" PRIu32,
-				     sw_job->num_cookies);
+	rc = env_array_overwrite_fmt(&job->env, CRAY_NUM_COOKIES_ENV,
+				     "%"PRIu32, sw_job->num_cookies);
 	if (rc == 0) {
-		CRAY_ERR("Failed to set env variable CRAY_NUM_COOKIES");
+		CRAY_ERR("Failed to set env var " CRAY_NUM_COOKIES_ENV);
 		return SLURM_ERROR;
 	}
 
@@ -107,9 +109,9 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 			xstrcat(buff, sw_job->cookies[i]);
 	}
 
-	rc = env_array_overwrite(&job->env, "CRAY_COOKIES", buff);
+	rc = env_array_overwrite(&job->env, CRAY_COOKIES_ENV, buff);
 	if (rc == 0) {
-		CRAY_ERR("Failed to set env variable CRAY_COOKIES");
+		CRAY_ERR("Failed to set env var " CRAY_COOKIES_ENV);
 		xfree(buff);
 		return SLURM_ERROR;
 	}
@@ -120,12 +122,54 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 	 * Cray's PMI uses this is the port to communicate its control tree
 	 * information.
 	 */
-	rc = env_array_overwrite_fmt(&job->env, "PMI_CONTROL_PORT", "%" PRIu32,
-				     sw_job->port);
+	rc = env_array_overwrite_fmt(&job->env, PMI_CONTROL_PORT_ENV,
+				     "%"PRIu32, sw_job->port);
 	if (rc == 0) {
-		CRAY_ERR("Failed to set env variable PMI_CONTROL_PORT");
+		CRAY_ERR("Failed to set env var " PMI_CONTROL_PORT_ENV);
 		return SLURM_ERROR;
 	}
+
+	/*
+	 * Determine whether non-SMP ordering is used.
+	 * That is, if distribution is cyclic and there are more
+	 * tasks than nodes, or the distribution is arbitrary.
+	 */
+	switch (job->task_dist) {
+	case SLURM_DIST_BLOCK:
+	case SLURM_DIST_BLOCK_CYCLIC:
+	case SLURM_DIST_BLOCK_BLOCK:
+		non_smp = 0;
+		break;
+	case SLURM_DIST_CYCLIC:
+	case SLURM_DIST_CYCLIC_CYCLIC:
+	case SLURM_DIST_CYCLIC_BLOCK:
+		if (job->ntasks > job->nnodes) {
+			CRAY_INFO("Non-SMP ordering identified; distribution"
+				  " %s tasks %"PRIu32" nodes %"PRIu32,
+				  slurm_step_layout_type_name(job->task_dist),
+				  job->ntasks, job->nnodes);
+			non_smp = 1;
+		} else {
+		    non_smp = 0;
+		}
+		break;
+	case SLURM_DIST_ARBITRARY:
+	case SLURM_DIST_PLANE:
+	case SLURM_NO_LLLP_DIST:
+	case SLURM_DIST_UNKNOWN:
+	default:
+		CRAY_INFO("Non-SMP ordering identified; distribution %s",
+			  slurm_step_layout_type_name(job->task_dist));
+		non_smp = 1;
+		break;
+	}
+	rc = env_array_overwrite_fmt(&job->env, PMI_CRAY_NO_SMP_ENV,
+				     "%d", non_smp);
+	if (rc == 0) {
+		CRAY_ERR("Failed to set env var "PMI_CRAY_NO_SMP_ENV);
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -306,10 +350,10 @@ void print_jobinfo(slurm_cray_jobinfo_t *job)
 	}
 
 	// Log jobinfo
-	info("jobinfo magic=%"PRIx32" jobid=%"PRIu32" stepid=%"PRIu32
-	     "apid=%"PRIu64" port=%"PRIu32" num_cookies=%"PRIu32" cookies=%s"
-	     " cookie_ids=%s",
-	     job->magic, job->jobid, job->stepid, job->apid, job->port,
+	info("jobinfo magic=%"PRIx32
+	     " apid=%"PRIu64" port=%"PRIu32" num_ports=%"PRIu32
+	     " num_cookies=%"PRIu32" cookies=%s cookie_ids=%s",
+	     job->magic, job->apid, job->port, job->num_ports,
 	     job->num_cookies, cookie_str, cookie_id_str);
 
 	// Cleanup
