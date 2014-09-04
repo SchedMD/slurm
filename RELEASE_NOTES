@@ -146,6 +146,7 @@ OTHER CHANGES
  -- In the job_submit plugin: Remove all slurmctld locks prior to job_submit()
     being called for improved performance. If any slurmctld data structures are
     read or modified, add locks directly in the plugin.
+ -- Cray MPMD (Multiple-Program Multiple-Data) support completed.
 
 API CHANGES
 ===========

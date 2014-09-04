@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     slurm.log_info, etc. Also, the job_submit.lua script is reloaded when
     updated without restarting the slurmctld daemon.
  -- Allow users to specify --resv_ports to have value 0.
+ -- Cray MPMD (Multiple-Program Multiple-Data) support completed.
 
 * Changes in Slurm 14.11.0pre4
 ==============================
