@@ -251,6 +251,8 @@ documents those changes that are of interest to users and administrators.
     fails to make the links the files are copied instead.
  -- Fix error handling for job array create failure due to inability to copy
     job files (script and environment).
+ -- Added patch in the contribs directory for integrating make version 4.0 with
+    Slurm and renamed the previous patch "make-3.81.slurm.patch".
 
 * Changes in Slurm 14.03.7
 ==========================
