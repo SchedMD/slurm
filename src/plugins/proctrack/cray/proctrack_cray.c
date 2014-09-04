@@ -329,7 +329,7 @@ int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 			*npids = 0;
 			xfree(p);
 
-			return SLURM_ERROR;
+			return rc;
 		}
 		*pids = p;
 		*npids = pidcnt;
