@@ -555,8 +555,11 @@ static int _check_status_file(stepd_step_rec_t *job)
 	// Open the lli file.
 	fd = open(llifile, O_RDONLY);
 	if (fd == -1) {
-		CRAY_ERR("open(%s) failed: %m", llifile);
-		return SLURM_ERROR;
+		// There's a timing issue for large jobs; this file could
+		// already be cleaned up by the time we get here.
+		// However, this is during a normal cleanup so no big deal.
+		debug("open(%s) failed: %m", llifile);
+		return SLURM_SUCCESS;
 	}
 
 	// Read the first byte (indicates starting)
