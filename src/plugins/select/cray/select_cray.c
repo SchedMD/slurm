@@ -168,6 +168,7 @@ pthread_mutex_t aeld_mutex = PTHREAD_MUTEX_INITIALIZER;	// Mutex for the above
 
 #define AELD_SESSION_INTERVAL	60	// aeld session retry interval (s)
 #define AELD_EVENT_INTERVAL	110	// aeld event sending interval (ms)
+#define AELD_LIST_CAPACITY	65536	// maximum list capacity
 
 /* Static functions used for aeld communication */
 static void _handle_aeld_error(const char *funcname, char *errmsg, int rv,
@@ -407,9 +408,6 @@ static void _start_session(alpsc_ev_session_t **session, int *sessionfd)
 	while (1) {
 		pthread_mutex_lock(&aeld_mutex);
 
-		// Clear out the event list
-		_clear_event_list(event_list, &event_list_size);
-
 		// Create the session
 		rv = alpsc_ev_create_session(&errmsg, session, app_list,
 					     app_list_size);
@@ -607,6 +605,9 @@ static void _add_to_app_list(alpsc_ev_app_t **list, int32_t *size,
 	if (*size + 1 > *capacity) {
 		if (*capacity == 0) {
 			*capacity = 16;
+		} else if (*capacity >= AELD_LIST_CAPACITY) {
+			debug("aeld list over capacity");
+			return;
 		} else {
 			*capacity *= 2;
 		}
@@ -652,7 +653,7 @@ static void _update_app(struct job_record *job_ptr,
 	pthread_mutex_lock(&aeld_mutex);
 
 	// Add it to the event list, only if aeld is up
-	if (aeld_running == 2) {
+	if (aeld_running) {
 		_add_to_app_list(&event_list, &event_list_size,
 				 &event_list_capacity, &app);
 	}
