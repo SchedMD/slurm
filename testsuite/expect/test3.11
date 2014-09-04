@@ -314,6 +314,11 @@ expect {
 		wait
 	}
 }
+if {[string compare $def_node ""] == 0} {
+	send_user "\nFAILURE:default partition seems to have no nodes\n"
+	exit 1
+}
+
 spawn $sinfo -h -o "=%N=" -p $def_partition
 expect {
 	-re "=($alpha_numeric).($number)-($number).=" {
@@ -326,9 +331,12 @@ expect {
 		wait
 	}
 }
-if {[string compare $def_node ""] == 0} {
-	send_user "\nFAILURE:default partition seems to have no nodes\n"
-	exit 1
+
+# Some tests do not support names of this form "rack[0-3]_blade[0-63]"
+set irregular_node_name 0
+if {[string compare $def_node_name ""] == 0} {
+	send_user "\nWARNING: Node name format not supported for all test\n"
+	set irregular_node_name 1
 }
 
 #
@@ -403,6 +411,8 @@ inc3_11_6
 if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0} {
 	inc3_11_7
 	inc3_11_8
+}
+if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0 && $irregular_node_name == 0} {
 	inc3_11_9
 }
 
