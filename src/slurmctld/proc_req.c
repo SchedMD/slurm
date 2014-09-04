@@ -4960,7 +4960,11 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 			    kill->flags,
 			    uid,
 			    0);
-	if (cc != SLURM_SUCCESS) {
+	if (cc == ESLURM_ALREADY_DONE) {
+		debug2("%s: job_str_signal() job %s sig %d returned %s",
+		       __func__, kill->sjob_id,
+		       kill->signal, slurm_strerror(cc));
+	} else if (cc != SLURM_SUCCESS) {
 		error("%s: job_str_signal() job %s sig %d returned %s",
 		      __func__, kill->sjob_id,
 		      kill->signal, slurm_strerror(cc));
