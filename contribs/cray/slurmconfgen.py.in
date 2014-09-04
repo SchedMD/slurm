@@ -166,11 +166,15 @@ def format_nodes(class_reps, class_nodes):
 	nodestr = ""
 	for rep in class_reps:
 		nodeid, memory, cores, sockets, cu, gpu, mic = rep
-		gres = "craynetwork:4"
+
+		# KNC nodes only have half network resources
+		if mic > 0:
+		    gres = "craynetwork:2,mic:{0}".format(mic)
+		else:
+		    gres = "craynetwork:4"
+
 		if gpu > 0:
 		    gres += ",gpu:{0}".format(gpu)
-		elif mic > 0:
-		    gres += ",mic:{0}".format(mic)
 
 		nodestr += "NodeName={0} Sockets={1} CoresPerSocket={2} \
 ThreadsPerCore={3} Gres={5} # RealMemory={4} (set by FastSchedule 0)\n".format(

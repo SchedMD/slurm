@@ -49,8 +49,9 @@ ProctrackType=proctrack/cray
 #Prolog=
 #PrologSlurmctld=
 #PropagatePrioProcess=0
-PropagateResourceLimits=ALL
-#PropagateResourceLimitsExcept=
+#PropagateResourceLimits=ALL
+# Some programming models require unlimited virtual memory
+PropagateResourceLimitsExcept=AS
 #RebootProgram=
 # ReturnToService 2 will let rebooted nodes come back up immediately
 ReturnToService=2
@@ -153,6 +154,7 @@ SlurmdLogFile=/var/spool/slurmd/%h.log
 #
 #
 # POWER SAVE SUPPORT FOR IDLE NODES (optional)
+CpuFreqDef=performance
 #SuspendProgram=
 #ResumeProgram=
 #SuspendTimeout=
