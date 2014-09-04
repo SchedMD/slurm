@@ -282,7 +282,8 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 	      job->jobid, job->stepid);
 
 #ifdef HAVE_NATIVE_CRAY
-	_step_prologue();
+	if (!job->batch)
+		_step_prologue();
 #endif
 
 	return SLURM_SUCCESS;
@@ -415,9 +416,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	 * NUMA node: mems
 	 * CPU Masks: cpus
 	 */
-
-
-	if ((job->stepid == NO_VAL) || (job->stepid == SLURM_BATCH_SCRIPT)) {
+	if (job->batch) {
 		// Batch Job Step
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
@@ -428,6 +427,10 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 		}
 	} else {
 		// Normal Job Step
+
+		/* Only run epilogue on non-batch steps */
+		_step_epilogue();
+
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
 			      PRIu32 "/step_%" PRIu32,
@@ -464,8 +467,6 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	if (rc != 1) {
 		return SLURM_ERROR;
 	}
-
-	_step_epilogue();
 #endif
 	return SLURM_SUCCESS;
 }
