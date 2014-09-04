@@ -466,7 +466,7 @@ static void layouts_mgr_init(layouts_mgr_t* mgr)
 static void layouts_mgr_free(layouts_mgr_t* mgr)
 {
 	/* free the configuration details */
-	list_destroy(mgr->layouts_desc);
+	FREE_NULL_LIST(mgr->layouts_desc);
 
 	/* FIXME: can we do a faster free here ? since each node removal will
 	 * modify either the entities or layouts for back (or forward)

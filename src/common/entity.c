@@ -67,7 +67,7 @@ void entity_free(entity_t* entity)
 		xfree(entity->name);
 		xfree(entity->type);
 		xhash_free(entity->data);
-		list_destroy(entity->nodes);
+		FREE_NULL_LIST(entity->nodes);
 	}
 }
 
