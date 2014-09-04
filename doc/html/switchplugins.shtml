@@ -575,6 +575,38 @@ switch_p_job_suspend_info_get() and switch_p_job_suspend_info_unpack() functions
 information needed for a job to be preempted, including information for all
 steps in that job.</p>
 
+<h3>Job Step Management Suspend/Resume Functions</h3>
+
+<p class="commandline">int switch_p_job_step_pre_suspend (stepd_step_rec_t *jobstep);</p>
+<p style="margin-left:.2in"><b>Description</b>: Perform any job step pre-suspend functionality (done before the application PIDs are stopped).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job</span>&nbsp; &nbsp;&nbsp;(input)
+structure representing the slurmstepd's view of the job step.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the job step can be
+suspended and SLURM_ERROR otherwise.</p>
+
+<p class="commandline">int switch_p_job_step_post_suspend (stepd_step_rec_t *jobstep);</p>
+<p style="margin-left:.2in"><b>Description</b>: Perform any job step post-suspend functionality (done after the application PIDs are stopped).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job</span>&nbsp; &nbsp;&nbsp;(input)
+structure representing the slurmstepd's view of the job step.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the job step has been suspended and SLURM_ERROR otherwise.</p>
+
+<p class="commandline">int switch_p_job_step_pre_resume (stepd_step_rec_t *jobstep);</p>
+<p style="margin-left:.2in"><b>Description</b>: Perform any job step pre-resume functionality (done before the application PIDs are re-started).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job</span>&nbsp; &nbsp;&nbsp;(input)
+structure representing the slurmstepd's view of the job step.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the job step can be
+resumed and SLURM_ERROR otherwise.</p>
+
+<p class="commandline">int switch_p_job_step_post_resume (stepd_step_rec_t *jobstep);</p>
+<p style="margin-left:.2in"><b>Description</b>: Perform any job step post-resume functionality (done after the application PIDs are re-started).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job</span>&nbsp; &nbsp;&nbsp;(input)
+structure representing the slurmstepd's view of the job step.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the job step has been resumed and SLURM_ERROR otherwise.</p>
+
 <h3>Error Handling Functions</h3>
 <a name="get_errno"><p class="commandline">int switch_p_get_errno (void);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: Return the number of a switch
