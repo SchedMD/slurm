@@ -472,28 +472,18 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	 * Free the cookies and the cookie_ids.
 	 */
 	if (job->num_cookies != 0) {
-		// Free the cookie_ids
-		if (job->cookie_ids) {
-			xfree(job->cookie_ids);
-		}
+		xfree(job->cookie_ids);
 
 		if (job->cookies) {
 			// Free the individual cookie strings.
 			for (i = 0; i < job->num_cookies; i++) {
-				if (job->cookies[i]) {
-					xfree(job->cookies[i]);
-				}
+				xfree(job->cookies[i]);
 			}
-
-			// Free the cookie array
 			xfree(job->cookies);
 		}
 	}
-
-	// Free the ptags (if any)
 	if (job->num_ptags)
 		xfree(job->ptags);
-
 	xfree(job);
 
 	return;
@@ -583,29 +573,6 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		safe_unpack32(&job->port, buffer);
 		safe_unpack32(&job->num_ports, buffer);
 		safe_unpack64(&job->apid, buffer);
-
-#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	/*
-	 * On recovery, we want to keep extending the life of
-	 * cookies still in use. So lets track these cookies
-	 * with the lease extender. Duplicate cookies are ignored.
-	 */
-	track_cookies(job);
-#endif
-
-#ifndef HAVE_CRAY_NETWORK
-		/* If the libstate save/restore failed, at least make sure that
-		 * we do not re-allocate ports assigned to job steps that we
-		 * recover.
-		 *
-		 * NOTE: port_resv is NULL when unpacking things in srun.
-		 */
-		pthread_mutex_lock(&port_mutex);
-		if (port_resv && (job->port >= MIN_PORT)
-		    && (job->port <= MAX_PORT))
-			bit_set(port_resv, job->port - MIN_PORT);
-		pthread_mutex_unlock(&port_mutex);
-#endif
 	} else {
 		safe_unpack32(&job->magic, buffer);
 
@@ -633,25 +600,32 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		safe_unpack32(&job->port, buffer);
 #if 0
 		/* We rely upon switch_p_alloc_jobinfo() to initialize these
-		 * since the values do not exist in older data structures. */
+		 * fields, which do not exist in older data structures. */
 		job->num_ports = 1;
 		job->apid = SLURM_ID_HASH(jobid, stepid);
 #endif
+	}
 
 #ifndef HAVE_CRAY_NETWORK
-		/* If the libstate save/restore failed, at least make sure that
-		 * we do not re-allocate ports assigned to job steps that we
-		 * recover.
-		 *
-		 * NOTE: port_resv is NULL when unpacking things in srun.
-		 */
-		pthread_mutex_lock(&port_mutex);
-		if (port_resv && (job->port >= MIN_PORT)
-		    && (job->port <= MAX_PORT))
-			bit_set(port_resv, job->port - MIN_PORT);
-		pthread_mutex_unlock(&port_mutex);
+	/* If the libstate save/restore failed, at least make sure that
+	 * we do not re-allocate ports assigned to job steps that we recover.
+	 *
+	 * NOTE: port_resv is NULL when unpacking things in srun.
+	 */
+	pthread_mutex_lock(&port_mutex);
+	if (port_resv && (job->port >= MIN_PORT) && (job->port <= MAX_PORT))
+		bit_set(port_resv, job->port - MIN_PORT);
+	pthread_mutex_unlock(&port_mutex);
 #endif
-	}
+
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
+	/*
+	 * On recovery, we want to keep extending the life of
+	 * cookies still in use. So lets track these cookies
+	 * with the lease extender. Duplicate cookies are ignored.
+	 */
+	track_cookies(job);
+#endif
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		CRAY_INFO("Unpacked jobinfo");
@@ -663,23 +637,17 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 unpack_error:
 	CRAY_ERR("Unpacking error");
 	if (job->num_cookies) {
-		// Free the cookie_ids
-		if (job->cookie_ids)
-			xfree(job->cookie_ids);
+		xfree(job->cookie_ids);
 
 		if (job->cookies) {
 			int i;
 			// Free the individual cookie strings.
 			for (i = 0; i < job->num_cookies; i++) {
-				if (job->cookies[i])
-					xfree(job->cookies[i]);
+				xfree(job->cookies[i]);
 			}
-
-			// Free the cookie array
 			xfree(job->cookies);
 		}
 	}
-	// Free the ptags (if any)
 	if (job->num_ptags)
 		xfree(job->ptags);
 
