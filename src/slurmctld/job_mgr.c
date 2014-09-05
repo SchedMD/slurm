@@ -10431,8 +10431,15 @@ reply:
 		        resp_msg.data      = &rc_msg;
 		}
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
-        }
+
+		if (resp_array_msg) {
+			slurm_free_job_array_resp(resp_array_msg);
+			resp_msg.data = NULL;
+		}
+	}
         _resp_array_free(resp_array);
+
+	FREE_NULL_BITMAP(array_bitmap);
 
 	return rc;
 }
@@ -12228,8 +12235,16 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			resp_msg.data      = &rc_msg;
 		}
 		slurm_send_node_msg(conn_fd, &resp_msg);
+
+		if (resp_array_msg) {
+			slurm_free_job_array_resp(resp_array_msg);
+			resp_msg.data = NULL;
+		}
 	}
 	_resp_array_free(resp_array);
+
+	FREE_NULL_BITMAP(array_bitmap);
+
 	return rc;
 }
 
@@ -12538,8 +12553,16 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 			resp_msg.data      = &rc_msg;
 		}
 		slurm_send_node_msg(conn_fd, &resp_msg);
+
+		if (resp_array_msg) {
+			slurm_free_job_array_resp(resp_array_msg);
+			resp_msg.data = NULL;
+		}
 	}
 	_resp_array_free(resp_array);
+
+	FREE_NULL_BITMAP(array_bitmap);
+
 	return rc;
 }
 
