@@ -102,7 +102,7 @@ int assign_ports(uint32_t *real_port, int num_ports)
 		}
 
 		// If we've overflowed, reset
-		if (port > PORT_CNT) {
+		if (port >= PORT_CNT) {
 			port = -1;
 			block_size = 0;
 			continue;
@@ -144,7 +144,7 @@ int release_ports(uint32_t real_port, int num_ports)
 {
 	uint32_t port;
 
-	if (real_port < MIN_PORT || real_port + num_ports - 1 >= MAX_PORT) {
+	if (real_port < MIN_PORT || real_port + num_ports - 1 > MAX_PORT) {
 		if (num_ports == 1) {
 			CRAY_ERR("Port %"PRIu32" outside of valid range %"PRIu32
 			 "-%"PRIu32, real_port, MIN_PORT, MAX_PORT);
