@@ -398,8 +398,8 @@ static bool _duplicate_trigger(trigger_info_t *trig_desc)
 		    (trig_desc->trig_type == trig_rec->trig_type)  &&
 		    (trig_desc->offset    == trig_rec->trig_time)  &&
 		    (trig_desc->user_id   == trig_rec->user_id)    &&
-		    !strcmp(trig_desc->program, trig_rec->program) &&
-		    !strcmp(trig_desc->res_id, trig_rec->res_id)) {
+		    !xstrcmp(trig_desc->program, trig_rec->program) &&
+		    !xstrcmp(trig_desc->res_id, trig_rec->res_id)) {
 			found_dup = true;
 			break;
 		}

@@ -1579,12 +1579,12 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 	if (count && count != NO_VAL) {
 		itr = list_iterator_create(object->clus_res_list);
-		while((clus_res = list_next(itr)))
+		while ((clus_res = list_next(itr)))
 			slurmdb_pack_clus_res_rec(
 				clus_res, rpc_version, buffer);
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
+
 	if (object->clus_res_rec) {
 		pack32(0, buffer); /* anything not NO_VAL */
 		slurmdb_pack_clus_res_rec(
@@ -1749,13 +1749,12 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		if (count && count != NO_VAL) {
 			itr = list_iterator_create(object->accounting_list);
-			while((slurmdb_info = list_next(itr))) {
+			while ((slurmdb_info = list_next(itr))) {
 				slurmdb_pack_accounting_rec(
 					slurmdb_info, rpc_version, buffer);
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		packstr(object->cluster, buffer);
 
@@ -1908,7 +1907,6 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		pack16(object->with_assocs, buffer);
 		pack16(object->with_coords, buffer);
@@ -4015,7 +4013,6 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t rpc_version,
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
 	packstr(object->nodes, buffer);
 	pack_time(object->time_end, buffer);
@@ -4314,7 +4311,6 @@ extern void slurmdb_pack_res_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
 	if (object->type_list)
 		count = list_count(object->type_list);

@@ -2112,7 +2112,6 @@ static void _pack_shares_request_msg(shares_request_msg_t * msg, Buf buffer,
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 }
 
 static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
@@ -2174,9 +2173,7 @@ static void _pack_shares_response_msg(shares_response_msg_t * msg, Buf buffer,
 						  protocol_version);
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 	pack64(msg->tot_shares, buffer);
-
 }
 
 static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
@@ -5645,7 +5642,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -5861,7 +5857,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -9376,7 +9371,6 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);

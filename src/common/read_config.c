@@ -1968,9 +1968,7 @@ extern char *slurm_conf_get_nodename_from_addr(const char *node_addr)
 	} else {
 		start_name = xstrdup(hptr->h_name);
 		dot_ptr = strchr(start_name, '.');
-		if (dot_ptr == NULL)
-			dot_ptr = start_name + strlen(start_name);
-		else
+		if (dot_ptr)
 			dot_ptr[0] = '\0';
 	}
 

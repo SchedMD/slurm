@@ -747,8 +747,9 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			rc = false;
 			goto end_it;
 		}
-	} else if (!reason)
+	} else {
 		strict_checking = reason ? true : false;
+	}
 
 	while (assoc_ptr) {
 		/* for validation we don't need to look at
