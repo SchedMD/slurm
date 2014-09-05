@@ -4209,7 +4209,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	}
 	if (!valid) {
 		info("%s: 3 invalid job id %s", __func__, job_id_str);
-		return ESLURM_INVALID_JOB_ID;
+		rc = ESLURM_INVALID_JOB_ID;
+		goto endit;
 	}
 
 	/* Find some job record and validate the user cancelling the job */
@@ -4226,7 +4227,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	    ((job_ptr->array_task_id == NO_VAL) &&
 	     (job_ptr->array_recs == NULL))) {
 		info("%s: 4 invalid job id %s", __func__, job_id_str);
-		return ESLURM_INVALID_JOB_ID;
+		rc = ESLURM_INVALID_JOB_ID;
+		goto endit;
 	}
 
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
@@ -4234,14 +4236,16 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 					  job_ptr->account)) {
 		error("%s: Security violation JOB_CANCEL RPC for jobID %s from "
 		      "uid %d", __func__, job_id_str, uid);
-		return ESLURM_ACCESS_DENIED;
+		rc = ESLURM_ACCESS_DENIED;
+		goto endit;
 	}
 	if (!validate_slurm_user(uid) && (signal == SIGKILL) &&
 	    job_ptr->part_ptr &&
 	    (job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY) && wiki2_sched) {
 		info("%s: Attempt to cancel Moab job using Slurm command from "
 		     "uid %d", __func__, uid);
-		return ESLURM_ACCESS_DENIED;
+		rc = ESLURM_ACCESS_DENIED;
+		goto endit;
 	}
 
 	if (IS_JOB_PENDING(job_ptr) &&
@@ -4307,7 +4311,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		rc2 = _job_signal(job_ptr, signal, flags, uid, preempt);
 		rc = MAX(rc, rc2);
 	}
-
+endit:
 	FREE_NULL_BITMAP(array_bitmap);
 
 	return rc;
