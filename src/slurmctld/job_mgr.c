@@ -12059,6 +12059,11 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
 
     reply:
+
+	/* Since we have already used it lets make sure we don't leak
+	   memory */
+	xfree(sus_ptr->job_id_str);
+
 	if (conn_fd >= 0) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = protocol_version;
