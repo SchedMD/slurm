@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Validate scontrol update command for nodes.
+#          Validate scontrol update command for jobs.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -151,7 +151,7 @@ expect {
 		wait
 	}
 }
-if {$read_priority == 0} {
+if {$read_priority != $new_prio} {
 	send_user "\nFAILURE: scontrol priority change error\n"
 	set exit_code 1
 }
@@ -163,4 +163,3 @@ if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
-
