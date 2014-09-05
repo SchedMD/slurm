@@ -4306,6 +4306,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		rc = MAX(rc, rc2);
 	}
 
+	FREE_NULL_BITMAP(array_bitmap);
+
 	return rc;
 }
 
