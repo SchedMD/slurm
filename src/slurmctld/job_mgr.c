@@ -3481,11 +3481,13 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	job_ptr_pend->alias_list = xstrdup(job_ptr->alias_list);
 	job_ptr_pend->alloc_node = xstrdup(job_ptr->alloc_node);
 
+	job_ptr_pend->array_recs = job_ptr->array_recs;
+	job_ptr->array_recs = NULL;
+
 	bit_clear(job_ptr_pend->array_recs->task_id_bitmap,
 		  job_ptr_pend->array_task_id);
 	xfree(job_ptr_pend->array_recs->task_id_str);
 	job_ptr_pend->array_recs->task_cnt--;
-	job_ptr->array_recs = NULL;
 	job_ptr_pend->array_task_id = NO_VAL;
 
 	job_ptr_pend->batch_host = NULL;
