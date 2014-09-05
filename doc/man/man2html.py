@@ -184,6 +184,8 @@ for filename in files:
         # Remove html header/footer created by man2html
         if line == "Content-type: text/html\n":
             continue
+        if line == "Content-type: text/html; charset=UTF-8\n":
+            continue
         if line[:6] == "<HTML>":
             continue
         if line[:7] == "</HEAD>":
@@ -203,6 +205,7 @@ for filename in files:
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
     lines = open(sys.argv[3], 'r').read()
+    lines = lines.replace(".shtml",".html")
     lines = version_regex.sub(version_rewrite, lines)
     html.write(lines)
 #    html.write(<!--#include virtual="footer.txt"-->)

@@ -172,7 +172,9 @@ launch a shell on a node in the job's allocation?</a></li>
    be requeued?</a></li>
 <li><a href="#user_account">Can a user's account be changed in the database?</a></li>
 <li><a href="#mpi_perf">What might account for MPI performance being below the
-  expected level?</a></li>
+   expected level?</a></li>
+<li><a href="#state_info">How could some jobs submitted immediately before the
+   slurmctld daemon crashed be lost?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -442,9 +444,10 @@ tdev2
 <p><a name="parallel_make"><b>14. Can the <i>make</i> command
 utilize the resources allocated to a Slurm job?</b></a><br>
 Yes. There is a patch available for GNU make version 3.81
-available as part of the Slurm distribution in the file
-<i>contribs/make.slurm.patch</i>.
-This patch will use Slurm to launch tasks across a job's current resource
+available as part of the SLURM distribution in the file
+<i>contribs/make-3.81.slurm.patch</i>.  For GNU make version 4.0 you
+can use the patch in the file <i>contribs/make-4.0.slurm.patch</i>.
+This patch will use SLURM to launch tasks across a job's current resource
 allocation. Depending upon the size of modules to be compiled, this may
 or may not improve performance. If most modules are thousands of lines
 long, the use of additional resources should more than compensate for the
@@ -1921,7 +1924,7 @@ we touch the file /tmp/myfile, then release the job which will finish
 in COMPLETE state.
 </p>
 
-<p><a name="reqspec"><b>58. Can a user's account be changed in the database?</b></a></br>
+<p><a name="user_account"><b>58. Can a user's account be changed in the database?</b></a></br>
 A user's account can not be changed directly. A new association needs to be
 created for the user with the new account. Then the association with the old
 account can be deleted.</p>
@@ -1937,8 +1940,20 @@ Starting the slurmd daemons with limited locked memory can account for this.
 Adding the line "ulimit -l unlimited" to <i>/etc/sysconfig/slurm</i> file can
 fix this.</p>
 
+<p><a name="state_info"><b>60. How could some jobs submitted immediately before
+   the slurmctld daemon crashed be lost?</b></a><br>
+Any time the slurmctld daemon or hardware fails before state information reaches
+disk can result in lost state.
+Slurmctld writes state frequently (every five seconds by default), but with
+large numbers of jobs, the formatting and writing of records can take seconds
+and recently changes might not be written to disk.
+Another example is if the state information written to file, but that
+information is cached in memory rather than written to disk when the node fails.
+The interval between state saves being written to disk can be configured at
+build time by defining SAVE_MAX_WAIT to a different value than five.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 August 2014</p>
+<p style="text-align:center;">Last modified 5 September 2014</p>
 
 <!--#include virtual="footer.txt"-->
