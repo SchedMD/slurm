@@ -4115,7 +4115,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	time_t now = time(NULL);
 	char *end_ptr = NULL, *tok, *tmp;
 	long int long_id;
-	bitstr_t *array_bitmap, *tmp_bitmap;
+	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	int rc = SLURM_SUCCESS, rc2, len;
@@ -10259,14 +10259,14 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	slurm_ctl_conf_t *conf;
 	long int long_id;
 	uint32_t job_id = 0;
-	bitstr_t *array_bitmap, *tmp_bitmap;
+	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	int len, rc = SLURM_SUCCESS, rc2;
 	char *end_ptr, *tok, *tmp;
 	char *job_id_str;
 	resp_array_struct_t *resp_array = NULL;
-	job_array_resp_msg_t *resp_array_msg;
+	job_array_resp_msg_t *resp_array_msg = NULL;
 	return_code_msg_t rc_msg;
 
 	job_id_str = job_specs->job_id_str;
@@ -12113,13 +12113,13 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	long int long_id;
 	uint32_t job_id = 0;
 	char *end_ptr = NULL, *tok, *tmp;
-	bitstr_t *array_bitmap;
+	bitstr_t *array_bitmap = NULL;
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	resp_array_struct_t *resp_array = NULL;
-	job_array_resp_msg_t *resp_array_msg;
+	job_array_resp_msg_t *resp_array_msg = NULL;
 
 #ifdef HAVE_BG
 	rc = ESLURM_NOT_SUPPORTED;
@@ -12442,7 +12442,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 	long int long_id;
 	uint32_t job_id = 0;
 	char *end_ptr = NULL, *tok, *tmp;
-	bitstr_t *array_bitmap;
+	bitstr_t *array_bitmap = NULL;
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	slurm_msg_t resp_msg;
@@ -12450,7 +12450,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 	uint32_t state = req_ptr->state;
 	char *job_id_str = req_ptr->job_id_str;
 	resp_array_struct_t *resp_array = NULL;
-	job_array_resp_msg_t *resp_array_msg;
+	job_array_resp_msg_t *resp_array_msg = NULL;
 
 	if (max_array_size == NO_VAL) {
 		conf = slurm_conf_lock();
