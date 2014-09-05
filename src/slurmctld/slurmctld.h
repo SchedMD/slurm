@@ -1274,7 +1274,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			  uid_t uid, bool preempt);
 
 /*
- * job_suspend - perform some suspend/resume operation
+ * job_suspend/job_suspend2 - perform some suspend/resume operation
+ * NB job_suspend  - Uses the job_id field and ignores job_id_str
+ * NB job_suspend2 - Ignores the job_id field and uses job_id_str
+ *
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply,

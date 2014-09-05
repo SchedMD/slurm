@@ -12025,6 +12025,8 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 
 /*
  * job_suspend - perform some suspend/resume operation
+ * NB job_suspend  - Uses the job_id field and ignores job_id_str
+ *
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply,
@@ -12088,6 +12090,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 
 /*
  * job_suspend2 - perform some suspend/resume operation
+ * NB job_suspend2 - Ignores the job_id field and uses job_id_str
+ *
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply,
