@@ -52,12 +52,21 @@ static const char* _entity_data_identify(void* item)
 	return data_item->key;
 }
 
+static void _entity_node_destroy(void* x)
+{
+	entity_node_t* entity_node = (entity_node_t*)x;
+	if (entity_node) {
+		/* layout and node should be freed elsewhere */
+		xfree(entity_node);
+	}
+}
+
 void entity_init(entity_t* entity, const char* name, const char* type)
 {
 	entity->name = xstrdup(name);
 	entity->type = xstrdup(type);
 	entity->data = xhash_init(_entity_data_identify, NULL, NULL, 0);
-	entity->nodes = list_create(NULL);
+	entity->nodes = list_create(_entity_node_destroy);
 	entity->ptr = NULL;
 }
 
@@ -143,16 +152,9 @@ static int _entity_node_find(void* x, void* key)
 
 void entity_delete_node(entity_t* entity, void* node)
 {
-	ListIterator i;
-	void* result;
-	i = list_iterator_create(entity->nodes);
-	result = list_find(i, _entity_node_find, node);
-	do {
-		if (result == NULL)
-			break;
+	ListIterator i = list_iterator_create(entity->nodes);
+	if (list_find(i, _entity_node_find, node))
 		list_delete_item(i);
-		xfree(result);
-	} while(0);
 	list_iterator_destroy(i);
 }
 
