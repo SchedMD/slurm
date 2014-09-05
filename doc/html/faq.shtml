@@ -171,6 +171,10 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#reqspec">How can a job which has exited with a specific exit code
    be requeued?</a></li>
 <li><a href="#user_account">Can a user's account be changed in the database?</a></li>
+<li><a href="#mpi_perf">What might account for MPI performance being below the
+   expected level?</a></li>
+<li><a href="#state_info">How could some jobs submitted immediately before the
+   slurmctld daemon crashed be lost?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1920,7 +1924,7 @@ we touch the file /tmp/myfile, then release the job which will finish
 in COMPLETE state.
 </p>
 
-<p><a name="reqspec"><b>58. Can a user's account be changed in the database?</b></a></br>
+<p><a name="user_account"><b>58. Can a user's account be changed in the database?</b></a></br>
 A user's account can not be changed directly. A new association needs to be
 created for the user with the new account. Then the association with the old
 account can be deleted.</p>
@@ -1930,8 +1934,26 @@ sacctmgr create user name=adam cluster=tux account=physics
 sacctmgr delete user name=adam cluster=tux account=chemistry
 </pre>
 
+<p><a name="mpi_perf"><b>59. What might account for MPI performance being below
+  the expected level?</b></a><br>
+Starting the slurmd daemons with limited locked memory can account for this.
+Adding the line "ulimit -l unlimited" to <i>/etc/sysconfig/slurm</i> file can
+fix this.</p>
+
+<p><a name="state_info"><b>60. How could some jobs submitted immediately before
+   the slurmctld daemon crashed be lost?</b></a><br>
+Any time the slurmctld daemon or hardware fails before state information reaches
+disk can result in lost state.
+Slurmctld writes state frequently (every five seconds by default), but with
+large numbers of jobs, the formatting and writing of records can take seconds
+and recently changes might not be written to disk.
+Another example is if the state information written to file, but that
+information is cached in memory rather than written to disk when the node fails.
+The interval between state saves being written to disk can be configured at
+build time by defining SAVE_MAX_WAIT to a different value than five.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 June 2014</p>
+<p style="text-align:center;">Last modified 5 September 2014</p>
 
 <!--#include virtual="footer.txt"-->
