@@ -241,7 +241,7 @@ test3.#    Testing of scontrol options (best run as SlurmUser or root).
 test3.1    Validate scontrol reconfigure command.
 test3.2    Validate scontrol update command for partitions.
 test3.3    Validate scontrol update command for nodes.
-test3.4    Validate scontrol update command for jobs.
+test3.4    Validate scontrol update command for jobs by JobID.
 test3.5    Validate scontrol create, delete, and update of partition.
 test3.6    Testing of hidden partitions.
 test3.7    Test of job suspend/resume.
@@ -250,6 +250,7 @@ test3.9    Test of "scontrol show slurmd"
 test3.10   Test of "scontrol notify <jobid> <message>"
 test3.11   Validate scontrol create, delete, and update of reservations.
 test3.12   Validate scontrol update command for front end nodes.
+test3.13   Validate scontrol update command for jobs by JobName and UserID.
 UNTESTED   "scontrol abort"    would stop slurm
 UNTESTED   "scontrol shutdown" would stop slurm
 
