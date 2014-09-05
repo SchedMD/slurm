@@ -1116,6 +1116,7 @@ int slurm_layouts_fini(void)
 	}
 	xfree(mgr->plugins);
 	mgr->plugins = NULL;
+	mgr->plugins_count = 0;
 
 	layouts_mgr_free(mgr);
 
