@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "May 2014" "scontrol 14.11" "Slurm components"
+.TH SCONTROL "1" "September 2014" "scontrol 14.11" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -587,8 +587,8 @@ Only the Slurm administrator or root can change this parameter.
 \fIJobName\fP=<name>
 Identify the name of jobs to be modified or set the job's name to the
 specified value.
-When used to identify jobs to be modified, only jobs belonging to the user
-issuing the command are updated.
+When used to identify jobs to be modified, all jobs belonging to all users
+are modified unless the \fIUserID\fP option is used to identify a specific user.
 Either \fIJobId\fP or \fIJobName\fP is required.
 .TP
 \fINice\fP[=delta]
@@ -728,18 +728,12 @@ time limit (e.g. "TimeLimit=+30"). In order to increment or decrement the
 current time limit, the \fIJobId\fP specification must precede the
 \fITimeLimit\fP specification.
 Only the Slurm administrator or root can increase job's TimeLimit.
+
 .TP
-\fIwait\-for\-switch\fP=<max\-time\-to\-wait>
-When a tree topology is used, this defines the  maximum time to wait for the
-desired count of switches. If SLURM finds an allocation containing more
-switches than the count specified, the job remain pending until it either finds
-an allocation with desired switch count or the time limit expires. By default
-there is no switch count limit and there is not time delay. Set the time
-to zero in order to clean any previously set time limit (disabling the limit).
-The job's maximum time delay may be limited by the system administrator using
-the \fBSchedulerParameters\fR configuration parameter with the
-\fBmax_switch_wait parameter\fR option.
-Also see \fISwitches\fP.
+\fIUserID\fP=<UID or name>
+Used with the \fIJobName\fP option to identify jobs to be modified.
+Either a user name or numeric ID (UID), may be specified.
+
 .TP
 \fIWCKey\fP=<key>
 Set the job's workload characterization key to the specified value.

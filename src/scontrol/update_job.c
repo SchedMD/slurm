@@ -40,7 +40,7 @@
 #include "scontrol.h"
 #include "src/common/env.h"
 #include "src/common/proc_args.h"
-
+#include "src/common/uid.h"
 
 typedef struct job_ids {
 	uint32_t job_id;
@@ -52,7 +52,7 @@ typedef struct job_ids {
 static uint32_t	_get_job_time(const char *job_id_str);
 static bool	_is_job_id(char *job_str);
 static bool	_is_single_job(char *job_id_str);
-static char *	_job_name2id(char *job_name);
+static char *	_job_name2id(char *job_name, uint32_t job_uid);
 static char *	_next_job_id(void);
 static int	_parse_checkpoint_args(int argc, char **argv,
 				       uint16_t *max_wait, char **image_dir);
@@ -721,6 +721,7 @@ scontrol_update_job (int argc, char *argv[])
 	int taglen, vallen;
 	job_desc_msg_t job_msg;
 	job_array_resp_msg_t *resp = NULL;
+	uint32_t job_uid = NO_VAL;
 
 	slurm_init_job_desc_msg (&job_msg);
 
@@ -1148,6 +1149,16 @@ scontrol_update_job (int argc, char *argv[])
 			}
 			update_cnt++;
 		}
+		else if (!strncasecmp(tag, "UserID", MAX(taglen, 3))) {
+			uid_t user_id = 0;
+			if (uid_from_string(val, &user_id) < 0) {
+				exit_code = 1;
+				fprintf (stderr, "Invalid UserID: %s\n", val);
+				fprintf (stderr, "Request aborted\n");
+				return 0;
+			}
+			job_uid = (uint32_t) user_id;
+		}
 		else {
 			exit_code = 1;
 			fprintf (stderr, "Update of this parameter is not "
@@ -1165,7 +1176,11 @@ scontrol_update_job (int argc, char *argv[])
 
 	if (!job_msg.job_id_str && job_msg.name) {
 		/* Translate name to job ID string */
-		job_msg.job_id_str = _job_name2id(job_msg.name);
+		job_msg.job_id_str = _job_name2id(job_msg.name, job_uid);
+		if (!job_msg.job_id_str) {
+			exit_code = 1;
+			return 0;
+		}
 	}
 
 	if (!job_msg.job_id_str) {
@@ -1490,13 +1505,12 @@ static bool _is_single_job(char *job_id_str)
 
 /* Translate a job name to relevant job IDs
  * NOTE: xfree the return value to avoid memory leak */
-static char * _job_name2id(char *job_name)
+static char *_job_name2id(char *job_name, uint32_t job_uid)
 {
 	int i, rc;
 	job_info_msg_t *resp;
 	slurm_job_info_t *job_ptr;
 	char *job_id_str = NULL, *sep = "";
-	uid_t my_uid = getuid();
 
 	xassert(job_name);
 
@@ -1509,7 +1523,8 @@ static char * _job_name2id(char *job_name)
 		}
 		for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
 		     i++, job_ptr++) {
-			if (my_uid != job_ptr->user_id)
+			if ((job_uid != NO_VAL) &&
+			    (job_uid != job_ptr->user_id))
 				continue;
 			if (!job_ptr->name || strcmp(job_name, job_ptr->name))
 				continue;
@@ -1523,9 +1538,16 @@ static char * _job_name2id(char *job_name)
 			}
 			sep = ",";
 		}
+		if (!job_id_str) {
+			if (job_uid == NO_VAL) {
+				error("No jobs with name \'%s\'", job_name);
+			} else {
+				error("No jobs with user ID %u and name \'%s\'",
+				      job_uid, job_name);
+			}
+		}
 	} else {
-		error("Could not load state information for JobName %s: %m",
-		      job_name);
+		error("Could not load state information: %m");
 	}
 
 	return job_id_str;
