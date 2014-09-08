@@ -4257,7 +4257,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (i_last < len) {
 			array_bitmap = bit_realloc(array_bitmap, len);
 		} else {
-			len = bit_size(array_bitmap);
 			array_bitmap = bit_realloc(array_bitmap, i_last);
 			job_ptr->array_recs->task_id_bitmap = bit_realloc(
 				job_ptr->array_recs->task_id_bitmap, i_last);
@@ -4385,14 +4384,13 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 /*
  * prolog_complete - note the normal termination of the prolog
  * IN job_id - id of the job which completed
- * IN requeue - job should be run again if possible
  * IN prolog_return_code - prolog's return code,
  *    if set then set job state to FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int prolog_complete(uint32_t job_id, bool requeue,
+extern int prolog_complete(uint32_t job_id,
 			   uint32_t prolog_return_code)
 {
 	struct job_record *job_ptr;
@@ -4407,14 +4405,11 @@ extern int prolog_complete(uint32_t job_id, bool requeue,
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;
 
-	if (requeue && (job_ptr->batch_flag > 1)) {
-		/* Failed one requeue, just kill it */
-		if (prolog_return_code == 0)
-			prolog_return_code = 1;
+	if (prolog_return_code)
 		error("Prolog launch failure, JobId=%u", job_ptr->job_id);
-	}
 
 	job_ptr->state_reason = WAIT_NO_REASON;
+
 	return SLURM_SUCCESS;
 }
 
@@ -4761,10 +4756,7 @@ static int _get_job_parts(job_desc_msg_t * job_desc,
 
 		while ((part_ptr_tmp = list_next(iter))) {
 			rc = _alt_part_test(part_ptr_tmp, &part_ptr_new);
-
-			if (rc == SLURM_SUCCESS && part_ptr_new)
-				part_ptr_tmp = part_ptr_new;
-			else if (rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				fail_rc = rc;
 				list_remove(iter);
 				rebuild_name_list = true;

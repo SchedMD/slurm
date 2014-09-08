@@ -1813,10 +1813,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 	       "JobId=%u", comp_msg->job_id);
 
 	lock_slurmctld(job_write_lock);
-
-	error_code = prolog_complete(comp_msg->job_id,
-				     false, comp_msg->prolog_rc);
-
+	error_code = prolog_complete(comp_msg->job_id, comp_msg->prolog_rc);
 	unlock_slurmctld(job_write_lock);
 
 	END_TIMER2("_slurm_rpc_complete_prolog");
