@@ -225,6 +225,16 @@ reads the saved state and resumes normal operation.  Other than a
 brief period of non-responsiveness, the transition back and forth
 should go undetected.</p>
 
+<p>Any time the slurmctld daemon or hardware fails before state information
+reaches disk can result in lost state.
+Slurmctld writes state frequently (every five seconds by default), but with
+large numbers of jobs, the formatting and writing of records can take seconds
+and recently changes might not be written to disk.
+Another example is if the state information written to file, but that
+information is cached in memory rather than written to disk when the node fails.
+The interval between state saves being written to disk can be configured at
+build time by defining SAVE_MAX_WAIT to a different value than five.</p>
+
 <h2>Infrastructure</h2>
 <h3>User and Group Identification</h3>
 <p>There must be a uniform user and group name space (including
@@ -776,6 +786,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 June 2014</p>
+<p style="text-align:center;">Last modified 8 September 2014</p>
 
 <!--#include virtual="footer.txt"-->
