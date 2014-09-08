@@ -229,7 +229,7 @@ should go undetected.</p>
 reaches disk can result in lost state.
 Slurmctld writes state frequently (every five seconds by default), but with
 large numbers of jobs, the formatting and writing of records can take seconds
-and recently changes might not be written to disk.
+and recent changes might not be written to disk.
 Another example is if the state information written to file, but that
 information is cached in memory rather than written to disk when the node fails.
 The interval between state saves being written to disk can be configured at
