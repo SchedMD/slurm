@@ -912,7 +912,7 @@ static bool _incr_coord(int *start, int *end, int *current)
 
 	for (i = 0; i < params.cluster_dims; i++) {
 		current[i]++;
-		if (current[i] <= end[i])	/* CLANG false positive */
+		if (current[i] <= end[i])
 			return true;
 		current[i] = start[i];
 	}
@@ -926,7 +926,7 @@ static void _addto_nodelist(List nodelist, int *start, int *end)
 
 	coord = xmalloc(sizeof(int) * params.cluster_dims);
 	for (i = 0; i < params.cluster_dims; i++) {
-		xassert(start[i] >= 0);	/* CLANG false positive */
+		xassert(start[i] >= 0);
 		coord[i] = start[i];
 		if (end[i] < dim_size[i])
 			continue;
@@ -950,6 +950,9 @@ static int _make_nodelist(char *nodes, List nodelist)
 
 	if (!nodelist)
 		nodelist = list_create(_nodelist_del);
+
+	memset(start, params.cluster_dims, sizeof(int));
+	memset(end,   params.cluster_dims, sizeof(int));
 
 	while (nodes[j] != '\0') {
 		int mid = j   + params.cluster_dims + 1;
