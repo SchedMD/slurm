@@ -113,8 +113,12 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	/****** Line 1 ******/
 	slurm_make_time_str(&resv_ptr->start_time, tmp1, sizeof(tmp1));
 	slurm_make_time_str(&resv_ptr->end_time,   tmp2, sizeof(tmp2));
-	duration = difftime(resv_ptr->end_time, resv_ptr->start_time);
-	secs2time_str(duration, tmp3, sizeof(tmp3));
+	if (resv_ptr->end_time >= resv_ptr->start_time) {
+		duration = difftime(resv_ptr->end_time, resv_ptr->start_time);
+		secs2time_str(duration, tmp3, sizeof(tmp3));
+	} else {
+		snprintf(tmp3, sizeof(tmp3), "N/A");
+	}
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "ReservationName=%s StartTime=%s EndTime=%s Duration=%s",
 		 resv_ptr->name, tmp1, tmp2, tmp3);

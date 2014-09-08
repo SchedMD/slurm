@@ -63,7 +63,7 @@ ReservationName=root_3 StartTime=2009-02-06T16:00:00
 <p>A variation of this would be to configure license to represent system
 resources, such as a global file system.
 The system resource may not require an actual license for use, but
-SLURM licenses can be used to prevent jobs needed the resource from being
+Slurm licenses can be used to prevent jobs needed the resource from being
 started when that resource is unavailable.
 One could create a reservation for all of those licenses in order to perform
 maintenance on that resource.
@@ -107,7 +107,7 @@ ReservationName=root_5 StartTime=2009-02-04T16:22:57
 </pre>
 
 <p>Our next example is to reserve ten nodes in the default
-SLURM partition starting at noon and with a duration of 60
+Slurm partition starting at noon and with a duration of 60
 minutes occurring daily. The reservation will be available
 only to users "alan" and "brenda".</p>
 <pre>
@@ -128,7 +128,7 @@ ReservationName=alan_6 StartTime=2009-02-05T12:00:00
 reservation request includes information about the sizes of jobs to be created.
 This is especially important for BlueGene systems due to restrictive rules
 about the topology of created blocks (due to hardware constraints and/or
-SLURM's configuration). To take advantage of this optimization, specify the
+Slurm's configuration). To take advantage of this optimization, specify the
 sizes of jobs of to be concurrently executed. The example below creates a
 reservation containing 4096 c-nodes on a BlueGene system so that two 2048
 c-node jobs can execute simultaneously.</p>
@@ -157,7 +157,7 @@ feature that every selected node must contain.</p>
 <p>On a smaller system, one might want to reserve cores rather than
 whole nodes. Slurm provides a core reservation capability in version 2.6.
 This capability permits the administrator to identify the core count to be
-reserved on each node as snown in the examples below.<br>
+reserved on each node as shown in the examples below.<br>
 <b>NOTE:</b> Core reservations are not available on IBM BlueGene or
 Cray/ALPS systems, nor when the system is configured to use the select/linear
 or select/serial plugins.</p>
@@ -296,6 +296,28 @@ resources removed from it by a subsequent reservation also having a
 "maint" or "overlap" flag, so nesting of reservations only works to a
 depth of two.</p>
 
+<h2>Reservations Floating Through Time</h2>
+
+<p>Slurm can be used to create an advanced reservation with a start time that
+remains a fixed period of time in the future.
+These reservation are not intended to run jobs, but to prevent long running
+jobs from being initiated on specific nodes.
+That node might be placed in a DRAINING state to prevent <b>any</b> new jobs
+from being started there.
+Alternately, an advanced reservation might be placed on the node to prevent
+jobs exceeding some specific time limit from being started.
+Attempts by users to make use of a reservation with a floating start time will
+be rejected.
+When ready to perform the maintenance, place the node in DRAINING state and
+delete the previously created advanced reservation.
+In the example below, node tux8 is prevented from starting any jobs exceeding
+a 60 minute time limit.
+The duration of 100 (minutes) is arbitrary.</p>
+<pre>
+$ scontrol create reservation user=operator nodes=tux8 \
+  starttime=now+60minutes duration=100 flags=time_float
+</pre>
+
 <h2>Reservation Accounting</h2>
 
 <p>Jobs executed within a reservation are accounted for using the appropriate
@@ -321,7 +343,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 29 July 2014</p>
+<p style="text-align: center;">Last modified 8 September 2014</p>
 
 <!--#include virtual="footer.txt"-->
 

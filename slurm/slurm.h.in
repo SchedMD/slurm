@@ -1998,6 +1998,8 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
 							 * nodes */
 #define RESERVE_FLAG_FIRST_CORES	0x00010000	/* Use only first cores
 							 * on each node */
+#define RESERVE_FLAG_TIME_FLOAT		0x00020000	/* Time offset is
+							 * relative */
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */

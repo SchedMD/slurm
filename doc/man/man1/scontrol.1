@@ -1285,8 +1285,16 @@ Flags\-=DAILY (NOTE: this shortcut is not supported for all flags).
 Currently supported flags include:
 .RS
 .TP 14
+\fIDAILY\fR
+Repeat the reservation at the same time every day
+.TP
 \fIFIRST_CORES\fR
 Use the lowest numbered cores on a node only.
+.TP
+\fIIGNORE_JOBS\fR
+Ignore currently running jobs when creating the reservation.
+This can be especially useful when reserving all nodes in the system
+for maintenance.
 .TP
 \fILICENSE_ONLY\fR
 This is a reservation for licenses only and not compute nodes.
@@ -1304,21 +1312,10 @@ reservation.
 This reservation can be allocated resources that are already in another
 reservation.
 .TP
-\fIIGNORE_JOBS\fR
-Ignore currently running jobs when creating the reservation.
-This can be especially useful when reserving all nodes in the system
-for maintenance.
-.TP
 \fIPART_NODES\fR
 This flag can be used to reserve all nodes within the specified
 partition.  PartitionName and Nodes=ALL must be specified or
 this option is ignored.
-.TP
-\fIDAILY\fR
-Repeat the reservation at the same time every day
-.TP
-\fIWEEKLY\fR
-Repeat the reservation at the same time every week
 .TP
 \fISPEC_NODES\fR
 Reservation is for specific nodes (output only)
@@ -1327,6 +1324,14 @@ Reservation is for specific nodes (output only)
 Make it so after the nodes are selected for a reservation they don't
 change.  Without this option when nodes are selected for a reservation
 and one goes down the reservation will select a new node to fill the spot.
+.TP
+\fITIME_FLOAT\fR
+The reservation start time is relative to the current time and moves forward
+through time (e.g. a StartTime=now+10minutes will always be 10 minutes in the
+future).
+.TP
+\fIWEEKLY\fR
+Repeat the reservation at the same time every week
 .RE
 
 .TP

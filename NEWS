@@ -20,6 +20,10 @@ documents those changes that are of interest to users and administrators.
  -- Cray MPMD (Multiple-Program Multiple-Data) support completed.
  -- Added ability for "scontrol update" to references jobs by JobName (and
     filtered optionally by UserID).
+ -- Add support for an advanced reservation start time that remains constant
+    relative to the current time. This can be used to prevent the starting of
+    longer running jobs on select nodes for maintenance purpose. See the
+    reservation flag "TIME_FLOAT" for more information.
 
 * Changes in Slurm 14.11.0pre4
 ==============================
