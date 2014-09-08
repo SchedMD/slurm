@@ -191,9 +191,6 @@ inline static void  _update_cred_key(void);
 
 extern diag_stats_t slurmctld_diag_stats;
 
-extern int prolog_complete(uint32_t job_id, bool requeue,
-		uint32_t prolog_return_code);
-
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
@@ -1809,7 +1806,6 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK
 	};
-	bool job_requeue = false;
 
 	/* init */
 	START_TIMER;
@@ -1819,7 +1815,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 
 	error_code = prolog_complete(comp_msg->job_id,
-				     job_requeue, comp_msg->prolog_rc);
+				     false, comp_msg->prolog_rc);
 
 	unlock_slurmctld(job_write_lock);
 

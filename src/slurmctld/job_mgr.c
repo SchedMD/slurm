@@ -4393,7 +4393,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
  *	last_job_update - time of last job table update
  */
 extern int prolog_complete(uint32_t job_id, bool requeue,
-		uint32_t prolog_return_code)
+			   uint32_t prolog_return_code)
 {
 	struct job_record *job_ptr;
 
@@ -4409,7 +4409,6 @@ extern int prolog_complete(uint32_t job_id, bool requeue,
 
 	if (requeue && (job_ptr->batch_flag > 1)) {
 		/* Failed one requeue, just kill it */
-		requeue = 0;
 		if (prolog_return_code == 0)
 			prolog_return_code = 1;
 		error("Prolog launch failure, JobId=%u", job_ptr->job_id);
@@ -10358,7 +10357,6 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		if (i_last < len) {
 			array_bitmap = bit_realloc(array_bitmap, len);
 		} else {
-			len = bit_size(array_bitmap);
 			array_bitmap = bit_realloc(array_bitmap, i_last);
 			job_ptr->array_recs->task_id_bitmap = bit_realloc(
 				job_ptr->array_recs->task_id_bitmap, i_last);

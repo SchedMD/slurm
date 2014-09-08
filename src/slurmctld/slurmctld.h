@@ -1748,6 +1748,19 @@ extern int part_policy_valid_qos(
 extern bool partition_in_use(char *part_name);
 
 /*
+ * prolog_complete - note the normal termination of the prolog
+ * IN job_id - id of the job which completed
+ * IN requeue - job should be run again if possible
+ * IN prolog_return_code - prolog's return code,
+ *    if set then set job state to FAILED
+ * RET - 0 on success, otherwise ESLURM error code
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+extern int prolog_complete(uint32_t job_id, bool requeue,
+			   uint32_t prolog_return_code);
+
+/*
  * purge_old_job - purge old job records.
  *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
  *	Test job dependencies, handle after_ok, after_not_ok before
