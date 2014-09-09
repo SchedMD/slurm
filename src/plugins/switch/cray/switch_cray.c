@@ -35,8 +35,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/slurm_xlator.h"
-
 #if !defined(__FreeBSD__)
 #if     HAVE_CONFIG_H
 #include "config.h"
@@ -56,11 +54,11 @@
 #include <sched.h>
 #include <math.h>
 
+#include "switch_cray.h"
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/pack.h"
 #include "src/common/gres.h"
-#include "switch_cray.h"
 
 #ifdef HAVE_NATIVE_CRAY
 #include <job.h> /* Cray's job module component */

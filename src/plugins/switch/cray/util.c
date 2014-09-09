@@ -44,10 +44,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "switch_cray.h"
 #include "slurm/slurm.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/xstring.h"
-#include "switch_cray.h"
+
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 
