@@ -260,6 +260,9 @@ documents those changes that are of interest to users and administrators.
     job files (script and environment).
  -- Added patch in the contribs directory for integrating make version 4.0 with
     Slurm and renamed the previous patch "make-3.81.slurm.patch".
+ -- Don't wait for an update message from the DBD to finish before sending rc
+    message back.  In slow systems with many associations this could speed
+    responsiveness in sacctmgr after adding associations.
 
 * Changes in Slurm 14.03.7
 ==========================
