@@ -99,7 +99,7 @@ if { [test_xcpu] } {
 	set node_cnt 1-4
 }
 
-set srun_pid [spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 $job_mem_opt $file_in]
+set srun_pid [eval spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 --gres=craynetwork:0 $job_mem_opt $file_in]
 expect {
 	-re "Requested node configuration is not available" {
 		send_user "\nFAILURE: Memory is allocated, but your nodes don't have even 256MB configured\n"
