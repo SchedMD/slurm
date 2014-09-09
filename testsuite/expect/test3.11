@@ -268,6 +268,11 @@ proc delete_res { res_name } {
 	return $ret_code
 }
 
+if {[is_super_user] == 0} {
+	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
+	exit 0
+}
+
 set have_resv 0
 spawn $scontrol show res $res_name
 expect {
