@@ -1054,6 +1054,7 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 	if (suspended) {
 		debug("Terminating suspended job step %u.%u",
 		      job->jobid, job->stepid);
+		suspended = false;
 	}
 
 	if (proctrack_g_signal(job->cont_id, SIGKILL) < 0) {
