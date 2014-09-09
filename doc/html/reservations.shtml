@@ -309,10 +309,21 @@ jobs exceeding some specific time limit from being started.
 Attempts by users to make use of a reservation with a floating start time will
 be rejected.
 When ready to perform the maintenance, place the node in DRAINING state and
-delete the previously created advanced reservation.
+delete the previously created advanced reservation.</p>
+
+<p>Create the reservation by using the flag value of <b>TIME_FLOAT</b> and a
+start time that is relative to the current time (use the keyword <b>now</b>).
+The reservation duration should generally be a value which is large relative
+to typical job run times in order to not adversely impact backfill scheduling
+decisions.
+Alternately the reservation can have a specific end time, in which case the
+reservation's start time will increase through time until the reservation's
+end time is reached.
+When the current time passes the reservation end time then the reservation will
+be purged.
 In the example below, node tux8 is prevented from starting any jobs exceeding
 a 60 minute time limit.
-The duration of 100 (minutes) is arbitrary.</p>
+The duration of this reservation is 100 (minutes).</p>
 <pre>
 $ scontrol create reservation user=operator nodes=tux8 \
   starttime=now+60minutes duration=100 flags=time_float
@@ -343,7 +354,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 8 September 2014</p>
+<p style="text-align: center;">Last modified 9 September 2014</p>
 
 <!--#include virtual="footer.txt"-->
 
