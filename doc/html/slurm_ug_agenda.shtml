@@ -646,18 +646,19 @@ and involved in several research challenges of the European Human Brain Project.
 
 <h3>Level-based job prioritization</h3>
 <p>Ryan Cox and Levi Morrison (Brigham Young University)</p>
-<p>We will present about our new LEVEL_BASED job prioritization mechanism.
-  The algorithm prioritizes users such that users in an under-served account
-  will always have a higher fair share factor than users in an over-served
-  account.  It recurses through the account tree, calculates fair share at
-  each level, then uses bitwise math to ensure that the effect of usage and
-  shares below the current level cannot affect calculations at the current
-  level.</p>
-<p>Basically, if accounts A and B have the same shares but A has higher usage
-  than B then children of account A will have a lower fair share factor than
-  children of account B. This is not guaranteed in other prioritization methods.
-  LEVEL_BASED was also designed to reduce the likelihood of errors due to
-  floating point precision loss.</p>
+<p>We will begin by highlighting some problems with existing fairshare
+   algorithms.  We will then present about our new Fair Tree algorithm which
+   is designed to avoid these issues.</p>
+<p>Fair Tree prioritizes users such that if accounts A and B are siblings and
+   A has a higher fairshare factor than B, all children of A will have higher
+   fairshare factors than all children of B. The algorithm uses classic computer
+   science techniques to achieve this goal. First, the traditional fairshare
+   equation, 2**-(Usage/Shares), is used but it only considers an association
+   and its siblings, rather than including the effect of parents or children
+   in the equation. It then sorts the association tree by fairshare value to
+   create a rooted plane tree and uses a depth-first traversal to rank users
+   in the order they are found. This ranking is used to create the final
+   fairshare factor.</p>
 
 <h3>Integrating Layouts Framework in SLURM</h3>
 <p>Thomas Cadeau (BULL), Yiannis Georgiou (BULL), Matthieu Hautreux (CEA)</p>
@@ -865,6 +866,6 @@ and involved in several research challenges of the European Human Brain Project.
   system to dynamically allocate disk space on our test high-IOPS SSD
   scratch system.</p>
 
-<p style="text-align:center;">Last modified 4 September 2014</p>
+<p style="text-align:center;">Last modified 9 September 2014</p>
 
 <!--#include virtual="footer.txt"-->
