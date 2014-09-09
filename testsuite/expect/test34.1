@@ -247,6 +247,11 @@ proc clean_up { rc } {
 	}
 }
 
+if {[is_super_user] == 0} {
+	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
+	exit 0
+}
+
 make_bash_script $file_in "sleep 5"
 make_bash_script $job1 "sleep 120"
 make_bash_script $job2 "sleep 30"
