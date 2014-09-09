@@ -3725,10 +3725,24 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			struct job_record **job_pptr, char **err_msg)
 {
 	static int defer_sched = -1;
-	int error_code;
+	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+
+	if (job_specs->array_bitmap) {
+		i = bit_set_count(job_specs->array_bitmap);
+		if ((job_count + i) >= slurmctld_conf.max_job_cnt) {
+			info("%s: MaxJobCount limit reached (%d + %d >= %u)",
+			     __func__, job_count, i,
+			     slurmctld_conf.max_job_cnt);
+			return EAGAIN;
+		}
+	} else if (job_count >= slurmctld_conf.max_job_cnt) {
+		info("%s: MaxJobCount limit reached (%u)",
+		     __func__, slurmctld_conf.max_job_cnt);
+		return EAGAIN;
+	}
 
 	error_code = _job_create(job_specs, allocate, will_run,
 				 &job_ptr, submit_uid, err_msg);
@@ -5682,20 +5696,6 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	if (!_valid_array_inx(job_desc))
 		return ESLURM_INVALID_ARRAY;
-
-	if (job_desc->array_bitmap) {
-		int i = bit_set_count(job_desc->array_bitmap);
-		if ((job_count + i) >= slurmctld_conf.max_job_cnt) {
-			error("%s: job_count exceeds MaxJobCount limit "
-			      "configured (%d + %d >= %u)", __func__,
-			      job_count, i, slurmctld_conf.max_job_cnt);
-			return EAGAIN;
-		}
-	} else if (job_count >= slurmctld_conf.max_job_cnt) {
-		error("%s: MaxJobCount limit reached (%u)",
-		      __func__, slurmctld_conf.max_job_cnt);
-		return EAGAIN;
-	}
 
 	/* Make sure anything that may be put in the database will be
 	 * lower case */
