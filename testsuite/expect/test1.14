@@ -40,6 +40,14 @@ set file_out        "test$test_id.output"
 set job_id           0
 set sleep_secs       10
 
+# On a cray system we might only be able to run 2 tasks per node so force it
+# to always assume this is the case.
+if { [test_cray] } {
+	set extra "export SLURM_TASKS_PER_NODE=2"
+} else {
+	set extra ""
+}
+
 
 print_header $test_id
 
@@ -62,6 +70,7 @@ if {[test_launch_poe]} {
 #
 exec $bin_rm -f $file_in $file_in2 $file_out
 make_bash_script $file_in "
+  $extra
   echo tasks_per_node=\$SLURM_TASKS_PER_NODE
   inx=0
   while \[ \$inx -lt \$SLURM_TASKS_PER_NODE \]
@@ -153,6 +162,7 @@ if {$exit_code == 0} {
 #
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "
+  $extra
   inx=0
   while \[ \$inx -lt \$SLURM_TASKS_PER_NODE \]
   do
