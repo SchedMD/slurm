@@ -4534,12 +4534,22 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, EACCES);
 		return;
 	}
+
+	/* Send message back to the caller letting him know we got it.
+	   There is no need to wait since the end result would be the
+	   same if we wait or not since the update has already
+	   happened in the database.
+	*/
+
+	slurm_send_rc_msg(msg, rc);
+
 	if (update_ptr->update_list && list_count(update_ptr->update_list))
 		rc = assoc_mgr_update(update_ptr->update_list);
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
-	slurm_send_rc_msg(msg, rc);
+	if (rc != SLURM_SUCCESS)
+		error("assoc_mgr_update gave error: %s", slurm_strerror(rc));
 }
 
 /* _slurm_rpc_reboot_nodes - process RPC to schedule nodes reboot */
