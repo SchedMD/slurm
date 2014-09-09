@@ -685,8 +685,10 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	slurmdb_reservation_rec_t resv;
 	char temp_bit[BUF_SIZE];
 
-	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
+	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
+		return rc;
 
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = resv_ptr->assoc_list;
 	resv.cluster = slurmctld_cluster_name;
 	resv.cpus = resv_ptr->cpu_cnt;
@@ -698,18 +700,8 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 		resv.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					resv_ptr->node_bitmap);
 	}
-
-	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-		time_t now = time(NULL);
-		resv.time_start = now + resv_ptr->start_time;
-		if (resv_ptr->duration && (resv_ptr->duration != NO_VAL))
-			resv.time_end = resv.time_start + resv_ptr->duration;
-		else
-			resv.time_end = resv_ptr->end_time;
-	} else {
-		resv.time_end = resv_ptr->end_time;
-		resv.time_start = resv_ptr->start_time;
-	}
+	resv.time_end = resv_ptr->end_time;
+	resv.time_start = resv_ptr->start_time;
 
 	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
 
@@ -721,17 +713,15 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;
-	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 
+	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
+		return rc;
+
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.name = resv_ptr->name;
-	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-		time_t now = time(NULL);
-		resv.time_start = now + resv_ptr->start_time;
-	} else {
-		resv.time_start = resv_ptr->start_time;
-	}
+	resv.time_start = resv_ptr->start_time;
 	/* This is just a time stamp here to delete if the reservation
 	 * hasn't started yet so we don't get trash records in the
 	 * database if said database isn't up right now */
@@ -749,8 +739,10 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	slurmdb_reservation_rec_t resv;
 	char temp_bit[BUF_SIZE];
 
-	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
+	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
+		return rc;
 
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
@@ -802,14 +794,8 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		}
 	}
 	/* now set the (maybe new) start_times */
-	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-		time_t now = time(NULL);
-		resv.time_start = now + resv_ptr->start_time;
-		resv.time_start_prev = now + resv_ptr->start_time_prev;
-	} else {
-		resv.time_start = resv_ptr->start_time;
-		resv.time_start_prev = resv_ptr->start_time_prev;
-	}
+	resv.time_start = resv_ptr->start_time;
+	resv.time_start_prev = resv_ptr->start_time_prev;
 
 	if (resv.nodes && resv_ptr->node_bitmap) {
 		resv.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
@@ -2108,8 +2094,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
 			if ((resv_ptr->partition == NULL) &&
 			    (resv_desc_ptr->partition == NULL)) {
-				info("Reservation request can not set "
-				     "Part_Nodes flag without partition");
+				info("Reservation %s request can not set "
+				     "Part_Nodes flag without partition",
+				     resv_desc_ptr->name);
 				error_code = ESLURM_INVALID_PARTITION_NAME;
 				goto update_failure;
 			}
@@ -2120,6 +2107,12 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PART_NODES)
 			resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
+			info("Reservation %s request to set TIME_FLOAT flag",
+			     resv_desc_ptr->name);
+			error_code = ESLURM_INVALID_TIME_VALUE;
+			goto update_failure;
+		}
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
 		/* Clear the partition */
@@ -2131,8 +2124,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		struct part_record *part_ptr = NULL;
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
-			info("Reservation request has invalid partition (%s)",
-			     resv_desc_ptr->partition);
+			info("Reservation %s request has invalid partition (%s)",
+			     resv_desc_ptr->name, resv_desc_ptr->partition);
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 			goto update_failure;
 		}
@@ -2153,8 +2146,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		     (resv_desc_ptr->node_cnt[0] == 0)) ||
 		    ((resv_desc_ptr->node_cnt == NULL)  &&
 		     (resv_ptr->node_cnt == 0))) {
-			info("Reservation attempt to clear licenses with "
-			     "NodeCount=0");
+			info("Reservation %s attempt to clear licenses with "
+			     "NodeCount=0", resv_desc_ptr->name);
 			error_code = ESLURM_INVALID_LICENSES;
 			goto update_failure;
 		}
@@ -2169,8 +2162,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		List license_list;
 		license_list = _license_validate2(resv_desc_ptr, &valid);
 		if (!valid) {
-			info("Reservation invalid license update (%s)",
-			     resv_desc_ptr->licenses);
+			info("Reservation %s invalid license update (%s)",
+			     resv_desc_ptr->name, resv_desc_ptr->licenses);
 			error_code = ESLURM_INVALID_LICENSES;
 			goto update_failure;
 		}
@@ -2203,14 +2196,16 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 	}
 	if ((resv_ptr->users == NULL) && (resv_ptr->accounts == NULL)) {
-		info("Reservation request lacks users or accounts");
+		info("Reservation %s request lacks users or accounts",
+		     resv_desc_ptr->name);
 		error_code = ESLURM_RESERVATION_EMPTY;
 		goto update_failure;
 	}
 
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->start_time < (now - 60)) {
-			info("Reservation request has invalid start time");
+			info("Reservation %s request has invalid start time",
+			     resv_desc_ptr->name);
 			error_code = ESLURM_INVALID_TIME_VALUE;
 			goto update_failure;
 		}
@@ -2224,7 +2219,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->end_time < (now - 60)) {
-			info("Reservation request has invalid end time");
+			info("Reservation %s request has invalid end time",
+			     resv_desc_ptr->name);
 			error_code = ESLURM_INVALID_TIME_VALUE;
 			goto update_failure;
 		}
@@ -2322,13 +2318,15 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	if (_resv_overlap(resv_ptr->start_time, resv_ptr->end_time,
 			  resv_ptr->flags, resv_ptr->node_bitmap, resv_ptr)) {
-		info("Reservation request overlaps another");
+		info("Reservation %s request overlaps another",
+		     resv_desc_ptr->name);
 		error_code = ESLURM_RESERVATION_OVERLAP;
 		goto update_failure;
 	}
 	if (_job_overlap(resv_ptr->start_time, resv_ptr->flags,
 			 resv_ptr->node_bitmap)) {
-		info("Reservation request overlaps jobs");
+		info("Reservation %s request overlaps jobs",
+		     resv_desc_ptr->name);
 		error_code = ESLURM_NODES_BUSY;
 		goto update_failure;
 	}
