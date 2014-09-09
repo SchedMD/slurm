@@ -223,7 +223,7 @@ void _print_results(hostlist_t* hll, int hl_count)
 int _run_test(char** testcase, int lines)
 {
 	int i, rc;
-	hostlist_t* hll;
+	hostlist_t* hll = NULL;
 	int hl_count = 0;
 	int level;
 	char *list;
