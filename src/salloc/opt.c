@@ -117,6 +117,7 @@
 #define OPT_TIME_VAL	0x17
 #define OPT_PROFILE     0x18
 #define OPT_CORE_SPEC   0x19
+#define OPT_HINT	0x1a
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_CPU_BIND    0x101
@@ -404,6 +405,8 @@ env_vars_t env_vars[] = {
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
   {"SALLOC_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL          },
+  {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
+  {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL          },
   {"SALLOC_KILL_CMD",      OPT_KILL_CMD,   NULL,               NULL          },
   {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
@@ -550,6 +553,18 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
 					  &opt.cpu_bind_type))
 			exit(error_exit);
+		break;
+
+	case OPT_HINT:
+		/* Keep after other options filled in */
+		if (verify_hint(val,
+				&opt.sockets_per_node,
+				&opt.cores_per_socket,
+				&opt.threads_per_core,
+				&opt.ntasks_per_core,
+				&opt.cpu_bind_type)) {
+			exit(error_exit);
+		}
 		break;
 	case OPT_MEM_BIND:
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
