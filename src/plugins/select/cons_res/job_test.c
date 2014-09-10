@@ -2656,7 +2656,7 @@ alloc_job:
 	/* translate job_res->cpus array into format with rep count */
 	build_cnt = build_job_resources_cpu_array(job_res);
 	if (job_ptr->details->whole_node) {
-		int first, last = -1;
+		int first, last = -1, inx = 0;
 		first = bit_ffs(job_res->node_bitmap);
 		if (first != -1)
 			last  = bit_fls(job_res->node_bitmap);
@@ -2664,7 +2664,15 @@ alloc_job:
 		for (i = first; i <= last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
-			job_ptr->total_cpus += select_node_record[i].cpus;
+			/* The inx here always starts at 0.
+			 * Since we are allocating whole nodes up the
+			 * cpus in the job_res or it will no longer be
+			 * accurate when the job starts finishing and
+			 * nodes are removed from the count.
+			 */
+			job_res->cpus[inx] = select_node_record[i].cpus;
+			job_ptr->total_cpus += job_res->cpus[inx];
+			inx++;
 		}
 	} else if (build_cnt >= 0)
 		job_ptr->total_cpus = build_cnt;
