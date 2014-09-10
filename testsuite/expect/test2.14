@@ -110,6 +110,14 @@ if {[wait_for_file $file_out] != 0} {
 set task_count 0
 spawn $bin_cat $file_out
 expect {
+	-re "slurm_allocation_lookup_lite" {
+		send_user "\nFAILURE: Couldn't look up the job correctly\n\n\n"
+		set exit_code 1
+	}
+	-re "No such file or directory" {
+		send_user "\nFAILURE: For some reason the resize script wasn't found\n\n\n"
+		set exit_code 1
+	}
 	-re "($number): *uid=" {
 		incr task_count
 		exp_continue
@@ -121,7 +129,7 @@ expect {
 if {$task_count != 3} {
 	send_user "\nFAILURE: Invalid task count ($task_count != 3)\n\n\n"
 	set exit_code 1
-} else {
+} elseif (!$exit_code) {
 	send_user "\nSo far, so good...\n\n\n"
 }
 
