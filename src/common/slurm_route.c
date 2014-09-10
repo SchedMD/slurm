@@ -130,8 +130,8 @@ static void _set_collectors(char *this_node_name)
 	char addrbuf[32];
 	int i, j, f;
 	int hl_count = 0;
-	uint16_t port;
-	uint16_t slurmd_port;
+	uint16_t parent_port;
+	uint16_t backup_port;
 	bool found = false;
 	bool ctldparent = true;
 
@@ -146,14 +146,14 @@ static void _set_collectors(char *this_node_name)
 	 * full list is split */
 	xassert(this_node_name);
 
-	slurmd_port = slurm_get_slurmd_port();
 	conf = slurm_conf_lock();
 	nodes = _get_all_nodes();
 	parent = strdup(conf->control_addr);
 	if (conf->backup_addr) {
 		backup = strdup(conf->backup_addr);
 	}
-	port = conf->slurmctld_port;
+	parent_port = conf->slurmctld_port;
+	backup_port = parent_port;
 	slurm_conf_unlock();
 	while (!found) {
 		if ( route_g_split_hostlist(nodes, &hll, &hl_count) ) {
@@ -178,10 +178,11 @@ static void _set_collectors(char *this_node_name)
 			xfree(msg_collect_node);
 			msg_collect_node = xmalloc(sizeof(slurm_addr_t));
 			if (ctldparent)
-				slurm_set_addr(msg_collect_node, port, parent);
+				slurm_set_addr(msg_collect_node, parent_port,
+					       parent);
 			else {
 				slurm_conf_get_addr(parent, msg_collect_node);
-				msg_collect_node->sin_port = htons(port);
+				msg_collect_node->sin_port = htons(parent_port);
 			}
 			if (debug_flags & DEBUG_FLAG_ROUTE) {
 				slurm_print_slurm_addr(msg_collect_node,
@@ -195,12 +196,12 @@ static void _set_collectors(char *this_node_name)
 					xmalloc(sizeof(slurm_addr_t));
 				if (ctldparent) {
 					slurm_set_addr(msg_collect_backup,
-						       port, backup);
+						       backup_port, backup);
 				} else {
 					slurm_conf_get_addr(backup,
 							    msg_collect_backup);
 					msg_collect_backup->sin_port =
-						htons(port);
+						htons(backup_port);
 				}
 				if (debug_flags & DEBUG_FLAG_ROUTE) {
 					slurm_print_slurm_addr(
@@ -225,7 +226,6 @@ static void _set_collectors(char *this_node_name)
 		 * We also know that the forwarding node is not a controller.
 		 *
 		 * clean up parent context */
-		port = slurmd_port;
 		ctldparent = false;
 		hostlist_destroy(nodes);
 		if (parent)
@@ -247,6 +247,12 @@ static void _set_collectors(char *this_node_name)
 			if (hostlist_count(nodes) > 1)
 				backup = hostlist_nth(nodes, 1);
 		}
+		parent_port =  slurm_conf_get_port(parent);
+		if (backup) {
+			backup_port = slurm_conf_get_port(backup);
+		} else
+			backup_port = 0;
+
 	}
 clean:
 	if (debug_flags & DEBUG_FLAG_ROUTE) {
