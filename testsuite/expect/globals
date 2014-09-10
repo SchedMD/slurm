@@ -3202,3 +3202,33 @@ proc test_proctrack { } {
 
 	return $proctype
 }
+
+#####################################################################
+#
+# Proc: get_srun_ports
+#
+# Purpose: Determine the SrunPortRange
+#
+# Returns: the SrunPortRange
+#
+#####################################################################
+
+proc get_srun_ports { } {
+
+	global scontrol alpha_numeric_under bin_grep bin_bash number
+	log_user 0
+	set ports 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SrunPortRange"
+	expect {
+		-re "SrunPortRange *=* ($alpha_numeric_under)" {
+			set ports $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $ports
+}
