@@ -1195,7 +1195,6 @@ scontrol_update_job (int argc, char *argv[])
 	}
 
 	if (_is_job_id(job_msg.job_id_str)) {
-		char *job_str = xstrdup(job_msg.job_id_str);
 		job_msg.job_id_str = _next_job_id();
 		while (job_msg.job_id_str) {
 			rc2 = slurm_update_job2(&job_msg, &resp);
@@ -1225,7 +1224,6 @@ scontrol_update_job (int argc, char *argv[])
 			}
 			job_msg.job_id_str = _next_job_id();
 		}
-		xfree(job_str);
 	}
 
 	if (update_size)	/* See check above for one job ID */
