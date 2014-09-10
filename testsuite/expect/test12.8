@@ -65,19 +65,16 @@ if {$job_id == 0} {
 
 wait_for_job $job_id DONE
 
-set good_state 0
+set failed_cnt 0
+set timeout_cnt 0
 spawn $sacct --jobs=$job_id --format=State --noheader
 expect {
 	-re "FAILED" {
-		incr good_state 1
-		exp_continue
-	}
-	-re "FAILED" {
-		incr good_state 1
+		incr failed_cnt
 		exp_continue
 	}
 	-re "TIMEOUT" {
-		incr good_state 1
+		incr timeout_cnt
 		exp_continue
 	}
 	timeout {
@@ -89,9 +86,10 @@ expect {
 	}
 }
 
-if {$good_state != 3} {
+if {$failed_cnt != 2 && $timeout_cnt != 1} {
 	send_user "\nFAILURE: batch job $job_id did not FAIL and/or the step "
-	send_user "did not TIMEOUT\n"
+	send_user "did not TIMEOUT.  Count for FAILED was $failed_cnt and "
+	send_user "TIMEOUT was $timeout_cnt\n"
 	set exit_code 1
 }
 
