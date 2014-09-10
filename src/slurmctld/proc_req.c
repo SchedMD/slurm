@@ -953,6 +953,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
 	resource_allocation_response_msg_t alloc_msg;
+	/* Locks: Read config, read job, read node, read partition */
+	slurmctld_lock_t job_read_lock = {
+		READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
@@ -981,8 +984,14 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%d",
 		      uid);
 	}
-	if (error_code == SLURM_SUCCESS)
+
+	if (error_code == SLURM_SUCCESS) {
+		/* Locks are for job_submit plugin use */
+		lock_slurmctld(job_read_lock);
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
+		unlock_slurmctld(job_read_lock);
+	}
+
 #if HAVE_ALPS_CRAY
 	/*
 	 * Catch attempts to nest salloc sessions. It is not possible to use an
@@ -2237,6 +2246,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	struct job_record *job_ptr = NULL;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
+	/* Locks: Read config, read job, read node, read partition */
+	slurmctld_lock_t job_read_lock = {
+		READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
@@ -2259,8 +2271,13 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_JOB_WILL_RUN lacks alloc_node from uid=%d", uid);
 	}
-	if (error_code == SLURM_SUCCESS)
+
+	if (error_code == SLURM_SUCCESS) {
+		/* Locks are for job_submit plugin use */
+		lock_slurmctld(job_read_lock);
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
+		unlock_slurmctld(job_read_lock);
+	}
 
 	if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
 		job_desc_msg->resp_host = xmalloc(16);
@@ -3009,6 +3026,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
+	/* Locks: Read config, read job, read node, read partition */
+	slurmctld_lock_t job_read_lock = {
+		READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
@@ -3033,8 +3053,14 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%d", uid);
 	}
-	if (error_code == SLURM_SUCCESS)
+
+	if (error_code == SLURM_SUCCESS) {
+		/* Locks are for job_submit plugin use */
+		lock_slurmctld(job_read_lock);
 		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
+		unlock_slurmctld(job_read_lock);
+	}
+
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		_throttle_start(&active_rpc_cnt);
