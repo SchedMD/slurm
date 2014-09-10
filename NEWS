@@ -221,8 +221,8 @@ documents those changes that are of interest to users and administrators.
     has finished)
  -- Fix sinfo/sview to be able to query against nodes in reserved and other
     states.
- -- Make sbatch read in (SLURM|SBATCH)_HINT in order to handle sruns in the
-    script that will use it.
+ -- Make sbatch/salloc read in (SLURM|(SBATCH|SALLOC))_HINT in order to
+    handle sruns in the script that will use it.
  -- srun properly interprets a leading "." in the executable name based upon
     the working directory of the compute node rather than the submit host.
  -- Fix Lustre misspellings in hdf5 guide
