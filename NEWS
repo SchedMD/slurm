@@ -265,6 +265,7 @@ documents those changes that are of interest to users and administrators.
     message back.  In slow systems with many associations this could speed
     responsiveness in sacctmgr after adding associations.
  -- Eliminate race condition in enforcement of MaxJobCount limit for job arrays.
+ -- Fix anomaly allocating cores for GRES with specific device/CPU mapping.
 
 * Changes in Slurm 14.03.7
 ==========================
