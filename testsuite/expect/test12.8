@@ -1,0 +1,103 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          validate that a job step will report a TIMEOUT state
+#          inside accounting when job exceeds timelimit
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2014 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id       12.8
+set exit_code     0
+set job_id        0
+set file_in       "test$test_id\_sc"
+
+print_header $test_id
+
+# Remove any vestigial files
+exec $bin_rm -f $file_in
+
+make_bash_script $file_in "$srun -t00:01:00 sleep 300"
+
+spawn $sbatch -o/dev/null -t00:02:00 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: No job was submitted\n"
+	exit 1
+}
+
+wait_for_job $job_id DONE
+
+set good_state 0
+spawn $sacct --jobs=$job_id --format=State --noheader
+expect {
+	-re "FAILED" {
+		incr good_state 1
+		exp_continue
+	}
+	-re "FAILED" {
+		incr good_state 1
+		exp_continue
+	}
+	-re "TIMEOUT" {
+		incr good_state 1
+		exp_continue
+	}
+	timeout {
+		send_user "FAILURE: sacct is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$good_state != 3} {
+	send_user "\nFAILURE: batch job $job_id did not FAIL and/or the step "
+	send_user "did not TIMEOUT\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
