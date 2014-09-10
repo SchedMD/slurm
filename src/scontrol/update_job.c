@@ -1192,6 +1192,10 @@ scontrol_update_job (int argc, char *argv[])
 	if (update_size && !_is_single_job(job_msg.job_id_str)) {
 		exit_code = 1;
 		return 0;
+	} else if (update_size) {
+		/* See check above for one job ID */
+		job_msg.job_id = slurm_atoul(job_msg.job_id_str);
+		_update_job_size(job_msg.job_id);
 	}
 
 	if (_is_job_id(job_msg.job_id_str)) {
@@ -1225,9 +1229,6 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.job_id_str = _next_job_id();
 		}
 	}
-
-	if (update_size)	/* See check above for one job ID */
-		_update_job_size(job_msg.job_id);
 
 	return rc;
 }
