@@ -128,7 +128,7 @@ static void _set_collectors(char *this_node_name)
 	hostlist_t* hll = NULL;
 	char *parent = NULL, *backup = NULL;
 	char addrbuf[32];
-	int i, j, f;
+	int i, j, f = -1;
 	int hl_count = 0;
 	uint16_t parent_port;
 	uint16_t backup_port;

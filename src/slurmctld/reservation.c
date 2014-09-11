@@ -2974,11 +2974,6 @@ extern int validate_job_resv(struct job_record *job_ptr)
 	/* Find the named reservation */
 	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 			_find_resv_name, job_ptr->resv_name);
-	if (!resv_ptr) {
-		info("Reservation name not found (%s)", job_ptr->resv_name);
-		return ESLURM_RESERVATION_INVALID;
-	}
-
 	rc = _valid_job_access_resv(job_ptr, resv_ptr);
 	if (rc == SLURM_SUCCESS) {
 		job_ptr->resv_id    = resv_ptr->resv_id;
@@ -3512,14 +3507,19 @@ fini:	FREE_NULL_BITMAP(orig_bitmap);
 }
 
 /* Determine if a job has access to a reservation
- * RET SLURM_SUCCESS if true, ESLURM_RESERVATION_ACCESS otherwise */
+ * RET SLURM_SUCCESS if true, some error code otherwise */
 static int _valid_job_access_resv(struct job_record *job_ptr,
 				  slurmctld_resv_t *resv_ptr)
 {
 	bool account_good = false, user_good = false;
 	int i;
 
-	if (resv_ptr && (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)) {
+	if (!resv_ptr) {
+		info("Reservation name not found (%s)", job_ptr->resv_name);
+		return ESLURM_RESERVATION_INVALID;
+	}
+
+	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
 		verbose("Job %u attempting to use reservation %s with floating "
 			"start time", job_ptr->job_id, resv_ptr->name);
 		return ESLURM_RESERVATION_ACCESS;
@@ -3636,6 +3636,7 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t now;
+	int rc;
 
 	if (job_ptr->resv_name == NULL)
 		return SLURM_SUCCESS;
@@ -3643,11 +3644,10 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 			_find_resv_name, job_ptr->resv_name);
 	job_ptr->resv_ptr = resv_ptr;
-	if (!resv_ptr)
-		return ESLURM_RESERVATION_INVALID;
+	rc = _valid_job_access_resv(job_ptr, resv_ptr);
+	if (rc != SLURM_SUCCESS)
+		return rc;
 
-	if (_valid_job_access_resv(job_ptr, resv_ptr) != SLURM_SUCCESS)
-		return ESLURM_RESERVATION_ACCESS;
 	now = time(NULL);
 	if (now < resv_ptr->start_time) {
 		/* reservation starts later */
@@ -3813,7 +3813,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	time_t start_relative, end_relative;
 	time_t now = time(NULL);
 	ListIterator iter;
-	int i, rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS, rc2;
 
 	job_start_time = *when;
 	job_end_time   = *when + _get_job_duration(job_ptr);
@@ -3823,10 +3823,9 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 				_find_resv_name, job_ptr->resv_name);
 		job_ptr->resv_ptr = resv_ptr;
-		if (!resv_ptr)
-			return ESLURM_RESERVATION_INVALID;
-		if (_valid_job_access_resv(job_ptr, resv_ptr) != SLURM_SUCCESS)
-			return ESLURM_RESERVATION_ACCESS;
+		rc2 = _valid_job_access_resv(job_ptr, resv_ptr);
+		if (rc2 != SLURM_SUCCESS)
+			return rc2;
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
 		if (*when < resv_ptr->start_time) {
