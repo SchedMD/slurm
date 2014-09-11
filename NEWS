@@ -24,7 +24,9 @@ documents those changes that are of interest to users and administrators.
     relative to the current time. This can be used to prevent the starting of
     longer running jobs on select nodes for maintenance purpose. See the
     reservation flag "TIME_FLOAT" for more information.
- -- Enlarge the jobid field to 18 chars in squeue output.
+ -- Enlarge the jobid field to 18 characters in squeue output.
+ -- Added "scontrol write config" option to save a copy of the current
+    configuration in a file containing a time stamp.
 
 * Changes in Slurm 14.11.0pre4
 ==============================

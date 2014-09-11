@@ -59,6 +59,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/* Local functions */
+static void _print_key_pairs(FILE* out, void *key_pairs, char *title);
+static void _write_group_header(FILE* out, char * header);
+static void _write_key_pairs(FILE* out, void *key_pairs);
+
 /*
  * slurm_api_version - Return a single number reflecting the SLURM API's
  *      version number. Use the macros SLURM_VERSION_NUM, SLURM_VERSION_MAJOR,
@@ -117,7 +122,6 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	  struct records *next;
 	} *rp = NULL;
 	struct records *crp;
-	void slurm_write_group_header(FILE *, char *);
 
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
@@ -153,11 +157,11 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
 	if (ret_list) {
-		slurm_write_key_pairs(fp, ret_list);
+		_write_key_pairs(fp, ret_list);
 		list_destroy((List)ret_list);
 	}
 
-	slurm_write_group_header (fp, "NODES");
+	_write_group_header (fp, "NODES");
 	/* Write node info; first create a string (tmp_str) that contains
 	 * all fields associated with a node (but do not include the node
 	 * name itself). Search for duplicate tmp_str records as we process
@@ -250,7 +254,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		xfree(crp);
 	}
 
-	slurm_write_group_header (fp, "PARTITIONS");
+	_write_group_header (fp, "PARTITIONS");
 	/* now write partition info */
 	part_ptr = part_info_ptr->partition_array;
 	for (i = 0; i < part_info_ptr->record_count; i++) {
@@ -275,7 +279,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration
- *	message as loaded using slurm_load_ctl_conf
+ *	message as loaded using slurm_load_ctl_conf()
  * IN out - file to write to
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  */
@@ -306,19 +310,18 @@ void slurm_print_ctl_conf ( FILE* out,
 
 	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
 	if (ret_list) {
-		slurm_print_key_pairs(out, ret_list, tmp_str);
-
+		_print_key_pairs(out, ret_list, tmp_str);
 		list_destroy((List)ret_list);
 	}
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
-			      "\nAccount Gather\n");
+	_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
+			 "\nAccount Gather\n");
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
-			      "\nExternal Sensors\n");
+	_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
+			 "\nExternal Sensors\n");
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
-			      select_title);
+	_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
+			 select_title);
 
 }
 
@@ -517,7 +520,10 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
-	if (slurm_ctl_conf_ptr->def_mem_per_cpu & MEM_PER_CPU) {
+	if (slurm_ctl_conf_ptr->def_mem_per_cpu == INFINITE) {
+		key_pair->name = xstrdup("DefMemPerNode");
+		key_pair->value = xstrdup("UNLIMITED");
+	} else if (slurm_ctl_conf_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		key_pair->name = xstrdup("DefMemPerCPU");
 		snprintf(tmp_str, sizeof(tmp_str), "%u",
 			 slurm_ctl_conf_ptr->def_mem_per_cpu &
@@ -839,7 +845,10 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
-	if (slurm_ctl_conf_ptr->max_mem_per_cpu & MEM_PER_CPU) {
+	if (slurm_ctl_conf_ptr->max_mem_per_cpu == INFINITE) {
+		key_pair->name = xstrdup("MaxMemPerNode");
+		key_pair->value = xstrdup("UNLIMITED");
+	} else if (slurm_ctl_conf_ptr->max_mem_per_cpu & MEM_PER_CPU) {
 		key_pair->name = xstrdup("MaxMemPerCPU");
 		snprintf(tmp_str, sizeof(tmp_str), "%u",
 			 slurm_ctl_conf_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
@@ -1668,12 +1677,12 @@ void slurm_print_slurmd_status (FILE* out,
 }
 
 /*
- * slurm_write_key_pairs - write the contents of slurm
+ * _write_key_pairs - write the contents of slurm
  *	configuration to an output file
  * IN out - file to write to
  * IN key_pairs - key pairs of the running slurm configuration
  */
-extern void slurm_write_key_pairs(FILE* out, void *key_pairs)
+static void _write_key_pairs(FILE* out, void *key_pairs)
 {
 	config_key_pair_t *key_pair;
 	char *temp = NULL;
@@ -1692,7 +1701,6 @@ extern void slurm_write_key_pairs(FILE* out, void *key_pairs)
 	List proepilog_list = list_create(slurm_destroy_char);
 	List resconf_list = list_create(slurm_destroy_char);
 	List proctrac_list = list_create(slurm_destroy_char);
-	void slurm_write_group_header(FILE *, char *);
 
 	if (!config_list)
 		return;
@@ -1712,20 +1720,8 @@ extern void slurm_write_key_pairs(FILE* out, void *key_pairs)
 
 		/* Certain values need to be changed to prevent
 		 * errors in reading/parsing the conf file */
-		/* - When setting DefMemPerCPU=UNLIMITED the value
-		   gets converted to 2147483647 (a bug?) */
 		if (!strcasecmp(key_pair->name, "SuspendTime") &&
 		    !strcasecmp(key_pair->value, "NONE"))
-			strcpy(key_pair->value, "0");
-		if (!strcasecmp(key_pair->name, "DefMemPerNode") &&
-		    !strcasecmp(key_pair->value, "UNLIMITED"))
-			strcpy(key_pair->value, "0");
-		if (!strcasecmp(key_pair->name, "MaxMemPerNode") &&
-		    !strcasecmp(key_pair->value, "UNLIMITED"))
-			strcpy(key_pair->value, "0");
-		if (!strcasecmp(key_pair->name, "DefMemPerCPU") &&
-		    (!strcasecmp(key_pair->value, "UNLIMITED") ||
-		     !strcasecmp(key_pair->value, "2147483647")))
 			strcpy(key_pair->value, "0");
 
 		/* Comment out certain key_pairs */
@@ -1874,84 +1870,84 @@ extern void slurm_write_key_pairs(FILE* out, void *key_pairs)
 	}
 	list_iterator_destroy(iter);
 
-	slurm_write_group_header (out, "CONTROL");
+	_write_group_header (out, "CONTROL");
 	iter = list_iterator_create(control_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)control_list);
 
-	slurm_write_group_header (out, "LOGGING & OTHER PATHS");	
+	_write_group_header (out, "LOGGING & OTHER PATHS");
 	iter = list_iterator_create(logging_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)logging_list);
 
-	slurm_write_group_header (out, "ACCOUNTING");
+	_write_group_header (out, "ACCOUNTING");
 	iter = list_iterator_create(accounting_list);
 	while((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)accounting_list);
 
-	slurm_write_group_header (out, "SCHEDULING & ALLOCATION");
+	_write_group_header (out, "SCHEDULING & ALLOCATION");
 	iter = list_iterator_create(sched_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)sched_list);
 
-	slurm_write_group_header (out, "TOPOLOGY");
+	_write_group_header (out, "TOPOLOGY");
 	iter = list_iterator_create(topology_list);
 	while((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)topology_list);
 
-	slurm_write_group_header (out, "TIMERS");
+	_write_group_header (out, "TIMERS");
 	iter = list_iterator_create(timers_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)timers_list);
 
-	slurm_write_group_header (out, "POWER");
+	_write_group_header (out, "POWER");
 	iter = list_iterator_create(power_list);
 	while((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)power_list);
 
-	slurm_write_group_header (out, "DEBUG");
+	_write_group_header (out, "DEBUG");
 	iter = list_iterator_create(debug_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)debug_list);
 
-	slurm_write_group_header (out, "EPILOG & PROLOG");
+	_write_group_header (out, "EPILOG & PROLOG");
 	iter = list_iterator_create(proepilog_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)proepilog_list);
 
-	slurm_write_group_header (out, "PROCESS TRACKING");
+	_write_group_header (out, "PROCESS TRACKING");
 	iter = list_iterator_create(proctrac_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)proctrac_list);
 
-	slurm_write_group_header (out, "RESOURCE CONFINEMENT");
+	_write_group_header (out, "RESOURCE CONFINEMENT");
 	iter = list_iterator_create(resconf_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)resconf_list);
 
-	slurm_write_group_header (out, "OTHER");
+	_write_group_header (out, "OTHER");
 	iter = list_iterator_create(other_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
@@ -1960,7 +1956,7 @@ extern void slurm_write_key_pairs(FILE* out, void *key_pairs)
 
 }
 
-extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
+static void _print_key_pairs(FILE* out, void *key_pairs, char *title)
 {
 	List config_list = (List)key_pairs;
 	ListIterator iter = NULL;
@@ -1978,13 +1974,13 @@ extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
 }
 
 /*
- * slurm_write_group_header - write the group headers on the
+ * _write_group_header - write the group headers on the
  *	output slurm configuration file - with the header
  *      string centered between the hash characters
  * IN out - file to write to
  * IN header - header string to write
  */
-void slurm_write_group_header (FILE* out, char * header)
+static void _write_group_header(FILE* out, char * header)
 {
 	static int comlen = 48;
 	int i, hdrlen, left, right;

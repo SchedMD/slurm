@@ -144,6 +144,8 @@ COMMAND CHANGES (see man pages for details)
     relative to the current time. This can be used to prevent the starting of
     longer running jobs on select nodes for maintenance purpose. See the
     reservation flag "TIME_FLOAT" for more information.
+ -- Added "scontrol write config" option to save a copy of the current
+    configuration in a file containing a time stamp.
 
 OTHER CHANGES
 =============
