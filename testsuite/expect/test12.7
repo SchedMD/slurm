@@ -205,6 +205,7 @@ check_step 0
 
 # Check the job state
 send_user "\n\nTest 1\n"
+wait_for_job $job_id PENDING
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
 	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
