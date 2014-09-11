@@ -19,7 +19,11 @@ line, \fBscontrol\fR will execute that command and terminate. All commands
 and options are case\-insensitive, although node names, partition names, and
 reservation names are case\-sensitive (node names "LX" and "lx" are distinct).
 All commands and options can be abbreviated to the extent that the
-specification is unique.
+specification is unique.  A modified Slurm configuration can be written to
+a file using the \fIscontrol write config\fR command. The resulting file
+will be named using the convention "slurm.conf.<datetime>" and located in the
+same directory as the original "slurm.conf" file. The directory containing
+the original slurm.conf must be writable for this to occur.
 
 .SH "OPTIONS"
 .TP
@@ -451,6 +455,12 @@ Wait until a job andall of its nodes are ready for use or the job has entered
 some termination state. This option is particularly useful in the SLURM Prolog
 or in the batch script itself if nodes are powered down and restarted
 automatically as needed.
+
+.TP
+\fBwrite config\fP
+Write the current configuration to a file with the naming convention of
+"slurm.conf.<datetime>" in the same directory as the original slurm.conf
+file.
 
 .TP
 \fB!!\fP

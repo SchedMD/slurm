@@ -83,6 +83,7 @@ static int	_update_bluegene_block (int argc, char *argv[]);
 static int      _update_bluegene_subbp (int argc, char *argv[]);
 static int	_update_slurmctld_debug(char *val);
 static void	_usage ();
+static void	_write_config (void);
 
 int
 main (int argc, char *argv[])
@@ -346,6 +347,74 @@ _get_command (int *argc, char **argv)
 		}
 	}
 	return 0;
+}
+
+/*
+ * _write_config - write the configuration parameters and values to a file.
+ */
+static void
+_write_config (void)
+{
+	int error_code;
+	node_info_msg_t *node_info_ptr = NULL;
+	partition_info_msg_t *part_info_ptr = NULL;
+	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+
+	/* slurm config loading code copied from _print_config() */
+
+	if (old_slurm_ctl_conf_ptr) {
+		error_code = slurm_load_ctl_conf (
+				old_slurm_ctl_conf_ptr->last_update,
+				&slurm_ctl_conf_ptr);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
+			error_code = SLURM_SUCCESS;
+			if (quiet_flag == -1) {
+				printf ("slurm_load_ctl_conf no change "
+					"in data\n");
+			}
+		}
+	}
+	else
+		error_code = slurm_load_ctl_conf ((time_t) NULL,
+						  &slurm_ctl_conf_ptr);
+
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_load_ctl_conf error");
+	}
+	else
+		old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
+
+
+	if (error_code == SLURM_SUCCESS) {
+	        /* now gather node info */
+	        error_code = scontrol_load_nodes(&node_info_ptr, 0);
+
+		if (error_code) {
+		        exit_code = 1;
+			if (quiet_flag != 1)
+			        slurm_perror ("slurm_load_node error");
+			return;
+		}
+
+		/* now gather partition info */
+		error_code = scontrol_load_partitions(&part_info_ptr);
+		if (error_code) {
+		        exit_code = 1;
+			if (quiet_flag != 1)
+			        slurm_perror ("slurm_load_partitions error");
+			return;
+		}
+
+		/* send the info off to be written */
+		slurm_write_ctl_conf (slurm_ctl_conf_ptr,
+				      node_info_ptr,
+				      part_info_ptr);
+	}
 }
 
 /*
@@ -1124,6 +1193,28 @@ _process_command (int argc, char *argv[])
 	}
 	else if (strncasecmp (tag, "show", MAX(tag_len, 3)) == 0) {
 		_show_it (argc, argv);
+	}
+	else if (strncasecmp (tag, "write", MAX(tag_len, 5)) == 0) {
+		if (argc > 2) {
+			exit_code = 1;
+			fprintf(stderr,
+				"too many arguments for keyword:%s\n",
+				tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			fprintf(stderr,
+				"too few arguments for keyword:%s\n",
+				tag);
+		} else {
+		            if (strcmp(argv[1], "config")) {
+				error_code = 1;
+				exit_code = 1;
+				fprintf (stderr,
+					 "invalid write argument:%s\n",
+					 argv[1]);
+			    } else
+			        _write_config ();
+		}
 	}
 	else if (strncasecmp (tag, "takeover", MAX(tag_len, 8)) == 0) {
 		char *secondary = NULL;
