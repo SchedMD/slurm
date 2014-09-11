@@ -54,6 +54,7 @@ enum {
 	SORTID_ERR_CPUS,
 	SORTID_FEATURES,
 	SORTID_GRES,
+	SORTID_IDLE_CPUS,
 	SORTID_NAME,
 	SORTID_NODE_ADDR,
 	SORTID_NODE_HOSTNAME,
@@ -114,6 +115,8 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_STRING, SORTID_USED_CPUS, "Used CPU Count", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_IDLE_CPUS, "Idle CPU Count", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_BOARDS, "Boards", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -287,6 +290,12 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_ERR_CPUS),
 				   tmp_cnt);
 
+	convert_num_unit((float)idle_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_IDLE_CPUS),
+				   tmp_cnt);
+
 	upper = node_state_string(node_ptr->node_state);
 	lower = str_tolower(upper);
 
@@ -426,7 +435,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
 	uint32_t alloc_memory;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
-	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20];
+	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20], tmp_idle_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
 	char tmp_used_cpus[20], tmp_cpu_load[20];
 	char tmp_current_watts[50], tmp_base_watts[50], tmp_consumed_energy[50];
@@ -495,6 +504,9 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	convert_num_unit((float)err_cpus, tmp_err_cpus, sizeof(tmp_err_cpus),
 			 UNIT_NONE);
 
+	convert_num_unit((float)idle_cpus, tmp_idle_cpus, sizeof(tmp_idle_cpus),
+			 UNIT_NONE);
+
 	if (IS_NODE_DRAIN(node_ptr)) {
 		/* don't worry about mixed since the
 		 * whole node is being drained. */
@@ -535,6 +547,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_CPU_LOAD,  tmp_cpu_load,
 			   SORTID_DISK,      tmp_disk,
 			   SORTID_ERR_CPUS,  tmp_err_cpus,
+			   SORTID_IDLE_CPUS, tmp_idle_cpus,
 			   SORTID_FEATURES,  node_ptr->features,
 			   SORTID_GRES,      node_ptr->gres,
 			   SORTID_MEMORY,    tmp_mem,
