@@ -238,7 +238,6 @@ extern int sort_user_dec(void *v1, void *v2)
 	slurmdb_report_user_rec_t *user_b;
 	int diff;
 
-	diff = 0;
 	user_a = *(slurmdb_report_user_rec_t **)v1;
 	user_b = *(slurmdb_report_user_rec_t **)v2;
 
@@ -273,7 +272,7 @@ extern int sort_user_dec(void *v1, void *v2)
  */
 extern int sort_cluster_dec(void *v1, void *v2)
 {
-	int diff = 0;
+	int diff;
 	slurmdb_report_cluster_rec_t *cluster_a;
 	slurmdb_report_cluster_rec_t *cluster_b;
 
@@ -305,7 +304,7 @@ extern int sort_cluster_dec(void *v1, void *v2)
  */
 extern int sort_assoc_dec(void *v1, void *v2)
 {
-	int diff = 0;
+	int diff;
 	slurmdb_report_assoc_rec_t *assoc_a;
 	slurmdb_report_assoc_rec_t *assoc_b;
 
@@ -346,7 +345,7 @@ extern int sort_assoc_dec(void *v1, void *v2)
  */
 extern int sort_reservations_dec(void *v1, void *v2)
 {
-	int diff = 0;
+	int diff;
 	slurmdb_reservation_rec_t *resv_a;
 	slurmdb_reservation_rec_t *resv_b;
 
