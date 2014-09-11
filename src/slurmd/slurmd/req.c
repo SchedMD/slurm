@@ -421,15 +421,15 @@ slurmd_req(slurm_msg_t *msg)
 		slurm_free_file_bcast_msg(msg->data);
 		break;
 	case REQUEST_STEP_COMPLETE:
-		rc = _rpc_step_complete(msg);
+		(void) _rpc_step_complete(msg);
 		slurm_free_step_complete_msg(msg->data);
 		break;
 	case REQUEST_JOB_STEP_STAT:
-		rc = _rpc_stat_jobacct(msg);
+		(void) _rpc_stat_jobacct(msg);
 		slurm_free_job_step_id_msg(msg->data);
 		break;
 	case REQUEST_JOB_STEP_PIDS:
-		rc = _rpc_list_pids(msg);
+		(void) _rpc_list_pids(msg);
 		slurm_free_job_step_id_msg(msg->data);
 		break;
 	case REQUEST_DAEMON_STATUS:
@@ -642,16 +642,20 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	if (!user_name) {
 #endif
 		/* send cached group ids array for the relevant uid */
-		debug3("_send_slurmstepd_init: call to getpwuid_r");
+		debug3("%s: call to getpwuid_r", __func__);
 		if (getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE,
 			       &pwd_result) || (pwd_result == NULL)) {
-			error("_send_slurmstepd_init getpwuid_r: %m");
+			error("%s: getpwuid_r: %m", __func__);
 			len = 0;
 			safe_write(fd, &len, sizeof(int));
 			errno = ESLURMD_UID_NOT_FOUND;
 			return errno;
 		}
-		debug3("_send_slurmstepd_init: return from getpwuid_r");
+		debug3("%s: return from getpwuid_r", __func__);
+		if (gid != pwd_result->pw_gid) {
+			debug("%s: Changing gid from %d to %d",
+			      __func__, gid, pwd_result->pw_gid);
+		}
 		gid = pwd_result->pw_gid;
 		if (!user_name)
 			user_name = pwd_result->pw_name;
@@ -661,7 +665,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	if (!user_name) {
 		/* Sanity check since gids_cache_lookup will fail
 		 * with a NULL. */
-		error("_send_slurmstepd_init No user name for %d: %m", uid);
+		error("%s: No user name for %d: %m", __func__, uid);
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
 		errno = ESLURMD_UID_NOT_FOUND;
@@ -3135,7 +3139,6 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		      req_uid, req->fname, strerror(errno));
 	}
 	close(fd);
-	fd = 0;
 	if (req->last_block && req->atime) {
 		struct utimbuf time_buf;
 		time_buf.actime  = req->atime;
@@ -4099,7 +4102,6 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		}
 		error("[job %u] epilog failed status=%d:%d",
 		      job_id, exit_status, term_sig);
-		rc = ESLURMD_EPILOG_FAILED;
 	} else
 		debug("completed epilog for jobid %u", job_id);
 	if (container_g_delete(job_id))
@@ -5390,7 +5392,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 
 	/* sanity check */
 	if (strlen(req->address) > sizeof(sa.sun_path) - 1) {
-		rc = EINVAL;
+		slurm_seterrno(EINVAL);
 		goto done;
 	}
 
