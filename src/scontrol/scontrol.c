@@ -366,9 +366,9 @@ _write_config (void)
 		error_code = slurm_load_ctl_conf (
 				old_slurm_ctl_conf_ptr->last_update,
 				&slurm_ctl_conf_ptr);
-		if (error_code == SLURM_SUCCESS)
+		if (error_code == SLURM_SUCCESS) {
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {
@@ -376,37 +376,36 @@ _write_config (void)
 					"in data\n");
 			}
 		}
-	}
-	else
+	} else {
 		error_code = slurm_load_ctl_conf ((time_t) NULL,
 						  &slurm_ctl_conf_ptr);
+	}
 
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_ctl_conf error");
-	}
-	else
+	} else
 		old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
 
 
 	if (error_code == SLURM_SUCCESS) {
-	        /* now gather node info */
-	        error_code = scontrol_load_nodes(&node_info_ptr, 0);
+		/* now gather node info */
+		error_code = scontrol_load_nodes(&node_info_ptr, 0);
 
 		if (error_code) {
-		        exit_code = 1;
+			exit_code = 1;
 			if (quiet_flag != 1)
-			        slurm_perror ("slurm_load_node error");
+				slurm_perror ("slurm_load_node error");
 			return;
 		}
 
 		/* now gather partition info */
 		error_code = scontrol_load_partitions(&part_info_ptr);
 		if (error_code) {
-		        exit_code = 1;
+			exit_code = 1;
 			if (quiet_flag != 1)
-			        slurm_perror ("slurm_load_partitions error");
+				slurm_perror ("slurm_load_partitions error");
 			return;
 		}
 
@@ -1205,15 +1204,14 @@ _process_command (int argc, char *argv[])
 			fprintf(stderr,
 				"too few arguments for keyword:%s\n",
 				tag);
+		} else if (strcmp(argv[1], "config")) {
+			error_code = 1;
+			exit_code = 1;
+			fprintf (stderr,
+				 "invalid write argument:%s\n",
+				 argv[1]);
 		} else {
-		            if (strcmp(argv[1], "config")) {
-				error_code = 1;
-				exit_code = 1;
-				fprintf (stderr,
-					 "invalid write argument:%s\n",
-					 argv[1]);
-			    } else
-			        _write_config ();
+			_write_config ();
 		}
 	}
 	else if (strncasecmp (tag, "takeover", MAX(tag_len, 8)) == 0) {

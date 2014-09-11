@@ -103,9 +103,9 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			    node_info_msg_t * node_info_ptr,
 			    partition_info_msg_t * part_info_ptr)
 {
-        int i = 0;
+	int i = 0;
 	char time_str[32];
-	char *tmp_str;
+	char *tmp_str = NULL;
 	char *base_path = NULL;
 	char *path = NULL;
 	void *ret_list = NULL;
@@ -126,18 +126,18 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			     time_str, sizeof(time_str));
 
 	/* open new slurm.conf.<datetime> file for write. This file will
-	   contain the currently running slurm configuration. */
+	 * contain the currently running slurm configuration. */
 
 	base_path = getenv("SLURM_CONF");
 	if (base_path == NULL)
-	        base_path = default_slurm_config_file;
+		base_path = default_slurm_config_file;
 
-	xstrfmtcat (path,  "%s.%s", base_path, time_str);
+	xstrfmtcat (path, "%s.%s", base_path, time_str);
 
 	debug("Writing slurm.conf file: %s", path);
 
 	if ( ( fp = fopen(path, "w") ) == NULL ) {
-	        fprintf(stderr, "Could not create file %s: %s\n", path, 
+		fprintf(stderr, "Could not create file %s: %s\n", path, 
 			strerror(errno));
 		xfree(path);
 		return;
@@ -159,22 +159,19 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 	slurm_write_group_header (fp, "NODES");
 	/* Write node info; first create a string (tmp_str) that contains
-	   all fields associated with a node (but do not include the node
-	   name itself). Search for duplicate tmp_str records as we process
-	   each node entry so not to have duplicates. Associate each node
-	   name that has equal tmp_str records and create a hostlist_t string
-	   for that record. */
+	 * all fields associated with a node (but do not include the node
+	 * name itself). Search for duplicate tmp_str records as we process
+	 * each node entry so not to have duplicates. Associate each node
+	 * name that has equal tmp_str records and create a hostlist_t string
+	 * for that record. */
 	for (i = 0; i < node_info_ptr->record_count; i++) {
-	        if (node_info_ptr->node_array[i].name == NULL)
-		        continue;
-
-		if (tmp_str)
-		   xfree(tmp_str);
+		if (node_info_ptr->node_array[i].name == NULL)
+			continue;
 
 		if (node_info_ptr->node_array[i].node_hostname != NULL &&
 		   strcmp(node_info_ptr->node_array[i].node_hostname,
 			  node_info_ptr->node_array[i].name))
-		                xstrfmtcat(tmp_str, " NodeHostName=%s",
+			xstrfmtcat(tmp_str, " NodeHostName=%s",
 				   node_info_ptr->node_array[i].node_hostname);
 
 		if (node_info_ptr->node_array[i].node_addr != NULL &&
@@ -184,15 +181,15 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 				   node_info_ptr->node_array[i].node_addr);
 
 		if (node_info_ptr->node_array[i].sockets)
-		        xstrfmtcat(tmp_str, " Sockets=%d",
+		        xstrfmtcat(tmp_str, " Sockets=%u",
 				   node_info_ptr->node_array[i].sockets);
 
 		if (node_info_ptr->node_array[i].cores)
-		        xstrfmtcat(tmp_str,  " CoresPerSocket=%d",
+		        xstrfmtcat(tmp_str,  " CoresPerSocket=%u",
 				   node_info_ptr->node_array[i].cores);
 
 		if (node_info_ptr->node_array[i].threads)
-		        xstrfmtcat(tmp_str, " ThreadsPerCore=%d",
+		        xstrfmtcat(tmp_str, " ThreadsPerCore=%u",
 				   node_info_ptr->node_array[i].threads);
 
 		if (node_info_ptr->node_array[i].gres != NULL)
@@ -200,15 +197,15 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 				   node_info_ptr->node_array[i].gres);
 
 		if (node_info_ptr->node_array[i].real_memory > 1)
-		        xstrfmtcat(tmp_str, " RealMemory=%d",
+		        xstrfmtcat(tmp_str, " RealMemory=%u",
 				   node_info_ptr->node_array[i].real_memory);
 
 		if (node_info_ptr->node_array[i].tmp_disk)
-		        xstrfmtcat(tmp_str, " TmpDisk=%d",
+		        xstrfmtcat(tmp_str, " TmpDisk=%u",
 				   node_info_ptr->node_array[i].tmp_disk);
 
 		if (node_info_ptr->node_array[i].weight != -1)
-		        xstrfmtcat(tmp_str, " Weight=%d",
+		        xstrfmtcat(tmp_str, " Weight=%u",
 				   node_info_ptr->node_array[i].weight);
 
 		if (node_info_ptr->node_array[i].features != NULL)
@@ -216,32 +213,32 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 				   node_info_ptr->node_array[i].features);
 
 		/* check for duplicate records */
-		for (crp=rp; crp!=NULL; crp=crp->next) {
-		        if(!strcmp(crp->rec, tmp_str)) break;
+		for (crp = rp; crp != NULL; crp = crp->next) {
+			if (!strcmp(crp->rec, tmp_str)) {
+				xfree(tmp_str);
+				break;
+			}
 		}
-		if (crp==NULL) {
-		        crp = xmalloc(sizeof(struct records));
-			crp->rec = xmalloc(strlen(tmp_str)+1);
-			strcpy(crp->rec, tmp_str);
+		if (crp == NULL) {
+			crp = xmalloc(sizeof(struct records));
+			crp->rec = tmp_str;
+			tmp_str = NULL;	/* transfered to record */
 			crp->hostlist = hostlist_create("");
 			hostlist_push(crp->hostlist,
 				      node_info_ptr->node_array[i].name);
 			crp->next = rp;
 			rp = crp;
+		} else {
+			hostlist_push(crp->hostlist,
+				      node_info_ptr->node_array[i].name);
 		}
-		else
-		        hostlist_push(crp->hostlist,
-				      node_info_ptr->node_array[i].name);  
 	}
 
 	/* now write the node strings to the output file */
-	xfree(tmp_str);
-	tmp_str = NULL;
-	for (crp=rp; crp!=NULL; crp=crp->next) {
-	        tmp_str = hostlist_ranged_string_xmalloc(crp->hostlist);
-	        fprintf(fp, "NodeName=%s%s\n",
-			tmp_str, crp->rec);
-		debug("Hostlist: %s written to output file.",tmp_str);
+	for (crp = rp; crp != NULL; crp = crp->next) {
+		tmp_str = hostlist_ranged_string_xmalloc(crp->hostlist);
+		fprintf(fp, "NodeName=%s%s\n", tmp_str, crp->rec);
+		debug("Hostlist: %s written to output file.", tmp_str);
 		xfree(tmp_str);
 		xfree(crp->rec);
 		hostlist_destroy(crp->hostlist);
@@ -257,15 +254,15 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	/* now write partition info */
 	part_ptr = part_info_ptr->partition_array;
 	for (i = 0; i < part_info_ptr->record_count; i++) {
-	        if (part_ptr[i].name == NULL)
-		        continue;
+		if (part_ptr[i].name == NULL)
+			continue;
 		fprintf(fp, "PartitionName=%s", part_ptr[i].name);
 		if (part_ptr[i].nodes != NULL)
-		        fprintf(fp, " Nodes=%s", part_ptr[i].nodes);
-		if (part_ptr[i].max_time != -1)
-		        fprintf(fp, " MaxTime=%d", part_ptr[i].max_time);
+			fprintf(fp, " Nodes=%s", part_ptr[i].nodes);
+		if (part_ptr[i].max_time != INFINITE)
+			fprintf(fp, " MaxTime=%u", part_ptr[i].max_time);
 		if (part_ptr[i].flags & PART_FLAG_DEFAULT)
-		        fprintf(fp, " DEFAULT=YES");
+			fprintf(fp, " DEFAULT=YES");
 
 		fprintf(fp, "\n");
 	}
@@ -274,7 +271,6 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 	xfree(path);
 	fclose(fp);
-
 }
 
 /*
@@ -1702,328 +1698,263 @@ extern void slurm_write_key_pairs(FILE* out, void *key_pairs)
 		return;
 
 	iter = list_iterator_create(config_list);
-	while((key_pair = list_next(iter))) {
-	        /* Ignore ENV variables in config_list; they'll
-		   cause problems in an active slurm.conf */
-    	        if(!strcmp(key_pair->name,
-			   "BOOT_TIME") ||
-		   !strcmp(key_pair->name,
-			   "HASH_VAL") ||
-		   !strcmp(key_pair->name,
-			   "NEXT_JOB_ID") ||
-		   !strcmp(key_pair->name,
-			   "SLURM_CONF") ||
-		   !strcmp(key_pair->name,
-			   "SLURM_VERSION")) {
-		       debug("Ignoring %s (not written)",
-			     key_pair->name);
-		       continue;
+	while ((key_pair = list_next(iter))) {
+		/* Ignore ENV variables in config_list; they'll
+		 * cause problems in an active slurm.conf */
+		if (!strcmp(key_pair->name, "BOOT_TIME") ||
+		    !strcmp(key_pair->name, "HASH_VAL") ||
+		    !strcmp(key_pair->name, "NEXT_JOB_ID") ||
+		    !strcmp(key_pair->name, "SLURM_CONF") ||
+		    !strcmp(key_pair->name, "SLURM_VERSION")) {
+			debug("Ignoring %s (not written)", key_pair->name);
+			continue;
 		}
-	    
+
 		/* Certain values need to be changed to prevent
-		   errors in reading/parsing the conf file */
+		 * errors in reading/parsing the conf file */
 		/* - When setting DefMemPerCPU=UNLIMITED the value
 		   gets converted to 2147483647 (a bug?) */
-		if(!strcasecmp(key_pair->name, "SuspendTime") &&
-		   !strcasecmp(key_pair->value, "NONE"))
-		       strcpy(key_pair->value, "0");
-		if(!strcasecmp(key_pair->name, "DefMemPerNode") &&
-		   !strcasecmp(key_pair->value, "UNLIMITED"))
-		       strcpy(key_pair->value, "0");
-		if(!strcasecmp(key_pair->name, "MaxMemPerNode") &&
-		   !strcasecmp(key_pair->value, "UNLIMITED"))
-		       strcpy(key_pair->value, "0");
-		if(!strcasecmp(key_pair->name, "DefMemPerCPU") &&
-		   (!strcasecmp(key_pair->value, "UNLIMITED") ||
-		    !strcasecmp(key_pair->value, "2147483647")))
-		       strcpy(key_pair->value, "0");
+		if (!strcasecmp(key_pair->name, "SuspendTime") &&
+		    !strcasecmp(key_pair->value, "NONE"))
+			strcpy(key_pair->value, "0");
+		if (!strcasecmp(key_pair->name, "DefMemPerNode") &&
+		    !strcasecmp(key_pair->value, "UNLIMITED"))
+			strcpy(key_pair->value, "0");
+		if (!strcasecmp(key_pair->name, "MaxMemPerNode") &&
+		    !strcasecmp(key_pair->value, "UNLIMITED"))
+			strcpy(key_pair->value, "0");
+		if (!strcasecmp(key_pair->name, "DefMemPerCPU") &&
+		    (!strcasecmp(key_pair->value, "UNLIMITED") ||
+		     !strcasecmp(key_pair->value, "2147483647")))
+			strcpy(key_pair->value, "0");
 
 		/* Comment out certain key_pairs */
 		/* - TaskPluginParam=(null type) is not a NULL but
-		   it does imply no value */
-	        if(key_pair->value == NULL ||
-		   strlen(key_pair->value) == 0 ||
-		   !strcasecmp(key_pair->value, "(null type)") ||
-		   !strcasecmp(key_pair->value, "N/A") ||
-		   (!strcasecmp(key_pair->name, "KeepAliveTime") &&
-		    !strcasecmp(key_pair->value, "SYSTEM_DEFAULT")) ||
-		   !strcasecmp(key_pair->name, "DynAllocPort")) {
-		       temp = xstrdup_printf("#%s=",
-		             key_pair->name);
-		       debug("Commenting out %s=%s",
-			     key_pair->name,
-			     key_pair->value);
+		 * it does imply no value */
+		if ((key_pair->value == NULL) ||
+		    (strlen(key_pair->value) == 0) ||
+		    !strcasecmp(key_pair->value, "(null type)") ||
+		    !strcasecmp(key_pair->value, "N/A") ||
+		    (!strcasecmp(key_pair->name, "KeepAliveTime") &&
+		     !strcasecmp(key_pair->value, "SYSTEM_DEFAULT")) ||
+		    !strcasecmp(key_pair->name, "DynAllocPort")) {
+			temp = xstrdup_printf("#%s=", key_pair->name);
+			debug("Commenting out %s=%s",
+			      key_pair->name,
+			      key_pair->value);
+		} else {
+			key_pair->value = strtok(key_pair->value, " (");
+			temp = xstrdup_printf("%s=%s",
+					      key_pair->name, key_pair->value);
 		}
-		else {
-	               key_pair->value = strtok(key_pair->value, " (");
-		       temp = xstrdup_printf("%s=%s",
-		             key_pair->name, key_pair->value);
+
+		if (!strcasecmp(key_pair->name, "ControlMachine") ||
+		    !strcasecmp(key_pair->name, "ControlAddr") ||
+		    !strcasecmp(key_pair->name, "ClusterName") ||
+		    !strcasecmp(key_pair->name, "SlurmUser") ||
+		    !strcasecmp(key_pair->name, "SlurmdUser") ||
+		    !strcasecmp(key_pair->name, "SlurmctldPort") ||
+		    !strcasecmp(key_pair->name, "SlurmdPort") ||
+		    !strcasecmp(key_pair->name, "BackupAddr") ||
+		    !strcasecmp(key_pair->name, "BackupController")) {
+			list_append(control_list, temp);
+			continue;
 		}
-		if(!strcasecmp(key_pair->name,
-			       "ControlMachine") ||
-		   !strcasecmp(key_pair->name,
-			       "ControlAddr") ||
-		   !strcasecmp(key_pair->name,
-			       "ClusterName") ||
-		   !strcasecmp(key_pair->name,
-			       "SlurmUser") ||
-		   !strcasecmp(key_pair->name,
-			       "SlurmdUser") ||
-		   !strcasecmp(key_pair->name,
-			       "SlurmctldPort") ||
-		   !strcasecmp(key_pair->name,
-			       "SlurmdPort") ||
-		   !strcasecmp(key_pair->name,
-			       "BackupAddr") ||
-		   !strcasecmp(key_pair->name,
-			       "BackupController"))
-		  list_append(control_list, temp);
-		else if(!strcasecmp(key_pair->name,
-				    "StateSaveLocation") ||
-			!strcasecmp(key_pair->name,
-				    "SlurmdSpoolDir") ||
-			!strcasecmp(key_pair->name,
-				    "SlurmctldLogFile") ||
-			!strcasecmp(key_pair->name,
-				    "SlurmdLogFile") ||
-			!strcasecmp(key_pair->name,
-				    "SlurmctldPidFile") ||
-			!strcasecmp(key_pair->name,
-				    "SlurmdPidFile") ||
-			!strcasecmp(key_pair->name,
-				    "SlurmSchedLogFile") ||
-			!strcasecmp(key_pair->name,
-				    "SlurmEventHandlerLogfile"))
-		  list_append(logging_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "AccountingStorageBackupHost") ||
-			 !strcasecmp(key_pair->name,
-				     "AccountingStorageEnforce") ||
-			 !strcasecmp(key_pair->name,
-				     "AccountingStorageHost") ||
-			 !strcasecmp(key_pair->name,
-				     "AccountingStorageLoc") ||
-			 !strcasecmp(key_pair->name,
-				     "AccountingStoragePort") ||
-			 !strcasecmp(key_pair->name,
-				     "AccountingStorageType") ||
-			 !strcasecmp(key_pair->name,
-				     "AccountingStorageUser") ||
-			 !strcasecmp(key_pair->name,
-				     "AccountingStoreJobComment") ||
-			 !strcasecmp(key_pair->name,
-				     "AcctGatherEnergyType") ||
-			 !strcasecmp(key_pair->name,
-				     "AcctGatherFilesystemType") ||
-			 !strcasecmp(key_pair->name,
-				     "AcctGatherInfinibandType") ||
-			 !strcasecmp(key_pair->name,
-				     "AcctGatherNodeFreq") ||
-			 !strcasecmp(key_pair->name,
-				     "JobAcctGatherFrequency") ||
-			 !strcasecmp(key_pair->name,
-				     "JobAcctGatherType") ||
-			 !strcasecmp(key_pair->name,
-				     "ExtSensorsType") ||
-			 !strcasecmp(key_pair->name,
-				     "ExtSensorsFreq") ||
-			 !strcasecmp(key_pair->name,
-				     "AcctGatherProfileType"))
-		  list_append(accounting_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "SuspendExcNodes") ||
-			 !strcasecmp(key_pair->name,
-				     "SuspendExcParts") ||
-			 !strcasecmp(key_pair->name,
-				     "SuspendProgram") ||
-			 !strcasecmp(key_pair->name,
-				     "SuspendRate") ||
-			 !strcasecmp(key_pair->name,
-				     "SuspendTime") ||
-			 !strcasecmp(key_pair->name,
-				     "SuspendTimeout") ||
-			 !strcasecmp(key_pair->name,
-				     "ResumeProgram") ||
-			 !strcasecmp(key_pair->name,
-				     "ResumeRate") ||
-			 !strcasecmp(key_pair->name,
-				     "ResumeTimeout"))
-		  list_append(power_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "SelectType") ||
-			 !strcasecmp(key_pair->name,
-				     "SelectTypeParameters") ||
-			 !strcasecmp(key_pair->name,
-				     "SchedulerParameters") ||
-			 !strcasecmp(key_pair->name,
-				     "SchedulerPort") ||
-			 !strcasecmp(key_pair->name,
-				     "SchedulerRootFilter") ||
-			 !strcasecmp(key_pair->name,
-				     "SchedulerTimeSlice") ||
-			 !strcasecmp(key_pair->name,
-				     "SchedulerType") ||
-			 !strcasecmp(key_pair->name,
-				     "SlurmSchedLogLevel") ||
-			 !strcasecmp(key_pair->name,
-				     "PreemptMode") ||
-			 !strcasecmp(key_pair->name,
-				     "PreemptType") ||
-			 !strcasecmp(key_pair->name,
-				     "PriorityType") ||
-			 !strcasecmp(key_pair->name,
-				     "FastSchedule"))
-		  list_append(sched_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "TopologyPlugin"))
-		  list_append(topology_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "SlurmctldTimeout") ||
-			 !strcasecmp(key_pair->name,
-				     "SlurmdTimeout") ||
-			 !strcasecmp(key_pair->name,
-				     "InactiveLimit") ||
-			 !strcasecmp(key_pair->name,
-				     "MinJobAge") ||
-			 !strcasecmp(key_pair->name,
-				     "KillWait") ||
-			 !strcasecmp(key_pair->name,
-				     "BatchStartTimeout") ||
-			 !strcasecmp(key_pair->name,
-				     "CompleteWait") ||
-			 !strcasecmp(key_pair->name,
-				     "EpilogMsgTime") ||
-			 !strcasecmp(key_pair->name,
-				     "GetEnvTimeout") ||
-			 !strcasecmp(key_pair->name,
-				     "Waittime"))
-		  list_append(timers_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "SlurmctldDebug") ||
-			 !strcasecmp(key_pair->name,
-				     "SlurmdDebug") ||
-			 !strcasecmp(key_pair->name,
-				     "DebugFlags"))
-		  list_append(debug_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "TaskPlugin") ||
-			 !strcasecmp(key_pair->name,
-				     "TaskPluginParam"))
-		  list_append(resconf_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "ProcTrackType"))
-		  list_append(proctrac_list, temp);
-		else if (!strcasecmp(key_pair->name,
-				     "Epilog") ||
-			 !strcasecmp(key_pair->name,
-				     "Prolog") ||
-			 !strcasecmp(key_pair->name,
-				     "SrunProlog") ||
-			 !strcasecmp(key_pair->name,
-				     "SrunEpilog") ||
-			 !strcasecmp(key_pair->name,
-				     "TaskEpilog") ||
-			 !strcasecmp(key_pair->name,
-				     "TaskProlog"))
-		  list_append(proepilog_list, temp);
-		else
-		  list_append(other_list, temp);
+
+		if (!strcasecmp(key_pair->name, "StateSaveLocation") ||
+		    !strcasecmp(key_pair->name, "SlurmdSpoolDir") ||
+		    !strcasecmp(key_pair->name, "SlurmctldLogFile") ||
+		    !strcasecmp(key_pair->name, "SlurmdLogFile") ||
+		    !strcasecmp(key_pair->name, "SlurmctldPidFile") ||
+		    !strcasecmp(key_pair->name, "SlurmdPidFile") ||
+		    !strcasecmp(key_pair->name, "SlurmSchedLogFile") ||
+		    !strcasecmp(key_pair->name, "SlurmEventHandlerLogfile")) {
+			list_append(logging_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "AccountingStorageBackupHost") ||
+		    !strcasecmp(key_pair->name, "AccountingStorageEnforce") ||
+		    !strcasecmp(key_pair->name, "AccountingStorageHost") ||
+		    !strcasecmp(key_pair->name, "AccountingStorageLoc") ||
+		    !strcasecmp(key_pair->name, "AccountingStoragePort") ||
+		    !strcasecmp(key_pair->name, "AccountingStorageType") ||
+		    !strcasecmp(key_pair->name, "AccountingStorageUser") ||
+		    !strcasecmp(key_pair->name, "AccountingStoreJobComment") ||
+		    !strcasecmp(key_pair->name, "AcctGatherEnergyType") ||
+		    !strcasecmp(key_pair->name, "AcctGatherFilesystemType") ||
+		    !strcasecmp(key_pair->name, "AcctGatherInfinibandType") ||
+		    !strcasecmp(key_pair->name, "AcctGatherNodeFreq") ||
+		    !strcasecmp(key_pair->name, "AcctGatherProfileType") ||
+		    !strcasecmp(key_pair->name, "JobAcctGatherFrequency") ||
+		    !strcasecmp(key_pair->name, "JobAcctGatherType") ||
+		    !strcasecmp(key_pair->name, "ExtSensorsType") ||
+		    !strcasecmp(key_pair->name, "ExtSensorsFreq")) {
+			list_append(accounting_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "SuspendExcNodes") ||
+		    !strcasecmp(key_pair->name, "SuspendExcParts") ||
+		    !strcasecmp(key_pair->name, "SuspendProgram") ||
+		    !strcasecmp(key_pair->name, "SuspendRate") ||
+		    !strcasecmp(key_pair->name, "SuspendTime") ||
+		    !strcasecmp(key_pair->name, "SuspendTimeout") ||
+		    !strcasecmp(key_pair->name, "ResumeProgram") ||
+		    !strcasecmp(key_pair->name, "ResumeRate") ||
+		    !strcasecmp(key_pair->name, "ResumeTimeout")) {
+			list_append(power_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "SelectType") ||
+		    !strcasecmp(key_pair->name, "SelectTypeParameters") ||
+		    !strcasecmp(key_pair->name, "SchedulerParameters") ||
+		    !strcasecmp(key_pair->name, "SchedulerPort") ||
+		    !strcasecmp(key_pair->name, "SchedulerRootFilter") ||
+		    !strcasecmp(key_pair->name, "SchedulerTimeSlice") ||
+		    !strcasecmp(key_pair->name, "SchedulerType") ||
+		    !strcasecmp(key_pair->name, "SlurmSchedLogLevel") ||
+		    !strcasecmp(key_pair->name, "PreemptMode") ||
+		    !strcasecmp(key_pair->name, "PreemptType") ||
+		    !strcasecmp(key_pair->name, "PriorityType") ||
+		    !strcasecmp(key_pair->name, "FastSchedule")) {
+			list_append(sched_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "TopologyPlugin")) {
+			list_append(topology_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "SlurmctldTimeout") ||
+		    !strcasecmp(key_pair->name, "SlurmdTimeout") ||
+		    !strcasecmp(key_pair->name, "InactiveLimit") ||
+		    !strcasecmp(key_pair->name, "MinJobAge") ||
+		    !strcasecmp(key_pair->name, "KillWait") ||
+		    !strcasecmp(key_pair->name, "BatchStartTimeout") ||
+		    !strcasecmp(key_pair->name, "CompleteWait") ||
+		    !strcasecmp(key_pair->name, "EpilogMsgTime") ||
+		    !strcasecmp(key_pair->name, "GetEnvTimeout") ||
+		    !strcasecmp(key_pair->name, "Waittime")) {
+			list_append(timers_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "SlurmctldDebug") ||
+		    !strcasecmp(key_pair->name, "SlurmdDebug") ||
+		    !strcasecmp(key_pair->name, "DebugFlags")) {
+			list_append(debug_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "TaskPlugin") ||
+		    !strcasecmp(key_pair->name, "TaskPluginParam")) {
+			list_append(resconf_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "ProcTrackType")) {
+			list_append(proctrac_list, temp);
+			continue;
+		}
+
+		if (!strcasecmp(key_pair->name, "Epilog") ||
+		    !strcasecmp(key_pair->name, "Prolog") ||
+		    !strcasecmp(key_pair->name, "SrunProlog") ||
+		    !strcasecmp(key_pair->name, "SrunEpilog") ||
+		    !strcasecmp(key_pair->name, "TaskEpilog") ||
+		    !strcasecmp(key_pair->name, "TaskProlog")) {
+			list_append(proepilog_list, temp);
+			continue;
+		} else {
+			list_append(other_list, temp);
+		}
 	}
 	list_iterator_destroy(iter);
 
 	slurm_write_group_header (out, "CONTROL");
 	iter = list_iterator_create(control_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)control_list);
 
 	slurm_write_group_header (out, "LOGGING & OTHER PATHS");	
 	iter = list_iterator_create(logging_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)logging_list);
 
 	slurm_write_group_header (out, "ACCOUNTING");
 	iter = list_iterator_create(accounting_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)accounting_list);
 
 	slurm_write_group_header (out, "SCHEDULING & ALLOCATION");
 	iter = list_iterator_create(sched_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)sched_list);
 
 	slurm_write_group_header (out, "TOPOLOGY");
 	iter = list_iterator_create(topology_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)topology_list);
 
 	slurm_write_group_header (out, "TIMERS");
 	iter = list_iterator_create(timers_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)timers_list);
 
 	slurm_write_group_header (out, "POWER");
 	iter = list_iterator_create(power_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)power_list);
 
 	slurm_write_group_header (out, "DEBUG");
 	iter = list_iterator_create(debug_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)debug_list);
 
 	slurm_write_group_header (out, "EPILOG & PROLOG");
 	iter = list_iterator_create(proepilog_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)proepilog_list);
 
 	slurm_write_group_header (out, "PROCESS TRACKING");
 	iter = list_iterator_create(proctrac_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)proctrac_list);
 
 	slurm_write_group_header (out, "RESOURCE CONFINEMENT");
 	iter = list_iterator_create(resconf_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)resconf_list);
 
 	slurm_write_group_header (out, "OTHER");
 	iter = list_iterator_create(other_list);
-	while((temp = list_next(iter))) {
-	        fprintf(out, "%s\n", temp);
-	}
+	while ((temp = list_next(iter)))
+		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)other_list);
 
@@ -2040,7 +1971,7 @@ extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
 
 	fprintf(out, "%s", title);
 	iter = list_iterator_create(config_list);
-	while((key_pair = list_next(iter))) {
+	while ((key_pair = list_next(iter))) {
 		fprintf(out, "%-23s = %s\n", key_pair->name, key_pair->value);
 	}
 	list_iterator_destroy(iter);
@@ -2055,20 +1986,28 @@ extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
  */
 void slurm_write_group_header (FILE* out, char * header)
 {
-  static int comlen = 48;
-  int i;
-  int hdrlen = strlen(header);
-  int left = ((comlen - hdrlen) / 2) - 1;
-  int right = left;
-  if((comlen - hdrlen) % 2) right++; 
+	static int comlen = 48;
+	int i, hdrlen, left, right;
 
-  fprintf(out, "#\n");
-  for(i=0; i<comlen; i++) fprintf(out, "#");
-  fprintf(out, "\n#");
-  for(i=0; i<left; i++) fprintf(out, " ");
-  fprintf(out, "%s", header);
-  for(i=0; i<right; i++) fprintf(out, " ");
-  fprintf(out, "#\n");
-  for(i=0; i<comlen; i++) fprintf(out, "#");
-  fprintf(out, "\n");
+	if (!header)
+		return;
+	hdrlen = strlen(header);
+	left = ((comlen - hdrlen) / 2) - 1;
+	right = left;
+	if ((comlen - hdrlen) % 2)
+		right++; 
+
+	fprintf(out, "#\n");
+	for (i = 0; i < comlen; i++)
+		fprintf(out, "#");
+	fprintf(out, "\n#");
+	for (i = 0; i < left; i++)
+		fprintf(out, " ");
+	fprintf(out, "%s", header);
+	for (i = 0; i < right; i++)
+		fprintf(out, " ");
+	fprintf(out, "#\n");
+	for (i = 0; i < comlen; i++)
+		fprintf(out, "#");
+	fprintf(out, "\n");
 }
