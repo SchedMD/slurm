@@ -57,7 +57,7 @@ delimited list or a range may be specified using a "\-" separator
 generic resource; an attempt to use other CPUs will not be honored.</B>
 If not specified, then any CPU can be used with the resources.
 If any CPU can be effectively used with the resources, then do not specify the
-\fBCPUs\fR option for improved speed in the SLURM scheduling logic.
+CPUs option for improved speed in the SLURM scheduling logic.
 
 <LI><B>File</B> Fully qualified pathname of the device files associated with a
 resource.
