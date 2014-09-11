@@ -552,6 +552,7 @@ proc wait_for_file { file_name } {
 #        desired_state -- The state you want the job to attain before
 #                         returning.  Currently supports:
 #                            DONE any terminated state
+#                            PENDING job is pending
 #                            RUNNING job is running
 #
 # NOTE: We sleep for two seconds before replying that a job is
@@ -565,6 +566,7 @@ proc wait_for_job { job_id desired_state } {
 	# First verify that desired_state is supported
 	switch $desired_state {
 		"DONE" {}
+		"PENDING" {}
 		"RUNNING" {}
 		default {
 			send_user "FAILURE: wait_for_job with invalid state: $desired_state\n"
@@ -605,6 +607,14 @@ proc wait_for_job { job_id desired_state } {
 					send_user "but we wanted RUNNING\n"
 				}
 				return 1
+			}
+			"PENDING" {
+				if {[string compare $desired_state "PENDING"] == 0} {
+					send_user "Job $job_id is PENDING\n"
+					return 0
+				}
+				send_user "Job $job_id is in state $state, "
+				send_user "desire $desired_state\n"
 			}
 			"RUNNING" {
 				if {[string compare $desired_state "RUNNING"] == 0} {
