@@ -55,7 +55,7 @@ documents those changes that are of interest to users and admins.
  -- cons_res - When requesting exclusive access make sure we set the number
     of cpus in the job_resources_t structure so as nodes finish the correct
     cpu count is displayed in the user tools.
- -- If the job_submit plugin calls take longer than 1 second to run print a
+ -- If the job_submit plugin calls take longer than 1 second to run, print a
     warning.
 
 * Changes in Slurm 14.03.7

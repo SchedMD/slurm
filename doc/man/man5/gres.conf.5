@@ -32,14 +32,18 @@ Note that Count is a 32\-bit field and the maximum value is 4,294,967,295.
 .TP
 \fBCPUs\fR
 Specify the CPU index numbers for the specific CPUs which can
-use this resource. For example, it may be strongly preferable
+use this resource.
+For example, it may be strongly preferable
 to use specific CPUs with specific devices (e.g. on a NUMA
 architecture). Multiple CPUs may be specified using a comma
 delimited list or a range may be specified using a "\-" separator
 (e.g. "0,1,2,3" or "0\-3").
+If specified, then only the identified CPUs can be allocated with each generic
+resource; an attempt to use other CPUs will not be honored.
 If not specified, then any CPU can be used with the resources.
-If any CPU can be used with the resources, then do not specify the
+If any CPU can be effectively used with the resources, then do not specify the
 \fBCPUs\fR option for improved speed in the SLURM scheduling logic.
+
 Since SLURM must be able to perform resource management on heterogeneous
 clusters having various CPU ID numbering schemes, use the SLURM CPU index
 numbers here
