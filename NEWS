@@ -279,6 +279,8 @@ documents those changes that are of interest to users and administrators.
     cpu count is displayed in the user tools.
  -- If the job_submit plugin calls take longer than 1 second to run, print a
     warning.
+ -- Make sure transfer_s_p_options transfers all the portions of the
+    s_p_options_t struct.
 
 * Changes in Slurm 14.03.7
 ==========================
