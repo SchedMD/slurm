@@ -42,6 +42,9 @@ set file_in      "test$test_id\_sc"
 array set nodes {}
 array set tasks {}
 
+# some systems take a while to run the | sort -n | uniq -c stuff
+set timeout 60
+
 print_header $test_id
 
 if {![string match *CR_PACK_NODES* [test_select_type_params]]} {

@@ -50,7 +50,7 @@ if {[test_launch_poe]} {
 # spawn an allocation to run on 2
 # hosts with 4 tasks.
 #
-spawn $salloc -N 2 -n 4 -t 1
+spawn $salloc --gres=craynetwork:0 -N 2 -n 4 -t 1
 set salloc_id $spawn_id
 expect {
 	-re "Node count specification invalid|More processors requested" {
