@@ -745,6 +745,10 @@ job command are read\-only and cannot be modified:
 \fIAllocNode:Sid\fP
 Local node and system id making the resource allocation.
 .TP
+\fIBatchFlag\fP
+Jobs submitted using the sbatch command have BatchFlag set to 1.
+Jobs submitted using other commands have BatchFlag set to 0.
+.TP
 \fIEndTime\fP
 The time the job is expected to terminate based on the job's time
 limit.  When the job ends sooner, this field will be updated with the
