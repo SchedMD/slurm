@@ -2514,7 +2514,14 @@ static int _job_state_validate(char *config, void **gres_data,
 		if (cnt < 0)
 			return SLURM_ERROR;
 	} else {
-		return SLURM_ERROR;
+		/* Did not find this GRES name, check for zero value */
+		num = strrchr(config, ':');
+		if (num) {
+			cnt = strtol(num + 1, &last_num, 10);
+			if ((last_num[0] != '\0') || (cnt != 0))
+				return SLURM_ERROR;
+		} else
+			return SLURM_ERROR;
 	}
 
 	if (cnt == 0) {
@@ -4506,7 +4513,14 @@ static int _step_state_validate(char *config, void **gres_data,
 		if (cnt < 0)
 			return SLURM_ERROR;
 	} else {
-		return SLURM_ERROR;
+		/* Did not find this GRES name, check for zero value */
+		num = strrchr(config, ':');
+		if (num) {
+			 cnt = strtol(num + 1, &last_num, 10);
+			if ((last_num[0] != '\0') || (cnt != 0))
+				return SLURM_ERROR;
+		} else
+			return SLURM_ERROR;
 	}
 
 	if (cnt == 0) {
