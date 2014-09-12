@@ -86,7 +86,7 @@ int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid)
 int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 {
 	int rc, i, non_smp;
-	char *buff = NULL;
+	char *buff = NULL, *resv_ports = NULL, *tmp = NULL;
 
 	/*
 	 * Write the CRAY_NUM_COOKIES and CRAY_COOKIES variables out
@@ -123,11 +123,21 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 	 * Cray's PMI uses this is the port to communicate its control tree
 	 * information.
 	 */
-	rc = env_array_overwrite_fmt(&job->env, PMI_CONTROL_PORT_ENV,
-				     "%"PRIu32, sw_job->port);
-	if (rc == 0) {
-		CRAY_ERR("Failed to set env var " PMI_CONTROL_PORT_ENV);
-		return SLURM_ERROR;
+	resv_ports = getenvp(job->env, "SLURM_STEP_RESV_PORTS");
+	if (resv_ports != NULL) {
+		buff = xstrdup(resv_ports);
+		tmp = strchr(buff, '-');
+		if (tmp != NULL) {
+			*tmp = '\0';
+		}
+		rc = env_array_overwrite(&job->env, PMI_CONTROL_PORT_ENV,
+					 buff);
+		xfree(buff);
+		if (rc == 0) {
+			CRAY_ERR("Failed to set env var "PMI_CONTROL_PORT_ENV);
+			return SLURM_ERROR;
+		}
+
 	}
 
 	/*
@@ -351,10 +361,9 @@ void print_jobinfo(slurm_cray_jobinfo_t *job)
 	}
 
 	// Log jobinfo
-	info("jobinfo magic=%"PRIx32
-	     " apid=%"PRIu64" port=%"PRIu32" num_ports=%"PRIu32
+	info("jobinfo magic=%"PRIx32" apid=%"PRIu64
 	     " num_cookies=%"PRIu32" cookies=%s cookie_ids=%s",
-	     job->magic, job->apid, job->port, job->num_ports,
+	     job->magic, job->apid,
 	     job->num_cookies, cookie_str, cookie_id_str);
 
 	// Cleanup

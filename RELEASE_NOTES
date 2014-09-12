@@ -40,6 +40,12 @@ HIGHLIGHTS
     is available directly using names slurm.reservations, slurm.jobs,
     slurm.log_info, etc. Also, the job_submit.lua script is reloaded when
     updated without restarting the slurmctld daemon.
+ -- Eliminate native Cray specific port management. Native Cray systems must
+    now use the MpiParams configuration parameter to specify ports to be used
+    for commmunications. When upgrading Native Cray systems from version 14.03,
+    all running jobs should be killed and the switch_cray_state file (in
+    SaveStateLocation of the nodes where the slurmctld daemon runs) must be
+    explicitly deleted.
 
 RPMBUILD CHANGES
 ================

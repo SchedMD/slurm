@@ -3310,6 +3310,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
 
 	s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
+#if defined(HAVE_NATIVE_CRAY)
+	if (conf->mpi_params == NULL ||
+	    strstr(conf->mpi_params, "ports=") == NULL) {
+		error("MpiParams=ports= is required on native Cray systems");
+		return SLURM_ERROR;
+	}
+#endif
 
 	if (!s_p_get_boolean((bool *)&conf->track_wckey,
 			    "TrackWCKey", hashtbl))

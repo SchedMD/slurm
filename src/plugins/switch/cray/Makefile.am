@@ -12,7 +12,6 @@ switch_cray_la_SOURCES = \
 	gpu.c \
 	iaa.c \
 	pe_info.c \
-	ports.c \
 	scaling.c \
 	switch_cray.c \
 	switch_cray.h \

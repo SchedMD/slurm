@@ -41,7 +41,7 @@ JobSubmitPlugins=cray
 #MaxStepCount=40000
 #MaxTasksPerNode=128
 MpiDefault=none
-#MpiParams=ports=#-#
+MpiParams=ports=20000-32767
 #PluginDir=
 #PlugStackConfig=
 #PrivateData=jobs

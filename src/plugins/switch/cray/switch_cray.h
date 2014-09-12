@@ -74,29 +74,6 @@
 // Magic value signifying that jobinfo was NULL, don't unpack
 #define CRAY_NULL_JOBINFO_MAGIC	0xDEAFDEAF
 
-// File to save plugin state to
-#define CRAY_SWITCH_STATE	"/switch_cray_state"
-
-// Temporary file containing new plugin state
-#define CRAY_SWITCH_STATE_NEW	CRAY_SWITCH_STATE".new"
-
-// File containing previous plugin state
-#define CRAY_SWITCH_STATE_OLD	CRAY_SWITCH_STATE".old"
-
-// Minimum PMI port to allocate
-#define MIN_PORT		20000
-
-// Maximum PMI port to allocate
-// The dynamic port range starts at 32768, so stop here to avoid conflicts
-// with services using them (e.g. debuggers)
-#define MAX_PORT		32767
-
-// Number of ports to allocate
-#define PORT_CNT		(MAX_PORT - MIN_PORT + 1)
-
-// Number of times to attempt allocating a port when none are available
-#define ATTEMPTS		2
-
 // Maximum network resource scaling (in percent)
 #define MAX_SCALING		100
 
@@ -138,11 +115,8 @@ typedef struct slurm_cray_jobinfo {
 	// Array of ptags
 	int *ptags;
 
-	// Port for PMI communications
+	// Port (for compatibility with 14.03, remove in the future)
 	uint32_t port;
-
-	// Number of PMI ports reserved
-	uint32_t num_ports;
 
 	// Cray Application ID (Slurm hash)
 	uint64_t apid;
@@ -151,27 +125,12 @@ typedef struct slurm_cray_jobinfo {
 /**********************************************************
  * Global variables
  **********************************************************/
-#ifndef HAVE_CRAY_NETWORK
-// Which ports are reserved (holds PORT_CNT bits)
-extern bitstr_t *port_resv;
-
-// Last allocated port index
-extern uint32_t last_alloc_port;
-
-// Mutex controlling access to port variables
-extern pthread_mutex_t port_mutex;
-#endif
-
 // Debug flags
 extern uint64_t debug_flags;
 
 /**********************************************************
  * Function declarations
  **********************************************************/
-// Implemented in ports.c
-extern int assign_ports(uint32_t *ret_port, int num_ports);
-extern int release_ports(uint32_t real_port, int num_ports);
-
 // Implemented in pe_info.c
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 extern int build_alpsc_pe_info(stepd_step_rec_t *job,

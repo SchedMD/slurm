@@ -27,6 +27,12 @@ documents those changes that are of interest to users and administrators.
  -- Enlarge the jobid field to 18 characters in squeue output.
  -- Added "scontrol write config" option to save a copy of the current
     configuration in a file containing a time stamp.
+ -- Eliminate native Cray specific port management. Native Cray systems must
+    now use the MpiParams configuration parameter to specify ports to be used
+    for commmunications. When upgrading Native Cray systems from version 14.03,
+    all running jobs should be killed and the switch_cray_state file (in
+    SaveStateLocation of the nodes where the slurmctld daemon runs) must be
+    explicitly deleted.
 
 * Changes in Slurm 14.11.0pre4
 ==============================

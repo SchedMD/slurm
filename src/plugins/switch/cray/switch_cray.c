@@ -52,6 +52,7 @@
 #include "limits.h"
 #include <linux/limits.h>
 #include <sched.h>
+#include <sys/stat.h>
 #include <math.h>
 
 #include "switch_cray.h"
@@ -100,86 +101,6 @@ const char plugin_name[] = "switch CRAY plugin";
 const char plugin_type[] = "switch/cray";
 const uint32_t plugin_version = 100;
 
-#ifdef HAVE_NATIVE_CRAY
-static void _state_read_buf(Buf buffer)
-{
-	uint16_t protocol_version = (uint16_t) NO_VAL;
-	uint32_t min_port, max_port;
-	int i;
-
-	/* Validate state version */
-	safe_unpack16(&protocol_version, buffer);
-	debug3("Version in switch_cray header is %u", protocol_version);
-	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("******************************************************");
-		error("Can't recover switch/cray state, incompatible version");
-		error("******************************************************");
-		return;
-	}
-
-	pthread_mutex_lock(&port_mutex);
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
-		safe_unpack32(&min_port, buffer);
-		safe_unpack32(&max_port, buffer);
-		safe_unpack32(&last_alloc_port, buffer);
-		/* make sure we are NULL here */
-		FREE_NULL_BITMAP(port_resv);
-		unpack_bit_str_hex(&port_resv, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint8_t port_set = 0;
-		safe_unpack32(&min_port, buffer);
-		safe_unpack32(&max_port, buffer);
-		safe_unpack32(&last_alloc_port, buffer);
-		/* make sure we are NULL here */
-		FREE_NULL_BITMAP(port_resv);
-		port_resv = bit_alloc(PORT_CNT);
-		for (i = 0; i < PORT_CNT; i++) {
-			safe_unpack8(&port_set, buffer);
-			if (port_set)
-				bit_set(port_resv, i);
-		}
-	}
-
-	if (!port_resv || (bit_size(port_resv) != PORT_CNT)) {
-		error("_state_read_buf: Reserve Port size was %d not %d, "
-		      "reallocating",
-		      port_resv ? bit_size(port_resv) : -1, PORT_CNT);
-		port_resv = bit_realloc(port_resv, PORT_CNT);
-	}
-	pthread_mutex_unlock(&port_mutex);
-
-	if ((min_port != MIN_PORT) || (max_port != MAX_PORT)) {
-		error("******************************************************");
-		error("Can not recover switch/cray state");
-		error("Changed MIN_PORT (%u != %u) and/or MAX_PORT (%u != %u)",
-		      min_port, MIN_PORT, max_port, MAX_PORT);
-		error("******************************************************");
-		return;
-	}
-
-	return;
-
-unpack_error:
-	CRAY_ERR("unpack error");
-	return;
-}
-
-static void _state_write_buf(Buf buffer)
-{
-	pack16(SLURM_PROTOCOL_VERSION, buffer);
-	pack32(MIN_PORT, buffer);
-	pack32(MAX_PORT, buffer);
-
-	pthread_mutex_lock(&port_mutex);
-
-	pack32(last_alloc_port, buffer);
-	pack_bit_str_hex(port_resv, buffer);
-
-	pthread_mutex_unlock(&port_mutex);
-}
-
-#endif
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -197,13 +118,6 @@ int init(void)
 
 int fini(void)
 {
-
-#ifdef HAVE_NATIVE_CRAY
-	pthread_mutex_lock(&port_mutex);
-	FREE_NULL_BITMAP(port_resv);
-	pthread_mutex_unlock(&port_mutex);
-#endif
-
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	cleanup_lease_extender();
 #endif
@@ -221,130 +135,30 @@ extern int switch_p_reconfig(void)
  */
 extern int switch_p_libstate_save(char *dir_name)
 {
-#ifdef HAVE_NATIVE_CRAY
-	Buf buffer;
-	char *file_name;
-	int ret = SLURM_SUCCESS;
-	int state_fd;
-
-	xassert(dir_name != NULL);
-
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		CRAY_INFO("save to %s", dir_name);
-
-	buffer = init_buf(SWITCH_BUF_SIZE);
-	_state_write_buf(buffer);
-	file_name = xstrdup(dir_name);
-	xstrcat(file_name, "/switch_cray_state");
-	(void) unlink(file_name);
-	state_fd = creat(file_name, 0600);
-	if (state_fd < 0) {
-		CRAY_ERR("Can't save state, error creating file %s %m",
-		      file_name);
-		ret = SLURM_ERROR;
-	} else {
-		char  *buf = get_buf_data(buffer);
-		size_t len = get_buf_offset(buffer);
-		while (1) {
-			int wrote = write(state_fd, buf, len);
-			if ((wrote < 0) && (errno == EINTR))
-				continue;
-			if (wrote == 0)
-				break;
-			if (wrote < 0) {
-				CRAY_ERR("Can't save switch state: %m");
-				ret = SLURM_ERROR;
-				break;
-			}
-			buf += wrote;
-			len -= wrote;
-		}
-		close(state_fd);
-	}
-	xfree(file_name);
-
-	if (buffer)
-		free_buf(buffer);
-
-	return ret;
-#else
 	return SLURM_SUCCESS;
-#endif
 }
 
 extern int switch_p_libstate_restore(char *dir_name, bool recover)
 {
 #ifdef HAVE_NATIVE_CRAY
-	char *data = NULL, *file_name;
-	Buf buffer = NULL;
-	int error_code = SLURM_SUCCESS;
-	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
-
-	xassert(dir_name != NULL);
-
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		CRAY_INFO("restore from %s, recover %d",
-			  dir_name,  (int) recover);
-	}
-
-	if (!recover)		/* clean start, no recovery */
-		return SLURM_SUCCESS;
+	char *file_name;
+	struct stat st;
 
 	file_name = xstrdup(dir_name);
 	xstrcat(file_name, "/switch_cray_state");
-	state_fd = open (file_name, O_RDONLY);
-	if (state_fd >= 0) {
-		data_allocated = SWITCH_BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read (state_fd, &data[data_size],
-					  SWITCH_BUF_SIZE);
-			if ((data_read < 0) && (errno == EINTR))
-				continue;
-			if (data_read < 0) {
-				CRAY_ERR("Read error on %s, %m", file_name);
-				error_code = SLURM_ERROR;
-				break;
-			} else if (data_read == 0)
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close (state_fd);
-		(void) unlink(file_name);	/* One chance to recover */
+	if (stat(file_name, &st) == 0) {
+		error("%s no longer used, please remove it, kill all running "
+		      "jobs, and set MpiParams in slurm.conf", file_name);
 		xfree(file_name);
-	} else {
-		CRAY_ERR("No %s file for switch/cray state recovery",
-			 file_name);
-		CRAY_ERR("Starting switch/cray with clean state");
-		xfree(file_name);
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
-
-	if (error_code == SLURM_SUCCESS) {
-		buffer = create_buf (data, data_size);
-		data = NULL;	/* now in buffer, don't xfree() */
-		_state_read_buf(buffer);
-	}
-
-	if (buffer)
-		free_buf(buffer);
-	xfree(data);
+	xfree(file_name);
 #endif
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_libstate_clear(void)
 {
-#ifdef HAVE_NATIVE_CRAY
-	pthread_mutex_lock(&port_mutex);
-
-	bit_nclear(port_resv, 0, PORT_CNT - 1);
-	last_alloc_port = 0;
-
-	pthread_mutex_unlock(&port_mutex);
-#endif
 	return SLURM_SUCCESS;
 }
 
@@ -363,7 +177,6 @@ extern int switch_p_alloc_jobinfo(
 	new->cookies = NULL;
 	new->cookie_ids = NULL;
 	new->apid = SLURM_ID_HASH(job_id, step_id);
-	new->num_ports = 1;
 	*switch_job = (switch_jobinfo_t *) new;
 	return SLURM_SUCCESS;
 }
@@ -374,7 +187,6 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	int rc, cnt = 0;
-	uint32_t port = 0, num_ports = 0;
 	int32_t *nodes = NULL;
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
 
@@ -403,46 +215,6 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	if (rc != SLURM_SUCCESS) {
 		return rc;
 	}
-
-#ifdef HAVE_NATIVE_CRAY
-	/*
-	 * If the network value contains the number of ports to
-	 * reserve, use that. Otherwise, use the worst case
-	 * of one command for every task.
-	 */
-	if (network) {
-		char *tmp;
-		tmp = strstr(network, "ports=");
-		if (tmp != NULL) {
-			tmp += strlen("ports=");
-			errno = 0;
-			num_ports = strtoul(tmp, NULL, 0);
-			if (errno) {
-				CRAY_ERR("Error parsing port value %s: %m",
-					 tmp);
-			}
-		}
-	}
-	if (num_ports == 0) {
-		CRAY_ERR("No port value, using worst case %"PRIu32,
-			 step_layout->task_cnt);
-		num_ports = step_layout->task_cnt;
-	}
-
-	/*
-	 * Get a unique port for PMI communications
-	 */
-	rc = assign_ports(&port, num_ports);
-	if (rc < 0) {
-		CRAY_INFO("assign_port failed");
-		return SLURM_ERROR;
-	}
-#endif
-	/*
-	 * Populate the switch_jobinfo_t struct
-	 */
-	job->port = port;
-	job->num_ports = num_ports;
 #endif
 	return SLURM_SUCCESS;
 }
@@ -516,8 +288,6 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		pack32(job->num_cookies, buffer);
 		packstr_array(job->cookies, job->num_cookies, buffer);
 		pack32_array(job->cookie_ids, job->num_cookies, buffer);
-		pack32(job->port, buffer);
-		pack32(job->num_ports, buffer);
 		pack64(job->apid, buffer);
 	} else {
 		pack32(job->magic, buffer);
@@ -569,8 +339,6 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 				 job->num_cookies, num_cookies);
 			goto unpack_error;
 		}
-		safe_unpack32(&job->port, buffer);
-		safe_unpack32(&job->num_ports, buffer);
 		safe_unpack64(&job->apid, buffer);
 	} else {
 		safe_unpack32(&job->magic, buffer);
@@ -604,18 +372,6 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		job->apid = SLURM_ID_HASH(jobid, stepid);
 #endif
 	}
-
-#ifndef HAVE_CRAY_NETWORK
-	/* If the libstate save/restore failed, at least make sure that
-	 * we do not re-allocate ports assigned to job steps that we recover.
-	 *
-	 * NOTE: port_resv is NULL when unpacking things in srun.
-	 */
-	pthread_mutex_lock(&port_mutex);
-	if (port_resv && (job->port >= MIN_PORT) && (job->port <= MAX_PORT))
-		bit_set(port_resv, job->port - MIN_PORT);
-	pthread_mutex_unlock(&port_mutex);
-#endif
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	/*
@@ -1136,18 +892,6 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	if (rc != SLURM_SUCCESS) {
 		return rc;
 	}
-#ifdef HAVE_NATIVE_CRAY
-	/*
-	 * Release the reserved PMI port
-	 * If this fails, do not exit with an error.
-	 */
-	rc = release_ports(job->port, job->num_ports);
-	if (rc != 0) {
-		CRAY_ERR("Releasing port %" PRIu32 " failed.", job->port);
-		// return SLURM_ERROR;
-	}
-#endif
-
 #endif
 	return SLURM_SUCCESS;
 }
@@ -1171,16 +915,6 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 
 extern int switch_p_slurmctld_init(void)
 {
-#ifdef HAVE_NATIVE_CRAY
-	/*
-	 *  Initialize the port reservations.
-	 *  Each job step will be allocated one port from amongst this set of
-	 *  reservations for use by Cray's PMI for control tree communications.
-	 */
-	pthread_mutex_lock(&port_mutex);
-	port_resv = bit_alloc(PORT_CNT);
-	pthread_mutex_unlock(&port_mutex);
-#endif
 	return SLURM_SUCCESS;
 }
 

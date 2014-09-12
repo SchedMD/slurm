@@ -165,9 +165,6 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	int i, rc;
 	unsigned long step_wait = 0, my_sleep = 0;
 	time_t begin_time;
-#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	uint32_t num_ports;
-#endif
 
 	if (!job) {
 		error("launch_common_create_job_step: no job given");
@@ -240,6 +237,16 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.verbose_level = (uint16_t)_verbose;
 	if (opt.resv_port_cnt != NO_VAL)
 		job->ctx_params.resv_port_cnt = (uint16_t) opt.resv_port_cnt;
+	else {
+#if defined(HAVE_NATIVE_CRAY)
+		/*
+		 * On Cray systems default to reserving one port, or one
+		 * more than the number of multi prog commands, for Cray PMI
+		 */
+		job->ctx_params.resv_port_cnt = (opt.multi_prog ?
+						 opt.multi_prog_cmds + 1 : 1);
+#endif
+	}
 
 	switch (opt.distribution) {
 	case SLURM_DIST_BLOCK:
@@ -274,22 +281,6 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.node_list = opt.nodelist;
 
 	job->ctx_params.network = opt.network;
-#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	/*
-	 * On Cray systems the switch plugin needs to know
-	 * the number of ports to reserve for PMI. Rather than
-	 * change the step request and switch plugin format,
-	 * simply append to the network specification
-	 */
-	num_ports = opt.multi_prog ? opt.multi_prog_cmds + 1 : 1;
-	if (job->ctx_params.network == NULL) {
-		job->ctx_params.network = xstrdup_printf("ports=%"PRIu32,
-							 num_ports);
-	} else if (!strstr(job->ctx_params.network, "ports=")) {
-		xstrfmtcat(job->ctx_params.network, ",ports=%"PRIu32,
-			   num_ports);
-	}
-#endif
 	job->ctx_params.no_kill = opt.no_kill;
 	if (opt.job_name_set_cmd && opt.job_name)
 		job->ctx_params.name = opt.job_name;
