@@ -68,7 +68,7 @@ if {[test_aix]} {
 }
 
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N$node_cnt -n$task_cnt -O -t1 $srun -l -n$mult -O $bin_id]
+set srun_pid [spawn $srun --gres=craynetwork:0 -N$node_cnt -n$task_cnt -O -t1 $srun -l -n$mult -O $bin_id]
 expect {
 	-re "($number): uid=" {
 		incr task_output
