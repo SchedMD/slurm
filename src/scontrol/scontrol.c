@@ -1070,7 +1070,7 @@ _process_command (int argc, char *argv[])
 					fprintf(stderr, "invalid debug "
 						"flag: %s\n", argv[i]);
 				}
-				if ((quiet_flag != 1) &&  (mode = 0)) {
+				if ((quiet_flag != 1) && (mode == 0)) {
 					fprintf(stderr, "Usage: setdebugflags"
 						" [+|-]NAME\n");
 				}
