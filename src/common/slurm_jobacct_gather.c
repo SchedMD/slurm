@@ -268,6 +268,12 @@ extern int jobacct_gather_init(void)
 		goto done;
 	}
 
+	init_run = true;
+
+	/* only print the WARNING messages if in the slurmctld */
+	if (!run_in_daemon("slurmctld"))
+		goto done;
+
 	plugin_type = type;
 	type = slurm_get_proctrack_type();
 	if (!strcasecmp(type, "proctrack/pgid")) {
@@ -287,7 +293,6 @@ extern int jobacct_gather_init(void)
 		      "(%s) if this is not what you have in mind you will "
 		      "need to change it.", ACCOUNTING_STORAGE_TYPE_NONE);
 	}
-	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
