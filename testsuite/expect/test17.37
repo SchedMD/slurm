@@ -45,6 +45,10 @@ make_bash_script $script "sleep 10"
 # Submit a job to depend on
 spawn $sbatch -t1 -N2 -o/dev/null $script
 expect {
+	-re "Node count specification invalid" {
+		send_user "\nWARNING: can't this test with less than two nodes\n"
+		exit 0
+	}
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
 		exp_continue

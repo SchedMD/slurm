@@ -38,6 +38,11 @@ set file_in       "test$test_id\_sc"
 
 print_header $test_id
 
+if {[test_using_slurmdbd] == 0} {
+	send_user "\nWARNING: This test requires use of Slurmdbd\n"
+	exit $exit_code
+}
+
 # Remove any vestigial files
 exec $bin_rm -f $file_in
 
@@ -99,3 +104,4 @@ if {$exit_code == 0} {
 } else {
 	send_user "\nFAILURE\n"
 }
+exit $exit_code
