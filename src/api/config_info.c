@@ -60,7 +60,6 @@
 #include "src/common/xstring.h"
 
 /* Local functions */
-static void _print_key_pairs(FILE* out, void *key_pairs, char *title);
 static void _write_group_header(FILE* out, char * header);
 static void _write_key_pairs(FILE* out, void *key_pairs);
 
@@ -310,18 +309,18 @@ void slurm_print_ctl_conf ( FILE* out,
 
 	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
 	if (ret_list) {
-		_print_key_pairs(out, ret_list, tmp_str);
+		slurm_print_key_pairs(out, ret_list, tmp_str);
 		list_destroy((List)ret_list);
 	}
 
-	_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
-			 "\nAccount Gather\n");
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
+			      "\nAccount Gather\n");
 
-	_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
-			 "\nExternal Sensors\n");
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
+			      "\nExternal Sensors\n");
 
-	_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
-			 select_title);
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
+			      select_title);
 
 }
 
@@ -1956,7 +1955,14 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 
 }
 
-static void _print_key_pairs(FILE* out, void *key_pairs, char *title)
+/*
+ * slurm_print_key_pairs - output the contents of key_pairs
+ * which is a list of opaque data type config_key_pair_t
+ * IN out - file to write to
+ * IN key_pairs - List containing key pairs to be printed
+ * IN title - title of key pair list
+ */
+extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
 {
 	List config_list = (List)key_pairs;
 	ListIterator iter = NULL;
