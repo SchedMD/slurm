@@ -64,6 +64,7 @@ proc run_config { test_config } {
 	set cfgdir "$wd/$test_config"
 	set tc "$wd/$test_config/testcases"
 	set local_ok 0
+
 	send_user "\n./${test_prog} --configdir=${cfgdir} --testcases=${tc}\n"
 	spawn ./${test_prog} --configdir=${cfgdir} --testcases=${tc}
 	expect {
@@ -103,10 +104,90 @@ set cfgcount 0
 set cfgok 0
 set wd [pwd]
 
+# Set the default slurm.conf params for all tests
+set params "ClusterName=test33
+ControlMachine=peta0000
+TopologyPlugin=topology/tree
+TreeWidth=50
+
+DebugFlags=Route\n"
+
+# Set the params if needed for certain systems
+if {[test_cray]} {
+	set params "$params
+MPIParams=port=12000-13000\nProctrackType=proctrack/cray\n"
+}
+
+# test 33.1.1
+set file_in "$wd/etc.33.1.1/slurm.conf"
+file delete $file_in
+set fd [open "$file_in" a]
+puts $fd "$params
+RoutePlugin=route/topology
+
+# ================================
+# Node and Partition Definitions
+# ================================
+
+NodeName=peta\[10000-19999\]
+PartitionName=all  Nodes=peta\[10000-19999\] Default=YES"
+
+close $fd
 run_config "etc.33.1.1"
+file delete $file_in
+
+# test 33.1.2
+set file_in "$wd/etc.33.1.2/slurm.conf"
+file delete $file_in
+set fd [open "$file_in" a]
+puts $fd "$params
+RoutePlugin=route/topology
+
+# ================================
+# Node and Partition Definitions
+# ================================
+
+NodeName=peta\[10000-19999\]
+PartitionName=all  Nodes=peta\[10000-19999\] Default=YES"
+
+close $fd
 run_config "etc.33.1.2"
+file delete $file_in
+
+# test 33.1.3
+set file_in "$wd/etc.33.1.3/slurm.conf"
+file delete $file_in
+set fd [open "$file_in" a]
+puts $fd "$params
+
+# ================================
+# Node and Partition Definitions
+# ================================
+
+NodeName=peta\[10000-10399\]
+PartitionName=all  Nodes=peta\[10000-10399\] Default=YES"
+
+close $fd
 run_config "etc.33.1.3"
+file delete $file_in
+
+# test 33.1.4
+set file_in "$wd/etc.33.1.4/slurm.conf"
+file delete $file_in
+set fd [open "$file_in" a]
+puts $fd "$params
+RoutePlugin=route/topology
+
+# ================================
+# Node and Partition Definitions
+# ================================
+
+NodeName=peta\[10000-10399\]
+PartitionName=all  Nodes=peta\[10000-10399\] Default=YES"
+
+close $fd
 run_config "etc.33.1.4"
+file delete $file_in
 
 if {$cfgok != $cfgcount} {
 	send_user "\n\nFAILURE\n"
