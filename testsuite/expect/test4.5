@@ -149,7 +149,7 @@ send_user "\nTesting ALLOCATED state\n"
 set tmp_id 0
 set tmp_sc "test$test_id\_tmp_sc"
 make_bash_script $tmp_sc "sleep 20"
-spawn $sbatch -w$node_list(0),$node_list(1) -o/dev/null -n[expr 2 * $num_cpus] $tmp_sc
+spawn $sbatch -p$partition -w$node_list(0),$node_list(1) -o/dev/null -n[expr 2 * $num_cpus] $tmp_sc
 expect {
 	-re "Submitted batch job ($number)" {
 		set tmp_id $expect_out(1,string)
