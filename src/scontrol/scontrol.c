@@ -1205,7 +1205,6 @@ _process_command (int argc, char *argv[])
 				"too few arguments for keyword:%s\n",
 				tag);
 		} else if (strcmp(argv[1], "config")) {
-			error_code = 1;
 			exit_code = 1;
 			fprintf (stderr,
 				 "invalid write argument:%s\n",

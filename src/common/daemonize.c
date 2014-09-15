@@ -176,13 +176,11 @@ create_pidfile(const char *pidfile, uid_t uid)
 
 	if (fd_get_write_lock(fd) < 0) {
 		error ("Unable to lock pidfile `%s': %m", pidfile);
-		fd = -1;
 		goto error;
 	}
 
 	if (fprintf(fp, "%lu\n", (unsigned long) getpid()) == EOF) {
 		error("Unable to write to pidfile `%s': %m", pidfile);
-		fd = -1;
 		goto error;
 	}
 

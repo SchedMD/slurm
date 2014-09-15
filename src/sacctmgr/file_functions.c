@@ -2133,7 +2133,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				list_append(temp_assoc_list,
 					    cluster->root_assoc);
 
-				rc = _print_out_assoc(temp_assoc_list, 0, 0);
+				(void) _print_out_assoc(temp_assoc_list, 0, 0);
 				list_destroy(temp_assoc_list);
 				notice_thread_init();
 

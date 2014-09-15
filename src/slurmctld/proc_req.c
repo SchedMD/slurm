@@ -4746,7 +4746,7 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 	int rc = SLURM_SUCCESS;
 	spank_env_request_msg_t *spank_req_msg = (spank_env_request_msg_t *)
 						 msg->data;
-	spank_env_responce_msg_t *spank_resp_msg;
+	spank_env_responce_msg_t *spank_resp_msg = NULL;
 	/* Locks: read job */
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
@@ -4763,7 +4763,6 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 		      "from uid=%d", uid);
 	}
 
-	spank_resp_msg = xmalloc(sizeof(spank_env_responce_msg_t));
 	if (rc == SLURM_SUCCESS) {
 		/* do RPC call */
 		struct job_record *job_ptr;
@@ -4772,6 +4771,8 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 		lock_slurmctld(job_read_lock);
 		job_ptr = find_job_record(spank_req_msg->job_id);
 		if (job_ptr) {
+			spank_resp_msg =
+				xmalloc(sizeof(spank_env_responce_msg_t));
 			spank_resp_msg->spank_job_env_size =
 				job_ptr->spank_job_env_size;
 			spank_resp_msg->spank_job_env = xmalloc(
@@ -4780,20 +4781,25 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 			for (i = 0; i < spank_resp_msg->spank_job_env_size; i++)
 				spank_resp_msg->spank_job_env[i] = xstrdup(
 					job_ptr->spank_job_env[i]);
-		} else
+		} else {
 			rc = ESLURM_INVALID_JOB_ID;
+		}
 		unlock_slurmctld(job_read_lock);
 	}
 	END_TIMER2("_slurm_rpc_dump_spank");
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address  = msg->address;
-	response_msg.msg_type = RESPONCE_SPANK_ENVIRONMENT;
-	response_msg.data     = spank_resp_msg;
-	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	slurm_free_spank_env_responce_msg(spank_resp_msg);
+	if (rc == SLURM_SUCCESS) {
+		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
+		response_msg.address  = msg->address;
+		response_msg.msg_type = RESPONCE_SPANK_ENVIRONMENT;
+		response_msg.data     = spank_resp_msg;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		slurm_free_spank_env_responce_msg(spank_resp_msg);
+	} else {
+		slurm_send_rc_msg(msg, rc);
+	}
 }
 
 static void _clear_rpc_stats(void)

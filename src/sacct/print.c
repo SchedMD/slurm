@@ -588,7 +588,6 @@ void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_DERIVED_EC:
-			tmp_int = 0;
 			tmp_int2 = 0;
 			switch(type) {
 			case JOB:

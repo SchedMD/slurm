@@ -564,7 +564,6 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 				msg->task_id_list[i],
 				WTERMSIG(msg->return_code));
 		}
-		rc = 1;
 	}
 
 	pthread_cond_signal(&mts->cond);

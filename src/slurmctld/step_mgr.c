@@ -1140,7 +1140,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			 * only ones we could choose from.  If it
 			 * doesn't fit here then defer request */
 			if (!bit_super_set(nodes_avail, select_nodes_avail)) {
-				i_last = -1;
 				tasks_picked_cnt = 0;
 			}
 			FREE_NULL_BITMAP(selected_nodes);
@@ -1533,7 +1532,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			FREE_NULL_BITMAP (node_tmp);
 			node_tmp = NULL;
 			nodes_picked_cnt = step_spec->min_nodes;
-			nodes_needed = 0;
 		} else if (nodes_needed > 0) {
 			if ((step_spec->max_nodes <= nodes_picked_cnt) &&
 			    (mem_blocked_cpus == 0)) {

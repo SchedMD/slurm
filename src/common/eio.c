@@ -425,10 +425,8 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 			(*obj->ops->handle_error) (obj, objList);
 		} else if (obj->ops->handle_read) {
 			(*obj->ops->handle_read) (obj, objList);
-			read_called = true;
 		} else if (obj->ops->handle_write) {
 			(*obj->ops->handle_write) (obj, objList);
-			write_called = true;
 		} else {
 			debug("No handler for %s on fd %d",
 			      revents & POLLERR ? "POLLERR" : "POLLNVAL",
@@ -461,7 +459,6 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 		if (obj->ops->handle_read) {
 			if (!read_called) {
 				(*obj->ops->handle_read ) (obj, objList);
-				read_called = true;
 			}
 		} else {
 			debug("No handler for POLLIN");
@@ -473,7 +470,6 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 		if (obj->ops->handle_write) {
 			if (!write_called) {
 				(*obj->ops->handle_write) (obj, objList);
-				write_called = true;
 			}
 		} else {
 			debug("No handler for POLLOUT");

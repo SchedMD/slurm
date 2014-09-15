@@ -787,11 +787,11 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		}
 	} else {
 		time_t start_res = time(NULL);
-		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				   &exc_core_bitmap, &resv_overlap);
-		FREE_NULL_BITMAP(resv_bitmap);
 		/* We do not care about return value.
 		 * We are just interested in exc_core_bitmap creation */
+		(void) job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
+				     &exc_core_bitmap, &resv_overlap);
+		FREE_NULL_BITMAP(resv_bitmap);
 	}
 
 	/* save job and request state */
