@@ -64,6 +64,8 @@ documents those changes that are of interest to users and admins.
     plugin is configured.
  -- sacct - Initialize variables correctly to avoid incorrect structure
     reference.
+ -- Performance adjustment to avoid calling a function multiple times when it
+    only needs to be called once.
 
 * Changes in Slurm 14.03.7
 ==========================

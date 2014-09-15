@@ -1542,7 +1542,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	bitstr_t *select_bitmap = NULL;
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = NULL;
-	uint32_t min_nodes, max_nodes, req_nodes;
+	uint32_t min_nodes, max_nodes, req_nodes, acct_max_nodes;
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
@@ -1636,7 +1636,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		max_nodes = MIN(job_ptr->details->max_nodes,
 				part_ptr->max_nodes);
 
-	max_nodes = MIN(max_nodes, acct_policy_get_max_nodes(job_ptr));
+	/* Don't call functions in MIN/MAX it will result in the
+	   function being called multiple times.
+	*/
+	acct_max_nodes = acct_policy_get_max_nodes(job_ptr);
+	max_nodes = MIN(max_nodes, acct_max_nodes);
 
 	if (job_ptr->details->req_node_bitmap && job_ptr->details->max_nodes) {
 		i = bit_set_count(job_ptr->details->req_node_bitmap);
