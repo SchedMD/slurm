@@ -271,7 +271,7 @@ extern int slurm_jobcomp_set_location(char *location)
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	char *usr_str = NULL, *grp_str = NULL, lim_str[32];
+	char *usr_str = NULL, *grp_str = NULL, lim_str[32], *jname = NULL;
 	char *connect_type = NULL, *reboot = NULL, *rotate = NULL,
 		*geometry = NULL, *start = NULL,
 		*blockid = NULL;
@@ -325,6 +325,11 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		end_time = job_ptr->end_time;
 	}
 
+	if (job_ptr->name && job_ptr->name[0])
+		jname = slurm_add_slash_to_quotes(job_ptr->name);
+	else
+		jname = xstrdup("allocation");
+
 	connect_type = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						       SELECT_PRINT_CONNECTION);
 	reboot = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
@@ -364,10 +369,10 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		xstrcat(query, ", start");
 	if (blockid)
 		xstrcat(query, ", blockid");
-	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', \"%s\", %d, %u, "
-		   "'%s', \"%s\", %u, %u, %u",
+	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', '%s', %d, %u, "
+		   "'%s', '%s', %u, %u, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
-		   job_ptr->group_id, grp_str, job_ptr->name,
+		   job_ptr->group_id, grp_str, jname,
 		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
 		   start_time, end_time, job_ptr->node_cnt);
 
@@ -406,6 +411,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	rc = mysql_db_query(jobcomp_mysql_conn, query);
 	xfree(usr_str);
 	xfree(grp_str);
+	xfree(jname);
 
 	return rc;
 }
