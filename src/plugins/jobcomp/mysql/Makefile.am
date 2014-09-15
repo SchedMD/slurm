@@ -16,7 +16,10 @@ jobcomp_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 jobcomp_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 jobcomp_mysql_la_LIBADD  = $(top_builddir)/src/database/libslurm_mysql.la \
 	$(MYSQL_LIBS)
-jobcomp_mysql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_mysql.la
+
+force:
+$(jobcomp_mysql_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 else
 EXTRA_jobcomp_mysql_la_SOURCES = jobcomp_mysql.c \
 		mysql_jobcomp_process.c mysql_jobcomp_process.h
