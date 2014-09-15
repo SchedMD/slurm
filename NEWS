@@ -59,6 +59,9 @@ documents those changes that are of interest to users and admins.
     warning.
  -- Make sure transfer_s_p_options transfers all the portions of the
     s_p_options_t struct.
+ -- Correct the srun man page, the SLURM_CPU_BIND_VERBOSE, SLURM_CPU_BIND_TYPE
+    SLURM_CPU_BIND_LIST environment variable are set only when task/affinity
+    plugin is configured.
 
 * Changes in Slurm 14.03.7
 ==========================

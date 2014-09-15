@@ -259,7 +259,8 @@ is in use:
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
-of the individual SLURM_CPU_BIND* variables.
+of the individual SLURM_CPU_BIND variables. These variable are available
+only if the task/affinity plugin is configured.
 
 When using \fB\-\-cpus\-per\-task\fR to run multithreaded tasks, be aware that
 CPU binding is inherited from the parent of the process.  This means that
