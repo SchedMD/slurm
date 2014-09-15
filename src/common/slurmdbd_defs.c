@@ -2110,8 +2110,8 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 			abs_time.tv_sec  = time(NULL) + 10;
 			abs_time.tv_nsec = 0;
-			rc = pthread_cond_timedwait(&agent_cond, &agent_lock,
-						    &abs_time);
+			(void) pthread_cond_timedwait(&agent_cond, &agent_lock,
+						      &abs_time);
 			slurm_mutex_unlock(&agent_lock);
 			continue;
 		} else if ((cnt > 0) && ((cnt % 50) == 0))
@@ -2813,12 +2813,11 @@ slurmdbd_pack_acct_coord_msg(dbd_acct_coord_msg_t *msg,
 	pack32(count, buffer);
 	if (count) {
 		itr = list_iterator_create(msg->acct_list);
-		while((acct = list_next(itr))) {
+		while ((acct = list_next(itr))) {
 			packstr(acct, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
 
 	slurmdb_pack_user_cond(msg->cond, rpc_version, buffer);
 }
@@ -3530,7 +3529,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 	}
 	if (count) {
 		itr = list_iterator_create(msg->my_list);
-		while((object = list_next(itr))) {
+		while ((object = list_next(itr))) {
 			(*(my_function))(object, rpc_version, buffer);
 		}
 		list_iterator_destroy(itr);

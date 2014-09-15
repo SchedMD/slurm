@@ -513,10 +513,10 @@ static void	_get_job_comment(struct job_record *job_ptr,
 	if (job_ptr->comment && job_ptr->comment[0]) {
 		size += snprintf((buffer + size), (buf_size - size),
 			"%s%s", field_sep, job_ptr->comment);
-		field_sep = "?";
+		//field_sep = "?";	/* Comment out to avoid CLANG error */
 	}
 
-	size += snprintf((buffer + size), (buf_size - size), "\";");
+	snprintf((buffer + size), (buf_size - size), "\";");
 }
 
 static uint16_t _get_job_cpus_per_task(struct job_record *job_ptr)

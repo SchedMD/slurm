@@ -315,7 +315,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
 		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
 			char *list;
-			list = strsep(&tok, ":=");
+			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits, CPU_BIND_MAP);
 			xfree(*cpu_bind);
@@ -330,7 +330,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
 		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
 			char *list;
-			list = strsep(&tok, ":=");
+			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits, CPU_BIND_MASK);
 			xfree(*cpu_bind);
@@ -349,7 +349,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		} else if ((strncasecmp(tok, "map_ldom", 8) == 0) ||
 		           (strncasecmp(tok, "mapldom", 7) == 0)) {
 			char *list;
-			list = strsep(&tok, ":=");
+			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits,
 					CPU_BIND_LDMAP);
@@ -365,7 +365,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		} else if ((strncasecmp(tok, "mask_ldom", 9) == 0) ||
 		           (strncasecmp(tok, "maskldom", 8) == 0)) {
 			char *list;
-			list = strsep(&tok, ":=");
+			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits,
 					CPU_BIND_LDMASK);
@@ -529,7 +529,7 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
 			char *list;
-			list = strsep(&tok, ":=");
+			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits, MEM_BIND_MAP);
 			xfree(*mem_bind);
@@ -543,7 +543,7 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 		} else if ((strncasecmp(tok, "mask_mem", 8) == 0) ||
 		           (strncasecmp(tok, "maskmem", 7) == 0)) {
 			char *list;
-			list = strsep(&tok, ":=");
+			(void) strsep(&tok, ":=");
 			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits, MEM_BIND_MASK);
 			xfree(*mem_bind);
