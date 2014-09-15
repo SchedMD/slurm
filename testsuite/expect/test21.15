@@ -119,7 +119,7 @@ if {$access_err != 0} {
 }
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]]
+incr exit_code [add_cluster "$tc1,$tc2,$tc3" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1"
 	remove_acct "" "$ta1,$ta2,$ta3"
@@ -198,7 +198,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-check_assoc_limit 3 user $tu2 $user_req2(fairshare) $user_req2(grpcpumins) $user_req2(grpcpus) $user_req2(grpcpurunmins) $user_req2(grpjob) $user_req2(grpnode) $user_req2(grpsubmitjob) $user_req2(grpwall) $user_req2(maxcpus) $user_req2(maxcpumin) $user_req2(maxjob) $user_req2(maxsubmitjobs) $user_req2(maxnode) $user_req2(maxwall) $user_req2(grpmemory) $user_req2(defaultqos)
+check_assoc_limit 3 user $tu2 [array get user_req2]
 
 # This is the end below here
 

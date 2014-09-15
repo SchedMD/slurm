@@ -35,42 +35,29 @@ source ./globals_accounting
 
 set test_id     "21.6"
 set exit_code   0
-set amatches    0
-set lmatches    0
 set dmatches    0
-set not_support 0
-set acct_check  0
-set nam		Name
-set fs		Fairshare
-set gc		GrpCPUs
-set gj		GrpJobs
-set gm          GrpMemory
-set gs		GrpSubmitJobs
-set gn		GrpNodes
-set mm		MaxCPUMins
-set mc		MaxCPUs
-set mj		MaxJobs
-set ms		MaxSubmitJobs
-set mn		MaxNodes
-set mw		MaxWall
-set dqos        QOS
+set lmatch      0
+
+# Test Clusters
 set tc1		slurm_test-cluster-1
 set tc2		slurm_test-cluster-2
 set tc3		slurm_test-cluster-3
-set fs1		2500
-set gc1		50
-set gj1		100
-set gs1		500
-set gm1         200
-set gn1		300
-set mc1		100
-set mm1		100000
-set mj1		500
-set ms1		500
-set mn1		300
-set mw1		01:00:00
-set dqos1       "test$test_id\_qos"
 
+# Cluster Limits
+array set cluster {}
+set cluster(Fairshare)     2500
+set cluster(GrpCPUs)       50
+set cluster(GrpJobs)       100
+set cluster(GrpMemory)     200
+set cluster(GrpSubmitJobs) 500
+set cluster(GrpNodes)      300
+set cluster(MaxCPUMins)    100000
+set cluster(MaxCPUs)       100
+set cluster(MaxJobs)       500
+set cluster(MaxSubmitJobs) 500
+set cluster(MaxNodes)      300
+set cluster(MaxWall)       01:00:00
+set cluster(DefaultQos)    "test$test_id\_qos"
 set access_err  0
 set timeout	30
 print_header $test_id
@@ -91,69 +78,69 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 #
 # Use sacctmgr to delete the test cluster
 #
-	set nothing 0
-	set matches 0
+set nothing 0
+set matches 0
 
 set my_pid [spawn $sacctmgr -i delete cluster $tc1,$tc2,$tc3]
 
-	expect {
-		-re "privilege to perform this action" {
-			set access_err 1
-			exp_continue
-		}
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Deleting clusters" {
-			incr matches
-			exp_continue
-		}
-		-re " Nothing deleted" {
-			incr matches
-			set nothing 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr delete not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
+expect {
+	-re "privilege to perform this action" {
+		set access_err 1
+		exp_continue
 	}
-	if {$access_err != 0} {
-		return 1
-	}
-	if {$matches != 1} {
-		send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
+	-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		incr exit_code 1
 	}
-	if { !$nothing } {
-		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
-			incr exit_code 1
-		}
+	-re "Problem getting" {
+		send_user "FAILURE: there was a problem getting information from the database\n"
+		incr exit_code 1
 	}
+	-re "Problem adding" {
+		send_user "FAILURE: there was an unknown problem\n"
+		incr exit_code 1
+	}
+	-re "No associations" {
+		send_user "FAILURE: your command didn't return anything\n"
+		incr exit_code 1
+	}
+	-re "Deleting clusters" {
+		incr matches
+		exp_continue
+	}
+	-re " Nothing deleted" {
+		incr matches
+		set nothing 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$access_err != 0} {
+	return 1
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
+	incr exit_code 1
+}
+if { !$nothing } {
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+}
 
 #
 # Delete vestigial QOSs
 #
 set dmatches 0
-spawn $sacctmgr -i delete qos $dqos1
+spawn $sacctmgr -i delete qos $cluster(DefaultQos)
 expect {
 	-re "Deleting QOS" {
 		incr dmatches
@@ -182,7 +169,7 @@ if {$dmatches != 1} {
 # Create tmp QOS
 #
 set qos_set 0
-spawn $sacctmgr -i add qos $dqos1
+spawn $sacctmgr -i add qos $cluster(DefaultQos)
 expect {
 	-re "Adding QOS" {
 		set qos_set 1
@@ -206,125 +193,21 @@ if {$qos_set != 1} {
 # because they are not valid for root associations of a cluster.
 #
 
-#
-# Use sacctmgr to create a cluster
-#
-set sadd_pid [spawn $sacctmgr add cluster name=$tc1,$tc2,$tc3 \
-fairshare=$fs1 GrpCPUs=$gc1 GrpJobs=$gj1 GrpNodes=$gn1 GrpSubmitJobs=$gs1 \
-MaxCPUs=$mc1 MaxCPUMins=$mm1 MaxJobs=$mj1 MaxSubmitJobs=$ms1 MaxNodes=$mn1 \
-MaxWall=$mw1 GrpMem=$gm1 DefaultQOS=$dqos1 QosLevel=$dqos1]
-expect {
-	-re "privilege to preform this action" {
-		set access_err 1
-		exp_continue
-	}
-	-re "Adding Cluster" {
-		incr amatches
-		exp_continue
-	}
-	-re "$nam *= $tc1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$nam *= $tc2" {
-		incr amatches
-		exp_continue
-	}
-	-re "$nam *= $tc3" {
-		incr amatches
-		exp_continue
-	}
-	-re "Default Limits" {
-		incr amatches
-		exp_continue
-	}
-	-re "$fs *= $fs1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$gc *= $gc1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$gj *= $gj1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$gm *= $gm1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$gn *= $gn1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$gs *= $gs1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$mm *= $mm1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$mc *= $mc1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$mj *= $mj1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$mn *= $mn1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$ms *= $ms1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$mw *= $mw1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$dqos *= $dqos1" {
-		incr amatches
-		exp_continue
-	}
-	-re "Would you like to commit changes\\\? \\\(You have 30 seconds to decide\\\)" {
-		incr amatches
-		exp_continue
-	}
-	-re "\\\(N\\\/y\\\):" {
-		incr amatches
-		send "Y"
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+add_cluster "$tc1,$tc2,$tc3" [array get cluster]
+
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
-if {$amatches != 20} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding clusters got $amatches\n"
-	set exit_code 1
-}
 
 # Check Cluster 1
-check_assoc_limit 1 cluster $tc1 $fs1 "" $gc1 "" $gj1 $gn1 $gs1 "" $mc1 $mm1 $mj1 $ms1 $mn1 $mw1 $gm1 $dqos1
+check_assoc_limit 1 cluster $tc1 [array get cluster]
 
 # Check Cluster 2
-check_assoc_limit 1 cluster $tc2 $fs1 "" $gc1 "" $gj1 $gn1 $gs1 "" $mc1 $mm1 $mj1 $ms1 $mn1 $mw1 $gm1 $dqos1
+check_assoc_limit 1 cluster $tc2 [array get cluster]
 
 # Check Cluster 3
-check_assoc_limit 1 cluster $tc3 $fs1 "" $gc1 "" $gj1 $gn1 $gs1 "" $mc1 $mm1 $mj1 $ms1 $mn1 $mw1 $gm1 $dqos1
+check_assoc_limit 1 cluster $tc3 [array get cluster]
 
 if { ![check_acct_associations] } {
 	send_user "\nFAILURE:  Our associations don't line up\n"
@@ -372,7 +255,7 @@ if {$dmatches != 4} {
 # Remove tmp QOS
 #
 set dmatches 0
-spawn $sacctmgr -i delete qos $dqos1
+spawn $sacctmgr -i delete qos $cluster(DefaultQos)
 expect {
 	-re "Deleting QOS" {
 		incr dmatches

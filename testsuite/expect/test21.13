@@ -46,9 +46,6 @@ set or1		accountorg1
 set or2		accountorg2
 set access_err  0
 
-# Cluster
-array set clus_req {}
-
 # Account
 array set acct_req {}
 set acct_req(cluster) $tc1,$tc2
@@ -114,7 +111,7 @@ if {$access_err != 0} {
 remove_acct "" "$ta1,$ta2,$ta3"
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2" [array get clus_req]]
+incr exit_code [add_cluster "$tc1,$tc2" ""]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"

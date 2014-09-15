@@ -174,22 +174,11 @@ if {$matches != 27} {
 }
 
 # This is the end below here
-
 incr exit_code [remove_user "" "" "$tu1,$tu2,$tu3"]
-incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
-incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
-
-if {$exit_code == 0} {
-	print_success $test_id
-} else {
-	send_user "\nFAILURE\n"
-}
-exit $exit_code
 
 #
 # From here we test all the limits associated with multiple users
 #
-
 incr exit_code [add_qos "$dqos1"]
 if { $exit_code } {
 	remove_qos "$dqos1"
@@ -209,6 +198,16 @@ if { $exit_code } {
 }
 
 # Check Limits of both users
-check_assoc_limit 3 user $tu4 $user_req2(fairshare) $user_req2(grpcpumin) $user_req2(grpcpus) $user_req2(grpcpurunmin) $user_req2(grpjob) $user_req2(grpnodes) $user_req2(grpsubmitjobs) $user_req(grpwall)
+check_assoc_limit 3 user $tu4 [array get user_req2]
+check_assoc_limit 3 user $tu5 [array get user_req2]
 
-check_assoc_limit 3 user $tu5 $user_req2(fairshare) $user_req2(grpcpumin) $user_req2(grpcpus) $user_req2(grpcpurunmin) $user_req2(grpjob) $user_req2(grpnodes) $user_req2(grpsubmitjobs) $user_req(grpwall)
+incr exit_code [remove_user "" "" "$tu4,$tu5"]
+incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
+incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
+
+if {$exit_code == 0} {
+	print_success $test_id
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code

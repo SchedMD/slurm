@@ -35,58 +35,47 @@ source ./globals_accounting
 
 set test_id     "21.11"
 set exit_code   0
-set acmatches   0
-set aamatches   0
 set almatches   0
-set lmatches    0
 set damatches   0
 set dcmatches   0
-set not_support 0
-set nam		Name
-set fs		Fairshare
-set mc          MaxCPUs
-set mcm		MaxCPUMins
-set mj		MaxJobs
-set msj         MaxSubmitJobs
-set mn		MaxNodes
-set mw		MaxWall
-set gcm         GrpCPUMins
-set gc          GrpCPU
-set gcrm        GrpCPURunMins
-set gj		GrpJobs
-set gmem        GrpMemory
-set gsj 	GrpSubmitJobs
-set gn		GrpNodes
-set gw		GrpWall
-
-
+# Cluster Names #
 set tc1		slurm_test-cluster-1
 set tc2		slurm_test-cluster-2
-set fs1		2500
-set mc1         100
-set mcm1	1000000
-set mj1		50
-set msj1        60
-set mn1		300
-set mw1		01:00:00
-set gcm1        100
-set gc1         50
-set gcrm1       150
-set gj1         100
-set gmem1       60
-set gsj1        500
-set gn1         100
-set gw1         00:45:00
-
-
-
+# Cluster values #
+array set cluster {}
+set cluster(Fairshare)     2500
+set cluster(MaxCPUs)       100
+set cluster(MaxJobs)       50
+set cluster(MaxNodes)      300
+set cluster(MaxWall)       01:00:00
+# Account Name #
 set ta1		slurm_test-account.1
 set ta2		slurm_test-account.2
-set ds1		"Test Account A1"
-set or1		"Account Org A1"
-set dqos1        "test$test_id\_qos"
+# Account Limits #
+array set acct {}
+set acct(Cluster)       $tc1
+set acct(Fairshare)     2500
+set acct(GrpCPUMins)    100
+set acct(GrpCPURunMins) 150
+set acct(GrpCPUs)       50
+set acct(GrpJobs)       100
+set acct(GrpMemory)     60
+set acct(GrpSubmitJobs) 500
+set acct(GrpNodes)      100
+set acct(GrpWall)       00:45:00
+set acct(MaxCPUMins)    100000
+set acct(MaxCPUs)       100
+set acct(MaxJobs)       50
+set acct(MaxSubmitJobs) 60
+set acct(MaxNodes)      300
+set acct(MaxWall)       01:00:00
+set acct(DefaultQos)    "test$test_id\_qos"
+set acct(Organization)  "Account_Org_A1"
+set acct(Description)   "Test_Account_A1"
+
 set access_err  0
 set timeout 60
+
 print_header $test_id
 
 if { [test_account_storage] == 0 } {
@@ -111,35 +100,13 @@ if {$access_err != 0} {
 }
 
 #
-# Use sacctmgr to create a cluster
+# Add test Cluster
 #
-set sadd_pid [spawn $sacctmgr -i add cluster name=$tc1,$tc2 fairshare=$fs1 MaxCPUs=$mc1 MaxJobs=$mj1 MaxNodes=$mn1 MaxWall=$mw1]
-expect {
-	-re "privilege to preform this action" {
-		set access_err 1
-		exp_continue
-	}
-	-re "Adding Cluster" {
-		incr acmatches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+add_cluster "$tc1,$tc2" [array get cluster]
+
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
-}
-if {$acmatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding clusters
-	got $acmatches\n"
-	set exit_code 1
 }
 
 if { ![check_acct_associations] } {
@@ -151,7 +118,7 @@ if { ![check_acct_associations] } {
 # Create tmp QOS
 #
 set qos_set 0
-spawn $sacctmgr -i add qos $dqos1
+spawn $sacctmgr -i add qos $acct(DefaultQos)
 expect {
 	-re "Adding QOS" {
 		set qos_set 1
@@ -166,39 +133,14 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	send_user "\nFAILURE QOS $dqos1 was not created\n"
+	send_user "\nFAILURE QOS $acct(DefaultQos) was not created\n"
 	set exit_code 1
 }
 
-
 #
-# Use sacctmgr to add an account
+# Add test Account
 #
-set sadel_pid [spawn $sacctmgr -i add account cluster=$tc1 description="$ds1" \
-fairshare=$fs1 MaxCPUs=$mc1 MaxJobs=$mj1 MaxSubmitJobs=$msj1 MaxCPUMins=$mcm1 \
-MaxNodes=$mn1 MaxWall=$mw1 GrpCPUMins=$gcm1 GrpCPUs=$gc1 GrpCPURunMins=$gcrm1 \
-GrpJobs=$gj1 GrpMemory=$gmem1 GrpSubmitJobs=$gsj1 GrpNodes=$gn1 GrpWall=$gw1 \
-name=$ta1,$ta2 organization="$or1" DefaultQos=$dqos1 QosLevel=$dqos1]
-expect {
-	-re "Adding Account" {
-		incr aamatches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadel_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account.
-	got $aamatches\n"
-	set exit_code 1
-}
+add_acct "$ta1,$ta2" [array get acct]
 
 #
 # Use sacctmgr to list the test associations
@@ -215,12 +157,12 @@ expect {
 	}
 	-re "$tc2.$ta1" {
 		set exit_code 1
-		send_user "\nFAILURE: $nm1 account erroneously added to $tc2\n"
+		send_user "\nFAILURE: $ta1 account erroneously added to $tc2\n"
 		exp_continue
 	}
 	-re "$tc2.$ta2" {
 		exp_continue
-		send_user "\nFAILURE: $nm2 account erroneously added to $tc2\n"
+		send_user "\nFAILURE: $ta2 account erroneously added to $tc2\n"
 		set exit_code 1
 	}
 	timeout {
@@ -239,9 +181,9 @@ if {$almatches != 2} {
 	set exit_code 1
 }
 # Check that the Association was set correctly
-check_assoc_limit 2 account $ta1 $fs1 $gcm1 $gc1 $gcrm1 $gj1 $gn1 $gsj1 $gw1 $mc1 $mcm1 $mj1 $msj1 $mn1 $mw1 $gmem1 $dqos1
+check_assoc_limit 2 account $ta1 [array get acct]
 
-check_assoc_limit 2 account $ta2 $fs1 $gcm1 $gc1 $gcrm1 $gj1 $gn1 $gsj1 $gw1 $mc1 $mcm1 $mj1 $msj1 $mn1 $mw1 $gmem1 $dqos1
+check_assoc_limit 2 account $ta2 [array get acct]
 
 if { ![check_acct_associations] } {
 	send_user "\nFAILURE:  Our associations don't line up\n"
@@ -305,7 +247,7 @@ if {$dcmatches != 1} {
 # Delete Qos
 #
 set dmatches 0
-set sadel_pid [spawn $sacctmgr -i delete qos $dqos1]
+set sadel_pid [spawn $sacctmgr -i delete qos $acct(DefaultQos)]
 expect {
 	-re "Deleting QOS" {
 		incr dmatches

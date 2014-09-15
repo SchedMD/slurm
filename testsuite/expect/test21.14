@@ -42,9 +42,6 @@ set ta2		slurm_test-account.2
 set ta3		slurm_test-account.3
 set access_err  0
 
-########## Cluster ##########
-array set clus_req {}
-
 ########## Account ##########
 array set acct_req {}
 set acct_req(cluster) $tc1,$tc2
@@ -131,7 +128,7 @@ if {$access_err != 0} {
 remove_acct "" "$ta1,$ta2,$ta3"
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2" [array get clus_req]]
+incr exit_code [add_cluster "$tc1,$tc2" ""]
 if { $exit_code } {
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
@@ -276,12 +273,10 @@ expect {
 	    	incr exit_code 1
 	}
 	-re "$ta3.$ta2.$tc1.1.$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall)." {
-		send_user "hey\n"
 		incr matches
 		exp_continue
 	}
 	-re "$ta3.root.$tc2.1....." {
-		send_user "hey 2\n"
 		incr matches
 		exp_continue
 	}

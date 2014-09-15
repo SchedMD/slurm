@@ -186,6 +186,76 @@ proc remove_cluster {name} {
 	return $exit_code
 }
 
+proc mod_cluster { name clus_req_in } {
+	global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	array set clus_req $clus_req_in
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
+	}
+
+	set command ""
+
+	foreach option [array names clus_req] {
+
+		if { ![string compare $option "qos"] } {
+			if { ![string compare $clus_req($option) " "] } {
+				set $clus_req($option) "''"
+			}
+		}
+		set command "$command $option=$clus_req($option)"
+	}
+	set command "$command where name=$name"
+
+	set my_pid [eval spawn $sacctmgr -i mod cluster set $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Modified cluster" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding clusters
+	got $matches\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+
+	return $exit_code
+}
+
 #
 # Use sacctmgr to add an account
 #
@@ -1382,18 +1452,40 @@ proc remove_clus_res {name} {
 # Returns: 1 if association limits are correct, 0 otherwise
 #
 ################################################################
-proc check_assoc_limit { assoc type name fs gcm gc gcrm gj gn gsj gw mc mcm mj msj mn mw gm dqos } {
+proc check_assoc_limit { assoc type name assoc_val } {
 	global sacctmgr number alpha_numeric_under exit_code
+	array set assoc_arr $assoc_val
+	set format_str ""
+	set exp "$name"
+	set first 0
 
+	foreach vals [array name assoc_arr] {
+
+		if {[string compare -nocase $vals "Description"] &&
+		    [string compare -nocase $vals "Organization"] &&
+		    [string compare -nocase $vals "AdminLevel"] &&
+		    [string compare -nocase $vals "DefaultAccount"]} {
+
+			if { $first == 0 } {
+				set format_str "$vals"
+				set exp "$exp\.$assoc_arr($vals)"
+				set first 1
+			} else {
+
+				set exp "$exp\.$assoc_arr($vals)"
+				set format_str "$format_str\,$vals"
+			}
+		}
+	}
 	send_user "\nChecking $name Limits\n"
 	log_user 0
 	set check_val 0
 	if {$assoc == 1} {
-		spawn $sacctmgr list cluster $type=$name -p -n format=Cluster,Fairshare,GrpCPUs,GrpJobs,GrpNodes,GrpSubmitJobs,MaxCPUs,MaxCPUMins,MaxJobs,MaxSubmitJobs,MaxNodes,MaxWall,GrpMemory,DefaultQos
+		spawn $sacctmgr list cluster $type=$name -p -n format=Cluster,$format_str
 		expect {
-			-re "$name.$fs.$gc.$gj.$gn.$gsj.$mc.$mcm.$mj.$msj.$mn.$mw.$gm.$dqos" {
-				 set check_val 1
-				 exp_continue
+			-re "$exp" {
+				set check_val 1
+				exp_continue
 			}
 			timeout {
 				send_user "\nFAILURE: sacctmgr is not responding\n"
@@ -1410,9 +1502,9 @@ proc check_assoc_limit { assoc type name fs gcm gc gcrm gj gn gsj gw mc mcm mj m
 		}
 
 	} elseif {$assoc == 2} {
-		spawn $sacctmgr list assoc $type=$name -p -n format=account,fairshare,GrpCPUMins,GrpCpuRunMins,GrpCPUs,GrpJobs,GrpSubmitJobs,GrpNodes,GrpWall,MaxCPUMins,MaxCPUs,MaxJobs,MaxSubmitJobs,MaxNodes,MaxWall,GrpMemory,DefaultQos
+		spawn $sacctmgr list assoc $type=$name -p -n format=account,$format_str
 		expect {
-			-re "$name.$fs.$gcm.$gcrm.$gc.$gj.$gsj.$gn.$gw.$mcm.$mc.$mj.$msj.$mn.$mw.$gm.$dqos" {
+			-re "$exp" {
 				set check_val 1
 				exp_continue
 			}
@@ -1430,9 +1522,9 @@ proc check_assoc_limit { assoc type name fs gcm gc gcrm gj gn gsj gw mc mcm mj m
 			set exit_code 1
 		}
 	} elseif {$assoc == 3} {
-		spawn $sacctmgr list assoc $type=$name -p -n format=user,fairshare,GrpCpuMins,GrpCpuRunMins,GrpCPUs,GrpJob,GrpMemory,GrpNode,GrpSubmit,GrpWall,MaxCpuMin,MaxCpus,MaxJob,MaxNode,MaxSubmit,MaxWall,DefaultQos
+		spawn $sacctmgr list assoc $type=$name -p -n format=user,$format_str
 		expect {
-			-re "$name.$fs.$gcm.$gcrm.$gc.$gj.$gm.$gn.$gsj.$gw.$mcm.$mc.$mj.$mn.$msj.$mw.$dqos" {
+			-re "$exp" {
 				set check_val 1
 				exp_continue
 			}
