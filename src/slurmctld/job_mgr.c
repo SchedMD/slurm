@@ -408,10 +408,11 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 		bit_fmt(task_str, ARRAY_ID_BUF_SIZE,
 			resp->resp_array_task_id[low]);
 		if (strlen(task_str) >= ARRAY_ID_BUF_SIZE - 2) {
+			/* Append "..." to the buffer on overflow */
 			task_str[ARRAY_ID_BUF_SIZE - 4] = '.';
 			task_str[ARRAY_ID_BUF_SIZE - 3] = '.';
 			task_str[ARRAY_ID_BUF_SIZE - 2] = '.';
-			task_str[ARRAY_ID_BUF_SIZE - 0] = '\0';
+			task_str[ARRAY_ID_BUF_SIZE - 1] = '\0';
 		}
 		xstrfmtcat(msg->job_array_id[i], "%u_%s", job_id, task_str);
 	}
