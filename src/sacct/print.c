@@ -140,7 +140,15 @@ void print_fields(type_t type, void *object)
 		*/
 		if (!step)
 			job->track_steps = 1;
-
+		job_comp = NULL;
+		break;
+	case JOBSTEP:
+		job = step->job_ptr;
+		job_comp = NULL;
+		break;
+	case JOBCOMP:
+		job = NULL;
+		step = NULL;
 		break;
 	default:
 		break;

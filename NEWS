@@ -62,6 +62,8 @@ documents those changes that are of interest to users and admins.
  -- Correct the srun man page, the SLURM_CPU_BIND_VERBOSE, SLURM_CPU_BIND_TYPE
     SLURM_CPU_BIND_LIST environment variable are set only when task/affinity
     plugin is configured.
+ -- sacct - Initialize variables correctly to avoid incorrect structure
+    reference.
 
 * Changes in Slurm 14.03.7
 ==========================
