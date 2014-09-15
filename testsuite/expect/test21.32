@@ -73,7 +73,7 @@ proc reset_qos { } {
 	}
 
 	if {$removed != 1} {
-		send_user "\nFAILURE: qos $qos_main\'s preempt qos were not "
+		send_user "\nFAILURE: qos $qos_test(0)\'s preempt qos were not "
 		send_user "removed\n"
 		set exit_code 1
 	}
@@ -101,7 +101,7 @@ proc _local_mod_qos { preempt_qos } {
 	}
 
 	if {$mod != 1} {
-		send_user "\nFAILURE: QoS was not modified\n"
+		send_user "\nFAILURE: QoS $qos_test(0) was not modified\n"
 		set exit_code 1
 	}
 }
