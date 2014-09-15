@@ -35,7 +35,7 @@ source ./globals
 set test_id     "21.23"
 set exit_code   0
 set file_in     "test.$test_id.input"
-set ta		slurm_test-account.1
+set ta		"test$test_id-account.1"
 set wk          twckey
 set timeout 60
 

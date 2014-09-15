@@ -35,11 +35,11 @@ source ./globals_accounting
 
 set test_id     "21.14"
 set exit_code   0
-set tc1		slurm_test-cluster-1
-set tc2		slurm_test-cluster-2
-set ta1		slurm_test-account.1
-set ta2		slurm_test-account.2
-set ta3		slurm_test-account.3
+set tc1		"test$test_id-cluster-1"
+set tc2		"test$test_id-cluster-2"
+set ta1		"test$test_id-account.1"
+set ta2		"test$test_id-account.2"
+set ta3		"test$test_id-account.3"
 set access_err  0
 
 ########## Account ##########

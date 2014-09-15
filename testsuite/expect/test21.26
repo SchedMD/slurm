@@ -35,10 +35,10 @@ source ./globals_accounting
 set test_id     "21.26"
 set exit_code   0
 set tc1		[get_cluster_name]
-set ta1		slurm_test-account.1
-set ta2		slurm_test-account.2
+set ta1		"test$test_id-account.1"
+set ta2		"test$test_id-account.2"
 set qos1	qqostest
-set tu1         slurm_test-user.1
+set tu1         "test$test_id-user.1"
 set access_err  0
 
 # Accounts

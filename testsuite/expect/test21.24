@@ -52,22 +52,22 @@ set wco		withcoordinator
 set par		Parent
 set roo		root
 set clu		Cluster
-set tc1		slurm_test-cluster-1
-set tc2		slurm_test-cluster-2
-set tc3		slurm_test-cluster-3
+set tc1		"test$test_id-cluster-1"
+set tc2		"test$test_id-cluster-2"
+set tc3		"test$test_id-cluster-3"
 set acc		Account
 set nams	names
-set ta1		slurm_test-account.1
-set ta2		slurm_test-account.2
-set ta3		slurm_test-account.3
-set ta4		slurm_test-account.4
+set ta1		"test$test_id-account.1"
+set ta2		"test$test_id-account.2"
+set ta3		"test$test_id-account.3"
+set ta4		"test$test_id-account.4"
 set dsc		Description
 set org		Organization
 set usr		User
-set tu1         slurm_test-user.1
-set tu2         slurm_test-user.2
-set tu3         slurm_test-user.3
-set tu4         slurm_test-user.4
+set tu1         "test$test_id-user.1"
+set tu2         "test$test_id-user.2"
+set tu3         "test$test_id-user.3"
+set tu4         "test$test_id-user.4"
 set qs          QOS
 set qs2         runfirst
 set al		AdminLevel
@@ -104,7 +104,6 @@ set wckey_check hole,latch,stone,turn
 
 # Accounts
 array set acct_req {
-	cluster        slurm_test-cluster-3
 	parent         root
 	description    appliedacct
 	organization   organization
@@ -123,10 +122,9 @@ array set acct_req {
 	maxwall        350
 }
 set acct_req(qos) $qs2
+set acct_req(cluster) $tc3
 
 array set acct_req2 {
-	cluster        slurm_test-cluster-3
-	parent         slurm_test-account.4
 	description    theoryacct
 	organization   theoryorg
 	fairshare      4321
@@ -144,10 +142,10 @@ array set acct_req2 {
 	maxwall        280
 }
 set acct_req2(qos) $qs2
+set acct_req2(cluster) $tc3
+set acct_req2(parent) $ta4
 
 array set acct_req3 {
-	cluster        slurm_test-cluster-3
-	parent         slurm_test-account.3
 	description    physicsacct
 	organization   physicsorg
 	fairshare      3240
@@ -165,14 +163,12 @@ array set acct_req3 {
 	maxwall        210
 }
 set acct_req3(qos) $qs2
+set acct_req3(cluster) $tc3
+set acct_req3(parent) $ta3
 
 # Users
 array set user_req {
-
-	cluster        slurm_test-cluster-3
-	account        slurm_test-account.4
 	adminlevel     Administrator
-	defaultaccount slurm_test-account.3
 	defaultwckey   hole
 	wckey          latch,stone,turn
 	fairshare      3240
@@ -190,13 +186,12 @@ array set user_req {
 	maxwall        210
 }
 set user_req(qos) $qs2
+set user_req(cluster) $tc3
+set user_req(account) $ta4
+set user_req(defaultaccount) $ta3
 
 array set user_req2 {
-
-	cluster        slurm_test-cluster-3
-	account        slurm_test-account.3
 	adminlevel     Operator
-	defaultaccount slurm_test-account.2
 	defaultwckey   stone
 	wckey          latch,hole,turn
 	fairshare      2375
@@ -215,13 +210,12 @@ array set user_req2 {
 
 }
 set user_req2(qos) $qs2
+set user_req2(cluster) $tc3
+set user_req2(account) $ta3
+set user_req2(defaultaccount) $ta2
 
 array set user_req3 {
-
-	cluster        slurm_test-cluster-3
-	account        slurm_test-account.2
 	adminlevel     None
-	defaultaccount slurm_test-account.2
 	defaultwckey   latch
 	wckey          stone,hole,turn
 	fairshare      1000
@@ -240,6 +234,9 @@ array set user_req3 {
 
 }
 set user_req3(qos) $qs2
+set user_req3(cluster) $tc3
+set user_req3(account) $ta2
+set user_req3(defaultaccount) $ta2
 
 # Clusters
 array set clus_req {
