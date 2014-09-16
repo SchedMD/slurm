@@ -449,7 +449,7 @@ typedef struct {
 	uint64_t max_cpu_mins_pj;  /* max number of cpu seconds this
 				    * association can have per job */
 	uint64_t max_cpu_run_mins; /* max number of cpu minutes this
-				    * assoiciation can
+				    * association can
 				    * having running at one time */
 	uint32_t max_cpus_pj;      /* max number of cpus this
 				    * association can allocate per job */
