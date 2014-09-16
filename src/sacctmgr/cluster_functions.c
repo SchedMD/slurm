@@ -1119,8 +1119,8 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		    "(root is created by default)...\n"
 		    "# Parent - 'root'\n"
 		    "# Account - 'cs':MaxNodesPerJob=5:MaxJobs=4:"
-		    "MaxProcSecondsPerJob=20:FairShare=399:"
-		    "MaxWallDurationPerJob=40:Description='Computer Science':"
+		    "MaxCPUMins=20:FairShare=399:"
+		    "MaxWallDuration=40:Description='Computer Science':"
 		    "Organization='LC'\n"
 		    "# Any of the options after a ':' can be left out and "
 		    "they can be in any order.\n"
@@ -1130,13 +1130,13 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		    "fashion...\n"
 		    "# Parent - 'cs'\n"
 		    "# Account - 'test':MaxNodesPerJob=1:MaxJobs=1:"
-		    "MaxProcSecondsPerJob=1:FairShare=1:"
-		    "MaxWallDurationPerJob=1:"
+		    "MaxCPUMins=1:FairShare=1:"
+		    "MaxWallDuration=1:"
 		    "Description='Test Account':Organization='Test'\n"
 		    "# To add users to a account add a line like this after a "
 		    "Parent - 'line'\n"
 		    "# User - 'lipari':MaxNodesPerJob=2:MaxJobs=3:"
-		    "MaxProcSecondsPerJob=4:FairShare=1:"
+		    "MaxCPUMins=4:FairShare=1:"
 		    "MaxWallDurationPerJob=1\n") < 0) {
 		exit_code = 1;
 		fprintf(stderr, "Can't write to file");

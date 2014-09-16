@@ -75,6 +75,7 @@ documents those changes that are of interest to users and admins.
     and abort the job.
  -- Add the name of the node a job is running on to the message printed by
     slurmstepd when terminating a job.
+ -- Remove unsupported options from sacctmgr help and the dump function.
 
 * Changes in Slurm 14.03.7
 ==========================
