@@ -86,19 +86,19 @@ when running with various options are
 .RS
 .TP 15
 .I "default"
-"%9P %.5a %.10l %.6D %.6t %N"
+"%#P %.5a %.10l %.6D %.6t %N"
 .TP
 .I "\-\-summarize"
-"%9P %.5a %.10l %.16F  %N"
+"%#P %.5a %.10l %.16F  %N"
 .TP
 .I "\-\-long"
-"%9P %.5a %.10l %.10s %.4r %.8h %.10g %.6D %.11T %N"
+"%#P %.5a %.10l %.10s %.4r %.8h %.10g %.6D %.11T %N"
 .TP
 .I "\-\-Node"
-"%N %.6D %.9P %6t"
+"%#N %.6D %#P %6t"
 .TP
 .I "\-\-long \-\-Node"
-"%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20E"
+"%#N %.6D %#P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20E"
 .TP
 .I "\-\-list\-reasons"
 "%20E %9u %19H %N"
@@ -109,7 +109,10 @@ when running with various options are
 
 .IP
 In the above format strings the use of "#" represents the
-maximum length of an node list to be printed.
+maximum length of any partition name or node list to be printed.
+A pass is made over the records to be printed to establish the size in order
+to allign the sinfo output, then a second pass is made over the records to
+print them.
 .IP
 The field specifications available include:
 .RS
