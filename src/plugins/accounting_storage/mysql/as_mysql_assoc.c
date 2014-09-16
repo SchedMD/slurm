@@ -2387,7 +2387,8 @@ extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = xstrdup_printf(
-		"select id_assoc, lft from \"%s_%s\" where lft > %u",
+		"select id_assoc, lft from \"%s_%s\" where lft > %u "
+		"&& deleted = 0",
 		cluster_name, assoc_table, start_lft);
 
 	debug3("%d(%d) query\n%s",
