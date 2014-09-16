@@ -71,7 +71,7 @@ documents those changes that are of interest to users and admins.
  -- DB - When sending lft updates to the slurmctld only send non-deleted lfts.
  -- BLUEGENE - Fix documentation on how to build a reservation less than
     a midplane.
- -- If Slurmctld fails to read the job environment consider it a fatal error
+ -- If Slurmctld fails to read the job environment consider it an error
     and abort the job.
  -- Add the name of the node a job is running on to the message printed by
     slurmstepd when terminating a job.
