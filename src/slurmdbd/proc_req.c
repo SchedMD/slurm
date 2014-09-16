@@ -3621,7 +3621,7 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	list_msg.my_list = list_create(slurmdbd_free_id_rc_msg);
-	START_TIMER;
+	/* START_TIMER; */
 	itr = list_iterator_create(get_msg->my_list);
 	while ((job_start_msg = list_next(itr))) {
 	        id_rc_msg = xmalloc(sizeof(dbd_id_rc_msg_t));
