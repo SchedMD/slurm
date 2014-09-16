@@ -116,9 +116,12 @@
 
 #define MAX_THREADS		256
 
+#define _free_and_set(__dst, __src) \
+	xfree(__dst); __dst = __src
+
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
-slurmd_conf_t * conf;
+slurmd_conf_t * conf = NULL;
 
 /*
  * count of active threads
@@ -739,14 +742,6 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	return;
 }
 
-static inline void
-_free_and_set(char **confvar, char *newval)
-{
-
-	xfree(*confvar);
-	*confvar = newval;	/* CLANG false positive */
-}
-
 /*
  * Replace first "%h" in path string with actual hostname.
  * Replace first "%n" in path string with NodeName.
@@ -925,25 +920,25 @@ _read_config(void)
 
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
-	_free_and_set(&conf->cluster_name, xstrdup(cf->cluster_name));
-	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
-	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
-	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
-	_free_and_set(&conf->health_check_program,
+	_free_and_set(conf->cluster_name, xstrdup(cf->cluster_name));
+	_free_and_set(conf->epilog,   xstrdup(cf->epilog));
+	_free_and_set(conf->prolog,   xstrdup(cf->prolog));
+	_free_and_set(conf->tmpfs,    xstrdup(cf->tmp_fs));
+	_free_and_set(conf->health_check_program,
 		      xstrdup(cf->health_check_program));
-	_free_and_set(&conf->spooldir, xstrdup(cf->slurmd_spooldir));
+	_free_and_set(conf->spooldir, xstrdup(cf->slurmd_spooldir));
 	_massage_pathname(&conf->spooldir);
-	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
+	_free_and_set(conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
-	_free_and_set(&conf->select_type, xstrdup(cf->select_type));
-	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
-	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
-	_free_and_set(&conf->pubkey,   path_pubkey);
+	_free_and_set(conf->select_type, xstrdup(cf->select_type));
+	_free_and_set(conf->task_prolog, xstrdup(cf->task_prolog));
+	_free_and_set(conf->task_epilog, xstrdup(cf->task_epilog));
+	_free_and_set(conf->pubkey,   path_pubkey);
 
 	conf->debug_flags = cf->debug_flags;
 	conf->propagate_prio = cf->propagate_prio_process;
 
-	_free_and_set(&conf->job_acct_gather_freq,
+	_free_and_set(conf->job_acct_gather_freq,
 		      xstrdup(cf->job_acct_gather_freq));
 
 	conf->acct_freq_task = (uint16_t)NO_VAL;
@@ -952,15 +947,15 @@ _read_config(void)
 	if (cc != -1)
 		conf->acct_freq_task = cc;
 
-	_free_and_set(&conf->acct_gather_energy_type,
+	_free_and_set(conf->acct_gather_energy_type,
 		      xstrdup(cf->acct_gather_energy_type));
-	_free_and_set(&conf->acct_gather_filesystem_type,
+	_free_and_set(conf->acct_gather_filesystem_type,
 		      xstrdup(cf->acct_gather_filesystem_type));
-	_free_and_set(&conf->acct_gather_infiniband_type,
+	_free_and_set(conf->acct_gather_infiniband_type,
 		      xstrdup(cf->acct_gather_infiniband_type));
-	_free_and_set(&conf->acct_gather_profile_type,
+	_free_and_set(conf->acct_gather_profile_type,
 		      xstrdup(cf->acct_gather_profile_type));
-	_free_and_set(&conf->job_acct_gather_type,
+	_free_and_set(conf->job_acct_gather_type,
 		      xstrdup(cf->job_acct_gather_type));
 
 	if ( (conf->node_name == NULL) ||
