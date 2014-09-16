@@ -229,6 +229,10 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	}
 	rc = write(fd, "1", 2);
 	close(fd);
+	if (rc < 1) {
+		error("write(%s, %s): %m", file_path, mstr);
+		return SLURM_ERROR;
+	}
 
 	/* Only now can we add tasks. */
 	snprintf(file_path, sizeof(file_path), "%s/tasks", path);

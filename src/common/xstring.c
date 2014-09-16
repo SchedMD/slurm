@@ -516,9 +516,7 @@ char *xshort_hostname(void)
 		return NULL;
 
 	dot_ptr = strchr (path_name, '.');
-	if (dot_ptr == NULL)
-		dot_ptr = path_name + strlen(path_name);
-	else
+	if (dot_ptr != NULL)
 		dot_ptr[0] = '\0';
 
 	return xstrdup(path_name);

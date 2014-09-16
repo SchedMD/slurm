@@ -340,7 +340,6 @@ static void _task_finish(task_exit_msg_t *msg)
 			verbose("%s: %s %s: %s%s",
 				hosts, task_str, tasks, signal_str, core_str);
 		} else {
-			rc = msg->return_code;
 			if (reduce_task_exit_msg == 0 ||
 			    msg_printed == 0 ||
 			    msg->return_code != last_task_exit_rc) {

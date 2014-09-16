@@ -246,7 +246,7 @@ static void * _service_connection(void *arg)
 			fini = true;
 		}
 
-		rc = _send_resp(conn->newsockfd, buffer);
+		(void) _send_resp(conn->newsockfd, buffer);
 		xfree(msg);
 	}
 

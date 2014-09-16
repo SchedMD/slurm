@@ -185,7 +185,6 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
-	start_time = MAX(start_time, start_res);
 	bit_and(avail_bitmap, resv_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 
@@ -476,7 +475,6 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
-	start_time = MAX(start_time, start_res);
 	bit_and(avail_bitmap, resv_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 

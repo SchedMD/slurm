@@ -763,10 +763,10 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 			xrealloc(buf, bufsize);
 		}
 		s += snprintf(buf+s, bufsize-s, ",(%s,%s,%s)",
-					  ifa_ptr->ifa_name, ifa_ptr->ifa_family,
-					  ifa_ptr->ifa_addr);
+			      ifa_ptr->ifa_name, ifa_ptr->ifa_family,
+			      ifa_ptr->ifa_addr);
 	}
-	s += snprintf(buf+s, bufsize-s, ")");
+	snprintf(buf+s, bufsize-s, ")");
 
 	*(char **)resulting_data = buf; /* return x-alloc'ed data */
 

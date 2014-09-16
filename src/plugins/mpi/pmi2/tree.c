@@ -461,7 +461,7 @@ unpack_error:
 static int
 _handle_name_lookup(int fd, Buf buf)
 {
-	int rc;
+	int rc = SLURM_SUCCESS, rc2;
 	uint32_t tmp32;
 	char *name = NULL, *port = NULL;
 	Buf resp_buf = NULL;
@@ -477,9 +477,10 @@ _handle_name_lookup(int fd, Buf buf)
 out:
 	resp_buf = init_buf(1024);
 	packstr(port, resp_buf);
-	rc = _slurm_msg_sendto(fd, get_buf_data(resp_buf),
-			       get_buf_offset(resp_buf),
-			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+	rc2 = _slurm_msg_sendto(fd, get_buf_data(resp_buf),
+				get_buf_offset(resp_buf),
+				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+	rc = MAX(rc, rc2);
 	free_buf(resp_buf);
 	xfree(name);
 	xfree(port);

@@ -307,7 +307,6 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 	char* e;
 	char* entry;
 	char* subsys;
-	int found=0;
 
 	/* build pid cgroup meta filepath */
 	if (snprintf(file_path, PATH_MAX, "/proc/%u/cgroup",
@@ -326,7 +325,7 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 	if (fstatus == XCGROUP_SUCCESS) {
 		fstatus = XCGROUP_ERROR;
 		p = buf;
-		while (found==0 && (e = index(p, '\n')) != NULL) {
+		while ((e = index(p, '\n')) != NULL) {
 			*e='\0';
 			/* get subsystems entry */
 			subsys = index(p, ':');
@@ -345,8 +344,6 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 				      subsys, cgns->subsystems);
 				continue;
 			}
-			else
-				found=1;
 			entry++;
 			fstatus = xcgroup_load(cgns, cg, entry);
 			break;

@@ -166,7 +166,6 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job)
 		return false;
 
 	nummasks = 1;
-	maskid = 0;
 	selstr = NULL;
 
 	/* get number of strings present in cpu_bind */
@@ -174,7 +173,6 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job)
 	while (*curstr) {
 		if (nummasks == local_id+1) {
 			selstr = curstr;
-			maskid = local_id;
 			break;
 		}
 		if (*curstr == ',')

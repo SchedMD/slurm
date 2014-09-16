@@ -482,7 +482,6 @@ int _get_sched_cpuset(hwloc_topology_t topology,
 		return false;
 
 	nummasks = 1;
-	maskid = 0;
 	selstr = NULL;
 
 	/* get number of strings present in cpu_bind */
@@ -490,7 +489,6 @@ int _get_sched_cpuset(hwloc_topology_t topology,
 	while (*curstr) {
 		if (nummasks == local_id+1) {
 			selstr = curstr;
-			maskid = local_id;
 			break;
 		}
 		if (*curstr == ',')

@@ -1143,7 +1143,7 @@ static int mvapich_pmgr_loop (mvapich_state_t *st)
 	// for each process, read in one opcode and its associated data
 	mp = mvapich_poll_create (st);
 	while ((mvi = mvapich_poll_next (mp, 1))) {
-		done = mvapich_process_op (st, mvi, &root, &opcode, &buf, &size);
+		(void)mvapich_process_op (st, mvi, &root, &opcode, &buf, &size);
 		completed++;
 		mvi->do_poll = 0;
 	}
@@ -1245,7 +1245,6 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 	}
 	else {
 		msgstr = "";
-		msglen = 0;
 	}
 
 	host = slurm_step_layout_host_name (sl, rank);

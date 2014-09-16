@@ -300,7 +300,7 @@ ifconfig(void)
 					ifa->ifa_name, "IP_V6", addr);
 		}
 	}
-	n = n + sprintf(buf + n, ")");
+	sprintf(buf + n, ")");
 
 	debug("%s: ifconfig %s", __func__, buf);
 
