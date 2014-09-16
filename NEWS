@@ -69,6 +69,8 @@ documents those changes that are of interest to users and admins.
  -- Give more correct waiting reason if job is waiting on association/QOS
     MaxNode limit.
  -- DB - When sending lft updates to the slurmctld only send non-deleted lfts.
+ -- BLUEGENE - Fix documentation on how to build a reservation less than
+    a midplane.
 
 * Changes in Slurm 14.03.7
 ==========================

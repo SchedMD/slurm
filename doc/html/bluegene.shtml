@@ -824,7 +824,8 @@ explicitly reserved are available to any job.</p>
 <p>For example, in <i>slurm.conf</i> specify something of this sort:
 "<i>Licenses=cnode*512</i>". Then create an advanced reservation with a
 command like this:<br>
-"<i>scontrol create reservation licenses="cnode*32" starttime=now duration=30:00 users=joe</i>".<br>
+"<i>scontrol create reservation licenses="cnode*32" starttime=now
+    duration=30:00 flags=LICENSE_ONLY users=joe</i>".<br>
 Jobs run in this reservation will then have <u>at least</u> 32 c-nodes
 available for their use, but could use more given an appropriate workload.</p>
 
