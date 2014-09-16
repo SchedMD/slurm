@@ -186,7 +186,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      uint16_t protocol_version);
 static int  _purge_job_record(uint32_t job_id);
 static void _purge_missing_jobs(int node_inx, time_t now);
-static void _read_data_array_from_file(char *file_name, char ***data,
+static int  _read_data_array_from_file(char *file_name, char ***data,
 				       uint32_t * size,
  				       struct job_record *job_ptr);
 static void _read_data_from_file(char *file_name, char **data);
@@ -5326,12 +5326,20 @@ static int _write_data_to_file(char *file_name, char *data)
 char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
 	char job_dir[30], *file_name, **environment = NULL;
+	int cc;
 
 	file_name = slurm_get_state_save_location();
 	sprintf(job_dir, "/job.%u/environment", job_ptr->job_id);
 	xstrcat(file_name, job_dir);
 
-	_read_data_array_from_file(file_name, &environment, env_size, job_ptr);
+	cc = _read_data_array_from_file(file_name,
+					&environment,
+					env_size,
+					job_ptr);
+	if (cc < 0) {
+		xfree(file_name);
+		return NULL;
+	}
 
 	xfree(file_name);
 	return environment;
@@ -5369,7 +5377,7 @@ char *get_job_script(struct job_record *job_ptr)
  * IN job_ptr - job
  * NOTE: The output format of this must be identical with _xduparray2()
  */
-static void
+static int
 _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 			   struct job_record *job_ptr)
 {
@@ -5386,7 +5394,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 	fd = open(file_name, 0);
 	if (fd < 0) {
 		error("Error opening file %s, %m", file_name);
-		return;
+		return -1;
 	}
 
 	amount = read(fd, &rec_cnt, sizeof(uint32_t));
@@ -5396,14 +5404,21 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 		else
 			verbose("File %s has zero size", file_name);
 		close(fd);
-		return;
+		return -1;
+	}
+
+	if (rec_cnt >= INT_MAX) {
+		error("%s: unreasonable record counter %d in file %s",
+		      __func__, rec_cnt, file_name);
+		close(fd);
+		return -1;
 	}
 
 	if (rec_cnt == 0) {
 		*data = NULL;
 		*size = 0;
 		close(fd);
-		return;
+		return 0;
 	}
 
 	pos = 0;
@@ -5415,7 +5430,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 			error("Error reading file %s, %m", file_name);
 			xfree(buffer);
 			close(fd);
-			return;
+			return -1;
 		}
 		pos += amount;
 		if (amount < BUF_SIZE)	/* end of file */
@@ -5485,7 +5500,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 
 	*size = rec_cnt;
 	*data = array_ptr;
-	return;
+	return 0;
 }
 
 /*

@@ -1517,6 +1517,13 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	}
 	launch_msg_ptr->environment = get_job_env(job_ptr,
 						  &launch_msg_ptr->envc);
+	if (launch_msg_ptr->environment == NULL) {
+		error("%s: environment missing or corrupted aborting job %u",
+		      __func__, job_ptr->job_id);
+		slurm_free_job_launch_msg(launch_msg_ptr);
+		job_complete(job_ptr->job_id, getuid(), false, true, 0);
+		return NULL;
+	}
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *
