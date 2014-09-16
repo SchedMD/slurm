@@ -284,6 +284,7 @@ static int copy_hostent(const struct hostent *src, char *buf, int len)
 		return(-1);
 
 	assert(validate_hostent_copy(src, dst) >= 0);
+	assert(buf != NULL);	/* Used only to eliminate CLANG error */
 	return(0);
 }
 

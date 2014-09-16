@@ -132,7 +132,6 @@ static void _set_collectors(char *this_node_name)
 	int hl_count = 0;
 	uint16_t parent_port;
 	uint16_t backup_port;
-	bool found = false;
 	bool ctldparent = true;
 
 #ifdef HAVE_FRONT_END
@@ -155,7 +154,7 @@ static void _set_collectors(char *this_node_name)
 	parent_port = conf->slurmctld_port;
 	backup_port = parent_port;
 	slurm_conf_unlock();
-	while (!found) {
+	while (1) {
 		if ( route_g_split_hostlist(nodes, &hll, &hl_count) ) {
 			error("unable to split forward hostlist");
 			goto clean; /* collector addrs remains null */
@@ -217,7 +216,6 @@ static void _set_collectors(char *this_node_name)
 				}
 
 			}
-			found = true;
 			goto clean;
 		}
 

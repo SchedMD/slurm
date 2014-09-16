@@ -251,8 +251,6 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		return SLURM_ERROR;
 	}
 
-	fstatus = SLURM_SUCCESS;
-
 	/*
 	 * create cpuacct root cg and lock it
 	 *
