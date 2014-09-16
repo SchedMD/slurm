@@ -3598,6 +3598,7 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	ListIterator itr = NULL;
 	dbd_job_start_msg_t *job_start_msg;
 	dbd_id_rc_msg_t *id_rc_msg;
+	/* DEF_TIMERS; */
 
 	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_SEND_MULT_JOB_START message from invalid uid";
@@ -3620,7 +3621,7 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	list_msg.my_list = list_create(slurmdbd_free_id_rc_msg);
-
+	START_TIMER;
 	itr = list_iterator_create(get_msg->my_list);
 	while ((job_start_msg = list_next(itr))) {
 	        id_rc_msg = xmalloc(sizeof(dbd_id_rc_msg_t));
@@ -3629,6 +3630,9 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 		_process_job_start(slurmdbd_conn, job_start_msg, id_rc_msg);
 	}
 	list_iterator_destroy(itr);
+	/* END_TIMER; */
+	/* info("%d multi job took %s", */
+	/*      list_count(get_msg->my_list), TIME_STR); */
 
 	slurmdbd_free_list_msg(get_msg);
 
@@ -3652,6 +3656,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 	ListIterator itr = NULL;
 	Buf req_buf = NULL, ret_buf = NULL;
 	int rc = SLURM_SUCCESS;
+	/* DEF_TIMERS; */
 
 	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_SEND_MULT_MSG message from invalid uid";
@@ -3674,7 +3679,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	list_msg.my_list = list_create(slurmdbd_free_buffer);
-
+	/* START_TIMER; */
 	itr = list_iterator_create(get_msg->my_list);
 	while ((req_buf = list_next(itr))) {
 		ret_buf = NULL;
@@ -3686,6 +3691,8 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 			break;
 	}
 	list_iterator_destroy(itr);
+	/* END_TIMER; */
+	/* info("%d multi took %s", list_count(get_msg->my_list), TIME_STR); */
 
 	slurmdbd_free_list_msg(get_msg);
 
