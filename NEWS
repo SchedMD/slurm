@@ -288,6 +288,9 @@ documents those changes that are of interest to users and administrators.
     reference.
  -- Performance adjustment to avoid calling a function multiple times when it
     only needs to be called once.
+ -- Give more correct waiting reason if job is waiting on association/QOS
+    MaxNode limit.
+ -- DB - When sending lft updates to the slurmctld only send non-deleted lfts.
 
 * Changes in Slurm 14.03.7
 ==========================

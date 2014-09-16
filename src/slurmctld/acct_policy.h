@@ -121,7 +121,8 @@ extern bool acct_policy_job_runnable_state(struct job_record *job_ptr);
 /*
  * Using the limits on the job get the max nodes possible.
  */
-extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr);
+extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
+					  uint32_t *wait_reason);
 
 /*
  * acct_policy_update_pending_job - Make sure the limits imposed on a

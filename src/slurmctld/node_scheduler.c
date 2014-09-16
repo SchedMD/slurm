@@ -1559,6 +1559,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes, acct_max_nodes;
+	uint32_t wait_reason = 0;
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
@@ -1657,7 +1658,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* Don't call functions in MIN/MAX it will result in the
 	   function being called multiple times.
 	*/
-	acct_max_nodes = acct_policy_get_max_nodes(job_ptr);
+	acct_max_nodes = acct_policy_get_max_nodes(job_ptr, &wait_reason);
 	max_nodes = MIN(max_nodes, acct_max_nodes);
 
 	if (job_ptr->details->req_node_bitmap && job_ptr->details->max_nodes) {
@@ -1678,7 +1679,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		req_nodes = min_nodes;
 	/* info("nodes:%u:%u:%u", min_nodes, req_nodes, max_nodes); */
 
-	if (max_nodes < min_nodes) {
+	if (acct_max_nodes < min_nodes) {
+		error_code = ESLURM_ACCOUNTING_POLICY;
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = wait_reason;
+		goto cleanup;
+	} else if (max_nodes < min_nodes) {
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	} else {
 		/* Select resources for the job here */
