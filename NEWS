@@ -291,6 +291,15 @@ documents those changes that are of interest to users and administrators.
  -- Give more correct waiting reason if job is waiting on association/QOS
     MaxNode limit.
  -- DB - When sending lft updates to the slurmctld only send non-deleted lfts.
+ -- BLUEGENE - Fix documentation on how to build a reservation less than
+    a midplane.
+ -- If Slurmctld fails to read the job environment consider it an error
+    and abort the job.
+ -- Add the name of the node a job is running on to the message printed by
+    slurmstepd when terminating a job.
+ -- Remove unsupported options from sacctmgr help and the dump function.
+ -- Update sacctmgr man page removing reference to obsolete parameter
+    MaxProcSecondsPerJob.
 
 * Changes in Slurm 14.03.7
 ==========================

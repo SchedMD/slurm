@@ -5998,6 +5998,7 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
 	char job_dir[30], *file_name, **environment = NULL;
 	int hash = job_ptr->job_id % 10;
+	int cc;
 
 	file_name = slurm_get_state_save_location();
 	sprintf(job_dir, "/hash.%d/job.%u/environment", hash, job_ptr->job_id);
@@ -6010,8 +6011,14 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 		file_name = slurm_get_state_save_location();
 		sprintf(job_dir, "/job.%u/environment", job_ptr->job_id);
 		xstrcat(file_name, job_dir);
-		(void) _read_data_array_from_file(file_name, &environment,
-						  env_size, job_ptr);
+		cc = _read_data_array_from_file(file_name,
+						&environment,
+						env_size,
+						job_ptr);
+		if (cc < 0) {
+			xfree(file_name);
+			return NULL;
+		}
 	}
 
 	xfree(file_name);
@@ -6085,6 +6092,13 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 			error("Error reading file %s, %m", file_name);
 		else
 			verbose("File %s has zero size", file_name);
+		close(fd);
+		return -1;
+	}
+
+	if (rec_cnt >= INT_MAX) {
+		error("%s: unreasonable record counter %d in file %s",
+		      __func__, rec_cnt, file_name);
 		close(fd);
 		return -1;
 	}
