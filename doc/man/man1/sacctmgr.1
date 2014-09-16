@@ -1661,9 +1661,6 @@ Maximum number of jobs the children of this association can run.
 \fIMaxNodesPerJob=\fP
 Maximum number of nodes per job the children of this association can run.
 .TP
-\fIMaxProcSecondsPerJob=\fP
-Maximum cpu seconds children of this accounts jobs can run.
-.TP
 \fIMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
@@ -1676,11 +1673,11 @@ Followed by Accounts you want in this fashion...
 .na
 \fBParent\ \-\ root\fP (Defined by default)
 .br
-\fBAccount\ \-\ cs\fP:MaxNodesPerJob=5:MaxJobs=4:MaxProcSecondsPerJob=20:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
+\fBAccount\ \-\ cs\fP:MaxNodesPerJob=5:MaxJobs=4:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
 .br
 \fBParent\ \-\ cs\fP
 .br
-\fBAccount\ \-\ test\fP:MaxNodesPerJob=1:MaxJobs=1:MaxProcSecondsPerJob=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'
+\fBAccount\ \-\ test\fP:MaxNodesPerJob=1:MaxJobs=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'
 .ad
 
 .TP
@@ -1741,9 +1738,6 @@ Maximum number of jobs the children of this association can run.
 \fIMaxNodesPerJob=\fP
 Maximum number of nodes per job the children of this association can run.
 .TP
-\fIMaxProcSecondsPerJob=\fP
-Maximum cpu seconds children of this accounts jobs can run.
-.TP
 \fIMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
@@ -1759,7 +1753,7 @@ To add users to a account add a line like this after a Parent \- line
 \fBParent\ \-\ test\fP
 .br
 .na
-\fBUser\ \-\ adam\fP:MaxNodesPerJob=2:MaxJobs=3:MaxProcSecondsPerJob=4:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'
+\fBUser\ \-\ adam\fP:MaxNodesPerJob=2:MaxJobs=3:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'
 .ad
 
 .TP
@@ -1788,9 +1782,6 @@ Maximum number of jobs this user can run.
 .TP
 \fIMaxNodesPerJob=\fP
 Maximum number of nodes per job this user can run.
-.TP
-\fIMaxProcSecondsPerJob=\fP
-Maximum cpu seconds this user can run per job.
 .TP
 \fIMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) this user can run.
