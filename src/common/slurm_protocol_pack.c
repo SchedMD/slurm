@@ -5383,7 +5383,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		pack16(build_ptr->select_type_param, buffer);
 

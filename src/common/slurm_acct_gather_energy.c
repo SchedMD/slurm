@@ -279,7 +279,6 @@ extern int acct_gather_energy_startpoll(uint32_t frequency)
 	if (pthread_create(&_watch_node_thread_id, &attr, &_watch_node, NULL)) {
 		debug("acct_gather_energy failed to create _watch_node "
 		      "thread: %m");
-		frequency = 0;
 	} else
 		debug3("acct_gather_energy dynamic logging enabled");
 	slurm_attr_destroy(&attr);

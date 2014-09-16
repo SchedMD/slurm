@@ -351,7 +351,6 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 			    &_watch_tasks, NULL)) {
 		debug("jobacct_gather failed to create _watch_tasks "
 		      "thread: %m");
-		frequency = 0;
 	} else
 		debug3("jobacct_gather dynamic logging enabled");
 	slurm_attr_destroy(&attr);

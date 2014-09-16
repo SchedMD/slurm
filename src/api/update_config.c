@@ -187,6 +187,8 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg)
 	req_msg.data     = resv_msg;
 
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	if (rc)
+		slurm_seterrno(rc);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_CREATE_RESERVATION:
 		resp = (reservation_name_msg_t *) resp_msg.data;

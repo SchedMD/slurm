@@ -1665,7 +1665,6 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 	n = 0;
 	s = 0;
 
-	cp = args[0];
 	temp = (PMI_keyval_t *) malloc(num_args * (sizeof (PMI_keyval_t)));
 	if (temp == NULL) {
 		pmi_nomem_error(__FILE__, __LINE__, "PMI_Parse_option");

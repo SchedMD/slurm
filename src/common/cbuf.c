@@ -866,7 +866,7 @@ cbuf_write_line (cbuf_t dst, char *srcbuf, int *ndropped)
      */
     nfree = dst->size - dst->used;
     if ((len > nfree) && (dst->size < dst->maxsize)) {
-        nfree += cbuf_grow(dst, len - nfree);
+        (void) cbuf_grow(dst, len - nfree);
     }
     /*  Determine if src will fit (or be made to fit) in dst cbuf.
      */
