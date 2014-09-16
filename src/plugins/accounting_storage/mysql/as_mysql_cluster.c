@@ -1315,7 +1315,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 					"where time_end=0 and node_name=''",
 					mysql_conn->cluster_name,
 					event_table, cluster_nodes);
-				rc = mysql_db_query(mysql_conn, query);
+				(void) mysql_db_query(mysql_conn, query);
 				xfree(query);
 				goto update_it;
 			} else if (!strcmp(cluster_nodes, row[1])) {
@@ -1329,9 +1329,10 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 			}
 		} else
 			goto end_it;
-	} else
+	} else {
 		debug("%s has changed from %s cpus to %u",
 		      mysql_conn->cluster_name, row[0], cpus);
+	}
 
 	/* reset all the entries for this cluster since the cpus
 	   changed some of the downed nodes may have gone away.
@@ -1351,7 +1352,7 @@ add_it:
 		"values ('%s', %u, %ld, 'Cluster processor count')",
 		mysql_conn->cluster_name, event_table,
 		cluster_nodes, cpus, event_time);
-	rc = mysql_db_query(mysql_conn, query);
+	(void) mysql_db_query(mysql_conn, query);
 	xfree(query);
 update_it:
 	query = xstrdup_printf(

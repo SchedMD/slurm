@@ -1000,7 +1000,6 @@ static char *_setup_association_cond_qos(slurmdb_association_cond_t *assoc_cond,
 		list_iterator_destroy(itr);
 		xstrcat(extra, ") &&");
 	} else if (assoc_cond->with_sub_accts) {
-		prefix = "t2";
 		xstrfmtcat(extra, ", \"%s_%s\" as t2 where "
 			   "(t1.lft between t2.lft and t2.rgt) &&",
 			   cluster_name, assoc_table);

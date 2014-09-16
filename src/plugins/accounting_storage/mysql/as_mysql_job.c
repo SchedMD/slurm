@@ -818,7 +818,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				       end_time, end_time);
 		if (debug_flags & DEBUG_FLAG_DB_JOB)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
+		(void) mysql_db_query(mysql_conn, query);
 		xfree(query);
 	} else
 		slurm_mutex_unlock(&rollup_lock);

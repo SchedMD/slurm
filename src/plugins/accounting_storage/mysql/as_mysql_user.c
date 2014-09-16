@@ -1138,7 +1138,6 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (!user_cond) {
 		xstrcat(extra, "where deleted=0");
-		set = 1;
 		goto empty;
 	}
 
@@ -1187,7 +1186,6 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u",
 			   user_cond->admin_level);
-		set = 1;
 	}
 
 empty:
