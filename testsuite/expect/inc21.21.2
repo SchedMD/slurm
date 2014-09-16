@@ -35,7 +35,7 @@ proc inc21_21_2 {maxnode} {
 #
 # Spawn a job testing maxnode+1
 #
-	spawn $srun -N[expr $maxnode + 1] --account=$ta $bin_id
+	spawn $srun -N[expr $maxnode + 1] --account=$ta -I $bin_id
 	expect {
 		-re "Job violates accounting policy" {
 			send_user "\nThis error is expected, not a problem (Within: inc21.21.2)\n"

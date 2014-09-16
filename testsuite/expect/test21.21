@@ -170,7 +170,7 @@ proc _test_limits { } {
 	set matches 0
 	set mypid [spawn $squeue -o "\%i \%t \%r"]
 	expect {
-		-re "($job_id(2)|$job_id(3)).PD.AssociationJobLimit" {
+		-re "($job_id(2)|$job_id(3)).PD.AssocMaxJobsLimit" {
 			incr matches
 			exp_continue
 		}
