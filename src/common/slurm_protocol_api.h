@@ -923,13 +923,6 @@ int slurm_send_node_msg(slurm_fd_t open_fd, slurm_msg_t *msg);
  */
 extern slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr);
 extern slurm_fd_t slurm_open_controller_conn_spec(enum controller_id dest);
-/* gets the slurm_addr_t of the specified controller
- *	primary or secondary slurmctld message engine
- * IN dest      - controller to contact, primary or secondary
- * OUT addr     - slurm_addr_t to the specified controller
- */
-void slurm_get_controller_addr_spec(enum controller_id dest,
-				    slurm_addr_t *addr);
 
 /* In the bsd socket implementation it creates a SOCK_STREAM socket
  *	and calls connect on it a SOCK_DGRAM socket called with connect

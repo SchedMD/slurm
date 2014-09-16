@@ -2632,18 +2632,6 @@ slurm_fd_t slurm_open_controller_conn_spec(enum controller_id dest)
 	return rc;
 }
 
-/* gets the slurm_addr_t of the specified controller
- *	primary or secondary slurmctld message engine
- * IN dest      - controller to contact, primary or secondary
- * OUT addr     - slurm_addr_t to the specified controller
- */
-void slurm_get_controller_addr_spec(enum controller_id dest, slurm_addr_t *addr)
-{
-	addr = (dest == PRIMARY_CONTROLLER) ?
-		&proto_conf->primary_controller :
-		&proto_conf->secondary_controller;
-}
-
 /* In the bsd implmentation maps directly to a close call, to close
  *	the socket that was accepted
  * IN open_fd		- an open file descriptor to close
