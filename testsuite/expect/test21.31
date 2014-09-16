@@ -26,7 +26,7 @@ source ./globals_accounting
 
 set test_id     "test21.31"
 set exit_code   0
-set tc2		slurm_test-cluster-2
+set tc2		"$test_id-cluster-2"
 set nm		name
 set sr		res
 set sr1		[format "%s%s" $test_id "res_1"]
