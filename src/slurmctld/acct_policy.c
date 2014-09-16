@@ -2003,12 +2003,20 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 
 	assoc_mgr_lock(&locks);
 	if (qos_ptr) {
-		qos_max_p_limit = max_nodes_limit =
-			MIN(qos_ptr->max_nodes_pj, qos_ptr->max_nodes_pu);
-		max_nodes_limit =
-			MIN(max_nodes_limit, qos_ptr->grp_nodes);
-		if (max_nodes_limit != INFINITE)
-			*wait_reason = WAIT_QOS_JOB_LIMIT;
+		if (qos_ptr->max_nodes_pj < qos_ptr->max_nodes_pu) {
+			max_nodes_limit = qos_ptr->max_nodes_pj;
+			*wait_reason = WAIT_QOS_MAX_NODE_PER_JOB;
+		} else if (qos_ptr->max_nodes_pu != INFINITE) {
+			max_nodes_limit = qos_ptr->max_nodes_pu;
+			*wait_reason = WAIT_QOS_MAX_NODE_PER_USER;
+		}
+
+		qos_max_p_limit = max_nodes_limit;
+
+		if (qos_ptr->grp_nodes < max_nodes_limit) {
+			max_nodes_limit = qos_ptr->grp_nodes;
+			*wait_reason = WAIT_QOS_GRP_NODES;
+		}
 	}
 
 	/* We have to traverse all the associations because QOS might
@@ -2019,7 +2027,7 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 		    && (assoc_ptr->grp_nodes != INFINITE)
 		    && (assoc_ptr->grp_nodes < max_nodes_limit)) {
 			max_nodes_limit = assoc_ptr->grp_nodes;
-			*wait_reason = WAIT_ASSOC_JOB_LIMIT;
+			*wait_reason = WAIT_ASSOC_GRP_NODES;
 			grp_set = 1;
 		}
 
@@ -2028,7 +2036,7 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 		    && (assoc_ptr->max_nodes_pj != INFINITE)
 		    && (assoc_ptr->max_nodes_pj < max_nodes_limit)) {
 			max_nodes_limit = assoc_ptr->max_nodes_pj;
-			*wait_reason = WAIT_ASSOC_JOB_LIMIT;
+			*wait_reason = WAIT_ASSOC_MAX_NODE_PER_JOB;
 		}
 
 		/* only check the first grp set */
