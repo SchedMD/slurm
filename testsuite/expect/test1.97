@@ -47,7 +47,7 @@ print_header $test_id
 if {![string match *CR_PACK_NODES* [test_select_type_params]]} {
 	send_user "\nWARNING: this test requirese "
 	send_user "SelectTypeParameters=CR_PACK_NODES\n"
-	exit 1
+	exit 0
 }
 
 proc check_node_config { } {
