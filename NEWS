@@ -223,6 +223,9 @@ documents those changes that are of interest to users and administrators.
  -- When a job dependency can never be satisfied do not cancel the job but keep
     pending with reason WAIT_DEP_INVALID (DependencyNeverSatisfied).
 
+* Changes in Slurm 14.03.9
+==========================
+
 * Changes in Slurm 14.03.8
 ==========================
  -- Fix minor memory leak when Job doesn't have nodes on it (Meaning the job
