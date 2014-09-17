@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 14.03.9
+==========================
+
 * Changes in Slurm 14.03.8
 ==========================
  -- Fix minor memory leak when Job doesn't have nodes on it (Meaning the job
