@@ -119,9 +119,9 @@ if {$num_cpus == 0} {
 # Get a list of nodes that we can use
 #
 set i 0
-spawn $sinfo -o%n --noheader -p$partition
+spawn $sinfo -o%n|%t --noheader -p$partition
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($alpha_numeric_under).idle" {
 		if {$i<8} {
 			set node_list($i) $expect_out(1,string)
 			incr i 1
@@ -149,7 +149,7 @@ send_user "\nTesting ALLOCATED state\n"
 set tmp_id 0
 set tmp_sc "test$test_id\_tmp_sc"
 make_bash_script $tmp_sc "sleep 20"
-spawn $sbatch -p$partition -w$node_list(0),$node_list(1) -o/dev/null -n[expr 2 * $num_cpus] $tmp_sc
+spawn $sbatch -p$partition -w$node_list(0),$node_list(1) -o/dev/null -n[expr 2 * $num_cpus] --exclusive $tmp_sc
 expect {
 	-re "Submitted batch job ($number)" {
 		set tmp_id $expect_out(1,string)
