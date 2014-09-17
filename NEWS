@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 14.11.0pre6
+==============================
+
 * Changes in Slurm 14.11.0pre5
 ==============================
  -- Fix sbatch --export=ALL, it was treated by srun as a request to explicitly
