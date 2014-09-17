@@ -2757,7 +2757,7 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		}
 
 		bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
-		info("sequential pick using coremap: %s", str);
+		debug2("sequential pick using coremap: %s", str);
 
 	} else { /* Reservation is using full nodes */
 		while (node_cnt) {
@@ -2782,7 +2782,7 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		}
 
 		bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
-		info("sequential pick using nodemap: %s", str);
+		debug2("sequential pick using nodemap: %s", str);
 	}
 
 	return sp_avail_bitmap;

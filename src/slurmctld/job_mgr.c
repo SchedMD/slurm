@@ -5710,7 +5710,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		hl = hostlist_create(job_desc->req_nodes);
 		if (hl == NULL) {
 			/* likely a badly formatted hostlist */
-			error("%s: bad hostlist", __func__);
+			error("validate_job_create_req: bad hostlist");
 			return ESLURM_INVALID_NODE_NAME;
 		}
 		host_cnt = hostlist_count(hl);

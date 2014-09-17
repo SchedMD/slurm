@@ -300,6 +300,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove unsupported options from sacctmgr help and the dump function.
  -- Update sacctmgr man page removing reference to obsolete parameter
     MaxProcSecondsPerJob.
+ -- Added more validity checking of incoming job submit requests.
 
 * Changes in Slurm 14.03.7
 ==========================
