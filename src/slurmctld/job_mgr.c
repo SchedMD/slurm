@@ -5085,6 +5085,35 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc)
 	xstrtolower(job_desc->account);
 	xstrtolower(job_desc->wckey);
 
+	/* Basic validation of some parameters */
+	if (job_desc->req_nodes) {
+		hostlist_t hl;
+		uint32_t host_cnt;
+		hl = hostlist_create(job_desc->req_nodes);
+		if (hl == NULL) {
+			/* likely a badly formatted hostlist */
+			error("create_job_record: bad hostlist");
+			return ESLURM_INVALID_NODE_NAME;
+		}
+		host_cnt = hostlist_count(hl);
+		hostlist_destroy(hl);
+		if ((job_desc->min_nodes == NO_VAL) ||
+		    (job_desc->min_nodes <  host_cnt))
+			job_desc->min_nodes = host_cnt;
+	}
+	if ((job_desc->ntasks_per_node != (uint16_t) NO_VAL) &&
+	    (job_desc->min_nodes       != NO_VAL) &&
+	    (job_desc->num_tasks       != NO_VAL)) {
+		uint32_t ntasks = job_desc->ntasks_per_node *
+				  job_desc->min_nodes;
+		job_desc->num_tasks = MAX(job_desc->num_tasks, ntasks);
+	}
+	if ((job_desc->min_cpus  != NO_VAL) &&
+	    (job_desc->min_nodes != NO_VAL) &&
+	    (job_desc->min_cpus  <  job_desc->min_nodes) &&
+	    (job_desc->max_cpus  >= job_desc->min_nodes))
+		job_desc->min_cpus = job_desc->min_nodes;
+
 	return SLURM_SUCCESS;
 }
 
