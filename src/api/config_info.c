@@ -1732,7 +1732,9 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !strcasecmp(key_pair->value, "N/A") ||
 		    (!strcasecmp(key_pair->name, "KeepAliveTime") &&
 		     !strcasecmp(key_pair->value, "SYSTEM_DEFAULT")) ||
-		    !strcasecmp(key_pair->name, "DynAllocPort")) {
+		    !strcasecmp(key_pair->name, "DynAllocPort") ||
+		    (!strcasecmp(key_pair->name, "DefMemPerNode") &&
+		     !strcasecmp(key_pair->value, "UNLIMITED"))) {
 			temp = xstrdup_printf("#%s=", key_pair->name);
 			debug("Commenting out %s=%s",
 			      key_pair->name,
