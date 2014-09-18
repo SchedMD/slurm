@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.9
 ==========================
+ -- If slurmd fails to stat(2) the configuration print the string describing
+    the error code.
 
 * Changes in Slurm 14.03.8
 ==========================
