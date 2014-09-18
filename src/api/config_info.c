@@ -136,10 +136,6 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		base_path = default_slurm_config_file;
 
 	xstrfmtcat (path, "%s.%s", base_path, time_str);
-	/* remove colons (in the time portion of path) so that MS Windows
-	 * can correctly display the path */
-	while (index(path, ':') != NULL)
-	      xstrsubstitute(path, ":", "");
 
 	debug("Writing slurm.conf file: %s", path);
 
