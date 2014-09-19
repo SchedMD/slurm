@@ -3066,7 +3066,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				      "full_nodes is zero");
 				resv_ptr->full_nodes = 1;
 			}
-			if (resv_ptr->full_nodes) {
+			if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
 				bit_not(resv_ptr->node_bitmap);
 				bit_and(node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);

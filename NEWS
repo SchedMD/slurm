@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ==========================
  -- If slurmd fails to stat(2) the configuration print the string describing
     the error code.
+ -- Fix for mixing core base reservations with whole node based reservations
+    to avoid overlapping erroneously.
 
 * Changes in Slurm 14.03.8
 ==========================
