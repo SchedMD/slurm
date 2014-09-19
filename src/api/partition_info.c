@@ -197,7 +197,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	 ****** to maintain alphabetized output ******/
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s",
+		snprintf(tmp_line, sizeof(tmp_line), "Midplanes=%s",
 			 part_ptr->nodes);
 		xstrcat(out, tmp_line);
 		if (one_liner)

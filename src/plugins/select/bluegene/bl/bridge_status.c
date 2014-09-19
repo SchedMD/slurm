@@ -111,7 +111,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 			continue;
 		}
 
-		if (strcmp(bp_id, bpid) != 0) {	/* different base partition */
+		if (strcmp(bp_id, bpid) != 0) {	/* different midplane */
 			free(bpid);
 			continue;
 		}
@@ -469,7 +469,7 @@ static void _test_down_nodes(my_bluegene_t *my_bg)
 }
 
 /* Test for switches that are not UP in MMCS,
- * when found DRAIN them in SLURM and configure their base partition DOWN */
+ * when found DRAIN them in SLURM and configure their midplane DOWN */
 static void _test_down_switches(my_bluegene_t *my_bg)
 {
 	int switch_num, i, rc;

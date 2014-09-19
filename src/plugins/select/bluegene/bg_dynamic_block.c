@@ -420,7 +420,7 @@ try_small_again:
 		}
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-			info("allocate failure for size %d base partitions",
+			info("allocate failure for size %d midplanes",
 			     request->size);
 		rc = SLURM_ERROR;
 	}

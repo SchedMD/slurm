@@ -2783,7 +2783,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 
 	if (set != 2) {
 		error("update_sub_node: "
-		      "I didn't get the base partition and the sub part.");
+		      "I didn't get the midplane and the sub mp.");
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -3211,7 +3211,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		    || (job_desc->max_nodes < job_desc->min_nodes))
 			job_desc->max_nodes = job_desc->min_nodes;
 
-		/* See if min_nodes is greater than one base partition */
+		/* See if min_nodes is greater than one midplane */
 		if (job_desc->min_nodes > bg_conf->mp_cnode_cnt) {
 			/*
 			 * if it is make sure it is a factor of

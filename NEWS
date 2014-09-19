@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     the error code.
  -- Fix for mixing core base reservations with whole node based reservations
     to avoid overlapping erroneously.
+ -- BLUEGENE - Remove references to Base Partition.
 
 * Changes in Slurm 14.03.8
 ==========================
