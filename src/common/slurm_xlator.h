@@ -84,6 +84,8 @@
 #define	bit_clear		slurm_bit_clear
 #define	bit_nclear		slurm_bit_nclear
 #define	bit_nset		slurm_bit_nset
+#define	bit_set_all		slurm_bit_set_all
+#define	bit_clear_all		slurm_bit_clear_all
 #define	bit_ffc			slurm_bit_ffc
 #define	bit_ffs			slurm_bit_ffs
 #define	bit_free		slurm_bit_free

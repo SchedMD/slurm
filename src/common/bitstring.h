@@ -110,6 +110,8 @@ void bit_set(bitstr_t *b, bitoff_t bit);
 void bit_clear(bitstr_t *b, bitoff_t bit);
 void bit_nclear(bitstr_t *b, bitoff_t start, bitoff_t stop);
 void bit_nset(bitstr_t *b, bitoff_t start, bitoff_t stop);
+void bit_set_all(bitstr_t *b);
+void bit_clear_all(bitstr_t *b);
 
 /* changed interface from Vixie macros */
 bitoff_t bit_ffc(bitstr_t *b);
