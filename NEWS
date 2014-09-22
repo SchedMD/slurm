@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Remove references to Base Partition.
  -- sview - If compiled on a non-bluegene system then used to view a BGQ fix
     to allow sview to display blocks correctly.
+ -- Fix bug in update reservation. When modifying the reservation the end time
+    was set incorrectly.
+ -- The start time of a reservation that is in ACTIVE state cannot be modified.
 
 * Changes in Slurm 14.03.8
 ==========================
