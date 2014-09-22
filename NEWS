@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for mixing core base reservations with whole node based reservations
     to avoid overlapping erroneously.
  -- BLUEGENE - Remove references to Base Partition.
+ -- sview - If compiled on a non-bluegene system then used to view a BGQ fix
+    to allow sview to display blocks correctly.
 
 * Changes in Slurm 14.03.8
 ==========================

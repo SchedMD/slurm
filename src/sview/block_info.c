@@ -142,7 +142,7 @@ static display_data_t display_data_block[] = {
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ioload",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-#elif defined HAVE_BGQ
+#else
 	{G_TYPE_STRING, SORTID_USE, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGEBLRTS, NULL,
