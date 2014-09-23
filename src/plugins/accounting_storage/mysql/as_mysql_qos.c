@@ -735,13 +735,13 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			ListIterator new_preempt_itr =
 				list_iterator_create(qos->preempt_list);
 			char *new_preempt = NULL;
+			bool cleared = 0;
 
 			qos_rec->preempt_bitstr = bit_alloc(g_qos_count);
 			if (row[1] && row[1][0])
 				bit_unfmt(qos_rec->preempt_bitstr, row[1]+1);
 
 			while ((new_preempt = list_next(new_preempt_itr))) {
-				bool cleared = 0;
 				if (new_preempt[0] == '-') {
 					bit_clear(qos_rec->preempt_bitstr,
 						  atol(new_preempt+1));

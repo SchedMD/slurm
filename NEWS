@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
     was set incorrectly.
  -- The start time of a reservation that is in ACTIVE state cannot be modified.
  -- Update the cgroup documentation about release agent for devices.
+ -- MYSQL - fix for setting up preempt list on a QOS for multiple QOS.
 
 * Changes in Slurm 14.03.8
 ==========================
