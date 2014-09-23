@@ -141,7 +141,7 @@ extern int xcpu_signal(int sig, char *nodes)
 
 #else
 
-extern inline int xcpu_signal(int sig, char *nodes)
+extern int xcpu_signal(int sig, char *nodes)
 {
 	return 0;
 }

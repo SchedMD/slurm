@@ -13724,7 +13724,7 @@ extern void job_end_time_reset(struct job_record  *job_ptr)
 /*
  * jobid2str() - print all the parts that uniquely identify a job.
  */
-extern inline char *
+extern char *
 jobid2str(struct job_record *job_ptr, char *buf)
 {
 	if (job_ptr == NULL)
@@ -13748,7 +13748,7 @@ jobid2str(struct job_record *job_ptr, char *buf)
 /* trace_job() - print the job details if
  *               the DEBUG_FLAG_TRACE_JOBS is set
  */
-extern inline void
+extern void
 trace_job(struct job_record *job_ptr, const char *func, const char *extra)
 {
 	char jbuf[JBUFSIZ];
