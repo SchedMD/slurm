@@ -42,15 +42,9 @@
 #  include "config.h"
 #endif
 
-#if defined(__NetBSD__)
-#include <sys/types.h> /* for pid_t */
-#include <sys/signal.h> /* for SIGKILL */
-#endif
-#if defined(__FreeBSD__)
-#include <signal.h> /* for SIGKILL */
-#endif
 #include <ctype.h>
 #include <errno.h>
+#include <signal.h> /* for SIGKILL */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

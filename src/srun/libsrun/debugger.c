@@ -38,13 +38,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if defined(__FreeBSD__)
-#include <signal.h>
-#endif
-
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
+
+#include <signal.h>
 
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 /* Use symbols from the runjob.so library provided by IBM.

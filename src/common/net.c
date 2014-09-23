@@ -52,7 +52,7 @@
 #include <errno.h>
 #include <stdint.h>
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__)
 #define	SOL_TCP		IPPROTO_TCP
 #endif
 

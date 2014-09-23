@@ -45,11 +45,8 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
-#if defined(__FreeBSD__)
-#include <signal.h>
-#endif
-
 #include <fcntl.h>
+#include <signal.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
