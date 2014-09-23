@@ -43,10 +43,6 @@
 static void _ft_decay_apply_new_usage(struct job_record *job, time_t *start);
 static void _apply_priority_fs(void);
 
-extern void fair_tree_init(void) {
-}
-
-
 /* Fair Tree code called from the decay thread loop */
 extern void fair_tree_decay(List jobs, time_t start)
 {
@@ -138,7 +134,7 @@ static void _ft_debug(slurmdb_association_rec_t *assoc,
 
 /* Sort so that higher level_fs values are first in the list */
 static int _cmp_level_fs(slurmdb_association_rec_t **x,
-					 slurmdb_association_rec_t **y)
+			 slurmdb_association_rec_t **y)
 {
 	/* We sort based on the following critereon:
 	 *  1. level_fs value

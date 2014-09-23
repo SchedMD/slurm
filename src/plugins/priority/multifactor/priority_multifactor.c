@@ -1387,10 +1387,6 @@ static void _internal_setup(void)
 	weight_qos = slurm_get_priority_weight_qos();
 	flags = slurmctld_conf.priority_flags;
 
-	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
-		fair_tree_init();
-	}
-
 	if (priority_debug) {
 		info("priority: Damp Factor is %u", damp_factor);
 		info("priority: AccountingStorageEnforce is %u", enforce);
