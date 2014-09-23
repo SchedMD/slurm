@@ -36,13 +36,12 @@
 \*****************************************************************************/
 
 #include <math.h>
+#include <stdlib.h>
 
 #include "fair_tree.h"
 
 static void _ft_decay_apply_new_usage(struct job_record *job, time_t *start);
 static void _apply_priority_fs(void);
-typedef int (*QsortCmpF) (void *a, void *b);
-
 
 extern void fair_tree_init(void) {
 }
@@ -298,7 +297,7 @@ static void _calc_tree_fs(slurmdb_association_rec_t** siblings,
 
 	/* Sort children by level_fs */
 	 qsort(siblings, ndx, sizeof(slurmdb_association_rec_t*),
-			 (QsortCmpF) _cmp_level_fs);
+	       (__compar_fn_t) _cmp_level_fs);
 
 	/* Iterate through children in sorted order. If it's a user, calculate
 	 * fs_factor, otherwise recurse. */
