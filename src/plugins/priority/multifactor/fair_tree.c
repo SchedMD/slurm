@@ -69,8 +69,7 @@ extern void fair_tree_decay(List jobs, time_t start)
 
 
 /* In Fair Tree, usage_efctv is the normalized usage within the account */
-static void _ft_set_assoc_usage_efctv(
-		slurmdb_association_rec_t *assoc)
+static void _ft_set_assoc_usage_efctv(slurmdb_association_rec_t *assoc)
 {
 	slurmdb_association_rec_t *parent = assoc->usage->fs_assoc_ptr;
 
@@ -101,7 +100,7 @@ static void _ft_decay_apply_new_usage(struct job_record *job, time_t *start)
 
 
 static void _ft_debug(slurmdb_association_rec_t *assoc,
-		uint16_t assoc_level, bool tied)
+		      uint16_t assoc_level, bool tied)
 {
 	int spaces;
 	char *name;
@@ -112,21 +111,21 @@ static void _ft_debug(slurmdb_association_rec_t *assoc,
 
 	if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
 		info("%*s%.*s%s (%s):  parent",
-		       spaces,
-		       "",
-		       tie_char_count,
-		       "=",
-		       name,
-		       assoc->acct);
+		     spaces,
+		     "",
+		     tie_char_count,
+		     "=",
+		     name,
+		     assoc->acct);
 	} else {
 		info("%*s%.*s%s (%s):  %.20Lf",
-		       spaces,
-		       "",
-		       tie_char_count,
-		       "=",
-		       name,
-		       assoc->acct,
-		       assoc->usage->level_fs);
+		     spaces,
+		     "",
+		     tie_char_count,
+		     "=",
+		     name,
+		     assoc->acct,
+		     assoc->usage->level_fs);
 	}
 
 }
@@ -205,9 +204,9 @@ static void _calc_assoc_fs(slurmdb_association_rec_t *assoc)
 }
 
 
-static slurmdb_association_rec_t** _append_children_to_array(List list,
-		slurmdb_association_rec_t** merged,
-		size_t *child_count)
+static slurmdb_association_rec_t** _append_children_to_array(
+	List list, slurmdb_association_rec_t** merged,
+	size_t *child_count)
 {
 	ListIterator itr;
 	slurmdb_association_rec_t *next;
@@ -215,7 +214,7 @@ static slurmdb_association_rec_t** _append_children_to_array(List list,
 	*child_count += list_count(list);
 
 	merged = xrealloc(merged, sizeof(slurmdb_association_rec_t*)
-		* (*child_count + 1));
+			  * (*child_count + 1));
 
 	itr = list_iterator_create(list);
 	while ((next = list_next(itr)))
@@ -227,7 +226,7 @@ static slurmdb_association_rec_t** _append_children_to_array(List list,
 
 
 static size_t _count_tied_accounts(slurmdb_association_rec_t** assocs,
-		size_t i)
+				   size_t i)
 {
 	slurmdb_association_rec_t* next_assoc;
 	slurmdb_association_rec_t* assoc = assocs[i];
@@ -244,8 +243,8 @@ static size_t _count_tied_accounts(slurmdb_association_rec_t** assocs,
 
 
 static slurmdb_association_rec_t** _merge_accounts(
-		slurmdb_association_rec_t** siblings,
-		size_t begin, size_t end, uint16_t assoc_level)
+	slurmdb_association_rec_t** siblings,
+	size_t begin, size_t end, uint16_t assoc_level)
 {
 	size_t i;
 	size_t child_count = 0;
@@ -265,7 +264,7 @@ static slurmdb_association_rec_t** _merge_accounts(
 		}
 
 		merged = _append_children_to_array(children, merged,
-				&child_count);
+						   &child_count);
 	}
 	return merged;
 }
@@ -279,8 +278,8 @@ static slurmdb_association_rec_t** _merge_accounts(
  * for each user that is encountered.
  */
 static void _calc_tree_fs(slurmdb_association_rec_t** siblings,
-		uint16_t assoc_level, uint32_t *rank, uint32_t *i,
-		bool account_tied)
+			  uint16_t assoc_level, uint32_t *rank, uint32_t *i,
+			  bool account_tied)
 {
 	slurmdb_association_rec_t *assoc = NULL;
 	long double prev_level_fs = (long double) NO_VAL;
@@ -292,8 +291,8 @@ static void _calc_tree_fs(slurmdb_association_rec_t** siblings,
 		_calc_assoc_fs(assoc);
 
 	/* Sort children by level_fs */
-	 qsort(siblings, ndx, sizeof(slurmdb_association_rec_t*),
-	       (__compar_fn_t) _cmp_level_fs);
+	qsort(siblings, ndx, sizeof(slurmdb_association_rec_t*),
+	      (__compar_fn_t) _cmp_level_fs);
 
 	/* Iterate through children in sorted order. If it's a user, calculate
 	 * fs_factor, otherwise recurse. */
@@ -324,7 +323,8 @@ static void _calc_tree_fs(slurmdb_association_rec_t** siblings,
 			 * since the necessary information is stored on each
 			 * assoc's usage struct */
 			children = _merge_accounts(siblings, ndx,
-					ndx + merge_count, assoc_level);
+						   ndx + merge_count,
+						   assoc_level);
 
 			_calc_tree_fs(children, assoc_level + 1, rank, i, tied);
 
@@ -354,9 +354,9 @@ static void _apply_priority_fs(void)
 
 	/* _calc_tree_fs requires an array instead of List */
 	children = _append_children_to_array(
-			assoc_mgr_root_assoc->usage->children_list,
-			children,
-			&child_count);
+		assoc_mgr_root_assoc->usage->children_list,
+		children,
+		&child_count);
 
 	_calc_tree_fs(children, 0, &rank, &i, false);
 
