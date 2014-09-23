@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in update reservation. When modifying the reservation the end time
     was set incorrectly.
  -- The start time of a reservation that is in ACTIVE state cannot be modified.
+ -- Update the cgroup documentation about release agent for devices.
 
 * Changes in Slurm 14.03.8
 ==========================
