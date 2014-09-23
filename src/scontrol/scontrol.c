@@ -80,7 +80,7 @@ static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
 static void	_update_it (int argc, char *argv[]);
 static int	_update_bluegene_block (int argc, char *argv[]);
-static int      _update_bluegene_subbp (int argc, char *argv[]);
+static int      _update_bluegene_submp (int argc, char *argv[]);
 static int	_update_slurmctld_debug(char *val);
 static void	_usage ();
 static void	_write_config (void);
@@ -1623,7 +1623,7 @@ _update_it (int argc, char *argv[])
 	else if (block_tag)
 		error_code = _update_bluegene_block (argc, argv);
 	else if (sub_tag)
-		error_code = _update_bluegene_subbp (argc, argv);
+		error_code = _update_bluegene_submp (argc, argv);
 	else if (debug_tag)
 		error_code = _update_slurmctld_debug(val);
 	else {
@@ -1738,7 +1738,7 @@ _update_bluegene_block (int argc, char *argv[])
 }
 
 /*
- * _update_bluegene_subbp - update the bluegene nodecards per the
+ * _update_bluegene_submp - update the bluegene nodecards per the
  *	supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
@@ -1746,7 +1746,7 @@ _update_bluegene_block (int argc, char *argv[])
  *			error message and returns 0
  */
 static int
-_update_bluegene_subbp (int argc, char *argv[])
+_update_bluegene_submp (int argc, char *argv[])
 {
 	int i, update_cnt = 0;
 	update_block_msg_t block_msg;
