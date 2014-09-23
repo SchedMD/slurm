@@ -203,8 +203,8 @@ extern int _slurm_close_stream ( slurm_fd_t open_fd ) ;
  * IN open_fd	- an open file descriptor to change the effect
  * RET int	- the return code
  */
-extern inline int _slurm_set_stream_non_blocking ( slurm_fd_t open_fd ) ;
-extern inline int _slurm_set_stream_blocking ( slurm_fd_t open_fd ) ;
+extern int _slurm_set_stream_non_blocking ( slurm_fd_t open_fd ) ;
+extern int _slurm_set_stream_blocking ( slurm_fd_t open_fd ) ;
 
 int _slurm_send_timeout ( slurm_fd_t open_fd, char *buffer ,
 			  size_t size , uint32_t flags, int timeout ) ;

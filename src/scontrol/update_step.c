@@ -212,7 +212,7 @@ extern int scontrol_update_step (int argc, char *argv[])
 			if (incr || decr)
 				val++;
 			time_limit = time_str2mins(val);
-			if ((time_limit < 0) && (time_limit != INFINITE)) {
+			if (time_limit == NO_VAL) {
 				error("Invalid TimeLimit value");
 				exit_code = 1;
 				return 0;

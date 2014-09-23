@@ -627,7 +627,7 @@ static int host_prefix_end(const char *hostname, int dims)
 static hostname_t hostname_create_dims(const char *hostname, int dims)
 {
 	hostname_t hn = NULL;
-	char *p = '\0';
+	char *p;
 	int idx = 0;
 	int hostlist_base;
 
@@ -1160,7 +1160,6 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 
 		if (ldiff > 0 && isdigit(hr->prefix[len1-1])
 		    && (strlen(hn->suffix) >= ldiff)) {
-			char *p = '\0';
 			/* Tack on ldiff of the hostname's suffix to that of
 			 * it's prefix */
 			hn->prefix = realloc(hn->prefix, len2+ldiff+1);
@@ -1175,7 +1174,7 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 			 * single dimension systems we will always use
 			 * the base 10.
 			 */
-			hn->num = strtoul(hn->suffix, &p, 10);
+			hn->num = strtoul(hn->suffix, NULL, 10);
 
 			/* Now compare them and see if they match */
 			if (strcmp(hr->prefix, hn->prefix) != 0)

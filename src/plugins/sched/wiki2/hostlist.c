@@ -232,7 +232,7 @@ static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 	else
 		sep = "";
 	tok = host_str;
-	for (i=0; (fini == 0) ; i++) {
+	for (i=0; fini == 0; i++) {
 		switch (tok[i]) {
 			case '[':
 				in_bracket = 1;

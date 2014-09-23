@@ -2201,11 +2201,11 @@ extern void cleanup_completing(struct job_record *);
  * jobid2str() - print all the parts that uniquely
  *               identify a job.
  */
-extern inline char *jobid2str(struct job_record *, char *);
+extern char *jobid2str(struct job_record *, char *);
 
 /* trace_job() - print the job details if
  *               the DEBUG_FLAG_TRACE_JOBS is set
  */
-extern inline void trace_job(struct job_record *, const char *, const char *);
+extern void trace_job(struct job_record *, const char *, const char *);
 
 #endif /* !_HAVE_SLURMCTLD_H */

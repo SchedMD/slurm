@@ -135,8 +135,8 @@ static acct_gather_energy_t *local_energy = NULL;
 static uint64_t debug_flags = 0;
 
 /* one cpu in the package */
-static int pkg2cpu[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
-static int pkg_fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
+static int pkg2cpu[MAX_PKGS] = {[0 ... MAX_PKGS-1] = -1};
+static int pkg_fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] = -1};
 static char hostname[MAXHOSTNAMELEN];
 
 static int nb_pkg = 0;

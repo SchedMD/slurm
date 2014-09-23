@@ -71,8 +71,8 @@ static pthread_t pmi2_agent_tid = 0;
 static bool _tree_listen_readable(eio_obj_t *obj);
 static int  _tree_listen_read(eio_obj_t *obj, List objs);
 static struct io_operations tree_listen_ops = {
-readable:    &_tree_listen_readable,
-handle_read: &_tree_listen_read,
+.readable    = &_tree_listen_readable,
+.handle_read = &_tree_listen_read,
 };
 
 static bool _task_readable(eio_obj_t *obj);
@@ -80,8 +80,8 @@ static int  _task_read(eio_obj_t *obj, List objs);
 /* static bool _task_writable(eio_obj_t *obj); */
 /* static int  _task_write(eio_obj_t *obj, List objs); */
 static struct io_operations task_ops = {
-readable:       &_task_readable,
-handle_read:    &_task_read,
+.readable    =  &_task_readable,
+.handle_read =  &_task_read,
 };
 
 

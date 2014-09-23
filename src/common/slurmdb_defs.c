@@ -333,8 +333,7 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 			i--;
 
 		if (i > 0) {
-			char *p = '\0';
-			number = xstrntol(nodes + i, &p,
+			number = xstrntol(nodes + i, NULL,
 					  cluster_rec->dimensions, 36);
 			hostlist_parse_int_to_array(
 				number, cluster_rec->dim_size,

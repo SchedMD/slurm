@@ -506,7 +506,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 	bitstr_t *orig_map, *avail_cores, *free_cores;
 	bitstr_t *tmpcore = NULL;
 	bool test_only;
-	uint32_t c, i, j, k, n, csize, save_mem = 0;
+	uint32_t c, i, j, k, csize, save_mem = 0;
+	int n;
 	job_resources_t *job_res;
 	struct job_details *details_ptr;
 	struct part_res_record *p_ptr, *jp_ptr;

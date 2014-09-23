@@ -102,7 +102,7 @@ typedef struct slurm_gres_ops {
 						  void *data);
 	int		(*step_info)		( gres_step_state_t *step_gres_data,
 						  uint32_t node_inx,
-						  enum gres_job_data_type data_type,
+						  enum gres_step_data_type data_type,
 						  void *data);
 } slurm_gres_ops_t;
 

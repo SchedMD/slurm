@@ -4245,8 +4245,6 @@ static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	if (job_desc_msg->min_cpus > 0 &&
 	    job_desc_msg->min_cpus < launch_msg_ptr->ntasks)
 		launch_msg_ptr->ntasks = job_desc_msg->min_cpus;
-	if (launch_msg_ptr->ntasks < 0)
-		launch_msg_ptr->ntasks = job_ptr->cpu_cnt;
 
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  =

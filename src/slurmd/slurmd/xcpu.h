@@ -48,7 +48,7 @@ extern int xcpu_signal(int sig, char *nodes);
 #else
 
 /* Just returns a zero */
-inline extern int xcpu_signal(int sig, char *nodes);
+extern int xcpu_signal(int sig, char *nodes);
 
 #endif
 #endif

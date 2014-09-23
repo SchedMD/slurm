@@ -288,11 +288,11 @@ extern void kill_locked_threads(void)
 }
 
 /* un/lock semaphore used for saving state of slurmctld */
-extern void lock_state_files(void)
+extern inline void lock_state_files(void)
 {
 	slurm_mutex_lock(&state_mutex);
 }
-extern void unlock_state_files(void)
+extern inline void unlock_state_files(void)
 {
 	slurm_mutex_unlock(&state_mutex);
 }

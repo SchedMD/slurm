@@ -1477,7 +1477,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 }
 
 /* _wr_rdlock - Issue a read lock on the specified data type */
-static void _wr_rdlock(lock_datatype_t datatype)
+static void _wr_rdlock(assoc_mgr_lock_datatype_t datatype)
 {
 	//info("going to read lock on %d", datatype);
 	slurm_mutex_lock(&locks_mutex);
@@ -1497,7 +1497,7 @@ static void _wr_rdlock(lock_datatype_t datatype)
 }
 
 /* _wr_rdunlock - Issue a read unlock on the specified data type */
-static void _wr_rdunlock(lock_datatype_t datatype)
+static void _wr_rdunlock(assoc_mgr_lock_datatype_t datatype)
 {
 	//info("going to read unlock on %d", datatype);
 	slurm_mutex_lock(&locks_mutex);
@@ -1508,7 +1508,7 @@ static void _wr_rdunlock(lock_datatype_t datatype)
 }
 
 /* _wr_wrlock - Issue a write lock on the specified data type */
-static void _wr_wrlock(lock_datatype_t datatype)
+static void _wr_wrlock(assoc_mgr_lock_datatype_t datatype)
 {
 	//info("going to write lock on %d", datatype);
 	slurm_mutex_lock(&locks_mutex);
@@ -1530,7 +1530,7 @@ static void _wr_wrlock(lock_datatype_t datatype)
 }
 
 /* _wr_wrunlock - Issue a write unlock on the specified data type */
-static void _wr_wrunlock(lock_datatype_t datatype)
+static void _wr_wrunlock(assoc_mgr_lock_datatype_t datatype)
 {
 	//info("going to write unlock on %d", datatype);
 	slurm_mutex_lock(&locks_mutex);

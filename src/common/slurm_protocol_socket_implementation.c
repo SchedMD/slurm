@@ -546,13 +546,13 @@ int _slurm_close_stream ( slurm_fd_t open_fd )
 }
 
 
-int _slurm_set_stream_non_blocking(slurm_fd_t fd)
+inline int _slurm_set_stream_non_blocking(slurm_fd_t fd)
 {
 	fd_set_nonblocking(fd);
 	return SLURM_SUCCESS;
 }
 
-int _slurm_set_stream_blocking(slurm_fd_t fd)
+inline int _slurm_set_stream_blocking(slurm_fd_t fd)
 {
 	fd_set_blocking(fd);
 	return SLURM_SUCCESS;

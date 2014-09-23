@@ -106,7 +106,6 @@ static int pty_sigarray[] = { SIGWINCH, 0 };
 /*
  * Prototypes:
  */
-static inline int _estimate_nports(int nclients, int cli_per_port);
 static int        _compute_task_count(allocation_info_t *info);
 static void       _set_ntasks(allocation_info_t *info);
 static srun_job_t *_job_create_structure(allocation_info_t *info);
@@ -745,14 +744,6 @@ job_force_termination(srun_job_t *job)
 		}
 	}
 	kill_sent++;
-}
-
-static inline int
-_estimate_nports(int nclients, int cli_per_port)
-{
-	div_t d;
-	d = div(nclients, cli_per_port);
-	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
 static int

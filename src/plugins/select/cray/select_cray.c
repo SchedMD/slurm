@@ -2259,11 +2259,11 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	return other_fail_cnode(step_ptr);
 }
 
-extern int select_p_get_info_from_plugin(enum select_jobdata_type info,
+extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
 					 struct job_record *job_ptr,
 					 void *data)
 {
-	return other_get_info_from_plugin(info, job_ptr, data);
+	return other_get_info_from_plugin(dinfo, job_ptr, data);
 }
 
 extern int select_p_update_node_config(int index)

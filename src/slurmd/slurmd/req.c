@@ -1749,7 +1749,7 @@ _rpc_job_notify(slurm_msg_t *msg)
 
 	debug("_rpc_job_notify, uid = %d, jobid = %u", req_uid, req->job_id);
 	job_uid = _get_job_uid(req->job_id);
-	if (job_uid < 0)
+	if ((int)job_uid < 0)
 		goto no_job;
 
 	/*
@@ -2378,7 +2378,7 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
 		debug("_signal_jobstep: couldn't read from the "
 		      "step %u.%u: %m",
 		      jobid, stepid);
@@ -2468,7 +2468,7 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
 		debug("_rpc_checkpoint_tasks: couldn't read from the "
 		      "step %u.%u: %m",
 		      req->job_id, req->job_step_id);
@@ -2514,7 +2514,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
 		debug("terminate_tasks couldn't read from the step %u.%u: %m",
 		      req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
@@ -2686,7 +2686,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		return	ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
 		debug("stat_jobacct couldn't read from the step %u.%u: %m",
 		      req->job_id, req->step_id);
 		close(fd);
@@ -2759,7 +2759,7 @@ _rpc_list_pids(slurm_msg_t *msg)
 
 	job_uid = _get_job_uid(req->job_id);
 
-        if (job_uid < 0) {
+        if ((int)job_uid < 0) {
                 error("stat_pid for invalid job_id: %u",
 		      req->job_id);
                 if (msg->conn_fd >= 0)
@@ -3181,7 +3181,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((uid = stepd_get_uid(fd, protocol_version)) < 0) {
+	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
 		debug("_rpc_reattach_tasks couldn't read from the "
 		      "step %u.%u: %m",
 		      req->job_id, req->job_step_id);
@@ -3284,7 +3284,7 @@ static uid_t _get_job_uid(uint32_t jobid)
 		uid = stepd_get_uid(fd, stepd->protocol_version);
 
 		close(fd);
-		if (uid < 0) {
+		if ((int)uid < 0) {
 			debug("stepd_get_uid failed %u.%u: %m",
 			      stepd->jobid, stepd->stepid);
 			continue;
@@ -3563,7 +3563,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 
 	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);
 	job_uid = _get_job_uid(req->job_id);
-	if (job_uid < 0)
+	if ((int)job_uid < 0)
 		goto no_job;
 
 	/*

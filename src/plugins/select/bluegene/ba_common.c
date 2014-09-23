@@ -598,7 +598,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	int i, j, k;
 	slurm_conf_node_t **ptr_array;
 	int coords[HIGHEST_DIMENSIONS];
-	char *p = '\0';
 	int real_dims[HIGHEST_DIMENSIONS];
 	char dim_str[HIGHEST_DIMENSIONS+1];
 
@@ -652,7 +651,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 					numeric++;
 					continue;
 				}
-				number = xstrntol(numeric, &p, cluster_dims,
+				number = xstrntol(numeric, NULL, cluster_dims,
 						  cluster_base);
 				break;
 			}

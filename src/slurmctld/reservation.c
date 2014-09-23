@@ -2044,7 +2044,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	_dump_resv_req(resv_desc_ptr, "update_resv");
 
 	/* Find the specified reservation */
-	if ((resv_desc_ptr->name == NULL))
+	if (!resv_desc_ptr->name)
 		return ESLURM_RESERVATION_INVALID;
 
 	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,

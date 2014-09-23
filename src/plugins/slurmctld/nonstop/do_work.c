@@ -379,12 +379,12 @@ extern int save_nonstop_state(void)
 extern int restore_nonstop_state(void)
 {
 	char *dir_path, *state_file;
-	uint32_t data_allocated, data_size = 0, data_read;
+	uint32_t data_allocated, data_size = 0;
 	uint32_t job_cnt = 0;
 	char *data;
 	uint16_t protocol_version = (uint16_t) NO_VAL;
 	Buf buffer;
-	int error_code = SLURM_SUCCESS, i, state_fd;
+	int error_code = SLURM_SUCCESS, i, state_fd, data_read;
 	time_t buf_time;
 	job_failures_t *job_fail_ptr = NULL;
 

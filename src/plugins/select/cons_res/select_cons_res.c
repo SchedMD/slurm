@@ -3151,8 +3151,8 @@ fini:	for (i=0; i<switch_record_cnt; i++) {
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
 
 		while (core_cnt[0]) {
-			uint32_t inx, coff;
-			int i;
+			uint32_t coff;
+			int inx, i;
 			int avail_cores_in_node;
 
 			inx = bit_ffs(avail_nodes_bitmap);

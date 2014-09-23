@@ -104,7 +104,7 @@ static void _check_create_grouping(
 		acct_group = xmalloc(sizeof(slurmdb_report_acct_grouping_t));
 
 		acct_group->acct = xstrdup(name);
-		if (wckey_type == 1 || wckey_type == 3)
+		if (wckey_type)
 			acct_group->lft = wckey->id;
 		else {
 			acct_group->lft = assoc->lft;

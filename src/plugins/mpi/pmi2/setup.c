@@ -457,7 +457,8 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 				}
 				if (start_id >= node_cnt)
 					break;
-				/* find start block. block may be less than plane size */
+				/* find start block. block may be less
+				 * than plane size */
 				block = 0;
 				while (rounds[start_id] < tasks[start_id] &&
 				       (task_mapped ==
@@ -471,9 +472,12 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 				while (end_id < node_cnt &&
 				       (rounds[end_id] + block - 1 <
 					tasks[end_id])) {
-					for (i = 0; i < tasks[end_id] - rounds[end_id]; i ++) {
+					for (i = 0;
+					     i < tasks[end_id] - rounds[end_id];
+					     i ++) {
 						if (task_mapped + i !=
-						    tids[end_id][rounds[end_id] + i]) {
+						    tids[end_id][rounds[end_id]
+								 + i]) {
 							break;
 						}
 					}
@@ -498,12 +502,12 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 		for (i = start_id + 1; i < node_cnt; i ++) {
 			if (node_task_cnt == tasks[i])
 				continue;
-			xstrfmtcat(mapping, ",(%u,%u,%hu)", start_id,
+			xstrfmtcat(mapping, ",(%u,%u,%u)", start_id,
 				   i - start_id, node_task_cnt);
 			start_id = i;
 			node_task_cnt = tasks[i];
 		}
-		xstrfmtcat(mapping, ",(%u,%u,%hu))", start_id, i - start_id,
+		xstrfmtcat(mapping, ",(%u,%u,%u))", start_id, i - start_id,
 			   node_task_cnt);
 	}
 

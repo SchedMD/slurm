@@ -1822,7 +1822,7 @@ int spank_symbol_supported (const char *name)
 {
 	int i;
 
-	if ((name == NULL))
+	if (name == NULL)
 		return (-1);
 
 	for (i = 0; i < n_spank_syms; i++) {
