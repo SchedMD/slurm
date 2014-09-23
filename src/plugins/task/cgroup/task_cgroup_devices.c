@@ -493,4 +493,3 @@ static int read_allowed_devices_file(char **allowed_devices)
 
 	return num_lines;
 }
-

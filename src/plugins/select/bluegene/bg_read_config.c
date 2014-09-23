@@ -572,7 +572,7 @@ extern int read_bg_conf(void)
 
 	if (bg_conf->mp_cnode_cnt <= 0)
 		fatal("You should have more than 0 nodes "
-		      "per base partition");
+		      "per midplane");
 	bg_conf->actual_cnodes_per_mp = bg_conf->mp_cnode_cnt;
 	bg_conf->quarter_cnode_cnt = bg_conf->mp_cnode_cnt/4;
 
@@ -590,7 +590,7 @@ extern int read_bg_conf(void)
 	bg_conf->cpu_ratio = bg_conf->cpus_per_mp/bg_conf->mp_cnode_cnt;
 	if (!bg_conf->cpu_ratio)
 		fatal("We appear to have less than 1 cpu on a cnode.  "
-		      "You specified %u for BasePartitionNodeCnt "
+		      "You specified %u for MidplaneNodeCnt "
 		      "in the blugene.conf and %u cpus "
 		      "for each node in the slurm.conf",
 		      bg_conf->mp_cnode_cnt, bg_conf->cpus_per_mp);

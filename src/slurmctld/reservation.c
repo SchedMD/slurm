@@ -2200,6 +2200,11 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
+		if (resv_ptr->start_time <= time(NULL)) {
+			info("%s: reservation already started", __func__);
+			error_code = ESLURM_INVALID_TIME_VALUE;
+			goto update_failure;
+		}
 		if (resv_desc_ptr->start_time < (now - 60)) {
 			info("Reservation %s request has invalid start time",
 			     resv_desc_ptr->name);
@@ -2209,7 +2214,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time = resv_desc_ptr->start_time;
 		resv_ptr->start_time_first = resv_desc_ptr->start_time;
-		if (resv_ptr->duration) {
+		if (resv_ptr->duration != NO_VAL) {
 			resv_ptr->end_time = resv_ptr->start_time_first +
 				(resv_ptr->duration * 60);
 		}
@@ -3123,7 +3128,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				      "full_nodes is zero");
 				resv_ptr->full_nodes = 1;
 			}
-			if (resv_ptr->full_nodes) {
+			if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
 				bit_not(resv_ptr->node_bitmap);
 				bit_and(node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);

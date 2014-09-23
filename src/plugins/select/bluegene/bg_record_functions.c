@@ -272,7 +272,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 			break;
 	}
 	if (dim < SYSTEM_DIMENSIONS) {
-		/* means we have more than 1 base partition */
+		/* means we have more than 1 midplane */
 		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
 			if (bg_record->geo[dim] != cluster_dims[dim])
 				break;
@@ -912,7 +912,7 @@ extern int add_bg_record(List records, List *used_nodes,
 			      "There is an error in your bluegene.conf file.\n"
 			      "I am unable to request %d nodes consisting of "
 			      "%u 32CnBlocks and\n%u 128CnBlocks in one "
-			      "base partition with %u nodes.",
+			      "midplane with %u nodes.",
 			      i, blockreq->small32, blockreq->small128,
 			      bg_conf->mp_cnode_cnt);
 #else
@@ -937,7 +937,7 @@ extern int add_bg_record(List records, List *used_nodes,
 			      "%u 16CNBlocks, %u 32CNBlocks,\n"
 			      "%u 64CNBlocks, %u 128CNBlocks, "
 			      "and %u 256CNBlocks\n"
-			      "in one base partition with %u nodes.",
+			      "in one midplane with %u nodes.",
 			      i, blockreq->small16, blockreq->small32,
 			      blockreq->small64, blockreq->small128,
 			      blockreq->small256, bg_conf->mp_cnode_cnt);
