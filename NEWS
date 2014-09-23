@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.0pre6
 ==============================
+ -- When using cgroup name the batch step as step_batch instead of
+    batch_4294967294
 
 * Changes in Slurm 14.11.0pre5
 ==============================
