@@ -258,6 +258,10 @@ static inline stepd_step_task_info_t *
 job_task_info_by_pid (stepd_step_rec_t *job, pid_t pid)
 {
 	uint32_t i;
+
+	if (!job)
+		return NULL;
+
 	for (i = 0; i < job->node_tasks; i++) {
 		if (job->task[i]->pid == pid)
 			return (job->task[i]);

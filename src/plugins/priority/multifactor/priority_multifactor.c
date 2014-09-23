@@ -814,7 +814,6 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 			debug2("job: %u", job_ptr->job_id);
 		qos = NULL;
 		assoc = NULL;
-		delta = 0;
 
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
@@ -1195,8 +1194,6 @@ static void *_decay_thread(void *no_data)
 
 	while (1) {
 		now = start_time;
-		run_delta = 0.0;
-		real_decay = 0.0;
 
 		slurm_mutex_lock(&decay_lock);
 		running_decay = 1;

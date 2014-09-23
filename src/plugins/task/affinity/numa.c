@@ -151,7 +151,7 @@ void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 
 int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 {
-	int nummasks, maskid, i, threads;
+	int nummasks, i, threads;
 	char *curstr, *selstr;
 	char mstr[1 + NUMA_NUM_NODES / 4];
 	int local_id = job->envtp->localid;
@@ -177,7 +177,6 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 		return false;
 
 	nummasks = 1;
-	maskid = 0;
 	selstr = NULL;
 
 	/* get number of strings present in mem_bind */
@@ -185,7 +184,6 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 	while (*curstr) {
 		if (nummasks == local_id+1) {
 			selstr = curstr;
-			maskid = local_id;
 			break;
 		}
 		if (*curstr == ',')
@@ -196,8 +194,7 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 	/* if we didn't already find the mask... */
 	if (!selstr) {
 		/* ...select mask string by wrapping task ID into list */
-		maskid = local_id % nummasks;
-		i = maskid;
+		i = local_id % nummasks;
 		curstr = job->mem_bind;
 		while (*curstr && i) {
 			if (*curstr == ',')
