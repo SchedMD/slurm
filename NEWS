@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- When using cgroup name the batch step as step_batch instead of
     batch_4294967294
  -- Changed LEVEL_BASED priority to be "Fair_Tree"
+ -- Port to NetBSD.
 
 * Changes in Slurm 14.11.0pre5
 ==============================
