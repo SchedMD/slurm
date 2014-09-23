@@ -55,6 +55,7 @@
 slurmdb_association_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
 uint32_t g_qos_count = 0;
+uint32_t g_user_assoc_count = 0;
 List assoc_mgr_association_list = NULL;
 List assoc_mgr_res_list = NULL;
 List assoc_mgr_qos_list = NULL;
@@ -282,7 +283,7 @@ static void _delete_assoc_hash(void *assoc)
 }
 
 
-static void _normalize_assoc_shares_level_based(
+static void _normalize_assoc_shares_fair_tree(
 	slurmdb_association_rec_t *assoc)
 {
 	slurmdb_association_rec_t *fs_assoc = assoc;
@@ -319,9 +320,12 @@ static void _normalize_assoc_shares_traditional(
 	assoc2->usage->shares_norm = 1.0;
 	while (assoc->usage->parent_assoc_ptr) {
 		if (assoc->shares_raw != SLURMDB_FS_USE_PARENT) {
-			assoc2->usage->shares_norm *=
-				(double)assoc->shares_raw /
-				(double)assoc->usage->level_shares;
+			if (!assoc->usage->level_shares)
+				assoc2->usage->shares_norm = 0;
+			else
+				assoc2->usage->shares_norm *=
+					(double)assoc->shares_raw /
+					(double)assoc->usage->level_shares;
 			debug3("assoc %u(%s %s) normalize = %f "
 			       "from %u(%s %s) %u / %u = %f",
 			       assoc2->id, assoc2->acct, assoc2->user,
@@ -744,6 +748,7 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 	if (assoc->user) {
 		uid_t pw_uid;
 
+		g_user_assoc_count++;
 		if (uid_from_string(assoc->user, &pw_uid) < 0)
 			assoc->uid = NO_VAL;
 		else
@@ -861,6 +866,7 @@ static int _post_association_list(void)
 	itr = list_iterator_create(assoc_mgr_association_list);
 
 	//START_TIMER;
+	g_user_assoc_count = 0;
 	while ((assoc = list_next(itr))) {
 		_set_assoc_parent_and_user(assoc, reset);
 		_add_assoc_hash(assoc);
@@ -1721,6 +1727,8 @@ extern assoc_mgr_association_usage_t *create_assoc_mgr_association_usage()
 	usage->usage_efctv = 0;
 	usage->usage_norm = (long double)NO_VAL;
 	usage->usage_raw = 0;
+	usage->level_fs = 0;
+	usage->fs_factor = 0;
 
 	return usage;
 }
@@ -2559,8 +2567,8 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 		share->grp_cpu_mins = assoc->grp_cpu_mins;
 		share->cpu_run_mins = assoc->usage->grp_used_cpu_run_secs / 60;
-		share->priority_fs_raw = assoc->usage->priority_fs_raw;
-		share->priority_fs_ranked = assoc->usage->priority_fs_ranked;
+		share->fs_factor = assoc->usage->fs_factor;
+		share->level_fs = assoc->usage->level_fs;
 
 		if (assoc->user) {
 			/* We only calculate user effective usage when
@@ -2938,6 +2946,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	 */
 	if (parents_changed) {
 		int reset = 1;
+		g_user_assoc_count = 0;
 		slurmdb_sort_hierarchical_assoc_list(
 			assoc_mgr_association_list);
 
@@ -4620,8 +4629,8 @@ extern void assoc_mgr_normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 	 * global flags variable. assoc_mgr_init() would be the logical
 	 * place to set a global, but there is no great location for
 	 * resetting it when scontrol reconfigure is called */
-	if (slurmctld_conf.priority_flags & PRIORITY_FLAGS_LEVEL_BASED)
-		_normalize_assoc_shares_level_based(assoc);
+	if (slurmctld_conf.priority_flags & PRIORITY_FLAGS_FAIR_TREE)
+		_normalize_assoc_shares_fair_tree(assoc);
 	else
 		_normalize_assoc_shares_traditional(assoc);
 }

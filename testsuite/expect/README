@@ -641,7 +641,7 @@ test24.#   Testing of sshare/priority multifactor plugin.
 test24.1   multifactor plugin algo test
 test24.2   sshare h, n, p, P, v, and V options.
 test24.3   multifactor plugin algo test for fairshare=parent
-test24.4   Test of LEVEL_BASED multifactor
+test24.4   Test of Fair Tree multifactor
 
 test25.#   Testing of sprio command and options.
 ================================================

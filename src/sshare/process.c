@@ -73,19 +73,19 @@ extern int process(shares_response_msg_t *resp)
 		PRINT_RAWU,
 		PRINT_RUNMINS,
 		PRINT_USER,
-		PRINT_FSRAW
+		PRINT_LEVELFS
 	};
 
 	if (!resp)
 		return SLURM_ERROR;
 
 	format_list = list_create(slurm_destroy_char);
-	if (flags & PRIORITY_FLAGS_LEVEL_BASED) {
+	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 		if (long_flag) {
 			slurm_addto_char_list(format_list,
 					      "A,User,RawShares,NormShares,"
 					      "RawUsage,NormUsage,EffUsage,"
-					      "FSFctr,FSRaw,GrpCPUMins,"
+					      "FSFctr,LevelFS,GrpCPUMins,"
 					      "CPURunMins");
 		} else {
 			slurm_addto_char_list(format_list,
@@ -131,11 +131,11 @@ extern int process(shares_response_msg_t *resp)
 			field->name = xstrdup("FairShare");
 			field->len = 10;
 			field->print_routine = print_fields_double;
-		} else if (!strncasecmp("FSRaw", object, 4)) {
-			field->type = PRINT_FSRAW;
-			field->name = xstrdup("FairShare Raw");
-			field->len = 16;
-			field->print_routine = print_fields_hex064;
+		} else if (!strncasecmp("LevelFS", object, 1)) {
+			field->type = PRINT_LEVELFS;
+			field->name = xstrdup("Level FS");
+			field->len = 10;
+			field->print_routine = print_fields_double;
 		} else if (!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
@@ -243,21 +243,18 @@ extern int process(shares_response_msg_t *resp)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_FSFACTOR:
-				if (flags & PRIORITY_FLAGS_LEVEL_BASED) {
+				if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 					if(share->user)
 						field->print_routine(
 						field,
-						(double) NORMALIZE_VALUE(
-							share->priority_fs_ranked,
-							0, UINT64_MAX,
-							0.0l, 1.0l
-						),
+						share->fs_factor,
 						(curr_inx == field_count));
 					else
 						print_fields_str(
 							field,
 							NULL,
-							(curr_inx == field_count)
+							(curr_inx ==
+							 field_count)
 						);
 				}
 				else
@@ -270,9 +267,14 @@ extern int process(shares_response_msg_t *resp)
 							     shares_norm),
 						     (curr_inx == field_count));
 				break;
-			case PRINT_FSRAW:
-				field->print_routine(field,
-						     (uint64_t) share->priority_fs_raw,
+			case PRINT_LEVELFS:
+				if (share->shares_raw == SLURMDB_FS_USE_PARENT)
+					print_fields_str(field, NULL,
+							 (curr_inx ==
+							  field_count));
+				else
+					field->print_routine(field,
+						     (double) share->level_fs,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:

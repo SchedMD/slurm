@@ -779,7 +779,7 @@ enum ctx_keys {
 #define PRIORITY_FLAGS_CALCULATE_RUNNING 0x0010	/* Calculate priorities for
 						 * running jobs, not only the
 						 * pending jobs. */
-#define PRIORITY_FLAGS_LEVEL_BASED	0x0020	/* Prioritize by level in
+#define PRIORITY_FLAGS_FAIR_TREE	0x0020	/* Prioritize by level in
 +						 * account hierarchy. */
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
@@ -2273,8 +2273,6 @@ typedef struct slurm_ctl_conf {
 	uint16_t priority_favor_small; /* favor small jobs over large */
 	uint16_t priority_flags; /* set some flags for priority configuration,
 				  * see PRIORITY_FLAGS_* above */
-	uint16_t priority_levels; /* number of levels of interest to consider
-				   * in LEVEL_BASED */
 	uint32_t priority_max_age; /* time when not to add any more
 				    * priority to a job if reached */
     	char *priority_params;	/* priority plugin parameters */

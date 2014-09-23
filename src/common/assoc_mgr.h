@@ -107,7 +107,6 @@ typedef struct {
 struct assoc_mgr_association_usage {
 	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
-
 	uint32_t grp_used_cpus; /* count of active jobs in the group
 				 * (DON'T PACK) */
 	uint32_t grp_used_mem; /* count of active memory in the group
@@ -118,7 +117,8 @@ struct assoc_mgr_association_usage {
 				 * running jobs (DON'T PACK) */
 	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
 					 * (DON'T PACK) */
-
+	double fs_factor;	/* Fairshare factor. Not used by all algorithms
+				 * (DON'T PACK) */
 	uint32_t level_shares;  /* number of shares on this level of
 				 * the tree (DON'T PACK) */
 
@@ -143,7 +143,7 @@ struct assoc_mgr_association_usage {
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
 
-	/* Currently LEVEL_BASED and TICKET_BASED systems are defining data on
+	/* Currently FAIR_TREE and TICKET_BASED systems are defining data on
 	 * this struct but instead we could keep a void pointer to system
 	 * specific data. This would allow subsystems to define whatever data
 	 * they need without having to modify this struct; it would also save
@@ -154,10 +154,9 @@ struct assoc_mgr_association_usage {
 	unsigned active_seqno;  /* Sequence number for identifying
 				 * active associations (DON'T PACK) */
 
-	uint64_t priority_fs_raw;	/* (LEVEL_BASED) Priority used when
-					 * sorting (DON'T PACK) */
-	uint64_t priority_fs_ranked;	/* (LEVEL_BASED) Priority after
-					 * ranking (DON'T PACK) */
+	long double level_fs;	/* (FAIR_TREE) Result of fairshare equation
+				 * compared to the association's siblings (DON'T
+				 * PACK) */
 
 	bitstr_t *valid_qos;    /* qos available for this association
 				 * derived from the qos_list.
@@ -197,6 +196,7 @@ extern slurmdb_association_rec_t *assoc_mgr_root_assoc;
 
 extern uint32_t g_qos_max_priority; /* max priority in all qos's */
 extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
+extern uint32_t g_user_assoc_count; /* Number of assocations which are users */
 
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,

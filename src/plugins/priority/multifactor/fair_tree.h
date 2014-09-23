@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  level_based.c - level_based slurm multifactor algorithm
+ *  fair_tree.h - Fair Tree fairshare algorithm for Slurm
  *****************************************************************************
  *
  *  Copyright (C) 2014 Brigham Young University
@@ -35,22 +35,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _PRIORITY_MULTIFACTOR_LEVEL_BASED_H
-#define _PRIORITY_MULTIFACTOR_LEVEL_BASED_H
+#ifndef _PRIORITY_MULTIFACTOR_FAIR_TREE_H
+#define _PRIORITY_MULTIFACTOR_FAIR_TREE_H
 
 #include "priority_multifactor.h"
 
-extern void level_based_init(void);
+extern void fair_tree_init(void);
 
-/* LEVEL_BASED code called from the decay thread loop */
-extern void level_based_decay(List job_list, time_t start_time);
-
-/* Normalize the assoc's usage for use in usage_efctv:
- * from:  0.0 to parent->usage->usage_raw
- * to:    0.0 to 1.0
- *
- * In LEVEL_BASED, usage_efctv is the normalized usage within the account
- */
-extern double level_based_calc_assoc_usage(slurmdb_association_rec_t *assoc);
+/* Fair Tree code called from the decay thread loop */
+extern void fair_tree_decay(List jobs, time_t start);
 
 #endif

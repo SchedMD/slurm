@@ -47,7 +47,7 @@ generated_html = \
 	job_submit_plugins.html \
 	jobcompplugins.html \
 	launch_plugins.html \
-	level_based.html \
+	fair_tree.html \
 	mail.html \
 	man_index.html \
 	maui.html \

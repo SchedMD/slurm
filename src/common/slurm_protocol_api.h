@@ -283,12 +283,6 @@ uint32_t slurm_get_priority_calc_period(void);
  */
 bool slurm_get_priority_favor_small(void);
 
-/* slurm_get_priority_levels
- * returns the number of priority levels of interest from slurmctld_conf object
- * RET uint16_t - number of levels of interest
- */
-uint16_t slurm_get_priority_levels(void);
-
 /* slurm_get_priority_max_age
  * returns the priority age max in seconds from slurmctld_conf object
  * RET uint32_t - max_age in secs.

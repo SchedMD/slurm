@@ -76,7 +76,7 @@
 #include "src/common/xstring.h"
 #include "src/common/parse_time.h"
 
-#include "level_based.h"
+#include "fair_tree.h"
 
 #define SECS_PER_DAY	(24 * 60 * 60)
 #define SECS_PER_WEEK	(7 * SECS_PER_DAY)
@@ -161,9 +161,8 @@ static double decay_factor = 1; /* The decay factor when decaying time. */
 /* variables defined in prirority_multifactor.h */
 bool priority_debug = 0;
 
-extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
-extern double priority_p_calc_fs_factor(long double usage_efctv,
-					long double shares_norm);
+static void _priority_p_set_assoc_usage_debug(slurmdb_association_rec_t *assoc);
+static void _set_assoc_usage_efctv(slurmdb_association_rec_t *assoc);
 
 /*
  * apply decay factor to all associations usage_raw
@@ -426,9 +425,9 @@ static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc)
 /* This should initially get the children list from assoc_mgr_root_assoc.
  * Since our algorithm goes from top down we calculate all the non-user
  * associations now.  When a user submits a job, that norm_fairshare is
- * calculated.  Here we will set the usage_efctv to NO_VAL for users to not
- * have to calculate a bunch of things that will never be used, except it will
- * be calculated for LEVEL_BASED.
+ * calculated.  Here we will set the usage_efctv to NO_VAL for users to not have
+ * to calculate a bunch of things that will never be used. (Fair Tree calls a
+ * different function.)
  *
  * NOTE: acct_mgr_association_lock must be locked before this is called.
  */
@@ -443,11 +442,7 @@ static int _set_children_usage_efctv(List children_list)
 	itr = list_iterator_create(children_list);
 	while ((assoc = list_next(itr))) {
 		if (assoc->user) {
-			/* LEVEL_BASED must calculate this for users */
-			if(flags & PRIORITY_FLAGS_LEVEL_BASED)
-				priority_p_set_assoc_usage(assoc);
-			else
-				assoc->usage->usage_efctv = (long double)NO_VAL;
+			assoc->usage->usage_efctv = (long double)NO_VAL;
 			continue;
 		}
 		priority_p_set_assoc_usage(assoc);
@@ -559,16 +554,13 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 			     job_ptr->job_id, job_assoc->user, job_assoc->acct,
 			     priority_fs);
 		}
-	} else if (flags & PRIORITY_FLAGS_LEVEL_BASED) {
-		priority_fs = NORMALIZE_VALUE(
-			job_assoc->usage->priority_fs_ranked,
-			0, UINT64_MAX,
-			0.0L, 1.0L);
+	} else if (flags & PRIORITY_FLAGS_FAIR_TREE) {
+		priority_fs = job_assoc->usage->fs_factor;
 		if (priority_debug) {
 			info("Fairhare priority of job %u for user %s in acct"
-			     " %s is %f (0x%016"PRIX64")",
+			     " %s is %f",
 			     job_ptr->job_id, job_assoc->user, job_assoc->acct,
-			     priority_fs, job_assoc->usage->priority_fs_ranked);
+			     priority_fs);
 		}
 	} else {
 		priority_fs = priority_p_calc_fs_factor(
@@ -1257,11 +1249,14 @@ static void *_decay_thread(void *no_data)
 			}
 		}
 
-		/* now calculate all the normalized usage here */
-		assoc_mgr_lock(&locks);
-		_set_children_usage_efctv(
-			assoc_mgr_root_assoc->usage->children_list);
-		assoc_mgr_unlock(&locks);
+		/* Calculate all the normalized usage unless this is Fair Tree;
+		 * it handles these calculations during its tree traversal */
+		if (!(flags & PRIORITY_FLAGS_FAIR_TREE)) {
+			assoc_mgr_lock(&locks);
+			_set_children_usage_efctv(
+				assoc_mgr_root_assoc->usage->children_list);
+			assoc_mgr_unlock(&locks);
+		}
 
 		if (!g_last_ran)
 			goto get_usage;
@@ -1289,7 +1284,7 @@ static void *_decay_thread(void *no_data)
 		}
 
 		if (!(flags & (PRIORITY_FLAGS_TICKET_BASED
-			       | PRIORITY_FLAGS_LEVEL_BASED))) {
+			       | PRIORITY_FLAGS_FAIR_TREE))) {
 			lock_slurmctld(job_write_lock);
 			list_for_each(
 				job_list,
@@ -1302,8 +1297,8 @@ static void *_decay_thread(void *no_data)
 	get_usage:
 		if (flags & PRIORITY_FLAGS_TICKET_BASED)
 			_ticket_based_decay(job_list, start_time);
-		else if (flags & PRIORITY_FLAGS_LEVEL_BASED)
-			level_based_decay(job_list, start_time);
+		else if (flags & PRIORITY_FLAGS_FAIR_TREE)
+			fair_tree_decay(job_list, start_time);
 
 		g_last_ran = start_time;
 
@@ -1392,8 +1387,8 @@ static void _internal_setup(void)
 	weight_qos = slurm_get_priority_weight_qos();
 	flags = slurmctld_conf.priority_flags;
 
-	if (flags & PRIORITY_FLAGS_LEVEL_BASED) {
-		level_based_init();
+	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
+		fair_tree_init();
 	}
 
 	if (priority_debug) {
@@ -1432,15 +1427,22 @@ static void _set_norm_shares(List children_list)
 }
 
 
-static void _depth_oblivious_set_usage_efctv(
-	slurmdb_association_rec_t *assoc,
-	char *child,
-	char *child_str)
+static void _depth_oblivious_set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
 	long double ratio_p, ratio_l, k, f, ratio_s;
 	slurmdb_association_rec_t *parent_assoc = NULL;
 	ListIterator sib_itr = NULL;
 	slurmdb_association_rec_t *sibling = NULL;
+	char *child;
+	char *child_str;
+
+	if (assoc->user) {
+		child = "user";
+		child_str = assoc->user;
+	} else {
+		child = "account";
+		child_str = assoc->acct;
+	}
 
 	/* We want priority_fs = pow(2.0, -R); where
 	   R = ratio_p * ratio_l^k
@@ -1544,9 +1546,14 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 	uint32_t s_child = assoc->shares_raw;
 	uint32_t s_all_siblings = assoc->usage->level_shares;
 
-	assoc->usage->usage_efctv = ua_child +
-		(ue_parent - ua_child) *
-		(s_child / (long double) s_all_siblings);
+	/* If no user in the account has shares, avoid division by zero by
+	 * setting usage_efctv to the parent's usage_efctv */
+	if (!s_all_siblings)
+		assoc->usage->usage_efctv = ue_parent;
+	else
+		assoc->usage->usage_efctv = ua_child +
+			(ue_parent - ua_child) *
+			(s_child / (long double) s_all_siblings);
 }
 
 
@@ -1656,11 +1663,11 @@ extern void priority_p_reconfig(bool assoc_clear)
 	prevflags = flags;
 	_internal_setup();
 
-	/* Since LEVEL_BASED uses a different shares calculation method, we
+	/* Since Fair Tree uses a different shares calculation method, we
 	 * must reassign shares at reconfigure if the algorithm was switched to
-	 * or from LEVEL_BASED */
-	if ((flags & PRIORITY_FLAGS_LEVEL_BASED) !=
-	    (prevflags & PRIORITY_FLAGS_LEVEL_BASED)) {
+	 * or from Fair Tree */
+	if ((flags & PRIORITY_FLAGS_FAIR_TREE) !=
+	    (prevflags & PRIORITY_FLAGS_FAIR_TREE)) {
 		assoc_mgr_lock(&locks);
 		_set_norm_shares(assoc_mgr_root_assoc->usage->children_list);
 		assoc_mgr_unlock(&locks);
@@ -1679,100 +1686,39 @@ extern void priority_p_reconfig(bool assoc_clear)
 	return;
 }
 
+
+extern void set_assoc_usage_norm(slurmdb_association_rec_t *assoc)
+{
+	/* If root usage is 0, there is no usage anywhere. */
+	if (!assoc_mgr_root_assoc->usage->usage_raw) {
+		assoc->usage->usage_norm = 0L;
+		return;
+	}
+
+	assoc->usage->usage_norm = assoc->usage->usage_raw
+		/ assoc_mgr_root_assoc->usage->usage_raw;
+
+
+	/* This is needed in case someone changes the half-life on the
+	 * fly and now we have used more time than is available under
+	 * the new config */
+	if (assoc->usage->usage_norm > 1L)
+		assoc->usage->usage_norm = 1L;
+}
+
+
 extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 {
-	char *child;
-	char *child_str;
-
 	xassert(assoc_mgr_root_assoc);
 	xassert(assoc);
 	xassert(assoc->usage);
 	xassert(assoc->usage->fs_assoc_ptr);
 
-	if (assoc->user) {
-		child = "user";
-		child_str = assoc->user;
-	} else {
-		child = "account";
-		child_str = assoc->acct;
-	}
+	set_assoc_usage_norm(assoc);
+	_set_assoc_usage_efctv(assoc);
 
-	if (assoc_mgr_root_assoc->usage->usage_raw) {
-		assoc->usage->usage_norm = assoc->usage->usage_raw
-			/ assoc_mgr_root_assoc->usage->usage_raw;
-	} else {
-		/* This should only happen when no usage has occured
-		 * at all so no big deal, the other usage should be 0
-		 * as well here. */
-		assoc->usage->usage_norm = 0;
-	}
-
-	if (priority_debug) {
-		info("Normalized usage for %s %s off %s(%s) %Lf / %Lf = %Lf",
-		     child, child_str,
-		     assoc->usage->parent_assoc_ptr->acct,
-		     assoc->usage->fs_assoc_ptr->acct,
-		     assoc->usage->usage_raw,
-		     assoc_mgr_root_assoc->usage->usage_raw,
-		     assoc->usage->usage_norm);
-	}
-	/* This is needed in case someone changes the half-life on the
-	 * fly and now we have used more time than is available under
-	 * the new config */
-	if (assoc->usage->usage_norm > 1.0)
-		assoc->usage->usage_norm = 1.0;
-
-	if (flags & PRIORITY_FLAGS_LEVEL_BASED)
-		assoc->usage->usage_efctv =
-			level_based_calc_assoc_usage(assoc);
-	else if (assoc->usage->fs_assoc_ptr == assoc_mgr_root_assoc) {
-		assoc->usage->usage_efctv = assoc->usage->usage_norm;
-		if (priority_debug)
-			info("Effective usage for %s %s off %s(%s) %Lf %Lf",
-			     child, child_str,
-			     assoc->usage->parent_assoc_ptr->acct,
-			     assoc->usage->fs_assoc_ptr->acct,
-			     assoc->usage->usage_efctv,
-			     assoc->usage->usage_norm);
-	} else if (flags & PRIORITY_FLAGS_TICKET_BASED) {
-		_ticket_based_set_usage_efctv(assoc);
-		if (priority_debug) {
-			info("Effective usage for %s %s off %s(%s) = %Lf",
-			     child, child_str,
-			     assoc->usage->parent_assoc_ptr->acct,
-			     assoc->usage->fs_assoc_ptr->acct,
-			     assoc->usage->usage_efctv);
-		}
-	} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
-		slurmdb_association_rec_t *parent_assoc =
-			assoc->usage->fs_assoc_ptr;
-
-		assoc->usage->usage_efctv =
-			parent_assoc->usage->usage_efctv;
-		if (priority_debug) {
-			info("Effective usage for %s %s off %s %Lf",
-			     child, child_str,
-			     parent_assoc->acct,
-			     parent_assoc->usage->usage_efctv);
-		}
-	} else if (flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS) {
-		_depth_oblivious_set_usage_efctv(assoc, child, child_str);
-	} else {
-		_set_usage_efctv(assoc);
-		if (priority_debug) {
-			info("Effective usage for %s %s off %s(%s) "
-			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
-			     child, child_str,
-			     assoc->usage->parent_assoc_ptr->acct,
-			     assoc->usage->fs_assoc_ptr->acct,
-			     assoc->usage->usage_norm,
-			     assoc->usage->fs_assoc_ptr->usage->usage_efctv,
-			     assoc->usage->usage_norm,
-			     assoc->shares_raw,
-			     assoc->usage->level_shares,
-			     assoc->usage->usage_efctv);
-		}
-	}
+	if (priority_debug)
+		_priority_p_set_assoc_usage_debug(assoc);
 }
 
 
@@ -2049,4 +1995,88 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 		job_ptr->prio_factors->nice = job_ptr->details->nice;
 	else
 		job_ptr->prio_factors->nice = NICE_OFFSET;
+}
+
+
+/* Set usage_efctv based on algorithm-specific code. Fair Tree sets this
+ * elsewhere.
+ */
+static void _set_assoc_usage_efctv(slurmdb_association_rec_t *assoc)
+{
+	if (assoc->usage->fs_assoc_ptr == assoc_mgr_root_assoc)
+		assoc->usage->usage_efctv = assoc->usage->usage_norm;
+	else if (flags & PRIORITY_FLAGS_TICKET_BASED)
+		_ticket_based_set_usage_efctv(assoc);
+	else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
+		slurmdb_association_rec_t *parent_assoc =
+			assoc->usage->fs_assoc_ptr;
+
+		assoc->usage->usage_efctv =
+			parent_assoc->usage->usage_efctv;
+	} else if (flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS)
+		_depth_oblivious_set_usage_efctv(assoc);
+	else
+		_set_usage_efctv(assoc);
+}
+
+
+static void _priority_p_set_assoc_usage_debug(slurmdb_association_rec_t *assoc)
+{
+	char *child;
+	char *child_str;
+
+	if (assoc->user) {
+		child = "user";
+		child_str = assoc->user;
+	} else {
+		child = "account";
+		child_str = assoc->acct;
+	}
+
+	info("Normalized usage for %s %s off %s(%s) %Lf / %Lf = %Lf",
+	     child, child_str,
+	     assoc->usage->parent_assoc_ptr->acct,
+	     assoc->usage->fs_assoc_ptr->acct,
+	     assoc->usage->usage_raw,
+	     assoc_mgr_root_assoc->usage->usage_raw,
+	     assoc->usage->usage_norm);
+
+	if (assoc->usage->fs_assoc_ptr == assoc_mgr_root_assoc) {
+		info("Effective usage for %s %s off %s(%s) %Lf %Lf",
+		     child, child_str,
+		     assoc->usage->parent_assoc_ptr->acct,
+		     assoc->usage->fs_assoc_ptr->acct,
+		     assoc->usage->usage_efctv,
+		     assoc->usage->usage_norm);
+	} else if (flags & PRIORITY_FLAGS_TICKET_BASED) {
+		info("Effective usage for %s %s off %s(%s) = %Lf",
+		     child, child_str,
+		     assoc->usage->parent_assoc_ptr->acct,
+		     assoc->usage->fs_assoc_ptr->acct,
+		     assoc->usage->usage_efctv);
+	} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
+		slurmdb_association_rec_t *parent_assoc =
+			assoc->usage->fs_assoc_ptr;
+
+		info("Effective usage for %s %s off %s %Lf",
+		     child, child_str,
+		     parent_assoc->acct,
+		     parent_assoc->usage->usage_efctv);
+	} else if (flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS) {
+		/* Unfortunately, this must be handled inside of
+		 * _depth_oblivious_set_usage_efctv */
+	} else {
+		info("Effective usage for %s %s off %s(%s) "
+		     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
+		     child, child_str,
+		     assoc->usage->parent_assoc_ptr->acct,
+		     assoc->usage->fs_assoc_ptr->acct,
+		     assoc->usage->usage_norm,
+		     assoc->usage->fs_assoc_ptr->usage->usage_efctv,
+		     assoc->usage->usage_norm,
+		     assoc->shares_raw,
+		     assoc->usage->level_shares,
+		     assoc->usage->usage_efctv);
+	}
+
 }

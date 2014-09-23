@@ -1,0 +1,207 @@
+<!--#include virtual="header.txt"-->
+
+<!--
+
+Fair Tree contributed by Brigham Young University
+Authors: Ryan Cox and Levi Morrison
+
+ -->
+
+<h1>Fair Tree Fairshare Algorithm</h1>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#intro">Introduction</a></li>
+<li><a href="#enduser">Overview for End Users</a></li>
+<li><a href="#algorithm">Algorithm</a></li>
+<li><a href="#fairshare">Level Fairshare Calculation</a></li>
+<li><a href="#ties">Ties</a></li>
+<li><a href="#sshare">sshare</a></li>
+<li><a href="#config">Configuration</a></li>
+<li><a href="#notes">Important notes</a></li>
+</ul>
+
+<h2><a name="intro">Introduction</a></h2>
+
+<p>PriorityFlags=FAIR_TREE results in changes to several fairshare calculations.
+Fair Tree prioritizes users such that if accounts A and B are siblings and A has
+a higher fairshare factor than B, all children of A will have higher fairshare
+factors than all children of B.</p>
+
+<p>Some of the benefits include:</p>
+<ul>
+	<li>
+		All users from a higher priority account receive a higher fair
+		share factor than all users from a lower priority account.
+	</li>
+	<li>
+		Users are sorted and ranked to prevent errors due to precision
+		loss. Ties are allowed.
+	</li>
+	<li>
+		Account coordinators cannot accidentally harm the priority of
+		their users relative to users in other accounts.
+	</li>
+	<li>
+		Users are extremely unlikely to have exactly the same fairshare
+		factor as another user due to loss of precision in calculations.
+	</li>
+	<li>
+		New jobs are immediately assigned a priority.
+	</li>
+</ul>
+
+<h2><a name="enduser">Overview for End Users</a></h2>
+
+<p>This section is intended for non-admin users who just want to know how their
+fairshare factor is determined.  Run <code>sshare -l</code> (lowercase "L") to
+view the following columns: <code>FairShare, Level FS</code>.  Note that
+Level FS values are infinity if the association has no usage.</p>
+
+<p>If an account has a higher Level FS value than any other sibling user or
+sibling account, all children of that account will have a higher FairShare value
+than the children of the other account. This is true at every level of the
+association tree.</p>
+
+<p>The FairShare value is obtained by using the Fair Tree
+<a href="#algorithm">algorithm</a> to rank all users in the order that they
+should be prioritized (descending). The FairShare value is the user's rank
+divided by the total number of user associations. The highest ranked user
+receives a 1.0 fairshare value.</p>
+
+<p>If you (UserA) have a lower FairShare value than another user (UserB) and
+want to know why, find the first common ancestor account. At the level
+below the common ancestor, compare the Level FS value of your ancestor to the
+Level FS value of UserB's ancestor. Your ancestor has a lower Level FS value
+than UserB's ancestor. For information on how Level FS value is
+calculated, read the section about the <a href="#fairshare">Level FS
+equation</a>.</p>
+
+<p>For example, assume the association tree contains UserA and UserB as
+follows:</p>
+<pre>
+root =&gt; Acct1 =&gt; Acct12 =&gt; UserA
+root =&gt; Acct1 =&gt; Acct16 =&gt; UserB
+</pre>
+
+<p>Acct1 is the first common ancestor of UserA and UserB. Check the Level FS
+values of Acct12 and Acct16.  If UserB has a higher FairShare value than UserA,
+Acct16 has a higher Level FS value than Acct12.</p>
+
+<p>The sections below contain more information about the algorithm, including
+how the final fairshare factor and the Level FS values are calculated.</p>
+
+<h2><a name="algorithm">Algorithm</a></h2>
+
+<p>An equation is used to calculate a Level Fairshare value for each
+association, only considering the shares and usage of itself and its siblings.
+A <a href="http://www.math.ucsd.edu/~ebender/CombText/ch-9.pdf">
+rooted plane tree</a> <small>(PDF download)</small>, also known as a rooted
+ordered tree, is logically created then sorted by Level Fairshare with the
+highest values on the left. The tree is then visited in a depth-first
+traversal. Users are ranked in pre-order as they are found. The ranking is
+used to create the final fairshare factor for the user.</p>
+
+<p>The algorithm performs a single traversal of the tree since all the steps
+can be combined. The basic idea is to set <i>rank</i> equal to the count of user
+associations then start at root:</p>
+
+<ul><li>Calculate Level Fairshare for the subtree's children</li>
+<li>Sort children of the subtree</li>
+<li>Visit the children in descending order</li>
+<ul><li>If user, assign a final fairshare factor similar to
+	(rank-- / user_assoc_count)</li>
+<li>If account, descend to account</li>
+</ul></ul>
+
+
+<h2><a name="fairshare">Level Fairshare Calculation</a></h2>
+
+<p>The Level Fairshare equation is described below. Under-served associations
+will have a value greater than 1.0. Over-served associations will have a value
+between 0.0 and 1.0.
+</p>
+
+<pre>
+LF = S / U
+</pre>
+
+<dl>
+<dt>LF</dt>
+<dd> is the association's Level Fairshare</dd>
+<dt> S</dt>
+<dd> also known as Shares Norm, S is the association's assigned shares
+normalized to the shares assigned to itself and its siblings:
+<nobr><code>S = Sraw<sub>self</sub> / Sraw<sub>self+siblings</sub></code></nobr>
+</dd>
+<dt> U</dt>
+<dd> also known as Effective Usage, U is the association's usage normalized to
+the account's usage:
+<nobr><code>U = Uraw<sub>self</sub> / Uraw<sub>self+siblings</sub></code></nobr>
+</dd>
+</dl>
+
+<p>U and S are in the range <nobr><code>0.0 .. 1.0</code></nobr>. LF is in the
+range <nobr><code>0.0 .. infinity</code>.</nobr></p>
+
+<h2><a name="ties">Ties</a></h2>
+
+<p>Ties are handled as follows:
+<ul>
+<li>Sibling users with the same Level Fairshare receive the same rank</li>
+<li>A user with the same Level Fairshare as a sibling account will receive the
+same rank as its highest ranked user</li>
+<li>Sibling accounts with the same Level Fairshare have their children lists
+merged before descending</li>
+</ul>
+</p>
+
+<h2><a name="sshare">sshare</a></h2>
+
+<p>sshare was modified to show the Level Fairshare value as <code>Level FS</code> when
+the <code>-l</code> (long) parameter is specified.  The field shows the value for each
+association, thus allowing users to see the results of the fairshare
+calculation at each level.</p>
+
+<p>Note: Norm Usage is not used by Fair Tree but is still displayed.</p>
+
+<h2><a name="config">Configuration</a></h2>
+
+<p> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to
+configure the Fair Tree algorithm.  See slurm.conf(5) man page for more
+details.</p>
+
+<dl>
+<dt>PriorityFlags</dt>
+<dd>Set to "FAIR_TREE".</dd>
+<dt>PriorityType</dt>
+<dd>Set this value to "priority/multifactor".
+The default value for this variable is "priority/basic"
+which enables simple FIFO scheduling.</dd>
+<dt>PriorityCalcPeriod</dt>
+<dd>PriorityCalcPeriod is the frequency in minutes that job half-life decay
+and Fair Tree calculations are performed.</dd>
+</dl>
+
+<h2><a name="notes">Important Notes</a></h2>
+<ul>
+<li>As the Fair Tree algorithm ranks all users, active or not, the
+administrator must carefully consider how to apply other priority weights
+in the priority/multifactor plugin. The <i>PriorityWeightFairshare</i> can be
+usefully set to a much smaller value than usual, possibly as low as 1 or 2 times
+the number of user associations.
+</li>
+<li>Fair Tree requires the <a href="accounting.html">Slurm Accounting
+Database</a> to provide usage information and the assigned shares values.
+</li>
+<li><i>scontrol reconfigure</i> does not cause the Fair Tree algorithm to
+run immediately, even if switching from a different algorithm. You may have to
+wait until the next iteration as defined by <i>PriorityCalcPeriod</i>.
+</li>
+</ul>
+
+
+<!-- -------------------------------------------------------------------- -->
+<p style="text-align:center;">Last modified 15 Sep 2014</p>
+
+<!--#include virtual="footer.txt"-->

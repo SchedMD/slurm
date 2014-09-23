@@ -162,7 +162,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 priority_multifactor_la_DEPENDENCIES =
 am_priority_multifactor_la_OBJECTS = priority_multifactor.lo \
-	level_based.lo
+	fair_tree.lo
 priority_multifactor_la_OBJECTS =  \
 	$(am_priority_multifactor_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -476,7 +476,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = priority_multifactor.la
 
 # Null priority logging plugin.
-priority_multifactor_la_SOURCES = priority_multifactor.c level_based.c level_based.h priority_multifactor.h
+priority_multifactor_la_SOURCES = priority_multifactor.c fair_tree.c fair_tree.h priority_multifactor.h
 priority_multifactor_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 priority_multifactor_la_LIBADD = -lm
 all: all-am
@@ -558,7 +558,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/level_based.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fair_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/priority_multifactor.Plo@am__quote@
 
 .c.o:

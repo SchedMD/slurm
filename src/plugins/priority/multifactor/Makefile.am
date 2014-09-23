@@ -9,7 +9,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = priority_multifactor.la
 
 # Null priority logging plugin.
-priority_multifactor_la_SOURCES = priority_multifactor.c level_based.c level_based.h priority_multifactor.h
+priority_multifactor_la_SOURCES = priority_multifactor.c fair_tree.c fair_tree.h priority_multifactor.h
 
 
 priority_multifactor_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
