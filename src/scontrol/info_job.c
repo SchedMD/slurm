@@ -681,12 +681,12 @@ scontrol_print_hosts (char * node_list)
 		error("host list is empty");
 		return;
 	}
-	hl = hostlist_create(node_list);
+	hl = hostlist_create_dims(node_list, 0);
 	if (!hl) {
 		fprintf(stderr, "Invalid hostlist: %s\n", node_list);
 		return;
 	}
-	while ((host = hostlist_shift(hl))) {
+	while ((host = hostlist_shift_dims(hl, 0))) {
 		printf("%s\n", host);
 		free(host);
 	}

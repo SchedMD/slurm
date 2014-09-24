@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     --signal option.
  -- Enhance the scancel.1 man page to document the sequence of signals sent
     when terminating the job.
+ -- Fix hostlist_shift to be able to give correct node names on names with a
+    different number of dimensions than the cluster.
 
 * Changes in Slurm 14.03.8
 ==========================

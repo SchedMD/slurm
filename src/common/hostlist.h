@@ -237,6 +237,7 @@ char * hostlist_nth(hostlist_t hl, int n);
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
+char * hostlist_shift_dims(hostlist_t hl, int dims);
 char * hostlist_shift(hostlist_t hl);
 
 
