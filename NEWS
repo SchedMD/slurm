@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
  -- MYSQL - fix for setting up preempt list on a QOS for multiple QOS.
  -- Correct a minore error in the scancel.1 man page related to the
     --signal option.
+ -- Enhance the scancel.1 man page to document the sequence of signals sent
+    when terminating the job.
 
 * Changes in Slurm 14.03.8
 ==========================
