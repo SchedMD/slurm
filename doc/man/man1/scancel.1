@@ -79,7 +79,7 @@ Restrict the scancel operation to jobs with this reservation name.
 
 .TP
 \fB\-s\fR, \fB\-\-signal\fR=\fIsignal_name\fR
-The name or number of the signal to send.  If no signal is specified,
+The name or number of the signal to send.  If this option is not used
 the specified job or step will be terminated. \fBNote\fR. If this option
 is used the signal is sent directly to the slurmd where the job is
 running bypassing the slurmctld thus the job state will not change even
@@ -195,8 +195,9 @@ Cancelling a job step will not result in the job being terminated.
 The job must be cancelled to release a resource allocation.
 .LP
 To cancel a job, invoke \fBscancel\fR without \-\-signal option.  This
-will send a SIGTERM to all the job steps, wait the KillWait duration
-defined in the slurm.conf file, and then send a SIGKILL.  This gives
+will send first a SIGCONT to all steps to eventually wake them up followed by
+a SIGTERM, then wait the KillWait duration defined in the slurm.conf file
+and finally if they have not terminated send a SIGKILL.  This gives
 time for the running job/step(s) to clean up.
 .LP
 If a signal value of "KILL" is sent to an entire job, this will cancel

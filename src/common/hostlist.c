@@ -124,6 +124,7 @@ strong_alias(hostlist_ranged_string_xmalloc,
 					slurm_hostlist_ranged_string_xmalloc);
 strong_alias(hostlist_remove,		slurm_hostlist_remove);
 strong_alias(hostlist_shift,		slurm_hostlist_shift);
+strong_alias(hostlist_shift_dims,	slurm_hostlist_shift_dims);
 strong_alias(hostlist_shift_range,	slurm_hostlist_shift_range);
 strong_alias(hostlist_sort,		slurm_hostlist_sort);
 strong_alias(hostlist_uniq,		slurm_hostlist_uniq);
@@ -369,7 +370,7 @@ static int           hostrange_within_range(hostrange_t, hostrange_t);
 static int           hostrange_width_combine(hostrange_t, hostrange_t);
 static int           hostrange_empty(hostrange_t);
 static char *        hostrange_pop(hostrange_t);
-static char *        hostrange_shift(hostrange_t);
+static char *        hostrange_shift(hostrange_t, int);
 static int           hostrange_join(hostrange_t, hostrange_t);
 static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
 static int           hostrange_hn_within(hostrange_t, hostname_t);
@@ -988,13 +989,15 @@ static char *hostrange_pop(hostrange_t hr)
 }
 
 /* Same as hostrange_pop(), but remove host from start of range */
-static char *hostrange_shift(hostrange_t hr)
+static char *hostrange_shift(hostrange_t hr, int dims)
 {
 	size_t size = 0;
 	char *host = NULL;
-	int dims = slurmdb_setup_cluster_name_dims();
 
 	assert(hr != NULL);
+
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
 
 	if (hr->singlehost) {
 		hr->lo++;
@@ -2169,7 +2172,7 @@ hostlist_shift_iterators(hostlist_t hl, int idx, int depth, int n)
 	}
 }
 
-char *hostlist_shift(hostlist_t hl)
+char *hostlist_shift_dims(hostlist_t hl, int dims)
 {
 	char *host = NULL;
 
@@ -2177,12 +2180,16 @@ char *hostlist_shift(hostlist_t hl)
 		error("hostlist_shift: no hostlist given");
 		return NULL;
 	}
+
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
+
 	LOCK_HOSTLIST(hl);
 
 	if (hl->nhosts > 0) {
 		hostrange_t hr = hl->hr[0];
 
-		host = hostrange_shift(hr);
+		host = hostrange_shift(hr, dims);
 		hl->nhosts--;
 
 		if (hostrange_empty(hr)) {
@@ -2195,6 +2202,11 @@ char *hostlist_shift(hostlist_t hl)
 	UNLOCK_HOSTLIST(hl);
 
 	return host;
+}
+
+char *hostlist_shift(hostlist_t hl)
+{
+	return hostlist_shift_dims(hl, 0);
 }
 
 
