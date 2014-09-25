@@ -200,6 +200,7 @@ AC_CHECK_FUNCS( \
    sysctlbyname \
    cfmakeraw \
    setresuid \
+   get_current_dir_name \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])

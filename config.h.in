@@ -130,6 +130,9 @@
 /* Define to 1 if running slurmd on front-end only */
 #undef HAVE_FRONT_END
 
+/* Define to 1 if you have the `get_current_dir_name' function. */
+#undef HAVE_GET_CURRENT_DIR_NAME
+
 /* Defined if you have HDF5 support */
 #undef HAVE_HDF5
 
