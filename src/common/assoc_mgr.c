@@ -266,8 +266,8 @@ static void _delete_assoc_hash(void *assoc)
 	if (!assoc_pptr) {
 		fatal("assoc id hash error");
 		return;	/* Fix CLANG false positive error */
-	}
-	*assoc_pptr = assoc_ptr->assoc_next_id;
+	} else
+		*assoc_pptr = assoc_ptr->assoc_next_id;
 
 	assoc_ptr = (slurmdb_association_rec_t *) assoc;
 	assoc_pptr = &assoc_hash[_assoc_hash_index(assoc_ptr)];
@@ -278,8 +278,8 @@ static void _delete_assoc_hash(void *assoc)
 	if (!assoc_pptr) {
 		fatal("assoc hash error");
 		return;	/* Fix CLANG false positive error */
-	}
-	*assoc_pptr = assoc_ptr->assoc_next;
+	} else
+		*assoc_pptr = assoc_ptr->assoc_next;
 }
 
 
