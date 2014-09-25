@@ -762,7 +762,7 @@ static List _handle_jobs_unusable_block(bg_record_t *bg_record)
 				kill_job_list =
 					bg_status_create_kill_job_list();
 			freeit = (kill_job_struct_t *)xmalloc(sizeof(freeit));
-			freeit->jobid = bg_record->job_ptr->job_id;
+			freeit->jobid = job_ptr->job_id;
 			list_push(kill_job_list, freeit);
 		}
 		list_iterator_destroy(itr);
