@@ -468,8 +468,8 @@ int xcgroup_instanciate(xcgroup_t* cg)
 	/* build cgroup */
  	if (mkdir(file_path, 0755)) {
 		if (create_only || errno != EEXIST) {
-			debug2("unable to create cgroup '%s' : %m",
-			       file_path);
+			debug2("%s: unable to create cgroup '%s' : %m",
+			       __func__, file_path);
 			umask(omask);
 			return fstatus;
 		}
