@@ -2180,10 +2180,14 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_specs->overcommit = 1;
 	step_specs->exclusive = 0;
 #endif
+
+#ifndef HAVE_BGQ /* This is to remove a Clang error since
+		  * orig_cpu_count is set below for BGQ systems. */
 	/* if the overcommit flag is checked, we 0 set cpu_count=0
 	 * which makes it so we don't check to see the available cpus
 	 */
 	orig_cpu_count =  step_specs->cpu_count;
+#endif
 
 	if (step_specs->overcommit) {
 		if (step_specs->exclusive) {

@@ -118,7 +118,7 @@ static void _destroy_allocated_block(void *object)
 
 static allocated_block_t *_make_request(select_ba_request_t *request)
 {
-	List results = list_create(NULL);
+	List results;
 	allocated_block_t *allocated_block = NULL;
 
 #ifdef HAVE_BGQ
@@ -1036,6 +1036,9 @@ static int _add_bg_record(select_ba_request_t *blockreq, List allocated_blocks)
 	memset(tmp_char, 0, sizeof(tmp_char));
 	memset(tmp_char2, 0, sizeof(tmp_char2));
 
+	start[0] = end[0] = (int16_t)-1; /* Set this here just so Clang won't
+					  * report false postive.
+					  */
 	for (i = 0; i < params.cluster_dims; i++) {
 		best_start[0] = 0;
 		blockreq->geometry[i] = 0;

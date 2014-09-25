@@ -529,8 +529,6 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		} else
 			pack32(count, buffer);
 
-		count = NO_VAL;
-
 		packstr(bg_record->linuximage, buffer);
 		packstr(bg_record->mloaderimage, buffer);
 		packstr(bg_record->mp_str, buffer);
@@ -631,7 +629,7 @@ static int _unpack_block_ext(bg_record_t *bg_record, Buf buffer,
 unpack_error:
 	error("Problem unpacking extended block info for %s, "
 	      "removing from list",
-	      bg_record->bg_block_id);
+	      bg_record ? bg_record->bg_block_id : "Uknown block");
 	return SLURM_ERROR;
 }
 
@@ -938,7 +936,9 @@ static int _validate_config_blocks(List curr_block_list,
 
 	/* read in state from last run. */
 	if (bg_recover)
-		rc = _load_state_file(curr_block_list, dir);
+		rc = _load_state_file(curr_block_list, dir); /* False Clang
+							      * Positive
+							      */
 
 #ifndef HAVE_BG_FILES
 	if (rc != SLURM_SUCCESS)

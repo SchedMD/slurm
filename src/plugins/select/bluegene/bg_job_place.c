@@ -779,7 +779,6 @@ static int _check_for_booted_overlapping_blocks(
 	bg_record_t *found_record = NULL;
 	ListIterator itr = NULL;
 	int rc = 0;
-	int overlap = 0;
 	bool is_test = SELECT_IS_TEST(query_mode);
 
 	/* this test only is for actually picking a block not testing */
@@ -791,6 +790,7 @@ static int _check_for_booted_overlapping_blocks(
 	*/
 	itr = list_iterator_create(block_list);
 	while ((found_record = (bg_record_t*)list_next(itr)) != NULL) {
+		int overlap;
 		if ((!found_record->bg_block_id)
 		    || (bg_record == found_record)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
@@ -805,7 +805,6 @@ static int _check_for_booted_overlapping_blocks(
 		slurm_mutex_unlock(&block_state_mutex);
 
 		if (overlap) {
-			overlap = 0;
 			/* make the available time on this block
 			 * (bg_record) the max of this found_record's job
 			 * or the one already set if in overlapped_block_list
@@ -1075,7 +1074,12 @@ static int _dynamically_request(List block_list, int *blocks_added,
 						error("_dynamically_request: "
 						      "unable to configure "
 						      "block");
-						rc = SLURM_ERROR;
+						/* Clang reports this
+						 * is never read since
+						 * (blocks_added) is
+						 * never set the rc is
+						 * set below there */
+						/* rc = SLURM_ERROR; */
 						break;
 					}
 					list_append(block_list, bg_record);
@@ -1223,10 +1227,11 @@ static int _find_best_block_match(List block_list,
 			       "should be %u from %s",
 			       min_nodes, target_size,
 			       tmp_geo);
-			min_nodes = target_size;
+			/* min_nodes isn't used anywhere after this so
+			   don't set it.
+			*/
+			/* min_nodes = target_size; */
 		}
-		if (!req_nodes)
-			req_nodes = min_nodes;
 	} else {
 		req_geometry[0] = (uint16_t)NO_VAL;
 		target_size = min_nodes;

@@ -1473,7 +1473,7 @@ extern void ba_sync_job_to_block(bg_record_t *bg_record,
 extern bitstr_t *ba_create_ba_mp_cnode_bitmap(bg_record_t *bg_record)
 {
 	int start, end, ionode_num;
-	char *tmp_char, *tmp_char2;
+	char *tmp_char = NULL, *tmp_char2;
 	bitstr_t *cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
 
 	if (!bg_record->ionode_bitmap
@@ -1953,7 +1953,6 @@ static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
 		     ba_switch_usage_str(start_mp->axis_switch[dim].usage),
 		     ba_switch_usage_str(start_mp->alter_switch[dim].usage));
 
-	axis_switch = &start_mp->axis_switch[dim];
 	alter_switch = &start_mp->alter_switch[dim];
 
 	if (_mp_out_used(start_mp, dim))

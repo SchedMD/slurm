@@ -801,7 +801,7 @@ static int _compute_block_map(uint16_t numproc,
 		}
 		qsort(*block_map, numproc, sizeof(uint16_t), &_compare_cpus);
 	}
-	if (block_map_inv) {
+	if (block_map && block_map_inv) {
 		*block_map_inv = xmalloc(numproc * sizeof(uint16_t));
 		for (i = 0; i < numproc; i++) {
 			uint16_t idx = (*block_map)[i];

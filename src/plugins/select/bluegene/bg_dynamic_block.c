@@ -319,7 +319,6 @@ try_small_again:
 	}
 
 	/* try on free midplanes */
-	rc = SLURM_SUCCESS;
 	if (results)
 		list_flush(results);
 	else {
@@ -400,7 +399,6 @@ try_small_again:
 			     bg_record->mp_str, request->size);
 
 		remove_block(bg_record->ba_mp_list, is_small);
-		rc = SLURM_SUCCESS;
 		if (results)
 			list_flush(results);
 		else {
