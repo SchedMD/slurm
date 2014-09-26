@@ -155,7 +155,7 @@ static int select_cray_dim_size[3] = {-1};
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/cray";
 uint32_t plugin_id		= 104;
-const uint32_t plugin_version	= 110;
+const uint32_t plugin_version	= 120;
 
 static bool _zero_size_job ( struct job_record *job_ptr )
 {

@@ -222,7 +222,7 @@ static uint64_t debug_flags = 0;
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/cray";
 uint32_t plugin_id		= 107;
-const uint32_t plugin_version	= 100;
+const uint32_t plugin_version	= 120;
 
 extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
 
