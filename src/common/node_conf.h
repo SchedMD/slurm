@@ -312,6 +312,10 @@ extern void cr_fini_global_core_data(void);
 /*return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 
+/* Return a bitmap the size of the machine in cores. On a Bluegene
+ * system it will return a bitmap in cnodes. */
+extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult);
+
 /* Given the number of tasks per core and the actual number of hw threads,
  * compute how many CPUs are "visible" and, hence, usable on the node.
  */

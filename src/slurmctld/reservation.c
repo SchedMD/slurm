@@ -3061,11 +3061,6 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	return i;
 }
 
-static void _create_cluster_core_bitmap(bitstr_t **core_bitmap)
-{
-	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
-}
-
 /* Given a reservation create request, select appropriate nodes for use */
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
@@ -3133,8 +3128,19 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				bit_and(node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);
 			} else {
-				if (*core_bitmap == NULL)
-					_create_cluster_core_bitmap(core_bitmap);
+				int core_mult = 1;
+#ifdef HAVE_BG
+				if (!cnodes_per_mp)
+					select_g_alter_node_cnt(
+						SELECT_GET_NODE_SCALING,
+						&cnodes_per_mp);
+				core_mult = cnodes_per_mp;
+#endif
+
+				if (!*core_bitmap)
+					*core_bitmap =
+						cr_create_cluster_core_bitmap(
+							core_mult);
 				bit_or(*core_bitmap, resv_ptr->core_bitmap);
 			}
 		}
@@ -3318,7 +3324,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 {
 	uint32_t total_nodes;
 	bitstr_t *full_node_bitmap;
-	int i_core, i_node;
+	int i_core, i_node, core_mult = 1;
 	int start = 0;
 	int rep_count = 0;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -3339,10 +3345,17 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 }
 #endif
 
+#ifdef HAVE_BG
+	if (!cnodes_per_mp)
+		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+					&cnodes_per_mp);
+	core_mult = cnodes_per_mp;
+#endif
+
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
 
-	if (*core_bitmap == NULL)
-		_create_cluster_core_bitmap(core_bitmap);
+	if (!*core_bitmap)
+		*core_bitmap = cr_create_cluster_core_bitmap(core_mult);
 
 	i_node = 0;
 	while (i_node < total_nodes) {

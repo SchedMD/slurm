@@ -1147,6 +1147,26 @@ extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 	return cr_node_cores_offset[node_index];
 }
 
+/* Return a bitmap the size of the machine in cores. On a Bluegene
+ * system it will return a bitmap in cnodes. */
+extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult)
+{
+	/* DEF_TIMERS; */
+	/* START_TIMER; */
+	bitstr_t *core_bitmap;
+	static int cnt = 0;
+
+	if (!cnt) {
+		cnt = cr_get_coremap_offset(node_record_count);
+		if (core_mult)
+			cnt *= core_mult;
+	}
+	core_bitmap = bit_alloc(cnt);
+	/* END_TIMER; */
+	/* info("creating of core bitmap of %d took %s", cnt, TIME_STR); */
+	return core_bitmap;
+}
+
 /* Given the number of tasks per core and the actual number of hw threads,
  * compute how many CPUs are "visible" and, hence, usable on the node.
  */
