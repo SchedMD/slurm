@@ -144,9 +144,19 @@ static display_data_t create_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NAME,  "Name", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_CNT, "Node_Count",
+	{G_TYPE_STRING, SORTID_NODE_CNT,
+#ifdef HAVE_BG
+	 "Midplane_Count",
+#else
+	 "Node_Count",
+#endif
 	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_CORE_CNT, "Core_Count",
+	{G_TYPE_STRING, SORTID_CORE_CNT,
+#ifdef HAVE_BG
+	 "Cnode_Count",
+#else
+	 "Core_Count",
+#endif
 	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODELIST,
 #ifdef HAVE_BG
