@@ -3429,9 +3429,8 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 		return NULL;
 	} else if ((total_node_cnt == node_cnt) &&
 		   (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
-		return select_g_resv_test(avail_bitmap, node_cnt,
-					  resv_desc_ptr->core_cnt, core_bitmap,
-					  resv_desc_ptr->flags);
+		return select_g_resv_test(resv_desc_ptr, node_cnt,
+					  avail_bitmap, core_bitmap);
 	}
 
 	orig_bitmap = bit_copy(avail_bitmap);
@@ -3458,10 +3457,8 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 		/* NOTE: select_g_resv_test() does NOT preserve avail_bitmap,
 		 * so we do that here and other calls to that function */
 		save_bitmap = bit_copy(avail_bitmap);
-		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt,
-						resv_desc_ptr->core_cnt,
-						core_bitmap,
-						resv_desc_ptr->flags);
+		ret_bitmap = select_g_resv_test(resv_desc_ptr, node_cnt,
+						avail_bitmap, core_bitmap);
 		if (ret_bitmap)
 			goto fini;
 		bit_or(avail_bitmap, save_bitmap);
@@ -3488,11 +3485,9 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 			total_node_cnt = bit_set_count(avail_bitmap);
 			if (total_node_cnt >= node_cnt) {
 				save_bitmap = bit_copy(avail_bitmap);
-				ret_bitmap = select_g_resv_test(avail_bitmap,
-						node_cnt,
-						resv_desc_ptr->core_cnt,
-						core_bitmap,
-						resv_desc_ptr->flags);
+				ret_bitmap = select_g_resv_test(
+					resv_desc_ptr, node_cnt,
+					avail_bitmap, core_bitmap);
 				if (!ret_bitmap) {
 					bit_or(avail_bitmap, save_bitmap);
 					FREE_NULL_BITMAP(save_bitmap);

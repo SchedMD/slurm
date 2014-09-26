@@ -2287,12 +2287,13 @@ extern int select_p_reconfigure(void)
 	return other_reconfigure();
 }
 
-extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t *core_cnt, bitstr_t **core_bitmap,
-				     uint32_t flags)
+extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
+				     uint32_t node_cnt,
+				     bitstr_t *avail_bitmap,
+				     bitstr_t **core_bitmap)
 {
-	return other_resv_test(avail_bitmap, node_cnt, core_cnt, core_bitmap,
-			       flags);
+	return other_resv_test(resv_desc_ptr, node_cnt,
+			       avail_bitmap, core_bitmap);
 }
 
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

@@ -3423,21 +3423,10 @@ extern int select_p_reconfigure(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * select_p_resv_test - Identify the nodes which "best" satisfy a reservation
- *	request. "best" is defined as either single set of consecutive nodes
- *	satisfying the request and leaving the minimum number of unused nodes
- *	OR the fewest number of consecutive node sets
- * IN/OUT avail_bitmap - nodes available for the reservation
- * IN node_cnt - count of required nodes
- * IN core_cnt - count of required cores per node
- * IN/OUT core_bitmap - cores which can not be used for this reservation
- * IN flags - reservation request flags
- * RET - nodes selected for use by the reservation
- */
-extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t *core_cnt, bitstr_t **core_bitmap,
-				     uint32_t flags)
+extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
+				     uint32_t node_cnt,
+				     bitstr_t *avail_bitmap,
+				     bitstr_t **core_bitmap)
 {
 	bitstr_t **switches_bitmap;		/* nodes on this switch */
 	int       *switches_cpu_cnt;		/* total CPUs on switch */
@@ -3453,6 +3442,8 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	bool sufficient;
 
 	xassert(avail_bitmap);
+	xassert(resv_desc_ptr);
+
 	if (!switch_record_cnt || !switch_record_table)
 		return bit_pick_cnt(avail_bitmap, node_cnt);
 

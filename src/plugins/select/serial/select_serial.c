@@ -2128,21 +2128,10 @@ extern int select_p_reconfigure(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * select_p_resv_test - Identify the nodes which "best" satisfy a reservation
- *	request. "best" is defined as either single set of consecutive nodes
- *	satisfying the request and leaving the minimum number of unused nodes
- *	OR the fewest number of consecutive node sets
- * IN/OUT avail_bitmap - nodes available for the reservation
- * IN node_cnt - count of required nodes
- * IN core_cnt - count of required cores per node
- * IN/OUT core_bitmap - cores which can not be used for this reservation
- * IN flags - reservation request flags
- * RET - nodes selected for use by the reservation
- */
-extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t *core_cnt, bitstr_t **core_bitmap,
-				     uint32_t flags)
+extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
+				     uint32_t node_cnt,
+				     bitstr_t *avail_bitmap,
+				     bitstr_t **core_bitmap)
 {
 	int i, j;
 	int core_inx = 0, node_cores;
@@ -2150,8 +2139,14 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	int rem_cores = 0;
 	bitstr_t *new_bitmap;
 	bool enforce_node_cnt = (node_cnt != 0);
+	uint32_t *core_cnt;
+	uint32_t flags;
 
 	xassert(avail_bitmap);
+	xassert(resv_desc_ptr);
+
+	core_cnt = resv_desc_ptr->core_cnt;
+	flags = resv_desc_ptr->flags;
 
 	if (flags & RESERVE_FLAG_FIRST_CORES) {
 		debug("select/serial: Reservation flag FIRST_CORES not "

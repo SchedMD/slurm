@@ -668,22 +668,21 @@ the plugin should return SLURM_ERROR.</p>
 
 <h3>Advanced Reservation Functions</h3>
 
-<p class="commandline">bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap,
-uint32_t node_cnt, uint32_t *core_cnt, bitstr_t **core_bitmap, uint32_t flags)</p>
+<p class="commandline">bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr, uint32_t node_cnt, bitstr_t *avail_bitmap, bitstr_t **core_bitmap)</p>
 <p style="margin-left:.2in"><b>Description</b>: Identify the nodes which best
 satisfy a reservation request taking system topology into consideration if
 applicable.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> avail_bitmap</span>&nbsp; &nbsp;&nbsp;(input/output)
-a bitmap of the nodes which are available for use in creating the reservation.<br>
+<span class="commandline"> resv_desc_ptr</span>&nbsp; &nbsp;&nbsp;(input/output)
+the request of the reservation.  The node_list could be changed inside
+of the plugin.<br>
 <span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input)
 number of nodes required to satisfy the reservation request.<br>
-<span class="commandline"> core_cnt</span>&nbsp; &nbsp;&nbsp;(input)
-number of cores per node required to satisfy the reservation request.<br>
+<span class="commandline"> avail_bitmap</span>&nbsp; &nbsp;&nbsp;(input/output)
+a bitmap of the nodes which are available for use in creating the reservation.<br>
 <span class="commandline"> core_bitmap</span>&nbsp; &nbsp;&nbsp;(input/output)
-a bitmap of the cores which are available for use in creating the reservation.<br>
-<span class="commandline"> flags</span>&nbsp; &nbsp;&nbsp;(input)
-flags associated with the reservation request.</p>
+cores which can not be used for this reservation IN, and cores to be
+used in the reservation OUT (flush bitstr then apply only used cores).<br>
 <p style="margin-left:.2in"><b>Returns</b>: A bitmap of the nodes which should
 be used for the advanced reservation or NULL if the selected nodes can not
 be used for an advanced reservation.</p>

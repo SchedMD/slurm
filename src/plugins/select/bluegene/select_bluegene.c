@@ -121,7 +121,7 @@ List assoc_mgr_qos_list = NULL;
 const char plugin_name[]       	= "BlueGene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
 const uint32_t plugin_id	= 100;
-const uint32_t plugin_version	= 110;
+const uint32_t plugin_version	= 120;
 
 /* Global variables */
 bg_config_t *bg_conf = NULL;
@@ -3369,9 +3369,10 @@ extern int select_p_reconfigure(void)
 #endif
 }
 
-extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				    uint32_t *core_cnt, bitstr_t **core_bitmap,
-				    uint32_t flags)
+extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
+				    uint32_t node_cnt,
+				    bitstr_t *avail_bitmap,
+				    bitstr_t **core_bitmap)
 {
 #ifdef HAVE_BG
 	/* Reserve a block of appropriate geometry by issuing a fake job
