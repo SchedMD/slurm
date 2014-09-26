@@ -944,13 +944,16 @@ extern void set_page_opts(int page, display_data_t *display_data,
 	itr = list_iterator_create(page_opts->col_list);
 	while ((col_name = list_next(itr))) {
 		replus(col_name);
-		if (strstr(col_name, "list")) {
+		if (strstr(col_name, "list") || strstr(col_name, " count")) {
 			char *orig_ptr = col_name;
 			xstrsubstitute(col_name, "bp ", "midplane");
-			if (cluster_flags & CLUSTER_FLAG_BG)
+			if (cluster_flags & CLUSTER_FLAG_BG) {
 				xstrsubstitute(col_name, "node", "midplane");
-			else
+				xstrsubstitute(col_name, "core", "cnode");
+			} else {
 				xstrsubstitute(col_name, "midplane", "node");
+				xstrsubstitute(col_name, "cnode", "core");
+			}
 
 			/* Make sure we have the correct pointer here
 			   since xstrsubstitute() could of changed it
