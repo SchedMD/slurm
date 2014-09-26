@@ -744,50 +744,25 @@ static bg_record_t *_find_matching_block(List block_list,
 			FREE_NULL_BITMAP(tmp_jobinfo.units_avail);
 			FREE_NULL_BITMAP(tmp_jobinfo.units_used);
 			xfree(tmp_jobinfo.ionode_str);
-		} else if (SELECT_IS_MODE_RESV(query_mode)
+		} else if (exc_core_bitmap
 			   && (bg_record->cpu_cnt < bg_conf->cpus_per_mp)) {
 			select_jobinfo_t *jobinfo =
 				job_ptr->select_jobinfo->data;
-			bitstr_t *total_bitmap = NULL;
-			bool need_free = false;
 			ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
+			int offset;
+			int i;
 
 			xassert(ba_mp);
 			xassert(ba_mp->cnode_bitmap);
 
-			if (bg_record->err_ratio &&
-			    !SELECT_IGN_ERR(query_mode)) {
-				xassert(ba_mp->cnode_err_bitmap);
-				if (!total_bitmap)
-					total_bitmap = bit_copy(
-						ba_mp->cnode_bitmap);
-				bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
-				need_free = true;
-			}
+			offset = cr_get_coremap_offset(ba_mp->index);
 
-			if (exc_core_bitmap) {
-				int offset = cr_get_coremap_offset(
-					ba_mp->index);
-				int i;
-
-				if (!total_bitmap)
-					total_bitmap =
-						bit_copy(ba_mp->cnode_bitmap);
-				/* Remove the cnodes we were told to
-				 * avoid if any.
-				 */
-				for (i=0; i < bit_size(total_bitmap); i++)
-					if (bit_test(exc_core_bitmap, i+offset))
-						bit_set(total_bitmap, i);
-				need_free = true;
-			}
-
-			if (!total_bitmap)
-				total_bitmap = ba_mp->cnode_bitmap;
-
-			if (!bit_equal(total_bitmap, ba_mp->cnode_bitmap)) {
-				if (need_free)
-					FREE_NULL_BITMAP(total_bitmap);
+			/* Remove the cnodes we were told to avoid if any. */
+			for (i=0; i < bg_conf->mp_cnode_cnt; i++)
+				if (bit_test(exc_core_bitmap, i+offset)
+				    && !bit_test(ba_mp->cnode_bitmap, i))
+					break;
+			if (i != bg_conf->mp_cnode_cnt) {
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK)
 					info("Can't use block %s, it is "
@@ -796,9 +771,6 @@ static bg_record_t *_find_matching_block(List block_list,
 				     bg_record->bg_block_id);
 				continue;
 			}
-
-			if (need_free)
-				FREE_NULL_BITMAP(total_bitmap);
 
 			FREE_NULL_BITMAP(jobinfo->units_used);
 			jobinfo->units_used = bit_copy(ba_mp->cnode_bitmap);
