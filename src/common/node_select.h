@@ -232,7 +232,7 @@ typedef struct slurm_select_ops {
 						 bool sanity_check);
 	void            (*ba_fini)              (void);
 	int *           (*ba_get_dims)          (void);
-
+	bitstr_t *      (*ba_cnodelist2bitmap)  (char *cnodelist);
 } slurm_select_ops_t;
 
 /*
@@ -740,5 +740,8 @@ extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
 
 /* Free storage allocated by select_g_ba_init() */
 extern void select_g_ba_fini(void);
+
+/* returns a bitmap with the cnodelist bits in a midplane not set */
+extern bitstr_t *select_g_ba_cnodelist2bitmap(char *cnodelist);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

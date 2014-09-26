@@ -402,5 +402,6 @@ extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 extern void other_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
 extern void other_ba_fini(void);
 extern int *other_ba_get_dims(void);
+extern bitstr_t *other_ba_cnodelist2bitmap(char *cnodelist);
 
 #endif /* _CRAY_OTHER_SELECT_H */

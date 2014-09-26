@@ -3454,3 +3454,13 @@ extern int *select_p_ba_get_dims(void)
 	return NULL;
 #endif
 }
+
+extern bitstr_t *select_p_ba_cnodelist2bitmap(char *cnodelist)
+{
+#ifdef HAVE_BG
+	return ba_cnodelist2bitmap(cnodelist);
+#else
+	return NULL;
+#endif
+
+}

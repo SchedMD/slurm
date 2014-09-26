@@ -586,6 +586,9 @@ extern void ba_sync_job_to_block(bg_record_t *bg_record,
 
 extern bitstr_t *ba_create_ba_mp_cnode_bitmap(bg_record_t *bg_record);
 
+/* returns a bitmap with the cnodelist bits in a midplane not set */
+extern bitstr_t *ba_cnodelist2bitmap(char *cnodelist);
+
 /* set the ionode str based off the block allocator, either ionodes
  * or cnode coords */
 extern void ba_set_ionode_str(bg_record_t *bg_record);

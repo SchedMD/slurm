@@ -1513,6 +1513,64 @@ extern bitstr_t *ba_create_ba_mp_cnode_bitmap(bg_record_t *bg_record)
 	return cnode_bitmap;
 }
 
+extern bitstr_t *ba_cnodelist2bitmap(char *cnodelist)
+{
+	char *cnode_name;
+	hostlist_t hl;
+	bitstr_t *cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+	int coord[ba_mp_geo_system->dim_count], dim = 0;
+
+	if (!cnodelist)
+		return cnode_bitmap;
+
+	if (!(hl = hostlist_create_dims(
+		      cnodelist, ba_mp_geo_system->dim_count))) {
+		FREE_NULL_BITMAP(cnode_bitmap);
+		error("ba_cnodelist2bitmap: couldn't create a hotlist from "
+		      "cnodelist given %s", cnodelist);
+		return NULL;
+	}
+
+	while ((cnode_name = hostlist_shift_dims(
+			hl, ba_mp_geo_system->dim_count))) {
+		for (dim = 0; dim < ba_mp_geo_system->dim_count; dim++) {
+			if (!cnode_name[dim])
+				break;
+			coord[dim] = select_char2coord(cnode_name[dim]);
+		}
+		free(cnode_name);
+
+		if (dim != ba_mp_geo_system->dim_count)
+			break;
+
+		if (ba_node_map_set_range(cnode_bitmap, coord, coord,
+					  ba_mp_geo_system) == -1) {
+			/* failure */
+			dim = 0;
+			break;
+		}
+	}
+	hostlist_destroy(hl);
+
+	if (dim != ba_mp_geo_system->dim_count) {
+		FREE_NULL_BITMAP(cnode_bitmap);
+		error("ba_cnodelist2bitmap: bad cnodelist given %s", cnodelist);
+		return NULL;
+	}
+
+	bit_not(cnode_bitmap);
+
+	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+		char *tmp_char = ba_node_map_ranged_hostlist(cnode_bitmap,
+							     ba_mp_geo_system);
+		info("ba_cnodelist2bitmap: %s translates to %s inverted",
+		     cnodelist, tmp_char);
+		xfree(tmp_char);
+	}
+
+	return cnode_bitmap;
+}
+
 extern void ba_set_ionode_str(bg_record_t *bg_record)
 {
 	int ionode_num, coords[5];

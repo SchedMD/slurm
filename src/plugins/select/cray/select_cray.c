@@ -2309,3 +2309,8 @@ extern void select_p_ba_fini(void)
 {
 	other_ba_fini();
 }
+
+extern bitstr_t *select_p_ba_cnodelist2bitmap(char *cnodelist)
+{
+	return other_ba_cnodelist2bitmap(cnodelist);
+}
