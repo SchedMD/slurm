@@ -802,40 +802,18 @@ and <i>slurmctld</i> due to blocks that previously existed being deleted.</p>
 <h4>Resource Reservations</h4>
 
 <p>Slurm's advance reservation mechanism can accept a node count specification
-as input rather than identification of specific nodes/midplanes. In SLURM
-version 2.4, an attempt will be made to select nodes which can be used to
-create a single block of the specified size. Multiple block sizes can also be
+as input rather than identification of specific nodes/midplanes.
+Beginning In Slurm version 14.11 cnodes can be reserved instead of
+full midplanes, so asking for 32 nodes will result in a reservation
+consisting of 32 cnodes.  Also beginning in 14.11 you can request
+specific cnodes in your reservation as well (e.g. <i>scontrol create reservation
+nodes=bgq0000[00000x11331]</i> will result in the first nodecard of
+midplane bgq0000 being reserved).  Multiple block sizes can also be
 specified and a reservation will be made that includes those block sizes
 (e.g. <i>scontrol create reservation nodecnt=4k,2k ...</i>). In earlier
 versions of Slurm, the nodes/midplanes selected for a reservation when
 specifying a node count might not be suitable for creating block(s) of the
 desired size(s).</p>
-
-<p>Slurm's advance reservation mechanism is designed to reserve resources
-at the level of whole nodes, which on a BlueGene systems would represent
-whole midplanes. In order to support advanced reservations with a finer
-grained resolution, you can configure one license per c-node on the system
-and reserve c-nodes instead of entire midplanes. Note that reserved licenses
-are treated somewhat differently than reserved nodes. When nodes are reserved
-then jobs using that reservation can use only those nodes. Reserved licenses
-can only be used by jobs associated with that reservation, but licenses not
-explicitly reserved are available to any job.</p>
-
-<p>For example, in <i>slurm.conf</i> specify something of this sort:
-"<i>Licenses=cnode*512</i>". Then create an advanced reservation with a
-command like this:<br>
-"<i>scontrol create reservation licenses="cnode*32" starttime=now
-    duration=30:00 flags=LICENSE_ONLY users=joe</i>".<br>
-Jobs run in this reservation will then have <u>at least</u> 32 c-nodes
-available for their use, but could use more given an appropriate workload.</p>
-
-<p>There is also a job_submit/cnode plugin available for use that will
-automatically set a job's license specification to match its c-node request
-(i.e. a command like<br>
-"<i>sbatch -N32 my.sh</i>" would automatically be translated to<br>
-"<i>sbatch -N32 --licenses=cnode*32 my.sh</i>" by the <i>slurmctld</i> daemon.
-Enable this plugin in the <i>slurm.conf</i> configuration file with the option
-"<i>JobSubmitPlugins=cnode</i>".</p>
 
 <h4>Debugging</h4>
 

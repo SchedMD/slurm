@@ -429,9 +429,11 @@ extern int select_g_fail_cnode (struct step_record *step_ptr);
 #define SELECT_MODE_RUN_NOW	 0x0000
 #define SELECT_MODE_TEST_ONLY	 0x0001
 #define SELECT_MODE_WILL_RUN	 0x0002
+#define SELECT_MODE_RESV	 0x0004
 
 #define SELECT_MODE_PREEMPT_FLAG 0x0100
 #define SELECT_MODE_CHECK_FULL   0x0200
+#define SELECT_MODE_IGN_ERR      0x0400
 
 #define SELECT_IS_MODE_RUN_NOW(_X) \
 	(((_X & SELECT_MODE_BASE) == SELECT_MODE_RUN_NOW) \
@@ -441,7 +443,13 @@ extern int select_g_fail_cnode (struct step_record *step_ptr);
 	(_X & SELECT_MODE_TEST_ONLY)
 
 #define SELECT_IS_MODE_WILL_RUN(_X) \
-	(_X & SELECT_MODE_WILL_RUN)
+	(_X & SELECT_MODE_WILL_RUN || SELECT_IS_MODE_RESV(_X))
+
+#define SELECT_IS_MODE_RESV(_X) \
+	(_X & SELECT_MODE_RESV)
+
+#define SELECT_IGN_ERR(_X) \
+	(_X & SELECT_MODE_IGN_ERR)
 
 #define SELECT_IS_PREEMPT_SET(_X) \
 	(_X & SELECT_MODE_PREEMPT_FLAG)

@@ -1110,6 +1110,10 @@ extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt,
 
 	for (n = 0; n < node_cnt; n++) {
 		uint16_t cores;
+#ifdef HAVE_BG
+		cores = node_ptr[n].sockets;
+
+#else
 		if (fast_schedule) {
 			cores  = node_ptr[n].config_ptr->cores;
 			cores *= node_ptr[n].config_ptr->sockets;
@@ -1117,6 +1121,7 @@ extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt,
 			cores  = node_ptr[n].cores;
 			cores *= node_ptr[n].sockets;
 		}
+#endif
 		cr_node_num_cores[n] = cores;
 		if (n > 0) {
 			cr_node_cores_offset[n] = cr_node_cores_offset[n-1] +

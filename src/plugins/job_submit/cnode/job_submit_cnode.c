@@ -155,11 +155,19 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
 	uint32_t cnode_cnt = job_desc->min_nodes;
+	static bool printed = false;
 
 	xassert(job_desc);
 	if (cnode_cnt == NO_VAL)
 		cnode_cnt = MIN_CNODES;
 
+	if (!printed) {
+		error("job_submit/cnode is deprecated.  Reservations can now "
+		      "be done on a cnode level.  Please start doing it "
+		      "this way instead of using licenses as this plugin "
+		      "will go away in the next version of the code.");
+		printed = true;
+	}
 	_rebuild_licenses(&job_desc->licenses, cnode_cnt);
 	return SLURM_SUCCESS;
 }

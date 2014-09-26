@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     batch_4294967294
  -- Changed LEVEL_BASED priority to be "Fair_Tree"
  -- Port to NetBSD.
+ -- BGQ - Add cnode based reservations.
 
 * Changes in Slurm 14.11.0pre5
 ==============================

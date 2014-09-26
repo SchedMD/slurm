@@ -101,8 +101,11 @@ time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
 uint32_t  resv_over_run;
 uint32_t  top_suffix = 0;
+
 #ifdef HAVE_BG
-uint32_t  cnodes_per_bp = 0;
+uint32_t  cpu_mult = 0;
+uint32_t  cnodes_per_mp = 0;
+uint32_t  cpus_per_mp = 0;
 #endif
 
 static void _advance_resv_time(slurmctld_resv_t *resv_ptr);
@@ -689,6 +692,15 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	resv.assocs = resv_ptr->assoc_list;
 	resv.cluster = slurmctld_cluster_name;
 	resv.cpus = resv_ptr->cpu_cnt;
+#ifdef HAVE_BG
+	/* Since on a bluegene we track cnodes instead of cpus do the
+	   adjustment since accounting is expecting cpus here.
+	*/
+	if (!cpu_mult)
+		(void)select_g_alter_node_cnt(
+			SELECT_GET_NODE_CPU_CNT, &cpu_mult);
+	resv.cpus *= cpu_mult;
+#endif
 	resv.flags = resv_ptr->flags;
 	resv.id = resv_ptr->resv_id;
 	resv.name = resv_ptr->name;
@@ -747,6 +759,16 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	if (!old_resv_ptr) {
 		resv.assocs = resv_ptr->assoc_list;
 		resv.cpus = resv_ptr->cpu_cnt;
+#ifdef HAVE_BG
+		/* Since on a bluegene we track cnodes instead of cpus
+		 * do the adjustment since accounting is expecting
+		 * cpus here.
+		 */
+		if (!cpu_mult)
+			(void)select_g_alter_node_cnt(
+				SELECT_GET_NODE_CPU_CNT, &cpu_mult);
+		resv.cpus *= cpu_mult;
+#endif
 		resv.flags = resv_ptr->flags;
 		resv.nodes = resv_ptr->node_list;
 	} else {
@@ -759,9 +781,19 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		} else if (resv_ptr->assoc_list)
 			resv.assocs = resv_ptr->assoc_list;
 
-		if (old_resv_ptr->cpu_cnt != resv_ptr->cpu_cnt)
+		if (old_resv_ptr->cpu_cnt != resv_ptr->cpu_cnt) {
 			resv.cpus = resv_ptr->cpu_cnt;
-		else
+#ifdef HAVE_BG
+			/* Since on a bluegene we track cnodes instead
+			 * of cpus do the adjustment since accounting
+			 * is expecting cpus here.
+			 */
+			if (!cpu_mult)
+				(void)select_g_alter_node_cnt(
+					SELECT_GET_NODE_CPU_CNT, &cpu_mult);
+			resv.cpus *= cpu_mult;
+#endif
+		} else
 			resv.cpus = (uint32_t)NO_VAL;
 
 		if (old_resv_ptr->flags != resv_ptr->flags)
@@ -838,7 +870,8 @@ static int _build_account_list(char *accounts, int *account_cnt,
 			if (ac_cnt == 0) {
 				*account_not = true;
 			} else if (*account_not != true) {
-				info("Reservation request has some not/accounts");
+				info("Reservation request has some "
+				     "not/accounts");
 				goto inval;
 			}
 			tok++;
@@ -1285,9 +1318,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal, uint16_t protocol_version)
 {
 	time_t now, start_relative, end_relative;
-#ifdef HAVE_BG
-	uint32_t cnode_cnt;
-#endif
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
 		now = time(NULL);
@@ -1317,18 +1347,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->flags,		buffer);
 		packstr(resv_ptr->licenses,	buffer);
 		packstr(resv_ptr->name,		buffer);
-#ifdef HAVE_BG
-		if (!cnodes_per_bp) {
-			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-						&cnodes_per_bp);
-		}
-		cnode_cnt = resv_ptr->node_cnt;
-		if (cnodes_per_bp && !internal)
-			cnode_cnt *= cnodes_per_bp;
-		pack32(cnode_cnt,		buffer);
-#else
 		pack32(resv_ptr->node_cnt,	buffer);
-#endif
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
 		pack_time(start_relative,	buffer);
@@ -1361,18 +1380,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack16(flags,			buffer);
 		packstr(resv_ptr->licenses,	buffer);
 		packstr(resv_ptr->name,		buffer);
-#ifdef HAVE_BG
-		if (!cnodes_per_bp) {
-			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-						&cnodes_per_bp);
-		}
-		cnode_cnt = resv_ptr->node_cnt;
-		if (cnodes_per_bp && !internal)
-			cnode_cnt *= cnodes_per_bp;
-		pack32(cnode_cnt,		buffer);
-#else
 		pack32(resv_ptr->node_cnt,	buffer);
-#endif
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
 		pack_time(resv_ptr->start_time_first,	buffer);
@@ -1610,13 +1618,26 @@ static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr)
 	if (!resv_ptr->node_bitmap)
 		return;
 
+#ifdef HAVE_BG
+	if (!cnodes_per_mp)
+		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+					&cnodes_per_mp);
+#endif
+
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (!bit_test(resv_ptr->node_bitmap, i))
 			continue;
+#ifdef HAVE_BG
+		if (cnodes_per_mp)
+			cpu_cnt += cnodes_per_mp;
+		else
+			cpu_cnt += node_ptr->sockets;
+#else
 		if (slurmctld_conf.fast_schedule)
 			cpu_cnt += node_ptr->config_ptr->cpus;
 		else
 			cpu_cnt += node_ptr->cpus;
+#endif
 	}
 	resv_ptr->cpu_cnt = cpu_cnt;
 }
@@ -1782,26 +1803,31 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 
 #ifdef HAVE_BG
-	if (!cnodes_per_bp) {
+	if (!cnodes_per_mp) {
 		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-					&cnodes_per_bp);
+					&cnodes_per_mp);
 	}
-	if (resv_desc_ptr->node_cnt && cnodes_per_bp) {
+	if (resv_desc_ptr->node_cnt && cnodes_per_mp) {
 		/* Pack multiple small blocks into midplane rather than
 		 * allocating a whole midplane for each small block */
 		int small_block_nodes = 0, small_block_count = 0;
 		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-			if (resv_desc_ptr->node_cnt[i] < cnodes_per_bp)
+			if (resv_desc_ptr->node_cnt[i] < cnodes_per_mp)
 				small_block_nodes += resv_desc_ptr->node_cnt[i];
 		}
 		small_block_count  =  small_block_nodes;
-		small_block_count += (cnodes_per_bp - 1);
-		small_block_count /=  cnodes_per_bp;
+		small_block_count += (cnodes_per_mp - 1);
+		small_block_count /=  cnodes_per_mp;
 
 		/* Convert c-node count to midplane count */
 		total_node_cnt = 0;
 		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-			if (resv_desc_ptr->node_cnt[i] < cnodes_per_bp) {
+			if (resv_desc_ptr->node_cnt[i] < cnodes_per_mp) {
+				if (!resv_desc_ptr->core_cnt)
+					resv_desc_ptr->core_cnt =
+						xmalloc(sizeof(uint32_t) * 2);
+				resv_desc_ptr->core_cnt[0] +=
+					resv_desc_ptr->node_cnt[i];
 				if (small_block_count == 0) {
 					resv_desc_ptr->node_cnt[i] = 0;
 					break;
@@ -1809,14 +1835,33 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 				small_block_count--;
 			}
 
-			resv_desc_ptr->node_cnt[i] += (cnodes_per_bp - 1);
-			resv_desc_ptr->node_cnt[i] /=  cnodes_per_bp;
+			resv_desc_ptr->node_cnt[i] += (cnodes_per_mp - 1);
+			resv_desc_ptr->node_cnt[i] /=  cnodes_per_mp;
 			total_node_cnt += resv_desc_ptr->node_cnt[i];
 		}
 	}
 #endif
 
 	if (resv_desc_ptr->node_list) {
+#ifdef HAVE_BG
+		int inx;
+		bitstr_t *cnode_bitmap = NULL;
+		for (inx = 0; resv_desc_ptr->node_list[inx]; inx++) {
+			if (resv_desc_ptr->node_list[inx] == '['
+			    && resv_desc_ptr->node_list[inx-1] <= '9'
+			    && resv_desc_ptr->node_list[inx-1] >= '0') {
+				if (!(cnode_bitmap =
+				      select_g_ba_cnodelist2bitmap(
+					      resv_desc_ptr->node_list+inx))) {
+					rc = ESLURM_INVALID_NODE_NAME;
+					goto bad_parse;
+				}
+				resv_desc_ptr->node_list[inx] = '\0';
+				break;
+			}
+		}
+#endif
+
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			if ((resv_desc_ptr->partition) &&
@@ -1859,6 +1904,44 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
 		}
+#ifdef HAVE_BG
+		if (cnode_bitmap && total_node_cnt == 1) {
+			int offset =
+				cr_get_coremap_offset(bit_ffs(node_bitmap));
+
+			if (!cnodes_per_mp)
+				select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+							&cnodes_per_mp);
+
+			if (!core_bitmap)
+				core_bitmap = cr_create_cluster_core_bitmap(
+					cnodes_per_mp);
+			if (!resv_desc_ptr->core_cnt) {
+				resv_desc_ptr->core_cnt =
+					xmalloc(sizeof(uint32_t) * 2);
+				resv_desc_ptr->core_cnt[0] =
+					bit_clear_count(cnode_bitmap);
+			}
+			if (!resv_desc_ptr->node_cnt) {
+				resv_desc_ptr->node_cnt =
+					xmalloc(sizeof(uint32_t) * 2);
+				resv_desc_ptr->node_cnt[0] = 1;
+			}
+
+			/* We only have to worry about this one
+			   midplane since none of the others will be
+			   considered.
+			*/
+			for (inx=0; inx < cnodes_per_mp; inx++) {
+				/* Skip any not set, since they are
+				 * the only ones available to run on. */
+				if (!bit_test(cnode_bitmap, inx))
+					continue;
+				bit_set(core_bitmap, inx+offset);
+			}
+		}
+		FREE_NULL_BITMAP(cnode_bitmap);
+#endif
 		/* We do allow to request cores with nodelist */
 		if (resv_desc_ptr->core_cnt) {
 			int nodecnt = bit_set_count(node_bitmap);
@@ -2296,15 +2379,15 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 
 #ifdef HAVE_BG
-		if (!cnodes_per_bp) {
+		if (!cnodes_per_mp) {
 			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-						&cnodes_per_bp);
+						&cnodes_per_mp);
 		}
-		if (cnodes_per_bp) {
+		if (cnodes_per_mp) {
 			/* Convert c-node count to midplane count */
 			for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-				resv_desc_ptr->node_cnt[i] += cnodes_per_bp - 1;
-				resv_desc_ptr->node_cnt[i] /= cnodes_per_bp;
+				resv_desc_ptr->node_cnt[i] += cnodes_per_mp - 1;
+				resv_desc_ptr->node_cnt[i] /= cnodes_per_mp;
 			}
 		}
 #endif
@@ -2685,6 +2768,20 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		last_resv_update = time(NULL);
 	} else if (resv_ptr->node_list) {	/* Change bitmap last */
 		bitstr_t *node_bitmap;
+#ifdef HAVE_BG
+		int inx;
+		char save = '\0';
+		/* Make sure we take off the cnodes in the reservation */
+		for (inx = 0; resv_ptr->node_list[inx]; inx++) {
+			if (resv_ptr->node_list[inx] == '['
+			    && resv_ptr->node_list[inx-1] <= '9'
+			    && resv_ptr->node_list[inx-1] >= '0') {
+				save = resv_ptr->node_list[inx];
+				resv_ptr->node_list[inx] = '\0';
+				break;
+			}
+		}
+#endif
 		if (strcasecmp(resv_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
@@ -2694,6 +2791,12 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			      resv_ptr->name, resv_ptr->node_list);
 			return false;
 		}
+
+#ifdef HAVE_BG
+		if (save)
+			resv_ptr->node_list[inx] = save;
+#endif
+
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		resv_ptr->node_bitmap = node_bitmap;
 	}
@@ -3100,7 +3203,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
 				start_relative = resv_ptr->start_time + now;
 				if (resv_ptr->duration == INFINITE)
-					end_relative = start_relative + ONE_YEAR;
+					end_relative = start_relative +
+						ONE_YEAR;
 				else if (resv_ptr->duration &&
 					 (resv_ptr->duration != NO_VAL)) {
 					end_relative = start_relative +
@@ -3220,6 +3324,10 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	 * safe we do. */
 	FREE_NULL_BITMAP(*resv_bitmap);
 	if (rc == SLURM_SUCCESS) {
+		/* Free node_list here since it could be filled in in the
+		   select plugin.
+		*/
+		xfree(resv_desc_ptr->node_list);
 		*resv_bitmap = _pick_idle_nodes(node_bitmap,
 						resv_desc_ptr, core_bitmap);
 	}
@@ -3230,9 +3338,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		return rc;
 	}
 
-	/* Same thing as the *resv_bitmap, might as well keep them in sync */
-	xfree(resv_desc_ptr->node_list);
-	resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
+	if (!resv_desc_ptr->node_list)
+		resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
 
 	return SLURM_SUCCESS;
 }
@@ -3914,6 +4021,23 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	bit_nset(*node_bitmap, 0, (node_record_count - 1));
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
+#ifdef HAVE_BG
+	/* Since on a bluegene we track cnodes instead of cpus do the
+	   adjustment since accounting is expecting cpus here.
+	*/
+	if (!cpus_per_mp)
+		(void)select_g_alter_node_cnt(
+			SELECT_GET_MP_CPU_CNT, &cpus_per_mp);
+
+	/* If the job is looking for whole mp blocks we need to tell
+	 * the reservations about it so it sends the plugin the correct
+	 * thing.
+	 */
+	if (job_ptr->details->max_cpus < cpus_per_mp)
+		job_ptr->details->whole_node = 0;
+	else
+		job_ptr->details->whole_node = 1;
+#endif
 
 	/* Job has no reservation, try to find time when this can
 	 * run and get it's required nodes (if any) */
