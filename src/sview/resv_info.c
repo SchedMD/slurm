@@ -146,7 +146,7 @@ static display_data_t create_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_CNT, "Node_Count",
 	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_CNT, "Core_Count",
+	{G_TYPE_STRING, SORTID_CORE_CNT, "Core_Count",
 	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODELIST,
 #ifdef HAVE_BG
