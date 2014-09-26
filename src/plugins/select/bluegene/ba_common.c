@@ -211,6 +211,11 @@ static int _ba_node_map_set_range_internal(int level, uint16_t *coords,
 		return -1;
 
 	if (level < my_geo_system->dim_count) {
+
+		if (start_offset[level] > my_geo_system->dim_size[level]
+		    || end_offset[level] > my_geo_system->dim_size[level])
+			return -1;
+
 		for (coords[level] = start_offset[level];
 		     coords[level] <= end_offset[level];
 		     coords[level]++) {
