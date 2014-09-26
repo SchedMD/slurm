@@ -308,9 +308,9 @@ extern void ba_node_map_set(bitstr_t *node_bitmap, uint16_t *full_offset,
  * IN end_offset - N-dimension zero-origin offset to start setting at
  * IN my_geo_system - system geometry specification
  */
-extern void ba_node_map_set_range(bitstr_t *node_bitmap,
-				  int *start_offset, int *end_offset,
-				  ba_geo_system_t *my_geo_system);
+extern int ba_node_map_set_range(bitstr_t *node_bitmap,
+				 int *start_offset, int *end_offset,
+				 ba_geo_system_t *my_geo_system);
 
 /*
  * Return the contents of the specified position in the bitmap

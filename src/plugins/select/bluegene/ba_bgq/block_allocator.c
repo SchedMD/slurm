@@ -1489,10 +1489,11 @@ extern bitstr_t *ba_create_ba_mp_cnode_bitmap(bg_record_t *bg_record)
 		nc_start = ionode_num * (int)bg_conf->nc_ratio;
 		nc_end = nc_start + (int)bg_conf->nc_ratio;
 		for (nc_num = nc_start; nc_num < nc_end; nc_num++)
-			ba_node_map_set_range(cnode_bitmap,
-					      g_nc_coords[nc_num].start,
-					      g_nc_coords[nc_num].end,
-					      ba_mp_geo_system);
+			/* this should always be true */
+			(void)ba_node_map_set_range(cnode_bitmap,
+						    g_nc_coords[nc_num].start,
+						    g_nc_coords[nc_num].end,
+						    ba_mp_geo_system);
 	}
 
 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
