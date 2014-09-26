@@ -948,7 +948,12 @@ extern void set_page_opts(int page, display_data_t *display_data,
 			char *orig_ptr = col_name;
 			xstrsubstitute(col_name, "bp ", "midplane");
 			if (cluster_flags & CLUSTER_FLAG_BG) {
-				xstrsubstitute(col_name, "node", "midplane");
+				/* We only want to replace "nodes",
+				 * not "cnodes"
+				 */
+				if (col_name[0] != 'c')
+					xstrsubstitute(col_name,
+						       "node", "midplane");
 				xstrsubstitute(col_name, "core", "cnode");
 			} else {
 				xstrsubstitute(col_name, "midplane", "node");
