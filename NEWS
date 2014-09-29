@@ -15,10 +15,10 @@ documents those changes that are of interest to users and admins.
  -- The start time of a reservation that is in ACTIVE state cannot be modified.
  -- Update the cgroup documentation about release agent for devices.
  -- MYSQL - fix for setting up preempt list on a QOS for multiple QOS.
- -- Correct a minore error in the scancel.1 man page related to the
+ -- Correct a minor error in the scancel.1 man page related to the
     --signal option.
  -- Enhance the scancel.1 man page to document the sequence of signals sent
- -- Fix slurmstepd core dump if the cgroup hierarchy is not completed.
+ -- Fix slurmstepd core dump if the cgroup hierarchy is not completed
     when terminating the job.
  -- Fix hostlist_shift to be able to give correct node names on names with a
     different number of dimensions than the cluster.
