@@ -132,29 +132,29 @@ static void _ft_debug(slurmdb_association_rec_t *assoc,
 
 
 /* Sort so that higher level_fs values are first in the list */
-static int _cmp_level_fs(slurmdb_association_rec_t **x,
-			 slurmdb_association_rec_t **y)
+static int _cmp_level_fs(const void *x,
+			 const void *y)
 {
 	/* We sort based on the following critereon:
 	 *  1. level_fs value
 	 *  2. Prioritize users over accounts (required for tie breakers when
 	 *     comparing users and accounts)
 	 */
-	slurmdb_association_rec_t *a = *x;
-	slurmdb_association_rec_t *b = *y;
+	slurmdb_association_rec_t **a = (slurmdb_association_rec_t **)x;
+	slurmdb_association_rec_t **b = (slurmdb_association_rec_t **)y;
 
 	/* 1. level_fs value */
-	if (a->usage->level_fs != b->usage->level_fs)
-		return a->usage->level_fs < b->usage->level_fs ? 1 : -1;
+	if ((*a)->usage->level_fs != (*b)->usage->level_fs)
+		return (*a)->usage->level_fs < (*b)->usage->level_fs ? 1 : -1;
 
 	/* 2. Prioritize users over accounts */
 
 	/* a and b are both users or both accounts */
-	if (!a->user == !b->user)
+	if (!(*a)->user == !(*b)->user)
 		return 0;
 
 	/* -1 if a is user, 1 if b is user */
-	return a->user ? -1 : 1;
+	return (*a)->user ? -1 : 1;
 }
 
 
@@ -291,8 +291,8 @@ static void _calc_tree_fs(slurmdb_association_rec_t** siblings,
 		_calc_assoc_fs(assoc);
 
 	/* Sort children by level_fs */
-	qsort(siblings, ndx, sizeof(slurmdb_association_rec_t*),
-	      (__compar_fn_t) _cmp_level_fs);
+	qsort(siblings, ndx, sizeof(slurmdb_association_rec_t *),
+	      _cmp_level_fs);
 
 	/* Iterate through children in sorted order. If it's a user, calculate
 	 * fs_factor, otherwise recurse. */
