@@ -205,7 +205,7 @@ tel +41(0)91 923 10 68</td>
     <td>Technical</td>
     <td>Ryan Cox, Levi Morrison (Brigham Young
     University)</td>
-    <td>Level-based job prioritization</td>
+    <td>Fair Tree: Fairshare Algorithm for Slurm</td>
   </tr>
 
   <tr>
@@ -256,8 +256,8 @@ tel +41(0)91 923 10 68</td>
   <tr>
     <td>13:45 - 14:05</td>
     <td>Site Report</td>
-    <td>Magnus Jonsson (Umea University)</td>
-    <td>Umea University Site Report</td>
+    <td>Magnus Jonsson (Ume&aring; University)</td>
+    <td>Ume&aring; University Site Report</td>
   </tr>
   <tr>
     <td>14:05 - 14:25</td>
@@ -288,7 +288,7 @@ tel +41(0)91 923 10 68</td>
   <tr>
     <td>15:20 - 15:40</td>
     <td>Site Report</td>
-    <td>Benini Massimo (CSCS)</td>
+    <td>Massimo Benini (CSCS)</td>
     <td>CSCS Site Report</td>
   </tr>
   <tr>
@@ -760,8 +760,8 @@ and involved in several research challenges of the European Human Brain Project.
   utilization. This presentation will describe upcoming Slurm
   development plans.</p>
 
-<h3>Umea University Site Report</h3>
-<p>Magnus Jonsson (Umea University)<p>
+<h3>Ume&aring; University Site Report</h3>
+<p>Magnus Jonsson (Ume&aring; University)<p>
 <p>Use of SPANK plugins to create a private temporary file systems for
   each job. This eliminates interference between jobs without the need
   to obey the TMPDIR environment variable. The module is using the
@@ -824,7 +824,7 @@ and involved in several research challenges of the European Human Brain Project.
 <p>CEA Site Report</p>
 
 <h3>CSCS Site Report</h3>
-<p>Benini Massimo (CSCS)</p>
+<p>Massimo Benini (CSCS)</p>
 <p>CSCS Site Report</p>
 
 <h3>Aalto University Site Report</h3>
@@ -866,6 +866,6 @@ and involved in several research challenges of the European Human Brain Project.
   system to dynamically allocate disk space on our test high-IOPS SSD
   scratch system.</p>
 
-<p style="text-align:center;">Last modified 9 September 2014</p>
+<p style="text-align:center;">Last modified 29 September 2014</p>
 
 <!--#include virtual="footer.txt"-->

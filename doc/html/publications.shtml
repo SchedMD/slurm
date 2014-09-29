@@ -2,9 +2,109 @@
 
 <h1>Publications and Presentations</h1>
 
-<p>Note that some of this material contains dated information.</p>
+<p>Note that some of the older material contains dated information.</p>
 
 <h2>Presentations</h2>
+
+<!--Slurm User Group Meeting 2013-->
+<li><b>Presentations from SLURM User Group Meeting, September 2014</b></li>
+<ul>
+
+<li><a href="SUG14/welcome.pdf">Welcoming Address</a>
+Colin McMurtrie (Swiss National Supercomputing Centre, CSCS)</li>
+
+<!-- Keynote -->
+
+<li><a href="SUG14/v1411.pdf">Overview of Slurm Versions 14.03 and 14.11</a>
+Jacob Jenson (SchedMD) and Yiannis Georgiou (Bull)</li>
+
+<li><a href="SUG14/node_health_check.pdf">Warewulf Node Health Check</a>
+Jacqueline Scoggins and Michael Jennings (Lawrence Berkeley National Lab)</li>
+
+<li><a href="SUG14/process_isolation.pdf">Slurm Process Isolation</a>
+Bill Brophy, Martin Perry and Yiannis Georgiou (Bull),
+Morris Jette (SchedMD),
+Matthieu Hautreux (CEA)</li>
+
+<li><a href="SUG14/message_aggregation.pdf">Improving message forwarding logic in Slurm</a>
+Rod Schultz, Martin Perry and Yiannis Georgiou (Bull),
+Matthieu Hautreux (CEA),
+Danny Auble and Morris Jette (SchedMD)</li>
+
+<li><a href="SUG14/sched_tutorial.pdf">Tuning Slurm Scheduling for Optimal Responsiveness and Utilization</a>
+Morris Jette (SchedMD)</li>
+
+<!-- Carles -->
+
+<li><a href="SUG14/ostrich.pdf">OStrich: Fair Scheduler for Burst Submissions of Parallel Job</a>
+Krzysztof Rzadca (University of Warsaw) and Filip Skalski ((University of Warsaw / Google)</li>
+
+<li><a href="SUG14/power_capping.pdf">Adaptive Resource and Job Management for limited power consumption</a>
+Yiannis Georgiou and David Glesser (Bull),
+Matthieu Hautreux (CEA),
+Denis Trystram (University Grenoble-Alpes)</li>
+
+<li><a href="SUG14/energetic_fair_share.pdf">Introducing Energy based fair-share scheduling</a>
+Yiannis Georgiou and David Glesser (Bull),
+Krzysztof Rzadca (University of Warsaw),
+Denis Trystram (University Grenoble-Alpes)</li>
+
+<li><a href="SUG14/data_movement.pdf">High Performance Data movement between Lustre and Enterprise storage systems</a>
+Aamir Rashid (Terascala)</li>
+
+<li><a href="SUG14/remote_gpu.pdf">Extending Slurm with Support for Remote GPU Virtualization</a>
+Sergio Iserte, Adri&aacute;n Castell&oacute;, Rafael Mayo,
+Enrique S. Quintana-Ortl&iacute;, Federico Silla, Jose Duato
+(Universitat Jaume and Universitat Polit&egrave;cnica de Val&egrave;ncia)</li>
+
+<li><a href="SUG14/slurm_migration.pdf">SLURM Migration Experience</a>
+Jacqueline Scoggins (Lawrence Berkeley National Lab)</li>
+
+<li><a href="SUG14/budget_checking.pdf">Budget Checking Plugin for SLURM</a>
+Huub Stoffers (SURF sara)</li>
+
+<li><a href="SUG14/fair_tree.pdf">Fair Tree: Fairshare Algorithm for Slurm</a>
+Ryan Cox and Levi Morrison (Brigham Young University)</li>
+
+<li><a href="SUG14/layouts_framework.pdf">Integrating Layouts Framework in Slurm</a>
+Thomas Cadeau and Yiannis Georgiou (Bull),
+Matthieu Hautreux (CEA)</li>
+
+<!-- Emmanuel -->
+
+<li><a href="SUG14/inter_cluster.pdf">Slurm Inter-Cluster Project</a>
+Stephen Trofinoff (CSCS)</li>
+
+<li><a href="SUG14/cray_native.pdf">Slurm Native Workload Management on Cray Systems</a>
+Morris Jette (SchedMD)</li>
+<li><a href="SUG14/cray_slurm.pdf">Slurm on Cray Systems</a>
+Jason Coverston (Cray)</li>
+
+<li><a href="SUG14/roadmap.pdf">SLURM Roadmap</a>
+Yiannis Georgiou (Bull), Morris Jette and Jacob Jenson (SchedMD)</li>
+
+<li><a href="SUG14/private_tmp.pdf">Private /tmp for each job using SPANK</a>
+Magnus Jonsson (Ume&aring; Universitet)</li>
+
+<li><a href="SUG14/site_rept_icm.pdf">ICM Warsaw University Site Report</a>
+Dominik Bartkiewicz and Marcin Stolarek (ICM Warsaw University)</li>
+
+<li><a href="SUG14/site_rept_ivec.pdf">iVEC Site Report</a>
+Andrew Elwell (iVEC)</li>
+
+<li><a href="SUG14/site_rept_cea.pdf">CEA Site Report</a>
+Matthieu Hautreux (CEA)</li>
+
+<li><a href="SUG14/site_rept_cscs.pdf">Swiss National Supercomputing Centre site report</a>
+Massimo Benini (Swiss National Supercomputing Centre, CSCS)</li>
+
+<li><a href="SUG14/site_rept_aalto.pdf">Aalto University Site Report</a>
+Janne Blomqvist, Ivan Degtyarenko and Mikko Hakala (Aalto University)</li>
+
+<li><a href="SUG14/site_rept_gwu.pdf">The George Washington University site report</a>
+Tim Wickberg (George Washington University)</li>
+
+</ul>
 
 <!-- SC13 Slurm BOF-->
 <li><b>Presentations from Slurm Birds of a Feather, SC13, November 2013</b></li>
@@ -433,6 +533,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 25 August 2014</p>
+<p style="text-align:center;">Last modified 29 September 2014</p>
 
 <!--#include virtual="footer.txt"-->
