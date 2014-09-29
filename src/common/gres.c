@@ -2126,7 +2126,7 @@ static int _job_config_validate(char *config, uint32_t *gres_cnt,
 				slurm_gres_context_t *context_ptr)
 {
 	char *last_num = NULL;
-	int cnt;
+	long cnt;
 
 	if (!strcmp(config, context_ptr->gres_name)) {
 		cnt = 1;
@@ -2144,7 +2144,7 @@ static int _job_config_validate(char *config, uint32_t *gres_cnt,
 			cnt *= (1024 * 1024 * 1024);
 		else
 			return SLURM_ERROR;
-		if (cnt < 0)
+		if ((cnt < 0) || (cnt > 0xffffffff))
 			return SLURM_ERROR;
 	} else
 		return SLURM_ERROR;

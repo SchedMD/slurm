@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     different number of dimensions than the cluster.
  -- BLUEGENE - Fix invalid pointer in corner case in the plugin.
  -- Make sure on a reconfigure the select information for a node is preserved.
+ -- Correct logic to support job GRES specification over 31 bits (problem
+    in logic converting int to uint32_t).
 
 * Changes in Slurm 14.03.8
 ==========================
