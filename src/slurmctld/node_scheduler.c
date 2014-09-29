@@ -1802,6 +1802,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	job_end_time_reset(job_ptr);
 
+	job_array_post_sched(job_ptr);
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);
@@ -1833,7 +1834,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	configuring = IS_JOB_CONFIGURING(job_ptr);
 
 	job_ptr->job_state = JOB_RUNNING;
-	job_array_post_sched(job_ptr);
 	if (nonstop_ops.job_begin)
 		(nonstop_ops.job_begin)(job_ptr);
 

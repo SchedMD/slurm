@@ -13781,8 +13781,7 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 {
 	struct job_record *new_job_ptr;
 
-	if (!job_ptr->array_recs || !job_ptr->array_recs->task_id_bitmap ||
-	    !IS_JOB_RUNNING(job_ptr))
+	if (!job_ptr->array_recs || !job_ptr->array_recs->task_id_bitmap)
 		return;
 
 	if (job_ptr->array_recs->task_cnt <= 1) {
