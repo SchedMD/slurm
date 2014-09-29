@@ -1154,6 +1154,8 @@ static int _restore_node_state(int recover,
 	for (i=0, old_node_ptr=old_node_table_ptr; i<old_node_record_count;
 	     i++, old_node_ptr++) {
 		uint32_t drain_flag = false, down_flag = false;
+		dynamic_plugin_data_t *tmp_select_nodeinfo;
+
 		node_ptr  = find_node_record(old_node_ptr->name);
 		if (node_ptr == NULL)
 			continue;
@@ -1194,6 +1196,12 @@ static int _restore_node_state(int recover,
 		}
 
 		node_ptr->last_response = old_node_ptr->last_response;
+
+		/* make sure we get the old state from the select
+		 * plugin, just swap it out to avoid possible memory leak */
+		tmp_select_nodeinfo = node_ptr->select_nodeinfo;
+		node_ptr->select_nodeinfo = old_node_ptr->select_nodeinfo;
+		old_node_ptr->select_nodeinfo = tmp_select_nodeinfo;
 
 #ifndef HAVE_BG
 		/* If running on a BlueGene system the cpus never
