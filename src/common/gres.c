@@ -1520,7 +1520,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	else if (gres_data->gres_cnt_avail == NO_VAL)
 		gres_data->gres_cnt_avail = 0;
 
-	if (context_ptr->has_file || gres_data->gres_cnt_avail) {
+	if (context_ptr->has_file) {
 		if (gres_data->gres_bit_alloc == NULL) {
 			gres_data->gres_bit_alloc =
 				bit_alloc(gres_data->gres_cnt_avail);
@@ -1653,7 +1653,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	else if (gres_data->gres_cnt_avail == NO_VAL)
 		gres_data->gres_cnt_avail = 0;
 
-	if (context_ptr->has_file || gres_data->gres_cnt_avail) {
+	if (context_ptr->has_file) {
 		if (gres_data->gres_bit_alloc == NULL) {
 			gres_data->gres_bit_alloc =
 				bit_alloc(gres_data->gres_cnt_avail);

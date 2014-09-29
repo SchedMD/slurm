@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Make sure on a reconfigure the select information for a node is preserved.
  -- Correct logic to support job GRES specification over 31 bits (problem
     in logic converting int to uint32_t).
+ -- Remove logic that was creating GRES bitmap for node when not needed (only
+    needed when GRES mapped to specific files).
 
 * Changes in Slurm 14.03.8
 ==========================
