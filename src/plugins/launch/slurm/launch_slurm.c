@@ -468,6 +468,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	/* set the jobid for totalview */
 	totalview_jobid = NULL;
 	xstrfmtcat(totalview_jobid, "%u", job->jobid);
+	totalview_stepid = NULL;
+	xstrfmtcat(totalview_stepid, "%u", job->stepid);
 
 	return launch_common_create_job_step(job, use_all_cpus,
 					     signal_function,

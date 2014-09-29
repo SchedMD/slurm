@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Changed LEVEL_BASED priority to be "Fair_Tree"
  -- Port to NetBSD.
  -- BGQ - Add cnode based reservations.
+ -- Alongside totalview_jobid implement totalview_stepid available
+    to sattach.
 
 * Changes in Slurm 14.11.0pre5
 ==============================

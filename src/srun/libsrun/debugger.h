@@ -98,6 +98,7 @@ extern void MPIR_Breakpoint(srun_job_t *job);
 /* Value for totalview %J expansion in bulk launch string
  */
 extern char *totalview_jobid;
+extern char *totalview_stepid;
 
 #endif
 #endif

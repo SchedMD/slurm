@@ -56,6 +56,7 @@ int MPIR_being_debugged;
 int MPIR_i_am_starter;
 int MPIR_acquired_pre_main;
 char *totalview_jobid;
+char *totalview_stepid;
 
 void MPIR_Breakpoint(void)
 {

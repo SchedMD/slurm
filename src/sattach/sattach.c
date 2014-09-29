@@ -158,6 +158,9 @@ int sattach(int argc, char *argv[])
 
 	totalview_jobid = NULL;
 	xstrfmtcat(totalview_jobid, "%u", opt.jobid);
+	totalview_stepid = NULL;
+	xstrfmtcat(totalview_stepid, "%u", opt.stepid);
+
 	_mpir_init(layout->task_cnt);
 	if (opt.input_filter_set) {
 		opt.fds.in.nodeid =
