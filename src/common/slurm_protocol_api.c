@@ -2401,7 +2401,7 @@ slurm_init_msg_engine_ports(uint16_t *ports)
 	int cc;
 	int val;
 	int s;
-	int16_t port;
+	int port;
 
 	s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (s < 0)
