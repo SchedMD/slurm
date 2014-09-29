@@ -28,6 +28,7 @@ documents those changes that are of interest to users and admins.
     in logic converting int to uint32_t).
  -- Remove logic that was creating GRES bitmap for node when not needed (only
     needed when GRES mapped to specific files).
+ -- BLUEGENE - Fix sinfo -tr before it would only print idle nodes correctly.
 
 * Changes in Slurm 14.03.8
 ==========================
