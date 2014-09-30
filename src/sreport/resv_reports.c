@@ -39,7 +39,7 @@
 \*****************************************************************************/
 
 #include "cluster_reports.h"
-
+#include "resv_reports.h"
 enum {
 	PRINT_RESV_NAME,
 	PRINT_RESV_CLUSTER,
