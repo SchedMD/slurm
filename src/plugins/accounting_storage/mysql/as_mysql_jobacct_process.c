@@ -70,6 +70,7 @@ char *job_req_inx[] = {
 	"t1.id_job",
 	"t1.id_qos",
 	"t1.id_resv",
+	"t3.resv_name",
 	"t1.id_user",
 	"t1.id_wckey",
 	"t1.job_db_inx",
@@ -115,6 +116,7 @@ enum {
 	JOB_REQ_JOBID,
 	JOB_REQ_QOS,
 	JOB_REQ_RESVID,
+	JOB_REQ_RESV_NAME,
 	JOB_REQ_UID,
 	JOB_REQ_WCKEYID,
 	JOB_REQ_ID,
@@ -440,9 +442,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf("select %s from \"%s_%s\" as t1 "
 			       "left join \"%s_%s\" as t2 "
-			       "on t1.id_assoc=t2.id_assoc",
+			       "on t1.id_assoc=t2.id_assoc "
+			       "left join \"%s_%s\" as t3 "
+			       " on t1.id_resv=t3.id_resv ",
 			       job_fields, cluster_name, job_table,
-			       cluster_name, assoc_table);
+			       cluster_name, assoc_table,
+			       cluster_name, resv_table);
 	if (extra) {
 		xstrcat(query, extra);
 		xfree(extra);
@@ -521,6 +526,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->array_job_id = slurm_atoul(row[JOB_REQ_ARRAYJOBID]);
 		job->array_task_id = slurm_atoul(row[JOB_REQ_ARRAYTASKID]);
 		job->resvid = slurm_atoul(row[JOB_REQ_RESVID]);
+
+		if (row[JOB_REQ_RESV_NAME] && row[JOB_REQ_RESV_NAME][0])
+			job->resv_name = xstrdup(row[JOB_REQ_RESV_NAME]);
+
 		job->cluster = xstrdup(cluster_name);
 
 		/* we want a blank wckey if the name is null */

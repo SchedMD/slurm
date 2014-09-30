@@ -621,6 +621,7 @@ typedef struct {
 	uint32_t req_mem;
 	uint32_t requid;
 	uint32_t resvid;
+	char *resv_name;
 	uint32_t show_full;
 	time_t start;
 	uint16_t	state;

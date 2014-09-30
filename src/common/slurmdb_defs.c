@@ -540,6 +540,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->partition);
 		xfree(job->nodes);
 		xfree(job->req_gres);
+		xfree(job->resv_name);
 		if (job->steps) {
 			list_destroy(job->steps);
 			job->steps = NULL;
