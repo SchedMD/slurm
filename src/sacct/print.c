@@ -105,28 +105,6 @@ static char *_find_qos_name_from_list(
 		return "Unknown";
 }
 
-static char *_find_reservation_name_from_list(
-	List reservation_list, int reservationid)
-{
-	ListIterator itr = NULL;
-	slurmdb_reservation_rec_t *reservation = NULL;
-
-	if (!reservation_list || reservationid == NO_VAL)
-		return NULL;
-
-	itr = list_iterator_create(reservation_list);
-	while((reservation = list_next(itr))) {
-		if (reservationid == reservation->id)
-			break;
-		}
-	list_iterator_destroy(itr);
-
-	if (reservation)
-		return reservation->name;
-	else
-		return "Unknown";
-}
-
 static void _print_small_double(
 	char *outbuf, int buf_size, double dub, int units)
 {
@@ -1508,29 +1486,11 @@ void print_fields(type_t type, void *object)
 		case PRINT_RESERVATION:
 			switch(type) {
 			case JOB:
-				if (job->resvid)
-					{
-					char *temp = slurm_get_cluster_name();
-					tmp_int = job->resvid;
-					tmp_char = job->account;
-					slurmdb_reservation_cond_t *reservation_cond = xmalloc(sizeof(slurmdb_reservation_cond_t));
-					List resv_list = NULL;
-					reservation_cond->with_usage = 1;
-					reservation_cond->cluster_list = list_create(slurm_destroy_char);
-					if (temp)
-						list_append(reservation_cond->cluster_list, temp);
-					reservation_cond->name_list = list_create(slurm_destroy_char);
-					reservation_cond->id_list=list_create(slurm_destroy_char);
-					sprintf(tmp_char,"%d", tmp_int);
-					slurm_addto_char_list(reservation_cond->id_list, tmp_char);
-					resv_list = slurmdb_reservations_get(
-						acct_db_conn, reservation_cond);
-					tmp_char = _find_reservation_name_from_list(resv_list,
-						tmp_int);
-					if (resv_list) list_destroy(resv_list);
-					}
-				else
+				if (job->resv_name) {
+					tmp_char = job->resv_name;
+				} else {
 					tmp_char = NULL;
+				}
 				break;
 			case JOBSTEP:
 				tmp_char = NULL;
