@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2014 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, Kevin Tew <tew1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -674,7 +675,7 @@ int main(int argc, char *argv[])
 	slurm_crypto_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	slurm_api_clear_config();
-	sleep(2);
+	sleep(1);
 }
 #else
 	/* Give REQUEST_SHUTDOWN a chance to get propagated,
@@ -1379,6 +1380,7 @@ static void *_slurmctld_background(void *no_data)
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int group_time, group_force;
+	int i;
 	uint32_t job_limit;
 	DEF_TIMERS;
 
@@ -1440,8 +1442,10 @@ static void *_slurmctld_background(void *no_data)
 	debug3("_slurmctld_background pid = %u", getpid());
 
 	while (1) {
-		if (slurmctld_config.shutdown_time == 0)
-			sleep(1);
+		for (i = 0; ((i < 10) && (slurmctld_config.shutdown_time == 0));
+		     i++) {
+			usleep(100000);
+		}
 
 		now = time(NULL);
 		START_TIMER;
@@ -1454,12 +1458,11 @@ static void *_slurmctld_background(void *no_data)
 			no_resp_msg_interval = 1;
 
 		if (slurmctld_config.shutdown_time) {
-			int i;
 			/* wait for RPC's to complete */
-			for (i = 1; i < CONTROL_TIMEOUT; i++) {
+			for (i = 1; i < (CONTROL_TIMEOUT * 10); i++) {
 				if (slurmctld_config.server_thread_count == 0)
 					break;
-				sleep(1);
+				usleep(100000);
 			}
 			if (slurmctld_config.server_thread_count)
 				info("shutdown server_thread_count=%d",

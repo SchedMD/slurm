@@ -2805,10 +2805,10 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	if (msg->msg_type == REQUEST_CONTROL) {
 		/* Wait for workload to dry up before sending reply.
 		 * One thread should remain, this one. */
-		for (i = 1; i < CONTROL_TIMEOUT; i++) {
+		for (i = 1; i < (CONTROL_TIMEOUT * 10); i++) {
 			if (slurmctld_config.server_thread_count <= 1)
 				break;
-			sleep(1);
+			usleep(100000);
 		}
 		if (slurmctld_config.server_thread_count > 1)
 			error("REQUEST_CONTROL reply with %d active threads",
