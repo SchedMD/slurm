@@ -97,6 +97,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add DebugFlags=Route to allow debugging of RoutePlugin.
  -- Added SchedulerParameters options of bf_max_job_array_resv to control how
     many tasks of a job array should have resources reserved for them.
+ -- Add ability to include other files in slurm.conf based upon the ClusterName,
+    hostname, and/or IP address.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

@@ -26,7 +26,8 @@ of the command "scontrol reconfigure" unless otherwise noted.
 If a line begins with the word "Include" followed by whitespace
 and then a file name, that file will be included inline with the current
 configuration file. For large or complex systems, multiple configuration files
-may prove easier to manage and enable reuse of some files.
+may prove easier to manage and enable reuse of some files (See INCLUDE
+MODIFIERS for more details).
 .LP
 Note on file permissions:
 .LP
@@ -4256,6 +4257,32 @@ PartitionName=debug Nodes=dev[0\-8,18\-25] Default=YES
 PartitionName=batch Nodes=dev[9\-17]  MinNodes=4
 .br
 PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
+
+.SH "INCLUDE MODIFIERS"
+The "include" key word can be used with modifiers within the specified
+pathname. These modifiers would be replaced with ie. cluster,hostname,etc
+depending on which modifier is specified.
+.TP
+\fB%c\fR
+Cluster name specified in the slurm.conf will be used.
+.TP
+\fB%h\fR
+Hostname will be used.
+.TP
+\fB%i\fR
+Last number of the host IP address will be used.
+For example, if the host IP address is "1.2.3.45", then the value of "45" will
+be substituted for "%i".
+.TP
+\fBEXAMPLE\fR
+.RE
+ClusterName=linux
+.RE
+include /home/slurm/etc/%c_config
+.RE
+# Above line interpreted as
+.RE
+# "include /home/slurm/etc/linux_config"
 
 .SH "FILE AND DIRECTORY PERMISSIONS"
 There are three classes of files:

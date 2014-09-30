@@ -57,6 +57,8 @@
 #include "src/common/macros.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_value.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
@@ -110,7 +112,6 @@ typedef struct _expline_values_st {
 	s_p_hashtbl_t*	index;
 	s_p_hashtbl_t**	values;
 } _expline_values_t;
-
 
 /*
  * NOTE - "key" is case insensitive.
@@ -916,10 +917,12 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 					       new_leftover, &new_leftover);
 			*leftover = new_leftover;
 		} else if (ignore_new) {
-			debug("Parsing error at unrecognized key: %s", key);
+			debug("%s: Parsing error at unrecognized key: %s",
+			      __func__, key);
 			*leftover = (char *)line;
 		} else {
-			error("Parsing error at unrecognized key: %s", key);
+			error("%s: Parsing error at unrecognized key: %s",
+			      __func__, key);
 			xfree(key);
 			xfree(value);
 			*leftover = (char *)line;
@@ -932,6 +935,84 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 	}
 
 	return 1;
+}
+
+static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
+{
+	char *filename = xstrdup(path);
+	char *format = NULL;
+	char *tmp_str = NULL;
+	char hostname[BUFFER_SIZE] = "";
+	char ip_str[BUFFER_SIZE] = "";
+	slurm_addr_t ip_addr;
+	char *ip, *port;
+
+	while (1) {
+		if ((format = strstr(filename, "%c"))) { /* ClusterName */
+			if (!s_p_get_string(&tmp_str, "ClusterName",f_hashtbl)){
+				error("%s: Did not get ClusterName for include "
+				      "path", __func__);
+				xfree(filename);
+				break;
+			}
+			xstrtolower(tmp_str);
+
+		} else if ((format = strstr(filename, "%h"))) { /* Hostname */
+			if (gethostname_short(hostname, sizeof(hostname))) {
+				error("%s: Did not get hostname for include "
+				      "path", __func__);
+				xfree(filename);
+				break;
+			}
+			tmp_str = hostname;
+
+		} else if ((format = strstr(filename, "%i"))) { /* IP Address */
+			if (gethostname(hostname, sizeof(hostname))) {
+				error("%s: Did not get IP address for include "
+				      "path", __func__);
+				xfree(filename);
+				break;
+			}
+			_slurm_set_addr_char(&ip_addr, 0, hostname);
+			_slurm_print_slurm_addr(&ip_addr, ip_str,
+						sizeof(ip_str));
+			if (!strncmp(ip_str, "127.0.0.1", 9) ||
+			    !strncmp(ip_str, "127.0.1.1", 9)) {
+				/* Got address for loopback */
+				error("%s: Could not get unique IP address for "
+				      "include path (hostname=%s)",
+				      __func__, hostname);
+				xfree(filename);
+				break;
+			}
+			ip = strrchr(ip_str, '.');
+			port = strstr(ip, ":");
+			if (!ip || !port) {
+				error("%s: Did not get IP address for include "
+				      "path (hostname=%s)", __func__, hostname);
+				xfree(filename);
+				break;
+			}
+			port[0] = '\0';	/* Exclude the port number */
+			tmp_str = ip + 1;
+		} else {	/* No special characters */
+			break;
+		}
+
+		/* Build the new path if tmp_str is not NULL*/
+		if (tmp_str != NULL) {
+			format[0] = '\0';
+			xstrfmtcat(filename, "%s%s", tmp_str, format+2);
+			tmp_str = NULL;
+		} else {
+			error("%s: Value for include modifier %s could "
+			      "not be found", __func__, format);
+			xfree(filename);
+			break;
+		}
+	}
+
+	return filename;
 }
 
 /*
@@ -947,10 +1028,12 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 	char *ptr;
 	char *fn_start, *fn_stop;
 	char *filename;
+	char *file_with_mod;
 
 	*leftover = NULL;
 	if (strncasecmp("include", line, strlen("include")) == 0) {
 		ptr = (char *)line + strlen("include");
+
 		if (!isspace((int)*ptr))
 			return 0;
 		while (isspace((int)*ptr))
@@ -959,7 +1042,13 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 		while (!isspace((int)*ptr))
 			ptr++;
 		fn_stop = *leftover = ptr;
-		filename = xstrndup(fn_start, fn_stop-fn_start);
+
+		file_with_mod = xstrndup(fn_start, fn_stop-fn_start);
+		filename = _parse_for_format(hashtbl, file_with_mod);
+		xfree(file_with_mod);
+		if (!filename)	/* Error printed by _parse_for_format() */
+			return -1;
+
 		if (s_p_parse_file(hashtbl, hash_val, filename, ignore_new)
 		    == SLURM_SUCCESS) {
 			xfree(filename);
@@ -994,7 +1083,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 	for (i = 0; ; i++) {
 		if (i == 1) {	/* Long once, on first retry */
 			error("s_p_parse_file: unable to status file %s: %m, "
-			      "retrying in 1sec upto 60sec",
+			      "retrying in 1sec up to 60sec",
 			      filename);
 		}
 		if (i >= 60)	/* Give up after 60 seconds */
@@ -1665,7 +1754,7 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 		case S_P_STRING:
 		case S_P_PLAIN_STRING:
 			if (s_p_get_string(&str, op->key, hashtbl)) {
-			        verbose("%s = %s", op->key, str);
+				verbose("%s = %s", op->key, str);
 				xfree(str);
 			} else {
 				verbose("%s", op->key);
