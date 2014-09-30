@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Alongside totalview_jobid implement totalview_stepid available
     to sattach.
  -- Add ability to include other files in slurm.conf based upon the ClusterName.
+ -- Update strlcpy to latest upstream version.
 
 * Changes in Slurm 14.11.0pre5
 ==============================
