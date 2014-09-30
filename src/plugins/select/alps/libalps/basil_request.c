@@ -199,7 +199,7 @@ static void *_timer_func(void *raw_data)
 
 	pthread_mutex_lock(&timer_lock);
 	gettimeofday(&now, NULL);
-	ts.tv_sec = now.tv_sec + time_outs;
+	ts.tv_sec = now.tv_sec + time_out;
 	ts.tv_nsec = now.tv_usec * 1000;
 	if (pthread_cond_timedwait(&timer_cond, &timer_lock, &ts) == ETIMEDOUT){
 		info("Apbasil taking too long--terminating apbasil pid: %d",
