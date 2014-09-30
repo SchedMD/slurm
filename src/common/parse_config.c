@@ -941,10 +941,6 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 	char *filename = xstrdup(path);
 	char *format = NULL;
 	char *tmp_str = NULL;
-	char hostname[BUFFER_SIZE] = "";
-	char ip_str[BUFFER_SIZE] = "";
-	slurm_addr_t ip_addr;
-	char *ip, *port;
 
 	while (1) {
 		if ((format = strstr(filename, "%c"))) { /* ClusterName */
@@ -957,9 +953,15 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 			xstrtolower(tmp_str);
 
 #if 0
+	char hostname[BUFFER_SIZE] = "";
+	char ip_str[BUFFER_SIZE] = "";
+	slurm_addr_t ip_addr;
+	char *ip, *port;
+
 /* Disable modifiers for hostname and IP address as doing offers little benefit,
  * but provides ample opportunity for failures due to bad configurations which
- * would be very difficult to diagnose. */
+ * would be very difficult to diagnose.
+ */
 		} else if ((format = strstr(filename, "%h"))) { /* Hostname */
 			if (gethostname_short(hostname, sizeof(hostname))) {
 				error("%s: Did not get hostname for include "
