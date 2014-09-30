@@ -957,6 +957,10 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 			}
 			xstrtolower(tmp_str);
 
+#if 0
+/* Disable modifiers for hostname and IP address as doing offers little benefit,
+ * but provides ample opportunity for failures due to bad configurations which
+ * would be very difficult to diagnose. */
 		} else if ((format = strstr(filename, "%h"))) { /* Hostname */
 			if (gethostname_short(hostname, sizeof(hostname))) {
 				error("%s: Did not get hostname for include "
@@ -995,6 +999,8 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 			}
 			port[0] = '\0';	/* Exclude the port number */
 			tmp_str = ip + 1;
+#endif
+
 		} else {	/* No special characters */
 			break;
 		}

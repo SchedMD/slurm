@@ -4260,19 +4260,11 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 
 .SH "INCLUDE MODIFIERS"
 The "include" key word can be used with modifiers within the specified
-pathname. These modifiers would be replaced with ie. cluster,hostname,etc
-depending on which modifier is specified.
+pathname. These modifiers would be replaced with cluster name or other
+information depending on which modifier is specified.
 .TP
 \fB%c\fR
 Cluster name specified in the slurm.conf will be used.
-.TP
-\fB%h\fR
-Hostname will be used.
-.TP
-\fB%i\fR
-Last number of the host IP address will be used.
-For example, if the host IP address is "1.2.3.45", then the value of "45" will
-be substituted for "%i".
 .TP
 \fBEXAMPLE\fR
 .RE
