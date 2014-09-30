@@ -3362,6 +3362,11 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 		return select_g_resv_test(avail_bitmap, node_cnt,
 					  resv_desc_ptr->core_cnt, core_bitmap,
 					  resv_desc_ptr->flags);
+	} else if ((node_cnt == 0) &&
+		   ((resv_desc_ptr->core_cnt == NULL) ||
+		    (resv_desc_ptr->core_cnt[0] == 0)) &&
+		   (resv_desc_ptr->flags & RESERVE_FLAG_LIC_ONLY)) {
+		return bit_alloc(bit_size(avail_bitmap));
 	}
 
 	orig_bitmap = bit_copy(avail_bitmap);
