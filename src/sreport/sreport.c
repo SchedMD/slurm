@@ -818,7 +818,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
        Reservation                                                         \n\
        - Utilization                                                       \n\
              - Allocated, Associations, Cluster, CPUCount, CPUTime,        \n\
-               End, Idle, Name, Nodes, Start, TotalTime                    \n\
+               End, Flags, Idle, Name, Nodes, ReservationId, Start, TotalTime \n\
                                                                            \n\
        User                                                                \n\
        - TopUsage                                                          \n\

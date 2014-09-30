@@ -54,6 +54,7 @@ enum {
 	PRINT_RESV_FLAGS,
 	PRINT_RESV_TIME,
 	PRINT_RESV_CPUTIME,
+	PRINT_RESV_ID,
 };
 
 typedef enum {
@@ -121,8 +122,7 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Flags",
 					 MAX(command_len, 2))) {
-			/* FIX ME: make flags work here */
-			//resv_cond->flags = parse_resv_flags(argv[i]+end);
+			resv_cond->flags = parse_resv_flags(argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 2))) {
@@ -237,7 +237,13 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("CPU count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("down", object, MAX(command_len, 1))) {
+		} else if (!strncasecmp("ReservationId", object,
+					MAX(command_len, 2))) {
+			field->type = PRINT_RESV_ID;
+			field->name = xstrdup("Id");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+        } else if (!strncasecmp("down", object, MAX(command_len, 1))) {
 			field->type = PRINT_RESV_DCPU;
 			field->name = xstrdup("Down");
 			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
@@ -280,6 +286,11 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("End");
 			field->len = 19;
 			field->print_routine = print_fields_date;
+		} else if (!strncasecmp("Flags", object, MAX(command_len, 2))) {
+			field->type = PRINT_RESV_FLAGS;
+			field->name = xstrdup("Flags");
+			field->len = 20;
+			field->print_routine = print_fields_str;
 		} else if (!strncasecmp("TotalTime", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_TIME;
@@ -439,6 +450,7 @@ extern int resv_utilization(int argc, char *argv[])
 	while((tot_resv = list_next(tot_itr))) {
 		uint64_t idle_secs = 0, total_reported = 0;
 		int curr_inx = 1;
+		char *temp_char = NULL;
 
 		total_time = tot_resv->time_end - tot_resv->time_start;
 		if (total_time <= 0)
@@ -467,6 +479,12 @@ extern int resv_utilization(int argc, char *argv[])
 						     tot_resv->cpus,
 						     (curr_inx ==
 						      field_count));
+				break;
+			case PRINT_RESV_ID:
+				field->print_routine(field,
+						     tot_resv->id,
+						     (curr_inx ==
+						     field_count));
 				break;
 			case PRINT_RESV_ACPU:
 				field->print_routine(field,
@@ -513,6 +531,13 @@ extern int resv_utilization(int argc, char *argv[])
 						     (curr_inx ==
 						      field_count));
 				break;
+			case PRINT_RESV_FLAGS:
+				temp_char = reservation_flags_string(tot_resv->flags);
+				field->print_routine(field,
+						     temp_char,
+						     (curr_inx ==
+						      field_count));
+				break;
 			case PRINT_RESV_TIME:
 				field->print_routine(field,
 						     (uint64_t)total_time,
@@ -532,6 +557,7 @@ extern int resv_utilization(int argc, char *argv[])
 				break;
 			}
 			curr_inx++;
+			xfree(temp_char);
 		}
 		list_iterator_reset(itr2);
 		printf("\n");

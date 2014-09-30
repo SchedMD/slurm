@@ -104,6 +104,8 @@ print_field_t fields[] = {
 	{8,  "ReqCPUS", print_fields_uint, PRINT_REQ_CPUS},
 	{12, "ReqGRES", print_fields_str, PRINT_REQ_GRES},
 	{10, "ReqMem", print_fields_str, PRINT_REQ_MEM},
+	{20, "Reservation",  print_fields_str, PRINT_RESERVATION},
+	{8,  "ReservationId",  print_fields_uint, PRINT_RESERVATION_ID},
 	{10, "Reserved", print_fields_time_from_secs, PRINT_RESV},
 	{10, "ResvCPU", print_fields_time_from_secs, PRINT_RESV_CPU},
 	{10, "ResvCPURAW", print_fields_uint, PRINT_RESV_CPU},
