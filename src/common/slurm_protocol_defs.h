@@ -1037,8 +1037,8 @@ typedef struct slurm_node_registration_status_msg {
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
 	Buf gres_info;		/* generic resource info */
-	uint32_t hash_val;      /* hash value of slurm.conf file
-				   existing on node */
+	uint32_t hash_val;      /* hash value of slurm.conf and included files
+				 * existing on node */
 	uint32_t job_count;	/* number of associate job_id's */
 	uint32_t *job_id;	/* IDs of running job (if any) */
 	char *node_name;

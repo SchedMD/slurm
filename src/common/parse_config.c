@@ -409,8 +409,7 @@ static void _strip_escapes(char *line)
 	}
 }
 
-/* This can be used to make sure files are the same across nodes if
- * needed */
+/* This can be used to make sure files are the same across nodes if needed */
 static void _compute_hash_val(uint32_t *hash_val, char *line)
 {
 	int idx, i, len;
