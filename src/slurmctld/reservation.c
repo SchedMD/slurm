@@ -4319,19 +4319,21 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 	struct node_record *node_ptr;
 
 	if (!resv_ptr->node_bitmap) {
-		error("_set_nodes_flags: reservation %s lacks a bitmap",
-		      resv_ptr->name);
+		error("%s: reservation %s lacks a bitmap",
+		      __func__, resv_ptr->name);
 		return;
 	}
 
 	i_first = bit_ffs(resv_ptr->node_bitmap);
 	if (i_first < 0) {
-		error("_set_nodes_flags: reservation %s includes no nodes",
-		      resv_ptr->name);
+		if ((resv_ptr->flags & RESERVE_FLAG_LIC_ONLY) == 0) {
+			error("%s: reservation %s includes no nodes",
+			      __func__, resv_ptr->name);
+		}
 		return;
 	}
 	i_last  = bit_fls(resv_ptr->node_bitmap);
-	for (i=i_first; i<=i_last; i++) {
+	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(resv_ptr->node_bitmap, i))
 			continue;
 
