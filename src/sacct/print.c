@@ -1552,7 +1552,7 @@ void print_fields(type_t type, void *object)
 				if (job->resvid)
 					tmp_uint32 = job->resvid;
 				else
-					tmp_uint32 = NO_VAL; 
+					tmp_uint32 = NO_VAL;
 				break;
 			case JOBSTEP:
 				tmp_uint32 = NO_VAL;

@@ -142,7 +142,7 @@ extern uint32_t parse_resv_flags(const char *flagstr)
 	uint32_t outflags = 0;
 	const char *curr = flagstr;
 	int taglen = 0;
-	
+
 	while (*curr != '\0') {
 		flip = 0;
 		if (*curr == '+') {
@@ -152,7 +152,7 @@ extern uint32_t parse_resv_flags(const char *flagstr)
 			curr++;
 		}
 		taglen = 0;
-		while (curr[taglen] != ',' && curr[taglen] != '\0')	
+		while (curr[taglen] != ',' && curr[taglen] != '\0')
 			taglen++;
 		if (strncasecmp(curr, "Maintenance", MAX(taglen,1)) == 0) {
 			curr += taglen;
