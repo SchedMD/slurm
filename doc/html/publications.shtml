@@ -10,10 +10,13 @@
 <li><b>Presentations from SLURM User Group Meeting, September 2014</b></li>
 <ul>
 
+<li><a href="http://www.hsiphotography.com/p96779352/h24431f4d#h33c5b153">Group photo</a>
+Paul Hsi (MIT Kavli Institute for Astrophysics and Space Research)</li>
+
 <li><a href="SUG14/welcome.pdf">Welcoming Address</a>
 Colin McMurtrie (Swiss National Supercomputing Centre, CSCS)</li>
 
-<!-- Keynote -->
+<!-- Schurmann keynote (EPFL) -->
 
 <li><a href="SUG14/v1411.pdf">Overview of Slurm Versions 14.03 and 14.11</a>
 Jacob Jenson (SchedMD) and Yiannis Georgiou (Bull)</li>
@@ -34,7 +37,7 @@ Danny Auble and Morris Jette (SchedMD)</li>
 <li><a href="SUG14/sched_tutorial.pdf">Tuning Slurm Scheduling for Optimal Responsiveness and Utilization</a>
 Morris Jette (SchedMD)</li>
 
-<!-- Carles -->
+<!-- Carles (BSC) -->
 
 <li><a href="SUG14/ostrich.pdf">OStrich: Fair Scheduler for Burst Submissions of Parallel Job</a>
 Krzysztof Rzadca (University of Warsaw) and Filip Skalski ((University of Warsaw / Google)</li>
@@ -70,9 +73,11 @@ Ryan Cox and Levi Morrison (Brigham Young University)</li>
 Thomas Cadeau and Yiannis Georgiou (Bull),
 Matthieu Hautreux (CEA)</li>
 
-<!-- Emmanuel -->
+<li><a href="SUG14/topo_aware.pdf">Topology-Aware Resource Selectiont</a>
+Emmanuel Jeannot, Guillaume Mercier, and Ad&egrave;le Villiermet (Inria)</li>
 
-<li><a href="SUG14/inter_cluster.pdf">Slurm Inter-Cluster Project</a>
+<li><a href="SUG14/inter_cluster.pdf">Slurm Inter-Cluster Project (presentation)</a>,
+<a href="SUG14/SICP.pdf">(paper)</a>
 Stephen Trofinoff (CSCS)</li>
 
 <li><a href="SUG14/cray_native.pdf">Slurm Native Workload Management on Cray Systems</a>
@@ -533,6 +538,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 29 September 2014</p>
+<p style="text-align:center;">Last modified 30 September 2014</p>
 
 <!--#include virtual="footer.txt"-->
