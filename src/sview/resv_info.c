@@ -29,6 +29,7 @@
 #include "src/common/uid.h"
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
+#include "src/common/proc_args.h"
 
 #define _DEBUG 0
 
@@ -212,99 +213,6 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 static void _process_each_resv(GtkTreeModel *model, GtkTreePath *path,
 			       GtkTreeIter*iter, gpointer userdata);
 
-/*
- *  _parse_flags  is used to parse the Flags= option.  It handles
- *  daily, weekly, maint, static_nodes and part_nodes optionally
- *  preceded by + or -, separated by a comma but no spaces.
- */
-static uint32_t _parse_flags(const char *flagstr)
-{
-	int flip;
-	uint32_t outflags = 0;
-	const char *curr = flagstr;
-	int taglen = 0;
-
-	while (*curr != '\0') {
-		flip = 0;
-		if (*curr == '+') {
-			curr++;
-		} else if (*curr == '-') {
-			flip = 1;
-			curr++;
-		}
-		taglen = 0;
-		while (curr[taglen] != ',' && curr[taglen] != '\0')
-			taglen++;
-
-		if (strncasecmp(curr, "Maintenance", MAX(taglen,1)) == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_MAINT;
-			else
-				outflags |= RESERVE_FLAG_MAINT;
-		} else if ((strncasecmp(curr, "Overlap",MAX(taglen,1))
-			    == 0) && (!flip)) {
-			curr += taglen;
-			outflags |= RESERVE_FLAG_OVERLAP;
-		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1))
-			   == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_IGN_JOB;
-			else
-				outflags |= RESERVE_FLAG_IGN_JOBS;
-		} else if (strncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_DAILY;
-			else
-				outflags |= RESERVE_FLAG_DAILY;
-		} else if (strncasecmp(curr, "Weekly", MAX(taglen,1)) == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_WEEKLY;
-			else
-				outflags |= RESERVE_FLAG_WEEKLY;
-		} else if (strncasecmp(curr, "License_Only", MAX(taglen,1))
-			    == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_LIC_ONLY;
-			else
-				outflags |= RESERVE_FLAG_LIC_ONLY;
-		} else if (strncasecmp(curr, "Static_Alloc", MAX(taglen,1))
-			   == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_STATIC;
-			else
-				outflags |= RESERVE_FLAG_STATIC;
-		} else if (strncasecmp(curr, "Part_Nodes", MAX(taglen,1))
-			   == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_PART_NODES;
-			else
-				outflags |= RESERVE_FLAG_PART_NODES;
-		} else if (!strncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
-			   !flip) {
-			curr += taglen;
-			outflags |= RESERVE_FLAG_FIRST_CORES;
-		} else {
-			char *temp = g_strdup_printf("Error parsing flags %s.",
-						     flagstr);
-			display_edit_note(temp);
-			g_free(temp);
-			outflags = (uint32_t)NO_VAL;
-			break;
-		}
-
-		if (*curr == ',')
-			curr++;
-	}
-	return outflags;
-}
-
 static void _set_active_combo_resv(GtkComboBox *combo,
 				   GtkTreeModel *model, GtkTreeIter *iter,
 				   int type)
@@ -378,7 +286,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "features";
 		break;
 	case SORTID_FLAGS:
-		f = _parse_flags(new_text);
+		f = parse_resv_flags(new_text, __func__);
 		type = "flags";
 		if (f == (uint32_t)NO_VAL)
 			goto return_error;

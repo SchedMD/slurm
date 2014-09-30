@@ -122,7 +122,8 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Flags",
 					 MAX(command_len, 2))) {
-			resv_cond->flags = parse_resv_flags(argv[i]+end);
+			resv_cond->flags = parse_resv_flags(argv[i]+end,
+							    __func__);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 2))) {

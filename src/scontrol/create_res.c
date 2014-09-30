@@ -39,7 +39,7 @@
 #define _GNU_SOURCE
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
-
+#include "src/common/proc_args.h"
 
 /*
  *  _process_plus_minus is used to convert a string like
@@ -73,106 +73,6 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 
 	return ret;
 }
-
-
-/*
- *  _parse_flags  is used to parse the Flags= option.  It handles
- *  daily, weekly, static_alloc, part_nodes, and maint, optionally
- *  preceded by + or -, separated by a comma but no spaces.
- */
-static uint32_t _parse_flags(const char *flagstr, const char *msg)
-{
-	int flip;
-	uint32_t outflags = 0;
-	const char *curr = flagstr;
-	int taglen = 0;
-
-	while (*curr != '\0') {
-		flip = 0;
-		if (*curr == '+') {
-			curr++;
-		} else if (*curr == '-') {
-			flip = 1;
-			curr++;
-		}
-		taglen = 0;
-		while (curr[taglen] != ',' && curr[taglen] != '\0')
-			taglen++;
-
-		if (strncasecmp(curr, "Maintenance", MAX(taglen,1)) == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_MAINT;
-			else
-				outflags |= RESERVE_FLAG_MAINT;
-		} else if ((strncasecmp(curr, "Overlap", MAX(taglen,1))
-			    == 0) && (!flip)) {
-			curr += taglen;
-			outflags |= RESERVE_FLAG_OVERLAP;
-			/* "-OVERLAP" is not supported since that's the
-			 * default behavior and the option only applies
-			 * for reservation creation, not updates */
-		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1))
-			   == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_IGN_JOB;
-			else
-				outflags |= RESERVE_FLAG_IGN_JOBS;
-		} else if (strncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_DAILY;
-			else
-				outflags |= RESERVE_FLAG_DAILY;
-		} else if (strncasecmp(curr, "Weekly", MAX(taglen,1)) == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_WEEKLY;
-			else
-				outflags |= RESERVE_FLAG_WEEKLY;
-		} else if (strncasecmp(curr, "License_Only", MAX(taglen,1))
-			   == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_LIC_ONLY;
-			else
-				outflags |= RESERVE_FLAG_LIC_ONLY;
-		} else if (strncasecmp(curr, "Static_Alloc", MAX(taglen,1))
-			   == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_STATIC;
-			else
-				outflags |= RESERVE_FLAG_STATIC;
-		} else if (strncasecmp(curr, "Part_Nodes", MAX(taglen,1))
-			   == 0) {
-			curr += taglen;
-			if (flip)
-				outflags |= RESERVE_FLAG_NO_PART_NODES;
-			else
-				outflags |= RESERVE_FLAG_PART_NODES;
-		} else if (!strncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
-			   !flip) {
-			curr += taglen;
-			outflags |= RESERVE_FLAG_FIRST_CORES;
-		} else if (!strncasecmp(curr, "Time_Float", MAX(taglen,1)) &&
-			   !flip) {
-			curr += taglen;
-			outflags |= RESERVE_FLAG_TIME_FLOAT;
-		} else {
-			error("Error parsing flags %s.  %s", flagstr, msg);
-			return 0xffffffff;
-		}
-
-		if (*curr == ',') {
-			curr++;
-		}
-	}
-	return outflags;
-}
-
-
 
 /*
  * scontrol_parse_res_options   parse options for creating or updating a
@@ -255,10 +155,10 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			if (plus_minus) {
 				char *tmp =
 					_process_plus_minus(plus_minus, val);
-				f = _parse_flags(tmp, msg);
+				f = parse_resv_flags(tmp, msg);
 				xfree(tmp);
 			} else {
-				f = _parse_flags(val, msg);
+				f = parse_resv_flags(val, msg);
 			}
 			if (f == 0xffffffff) {
 				return -1;

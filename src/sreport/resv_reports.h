@@ -42,12 +42,12 @@
 #define __SREPORT_RESV_REPORTS_H
 
 #include "sreport.h"
+#include "src/common/proc_args.h"
 
 //extern int slurmdb_cluster_account_by_user(int argc, char *argv[]);
 //extern int cluster_user_by_account(int argc, char *argv[]);
 //extern int cluster_user_by_wckey(int argc, char *argv[]);
 extern int resv_utilization(int argc, char *argv[]);
-extern uint32_t parse_resv_flags(const char *flagstr);
 //extern int cluster_wckey_by_user(int argc, char *argv[]);
 
 #endif
