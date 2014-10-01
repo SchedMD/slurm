@@ -1307,7 +1307,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
 			uint16_t *cpu_cnt)
 {
-	int i, error_code = SLURM_ERROR;
+	int i, i_start, i_end, error_code = SLURM_ERROR;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
@@ -1319,8 +1319,13 @@ static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
 	rem_cpus = details_ptr->min_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
 	min_rem_nodes = min_nodes;
+	i_start = bit_ffs(node_map);
+	if (i_start >= 0)
+		i_end = bit_fls(node_map);
+	else
+		i_end = i_start - 1;
 	if (req_map) {
-		for (i = 0; i < cr_node_cnt; i++) {
+		for (i = i_start; i <= i_end; i++) {
 			if (!bit_test(req_map, i)) {
 				bit_clear(node_map, i);
 				continue;
@@ -1356,7 +1361,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
 	 * For larger allocation, use list_sort(). */
 	while (((rem_cpus > 0) || (rem_nodes > 0)) && (max_nodes > 0)) {
 		int max_cpu_idx = -1;
-		for (i = 0; i < cr_node_cnt; i++) {
+		for (i = i_start; i <= i_end; i++) {
 			if (bit_test(node_map, i))
 				continue;
 			if ((max_cpu_idx == -1) ||
@@ -1366,7 +1371,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
 					break;
 			}
 		}
-		if (cpu_cnt[max_cpu_idx] == 0)
+		if ((max_cpu_idx == -1) || (cpu_cnt[max_cpu_idx] == 0))
 			break;
 		last_max_cpu_cnt = cpu_cnt[max_cpu_idx];
 		avail_cpus = _get_cpu_cnt(job_ptr, max_cpu_idx, cpu_cnt);
