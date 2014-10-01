@@ -2189,6 +2189,11 @@ For example if MessageTimeout=10, the time limit will be 4 seconds
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 300 seconds.
 .TP
+\fBpack_serial_at_end\fR
+If used with the select/cons_res plugin then put serial jobs at the end of
+the available nodes rather than using a best fit algorithm.
+This may reduce resource fragmentation for some workloads.
+.TP
 \fBpartition_job_depth=#\fR
 The default number of jobs to attempt scheduling (i.e. the queue depth)
 from each partition/queue in Slurm's main scheduling logic.

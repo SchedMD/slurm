@@ -117,6 +117,10 @@ static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
 			uint32_t min_nodes, uint32_t max_nodes,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
 			uint16_t *cpu_cnt);
+static int _eval_nodes_serial(struct job_record *job_ptr, bitstr_t *node_map,
+			uint32_t min_nodes, uint32_t max_nodes,
+			uint32_t req_nodes, uint32_t cr_node_cnt,
+			uint16_t *cpu_cnt);
 static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *node_map,
 			uint32_t min_nodes, uint32_t max_nodes,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
@@ -967,6 +971,16 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				       cr_node_cnt, cpu_cnt);
 	}
 
+	if (pack_serial_at_end &&
+	    (details_ptr->min_cpus == 1) && (req_nodes == 1)) {
+		/* Put serial jobs at the end of the available node list
+		 * rather than using a best-fit algorithm, which fragments
+		 * resources. */
+		return _eval_nodes_serial(job_ptr, node_map,
+					  min_nodes, max_nodes, req_nodes,
+					  cr_node_cnt, cpu_cnt);
+	}
+
 	if (switch_record_cnt && switch_record_table) {
 		/* Perform optimized resource selection based upon topology */
 		return _eval_nodes_topo(job_ptr, node_map,
@@ -1374,6 +1388,95 @@ static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
 		if ((max_cpu_idx == -1) || (cpu_cnt[max_cpu_idx] == 0))
 			break;
 		last_max_cpu_cnt = cpu_cnt[max_cpu_idx];
+		avail_cpus = _get_cpu_cnt(job_ptr, max_cpu_idx, cpu_cnt);
+		if (avail_cpus) {
+			rem_cpus -= avail_cpus;
+			bit_set(node_map, max_cpu_idx);
+			rem_nodes--;
+			min_rem_nodes--;
+			max_nodes--;
+		} else {
+			break;
+		}
+	}
+
+	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
+		bit_nclear(node_map, 0, cr_node_cnt-1); /* Clear Map. */
+		error_code = SLURM_ERROR;
+	} else
+		error_code = SLURM_SUCCESS;
+
+fini:	return error_code;
+}
+
+/*
+ * A variation of _eval_nodes() to select resources at the end of the node
+ * list to reduce fragmentation */
+static int _eval_nodes_serial(struct job_record *job_ptr, bitstr_t *node_map,
+			      uint32_t min_nodes, uint32_t max_nodes,
+			      uint32_t req_nodes, uint32_t cr_node_cnt,
+			      uint16_t *cpu_cnt)
+{
+	int i, i_start, i_end, error_code = SLURM_ERROR;
+	int rem_cpus, rem_nodes; /* remaining resources desired */
+	int min_rem_nodes;	/* remaining resources desired */
+	int total_cpus = 0;	/* #CPUs allocated to job */
+	int avail_cpus;
+	struct job_details *details_ptr = job_ptr->details;
+	bitstr_t *req_map = details_ptr->req_node_bitmap;
+
+	rem_cpus = details_ptr->min_cpus;
+	rem_nodes = MAX(min_nodes, req_nodes);
+	min_rem_nodes = min_nodes;
+	i_start = bit_ffs(node_map);
+	if (i_start >= 0)
+		i_end = bit_fls(node_map);
+	else
+		i_end = i_start - 1;
+	if (req_map) {
+		for (i = i_start; i <= i_end; i++) {
+			if (!bit_test(req_map, i)) {
+				bit_clear(node_map, i);
+				continue;
+			}
+			if (bit_test(node_map, i)) {
+				avail_cpus = cpu_cnt[i];
+				if (max_nodes > 0) {
+					total_cpus += avail_cpus;
+					rem_cpus   -= avail_cpus;
+					rem_nodes--;
+					min_rem_nodes--;
+					/* leaving bitmap set, decr max limit */
+					max_nodes--;
+				} else {	/* node not selected (yet) */
+					bit_clear(node_map, i);
+				}
+			}
+		}
+	} else {
+		bit_nclear(node_map, 0, (cr_node_cnt - 1));
+	}
+
+	/* Compute CPUs already allocated to required nodes */
+	if ((details_ptr->max_cpus != NO_VAL) &&
+	    (total_cpus > details_ptr->max_cpus)) {
+		info("Job %u can't use required nodes due to max CPU limit",
+		     job_ptr->job_id);
+		goto fini;
+	}
+
+	while (((rem_cpus > 0) || (rem_nodes > 0)) && (max_nodes > 0)) {
+		int max_cpu_idx = -1;
+		for (i = i_end; i >= i_start; i--) {
+			if (bit_test(node_map, i))
+				continue;
+			if (cpu_cnt[i]) {
+				max_cpu_idx = i;
+				break;
+			}
+		}
+		if ((max_cpu_idx == -1) || (cpu_cnt[max_cpu_idx] == 0))
+			break;
 		avail_cpus = _get_cpu_cnt(job_ptr, max_cpu_idx, cpu_cnt);
 		if (avail_cpus) {
 			rem_cpus -= avail_cpus;

@@ -178,8 +178,9 @@ const uint32_t pstate_version = 7;	/* version control on saved state */
 
 uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
-uint64_t select_debug_flags;
-uint16_t select_fast_schedule;
+bool     pack_serial_at_end   = false;
+uint64_t select_debug_flags   = 0;
+uint16_t select_fast_schedule = 0;
 
 struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
@@ -1941,6 +1942,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		fatal("Invalid SchedulerParameters preempt_reorder_count: %d",
 		      preempt_reorder_cnt);
 	}
+	if (sched_params && strstr(sched_params, "pack_serial_at_end"))
+		pack_serial_at_end = true;
 	xfree(sched_params);
 
 	/* initial global core data structures */
