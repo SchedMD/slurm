@@ -361,28 +361,34 @@ _query_server(partition_info_msg_t ** part_pptr,
 		}
 	}
 
-	if (old_resv_ptr) {
-		if (clear_old)
-			old_resv_ptr->last_update = 0;
-		error_code = slurm_load_reservations(old_resv_ptr->last_update,
-						     &new_resv_ptr);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_reservation_info_msg(old_resv_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-			error_code = SLURM_SUCCESS;
-			new_resv_ptr = old_resv_ptr;
+	/* Avoid calling slurmctld for reservation
+	 * if the reservation flag is not set.
+	 */
+	if (params.reservation_flag) {
+		if (old_resv_ptr) {
+			if (clear_old)
+				old_resv_ptr->last_update = 0;
+			error_code
+				= slurm_load_reservations(old_resv_ptr->last_update,
+							  &new_resv_ptr);
+			if (error_code == SLURM_SUCCESS)
+				slurm_free_reservation_info_msg(old_resv_ptr);
+			else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+				error_code = SLURM_SUCCESS;
+				new_resv_ptr = old_resv_ptr;
+			}
+		} else {
+			error_code = slurm_load_reservations((time_t) NULL,
+							     &new_resv_ptr);
 		}
-	} else {
-		error_code = slurm_load_reservations((time_t) NULL,
-						     &new_resv_ptr);
-	}
 
-	if (error_code && params.reservation_flag) {
-		slurm_perror("slurm_load_reservations");
-		return error_code;
+		if (error_code) {
+			slurm_perror("slurm_load_reservations");
+			return error_code;
+		}
+		old_resv_ptr = new_resv_ptr;
+		*reserv_pptr = new_resv_ptr;
 	}
-	old_resv_ptr = new_resv_ptr;
-	*reserv_pptr = new_resv_ptr;
 
 	if (!params.bg_flag)
 		return SLURM_SUCCESS;
