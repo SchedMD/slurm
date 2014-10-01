@@ -29,7 +29,8 @@ documents those changes that are of interest to users and admins.
  -- Remove logic that was creating GRES bitmap for node when not needed (only
     needed when GRES mapped to specific files).
  -- BLUEGENE - Fix sinfo -tr before it would only print idle nodes correctly.
- -- Fix for licenses_only reservation on bluegene systems.
+ -- BLUEGENE - Fix for licenses_only reservation on bluegene systems.
+ -- sview - Verify pointer before using strchr.
 
 * Changes in Slurm 14.03.8
 ==========================

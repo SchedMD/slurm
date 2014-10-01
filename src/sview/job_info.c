@@ -2670,6 +2670,10 @@ static void _update_info_job(List info_list,
 			gtk_tree_model_get(model, &sview_job_info->iter_ptr,
 					   SORTID_JOBID, &tmp_jobid, -1);
 			offset = strchr(tmp_jobid, '(');
+
+			if (!tmp_jobid)
+				continue;
+
 			if (offset)
 				offset++;
 			else
@@ -3259,7 +3263,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 	GtkTreeIter iter;
 	job_desc_msg_t *job_msg = xmalloc(sizeof(job_desc_msg_t));
-	char *tmp_jobid, *offset;
+	char *tmp_jobid = NULL, *offset;
 
 	char *temp = NULL;
 	char *old_text = NULL;
@@ -3278,6 +3282,9 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 			   SORTID_JOBID, &tmp_jobid,
 			   column, &old_text,
 			   -1);
+	if (!tmp_jobid)
+		goto no_input;
+
 	offset = strchr(tmp_jobid, '(');
 	if (offset)
 		offset++;
@@ -3822,7 +3829,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	GError *error = NULL;
 	int i=0;
 	char *type;
-	char *tmp_jobid, *offset;
+	char *tmp_jobid = NULL, *offset;
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		type = "Midplane";
@@ -3831,6 +3838,10 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &tmp_jobid, -1);
 	offset = strchr(tmp_jobid, '(');
+
+	if (!tmp_jobid)
+		return;
+
 	if (offset)
 		offset++;
 	else
@@ -4108,6 +4119,10 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	char *tmp_jobid, *offset, *end_ptr;
 
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &tmp_jobid, -1);
+
+	if (!tmp_jobid)
+		return;
+
 	offset = strchr(tmp_jobid, '(');
 	if (offset) {
 		array_job_id  = strtol(tmp_jobid, &end_ptr, 10);
@@ -4292,6 +4307,10 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &tmp_jobid, -1);
+
+	if (!tmp_jobid)
+		return;
+
 	offset = strchr(tmp_jobid, '(');
 	if (offset)
 		offset++;
