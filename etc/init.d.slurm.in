@@ -112,7 +112,7 @@ startall() {
 	optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
 	if [[ ${MULTIPLE_SLURMD} == yes ]] && [[ ${prog} == slurmd ]]
 	then
-	    for node in $(scontrol show aliases)
+	    for node in $($BINDIR/scontrol show aliases)
 	    do
 		start $prog -N ${node} ${!optvar}
 	    done
@@ -151,7 +151,7 @@ slurmstatus() {
 	echo ${pidfile} | grep -q %n
 	if [[ $? -eq 0 ]]
 	then
-	    for n in $(scontrol show aliases)
+	    for n in $($BINDIR/scontrol show aliases)
 	    do
 		pidfiles="${pidfiles} $(echo ${pidfile} | sed "s/%n/$n/g")"
 	    done
@@ -277,7 +277,7 @@ case "$1" in
 		 optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
 		 if [[ ${MULTIPLE_SLURMD} == yes ]] && [[ ${prog} == slurmd ]]
 		 then
-		     for node in $(scontrol show aliases)
+		     for node in $($BINDIR/scontrol show aliases)
 		     do
 			 start $prog -N ${node}
 		     done
