@@ -649,11 +649,10 @@ static uint32_t _get_priority_internal(time_t start_time,
 			priority_part = part_ptr->priority /
 				(double)part_max_priority *
 				(double)weight_part;
-			priority_part =
+			priority_part +=
 				 (job_ptr->prio_factors->priority_age
 				 + job_ptr->prio_factors->priority_fs
 				 + job_ptr->prio_factors->priority_js
-				 + priority_part
 				 + job_ptr->prio_factors->priority_qos
 				 - (double)(job_ptr->prio_factors->nice
 					    - NICE_OFFSET));
