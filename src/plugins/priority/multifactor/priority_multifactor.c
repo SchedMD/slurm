@@ -660,6 +660,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 			      job_ptr->priority_array[i]);
 			i++;
 		}
+		list_iterator_destroy(part_iterator);
 	}
 
 	if (priority_debug) {
