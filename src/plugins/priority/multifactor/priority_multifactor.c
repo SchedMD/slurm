@@ -632,8 +632,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 		int i = 0;
 
 		if (!job_ptr->priority_array) {
-			job_ptr->priority_array = xmalloc(sizeof(uint32_t) *
-			                                  (list_count(job_ptr->part_ptr_list) + 1));
+			i = list_count(job_ptr->part_ptr_list) + 1;
+			job_ptr->priority_array = xmalloc(sizeof(uint32_t) * i);
 		}
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = (struct part_record *)
