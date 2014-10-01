@@ -629,6 +629,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		struct part_record *part_ptr;
 		double priority_part;
 		ListIterator part_iterator;
+		uint64_t tmp_64;
 		int i = 0;
 
 		if (!job_ptr->priority_array) {
@@ -641,7 +642,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 			priority_part = part_ptr->priority /
 				(double)part_max_priority *
 				(double)weight_part;
-			job_ptr->priority_array[i] = (uint32_t)
+			tmp_64 = (uint64_t)
 				(job_ptr->prio_factors->priority_age
 				 + job_ptr->prio_factors->priority_fs
 				 + job_ptr->prio_factors->priority_js
@@ -649,6 +650,11 @@ static uint32_t _get_priority_internal(time_t start_time,
 				 + job_ptr->prio_factors->priority_qos
 				 - (double)(job_ptr->prio_factors->nice
 					    - NICE_OFFSET));
+			if (tmp_64 > 0xffffffff) {
+				error("Job %u priority exceeds 32 bits",
+				      job_ptr->job_id);
+			}
+			job_ptr->priority_array[i] = (uint32_t) tmp_64;
 			debug("Job %u has more than one partition (%s)(%u)",
 			      job_ptr->job_id, part_ptr->name,
 			      job_ptr->priority_array[i]);
