@@ -108,11 +108,13 @@ when running with various options are
 .RE
 
 .IP
-In the above format strings the use of "#" represents the
+In the above format strings, the use of "#" represents the
 maximum length of any partition name or node list to be printed.
 A pass is made over the records to be printed to establish the size in order
 to allign the sinfo output, then a second pass is made over the records to
 print them.
+Note that the literal character "#" itself is not a valid field length
+specification, but is only used to document this behaviour.
 .IP
 The field specifications available include:
 .RS
