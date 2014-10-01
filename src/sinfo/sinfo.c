@@ -377,7 +377,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 						     &new_resv_ptr);
 	}
 
-	if (error_code) {
+	if (error_code && params.reservation_flag) {
 		slurm_perror("slurm_load_reservations");
 		return error_code;
 	}
