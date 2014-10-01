@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
     the end of the available nodes rather than using a best fit algorithm.
  -- Allow regular users to view default sinfo output when
     privatedata=reservations is set.
+ -- PrivateData=reservation modified to permit users to view the reservations
+    which they have access to (rather then preventing them from seeing ANY
+    reservation).
 
 * Changes in Slurm 14.11.0pre5
 ==============================
