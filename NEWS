@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- Add ability to include other files in slurm.conf based upon the ClusterName.
  -- Update strlcpy to latest upstream version.
  -- Add reservation information in the sacct and sreport output.
+ -- Add job priority calculation check for overflow and fix memory leak.
 
 * Changes in Slurm 14.11.0pre5
 ==============================
