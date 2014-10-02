@@ -163,9 +163,8 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@HAVE_ALPS_CRAY_TRUE@select_alps_la_DEPENDENCIES =  \
-@HAVE_ALPS_CRAY_TRUE@	../other/libother_select.la \
-@HAVE_ALPS_CRAY_TRUE@	$(am__append_2) $(am__append_3)
+select_alps_la_DEPENDENCIES = ../other/libother_select.la \
+	$(am__append_2) $(am__append_3)
 am__select_alps_la_SOURCES_DIST = select_alps.c basil_interface.h \
 	nodespec.c parser_common.h cray_config.c cray_config.h \
 	basil_interface.c
@@ -533,10 +532,9 @@ pkglib_LTLIBRARIES = select_alps.la
 select_alps_la_SOURCES = select_alps.c basil_interface.h nodespec.c \
 	parser_common.h cray_config.c cray_config.h $(am__append_1)
 select_alps_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_alps_la_LIBADD = ../other/libother_select.la $(am__append_2) \
+	$(am__append_3)
 @HAVE_ALPS_CRAY_TRUE@select_alps_la_CFLAGS = $(MYSQL_CFLAGS)
-@HAVE_ALPS_CRAY_TRUE@select_alps_la_LIBADD =  \
-@HAVE_ALPS_CRAY_TRUE@	../other/libother_select.la \
-@HAVE_ALPS_CRAY_TRUE@	$(am__append_2) $(am__append_3)
 @HAVE_ALPS_CRAY_EMULATION_FALSE@@HAVE_ALPS_CRAY_TRUE@SUBDIRS = libalps
 @HAVE_ALPS_CRAY_EMULATION_TRUE@@HAVE_ALPS_CRAY_TRUE@SUBDIRS = libemulate
 all: all-recursive
@@ -960,9 +958,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	uninstall-pkglibLTLIBRARIES
 
 
-@HAVE_ALPS_CRAY_TRUE@force:
-@HAVE_ALPS_CRAY_TRUE@$(select_alps_la_LIBADD) : force
-@HAVE_ALPS_CRAY_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+force:
+$(select_alps_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
