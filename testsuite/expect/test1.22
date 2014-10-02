@@ -54,11 +54,13 @@ set host_0      ""
 set timeout $max_job_delay
 if { [test_xcpu] } {
 	set node_cnt 1-1
+	set task_num [get_max_tasks]
 } elseif {[test_serial]} {
 	set node_cnt 1
 	set task_num 1
 } else {
 	set node_cnt 1-64
+	set task_num [get_max_tasks]
 }
 if {[test_launch_poe]} {
 	set node_name_env MP_I_UPMD_HOSTNAME
@@ -66,7 +68,6 @@ if {[test_launch_poe]} {
 	set task_num 1
 } else {
 	set node_name_env SLURMD_NODENAME
-	set task_num [get_max_tasks]
 }
 
 set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_printenv $node_name_env]
