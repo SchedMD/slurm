@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix sinfo -tr before it would only print idle nodes correctly.
  -- BLUEGENE - Fix for licenses_only reservation on bluegene systems.
  -- sview - Verify pointer before using strchr.
+ -- -M option on tools talking to a Cray from a non-Cray fixed.
 
 * Changes in Slurm 14.03.8
 ==========================
