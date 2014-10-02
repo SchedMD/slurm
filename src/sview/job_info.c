@@ -2980,7 +2980,7 @@ static void _update_info_job(List info_list,
 		job_ptr = sview_job_info->job_ptr;
 
 		/* This means the tree_store changed (added new column
-		   or something). */
+		 * or something). */
 		if (last_model != model)
 			sview_job_info->iter_set = false;
 
@@ -2988,20 +2988,22 @@ static void _update_info_job(List info_list,
 			char *tmp_jobid = NULL, *offset = NULL;
 			gtk_tree_model_get(model, &sview_job_info->iter_ptr,
 					   SORTID_JOBID, &tmp_jobid, -1);
-			if (tmp_jobid) {
-				offset = strchr(tmp_jobid, '(');
-				if (offset)
-					offset++;
-				else
-					offset = tmp_jobid;
-				jobid = atoi(offset);
-				g_free(tmp_jobid);
-			}
+			if (!tmp_jobid)
+				continue;
+
+			offset = strchr(tmp_jobid, '(');
+			if (offset)
+				offset++;
+			else
+				offset = tmp_jobid;
+			jobid = atoi(offset);
+			g_free(tmp_jobid);
 
 			if ((jobid != job_ptr->job_id)
-			    && (jobid != job_ptr->array_job_id))
+			    && (jobid != job_ptr->array_job_id)) {
 				/* Bad pointer */
 				sview_job_info->iter_set = false;
+			}
 		}
 		if (sview_job_info->iter_set)
 			_update_job_record(sview_job_info,
