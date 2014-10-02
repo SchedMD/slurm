@@ -3039,7 +3039,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	uint32_t gres_cnt;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
-	bitstr_t *alloc_core_bitmap;
+	bitstr_t *alloc_core_bitmap = NULL;
 
 	/*
 	 * Validate data structures. Either job_gres_data->node_cnt and
