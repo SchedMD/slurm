@@ -49,7 +49,7 @@ an authentication plugin by the Slurm code itself, but provides a mechanism
 for the application to manage Kerberos V credentials.</li>
 </ul><br>
 
-<li><b>Checkpoint/Restart</b></li><br>
+<li><b>Checkpoint/Restart</b></li>
 <ul>
 <li><a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
 <b> BLCR (Berkeley Lab Checkpoint/Restart)</a></b>
