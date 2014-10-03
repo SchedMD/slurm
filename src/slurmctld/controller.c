@@ -2269,7 +2269,7 @@ static void *_assoc_cache_mgr(void *no_data)
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    (slurmdb_association_rec_t **)
-				    &job_ptr->assoc_ptr)) {
+				    &job_ptr->assoc_ptr, false)) {
 				verbose("Invalid association id %u "
 					"for job id %u",
 					job_ptr->assoc_id, job_ptr->job_id);

@@ -204,6 +204,11 @@ extern void destroy_assoc_mgr_qos_usage(void *object);
  *                      list should be created with list_create(NULL)
  *                      since we are putting pointers to memory used elsewhere.
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
+ *
+ * NOTE: Since the returned assoc_list is full of pointers from the
+ *       assoc_mgr_association_list assoc_mgr_lock_t READ_LOCK on
+ *       associations must be set before calling this function and while
+ *       handling it after a return.
  */
 extern int assoc_mgr_get_user_assocs(void *db_conn,
 				     slurmdb_association_rec_t *assoc,
@@ -220,12 +225,18 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
  * IN/OUT: assoc_pptr - if non-NULL then return a pointer to the
  *			slurmdb_association record in cache on success
  *                      DO NOT FREE.
+ * IN: locked - If you plan on using assoc_pptr after this function
+ *              you need to have an assoc_mgr_lock_t READ_LOCK for
+ *              associations while you use it before and after the
+ *              return.  This is not required if using the assoc for
+ *              non-pointer portions.
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_fill_in_assoc(void *db_conn,
 				   slurmdb_association_rec_t *assoc,
 				   int enforce,
-				   slurmdb_association_rec_t **assoc_pptr);
+				   slurmdb_association_rec_t **assoc_pptr,
+				   bool locked);
 
 /*
  * get info from the storage

@@ -507,12 +507,17 @@ static bool _is_account_valid(char *account)
 	assoc_rec.acct      = account;
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				    accounting_enforce, &assoc_ptr)) {
+				    accounting_enforce, &assoc_ptr, false)) {
 		return false;
 	}
 	return true;
 }
 
+/* Since the returned assoc_list is full of pointers from the
+ * assoc_mgr_association_list assoc_mgr_lock_t READ_LOCK on
+ * associations must be set before calling this function and while
+ * handling it after a return.
+ */
 static int _append_assoc_list(List assoc_list, slurmdb_association_rec_t *assoc)
 {
 	int rc = ESLURM_INVALID_ACCOUNT;
@@ -520,7 +525,7 @@ static int _append_assoc_list(List assoc_list, slurmdb_association_rec_t *assoc)
 	if (assoc_mgr_fill_in_assoc(
 		    acct_db_conn, assoc,
 		    accounting_enforce,
-		    &assoc_ptr)) {
+		    &assoc_ptr, true)) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("No association for user %u and account %s",
 			      assoc->uid, assoc->acct);
@@ -545,6 +550,9 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	int rc = SLURM_SUCCESS, i = 0, j = 0;
 	List assoc_list_allow = NULL, assoc_list_deny = NULL, assoc_list;
 	slurmdb_association_rec_t assoc, *assoc_ptr = NULL;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
 
 	/* no need to do this if we can't ;) */
 	if (!association_based_accounting)
@@ -556,6 +564,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
 	xfree(resv_ptr->assoc_list);
 
+	assoc_mgr_lock(&locks);
 	if (resv_ptr->account_cnt && resv_ptr->user_cnt) {
 		if (!resv_ptr->account_not && !resv_ptr->user_not) {
 			/* Add every association that matches both account
@@ -566,8 +575,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					       sizeof(slurmdb_association_rec_t));
 					assoc.acct = resv_ptr->account_list[j];
 					assoc.uid  = resv_ptr->user_list[i];
-					rc = _append_assoc_list(assoc_list_allow,
-								&assoc);
+					rc = _append_assoc_list(
+						assoc_list_allow, &assoc);
 					if (rc != SLURM_SUCCESS)
 						goto end_it;
 				}
@@ -676,6 +685,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 end_it:
 	list_destroy(assoc_list_allow);
 	list_destroy(assoc_list_deny);
+	assoc_mgr_unlock(&locks);
+
 	return rc;
 }
 
@@ -3486,7 +3497,7 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    (slurmdb_association_rec_t **)
-				    &job_ptr->assoc_ptr))
+				    &job_ptr->assoc_ptr, false))
 				goto end_it;
 		}
 

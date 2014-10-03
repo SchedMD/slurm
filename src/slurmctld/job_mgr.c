@@ -1694,7 +1694,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    (slurmdb_association_rec_t **)
-				    &job_ptr->assoc_ptr) &&
+				    &job_ptr->assoc_ptr, false) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 	    && (!IS_JOB_FINISHED(job_ptr))) {
 		info("Holding job %u with invalid association", job_id);
@@ -4245,7 +4245,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 
 				assoc_mgr_fill_in_assoc(
 					acct_db_conn, &assoc_rec,
-					accounting_enforce, NULL);
+					accounting_enforce, NULL, false);
 			}
 
 			if (assoc_ptr && assoc_rec.id != assoc_ptr->id) {
@@ -4632,9 +4632,11 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	assoc_rec.acct      = job_desc->account;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.uid       = job_desc->user_id;
-
+	/* Checks are done later to validate assoc_ptr, so we don't
+	   need to lock outside of fill_in_assoc.
+	*/
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				    accounting_enforce, &assoc_ptr)) {
+				    accounting_enforce, &assoc_ptr, false)) {
 		info("_job_create: invalid account or partition for user %u, "
 		     "account '%s', and partition '%s'",
 		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
@@ -4648,7 +4650,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		 * accounting records. */
 		assoc_rec.acct = NULL;
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					accounting_enforce, &assoc_ptr);
+					accounting_enforce, &assoc_ptr, false);
 		if (assoc_ptr) {
 			info("_job_create: account '%s' has no association "
 			     "for user %u using default account '%s'",
@@ -4657,6 +4659,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			xfree(job_desc->account);
 		}
 	}
+
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
 
@@ -8165,7 +8168,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    (slurmdb_association_rec_t **)
-				    &job_ptr->assoc_ptr)) {
+				    &job_ptr->assoc_ptr, false)) {
 				info("job_update: invalid account %s "
 				     "for job %u",
 				     job_specs->account, job_ptr->job_id);
@@ -10493,7 +10496,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 		if (!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					      accounting_enforce,
 					      (slurmdb_association_rec_t **)
-					      &job_ptr->assoc_ptr))) {
+					      &job_ptr->assoc_ptr, false))) {
 			job_ptr->assoc_id = assoc_rec.id;
 			/* we have to call job start again because the
 			 * associd does not get updated in job complete */
@@ -11367,7 +11370,7 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    (slurmdb_association_rec_t **)
-				    &job_ptr->assoc_ptr)) {
+				    &job_ptr->assoc_ptr, false)) {
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
 		return ESLURM_INVALID_ACCOUNT;
@@ -11382,7 +11385,7 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					accounting_enforce,
 					(slurmdb_association_rec_t **)
-					&job_ptr->assoc_ptr);
+					&job_ptr->assoc_ptr, false);
 		if (!job_ptr->assoc_ptr) {
 			debug("%s: we didn't have an association for account "
 			      "'%s' and user '%u', and we can't seem to find "
@@ -11501,7 +11504,7 @@ extern int send_jobs_to_accounting(void)
 				   acct_db_conn, &assoc_rec,
 				   accounting_enforce,
 				   (slurmdb_association_rec_t **)
-				   &job_ptr->assoc_ptr) &&
+				   &job_ptr->assoc_ptr, false) &&
 			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			    && (!IS_JOB_FINISHED(job_ptr))) {
 				info("Holding job %u with "

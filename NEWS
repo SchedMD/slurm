@@ -33,6 +33,9 @@ documents those changes that are of interest to users and admins.
  -- sview - Verify pointer before using strchr.
  -- -M option on tools talking to a Cray from a non-Cray fixed.
  -- CRAY - Fix rpmbuild issue for missing file slurm.conf.template.
+ -- Fix race condition when dealing with removing many associations at
+    different times when reservations are using the associations that are
+    being deleted.
 
 * Changes in Slurm 14.03.8
 ==========================
