@@ -1291,9 +1291,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 					node_ptr->last_idle = 0;
 					node_ptr->node_state &=
 						(~NODE_STATE_POWER_SAVE);
-					node_ptr->node_state |=
-						NODE_STATE_NO_RESPOND;
-					bit_clear(avail_node_bitmap, node_inx);
 					info("power down request repeating "
 					     "for node %s", this_node_name);
 				} else {
