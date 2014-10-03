@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 14.11.0rc2
+=============================
+
 * Changes in Slurm 14.11.0rc1
 =============================
  -- When using cgroup name the batch step as step_batch instead of
