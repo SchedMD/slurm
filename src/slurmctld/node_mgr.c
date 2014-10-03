@@ -1340,7 +1340,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 					bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
-				node_ptr->last_idle = now;
+				if (IS_NODE_POWER_SAVE(node_ptr))
+					node_ptr->last_idle = 0;
+				else
+					node_ptr->last_idle = now;
 			} else if (state_val == NODE_STATE_ALLOCATED) {
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)  &&
@@ -1366,8 +1369,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 					(nonstop_ops.node_fail)(NULL, node_ptr);
 			} else if (state_val == NODE_STATE_POWER_SAVE) {
 				if (IS_NODE_POWER_SAVE(node_ptr)) {
-					verbose("node %s already powered down",
-						this_node_name);
+					node_ptr->last_idle = 0;
+					node_ptr->node_state &=
+						(~NODE_STATE_POWER_SAVE);
+					info("power down request repeating "
+					     "for node %s", this_node_name);
 				} else {
 					node_ptr->last_idle = 0;
 					info("powering down node %s",
