@@ -586,7 +586,8 @@ next_part:		part_ptr = (struct part_record *)
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						     accounting_enforce,
 						     (slurmdb_association_rec_t **)
-						     &job_ptr->assoc_ptr)) {
+						     &job_ptr->assoc_ptr,
+						     false)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
 				xfree(job_ptr->state_desc);
 				job_ptr->assoc_id = assoc_rec.id;
@@ -1176,7 +1177,8 @@ next_task:
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						    accounting_enforce,
 						    (slurmdb_association_rec_t **)
-						    &job_ptr->assoc_ptr)) {
+						     &job_ptr->assoc_ptr,
+						     false)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
 				xfree(job_ptr->state_desc);
 				job_ptr->assoc_id = assoc_rec.id;

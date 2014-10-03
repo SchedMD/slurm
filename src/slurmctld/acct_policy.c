@@ -97,7 +97,7 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					    accounting_enforce,
 					    (slurmdb_association_rec_t **)
-					    &job_ptr->assoc_ptr)) {
+					    &job_ptr->assoc_ptr, false)) {
 			info("_validate_job_assoc: invalid account or "
 			     "partition for uid=%u jobid=%u",
 			     job_ptr->user_id, job_ptr->job_id);

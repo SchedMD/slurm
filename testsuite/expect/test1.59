@@ -374,30 +374,30 @@ for {set i 0} {$i<5} {incr i} {
 	}
 	if { $i == 1 } {
 		if { [string compare $node0 $1node2] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: tasks not distributed by -w\n"
 			set exit_code 1
 		} elseif { [string compare $node1 $1node0] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: tasks not distributed by -w\n"
 			set exit_code 1
 		} elseif { [string compare $node2 $1node1] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: tasks not distributed by -w\n"
 			set exit_code 1
 		}
 	} elseif { $i == 2 } {
 		if { [string compare $node0 $2node0] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: tasks not distributed by -w\n"
 			set exit_code 1
 		} elseif { [string compare $node1 $2node1] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: tasks not distributed by -w\n"
 			set exit_code 1
 		} elseif { [string compare $node2 $2node2] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: tasks not distributed by -w\n"
 			set exit_code 1
 		} elseif { [string compare $node3 $2node3] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: tasks not distributed by -w\n"
 			set exit_code 1
 		} elseif { [string compare $node4 $2node4] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: tasks not distributed by -w\n"
 			set exit_code 1
 		}
 	} elseif { $i == 3 } {
