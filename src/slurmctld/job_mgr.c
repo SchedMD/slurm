@@ -5985,11 +5985,9 @@ void job_time_limit(void)
 
 		if (IS_JOB_CONFIGURING(job_ptr)) {
 			if (!IS_JOB_RUNNING(job_ptr) ||
-			    ((bit_overlap(job_ptr->node_bitmap,
-					  power_node_bitmap) == 0) &&
-			     (bit_overlap(job_ptr->node_bitmap,
-					  avail_node_bitmap) == 0))) {
-				debug("Configuration for job %u is complete",
+			    (bit_overlap(job_ptr->node_bitmap,
+					 power_node_bitmap) == 0)) {
+				info("Configuration for job %u is complete",
 				      job_ptr->job_id);
 				job_ptr->job_state &= (~JOB_CONFIGURING);
 			}

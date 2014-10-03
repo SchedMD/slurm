@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
     being deleted.
  -- When a node's state is set to power_up, then execute ResumeProgram even if
     previously executed for that node.
+ -- Fix logic determining when job configuration (i.e. running node power up
+    logic) is complete.
 
 * Changes in Slurm 14.03.8
 ==========================
