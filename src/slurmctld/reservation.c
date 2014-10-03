@@ -4184,15 +4184,20 @@ extern int send_resvs_to_accounting(void)
 {
 	ListIterator itr = NULL;
 	slurmctld_resv_t *resv_ptr;
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
 
 	if (!resv_list)
 		return SLURM_SUCCESS;
 
+	lock_slurmctld(node_write_lock);
+
 	itr = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(itr))) {
+	while ((resv_ptr = list_next(itr)))
 		_post_resv_create(resv_ptr);
-	}
 	list_iterator_destroy(itr);
+
+	unlock_slurmctld(node_write_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -4290,15 +4295,22 @@ extern void update_assocs_in_resvs(void)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
 	ListIterator  iter = NULL;
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
 
-	if (!resv_list)
+	if (!resv_list) {
 		error("No reservation list given for updating associations");
+		return;
+	}
+
+	lock_slurmctld(node_write_lock);
 
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter))) {
+	while ((resv_ptr = list_next(iter)))
 		_set_assoc_list(resv_ptr);
-	}
 	list_iterator_destroy(iter);
+
+	unlock_slurmctld(node_write_lock);
 }
 
 extern void update_part_nodes_in_resv(struct part_record *part_ptr)
