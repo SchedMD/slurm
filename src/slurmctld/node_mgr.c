@@ -1288,8 +1288,14 @@ int update_node ( update_node_msg_t * update_node_msg )
 					(nonstop_ops.node_fail)(NULL, node_ptr);
 			} else if (state_val == NODE_STATE_POWER_SAVE) {
 				if (IS_NODE_POWER_SAVE(node_ptr)) {
-					verbose("node %s already powered down",
-						this_node_name);
+					node_ptr->last_idle = 0;
+					node_ptr->node_state &=
+						(~NODE_STATE_POWER_SAVE);
+					node_ptr->node_state |=
+						NODE_STATE_NO_RESPOND;
+					bit_clear(avail_node_bitmap, node_inx);
+					info("power down request repeating "
+					     "for node %s", this_node_name);
 				} else {
 					node_ptr->last_idle = 0;
 					info("powering down node %s",

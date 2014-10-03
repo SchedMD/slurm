@@ -36,8 +36,8 @@ documents those changes that are of interest to users and admins.
  -- Fix race condition when dealing with removing many associations at
     different times when reservations are using the associations that are
     being deleted.
- -- When a node's state is set to power_up, then execute ResumeProgram even if
-    previously executed for that node.
+ -- When a node's state is set to power_down/power_up, then execute
+    SuspendProgram/ResumeProgram even if previously executed for that node.
  -- Fix logic determining when job configuration (i.e. running node power up
     logic) is complete.
 
