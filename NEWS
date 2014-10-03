@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
     SuspendProgram/ResumeProgram even if previously executed for that node.
  -- Fix logic determining when job configuration (i.e. running node power up
     logic) is complete.
+ -- Setting the state of a node in powered down state node to "resume" will
+    no longer cause it to reboot, but only clear the "drain" state flag.
 
 * Changes in Slurm 14.03.8
 ==========================

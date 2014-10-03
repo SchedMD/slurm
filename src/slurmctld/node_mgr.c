@@ -1262,7 +1262,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 					bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
-				node_ptr->last_idle = now;
+				if (IS_NODE_POWER_SAVE(node_ptr))
+					node_ptr->last_idle = 0;
+				else
+					node_ptr->last_idle = now;
 			} else if (state_val == NODE_STATE_ALLOCATED) {
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)  &&
