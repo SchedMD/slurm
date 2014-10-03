@@ -1298,8 +1298,18 @@ int update_node ( update_node_msg_t * update_node_msg )
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
 				if (!IS_NODE_POWER_SAVE(node_ptr)) {
-					verbose("node %s already powered up",
-						this_node_name);
+					if (IS_NODE_POWER_UP(node_ptr)) {
+						node_ptr->last_idle = now;
+						node_ptr->node_state |=
+							NODE_STATE_POWER_SAVE;
+						info("power up request "
+						     "repeating for node %s",
+						     this_node_name);
+					} else {
+						verbose("node %s is already "
+							"powered up",
+							this_node_name);
+					}
 				} else {
 					node_ptr->last_idle = now;
 					info("powering up node %s",
