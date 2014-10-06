@@ -46,6 +46,9 @@ documents those changes that are of interest to users and admins.
     option (since it isn't).
  -- Fix issue with --hint=nomultithread and allocations with steps running
     arbitrary layouts (test1.59).
+ -- PrivateData=reservation modified to permit users to view the reservations
+    which they have access to (rather then preventing them from seeing ANY
+    reservation).  Backport from 14.11 commit 77c2bd25c.
 
 * Changes in Slurm 14.03.8
 ==========================

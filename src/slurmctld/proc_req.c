@@ -3510,12 +3510,7 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_RESERVATION_INFO from uid=%d", uid);
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS) &&
-	    (!validate_operator(uid))) {
-		debug2("Security violation, REQUEST_RESERVATION_INFO "
-		       "RPC from uid=%d", uid);
-		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
-	} else if ((resv_req_msg->last_update - 1) >= last_resv_update) {
+	if ((resv_req_msg->last_update - 1) >= last_resv_update) {
 		debug2("_slurm_rpc_resv_show, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
