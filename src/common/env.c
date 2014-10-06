@@ -280,7 +280,7 @@ setenvfs(const char *fmt, ...)
 
 int setenvf(char ***envp, const char *name, const char *fmt, ...)
 {
-	char *str = NULL, *value;
+	char *value;
 	va_list ap;
 	int size, rc;
 
@@ -301,15 +301,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		else
 			rc = 1;
 	} else {
-		/* XXX Space is allocated on the heap and will never
-		 * be reclaimed.
-		 * Also you can not use xmalloc here since some of the
-		 * external api's like perl will crap out when they
-		 * try to free it.
-		 */
-		str = malloc(size);	/* CLANG false positive */
-		snprintf(str, size, "%s=%s", name, value);
-		rc = putenv(str);
+		rc = setenv(name, value, 1);
 	}
 
 	xfree(value);
