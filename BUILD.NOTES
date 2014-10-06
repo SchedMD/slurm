@@ -251,14 +251,12 @@ Job profiling:
  - Run "gprof [executable-file] >outfile"
 
 Before new major release:
- - Test on ia64, i386, x86_64, BGL, AIX, OSX, XCPU
+ - Test on ia64, i386, x86_64, BGQ, NRT/POE, Cray
  - Test on Elan and IB switches
  - Test fail-over of slurmctld
  - Test for memory leaks in slurmctld, slurmd and slurmdbd with various plugins
  - Change API version number
- - Review and release web pages
- - Review and release code
- - Run "make check"
+ - Run "make check" (requires "dejagnu" package)
  - Test that the prolog and epilog run
  - Run the test suite with SlurmUser NOT being self
  - Test for errors reported by CLANG tool:
