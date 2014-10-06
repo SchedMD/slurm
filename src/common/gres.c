@@ -150,6 +150,7 @@ static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt);
 static int	_gres_find_id(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
+static bool	_is_gres_cnt_zero(char *config);
 static int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   int node_cnt, int node_offset, uint32_t cpu_cnt,
 			   char *gres_name, uint32_t job_id, char *node_name,
@@ -2540,6 +2541,21 @@ static int _job_state_validate(char *config, void **gres_data,
 	return SLURM_SUCCESS;
 }
 
+static bool _is_gres_cnt_zero(char *config)
+{
+	char *num = NULL;
+	long cnt;
+
+	num = strrchr(config, ':');
+	if (num)
+		cnt = strtol(num + 1, NULL, 10);
+	else
+		cnt = 1;
+	if (cnt == 0)
+		return true;
+	return false;
+}
+
 /*
  * Given a job's requested gres configuration, validate it and build a gres list
  * IN req_config - job request's gres input string
@@ -2582,6 +2598,8 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 			list_append(*gres_list, gres_ptr);
 			break;		/* processed it */
 		}
+		if ((i >= gres_context_cnt) && _is_gres_cnt_zero(tok))
+			rc2 = SLURM_SUCCESS;
 		if (rc2 != SLURM_SUCCESS) {
 			info("Invalid gres job specification %s", tok);
 			rc = ESLURM_INVALID_GRES;
@@ -4706,6 +4724,8 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			list_append(*step_gres_list, step_gres_ptr);
 			break;		/* processed it */
 		}
+		if ((i >= gres_context_cnt) && _is_gres_cnt_zero(tok))
+			rc2 = SLURM_SUCCESS;
 		if (rc2 != SLURM_SUCCESS) {
 			info("Invalid gres step %u.%u specification %s",
 			     job_id, step_id, tok);
