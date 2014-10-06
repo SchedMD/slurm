@@ -100,6 +100,18 @@ proc srun_test {exp_cnt account} {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
+		-re "($number)-($number):($number)" {
+#			NOTE: POE format
+			incr count [expr $expect_out(2,string) - $expect_out(1,string) + 1]
+			set job_id $expect_out(3,string)
+			exp_continue
+		}
+		-re "$number:($number)" {
+#			NOTE: POE format
+			incr count
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
 		timeout {
 			send_user "\nFAILURE srun is not responding\n"
 			set exit_code 1
