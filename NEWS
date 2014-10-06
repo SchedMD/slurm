@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
     no longer cause it to reboot, but only clear the "drain" state flag.
  -- Fix srun documentation to remove SLURM_NODELIST being equivalent as the -w
     option (since it isn't).
+ -- Fix issue with --hint=nomultithread and allocations with steps running
+    arbitrary layouts (test1.59).
 
 * Changes in Slurm 14.03.8
 ==========================
