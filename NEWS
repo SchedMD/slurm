@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
     logic) is complete.
  -- Setting the state of a node in powered down state node to "resume" will
     no longer cause it to reboot, but only clear the "drain" state flag.
+ -- Fix srun documentation to remove SLURM_NODELIST being equivalent as the -w
+    option (since it isn't).
 
 * Changes in Slurm 14.03.8
 ==========================
