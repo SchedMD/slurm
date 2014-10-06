@@ -127,7 +127,7 @@ if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 } elseif {[test_launch_poe]} {
-	send_user "\nWARNING: Sporatic failures with POE are expected. Please retest.\n"
+	send_user "\nWARNING: Frequent failures with POE are expected due. Please retest.\n"
 #	POE BUG: If the application exits immediately then pmdv12 hangs until
 #	slurm kills it with a timeout, thus the sleep below is required:
 #	F S   UID   PID  PPID  C PRI  NI ADDR SZ WCHAN TTY   TIME CMD

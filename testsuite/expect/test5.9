@@ -104,6 +104,12 @@ if {$available < 2} {
     exit $exit_code
 }
 
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
+}
+
 remove_acct [get_cluster_name] $test_acct
 
 # Run a job to get a usable node to test
@@ -356,7 +362,7 @@ if {$match != 1} {
 # jobid
 set sq_step_format(jobid)       $job_id
 # stepid
-set sq_step_format(stepid)      $job_id.0
+set sq_step_format(stepid)      $job_id.$step_id
 # stepname
 set sq_step_format(stepname)    "sleep"
 # state

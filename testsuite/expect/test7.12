@@ -48,6 +48,14 @@ if {[test_front_end] != 0} {
         exit 0
 }
 
+if {[test_launch_poe]} {
+	set step_id   1
+	set pid_count 2
+} else {
+	set step_id   0
+	set pid_count 1
+}
+
 #
 # Delete left-over program and rebuild it
 #
@@ -115,7 +123,7 @@ if {$debug} {
 set job_matches  0
 set pid_matches  0
 set step_matches 0
-spawn ./$test_prog $job_id
+spawn ./$test_prog $job_id $step_id
 expect {
 	-re "job_id:$job_id step_id" {
 		incr step_matches
@@ -143,13 +151,14 @@ if {$step_matches != 1} {
 	send_user "\nFAILURE: error running slurm_job_step_stat() program ($step_matches != 1)\n"
 	set exit_code 1
 }
-if {$pid_matches != 1} {
-	send_user "\nWARNING: Failed to load PIDs associated with job step ($pid_matches != 1).\n"
+if {$pid_matches != $pid_count} {
+	send_user "\nWARNING: Failed to load PIDs associated with job step ($pid_matches != $pid_count).\n"
 	send_user "         This is dependent upon the ProctrackType configured.\n"
 	send_user "         proctrack/pgid does NOT support this functionality.\n"
 }
 if {$job_matches != 1} {
 	send_user "\nFAILURE: Failed to load job info for this job ($job_matches != 1).\n"
+	set exit_code 1
 }
 
 cancel_job $job_id

@@ -40,13 +40,12 @@ main(int argc, char **argv)
 	job_info_msg_t *job_info_msg;
 	slurm_job_info_t *job_ptr;
 
-	if (argc < 2) {
-		printf("Usage: job_id [step_id]\n");
+	if (argc < 3) {
+		printf("Usage: job_id step_id\n");
 		exit(1);
 	}
 	job_id = atoi(argv[1]);
-	if (argc > 2)
-		step_id = atoi(argv[2]);
+	step_id = atoi(argv[2]);
 	printf("job_id:%u step_id:%u\n", job_id, step_id);
 
 	rc = slurm_job_step_stat(job_id, step_id, NULL, &resp);

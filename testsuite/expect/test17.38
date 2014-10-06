@@ -56,7 +56,7 @@ function gettime \{
 echo \"starting...\"
 T=\"$\(date +%s)\"
 trap \"echo Got SIGINT 2; gettime; exit 1\" 2
-$srun $file_prog &
+$srun ./$file_prog &
 while :
 do
 	:
