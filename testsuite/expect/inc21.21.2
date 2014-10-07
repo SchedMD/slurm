@@ -29,11 +29,12 @@
 proc inc21_21_2 {maxnode} {
 
 	global number bin_id ta srun exit_code
+	set job_id 0
 
 	send_user "\nTest MaxNodes overage (Within: inc21.21.2)\n"
 
 #
-# Spawn a job testing maxnode+1
+#	Spawn a job testing maxnode+1
 #
 	spawn $srun -N[expr $maxnode + 1] --account=$ta -I $bin_id
 	expect {
@@ -42,6 +43,7 @@ proc inc21_21_2 {maxnode} {
 			exp_continue
 		}
 		-re "launching ($number)" {
+			set job_id $expect_out(1,string)
 			send_user "\nFAILURE: job should not have run. (Within: inc21.21.2)\n"
 			set exit_code 1
 			exp_continue
@@ -55,9 +57,12 @@ proc inc21_21_2 {maxnode} {
 		}
 	}
 
+	if {$job_id != 0 && [wait_for_job $job_id "DONE"] != 0} {
+		send_user "\nFAILURE: job $job_id did not complete (Within: inc21.21.2)\n"
+		set exit_code 1	
+	}
+
 	if { $exit_code } {
 		return $exit_code
 	}
-
-
 }

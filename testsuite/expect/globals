@@ -598,7 +598,7 @@ proc wait_for_job { job_id desired_state } {
 			"PREEMPTED" -
 			"COMPLETED" {
 				if {[string compare $desired_state "DONE"] == 0} {
-					send_user "Job $job_id is DONE\n"
+					send_user "Job $job_id is DONE ($state)\n"
 					sleep 2
 					return 0
 				}

@@ -27,9 +27,10 @@
 # Test for maxwall
 #
 
-proc inc21_21_3 {maxwall } {
+proc inc21_21_3 { maxwall } {
 
 	global number bin_id ta srun exit_code
+	set job_id 0
 
 	send_user "\nTest MaxWall (Within: inc21.21.3)\n"
 
@@ -40,6 +41,7 @@ proc inc21_21_3 {maxwall } {
 	spawn $srun -v -t$maxwall --account=$ta $bin_id
 	expect {
 		-re "launching ($number)" {
+			set job_id $expect_out(1,string)
 			incr matches
 			exp_continue
 		}
@@ -52,11 +54,14 @@ proc inc21_21_3 {maxwall } {
 		}
 	}
 
+	if {$job_id != 0 && [wait_for_job $job_id "DONE"] != 0} {
+		send_user "\nFAILURE: job $job_id did not complete (Within: inc21.21.3)\n"
+		set exit_code 1	
+	}
+
 	if { $matches != 1 } {
 		send_user "\nFAILURE: job dion't launch with correct limit (Within: inc21.21.3)\n"
 		set exit_code 1
 		return $exit_code
 	}
-
-
 }
