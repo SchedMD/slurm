@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.0rc2
 =============================
+ -- Logs for jobs which are explicitly requeued will say so rather than saying
+    that a node in their allocation failed.
 
 * Changes in Slurm 14.11.0rc1
 =============================

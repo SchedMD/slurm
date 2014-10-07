@@ -4258,8 +4258,10 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			error("Error in _wait_for_starting_step");
 		}
 	}
-	if (IS_JOB_NODE_FAILED(req) || IS_JOB_PENDING(req)) /* requeued */
+	if (IS_JOB_NODE_FAILED(req))
 		_kill_all_active_steps(req->job_id, SIG_NODE_FAIL, true);
+	if (IS_JOB_PENDING(req))
+		_kill_all_active_steps(req->job_id, SIG_REQUEUED, true);
 	else if (IS_JOB_FAILED(req))
 		_kill_all_active_steps(req->job_id, SIG_FAILURE, true);
 

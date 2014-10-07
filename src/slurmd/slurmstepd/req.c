@@ -797,6 +797,10 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 			error("*** %s CANCELLED AT %s DUE TO NODE %s FAILURE ***",
 			      entity, time_str, job->node_name);
 			msg_sent = 1;
+		} else if (sig == SIG_REQUEUED) {
+			error("*** %s CANCELLED AT %s DUE TO JOB REQUEUE ***",
+			      entity, time_str);
+			msg_sent = 1;
 		} else if (sig == SIG_FAILURE) {
 			error("*** %s FAILED (non-zero exit code or other "
 			      "failure mode) on %s ***",
@@ -809,7 +813,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		}
 	}
 	if ((sig == SIG_TIME_LIMIT) || (sig == SIG_NODE_FAIL) ||
-	    (sig == SIG_PREEMPTED)  || (sig == SIG_FAILURE))
+	    (sig == SIG_PREEMPTED)  || (sig == SIG_FAILURE) ||
+	    (sig == SIG_REQUEUED))
 		goto done;
 
 	if (sig == SIG_ABORT) {

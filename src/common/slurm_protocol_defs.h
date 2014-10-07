@@ -785,6 +785,7 @@ typedef struct return_code2_msg {
  * from getting the MPIRUN_PARTITION at that time. It is needed for
  * the job epilog. */
 
+#define SIG_REQUEUED	993	/* Dummy signal value to job requeue */
 #define SIG_PREEMPTED	994	/* Dummy signal value for job preemption */
 #define SIG_DEBUG_WAKE	995	/* Dummy signal value to wake procs stopped
 				 * for debugger */
