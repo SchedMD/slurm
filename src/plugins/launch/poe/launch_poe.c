@@ -756,11 +756,34 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
  	return SLURM_SUCCESS;
 }
 
+static void _build_user_env(void)
+{
+	char *tmp_env, *tok, *save_ptr = NULL, *eq_ptr, *value;
+
+	tmp_env = xstrdup(opt.export_env);
+	tok = strtok_r(tmp_env, ",", &save_ptr);
+	while (tok) {
+		if (!strcasecmp(tok, "NONE"))
+			break;
+		eq_ptr = strchr(tok, '=');
+		if (eq_ptr) {
+			eq_ptr[0] = '\0';
+			value = eq_ptr + 1;
+			setenv(tok, value, 1);
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_env);
+}
+
 extern int launch_p_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
 	slurm_step_launch_callbacks_t *step_callbacks)
 {
 	int rc = 0;
+
+	if (opt.export_env)
+		_build_user_env();
 
 	poe_pid = fork();
 	if (poe_pid < 0) {
