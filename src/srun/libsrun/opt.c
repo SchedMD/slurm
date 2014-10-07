@@ -958,6 +958,8 @@ static void _set_options(const int argc, char **argv)
 	char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
 		"o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
 	char *pos_delimit;
+	bool ntasks_set_opt = false;
+
 #ifdef HAVE_PTY_H
 	char *tmp_str;
 #endif
@@ -1101,6 +1103,7 @@ static void _set_options(const int argc, char **argv)
 			}
 			break;
 		case (int)'n':
+			ntasks_set_opt = true;
 			opt.ntasks_set = true;
 			opt.ntasks =
 				_get_int(optarg, "number of tasks", true);
@@ -1648,6 +1651,12 @@ static void _set_options(const int argc, char **argv)
 			}
 		}
 	}
+
+	/* This means it was read from the environment.  We will
+	 * override it with what the user specified in the hostlist.
+	 */
+	if (!ntasks_set_opt && (opt.distribution == SLURM_DIST_ARBITRARY))
+		opt.ntasks_set = false;
 
 	spank_option_table_destroy (optz);
 }

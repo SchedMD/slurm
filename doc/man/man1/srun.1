@@ -2070,9 +2070,6 @@ Same as \fB\-\-network\fR
 \fBSLURM_NNODES\fR
 Same as \fB\-N, \-\-nodes\fR
 .TP
-\fBSLURM_NODELIST\fR
-Same as \fB\-w, \-\-nodelist\fR
-.TP
 \fBSLURM_NO_ROTATE\fR
 Same as \fB\-R, \-\-no\-rotate\fR
 .TP
@@ -2201,7 +2198,7 @@ if specified on the execute line.
 \-\-cpu_bind verbosity (quiet,verbose).
 .TP
 \fBSLURM_CPU_BIND_TYPE\fR
-\-\-cpu_bind type (none,rank,map_cpu:,mask_cpu:)
+\-\-cpu_bind type (none,rank,map_cpu:,mask_cpu:).
 .TP
 \fBSLURM_CPU_BIND_LIST\fR
 \-\-cpu_bind map or mask list (list of SLURM CPU IDs or masks for this node,
@@ -2239,7 +2236,7 @@ Number of CPUS per node.
 Set to value of the \-\-dependency option.
 .TP
 \fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
-Job id of the executing job
+Job id of the executing job.
 
 .TP
 \fBSLURM_JOB_NAME\fR
@@ -2254,24 +2251,24 @@ Name of the partition in which the job is running.
 .TP
 \fBSLURM_LAUNCH_NODE_IPADDR\fR
 IP address of the node from which the task launch was
-initiated (where the srun command ran from)
+initiated (where the srun command ran from).
 .TP
 \fBSLURM_LOCALID\fR
-Node local task ID for the process within a job
+Node local task ID for the process within a job.
 
 .TP
 \fBSLURM_MEM_BIND_VERBOSE\fR
 \-\-mem_bind verbosity (quiet,verbose).
 .TP
 \fBSLURM_MEM_BIND_TYPE\fR
-\-\-mem_bind type (none,rank,map_mem:,mask_mem:)
+\-\-mem_bind type (none,rank,map_mem:,mask_mem:).
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
-\-\-mem_bind map or mask list (<list of IDs or masks for this node>)
+\-\-mem_bind map or mask list (<list of IDs or masks for this node>).
 
 .TP
 \fBSLURM_NNODES\fR
-Total number of nodes in the job's resource allocation
+Total number of nodes in the job's resource allocation.
 .TP
 \fBSLURM_NODE_ALIASES\fR
 Sets of node name, communication address and hostname for nodes allocated to
@@ -2282,20 +2279,20 @@ SLURM_NODE_ALIASES\:=\:ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 .ad
 .TP
 \fBSLURM_NODEID\fR
-The relative node ID of the current node
+The relative node ID of the current node.
 .TP
 \fBSLURM_NODELIST\fR
-List of nodes allocated to the job
+List of nodes allocated to the job.
 .TP
 \fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
-Total number of processes in the current job
+Total number of processes in the current job.
 .TP
 \fBSLURM_PRIO_PROCESS\fR
 The scheduling priority (nice value) at the time of job submission.
 This value is propagated to the spawned processes.
 .TP
 \fBSLURM_PROCID\fR
-The MPI rank (or relative process ID) of the current process
+The MPI rank (or relative process ID) of the current process.
 .TP
 \fBSLURM_SRUN_COMM_HOST\fR
 IP address of srun communication host.
@@ -2319,7 +2316,7 @@ Number of processes in the step.
 Number of processes per node within the step.
 .TP
 \fBSLURM_STEP_ID\fR (and \fBSLURM_STEPID\fR for backwards compatibility)
-The step ID of the current job
+The step ID of the current job.
 .TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which \fBsrun\fR was invoked.

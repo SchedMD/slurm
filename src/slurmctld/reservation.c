@@ -2506,6 +2506,34 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 	list_iterator_destroy(job_iterator);
 }
 
+static bool _match_user_assoc(char *assoc_str, List assoc_list, bool deny)
+{
+	ListIterator itr;
+	bool found = 0;
+	slurmdb_association_rec_t *assoc;
+	char tmp_char[1000];
+
+	if (!assoc_str || !assoc_list || !list_count(assoc_list))
+		return false;
+
+	itr = list_iterator_create(assoc_list);
+	while ((assoc = list_next(itr))) {
+		while (assoc) {
+			snprintf(tmp_char, sizeof(tmp_char), ",%s%u,",
+				 deny ? "-" : "", assoc->id);
+			if (strstr(assoc_str, tmp_char)) {
+				found = 1;
+				goto end_it;
+			}
+			assoc = assoc->usage->parent_assoc_ptr;
+		}
+	}
+end_it:
+	list_iterator_destroy(itr);
+
+	return found;
+}
+
 /* Delete an exiting resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 {
@@ -2570,6 +2598,12 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	int tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
+	List assoc_list = NULL;
+	bool check_permissions = false;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK };
+
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -2586,25 +2620,81 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	pack32(resv_packed, buffer);
 	pack_time(now, buffer);
 
+	/* Create this list once since it will not change durning this call. */
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
+	    && !validate_operator(uid)) {
+		slurmdb_association_rec_t assoc;
+
+		check_permissions = true;
+
+		memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
+		assoc.uid = uid;
+
+		assoc_list = list_create(NULL);
+
+		assoc_mgr_lock(&locks);
+		if (assoc_mgr_get_user_assocs(acct_db_conn, &assoc,
+					      accounting_enforce, assoc_list)
+		    != SLURM_SUCCESS)
+			goto no_assocs;
+	}
+
 	/* write individual reservation records */
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
-		    && !validate_operator(uid)) {
-			int i = 0;
-			for (i = 0; i < resv_ptr->user_cnt; i++) {
-				if (resv_ptr->user_list[i] == uid)
-					break;
-			}
+		if (check_permissions) {
+			/* Determine if we have access */
+			if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+			    && resv_ptr->assoc_list) {
+				/* Check to see if the association is
+				 * here or the parent association is
+				 * listed in the valid associations.
+				 */
+				if (strchr(resv_ptr->assoc_list, '-')) {
+					if (_match_user_assoc(
+						    resv_ptr->assoc_list,
+						    assoc_list,
+						    true))
+						continue;
+				}
 
-			if (i >= resv_ptr->user_cnt)
-				continue;
+				if (strstr(resv_ptr->assoc_list, ",1") ||
+				    strstr(resv_ptr->assoc_list, ",2") ||
+				    strstr(resv_ptr->assoc_list, ",3") ||
+				    strstr(resv_ptr->assoc_list, ",4") ||
+				    strstr(resv_ptr->assoc_list, ",5") ||
+				    strstr(resv_ptr->assoc_list, ",6") ||
+				    strstr(resv_ptr->assoc_list, ",7") ||
+				    strstr(resv_ptr->assoc_list, ",8") ||
+				    strstr(resv_ptr->assoc_list, ",9") ||
+				    strstr(resv_ptr->assoc_list, ",0")) {
+					if (!_match_user_assoc(
+						    resv_ptr->assoc_list,
+						    assoc_list, false))
+						continue;
+				}
+			} else {
+				int i = 0;
+				for (i = 0; i < resv_ptr->user_cnt; i++) {
+					if (resv_ptr->user_list[i] == uid)
+						break;
+				}
+
+				if (i >= resv_ptr->user_cnt)
+					continue;
+			}
 		}
 
 		_pack_resv(resv_ptr, buffer, false, protocol_version);
 		resv_packed++;
 	}
 	list_iterator_destroy(iter);
+
+no_assocs:
+	if (check_permissions) {
+		FREE_NULL_LIST(assoc_list);
+		assoc_mgr_unlock(&locks);
+	}
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);

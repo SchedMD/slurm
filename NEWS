@@ -288,6 +288,15 @@ documents those changes that are of interest to users and administrators.
     logic) is complete.
  -- Setting the state of a node in powered down state node to "resume" will
     no longer cause it to reboot, but only clear the "drain" state flag.
+ -- Fix srun documentation to remove SLURM_NODELIST being equivalent as the -w
+    option (since it isn't).
+ -- Fix issue with --hint=nomultithread and allocations with steps running
+    arbitrary layouts (test1.59).
+ -- PrivateData=reservation modified to permit users to view the reservations
+    which they have access to (rather then preventing them from seeing ANY
+    reservation).  Backport from 14.11 commit 77c2bd25c.
+ -- Fix PrivateData=reservation when using associations to give privileges to
+    a reservation.
 
 * Changes in Slurm 14.03.8
 ==========================
