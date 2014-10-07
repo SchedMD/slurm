@@ -241,6 +241,10 @@ expect {
 	}
 }
 
+if { [string length $partition] == 0 } {
+	 set partition [default_partition]
+}
+
 set node_name [ get_idle_node_in_part $partition ]
 set cluster_name [ get_cluster_name ]
 
