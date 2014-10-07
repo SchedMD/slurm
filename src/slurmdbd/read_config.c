@@ -659,7 +659,7 @@ extern List dump_config(void)
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ArchiveSupend");
+	key_pair->name = xstrdup("ArchiveSuspend");
 	key_pair->value = xstrdup_printf(
 		"%u", SLURMDB_PURGE_ARCHIVE_SET(
 			slurmdbd_conf->purge_suspend) ? 1 : 0);
