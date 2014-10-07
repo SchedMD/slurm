@@ -2274,7 +2274,7 @@ exit_steps:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging job entires before %ld for %s",
+		debug4("Purging job entries before %ld for %s",
 		       curr_end, cluster_name);
 
 		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
@@ -2312,7 +2312,7 @@ exit_jobs:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging resv entires before %ld for %s",
+		debug4("Purging resv entries before %ld for %s",
 		       curr_end, cluster_name);
 
 		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_resv)) {
