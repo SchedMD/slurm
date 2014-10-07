@@ -354,7 +354,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 
 	if ((opt.distribution == SLURM_DIST_ARBITRARY) &&
 	    (count != opt.ntasks)) {
-		error("You asked for %d tasks but specified %d nodes",
+		error("You asked for %d tasks but hostlist specified %d nodes",
 		      opt.ntasks, count);
 		goto error;
 	}
