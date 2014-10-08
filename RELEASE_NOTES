@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 14.11
-6 July 2014
+8 October 2014
 
 
 IMPORTANT NOTE:
@@ -29,12 +29,10 @@ HIGHLIGHTS
  -- Added support for reserving CPUs and/or memory on a compute node for system
     use.
  -- Added support for allocation of generic resources by model type for
-    heterogenous systems (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of
+    heterogeneous systems (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of
     any type).
  -- Added support for non-consumable generic resources that are limited, but
     can be shared between jobs.
- -- Added a Route plugin to allow messages to be forwarded using switch
-    topology information.
  -- Refactor job_submit/lua interface. LUA FUNCTIONS NEED TO CHANGE! The
     lua script no longer needs to explicitly load meta-tables, but information
     is available directly using names slurm.reservations, slurm.jobs,
@@ -42,10 +40,11 @@ HIGHLIGHTS
     updated without restarting the slurmctld daemon.
  -- Eliminate native Cray specific port management. Native Cray systems must
     now use the MpiParams configuration parameter to specify ports to be used
-    for commmunications. When upgrading Native Cray systems from version 14.03,
+    for communications. When upgrading Native Cray systems from version 14.03,
     all running jobs should be killed and the switch_cray_state file (in
     SaveStateLocation of the nodes where the slurmctld daemon runs) must be
     explicitly deleted.
+
 
 RPMBUILD CHANGES
 ================
@@ -76,7 +75,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add SelectTypeParameters option of CR_PACK_NODES to pack a job's tasks
     tightly on its allocated nodes rather than distributing them evenly across
     the allocated nodes.
- -- Added PriorityFlags option of Calulate_Running to continue recalculating
+ -- Added PriorityFlags option of Calculate_Running to continue recalculating
     the priority of running jobs.
  -- Add new node configuration parameters CoreSpecCount, CPUSpecList and
     MemSpecLimit which support the reservation of resources for system use
@@ -101,9 +100,11 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add SchedulerParameters option of pack_serial_at_end to put serial jobs at
     the end of the available nodes rather than using a best fit algorithm.
 
+
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
  -- Added DebugFlags
+
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -155,6 +156,9 @@ COMMAND CHANGES (see man pages for details)
     reservation flag "TIME_FLOAT" for more information.
  -- Added "scontrol write config" option to save a copy of the current
     configuration in a file containing a time stamp.
+ -- Added "sacctmgr reconfigure" option to cause slurmdbd to read current
+    configuration.
+
 
 OTHER CHANGES
 =============
@@ -165,12 +169,20 @@ OTHER CHANGES
     read or modified, add locks directly in the plugin.
  -- Cray MPMD (Multiple-Program Multiple-Data) support completed.
 
+
 API CHANGES
 ===========
 
-
 Changed members of the following structs
 ========================================
+ -- Changed the following fields in struct front_end_info:
+    node_state change from 16-bits to 32-bits
+ -- Changed the following fields in struct node_info:
+    node_state change from 16-bits to 32-bits
+ -- Changed the following fields in struct slurm_update_front_end_msg:
+    node_state change from 16-bits to 32-bits
+ -- Changed the following fields in struct slurm_update_node_msg:
+    node_state change from 16-bits to 32-bits
 
 
 Added the following struct definitions
@@ -178,27 +190,62 @@ Added the following struct definitions
  -- Added the following fields to struct stats_info_response_msg:
     rpc_type_size, rpc_type_id, rpc_type_cnt, rpc_type_time,
     rpc_user_size, rpc_user_id, rpc_user_cnt, rpc_user_time.
+ -- Added the following fields to struct job_descriptor:
+    job_id_str
  -- Added the following fields to struct job_info:
-    reboot, sched_nodes
+    array_bitmap, array_max_tasks, array_task_str, reboot, sched_nodes
  -- Added the following fields to struct node_info:
     gres_drain and gres_used
     core_spec_cnt, cpu_spec_list, mem_spec_limit
  -- Added the following fields to struct slurm_ctl_conf:
-    chos_loc, mem_limit_enforce, priority_params
-    requeue_exit, requeue_exit_hold, route_plugin
+    chos_loc, cpu_freq_def, layouts, mem_limit_enforce, priority_params,
+    requeue_exit, requeue_exit_hold, route_plugin, srun_port_range,
+    use_spec_resources
+ -- Added the following fields to struct suspend_msg:
+    job_id_str
+ -- Added the following fields to struct slurm_step_ctx_params_t:
+    profile
+
+
+Added the following struct definitions
+======================================
+job_array_resp_msg_t - Job array response data structure
 
 
 Changed the following enums and #defines
 ========================================
--- Added #define DEBUG_FLAG_ROUTE to list of debug flags.
+CPU_FREQ_* - Identification of CPU governors to use
+DEBUG_FLAG_* - Many new DebugFlag values defined
+HEALTH_CHECK_CYCLE - Cycle through nodes for health check rather than trying
+		to run health check in parallel on large numbers of nodes
+KILL_STEPS_ONLY - Do not signal batch script
+MAIL_JOB_TIME* - Email event triggers based upon job's run time relative to
+		its time limit
+PRIORITY_FLAGS_* - New job priority calculation options
+RESERVE_FLAG_TIME_FLOAT - Identify a reservation with a start time that is
+		relative to the current time
+WAIT_ASSOC_*, WAIT_QOS_* - Many new job "reason" flags added to better identify
+		why a job is pending rather than running. This includes a
+		detailed identify of specific association and QOS limits.
 
 
 Added the following API's
 =========================
+slurm_free_job_array_resp() - Free job array RPC responses
+slurm_kill_job2() - Similar to slurm_kill_job(), but supports job arrays
+slurm_kill_job_step2()- Similar to slurm_kill_job_step(), but supports job arrays
+slurm_requeue2()  - Similar to slurm_requeue(), but supports job arrays
+slurm_resume2()   - Similar to slurm_resume(), but supports job arrays
+slurm_suspend2()  - Similar to slurm_suspend(), but supports job arrays
+slurm_update_job2() - Similar to slurm_update_job(), but supports job arrays
+slurm_write_ctl_conf() - write the contents of slurm control configuration
+		message as loaded using slurm_load_ctl_conf() to a file
 
 
-Change the following API's
-===========================
+Changed the following API's
+============================
+slurm_set_debugflags() - Debug flags argument changed from 32-bit to 64-bit
+slurm_signal_job_step() - Signal value changed from 16-bit to 32-bit
 
 
 DBD API Changes
@@ -207,9 +254,19 @@ DBD API Changes
 Changed members of the following structs
 ========================================
 
+
 Added the following struct definitions
 ======================================
-
+ -- Added the following fields to struct slurmdb_association_rec:
+    assoc_next, assoc_next_id (for hash table)
+ -- Added the following fields to struct slurmdb_job_rec_t:
+    array_max_tasks, array_task_str, alloc_gres, req_gres, used_gres, resv_name
+ -- Added the following fields to struct slurmdb_reservation_rec_t:
+    array_job_id, array_task_id
+ -- Added the following fields to struct slurmdb_select_step_t:
+    array_task_id
+ -- Added the following fields to struct slurmdb_qos_rec_t:
+    min_cpus_pj
 
 Added the following enums and #defines
 ========================================
@@ -217,3 +274,4 @@ Added the following enums and #defines
 
 Added the following API's
 =========================
+slurmdb_reconfig() - Reconfigure the slurmdbd (re-read the configuration file)
