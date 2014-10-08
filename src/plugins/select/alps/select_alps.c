@@ -151,7 +151,7 @@ static int select_cray_dim_size[3] = {-1};
  * minimum version for their plugins as the node selection API matures.
  */
 const char plugin_name[]	= "Cray node selection plugin";
-const char plugin_type[]	= "select/cray";
+const char plugin_type[]	= "select/alps";
 uint32_t plugin_id		= 104;
 const uint32_t plugin_version	= 110;
 
