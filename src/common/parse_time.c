@@ -431,7 +431,7 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 /* Convert string to equivalent time value
  * input formats:
  *   today or tomorrow
- *   midnight, noon, teatime (4PM)
+ *   midnight, noon, fika (3 PM), teatime (4 PM)
  *   HH:MM[:SS] [AM|PM]
  *   MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
  *   MM/DD[/YY]-HH:MM[:SS]
@@ -494,6 +494,13 @@ extern time_t parse_time(char *time_str, int past)
 		}
 		if (strncasecmp(time_str+pos, "noon", 4) == 0) {
 			hour   = 12;
+			minute = 0;
+			second = 0;
+			pos += 3;
+			continue;
+		}
+		if (strncasecmp(time_str+pos, "fika", 4) == 0) {
+			hour   = 15;
 			minute = 0;
 			second = 0;
 			pos += 3;

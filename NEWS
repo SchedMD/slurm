@@ -52,6 +52,7 @@ documents those changes that are of interest to users and admins.
  -- Fix PrivateData=reservation when using associations to give privileges to
     a reservation.
  -- Better checking to see if select plugin is linear or not.
+ -- Add support for time specification of "fika" (3 PM).
 
 * Changes in Slurm 14.03.8
 ==========================
