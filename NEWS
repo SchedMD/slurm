@@ -53,6 +53,7 @@ documents those changes that are of interest to users and admins.
     a reservation.
  -- Better checking to see if select plugin is linear or not.
  -- Add support for time specification of "fika" (3 PM).
+ -- Standardize qstat wrapper more.
 
 * Changes in Slurm 14.03.8
 ==========================
