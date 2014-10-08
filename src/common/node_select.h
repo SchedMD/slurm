@@ -266,6 +266,12 @@ extern int select_get_plugin_id_pos(uint32_t plugin_id);
 /* Get the plugin ID number. Unique for each select plugin type */
 extern int select_get_plugin_id(void);
 
+/* If the slurmctld is running a linear based select plugin return 1
+ * else 0. */
+extern int select_running_linear_based(void);
+
+extern int select_is_linear_based(void);
+
 /*
  * Save any global state information
  * IN dir_name - directory into which the data can be stored

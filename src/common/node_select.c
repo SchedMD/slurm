@@ -210,23 +210,6 @@ extern int slurm_select_init(bool only_default)
 	if (working_cluster_rec) {
 		/* just ignore warnings here */
 	} else {
-#ifdef HAVE_XCPU
-		if (strcasecmp(type, "select/linear")) {
-			error("%s is incompatible with XCPU use", type);
-			fatal("Use SelectType=select/linear");
-		}
-#endif
-		if (!strcasecmp(type, "select/linear")) {
-			uint16_t cr_type = slurm_get_select_type_param();
-			if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE) ||
-			    (cr_type & CR_CPU)) {
-				fatal("Invalid SelectTypeParameters for "
-				      "select/linear: %s (%u)",
-				      select_type_param_string(cr_type),
-				      cr_type);
-			}
-		}
-
 #ifdef HAVE_BG
 		if (strcasecmp(type, "select/bluegene")) {
 			error("%s is incompatible with BlueGene", type);
@@ -396,11 +379,30 @@ skip_load_all:
 
 	}
 	init_run = true;
-
 done:
 	slurm_mutex_unlock( &select_context_lock );
+	if (!working_cluster_rec) {
+		if (select_running_linear_based()) {
+			uint16_t cr_type = slurm_get_select_type_param();
+			if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE) ||
+			    (cr_type & CR_CPU)) {
+				fatal("Invalid SelectTypeParameters for "
+				      "%s: %s (%u)",
+				      type,
+				      select_type_param_string(cr_type),
+				      cr_type);
+			}
+		} else {
+#ifdef HAVE_XCPU
+			error("%s is incompatible with XCPU use", type);
+			fatal("Use SelectType=select/linear");
+#endif
+		}
+	}
+
 	xfree(type);
 	xfree(dir_array);
+
 	return retval;
 }
 
@@ -450,6 +452,28 @@ extern int select_get_plugin_id(void)
 		return 0;
 
 	return *(ops[select_context_default].plugin_id);
+}
+
+/* If the slurmctld is running a linear based select plugin return 1
+ * else 0. */
+extern int select_running_linear_based(void)
+{
+	int rc = 0;
+
+	if (slurm_select_init(0) < 0)
+		return 0;
+
+	switch (*(ops[select_context_default].plugin_id)) {
+	case 102: // select/linear
+	case 104: // select/alps -> linear
+	case 107: // select/cray -> linear
+		rc = 1;
+		break;
+	default:
+		rc = 0;
+		break;
+	}
+	return rc;
 }
 
 /*
