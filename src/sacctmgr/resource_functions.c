@@ -345,7 +345,7 @@ static int _set_res_rec(int *start, int argc, char *argv[],
 				exit_code = 1;
 			} else
 				set = 1;
-		} else if (!strncasecmp(argv[i], "Manager",
+		} else if (!strncasecmp(argv[i], "ServerType",
 					 MAX(command_len, 1))) {
 			if (!res->manager)
 				res->manager =
@@ -426,14 +426,6 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 			field->print_routine(field, count,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_CUSED:
-			if (clus_res)
-				count = (res->count * res->percent_used) / 100;
-			else
-				count = 0;
-			field->print_routine(field, count,
-					     (curr_inx == field_count));
-			break;
 		case PRINT_COUNT:
 			field->print_routine(field,
 					     res->count,
@@ -457,7 +449,7 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 				(curr_inx == field_count));
 			xfree(tmp_char);
 			break;
-		case PRINT_MANAGER:
+		case PRINT_SERVERTYPE:
 			field->print_routine(field,
 					     res->manager,
 					     (curr_inx == field_count));
@@ -478,7 +470,7 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 						     res->type),
 					     (curr_inx == field_count));
 			break;
-		case PRINT_USED:
+		case PRINT_ALLOCATED:
 			field->print_routine(
 				field, res->percent_used,
 				(curr_inx == field_count));
@@ -793,7 +785,7 @@ extern int sacctmgr_list_res(int argc, char *argv[])
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(
 			format_list,
-			"Name,Server,Type,Count,Used");
+			"Name,Server,Type,Count,Allocated,ServerType");
 		if (res_cond->with_clusters)
 			slurm_addto_char_list(
 				format_list, "Cluster,Allowed");

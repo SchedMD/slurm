@@ -353,9 +353,9 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("LFT");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Manager", object, MAX(command_len, 3))) {
-		field->type = PRINT_MANAGER;
-		field->name = xstrdup("Manager");
+	} else if (!strncasecmp("servertype", object, MAX(command_len, 10))) {
+		field->type = PRINT_SERVERTYPE;
+		field->name = xstrdup("ServerType");
 		field->len = 10;
 		field->print_routine = print_fields_str;
 	} else if (!strncasecmp("MaxCPUMinsPerJob", object,
@@ -540,10 +540,10 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("UsageThres");
 		field->len = 10;
 		field->print_routine = print_fields_double;
-	} else if (!strncasecmp("Used", object, MAX(command_len, 7))) {
-		field->type = PRINT_USED;
-		field->name = xstrdup("% Used");
-		field->len = 10;
+	} else if (!strncasecmp("Allocated", object, MAX(command_len, 7))) {
+		field->type = PRINT_ALLOCATED;
+		field->name = xstrdup("% Allocated");
+		field->len = 11;
 		field->print_routine = print_fields_uint16;
 	} else if (!strncasecmp("User", object, MAX(command_len, 1))) {
 		field->type = PRINT_USER;

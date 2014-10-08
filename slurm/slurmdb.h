@@ -113,7 +113,7 @@ typedef enum {
 
 typedef enum {
 	SLURMDB_RESOURCE_NOTSET,
-	SLURMDB_RESOURCE_LICENSE,
+	SLURMDB_RESOURCE_LICENSE
 } slurmdb_resource_type_t;
 
 typedef enum {

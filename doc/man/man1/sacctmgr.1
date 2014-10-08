@@ -215,7 +215,8 @@ Quality of Service.
 
 .TP
 \fIResource\fP
-Resources - software resources for the system.
+Software resources for the system. Those are software licenses shared
+among clusters.
 
 .TP
 \fItransaction\fR
@@ -1334,8 +1335,9 @@ Flags that identify specific attributes of the system resource.  At this time
 no flags have been defined.
 
 .TP
-\fIManager\fP=<OPT>
-The name of a software resource manager controlling this system resource.
+\fIServerType\fP=<OPT>
+The type of a software resource manager providing the licenses. For example
+FlexNext Publisher Flexlm license server or Reprise License Manager RLM.
 
 .TP
 \fINames\fP=<OPT>
@@ -1350,7 +1352,8 @@ Percentage of a specific resource that can be used on specified cluster.
 
 .TP
 \fIServer\fP=<OPT>
-The name of the server serving up the resource.  Default is 'slurmdb'.
+The name of the server serving up the resource.  Default is 'slurmdb' indicating
+the licenses are being served by the database.
 
 .TP
 \fIType\fP=<OPT>
@@ -1372,46 +1375,28 @@ Name of cluster resource is given to.
 The count of a specific resource configured on the system globally.
 
 .TP
-\fICountAllowed\fP
-The count of a specific resource configured on the system to a cluster.
-
-.TP
-\fICountUsed\fP
-The used count of a specific resource configured on the system globally.
+\fIAllocated\fP
+The percent of licenses allocated to a cluster.
 
 .TP
 \fIDescription\fP
 Description of the resource.
 
 .TP
-\fIFlags\fP
-Flags that identify specific attributes associated with the resource.  At
-this time no flags have been defined.
-
- .TP
-\fIManager\fP
-Name of the resource manager that controls this resource.
+\fIServerType\fP
+The type of the server controlling the licenses.
 
 .TP
 \fIName\fP
 Name of this resource.
 
 .TP
-\fIPercentAllowed\fP
-The percent of a specific resource given to a cluster.
-
-.TP
-\fIPercentUsed\fP
-The used percentage of a specific resource globally.
-
- .TP
 \fIServer\fP
 Server serving up the resource.
 
 .TP
 \fIType\fP
 Type of resource this record represents.
-
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
 
