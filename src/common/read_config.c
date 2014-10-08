@@ -71,6 +71,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
+#include "src/common/node_select.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
