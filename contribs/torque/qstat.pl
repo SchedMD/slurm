@@ -436,7 +436,9 @@ sub print_job_brief
 
 	if(!$line_num) {
 		printf("%-19s %-16s %-15s %-8s %-1s %-15s\n",
-		       "Job ID", "Jobname", "Username", "Time",  "S", "Queue");
+		       "Job id", "Name", "Username", "Time Use",  "S", "Queue");
+		printf("%-19s %-16s %-15s %-8s %-1s %-15s\n",
+		       '-' x 19, '-' x 16, '-' x 15, '-' x 8, '-' x 1, '-' x 15);
 	}
 	printf("%-19.19s %-16.16s %-15.15s %-8.8s %-1.1s %-15.15s\n",
 	       $job->{'job_id'}, $job->{'name'}, $job->{'user_name'},
@@ -458,8 +460,8 @@ sub print_job_select
 		       "", "", "", "", "", "", "", "Req'd", "Req'd", "", "Elap");
 		printf(
 			"%-20s %-8s %-8s %-20s %-6s %-5s %-5s %-6s %-5s %-1s %-5s\n",
-			"Job ID", "Username", "Queue", "Jobname", "SessID", "NDS",
-			"TSK",    "Memory",   "Time",  "S",       "Time"
+			"Job id", "Username", "Queue", "Name", "SessID", "NDS",
+			"TSK",    "Memory",   "Time Use",  "S",       "Time"
 			);
 		printf(
 			"%-20s %-8s %-8s %-20s %-6s %-5s %-5s %-6s %-5s %-1s %-5s\n",
