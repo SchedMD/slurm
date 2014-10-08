@@ -270,8 +270,6 @@ extern int select_get_plugin_id(void);
  * else 0. */
 extern int select_running_linear_based(void);
 
-extern int select_is_linear_based(void);
-
 /*
  * Save any global state information
  * IN dir_name - directory into which the data can be stored
