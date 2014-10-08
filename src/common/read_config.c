@@ -71,7 +71,6 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
-#include "src/common/node_select.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
@@ -3655,9 +3654,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->select_type_param = 0;
 
 	/* If not running linear default to be CR_CPU */
-	if (!(slurmctld_conf.select_type_param & (CR_CPU | CR_SOCKET | CR_CORE))
-	    && !select_running_linear_based())
-		slurmctld_conf.select_type_param |= CR_CPU;
+	if (!(conf->select_type_param & (CR_CPU | CR_SOCKET | CR_CORE))
+	    && (strcmp(conf->select_type, "select/linear") ||
+		((strcmp(conf->select_type, "select/alps") ||
+		  strcmp(conf->select_type, "select/cray")) &&
+		 !(conf->select_type_param & CR_OTHER_CONS_RES))))
+		conf->select_type_param |= CR_CPU;
 
 	if (!s_p_get_string( &conf->slurm_user_name, "SlurmUser", hashtbl)) {
 		conf->slurm_user_name = xstrdup("root");
