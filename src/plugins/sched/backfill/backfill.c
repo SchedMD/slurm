@@ -421,15 +421,17 @@ static int _delta_tv(struct timeval *tv)
 
 static void _my_sleep(int usec)
 {
+	int64_t nsec;
 	struct timespec ts = {0, 0};
 	struct timeval  tv = {0, 0};
 
 	if (gettimeofday(&tv, NULL))
 		return;		/* Some error */
 
-	ts.tv_nsec  = (tv.tv_usec + usec) * 1000;
-	ts.tv_sec   = tv.tv_sec + (ts.tv_nsec / 1000000000);
-	ts.tv_nsec %= 1000000000;
+	nsec  = tv.tv_usec + usec;
+	nsec *= 1000;
+	ts.tv_sec  = tv.tv_sec + (nsec / 1000000000);
+	ts.tv_nsec = nsec % 1000000000;
 	pthread_mutex_lock(&term_lock);
 	if (!stop_backfill)
 		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
