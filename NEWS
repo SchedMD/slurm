@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     the Slurm database.
  -- Insure that slurm_spank_exit() is only called once from srun.
  -- Change the signature of net_set_low_water() to use 4 bytes instead of 8.
+ -- Export working_cluster_rec in libslurmdb.so as well as move some function
+    definitions needed for drmaa.
 
 * Changes in Slurm 14.11.0rc1
 =============================
