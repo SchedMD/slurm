@@ -385,10 +385,10 @@ done:
 	if (!working_cluster_rec) {
 		if (select_running_linear_based()) {
 			uint16_t cr_type = slurm_get_select_type_param();
-			if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE) ||
-			    (cr_type & CR_CPU)) {
+			if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
 				fatal("Invalid SelectTypeParameters for "
-				      "%s: %s (%u)",
+				      "%s: %s (%u), it's can't contain "
+				      "CR_(CPU|CORE|SOCKET).",
 				      type,
 				      select_type_param_string(cr_type),
 				      cr_type);

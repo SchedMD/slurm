@@ -1919,8 +1919,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	int i, tot_core;
 
 	info("cons_res: select_p_node_init");
-	if ((cr_type & (CR_CPU | CR_SOCKET | CR_CORE)) == 0) {
-		fatal("Invalid SelectTypeParameters: %s (%u)",
+	if ((cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) == 0) {
+		fatal("Invalid SelectTypeParameters: %s (%u), "
+		      "You need at least CR_(CPU|CORE|SOCKET)*",
 		      select_type_param_string(cr_type), cr_type);
 	}
 	if (node_ptr == NULL) {
