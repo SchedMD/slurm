@@ -168,7 +168,7 @@ int readn(int fd, void *buf, size_t nbytes)
 	return(n);
 }
 
-int net_set_low_water(int sock, int size)
+int net_set_low_water(int sock, socklen_t size)
 {
 	if (setsockopt(sock, SOL_SOCKET, SO_RCVLOWAT,
 		       (const void *) &size, sizeof(size)) < 0) {

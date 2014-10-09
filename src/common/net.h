@@ -41,6 +41,7 @@
 #define _NET_H
 
 #include <stdint.h>
+#include <sys/socket.h>
 
 #include "src/common/macros.h"
 
@@ -59,7 +60,7 @@ extern int net_accept_stream(int fd);
 
 /* set low water mark on socket
  */
-extern int net_set_low_water(int sock, int size);
+extern int net_set_low_water(int sock, socklen_t size);
 
 /* set keep alive time on socket */
 extern int net_set_keep_alive(int sock);
