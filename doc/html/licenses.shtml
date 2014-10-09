@@ -1,0 +1,132 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Licenses Guide</h1>
+
+<h2>Licenses Overview</h2>
+<p>
+<ul>
+Slurm can help with software license management by assigning available
+licenses to jobs at scheduling time. If the license are not available the
+jobs are kept pending until some other jobs using the licenses finishes
+freeing up the desired number of licenses.
+License in Slurm are essentially shared resources meaning configured resources
+that are not tied to a specific host, but are associated with the entire cluster.
+</ul>
+<ul>
+License in Slurm can be configured in two ways.
+<li><b>Local Licenses</b>
+Local licenses means they are local to the cluster using the
+<it>slurm.conf</it> in which they are configured.
+</li>
+<li><b>Remote Licenses</b>
+Remote licenses are served by the database and are configured using the
+<it>sacctmgr</it> command. This also makes them dynamic as upon running
+the command the <it>slurmdbd</it> updates all clusters the licenses
+are assigned to.
+</li>
+</ul>
+
+<h2>Use Case</h2>
+<ul>
+A site has two license servers, one provides by FlexNet serving 100 Nastran
+licenses and another one from Reprise License Management providing Matlab 50
+licenses. The site has two clusters named fluid and pdf dedicated to run
+simulation jobs using both products. The managers want to split the number
+of Nastran licenses equally between clusters but assign 2/3 of Matlab to
+cluster pdf and the remaining 1/2 to fluid cluster.
+</ul>
+
+<h2>Solving using case with Slurm</h2>
+<ul>
+Here we assume that both clusters have been configured correctly in the
+<it>slurmdbd</it> using the <it>sacctmgr</i> command.
+<li>
+<pre>
+->sacctmgr show clusters format=cluster,controlhost
+   Cluster     ControlHost
+---------- ---------------
+     fluid     143.11.1.3
+       pdf     144.12.3.2
+</pre>
+<li>
+The licenses are added using the <i>sacctmgr</i> specifying the
+total count of licenses and the percentage that should allocated
+to each cluster.
+<li>
+<pre>
+sacctmgr add resource name=nastran cluster=fluid
+count=100 percentallowed=50 server=flex_host
+servertype=flexlm type=license
+ Adding Resource(s)
+  nastran@slurmdb
+   Cluster - fluid      50%
+ Settings
+  Name           = nastran
+  Server         = slurmdb
+  Description    = nastran
+  Manager        = flex_host
+  Count          = 100
+  Type           = License
+</pre>
+Identical command is issued to add the licenses to the other cluster pdf.
+</li>
+<li>
+The configured licenses are now visible in both cluster using the <it>scontrol</it>
+command.
+On cluster fluid:
+<pre>
+->scontrol show lic
+LicenseName=nastran@slurmdb
+    Total=50 Used=0 Free=50 Remote=yes
+</pre>
+On cluster pdf:
+<pre>
+->scontrol show lic
+LicenseName=nastran@slurmdb
+    Total=50 Used=0 Free=50 Remote=yes
+</pre>
+</li>
+Identical command have to be ran to add the matlab license to the cluster
+using different percentage and different license server as it different
+from the previous one.
+<li>
+On cluster pdf
+<pre>
+scontrol show lic matlab@slurmdb
+LicenseName=matlab@slurmdb
+    Total=35 Used=0 Free=35 Remote=yes
+</pre>
+On cluster fluid:
+<pre>
+scontrol show lic matlab@slurmdb
+LicenseName=matlab@slurmdb
+    Total=15 Used=0 Free=15 Remote=yes
+</pre>
+</li>
+The <it>sacctmgr</it> command will not display the grand total
+of licenses.
+<pre>
+>sacctmgr show resource
+      Name     Server     Type  Count % Allocated ServerType
+---------- ---------- -------- ------ ----------- ----------
+   nastran    slurmdb  License    100         100  flex_host
+    matlab    slurmdb  License     50         100  flex_host
+</pre>
+</ul>
+
+<h2>Dynamic licenses</h2>
+<ul>
+When the license counter and percentage is updated using the <it>sacctmgr</it>
+command the values are updated in the database and the updated values sent
+to the controller. In this way the remote licenses are also dynamic.
+It is possible for sites to write a script that detects global license counter
+changes due to new licenses being add or old licenses being removed and
+updates Slurm. Should the license count decrease the running jobs will not be
+affected only the dispatch of new job will reflect the new license count.
+
+</ul>
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 30 May 2014</p>
+
+<!--#include virtual="footer.txt"-->
