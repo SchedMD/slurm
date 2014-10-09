@@ -462,6 +462,7 @@ generated_html = \
 	job_submit_plugins.html \
 	jobcompplugins.html \
 	launch_plugins.html \
+	licenses.html \
 	fair_tree.html \
 	mail.html \
 	man_index.html \
@@ -512,8 +513,7 @@ generated_html = \
 	topology.html \
 	topology_plugin.html \
 	troubleshoot.html \
-	tutorials.html \
-	licenses.html
+	tutorials.html
 
 html_DATA = \
 	${generated_html} \
