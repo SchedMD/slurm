@@ -7786,9 +7786,9 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	}
 }
 
-static int _find_node_max_cpu_cnt(void)
+static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 {
-	int i, max_cpu_cnt = 1;
+	int i, max_cpu_cnt = 1, max_core_cnt = 1;
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
@@ -7797,22 +7797,26 @@ static int _find_node_max_cpu_cnt(void)
 			/* Only data from config_record used for scheduling */
 			max_cpu_cnt = MAX(max_cpu_cnt,
 					  node_ptr->config_ptr->cpus);
+			max_core_cnt =  MAX(max_core_cnt,
+					    node_ptr->config_ptr->cores);
 		} else {
 #endif
 			/* Individual node data used for scheduling */
 			max_cpu_cnt = MAX(max_cpu_cnt, node_ptr->cpus);
+			max_core_cnt =  MAX(max_core_cnt, node_ptr->cores);
 #ifndef HAVE_BG
 		}
 #endif
 	}
-	return max_cpu_cnt;
+	*cpu_cnt_ptr  = max_cpu_cnt;
+	*core_cnt_ptr = max_core_cnt;
 }
 
 /* pack default job details for "get_job_info" RPC */
 static void _pack_default_job_details(struct job_record *job_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
-	static int max_cpu_cnt = -1;
+	static int max_cpu_cnt = -1, max_core_cnt = -1;
 	int i;
 	struct job_details *detail_ptr = job_ptr->details;
 	char *cmd_line = NULL;
@@ -7840,7 +7844,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 		shared = (uint16_t) NO_VAL;	/* No user or partition info */
 
 	if (max_cpu_cnt == -1)
-		max_cpu_cnt = _find_node_max_cpu_cnt();
+		_find_node_config(&max_cpu_cnt, &max_core_cnt);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (detail_ptr) {
@@ -7889,14 +7893,53 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 					pack32((uint32_t) 0, buffer);
 
 			}
+
 			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
 				pack32(job_ptr->node_cnt, buffer);
 				pack32((uint32_t) 0, buffer);
 			} else if (job_ptr->total_nodes) {
 				pack32(job_ptr->total_nodes, buffer);
 				pack32((uint32_t) 0, buffer);
+			} else if (detail_ptr->ntasks_per_node) {
+				/* min_nodes based upon task count and ntasks
+				 * per node */
+				uint32_t min_nodes;
+				min_nodes = detail_ptr->num_tasks /
+					    detail_ptr->ntasks_per_node;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			} else if (detail_ptr->cpus_per_task > 1) {
+				/* min_nodes based upon task count and cpus
+				 * per task */
+				uint32_t min_cpus, min_nodes;
+				min_cpus = detail_ptr->num_tasks *
+					   detail_ptr->cpus_per_task;
+				min_nodes = min_cpus + max_cpu_cnt - 1;
+				min_nodes /= max_cpu_cnt;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			} else if (detail_ptr->mc_ptr &&
+				   detail_ptr->mc_ptr->ntasks_per_core) {
+				/* min_nodes based upon task count and ntasks
+				 * per core */
+				uint32_t min_cores, min_nodes;
+				min_cores = detail_ptr->num_tasks +
+					    detail_ptr->mc_ptr->ntasks_per_core
+					    - 1;
+				min_cores /= detail_ptr->mc_ptr->ntasks_per_core;
+
+				min_nodes = min_cores + max_core_cnt - 1;
+				min_nodes /= max_core_cnt;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
 			} else {
-				/* Use task count to help estimate min_nodes */
+				/* min_nodes based upon task count only */
 				uint32_t min_nodes;
 				min_nodes = detail_ptr->num_tasks +
 					    max_cpu_cnt - 1;

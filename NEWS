@@ -304,6 +304,8 @@ documents those changes that are of interest to users and administrators.
  -- Better checking to see if select plugin is linear or not.
  -- Add support for time specification of "fika" (3 PM).
  -- Standardize qstat wrapper more.
+ -- Provide better estimate of minimum node count for pending jobs using more
+    job parameters.
 
 * Changes in Slurm 14.03.8
 ==========================
