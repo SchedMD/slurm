@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Updated the documentation about the remote licenses served by
     the Slurm database.
  -- Insure that slurm_spank_exit() is only called once from srun.
+ -- Change the signature of net_set_low_water() to use 4 bytes instead of 8.
 
 * Changes in Slurm 14.11.0rc1
 =============================
