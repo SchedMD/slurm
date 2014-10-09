@@ -92,7 +92,9 @@ is an implementation of <a href="http://www.gridforum.org/">Open Grid Forum</a>
 and control of jobs to <href="http://slurm.schedmd.com">Slurm</a>.
 Using DRMAA, grid applications builders, portal developers and ISVs can use 
 the same high-level API to link their software with different cluster/resource
-management systems.</li><br>
+management systems.<br><br>
+There is a variant of PSNC DRMAA providing support for Slurm's --cluster option
+avaiable <a href="https://github.com/natefoo/slurm-drmaa">here</a>.</li><br>
 
 <li><b>Hostlist</b><br>
 A Python program used for manipulation of Slurm hostlists including
@@ -341,6 +343,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 29 September 2014</p>
+<p style="text-align:center;">Last modified 9 October 2014</p>
 
 <!--#include virtual="footer.txt"-->
