@@ -1279,8 +1279,66 @@ extern List slurmdb_reservations_get(void *db_conn,
  */
 extern List slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond);
 
+/*
+ * Get information about requested cluster(s). Similar to
+ * slurmdb_clusters_get, but should be used when setting up the
+ * working_cluster_rec.  It replaces the plugin_id_select with
+ * the position of the id in the select plugin array, as well as sets up the
+ * control_addr and dim_size parts of the structure.
+ *
+ * IN: cluster_names - comman separated string of cluster names
+ * RET: List of slurmdb_cluster_rec_t *
+ * note List needs to bbe freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_get_info_cluster(char *cluster_names);
 
 /************** helper functions **************/
+extern void slurmdb_destroy_user_defs(void *object);
+extern void slurmdb_destroy_user_rec(void *object);
+extern void slurmdb_destroy_account_rec(void *object);
+extern void slurmdb_destroy_coord_rec(void *object);
+extern void slurmdb_destroy_clus_res_rec(void *object);
+extern void slurmdb_destroy_cluster_accounting_rec(void *object);
+extern void slurmdb_destroy_cluster_rec(void *object);
+extern void slurmdb_destroy_accounting_rec(void *object);
+extern void slurmdb_destroy_association_rec(void *object);
+extern void slurmdb_destroy_event_rec(void *object);
+extern void slurmdb_destroy_job_rec(void *object);
+extern void slurmdb_destroy_qos_rec(void *object);
+extern void slurmdb_destroy_reservation_rec(void *object);
+extern void slurmdb_destroy_step_rec(void *object);
+extern void slurmdb_destroy_res_rec(void *object);
+extern void slurmdb_destroy_txn_rec(void *object);
+extern void slurmdb_destroy_wckey_rec(void *object);
+extern void slurmdb_destroy_archive_rec(void *object);
+extern void slurmdb_destroy_report_assoc_rec(void *object);
+extern void slurmdb_destroy_report_user_rec(void *object);
+extern void slurmdb_destroy_report_cluster_rec(void *object);
+
+extern void slurmdb_destroy_user_cond(void *object);
+extern void slurmdb_destroy_account_cond(void *object);
+extern void slurmdb_destroy_cluster_cond(void *object);
+extern void slurmdb_destroy_association_cond(void *object);
+extern void slurmdb_destroy_event_cond(void *object);
+extern void slurmdb_destroy_job_cond(void *object);
+extern void slurmdb_destroy_job_modify_cond(void *object);
+extern void slurmdb_destroy_qos_cond(void *object);
+extern void slurmdb_destroy_reservation_cond(void *object);
+extern void slurmdb_destroy_res_cond(void *object);
+extern void slurmdb_destroy_txn_cond(void *object);
+extern void slurmdb_destroy_wckey_cond(void *object);
+extern void slurmdb_destroy_archive_cond(void *object);
+
+extern void slurmdb_destroy_update_object(void *object);
+extern void slurmdb_destroy_used_limits(void *object);
+extern void slurmdb_destroy_update_shares_rec(void *object);
+extern void slurmdb_destroy_print_tree(void *object);
+extern void slurmdb_destroy_hierarchical_rec(void *object);
+extern void slurmdb_destroy_selected_step(void *object);
+
+extern void slurmdb_destroy_report_job_grouping(void *object);
+extern void slurmdb_destroy_report_acct_grouping(void *object);
+extern void slurmdb_destroy_report_cluster_grouping(void *object);
 
 extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
 					 bool free_it);
@@ -1298,6 +1356,7 @@ extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 				      bool free_it);
 extern void slurmdb_init_res_cond(slurmdb_res_cond_t *cluster,
 				  bool free_it);
+
 /* The next two functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */

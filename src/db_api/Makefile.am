@@ -95,6 +95,7 @@ $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   slurm_*;"; \
 	 echo "   slurmdb_*;"; \
+	 echo "   working_cluster_rec;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 

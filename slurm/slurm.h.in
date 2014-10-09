@@ -1052,6 +1052,13 @@ extern void * slurm_list_next PARAMS((ListIterator i));
  */
 extern void slurm_list_sort PARAMS((List l, ListCmpF f));
 
+/* slurm_list_pop():
+ *
+ *  Pops the data item at the top of the stack [l].
+ *  Returns the data's ptr, or NULL if the stack is empty.
+ */
+extern void * slurm_list_pop PARAMS((List l));
+
 /*****************************************************************************\
  *      SLURM BITSTR FUNCTIONS
 \*****************************************************************************/
