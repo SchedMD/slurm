@@ -56,6 +56,8 @@ documents those changes that are of interest to users and admins.
  -- Standardize qstat wrapper more.
  -- Provide better estimate of minimum node count for pending jobs using more
     job parameters.
+ -- ALPS - Add SubAllocate to cray.conf file for those who like the way <=2.5
+    did the ALPS reservation.
 
 * Changes in Slurm 14.03.8
 ==========================

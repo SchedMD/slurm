@@ -77,6 +77,9 @@
  * @sdb_pass:	SDB database password
  * @sdb_port:	port number of SDB host
  * @slurm_debug_flags: see code for details
+ * @sub_alloc:  Only allocate requested node resources instead of the
+ *              whole node.  In both cases the user will be charged
+ *              for the entire node.  This is the Slurm <=2.5 behavior.
  * @sync_timeout: seconds to wait for ALPS and SLURM to sync without scheduling
  *                jobs
  */
@@ -92,6 +95,7 @@ typedef struct {
 	char		*sdb_pass;
 	uint32_t	sdb_port;
 	uint32_t	slurm_debug_flags;
+	bool		sub_alloc;
 	uint32_t	sync_timeout;
 } cray_config_t;
 

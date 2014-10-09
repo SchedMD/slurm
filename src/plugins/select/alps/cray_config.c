@@ -62,6 +62,7 @@ s_p_options_t cray_conf_file_options[] = {
 	{"SDBpass",        S_P_STRING},
 	{"SDBport",        S_P_UINT32},
 	{"SDBuser",        S_P_STRING},
+	{"SubAllocate",    S_P_BOOLEAN},
 	{"SyncTimeout",    S_P_UINT32},
 	{NULL}
 };
@@ -138,6 +139,9 @@ extern int create_config(void)
 		cray_conf->sdb_port = DEFAULT_CRAY_SDB_PORT;
 	if (!s_p_get_string(&cray_conf->sdb_user, "SDBuser", tbl))
 		cray_conf->sdb_user = xstrdup(DEFAULT_CRAY_SDB_USER);
+
+	s_p_get_boolean(&cray_conf->sub_alloc, "SubAllocate", tbl);
+
 	if (!s_p_get_uint32(&cray_conf->sync_timeout, "SyncTimeout", tbl))
 		cray_conf->sync_timeout = DEFAULT_CRAY_SYNC_TIMEOUT;
 
@@ -156,6 +160,7 @@ end_it:
 	info("\tSDBpass=\t%s", cray_conf->sdb_pass);
 	info("\tSDBport=\t%u", cray_conf->sdb_port);
 	info("\tSDBuser=\t%s", cray_conf->sdb_user);
+	info("\tSubAllocate=\t%u", cray_conf->sub_alloc);
 	info("\tSyncTimeout=\t%u", cray_conf->sync_timeout);
 #endif
 	return rc;
