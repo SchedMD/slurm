@@ -52,7 +52,11 @@ AC_DEFUN([X_AC_OFED],
     AC_MSG_WARN([unable to locate ofed installation])
   else
     OFED_CPPFLAGS="-I$x_ac_cv_ofed_dir/include/infiniband"
-    OFED_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ofed_dir/$bit -L$x_ac_cv_ofed_dir/$bit"
+    if test "$ac_with_rpath" = "yes"; then
+      OFED_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ofed_dir/$bit -L$x_ac_cv_ofed_dir/$bit"
+    else
+      OFED_LDFLAGS="-L$x_ac_cv_ofed_dir/$bit"
+    fi
     OFED_LIBS="-libmad -libumad"
     AC_DEFINE(HAVE_OFED, 1, [Define to 1 if ofed library found])
     if test ! -z "$have_pma_query_via" ; then

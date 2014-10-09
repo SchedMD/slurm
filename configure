@@ -20162,7 +20162,11 @@ $as_echo "$x_ac_cv_ofed_dir" >&6; }
 $as_echo "$as_me: WARNING: unable to locate ofed installation" >&2;}
   else
     OFED_CPPFLAGS="-I$x_ac_cv_ofed_dir/include/infiniband"
-    OFED_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ofed_dir/$bit -L$x_ac_cv_ofed_dir/$bit"
+    if test "$ac_with_rpath" = "yes"; then
+      OFED_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ofed_dir/$bit -L$x_ac_cv_ofed_dir/$bit"
+    else
+      OFED_LDFLAGS="-L$x_ac_cv_ofed_dir/$bit"
+    fi
     OFED_LIBS="-libmad -libumad"
 
 $as_echo "#define HAVE_OFED 1" >>confdefs.h
@@ -20597,7 +20601,11 @@ $as_echo "$x_ac_cv_hwloc_dir" >&6; }
 $as_echo "$as_me: WARNING: unable to locate hwloc installation" >&2;}
   else
     HWLOC_CPPFLAGS="-I$x_ac_cv_hwloc_dir/include"
-    HWLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_hwloc_dir/$bit -L$x_ac_cv_hwloc_dir/$bit"
+    if test "$ac_with_rpath" = "yes"; then
+      HWLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_hwloc_dir/$bit -L$x_ac_cv_hwloc_dir/$bit"
+    else
+      HWLOC_LDFLAGS="-L$x_ac_cv_hwloc_dir/$bit"
+    fi
     HWLOC_LIBS="-lhwloc"
 
 $as_echo "#define HAVE_HWLOC 1" >>confdefs.h
@@ -20675,7 +20683,11 @@ $as_echo "$x_ac_cv_freeipmi_dir" >&6; }
 $as_echo "$as_me: WARNING: unable to locate freeipmi installation" >&2;}
   else
     FREEIPMI_CPPFLAGS="-I$x_ac_cv_freeipmi_dir/include"
-    FREEIPMI_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_freeipmi_dir/$bit -L$x_ac_cv_freeipmi_dir/$bit"
+    if test "$ac_with_rpath" = "yes"; then
+      FREEIPMI_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_freeipmi_dir/$bit -L$x_ac_cv_freeipmi_dir/$bit"
+    else
+      FREEIPMI_LDFLAGS="-L$x_ac_cv_freeipmi_dir/$bit"
+    fi
     FREEIPMI_LIBS="-lipmimonitoring"
 
 $as_echo "#define HAVE_FREEIPMI 1" >>confdefs.h
@@ -20850,7 +20862,11 @@ fi
 $as_echo "$as_me: WARNING: unable to locate rrdtool installation" >&2;}
   else
     RRDTOOL_CPPFLAGS="-I$x_ac_cv_rrdtool_dir/include"
-    RRDTOOL_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_rrdtool_dir/$bit -L$x_ac_cv_rrdtool_dir/$bit"
+    if test "$ac_with_rpath" = "yes"; then
+      RRDTOOL_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_rrdtool_dir/$bit -L$x_ac_cv_rrdtool_dir/$bit"
+    else
+      RRDTOOL_LDFLAGS="-L$x_ac_cv_rrdtool_dir/$bit"
+    fi
     RRDTOOL_LIBS="-lrrd"
   fi
 
