@@ -54,7 +54,7 @@ value of 2035.</li>
 </ul>
 <p>A plugin may optionally define and export the following symbols:</p>
 <ul>
-<li>const uint32_t plugin_legacy<br>
+<li>const uint32_t min_plug_version<br>
 a 32-bit unsigned integer formatted the same as <span class="commandline">plugin_version</span>
 giving the lowest API version number with which this plugin is compatible. If
 this symbol is omitted, its value is assumed to be equivalent to the <span class="commandline">plugin_version</span>
@@ -112,6 +112,6 @@ utilize a thread for that functionality. This thread may be created by the
 for an example of how to do this.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 9 October 2014</p>
 
 <!--#include virtual="footer.txt"-->
