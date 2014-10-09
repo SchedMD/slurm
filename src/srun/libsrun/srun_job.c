@@ -111,7 +111,8 @@ static void       _set_ntasks(allocation_info_t *info);
 static srun_job_t *_job_create_structure(allocation_info_t *info);
 static char *     _normalize_hostlist(const char *hostlist);
 static int _become_user(void);
-static int _call_spank_local_user(srun_job_t *job);
+static void _call_spank_fini(void);
+static int  _call_spank_local_user(srun_job_t *job);
 static void _default_sigaction(int sig);
 static long _diff_tv_str(struct timeval *tv1, struct timeval *tv2);
 static void _handle_intr(srun_job_t *job);
@@ -431,7 +432,7 @@ extern void init_srun(int ac, char **av,
 
 	/* Be sure to call spank_fini when srun exits.
 	 */
-	if (atexit((void (*) (void)) spank_fini) < 0)
+	if (atexit(_call_spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
 
 	/* set default options, process commandline arguments, and
@@ -1447,3 +1448,8 @@ static int _validate_relative(resource_allocation_response_msg_t *resp)
 	return 0;
 }
 
+static void _call_spank_fini(void)
+{
+	if (-1 != shepard_fd)
+		spank_fini(NULL);
+}
