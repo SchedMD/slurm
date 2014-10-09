@@ -746,8 +746,21 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	if (first_bit == -1 || last_bit == -1)
 		return SLURM_SUCCESS;		/* no nodes allocated */
 
-	/* always be 1 */
-	mppdepth = 1;
+	if (cray_conf->sub_alloc) {
+		mppdepth = MAX(1, job_ptr->details->cpus_per_task);
+		if (job_ptr->details->ntasks_per_node) {
+			mppnppn  = job_ptr->details->ntasks_per_node;
+		} else if (job_ptr->details->num_tasks) {
+			mppnppn = (job_ptr->details->num_tasks +
+				   job_ptr->job_resrcs->nhosts - 1) /
+				job_ptr->job_resrcs->nhosts;
+		} else {
+			mppnppn = 1;
+		}
+	} else {
+		/* always be 1 */
+		mppdepth = 1;
+	}
 
 	/* mppmem */
 	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
@@ -805,31 +818,66 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			node_mem  = node_ptr->real_memory;
 		}
 
-		node_cpus = adjust_cpus_nppcu(nppcu, threads, node_cpus);
+		if (cray_conf->sub_alloc && node_min_mem) {
+			int32_t tmp_mppmem;
 
-		/* On a reservation we can only run one job per node
-		   on a cray so allocate all the cpuss on each node
-		   reguardless of the request.
-		*/
-		mppwidth += node_cpus;
-
-		/* We want mppnppn to be the smallest number of cpus
-		   per node and allocate that on each of the nodes
-		   reguardless of the request.
-		*/
-		mppnppn = MIN(mppnppn, node_cpus);
-
-		if (node_min_mem) {
-			/* Keep track of the largest cpu count and Min
-			   memory if we need to split up the memory
-			   per cpu.
+			/* If the job has requested memory use it (if
+			   lesser) for calculations.
 			*/
-			largest_cpus = MAX(largest_cpus, node_cpus);
-			min_memory = MIN(min_memory, node_mem);
+			tmp_mppmem = MIN(node_mem, node_min_mem);
+			/*
+			 * ALPS 'Processing Elements per Node'
+			 * value (aprun -N), which in slurm is
+			 * --ntasks-per-node and 'mppnppn' in PBS: if
+			 * --ntasks is specified, default to the
+			 * number of cores per node (also the
+			 * default for 'aprun -N').  On a
+			 * heterogeneous system the nodes
+			 * aren't always the same so keep
+			 * track of the lowest mppmem and use
+			 * it as the level for all nodes
+			 * (mppmem is 0 when coming in).
+			 */
+			tmp_mppmem /= mppnppn ? mppnppn : node_cpus;
+
+			/* Minimum memory per processing
+			 * element should be 1, since 0 means
+			 * give all the memory to the job. */
+			if (tmp_mppmem <= 0)
+				tmp_mppmem = 1;
+
+			if (mppmem)
+				mppmem = MIN(mppmem, tmp_mppmem);
+			else
+				mppmem = tmp_mppmem;
+		} else {
+			node_cpus = adjust_cpus_nppcu(
+				nppcu, threads, node_cpus);
+
+			/* On a reservation we can only run one job per node
+			   on a cray so allocate all the cpus on each node
+			   regardless of the request.
+			*/
+			mppwidth += node_cpus;
+
+			/* We want mppnppn to be the smallest number of cpus
+			   per node and allocate that on each of the nodes
+			   reguardless of the request.
+			*/
+			mppnppn = MIN(mppnppn, node_cpus);
+
+			if (node_min_mem) {
+				/* Keep track of the largest cpu count and Min
+				   memory if we need to split up the memory
+				   per cpu.
+				*/
+				largest_cpus = MAX(largest_cpus, node_cpus);
+				min_memory = MIN(min_memory, node_mem);
+			}
 		}
 	}
 
-	if (node_min_mem) {
+	if (!cray_conf->sub_alloc && node_min_mem) {
 		/*
 		 * ALPS 'Processing Elements per Node' value (aprun -N),
 		 * which in slurm is --ntasks-per-node and 'mppnppn' in
@@ -847,6 +895,33 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	 * since 0 means give all the memory to the job. */
 	if (mppmem <= 0)
 		mppmem = 1;
+
+	if (cray_conf->sub_alloc) {
+		mppwidth = 0;
+		/* mppwidth */
+		for (i = 0; i < job_ptr->job_resrcs->nhosts; i++) {
+			uint16_t hwthreads_per_core = 1;
+			uint32_t node_tasks =
+				job_ptr->job_resrcs->cpus[i] / mppdepth;
+
+			if ((job_ptr->job_resrcs->sockets_per_node[i] > 0) &&
+			    (job_ptr->job_resrcs->cores_per_socket[i] > 0)) {
+				hwthreads_per_core =
+					job_ptr->job_resrcs->cpus[i] /
+					job_ptr->job_resrcs->
+					sockets_per_node[i] /
+					job_ptr->job_resrcs->
+					cores_per_socket[i];
+			}
+			if (nppcu)
+				node_tasks =
+					node_tasks * nppcu / hwthreads_per_core;
+
+			if (mppnppn && mppnppn < node_tasks)
+				node_tasks = mppnppn;
+			mppwidth += node_tasks;
+		}
+	}
 
 	snprintf(batch_id, sizeof(batch_id), "%u", job_ptr->job_id);
 	user = uid_to_string(job_ptr->user_id);
