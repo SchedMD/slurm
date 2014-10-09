@@ -59,7 +59,7 @@ extern int net_accept_stream(int fd);
 
 /* set low water mark on socket
  */
-extern int net_set_low_water(int sock, size_t size);
+extern int net_set_low_water(int sock, int size);
 
 /* set keep alive time on socket */
 extern int net_set_keep_alive(int sock);
