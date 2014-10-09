@@ -275,7 +275,7 @@ To ensure that distinct CPUs are allocated to each job step, use the
 \fB\-\-exclusive\fR option.
 
 If the job step allocation includes an allocation with a number of
-sockets, cores, or threads equal to the number of tasks to be started
+sockets, cores, or threads equal to the number of tasks times cpus\-per\-task,
 then the tasks will by default be bound to the appropriate resources (auto
 binding). Disable this mode of operation by explicitly setting
 "-\-cpu_bind=none".

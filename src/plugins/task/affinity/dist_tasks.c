@@ -410,7 +410,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	if (!(req->cpu_bind_type & bind_entity)) {
 		/* No bind unit (sockets, cores) specified by user,
 		 * pick something reasonable */
-		int max_tasks = req->tasks_to_launch[(int)node_id];
+		int max_tasks = req->tasks_to_launch[(int)node_id] *
+			req->cpus_per_task;
 		char *avail_mask = _alloc_mask(req,
 					       &whole_nodes,  &whole_sockets,
 					       &whole_cores,  &whole_threads,

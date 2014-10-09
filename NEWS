@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     definitions needed for drmaa.
  -- If using cons_res or serial cause a fatal in the plugin instead of causing
     the SelectTypeParameters to magically set to CR_CPU.
+ -- Enhance task/affinity auto binding to consider tasks * cpus-per-task.
 
 * Changes in Slurm 14.11.0rc1
 =============================
