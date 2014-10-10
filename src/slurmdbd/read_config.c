@@ -513,6 +513,8 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->purge_event = NO_VAL;
 	if (!slurmdbd_conf->purge_job)
 		slurmdbd_conf->purge_job = NO_VAL;
+	if (!slurmdbd_conf->purge_resv)
+		slurmdbd_conf->purge_resv = NO_VAL;
 	if (!slurmdbd_conf->purge_step)
 		slurmdbd_conf->purge_step = NO_VAL;
 	if (!slurmdbd_conf->purge_suspend)
@@ -644,6 +646,13 @@ extern List dump_config(void)
 	key_pair->value = xstrdup_printf(
 		"%u",
 		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job) ? 1 : 0);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ArchiveResvs");
+	key_pair->value = xstrdup_printf(
+		"%u",
+		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_resv) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

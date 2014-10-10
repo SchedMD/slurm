@@ -61,6 +61,8 @@ documents those changes that are of interest to users and admins.
  -- Safer check to avoid invalid reads when shutting down the slurmctld with
     lots of jobs.
  -- Fix minor memory leak in the backfill scheduler when shutting down.
+ -- Add ArchiveResvs to the output of sacctmgr show config and init the variable
+    on slurmdbd startup.
 
 * Changes in Slurm 14.03.8
 ==========================
