@@ -1009,6 +1009,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			total_cpus = total_nodes * single_node_cpus;
 
 			if ((base_state == NODE_STATE_ALLOCATED) ||
+			    (base_state == NODE_STATE_MIXED) ||
 			    (node_ptr->node_state & NODE_STATE_COMPLETING)) {
 				sinfo_ptr->nodes_alloc += total_nodes;
 				sinfo_ptr->cpus_alloc += total_cpus;
@@ -1028,6 +1029,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		}
 	} else {
 		if ((base_state == NODE_STATE_ALLOCATED) ||
+		    (base_state == NODE_STATE_MIXED) ||
 		    IS_NODE_COMPLETING(node_ptr))
 			sinfo_ptr->nodes_alloc += total_nodes;
 		else if (IS_NODE_DRAIN(node_ptr)
