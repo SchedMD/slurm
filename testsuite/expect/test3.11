@@ -57,6 +57,7 @@ set def_node_name	""
 set def_node_inx_min	-1
 set def_node_inx_max	-1
 set ii			0
+set log_cpu_cnt		0
 
 print_header $test_id
 
@@ -73,6 +74,7 @@ proc create_res { res_params failure_expected } {
 	global res_nodecnt
 	global res_corecnt
 	global res_thread_cnt
+	global log_cpu_cnt
 
 	set ret_code 0
 	set res_name ""
@@ -167,8 +169,23 @@ proc create_res { res_params failure_expected } {
 		}
 	}
 
+	set cores_per_socket 1
+	set cpu_tot 1
+	set sockets 1
 	spawn $scontrol show node $res_nodes
 	expect {
+		-re "CoresPerSocket=($number)" {
+			set cores_per_socket $expect_out(1,string)
+			exp_continue
+		}
+		-re "CPUTot=($number)" {
+			set cpu_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set sockets $expect_out(1,string)
+			exp_continue
+		}
 		-re "ThreadsPerCore=($number)" {
 			set res_thread_cnt $expect_out(1,string)
 			exp_continue
@@ -180,6 +197,15 @@ proc create_res { res_params failure_expected } {
 		eof {
 			wait
 		}
+	}
+	set core_cnt [expr $sockets * $cores_per_socket]
+	set thread_cnt [expr $core_cnt * $res_thread_cnt]
+	if {$cpu_tot != $thread_cnt && $cpu_tot == $core_cnt} {
+		if {$log_cpu_cnt == 0} {
+			send_user "\nNOTE: Cores rather than threads are being allocated\n"
+			set log_cpu_cnt 1
+		}
+		set res_thread_cnt 1
 	}
 	#exp_internal 0
 
