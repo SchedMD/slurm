@@ -38,6 +38,7 @@
 static GtkListStore *_create_model_part2(int type);
 
 typedef struct {
+	uint32_t cpu_cnt;
 	uint32_t cpu_alloc_cnt;
 	uint32_t cpu_error_cnt;
 	uint32_t cpu_idle_cnt;
@@ -46,6 +47,9 @@ typedef struct {
 	hostlist_t hl;
 	uint32_t mem_total;
 	uint32_t node_cnt;
+	uint32_t node_alloc_cnt;
+	uint32_t node_error_cnt;
+	uint32_t node_idle_cnt;
 	List node_ptr_list;
 	uint16_t node_state;
 	partition_info_t* part_ptr;
@@ -900,14 +904,11 @@ static void _layout_part_record(GtkTreeView *treeview,
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 
-	convert_num_unit((float)sview_part_info->sub_part_total.cpu_alloc_cnt
-			 / cpus_per_node,
+	convert_num_unit((float)sview_part_info->sub_part_total.node_alloc_cnt,
 			 tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
-	convert_num_unit((float)sview_part_info->sub_part_total.cpu_idle_cnt
-			 / cpus_per_node,
+	convert_num_unit((float)sview_part_info->sub_part_total.node_idle_cnt,
 			 tmp_cnt1, sizeof(tmp_cnt1), UNIT_NONE);
-	convert_num_unit((float)sview_part_info->sub_part_total.cpu_error_cnt
-			 / cpus_per_node,
+	convert_num_unit((float)sview_part_info->sub_part_total.node_error_cnt,
 			 tmp_cnt2, sizeof(tmp_cnt2), UNIT_NONE);
 	snprintf(ind_cnt, sizeof(ind_cnt), "%s/%s/%s",
 		 tmp_cnt, tmp_cnt1, tmp_cnt2);
@@ -1394,7 +1395,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 		}
 	} else {
 		tmp_cpus = xmalloc(20);
-		convert_num_unit((float)part_ptr->total_cpus,
+		convert_num_unit((float)sview_part_sub->cpu_cnt,
 				 tmp_cpus, 20, UNIT_NONE);
 	}
 
@@ -1499,6 +1500,8 @@ static void _part_info_free(sview_part_info_t *sview_part_info)
 {
 	if (sview_part_info) {
 		xfree(sview_part_info->part_name);
+		memset(&sview_part_info->sub_part_total, 0,
+		       sizeof(sview_part_sub_t));
 		if (sview_part_info->sub_list)
 			list_destroy(sview_part_info->sub_list);
 	}
@@ -1587,12 +1590,14 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 		idle_cpus = 0;
 	}
 
+	sview_part_sub->cpu_cnt    += alloc_cpus + err_cpus + idle_cpus;
 	sview_part_sub->cpu_alloc_cnt += alloc_cpus;
 	sview_part_sub->cpu_error_cnt += err_cpus;
 	sview_part_sub->cpu_idle_cnt += idle_cpus;
 	sview_part_sub->disk_total += node_ptr->tmp_disk;
 	sview_part_sub->mem_total  += node_ptr->real_memory;
 	sview_part_sub->node_cnt   += node_scaling;
+
 	list_append(sview_part_sub->node_ptr_list, node_ptr);
 	hostlist_push_host(sview_part_sub->hl, node_ptr->name);
 }
@@ -1622,7 +1627,6 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 	sview_part_sub_ptr->part_ptr = part_ptr;
 	sview_part_sub_ptr->hl = hostlist_create(NULL);
 	sview_part_sub_ptr->node_ptr_list = list_create(NULL);
-
 	_update_sview_part_sub(sview_part_sub_ptr, node_ptr, node_scaling);
 
 	return sview_part_sub_ptr;
@@ -1784,10 +1788,35 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		/* Need to do this after the fact so we deal with
 		   complete sub parts.
 		*/
+
 		itr = list_iterator_create(sview_part_info->sub_list);
 		while ((sview_part_sub = list_next(itr))) {
 			sview_part_info->sub_part_total.node_cnt +=
 				sview_part_sub->node_cnt;
+			sview_part_info->sub_part_total.cpu_cnt +=
+				sview_part_sub->cpu_cnt;
+
+			if (cluster_flags & CLUSTER_FLAG_BG) {
+				sview_part_info->sub_part_total.node_alloc_cnt
+					+= sview_part_sub->cpu_alloc_cnt;
+				sview_part_info->sub_part_total.node_idle_cnt
+					+= sview_part_sub->cpu_idle_cnt;
+				sview_part_info->sub_part_total.node_error_cnt
+					+= sview_part_sub->cpu_error_cnt;
+			} else if (((sview_part_sub->node_state
+				     & NODE_STATE_BASE) == NODE_STATE_MIXED) ||
+				   (sview_part_sub->node_state
+				    == NODE_STATE_ALLOCATED))
+				sview_part_info->sub_part_total.node_alloc_cnt
+					+= sview_part_sub->node_cnt;
+			else if (sview_part_sub->node_state
+				   != NODE_STATE_IDLE)
+				sview_part_info->sub_part_total.node_error_cnt
+					+= sview_part_sub->node_cnt;
+			else
+				sview_part_info->sub_part_total.node_idle_cnt
+					+= sview_part_sub->node_cnt;
+
 			sview_part_info->sub_part_total.cpu_alloc_cnt +=
 				sview_part_sub->cpu_alloc_cnt;
 			sview_part_info->sub_part_total.cpu_error_cnt +=
@@ -1809,6 +1838,15 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			hostlist_sort(sview_part_sub->hl);
 		}
 		list_iterator_destroy(itr);
+		if (cluster_flags & CLUSTER_FLAG_BG) {
+			sview_part_info->sub_part_total.node_alloc_cnt /=
+				cpus_per_node;
+			sview_part_info->sub_part_total.node_idle_cnt /=
+				cpus_per_node;
+			sview_part_info->sub_part_total.node_error_cnt /=
+				cpus_per_node;
+		}
+
 	}
 	list_sort(info_list, (ListCmpF)_sview_part_sort_aval_dec);
 
