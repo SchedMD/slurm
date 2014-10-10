@@ -1152,7 +1152,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 			total_cpus = job_resrcs_ptr->cpus[node_inx];
 			usable_cpu_cnt[i] = avail_cpus = total_cpus;
-			if (step_spec->pn_min_memory & MEM_PER_CPU) {
+			if (_is_mem_resv() &&
+			    step_spec->pn_min_memory & MEM_PER_CPU) {
 				uint32_t mem_use = step_spec->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
 				/* ignore current step allocations */
@@ -1169,7 +1170,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					usable_cpu_cnt[i] = avail_cpus;
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
 				}
-			} else if (step_spec->pn_min_memory) {
+			} else if (_is_mem_resv() && step_spec->pn_min_memory) {
 				uint32_t mem_use = step_spec->pn_min_memory;
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
