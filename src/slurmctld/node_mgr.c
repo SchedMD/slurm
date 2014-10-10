@@ -623,7 +623,8 @@ extern int load_all_node_state ( bool state_only )
 					obj_protocol_version;
 			else
 				node_ptr->protocol_version = protocol_version;
-			node_ptr->last_idle	= now;
+			if (!IS_NODE_POWER_SAVE(node_ptr))
+				node_ptr->last_idle = now;
 			select_g_update_node_state(node_ptr);
 		}
 
@@ -1375,6 +1376,12 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("power down request repeating "
 					     "for node %s", this_node_name);
 				} else {
+					if (IS_NODE_DOWN(node_ptr) &&
+					    IS_NODE_POWER_UP(node_ptr)) {
+						/* Abort power up request */
+						node_ptr->node_state &=
+							(~NODE_STATE_POWER_UP);
+					}
 					node_ptr->last_idle = 0;
 					info("powering down node %s",
 					     this_node_name);
