@@ -63,6 +63,8 @@ documents those changes that are of interest to users and admins.
  -- Fix minor memory leak in the backfill scheduler when shutting down.
  -- Add ArchiveResvs to the output of sacctmgr show config and init the variable
     on slurmdbd startup.
+ -- SLURMDBD - Only set the archive flag if purging the object
+    (i.e ArchiveJobs PurgeJobs).  This is only a cosmetic change.
 
 * Changes in Slurm 14.03.8
 ==========================
