@@ -40,9 +40,9 @@ set cnt		count
 set cnt1	80
 set cnt1a	50
 set cnt2	100
-set man		manager
-set man1	manager_1
-set man2	manager_2
+set man		ServerType
+set man1	server_type_1
+set man2	server_type_2
 set ser		server
 set ser1	server_1
 set ser2	server_2
@@ -93,7 +93,7 @@ if {$access_err != 0} {
 }
 
 #
-#add cluster
+# add cluster
 #
 incr exit_code [add_cluster "$tc2" [array get clus_req]]
 if { $exit_code } {
@@ -106,11 +106,11 @@ if { $exit_code } {
 set cluster [get_cluster_name]
 
 #
-#add a global resource designating multiple clusters
+# add a global resource designating multiple clusters
 #
 set my_pid [spawn $sacctmgr -i add res $nm=$sr1 $dsc=$dsc1 $cnt=$cnt1 $man=$man1 $ser=$ser1 $typ=$typ1 $clu=$cluster,$tc2 $all=$all1]
 expect {
-	 timeout {
+	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
 		set exit_code 1
 	}
@@ -141,7 +141,7 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($sr1.$cnt1.$man1.$ser1.$dsc1)" {
+	-re "$sr1.$cnt1.$man1.$ser1.$dsc1" {
 		incr matches
 		exp_continue
 	}
@@ -154,11 +154,9 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 1} {
-	send_user "\n\n res matches is $matches.\n\n"
-	send_user "\nFAILURE:  res field incorrect.\n"
-	send_user "\nFAILURE: sacctmgr list res not responding\n"
+	send_user "\nFAILURE: list resource output is incorrect ($matches != 1).\n"
+	send_user "  Expected:$sr1|$cnt1|$man1|$ser1|$dsc1\n\n\n"
 	incr exit_code 1
 }
 
@@ -172,10 +170,8 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Total=($alpha_numeric_under)" {
-		if {[string compare $expect_out(1,string) $ect1] == 0} {
-			incr matches
-		}
+	-re "Total=$ect1 Used=0 Free=$ect1 Remote=yes" {
+		incr matches
 		exp_continue
 	}
 	timeout {
@@ -187,13 +183,14 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\n\n lic matches is $matches.\n\n"
-	send_user "\nFAILURE:  lic show not working.\n"
+	send_user "\nFAILURE: license output is incorrect ($matches != 2).\n"
+	send_user "  Expected: LicenseName=$sr1@$ser1\n"
+	send_user "  Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes\n\n\n"
 	incr exit_code 1
 }
 
 #
-#modify res
+# modify resources
 #
 set matches 0
 set my_pid [eval spawn $sacctmgr -i mod res where $nm=$sr1 set $cnt=$cnt1a]
@@ -231,10 +228,8 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 1} {
-	send_user "\n\n res matches is $matches.\n\n"
-	send_user "\nFAILURE:  res modify not working.\n"
+	send_user "\nFAILURE: Resource modify not working ($matches != 1).\n"
 	incr exit_code 1
 }
 
@@ -262,7 +257,7 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($sr1.$cnt1a.$man1.$ser1.$dsc1)" {
+	-re "$sr1.$cnt1a.$man1.$ser1.$dsc1" {
 		incr matches
 		exp_continue
 	}
@@ -275,11 +270,9 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 1} {
-	send_user "\n\n Resource matches is $matches.\n\n"
-	send_user "\nFAILURE:  Resource field incorrect.\n"
-	send_user "\nFAILURE: sacctmgr list res not responding\n"
+	send_user "\nFAILURE: list resource output is incorrect ($matches != 1).\n"
+	send_user "  Expected:$sr1|$cnt1a|$man1|$ser1|$dsc1\n\n\n"
 	incr exit_code 1
 }
 
@@ -289,14 +282,12 @@ if {$matches != 1} {
 set matches 0
 set my_pid [eval spawn $scontrol show lic $sr1@$ser1]
 expect {
-	-re "LicenseName=($sr1@$ser1)" {
+	-re "LicenseName=$sr1@$ser1" {
 		incr matches
 		exp_continue
 	}
-	-re "Total=($alpha_numeric_under)" {
-		if {[string compare $expect_out(1,string) $ect1a] == 0} {
-			incr matches
-		}
+	-re "Total=$ect1a Used=0 Free=$ect1a Remote=yes" {
+		incr matches
 		exp_continue
 	}
 	timeout {
@@ -308,8 +299,9 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\n\n lic matches is $matches.\n\n"
-	send_user "\nFAILURE:  scontrol show lic not working.\n"
+	send_user "\nFAILURE: license output is incorrect ($matches != 2).\n"
+	send_user "  Expected: LicenseName=$sr1@$ser1\n"
+	send_user "  Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes\n\n\n"
 	incr exit_code 1
 }
 
@@ -324,7 +316,7 @@ incr exit_code [remove_res $sr1]
 set matches 0
 set my_pid [eval spawn $scontrol show lic]
 expect {
-	-re "LicenseName=($sr1@$ser1)" {
+	-re "LicenseName=$sr1@$ser1" {
 		incr matches
 		exp_continue
 	}
@@ -337,13 +329,12 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\n\n lic matches is $matches.\n\n"
-	send_user "\nFAILURE:  scontrol show lic not working.\n"
+	send_user "\nFAILURE: scontrol failed to remove license $sr1@$ser1.\n"
 	incr exit_code 1
 }
 
 #
-#add multiple global resources in a single call
+# add multiple global resources in a single call
 #
 spawn $sacctmgr -i add res $nm="$sr2,$sr3" $dsc=$dsc2 $cnt=$cnt2 $man=$man2 $ser=$ser2 $typ=$typ2
 expect {
@@ -378,11 +369,11 @@ expect {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		incr exit_code 1
 	}
-	-re "($sr2.$cnt2.$ser2.$man2.$dsc2)" {
+	-re "$sr2.$cnt2.$ser2.$man2.$dsc2" {
 		incr matches
 		exp_continue
 	}
-	-re "($sr3.$cnt2.$ser2.$man2.$dsc2)" {
+	-re "$sr3.$cnt2.$ser2.$man2.$dsc2" {
 		incr matches
 		exp_continue
 	}
@@ -397,14 +388,15 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\n\n Resource matches is $matches.\n\n"
-	send_user "\nFAILURE:  Resource field incorrect.\n"
-	send_user "\nFAILURE: sacctmgr list res not responding\n"
+	send_user "\nFAILURE: list resource output is incorrect ($matches != 2).\n"
+	send_user "  Expected:$sr2|$cnt2|$ser2|$man2|$dsc2\n"
+	send_user "  Expected:$sr3|$cnt2|$ser2|$man2|$dsc2\n\n\n"
 	incr exit_code 1
 }
 
-# Next is clean up and the end
-
+#
+# Clean up and exit
+#
 incr exit_code [remove_res $sr2,$sr3]
 incr exit_code [remove_cluster $tc2]
 
