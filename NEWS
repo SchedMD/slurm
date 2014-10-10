@@ -322,6 +322,8 @@ documents those changes that are of interest to users and administrators.
     on slurmdbd startup.
  -- SLURMDBD - Only set the archive flag if purging the object
     (i.e ArchiveJobs PurgeJobs).  This is only a cosmetic change.
+ -- Fix for job step memory allocation logic if step requests GRES and memory
+    is not allocations are not managed.
 
 * Changes in Slurm 14.03.8
 ==========================
