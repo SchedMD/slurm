@@ -425,15 +425,20 @@ extern int read_slurmdbd_conf(void)
 				     "TrackSlurmctldDown", tbl))
 			slurmdbd_conf->track_ctld = false;
 
-		if (a_events)
+		if (a_events &&
+		    SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_event))
 			slurmdbd_conf->purge_event |= SLURMDB_PURGE_ARCHIVE;
-		if (a_jobs)
+		if (a_jobs &&
+		    SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job))
 			slurmdbd_conf->purge_job |= SLURMDB_PURGE_ARCHIVE;
-		if (a_resv)
+		if (a_resv &&
+		    SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_resv))
 			slurmdbd_conf->purge_resv |= SLURMDB_PURGE_ARCHIVE;
-		if (a_steps)
+		if (a_steps &&
+		    SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step))
 			slurmdbd_conf->purge_step |= SLURMDB_PURGE_ARCHIVE;
-		if (a_suspend)
+		if (a_suspend &&
+		    SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_suspend))
 			slurmdbd_conf->purge_suspend |= SLURMDB_PURGE_ARCHIVE;
 
 		s_p_hashtbl_destroy(tbl);
@@ -528,6 +533,8 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->purge_event = NO_VAL;
 	if (!slurmdbd_conf->purge_job)
 		slurmdbd_conf->purge_job = NO_VAL;
+	if (!slurmdbd_conf->purge_resv)
+		slurmdbd_conf->purge_resv = NO_VAL;
 	if (!slurmdbd_conf->purge_step)
 		slurmdbd_conf->purge_step = NO_VAL;
 	if (!slurmdbd_conf->purge_suspend)
@@ -664,6 +671,13 @@ extern List dump_config(void)
 	key_pair->value = xstrdup_printf(
 		"%u",
 		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job) ? 1 : 0);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ArchiveResvs");
+	key_pair->value = xstrdup_printf(
+		"%u",
+		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_resv) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
