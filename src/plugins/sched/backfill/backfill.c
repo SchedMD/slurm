@@ -717,8 +717,10 @@ static int _attempt_backfill(void)
 				info("backfill: reached end of job queue");
 			break;
 		}
-		if (slurmctld_config.shutdown_time)
+		if (slurmctld_config.shutdown_time) {
+			xfree(job_queue_rec);
 			break;
+		}
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
 		    ((time(NULL) - sched_start) >= sched_timeout)) {

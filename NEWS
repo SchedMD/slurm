@@ -60,6 +60,7 @@ documents those changes that are of interest to users and admins.
     did the ALPS reservation.
  -- Safer check to avoid invalid reads when shutting down the slurmctld with
     lots of jobs.
+ -- Fix minor memory leak in the backfill scheduler when shutting down.
 
 * Changes in Slurm 14.03.8
 ==========================
