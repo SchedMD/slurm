@@ -37,7 +37,9 @@ Danny Auble and Morris Jette (SchedMD)</li>
 <li><a href="SUG14/sched_tutorial.pdf">Tuning Slurm Scheduling for Optimal Responsiveness and Utilization</a>
 Morris Jette (SchedMD)</li>
 
-<!-- Carles (BSC) -->
+<li><a href="SUG14/app_sched.pdf">Improving HPC applications scheduling with predictions
+based on automatically-collected historical data</a>
+Carlos Fenoy Garc&iacute;a (Barcelona  Supercomputing Centre)</li>
 
 <li><a href="SUG14/ostrich.pdf">OStrich: Fair Scheduler for Burst Submissions of Parallel Job</a>
 Krzysztof Rzadca (University of Warsaw) and Filip Skalski ((University of Warsaw / Google)</li>
@@ -538,6 +540,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 30 September 2014</p>
+<p style="text-align:center;">Last modified 10 October 2014</p>
 
 <!--#include virtual="footer.txt"-->
