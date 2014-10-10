@@ -572,7 +572,8 @@ extern int load_all_node_state ( bool state_only )
 					obj_protocol_version;
 			else
 				node_ptr->protocol_version = protocol_version;
-			node_ptr->last_idle	= now;
+			if (!IS_NODE_POWER_SAVE(node_ptr))
+				node_ptr->last_idle = now;
 			select_g_update_node_state(node_ptr);
 		}
 
