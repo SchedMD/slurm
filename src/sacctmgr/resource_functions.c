@@ -345,8 +345,16 @@ static int _set_res_rec(int *start, int argc, char *argv[],
 				exit_code = 1;
 			} else
 				set = 1;
+
+		} else if (!strncasecmp(argv[i], "Server",
+					MAX(command_len, 1))) {
+			if (!res->server) {
+				res->server=
+					strip_quotes(argv[i]+end, NULL, 1);
+			}
+			set = 1;
 		} else if (!strncasecmp(argv[i], "ServerType",
-					 MAX(command_len, 1))) {
+					MAX(command_len, 1))) {
 			if (!res->manager)
 				res->manager =
 					strip_quotes(argv[i]+end, NULL, 1);
@@ -358,13 +366,6 @@ static int _set_res_rec(int *start, int argc, char *argv[],
 				       "PercentAllowed") == SLURM_SUCCESS) {
 				set = 1;
 			}
-		} else if (!strncasecmp(argv[i], "Server",
-					  MAX(command_len, 1))) {
-			if (!res->server) {
-				res->server=
-					strip_quotes(argv[i]+end, NULL, 1);
-			}
-			set = 1;
 		} else if (!strncasecmp(argv[i], "Type",
 					MAX(command_len, 1))) {
 			char *temp = strip_quotes(argv[i]+end, NULL, 1);
