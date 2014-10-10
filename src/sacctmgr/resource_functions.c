@@ -234,7 +234,7 @@ static int _set_res_cond(int *start, int argc, char *argv[],
 				}
 			}
 			list_iterator_destroy(itr);
-		} else if (!strncasecmp(argv[i], "Manager",
+		} else if (!strncasecmp(argv[i], "ServerType",
 					 MAX(command_len, 2))) {
 			if (!res_cond->manager_list) {
 				res_cond->manager_list =
@@ -719,7 +719,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 		if (res->description)
 			printf("  Description    = %s\n", res->description);
 		if (res->manager)
-			printf("  Manager        = %s\n", res->manager);
+			printf("  ServerType     = %s\n", res->manager);
 		if (res->count != NO_VAL)
 			printf("  Count          = %u\n", res->count);
 		printf("  Type           = %s\n", tmp_str);
