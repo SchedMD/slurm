@@ -67,6 +67,7 @@ documents those changes that are of interest to users and admins.
     (i.e ArchiveJobs PurgeJobs).  This is only a cosmetic change.
  -- Fix for job step memory allocation logic if step requests GRES and memory
     is not allocations are not managed.
+ -- Fix sinfo to display mixed nodes as allocated in '%F' output.
 
 * Changes in Slurm 14.03.8
 ==========================
