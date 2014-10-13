@@ -348,7 +348,8 @@ Identify which environment variables are propagated to the batch job.
 Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
 value of those variables (e.g. "\-\-export=EDITOR") or specific values
-for the variables may be exported (e.g.. "\-\-export=EDITOR=/bin/vi").
+for the variables may be exported (e.g.. "\-\-export=EDITOR=/bin/vi")
+in addition to the environment variables that would otherwise be set.
 This option particularly important for jobs that are submitted on one cluster
 and execute on a different cluster (e.g. with different paths). By default all
 environment variables are propagated. If the argument is \fINONE\fR or
