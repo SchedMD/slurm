@@ -2562,7 +2562,7 @@ static void _help(void)
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --chdir=path            change remote current working directory\n"
 "      --export=env_vars|NONE  environment variables passed to launcher with\n"
-"                              optiional values or NONE (pass no variables)\n"
+"                              optional values or NONE (pass no variables)\n"
 "  -e, --error=err             location of stderr redirection\n"
 "      --epilog=program        run \"program\" after launching job step\n"
 "  -E, --preserve-env          env vars for node and task counts override\n"
