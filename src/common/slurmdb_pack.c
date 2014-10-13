@@ -4843,16 +4843,16 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t rpc_version,
 {
 	slurmdb_archive_cond_t *object = (slurmdb_archive_cond_t *)in;
 
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
 			packnull(buffer);
 			slurmdb_pack_job_cond(NULL, rpc_version, buffer);
-			pack32((uint16_t)NO_VAL, buffer);
-			pack32((uint16_t)NO_VAL, buffer);
-			pack32((uint16_t)NO_VAL, buffer);
-			pack32((uint16_t)NO_VAL, buffer);
-			pack32((uint16_t)NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			return;
 		}
 
@@ -4862,6 +4862,25 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t rpc_version,
 		pack32(object->purge_event, buffer);
 		pack32(object->purge_job, buffer);
 		pack32(object->purge_resv, buffer);
+		pack32(object->purge_step, buffer);
+		pack32(object->purge_suspend, buffer);
+	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+		if (!object) {
+			packnull(buffer);
+			packnull(buffer);
+			slurmdb_pack_job_cond(NULL, rpc_version, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			return;
+		}
+
+		packstr(object->archive_dir, buffer);
+		packstr(object->archive_script, buffer);
+		slurmdb_pack_job_cond(object->job_cond, rpc_version, buffer);
+		pack32(object->purge_event, buffer);
+		pack32(object->purge_job, buffer);
 		pack32(object->purge_step, buffer);
 		pack32(object->purge_suspend, buffer);
 	}
@@ -4876,7 +4895,7 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->archive_dir,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->archive_script,
@@ -4887,6 +4906,18 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->purge_event, buffer);
 		safe_unpack32(&object_ptr->purge_job, buffer);
 		safe_unpack32(&object_ptr->purge_resv, buffer);
+		safe_unpack32(&object_ptr->purge_step, buffer);
+		safe_unpack32(&object_ptr->purge_suspend, buffer);
+	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+		safe_unpackstr_xmalloc(&object_ptr->archive_dir,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->archive_script,
+				       &uint32_tmp, buffer);
+		if (slurmdb_unpack_job_cond((void *)&object_ptr->job_cond,
+					    rpc_version, buffer) == SLURM_ERROR)
+			goto unpack_error;
+		safe_unpack32(&object_ptr->purge_event, buffer);
+		safe_unpack32(&object_ptr->purge_job, buffer);
 		safe_unpack32(&object_ptr->purge_step, buffer);
 		safe_unpack32(&object_ptr->purge_suspend, buffer);
 	}
