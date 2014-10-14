@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- If using cons_res or serial cause a fatal in the plugin instead of causing
     the SelectTypeParameters to magically set to CR_CPU.
  -- Enhance task/affinity auto binding to consider tasks * cpus-per-task.
+ -- Fix regression the priority/multifactor which would cause memory corruption.
+    Issue is only in rc1.
 
 * Changes in Slurm 14.11.0rc1
 =============================
