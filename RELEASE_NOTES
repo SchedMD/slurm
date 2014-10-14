@@ -33,6 +33,7 @@ HIGHLIGHTS
     any type).
  -- Added support for non-consumable generic resources that are limited, but
     can be shared between jobs.
+ -- Added support for automatic job requeue policy based on exit value.
  -- Refactor job_submit/lua interface. LUA FUNCTIONS NEED TO CHANGE! The
     lua script no longer needs to explicitly load meta-tables, but information
     is available directly using names slurm.reservations, slurm.jobs,
@@ -44,7 +45,6 @@ HIGHLIGHTS
     all running jobs should be killed and the switch_cray_state file (in
     SaveStateLocation of the nodes where the slurmctld daemon runs) must be
     explicitly deleted.
-
 
 RPMBUILD CHANGES
 ================
