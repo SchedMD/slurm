@@ -156,6 +156,9 @@ typedef struct slurmd_config {
 	List		prolog_running_jobs;
 	pthread_mutex_t	prolog_running_lock;
 	pthread_cond_t	prolog_running_cond;
+	char         *plugstack;	/* path to SPANK config file	*/
+	uint16_t      kill_wait;	/* seconds between SIGXCPU to SIGKILL
+					 * on job termination */
 } slurmd_conf_t;
 
 extern slurmd_conf_t * conf;

@@ -4050,14 +4050,14 @@ _rpc_complete_batch(slurm_msg_t *msg)
 static void
 _rpc_terminate_job(slurm_msg_t *msg)
 {
+#ifndef HAVE_AIX
+	bool		have_spank = false;
+#endif
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	int             nsteps = 0;
 	int		delay;
-	slurm_ctl_conf_t *cf;
-	bool		have_spank = false;
-	struct stat	stat_buf;
 	job_env_t       job_env;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
@@ -4155,12 +4155,12 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			_kill_all_active_steps(req->job_id, SIGTERM, true);
 	}
 
-	cf = slurm_conf_lock();
-	delay = MAX(cf->kill_wait, 5);
-	if (cf->plugstack && (stat(cf->plugstack, &stat_buf) == 0))
-		have_spank = true;
-	slurm_conf_unlock();
-
+#ifndef HAVE_AIX
+	if ((nsteps == 0) && !conf->epilog) {
+		struct stat stat_buf;
+		if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
+			have_spank = true;
+	}
 	/*
 	 *  If there are currently no active job steps and no
 	 *    configured epilog to run, bypass asynchronous reply and
@@ -4168,13 +4168,12 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *    request. We need to send current switch state on AIX
 	 *    systems, so this bypass can not be used.
 	 */
-
-#ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog && !have_spank) {
 		debug4("sent ALREADY_COMPLETE");
-		if (msg->conn_fd >= 0)
+		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg,
 					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
+		}
 		slurm_cred_begin_expiration(conf->vctx, req->job_id);
 		save_cred_state(conf->vctx);
 		_waiter_complete(req->job_id);
@@ -4213,6 +4212,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	/*
 	 *  Check for corpses
 	 */
+	delay = MAX(conf->kill_wait, 5);
 	if ( !_pause_for_job_completion (req->job_id, req->nodes, delay) &&
 	     (xcpu_signal(SIGKILL, req->nodes) +
 	      _terminate_all_steps(req->job_id, true)) ) {
@@ -4624,14 +4624,20 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 static int _run_job_script(const char *name, const char *path,
 			   uint32_t jobid, int timeout, char **env, uid_t uid)
 {
-	int status, rc;
+	bool have_spank = false;
+	struct stat stat_buf;
+	int status = 0, rc;
+
 	/*
 	 *  Always run both spank prolog/epilog and real prolog/epilog script,
 	 *   even if spank plugins fail. (May want to alter this in the future)
 	 *   If both "script" mechanisms fail, prefer to return the "real"
 	 *   prolog/epilog status.
 	 */
-	status = _run_spank_job_script(name, env, jobid, uid);
+	if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
+		have_spank = true;
+	if (have_spank)
+		status = _run_spank_job_script(name, env, jobid, uid);
 	if ((rc = run_script(name, path, jobid, timeout, env, uid)))
 		status = rc;
 	return (status);

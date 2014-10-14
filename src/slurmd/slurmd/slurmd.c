@@ -903,6 +903,7 @@ _read_config(void)
 	_massage_pathname(&conf->spooldir);
 	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
+	_free_and_set(&conf->plugstack,   xstrdup(cf->plugstack));
 	_free_and_set(&conf->select_type, xstrdup(cf->select_type));
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
@@ -940,6 +941,7 @@ _read_config(void)
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
 	conf->slurmd_timeout = cf->slurmd_timeout;
+	conf->kill_wait = cf->kill_wait;
 	conf->use_pam = cf->use_pam;
 	conf->task_plugin_param = cf->task_plugin_param;
 
@@ -1163,6 +1165,7 @@ _destroy_conf(void)
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);
 		xfree(conf->pidfile);
+		xfree(conf->plugstack);
 		xfree(conf->prolog);
 		xfree(conf->pubkey);
 		xfree(conf->select_type);
