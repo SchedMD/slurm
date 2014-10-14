@@ -1025,10 +1025,7 @@ static bool _front_end_job_test(bitstr_t *front_end_bitmap,
 /* Test if the event has been triggered, change trigger state as needed */
 static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 {
-	if ((trig_in->job_ptr == NULL) ||
-	    (trig_in->job_ptr->magic != JOB_MAGIC) ||
-	    (trig_in->job_ptr->job_id != trig_in->job_id))
-		trig_in->job_ptr = find_job_record(trig_in->job_id);
+	trig_in->job_ptr = find_job_record(trig_in->job_id);
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_FINI) &&
 	    ((trig_in->job_ptr == NULL) ||
