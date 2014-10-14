@@ -1629,7 +1629,7 @@ static void _set_options(const int argc, char **argv)
 			opt.gres = xstrdup(optarg);
 			break;
 		case LONG_OPT_ALPS:
-			verbose("Not running ALPS. --alps option ignored.");
+			error("Not running ALPS. --alps option ignored.");
 			break;
 		case LONG_OPT_REQ_SWITCH:
 			pos_delimit = strstr(optarg,"@");
