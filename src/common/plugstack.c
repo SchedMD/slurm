@@ -1242,7 +1242,7 @@ _get_next_segment (char **from, int width, char *buf, int bufsiz)
 }
 
 static int
-_term_columns ()
+_term_columns (void)
 {
 	char *val;
 	int  cols = 80;

@@ -262,7 +262,7 @@ static int get_jobid_uid_from_env (uint32_t *jobidp, uid_t *uidp)
 	return (0);
 }
 
-static int handle_spank_mode (int argc, char *argv[])
+static int _handle_spank_mode (int argc, char *argv[])
 {
 	char prefix[64] = "spank-";
 	const char *mode = argv[2];
@@ -326,7 +326,7 @@ static int process_cmdline (int argc, char *argv[])
 		exit(0);
 	}
 	if ((argc == 3) && (strcmp(argv[1], "spank") == 0)) {
-		if (handle_spank_mode (argc, argv) < 0)
+		if (_handle_spank_mode(argc, argv) < 0)
 			exit (1);
 		exit (0);
 	}
