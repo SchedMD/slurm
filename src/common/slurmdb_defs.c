@@ -2158,8 +2158,14 @@ extern uint32_t slurmdb_parse_purge(char *string)
 extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
 				  bool with_archive)
 {
-	uint32_t units = SLURMDB_PURGE_GET_UNITS(purge);
+	uint32_t units;
 
+	if (purge == NO_VAL) {
+		snprintf(string, len, "NONE");
+		return string;
+	}
+
+	units = SLURMDB_PURGE_GET_UNITS(purge);
 	if (SLURMDB_PURGE_IN_HOURS(purge)) {
 		if (with_archive && SLURMDB_PURGE_ARCHIVE_SET(purge))
 			snprintf(string, len, "%u hours*", units);
