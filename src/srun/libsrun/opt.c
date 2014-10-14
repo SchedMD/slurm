@@ -190,7 +190,7 @@
 #define LONG_OPT_DEBUG_SLURMD    0x14f
 #define LONG_OPT_TIME_MIN        0x150
 #define LONG_OPT_GRES            0x151
-#define LONG_OPT_ALPS            0x152
+
 #define LONG_OPT_REQ_SWITCH      0x153
 #define LONG_OPT_LAUNCHER_OPTS   0x154
 #define LONG_OPT_CPU_FREQ        0x155
@@ -880,7 +880,6 @@ static void _set_options(const int argc, char **argv)
 		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
-		{"alps",             required_argument, 0, LONG_OPT_ALPS},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
@@ -1631,9 +1630,6 @@ static void _set_options(const int argc, char **argv)
 			}
 			xfree(opt.gres);
 			opt.gres = xstrdup(optarg);
-			break;
-		case LONG_OPT_ALPS:
-			error("Not running ALPS. --alps option ignored.");
 			break;
 		case LONG_OPT_REQ_SWITCH:
 			pos_delimit = strstr(optarg,"@");
