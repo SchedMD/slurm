@@ -96,7 +96,7 @@ expect {
 		#send_user "Job initiated\n"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		send_user "\nFAILURE: salloc not responding\n"
 		slow_kill $salloc_pid
 		set exit_code 1
 	}

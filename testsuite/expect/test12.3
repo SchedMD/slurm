@@ -170,6 +170,8 @@ expect {
 #
 set job_id_1 0
 set job_1_node_inx 0
+set job_1_node(0) "TBD"
+set job_1_node(1) "TBD"
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N2 -t1 -A $test_acct -J $job_name_1 -v $bin_id]
 expect {
@@ -198,6 +200,8 @@ if {$job_1_node_inx != 2} {
 #
 set job_id_2 0
 set job_2_node_inx 0
+set job_2_node(0) "TBD"
+set job_2_node(1) "TBD"
 set srun_pid [spawn $srun -N2 -x $job_1_node(0) -t1 -A $test_acct -J $job_name_2 -v $bin_id]
 expect {
 
@@ -226,6 +230,8 @@ if {$job_2_node_inx != 2} {
 #
 set job_id_3 0
 set job_3_node_inx 0
+set job_3_node(0) "TBD"
+set job_3_node(1) "TBD"
 set srun_pid [spawn $srun -w$job_1_node(0),$job_2_node(1) -t1 -A $test_acct -J $job_name_3 -v $bin_id]
 expect {
 
@@ -287,5 +293,7 @@ if {$damatches != 1} {
 
 if {$exit_code == 0} {
 	print_success $test_id
+} else {
+	print_failure $test_id
 }
 exit $exit_code

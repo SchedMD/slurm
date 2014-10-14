@@ -45,7 +45,7 @@ set hostfile    "test$test_id.hostfile"
 print_header $test_id
 
 if { [test_front_end] } {
-	send_user "\nWARNING: This test incompatible with front-end Systems\n"
+	send_user "\nWARNING: This test incompatible with front-end systems\n"
 	exit $exit_code
 } elseif {[test_launch_poe]} {
 	send_user "\nWARNING: This test is incompatible with POE systems\n"
@@ -92,7 +92,6 @@ exec $bin_rm -f %hostfile
 set node0       0
 set node1       0
 set node2       0
-set no_hostfile 0
 set timeout $max_job_delay
 for {set i 0} {$i<3} {incr i} {
 	if { $i==1 } {
@@ -129,17 +128,15 @@ for {set i 0} {$i<3} {incr i} {
 	set node0  0
 	set node1  0
 	set node2  0
+	set task_cnt 0
 	if { $i == 0} {
 		set srun_pid [spawn $srun -N3 -t1 -l $bin_printenv SLURMD_NODENAME]
 	} else {
 		set srun_pid [spawn $srun -N3 -t1 -l --distribution=arbitrary $bin_printenv SLURMD_NODENAME]
 	}
 	expect {
-		-re "SwitchType does not permit arbitrary task distribution" {
-			set no_hostfile 1
-			exp_continue
-		}
 		-re "($number): ($alpha_numeric_under)" {
+			incr task_cnt
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
 				set node0 $expect_out(2,string)
@@ -159,7 +156,7 @@ for {set i 0} {$i<3} {incr i} {
 			wait
 		}
 	}
-	if { $no_hostfile != 0 } {
+	if { $task_cnt != 3 } {
 		send_user "\nNo worries, test just can not run here\n"
 	} elseif { $i == 1 } {
 		if { [string compare $node0 $1node0] } {
