@@ -186,6 +186,11 @@ char *xstrchr(const char *s1, int c);
 int xstrcmp(const char *s1, const char *s2);
 
 /*
+ * safe strncmp (handles NULL values)
+ */
+int xstrncmp(const char *s1, const char *s2, size_t n);
+
+/*
  * safe strcasecmp (handles NULL values)
  */
 int xstrcasecmp(const char *s1, const char *s2);

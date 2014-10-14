@@ -565,10 +565,26 @@ int xstrcmp(const char *s1, const char *s2)
 {
 	if (!s1 && !s2)
 		return 0;
-	else if ((s1 && !s2) || (!s1 && s2))
+	else if (!s1)
+		return -1;
+	else if (!s2)
 		return 1;
 	else
 		return strcmp(s1, s2);
+}
+
+
+/* safe strncmp */
+int xstrncmp(const char *s1, const char *s2, size_t n)
+{
+	if (!s1 && !s2)
+		return 0;
+	else if (!s1)
+		return -1;
+	else if (!s2)
+		return 1;
+	else
+		return strncmp(s1, s2, n);
 }
 
 /* safe strcasecmp */
