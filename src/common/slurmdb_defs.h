@@ -44,13 +44,13 @@
 #define SLURMDB_PURGE_GET_UNITS(_X) \
 	(_X & SLURMDB_PURGE_BASE)
 #define SLURMDB_PURGE_ARCHIVE_SET(_X) \
-	(_X & SLURMDB_PURGE_ARCHIVE)
+	(_X != NO_VAL && _X & SLURMDB_PURGE_ARCHIVE)
 #define SLURMDB_PURGE_IN_HOURS(_X) \
-	(_X & SLURMDB_PURGE_HOURS)
+	(_X != NO_VAL && _X & SLURMDB_PURGE_HOURS)
 #define SLURMDB_PURGE_IN_DAYS(_X) \
-	(_X & SLURMDB_PURGE_DAYS)
+	(_X != NO_VAL && _X & SLURMDB_PURGE_DAYS)
 #define SLURMDB_PURGE_IN_MONTHS(_X) \
-	(_X & SLURMDB_PURGE_MONTHS)
+	(_X != NO_VAL && _X & SLURMDB_PURGE_MONTHS)
 
 extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();
