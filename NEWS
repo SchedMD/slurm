@@ -69,6 +69,7 @@ documents those changes that are of interest to users and admins.
     is not allocations are not managed.
  -- Fix sinfo to display mixed nodes as allocated in '%F' output.
  -- Sview - Fix cpu and node counts for partitions.
+ -- Ignore NO_VAL in SLURMDB_PURGE_* macros.
 
 * Changes in Slurm 14.03.8
 ==========================
