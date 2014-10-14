@@ -1258,8 +1258,6 @@ static void _gres_node_list_delete(void *list_element)
 	xfree(gres_node_ptr->topo_gres_cnt_avail);
 	xfree(gres_node_ptr->topo_model);
 	for (i = 0; i < gres_node_ptr->type_cnt; i++) {
-		xfree(gres_node_ptr->type_cnt_alloc[i]);
-		xfree(gres_node_ptr->type_cnt_avail[i]);
 		xfree(gres_node_ptr->type_model[i]);
 	}
 	xfree(gres_node_ptr->type_cnt_alloc);
