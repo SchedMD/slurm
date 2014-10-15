@@ -231,9 +231,11 @@ See the "man slurm.conf" for more information about these parameters.</p>
 
 <p><a name="rlimit"><b>2. Why are my resource limits not propagated?</b></a><br>
 When the <span class="commandline">srun</span> command executes, it captures the
-resource limits in effect at submit time. These limits are propagated to the allocated
-nodes before initiating the user's job. The Slurm daemon running on that node then
-tries to establish identical resource limits for the job being initiated.
+resource limits in effect at submit time on the node where srun executes.
+These limits are propagated to the allocated nodes before initiating the
+user's job.
+The Slurm daemons running on the allocated nodes then try to establish
+identical resource limits for the job being initiated.
 There are several possible reasons for not being able to establish those
 resource limits.
 <ul>
@@ -1945,6 +1947,6 @@ build time by defining SAVE_MAX_WAIT to a different value than five.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 September 2014</p>
+<p style="text-align:center;">Last modified 15 October 2014</p>
 
 <!--#include virtual="footer.txt"-->
