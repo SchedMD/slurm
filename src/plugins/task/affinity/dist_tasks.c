@@ -213,7 +213,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	}
 
 	str = (char *)bit_fmt_hexmask(req_map);
-	debug3("task/affinity: job %u CPU mask from slurmctld: %s",
+	debug3("task/affinity: job %u core mask from slurmctld: %s",
 		req->job_id, str);
 	xfree(str);
 
@@ -602,7 +602,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	}
 
 	str = (char *)bit_fmt_hexmask(req_map);
-	debug3("task/affinity: job %u.%u CPU mask from slurmctld: %s",
+	debug3("task/affinity: job %u.%u core mask from slurmctld: %s",
 		req->job_id, req->job_step_id, str);
 	xfree(str);
 
