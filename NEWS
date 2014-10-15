@@ -74,7 +74,6 @@ documents those changes that are of interest to users and admins.
     with no way to get them out.
  -- Fix issue with task/affinity oversubscribing cpus erroneously when
     using --ntasks-per-node.
- -- MYSQL - Fix load of archive files.
 
 * Changes in Slurm 14.03.8
 ==========================
