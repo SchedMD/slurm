@@ -72,6 +72,8 @@ documents those changes that are of interest to users and admins.
  -- Ignore NO_VAL in SLURMDB_PURGE_* macros.
  -- ALPS - Don't drain nodes if epilog fails.  It leaves them in drain state
     with no way to get them out.
+ -- Fix issue with task/affinity oversubscribing cpus erroneously when
+    using --ntasks-per-node.
 
 * Changes in Slurm 14.03.8
 ==========================
