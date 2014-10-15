@@ -99,7 +99,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add ability to include other files in slurm.conf based upon the ClusterName.
  -- Add SchedulerParameters option of pack_serial_at_end to put serial jobs at
     the end of the available nodes rather than using a best fit algorithm.
-
+ -- Add PrivateData value of "cloud". If set, powered down nodes in the cloud
+    will be visible.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

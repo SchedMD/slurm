@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Enhance task/affinity auto binding to consider tasks * cpus-per-task.
  -- Fix regression the priority/multifactor which would cause memory corruption.
     Issue is only in rc1.
+ -- Add PrivateData value of "cloud". If set, powered down nodes in the cloud
+    will be visible.
 
 * Changes in Slurm 14.11.0rc1
 =============================

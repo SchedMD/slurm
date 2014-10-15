@@ -100,6 +100,7 @@ static void 	_dump_node_state (struct node_record *dump_node_ptr,
 				  Buf buffer);
 static front_end_record_t * _front_end_reg(
 				slurm_node_registration_status_msg_t *reg_msg);
+static bool	_is_cloud_hidden(struct node_record *node_ptr);
 static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static bool	_node_is_hidden(struct node_record *node_ptr);
@@ -684,6 +685,15 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 	return (weight1 - weight2);
 }
 
+/* Return TRUE if the node should be hidden by virtue of being powered down
+ * and in the cloud. */
+static bool _is_cloud_hidden(struct node_record *node_ptr)
+{
+	if (((slurmctld_conf.private_data & PRIVATE_CLOUD_NODES) == 0) &&
+	    IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
+		return true;
+	return false;
+}
 
 static bool _node_is_hidden(struct node_record *node_ptr)
 {
@@ -758,8 +768,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 				hidden = true;
 			else if (IS_NODE_FUTURE(node_ptr))
 				hidden = true;
-			else if (IS_NODE_CLOUD(node_ptr) &&
-				 IS_NODE_POWER_SAVE(node_ptr))
+			else if (_is_cloud_hidden(node_ptr))
 				hidden = true;
 			else if ((node_ptr->name == NULL) ||
 				 (node_ptr->name[0] == '\0'))
@@ -845,9 +854,8 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 				hidden = true;
 			else if (IS_NODE_FUTURE(node_ptr))
 				hidden = true;
-			else if (IS_NODE_CLOUD(node_ptr) &&
-				 IS_NODE_POWER_SAVE(node_ptr))
-				hidden = true;
+			else if (_is_cloud_hidden(node_ptr))
+				hidden = false;
 			else if ((node_ptr->name == NULL) ||
 				 (node_ptr->name[0] == '\0'))
 				hidden = true;
