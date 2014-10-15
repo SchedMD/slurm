@@ -3832,10 +3832,13 @@ extern int prolog_complete(uint32_t job_id, bool requeue,
 extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			bool node_fail, uint32_t job_return_code)
 {
+	struct node_record *node_ptr;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	uint32_t job_comp_flag = 0;
 	bool suspended = false;
+	int i;
+	int use_cloud = false;
 
 	info("completing job %u status %d", job_id, job_return_code);
 	job_ptr = find_job_record(job_id);
@@ -3905,8 +3908,16 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		 * is too early */
 		//job_ptr->db_index = 0;
 		//job_ptr->details->submit_time = now + 1;
-
-		job_ptr->batch_flag++;	/* only one retry */
+		if (job_ptr->node_bitmap) {
+			i = bit_ffs(job_ptr->node_bitmap);
+			if (i >= 0) {
+				node_ptr = node_record_table_ptr + i;
+				if (IS_NODE_CLOUD(node_ptr))
+					use_cloud = true;
+			}
+		}
+		if (!use_cloud)
+			job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->restart_cnt++;
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
 		/* Since the job completion logger removes the job submit
