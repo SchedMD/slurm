@@ -1817,6 +1817,12 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid )
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
+#ifdef HAVE_ALPS_CRAY
+	error("We cannot drain nodes on a Cray/ALPS system, "
+	      "use native Cray tools such as xtprocadmin(8).");
+	return SLURM_SUCCESS;
+#endif
+
 	if ( (host_list = hostlist_create (nodes)) == NULL) {
 		error ("hostlist_create error on %s: %m", nodes);
 		return ESLURM_INVALID_NODE_NAME;
