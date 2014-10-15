@@ -1381,11 +1381,20 @@ int update_node ( update_node_msg_t * update_node_msg )
 						/* Abort power up request */
 						node_ptr->node_state &=
 							(~NODE_STATE_POWER_UP);
+#ifndef HAVE_FRONT_END
+						node_ptr->node_state |=
+							NODE_STATE_NO_RESPOND;
+#endif
+						node_ptr->node_state =
+							NODE_STATE_IDLE |
+							(node_ptr->node_state &
+							 NODE_STATE_FLAGS);
 					}
 					node_ptr->last_idle = 0;
 					info("powering down node %s",
 					     this_node_name);
 				}
+				free(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
 				if (!IS_NODE_POWER_SAVE(node_ptr)) {
@@ -1406,6 +1415,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("powering up node %s",
 					     this_node_name);
 				}
+				free(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_NO_RESPOND) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
