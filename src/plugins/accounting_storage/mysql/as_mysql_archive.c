@@ -46,6 +46,7 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/env.h"
 
+#define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
 #define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
 
 typedef struct {

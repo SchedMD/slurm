@@ -4066,12 +4066,9 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	/* Validate state version */
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if (ver_str) {
-		if (!strcmp(ver_str, NRT_STATE_VERSION))
-			safe_unpack16(&protocol_version, buffer);
-		else
-			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
-	}
+	if (ver_str && !strcmp(ver_str, NRT_STATE_VERSION))
+		safe_unpack16(&protocol_version, buffer);
+
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("******************************************************");
 		error("Can not recover switch/nrt state, incompatible version");
