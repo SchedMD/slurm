@@ -336,6 +336,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with task/affinity oversubscribing cpus erroneously when
     using --ntasks-per-node.
  -- MYSQL - Fix load of archive files.
+ -- Treat Cray MPI job calling exit() without mpi_fini() as fatal error for
+    that specific task and let srun handle all timeout logic.
 
 * Changes in Slurm 14.03.8
 ==========================

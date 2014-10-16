@@ -110,7 +110,8 @@ static void _alpsc_debug(const char *file, int line, const char *func,
 			 int rc, int expected_rc, const char *alpsc_func,
 			 char *err_msg);
 static int _make_status_file(stepd_step_rec_t *job);
-static int _check_status_file(stepd_step_rec_t *job);
+static int _check_status_file(stepd_step_rec_t *job,
+			      stepd_step_task_info_t *task);
 static int _get_numa_nodes(char *path, int *cnt, int **numa_array);
 static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 			  cpu_set_t **cpuMasks);
@@ -366,7 +367,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	      job->jobid, job->stepid, job->envtp->procid);
 
 	if (track_status) {
-		return _check_status_file(job);
+		return _check_status_file(job, task);
 	}
 #endif
 	return SLURM_SUCCESS;
@@ -542,13 +543,17 @@ static int _make_status_file(stepd_step_rec_t *job)
  * Check the status file for the exit of the given local task id
  * and terminate the job step if an improper exit is found
  */
-static int _check_status_file(stepd_step_rec_t *job)
+static int _check_status_file(stepd_step_rec_t *job,
+			      stepd_step_task_info_t *task)
 {
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	char status;
 	int rv, fd;
-	stepd_step_task_info_t *task;
-	char *reason;
+
+	// We only need to special case termination with exit(0)
+	// srun already handles abnormal exit conditions fine
+	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
+		return SLURM_SUCCESS;
 
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
@@ -596,25 +601,26 @@ static int _check_status_file(stepd_step_rec_t *job)
 
 	// Check the result
 	if (status == 0 && !terminated) {
-		task = job->task[job->envtp->localid];
 		if (task->killed_by_cmd) {
 			// We've been killed by request. User already knows
 			return SLURM_SUCCESS;
-		} else if (task->aborted) {
-			reason = "aborted";
-		} else if (WIFSIGNALED(task->estatus)) {
-			reason = "signaled";
-		} else {
-			reason = "exited";
 		}
 
-		// Cancel the job step, since we didn't find the exiting msg
-		error("Terminating job step %"PRIu32".%"PRIu32
-			"; task %d exit code %d %s without notification",
-			job->jobid, job->stepid, task->gtid,
-			WEXITSTATUS(task->estatus), reason);
-		terminated = 1;
-		slurm_terminate_job_step(job->jobid, job->stepid);
+		// Cancel the job step, since we didn't find the mpi_fini msg
+		// srun only gets the error() messages by default, send one
+		// per compute node, but log all other events with info().
+		if (terminated) {
+			info("step %u.%u task %u exited without calling "
+			     "PMI_Finalize()",
+			     job->jobid, job->stepid, task->gtid);
+		} else {
+			error("step %u.%u task %u exited without calling "
+			      "PMI_Finalize()",
+			      job->jobid, job->stepid, task->gtid);
+			terminated = 1;
+		}
+		info("reset estatus from %d to %d", task->estatus, SIGKILL);
+		task->estatus = SIGKILL;
 	}
 	return SLURM_SUCCESS;
 }
