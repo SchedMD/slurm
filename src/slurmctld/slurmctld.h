@@ -567,8 +567,9 @@ struct job_record {
 	uint16_t direct_set_prio;	/* Priority set directly if
 					 * set the system will not
 					 * change the priority any further. */
-	time_t end_time;		/* time of termination,
-					 * actual or expected */
+	time_t end_time;		/* time execution ended, actual or
+					 * expected. if terminated from suspend
+					 * state, this is time suspend began */
 	bool epilog_running;		/* true of EpilogSlurmctld is running */
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
