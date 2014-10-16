@@ -323,7 +323,6 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	char llifile[LLI_STATUS_FILE_BUF_SIZE];
 	char status;
 	int rv, fd;
-	char *reason;
 
 	debug("task_p_post_term: %u.%u, task %d",
 	      job->jobid, job->stepid, job->envtp->procid);
@@ -379,12 +378,6 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 		if (task->killed_by_cmd) {
 			// We've been killed by request. User already knows
 			return SLURM_SUCCESS;
-		} else if (task->aborted) {
-			reason = "aborted";
-		} else if (WIFSIGNALED(task->estatus)) {
-			reason = "signaled";
-		} else {
-			reason = "exited";
 		}
 
 		// Cancel the job step, since we didn't find the mpi_fini msg
