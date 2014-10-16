@@ -40,11 +40,16 @@ set proc             ""
 set run_host         ""
 set make_file        0
 set exit_code        0
+set pcmd_prog        "/opt/cray/nodehealth/default/bin/pcmd"
 
 print_header $test_id
 
 if {[test_cray]} {
 	set make_file 1
+	if { [file exists $pcmd_prog] == 0 } {
+		send_user "\nFAILURE: The file $pcmd_prog was not found\n"
+		exit $exit_code
+	}
 }
 if { [string compare [test_launch_type] "slurm"] } {
 	send_user "\nWARNING: This test is only compatible with systems using launch/slurm\n"
@@ -96,12 +101,12 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 }
 
 proc check_file { file_name } {
-	global test_id exit_code file_dir run_host
+	global test_id exit_code file_dir run_host pcmd_prog
 
 	sleep 1
 
 	set found 0
-	spawn /opt/cray/nodehealth/default/bin/pcmd -n $run_host "find $file_dir -name $file_name"
+	spawn $pcmd_prog -n $run_host "find $file_dir -name $file_name"
 	expect {
 		-re "$file_dir/$file_name" {
 			set found 1
