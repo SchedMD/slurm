@@ -412,6 +412,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	xfree(usr_str);
 	xfree(grp_str);
 	xfree(jname);
+	xfree(query);
 
 	return rc;
 }
