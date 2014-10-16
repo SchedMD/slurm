@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
     SLURM_MEM_PER_CPU and SLURM_MEM_PER_NODE environment variables.
  -- Prevent slurmctld abort on update of advanced reservation that contains no
     nodes.
+ -- ALPS - Revert commit 2c95e2d22 which also removes commit 2e2de6a4 allowing
+    cray with the SubAllocate option to work as it did with 2.5.
 
 * Changes in Slurm 14.11.8
 ==========================
