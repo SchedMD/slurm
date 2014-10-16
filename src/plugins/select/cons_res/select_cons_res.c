@@ -1698,7 +1698,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			 select_node_usage, exc_core_bitmap);
 	if (rc == SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(orig_map);
-		job_ptr->start_time = time(NULL);
+		job_ptr->start_time = now;
 		return SLURM_SUCCESS;
 	}
 
