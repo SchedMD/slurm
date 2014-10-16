@@ -622,7 +622,7 @@ extern void *backfill_agent(void *args)
 	return NULL;
 }
 
-/* Clear the start_time for all jobs. This is used to insure that a job which
+/* Clear the start_time for all pending jobs. This is used to insure that a job which
  * can run in multiple partitions has its start_time set to the smallest
  * value in any of those partitions. */
 static void _clear_job_start_times(void)
@@ -631,8 +631,9 @@ static void _clear_job_start_times(void)
 	struct job_record *job_ptr;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
-		job_ptr->start_time = 0;
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (IS_JOB_PENDING(job_ptr))
+			job_ptr->start_time = 0;
 	}
 	list_iterator_destroy(job_iterator);
 }
@@ -838,8 +839,7 @@ static int _attempt_backfill(void)
 			xfree(job_queue_rec);
 			continue;
 		}
-		if (backfill_continue)
-			orig_start_time = job_ptr->start_time;
+		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
 		part_ptr = job_queue_rec->part_ptr;
 		xfree(job_queue_rec);

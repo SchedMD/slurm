@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     Issue is only in rc1.
  -- Add PrivateData value of "cloud". If set, powered down nodes in the cloud
     will be visible.
+ -- Sched/backfill - Eliminate clearing start_time of running jobs.
 
 * Changes in Slurm 14.11.0rc1
 =============================
