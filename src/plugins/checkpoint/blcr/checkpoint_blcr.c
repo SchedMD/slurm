@@ -109,8 +109,6 @@ struct ckpt_req {
 
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 		      char *nodelist);
-static void _send_sig(uint32_t job_id, uint32_t step_id,
-		      uint16_t signal, char *nodelist);
 static void *_ckpt_agent_thr(void *arg);
 static void _ckpt_req_free(void *ptr);
 static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
@@ -596,6 +594,9 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 {
 	agent_arg_t *agent_args;
 	kill_tasks_msg_t *kill_tasks_msg;
+	hostlist_iterator_t hi;
+	char *host;
+	struct node_record *node_ptr;
 
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id		= job_id;
@@ -608,6 +609,16 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	agent_args->msg_args		= kill_tasks_msg;
 	agent_args->hostlist		= hostlist_create(nodelist);
 	agent_args->node_count		= hostlist_count(agent_args->hostlist);
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	hi = hostlist_iterator_create(agent_args->hostlist);
+	while ((host = hostlist_next(hi))) {
+		if ((node_ptr = find_node_record(host)) &&
+		    (agent_args->protocol_version > node_ptr->protocol_version))
+			agent_args->protocol_version =
+				node_ptr->protocol_version;
+		free(host);
+	}
+	hostlist_iterator_destroy(hi);
 
 	agent_queue_request(agent_args);
 }
@@ -646,7 +657,7 @@ static void *_ckpt_agent_thr(void *arg)
 	int rc;
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
 	struct check_job_info *check_ptr;
@@ -695,12 +706,12 @@ static void *_ckpt_agent_thr(void *arg)
 		check_ptr->error_msg = xstrdup(slurm_strerror(rc));
 
  out:
-	unlock_slurmctld(job_write_lock);
 
 	if (req->sig_done) {
 		_send_sig(req->job_id, req->step_id, req->sig_done,
 			  req->nodelist);
 	}
+	unlock_slurmctld(job_write_lock);
 
 	_on_ckpt_complete(req->gid, req->uid, req->job_id, req->step_id,
 			  req->image_dir, rc);

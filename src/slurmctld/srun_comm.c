@@ -343,12 +343,18 @@ extern int srun_user_message(struct job_record *job_ptr, char *msg)
 		agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
 		if (!agent_arg_ptr->hostlist)
 			fatal("Invalid srun host: %s", job_ptr->batch_host);
+
+		if (job_ptr->front_end_ptr)
+			agent_arg_ptr->protocol_version =
+				job_ptr->front_end_ptr->protocol_version;
+
 #else
 		node_ptr = find_first_node_record(job_ptr->node_bitmap);
 		if (node_ptr == NULL)
 			return ESLURM_DISABLED;	/* no allocated nodes */
 		agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 		agent_arg_ptr->hostlist = hostlist_create(node_ptr->name);
+		agent_arg_ptr->protocol_version = node_ptr->protocol_version;
 		if (!agent_arg_ptr->hostlist)
 			fatal("Invalid srun host: %s", node_ptr->name);
 #endif

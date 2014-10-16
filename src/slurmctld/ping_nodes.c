@@ -385,12 +385,17 @@ extern void run_health_check(void)
 	check_agent_args = xmalloc (sizeof (agent_arg_t));
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
 	check_agent_args->retry = 0;
+	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	check_agent_args->hostlist = hostlist_create(NULL);
 #ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
+		if (check_agent_args->protocol_version >
+		    front_end_ptr->protocol_version)
+			check_agent_args->protocol_version =
+				front_end_ptr->protocol_version;
 		hostlist_push_host(check_agent_args->hostlist,
 				   front_end_ptr->name);
 		check_agent_args->node_count++;
@@ -476,6 +481,10 @@ extern void run_health_check(void)
 					continue;
 			}
 		}
+		if (check_agent_args->protocol_version >
+		    node_ptr->protocol_version)
+			check_agent_args->protocol_version =
+				node_ptr->protocol_version;
 		hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
 		check_agent_args->node_count++;
 	}
@@ -512,6 +521,7 @@ extern void update_nodes_acct_gather_data(void)
 	agent_args = xmalloc (sizeof (agent_arg_t));
 	agent_args->msg_type = REQUEST_ACCT_GATHER_UPDATE;
 	agent_args->retry = 0;
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->hostlist = hostlist_create(NULL);
 
 #ifdef HAVE_FRONT_END
@@ -519,6 +529,11 @@ extern void update_nodes_acct_gather_data(void)
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
+		if (agent_args->protocol_version >
+		    front_end_ptr->protocol_version)
+			agent_args->protocol_version =
+				front_end_ptr->protocol_version;
+
 		hostlist_push_host(agent_args->hostlist, front_end_ptr->name);
 		agent_args->node_count++;
 	}
@@ -528,6 +543,9 @@ extern void update_nodes_acct_gather_data(void)
 		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr))
 			continue;
+		if (agent_args->protocol_version > node_ptr->protocol_version)
+			agent_args->protocol_version =
+				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}

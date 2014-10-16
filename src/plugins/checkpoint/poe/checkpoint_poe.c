@@ -420,6 +420,11 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	agent_args->hostlist = hostlist_create(node_name);
 	agent_args->node_count		= 1;
 
+	if ((node_ptr = find_node_record(node_name)))
+		agent_args->protocol_version = node_ptr->protocol_version;
+
+	hostlist_iterator_destroy(hi);
+
 	agent_queue_request(agent_args);
 }
 
