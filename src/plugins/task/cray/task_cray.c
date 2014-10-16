@@ -120,6 +120,8 @@ unsigned int numa_bitmask_weight(const struct bitmask *bmp);
 static int _get_numa_nodes(char *path, int *cnt, int **numa_array);
 static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 			  cpu_set_t **cpuMasks);
+
+static int terminated = 0;
 #endif
 
 /*
@@ -386,8 +388,18 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 		}
 
 		// Cancel the job step, since we didn't find the mpi_fini msg
-		error("step %u.%u task %u exited without calling mpi_fini()",
-		      job->jobid, job->stepid, task->gtid);
+		// srun only gets the error() messages by default, send one
+		// per compute node, but log all other events with info().
+		if (terminated) {
+			info("step %u.%u task %u exited without calling "
+			     "PMI_Finalize()",
+			     job->jobid, job->stepid, task->gtid);
+		} else {
+			error("step %u.%u task %u exited without calling "
+			      "PMI_Finalize()",
+			      job->jobid, job->stepid, task->gtid);
+			terminated = 1;
+		}
 		info("reset estatus from %d to %d", task->estatus, SIGKILL);
 		task->estatus = SIGKILL;
 	}
