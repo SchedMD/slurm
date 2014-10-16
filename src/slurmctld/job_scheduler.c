@@ -2813,12 +2813,17 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
 	reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
 	reboot_agent_args->retry = 0;
+	reboot_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	reboot_agent_args->hostlist = hostlist_create(NULL);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
-		hostlist_push(reboot_agent_args->hostlist, node_ptr->name);
+		if (reboot_agent_args->protocol_version
+		    > node_ptr->protocol_version)
+			reboot_agent_args->protocol_version =
+				node_ptr->protocol_version;
+		hostlist_push_host(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		bit_clear(avail_node_bitmap, i);

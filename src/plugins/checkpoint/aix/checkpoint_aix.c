@@ -417,6 +417,9 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 {
 	agent_arg_t *agent_args;
 	kill_tasks_msg_t *kill_tasks_msg;
+	uint16_t protocol_version = (uint16_t) NO_VAL;
+	agent_arg_t *agent_arg_ptr;
+	struct node_record *node_ptr;
 
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id		= job_id;
@@ -429,6 +432,9 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	agent_args->msg_args		= kill_tasks_msg;
 	agent_args->hostlist = hostlist_create(node_name);
 	agent_args->node_count		= 1;
+
+	if ((node_ptr = find_node_record(node_name)))
+		agent_args->protocol_version = node_ptr->protocol_version;
 
 	agent_queue_request(agent_args);
 }

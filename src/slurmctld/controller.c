@@ -1327,8 +1327,14 @@ static void _queue_reboot_msg(void)
 			reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
 			reboot_agent_args->retry = 0;
 			reboot_agent_args->hostlist = hostlist_create(NULL);
+			reboot_agent_args->protocol_version =
+				SLURM_PROTOCOL_VERSION;
 		}
-		hostlist_push(reboot_agent_args->hostlist, node_ptr->name);
+		if (reboot_agent_args->protocol_version
+		    > node_ptr->protocol_version)
+			reboot_agent_args->protocol_version =
+				node_ptr->protocol_version;
+		hostlist_push_host(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;
 		node_ptr->node_state &= ~NODE_STATE_MAINT;
 		node_ptr->node_state &=  NODE_STATE_FLAGS;

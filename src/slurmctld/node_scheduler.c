@@ -1913,6 +1913,9 @@ static void _launch_prolog(struct job_record *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
+#ifndef HAVE_FRONT_END
+	int i;
+#endif
 
 	xassert(job_ptr);
 
@@ -1954,6 +1957,16 @@ static void _launch_prolog(struct job_record *job_ptr)
 	agent_arg_ptr->node_count = 1;
 #else
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->nodes);
+	agent_arg_ptr->protocol_version = SLURM_PROTOCOL_VERSION;
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		if (agent_arg_ptr->protocol_version >
+		    node_record_table_ptr[i].protocol_version)
+			agent_arg_ptr->protocol_version =
+				node_record_table_ptr[i].protocol_version;
+	}
+
 	agent_arg_ptr->node_count = job_ptr->node_cnt;
 #endif
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
@@ -2816,6 +2829,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->hostlist = hostlist_create(NULL);
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	kill_job->job_id    = job_ptr->job_id;
