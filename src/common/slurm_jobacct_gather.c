@@ -850,19 +850,6 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 
 	no_pack = (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD));
 
-	/* The function can take calls from both DBD and from regular
-	 * SLURM functions.  We choose to standardize on using the
-	 * SLURM_PROTOCOL_VERSION here so if PROTOCOL_TYPE_DBD comes
-	 * in we need to translate the DBD rpc_version to use the
-	 * SLURM protocol_version.
-	 *
-	 * If this function ever changes make sure the
-	 * slurmdbd_translate_rpc function has been updated with the
-	 * new protocol version.
-	 */
-	if (protocol_type == PROTOCOL_TYPE_DBD)
-		rpc_version = slurmdbd_translate_rpc(rpc_version);
-
 	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (no_pack) {
 			pack8((uint8_t) 0, buffer);
@@ -923,19 +910,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	uint8_t  uint8_tmp;
 
 	jobacct_gather_init();
-
-	/* The function can take calls from both DBD and from regular
-	 * SLURM functions.  We choose to standardize on using the
-	 * SLURM_PROTOCOL_VERSION here so if PROTOCOL_TYPE_DBD comes
-	 * in we need to translate the DBD rpc_version to use the
-	 * SLURM protocol_version.
-	 *
-	 * If this function ever changes make sure the
-	 * slurmdbd_translate_rpc function has been updated with the
-	 * new protocol version.
-	 */
-	if (protocol_type == PROTOCOL_TYPE_DBD)
-		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
 	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);

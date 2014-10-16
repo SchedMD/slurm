@@ -139,23 +139,6 @@ static int    _tot_wait (struct timeval *start_time);
  * Socket open/close/read/write functions
  ****************************************************************************/
 
-/* Some functions are called by the DBD as well as regular slurm
- * procedures.  In this case we need to make a way to translate the
- * DBD rpc to that of SLURM.
- * rpc_version IN - DBD rpc version
- * Returns corrisponding SLURM rpc version
- */
-extern uint16_t slurmdbd_translate_rpc(uint16_t rpc_version)
-{
-	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION)
-		return SLURM_14_03_PROTOCOL_VERSION;
-	else if (rpc_version >= SLURMDBD_2_6_VERSION)
-		return SLURM_2_6_PROTOCOL_VERSION;
-
-	return 0;
-}
-
-
 /* Open a socket connection to SlurmDbd
  * auth_info IN - alternate authentication key
  * callbacks IN - make agent to process RPCs and contains callback pointers

@@ -50,14 +50,6 @@
 #include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
 
-uint16_t _get_slurm_version(uint32_t rpc_version)
-{
-	if (rpc_version >= SLURM_PROTOCOL_VERSION)
-		return SLURM_PROTOCOL_VERSION;
-	else
-		return SLURM_2_6_PROTOCOL_VERSION;
-}
-
 /*
  * check_header_version checks to see that the specified header was sent
  * from a node running the same version of the protocol as the current node
@@ -68,10 +60,8 @@ int check_header_version(header_t * header)
 {
 	uint16_t check_version = SLURM_PROTOCOL_VERSION;
 
-	if (working_cluster_rec) {
-		check_version = _get_slurm_version(
-			working_cluster_rec->rpc_version);
-	}
+	if (working_cluster_rec)
+		check_version = working_cluster_rec->rpc_version;
 
 	if (slurmdbd_conf) {
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
@@ -128,14 +118,13 @@ void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 	if (msg->protocol_version != (uint16_t)NO_VAL)
 		header->version = msg->protocol_version;
 	else if (working_cluster_rec)
-		msg->protocol_version = header->version = _get_slurm_version(
-			working_cluster_rec->rpc_version);
+		msg->protocol_version = header->version =
+			working_cluster_rec->rpc_version;
 	else if ((msg->msg_type == ACCOUNTING_UPDATE_MSG) ||
 	         (msg->msg_type == ACCOUNTING_FIRST_REG)) {
 		uint32_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;
-		msg->protocol_version = header->version =
-			_get_slurm_version(rpc_version);
+		msg->protocol_version = header->version = rpc_version;
 	} else
 		msg->protocol_version = header->version =
 			SLURM_PROTOCOL_VERSION;
