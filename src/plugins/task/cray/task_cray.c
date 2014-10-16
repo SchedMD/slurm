@@ -120,8 +120,6 @@ unsigned int numa_bitmask_weight(const struct bitmask *bmp);
 static int _get_numa_nodes(char *path, int *cnt, int **numa_array);
 static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 			  cpu_set_t **cpuMasks);
-
-static int terminated = 0;
 #endif
 
 /*
@@ -328,6 +326,11 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	debug("task_p_post_term: %u.%u, task %d",
 	      job->jobid, job->stepid, job->envtp->procid);
 
+	// We only need to special case termination with exit(0)
+	// srun already handles abnormal exit conditions fine
+	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
+		return SLURM_SUCCESS;
+
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
 		 SLURM_ID_HASH(job->jobid, job->stepid));
@@ -370,7 +373,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 	}
 
 	// Check the result
-	if (status == 0 && !terminated) {
+	if (status == 0) {
 		if (task->killed_by_cmd) {
 			// We've been killed by request. User already knows
 			return SLURM_SUCCESS;
@@ -382,13 +385,11 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 			reason = "exited";
 		}
 
-		// Cancel the job step, since we didn't find the exiting msg
-		error("Terminating job step %"PRIu32".%"PRIu32
-			"; task %d exit code %d %s without notification",
-			job->jobid, job->stepid, task->gtid,
-			WEXITSTATUS(task->estatus), reason);
-		terminated = 1;
-		slurm_terminate_job_step(job->jobid, job->stepid);
+		// Cancel the job step, since we didn't find the mpi_fini msg
+		error("step %u.%u task %u exited without calling mpi_fini()",
+		      job->jobid, job->stepid, task->gtid);
+		info("reset estatus from %d to %d", task->estatus, SIGKILL);
+		task->estatus = SIGKILL;
 	}
 
 #endif
