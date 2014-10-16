@@ -406,6 +406,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	rc = mysql_db_query(jobcomp_mysql_conn, query);
 	xfree(usr_str);
 	xfree(grp_str);
+	xfree(query);
 
 	return rc;
 }

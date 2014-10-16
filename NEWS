@@ -77,6 +77,7 @@ documents those changes that are of interest to users and admins.
  -- MYSQL - Fix load of archive files.
  -- Treat Cray MPI job calling exit() without mpi_fini() as fatal error for
     that specific task and let srun handle all timeout logic.
+ -- Fix small memory leak in jobcomp/mysql.
 
 * Changes in Slurm 14.03.8
 ==========================
