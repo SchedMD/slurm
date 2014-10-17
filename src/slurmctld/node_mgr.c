@@ -331,7 +331,7 @@ extern int load_all_node_state ( bool state_only )
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in node_state header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, NODE_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, NODE_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
@@ -1400,18 +1400,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 	return error_code;
 }
 
-/* variation of strcmp that accepts NULL pointers */
-static int _strcmp(char *str1, char *str2)
-{
-	if (!str1 && !str2)
-		return 0;
-	if (str1 && !str2)
-		return 1;
-	if (!str1 && str2)
-		return -1;
-	return strcmp(str1, str2);
-}
-
 /*
  * restore_node_features - Make node and config (from slurm.conf) fields
  *	consistent for Features, Gres and Weight
@@ -1439,7 +1427,7 @@ extern void restore_node_features(int recover)
 			}
 		}
 
-		if (_strcmp(node_ptr->config_ptr->feature, node_ptr->features)){
+		if (xstrcmp(node_ptr->config_ptr->feature, node_ptr->features)){
 			error("Node %s Features(%s) differ from slurm.conf",
 			      node_ptr->name, node_ptr->features);
 			if (recover == 2) {

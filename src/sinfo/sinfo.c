@@ -93,7 +93,6 @@ static int  _query_server(partition_info_msg_t ** part_pptr,
 static int _reservation_report(reserve_info_msg_t *resv_ptr);
 static bool _serial_part_data(void);
 static void _sort_hostlist(List sinfo_list);
-static int  _strcmp(char *data1, char *data2);
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			  uint32_t node_scaling);
 
@@ -512,7 +511,7 @@ static int _build_sinfo_data(List sinfo_list,
 		part_ptr = partition_msg->partition_array;
 		for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 			if ((!params.partition) ||
-			    (_strcmp(params.partition, part_ptr->name) == 0)) {
+			    (xstrcmp(params.partition, part_ptr->name) == 0)) {
 				list_append(sinfo_list, _create_sinfo(
 						    part_ptr, (uint16_t) j,
 						    NULL,
@@ -534,7 +533,7 @@ static int _build_sinfo_data(List sinfo_list,
 		part_ptr = &(partition_msg->partition_array[j]);
 
 		if (params.filtering && params.partition &&
-		    _strcmp(part_ptr->name, params.partition))
+		    xstrcmp(part_ptr->name, params.partition))
 			continue;
 
 		if (node_msg->record_count == 1) { /* node_name_single */
@@ -736,17 +735,17 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.features_flag &&
-	    (_strcmp(node_ptr->features, sinfo_ptr->features)))
+	    (xstrcmp(node_ptr->features, sinfo_ptr->features)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.gres_flag &&
-	    (_strcmp(node_ptr->gres, sinfo_ptr->gres)))
+	    (xstrcmp(node_ptr->gres, sinfo_ptr->gres)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.reason_flag &&
-	    (_strcmp(node_ptr->reason, sinfo_ptr->reason)))
+	    (xstrcmp(node_ptr->reason, sinfo_ptr->reason)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
@@ -764,7 +763,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		char *state1, *state2;
 		state1 = node_state_string(node_ptr->node_state);
 		state2 = node_state_string(sinfo_ptr->node_state);
-		if (strcmp(state1, state2))
+		if (xstrcmp(state1, state2))
 			return false;
 	}
 
@@ -834,7 +833,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 		return false;
 
 	if (params.match_flags.partition_flag
-	    && (_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
+	    && (xstrcmp(part_ptr->name, sinfo_ptr->part_info->name)))
 		return false;
 
 	if (params.match_flags.avail_flag &&
@@ -842,7 +841,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 		return false;
 
 	if (params.match_flags.groups_flag &&
-	    (_strcmp(part_ptr->allow_groups,
+	    (xstrcmp(part_ptr->allow_groups,
 		     sinfo_ptr->part_info->allow_groups)))
 		return false;
 
@@ -1206,16 +1205,4 @@ static void _sinfo_list_delete(void *data)
 	hostlist_destroy(sinfo_ptr->node_addr);
 	hostlist_destroy(sinfo_ptr->hostnames);
 	xfree(sinfo_ptr);
-}
-
-/* like strcmp, but works with NULL pointers */
-static int _strcmp(char *data1, char *data2)
-{
-	static char null_str[] = "(null)";
-
-	if (data1 == NULL)
-		data1 = null_str;
-	if (data2 == NULL)
-		data2 = null_str;
-	return strcmp(data1, data2);
 }

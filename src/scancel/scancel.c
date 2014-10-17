@@ -249,18 +249,6 @@ _verify_job_ids (void)
 	return rc;
 }
 
-/* variant of strcmp() that handles NULL input */
-static int _strcmp(char *s1, char *s2)
-{
-	if (s1 && s2)
-		return strcmp(s1, s2);
-	if (s1)
-		return 1;
-	if (s2)
-		return -1;
-	return 0;	/* both NULL */
-}
-
 /* _filter_job_records - filtering job information per user specification
  * RET Count of job's filtered out OTHER than for job ID value */
 static int
@@ -286,35 +274,35 @@ _filter_job_records (void)
 		}
 
 		if (opt.account != NULL &&
-		    _strcmp(job_ptr[i].account, opt.account)) {
+		    xstrcmp(job_ptr[i].account, opt.account)) {
 			job_ptr[i].job_id = 0;
 			filter_cnt++;
 			continue;
 		}
 
 		if (opt.job_name != NULL &&
-		    _strcmp(job_ptr[i].name, opt.job_name)) {
+		    xstrcmp(job_ptr[i].name, opt.job_name)) {
 			job_ptr[i].job_id = 0;
 			filter_cnt++;
 			continue;
 		}
 
 		if ((opt.partition != NULL) &&
-		    _strcmp(job_ptr[i].partition,opt.partition)) {
+		    xstrcmp(job_ptr[i].partition,opt.partition)) {
 			job_ptr[i].job_id = 0;
 			filter_cnt++;
 			continue;
 		}
 
 		if ((opt.qos != NULL) &&
-		    _strcmp(job_ptr[i].qos, opt.qos)) {
+		    xstrcmp(job_ptr[i].qos, opt.qos)) {
 			job_ptr[i].job_id = 0;
 			filter_cnt++;
 			continue;
 		}
 
 		if ((opt.reservation != NULL) &&
-		    _strcmp(job_ptr[i].resv_name, opt.reservation)) {
+		    xstrcmp(job_ptr[i].resv_name, opt.reservation)) {
 			job_ptr[i].job_id = 0;
 			filter_cnt++;
 			continue;
@@ -369,7 +357,7 @@ _filter_job_records (void)
 			if ((opt.wckey[0] != '*') && (job_key[0] == '*'))
 				job_key++;
 
-			if (strcmp(job_key, opt.wckey) != 0) {
+			if (xstrcmp(job_key, opt.wckey) != 0) {
 				job_ptr[i].job_id = 0;
 				filter_cnt++;
 				continue;
