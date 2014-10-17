@@ -1107,7 +1107,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #endif
 	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
-	socklen_t adlen;
 	hostset_t step_hset = NULL;
 	job_mem_limits_t *job_limits_ptr;
 	int nodeid = 0;
@@ -1224,8 +1223,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		slurm_mutex_unlock(&job_limits_mutex);
 	}
 
-	adlen = sizeof(self);
-	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
+	slurm_get_stream_addr(msg->conn_fd, &self);
 
 	debug3("_rpc_launch_tasks: call to _forkexec_slurmstepd");
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
@@ -2837,7 +2835,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 	 *  Indicate to slurmctld that we've received the message
 	 */
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	slurm_close_accepted_conn(msg->conn_fd);
+	slurm_close(msg->conn_fd);
 	msg->conn_fd = -1;
 
 	if (req->step_id != NO_VAL) {
@@ -3553,7 +3551,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 		error("REQUEST_SIGNAL_JOB not supported with XCPU system");
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+			if (slurm_close(msg->conn_fd) < 0)
 				error ("_rpc_signal_job: close(%d): %m",
 				       msg->conn_fd);
 			msg->conn_fd = -1;
@@ -3575,7 +3573,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 		      req->job_id, req_uid);
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+			if (slurm_close(msg->conn_fd) < 0)
 				error ("_rpc_signal_job: close(%d): %m",
 				       msg->conn_fd);
 			msg->conn_fd = -1;
@@ -3635,7 +3633,7 @@ no_job:
 	 */
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+		if (slurm_close(msg->conn_fd) < 0)
 			error ("_rpc_signal_job: close(%d): %m", msg->conn_fd);
 		msg->conn_fd = -1;
 	}
@@ -3745,7 +3743,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	 * detected with the request */
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, rc);
-		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+		if (slurm_close(msg->conn_fd) < 0)
 			error("_rpc_suspend_job: close(%d): %m",
 			      msg->conn_fd);
 		msg->conn_fd = -1;
@@ -3951,7 +3949,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 */
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+		if (slurm_close(msg->conn_fd) < 0)
 			error ("rpc_abort_job: close(%d): %m", msg->conn_fd);
 		msg->conn_fd = -1;
 	}
@@ -4245,7 +4243,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			 */
 			debug("sent SUCCESS, waiting for step to start");
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
-			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+			if (slurm_close(msg->conn_fd) < 0)
 				error ( "rpc_kill_job: close(%d): %m",
 					msg->conn_fd);
 			msg->conn_fd = -1;
@@ -4335,7 +4333,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	if (msg->conn_fd >= 0) {
 		debug4("sent SUCCESS");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+		if (slurm_close(msg->conn_fd) < 0)
 			error ("rpc_kill_job: close(%d): %m", msg->conn_fd);
 		msg->conn_fd = -1;
 	}

@@ -382,11 +382,11 @@ static void *_background_rpc_mgr(void *no_data)
 
 		slurm_free_msg(msg);
 
-		slurm_close_accepted_conn(newsockfd);	/* close new socket */
+		slurm_close(newsockfd);	/* close new socket */
 	}
 
 	debug3("_background_rpc_mgr shutting down");
-	slurm_close_accepted_conn(sockfd);	/* close the main socket */
+	slurm_close(sockfd);	/* close the main socket */
 	pthread_exit((void *) 0);
 	return NULL;
 }

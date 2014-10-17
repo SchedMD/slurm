@@ -169,7 +169,7 @@ void *_forward_thread(void *arg)
 		/*
 		 * forward message
 		 */
-		if (_slurm_msg_sendto(fd,
+		if (slurm_msg_sendto(fd,
 				     get_buf_data(buffer),
 				     get_buf_offset(buffer),
 				     SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0) {
@@ -183,7 +183,7 @@ void *_forward_thread(void *arg)
 				free_buf(buffer);
 				buffer = init_buf(fwd_msg->buf_len);
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
-				slurm_close_accepted_conn(fd);
+				slurm_close(fd);
 				fd = -1;
 				continue;
 			}
@@ -238,7 +238,7 @@ void *_forward_thread(void *arg)
 				free_buf(buffer);
 				buffer = init_buf(fwd_msg->buf_len);
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
-				slurm_close_accepted_conn(fd);
+				slurm_close(fd);
 				fd = -1;
 				continue;
 			}
@@ -306,7 +306,7 @@ void *_forward_thread(void *arg)
 	}
 	free(name);
 cleanup:
-	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
+	if ((fd >= 0) && slurm_close(fd) < 0)
 		error ("close(%d): %m", fd);
 	hostlist_destroy(hl);
 	destroy_forward(&fwd_msg->header.forward);

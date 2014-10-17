@@ -400,7 +400,7 @@ extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 		 * for an arbitray fd or should these be fire
 		 * and forget?  For this, that we can probably
 		 * forget about it */
-		slurm_close_stream(fd);
+		slurm_close(fd);
 	}
 	return rc;
 }

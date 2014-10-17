@@ -130,7 +130,7 @@ extern void term_msg_thread(void)
 		fd = slurm_open_stream(&addr, true);
 		if (fd != -1) {
 			/* we don't care if the open failed */
-			slurm_close_stream(fd);
+			slurm_close(fd);
 		}
 
 		debug2("waiting for sched/wiki2 thread to exit");
@@ -202,7 +202,7 @@ static void *_msg_thread(void *no_data)
 			_proc_msg(new_fd, msg);
 			xfree(msg);
 		}
-		slurm_close_accepted_conn(new_fd);
+		slurm_close(new_fd);
 	}
 	verbose("wiki: message engine shutdown");
 	if (sock_fd > 0)

@@ -248,7 +248,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		char inetbuf[64];
 
 		p = rpc_num2string(msg->msg_type);
-		_slurm_print_slurm_addr(&arg->cli_addr,
+		slurm_print_slurm_addr(&arg->cli_addr,
 					inetbuf,
 					sizeof(inetbuf));
 		info("%s: received opcode %s from %s", __func__, p, inetbuf);

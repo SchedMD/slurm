@@ -824,13 +824,6 @@ extern slurm_fd_t slurm_init_msg_engine(slurm_addr_t * slurm_address);
 extern slurm_fd_t slurm_accept_msg_conn(slurm_fd_t open_fd,
 				      slurm_addr_t * slurm_address);
 
-/* In the bsd implmentation maps directly to a close call, to close
- *	the socket that was accepted
- * IN open_fd		- an open file descriptor to close
- * RET int		- the return code
- */
-extern int slurm_close_accepted_conn(slurm_fd_t open_fd);
-
 /* just calls close on an established msg connection
  * IN open_fd	- an open file descriptor to close
  * RET int	- the return code
@@ -939,13 +932,6 @@ extern int slurm_shutdown_msg_conn(slurm_fd_t open_fd);
  * stream functions
 \**********************************************************************/
 
-/* slurm_close_stream
- * closes either a server or client stream file_descriptor
- * IN open_fd	- an open file descriptor to close
- * RET int	- the return code
- */
-extern int slurm_close_stream(slurm_fd_t open_fd);
-
 /* slurm_write_stream
  * writes a buffer out a stream file descriptor
  * IN open_fd		- file descriptor to write on
@@ -974,40 +960,9 @@ extern size_t slurm_read_stream_timeout(slurm_fd_t open_fd,
 					char *buffer, size_t size,
 					int timeout);
 
-/* slurm_get_stream_addr
- * esentially a encapsilated get_sockname
- * IN open_fd 		- file descriptor to retreive slurm_addr_t for
- * OUT address		- address that open_fd to bound to
- */
-extern int slurm_get_stream_addr(slurm_fd_t open_fd, slurm_addr_t * address);
-
-/* make an open slurm connection blocking or non-blocking
- *	(i.e. wait or do not wait for i/o completion )
- * IN open_fd	- an open file descriptor to change the effect
- * RET int	- the return code
- */
-extern int slurm_set_stream_non_blocking(slurm_fd_t open_fd);
-extern int slurm_set_stream_blocking(slurm_fd_t open_fd);
-
 /**********************************************************************\
  * address conversion and management functions
 \**********************************************************************/
-
-/* slurm_set_addr_uint
- * initializes the slurm_address with the supplied port and ip_address
- * OUT slurm_address	- slurm_addr_t to be filled in
- * IN port		- port in host order
- * IN ip_address	- ipv4 address in uint32 host order form
- */
-extern void slurm_set_addr_uint(slurm_addr_t * slurm_address,
-				uint16_t port, uint32_t ip_address);
-
-/* reset_slurm_addr
- * resets the address field of a slurm_addr, port and family unchanged
- * OUT slurm_address	- slurm_addr_t to be reset in
- * IN new_address	- source of address to write into slurm_address
- */
-void reset_slurm_addr(slurm_addr_t * slurm_address, slurm_addr_t new_address);
 
 /* slurm_set_addr
  * initializes the slurm_address with the supplied port and ip_address
@@ -1024,25 +979,6 @@ extern void slurm_set_addr(slurm_addr_t * slurm_address,
  * IN port		- port in host order
  */
 extern void slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port);
-
-/* slurm_set_addr_char
- * initializes the slurm_address with the supplied port and host
- * OUT slurm_address	- slurm_addr_t to be filled in
- * IN port		- port in host order
- * IN host		- hostname or dns name
- */
-extern void slurm_set_addr_char(slurm_addr_t * slurm_address,
-				uint16_t port, char *host);
-
-/* slurm_get_addr
- * given a slurm_address it returns to port and hostname
- * IN slurm_address	- slurm_addr_t to be queried
- * OUT port		- port number
- * OUT host		- hostname
- * IN buf_len		- length of hostname buffer
- */
-extern void slurm_get_addr(slurm_addr_t * slurm_address,
-			   uint16_t * port, char *host, uint32_t buf_len);
 
 /* slurm_get_ip_str
  * given a slurm_address it returns its port and ip address string
@@ -1061,34 +997,9 @@ extern void slurm_get_ip_str(slurm_addr_t * slurm_address, uint16_t * port,
  */
 extern int slurm_get_peer_addr(slurm_fd_t fd, slurm_addr_t * slurm_address);
 
-/* slurm_print_slurm_addr
- * prints a slurm_addr_t into a buf
- * IN address		- slurm_addr_t to print
- * IN buf		- space for string representation of slurm_addr
- * IN n			- max number of bytes to write (including NUL)
- */
-extern void slurm_print_slurm_addr(slurm_addr_t * address,
-				   char *buf, size_t n);
-
 /**********************************************************************\
  * slurm_addr_t pack routines
 \**********************************************************************/
-
-/* slurm_pack_slurm_addr
- * packs a slurm_addr_t into a buffer to serialization transport
- * IN slurm_address	- slurm_addr_t to pack
- * IN/OUT buffer	- buffer to pack the slurm_addr_t into
- */
-extern void slurm_pack_slurm_addr(slurm_addr_t * slurm_address, Buf buffer);
-
-/* slurm_pack_slurm_addr
- * unpacks a buffer into a slurm_addr_t after serialization transport
- * OUT slurm_address	- slurm_addr_t to unpack to
- * IN/OUT buffer	- buffer to upack the slurm_addr_t from
- * returns 		- SLURM error code
- */
-extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t * slurm_address,
-					    Buf buffer);
 
 /* slurm_pack_slurm_addr_array
  * packs an array of slurm_addrs into a buffer

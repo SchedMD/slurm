@@ -304,7 +304,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");
-		slurm_close_accepted_conn(srun_fd);
+		slurm_close(srun_fd);
 		return errno;
 	}
 	if (msg_rcv.auth_cred)
@@ -312,13 +312,13 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
-		slurm_close_accepted_conn(srun_fd);
+		slurm_close(srun_fd);
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	}
 	if (slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS) < 0)
 		error("slurm_send_rc_msg: %m");
 
-	slurm_close_accepted_conn(srun_fd);
+	slurm_close(srun_fd);
 	*kvs_set_ptr = msg_rcv.data;
 
 	rc = _forward_comm_set(*kvs_set_ptr);

@@ -2461,7 +2461,7 @@ slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
  */
 int slurm_shutdown_msg_engine(slurm_fd_t fd)
 {
-	int rc = _slurm_close(fd);
+	int rc = slurm_close(fd);
 	if (rc)
 		slurm_seterrno(SLURM_COMMUNICATIONS_SHUTDOWN_ERROR);
 	return rc;
@@ -2476,7 +2476,7 @@ int slurm_shutdown_msg_engine(slurm_fd_t fd)
  */
 int slurm_shutdown_msg_conn(slurm_fd_t fd)
 {
-	return _slurm_close(fd);
+	return slurm_close(fd);
 }
 
 /**********************************************************************\
@@ -2613,16 +2613,6 @@ slurm_fd_t slurm_open_controller_conn_spec(enum controller_id dest)
 	return rc;
 }
 
-/* In the bsd implmentation maps directly to a close call, to close
- *	the socket that was accepted
- * IN open_fd		- an open file descriptor to close
- * RET int		- the return code
- */
-int slurm_close_accepted_conn(slurm_fd_t open_fd)
-{
-	return _slurm_close_accepted_conn(open_fd);
-}
-
 /**********************************************************************\
  * receive message functions
 \**********************************************************************/
@@ -2666,7 +2656,7 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
 		forward_init(&header.forward, NULL);
 		rc = errno;
 		goto total_return;
@@ -2844,7 +2834,7 @@ List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
 		forward_init(&header.forward, NULL);
 		rc = errno;
 		goto total_return;
@@ -3042,7 +3032,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
 		forward_init(&header.forward, NULL);
 		rc = errno;
 		goto total_return;
@@ -3304,9 +3294,9 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 	/*
 	 * Send message
 	 */
-	rc = _slurm_msg_sendto( fd, get_buf_data(buffer),
-				get_buf_offset(buffer),
-				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS );
+	rc = slurm_msg_sendto( fd, get_buf_data(buffer),
+			       get_buf_offset(buffer),
+			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS );
 
 	if ((rc < 0) && (errno == ENOTCONN)) {
 		debug3("slurm_msg_sendto: peer has disappeared for msg_type=%u",
@@ -3347,16 +3337,16 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
  */
 size_t slurm_write_stream(slurm_fd_t open_fd, char *buffer, size_t size)
 {
-	return _slurm_send_timeout(open_fd, buffer, size,
-				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   (slurm_get_msg_timeout() * 1000));
+	return slurm_send_timeout(open_fd, buffer, size,
+				  SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+				  (slurm_get_msg_timeout() * 1000));
 }
 size_t slurm_write_stream_timeout(slurm_fd_t open_fd, char *buffer,
 				  size_t size, int timeout)
 {
-	return _slurm_send_timeout(open_fd, buffer, size,
-				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   timeout);
+	return slurm_send_timeout(open_fd, buffer, size,
+				  SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+				  timeout);
 }
 
 /* slurm_read_stream
@@ -3369,67 +3359,21 @@ size_t slurm_write_stream_timeout(slurm_fd_t open_fd, char *buffer,
  */
 size_t slurm_read_stream(slurm_fd_t open_fd, char *buffer, size_t size)
 {
-	return _slurm_recv_timeout(open_fd, buffer, size,
+	return slurm_recv_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				   (slurm_get_msg_timeout() * 1000));
 }
 size_t slurm_read_stream_timeout(slurm_fd_t open_fd, char *buffer,
 				 size_t size, int timeout)
 {
-	return _slurm_recv_timeout(open_fd, buffer, size,
+	return slurm_recv_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				   timeout);
-}
-
-/* slurm_get_stream_addr
- * esentially a encapsilated get_sockname
- * IN open_fd		- file descriptor to retreive slurm_addr_t for
- * OUT address		- address that open_fd to bound to
- */
-int slurm_get_stream_addr(slurm_fd_t open_fd, slurm_addr_t * address)
-{
-	return _slurm_get_stream_addr(open_fd, address);
-}
-
-/* slurm_close_stream
- * closes either a server or client stream file_descriptor
- * IN open_fd	- an open file descriptor to close
- * RET int	- the return code
- */
-int slurm_close_stream(slurm_fd_t open_fd)
-{
-	return _slurm_close_stream(open_fd);
-}
-
-/* make an open slurm connection blocking or non-blocking
- *	(i.e. wait or do not wait for i/o completion )
- * IN open_fd	- an open file descriptor to change the effect
- * RET int	- the return code
- */
-int slurm_set_stream_non_blocking(slurm_fd_t open_fd)
-{
-	return _slurm_set_stream_non_blocking(open_fd);
-}
-int slurm_set_stream_blocking(slurm_fd_t open_fd)
-{
-	return _slurm_set_stream_blocking(open_fd);
 }
 
 /**********************************************************************\
  * address conversion and management functions
 \**********************************************************************/
-
-/* slurm_set_addr_uint
- * initializes the slurm_address with the supplied port and ip_address
- * OUT slurm_address	- slurm_addr_t to be filled in
- * IN port		- port in host order
- * IN ip_address	- ipv4 address in uint32 host order form
- */
-void slurm_set_addr_uint(slurm_addr_t * slurm_address, uint16_t port,
-			 uint32_t ip_address)
-{
-	_slurm_set_addr_uint(slurm_address, port, ip_address);
-}
 
 /* slurm_set_addr_any
  * initialized the slurm_address with the supplied port on INADDR_ANY
@@ -3438,7 +3382,7 @@ void slurm_set_addr_uint(slurm_addr_t * slurm_address, uint16_t port,
  */
 void slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port)
 {
-	_slurm_set_addr_uint(slurm_address, port, SLURM_INADDR_ANY);
+	slurm_set_addr_uint(slurm_address, port, SLURM_INADDR_ANY);
 }
 
 /* slurm_set_addr
@@ -3449,42 +3393,7 @@ void slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port)
  */
 void slurm_set_addr(slurm_addr_t * slurm_address, uint16_t port, char *host)
 {
-	_slurm_set_addr_char(slurm_address, port, host);
-}
-
-/* reset_slurm_addr
- * resets the address field of a slurm_addr, port and family unchanged
- * OUT slurm_address	- slurm_addr_t to be reset in
- * IN new_address	- source of address to write into slurm_address
- */
-void reset_slurm_addr(slurm_addr_t * slurm_address, slurm_addr_t new_address)
-{
-	_reset_slurm_addr(slurm_address, new_address);
-}
-
-/* slurm_set_addr_char
- * initializes the slurm_address with the supplied port and host
- * OUT slurm_address	- slurm_addr_t to be filled in
- * IN port		- port in host order
- * IN host		- hostname or dns name
- */
-void slurm_set_addr_char(slurm_addr_t * slurm_address, uint16_t port,
-			 char *host)
-{
-	_slurm_set_addr_char(slurm_address, port, host);
-}
-
-/* slurm_get_addr
- * given a slurm_address it returns its port and hostname
- * IN slurm_address	- slurm_addr_t to be queried
- * OUT port		- port number
- * OUT host		- hostname
- * IN buf_len		- length of hostname buffer
- */
-void slurm_get_addr(slurm_addr_t * slurm_address, uint16_t * port,
-		    char *host, unsigned int buf_len)
-{
-	_slurm_get_addr(slurm_address, port, host, buf_len);
+	slurm_set_addr_char(slurm_address, port, host);
 }
 
 /* slurm_get_ip_str
@@ -3513,48 +3422,15 @@ int slurm_get_peer_addr(slurm_fd_t fd, slurm_addr_t * slurm_address)
 	socklen_t namelen = (socklen_t) sizeof(struct sockaddr);
 	int rc;
 
-	if ((rc = _slurm_getpeername((int) fd, &name, &namelen)))
+	if ((rc = slurm_getpeername((int) fd, &name, &namelen)))
 		return rc;
 	memcpy(slurm_address, &name, sizeof(slurm_addr_t));
 	return 0;
 }
 
-/* slurm_print_slurm_addr
- * prints a slurm_addr_t into a buf
- * IN address		- slurm_addr_t to print
- * IN buf		- space for string representation of slurm_addr
- * IN n			- max number of bytes to write (including NUL)
- */
-void slurm_print_slurm_addr(slurm_addr_t * address, char *buf, size_t n)
-{
-	_slurm_print_slurm_addr(address, buf, n);
-}
-
 /**********************************************************************\
  * slurm_addr_t pack routines
 \**********************************************************************/
-
-/* slurm_pack_slurm_addr
- * packs a slurm_addr_t into a buffer to serialization transport
- * IN slurm_address	- slurm_addr_t to pack
- * IN/OUT buffer	- buffer to pack the slurm_addr_t into
- */
-void slurm_pack_slurm_addr(slurm_addr_t * slurm_address, Buf buffer)
-{
-	_slurm_pack_slurm_addr(slurm_address, buffer);
-}
-
-/* slurm_unpack_slurm_addr
- * unpacks a buffer into a slurm_addr_t after serialization transport
- * OUT slurm_address	- slurm_addr_t to unpack to
- * IN/OUT buffer	- buffer to unpack the slurm_addr_t from
- * returns		- SLURM error code
- */
-int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t * slurm_address,
-				     Buf buffer)
-{
-	return _slurm_unpack_slurm_addr_no_alloc(slurm_address, buffer);
-}
 
 /* slurm_pack_slurm_addr_array
  * packs an array of slurm_addrs into a buffer
@@ -4375,6 +4251,3 @@ _is_port_ok(int s, uint16_t port)
 
 	return true;
 }
-/*
- * vi: shiftwidth=8 tabstop=8 expandtab
- */

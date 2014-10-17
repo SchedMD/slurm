@@ -1748,7 +1748,7 @@ static void _send_event_callbacks(void)
 				      callback_jobid);
 				goto io_fini;
 			}
-			sent = _slurm_msg_sendto_timeout(fd,
+			sent = slurm_msg_sendto_timeout(fd,
 					(char *) &callback_flags,
 					sizeof(uint32_t), 0, 100000);
 			while ((slurm_shutdown_msg_conn(fd) < 0) &&

@@ -412,9 +412,9 @@ out:
 	xfree(port);
 	resp_buf = init_buf(32);
 	pack32((uint32_t) rc, resp_buf);
-	rc = _slurm_msg_sendto(fd, get_buf_data(resp_buf),
-			       get_buf_offset(resp_buf),
-			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+	rc = slurm_msg_sendto(fd, get_buf_data(resp_buf),
+			      get_buf_offset(resp_buf),
+			      SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 	free_buf(resp_buf);
 
 	debug3("mpi/pmi2: out _handle_name_publish");
@@ -445,9 +445,9 @@ out:
 	xfree(name);
 	resp_buf = init_buf(32);
 	pack32((uint32_t) rc, resp_buf);
-	rc = _slurm_msg_sendto(fd, get_buf_data(resp_buf),
-			       get_buf_offset(resp_buf),
-			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+	rc = slurm_msg_sendto(fd, get_buf_data(resp_buf),
+			      get_buf_offset(resp_buf),
+			      SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 	free_buf(resp_buf);
 
 	debug3("mpi/pmi2: out _handle_name_unpublish");
@@ -477,9 +477,9 @@ _handle_name_lookup(int fd, Buf buf)
 out:
 	resp_buf = init_buf(1024);
 	packstr(port, resp_buf);
-	rc2 = _slurm_msg_sendto(fd, get_buf_data(resp_buf),
-				get_buf_offset(resp_buf),
-				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+	rc2 = slurm_msg_sendto(fd, get_buf_data(resp_buf),
+			       get_buf_offset(resp_buf),
+			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 	rc = MAX(rc, rc2);
 	free_buf(resp_buf);
 	xfree(name);
@@ -539,7 +539,7 @@ tree_msg_to_srun(uint32_t len, char *msg)
 	fd = slurm_open_stream(tree_info.srun_addr, true);
 	if (fd < 0)
 		return SLURM_ERROR;
-	rc = _slurm_msg_sendto(fd, msg, len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+	rc = slurm_msg_sendto(fd, msg, len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 	if (rc == len) /* all data sent */
 		rc = SLURM_SUCCESS;
 	else
@@ -560,7 +560,7 @@ tree_msg_to_srun_with_resp(uint32_t len, char *msg, Buf *resp_ptr)
 	fd = slurm_open_stream(tree_info.srun_addr, true);
 	if (fd < 0)
 		return SLURM_ERROR;
-	rc = _slurm_msg_sendto(fd, msg, len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+	rc = slurm_msg_sendto(fd, msg, len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 	if (rc == len) { 	/* all data sent */
 		safe_read(fd, &len, sizeof(len));
 		len = ntohl(len);
@@ -606,8 +606,8 @@ tree_msg_to_spawned_sruns(uint32_t len, char *msg)
 		fd = slurm_open_stream(&srun_addr, true);
 		if (fd < 0)
 			return SLURM_ERROR;
-		sent = _slurm_msg_sendto(fd, msg, len,
-					 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+		sent = slurm_msg_sendto(fd, msg, len,
+					SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 		if (sent != len)
 			rc = SLURM_ERROR;
 		close(fd);

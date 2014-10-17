@@ -1001,7 +1001,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 			char inetbuf[64];
 
-			_slurm_print_slurm_addr(&cli_addr,
+			slurm_print_slurm_addr(&cli_addr,
 						inetbuf,
 						sizeof(inetbuf));
 			info("%s: accept() connection from %s", __func__, inetbuf);
@@ -1060,7 +1060,7 @@ static void *_service_connection(void *arg)
 	if (slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
 		error("slurm_receive_msg: %m");
 		/* close the new socket */
-		slurm_close_accepted_conn(conn->newsockfd);
+		slurm_close(conn->newsockfd);
 		goto cleanup;
 	}
 
@@ -1074,7 +1074,7 @@ static void *_service_connection(void *arg)
 		slurmctld_req(msg, conn);
 	}
 	if ((conn->newsockfd >= 0)
-	    && slurm_close_accepted_conn(conn->newsockfd) < 0)
+	    && slurm_close(conn->newsockfd) < 0)
 		error ("close(%d): %m",  conn->newsockfd);
 
 cleanup:

@@ -389,12 +389,12 @@ static void *_msg_thr_internal(void *arg)
 		if (slurm_receive_msg(newsockfd, msg, 0) != 0) {
 			error("slurm_receive_msg: %m");
 			/* close the new socket */
-			slurm_close_accepted_conn(newsockfd);
+			slurm_close(newsockfd);
 			continue;
 		}
 		_handle_msg(msg);
 		slurm_free_msg(msg);
-		slurm_close_accepted_conn(newsockfd);
+		slurm_close(newsockfd);
 	}
 	return NULL;
 }

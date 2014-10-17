@@ -282,7 +282,7 @@ static void * _service_connection(void *arg)
 	}
 
 	acct_storage_g_close_connection(&conn->db_conn);
-	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
+	if (slurm_close(conn->newsockfd) < 0)
 		error("close(%d): %m(%s)",  conn->newsockfd, conn->ip);
 	else
 		debug2("Closed connection %d uid(%d)", conn->newsockfd, uid);
