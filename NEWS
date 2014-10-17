@@ -78,6 +78,8 @@ documents those changes that are of interest to users and admins.
  -- Treat Cray MPI job calling exit() without mpi_fini() as fatal error for
     that specific task and let srun handle all timeout logic.
  -- Fix small memory leak in jobcomp/mysql.
+ -- Correct tracking of licenses for suspended jobs on slurmctld reconfigure or
+    restart.
 
 * Changes in Slurm 14.03.8
 ==========================
