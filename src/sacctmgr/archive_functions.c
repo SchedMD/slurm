@@ -428,11 +428,11 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	if (arch_cond->archive_dir) {
 		if (stat(arch_cond->archive_dir, &st) < 0) {
 			exit_code = errno;
-			fprintf(stderr, " dump: Failed to stat %s: %m\n "
+			fprintf(stderr, " dump: Failed to stat %s: %s\n "
 				"Note: For archive dump, "
 				"the directory must be on "
 				"the calling host.\n",
-				arch_cond->archive_dir);
+				arch_cond->archive_dir, slurm_strerror(errno));
 			return SLURM_ERROR;
 		}
 
@@ -456,10 +456,11 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	if (arch_cond->archive_script) {
 		if (stat(arch_cond->archive_script, &st) < 0) {
 			exit_code = errno;
-			fprintf(stderr, " dump: Failed to stat %s: %m\n "
+			fprintf(stderr, " dump: Failed to stat %s: %s\n "
 				"Note: For archive dump, the script must be on "
 				"the calling host.\n",
-				arch_cond->archive_script);
+				arch_cond->archive_script,
+				slurm_strerror(errno));
 			return SLURM_ERROR;
 		}
 		if (!(st.st_mode & S_IFREG)) {
@@ -551,10 +552,10 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 
 		if (stat(arch_rec->archive_file, &st) < 0) {
 			exit_code = errno;
-			fprintf(stderr, " load: Failed to stat %s: %m\n "
+			fprintf(stderr, " load: Failed to stat %s: %s\n "
 				"Note: For archive load, the file must be on "
 				"the calling host.\n",
-				arch_rec->archive_file);
+				arch_rec->archive_file, slurm_strerror(errno));
 			return SLURM_ERROR;
 		}
 	}
