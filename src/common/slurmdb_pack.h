@@ -76,11 +76,11 @@ extern void slurmdb_pack_accounting_rec(void *in,
 					Buf buffer);
 extern int slurmdb_unpack_accounting_rec(void **object, uint16_t rpc_version,
 					 Buf buffer);
-extern void slurmdb_pack_association_rec(void *in,
-					 uint16_t rpc_version,
-					 Buf buffer);
-extern int slurmdb_unpack_association_rec(void **object, uint16_t rpc_version,
-					  Buf buffer);
+extern void slurmdb_pack_assoc_rec(void *in,
+				   uint16_t rpc_version,
+				   Buf buffer);
+extern int slurmdb_unpack_assoc_rec(void **object, uint16_t rpc_version,
+				    Buf buffer);
 extern void slurmdb_pack_event_rec(void *in,
 				   uint16_t rpc_version,
 				   Buf buffer);
@@ -122,11 +122,11 @@ extern void slurmdb_pack_cluster_cond(void *in,
 				      uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_cluster_cond(void **object, uint16_t rpc_version,
 				       Buf buffer);
-extern void slurmdb_pack_association_cond(void *in,
-					  uint16_t rpc_version,
-					  Buf buffer);
-extern int slurmdb_unpack_association_cond(void **object, uint16_t rpc_version,
-					   Buf buffer);
+extern void slurmdb_pack_assoc_cond(void *in,
+				    uint16_t rpc_version,
+				    Buf buffer);
+extern int slurmdb_unpack_assoc_cond(void **object, uint16_t rpc_version,
+				     Buf buffer);
 extern void slurmdb_pack_event_cond(void *in,
 				    uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_event_cond(void **object, uint16_t rpc_version,

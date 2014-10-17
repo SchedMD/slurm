@@ -1558,7 +1558,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	bool configuring = false;
 	List preemptee_job_list = NULL;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	slurmdb_association_rec_t *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1568,7 +1568,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 
 	/* identify partition */
 	if (part_ptr == NULL) {

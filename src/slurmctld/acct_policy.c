@@ -80,14 +80,14 @@ static slurmdb_used_limits_t *_get_used_limits_for_user(
 
 static bool _valid_job_assoc(struct job_record *job_ptr)
 {
-	slurmdb_association_rec_t assoc_rec, *assoc_ptr;
+	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr;
 
-	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	if ((assoc_ptr == NULL) ||
 	    (assoc_ptr->id  != job_ptr->assoc_id) ||
 	    (assoc_ptr->uid != job_ptr->user_id)) {
 		error("Invalid assoc_ptr for jobid=%u", job_ptr->job_id);
-		memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+		memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 
 		assoc_rec.acct      = job_ptr->account;
 		if (job_ptr->part_ptr)
@@ -96,7 +96,7 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					    accounting_enforce,
-					    (slurmdb_association_rec_t **)
+					    (slurmdb_assoc_rec_t **)
 					    &job_ptr->assoc_ptr, false)) {
 			info("_validate_job_assoc: invalid account or "
 			     "partition for uid=%u jobid=%u",
@@ -110,7 +110,7 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 
 static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 {
-	slurmdb_association_rec_t *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t used_cpu_run_secs = 0;
@@ -269,7 +269,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		}
 	}
 
-	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		switch(type) {
 		case ACCT_POLICY_ADD_SUBMIT:
@@ -379,7 +379,7 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 extern void acct_policy_alter_job(struct job_record *job_ptr,
 				  uint32_t new_time_limit)
 {
-	slurmdb_association_rec_t *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t used_cpu_run_secs, new_used_cpu_run_secs;
@@ -414,7 +414,7 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 		       new_used_cpu_run_secs);
 	}
 
-	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		assoc_ptr->usage->grp_used_cpu_run_secs -=
 			used_cpu_run_secs;
@@ -435,14 +435,14 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 struct part_record *part_ptr,
-				 slurmdb_association_rec_t *assoc_in,
+				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *reason,
 				 acct_policy_limit_set_t *acct_policy_limit_set,
 				 bool update_call)
 {
 	uint32_t time_limit;
-	slurmdb_association_rec_t *assoc_ptr = assoc_in;
+	slurmdb_assoc_rec_t *assoc_ptr = assoc_in;
 	int parent = 0, job_cnt = 1;
 	char *user_name = NULL;
 	bool rc = true;
@@ -986,7 +986,7 @@ extern bool acct_policy_job_runnable_state(struct job_record *job_ptr)
 extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 {
 	slurmdb_qos_rec_t *qos_ptr;
-	slurmdb_association_rec_t *assoc_ptr;
+	slurmdb_assoc_rec_t *assoc_ptr;
 	slurmdb_used_limits_t *used_limits = NULL;
 	bool free_used_limits = false;
 	uint32_t time_limit;
@@ -1262,7 +1262,7 @@ extern bool acct_policy_job_runnable_post_select(
 	uint32_t cpu_cnt, uint32_t pn_min_memory)
 {
 	slurmdb_qos_rec_t *qos_ptr;
-	slurmdb_association_rec_t *assoc_ptr;
+	slurmdb_assoc_rec_t *assoc_ptr;
 	slurmdb_used_limits_t *used_limits = NULL;
 	bool free_used_limits = false;
 	uint64_t cpu_time_limit;
@@ -1989,7 +1989,7 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
-	slurmdb_association_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 	bool parent = 0; /* flag to tell us if we are looking at the
 			  * parent or not
 			  */
@@ -2193,7 +2193,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	uint64_t usage_mins;
 	uint32_t wall_mins;
 	slurmdb_qos_rec_t *qos = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	time_t now;
@@ -2209,7 +2209,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	assoc_mgr_lock(&locks);
 
 	qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-	assoc =	(slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	assoc =	(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 
 	now = time(NULL);
 

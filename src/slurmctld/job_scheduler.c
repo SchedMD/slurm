@@ -576,8 +576,8 @@ next_part:		part_ptr = (struct part_record *)
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
-			slurmdb_association_rec_t assoc_rec;
-			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+			slurmdb_assoc_rec_t assoc_rec;
+			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.acct      = job_ptr->account;
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
@@ -585,7 +585,7 @@ next_part:		part_ptr = (struct part_record *)
 
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						     accounting_enforce,
-						     (slurmdb_association_rec_t **)
+						     (slurmdb_assoc_rec_t **)
 						     &job_ptr->assoc_ptr,
 						     false)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
@@ -597,8 +597,8 @@ next_part:		part_ptr = (struct part_record *)
 			}
 		}
 		if (job_ptr->qos_id) {
-			slurmdb_association_rec_t *assoc_ptr =
-				(slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+			slurmdb_assoc_rec_t *assoc_ptr =
+				(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
 				      job_ptr->qos_id) &&
@@ -1167,8 +1167,8 @@ next_task:
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
-			slurmdb_association_rec_t assoc_rec;
-			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+			slurmdb_assoc_rec_t assoc_rec;
+			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.acct      = job_ptr->account;
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
@@ -1176,7 +1176,7 @@ next_task:
 
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						    accounting_enforce,
-						    (slurmdb_association_rec_t **)
+						    (slurmdb_assoc_rec_t **)
 						     &job_ptr->assoc_ptr,
 						     false)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
@@ -1193,8 +1193,8 @@ next_task:
 			}
 		}
 		if (job_ptr->qos_id) {
-			slurmdb_association_rec_t *assoc_ptr;
-			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+			slurmdb_assoc_rec_t *assoc_ptr;
+			assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
 				      job_ptr->qos_id) &&

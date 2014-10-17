@@ -94,17 +94,17 @@ typedef struct {
  	uint16_t cache_level;
 	uint16_t enforce;
 	void (*add_license_notify) (slurmdb_res_rec_t *rec);
- 	void (*remove_assoc_notify) (slurmdb_association_rec_t *rec);
+	void (*remove_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*remove_license_notify) (slurmdb_res_rec_t *rec);
- 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
+	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*sync_license_notify) (List clus_res_list);
- 	void (*update_assoc_notify) (slurmdb_association_rec_t *rec);
+	void (*update_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*update_license_notify) (slurmdb_res_rec_t *rec);
- 	void (*update_qos_notify) (slurmdb_qos_rec_t *rec);
+	void (*update_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*update_resvs) ();
 } assoc_init_args_t;
 
-struct assoc_mgr_association_usage {
+struct assoc_mgr_assoc_usage {
 	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
 	uint32_t grp_used_cpus; /* count of active jobs in the group
@@ -122,12 +122,12 @@ struct assoc_mgr_association_usage {
 	uint32_t level_shares;  /* number of shares on this level of
 				 * the tree (DON'T PACK) */
 
-	slurmdb_association_rec_t *parent_assoc_ptr; /* ptr to direct
+	slurmdb_assoc_rec_t *parent_assoc_ptr; /* ptr to direct
 						      * parent assoc
 						      * set in slurmctld
 						      * (DON'T PACK) */
 
-	slurmdb_association_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
+	slurmdb_assoc_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
 						     * assoc if fairshare
 						     * == SLURMDB_FS_USE_PARENT
 						     * set in slurmctld
@@ -186,13 +186,13 @@ struct assoc_mgr_qos_usage {
 };
 
 
-extern List assoc_mgr_association_list;
+extern List assoc_mgr_assoc_list;
 extern List assoc_mgr_res_list;
 extern List assoc_mgr_qos_list;
 extern List assoc_mgr_user_list;
 extern List assoc_mgr_wckey_list;
 
-extern slurmdb_association_rec_t *assoc_mgr_root_assoc;
+extern slurmdb_assoc_rec_t *assoc_mgr_root_assoc;
 
 extern uint32_t g_qos_max_priority; /* max priority in all qos's */
 extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
@@ -205,14 +205,14 @@ extern int assoc_mgr_fini(char *state_save_location);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
 
-extern assoc_mgr_association_usage_t *create_assoc_mgr_association_usage();
-extern void destroy_assoc_mgr_association_usage(void *object);
+extern assoc_mgr_assoc_usage_t *create_assoc_mgr_assoc_usage();
+extern void destroy_assoc_mgr_assoc_usage(void *object);
 extern assoc_mgr_qos_usage_t *create_assoc_mgr_qos_usage();
 extern void destroy_assoc_mgr_qos_usage(void *object);
 
 /*
  * get info from the storage
- * IN:  assoc - slurmdb_association_rec_t with at least cluster and
+ * IN:  assoc - slurmdb_assoc_rec_t with at least cluster and
  *		    account set for account association.  To get user
  *		    association set user, and optional partition.
  *		    Sets "id" field with the association ID.
@@ -224,24 +224,24 @@ extern void destroy_assoc_mgr_qos_usage(void *object);
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  *
  * NOTE: Since the returned assoc_list is full of pointers from the
- *       assoc_mgr_association_list assoc_mgr_lock_t READ_LOCK on
+ *       assoc_mgr_assoc_list assoc_mgr_lock_t READ_LOCK on
  *       associations must be set before calling this function and while
  *       handling it after a return.
  */
 extern int assoc_mgr_get_user_assocs(void *db_conn,
-				     slurmdb_association_rec_t *assoc,
+				     slurmdb_assoc_rec_t *assoc,
 				     int enforce,
 				     List assoc_list);
 
 /*
  * get info from the storage
- * IN/OUT:  assoc - slurmdb_association_rec_t with at least cluster and
+ * IN/OUT:  assoc - slurmdb_assoc_rec_t with at least cluster and
  *		    account set for account association.  To get user
  *		    association set user, and optional partition.
  *		    Sets "id" field with the association ID.
  * IN: enforce - return an error if no such association exists
  * IN/OUT: assoc_pptr - if non-NULL then return a pointer to the
- *			slurmdb_association record in cache on success
+ *			slurmdb_assoc record in cache on success
  *                      DO NOT FREE.
  * IN: locked - If you plan on using assoc_pptr after this function
  *              you need to have an assoc_mgr_lock_t READ_LOCK for
@@ -251,9 +251,9 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_fill_in_assoc(void *db_conn,
-				   slurmdb_association_rec_t *assoc,
+				   slurmdb_assoc_rec_t *assoc,
 				   int enforce,
-				   slurmdb_association_rec_t **assoc_pptr,
+				   slurmdb_assoc_rec_t **assoc_pptr,
 				   bool locked);
 
 /*
@@ -315,7 +315,7 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 
 /*
  * get the share information from the association list in the form of
- * a list containing association_share_object_t's
+ * a list containing assoc_share_object_t's
  * IN: uid: uid_t of user issuing the request
  * IN: acct_list: char * list of accounts you want (NULL for all)
  * IN: user_list: char * list of user names you want (NULL for all)
@@ -385,10 +385,10 @@ extern void assoc_mgr_clear_used_info(void);
 
 /*
  * Remove the association's accumulated usage
- * IN:  slurmdb_association_rec_t *assoc
+ * IN:  slurmdb_assoc_rec_t *assoc
  * RET: SLURM_SUCCESS on success or else SLURM_ERROR
  */
-extern void assoc_mgr_remove_assoc_usage(slurmdb_association_rec_t *assoc);
+extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc);
 
 /*
  * Remove the QOS's accumulated usage
@@ -434,6 +434,6 @@ extern int assoc_mgr_set_missing_uids();
 /* Normalize shares for an association. External so a priority plugin
  * can call it if needed.
  */
-extern void assoc_mgr_normalize_assoc_shares(slurmdb_association_rec_t *assoc);
+extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc);
 
 #endif /* _SLURM_ASSOC_MGR_H */

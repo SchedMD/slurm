@@ -33,7 +33,7 @@ av_to_cluster_grouping_list(AV* av, List grouping_list)
 }
 
 int
-hv_to_assoc_cond(HV* hv, slurmdb_association_cond_t* assoc_cond)
+hv_to_assoc_cond(HV* hv, slurmdb_assoc_cond_t* assoc_cond)
 {
     AV*    element_av;
     SV**   svp;
@@ -359,7 +359,7 @@ cluster_rec_to_hv(slurmdb_cluster_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, name,           charp);
     STORE_FIELD(hv, rec, nodes,          charp);
     STORE_FIELD(hv, rec, plugin_id_select, uint32_t);
-    /* slurmdb_association_rec_t* root_assoc; */
+    /* slurmdb_assoc_rec_t* root_assoc; */
     STORE_FIELD(hv, rec, rpc_version,    uint16_t);
 
     return 0;

@@ -136,7 +136,7 @@ extern void priority_p_reconfig(bool assoc_clear)
 	return;
 }
 
-extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
+extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 {
 	return;
 }
@@ -170,7 +170,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 {
 	uint64_t unused_cpu_run_secs = 0;
 	uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
-	slurmdb_association_rec_t *assoc_ptr;
+	slurmdb_assoc_rec_t *assoc_ptr;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
@@ -195,7 +195,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 			qos_ptr->usage->grp_used_cpu_run_secs -=
 				unused_cpu_run_secs;
 	}
-	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		/* If the job finished early remove the extra time now. */
 		if (unused_cpu_run_secs >

@@ -164,7 +164,7 @@ static struct job_record *_create_job_record(int *error_code,
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
-	char *resv_name, slurmdb_association_rec_t *assoc_ptr,
+	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
@@ -230,7 +230,7 @@ static int  _valid_job_part(job_desc_msg_t * job_desc,
 			    uid_t submit_uid, bitstr_t *req_bitmap,
 			    struct part_record **part_pptr,
 			    List part_ptr_list,
-			    slurmdb_association_rec_t *assoc_ptr,
+			    slurmdb_assoc_rec_t *assoc_ptr,
 			    slurmdb_qos_rec_t *qos_ptr);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
                                uid_t submit_uid, struct part_record *part_ptr,
@@ -577,7 +577,7 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 }
 
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
-	char *resv_name, slurmdb_association_rec_t *assoc_ptr,
+	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool admin, slurmdb_qos_rec_t *qos_rec, int *error_code)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
@@ -1249,7 +1249,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	job_resources_t *job_resources = NULL;
 	check_jobinfo_t check_job = NULL;
-	slurmdb_association_rec_t assoc_rec;
+	slurmdb_assoc_rec_t assoc_rec;
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 	char jbuf[JBUFSIZ];
@@ -1768,7 +1768,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	_add_job_hash(job_ptr);
 	_add_job_array_hash(job_ptr);
 
-	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 
 	/*
 	 * For speed and accurracy we will first see if we once had an
@@ -1786,7 +1786,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_association_rec_t **)
+				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, false) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 	    && (!IS_JOB_FINISHED(job_ptr))) {
@@ -4595,12 +4595,12 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			   uid_t submit_uid, bitstr_t *req_bitmap,
 			   struct part_record **part_pptr,
 			   List part_ptr_list,
-			   slurmdb_association_rec_t *assoc_ptr,
+			   slurmdb_assoc_rec_t *assoc_ptr,
 			   slurmdb_qos_rec_t *qos_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	struct part_record *part_ptr = *part_pptr, *part_ptr_tmp;
-	slurmdb_association_rec_t assoc_rec;
+	slurmdb_assoc_rec_t assoc_rec;
 	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
 	uint32_t max_time = 0;
 
@@ -4616,7 +4616,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			 * associations.
 			 */
 			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_association_rec_t));
+			       sizeof(slurmdb_assoc_rec_t));
 			if (assoc_ptr) {
 				assoc_rec.acct      = assoc_ptr->acct;
 				assoc_rec.partition = part_ptr_tmp->name;
@@ -4790,7 +4790,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	struct part_record *part_ptr = NULL;
 	struct job_record *job_ptr = NULL;
 	slurmdb_qos_rec_t  *qos_ptr;
-	slurmdb_association_rec_t *assoc_ptr;
+	slurmdb_assoc_rec_t *assoc_ptr;
 	uint32_t job_min_nodes, job_max_nodes;
 	uint32_t part_min_nodes, part_max_nodes;
 	uint32_t time_check;
@@ -4911,7 +4911,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
-	slurmdb_association_rec_t assoc_rec, *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
 	List license_list = NULL;
 	bool valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
@@ -5002,7 +5002,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 
 
-	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc_rec.acct      = job_desc->account;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.uid       = job_desc->user_id;
@@ -8450,16 +8450,16 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if ((tmp_part_ptr->state_up & PARTITION_SUBMIT) == 0)
 			error_code = ESLURM_PARTITION_NOT_AVAIL;
 		else {
-			slurmdb_association_rec_t assoc_rec;
+			slurmdb_assoc_rec_t assoc_rec;
 			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_association_rec_t));
+			       sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.acct      = job_ptr->account;
 			assoc_rec.partition = tmp_part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
 			if (assoc_mgr_fill_in_assoc(
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_association_rec_t **)
+				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, false)) {
 				info("job_update: invalid account %s "
 				     "for job %u",
@@ -11141,9 +11141,9 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		return;
 
 	if (!job_ptr->assoc_id) {
-		slurmdb_association_rec_t assoc_rec;
+		slurmdb_assoc_rec_t assoc_rec;
 		/* In case accounting enabled after starting the job */
-		memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+		memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 		assoc_rec.acct      = job_ptr->account;
 		if (job_ptr->part_ptr)
 			assoc_rec.partition = job_ptr->part_ptr->name;
@@ -11151,7 +11151,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 
 		if (!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					      accounting_enforce,
-					      (slurmdb_association_rec_t **)
+					      (slurmdb_assoc_rec_t **)
 					      &job_ptr->assoc_ptr, false))) {
 			job_ptr->assoc_id = assoc_rec.id;
 			/* we have to call job start again because the
@@ -12321,11 +12321,11 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 			}
 
 			job_ptr->assoc_ptr =
-				((slurmdb_association_rec_t *)
+				((slurmdb_assoc_rec_t *)
 				 job_ptr->assoc_ptr)->usage->parent_assoc_ptr;
 			if (job_ptr->assoc_ptr)
 				job_ptr->assoc_id =
-					((slurmdb_association_rec_t *)
+					((slurmdb_assoc_rec_t *)
 					 job_ptr->assoc_ptr)->id;
 		}
 
@@ -12404,7 +12404,7 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 extern int update_job_account(char *module, struct job_record *job_ptr,
 			      char *new_account)
 {
-	slurmdb_association_rec_t assoc_rec;
+	slurmdb_assoc_rec_t assoc_rec;
 
 	if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL)) {
 		info("%s: attempt to modify account for non-pending "
@@ -12413,14 +12413,14 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 	}
 
 
-	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc_rec.acct      = new_account;
 	if (job_ptr->part_ptr)
 		assoc_rec.partition = job_ptr->part_ptr->name;
 	assoc_rec.uid       = job_ptr->user_id;
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_association_rec_t **)
+				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, false)) {
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
@@ -12435,7 +12435,7 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		assoc_rec.acct = NULL;
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					accounting_enforce,
-					(slurmdb_association_rec_t **)
+					(slurmdb_assoc_rec_t **)
 					&job_ptr->assoc_ptr, false);
 		if (!job_ptr->assoc_ptr) {
 			debug("%s: we didn't have an association for account "
@@ -12543,9 +12543,9 @@ extern int send_jobs_to_accounting(void)
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
 		if (!job_ptr->assoc_id) {
-			slurmdb_association_rec_t assoc_rec;
+			slurmdb_assoc_rec_t assoc_rec;
 			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_association_rec_t));
+			       sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.acct      = job_ptr->account;
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
@@ -12554,7 +12554,7 @@ extern int send_jobs_to_accounting(void)
 			if (assoc_mgr_fill_in_assoc(
 				   acct_db_conn, &assoc_rec,
 				   accounting_enforce,
-				   (slurmdb_association_rec_t **)
+				   (slurmdb_assoc_rec_t **)
 				   &job_ptr->assoc_ptr, false) &&
 			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			    && (!IS_JOB_FINISHED(job_ptr))) {

@@ -676,7 +676,7 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
 		ListIterator itr2 = NULL;
 		slurmdb_user_rec_t user;
 		slurmdb_coord_rec_t *coord = NULL;
-		slurmdb_association_rec_t *object = NULL;
+		slurmdb_assoc_rec_t *object = NULL;
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
 		user.uid = *uid;
@@ -720,7 +720,7 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
 		}
 	}
 
-	rc = acct_storage_g_add_associations(slurmdbd_conn->db_conn, *uid,
+	rc = acct_storage_g_add_assocs(slurmdbd_conn->db_conn, *uid,
 					     get_msg->my_list);
 end_it:
 	slurmdbd_free_list_msg(get_msg);
@@ -1182,7 +1182,7 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 		return SLURM_ERROR;
 	}
 
-	list_msg.my_list = acct_storage_g_get_associations(
+	list_msg.my_list = acct_storage_g_get_assocs(
 		slurmdbd_conn->db_conn, *uid, get_msg->cond);
 
 	if (!errno) {
@@ -2192,7 +2192,7 @@ static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	 * until we process it through the database.
 	 */
 
-	if (!(list_msg.my_list = acct_storage_g_modify_associations(
+	if (!(list_msg.my_list = acct_storage_g_modify_assocs(
 		      slurmdbd_conn->db_conn, *uid, get_msg->cond,
 		      get_msg->rec))) {
 		if (errno == ESLURM_ACCESS_DENIED) {
@@ -3205,7 +3205,7 @@ static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	 * until we process it through the database.
 	 */
 
-	if (!(list_msg.my_list = acct_storage_g_remove_associations(
+	if (!(list_msg.my_list = acct_storage_g_remove_assocs(
 		      slurmdbd_conn->db_conn, *uid, get_msg->cond))) {
 		if (errno == ESLURM_ACCESS_DENIED) {
 			comment = "Your user doesn't have privilege to perform this action";

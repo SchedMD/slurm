@@ -89,7 +89,7 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 struct part_record *part_ptr,
-				 slurmdb_association_rec_t *assoc_in,
+				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *state_reason,
 				 acct_policy_limit_set_t *acct_policy_limit_set,

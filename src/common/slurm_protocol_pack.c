@@ -1996,7 +1996,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 static void _pack_assoc_shares_object(void *in, Buf buffer,
 				      uint16_t protocol_version)
 {
-	association_shares_object_t *object = (association_shares_object_t *)in;
+	assoc_shares_object_t *object = (assoc_shares_object_t *)in;
 
 	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		if (!object) {
@@ -2092,8 +2092,8 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 				       uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
-	association_shares_object_t *object_ptr =
-		xmalloc(sizeof(association_shares_object_t));
+	assoc_shares_object_t *object_ptr =
+		xmalloc(sizeof(assoc_shares_object_t));
 
 	*object = (void *) object_ptr;
 
@@ -2147,7 +2147,7 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_destroy_association_shares_object(object_ptr);
+	slurm_destroy_assoc_shares_object(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }
@@ -2231,7 +2231,7 @@ static void _pack_shares_response_msg(shares_response_msg_t * msg, Buf buffer,
 				      uint16_t protocol_version)
 {
 	ListIterator itr = NULL;
-	association_shares_object_t *share = NULL;
+	assoc_shares_object_t *share = NULL;
 	uint32_t count = NO_VAL;
 
 	xassert(msg != NULL);
@@ -2264,7 +2264,7 @@ static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
 	safe_unpack32(&count, buffer);
 	if (count != NO_VAL) {
 		object_ptr->assoc_shares_list =
-			list_create(slurm_destroy_association_shares_object);
+			list_create(slurm_destroy_assoc_shares_object);
 		for (i=0; i<count; i++) {
 			if (_unpack_assoc_shares_object(&tmp_info, buffer,
 						       protocol_version)

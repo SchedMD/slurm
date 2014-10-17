@@ -60,7 +60,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int set = 0;
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
-	slurmdb_association_cond_t *assoc_cond = NULL;
+	slurmdb_assoc_cond_t *assoc_cond = NULL;
 	time_t start_time, end_time;
 	int command_len = 0;
 
@@ -73,7 +73,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	user_cond->with_assocs = 1;
 	if (!user_cond->assoc_cond) {
 		user_cond->assoc_cond =
-			xmalloc(sizeof(slurmdb_association_cond_t));
+			xmalloc(sizeof(slurmdb_assoc_cond_t));
 		user_cond->assoc_cond->with_usage = 1;
 	}
 	assoc_cond = user_cond->assoc_cond;

@@ -131,7 +131,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL, *tmp_extra = NULL;
 
 	int affect_rows = 0;
-	List assoc_list = list_create(slurmdb_destroy_association_rec);
+	List assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -700,7 +700,7 @@ empty:
 		if (acct_cond && acct_cond->with_assocs) {
 			if (!acct_cond->assoc_cond) {
 				acct_cond->assoc_cond = xmalloc(
-					sizeof(slurmdb_association_cond_t));
+					sizeof(slurmdb_assoc_cond_t));
 			}
 
 			list_append(acct_cond->assoc_cond->acct_list,
@@ -713,7 +713,7 @@ empty:
 	    && list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;
-		slurmdb_association_rec_t *assoc = NULL;
+		slurmdb_assoc_rec_t *assoc = NULL;
 		List assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, acct_cond->assoc_cond);
 
@@ -731,7 +731,7 @@ empty:
 
 				if (!acct->assoc_list)
 					acct->assoc_list = list_create(
-						slurmdb_destroy_association_rec);
+						slurmdb_destroy_assoc_rec);
 				list_append(acct->assoc_list, assoc);
 				list_remove(assoc_itr);
 			}

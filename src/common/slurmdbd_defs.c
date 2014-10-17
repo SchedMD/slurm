@@ -2548,7 +2548,7 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 		case DBD_GET_ASSOCS:
 		case DBD_GET_PROBS:
 		case DBD_REMOVE_ASSOCS:
-			my_destroy = slurmdb_destroy_association_cond;
+			my_destroy = slurmdb_destroy_assoc_cond;
 			break;
 		case DBD_GET_CLUSTERS:
 		case DBD_REMOVE_CLUSTERS:
@@ -2669,8 +2669,8 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 			destroy_rec = slurmdb_destroy_account_rec;
 			break;
 		case DBD_MODIFY_ASSOCS:
-			destroy_cond = slurmdb_destroy_association_cond;
-			destroy_rec = slurmdb_destroy_association_rec;
+			destroy_cond = slurmdb_destroy_assoc_cond;
+			destroy_rec = slurmdb_destroy_assoc_rec;
 			break;
 		case DBD_MODIFY_CLUSTERS:
 			destroy_cond = slurmdb_destroy_cluster_cond;
@@ -2758,7 +2758,7 @@ extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 		switch(type) {
 		case DBD_GET_ASSOC_USAGE:
 		case DBD_GOT_ASSOC_USAGE:
-			destroy_rec = slurmdb_destroy_association_rec;
+			destroy_rec = slurmdb_destroy_assoc_rec;
 			break;
 		case DBD_GET_CLUSTER_USAGE:
 		case DBD_GOT_CLUSTER_USAGE:
@@ -2938,7 +2938,7 @@ extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
 	case DBD_GET_ASSOCS:
 	case DBD_GET_PROBS:
 	case DBD_REMOVE_ASSOCS:
-		my_function = slurmdb_pack_association_cond;
+		my_function = slurmdb_pack_assoc_cond;
 		break;
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
@@ -2998,7 +2998,7 @@ extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 	case DBD_GET_ASSOCS:
 	case DBD_GET_PROBS:
 	case DBD_REMOVE_ASSOCS:
-		my_function = slurmdb_unpack_association_cond;
+		my_function = slurmdb_unpack_assoc_cond;
 		break;
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
@@ -3448,7 +3448,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 	case DBD_ADD_ASSOCS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_PROBS:
-		my_function = slurmdb_pack_association_rec;
+		my_function = slurmdb_pack_assoc_rec;
 		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
@@ -3541,8 +3541,8 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	case DBD_ADD_ASSOCS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_PROBS:
-		my_function = slurmdb_unpack_association_rec;
-		my_destroy = slurmdb_destroy_association_rec;
+		my_function = slurmdb_unpack_assoc_rec;
+		my_destroy = slurmdb_destroy_assoc_rec;
 		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
@@ -3654,8 +3654,8 @@ extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 		my_rec = slurmdb_pack_account_rec;
 		break;
 	case DBD_MODIFY_ASSOCS:
-		my_cond = slurmdb_pack_association_cond;
-		my_rec = slurmdb_pack_association_rec;
+		my_cond = slurmdb_pack_assoc_cond;
+		my_rec = slurmdb_pack_assoc_rec;
 		break;
 	case DBD_MODIFY_CLUSTERS:
 		my_cond = slurmdb_pack_cluster_cond;
@@ -3703,8 +3703,8 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 		my_rec = slurmdb_unpack_account_rec;
 		break;
 	case DBD_MODIFY_ASSOCS:
-		my_cond = slurmdb_unpack_association_cond;
-		my_rec = slurmdb_unpack_association_rec;
+		my_cond = slurmdb_unpack_assoc_cond;
+		my_rec = slurmdb_unpack_assoc_rec;
 		break;
 	case DBD_MODIFY_CLUSTERS:
 		my_cond = slurmdb_unpack_cluster_cond;
@@ -4048,7 +4048,7 @@ extern void slurmdbd_pack_usage_msg(dbd_usage_msg_t *msg,
 	switch(type) {
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
-		my_rec = slurmdb_pack_association_rec;
+		my_rec = slurmdb_pack_assoc_rec;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
@@ -4082,7 +4082,7 @@ extern int slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 	switch(type) {
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
-		my_rec = slurmdb_unpack_association_rec;
+		my_rec = slurmdb_unpack_assoc_rec;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:

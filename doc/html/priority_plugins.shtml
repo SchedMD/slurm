@@ -51,7 +51,7 @@ errno, prior to any error condition arising, should be SLURM_SUCCESS. </p>
 <p style="margin-left:.2in"><b>Description</b>: A slurmctld structure that
 contains details about a job.</p>
 
-<p class="commandline"> acct_association_rec_t</p>
+<p class="commandline"> acct_assoc_rec_t</p>
 <p style="margin-left:.2in"><b>Description</b>: A slurm_accounting_storage
 structure that contains details about an association.</p>
 
@@ -114,7 +114,7 @@ when Slurm is reconfigured, but false if an RPC is used to change only the
 debug level of debug flags.</p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
-<p class="commandline">void priority_p_set_assoc_usage(acct_association_rec_t *assoc)</p>
+<p class="commandline">void priority_p_set_assoc_usage(acct_assoc_rec_t *assoc)</p>
 <p style="margin-left:.2in"><b>Description</b>: Set the normalized and
 effective usage for an association.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:

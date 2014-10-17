@@ -637,7 +637,7 @@ static void _show_it (int argc, char *argv[])
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Associations",
 				MAX(command_len, 2)) == 0) {
-		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
+		error_code = sacctmgr_list_assoc((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Clusters",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);

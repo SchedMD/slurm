@@ -61,7 +61,7 @@ extern void priority_g_reconfig(bool assoc_clear);
  * association.
  * IN/OUT: assoc - association to have usage set.
  */
-extern void priority_g_set_assoc_usage(slurmdb_association_rec_t *assoc);
+extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc);
 extern double priority_g_calc_fs_factor(long double usage_efctv,
 					long double shares_norm);
 extern List priority_g_get_priority_factors_list(

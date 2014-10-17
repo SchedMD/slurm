@@ -179,15 +179,15 @@ acct_cluster_rec_t *'s containing information about the clusters to add. <br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int acct_storage_p_add_associations(void *db_conn, uint32_t uid, List association_list)
+int acct_storage_p_add_assocs(void *db_conn, uint32_t uid, List assoc_list)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Called to add associations to the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">uid</span> (input) uid of user calling the function.<br>
-<span class="commandline">association_list</span> (input) list of
-acct_association_rec_t *'s containing information about the
+<span class="commandline">assoc_list</span> (input) list of
+acct_assoc_rec_t *'s containing information about the
 associations to add. <br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
@@ -301,8 +301,8 @@ modified on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
-List acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
-acct_association_cond_t *assoc_cond, acct_association_rec_t *assoc)
+List acct_storage_p_modify_assocs(void *db_conn, uint32_t uid,
+acct_assoc_cond_t *assoc_cond, acct_assoc_rec_t *assoc)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to modify existing associations in the storage type.  The condition
   could include very vague information about the association, so this
@@ -474,8 +474,8 @@ removed on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
-List acct_storage_p_remove_associations(void *db_conn, uint32_t uid,
-acct_association_cond_t *assoc_cond)
+List acct_storage_p_remove_assocs(void *db_conn, uint32_t uid,
+acct_assoc_cond_t *assoc_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to remove associations from the storage type.  You need to make
   sure no jobs are running with any association that is to be removed.
@@ -591,10 +591,10 @@ on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
-List acct_storage_p_get_associations(void *db_conn, uint32_t uid,
-acct_association_cond_t *assoc_cond)
+List acct_storage_p_get_assocs(void *db_conn, uint32_t uid,
+acct_assoc_cond_t *assoc_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-Get a list of acct_association_rec_t *'s based on the conditional sent.
+Get a list of acct_assoc_rec_t *'s based on the conditional sent.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
@@ -604,7 +604,7 @@ function.<br>
 which associations are to be returned.  Association names should not need to
 be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">List</span> containing acct_association_rec_t *'s
+<span class="commandline">List</span> containing acct_assoc_rec_t *'s
 on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
@@ -690,7 +690,7 @@ the storage type.<br>
 <span class="commandline">uid</span> (input) uid of user calling the
 function.<br>
 <span class="commandline">in</span> (input/out) can be anything that
-gathers usage like acct_association_rec_t * or acct_wckey_rec_t *.<br>
+gathers usage like acct_assoc_rec_t * or acct_wckey_rec_t *.<br>
 <span class="commandline">type</span> (input) really
 slurmdbd_msg_type_t should let the plugin know what the structure is
 that was sent in some how.<br>

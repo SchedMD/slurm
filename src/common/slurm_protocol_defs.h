@@ -449,7 +449,7 @@ typedef struct ret_data_info {
  * Slurm Protocol Data Structures
 \*****************************************************************************/
 
-typedef struct association_shares_object {
+typedef struct assoc_shares_object {
 	uint32_t assoc_id;	/* association ID */
 
 	char *cluster;          /* cluster name */
@@ -472,7 +472,7 @@ typedef struct association_shares_object {
 				 * needed for display in sshare */
 	uint16_t user;          /* 1 if user association 0 if account
 				 * association */
-} association_shares_object_t;
+} assoc_shares_object_t;
 
 typedef struct shares_request_msg {
 	List acct_list;
@@ -480,7 +480,7 @@ typedef struct shares_request_msg {
 } shares_request_msg_t;
 
 typedef struct shares_response_msg {
-	List assoc_shares_list; /* list of association_shares_object_t *'s */
+	List assoc_shares_list; /* list of assoc_shares_object_t *'s */
 	uint64_t tot_shares;
 } shares_response_msg_t;
 
@@ -1131,7 +1131,7 @@ extern void slurm_free_step_alloc_info_msg(step_alloc_info_msg_t * msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
 extern void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg);
 extern void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
-extern void slurm_destroy_association_shares_object(void *object);
+extern void slurm_destroy_assoc_shares_object(void *object);
 extern void slurm_free_shares_request_msg(shares_request_msg_t *msg);
 extern void slurm_free_shares_response_msg(shares_response_msg_t *msg);
 extern void slurm_destroy_priority_factors_object(void *object);

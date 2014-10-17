@@ -208,19 +208,19 @@ extern List g_res_list;
 extern bool tree_display;
 
 extern bool sacctmgr_check_default_qos(uint32_t qos_id,
-				       slurmdb_association_cond_t *assoc_cond);
+				       slurmdb_assoc_cond_t *assoc_cond);
 
-extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
+extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 					 char *type, char *value,
 					 int command_len, int option);
-extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc_rec,
+extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc_rec,
 					char *type, char *value,
 					int command_len, int option);
-extern void sacctmgr_print_association_rec(slurmdb_association_rec_t *assoc,
+extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 					   print_field_t *field, List tree_list,
 					   bool last);
 
-extern int sacctmgr_add_association(int argc, char *argv[]);
+extern int sacctmgr_add_assoc(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);
 extern int sacctmgr_add_account(int argc, char *argv[]);
 extern int sacctmgr_add_cluster(int argc, char *argv[]);
@@ -228,7 +228,7 @@ extern int sacctmgr_add_coord(int argc, char *argv[]);
 extern int sacctmgr_add_qos(int argc, char *argv[]);
 extern int sacctmgr_add_res(int argc, char *argv[]);
 
-extern int sacctmgr_list_association(int argc, char *argv[]);
+extern int sacctmgr_list_assoc(int argc, char *argv[]);
 extern int sacctmgr_list_user(int argc, char *argv[]);
 extern int sacctmgr_list_account(int argc, char *argv[]);
 extern int sacctmgr_list_cluster(int argc, char *argv[]);
@@ -239,7 +239,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[]);
 extern int sacctmgr_list_res(int argc, char *argv[]);
 extern int sacctmgr_list_wckey(int argc, char *argv[]);
 
-extern int sacctmgr_modify_association(int argc, char *argv[]);
+extern int sacctmgr_modify_assoc(int argc, char *argv[]);
 extern int sacctmgr_modify_user(int argc, char *argv[]);
 extern int sacctmgr_modify_account(int argc, char *argv[]);
 extern int sacctmgr_modify_cluster(int argc, char *argv[]);
@@ -247,7 +247,7 @@ extern int sacctmgr_modify_job(int argc, char *argv[]);
 extern int sacctmgr_modify_qos(int argc, char *argv[]);
 extern int sacctmgr_modify_res(int argc, char *argv[]);
 
-extern int sacctmgr_delete_association(int argc, char *argv[]);
+extern int sacctmgr_delete_assoc(int argc, char *argv[]);
 extern int sacctmgr_delete_user(int argc, char *argv[]);
 extern int sacctmgr_delete_account(int argc, char *argv[]);
 extern int sacctmgr_delete_cluster(int argc, char *argv[]);
@@ -281,18 +281,18 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 				      bitstr_t *value, int last);
 
-extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc);
+extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc);
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
-extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond);
+extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond);
 extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond);
 extern int sort_coord_list(void *, void *);
 extern List sacctmgr_process_format_list(List format_list);
 extern int sacctmgr_validate_cluster_list(List cluster_list);
 
 /* you need to free the objects returned from these functions */
-extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(
+extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc(
 	char *account, char *cluster);
-extern slurmdb_association_rec_t *sacctmgr_find_root_assoc(char *cluster);
+extern slurmdb_assoc_rec_t *sacctmgr_find_root_assoc(char *cluster);
 extern slurmdb_user_rec_t *sacctmgr_find_user(char *name);
 extern slurmdb_account_rec_t *sacctmgr_find_account(char *name);
 extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name);
@@ -301,10 +301,10 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name);
  * they are pointing to an object in the list given
  */
 
-extern slurmdb_association_rec_t *sacctmgr_find_association_from_list(
+extern slurmdb_assoc_rec_t *sacctmgr_find_assoc_from_list(
 	List assoc_list, char *user, char *account,
 	char *cluster, char *partition);
-extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
+extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc_from_list(
 	List assoc_list, char *account, char *cluster);
 extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
 	List res_list, uint32_t id, char *name, char *server);
@@ -322,7 +322,7 @@ extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
 
 /* file_functions.c */
 extern int print_file_add_limits_to_line(char **line,
-					 slurmdb_association_rec_t *assoc);
+					 slurmdb_assoc_rec_t *assoc);
 
 extern int print_file_slurmdb_hierarchical_rec_list(FILE *fd,
 					  List slurmdb_hierarchical_rec_list,

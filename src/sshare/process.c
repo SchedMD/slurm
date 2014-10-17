@@ -46,7 +46,7 @@ extern int process(shares_response_msg_t *resp)
 {
 	uint32_t flags = slurmctld_conf.priority_flags;
 	int rc = SLURM_SUCCESS;
-	association_shares_object_t *share = NULL;
+	assoc_shares_object_t *share = NULL;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	char *object = NULL;

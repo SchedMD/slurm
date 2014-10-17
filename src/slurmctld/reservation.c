@@ -493,12 +493,12 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 /* Validate an account name */
 static bool _is_account_valid(char *account)
 {
-	slurmdb_association_rec_t assoc_rec, *assoc_ptr;
+	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr;
 
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return true;	/* don't worry about account validity */
 
-	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc_rec.uid       = NO_VAL;
 	assoc_rec.acct      = account;
 
@@ -514,10 +514,10 @@ static bool _is_account_valid(char *account)
  * associations must be set before calling this function and while
  * handling it after a return.
  */
-static int _append_assoc_list(List assoc_list, slurmdb_association_rec_t *assoc)
+static int _append_assoc_list(List assoc_list, slurmdb_assoc_rec_t *assoc)
 {
 	int rc = ESLURM_INVALID_ACCOUNT;
-	slurmdb_association_rec_t *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	if (assoc_mgr_fill_in_assoc(
 		    acct_db_conn, assoc,
 		    accounting_enforce,
@@ -545,7 +545,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS, i = 0, j = 0;
 	List assoc_list_allow = NULL, assoc_list_deny = NULL, assoc_list;
-	slurmdb_association_rec_t assoc, *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t assoc, *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -557,7 +557,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	assoc_list_allow = list_create(NULL);
 	assoc_list_deny  = list_create(NULL);
 
-	memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
+	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 	xfree(resv_ptr->assoc_list);
 
 	assoc_mgr_lock(&locks);
@@ -568,7 +568,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 			for (i=0; i < resv_ptr->user_cnt; i++) {
 				for (j=0; j < resv_ptr->account_cnt; j++) {
 					memset(&assoc, 0,
-					       sizeof(slurmdb_association_rec_t));
+					       sizeof(slurmdb_assoc_rec_t));
 					assoc.acct = resv_ptr->account_list[j];
 					assoc.uid  = resv_ptr->user_list[i];
 					rc = _append_assoc_list(
@@ -584,7 +584,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				assoc_list = assoc_list_allow;
 			for (i=0; i < resv_ptr->user_cnt; i++) {
 				memset(&assoc, 0,
-				       sizeof(slurmdb_association_rec_t));
+				       sizeof(slurmdb_assoc_rec_t));
 				assoc.uid = resv_ptr->user_list[i];
 				rc = assoc_mgr_get_user_assocs(
 					    acct_db_conn, &assoc,
@@ -603,7 +603,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				assoc_list = assoc_list_allow;
 			for (j=0; j < resv_ptr->account_cnt; j++) {
 				memset(&assoc, 0,
-				       sizeof(slurmdb_association_rec_t));
+				       sizeof(slurmdb_assoc_rec_t));
 				assoc.acct = resv_ptr->account_list[j];
 				assoc.uid  = (uint32_t)NO_VAL;
 				rc = _append_assoc_list(assoc_list, &assoc);
@@ -617,7 +617,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		else
 			assoc_list = assoc_list_allow;
 		for (i=0; i < resv_ptr->user_cnt; i++) {
-			memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
+			memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc.uid = resv_ptr->user_list[i];
 			rc = assoc_mgr_get_user_assocs(
 				    acct_db_conn, &assoc,
@@ -635,7 +635,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		else
 			assoc_list = assoc_list_allow;
 		for (i=0; i < resv_ptr->account_cnt; i++) {
-			memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
+			memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc.acct = resv_ptr->account_list[i];
 			assoc.uid  = (uint32_t)NO_VAL;
 			if ((rc = _append_assoc_list(assoc_list, &assoc))
@@ -2428,7 +2428,7 @@ static bool _match_user_assoc(char *assoc_str, List assoc_list, bool deny)
 {
 	ListIterator itr;
 	bool found = 0;
-	slurmdb_association_rec_t *assoc;
+	slurmdb_assoc_rec_t *assoc;
 	char tmp_char[1000];
 
 	if (!assoc_str || !assoc_list || !list_count(assoc_list))
@@ -2541,11 +2541,11 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	/* Create this list once since it will not change durning this call. */
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
 	    && !validate_operator(uid)) {
-		slurmdb_association_rec_t assoc;
+		slurmdb_assoc_rec_t assoc;
 
 		check_permissions = true;
 
-		memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
+		memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 		assoc.uid = uid;
 
 		assoc_list = list_create(NULL);
@@ -3666,7 +3666,7 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 	/* Determine if we have access */
 	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 		char tmp_char[30];
-		slurmdb_association_rec_t *assoc;
+		slurmdb_assoc_rec_t *assoc;
 		if (!resv_ptr->assoc_list) {
 			error("Reservation %s has no association list. "
 			      "Checking user/account lists",
@@ -3675,16 +3675,16 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 		}
 
 		if (!job_ptr->assoc_ptr) {
-			slurmdb_association_rec_t assoc_rec;
+			slurmdb_assoc_rec_t assoc_rec;
 			/* This should never be called, but just to be
 			 * safe we will try to fill it in. */
 			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_association_rec_t));
+			       sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
 			if (assoc_mgr_fill_in_assoc(
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_association_rec_t **)
+				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, false))
 				goto end_it;
 		}

@@ -64,7 +64,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 	int exit_code = 0;
 	slurmdb_user_rec_t *user = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_accounting_rec_t *assoc_acct = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
@@ -81,7 +81,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 	if (!user_cond->assoc_cond) {
 		delete_assoc_cond = 1;
 		user_cond->assoc_cond =
-			xmalloc(sizeof(slurmdb_association_cond_t));
+			xmalloc(sizeof(slurmdb_assoc_cond_t));
 	}
 
 	if (!user_cond->assoc_cond->cluster_list) {
@@ -275,7 +275,7 @@ end_it:
 	}
 
 	if (delete_assoc_cond) {
-		slurmdb_destroy_association_cond(user_cond->assoc_cond);
+		slurmdb_destroy_assoc_cond(user_cond->assoc_cond);
 		user_cond->assoc_cond = NULL;
 	}
 

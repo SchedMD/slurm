@@ -87,7 +87,7 @@ static List _get_other_user_names_to_mod(mysql_conn_t *mysql_conn, uint32_t uid,
 	List ret_list = NULL;
 	ListIterator itr = NULL;
 
-	slurmdb_association_cond_t assoc_cond;
+	slurmdb_assoc_cond_t assoc_cond;
 	slurmdb_wckey_cond_t wckey_cond;
 
 	if (!user_cond->def_acct_list || !list_count(user_cond->def_acct_list))
@@ -96,7 +96,7 @@ static List _get_other_user_names_to_mod(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* We have to use a different association_cond here because
 	   other things could be set here we don't care about in the
 	   user's. (So to be safe just move over the info we care about) */
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 	assoc_cond.acct_list = user_cond->def_acct_list;
 	if (user_cond->assoc_cond) {
 		if (user_cond->assoc_cond->cluster_list)
@@ -108,7 +108,7 @@ static List _get_other_user_names_to_mod(mysql_conn_t *mysql_conn, uint32_t uid,
 	assoc_cond.only_defs = 1;
 	tmp_list = as_mysql_get_assocs(mysql_conn, uid, &assoc_cond);
 	if (tmp_list) {
-		slurmdb_association_rec_t *object = NULL;
+		slurmdb_assoc_rec_t *object = NULL;
 		itr = list_iterator_create(tmp_list);
 		while ((object = list_next(itr))) {
 			if (!ret_list)
@@ -276,7 +276,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	char *extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
-	List assoc_list = list_create(slurmdb_destroy_association_rec);
+	List assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	List wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -355,7 +355,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		   it set correctly.
 		*/
 		if (object->assoc_list) {
-			slurmdb_association_rec_t *assoc = NULL;
+			slurmdb_assoc_rec_t *assoc = NULL;
 			ListIterator assoc_itr =
 				list_iterator_create(object->assoc_list);
 			while ((assoc = list_next(assoc_itr))) {
@@ -669,12 +669,12 @@ no_user_table:
 	}
 
 	if (user->default_acct) {
-		slurmdb_association_cond_t assoc_cond;
-		slurmdb_association_rec_t assoc;
+		slurmdb_assoc_cond_t assoc_cond;
+		slurmdb_assoc_rec_t assoc;
 		List tmp_list = NULL;
 
-		memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
-		slurmdb_init_association_rec(&assoc, 0);
+		memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
+		slurmdb_init_assoc_rec(&assoc, 0);
 		assoc.is_def = 1;
 		assoc_cond.acct_list = list_create(NULL);
 		list_append(assoc_cond.acct_list, user->default_acct);
@@ -753,7 +753,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	slurmdb_user_cond_t user_coord_cond;
-	slurmdb_association_cond_t assoc_cond;
+	slurmdb_assoc_cond_t assoc_cond;
 	slurmdb_wckey_cond_t wckey_cond;
 	bool jobs_running = 0;
 
@@ -829,7 +829,7 @@ no_user_table:
 	xfree(query);
 
 	memset(&user_coord_cond, 0, sizeof(slurmdb_user_cond_t));
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 	/* we do not need to free the objects we put in here since
 	   they are also placed in a list that will be freed
 	*/
@@ -1151,7 +1151,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	if (user_list) {
 		if (!user_cond->assoc_cond)
 			user_cond->assoc_cond =
-				xmalloc(sizeof(slurmdb_association_rec_t));
+				xmalloc(sizeof(slurmdb_assoc_rec_t));
 
 		if (!user_cond->assoc_cond->user_list)
 			user_cond->assoc_cond->user_list = user_list;
@@ -1235,7 +1235,7 @@ empty:
 			      && user_cond->assoc_cond->only_defs))) {
 		ListIterator assoc_itr = NULL;
 		slurmdb_user_rec_t *user = NULL;
-		slurmdb_association_rec_t *assoc = NULL;
+		slurmdb_assoc_rec_t *assoc = NULL;
 		List assoc_list = NULL;
 
 		/* Make sure we don't get any non-user associations
@@ -1243,7 +1243,7 @@ empty:
 		 * defined */
 		if (!user_cond->assoc_cond)
 			user_cond->assoc_cond =
-				xmalloc(sizeof(slurmdb_association_cond_t));
+				xmalloc(sizeof(slurmdb_assoc_cond_t));
 
 		if (!user_cond->assoc_cond->user_list)
 			user_cond->assoc_cond->user_list = list_create(NULL);
@@ -1285,7 +1285,7 @@ empty:
 
 				if (!user->assoc_list)
 					user->assoc_list = list_create(
-						slurmdb_destroy_association_rec);
+						slurmdb_destroy_assoc_rec);
 				list_append(user->assoc_list, assoc);
 				list_remove(assoc_itr);
 			}

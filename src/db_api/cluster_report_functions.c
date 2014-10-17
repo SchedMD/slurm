@@ -55,7 +55,7 @@ typedef enum {
 	CLUSTER_REPORT_WU
 } cluster_report_t;
 
-static void _process_ua(List user_list, slurmdb_association_rec_t *assoc)
+static void _process_ua(List user_list, slurmdb_assoc_rec_t *assoc)
 {
 	ListIterator itr = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
@@ -105,7 +105,7 @@ static void _process_ua(List user_list, slurmdb_association_rec_t *assoc)
 	list_iterator_destroy(itr);
 }
 
-static void _process_au(List assoc_list, slurmdb_association_rec_t *assoc)
+static void _process_au(List assoc_list, slurmdb_assoc_rec_t *assoc)
 {
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc =
 		xmalloc(sizeof(slurmdb_report_assoc_rec_t));
@@ -220,7 +220,7 @@ static void _process_assoc_type(
 	char *cluster_name,
 	cluster_report_t type)
 {
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 
 	/* now add the associations of interest here by user */
 	while((assoc = list_next(itr))) {
@@ -298,11 +298,11 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 	cluster_cond.with_deleted = 1;
 	cluster_cond.with_usage = 1;
 	if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
-		start_time = ((slurmdb_association_cond_t *)cond)->usage_start;
-		end_time = ((slurmdb_association_cond_t *)cond)->usage_end;
+		start_time = ((slurmdb_assoc_cond_t *)cond)->usage_start;
+		end_time = ((slurmdb_assoc_cond_t *)cond)->usage_end;
 
 		cluster_cond.cluster_list =
-			((slurmdb_association_cond_t *)cond)->cluster_list;
+			((slurmdb_assoc_cond_t *)cond)->cluster_list;
 	} else if ((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
 		start_time = ((slurmdb_wckey_cond_t *)cond)->usage_start;
 		end_time = ((slurmdb_wckey_cond_t *)cond)->usage_end;
@@ -334,9 +334,9 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 	}
 
 	if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
-		((slurmdb_association_cond_t *)cond)->usage_start = start_time;
-		((slurmdb_association_cond_t *)cond)->usage_end = end_time;
-		type_list = acct_storage_g_get_associations(
+		((slurmdb_assoc_cond_t *)cond)->usage_start = start_time;
+		((slurmdb_assoc_cond_t *)cond)->usage_end = end_time;
+		type_list = acct_storage_g_get_assocs(
 			db_conn, my_uid, cond);
 	} else if ((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
 		((slurmdb_wckey_cond_t *)cond)->usage_start = start_time;
@@ -420,7 +420,7 @@ end_it:
 
 
 extern List slurmdb_report_cluster_account_by_user(void *db_conn,
-	slurmdb_association_cond_t *assoc_cond)
+	slurmdb_assoc_cond_t *assoc_cond)
 {
 	return _process_util_by_report(db_conn,
 				       "slurmdb_report_cluster_account_by_user",
@@ -428,7 +428,7 @@ extern List slurmdb_report_cluster_account_by_user(void *db_conn,
 }
 
 extern List slurmdb_report_cluster_user_by_account(void *db_conn,
-	slurmdb_association_cond_t *assoc_cond)
+	slurmdb_assoc_cond_t *assoc_cond)
 {
 	return _process_util_by_report(db_conn,
 				       "slurmdb_report_cluster_user_by_account",

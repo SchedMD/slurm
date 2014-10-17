@@ -2743,10 +2743,10 @@ extern void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
 	xfree(msg);
 }
 
-extern void slurm_destroy_association_shares_object(void *object)
+extern void slurm_destroy_assoc_shares_object(void *object)
 {
-	association_shares_object_t *obj_ptr =
-		(association_shares_object_t *)object;
+	assoc_shares_object_t *obj_ptr =
+		(assoc_shares_object_t *)object;
 
 	if (obj_ptr) {
 		xfree(obj_ptr->cluster);

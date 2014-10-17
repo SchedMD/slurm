@@ -175,7 +175,7 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_assoc_cond(int *start, int argc, char *argv[],
-			   slurmdb_association_cond_t *assoc_cond,
+			   slurmdb_assoc_cond_t *assoc_cond,
 			   List format_list)
 {
 	int i;
@@ -186,7 +186,7 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 	int command_len = 0;
 
 	if (!assoc_cond) {
-		error("We need an slurmdb_association_cond to call this");
+		error("We need an slurmdb_assoc_cond to call this");
 		return SLURM_ERROR;
 	}
 
@@ -588,8 +588,8 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 extern int cluster_account_by_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_association_cond_t *assoc_cond =
-		xmalloc(sizeof(slurmdb_association_cond_t));
+	slurmdb_assoc_cond_t *assoc_cond =
+		xmalloc(sizeof(slurmdb_assoc_cond_t));
 	slurmdb_cluster_cond_t cluster_cond;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
@@ -767,7 +767,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	}
 	list_iterator_destroy(cluster_itr);
 end_it:
-	slurmdb_destroy_association_cond(assoc_cond);
+	slurmdb_destroy_assoc_cond(assoc_cond);
 
 	if (slurmdb_report_cluster_list) {
 		list_destroy(slurmdb_report_cluster_list);
@@ -785,8 +785,8 @@ end_it:
 extern int cluster_user_by_account(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_association_cond_t *assoc_cond =
-		xmalloc(sizeof(slurmdb_association_cond_t));
+	slurmdb_assoc_cond_t *assoc_cond =
+		xmalloc(sizeof(slurmdb_assoc_cond_t));
 	slurmdb_cluster_cond_t cluster_cond;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
@@ -928,7 +928,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	}
 	list_iterator_destroy(cluster_itr);
 end_it:
-	slurmdb_destroy_association_cond(assoc_cond);
+	slurmdb_destroy_assoc_cond(assoc_cond);
 
 	if (slurmdb_report_cluster_list) {
 		list_destroy(slurmdb_report_cluster_list);

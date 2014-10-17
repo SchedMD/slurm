@@ -517,7 +517,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	char *id_str = NULL;
 	ListIterator itr = NULL, u_itr = NULL;
 	void *object = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	slurmdb_accounting_rec_t *accounting_rec = NULL;
 
@@ -668,7 +668,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
-			assoc = (slurmdb_association_rec_t *)object;
+			assoc = (slurmdb_assoc_rec_t *)object;
 			if (!assoc->accounting_list)
 				assoc->accounting_list = list_create(
 					slurmdb_destroy_accounting_rec);
@@ -732,7 +732,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_ROW row;
 	char *tmp = NULL;
 	char *my_usage_table = NULL;
-	slurmdb_association_rec_t *slurmdb_assoc = in;
+	slurmdb_assoc_rec_t *slurmdb_assoc = in;
 	slurmdb_wckey_rec_t *slurmdb_wckey = in;
 	char *query = NULL;
 	char *username = NULL;

@@ -41,7 +41,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     slurmdb_association_cond_t *assoc_cond,
+		     slurmdb_assoc_cond_t *assoc_cond,
 		     List format_list)
 {
 	int i, end = 0;
@@ -119,7 +119,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if (format_list)
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
-		} else if (!(set = sacctmgr_set_association_cond(
+		} else if (!(set = sacctmgr_set_assoc_cond(
 				    assoc_cond, argv[i], argv[i]+end,
 				    command_len, option)) || exit_code) {
 			exit_code = 1;
@@ -133,18 +133,18 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 extern bool sacctmgr_check_default_qos(uint32_t qos_id,
-				       slurmdb_association_cond_t *assoc_cond)
+				       slurmdb_assoc_cond_t *assoc_cond)
 {
 	char *object = NULL;
 	ListIterator itr;
-	slurmdb_association_rec_t *assoc;
+	slurmdb_assoc_rec_t *assoc;
 	List no_access_list = NULL;
 	List assoc_list = NULL;
 
 	if (qos_id == NO_VAL)
 		return true;
 
-	assoc_list = acct_storage_g_get_associations(
+	assoc_list = acct_storage_g_get_assocs(
 		db_conn, my_uid, assoc_cond);
 	if (!assoc_list) {
 		fprintf(stderr, "Couldn't get a list back for checking qos.\n");
@@ -230,7 +230,7 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 }
 
 
-extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
+extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 					 char *type, char *value,
 					 int command_len, int option)
 {
@@ -428,7 +428,7 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 	return set;
 }
 
-extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc,
+extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 					char *type, char *value,
 					int command_len, int option)
 {
@@ -562,7 +562,7 @@ extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc,
 	return set;
 }
 
-extern void sacctmgr_print_association_rec(slurmdb_association_rec_t *assoc,
+extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 					   print_field_t *field, List tree_list,
 					   bool last)
 {
@@ -696,13 +696,13 @@ extern void sacctmgr_print_association_rec(slurmdb_association_rec_t *assoc,
 	}
 }
 
-extern int sacctmgr_list_association(int argc, char *argv[])
+extern int sacctmgr_list_assoc(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_association_cond_t *assoc_cond =
-		xmalloc(sizeof(slurmdb_association_cond_t));
+	slurmdb_assoc_cond_t *assoc_cond =
+		xmalloc(sizeof(slurmdb_assoc_cond_t));
 	List assoc_list = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
@@ -725,7 +725,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	}
 
 	if (exit_code) {
-		slurmdb_destroy_association_cond(assoc_cond);
+		slurmdb_destroy_assoc_cond(assoc_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if (!list_count(format_list)) {
@@ -741,14 +741,14 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if (exit_code) {
-		slurmdb_destroy_association_cond(assoc_cond);
+		slurmdb_destroy_assoc_cond(assoc_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
 
-	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+	assoc_list = acct_storage_g_get_assocs(db_conn, my_uid,
 						     assoc_cond);
-	slurmdb_destroy_association_cond(assoc_cond);
+	slurmdb_destroy_assoc_cond(assoc_cond);
 
 	if (!assoc_list) {
 		exit_code=1;
@@ -778,7 +778,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			last_cluster = assoc->cluster;
 		}
 		while((field = list_next(itr2))) {
-			sacctmgr_print_association_rec(
+			sacctmgr_print_assoc_rec(
 				assoc, field, tree_list,
 				(curr_inx == field_count));
 			curr_inx++;
@@ -798,13 +798,13 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	return rc;
 }
 
-/* extern int sacctmgr_modify_association(int argc, char *argv[]) */
+/* extern int sacctmgr_modify_assoc(int argc, char *argv[]) */
 /* { */
 /* 	int rc = SLURM_SUCCESS; */
 /* 	return rc; */
 /* } */
 
-/* extern int sacctmgr_delete_association(int argc, char *argv[]) */
+/* extern int sacctmgr_delete_assoc(int argc, char *argv[]) */
 /* { */
 /* 	int rc = SLURM_SUCCESS; */
 /* 	return rc; */

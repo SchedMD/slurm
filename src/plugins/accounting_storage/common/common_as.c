@@ -81,7 +81,7 @@ static int _sort_update_object_dec(void *a, void *b)
 
 static void _dump_slurmdb_assoc_records(List assoc_list)
 {
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 
 	itr = list_iterator_create(assoc_list);
@@ -142,7 +142,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			     void *object)
 {
 	slurmdb_update_object_t *update_object = NULL;
-	slurmdb_association_rec_t *assoc = object;
+	slurmdb_assoc_rec_t *assoc = object;
 	slurmdb_qos_rec_t *qos = object;
 	ListIterator itr = NULL;
 	if (!update_list) {
@@ -218,9 +218,9 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			assoc->max_wall_pj = INFINITE;
 	case SLURMDB_MODIFY_ASSOC:
 	case SLURMDB_REMOVE_ASSOC:
-		xassert(((slurmdb_association_rec_t *)object)->cluster);
+		xassert(((slurmdb_assoc_rec_t *)object)->cluster);
 		update_object->objects = list_create(
-			slurmdb_destroy_association_rec);
+			slurmdb_destroy_assoc_rec);
 		break;
 	case SLURMDB_ADD_QOS:
 		/* We are going to send these to the slurmctld's so

@@ -90,7 +90,7 @@ extern uint16_t str_2_classification(char *classification);
 extern char *slurmdb_problem_str_get(uint16_t problem);
 extern uint16_t str_2_slurmdb_problem(char *problem);
 
-extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr, List qos_list);
+extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr, List qos_list);
 
 extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end);
 

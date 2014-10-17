@@ -526,8 +526,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 static bool _isdefault(List qos_list)
 {
 	int rc = 0;
-	slurmdb_association_cond_t assoc_cond;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_cond_t assoc_cond;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	ListIterator itr;
 	List ret_list = NULL;
 	char *name = NULL;
@@ -539,7 +539,7 @@ static bool _isdefault(List qos_list)
 	   can figure out things correctly */
 	xassert(g_qos_list);
 
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 	assoc_cond.without_parent_info = 1;
 	assoc_cond.def_qos_id_list = list_create(slurm_destroy_char);
 
@@ -553,7 +553,7 @@ static bool _isdefault(List qos_list)
 	}
 	list_iterator_destroy(itr);
 
-	ret_list = acct_storage_g_get_associations(
+	ret_list = acct_storage_g_get_assocs(
 		db_conn, my_uid, &assoc_cond);
 	list_destroy(assoc_cond.def_qos_id_list);
 

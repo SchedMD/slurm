@@ -49,7 +49,7 @@
 
 /*
  * get info from the storage
- * IN/OUT:  in void * (slurmdb_association_rec_t *) or
+ * IN/OUT:  in void * (slurmdb_assoc_rec_t *) or
  *          (slurmdb_wckey_rec_t *) of (slurmdb_cluster_rec_t *) with
  *          the id, and cluster set.
  * IN:  type what type is 'in'

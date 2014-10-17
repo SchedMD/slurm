@@ -129,12 +129,12 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	int added = 0;
 	List assoc_list = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	assoc_list = list_create(slurmdb_destroy_association_rec);
+	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
 	user_name = uid_to_string((uid_t) uid);
 	/* Since adding tables make it so you can't roll back, if
@@ -173,7 +173,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
 		if (object->root_assoc)
-			setup_association_limits(object->root_assoc, &cols,
+			setup_assoc_limits(object->root_assoc, &cols,
 						 &vals, &extra,
 						 QOS_LEVEL_SET, 1);
 		xstrfmtcat(query,
@@ -279,8 +279,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * association.  This gets popped off so we need to
 		 * read it every time here.
 		 */
-		assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(assoc, 0);
+		assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+		slurmdb_init_assoc_rec(assoc, 0);
 		list_append(assoc_list, assoc);
 
 		assoc->cluster = xstrdup(object->name);
@@ -323,7 +323,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	bool clust_reg = false;
 
 	/* If you need to alter the default values of the cluster use
-	 * modify_associations since this is used only for registering
+	 * modify_assocs since this is used only for registering
 	 * the controller when it loads
 	 */
 
@@ -613,10 +613,10 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	slurmdb_association_cond_t assoc_cond;
+	slurmdb_assoc_cond_t assoc_cond;
 	ListIterator assoc_itr = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	List assoc_list = NULL;
 
 	/* if this changes you will need to edit the corresponding enum */
@@ -678,7 +678,7 @@ empty:
 
 	cluster_list = list_create(slurmdb_destroy_cluster_rec);
 
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 
 	if (cluster_cond) {
 		/* I don't think we want the with_usage flag here.

@@ -304,8 +304,8 @@ extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_associations(void *db_conn, uint32_t uid,
-					   List association_list)
+extern int acct_storage_p_add_assocs(void *db_conn, uint32_t uid,
+					   List assoc_list)
 {
 	return SLURM_SUCCESS;
 }
@@ -355,9 +355,9 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
-					      slurmdb_association_cond_t *assoc_q,
-					      slurmdb_association_rec_t *assoc)
+extern List acct_storage_p_modify_assocs(void *db_conn, uint32_t uid,
+					      slurmdb_assoc_cond_t *assoc_q,
+					      slurmdb_assoc_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
@@ -421,8 +421,8 @@ extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_remove_associations(void *db_conn, uint32_t uid,
-					      slurmdb_association_cond_t *assoc_q)
+extern List acct_storage_p_remove_assocs(void *db_conn, uint32_t uid,
+					      slurmdb_assoc_cond_t *assoc_q)
 {
 	return SLURM_SUCCESS;
 }
@@ -474,8 +474,8 @@ extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 	return NULL;
 }
 
-extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
-					    slurmdb_association_cond_t *assoc_q)
+extern List acct_storage_p_get_assocs(void *db_conn, uid_t uid,
+					    slurmdb_assoc_cond_t *assoc_q)
 {
 	return NULL;
 }
@@ -487,7 +487,7 @@ extern List acct_storage_p_get_events(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
-					slurmdb_association_cond_t *assoc_q)
+					slurmdb_assoc_cond_t *assoc_q)
 {
 	return NULL;
 }

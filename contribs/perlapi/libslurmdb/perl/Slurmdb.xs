@@ -11,7 +11,7 @@
 #include "const-c.inc"
 
 extern void *slurm_xmalloc(size_t, const char *, int, const char *);
-extern void slurmdb_destroy_association_cond(void *object);
+extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_cluster_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
 extern void slurmdb_destroy_user_cond(void *object);
@@ -73,8 +73,8 @@ slurmdb_report_cluster_account_by_user(db_conn, assoc_condition)
     INIT:
 	AV*   results;
 	List  list = NULL;
-	slurmdb_association_cond_t *assoc_cond = (slurmdb_association_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_association_cond_t), __FILE__,
+	slurmdb_assoc_cond_t *assoc_cond = (slurmdb_assoc_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_assoc_cond_t), __FILE__,
 		__LINE__, "slurmdb_report_cluster_account_by_user");
 
 	if (hv_to_assoc_cond(assoc_condition, assoc_cond) < 0) {
@@ -90,7 +90,7 @@ slurmdb_report_cluster_account_by_user(db_conn, assoc_condition)
 	    slurm_list_destroy(list);
 	}
 	RETVAL = newRV((SV*)results);
-	slurmdb_destroy_association_cond(assoc_cond);
+	slurmdb_destroy_assoc_cond(assoc_cond);
     OUTPUT:
         RETVAL
 
@@ -101,8 +101,8 @@ slurmdb_report_cluster_user_by_account(db_conn, assoc_condition)
     INIT:
 	AV*   results;
 	List  list = NULL;
-	slurmdb_association_cond_t *assoc_cond = (slurmdb_association_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_association_cond_t), __FILE__,
+	slurmdb_assoc_cond_t *assoc_cond = (slurmdb_assoc_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_assoc_cond_t), __FILE__,
 		__LINE__, "slurmdb_report_cluster_user_by_account");
 
 	if (hv_to_assoc_cond(assoc_condition, assoc_cond) < 0) {
@@ -118,7 +118,7 @@ slurmdb_report_cluster_user_by_account(db_conn, assoc_condition)
 	    slurm_list_destroy(list);
 	}
 	RETVAL = newRV((SV*)results);
-	slurmdb_destroy_association_cond(assoc_cond);
+	slurmdb_destroy_assoc_cond(assoc_cond);
     OUTPUT:
         RETVAL
 
@@ -168,8 +168,8 @@ slurmdb_report_user_top_usage(db_conn, user_condition, group_accounts)
 	slurmdb_user_cond_t* user_cond = (slurmdb_user_cond_t*)
 		slurm_xmalloc(sizeof(slurmdb_user_cond_t), __FILE__,
 		__LINE__, "slurmdb_report_user_top_usage");
-	user_cond->assoc_cond =	(slurmdb_association_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_association_cond_t), __FILE__,
+	user_cond->assoc_cond =	(slurmdb_assoc_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_assoc_cond_t), __FILE__,
 		__LINE__, "slurmdb_report_user_top_usage");
 	if (hv_to_user_cond(user_condition, user_cond) < 0) {
 		XSRETURN_UNDEF;

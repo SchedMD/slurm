@@ -161,8 +161,8 @@ static double decay_factor = 1; /* The decay factor when decaying time. */
 /* variables defined in prirority_multifactor.h */
 bool priority_debug = 0;
 
-static void _priority_p_set_assoc_usage_debug(slurmdb_association_rec_t *assoc);
-static void _set_assoc_usage_efctv(slurmdb_association_rec_t *assoc);
+static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc);
+static void _set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc);
 
 /*
  * apply decay factor to all associations usage_raw
@@ -174,7 +174,7 @@ static void _set_assoc_usage_efctv(slurmdb_association_rec_t *assoc);
 static int _apply_decay(double real_decay)
 {
 	ListIterator itr = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -189,10 +189,10 @@ static int _apply_decay(double real_decay)
 
 	assoc_mgr_lock(&locks);
 
-	xassert(assoc_mgr_association_list);
+	xassert(assoc_mgr_assoc_list);
 	xassert(assoc_mgr_qos_list);
 
-	itr = list_iterator_create(assoc_mgr_association_list);
+	itr = list_iterator_create(assoc_mgr_assoc_list);
 	/* We want to do this to all associations including root.
 	   All usage_raws are calculated from the bottom up.
 	*/
@@ -214,14 +214,14 @@ static int _apply_decay(double real_decay)
 }
 
 /*
- * reset usage_raw, and grp_used_wall on all associations
+ * reset usage_raw, and grp_used_wall on all assocs
  * This should be called every PriorityUsageResetPeriod
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
 static int _reset_usage(void)
 {
 	ListIterator itr = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -231,9 +231,9 @@ static int _reset_usage(void)
 
 	assoc_mgr_lock(&locks);
 
-	xassert(assoc_mgr_association_list);
+	xassert(assoc_mgr_assoc_list);
 
-	itr = list_iterator_create(assoc_mgr_association_list);
+	itr = list_iterator_create(assoc_mgr_assoc_list);
 	/* We want to do this to all associations including root.
 	 * All usage_raws are calculated from the bottom up.
 	 */
@@ -395,10 +395,10 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 
 
 /* Set the effective usage of a node. */
-static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc)
+static void _ticket_based_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
 	long double min_shares_norm;
-	slurmdb_association_rec_t *fs_assoc = assoc;
+	slurmdb_assoc_rec_t *fs_assoc = assoc;
 
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
 	    && assoc->usage->fs_assoc_ptr) {
@@ -429,11 +429,11 @@ static void _ticket_based_set_usage_efctv(slurmdb_association_rec_t *assoc)
  * to calculate a bunch of things that will never be used. (Fair Tree calls a
  * different function.)
  *
- * NOTE: acct_mgr_association_lock must be locked before this is called.
+ * NOTE: acct_mgr_assoc_lock must be locked before this is called.
  */
 static int _set_children_usage_efctv(List children_list)
 {
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 
 	if (!children_list || !list_count(children_list))
@@ -455,12 +455,12 @@ static int _set_children_usage_efctv(List children_list)
 
 /* Distribute the tickets to child nodes recursively.
  *
- * NOTE: acct_mgr_association_lock must be locked before this is called.
+ * NOTE: acct_mgr_assoc_lock must be locked before this is called.
  */
 static int _distribute_tickets(List children_list, uint32_t tickets)
 {
 	ListIterator itr;
-	slurmdb_association_rec_t *assoc;
+	slurmdb_assoc_rec_t *assoc;
 	double sfsum = 0, fs;
 
 	if (!children_list || !list_count(children_list))
@@ -513,9 +513,9 @@ static int _distribute_tickets(List children_list, uint32_t tickets)
  */
 static double _get_fairshare_priority(struct job_record *job_ptr)
 {
-	slurmdb_association_rec_t *job_assoc =
-		(slurmdb_association_rec_t *)job_ptr->assoc_ptr;
-	slurmdb_association_rec_t *fs_assoc = NULL;
+	slurmdb_assoc_rec_t *job_assoc =
+		(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	slurmdb_assoc_rec_t *fs_assoc = NULL;
 	double priority_fs = 0.0;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
@@ -715,8 +715,8 @@ static uint32_t _get_priority_internal(time_t start_time,
  * manager lock should be held on entry.  */
 static bool _mark_assoc_active(struct job_record *job_ptr)
 {
-	slurmdb_association_rec_t *job_assoc =
-		(slurmdb_association_rec_t *)job_ptr->assoc_ptr,
+	slurmdb_assoc_rec_t *job_assoc =
+		(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr,
 		*assoc;
 
 	if (!job_assoc) {
@@ -819,7 +819,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t delta;
 	slurmdb_qos_rec_t *qos;
-	slurmdb_association_rec_t *assoc;
+	slurmdb_assoc_rec_t *assoc;
 
 	if (priority_debug)
 		info("Initializing grp_used_cpu_run_secs");
@@ -848,7 +848,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 		delta = job_ptr->total_cpus * (last_ran - job_ptr->start_time);
 
 		qos = (slurmdb_qos_rec_t *) job_ptr->qos_ptr;
-		assoc = (slurmdb_association_rec_t *) job_ptr->assoc_ptr;
+		assoc = (slurmdb_assoc_rec_t *) job_ptr->assoc_ptr;
 
 		if (qos) {
 			if (priority_debug) {
@@ -905,7 +905,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 			    time_t start_period, time_t end_period)
 {
 	slurmdb_qos_rec_t *qos;
-	slurmdb_association_rec_t *assoc;
+	slurmdb_assoc_rec_t *assoc;
 	double run_delta = 0.0, run_decay = 0.0, real_decay = 0.0;
 	uint64_t cpu_run_delta = 0;
 	uint64_t job_time_limit_ends = 0;
@@ -973,7 +973,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	   here.
 	*/
 	qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-	assoc = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	assoc = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 
 	/* now apply the usage factor for this qos */
 	if (qos) {
@@ -1423,12 +1423,12 @@ static void _internal_setup(void)
 
 
 /* Reursively call assoc_mgr_normalize_assoc_shares from assoc_mgr.c on
- * children of an association
+ * children of an assoc
  */
 static void _set_norm_shares(List children_list)
 {
 	ListIterator itr = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t *assoc = NULL;
 
 	if (!children_list || list_is_empty(children_list))
 		return;
@@ -1444,12 +1444,12 @@ static void _set_norm_shares(List children_list)
 }
 
 
-static void _depth_oblivious_set_usage_efctv(slurmdb_association_rec_t *assoc)
+static void _depth_oblivious_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
 	long double ratio_p, ratio_l, k, f, ratio_s;
-	slurmdb_association_rec_t *parent_assoc = NULL;
+	slurmdb_assoc_rec_t *parent_assoc = NULL;
 	ListIterator sib_itr = NULL;
-	slurmdb_association_rec_t *sibling = NULL;
+	slurmdb_assoc_rec_t *sibling = NULL;
 	char *child;
 	char *child_str;
 
@@ -1554,7 +1554,7 @@ static void _depth_oblivious_set_usage_efctv(slurmdb_association_rec_t *assoc)
 	}
 }
 
-static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
+static void _set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
 	/* Variable names taken from HTML documentation */
 	long double ua_child = assoc->usage->usage_norm;
@@ -1704,7 +1704,7 @@ extern void priority_p_reconfig(bool assoc_clear)
 }
 
 
-extern void set_assoc_usage_norm(slurmdb_association_rec_t *assoc)
+extern void set_assoc_usage_norm(slurmdb_assoc_rec_t *assoc)
 {
 	/* If root usage is 0, there is no usage anywhere. */
 	if (!assoc_mgr_root_assoc->usage->usage_raw) {
@@ -1724,7 +1724,7 @@ extern void set_assoc_usage_norm(slurmdb_association_rec_t *assoc)
 }
 
 
-extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
+extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 {
 	xassert(assoc_mgr_root_assoc);
 	xassert(assoc);
@@ -2018,14 +2018,14 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 /* Set usage_efctv based on algorithm-specific code. Fair Tree sets this
  * elsewhere.
  */
-static void _set_assoc_usage_efctv(slurmdb_association_rec_t *assoc)
+static void _set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
 	if (assoc->usage->fs_assoc_ptr == assoc_mgr_root_assoc)
 		assoc->usage->usage_efctv = assoc->usage->usage_norm;
 	else if (flags & PRIORITY_FLAGS_TICKET_BASED)
 		_ticket_based_set_usage_efctv(assoc);
 	else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
-		slurmdb_association_rec_t *parent_assoc =
+		slurmdb_assoc_rec_t *parent_assoc =
 			assoc->usage->fs_assoc_ptr;
 
 		assoc->usage->usage_efctv =
@@ -2037,7 +2037,7 @@ static void _set_assoc_usage_efctv(slurmdb_association_rec_t *assoc)
 }
 
 
-static void _priority_p_set_assoc_usage_debug(slurmdb_association_rec_t *assoc)
+static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc)
 {
 	char *child;
 	char *child_str;
@@ -2072,7 +2072,7 @@ static void _priority_p_set_assoc_usage_debug(slurmdb_association_rec_t *assoc)
 		     assoc->usage->fs_assoc_ptr->acct,
 		     assoc->usage->usage_efctv);
 	} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
-		slurmdb_association_rec_t *parent_assoc =
+		slurmdb_assoc_rec_t *parent_assoc =
 			assoc->usage->fs_assoc_ptr;
 
 		info("Effective usage for %s %s off %s %Lf",

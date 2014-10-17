@@ -629,15 +629,15 @@ extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_add_associations(void *db_conn, uint32_t uid,
-					   List association_list)
+extern int acct_storage_p_add_assocs(void *db_conn, uint32_t uid,
+					   List assoc_list)
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
 	int rc, resp_code;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
-	get_msg.my_list = association_list;
+	get_msg.my_list = assoc_list;
 
 	req.msg_type = DBD_ADD_ASSOCS;
 	req.data = &get_msg;
@@ -866,10 +866,10 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_modify_associations(
+extern List acct_storage_p_modify_assocs(
 	void *db_conn, uint32_t uid,
-	slurmdb_association_cond_t *assoc_cond,
-	slurmdb_association_rec_t *assoc)
+	slurmdb_assoc_cond_t *assoc_cond,
+	slurmdb_assoc_rec_t *assoc)
 {
 	slurmdbd_msg_t req;
 	dbd_modify_msg_t get_msg;
@@ -1281,9 +1281,9 @@ extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_remove_associations(
+extern List acct_storage_p_remove_assocs(
 	void *db_conn, uint32_t uid,
-	slurmdb_association_cond_t *assoc_cond)
+	slurmdb_assoc_cond_t *assoc_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_cond_msg_t get_msg;
@@ -1639,8 +1639,8 @@ extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 	return ret_list;
 }
 
-extern List acct_storage_p_get_associations(
-	void *db_conn, uid_t uid, slurmdb_association_cond_t *assoc_cond)
+extern List acct_storage_p_get_assocs(
+	void *db_conn, uid_t uid, slurmdb_assoc_cond_t *assoc_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1722,7 +1722,7 @@ extern List acct_storage_p_get_events(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
-					slurmdb_association_cond_t *assoc_cond)
+					slurmdb_assoc_cond_t *assoc_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -2003,7 +2003,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	slurmdbd_msg_t req, resp;
 	dbd_usage_msg_t get_msg;
 	dbd_usage_msg_t *got_msg;
-	slurmdb_association_rec_t *got_assoc = (slurmdb_association_rec_t *)in;
+	slurmdb_assoc_rec_t *got_assoc = (slurmdb_assoc_rec_t *)in;
 	slurmdb_wckey_rec_t *got_wckey = (slurmdb_wckey_rec_t *)in;
 	slurmdb_cluster_rec_t *got_cluster = (slurmdb_cluster_rec_t *)in;
 	List *my_list = NULL;
@@ -2056,7 +2056,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 		got_msg = (dbd_usage_msg_t *) resp.data;
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
-			got_assoc = (slurmdb_association_rec_t *)got_msg->rec;
+			got_assoc = (slurmdb_assoc_rec_t *)got_msg->rec;
 			(*my_list) = got_assoc->accounting_list;
 			got_assoc->accounting_list = NULL;
 			break;

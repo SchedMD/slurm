@@ -33,7 +33,7 @@
 
 
 extern int av_to_cluster_grouping_list(AV* av, List grouping_list);
-extern int hv_to_assoc_cond(HV* hv, slurmdb_association_cond_t* assoc_cond);
+extern int hv_to_assoc_cond(HV* hv, slurmdb_assoc_cond_t* assoc_cond);
 extern int hv_to_cluster_cond(HV* hv, slurmdb_cluster_cond_t* cluster_cond);
 extern int hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond);
 extern int hv_to_user_cond(HV* hv, slurmdb_user_cond_t* user_cond);

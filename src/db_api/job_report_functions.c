@@ -70,7 +70,7 @@ static void _check_create_grouping(
 {
 	ListIterator itr;
 	slurmdb_wckey_rec_t *wckey = (slurmdb_wckey_rec_t *)object;
-	slurmdb_association_rec_t *assoc = (slurmdb_association_rec_t *)object;
+	slurmdb_assoc_rec_t *assoc = (slurmdb_assoc_rec_t *)object;
 	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
 	slurmdb_report_acct_grouping_t *acct_group = NULL;
 	slurmdb_report_job_grouping_t *job_group = NULL;
@@ -233,8 +233,8 @@ static List _process_grouped_report(
 		goto no_objects;
 
 	if (!wckey_type || both) {
-		slurmdb_association_cond_t assoc_cond;
-		memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+		slurmdb_assoc_cond_t assoc_cond;
+		memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 		assoc_cond.id_list = job_cond->associd_list;
 		assoc_cond.cluster_list = job_cond->cluster_list;
 		/* don't limit associations to having the partition_list */
@@ -246,7 +246,7 @@ static List _process_grouped_report(
 			list_append(job_cond->acct_list, "root");
 		}
 		assoc_cond.parent_acct_list = job_cond->acct_list;
-		object_list = acct_storage_g_get_associations(db_conn, my_uid,
+		object_list = acct_storage_g_get_assocs(db_conn, my_uid,
 							      &assoc_cond);
 	}
 
@@ -275,8 +275,8 @@ static List _process_grouped_report(
 	while((object = list_next(itr))) {
 		char *cluster = NULL;
 		slurmdb_wckey_rec_t *wckey = (slurmdb_wckey_rec_t *)object;
-		slurmdb_association_rec_t *assoc =
-			(slurmdb_association_rec_t *)object;
+		slurmdb_assoc_rec_t *assoc =
+			(slurmdb_assoc_rec_t *)object;
 		if (!itr2) {
 			char *name = NULL;
 			if (wckey_type) {
@@ -295,8 +295,8 @@ static List _process_grouped_report(
 		while((object2 = list_next(itr2))) {
 			slurmdb_wckey_rec_t *wckey2 =
 				(slurmdb_wckey_rec_t *)object2;
-			slurmdb_association_rec_t *assoc2 =
-				(slurmdb_association_rec_t *)object2;
+			slurmdb_assoc_rec_t *assoc2 =
+				(slurmdb_assoc_rec_t *)object2;
 			char name[200];
 			if (!wckey_type) {
 				if (strcmp(assoc->cluster, wckey2->cluster))

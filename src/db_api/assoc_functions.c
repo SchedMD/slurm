@@ -49,49 +49,49 @@
 
 /*
  * add associations to accounting system
- * IN:  association_list List of slurmdb_association_rec_t *
+ * IN:  assoc_list List of slurmdb_assoc_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurmdb_associations_add(void *db_conn, List assoc_list)
 {
-	return acct_storage_g_add_associations(db_conn, getuid(), assoc_list);
+	return acct_storage_g_add_assocs(db_conn, getuid(), assoc_list);
 }
 
 /*
  * get info from the storage
- * IN:  slurmdb_association_cond_t *
- * RET: List of slurmdb_association_rec_t *
+ * IN:  slurmdb_assoc_cond_t *
+ * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed when called
  */
 extern List slurmdb_associations_get(void *db_conn,
-				     slurmdb_association_cond_t *assoc_cond)
+				     slurmdb_assoc_cond_t *assoc_cond)
 {
-	return acct_storage_g_get_associations(db_conn, getuid(), assoc_cond);
+	return acct_storage_g_get_assocs(db_conn, getuid(), assoc_cond);
 }
 
 
 /*
  * modify existing associations in the accounting system
- * IN:  slurmdb_association_cond_t *assoc_cond
- * IN:  slurmdb_association_rec_t *assoc
+ * IN:  slurmdb_assoc_cond_t *assoc_cond
+ * IN:  slurmdb_assoc_rec_t *assoc
  * RET: List containing (char *'s) else NULL on error
  */
 extern List slurmdb_associations_modify(void *db_conn,
-					slurmdb_association_cond_t *assoc_cond,
-					slurmdb_association_rec_t *assoc)
+					slurmdb_assoc_cond_t *assoc_cond,
+					slurmdb_assoc_rec_t *assoc)
 {
-	return acct_storage_g_modify_associations(db_conn, getuid(),
-						  assoc_cond, assoc);
+	return acct_storage_g_modify_assocs(db_conn, getuid(),
+					    assoc_cond, assoc);
 }
 
 /*
  * remove associations from accounting system
- * IN:  slurmdb_association_cond_t *assoc_cond
+ * IN:  slurmdb_assoc_cond_t *assoc_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List slurmdb_associations_remove(
-	void *db_conn, slurmdb_association_cond_t *assoc_cond)
+	void *db_conn, slurmdb_assoc_cond_t *assoc_cond)
 {
-	return acct_storage_g_remove_associations(db_conn, getuid(), assoc_cond);
+	return acct_storage_g_remove_assocs(db_conn, getuid(), assoc_cond);
 }
 

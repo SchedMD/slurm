@@ -536,7 +536,7 @@ struct job_record {
 	job_array_struct_t *array_recs;	/* job array details,
 					 * only in meta-job record */
 	uint32_t assoc_id;              /* used for accounting plugins */
-	void    *assoc_ptr;		/* job's association record ptr, it is
+	void    *assoc_ptr;		/* job's assoc record ptr, it is
 					 * void* because of interdependencies
 					 * in the header files, confirm the
 					 * value before use */

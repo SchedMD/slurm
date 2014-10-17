@@ -220,9 +220,9 @@ static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char *argv[]);
 inline static int   _ping_backup_controller(void);
-static void         _remove_assoc(slurmdb_association_rec_t *rec);
+static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
-static void         _update_assoc(slurmdb_association_rec_t *rec);
+static void         _update_assoc(slurmdb_assoc_rec_t *rec);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
@@ -1214,7 +1214,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	return rc;
 }
 
-static void _remove_assoc(slurmdb_association_rec_t *rec)
+static void _remove_assoc(slurmdb_assoc_rec_t *rec)
 {
 	int cnt = 0;
 
@@ -1239,7 +1239,7 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 		debug("Removed QOS:%s", rec->name);
 }
 
-static void _update_assoc(slurmdb_association_rec_t *rec)
+static void _update_assoc(slurmdb_assoc_rec_t *rec)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -2258,7 +2258,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	ListIterator itr = NULL;
 	struct job_record *job_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec;
-	slurmdb_association_rec_t assoc_rec;
+	slurmdb_assoc_rec_t assoc_rec;
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
@@ -2299,7 +2299,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	while ((job_ptr = list_next(itr))) {
 		if (job_ptr->assoc_id) {
 			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_association_rec_t));
+			       sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
 
 			debug("assoc is %zx (%d) for job %u",
@@ -2309,7 +2309,7 @@ static void *_assoc_cache_mgr(void *no_data)
 			if (assoc_mgr_fill_in_assoc(
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_association_rec_t **)
+				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, false)) {
 				verbose("Invalid association id %u "
 					"for job id %u",
