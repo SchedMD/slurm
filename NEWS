@@ -20,7 +20,7 @@ documents those changes that are of interest to users and administrators.
     will be visible.
  -- Sched/backfill - Eliminate clearing start_time of running jobs.
  -- Fix various backwards compatibility issues.
- -- If failed to launch a batch job requeue it in hold.
+ -- If failed to launch a batch job, requeue it in hold.
 
 * Changes in Slurm 14.11.0rc1
 =============================
@@ -265,6 +265,9 @@ documents those changes that are of interest to users and administrators.
  -- When a job dependency can never be satisfied do not cancel the job but keep
     pending with reason WAIT_DEP_INVALID (DependencyNeverSatisfied).
 
+* Changes in Slurm 14.03.10
+===========================
+
 * Changes in Slurm 14.03.9
 ==========================
  -- If slurmd fails to stat(2) the configuration print the string describing
@@ -342,6 +345,9 @@ documents those changes that are of interest to users and administrators.
  -- Treat Cray MPI job calling exit() without mpi_fini() as fatal error for
     that specific task and let srun handle all timeout logic.
  -- Fix small memory leak in jobcomp/mysql.
+ -- Correct tracking of licenses for suspended jobs on slurmctld reconfigure or
+    restart.
+ -- If failed to launch a batch job requeue it in hold.
 
 * Changes in Slurm 14.03.8
 ==========================

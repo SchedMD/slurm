@@ -1803,13 +1803,11 @@ _requeue_job(uint32_t job_id, uint32_t slurm_rc)
 	struct requeue_msg req;
 	slurm_msg_t resp_msg;
 	int rc;
-	char buf[64];
 
 	slurm_msg_t_init(&resp_msg);
 
-	sprintf(buf, "%u", job_id);
 	req.job_id = job_id;
-	req.job_id_str = buf;
+	req.job_id_str = NULL;
 	req.state = JOB_REQUEUE_HOLD;
 
 	resp_msg.msg_type = REQUEST_JOB_REQUEUE;
