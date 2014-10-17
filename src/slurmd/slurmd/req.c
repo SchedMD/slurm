@@ -1786,7 +1786,6 @@ _requeue_job(uint32_t job_id, uint32_t slurm_rc)
 
 	sprintf(buf, "%u", job_id);
 	req.job_id = job_id;
-	req.job_id_str = buf;
 	req.state = JOB_REQUEUE_HOLD;
 
 	resp_msg.msg_type = REQUEST_JOB_REQUEUE;
@@ -5270,7 +5269,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 		rc = EINVAL;
 		goto done;
 	}
-	
+
 	/* connect to specified address */
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
@@ -5298,7 +5297,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 	req_uid = htonl(req->len);
 	safe_write(fd, &req_uid, sizeof(uint32_t));
 	safe_write(fd, req->data, req->len);
-	
+
 rwfail:
 done:
 	if (fd >= 0)
