@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     will be visible.
  -- Sched/backfill - Eliminate clearing start_time of running jobs.
  -- Fix various backwards compatibility issues.
+ -- If failed to launch a batch job requeue it in hold.
 
 * Changes in Slurm 14.11.0rc1
 =============================
