@@ -1,5 +1,5 @@
-RELEASE NOTES FOR SLURM VERSION 14.11
-8 October 2014
+RELEASE NOTES FOR SLURM VERSION 15.08
+17 October 2014
 
 
 IMPORTANT NOTE:
@@ -18,33 +18,13 @@ innodb_buffer_pool_size=64M
 under the [mysqld] reference in the my.cnf file and restarting the mysqld.
 This is needed when converting large tables over to the new database schema.
 
-Slurm can be upgraded from version 2.6 or 14.03 to version 14.11 without loss of
-jobs or other state information. Upgrading directly from an earlier version of
-Slurm will result in loss of state information.
+Slurm can be upgraded from version 14.03 or 14.11 to version 15.08 without loss
+of jobs or other state information. Upgrading directly from an earlier version
+of Slurm will result in loss of state information.
 
 
 HIGHLIGHTS
 ==========
- -- Added job array data structure and removed 64k array size restriction.
- -- Added support for reserving CPUs and/or memory on a compute node for system
-    use.
- -- Added support for allocation of generic resources by model type for
-    heterogeneous systems (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of
-    any type).
- -- Added support for non-consumable generic resources that are limited, but
-    can be shared between jobs.
- -- Added support for automatic job requeue policy based on exit value.
- -- Refactor job_submit/lua interface. LUA FUNCTIONS NEED TO CHANGE! The
-    lua script no longer needs to explicitly load meta-tables, but information
-    is available directly using names slurm.reservations, slurm.jobs,
-    slurm.log_info, etc. Also, the job_submit.lua script is reloaded when
-    updated without restarting the slurmctld daemon.
- -- Eliminate native Cray specific port management. Native Cray systems must
-    now use the MpiParams configuration parameter to specify ports to be used
-    for communications. When upgrading Native Cray systems from version 14.03,
-    all running jobs should be killed and the switch_cray_state file (in
-    SaveStateLocation of the nodes where the slurmctld daemon runs) must be
-    explicitly deleted.
 
 RPMBUILD CHANGES
 ================
@@ -52,123 +32,20 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- Modify etc/cgroup.release_common.example to set specify full path to the
-    scontrol command. Also find cgroup mount point by reading cgroup.conf file.
- -- Added SchedulerParameters options of bf_yield_interval and bf_yield_sleep
-    to control how frequently and for how long the backfill scheduler will
-    relinquish its locks.
- -- To support larger numbers of jobs when the StateSaveDirectory is on a
-    file system that supports a limited number of files in a directory, add a
-    subdirectory called "hash.#" based upon the last digit of the job ID.
- -- Added GRES type (e.g. model name) and "non_consume" fields for resources
-    that are limited, but can be shared between jobs.
- -- Modify AuthInfo configuration parameter to accept credential lifetime
-    option.
- -- Added ChosLoc configuration parameter in slurm.conf (Chroot OS tool
-    location).
- -- Added MemLimitEnforce configuration parameter in slurm.conf (Used to disable
-    enforcement of memory limits)
- -- Added PriorityParameters configuration parameter in slurm.conf (String used
-    to hold configuration information for the PriorityType plugin).
- -- Added RequeueExit and RequeueExitHold configuration parameter in slurm.conf
-    (Defines job exit codes which trigger a job being requeued and/or held).
- -- Add SelectTypeParameters option of CR_PACK_NODES to pack a job's tasks
-    tightly on its allocated nodes rather than distributing them evenly across
-    the allocated nodes.
- -- Added PriorityFlags option of Calculate_Running to continue recalculating
-    the priority of running jobs.
- -- Add new node configuration parameters CoreSpecCount, CPUSpecList and
-    MemSpecLimit which support the reservation of resources for system use
-    with Linux cgroup.
- -- Added AllowSpecResourcesUsage configuration parameter in slurm.conf. This
-    allows jobs to use specialized resources on nodes allocated to them if the
-    job designates --core-spec=0.
- -- Add new SchedulerParameters option of build_queue_timeout to throttle how
-    much time can be consumed building the job queue for scheduling.
- -- Added HealthCheckNodeState option of "cycle" to cycle through the compute
-    nodes over the course of HealthCheckInterval rather than running all at
-    the same time.
- -- Added CpuFreqDef configuration parameter in slurm.conf to specify the
-    default CPU frequency and governor to be set at job end.
- -- Add RoutePlugin with route/default and route/topology implementations to
-    allow messages to be forwarded through the switch network defined in
-    the topology.conf file for TopologyPlugin=topology/tree.
- -- Add DebugFlags=Route to allow debugging of RoutePlugin.
- -- Added SchedulerParameters options of bf_max_job_array_resv to control how
-    many tasks of a job array should have resources reserved for them.
- -- Add ability to include other files in slurm.conf based upon the ClusterName.
- -- Add SchedulerParameters option of pack_serial_at_end to put serial jobs at
-    the end of the available nodes rather than using a best fit algorithm.
- -- Add PrivateData value of "cloud". If set, powered down nodes in the cloud
-    will be visible.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
- -- Added DebugFlags
 
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Improve qsub wrapper support for passing environment variables.
- -- Modify sdiag to report Slurm RPC traffic by type, count and time consumed.
- -- Enable display of nodes anticipated to be used for pending jobs by squeue,
-    sview or scontrol.
- -- Modify squeue --start option to print the nodes expected to be used for
-    pending job (in addition to expected start time, etc.).
- -- Add srun --cpu-freq options to set the CPU governor (OnDemand, Performance,
-    PowerSave or UserSpace).
- -- Added squeue -O/--Format option that makes all job and step fields available
-    for printing.
- -- Add "CPUs" count to output of "scontrol show step".
- -- Add job "reboot" option for Linux clusters. This invokes the configured
-    RebootProgram to reboot nodes allocated to a job before it begins execution.
- -- Added squeue -O/--Format option that makes all job and step fields available
-    for printing.
- -- Add "CPUs" count to output of "scontrol show step".
- -- Added support for job email triggers: TIME_LIMIT, TIME_LIMIT_90 (reached
-    90% of time limit), TIME_LIMIT_80 (reached 80% of time limit), and
-    TIME_LIMIT_50 (reached 50% of time limit). Applies to salloc, sbatch and
-    srun commands.
- -- Added srun --export option to set/export specific environment variables.
- -- Scontrol modified to print separate error messages for job arrays with
-    different exit codes on the different tasks of the job array. Applies to
-    job suspend and resume operations.
- -- Add node state string suffix of "$" to identify nodes in maintenance
-    reservation or scheduled for reboot. This applies to scontrol, sinfo,
-    and sview commands.
- -- Enable scontrol to clear a nodes's scheduled reboot by setting its state
-    to "RESUME".
- -- Added squeue -P/--priority option that can be used to display pending jobs
-    in the same order as used by the Slurm scheduler even if jobs are submitted
-    to multiple partitions (job is reported once per usable partition).
- -- Add sbatch job array option to limit the number of simultaneously running
-    tasks from a job array (e.g. "--array=0-15%4").
- -- Removed --cpu_bind from sbatch and salloc.  It just seemed to cause
-    confusion and wasn't ever handled in the allocation.  A user can now only
-    specify the option with srun.
- -- Modify scontrol job operations to accept comma delimited list of job IDs.
-    Applies to job update, hold, release, suspend, resume, requeue, and
-    requeuehold operations.
- -- Added ability for "scontrol update" to references jobs by JobName (and
-    filtered optionally by UserID).
- -- Add support for an advanced reservation start time that remains constant
-    relative to the current time. This can be used to prevent the starting of
-    longer running jobs on select nodes for maintenance purpose. See the
-    reservation flag "TIME_FLOAT" for more information.
- -- Added "scontrol write config" option to save a copy of the current
-    configuration in a file containing a time stamp.
- -- Added "sacctmgr reconfigure" option to cause slurmdbd to read current
-    configuration.
-
+ -- Add sbcast support for file transfer to resources allocated to a job step
+    rather than a job allocation (e.g. "sbcast -j 123.4 ...").
+ -- Add support for job dependencies joined with OR operator (e.g.
+    "--depend=afterok:123?afternotok:124").
 
 OTHER CHANGES
 =============
- -- Add job "reboot" option for Linux clusters. This invokes the configured
-    RebootProgram to reboot nodes allocated to a job before it begins execution.
- -- In the job_submit plugin: Remove all slurmctld locks prior to job_submit()
-    being called for improved performance. If any slurmctld data structures are
-    read or modified, add locks directly in the plugin.
- -- Cray MPMD (Multiple-Program Multiple-Data) support completed.
 
 
 API CHANGES
@@ -176,77 +53,26 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
- -- Changed the following fields in struct front_end_info:
-    node_state change from 16-bits to 32-bits
- -- Changed the following fields in struct node_info:
-    node_state change from 16-bits to 32-bits
- -- Changed the following fields in struct slurm_update_front_end_msg:
-    node_state change from 16-bits to 32-bits
- -- Changed the following fields in struct slurm_update_node_msg:
-    node_state change from 16-bits to 32-bits
 
 
 Added the following struct definitions
 ======================================
- -- Added the following fields to struct stats_info_response_msg:
-    rpc_type_size, rpc_type_id, rpc_type_cnt, rpc_type_time,
-    rpc_user_size, rpc_user_id, rpc_user_cnt, rpc_user_time.
- -- Added the following fields to struct job_descriptor:
-    job_id_str
- -- Added the following fields to struct job_info:
-    array_bitmap, array_max_tasks, array_task_str, reboot, sched_nodes
- -- Added the following fields to struct node_info:
-    gres_drain and gres_used
-    core_spec_cnt, cpu_spec_list, mem_spec_limit
- -- Added the following fields to struct slurm_ctl_conf:
-    chos_loc, cpu_freq_def, layouts, mem_limit_enforce, priority_params,
-    requeue_exit, requeue_exit_hold, route_plugin, srun_port_range,
-    use_spec_resources
- -- Added the following fields to struct suspend_msg:
-    job_id_str
- -- Added the following fields to struct slurm_step_ctx_params_t:
-    profile
 
 
 Added the following struct definitions
 ======================================
-job_array_resp_msg_t - Job array response data structure
 
 
 Changed the following enums and #defines
 ========================================
-CPU_FREQ_* - Identification of CPU governors to use
-DEBUG_FLAG_* - Many new DebugFlag values defined
-HEALTH_CHECK_CYCLE - Cycle through nodes for health check rather than trying
-		to run health check in parallel on large numbers of nodes
-KILL_STEPS_ONLY - Do not signal batch script
-MAIL_JOB_TIME* - Email event triggers based upon job's run time relative to
-		its time limit
-PRIORITY_FLAGS_* - New job priority calculation options
-RESERVE_FLAG_TIME_FLOAT - Identify a reservation with a start time that is
-		relative to the current time
-WAIT_ASSOC_*, WAIT_QOS_* - Many new job "reason" flags added to better identify
-		why a job is pending rather than running. This includes a
-		detailed identify of specific association and QOS limits.
 
 
 Added the following API's
 =========================
-slurm_free_job_array_resp() - Free job array RPC responses
-slurm_kill_job2() - Similar to slurm_kill_job(), but supports job arrays
-slurm_kill_job_step2()- Similar to slurm_kill_job_step(), but supports job arrays
-slurm_requeue2()  - Similar to slurm_requeue(), but supports job arrays
-slurm_resume2()   - Similar to slurm_resume(), but supports job arrays
-slurm_suspend2()  - Similar to slurm_suspend(), but supports job arrays
-slurm_update_job2() - Similar to slurm_update_job(), but supports job arrays
-slurm_write_ctl_conf() - write the contents of slurm control configuration
-		message as loaded using slurm_load_ctl_conf() to a file
 
 
 Changed the following API's
 ============================
-slurm_set_debugflags() - Debug flags argument changed from 32-bit to 64-bit
-slurm_signal_job_step() - Signal value changed from 16-bit to 32-bit
 
 
 DBD API Changes
@@ -258,16 +84,6 @@ Changed members of the following structs
 
 Added the following struct definitions
 ======================================
- -- Added the following fields to struct slurmdb_association_rec:
-    assoc_next, assoc_next_id (for hash table)
- -- Added the following fields to struct slurmdb_job_rec_t:
-    array_max_tasks, array_task_str, alloc_gres, req_gres, used_gres, resv_name
- -- Added the following fields to struct slurmdb_reservation_rec_t:
-    array_job_id, array_task_id
- -- Added the following fields to struct slurmdb_select_step_t:
-    array_task_id
- -- Added the following fields to struct slurmdb_qos_rec_t:
-    min_cpus_pj
 
 Added the following enums and #defines
 ========================================
@@ -275,4 +91,3 @@ Added the following enums and #defines
 
 Added the following API's
 =========================
-slurmdb_reconfig() - Reconfigure the slurmdbd (re-read the configuration file)
