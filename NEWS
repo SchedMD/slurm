@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.10
 ===========================
+ -- Fix a few sacctmgr error messages.
 
 * Changes in Slurm 14.03.9
 ==========================

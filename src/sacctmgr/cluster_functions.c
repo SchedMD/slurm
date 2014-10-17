@@ -1101,7 +1101,8 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
 	if ((fd = fopen(file_name,"w")) == NULL) {
-		fprintf(stderr, "Can't open file %s, %m\n", file_name);
+		fprintf(stderr, "Can't open file %s, %s\n", file_name,
+			slurm_strerror(errno));
 		FREE_NULL_LIST(acct_list);
 		FREE_NULL_LIST(assoc_list);
 		xfree(cluster_name);

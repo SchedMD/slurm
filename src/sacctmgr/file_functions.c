@@ -1935,7 +1935,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	xfree(file_name);
 	if (fd == NULL) {
 		exit_code=1;
-		fprintf(stderr, " Unable to read \"%s\": %m\n", argv[0]);
+		fprintf(stderr, " Unable to read \"%s\": %s\n", argv[0],
+			slurm_strerror(errno));
 		xfree(cluster_name);
 		return;
 	}
