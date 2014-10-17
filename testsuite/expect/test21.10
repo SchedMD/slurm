@@ -207,7 +207,7 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 #
 set sadd_pid [spawn $sacctmgr -i add cluster name=$tc1]
 expect {
-	-re "privilege to preform this action" {
+	-re "privilege to perform this action" {
 		set access_err 1
 		exp_continue
 	}
