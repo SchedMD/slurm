@@ -90,12 +90,12 @@ rm -f config.h.in
 
 set -x
 rm -fr autom4te*.cache
-aclocal -I auxdir $ACLOCAL_FLAGS || exit 1
-libtoolize --automake --copy --force || exit 1
-autoheader || exit 1
-automake --add-missing --copy --force-missing || exit 1
-#autoconf --force --warnings=all || exit 1
-autoconf --force --warnings=no-obsolete || exit 1
+${ACLOCAL:-aclocal} -I auxdir $ACLOCAL_FLAGS || exit 1
+${LIBTOOLIZE:-libtoolize} --automake --copy --force || exit 1
+${AUTOHEADER:-autoheader} || exit 1
+${AUTOMAKE:-automake} --add-missing --copy --force-missing || exit 1
+#${AUTOCONF:-autoconf} --force --warnings=all || exit 1
+${AUTOCONF:-autoconf} --force --warnings=no-obsolete || exit 1
 set +x
 
 if [ -e config.status ]; then
