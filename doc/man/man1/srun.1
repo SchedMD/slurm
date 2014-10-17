@@ -476,7 +476,10 @@ allocations when \-c has a value greater than \-c on salloc or sbatch.
 Defer the start of this job until the specified dependencies have been
 satisfied completed.
 <\fIdependency_list\fR> is of the form
-<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
+<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR> or
+<\fItype:job_id[:job_id][?type:job_id[:job_id]]\fR>.
+All dependencies must be satisfied if the "," separator is used.
+Any dependency may be satisfied if the "?" separator is used.
 Many jobs can share the same dependency and these jobs may even belong to
 different  users. The  value may be changed after job submission using the
 scontrol command.

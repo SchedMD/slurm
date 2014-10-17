@@ -1780,7 +1780,7 @@ extern void print_job_dependency(struct job_record *job_ptr)
 {
 	ListIterator depend_iter;
 	struct depend_spec *dep_ptr;
-	char *array_task_id, *dep_str;
+	char *array_task_id, *dep_flags, *dep_str;
 
 	info("Dependency information for job %u", job_ptr->job_id);
 	if ((job_ptr->details == NULL) ||
@@ -1793,6 +1793,11 @@ extern void print_job_dependency(struct job_record *job_ptr)
 			info("  singleton");
 			continue;
 		}
+
+		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
+			dep_flags = "OR";
+		else
+			dep_flags = "";
 
 		if      (dep_ptr->depend_type == SLURM_DEPEND_AFTER)
 			dep_str = "after";
@@ -1810,12 +1815,13 @@ extern void print_job_dependency(struct job_record *job_ptr)
 			array_task_id = "_*";
 		else
 			array_task_id = "";
-		info("  %s:%u%s", dep_str, dep_ptr->job_id, array_task_id);
+		info("  %s:%u%s %s",
+		     dep_str, dep_ptr->job_id, array_task_id, dep_flags);
 	}
 	list_iterator_destroy(depend_iter);
 }
 
-static void _depend_list2str(struct job_record *job_ptr)
+static void _depend_list2str(struct job_record *job_ptr, bool set_or_flag)
 {
 	ListIterator depend_iter;
 	struct depend_spec *dep_ptr;
@@ -1854,7 +1860,13 @@ static void _depend_list2str(struct job_record *job_ptr)
 			array_task_id = "";
 		xstrfmtcat(job_ptr->details->dependency, "%s%s:%u%s",
 			   sep, dep_str, dep_ptr->job_id, array_task_id);
-		sep = ",";
+
+		if (set_or_flag)
+			dep_ptr->depend_flags |= SLURM_FLAGS_OR;
+		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
+			sep = "?";
+		else
+			sep = ",";
 	}
 	list_iterator_destroy(depend_iter);
 }
@@ -1870,6 +1882,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	ListIterator depend_iter, job_iterator;
 	struct depend_spec *dep_ptr;
 	bool failure = false, depends = false, rebuild_str = false;
+	bool or_satisfied = false;
  	List job_queue = NULL;
  	bool run_now;
 	int results = 0;
@@ -2035,13 +2048,19 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		} else
 			failure = true;
 		if (clear_dep) {
-			list_delete_item(depend_iter);
 			rebuild_str = true;
+			if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
+				or_satisfied = true;
+				break;
+			}
+			list_delete_item(depend_iter);
 		}
 	}
 	list_iterator_destroy(depend_iter);
+	if (or_satisfied)
+		list_flush(job_ptr->details->depend_list);
 	if (rebuild_str)
-		_depend_list2str(job_ptr);
+		_depend_list2str(job_ptr, false);
 	if (list_count(job_ptr->details->depend_list) == 0)
 		xfree(job_ptr->details->dependency);
 
@@ -2079,7 +2098,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	List new_depend_list = NULL;
 	struct depend_spec *dep_ptr;
 	struct job_record *dep_job_ptr;
-	bool expand_cnt = 0;
+	int expand_cnt = 0;
+	bool or_flag = false;
 
 	if (job_ptr->details == NULL)
 		return EINVAL;
@@ -2215,7 +2235,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			if ((sep_ptr2 == NULL) ||
 			    (job_id == 0) || (job_id == job_ptr->job_id) ||
 			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') &&
-			     (sep_ptr2[0] != ':'))) {
+			     (sep_ptr2[0] != '?')  && (sep_ptr2[0] != ':'))) {
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
@@ -2275,10 +2295,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				break;
 			sep_ptr = sep_ptr2 + 1;	/* skip over ":" */
 		}
-		if (sep_ptr2 && (sep_ptr2[0] == ','))
+		if (sep_ptr2 && (sep_ptr2[0] == ',')) {
 			tok = sep_ptr2 + 1;
-		else
+		} else if (sep_ptr2 && (sep_ptr2[0] == '?')) {
+			tok = sep_ptr2 + 1;
+			or_flag = true;
+		} else {
 			break;
+		}
 	}
 
 	if (rc == SLURM_SUCCESS) {
@@ -2292,7 +2316,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		if (job_ptr->details->depend_list)
 			list_destroy(job_ptr->details->depend_list);
 		job_ptr->details->depend_list = new_depend_list;
-		_depend_list2str(job_ptr);
+		_depend_list2str(job_ptr, or_flag);
 #if _DEBUG
 		print_job_dependency(job_ptr);
 #endif
