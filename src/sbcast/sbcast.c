@@ -126,16 +126,25 @@ int main(int argc, char *argv[])
 /* get details about this slurm job: jobid and allocated node */
 static void _get_job_info(void)
 {
-	xassert(params.jobid != NO_VAL);
+	xassert(params.job_id != NO_VAL);
 
-	verbose("jobid      = %u", params.jobid);
-
-	if (slurm_sbcast_lookup(params.jobid, &sbcast_cred) != SLURM_SUCCESS) {
-		error("Slurm jobid %u lookup error: %s",
-		      params.jobid, slurm_strerror(slurm_get_errno()));
+	if (slurm_sbcast_lookup(params.job_id, params.step_id, &sbcast_cred)
+	    != SLURM_SUCCESS) {
+		if (params.step_id == NO_VAL) {
+			error("Slurm job ID %u lookup error: %s",
+			      params.job_id, slurm_strerror(slurm_get_errno()));
+		} else {
+			error("Slurm step ID %u.%u lookup error: %s",
+			      params.job_id, params.step_id,
+			      slurm_strerror(slurm_get_errno()));
+		}
 		exit(1);
 	}
 
+	if (params.step_id == NO_VAL)
+		verbose("jobid      = %u", params.job_id);
+	else
+		verbose("jobid      = %u.%u", params.job_id, params.step_id);
 	verbose("node_cnt   = %u", sbcast_cred->node_cnt);
 	verbose("node_list  = %s", sbcast_cred->node_list);
 	/* also see sbcast_cred->node_addr (array) */

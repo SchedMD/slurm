@@ -1,4 +1,4 @@
-.TH SBCAST "1" "April 2006" "sbcast 2.0" "Slurm components"
+.TH SBCAST "1" "October 2014" "sbcast 15.08" "Slurm components"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a SLURM job.
@@ -32,9 +32,9 @@ If the destination file already exists, replace it.
 Specify the fanout of messages used for file transfer.
 Maximum value is currently eight.
 .TP
-\fB\-j\fR \fInumber\fR, \fB\-\-jobid\fR=\fInumber\fR
-Specify the jobid to use.  If ran inside an allocation this is
-unneeded as the jobid will read from the environment.
+\fB\-j\fR \fIjobID[.stepID]\fR, \fB\-\-jobid\fR=\fIjobID[.stepID]\fR
+Specify the job ID to use with optional step ID.  If run inside an allocation
+this is unneeded as the job ID will read from the environment.
 .TP
 \fB\-p\fR, \fB\-\-preserve\fR
 Preserves modification times, access times, and modes from the

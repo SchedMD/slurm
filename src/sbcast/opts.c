@@ -76,7 +76,7 @@ static void     _usage( void );
  */
 extern void parse_command_line(int argc, char *argv[])
 {
-	char *env_val = NULL;
+	char *end_ptr = NULL, *env_val = NULL;
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
@@ -101,7 +101,8 @@ extern void parse_command_line(int argc, char *argv[])
 	if (getenv("SBCAST_FORCE"))
 		params.force = true;
 
-	params.jobid = NO_VAL;
+	params.job_id  = NO_VAL;
+	params.step_id = NO_VAL;
 
 	if (getenv("SBCAST_PRESERVE"))
 		params.preserve = true;
@@ -129,7 +130,9 @@ extern void parse_command_line(int argc, char *argv[])
 			params.fanout = atoi(optarg);
 			break;
 		case (int)'j':
-			params.jobid = atol(optarg);
+			params.job_id = strtol(optarg, &end_ptr, 10);
+			if (end_ptr[0] == '.')
+				params.step_id = strtol(end_ptr+1, NULL, 10);
 		case (int)'p':
 			params.preserve = true;
 			break;
@@ -161,14 +164,16 @@ extern void parse_command_line(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (params.jobid == NO_VAL) {
+	if (params.job_id == NO_VAL) {
 		if (!(env_val = getenv("SLURM_JOB_ID"))) {
 			error("Need a job id to run this command.  "
 			      "Run from within a Slurm job or use the "
 			      "--jobid option.");
 			exit(1);
 		}
-		params.jobid = (uint32_t) atol(env_val);
+		params.job_id = strtol(env_val, &end_ptr, 10);
+		if (end_ptr[0] == '.')
+			params.step_id = strtol(end_ptr+1, NULL, 10);
 	}
 
 	params.src_fname = xstrdup(argv[optind]);
@@ -215,7 +220,10 @@ static void _print_options( void )
 	info("compress   = %s", params.compress ? "true" : "false");
 	info("force      = %s", params.force ? "true" : "false");
 	info("fanout     = %d", params.fanout);
-	info("jobid      = %u", params.jobid);
+	if (params.step_id == NO_VAL)
+		info("jobid      = %u", params.job_id);
+	else
+		info("jobid      = %u.%u", params.job_id, params.step_id);
 	info("preserve   = %s", params.preserve ? "true" : "false");
 	info("timeout    = %d", params.timeout);
 	info("verbose    = %d", params.verbose);
@@ -237,7 +245,8 @@ Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -C, --compress      compress the file being transmitted\n\
   -f, --force         replace destination file as required\n\
   -F, --fanout=num    specify message fanout\n\
-  -j, --jobid=num     specify jobid, unneeded if ran inside allocation\n\
+  -j, --jobid=#[.#]   specify job ID and optional step ID, unneeded if run\n\
+                      inside allocation\n\
   -p, --preserve      preserve modes and times of source file\n\
   -s, --size=num      block size in bytes (rounded off)\n\
   -t, --timeout=secs  specify message timeout (seconds)\n\

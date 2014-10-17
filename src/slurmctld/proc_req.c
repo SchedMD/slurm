@@ -350,7 +350,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		_slurm_rpc_job_sbcast_cred(msg);
-		slurm_free_job_alloc_info_msg(msg->data);
+		slurm_free_step_alloc_info_msg(msg->data);
 		break;
 	case REQUEST_PING:
 		_slurm_rpc_ping(msg);
@@ -2596,12 +2596,23 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
  *	plus sbcast credential */
 static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 {
+#ifdef HAVE_FRONT_END
+	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+#else
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
+	struct step_record *step_ptr;
+	char *node_list = NULL;
+	struct node_record *node_ptr;
+	slurm_addr_t *node_addr = NULL;
+	hostlist_t host_list = NULL;
+	char *this_node_name;
+	int node_inx = 0;
+	uint32_t node_cnt;
 	DEF_TIMERS;
-	job_alloc_info_msg_t *job_info_msg =
-		(job_alloc_info_msg_t *) msg->data;
+	step_alloc_info_msg_t *job_info_msg =
+		(step_alloc_info_msg_t *) msg->data;
 	job_sbcast_cred_msg_t job_info_resp_msg;
 	sbcast_cred_t *sbcast_cred;
 	/* Locks: Read config, job, read node */
@@ -2615,6 +2626,45 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	/* do RPC call */
 	lock_slurmctld(job_read_lock);
 	error_code = job_alloc_info(uid, job_info_msg->job_id, &job_ptr);
+	if (job_ptr && (job_info_msg->step_id != NO_VAL)) {
+		step_ptr = find_step_record(job_ptr, job_info_msg->step_id);
+		if (!step_ptr) {
+			job_ptr = NULL;
+			error_code = ESLURM_INVALID_JOB_ID;
+		} else if (step_ptr->step_layout &&
+			   (step_ptr->step_layout->node_cnt !=
+			    job_ptr->node_cnt)) {
+			node_cnt  = step_ptr->step_layout->node_cnt;
+			node_list = step_ptr->step_layout->node_list;
+			if ((host_list = hostlist_create(node_list)) == NULL) {
+				fatal("hostlist_create error for %s: %m",
+				      node_list);
+				return;	/* Avoid CLANG false positive */
+			}
+			node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
+			while ((this_node_name = hostlist_shift(host_list))) {
+				if ((node_ptr = find_node_record(this_node_name))) {
+					memcpy(&node_addr[node_inx++],
+					       &node_ptr->slurm_addr,
+					       sizeof(slurm_addr_t));
+				} else {
+					error("Invalid node %s in Step=%u.%u",
+					      this_node_name, job_ptr->job_id,
+					      step_ptr->step_id);
+				}
+				free(this_node_name);
+			}
+			hostlist_destroy(host_list);
+		}
+	}
+	if (job_ptr && !node_addr) {
+		node_addr = job_ptr->node_addr;
+		node_cnt  = job_ptr->node_cnt;
+		node_list = job_ptr->nodes;
+		node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
+		memcpy(node_addr, job_ptr->node_addr,
+		       (sizeof(slurm_addr_t) * node_cnt));
+	}
 	END_TIMER2("_slurm_rpc_job_alloc_info");
 
 	/* return result */
@@ -2626,24 +2676,27 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else if ((sbcast_cred =
 		    create_sbcast_cred(slurmctld_config.cred_ctx,
-				       job_ptr->job_id,
-				       job_ptr->nodes,
+				       job_ptr->job_id, node_list,
 				       job_ptr->end_time)) == NULL){
 		unlock_slurmctld(job_read_lock);
 		error("_slurm_rpc_job_sbcast_cred JobId=%u cred create error",
 		      job_info_msg->job_id);
 		slurm_send_rc_msg(msg, SLURM_ERROR);
 	} else {
-		info("_slurm_rpc_job_sbcast_cred JobId=%u NodeList=%s %s",
-		     job_info_msg->job_id, job_ptr->nodes, TIME_STR);
+		if (job_ptr && (job_info_msg->step_id != NO_VAL)) {
+			info("_slurm_rpc_job_sbcast_cred Job=%u NodeList=%s %s",
+			     job_info_msg->job_id, node_list, TIME_STR);
+		} else {
+			info("_slurm_rpc_job_sbcast_cred Step=%u.%u "
+			     "NodeList=%s %s",
+			     job_info_msg->job_id, job_info_msg->step_id,
+			     node_list, TIME_STR);
+		}
 
 		job_info_resp_msg.job_id         = job_ptr->job_id;
-		job_info_resp_msg.node_addr      =
-			xmalloc(sizeof(slurm_addr_t) * job_ptr->node_cnt);
-		memcpy(job_info_resp_msg.node_addr, job_ptr->node_addr,
-		       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
-		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
-		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
+		job_info_resp_msg.node_addr      = node_addr;
+		job_info_resp_msg.node_cnt       = node_cnt;
+		job_info_resp_msg.node_list      = xstrdup(node_list);
 		job_info_resp_msg.sbcast_cred    = sbcast_cred;
 		unlock_slurmctld(job_read_lock);
 
@@ -2654,10 +2707,13 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		response_msg.data        = &job_info_resp_msg;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		xfree(job_info_resp_msg.node_addr);
+		/* job_info_resp_msg.node_addr is pointer,
+		 * xfree(node_addr) is below */
 		xfree(job_info_resp_msg.node_list);
 		delete_sbcast_cred(sbcast_cred);
 	}
+	xfree(node_addr);
+#endif
 }
 
 /* _slurm_rpc_ping - process ping RPC */

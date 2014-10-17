@@ -325,6 +325,14 @@ _unpack_job_alloc_info_msg(job_alloc_info_msg_t **job_desc_buffer_ptr,
 			   Buf buffer,
 			   uint16_t protocol_version);
 
+static void _pack_step_alloc_info_msg(step_alloc_info_msg_t * job_desc_ptr,
+				      Buf buffer,
+				      uint16_t protocol_version);
+static int
+_unpack_step_alloc_info_msg(step_alloc_info_msg_t **job_desc_buffer_ptr,
+			    Buf buffer,
+			    uint16_t protocol_version);
+
 static void _pack_return_code_msg(return_code_msg_t * msg, Buf buffer,
 				  uint16_t protocol_version);
 static int _unpack_return_code_msg(return_code_msg_t ** msg, Buf buffer,
@@ -831,10 +839,14 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
-	case REQUEST_JOB_SBCAST_CRED:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
 					 buffer,
 					 msg->protocol_version);
+		break;
+	case REQUEST_JOB_SBCAST_CRED:
+		_pack_step_alloc_info_msg((step_alloc_info_msg_t *) msg->data,
+					  buffer,
+					  msg->protocol_version);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
@@ -1423,10 +1435,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
-	case REQUEST_JOB_SBCAST_CRED:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer,
 						msg->protocol_version);
+		break;
+	case REQUEST_JOB_SBCAST_CRED:
+		rc = _unpack_step_alloc_info_msg((step_alloc_info_msg_t **) &
+						 (msg->data), buffer,
+						 msg->protocol_version);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
@@ -6633,7 +6649,7 @@ _pack_job_alloc_info_msg(job_alloc_info_msg_t * job_desc_ptr, Buf buffer,
 			 uint16_t protocol_version)
 {
 	/* load the data values */
-	pack32((uint32_t)job_desc_ptr->job_id, buffer);
+	pack32(job_desc_ptr->job_id, buffer);
 }
 
 static int
@@ -6654,6 +6670,49 @@ _unpack_job_alloc_info_msg(job_alloc_info_msg_t **
 
 unpack_error:
 	slurm_free_job_alloc_info_msg(job_desc_ptr);
+	*job_desc_buffer_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+
+static void
+_pack_step_alloc_info_msg(step_alloc_info_msg_t * job_desc_ptr, Buf buffer,
+			  uint16_t protocol_version)
+{
+	/* load the data values */
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		pack32(job_desc_ptr->job_id, buffer);
+		pack32(job_desc_ptr->step_id, buffer);
+	} else {
+		pack32(job_desc_ptr->job_id, buffer);
+	}
+}
+
+static int
+_unpack_step_alloc_info_msg(step_alloc_info_msg_t **
+			    job_desc_buffer_ptr, Buf buffer,
+			    uint16_t protocol_version)
+{
+	step_alloc_info_msg_t *job_desc_ptr;
+
+	/* alloc memory for structure */
+	assert(job_desc_buffer_ptr != NULL);
+	job_desc_ptr = xmalloc(sizeof(step_alloc_info_msg_t));
+	*job_desc_buffer_ptr = job_desc_ptr;
+
+	/* load the data values */
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpack32(&job_desc_ptr->job_id, buffer);
+		safe_unpack32(&job_desc_ptr->step_id, buffer);
+	} else {
+		safe_unpack32(&job_desc_ptr->job_id, buffer);
+		job_desc_ptr->step_id = NO_VAL;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_step_alloc_info_msg(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;
 }

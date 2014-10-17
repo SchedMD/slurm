@@ -486,18 +486,21 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
  *	including a credential needed for sbcast
- * IN jobid - job allocation identifier
+ * IN job_id - job allocation identifier
+ * IN step_id - step allocation identifier (or NO_VAL for entire job)
  * OUT info - job allocation information including a credential for sbcast
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
  */
-int slurm_sbcast_lookup(uint32_t jobid, job_sbcast_cred_msg_t **info)
+int slurm_sbcast_lookup(uint32_t job_id, uint32_t step_id,
+			job_sbcast_cred_msg_t **info)
 {
-	job_alloc_info_msg_t req;
+	step_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
-	req.job_id = jobid;
+	req.job_id = job_id;
+	req.step_id = step_id;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_SBCAST_CRED;
