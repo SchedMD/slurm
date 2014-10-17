@@ -810,38 +810,40 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			node_mem  = node_ptr->real_memory;
 		}
 
-		if (cray_conf->sub_alloc && node_min_mem) {
-			int32_t tmp_mppmem;
+		if (cray_conf->sub_alloc) {
+			if (node_min_mem) {
+				int32_t tmp_mppmem;
 
-			/* If the job has requested memory use it (if
-			   lesser) for calculations.
-			*/
-			tmp_mppmem = MIN(node_mem, node_min_mem);
-			/*
-			 * ALPS 'Processing Elements per Node'
-			 * value (aprun -N), which in slurm is
-			 * --ntasks-per-node and 'mppnppn' in PBS: if
-			 * --ntasks is specified, default to the
-			 * number of cores per node (also the
-			 * default for 'aprun -N').  On a
-			 * heterogeneous system the nodes
-			 * aren't always the same so keep
-			 * track of the lowest mppmem and use
-			 * it as the level for all nodes
-			 * (mppmem is 0 when coming in).
-			 */
-			tmp_mppmem /= mppnppn ? mppnppn : node_cpus;
+				/* If the job has requested memory use it (if
+				   lesser) for calculations.
+				*/
+				tmp_mppmem = MIN(node_mem, node_min_mem);
+				/*
+				 * ALPS 'Processing Elements per Node'
+				 * value (aprun -N), which in slurm is
+				 * --ntasks-per-node and 'mppnppn' in PBS: if
+				 * --ntasks is specified, default to the
+				 * number of cores per node (also the
+				 * default for 'aprun -N').  On a
+				 * heterogeneous system the nodes
+				 * aren't always the same so keep
+				 * track of the lowest mppmem and use
+				 * it as the level for all nodes
+				 * (mppmem is 0 when coming in).
+				 */
+				tmp_mppmem /= mppnppn ? mppnppn : node_cpus;
 
-			/* Minimum memory per processing
-			 * element should be 1, since 0 means
-			 * give all the memory to the job. */
-			if (tmp_mppmem <= 0)
-				tmp_mppmem = 1;
+				/* Minimum memory per processing
+				 * element should be 1, since 0 means
+				 * give all the memory to the job. */
+				if (tmp_mppmem <= 0)
+					tmp_mppmem = 1;
 
-			if (mppmem)
-				mppmem = MIN(mppmem, tmp_mppmem);
-			else
-				mppmem = tmp_mppmem;
+				if (mppmem)
+					mppmem = MIN(mppmem, tmp_mppmem);
+				else
+					mppmem = tmp_mppmem;
+			}
 		} else {
 			node_cpus = adjust_cpus_nppcu(
 				nppcu, threads, node_cpus);
@@ -881,12 +883,12 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		 * nodes (mppmem is 0 when coming in).
 		 */
 		mppmem = min_memory / largest_cpus;
-	}
 
-	/* Minimum memory per processing element should be 1,
-	 * since 0 means give all the memory to the job. */
-	if (mppmem <= 0)
-		mppmem = 1;
+		/* Minimum memory per processing element should be 1,
+		 * since 0 means give all the memory to the job. */
+		if (mppmem <= 0)
+			mppmem = 1;
+	}
 
 	if (cray_conf->sub_alloc) {
 		mppwidth = 0;
