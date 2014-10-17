@@ -80,6 +80,7 @@ documents those changes that are of interest to users and admins.
  -- Fix small memory leak in jobcomp/mysql.
  -- Correct tracking of licenses for suspended jobs on slurmctld reconfigure or
     restart.
+ -- If failed to launch a batch job requeue it in hold.
 
 * Changes in Slurm 14.03.8
 ==========================
