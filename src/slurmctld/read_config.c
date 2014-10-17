@@ -1972,7 +1972,7 @@ static int _restore_job_dependencies(void)
 		FREE_NULL_LIST(job_ptr->license_list);
 		if (valid)
 			job_ptr->license_list = license_list;
-		if (IS_JOB_RUNNING(job_ptr))
+		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			license_job_get(job_ptr);
 
 		if ((job_ptr->details == NULL) ||

@@ -139,7 +139,7 @@ typedef struct {
 	char *user_name;
 } job_env_t;
 
-static int  _abort_job(uint32_t job_id, uint32_t slurm_rc);
+static int  _requeue_job(uint32_t job_id, uint32_t slurm_rc);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(job_env_t *job_env);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
@@ -1719,9 +1719,9 @@ done:
 		/* prolog or job launch failure,
 		 * tell slurmctld that the job failed */
 		if (req->step_id == SLURM_BATCH_SCRIPT)
-			(void) _abort_job(req->job_id, rc);
+			_requeue_job(req->job_id, rc);
 		else
-			(void) _abort_step(req->job_id, req->step_id);
+			_abort_step(req->job_id, req->step_id);
 	}
 
 	/*
@@ -1798,20 +1798,21 @@ no_job:
 }
 
 static int
-_abort_job(uint32_t job_id, uint32_t slurm_rc)
+_requeue_job(uint32_t job_id, uint32_t slurm_rc)
 {
-	complete_batch_script_msg_t  resp;
+	struct requeue_msg req;
 	slurm_msg_t resp_msg;
-	slurm_msg_t_init(&resp_msg);
-	int rc;		/* Note: we are ignoring return code */
+	int rc;
 
-	resp.job_id       = job_id;
-	resp.job_rc       = INFINITE;
-	resp.slurm_rc     = slurm_rc;
-	resp.node_name    = conf->node_name;
-	resp.jobacct      = NULL;       /* unused */
-	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
-	resp_msg.data     = &resp;
+	slurm_msg_t_init(&resp_msg);
+
+	req.job_id = job_id;
+	req.job_id_str = NULL;
+	req.state = JOB_REQUEUE_HOLD;
+
+	resp_msg.msg_type = REQUEST_JOB_REQUEUE;
+	resp_msg.data = &req;
+
 	return slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
 }
 
