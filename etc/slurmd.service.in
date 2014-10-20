@@ -1,0 +1,13 @@
+[Unit]
+Description=Slurm node daemon
+After=network.target
+ConditionPathExists=@sysconfdir@/slurm.conf
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/default/slurmd
+ExecStart=@sbindir@/slurmd $SLURMD_OPTIONS
+PIDFile=/var/run/slurm/slurmd.pid
+
+[Install]
+WantedBy=multi-user.target

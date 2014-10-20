@@ -17,7 +17,7 @@ Options are sched/backfill, which performs backfill scheduling, and
 sched/builtin, which attempts to schedule jobs in a string priority order within
 each partition/queue.</P>
 
-<P>There is also a <B>SchedulingParameters</B> configuration parameter which
+<P>There is also a <B>SchedulerParameters</B> configuration parameter which
 can specify a wide range of parameters as described below.
 This first set of parameters applies to all scheduling configurations.</P>
 <UL>
@@ -68,10 +68,10 @@ before it is killed. A system-wide configuration parameter.</LI>
 Locks are released briefly every two seconds so that other options can be
 processed, for example to process new job submission requests.
 Backfill scheduling can optionally continue execution after the lock release
-and ignore newly submitted jobs (<B>SchedulingParameters=bf_continue</B>).
+and ignore newly submitted jobs (<B>SchedulerParameters=bf_continue</B>).
 Doing so will permit consideration of more jobs, but may result in the delayed
 scheduling of newly submitted jobs.
-A list of <B>SchedulingParameters</B> configuration parameters related to
+A list of <B>SchedulerParameters</B> configuration parameters related to
 backfill scheduling follows.</P>
 <UL>
 <LI><B>bf_continue</B> - If set, then continue backfill scheduling after

@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.0rc3
 =============================
  -- Allow envs to override autotools binaries in autogen.sh
+ -- Added system services files.
 
 * Changes in Slurm 14.11.0rc2
 =============================
@@ -282,6 +283,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix a few sacctmgr error messages.
  -- Treat non-zero SlurmSchedLogLevel without SlurmSchedLogFile as a fatal
     error.
+ -- Correct sched_config.html documentation SchedulingParameters
+    should be SchedulerParameters.
+ -- When using gres and cgroup ConstrainDevices set correct access
+    permission for the batch step.
+ -- Fix minor memory leak in jobcomp/mysql on slurmctld reconfig.
 
 * Changes in Slurm 14.03.9
 ==========================

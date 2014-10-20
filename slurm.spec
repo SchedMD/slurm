@@ -452,6 +452,11 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
       ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
       ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
    fi
+   if [ -d /lib/systemd/system ]; then
+      install -D -m755 etc/slurmctld.service $RPM_BUILD_ROOT/lib/systemd/system/slurmctld.service
+      install -D -m755 etc/slurmd.service    $RPM_BUILD_ROOT/lib/systemd/system/slurmd.service
+      install -D -m755 etc/slurmdbd.service  $RPM_BUILD_ROOT/lib/systemd/system/systemdbd.service
+   fi
 %endif
 
 # Do not package Slurm's version of libpmi on Cray systems with ALPS.
@@ -576,6 +581,10 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
   echo /usr/sbin/rcslurm				>> $LIST
+test -f $RPM_BUILD_ROOT/lib/systemd/system/slurmctld.service	&&
+  echo /lib/systemd/system/slurmctld.service		>> $LIST
+test -f $RPM_BUILD_ROOT/lib/systemd/system/slurmd.service	&&
+  echo /lib/systemd/system/slurmd.service		>> $LIST
 
 test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release} &&
   echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
@@ -647,6 +656,8 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurmdbd			&&
   echo /etc/init.d/slurmdbd				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd			&&
   echo /usr/sbin/rcslurmdbd				>> $LIST
+test -f $RPM_BUILD_ROOT/lib/systemd/system/systemdbd.service	&&
+  echo /lib/systemd/system/systemdbd.service		>> $LIST
 
 LIST=./sql.files
 touch $LIST
