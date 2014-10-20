@@ -3789,6 +3789,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->sched_log_level,
 			   "SlurmSchedLogLevel", hashtbl))
 		conf->sched_log_level = DEFAULT_SCHED_LOG_LEVEL;
+	if (conf->sched_log_level && !conf->sched_logfile) {
+		error("SlurmSchedLogLevel requires SlurmSchedLogFile value");
+		return SLURM_ERROR;
+	}
 
 	if (!s_p_get_string(&conf->slurmd_spooldir, "SlurmdSpoolDir", hashtbl))
 		conf->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
