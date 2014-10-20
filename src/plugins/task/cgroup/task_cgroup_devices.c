@@ -360,41 +360,43 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	}
 
 
-	gres_step_bit_alloc = xmalloc ( sizeof (int) * (gres_conf_lines + 1));
+	if (job->stepid != SLURM_BATCH_SCRIPT ) {
 
-	/* fetch information concerning the gres devices allocation for the step */
-	gres_plugin_step_state_file(step_gres_list, gres_step_bit_alloc,
+		gres_step_bit_alloc = xmalloc ( sizeof (int) * (gres_conf_lines + 1));
+
+		/* fetch information concerning the gres devices allocation for the step */
+		gres_plugin_step_state_file(step_gres_list, gres_step_bit_alloc,
 				    gres_count);
 
 
-	/*
-         * with the current cgroup devices subsystem design (whitelist only supported)
-         * we need to allow all different devices that are supposed to be allowed by
-         * default.
-         */
-	for (k = 0; k < allow_lines; k++) {
-		info("Default access allowed to device %s", allowed_dev_major[k]);
-                xcgroup_set_param(&step_devices_cg,"devices.allow",
-			allowed_dev_major[k]);
-        }
+		/*
+		 * with the current cgroup devices subsystem design (whitelist only supported)
+		 * we need to allow all different devices that are supposed to be allowed by
+		 * default.
+		 */
+		for (k = 0; k < allow_lines; k++) {
+			info("Default access allowed to device %s", allowed_dev_major[k]);
+			xcgroup_set_param(&step_devices_cg,"devices.allow",
+					  allowed_dev_major[k]);
+		}
 
-	/*
-     	 * allow or deny access to devices according to gres permissions for the step
-         */
-	for (k = 0; k < gres_conf_lines; k++) {
-		if (gres_step_bit_alloc[k] == 1){
-			info("Allowing access to device %s for step",
-			     gres_cgroup[k]);
-			xcgroup_set_param(&step_devices_cg, "devices.allow",
-                                          gres_cgroup[k]);
-		} else {
-			info("Not allowing access to device %s for step",
-			     gres_cgroup[k]);
+		/*
+		 * allow or deny access to devices according to gres permissions for the step
+		 */
+		for (k = 0; k < gres_conf_lines; k++) {
+			if (gres_step_bit_alloc[k] == 1){
+				info("Allowing access to device %s for step",
+				     gres_cgroup[k]);
+				xcgroup_set_param(&step_devices_cg, "devices.allow",
+						  gres_cgroup[k]);
+			} else {
+				info("Not allowing access to device %s for step",
+				     gres_cgroup[k]);
 			xcgroup_set_param(&step_devices_cg, "devices.deny",
 					  gres_cgroup[k]);
+			}
 		}
 	}
-
 	/* attach the slurmstepd to the step devices cgroup */
 	pid_t pid = getpid();
 	rc = xcgroup_add_pids(&step_devices_cg,&pid,1);

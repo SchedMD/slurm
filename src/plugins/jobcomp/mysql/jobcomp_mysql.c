@@ -225,7 +225,7 @@ extern int fini ( void )
 
 extern int slurm_jobcomp_set_location(char *location)
 {
-	mysql_db_info_t *db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_JC);
+	mysql_db_info_t *db_info;
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
 	int i = 0;
@@ -253,6 +253,8 @@ extern int slurm_jobcomp_set_location(char *location)
 
 	debug2("mysql_connect() called for db %s", db_name);
 	jobcomp_mysql_conn = create_mysql_conn(0, 0, NULL);
+
+	db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_JC);
 
 	mysql_db_get_db_connection(jobcomp_mysql_conn, db_name, db_info);
 	xfree(db_name);
