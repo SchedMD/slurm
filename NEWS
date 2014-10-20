@@ -272,6 +272,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.03.10
 ===========================
  -- Fix a few sacctmgr error messages.
+ -- Treat non-zero SlurmSchedLogLevel without SlurmSchedLogFile as a fatal
+    error.
 
 * Changes in Slurm 14.03.9
 ==========================
