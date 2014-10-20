@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.0rc3
 =============================
  -- Allow envs to override autotools binaries in autogen.sh
+ -- Added system services files.
 
 * Changes in Slurm 14.11.0rc2
 =============================
