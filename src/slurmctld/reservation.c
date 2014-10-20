@@ -1325,12 +1325,10 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal, uint16_t protocol_version)
 {
-	time_t now, start_relative, end_relative;
+	time_t now = time(NULL), start_relative, end_relative;
 
-	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-		now = time(NULL);
+	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		last_resv_update = now;
-	}
 	if (!internal && (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)) {
 		start_relative = resv_ptr->start_time + now;
 		if (resv_ptr->duration == INFINITE)
