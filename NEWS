@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Fix a few sacctmgr error messages.
  -- Treat non-zero SlurmSchedLogLevel without SlurmSchedLogFile as a fatal
     error.
+ -- Correct sched_config.html documentation SchedulingParameters
+    should be SchedulerParameters.
 
 * Changes in Slurm 14.03.9
 ==========================
