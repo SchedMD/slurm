@@ -455,7 +455,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
    if [ -d /lib/systemd/system ]; then
       install -D -m755 etc/slurmctld.service $RPM_BUILD_ROOT/lib/systemd/system/slurmctld.service
       install -D -m755 etc/slurmd.service    $RPM_BUILD_ROOT/lib/systemd/system/slurmd.service
-      install -D -m755 etc/slurmdbd.service  $RPM_BUILD_ROOT/lib/systemd/system/systemdbd.service
+      install -D -m755 etc/slurmdbd.service  $RPM_BUILD_ROOT/lib/systemd/system/slurmdbd.service
    fi
 %endif
 
@@ -656,8 +656,8 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurmdbd			&&
   echo /etc/init.d/slurmdbd				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd			&&
   echo /usr/sbin/rcslurmdbd				>> $LIST
-test -f $RPM_BUILD_ROOT/lib/systemd/system/systemdbd.service	&&
-  echo /lib/systemd/system/systemdbd.service		>> $LIST
+test -f $RPM_BUILD_ROOT/lib/systemd/system/slurmdbd.service	&&
+  echo /lib/systemd/system/slurmdbd.service		>> $LIST
 
 LIST=./sql.files
 touch $LIST

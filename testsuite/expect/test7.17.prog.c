@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 
 	/*
-	 * Logic normally executed by slurmd dameon
+	 * Logic normally executed by slurmd daemon
 	 */
 	rc = gres_plugin_init();
 	if (rc != SLURM_SUCCESS) {
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	 * Logic normally executed by slurmctld dameon
+	 * Logic normally executed by slurmctld daemon
 	 */
 	/* FIXME: Read values from slurm.conf */
 	orig_config = "craynetwork:4";

@@ -13,9 +13,10 @@ documents those changes that are of interest to users and administrators.
 =============================
  -- Allow envs to override autotools binaries in autogen.sh
  -- Added system services files.
- -- If the jobs pends with DependencyNeverSatisfied keep it
-    pending even after the job which it was depending upon
-    was cleaned.
+ -- If the jobs pends with DependencyNeverSatisfied keep it pending even after
+    the job which it was depending upon was cleaned.
+ -- Let operators (in addition to user root and SlurmUser) see job script for
+    other user's jobs.
 
 * Changes in Slurm 14.11.0rc2
 =============================

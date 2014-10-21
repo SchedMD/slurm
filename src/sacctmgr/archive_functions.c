@@ -539,7 +539,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 	if (arch_rec->archive_file) {
 		char *fullpath;
 		char cwd[MAXPATHLEN + 1];
-		int  mode = R_OK;
+		int  mode = F_OK;
 
 		if ((getcwd(cwd, MAXPATHLEN)) == NULL)
 			fatal("getcwd failed: %m");
