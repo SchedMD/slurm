@@ -1705,7 +1705,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 #else
 		node_cnt = bit_set_count(select_bitmap);
 #endif
-		if (!acct_policy_job_runnable_post_select(
+		if (!test_only &&
+		    !acct_policy_job_runnable_post_select(
 			    job_ptr, node_cnt, job_ptr->total_cpus,
 			    job_ptr->details->pn_min_memory)) {
 			error_code = ESLURM_ACCOUNTING_POLICY;
