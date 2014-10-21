@@ -47,7 +47,7 @@ cluster.</li>
 to rule out <a href="#network">network and configuration problems</a>.</li>
 
 <li>If still not responding, check if there is an active slurmctld
-dameon by executing "<i>ps -el | grep slurmctld</i>".</li>
+daemon by executing "<i>ps -el | grep slurmctld</i>".</li>
 
 <li>If slurmctld is not running, restart it (typically as user root
 using the command "<i>/etc/init.d/slurm start</i>").
