@@ -7478,7 +7478,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		if (!IS_JOB_COMPLETED(dump_job_ptr) &&
 		    (show_flags & SHOW_DETAIL2) &&
 		    ((dump_job_ptr->user_id == (uint32_t) uid) ||
-		     validate_slurm_user(uid))) {
+		     validate_operator(uid))) {
 			char *batch_script = get_job_script(dump_job_ptr);
 			packstr(batch_script, buffer);
 			xfree(batch_script);
@@ -7606,7 +7606,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		if (!IS_JOB_COMPLETED(dump_job_ptr) &&
 		    (show_flags & SHOW_DETAIL2) &&
 		    ((dump_job_ptr->user_id == (uint32_t) uid) ||
-		     validate_slurm_user(uid))) {
+		     validate_operator(uid))) {
 			char *batch_script = get_job_script(dump_job_ptr);
 			packstr(batch_script, buffer);
 			xfree(batch_script);
@@ -7733,7 +7733,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		if (!IS_JOB_COMPLETED(dump_job_ptr) &&
 		    (show_flags & SHOW_DETAIL2) &&
 		    ((dump_job_ptr->user_id == (uint32_t) uid) ||
-		     validate_slurm_user(uid))) {
+		     validate_operator(uid))) {
 			char *batch_script = get_job_script(dump_job_ptr);
 			packstr(batch_script, buffer);
 			xfree(batch_script);
