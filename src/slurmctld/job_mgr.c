@@ -11180,7 +11180,8 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 
 	if ((job_ptr->state_reason == WAIT_HELD)
 	    || (job_ptr->state_reason == WAIT_HELD_USER)
-	    || job_ptr->state_reason == WAIT_MAX_REQUEUE)
+	    || job_ptr->state_reason == WAIT_MAX_REQUEUE
+	    || job_ptr->state_reason == WAIT_DEP_INVALID)
 		return false;
 
 	/* Check for maximum number of running tasks in a job array */

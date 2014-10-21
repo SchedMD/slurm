@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
 =============================
  -- Allow envs to override autotools binaries in autogen.sh
  -- Added system services files.
+ -- If the jobs pends with DependencyNeverSatisfied keep it
+    pending even after the job which it was depending upon
+    was cleaned.
 
 * Changes in Slurm 14.11.0rc2
 =============================
@@ -288,6 +291,10 @@ documents those changes that are of interest to users and administrators.
  -- When using gres and cgroup ConstrainDevices set correct access
     permission for the batch step.
  -- Fix minor memory leak in jobcomp/mysql on slurmctld reconfig.
+ -- Fix bug that prevented preservation of a job's GRES bitmap on slurmctld
+    restart or reconfigure (bug was introduced in 14.03.5 "Clear record of a
+    job's gres when requeued" and only applies when GRES mapped to specific
+    files).
 
 * Changes in Slurm 14.03.9
 ==========================
