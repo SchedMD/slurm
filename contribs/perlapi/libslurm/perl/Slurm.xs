@@ -675,7 +675,7 @@ slurm_job_will_run(slurm_t self, HV *job_desc)
 		RETVAL
 
 HV *
-slurm_sbcast_lookup(slurm_t self, uint32_t job_id)
+slurm_sbcast_lookup(slurm_t self, uint32_t job_id, uint32_t step_id)
 	PREINIT:
 		job_sbcast_cred_msg_t *info;
 		int rc;
@@ -685,7 +685,7 @@ slurm_sbcast_lookup(slurm_t self, uint32_t job_id)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_sbcast_lookup(job_id, &info);
+		rc = slurm_sbcast_lookup(job_id, step_id, &info);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);
