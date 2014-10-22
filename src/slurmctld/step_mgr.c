@@ -482,16 +482,20 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL) {
 		if (signal != SIG_NODE_FAIL) {
-			rc = ESLURM_INVALID_JOB_ID;
 			info("job_step_signal step %u.%u not found",
 			     job_id, step_id);
-			return rc;
+			return ESLURM_INVALID_JOB_ID;
 		}
-		/* If we get a node fail signal we need to process it
-		   since we will create a race condition otherwise
-		   where jobs could be started on these nodes and
-		   fail.
-		*/
+		if (job_ptr->nodes_completing == NULL) {
+			/* Job state has already been cleared for requeue.
+			 * Rely upon real-time server to put cnodes in error
+			 * state. */
+			info("%s: job %u already requeued, can not down cnodes",
+			     __func__, job_id);
+			return ESLURM_ALREADY_DONE;
+		}
+		/* If we get a node fail signal, down the cnodes to avoid
+		 * allocating them to another job. */
 		debug("job_step_signal step %u.%u not found, but got "
 		      "SIG_NODE_FAIL, so failing all nodes in allocation.",
 		      job_id, step_id);
