@@ -288,6 +288,8 @@ documents those changes that are of interest to users and administrators.
     restart or reconfigure (bug was introduced in 14.03.5 "Clear record of a
     job's gres when requeued" and only applies when GRES mapped to specific
     files).
+ -- BGQ: Fix race condition when job fails due to hardware failure and is
+    requeued. Previous code could result in slurmctld abort with NULL pointer.
 
 * Changes in Slurm 14.03.9
 ==========================
