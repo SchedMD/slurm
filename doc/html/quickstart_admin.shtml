@@ -96,10 +96,11 @@ and commands are denoted below.
 Please see the <a href=download.html>Download</a> page for references to
 required software to build these plugins.</p>
 
-<p>To build RPMs directly, copy the distributed tar-ball into the directory
-<b>/usr/src/redhat/SOURCES</b> and execute a command of this sort (substitute
-the appropriate Slurm version number):<br>
-<span class="commandline">rpmbuild -ta slurm-0.6.0-1.tar.bz2</span></p>
+<p>To build RPMs directly, copy the distributed tar-ball into a directory
+and execute a command of this sort (substitute the appropriate Slurm version number):<br>
+<span class="commandline">rpmbuild -ta slurm-14.03.9.tar.bz2</span></p>
+The rpm file will be installed under the <b>$(HOME)/rpmbuild</b> directory
+of the user building them.
 
 <p>You can control some aspects of the RPM built with a <i>.rpmmacros</i>
 file in your home directory. <b>Special macro definitions will likely
