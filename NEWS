@@ -299,6 +299,7 @@ documents those changes that are of interest to users and administrators.
     files).
  -- BGQ: Fix race condition when job fails due to hardware failure and is
     requeued. Previous code could result in slurmctld abort with NULL pointer.
+ -- Prevent negative job array index, which could cause slurmctld to crash.
 
 * Changes in Slurm 14.03.9
 ==========================
