@@ -5595,6 +5595,8 @@ static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
 	int i, first, last, step = 1;
 
 	first = strtol(tok, &end_ptr, 10);
+	if (first < 0)
+		return false;
 	if (end_ptr[0] == '-') {
 		last = strtol(end_ptr + 1, &end_ptr, 10);
 		if (end_ptr[0] == ':') {
