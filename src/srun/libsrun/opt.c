@@ -161,6 +161,7 @@
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_COMMENT     0x124
 #define LONG_OPT_QOS             0x127
+#define LONG_OPT_BURST_BUFFER    0x128
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET	 0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -198,7 +199,6 @@
 #define LONG_OPT_PROFILE         0x157
 #define LONG_OPT_EXPORT          0x158
 #define LONG_OPT_PRIORITY        0x160
-
 
 extern char **environ;
 
@@ -559,6 +559,7 @@ env_vars_t env_vars[] = {
 {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL             },
 {"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
 {"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
+{"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL         },
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL             },
 {"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
@@ -880,6 +881,7 @@ static void _set_options(const int argc, char **argv)
 		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
+		{"bb",               required_argument, 0, LONG_OPT_BURST_BUFFER},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
@@ -1397,6 +1399,10 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_EPILOG:
 			xfree(opt.epilog);
 			opt.epilog = xstrdup(optarg);
+			break;
+		case LONG_OPT_BURST_BUFFER:
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg, 0);
@@ -2369,6 +2375,7 @@ static void _opt_list(void)
 	     acct_gather_profile_to_string(opt.profile));
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
+	info("burst_buffer   : `%s'", opt.burst_buffer);
 	info("wckey          : `%s'", opt.wckey);
 	info("switches       : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
@@ -2531,9 +2538,10 @@ static void _usage(void)
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "            [--switches=max-switches{@max-time-to-wait}]\n"
-"            [--core-spec=cores] [--reboot]\n"
-"            [-w hosts...] [-x hosts...] executable [args...]\n"
-"            [--acctg-freq=<datatype>=<interval>\n");
+"            [--core-spec=cores] [--reboot] [--bb=burst_buffer_spec]\n"
+"            [--acctg-freq=<datatype>=<interval>\n"
+"            [-w hosts...] [-x hosts...] executable [args...]\n");
+
 }
 
 static void _help(void)
@@ -2545,11 +2553,12 @@ static void _help(void)
 "\n"
 "Parallel run options:\n"
 "  -A, --account=name          charge job to specified account\n"
-"      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "      --acctg-freq=<datatype>=<interval> accounting and profiling sampling\n"
 "                              intervals. Supported datatypes:\n"
 "                              task=<interval> energy=<interval>\n"
 "                              network=<interval> filesystem=<interval>\n"
+"      --bb=<spec>             burst buffer specifications\n"
+"      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --checkpoint=time       job step checkpoint interval\n"
 "      --checkpoint-dir=dir    directory to store job step checkpoint image \n"

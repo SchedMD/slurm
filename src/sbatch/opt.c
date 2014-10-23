@@ -146,6 +146,7 @@
 #define LONG_OPT_WRAP        0x118
 #define LONG_OPT_REQUEUE     0x119
 #define LONG_OPT_NETWORK     0x120
+#define LONG_OPT_BURST_BUFFER    0x126
 #define LONG_OPT_QOS             0x127
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
@@ -423,6 +424,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_ARRAY_INX",     OPT_STRING,     &opt.array_inx,     NULL          },
   {"SBATCH_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL          },
+  {"SBATCH_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL      },
   {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL          },
   {"SBATCH_CLUSTERS",      OPT_CLUSTERS,   &opt.clusters,      NULL          },
@@ -693,6 +695,7 @@ static struct option long_options[] = {
 	{"nodelist",      required_argument, 0, 'w'},
 	{"exclude",       required_argument, 0, 'x'},
 	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
+	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER},
 	{"begin",         required_argument, 0, LONG_OPT_BEGIN},
 	{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
@@ -1447,6 +1450,10 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MAIL_USER:
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
+			break;
+		case LONG_OPT_BURST_BUFFER:
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_NICE:
 			if (optarg)
@@ -2871,6 +2878,7 @@ static void _opt_list(void)
 	info("wait-for-switches : %d", opt.wait4switch);
 	str = print_commandline(opt.script_argc, opt.script_argv);
 	info("core-spec         : %d", opt.core_spec);
+	info("burst_buffer      : `%s'", opt.burst_buffer);
 	info("remote command    : `%s'", str);
 	xfree(str);
 
@@ -2909,7 +2917,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--mem_bind=...] [--reservation=name]\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
-"              [--core-spec=cores] [--reboot]\n"
+"              [--core-spec=cores] [--reboot] [--bb=burst_buffer_spec]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
@@ -2924,6 +2932,7 @@ static void _help(void)
 "Parallel run options:\n"
 "  -a, --array=indexes         job array index values\n"
 "  -A, --account=name          charge job to specified account\n"
+"      --bb=<spec>             burst buffer specifications\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"

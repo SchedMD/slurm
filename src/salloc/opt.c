@@ -151,6 +151,7 @@
 #define LONG_OPT_GET_USER_ENV    0x125
 #define LONG_OPT_NETWORK         0x126
 #define LONG_OPT_QOS             0x127
+#define LONG_OPT_BURST_BUFFER    0x128
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -396,6 +397,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
   {"SALLOC_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
+  {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
@@ -656,6 +658,7 @@ void set_options(const int argc, char **argv)
 		{"exclude",       required_argument, 0, 'x'},
 		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"begin",         required_argument, 0, LONG_OPT_BEGIN},
+		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
 		{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"cnload-image",  required_argument, 0, LONG_OPT_LINUX_IMAGE},
@@ -1200,6 +1203,10 @@ void set_options(const int argc, char **argv)
 				opt.wait4switch = time_str2secs(pos_delimit);
 			}
 			opt.req_switch = _get_int(optarg, "switches");
+			break;
+		case LONG_OPT_BURST_BUFFER:
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {
@@ -1829,6 +1836,7 @@ static void _opt_list(void)
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	info("core-spec         : %d", opt.core_spec);
+	info("burst_buffer      : `%s'", opt.burst_buffer);
 	xfree(str);
 
 }
@@ -1865,7 +1873,7 @@ static void _usage(void)
 "              [--mem_bind=...] [--reservation=name]\n"
 "              [--time-min=minutes] [--gres=list] [--profile=...]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
-"              [--core-spec=cores]  [--reboot]\n"
+"              [--core-spec=cores]  [--reboot] [--bb=burst_buffer_spec]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1880,6 +1888,7 @@ static void _help(void)
 "  -A, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "      --bell                  ring the terminal bell when the job is allocated\n"
+"      --bb=<spec>             burst buffer specifications\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"

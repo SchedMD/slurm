@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Change structures with association in them to assoc to save space.
  -- Add support for job dependencies jointed with OR operator (e.g.
     "--depend=afterok:123?afternotok:124").
+ -- Add "--bb" (burst buffer specification) option to salloc, sbatch, and srun.
 
 * Changes in Slurm 14.11.0rc3
 =============================

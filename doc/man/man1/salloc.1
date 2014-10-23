@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.6" "January 2013" "SLURM Commands"
+.TH "salloc" "1" "SLURM 15.08" "October 2014" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -120,6 +120,10 @@ to be honored.
 This option is not supported on BlueGene systems (select/bluegene plugin
 is configured).
 If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'.
+
+.TP
+\fB\-\-bb\fR=<\fIspec\fR>
+Burst buffer specification. The form of the specification is system dependent.
 
 .TP
 \fB\-\-begin\fR=<\fItime\fR>
@@ -1230,6 +1234,9 @@ Same as \fB\-\-acctg\-freq\fR
 .TP
 \fBSALLOC_BELL\fR
 Same as \fB\-\-bell\fR
+.TP
+\fBSALLOC_BURST_BUFFER\fR
+Same as \fB\-\-bb\fR
 .TP
 \fBSALLOC_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR

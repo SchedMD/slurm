@@ -181,6 +181,7 @@ typedef struct sbatch_options {
 	int umask;		/* job umask for PBS		*/
 	int core_spec;		/* --core-spec=n,      -S n	*/
 	bool test_only;		/* --test-only			*/
+	char *burst_buffer;	/* -bb				*/
 } opt_t;
 
 extern opt_t opt;

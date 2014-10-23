@@ -1125,6 +1125,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *array_inx;	/* job array index values */
 	void *array_bitmap;	/* NOTE: Set by slurmctld */
 	time_t begin_time;	/* delay initiation until this time */
+	char *burst_buffer;	/* burst buffer specifications */
 	uint16_t ckpt_interval;	/* periodically checkpoint this job */
 	char *ckpt_dir;	 	/* directory to store checkpoint images */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
@@ -1281,6 +1282,7 @@ typedef struct job_info {
 	char *batch_host;	/* name of host running batch script */
 	char *batch_script;	/* contents of batch script */
 	uint16_t boards_per_node;  /* boards per node required by job   */
+	char *burst_buffer;	/* burst buffer specifications */
 	char *command;		/* command to be executed, built from submitted
 				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */

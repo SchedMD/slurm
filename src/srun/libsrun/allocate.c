@@ -739,6 +739,8 @@ job_desc_msg_create_from_opts (void)
 
 	if (opt.mail_user)
 		j->mail_user = opt.mail_user;
+	if (opt.burst_buffer)
+		j->burst_buffer = opt.burst_buffer;
 	if (opt.begin)
 		j->begin_time = opt.begin;
 	if (opt.licenses)
