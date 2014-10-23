@@ -1171,6 +1171,10 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "JobHoldMaxRequeue";
 	case WAIT_ARRAY_TASK_LIMIT:
 		return "JobArrayTaskLimit";
+	case WAIT_BURST_BUFFER_RESOURCE:
+		return "BurstBufferResources";
+	case WAIT_BURST_BUFFER_STAGING:
+		return "BurstBufferStageIn";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;

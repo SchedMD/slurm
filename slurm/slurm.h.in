@@ -377,7 +377,9 @@ enum job_state_reason {
 	WAIT_ASSOC_MAX_SUB_JOB,      /* ASSOC MaxSubmitJobsPerUser exceeded */
 
 	WAIT_MAX_REQUEUE,            /* MAX_BATCH_REQUEUE reached */
-	WAIT_ARRAY_TASK_LIMIT        /* job array running task limit */
+	WAIT_ARRAY_TASK_LIMIT,       /* job array running task limit */
+	WAIT_BURST_BUFFER_RESOURCE,  /* Burst buffer resources */
+	WAIT_BURST_BUFFER_STAGING    /* Burst buffer file stage-in */
 };
 
 enum job_acct_types {
