@@ -488,10 +488,10 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 			     job_id, step_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
-		if (job_ptr->nodes_completing == NULL) {
+		if (job_ptr->node_bitmap == NULL) {
 			/* Job state has already been cleared for requeue.
-			 * Rely upon real-time server to put cnodes in error
-			 * state. */
+			 * This indicates that all nodes are already down.
+			 * Rely upon real-time server to manage cnodes state */
 			info("%s: job %u already requeued, can not down cnodes",
 			     __func__, job_id);
 			return ESLURM_ALREADY_DONE;
