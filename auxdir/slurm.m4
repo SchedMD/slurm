@@ -180,7 +180,7 @@ for name in CURRENT REVISION AGE; do
    eval SLURM_API_$name=$API
 done
 SLURM_API_MAJOR=`expr $SLURM_API_CURRENT - $SLURM_API_AGE`
-SLURM_API_VERSION=`printf "0x%02x%02x%02x" $SLURM_API_MAJOR $SLURM_API_AGE $SLURM_API_REVISION`
+SLURM_API_VERSION=`printf "0x%02x%02x%02x" $((10#$SLURM_API_MAJOR)) $((10#$SLURM_API_AGE)) $((10#$SLURM_API_REVISION))`
 
 AC_DEFINE_UNQUOTED(SLURM_API_VERSION,  $SLURM_API_VERSION,  [Define the API's version])
 AC_DEFINE_UNQUOTED(SLURM_API_CURRENT,  $SLURM_API_CURRENT,  [API current version])
@@ -208,7 +208,7 @@ RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 # NOTE: SLURM_VERSION_NUMBER excludes any non-numeric component 
 # (e.g. "pre1" in the MICRO), but may be suitable for the user determining 
 # how to use the APIs or other differences. 
-SLURM_VERSION_NUMBER="`printf "0x%02x%02x%02x" $SLURM_MAJOR $SLURM_MINOR $SLURM_MICRO`"
+SLURM_VERSION_NUMBER="`printf "0x%02x%02x%02x" $((10#$SLURM_MAJOR)) $((10#$SLURM_MINOR)) $((10#$SLURM_MICRO))`"
 AC_DEFINE_UNQUOTED(SLURM_VERSION_NUMBER, $SLURM_VERSION_NUMBER, [SLURM Version Number])
 AC_SUBST(SLURM_VERSION_NUMBER)
 
