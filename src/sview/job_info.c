@@ -113,6 +113,7 @@ enum {
 	SORTID_BATCH,
 	SORTID_BATCH_HOST,
 	SORTID_BLOCK,
+	SORTID_BURST_BUFFER,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_COMMAND,
@@ -362,6 +363,8 @@ static display_data_t display_data_job[] = {
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_BATCH_HOST, "Batch Host", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_BURST_BUFFER, "Burst Buffer", FALSE,
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_MIN, "CPUs Min",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_MAX, "CPUs Max",
@@ -993,6 +996,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->account = xstrdup(new_text);
 		type = "account";
 		break;
+	case SORTID_BURST_BUFFER:
+		job_msg->burst_buffer = xstrdup(new_text);
+		type = "burst buffer";
+		break;
 	case SORTID_QOS:
 		job_msg->qos = xstrdup(new_text);
 		type = "qos";
@@ -1450,6 +1457,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_BATCH_HOST),
 				   job_ptr->batch_host);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_BURST_BUFFER),
+				   job_ptr->burst_buffer);
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		add_display_treestore_line(update, treestore, &iter,
@@ -2275,6 +2287,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_ARRAY_TASK_ID,tmp_array_task_id,
 				   SORTID_BATCH,        tmp_batch,
 				   SORTID_BATCH_HOST,   job_ptr->batch_host,
+				   SORTID_BURST_BUFFER, job_ptr->burst_buffer,
 				   SORTID_COLOR,
 				   sview_colors[sview_job_info_ptr->color_inx],
 				   SORTID_COLOR_INX,
@@ -2303,6 +2316,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_ARRAY_TASK_ID,tmp_array_task_id,
 				   SORTID_BATCH,        tmp_batch,
 				   SORTID_BATCH_HOST,   job_ptr->batch_host,
+				   SORTID_BURST_BUFFER, job_ptr->burst_buffer,
 				   SORTID_COLOR,
 				   sview_colors[sview_job_info_ptr->color_inx],
 				   SORTID_COLOR_INX,

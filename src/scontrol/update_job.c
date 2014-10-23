@@ -1059,6 +1059,10 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.account = val;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "BurstBuffer", MAX(taglen, 1)) == 0) {
+			job_msg.burst_buffer = val;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "Dependency", MAX(taglen, 1)) == 0) {
 			job_msg.dependency = val;
 			update_cnt++;
