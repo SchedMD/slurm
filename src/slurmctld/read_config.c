@@ -582,6 +582,7 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
 	bitstr_t *tmp_qos_bitstr;
+	int rc;
 
 	if (!qos) {
 		FREE_NULL_BITMAP(*qos_bits);
@@ -595,13 +596,14 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 	while (one_qos_name) {
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.name = one_qos_name;
-		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-					  accounting_enforce,
-					  &qos_ptr) == SLURM_SUCCESS) {
-			bit_set(tmp_qos_bitstr, qos_rec.id);
-		} else {
-			error("Ignoring invalid Allow/DenyQOS value %s",
+		rc = assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					   accounting_enforce,
+					   &qos_ptr);
+		if ((rc != SLURM_SUCCESS) || (qos_rec.id >= g_qos_count)) {
+			error("Ignoring invalid Allow/DenyQOS value: %s",
 			      one_qos_name);
+		} else {
+			bit_set(tmp_qos_bitstr, qos_rec.id);
 		}
 		one_qos_name = strtok_r(NULL, ",", &name_ptr);
 	}
