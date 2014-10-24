@@ -57,9 +57,10 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/node_select.h"
 #include "src/common/parse_time.h"
-#include "src/common/slurm_auth.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
@@ -443,6 +444,26 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	return out;
 }
 
+static void _set_node_mixed(node_info_msg_t *resp)
+{
+	node_info_t *node_ptr = NULL;
+	uint16_t used_cpus = 0;
+	int i;
+
+	if (!resp)
+		return;
+
+	for (i = 0, node_ptr = resp->node_array;
+	     i < resp->record_count; i++, node_ptr++) {
+		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+					     SELECT_NODEDATA_SUBCNT,
+					     NODE_STATE_ALLOCATED, &used_cpus);
+		if ((used_cpus != 0) && (used_cpus != node_ptr->cpus)) {
+			node_ptr->node_state &= NODE_STATE_FLAGS;
+			node_ptr->node_state |= NODE_STATE_MIXED;
+		}
+	}
+}
 
 /*
  * slurm_load_node - issue RPC to get slurm all node configuration information
@@ -474,6 +495,8 @@ extern int slurm_load_node (time_t update_time,
 	switch (resp_msg.msg_type) {
 	case RESPONSE_NODE_INFO:
 		*resp = (node_info_msg_t *) resp_msg.data;
+		if (show_flags & SHOW_MIXED)
+			_set_node_mixed(*resp);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
@@ -520,6 +543,8 @@ extern int slurm_load_node_single (node_info_msg_t **resp,
 	switch (resp_msg.msg_type) {
 	case RESPONSE_NODE_INFO:
 		*resp = (node_info_msg_t *) resp_msg.data;
+		if (show_flags & SHOW_MIXED)
+			_set_node_mixed(*resp);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
