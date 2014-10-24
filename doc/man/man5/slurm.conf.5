@@ -4276,7 +4276,9 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 .SH "INCLUDE MODIFIERS"
 The "include" key word can be used with modifiers within the specified
 pathname. These modifiers would be replaced with cluster name or other
-information depending on which modifier is specified.
+information depending on which modifier is specified. If the included file
+is not an absolute path name (i.e. it does not start with a slash), it will
+searched for in the same directory as the slurm.conf file.
 .TP
 \fB%c\fR
 Cluster name specified in the slurm.conf will be used.
