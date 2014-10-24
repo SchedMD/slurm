@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     the job which it was depending upon was cleaned.
  -- Let operators (in addition to user root and SlurmUser) see job script for
     other user's jobs.
+ -- Perl API modified to return node state of MIXED rather than ALLOCATED if
+    only some CPUs allocated.
 
 * Changes in Slurm 14.11.0rc2
 =============================
