@@ -73,7 +73,7 @@ proc check_name { job_id name } {
 	}
 	if {$check_out != 1} {
 		send_user "\nFAILURE: job name for job $job_id was not changed\n"
-		set exi_code 1
+		set exit_code 1
 	}
 }
 
