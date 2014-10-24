@@ -936,6 +936,25 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 	return 1;
 }
 
+static char * _add_full_path(char *file_name, char *slurm_conf_path)
+{
+	char *path_name = NULL, *slash;
+
+	if ((file_name == NULL) || (file_name[0] == '/')) {
+		path_name = xstrdup(file_name);
+		return path_name;
+	}
+
+	path_name = xstrdup(slurm_conf_path);
+	slash = strrchr(path_name, '/');
+	if (slash)
+		slash[0] = '\0';
+	xstrcat(path_name, "/");
+	xstrcat(path_name, file_name);
+
+	return path_name;
+}
+
 static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 {
 	char *filename = xstrdup(path);
@@ -1030,12 +1049,13 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
  */
 static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 				    const char *line, char **leftover,
-				    bool ignore_new)
+				    bool ignore_new, char *slurm_conf_path)
 {
 	char *ptr;
 	char *fn_start, *fn_stop;
-	char *filename;
+	char *file_name, *path_name;
 	char *file_with_mod;
+	int rc;
 
 	*leftover = NULL;
 	if (strncasecmp("include", line, strlen("include")) == 0) {
@@ -1051,19 +1071,18 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 		fn_stop = *leftover = ptr;
 
 		file_with_mod = xstrndup(fn_start, fn_stop-fn_start);
-		filename = _parse_for_format(hashtbl, file_with_mod);
+		file_name = _parse_for_format(hashtbl, file_with_mod);//
 		xfree(file_with_mod);
-		if (!filename)	/* Error printed by _parse_for_format() */
+		if (!file_name)	/* Error printed by _parse_for_format() */
 			return -1;
-
-		if (s_p_parse_file(hashtbl, hash_val, filename, ignore_new)
-		    == SLURM_SUCCESS) {
-			xfree(filename);
+		path_name = _add_full_path(file_name, slurm_conf_path);
+		xfree(file_name);
+		rc = s_p_parse_file(hashtbl, hash_val, path_name, ignore_new);
+		xfree(path_name);
+		if (rc == SLURM_SUCCESS)
 			return 1;
-		} else {
-			xfree(filename);
+		else
 			return -1;
-		}
 	} else {
 		return 0;
 	}
@@ -1123,7 +1142,8 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 		}
 
 		inc_rc = _parse_include_directive(hashtbl, hash_val,
-						  line, &leftover, ignore_new);
+						  line, &leftover, ignore_new,
+						  filename);
 		if (inc_rc == 0) {
 			_parse_next_key(hashtbl, line, &leftover, ignore_new);
 		} else if (inc_rc < 0) {
