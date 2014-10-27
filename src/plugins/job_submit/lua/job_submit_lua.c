@@ -555,6 +555,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->requeue);
 	} else if (!strcmp(name, "reservation")) {
 		lua_pushstring (L, job_desc->reservation);
+	} else if (!strcmp(name, "script")) {
+		lua_pushstring (L, job_desc->script);
 	} else if (!strcmp(name, "shared")) {
 		lua_pushnumber (L, job_desc->shared);
 	} else if (!strcmp(name, "sockets_per_board")) {
@@ -731,6 +733,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->reservation);
 		if (strlen(value_str))
 			job_desc->reservation = xstrdup(value_str);
+	} else if (!strcmp(name, "script")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->script);
+		if (strlen(value_str))
+			job_desc->script = xstrdup(value_str);
 	} else if (!strcmp(name, "shared")) {
 		job_desc->shared = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "sockets_per_node")) {
