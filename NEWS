@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
  -- PrivateData=reservation modified to permit users to view the reservations
     which they have access to (rather then preventing them from seeing ANY
     reservation).
+ -- job_submit/lua: Fix job_desc set field logic
 
 * Changes in Slurm 14.11.0pre5
 ==============================
