@@ -10791,8 +10791,8 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 			if ((job_ptr->start_time < node_ptr->boot_time) &&
 			    (job_ptr->details && job_ptr->details->requeue))
 				requeue = true;
-			info("Batch JobId=%u missing from node 0",
-			     job_ptr->job_id);
+			info("Batch JobId=%u missing from node 0 (not found "
+			     "BatchStartTime after startup)", job_ptr->job_id);
 			job_ptr->exit_code = 1;
 			job_complete(job_ptr->job_id, 0, requeue, true, NO_VAL);
 		} else {
