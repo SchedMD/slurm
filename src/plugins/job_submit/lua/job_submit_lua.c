@@ -600,9 +600,10 @@ static int _get_job_req_field_name(lua_State *L)
 /* Get fields in an existing slurmctld job_descriptor record */
 static int _get_job_req_field_index(lua_State *L)
 {
-	const char *name = luaL_checkstring(L, 2);
+	const char *name;
 	struct job_descriptor *job_desc;
 
+	name = luaL_checkstring(L, 2);
 	lua_getmetatable(L, -2);
 	lua_getfield(L, -1, "_job_desc");
 	job_desc = lua_touserdata(L, -1);
@@ -612,14 +613,16 @@ static int _get_job_req_field_index(lua_State *L)
 
 /* Set fields in the job request structure on job submit or modify */
 static int _set_job_req_field(lua_State *L)
-
 {
-	struct job_descriptor *job_desc = lua_touserdata(L, 1);
 	const char *name, *value_str;
+	struct job_descriptor *job_desc;
 
 	name = luaL_checkstring(L, 2);
+	lua_getmetatable(L, -3);
+	lua_getfield(L, -1, "_job_desc");
+	job_desc = lua_touserdata(L, -1);
 	if (job_desc == NULL) {
-		error("_set_job_req_field: job_desc is NULL");
+		error("%s: job_desc is NULL", __func__);
 	} else if (!strcmp(name, "account")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->account);
