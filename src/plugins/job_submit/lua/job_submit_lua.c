@@ -485,6 +485,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->acctg_freq);
 	} else if (!strcmp(name, "begin_time")) {
 		lua_pushnumber (L, job_desc->begin_time);
+	} else if (!strcmp(name, "boards_per_node")) {
+		lua_pushnumber (L, job_desc->boards_per_node);
 	} else if (!strcmp(name, "burst_buffer")) {
 		lua_pushstring (L, job_desc->burst_buffer);
 	} else if (!strcmp(name, "comment")) {
@@ -523,8 +525,14 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->name);
 	} else if (!strcmp(name, "nice")) {
 		lua_pushnumber (L, job_desc->nice);
+	} else if (!strcmp(name, "ntasks_per_board")) {
+		lua_pushnumber (L, job_desc->ntasks_per_board);
+	} else if (!strcmp(name, "ntasks_per_core")) {
+		lua_pushnumber (L, job_desc->ntasks_per_core);
 	} else if (!strcmp(name, "ntasks_per_node")) {
 		lua_pushnumber (L, job_desc->ntasks_per_node);
+	} else if (!strcmp(name, "ntasks_per_socket")) {
+		lua_pushnumber (L, job_desc->ntasks_per_socket);
 	} else if (!strcmp(name, "num_tasks")) {
 		lua_pushnumber (L, job_desc->num_tasks);
 	} else if (!strcmp(name, "partition")) {
@@ -549,6 +557,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->reservation);
 	} else if (!strcmp(name, "shared")) {
 		lua_pushnumber (L, job_desc->shared);
+	} else if (!strcmp(name, "sockets_per_board")) {
+		lua_pushnumber (L, job_desc->sockets_per_board);
 	} else if (!strcmp(name, "sockets_per_node")) {
 		lua_pushnumber (L, job_desc->sockets_per_node);
 	} else if (!strcmp(name, "std_err")) {
@@ -571,16 +581,6 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->work_dir);
 	} else if (!strcmp(name, "wckey")) {
 		lua_pushstring (L, job_desc->wckey);
-	} else if (!strcmp(name, "ntasks_per_core")) {
-		lua_pushnumber (L, job_desc->ntasks_per_core);
-	} else if (!strcmp(name, "boards_per_node")) {
-		lua_pushnumber (L, job_desc->boards_per_node);
-	} else if (!strcmp(name, "ntasks_per_board")) {
-		lua_pushnumber (L, job_desc->ntasks_per_board);
-	} else if (!strcmp(name, "ntasks_per_socket")) {
-		lua_pushnumber (L, job_desc->ntasks_per_socket);
-	} else if (!strcmp(name, "sockets_per_board")) {
-		lua_pushnumber (L, job_desc->sockets_per_board);
 	} else {
 		lua_pushnil (L);
 	}
