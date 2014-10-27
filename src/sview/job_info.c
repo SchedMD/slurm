@@ -1307,10 +1307,6 @@ static int _get_node_cnt(job_info_t * job)
 				node_cnt = num_tasks;
 			else if (!node_cnt)
 				node_cnt = 1;
-		} else if (sview_max_cpus) {
-			int round  = job->num_cpus + sview_max_cpus - 1;
-			round /= sview_max_cpus;	/* round up */
-			node_cnt = MAX(node_cnt, round);
 		}
 	} else
 		node_cnt = _nodes_in_list(job->nodes);

@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Perl API modified to return node state of MIXED rather than ALLOCATED if
     only some CPUs allocated.
  -- Double Munge connect retry timeout from 1 to 2 seconds.
+ -- sview - Remove unneeded code that was resolved globally in commit
+    98e24b0dedc.
 
 * Changes in Slurm 14.11.0rc2
 =============================
