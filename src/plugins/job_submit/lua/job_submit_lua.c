@@ -473,11 +473,11 @@ static void _update_resvs_global(void)
 	lua_pop(L, 1);
 }
 
-static int _job_req_field(const struct job_descriptor *job_desc,
-                          const char *name)
+static int _get_job_req_field(const struct job_descriptor *job_desc,
+			      const char *name)
 {
 	if (job_desc == NULL) {
-		error("_job_req_field: job_desc is NULL");
+		error("%s: job_desc is NULL", __func__);
 		lua_pushnil (L);
 	} else if (!strcmp(name, "account")) {
 		lua_pushstring (L, job_desc->account);
@@ -589,16 +589,16 @@ static int _job_req_field(const struct job_descriptor *job_desc,
 }
 
 /* Get fields in the job request record on job submit or modify */
-static int _get_job_req_field(lua_State *L)
+static int _get_job_req_field_name(lua_State *L)
 {
 	const struct job_descriptor *job_desc = lua_touserdata(L, 1);
 	const char *name = luaL_checkstring(L, 2);
 
-	return _job_req_field(job_desc, name);
+	return _get_job_req_field(job_desc, name);
 }
 
 /* Get fields in an existing slurmctld job_descriptor record */
-static int _job_req_field_index(lua_State *L)
+static int _get_job_req_field_index(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 2);
 	struct job_descriptor *job_desc;
@@ -607,11 +607,12 @@ static int _job_req_field_index(lua_State *L)
 	lua_getfield(L, -1, "_job_desc");
 	job_desc = lua_touserdata(L, -1);
 
-	return _job_req_field(job_desc, name);
+	return _get_job_req_field(job_desc, name);
 }
 
 /* Set fields in the job request structure on job submit or modify */
 static int _set_job_req_field(lua_State *L)
+
 {
 	struct job_descriptor *job_desc = lua_touserdata(L, 1);
 	const char *name, *value_str;
@@ -781,7 +782,7 @@ static void _push_job_desc(struct job_descriptor *job_desc)
 	lua_newtable(L);
 
 	lua_newtable(L);
-	lua_pushcfunction(L, _job_req_field_index);
+	lua_pushcfunction(L, _get_job_req_field_index);
 	lua_setfield(L, -2, "__index");
 	lua_pushcfunction(L, _set_job_req_field);
 	lua_setfield(L, -2, "__newindex");
@@ -1024,8 +1025,8 @@ static void _register_lua_slurm_struct_functions (void)
 {
 	lua_pushcfunction(L, _get_job_rec_field);
 	lua_setglobal(L, "_get_job_rec_field");
-	lua_pushcfunction(L, _get_job_req_field);
-	lua_setglobal(L, "_get_job_req_field");
+	lua_pushcfunction(L, _get_job_req_field_name);
+	lua_setglobal(L, "_get_job_req_field_name");
 	lua_pushcfunction(L, _set_job_req_field);
 	lua_setglobal(L, "_set_job_req_field");
 	lua_pushcfunction(L, _get_part_rec_field);
