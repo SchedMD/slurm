@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     other user's jobs.
  -- Perl API modified to return node state of MIXED rather than ALLOCATED if
     only some CPUs allocated.
+ -- Double Munge connect retry timeout from 1 to 2 seconds.
 
 * Changes in Slurm 14.11.0rc2
 =============================
