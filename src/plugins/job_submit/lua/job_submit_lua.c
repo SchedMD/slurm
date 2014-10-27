@@ -250,6 +250,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushnil (L);
 	} else if (!strcmp(name, "account")) {
 		lua_pushstring (L, job_ptr->account);
+	} else if (!strcmp(name, "burst_buffer")) {
+		lua_pushstring (L, job_ptr->burst_buffer);
 	} else if (!strcmp(name, "comment")) {
 		lua_pushstring (L, job_ptr->comment);
 	} else if (!strcmp(name, "direct_set_prio")) {
@@ -483,6 +485,8 @@ static int _job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->acctg_freq);
 	} else if (!strcmp(name, "begin_time")) {
 		lua_pushnumber (L, job_desc->begin_time);
+	} else if (!strcmp(name, "burst_buffer")) {
+		lua_pushstring (L, job_desc->burst_buffer);
 	} else if (!strcmp(name, "comment")) {
 		lua_pushstring (L, job_desc->comment);
 	} else if (!strcmp(name, "contiguous")) {
@@ -627,6 +631,11 @@ static int _set_job_req_field(lua_State *L)
 			job_desc->acctg_freq = xstrdup(value_str);
 	} else if (!strcmp(name, "begin_time")) {
 		job_desc->begin_time = luaL_checknumber(L, 3);
+	} else if (!strcmp(name, "burst_buffer")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->burst_buffer);
+		if (strlen(value_str))
+			job_desc->burst_buffer = xstrdup(value_str);
 	} else if (!strcmp(name, "comment")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->comment);
