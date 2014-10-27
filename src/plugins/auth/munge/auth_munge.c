@@ -73,7 +73,7 @@
 #include "src/common/slurm_xlator.h"
 
 #define MUNGE_ERRNO_OFFSET	1000
-#define RETRY_COUNT		10
+#define RETRY_COUNT		20
 #define RETRY_USEC		100000
 
 /*
