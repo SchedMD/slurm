@@ -69,6 +69,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_bb_ops {
