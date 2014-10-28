@@ -108,6 +108,7 @@ expect {
 }
 
 check_name $job_id $job_name
+cancel_job $job_id
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
