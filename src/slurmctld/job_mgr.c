@@ -5659,7 +5659,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
-	rc = bb_g_job_validate(job_desc);
+	rc = bb_g_job_validate(job_desc, submit_uid);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 

@@ -309,6 +309,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_BURST_BUFFER_CHANGE,
 	  "BurstBufferType change requires restart of slurmctld daemon "
 	  "to take effect"},
+	{ ESLURM_BURST_BUFFER_PERMISSION,
+	  "Burst Buffer permssion denied"			},
+	{ ESLURM_BURST_BUFFER_LIMIT,
+	  "Burst Buffer resource limit exceeded"		},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

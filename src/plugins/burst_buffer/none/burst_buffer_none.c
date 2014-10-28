@@ -100,7 +100,7 @@ static uid_t *_parse_users(char *buf)
 	delim = strchr(tmp, ',');
 	if (delim)
 		delim[0] = '\0';
-	array_size = 10;
+	array_size = 1;
 	user_array = xmalloc(sizeof(uid_t) * array_size);
 	tok = strtok_r(tmp, ":", &save_ptr);
 	while (tok) {
@@ -130,7 +130,7 @@ static char *_print_users(uid_t *buf)
 	if (!buf)
 		return user_str;
 	for (i = 0; buf[i]; i++) {
-		user_elem = uid_to_string(buf[0]);
+		user_elem = uid_to_string(buf[i]);
 		if (!user_elem)
 			continue;
 		if (user_str)
@@ -238,11 +238,51 @@ extern int bb_p_reconfig(void)
 	return SLURM_SUCCESS;
 }
 
-extern int bb_p_job_validate(struct job_descriptor *job_desc)
+extern int bb_p_job_validate(struct job_descriptor *job_desc,
+			     uid_t submit_uid)
 {
 #if _DEBUG
+	uint32_t bb_size = 0;
+	char *key;
+	int i;
+
+	info("%s: job_user_id:%u, submit_uid:%d", __func__,
+	     job_desc->user_id, submit_uid);
 	info("%s: burst_buffer:%s", __func__, job_desc->burst_buffer);
 	info("%s: script:%s", __func__, job_desc->script);
+
+	if (job_desc->burst_buffer) {
+		key = strstr(job_desc->burst_buffer, "size=");
+		if (key)
+			bb_size = atoi(key + 5);
+	}
+	if (bb_size == 0)
+		return SLURM_SUCCESS;
+	if ((job_size_limit != NO_VAL) && (bb_size > job_size_limit))
+		return ESLURM_BURST_BUFFER_LIMIT;
+	if ((user_size_limit != NO_VAL) && (bb_size > user_size_limit))
+		return ESLURM_BURST_BUFFER_LIMIT;
+	if (allow_users) {
+		for (i = 0; allow_users[i]; i++) {
+			if (job_desc->user_id == allow_users[i])
+				break;
+		}
+		if (allow_users[i] == 0)
+			return ESLURM_BURST_BUFFER_PERMISSION;
+	}
+	if (deny_users) {
+		for (i = 0; deny_users[i]; i++) {
+			if (job_desc->user_id == deny_users[i])
+				break;
+		}
+		if (deny_users[i] != 0)
+			return ESLURM_BURST_BUFFER_PERMISSION;
+	}
+	if (bb_size > total_space) {
+		info("Job from user %u requested burst buffer size of %u, "
+		     "but total space is only %u",
+		     job_desc->user_id, bb_size, total_space);
+	}
 #endif
 	return SLURM_SUCCESS;
 }

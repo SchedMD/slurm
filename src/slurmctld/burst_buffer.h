@@ -67,7 +67,7 @@ extern int bb_g_fini(void);
  *
  * Returns a SLURM errno.
  */
-extern int bb_p_load_state(void);
+extern int bb_g_load_state(void);
 
 /*
  * Note configuration may have changed. Handle changes in BurstBufferParameters.
@@ -81,6 +81,7 @@ extern int bb_g_reconfig(void);
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_job_validate(struct job_descriptor *job_desc);
+extern int bb_g_job_validate(struct job_descriptor *job_desc,
+			     uid_t submit_uid);
 
 #endif /* !_SLURM_BURST_BUFFER_H */

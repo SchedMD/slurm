@@ -75,7 +75,8 @@
 typedef struct slurm_bb_ops {
 	int		(*load_state)	(void);
 	int		(*reconfig)	(void);
-	int		(*job_validate)	(struct job_descriptor *job_desc);
+	int		(*job_validate)	(struct job_descriptor *job_desc,
+					 uid_t submit_uid);
 } slurm_bb_ops_t;
 
 /*
@@ -196,7 +197,7 @@ fini:	slurm_mutex_unlock(&g_context_lock);
  *
  * Returns a SLURM errno.
  */
-extern int bb_p_load_state(void)
+extern int bb_g_load_state(void)
 {
 	DEF_TIMERS;
 	int i, rc;
@@ -238,7 +239,8 @@ extern int bb_g_reconfig(void)
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_job_validate(struct job_descriptor *job_desc)
+extern int bb_g_job_validate(struct job_descriptor *job_desc,
+			     uid_t submit_uid)
 {
 	DEF_TIMERS;
 	int i, rc;
@@ -247,7 +249,7 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc)
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].job_validate))(job_desc);
+		rc = (*(ops[i].job_validate))(job_desc, submit_uid);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 

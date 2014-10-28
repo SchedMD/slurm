@@ -79,6 +79,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/acct_policy.h"
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -718,6 +719,7 @@ static int _attempt_backfill(void)
 	 * pending RPCs before starting the backfill scheduling logic */
 	_yield_locks(1000000);
 #endif
+	bb_g_load_state();
 
 	START_TIMER;
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
