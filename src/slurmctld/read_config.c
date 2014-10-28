@@ -103,9 +103,10 @@ static int  _init_all_slurm_conf(void);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr,
 					uint16_t old_select_type_p);
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
-				char *old_auth_type, char *old_checkpoint_type,
-				char *old_crypto_type, char *old_sched_type,
-				char *old_select_type, char *old_switch_type);
+			      char *old_auth_type, char *old_checkpoint_type,
+			      char *old_crypto_type, char *old_sched_type,
+			      char *old_select_type, char *old_switch_type,
+			      char *old_bb_type);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
@@ -850,9 +851,10 @@ int read_slurm_conf(int recover, bool reconfig)
 	List old_part_list = NULL;
 	char *old_def_part_name = NULL;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
-	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
+	char *old_bb_type         = xstrdup(slurmctld_conf.bb_type);
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
 	char *old_crypto_type     = xstrdup(slurmctld_conf.crypto_type);
+	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
 	char *old_preempt_type    = xstrdup(slurmctld_conf.preempt_type);
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
@@ -1071,7 +1073,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	rc = _preserve_plugins(&slurmctld_conf,
 			       old_auth_type, old_checkpoint_type,
 			       old_crypto_type, old_sched_type,
-			       old_select_type, old_switch_type);
+			       old_select_type, old_switch_type, old_bb_type);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	if (xstrcmp(old_preempt_type, slurmctld_conf.preempt_type)) {
@@ -1645,7 +1647,8 @@ static int _update_preempt(uint16_t old_preempt_mode)
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 		char *old_auth_type, char *old_checkpoint_type,
 		char *old_crypto_type, char *old_sched_type,
-		char *old_select_type, char *old_switch_type)
+		char *old_select_type, char *old_switch_type,
+		char *old_bb_type)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -1656,6 +1659,15 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 			rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
 		} else	/* free duplicate value */
 			xfree(old_auth_type);
+	}
+
+	if (old_bb_type) {
+		if (xstrcmp(old_bb_type, ctl_conf_ptr->bb_type)) {
+			xfree(ctl_conf_ptr->bb_type);
+			ctl_conf_ptr->bb_type = old_auth_type;
+			rc =  ESLURM_INVALID_BURST_BUFFER_CHANGE;
+		} else	/* free duplicate value */
+			xfree(old_bb_type);
 	}
 
 	if (old_checkpoint_type) {

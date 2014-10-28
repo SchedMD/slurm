@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "May 2014" "slurm.conf 14.11" "Slurm configuration file"
+.TH "slurm.conf" "5" "October 2014" "slurm.conf 15.08" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -337,6 +337,17 @@ Therefore a job will not necessarily be terminated if its start time exceeds
 \fBBatchStartTimeout\fR.
 This configuration parameter is also applied to launch tasks and avoid aborting
 \fBsrun\fR commands due to long running \fBProlog\fR scripts.
+
+.TP
+\fBBurstBufferParamameters\fR
+Configuration parameters for the burst buffer plugin.
+More information later...
+
+.TP
+\fBBurstBufferType\fR
+The plugin used to manage burst buffers.
+Acceptable values at present include "burst_buffer/none".
+More information later...
 
 .TP
 \fBCacheGroups\fR

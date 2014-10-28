@@ -306,6 +306,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Duplicate event trigger"				},
 	{ ESLURM_INTERNAL,
 	  "Slurm internal error, contact system administrator"	},
+	{ ESLURM_INVALID_BURST_BUFFER_CHANGE,
+	  "BurstBufferType change requires restart of slurmctld daemon "
+	  "to take effect"},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Add support for job dependencies jointed with OR operator (e.g.
     "--depend=afterok:123?afternotok:124").
  -- Add "--bb" (burst buffer specification) option to salloc, sbatch, and srun.
+ -- Added configuration parameters BurstBufferParameters and BurstBufferType.
 
 * Changes in Slurm 14.11.0rc3
 =============================
