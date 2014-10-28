@@ -819,6 +819,42 @@ char *slurm_get_auth_type(void)
 	return auth_type;
 }
 
+/* slurm_get_bb_params
+ * returns the BurstBufferParameters (bb_params) from slurmctld_conf object
+ * RET char *    - BurstBufferParameters, MUST be xfreed by caller
+ */
+extern char *slurm_get_bb_params(void)
+{
+	char *bb_params = NULL;
+	slurm_ctl_conf_t *conf = NULL;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		bb_params = xstrdup(conf->bb_params);
+		slurm_conf_unlock();
+	}
+	return bb_params;
+}
+
+/* slurm_get_bb_type
+ * returns the BurstBufferType (bb_type) from slurmctld_conf object
+ * RET char *    - BurstBufferType, MUST be xfreed by caller
+ */
+extern char *slurm_get_bb_type(void)
+{
+	char *bb_type = NULL;
+	slurm_ctl_conf_t *conf = NULL;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		bb_type = xstrdup(conf->bb_type);
+		slurm_conf_unlock();
+	}
+	return bb_type;
+}
+
 /* slurm_get_checkpoint_type
  * returns the checkpoint_type from slurmctld_conf object
  * RET char *    - checkpoint type, MUST be xfreed by caller

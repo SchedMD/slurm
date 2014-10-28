@@ -81,6 +81,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
@@ -5655,6 +5656,10 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	int rc;
 
 	rc = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid, err_msg);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	rc = bb_g_job_validate(job_desc);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 

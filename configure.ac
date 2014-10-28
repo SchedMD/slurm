@@ -489,6 +489,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/auth/authd/Makefile
 		 src/plugins/auth/munge/Makefile
 		 src/plugins/auth/none/Makefile
+		 src/plugins/burst_buffer/Makefile
+		 src/plugins/burst_buffer/none/Makefile
 		 src/plugins/checkpoint/Makefile
 		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/blcr/Makefile

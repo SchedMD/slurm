@@ -870,6 +870,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/acct_gather_infiniband_none.so
 %{_libdir}/slurm/acct_gather_energy_none.so
 %{_libdir}/slurm/acct_gather_profile_none.so
+%{_libdir}/slurm/burst_buffer_none.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
 %{_libdir}/slurm/core_spec_cray.so

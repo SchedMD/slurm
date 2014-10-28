@@ -94,6 +94,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
@@ -428,6 +429,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize ext_sensors plugin");
 	if (switch_g_slurmctld_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize switch plugin");
+	if (bb_g_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize burst buffer plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -668,6 +671,7 @@ int main(int argc, char *argv[])
 	slurm_auth_fini();
 	switch_fini();
 	route_fini();
+	bb_g_fini();
 
 	/* purge remaining data structures */
 	license_free();

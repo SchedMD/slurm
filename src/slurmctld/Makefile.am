@@ -15,6 +15,8 @@ slurmctld_SOURCES =     \
 	agent.c  	\
 	agent.h		\
 	backup.c	\
+	burst_buffer.c	\
+	burst_buffer.h	\
 	controller.c 	\
 	front_end.c	\
 	front_end.h	\

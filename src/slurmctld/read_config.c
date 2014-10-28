@@ -76,6 +76,7 @@
 #include "src/common/strnatcmp.h"
 
 #include "src/slurmctld/acct_policy.h"
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -1093,6 +1094,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	rc = switch_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = _preserve_select_type_param(&slurmctld_conf, old_select_type_p);
+	error_code = MAX(error_code, rc);	/* not fatal */
+	rc =  bb_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	/* Restore job accounting info if file missing or corrupted,

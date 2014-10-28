@@ -5,6 +5,7 @@ SUBDIRS = \
 	acct_gather_infiniband  \
 	acct_gather_filesystem  \
 	auth			\
+	burst_buffer		\
 	checkpoint		\
 	core_spec		\
 	crypto			\
@@ -23,7 +24,7 @@ SUBDIRS = \
 	sched			\
 	select			\
 	slurmctld		\
-	slurmd		\
+	slurmd			\
 	switch			\
 	task			\
 	topology
