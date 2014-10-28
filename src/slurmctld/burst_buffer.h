@@ -60,6 +60,16 @@ extern int bb_g_fini(void);
  */
 
 /*
+ * Load the current burst buffer state (e.g. how much space is available now).
+ * Run at the beginning of each scheduling cycle in order to recognize external
+ * changes to the burst buffer state (e.g. capacity is added, removed, fails,
+ * etc.)
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_p_load_state(void);
+
+/*
  * Note configuration may have changed. Handle changes in BurstBufferParameters.
  *
  * Returns a SLURM errno.

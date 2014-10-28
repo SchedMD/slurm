@@ -73,6 +73,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_bb_ops {
+	int		(*load_state)	(void);
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(struct job_descriptor *job_desc);
 } slurm_bb_ops_t;
@@ -81,6 +82,7 @@ typedef struct slurm_bb_ops {
  * Must be synchronized with slurm_bb_ops_t above.
  */
 static const char *syms[] = {
+	"bb_p_load_state",
 	"bb_p_reconfig",
 	"bb_p_job_validate"
 };
@@ -187,6 +189,30 @@ fini:	slurm_mutex_unlock(&g_context_lock);
  */
 
 /*
+ * Load the current burst buffer state (e.g. how much space is available now).
+ * Run at the beginning of each scheduling cycle in order to recognize external
+ * changes to the burst buffer state (e.g. capacity is added, removed, fails,
+ * etc.).
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_p_load_state(void)
+{
+	DEF_TIMERS;
+	int i, rc;
+
+	START_TIMER;
+	rc = bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(ops[i].load_state))();
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/*
  * Note configuration may have changed. Handle changes in BurstBufferParameters.
  *
  * Returns a SLURM errno.
@@ -202,7 +228,7 @@ extern int bb_g_reconfig(void)
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].reconfig))();
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("bb_g_reconfig");
+	END_TIMER2(__func__);
 
 	return rc;
 }
@@ -223,7 +249,7 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc)
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].job_validate))(job_desc);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("bb_g_job_validate");
+	END_TIMER2(__func__);
 
 	return rc;
 }

@@ -340,8 +340,28 @@ This configuration parameter is also applied to launch tasks and avoid aborting
 
 .TP
 \fBBurstBufferParamameters\fR
-Configuration parameters for the burst buffer plugin.
-More information later...
+Comma delimited set of burst buffer donfiguration parameters.
+Supported values presently include:
+.RS
+.TP 18
+\fBallow_users=\fR
+Colon delimited list of user names and/or user IDs allowed to use burst buffers.
+By default, all users are permitted to use burst buffers.
+.TP
+\fBdeny_users=\fR
+Colon delimited list of user names and/or user IDs prevented from using burst buffers.
+By default, no user are prevented from using burst buffers.
+This option is ignored if \fBallow_users=\fR is specified.
+.TP
+\fBjob_size_limit="\fR
+Number of gigabytes of burst buffer space which can be used by any single job.
+By default, there is no limit.
+.TP
+\fBuser_size_limit="\fR
+Number of gigabytes of burst buffer space which can be used by any single user
+(including all jobs belonging to that user).
+By default, there is no limit.
+.RE
 
 .TP
 \fBBurstBufferType\fR

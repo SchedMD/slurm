@@ -37,8 +37,15 @@
 #if     HAVE_CONFIG_H
 #  include "config.h"
 #endif
+#include <stdlib.h>
 
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/uid.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
+
+#define _DEBUG 1
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -72,27 +79,170 @@ const char plugin_name[]        = "burst_buffer NONE plugin";
 const char plugin_type[]        = "burst_buffer/none";
 const uint32_t plugin_version   = 100;
 
+#if _DEBUG
+static uid_t   *allow_users = NULL;
+static uid_t   *deny_users = NULL;
+static uint32_t job_size_limit = NO_VAL;
+static uint32_t total_space = 0;
+static uint32_t user_size_limit = NO_VAL;
+
+/* Translate colon delimitted list of users into a UID array,
+ * Return value must be xfreed */
+static uid_t *_parse_users(char *buf)
+{
+	char *delim, *tmp, *tok, *save_ptr = NULL;
+	int inx = 0, array_size;
+	uid_t *user_array = NULL;
+
+	if (!buf)
+		return user_array;
+	tmp = xstrdup(buf);
+	delim = strchr(tmp, ',');
+	if (delim)
+		delim[0] = '\0';
+	array_size = 10;
+	user_array = xmalloc(sizeof(uid_t) * array_size);
+	tok = strtok_r(tmp, ":", &save_ptr);
+	while (tok) {
+		if ((uid_from_string(tok, user_array + inx) == -1) ||
+		    (user_array[inx] == 0)) {
+			error("%s: ignoring invalid user: %s", __func__, tok);
+		} else {
+			if (++inx >= array_size) {
+				array_size *= 2;
+				user_array = xrealloc(user_array,
+						      sizeof(uid_t)*array_size);
+			}
+		}
+		tok = strtok_r(NULL, ":", &save_ptr);
+	}
+	xfree(tmp);
+	return user_array;
+}
+
+/* Translate an array of UIDs into a string with colon delimited UIDs
+ * Return value must be xfreed */
+static char *_print_users(uid_t *buf)
+{
+	char *user_elem, *user_str = NULL;
+	int i;
+
+	if (!buf)
+		return user_str;
+	for (i = 0; buf[i]; i++) {
+		user_elem = uid_to_string(buf[0]);
+		if (!user_elem)
+			continue;
+		if (user_str)
+			xstrcat(user_str, ":");
+		xstrcat(user_str, user_elem);
+		xfree(user_elem);
+	}
+	return user_str;
+}
+
+static void _clear_config(void)
+{
+	xfree(allow_users);
+	xfree(deny_users);
+	job_size_limit = NO_VAL;
+	total_space = 0;
+	user_size_limit = NO_VAL;
+}
+
+/* Load and process BurstBufferParameters configuration parameter */
+static void _load_config_params(void)
+{
+	char *bb_params, *key, *value;
+
+	_clear_config();
+	bb_params = slurm_get_bb_params();
+	if (bb_params) {
+		/*                       01234567890123456 */
+		key = strstr(bb_params, "allow_users=");
+		if (key)
+			allow_users = _parse_users(key + 12);
+		value = _print_users(allow_users);
+		info("%s: allow_users:%s",  __func__, value);
+		xfree(value);
+
+		key = strstr(bb_params, "deny_users=");
+		if (allow_users && key) {
+			error("%s: ignoring deny_users, allow_users is set",
+			      __func__);
+		} else if (key) {
+			deny_users = _parse_users(key + 11);
+		}
+		value = _print_users(deny_users);
+		info("%s: deny_users:%s",  __func__, value);
+		xfree(value);
+
+		key = strstr(bb_params, "job_size_limit=");
+		if (key)
+			job_size_limit = atoi(key + 15);
+		info("%s: job_size_limit:%u",  __func__, job_size_limit);
+
+		key = strstr(bb_params, "user_size_limit=");
+		if (key)
+			user_size_limit = atoi(key + 16);
+		info("%s: user_size_limit:%u",  __func__, user_size_limit);
+	}
+	xfree(bb_params);
+}
+
+static void _load_state(void)
+{
+	total_space = 1000;	/* For testing purposes only */
+	info("%s: total_space:%u",  __func__, total_space);
+}
+#endif
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init(void)
 {
-	info("%s loaded", plugin_name);
+#if _DEBUG
+	info("%s: %s",  __func__, plugin_type);
+	_load_config_params();
+	_load_state();
+#endif
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
+#if _DEBUG
+	info("%s: %s",  __func__, plugin_type);
+	_clear_config();
+#endif
+	return SLURM_SUCCESS;
+}
+
+extern int bb_p_load_state(void)
+{
+#if _DEBUG
+	info("%s: %s",  __func__, plugin_type);
+	_load_state();
+#endif
 	return SLURM_SUCCESS;
 }
 
 extern int bb_p_reconfig(void)
 {
+#if _DEBUG
+	info("%s: %s",  __func__, plugin_type);
+	_load_config_params();
+#endif
 	return SLURM_SUCCESS;
 }
 
 extern int bb_p_job_validate(struct job_descriptor *job_desc)
 {
+#if _DEBUG
+	info("%s: burst_buffer:%s", __func__, job_desc->burst_buffer);
+	info("%s: script:%s", __func__, job_desc->script);
+#endif
 	return SLURM_SUCCESS;
 }
