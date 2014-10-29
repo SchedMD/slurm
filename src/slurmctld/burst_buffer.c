@@ -77,6 +77,7 @@ typedef struct slurm_bb_ops {
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(struct job_descriptor *job_desc,
 					 uid_t submit_uid);
+	int		(*job_test_stage_in) (struct job_record *job_ptr);
 } slurm_bb_ops_t;
 
 /*
@@ -85,7 +86,8 @@ typedef struct slurm_bb_ops {
 static const char *syms[] = {
 	"bb_p_load_state",
 	"bb_p_reconfig",
-	"bb_p_job_validate"
+	"bb_p_job_validate",
+	"bb_p_job_test_stage_in"
 };
 
 static int g_context_cnt = -1;
@@ -250,6 +252,29 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].job_validate))(job_desc, submit_uid);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/*
+ * Determine if a job's burst buffer stage in is complete
+ *
+ * RET: 0 - stage in is underway
+ *      1 - stage in complete
+ *     -1 - fatal error
+ */
+extern int bb_g_job_test_stage_in(struct job_record *job_ptr)
+{
+	DEF_TIMERS;
+	int i, rc;
+
+	START_TIMER;
+	rc = bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(ops[i].job_test_stage_in))(job_ptr);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 

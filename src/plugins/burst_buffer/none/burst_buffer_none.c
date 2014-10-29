@@ -80,11 +80,59 @@ const char plugin_type[]        = "burst_buffer/none";
 const uint32_t plugin_version   = 100;
 
 #if _DEBUG
+#define BB_HASH_SIZE		100
+#define BB_STATE_ALLOCATED	0x0001
+#define BB_STATE_STAGING_IN	0x0002
+#define BB_STATE_STAGED_IN	0x0003
+#define BB_STATE_STAGING_OUT	0x0004
+#define BB_STATE_STAGED_OUT	0x0005
+typedef struct bb_alloc {
+	uint32_t job_id;
+	struct bb_alloc *next;
+	uint32_t size;
+	uint16_t state;
+	uint32_t user_id;
+} bb_alloc_t;
+bb_alloc_t **bb_hash = NULL;	/* Hash by job_id */
+
 static uid_t   *allow_users = NULL;
 static uid_t   *deny_users = NULL;
 static uint32_t job_size_limit = NO_VAL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
+
+static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
+{
+	bb_alloc_t *bb_ptr = NULL;
+	int i;
+
+	xassert(bb_hash);
+	xassert(job_ptr);
+	bb_ptr = xmalloc(sizeof(bb_alloc_t));
+	bb_ptr->job_id = job_ptr->job_id;
+	i = job_ptr->job_id % BB_HASH_SIZE;
+	bb_ptr->next = bb_hash[i];
+	bb_hash[i] = bb_ptr->next;
+	bb_ptr->state = BB_STATE_ALLOCATED;
+	bb_ptr->user_id = job_ptr->user_id;
+
+	return bb_ptr;
+}
+
+static bb_alloc_t *_find_bb_rec(struct job_record *job_ptr)
+{
+	bb_alloc_t *bb_ptr = NULL;
+
+	xassert(bb_hash);
+	xassert(job_ptr);
+	bb_ptr = bb_hash[job_ptr->job_id % BB_HASH_SIZE];
+	while (bb_ptr) {
+		if (bb_ptr->job_id == job_ptr->job_id)
+			return bb_ptr;
+		bb_ptr = bb_ptr->next;
+	}
+	return bb_ptr;
+}
 
 /* Translate colon delimitted list of users into a UID array,
  * Return value must be xfreed */
@@ -151,7 +199,7 @@ static void _clear_config(void)
 }
 
 /* Load and process BurstBufferParameters configuration parameter */
-static void _load_config_params(void)
+static void _load_config(void)
 {
 	char *bb_params, *key, *value;
 
@@ -190,6 +238,31 @@ static void _load_config_params(void)
 	xfree(bb_params);
 }
 
+static void _clear_cache(void)
+{
+	struct bb_alloc *bb_current, *bb_next;
+	int i;
+
+	if (bb_hash) {
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			bb_current = bb_hash[i];
+			while (bb_current) {
+				bb_next = bb_current->next;
+				xfree(bb_current);
+				bb_current = bb_next;
+			}
+		}
+		xfree(bb_hash);
+	}
+}
+
+
+static void _load_cache(void)
+{
+/* FIXME: Need to populate */
+	bb_hash = xmalloc(sizeof(struct bb_alloc *) * BB_HASH_SIZE);
+}
+
 static void _load_state(void)
 {
 	total_space = 1000;	/* For testing purposes only */
@@ -205,8 +278,9 @@ extern int init(void)
 {
 #if _DEBUG
 	info("%s: %s",  __func__, plugin_type);
-	_load_config_params();
+	_load_config();
 	_load_state();
+	_load_cache();
 #endif
 	return SLURM_SUCCESS;
 }
@@ -216,6 +290,7 @@ extern int fini(void)
 #if _DEBUG
 	info("%s: %s",  __func__, plugin_type);
 	_clear_config();
+	_clear_cache();
 #endif
 	return SLURM_SUCCESS;
 }
@@ -233,7 +308,7 @@ extern int bb_p_reconfig(void)
 {
 #if _DEBUG
 	info("%s: %s",  __func__, plugin_type);
-	_load_config_params();
+	_load_config();
 #endif
 	return SLURM_SUCCESS;
 }
@@ -246,6 +321,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	char *key;
 	int i;
 
+	info("%s: %s",  __func__, plugin_type);
 	info("%s: job_user_id:%u, submit_uid:%d", __func__,
 	     job_desc->user_id, submit_uid);
 	info("%s: burst_buffer:%s", __func__, job_desc->burst_buffer);
@@ -285,4 +361,28 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	}
 #endif
 	return SLURM_SUCCESS;
+}
+
+extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
+{
+#if _DEBUG
+	bb_alloc_t *bb_ptr;
+
+	info("%s: %s",  __func__, plugin_type);
+	info("%s: job_id:%u", __func__, job_ptr->job_id);
+	if (!job_ptr->burst_buffer)	/* No burst buffer specification */
+		return 1;
+	bb_ptr = _find_bb_rec(job_ptr);
+	if (!bb_ptr)
+		bb_ptr = _alloc_bb_rec(job_ptr);
+	if (bb_ptr->state == BB_STATE_STAGED_IN) {
+		return 1;
+	} else if (bb_ptr->state < BB_STATE_STAGED_IN) {
+		bb_ptr->state++;
+		return 0;
+	}
+	error("%s: job_id:%u bb_state:%u", __func__,
+	      job_ptr->job_id, bb_ptr->state);
+	return -1;
+#endif
 }
