@@ -660,7 +660,7 @@ int dump_all_job_state(void)
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	Buf buffer = init_buf(high_buffer_size);
-	time_t min_age = 0, now = time(NULL);
+	time_t now = time(NULL);
 	time_t last_state_file_time;
 	DEF_TIMERS;
 
@@ -687,9 +687,6 @@ int dump_all_job_state(void)
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(now, buffer);
 
-	if (slurmctld_conf.min_job_age > 0)
-		min_age = now  - slurmctld_conf.min_job_age;
-
 	/*
 	 * write header: job id
 	 * This is needed so that the job id remains persistent even after
@@ -705,10 +702,6 @@ int dump_all_job_state(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
-		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
-		    (! IS_JOB_COMPLETING(job_ptr)) && IS_JOB_FINISHED(job_ptr))
-			continue;	/* job ready for purging, don't dump */
-
 		_dump_job_state(job_ptr, buffer);
 	}
 	list_iterator_destroy(job_iterator);
@@ -7134,10 +7127,12 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (cleaning)
 		return 0;      /* Job hasn't finished yet */
 
+	if (bb_g_job_test_stage_out(job_ptr) != 1)
+		return 0;      /* Stage out in progress */
+
 	/* If we don't have a db_index by now and we are running with
-	   the slurmdbd lets put it on the list to be handled later
-	   when it comes back up since we won't get another chance.
-	*/
+	 * the slurmdbd, lets put it on the list to be handled later
+	 * when slurmdbd comes back up since we won't get another chance. */
 	if (with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
@@ -7202,7 +7197,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	struct job_record *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
 	Buf buffer;
-	time_t min_age = 0, now = time(NULL);
+	time_t now = time(NULL);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -7213,9 +7208,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	/* put in a place holder job record count of 0 for now */
 	pack32(jobs_packed, buffer);
 	pack_time(now, buffer);
-
-	if (slurmctld_conf.min_job_age > 0)
-		min_age = now  - slurmctld_conf.min_job_age;
 
 	/* write individual job records */
 	part_filter_set(uid);
@@ -7229,11 +7221,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 
 		if (_hide_job(job_ptr, uid))
 			continue;
-
-		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
-		    (! IS_JOB_COMPLETING(job_ptr)) && IS_JOB_FINISHED(job_ptr))
-			continue;	/* job ready for purging, don't dump */
-
 		if ((filter_uid != NO_VAL) && (filter_uid != job_ptr->user_id))
 			continue;
 
@@ -11472,6 +11459,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		free_job_resources(&job_ptr->job_resrcs);
 #endif
 	acct_policy_remove_job_submit(job_ptr);
+	(void) bb_g_job_start_stage_out(job_ptr);
 
 	if (!IS_JOB_RESIZING(job_ptr)) {
 		/* Remove configuring state just to make sure it isn't there

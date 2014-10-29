@@ -295,6 +295,14 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Load the current burst buffer state (e.g. how much space is available now).
+ * Run at the beginning of each scheduling cycle in order to recognize external
+ * changes to the burst buffer state (e.g. capacity is added, removed, fails,
+ * etc.)
+ *
+ * Returns a SLURM errno.
+ */
 extern int bb_p_load_state(void)
 {
 #if _DEBUG
@@ -304,6 +312,11 @@ extern int bb_p_load_state(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Note configuration may have changed. Handle changes in BurstBufferParameters.
+ *
+ * Returns a SLURM errno.
+ */
 extern int bb_p_reconfig(void)
 {
 #if _DEBUG
@@ -313,6 +326,11 @@ extern int bb_p_reconfig(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Validate a job submit request with respect to burst buffer options.
+ *
+ * Returns a SLURM errno.
+ */
 extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
@@ -363,6 +381,13 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Determine if a job's burst buffer stage-in is complete
+ *
+ * RET: 0 - stage-in is underway
+ *      1 - stage-in complete
+ *     -1 - fatal error
+ */
 extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 {
 #if _DEBUG
@@ -375,14 +400,69 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 	bb_ptr = _find_bb_rec(job_ptr);
 	if (!bb_ptr)
 		bb_ptr = _alloc_bb_rec(job_ptr);
-	if (bb_ptr->state == BB_STATE_STAGED_IN) {
-		return 1;
-	} else if (bb_ptr->state < BB_STATE_STAGED_IN) {
+	if (bb_ptr->state < BB_STATE_STAGED_IN) {
 		bb_ptr->state++;
 		return 0;
+	} else if (bb_ptr->state == BB_STATE_STAGED_IN) {
+		return 1;
 	}
-	error("%s: job_id:%u bb_state:%u", __func__,
-	      job_ptr->job_id, bb_ptr->state);
+	error("%s: job_id:%u bb_state:%u",
+	      __func__, job_ptr->job_id, bb_ptr->state);
+	return -1;
+#endif
+}
+
+/*
+ * Trigger a job's burst buffer stage-out to begin
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
+{
+#if _DEBUG
+	bb_alloc_t *bb_ptr;
+
+	info("%s: %s",  __func__, plugin_type);
+	info("%s: job_id:%u", __func__, job_ptr->job_id);
+	if (!job_ptr->burst_buffer)	/* No burst buffer specification */
+		return SLURM_SUCCESS;
+	bb_ptr = _find_bb_rec(job_ptr);
+	if (!bb_ptr)
+		bb_ptr = _alloc_bb_rec(job_ptr);
+	bb_ptr->state = BB_STATE_STAGING_OUT;
+	return SLURM_SUCCESS;
+#endif
+}
+
+/*
+ * Determine if a job's burst buffer stage-out is complete
+ *
+ * RET: 0 - stage-out is underway
+ *      1 - stage-out complete
+ *     -1 - fatal error
+ */
+extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
+{
+#if _DEBUG
+	bb_alloc_t *bb_ptr;
+
+	info("%s: %s",  __func__, plugin_type);
+	info("%s: job_id:%u", __func__, job_ptr->job_id);
+	if (!job_ptr->burst_buffer)	/* No burst buffer specification */
+		return 1;
+	bb_ptr = _find_bb_rec(job_ptr);
+	if (!bb_ptr) {
+		error("%s: job_id:%u bb_rec not found",
+		      __func__, job_ptr->job_id);
+		return -1;
+	} else if (bb_ptr->state == BB_STATE_STAGING_OUT) {
+		bb_ptr->state++;
+		return 0;
+	} else if (bb_ptr->state == BB_STATE_STAGED_OUT) {
+		return 1;
+	}
+	error("%s: job_id:%u bb_state:%u",
+	      __func__, job_ptr->job_id, bb_ptr->state);
 	return -1;
 #endif
 }

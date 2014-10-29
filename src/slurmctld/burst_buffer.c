@@ -78,6 +78,8 @@ typedef struct slurm_bb_ops {
 	int		(*job_validate)	(struct job_descriptor *job_desc,
 					 uid_t submit_uid);
 	int		(*job_test_stage_in) (struct job_record *job_ptr);
+	int		(*job_start_stage_out) (struct job_record *job_ptr);
+	int		(*job_test_stage_out) (struct job_record *job_ptr);
 } slurm_bb_ops_t;
 
 /*
@@ -87,7 +89,9 @@ static const char *syms[] = {
 	"bb_p_load_state",
 	"bb_p_reconfig",
 	"bb_p_job_validate",
-	"bb_p_job_test_stage_in"
+	"bb_p_job_test_stage_in",
+	"bb_p_job_start_stage_out",
+	"bb_p_job_test_stage_out"
 };
 
 static int g_context_cnt = -1;
@@ -202,13 +206,15 @@ fini:	slurm_mutex_unlock(&g_context_lock);
 extern int bb_g_load_state(void)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc, rc2;
 
 	START_TIMER;
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].load_state))();
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		rc2 = (*(ops[i].load_state))();
+		rc = MAX(rc, rc2);
+	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 
@@ -223,13 +229,15 @@ extern int bb_g_load_state(void)
 extern int bb_g_reconfig(void)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc, rc2;
 
 	START_TIMER;
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].reconfig))();
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		rc2 = (*(ops[i].reconfig))();
+		rc = MAX(rc, rc2);
+	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 
@@ -245,13 +253,15 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc, rc2;
 
 	START_TIMER;
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].job_validate))(job_desc, submit_uid);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		rc2 = (*(ops[i].job_validate))(job_desc, submit_uid);
+		rc = MAX(rc, rc2);
+	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 
@@ -259,22 +269,72 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 }
 
 /*
- * Determine if a job's burst buffer stage in is complete
+ * Determine if a job's burst buffer stage-in is complete
  *
- * RET: 0 - stage in is underway
- *      1 - stage in complete
+ * RET: 0 - stage-in is underway
+ *      1 - stage-in complete
  *     -1 - fatal error
  */
 extern int bb_g_job_test_stage_in(struct job_record *job_ptr)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc, rc2;
 
 	START_TIMER;
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].job_test_stage_in))(job_ptr);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		rc2 = (*(ops[i].job_test_stage_in))(job_ptr);
+		rc = MIN(rc, rc2);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/*
+ * Trigger a job's burst buffer stage-out to begin
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_start_stage_out(struct job_record *job_ptr)
+{
+	DEF_TIMERS;
+	int i, rc, rc2;
+
+	START_TIMER;
+	rc = bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		rc2 = (*(ops[i].job_start_stage_out))(job_ptr);
+		rc = MAX(rc, rc2);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/*
+ * Determine if a job's burst buffer stage-out is complete
+ *
+ * RET: 0 - stage-out is underway
+ *      1 - stage-out complete
+ *     -1 - fatal error
+ */
+extern int bb_g_job_test_stage_out(struct job_record *job_ptr)
+{
+	DEF_TIMERS;
+	int i, rc, rc2;
+
+	START_TIMER;
+	rc = bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		rc2 = (*(ops[i].job_test_stage_out))(job_ptr);
+		rc = MIN(rc, rc2);
+	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 

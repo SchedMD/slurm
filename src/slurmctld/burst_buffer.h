@@ -86,12 +86,28 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid);
 
 /*
- * Determine if a job's burst buffer stage in is complete
+ * Determine if a job's burst buffer stage-in is complete
  *
- * RET: 0 - stage in is underway
- *      1 - stage in complete
+ * RET: 0 - stage-in is underway
+ *      1 - stage-in complete
  *     -1 - fatal error
  */
 extern int bb_g_job_test_stage_in(struct job_record *job_ptr);
+
+/*
+ * Trigger a job's burst buffer stage-out to begin
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_start_stage_out(struct job_record *job_ptr);
+
+/*
+ * Determine if a job's burst buffer stage-out is complete
+ *
+ * RET: 0 - stage-out is underway
+ *      1 - stage-out complete
+ *     -1 - fatal error
+ */
+extern int bb_g_job_test_stage_out(struct job_record *job_ptr);
 
 #endif /* !_SLURM_BURST_BUFFER_H */
