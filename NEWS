@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- sview - Remove unneeded code that was resolved globally in commit
     98e24b0dedc.
  -- Collect and report the accounting of the batch step and its children.
+ -- Add configure checks for faccessat and eaccess, and make use of one of
+    them if available.
 
 * Changes in Slurm 14.11.0rc2
 =============================
