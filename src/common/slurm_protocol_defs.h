@@ -390,25 +390,21 @@ typedef struct slurm_protocol_header {
 	List ret_list;
 } header_t;
 
-typedef struct forward_message {
-	header_t header;
+typedef struct forward_struct {
 	char *buf;
 	int buf_len;
-	int timeout;
-	List ret_list;
-	pthread_mutex_t *forward_mutex;
-	pthread_cond_t *notify;
-} forward_msg_t;
-
-typedef struct forward_struct {
-	int timeout;
 	uint16_t fwd_cnt;
 	pthread_mutex_t forward_mutex;
 	pthread_cond_t notify;
-	char *buf;
-	int buf_len;
 	List ret_list;
+	int timeout;
 } forward_struct_t;
+
+typedef struct forward_message {
+	forward_struct_t *fwd_struct;
+	header_t header;
+	int timeout;
+} forward_msg_t;
 
 typedef struct slurm_protocol_config {
 	slurm_addr_t primary_controller;
