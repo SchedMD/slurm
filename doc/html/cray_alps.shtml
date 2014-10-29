@@ -684,8 +684,20 @@ Cluster Compatibility Mode.</p>
 <p>By default the launch plugin on a Cray is on set
   to <i>launch/aprun</i>. Nothing extra is needed to enable it.</p>
 
+
+<h3>Node State</h3>
+
+<p>Slurm gets node state information from ALPS.
+Use the Cray <i>xtprocadmin</i> command to set node state <i>up</i> or <i>down</i>.
+If a node state is <i>down</i> in Slurm and setting it back up using the
+<i>xtprocadmin</i> command fails, it may be necessary to destroy the
+<i>node_state*</i> files in your <i>StateSaveLocation</i> directory (as
+configured in Slurm), which will remove all of Slurm's node state information
+and force Slurm to rely completely upon ALPS for all node state information.
+Stop the <i>slurmctld</i> daemon, delete the files, and restart the daemon.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 October 2013</p>
+<p style="text-align:center;">Last modified 29 October 2014</p>
 
 <!--#include virtual="footer.txt"-->
