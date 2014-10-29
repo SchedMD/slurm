@@ -653,9 +653,11 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 
 		break;
 	case JOBACCT_DATA_RUSAGE:
-		jobacct->user_cpu_sec = rusage->ru_utime.tv_sec;
+		if (rusage->ru_utime.tv_sec > jobacct->user_cpu_sec)
+			jobacct->user_cpu_sec = rusage->ru_utime.tv_sec;
 		jobacct->user_cpu_usec = rusage->ru_utime.tv_usec;
-		jobacct->sys_cpu_sec = rusage->ru_stime.tv_sec;
+		if (rusage->ru_stime.tv_sec > jobacct->sys_cpu_sec)
+			jobacct->sys_cpu_sec = rusage->ru_stime.tv_sec;
 		jobacct->sys_cpu_usec = rusage->ru_stime.tv_usec;
 		break;
 	case JOBACCT_DATA_MAX_RSS:

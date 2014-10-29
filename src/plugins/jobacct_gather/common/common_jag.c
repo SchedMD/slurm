@@ -269,7 +269,7 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
  * RETVAL:	==0 - no valid data
  * 		!=0 - data are valid
  *
- * The *prec will mostly be filled in. We need to simply subtract the 
+ * The *prec will mostly be filled in. We need to simply subtract the
  * amount of shared memory used by the process (in KB) from *prec->rss
  * and return the updated struct.
  *
@@ -618,8 +618,7 @@ extern void jag_common_poll_data(
 		itr2 = list_iterator_create(prec_list);
 		while ((prec = list_next(itr2))) {
 			if (prec->pid == jobacct->pid) {
-				uint32_t cpu_calc =
-					(prec->ssec + prec->usec)/hertz;
+				uint32_t cpu_calc;
 #if _DEBUG
 				info("pid:%u ppid:%u rss:%d KB",
 				     prec->pid, prec->ppid, prec->rss);
@@ -628,7 +627,7 @@ extern void jag_common_poll_data(
 				if (callbacks->get_offspring_data)
 					(*(callbacks->get_offspring_data))
 						(prec_list, prec, prec->pid);
-
+				cpu_calc = (prec->ssec + prec->usec)/hertz;
 				/* tally their usage */
 				jobacct->max_rss =
 					MAX(jobacct->max_rss, prec->rss);
@@ -652,12 +651,17 @@ extern void jag_common_poll_data(
 				jobacct->min_cpu =
 					MAX(jobacct->min_cpu, cpu_calc);
 				jobacct->last_total_cputime = jobacct->tot_cpu;
+				/* Update the cpu times
+				 */
 				jobacct->tot_cpu = cpu_calc;
-				debug2("%d mem size %"PRIu64" %"PRIu64" "
-				       "time %u(%u+%u)",
+				jobacct->user_cpu_sec = prec->usec/hertz;
+				jobacct->sys_cpu_sec = prec->ssec/hertz;
+				debug2("%s: %d mem size %"PRIu64" %"PRIu64" "
+				       "time %u(%u+%u)", __func__,
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
-				       prec->usec, prec->ssec);
+				       jobacct->user_cpu_sec,
+				       jobacct->sys_cpu_sec);
 				/* compute frequency */
 				jobacct->this_sampled_cputime =
 					cpu_calc - jobacct->last_total_cputime;
@@ -666,13 +670,14 @@ extern void jag_common_poll_data(
 					"cpuinfo_cur_freq", sbuf);
 				jobacct->act_cpufreq =
 					_update_weighted_freq(jobacct, sbuf);
-				debug2("Task average frequency = %u "
+				debug2("%s: Task average frequency = %u "
 				       "pid %d mem size %"PRIu64" %"PRIu64" "
-				       "time %u(%u+%u)",
+				       "time %u(%u+%u)", __func__,
 				       jobacct->act_cpufreq,
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
-				       prec->usec, prec->ssec);
+				       jobacct->user_cpu_sec,
+				       jobacct->sys_cpu_sec);
 				/* get energy consumption
   				 * only once is enough since we
  				 * report per node energy consumption */

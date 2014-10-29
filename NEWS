@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Double Munge connect retry timeout from 1 to 2 seconds.
  -- sview - Remove unneeded code that was resolved globally in commit
     98e24b0dedc.
+ -- Collect and report the accounting of the batch step and its children.
 
 * Changes in Slurm 14.11.0rc2
 =============================
