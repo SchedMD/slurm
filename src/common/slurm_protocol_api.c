@@ -3138,9 +3138,6 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 		slurm_mutex_init(&msg->forward_struct->forward_mutex);
 		pthread_cond_init(&msg->forward_struct->notify, NULL);
 
-		msg->forward_struct->forward_msg =
-			xmalloc(sizeof(forward_msg_t) * header.forward.cnt);
-
 		msg->forward_struct->buf_len = remaining_buf(buffer);
 		msg->forward_struct->buf =
 			xmalloc(sizeof(char) * msg->forward_struct->buf_len);

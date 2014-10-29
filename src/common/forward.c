@@ -313,6 +313,7 @@ cleanup:
 	free_buf(buffer);
 	pthread_cond_signal(fwd_msg->notify);
 	slurm_mutex_unlock(fwd_msg->forward_mutex);
+	xfree(fwd_msg);
 
 	return (NULL);
 }
@@ -505,7 +506,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		    (&attr_agent, PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetachstate error %m");
 
-		forward_msg = &forward_struct->forward_msg[thr_count];
+		forward_msg = xmalloc(sizeof(forward_msg_t));
 		forward_msg->ret_list = forward_struct->ret_list;
 
 		forward_msg->timeout = forward_struct->timeout;
@@ -739,7 +740,6 @@ void destroy_forward_struct(forward_struct_t *forward_struct)
 {
 	if (forward_struct) {
 		xfree(forward_struct->buf);
-		xfree(forward_struct->forward_msg);
 		slurm_mutex_destroy(&forward_struct->forward_mutex);
 		pthread_cond_destroy(&forward_struct->notify);
 		xfree(forward_struct);

@@ -405,7 +405,6 @@ typedef struct forward_struct {
 	uint16_t fwd_cnt;
 	pthread_mutex_t forward_mutex;
 	pthread_cond_t notify;
-	forward_msg_t *forward_msg;
 	char *buf;
 	int buf_len;
 	List ret_list;
