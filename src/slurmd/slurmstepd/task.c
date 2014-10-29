@@ -539,11 +539,9 @@ _make_tmpdir(stepd_step_rec_t *job)
 		 * still work with older systems we include this check.
 		 */
 
-#if defined(__FreeBSD__)
-#define	__GLIBC__ 		(1)
-#define __GLIBC_PREREQ(a,b)	(1)
-#endif
-#if defined __GLIBC__ && __GLIBC_PREREQ(2, 4)
+#if defined(HAVE_FACCESSAT)
+		else if (faccessat(AT_FDCWD, tmpdir, X_OK|W_OK, AT_EACCESS))
+#elif defined(HAVE_EACCESS)
 		else if (eaccess(tmpdir, X_OK|W_OK)) /* check permissions */
 #else
 		else if (euidaccess(tmpdir, X_OK|W_OK))
