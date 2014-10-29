@@ -73,6 +73,10 @@ typedef struct {
 	pthread_mutex_t *tree_mutex;
 } fwd_tree_t;
 
+static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
+				     fwd_tree_t *fwd_tree_in,
+				     int hl_count);
+
 void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 {
 	if (fwd_tree) {
@@ -404,6 +408,10 @@ void *_fwd_tree_thread(void *arg)
 			/* try next node */
 			if (ret_cnt <= send_msg.forward.cnt) {
 				free(name);
+				_start_msg_tree_internal(
+					fwd_tree->tree_hl, NULL,
+					fwd_tree,
+					hostlist_count(fwd_tree->tree_hl));
 				continue;
 			}
 		} else {
@@ -438,6 +446,71 @@ void *_fwd_tree_thread(void *arg)
 	return NULL;
 }
 
+static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
+				     fwd_tree_t *fwd_tree_in,
+				     int hl_count)
+{
+	int j;
+	fwd_tree_t *fwd_tree;
+
+	xassert((hl || sp_hl) && !(hl && sp_hl));
+	xassert(fwd_tree_in);
+	xassert(fwd_tree_in->p_thr_count);
+	xassert(fwd_tree_in->tree_mutex);
+	xassert(fwd_tree_in->notify);
+	xassert(fwd_tree_in->ret_list);
+
+	if (hl)
+		xassert(hl_count == hostlist_count(hl));
+
+	if (fwd_tree_in->timeout <= 0)
+		/* convert secs to msec */
+		fwd_tree_in->timeout  = slurm_get_msg_timeout() * 1000;
+
+	for (j = 0; j < hl_count; j++) {
+		pthread_attr_t attr_agent;
+		pthread_t thread_agent;
+		int retries = 0;
+
+		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate
+		    (&attr_agent, PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+
+		fwd_tree = xmalloc(sizeof(fwd_tree_t));
+		memcpy(fwd_tree, fwd_tree_in, sizeof(fwd_tree_t));
+
+		if (sp_hl) {
+			fwd_tree->tree_hl = sp_hl[j];
+			sp_hl[j] = NULL;
+		} else if (hl) {
+			char *name = hostlist_shift(hl);
+			fwd_tree->tree_hl = hostlist_create(name);
+			free(name);
+		}
+
+		/*
+		 * Lock and increase thread counter, we need that to protect
+		 * the start_msg_tree waiting loop that was originally designed
+		 * around a "while ((count < host_count))" loop. In case where a
+		 * fwd thread was not able to get all the return codes from
+		 * children, the waiting loop was deadlocked.
+		 */
+		slurm_mutex_lock(fwd_tree->tree_mutex);
+		(*fwd_tree->p_thr_count)++;
+		slurm_mutex_unlock(fwd_tree->tree_mutex);
+
+		while (pthread_create(&thread_agent, &attr_agent,
+				      _fwd_tree_thread, (void *)fwd_tree)) {
+			error("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			usleep(100000);	/* sleep and try again */
+		}
+		slurm_attr_destroy(&attr_agent);
+
+	}
+}
 /*
  * forward_init    - initilize forward structure
  * IN: forward     - forward_t *   - struct to store forward info
@@ -566,10 +639,10 @@ extern int forward_msg(forward_struct_t *forward_struct,
  */
 extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 {
-	fwd_tree_t *fwd_tree = NULL;
+	fwd_tree_t fwd_tree;
 	pthread_mutex_t tree_mutex;
 	pthread_cond_t notify;
-	int j = 0, count = 0;
+	int count = 0;
 	List ret_list = NULL;
 	int thr_count = 0;
 	int host_count = 0;
@@ -591,53 +664,16 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 
 	ret_list = list_create(destroy_data_info);
 
-	for (j = 0; j < hl_count; j++) {
-		pthread_attr_t attr_agent;
-		pthread_t thread_agent;
-		int retries = 0;
+	memset(&fwd_tree, 0, sizeof(fwd_tree));
+	fwd_tree.orig_msg = msg;
+	fwd_tree.ret_list = ret_list;
+	fwd_tree.timeout = timeout;
+	fwd_tree.notify = &notify;
+	fwd_tree.p_thr_count = &thr_count;
+	fwd_tree.tree_mutex = &tree_mutex;
 
-		slurm_attr_init(&attr_agent);
-		if (pthread_attr_setdetachstate
-		    (&attr_agent, PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
+	_start_msg_tree_internal(NULL, sp_hl, &fwd_tree, hl_count);
 
-		fwd_tree = xmalloc(sizeof(fwd_tree_t));
-		fwd_tree->orig_msg = msg;
-		fwd_tree->ret_list = ret_list;
-		fwd_tree->timeout = timeout;
-		fwd_tree->notify = &notify;
-		fwd_tree->p_thr_count = &thr_count;
-		fwd_tree->tree_mutex = &tree_mutex;
-
-		if (fwd_tree->timeout <= 0) {
-			/* convert secs to msec */
-			fwd_tree->timeout  = slurm_get_msg_timeout() * 1000;
-		}
-
-		fwd_tree->tree_hl = sp_hl[j];
-		sp_hl[j] = NULL;
-
-		/*
-		 * Lock and increase thread counter, we need that to protect
-		 * the start_msg_tree waiting loop that was originally designed
-		 * around a "while ((count < host_count))" loop. In case where a
-		 * fwd thread was not able to get all the return codes from
-		 * children, the waiting loop was deadlocked.
-		 */
-		slurm_mutex_lock(&tree_mutex);
-		thr_count++;
-		slurm_mutex_unlock(&tree_mutex);
-
-		while (pthread_create(&thread_agent, &attr_agent,
-				      _fwd_tree_thread, (void *)fwd_tree)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			usleep(100000);	/* sleep and try again */
-		}
-		slurm_attr_destroy(&attr_agent);
-
-	}
 	xfree(sp_hl);
 
 	slurm_mutex_lock(&tree_mutex);
