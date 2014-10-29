@@ -76,6 +76,10 @@ typedef struct {
 static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
 				     fwd_tree_t *fwd_tree_in,
 				     int hl_count);
+static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
+				  forward_struct_t *fwd_struct,
+				  header_t *header, int timeout,
+				  int hl_count);
 
 void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 {
@@ -136,6 +140,14 @@ void *_forward_thread(void *arg)
 			free(name);
 			if (hostlist_count(hl) > 0) {
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
+				/* Abandon tree. This way if all the
+				 * nodes in the branch are down we
+				 * don't have to time out for each
+				 * node serially.
+				 */
+				_forward_msg_internal(hl, NULL, fwd_struct,
+						      &fwd_msg->header, 0,
+						      hostlist_count(hl));
 				continue;
 			}
 			goto cleanup;
@@ -190,6 +202,14 @@ void *_forward_thread(void *arg)
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
 				slurm_close(fd);
 				fd = -1;
+				/* Abandon tree. This way if all the
+				 * nodes in the branch are down we
+				 * don't have to time out for each
+				 * node serially.
+				 */
+				_forward_msg_internal(hl, NULL, fwd_struct,
+						      &fwd_msg->header, 0,
+						      hostlist_count(hl));
 				continue;
 			}
 			goto cleanup;
@@ -409,6 +429,11 @@ void *_fwd_tree_thread(void *arg)
 			/* try next node */
 			if (ret_cnt <= send_msg.forward.cnt) {
 				free(name);
+				/* Abandon tree. This way if all the
+				 * nodes in the branch are down we
+				 * don't have to time out for each
+				 * node serially.
+				 */
 				_start_msg_tree_internal(
 					fwd_tree->tree_hl, NULL,
 					fwd_tree,
@@ -512,6 +537,70 @@ static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
 
 	}
 }
+
+static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
+				  forward_struct_t *fwd_struct,
+				  header_t *header, int timeout,
+				  int hl_count)
+{
+	int j;
+	forward_msg_t *fwd_msg = NULL;
+	char *buf = NULL, *tmp_char = NULL;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+
+	if (timeout <= 0)
+		/* convert secs to msec */
+		timeout  = slurm_get_msg_timeout() * 1000;
+
+	for (j = 0; j < hl_count; j++) {
+		int retries = 0;
+
+		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate
+		    (&attr_agent, PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+
+		fwd_msg = xmalloc(sizeof(forward_msg_t));
+
+		fwd_msg->fwd_struct = fwd_struct;
+
+		fwd_msg->timeout = timeout;
+
+		memcpy(&fwd_msg->header.orig_addr,
+		       &header->orig_addr,
+		       sizeof(slurm_addr_t));
+
+		fwd_msg->header.version = header->version;
+		fwd_msg->header.flags = header->flags;
+		fwd_msg->header.msg_type = header->msg_type;
+		fwd_msg->header.body_length = header->body_length;
+		fwd_msg->header.ret_list = NULL;
+		fwd_msg->header.ret_cnt = 0;
+
+		if (sp_hl) {
+			buf = hostlist_ranged_string_xmalloc(sp_hl[j]);
+			hostlist_destroy(sp_hl[j]);
+		} else {
+			tmp_char = hostlist_shift(hl);
+			buf = xstrdup(tmp_char);
+			free(tmp_char);
+		}
+
+		forward_init(&fwd_msg->header.forward, NULL);
+		fwd_msg->header.forward.nodelist = buf;
+		while (pthread_create(&thread_agent, &attr_agent,
+				     _forward_thread,
+				     (void *)fwd_msg)) {
+			error("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			usleep(100000);	/* sleep and try again */
+		}
+		slurm_attr_destroy(&attr_agent);
+	}
+}
+
 /*
  * forward_init    - initilize forward structure
  * IN: forward     - forward_t *   - struct to store forward info
@@ -548,10 +637,6 @@ extern void forward_init(forward_t *forward, forward_t *from)
  */
 extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 {
-	int j = 0;
-	int retries = 0;
-	forward_msg_t *forward_msg = NULL;
-	int thr_count = 0;
 	hostlist_t hl = NULL;
 	hostlist_t* sp_hl;
 	int hl_count = 0;
@@ -569,52 +654,9 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 		return SLURM_ERROR;
 	}
 
-	if (forward_struct->timeout <= 0)
-		/* convert secs to msec */
-		forward_struct->timeout  = slurm_get_msg_timeout() * 1000;
+	_forward_msg_internal(NULL, sp_hl, forward_struct, header,
+			      forward_struct->timeout, hl_count);
 
-	for (j = 0; j < hl_count; j++) {
-		pthread_attr_t attr_agent;
-		pthread_t thread_agent;
-		char *buf = NULL;
-
-		slurm_attr_init(&attr_agent);
-		if (pthread_attr_setdetachstate
-		    (&attr_agent, PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-
-		forward_msg = xmalloc(sizeof(forward_msg_t));
-
-		forward_msg->fwd_struct = forward_struct;
-
-		forward_msg->timeout = forward_struct->timeout;
-
-		memcpy(&forward_msg->header.orig_addr,
-		       &header->orig_addr,
-		       sizeof(slurm_addr_t));
-
-		forward_msg->header.version = header->version;
-		forward_msg->header.flags = header->flags;
-		forward_msg->header.msg_type = header->msg_type;
-		forward_msg->header.body_length = header->body_length;
-		forward_msg->header.ret_list = NULL;
-		forward_msg->header.ret_cnt = 0;
-
-		buf = hostlist_ranged_string_xmalloc(sp_hl[j]);
-		hostlist_destroy(sp_hl[j]);
-		forward_init(&forward_msg->header.forward, NULL);
-		forward_msg->header.forward.nodelist = buf;
-		while (pthread_create(&thread_agent, &attr_agent,
-				     _forward_thread,
-				     (void *)forward_msg)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			usleep(100000);	/* sleep and try again */
-		}
-		slurm_attr_destroy(&attr_agent);
-		thr_count++;
-	}
 	xfree(sp_hl);
 	hostlist_destroy(hl);
 	return SLURM_SUCCESS;

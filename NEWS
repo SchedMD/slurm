@@ -11,6 +11,9 @@ documents those changes that are of interest to users and administrators.
  -- Add "--bb" (burst buffer specification) option to salloc, sbatch, and srun.
  -- Added configuration parameters BurstBufferParameters and BurstBufferType.
  -- Added burst_buffer plugin infrastructure (needs many more functions).
+ -- Make it so when the fanout logic comes across a node that is down we abandon
+    the tree to avoid worst case scenarios when the entire branch is down and
+    we have to try each serially.
 
 * Changes in Slurm 14.11.0rc3
 =============================
