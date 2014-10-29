@@ -23763,11 +23763,11 @@ else
 #ifdef __cplusplus
 extern "C"
 #endif
-char cr_init ();
+char cr_get_restart_info ();
 int
 main ()
 {
-return cr_init ();
+return cr_get_restart_info ();
   ;
   return 0;
 }
