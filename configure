@@ -19510,6 +19510,8 @@ for ac_func in \
    cfmakeraw \
    setresuid \
    get_current_dir_name \
+   faccessat \
+   eaccess \
 
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`

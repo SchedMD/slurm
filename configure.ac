@@ -201,6 +201,8 @@ AC_CHECK_FUNCS( \
    cfmakeraw \
    setresuid \
    get_current_dir_name \
+   faccessat \
+   eaccess \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
