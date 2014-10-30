@@ -278,10 +278,11 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 extern int bb_g_job_test_stage_in(struct job_record *job_ptr)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = 1, rc2;
 
 	START_TIMER;
-	rc = bb_g_init();
+	if (bb_g_init() != SLURM_SUCCESS)
+		rc = -1;
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		rc2 = (*(ops[i].job_test_stage_in))(job_ptr);
@@ -326,10 +327,11 @@ extern int bb_g_job_start_stage_out(struct job_record *job_ptr)
 extern int bb_g_job_test_stage_out(struct job_record *job_ptr)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = 1, rc2;
 
 	START_TIMER;
-	rc = bb_g_init();
+	if (bb_g_init() != SLURM_SUCCESS)
+		rc = -1;
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		rc2 = (*(ops[i].job_test_stage_out))(job_ptr);

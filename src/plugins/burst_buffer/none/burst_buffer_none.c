@@ -395,7 +395,8 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 
 	info("%s: %s",  __func__, plugin_type);
 	info("%s: job_id:%u", __func__, job_ptr->job_id);
-	if (!job_ptr->burst_buffer)	/* No burst buffer specification */
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
 		return 1;
 	bb_ptr = _find_bb_rec(job_ptr);
 	if (!bb_ptr)
@@ -424,7 +425,8 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 
 	info("%s: %s",  __func__, plugin_type);
 	info("%s: job_id:%u", __func__, job_ptr->job_id);
-	if (!job_ptr->burst_buffer)	/* No burst buffer specification */
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
 		return SLURM_SUCCESS;
 	bb_ptr = _find_bb_rec(job_ptr);
 	if (!bb_ptr)
@@ -448,7 +450,8 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 
 	info("%s: %s",  __func__, plugin_type);
 	info("%s: job_id:%u", __func__, job_ptr->job_id);
-	if (!job_ptr->burst_buffer)	/* No burst buffer specification */
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
 		return 1;
 	bb_ptr = _find_bb_rec(job_ptr);
 	if (!bb_ptr) {
