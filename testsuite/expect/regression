@@ -52,6 +52,30 @@ fi
 # Remove any recently edited back-up files
 /bin/rm -f test*.*% test*input test*output test*error
 
+#jUnit-like output location 
+jUnitFile="jUnit.xml"
+echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > jUnitFile
+
+
+for elem in `ls TEST*`; do
+	echo $elem;
+done
+
+exit
+
+COUNTER=0
+for major in `seq 1 100`; do
+	for minor in `seq 1 100`; do
+		TEST=test${major}.${minor}
+		if [  -f ./$TEST ]; then COUNTER=$((COUNTER+1)); fi
+	done
+done
+
+
+
+echo "<testsuite tests=\"$COUNTER\">" >> $jUnitFile	
+
+
 # Run the tests in this directory
 /bin/date
 BEGIN_TIME=`date +%s`
@@ -64,6 +88,7 @@ for major in `seq 1 100`; do
 		if [ $? -eq 0 ]
 		then
 			COMPLETIONS=$((COMPLETIONS+1))
+			echo "    <testcase classname=\"SlurmRegressionTests\" name=\"$TEST\"/>" >> $jUnitFile			
 		else
 			FAILURES=$((FAILURES+1))
 			echo "=============" >& 2
@@ -71,10 +96,19 @@ for major in `seq 1 100`; do
 			echo "$TEST FAILURE"
 			grep "$TEST " README >& 2
 			echo "=============" >& 2
+			
+                      		 echo "    <testcase classname=\"SlurmRegressionTests\" name=\"$TEST\">" >> $jUnitFile
+			longString="        <failure type=\"Failure\">"
+			longString=$longString`grep "$TEST " README`
+			longString=$longString"</failure>"
+			echo "$longString" >> $jUnitFile
+			echo "    </testcase>" >> $jUnitFile
 		fi
-		/bin/echo "============================================"
+		echo "============================================"
 	done
 done
+
+echo "</testsuite>" >> $jUnitFile
 END_TIME=`date +%s`
 DELTA_TIME=`expr $END_TIME - $BEGIN_TIME`
 
