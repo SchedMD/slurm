@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
  -- Check the status of the database connection before using it.
  -- ALPS - If an allocation requests -n set the BASIL -N option to the
     amount of tasks / number of node.
+ -- ALPS - Don't set the env var APRUN_DEFAULT_MEMORY, it is not needed anymore.
 
 * Changes in Slurm 14.03.9
 ==========================
