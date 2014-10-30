@@ -45,7 +45,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define _DEBUG 1
+#define _DEBUG 0
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -431,6 +431,8 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 	error("%s: job_id:%u bb_state:%u",
 	      __func__, job_ptr->job_id, bb_ptr->state);
 	return -1;
+#else
+	return 1;
 #endif
 }
 
@@ -455,6 +457,8 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	if (!bb_ptr)
 		bb_ptr = _alloc_bb_rec(job_ptr);
 	bb_ptr->state = BB_STATE_STAGING_OUT;
+	return SLURM_SUCCESS;
+#else
 	return SLURM_SUCCESS;
 #endif
 }
@@ -492,5 +496,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	error("%s: job_id:%u bb_state:%u",
 	      __func__, job_ptr->job_id, bb_ptr->state);
 	return -1;
+#else
+	return 1;
 #endif
 }
