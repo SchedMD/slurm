@@ -2132,7 +2132,7 @@ extern int init ( void )
 		       mysql_conn, mysql_db_name, mysql_db_info)
 	       != SLURM_SUCCESS) {
 		error("The database must be up when starting "
-		      "the MYSQL plugin.  Trying agin in 5 seconds.");
+		      "the MYSQL plugin.  Trying again in 5 seconds.");
 		sleep(5);
 	}
 
