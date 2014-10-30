@@ -2632,11 +2632,6 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid)
 {
-	if (!mysql_conn->cluster_name) {
-		error("%s:%d no cluster name", THIS_FILE, __LINE__);
-		return SLURM_ERROR;
-	}
-
 	return as_mysql_node_down(mysql_conn, node_ptr,
 				  event_time, reason, reason_uid);
 }
@@ -2645,11 +2640,6 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
-	if (!mysql_conn->cluster_name) {
-		error("%s:%d no cluster name", THIS_FILE, __LINE__);
-		return SLURM_ERROR;
-	}
-
 	return as_mysql_node_up(mysql_conn, node_ptr, event_time);
 }
 
@@ -2659,11 +2649,6 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 					       uint16_t port)
 {
-	if (!mysql_conn->cluster_name) {
-		error("%s:%d no cluster name", THIS_FILE, __LINE__);
-		return SLURM_ERROR;
-	}
-
 	return as_mysql_register_ctld(
 		mysql_conn, mysql_conn->cluster_name, port);
 }
@@ -2675,6 +2660,9 @@ extern uint16_t clusteracct_storage_p_register_disconn_ctld(
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
 
 	if (!mysql_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
@@ -2723,6 +2711,9 @@ extern uint16_t clusteracct_storage_p_register_disconn_ctld(
 extern int clusteracct_storage_p_fini_ctld(mysql_conn_t *mysql_conn,
 					   slurmdb_cluster_rec_t *cluster_rec)
 {
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
 	if (!cluster_rec || (!mysql_conn->cluster_name && !cluster_rec->name)) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
@@ -2739,11 +2730,6 @@ extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
 					      uint32_t cpus,
 					      time_t event_time)
 {
-	if (!mysql_conn->cluster_name) {
-		error("%s:%d no cluster name", THIS_FILE, __LINE__);
-		return SLURM_ERROR;
-	}
-
 	return as_mysql_cluster_cpus(mysql_conn,
 				     cluster_nodes, cpus, event_time);
 }
