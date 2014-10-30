@@ -96,6 +96,7 @@ typedef struct bb_alloc {
 bb_alloc_t **bb_hash = NULL;	/* Hash by job_id */
 
 static uid_t   *allow_users = NULL;
+static bool	debug_flag = false;
 static uid_t   *deny_users = NULL;
 static uint32_t job_size_limit = NO_VAL;
 static uint32_t total_space = 0;
@@ -192,6 +193,7 @@ static char *_print_users(uid_t *buf)
 static void _clear_config(void)
 {
 	xfree(allow_users);
+	debug_flag = false;
 	xfree(deny_users);
 	job_size_limit = NO_VAL;
 	total_space = 0;
@@ -204,15 +206,14 @@ static void _load_config(void)
 	char *bb_params, *key, *value;
 
 	_clear_config();
+	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
+		debug_flag = true;
 	bb_params = slurm_get_bb_params();
 	if (bb_params) {
 		/*                       01234567890123456 */
 		key = strstr(bb_params, "allow_users=");
 		if (key)
 			allow_users = _parse_users(key + 12);
-		value = _print_users(allow_users);
-		info("%s: allow_users:%s",  __func__, value);
-		xfree(value);
 
 		key = strstr(bb_params, "deny_users=");
 		if (allow_users && key) {
@@ -221,21 +222,29 @@ static void _load_config(void)
 		} else if (key) {
 			deny_users = _parse_users(key + 11);
 		}
-		value = _print_users(deny_users);
-		info("%s: deny_users:%s",  __func__, value);
-		xfree(value);
 
 		key = strstr(bb_params, "job_size_limit=");
 		if (key)
 			job_size_limit = atoi(key + 15);
-		info("%s: job_size_limit:%u",  __func__, job_size_limit);
 
 		key = strstr(bb_params, "user_size_limit=");
 		if (key)
 			user_size_limit = atoi(key + 16);
-		info("%s: user_size_limit:%u",  __func__, user_size_limit);
 	}
 	xfree(bb_params);
+
+	if (debug_flag) {
+		value = _print_users(allow_users);
+		info("%s: allow_users:%s",  __func__, value);
+		xfree(value);
+
+		value = _print_users(deny_users);
+		info("%s: deny_users:%s",  __func__, value);
+		xfree(value);
+
+		info("%s: job_size_limit:%u",  __func__, job_size_limit);
+		info("%s: user_size_limit:%u",  __func__, user_size_limit);
+	}
 }
 
 static void _clear_cache(void)
@@ -266,7 +275,9 @@ static void _load_cache(void)
 static void _load_state(void)
 {
 	total_space = 1000;	/* For testing purposes only */
-	info("%s: total_space:%u",  __func__, total_space);
+
+	if (debug_flag)
+		info("%s: total_space:%u",  __func__, total_space);
 }
 #endif
 
@@ -277,8 +288,9 @@ static void _load_state(void)
 extern int init(void)
 {
 #if _DEBUG
-	info("%s: %s",  __func__, plugin_type);
 	_load_config();
+	if (debug_flag)
+		info("%s: %s",  __func__, plugin_type);
 	_load_state();
 	_load_cache();
 #endif
@@ -288,7 +300,8 @@ extern int init(void)
 extern int fini(void)
 {
 #if _DEBUG
-	info("%s: %s",  __func__, plugin_type);
+	if (debug_flag)
+		info("%s: %s",  __func__, plugin_type);
 	_clear_config();
 	_clear_cache();
 #endif
@@ -306,7 +319,8 @@ extern int fini(void)
 extern int bb_p_load_state(void)
 {
 #if _DEBUG
-	info("%s: %s",  __func__, plugin_type);
+	if (debug_flag)
+		info("%s: %s",  __func__, plugin_type);
 	_load_state();
 #endif
 	return SLURM_SUCCESS;
@@ -320,7 +334,8 @@ extern int bb_p_load_state(void)
 extern int bb_p_reconfig(void)
 {
 #if _DEBUG
-	info("%s: %s",  __func__, plugin_type);
+	if (debug_flag)
+		info("%s: %s",  __func__, plugin_type);
 	_load_config();
 #endif
 	return SLURM_SUCCESS;
@@ -339,11 +354,13 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	char *key;
 	int i;
 
-	info("%s: %s",  __func__, plugin_type);
-	info("%s: job_user_id:%u, submit_uid:%d", __func__,
-	     job_desc->user_id, submit_uid);
-	info("%s: burst_buffer:%s", __func__, job_desc->burst_buffer);
-	info("%s: script:%s", __func__, job_desc->script);
+	if (debug_flag) {
+		info("%s: %s",  __func__, plugin_type);
+		info("%s: job_user_id:%u, submit_uid:%d", __func__,
+		     job_desc->user_id, submit_uid);
+		info("%s: burst_buffer:%s", __func__, job_desc->burst_buffer);
+		info("%s: script:%s", __func__, job_desc->script);
+	}
 
 	if (job_desc->burst_buffer) {
 		key = strstr(job_desc->burst_buffer, "size=");
@@ -393,8 +410,10 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 #if _DEBUG
 	bb_alloc_t *bb_ptr;
 
-	info("%s: %s",  __func__, plugin_type);
-	info("%s: job_id:%u", __func__, job_ptr->job_id);
+	if (debug_flag) {
+		info("%s: %s",  __func__, plugin_type);
+		info("%s: job_id:%u", __func__, job_ptr->job_id);
+	}
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return 1;
@@ -423,8 +442,10 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 #if _DEBUG
 	bb_alloc_t *bb_ptr;
 
-	info("%s: %s",  __func__, plugin_type);
-	info("%s: job_id:%u", __func__, job_ptr->job_id);
+	if (debug_flag) {
+		info("%s: %s",  __func__, plugin_type);
+		info("%s: job_id:%u", __func__, job_ptr->job_id);
+	}
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return SLURM_SUCCESS;
@@ -448,8 +469,10 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 #if _DEBUG
 	bb_alloc_t *bb_ptr;
 
-	info("%s: %s",  __func__, plugin_type);
-	info("%s: job_id:%u", __func__, job_ptr->job_id);
+	if (debug_flag) {
+		info("%s: %s",  __func__, plugin_type);
+		info("%s: job_id:%u", __func__, job_ptr->job_id);
+	}
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return 1;

@@ -2129,6 +2129,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_DB_STEP      0x0000002000000000 /* Database step debug */
 #define DEBUG_FLAG_DB_USAGE     0x0000004000000000 /* Usage/Rollup debug */
 #define DEBUG_FLAG_DB_WCKEY     0x0000008000000000 /* Database WCKey debug */
+#define DEBUG_FLAG_BURST_BUF    0x0000010000000000 /* Burst buffer plugin */
 
 
 

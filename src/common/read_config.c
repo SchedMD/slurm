@@ -4319,6 +4319,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "BGBlockWires");
 	}
+	if (debug_flags & DEBUG_FLAG_BURST_BUF) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "BurstBuffer");
+	}
 	if (debug_flags & DEBUG_FLAG_CPU_BIND) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4525,6 +4530,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_BG_PICK;
 		else if (strcasecmp(tok, "BGBlockWires") == 0)
 			(*flags_out) |= DEBUG_FLAG_BG_WIRES;
+		else if (strcasecmp(tok, "BurstBuffer") == 0)
+			(*flags_out) |= DEBUG_FLAG_BURST_BUF;
 		else if (strcasecmp(tok, "CPU_Bind") == 0)
 			(*flags_out) |= DEBUG_FLAG_CPU_BIND;
 		else if (strcasecmp(tok, "DB_Assoc") == 0)
