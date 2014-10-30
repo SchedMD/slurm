@@ -169,6 +169,8 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 {
 	bool job_indepen = false;
 	uint16_t cleaning = 0;
+	time_t now = time(NULL);
+	int bb;
 
 	xassert(job_ptr->magic == JOB_MAGIC);
 	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
@@ -188,12 +190,28 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 		return false;
 	}
 
+	bb = bb_g_job_test_stage_in(job_ptr);
+	if (bb != 1) {
+		if (bb == -1)
+			job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
+		else	/* bb == 0 */
+			job_ptr->state_reason = WAIT_BURST_BUFFER_STAGING;
+		xfree(job_ptr->state_desc);
+		last_job_update = now;
+		debug3("sched: JobId=%u. State=%s. Reason=%s. Priority=%u.",
+		       job_ptr->job_id,
+		       job_state_string(job_ptr->job_state),
+		       job_reason_string(job_ptr->state_reason),
+		       job_ptr->priority);
+		return false;
+	}
+
 #ifdef HAVE_FRONT_END
 	/* At least one front-end node up at this point */
 	if (job_ptr->state_reason == WAIT_FRONT_END) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
-		last_job_update = time(NULL);
+		last_job_update = now;
 	}
 #endif
 
@@ -207,7 +225,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 		    && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
 			job_ptr->state_reason = WAIT_HELD;
 			xfree(job_ptr->state_desc);
-			last_job_update = time(NULL);
+			last_job_update = now;
 		}
 		debug3("sched: JobId=%u. State=%s. Reason=%s. Priority=%u.",
 		       job_ptr->job_id,
@@ -762,7 +780,7 @@ extern int schedule(uint32_t job_limit)
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
-	int bb, error_code, i, j, part_cnt, time_limit;
+	int error_code, i, j, part_cnt, time_limit;
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
@@ -1246,23 +1264,6 @@ next_task:
 		}
 		if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
-			xfree(job_ptr->state_desc);
-			last_job_update = now;
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
-			continue;
-		}
-
-		bb = bb_g_job_test_stage_in(job_ptr);
-		if (bb != 1) {
-			if (bb == -1)
-				job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
-			else	/* bb == 0 */
-				job_ptr->state_reason = WAIT_BURST_BUFFER_STAGING;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "

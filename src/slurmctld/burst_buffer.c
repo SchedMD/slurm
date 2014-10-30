@@ -258,7 +258,7 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 	START_TIMER;
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_validate))(job_desc, submit_uid);
 		rc = MAX(rc, rc2);
 	}
@@ -284,7 +284,7 @@ extern int bb_g_job_test_stage_in(struct job_record *job_ptr)
 	if (bb_g_init() != SLURM_SUCCESS)
 		rc = -1;
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_test_stage_in))(job_ptr);
 		rc = MIN(rc, rc2);
 	}
@@ -307,7 +307,7 @@ extern int bb_g_job_start_stage_out(struct job_record *job_ptr)
 	START_TIMER;
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_start_stage_out))(job_ptr);
 		rc = MAX(rc, rc2);
 	}
@@ -333,7 +333,7 @@ extern int bb_g_job_test_stage_out(struct job_record *job_ptr)
 	if (bb_g_init() != SLURM_SUCCESS)
 		rc = -1;
 	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_test_stage_out))(job_ptr);
 		rc = MIN(rc, rc2);
 	}

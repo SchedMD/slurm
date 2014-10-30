@@ -8031,7 +8031,7 @@ void purge_old_job(void)
 	i = list_delete_all(job_list, &_list_find_job_old, "");
 	if (i) {
 		debug2("purge_old_job: purged %d old job records", i);
-/*		last_job_update = now;		don't worry about state save */
+		last_job_update = time(NULL);
 	}
 }
 

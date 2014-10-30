@@ -113,7 +113,7 @@ static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 	bb_ptr->job_id = job_ptr->job_id;
 	i = job_ptr->job_id % BB_HASH_SIZE;
 	bb_ptr->next = bb_hash[i];
-	bb_hash[i] = bb_ptr->next;
+	bb_hash[i] = bb_ptr;
 	bb_ptr->state = BB_STATE_ALLOCATED;
 	bb_ptr->user_id = job_ptr->user_id;
 
@@ -274,10 +274,12 @@ static void _load_cache(void)
 
 static void _load_state(void)
 {
-	total_space = 1000;	/* For testing purposes only */
+	static last_total_space = 0;
 
-	if (debug_flag)
+	total_space = 1000;	/* For testing purposes only */
+	if (debug_flag && (total_space != last_total_space))
 		info("%s: total_space:%u",  __func__, total_space);
+	last_total_space = total_space;
 }
 #endif
 
