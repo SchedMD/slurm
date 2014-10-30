@@ -38,6 +38,7 @@
 #define _SLURM_BURST_BUFFER_H
 
 #include "slurm/slurm.h"
+#include "src/common/pack.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -69,6 +70,14 @@ extern int bb_g_fini(void);
  * Returns a SLURM errno.
  */
 extern int bb_g_load_state(void);
+
+/*
+ * Pack current burst buffer state information for network transmission to
+ * user (e.g. "scontrol show burst")
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_state_pack(Buf buffer, uint16_t protocol_version);
 
 /*
  * Note configuration may have changed. Handle changes in BurstBufferParameters.

@@ -2630,6 +2630,27 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 	}
 }
 
+/*
+ * slurm_free_burst_buffer_info_msg - free buffer returned by
+ *	slurm_load_burst_buffer
+ * IN burst_buffer_info_msg_ptr - pointer to burst_buffer_info_msg_t
+ * RET 0 or a slurm error code
+ */
+extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
+{
+	int i;
+	burst_buffer_info_t *bb_info_ptr;
+
+	if (msg) {
+		for (i = 0, bb_info_ptr = msg->burst_buffer_array;
+		     i < msg->record_count; i++, bb_info_ptr++) {
+			xfree(bb_info_ptr->name);
+			xfree(bb_info_ptr->burst_buffer_resv_ptr);
+		}
+		xfree(msg->burst_buffer_array);
+		xfree(msg);
+	}
+}
 
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 {
@@ -3061,6 +3082,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		slurm_free_job_array_resp(data);
 		break;
+	case RESPONSE_BURST_BUFFER_INFO:
+		slurm_free_burst_buffer_info_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -3312,10 +3336,6 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_STATS_INFO";
 	case RESPONSE_STATS_INFO:
 		return "RESPONSE_STATS_INFO";
-	case REQUEST_STATS_RESET:
-		return "REQUEST_STATS_RESET";
-	case RESPONSE_STATS_RESET:
-		return "RESPONSE_STATS_RESET";
 	case REQUEST_JOB_USER_INFO:
 		return "REQUEST_JOB_USER_INFO";
 	case REQUEST_NODE_INFO_SINGLE:
@@ -3530,6 +3550,10 @@ rpc_num2string(uint16_t opcode)
 		return "ACCOUNTING_FIRST_REG";
 	case ACCOUNTING_REGISTER_CTLD:
 		return "ACCOUNTING_REGISTER_CTLD";
+	case REQUEST_BURST_BUFFER_INFO:
+		return "REQUEST_BURST_BUFFER_INFO";
+	case RESPONSE_BURST_BUFFER_INFO:
+		return "RESPONSE_BURST_BUFFER_INFO";
 	default:
 		(void) snprintf(buf, sizeof(buf), "%u", opcode);
 		return buf;

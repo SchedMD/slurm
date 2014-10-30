@@ -4131,7 +4131,6 @@ extern int slurm_checkpoint_tasks PARAMS((uint32_t job_id, uint16_t step_id,
 					  time_t begin_time, char *image_dir,
 					  uint16_t max_wait, char *nodelist));
 
-
 /*****************************************************************************\
  *      SLURM TRIGGER FUNCTIONS
 \*****************************************************************************/
@@ -4172,6 +4171,80 @@ extern void slurm_free_trigger_msg PARAMS((trigger_info_msg_t * trigger_free));
  * OUT trigger_info_msg - user defined trigger descriptor
  */
 void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
+
+/*****************************************************************************\
+ *      SLURM BURST BUFFER FUNCTIONS
+\*****************************************************************************/
+
+#define BB_STATE_ALLOCATED	0x0001
+#define BB_STATE_STAGING_IN	0x0002
+#define BB_STATE_STAGED_IN	0x0003
+#define BB_STATE_STAGING_OUT	0x0004
+#define BB_STATE_STAGED_OUT	0x0005
+
+typedef struct {
+	uint32_t job_id;
+	uint32_t size;		/* In GB */
+	uint16_t state;		/* See BB_STATE_* */
+	uint32_t user_id;
+} burst_buffer_resv_t;
+
+typedef struct {
+	char *name;		/* Plugin name */
+	uint32_t total_space;	/* In GB */
+
+	burst_buffer_resv_t *burst_buffer_resv_ptr;
+	uint32_t  record_count;
+} burst_buffer_info_t;
+
+typedef struct {
+	burst_buffer_info_t *burst_buffer_array;
+	uint32_t  record_count;
+} burst_buffer_info_msg_t;
+
+/*
+ * slurm_load_burst_buffer_info - issue RPC to get slurm all burst buffer plugin
+ *	information
+ * IN burst_buffer_info_msg_pptr - place to store a burst buffer configuration
+ *	pointer
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_burst_buffer_info_msg
+ */
+extern int slurm_load_burst_buffer_info PARAMS(
+		(burst_buffer_info_msg_t **burst_buffer_info_msg_pptr));
+
+/*
+ * slurm_free_burst_buffer_info_msg - free buffer returned by
+ *	slurm_load_burst_buffer
+ * IN burst_buffer_info_msg_ptr - pointer to burst_buffer_info_msg_t
+ * RET 0 or a slurm error code
+ */
+extern void slurm_free_burst_buffer_info_msg PARAMS(
+		(burst_buffer_info_msg_t *burst_buffer_info_msg));
+
+/*
+ * slurm_print_burst_buffer_info_msg - output information about burst buffers
+ *	based upon message as loaded using slurm_load_burst_buffer
+ * IN out - file to write to
+ * IN info_ptr - burst_buffer information message pointer
+ * IN one_liner - print as a single line if true
+ */
+extern void slurm_print_burst_buffer_info_msg PARAMS(
+		(FILE *out, burst_buffer_info_msg_t *info_ptr, int one_liner));
+
+/*
+ * slurm_print_burst_buffer_record - output information about a specific Slurm
+ *	burst_buffer record based upon message as loaded using
+ *	slurm_load_burst_buffer_info()
+ * IN out - file to write to
+ * IN burst_buffer_ptr - an individual burst buffer record pointer
+ * IN one_liner - print as a single line if not zero
+ * RET out - char * containing formatted output (must be freed after call)
+ *	   NULL is returned on failure.
+ */
+extern void slurm_print_burst_buffer_record PARAMS(
+			(FILE *out, burst_buffer_info_t *burst_buffer_ptr,
+			 int one_liner));
 
 END_C_DECLS
 

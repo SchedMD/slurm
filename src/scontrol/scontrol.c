@@ -1484,8 +1484,10 @@ _show_it (int argc, char *argv[])
 			_print_aliases (val);
 		else
 			_print_aliases (NULL);
-	} else if (strncasecmp (tag, "blocks", MAX(tag_len, 1)) == 0) {
+	} else if (strncasecmp (tag, "blocks", MAX(tag_len, 2)) == 0) {
 		scontrol_print_block (val);
+	} else if (strncasecmp (tag, "burstbuffer", MAX(tag_len, 2)) == 0) {
+		scontrol_print_burst_buffer ();
 	} else if (strncasecmp (tag, "config", MAX(tag_len, 1)) == 0) {
 		_print_config (val);
 	} else if (strncasecmp (tag, "daemons", MAX(tag_len, 1)) == 0) {
@@ -1919,7 +1921,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      (the primary controller will be stopped)     \n\
      suspend <job_list>       susend specified job (see resume)            \n\
      takeover                 ask slurm backup controller to take over     \n\
-     uhold <jobid_list>       place user hold on specified job (see hold)\n\
+     uhold <jobid_list>       place user hold on specified job (see hold)  \n\
      update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
 			      step or bluegene block/submp configuration   \n\
      verbose                  enable detailed logging.                     \n\
@@ -1928,9 +1930,10 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      are booted and usable                        \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
-  <ENTITY> may be \"aliases\", \"config\", \"daemons\", \"frontend\",      \n\
-       \"hostlist\", \"hostlistsorted\", \"hostnames\", \"job\", \"node\", \n\
-       \"partition\", \"reservation\", \"slurmd\", \"step\", or \"topology\"\n\
+  <ENTITY> may be \"aliases\", \"burstBuffer\", \"config\", \"daemons\",   \n\
+       \"frontend\", \"hostlist\", \"hostlistsorted\", \"hostnames\",      \n\
+       \"job\", \"node\", \"partition\", \"reservation\", \"slurmd\",      \n\
+        \"step\", or \"topology\"                                          \n\
        (also for BlueGene only: \"block\" or \"submp\").                   \n\
 									   \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\

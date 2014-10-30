@@ -37,8 +37,12 @@
 #if     HAVE_CONFIG_H
 #  include "config.h"
 #endif
+
 #include <stdlib.h>
 
+#include "slurm/slurm.h"
+
+#include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -81,11 +85,6 @@ const uint32_t plugin_version   = 100;
 
 #if _DEBUG
 #define BB_HASH_SIZE		100
-#define BB_STATE_ALLOCATED	0x0001
-#define BB_STATE_STAGING_IN	0x0002
-#define BB_STATE_STAGED_IN	0x0003
-#define BB_STATE_STAGING_OUT	0x0004
-#define BB_STATE_STAGED_OUT	0x0005
 typedef struct bb_alloc {
 	uint32_t job_id;
 	struct bb_alloc *next;
@@ -105,7 +104,8 @@ static uint32_t user_size_limit = NO_VAL;
 static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr = NULL;
-	int i;
+	char *tok;
+	int32_t i;
 
 	xassert(bb_hash);
 	xassert(job_ptr);
@@ -116,6 +116,11 @@ static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 	bb_hash[i] = bb_ptr;
 	bb_ptr->state = BB_STATE_ALLOCATED;
 	bb_ptr->user_id = job_ptr->user_id;
+
+	tok = strstr(job_ptr->burst_buffer, "size=");
+	i = atoi(tok + 5);
+	if (i > 0)
+		bb_ptr->size = i;
 
 	return bb_ptr;
 }
@@ -268,13 +273,13 @@ static void _clear_cache(void)
 
 static void _load_cache(void)
 {
-/* FIXME: Need to populate */
+/* FIXME: Need to populate on restart */
 	bb_hash = xmalloc(sizeof(struct bb_alloc *) * BB_HASH_SIZE);
 }
 
 static void _load_state(void)
 {
-	static last_total_space = 0;
+	static uint32_t last_total_space = 0;
 
 	total_space = 1000;	/* For testing purposes only */
 	if (debug_flag && (total_space != last_total_space))
@@ -344,6 +349,49 @@ extern int bb_p_reconfig(void)
 }
 
 /*
+ * Pack current burst buffer state information for network transmission to
+ * user (e.g. "scontrol show burst")
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
+{
+#if _DEBUG
+	struct bb_alloc *bb_next;
+	uint32_t rec_count = 0;
+	int i, eof, offset;
+
+	if (debug_flag)
+		info("%s: %s",  __func__, plugin_type);
+	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
+	offset = get_buf_offset(buffer);
+	pack32(rec_count, buffer);
+	pack32(total_space, buffer);
+	if (bb_hash == NULL)
+		return SLURM_SUCCESS;
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_next = bb_hash[i];
+		while (bb_next) {
+			pack32(bb_next->job_id, buffer);
+			pack32(bb_next->size, buffer);
+			pack16(bb_next->state, buffer);
+			pack32(bb_next->user_id, buffer);
+			rec_count++;
+			bb_next = bb_next->next;
+		}
+	}
+	if (rec_count != 0) {
+		eof = get_buf_offset(buffer);
+		set_buf_offset(buffer, offset);
+		pack32(rec_count, buffer);
+		set_buf_offset(buffer, eof);
+	}
+	info("%s: record_count:%u",  __func__, rec_count);
+#endif
+	return SLURM_SUCCESS;
+}
+
+/*
  * Validate a job submit request with respect to burst buffer options.
  *
  * Returns a SLURM errno.
@@ -352,7 +400,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
 #if _DEBUG
-	uint32_t bb_size = 0;
+	int32_t bb_size = 0;
 	char *key;
 	int i;
 
@@ -371,6 +419,8 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	}
 	if (bb_size == 0)
 		return SLURM_SUCCESS;
+	if (bb_size < 0)
+		return ESLURM_BURST_BUFFER_LIMIT;
 	if ((job_size_limit != NO_VAL) && (bb_size > job_size_limit))
 		return ESLURM_BURST_BUFFER_LIMIT;
 	if ((user_size_limit != NO_VAL) && (bb_size > user_size_limit))

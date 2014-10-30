@@ -74,6 +74,7 @@
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_block_info_resp_msg(msg,buf)	_pack_buffer_msg(msg,buf)
+#define _pack_burst_buffer_info_resp_msg(msg,buf) _pack_buffer_msg(msg,buf)
 #define _pack_front_end_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_partition_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
@@ -688,6 +689,10 @@ static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, Buf buffer,
 static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, Buf buffer,
 				       uint16_t protocol_version);
 
+static int _unpack_burst_buffer_info_msg(
+			burst_buffer_info_msg_t **burst_buffer_info, Buf buffer,
+			uint16_t protocol_version);
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -860,6 +865,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
+	case REQUEST_BURST_BUFFER_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -1227,6 +1233,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_BLOCK_INFO:
 		_pack_block_info_resp_msg((slurm_msg_t *) msg, buffer);
 		break;
+	case RESPONSE_BURST_BUFFER_INFO:
+		_pack_burst_buffer_info_resp_msg((slurm_msg_t *) msg, buffer);
+		break;
 	case REQUEST_FILE_BCAST:
 		_pack_file_bcast((file_bcast_msg_t *) msg->data, buffer,
 				 msg->protocol_version);
@@ -1456,6 +1465,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
+	case REQUEST_BURST_BUFFER_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -1854,6 +1864,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_BLOCK_INFO:
 		rc = slurm_unpack_block_info_msg(
 			(block_info_msg_t **) &(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_BURST_BUFFER_INFO:
+		rc = _unpack_burst_buffer_info_msg(
+			(burst_buffer_info_msg_t **) &(msg->data), buffer,
 			msg->protocol_version);
 		break;
 	case REQUEST_FILE_BCAST:
@@ -9241,6 +9256,45 @@ static int _unpack_block_info(block_info_t **block_info, Buf buffer,
 	else
 		*block_info = bg_rec;
 	return rc;
+}
+
+static int _unpack_burst_buffer_info_msg(
+			burst_buffer_info_msg_t **burst_buffer_info, Buf buffer,
+			uint16_t protocol_version)
+{
+	int i, j;
+	burst_buffer_info_msg_t *bb_msg_ptr = NULL;
+	burst_buffer_info_t *bb_info_ptr;
+	burst_buffer_resv_t *bb_resv_ptr;
+	uint32_t uint32_tmp;
+
+	bb_msg_ptr = xmalloc(sizeof(burst_buffer_info_msg_t));
+	safe_unpack32(&bb_msg_ptr->record_count, buffer);
+	bb_msg_ptr->burst_buffer_array = xmalloc(sizeof(burst_buffer_info_t) *
+						 bb_msg_ptr->record_count);
+	for (i = 0, bb_info_ptr = bb_msg_ptr->burst_buffer_array;
+	     i < bb_msg_ptr->record_count; i++, bb_info_ptr++) {
+		safe_unpackstr_xmalloc(&bb_info_ptr->name, &uint32_tmp, buffer);
+		safe_unpack32(&bb_info_ptr->record_count, buffer);
+		safe_unpack32(&bb_info_ptr->total_space, buffer);
+		bb_info_ptr->burst_buffer_resv_ptr =
+			xmalloc(sizeof(burst_buffer_resv_t) *
+				bb_info_ptr->record_count);
+		for (j = 0, bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
+		     j < bb_info_ptr->record_count; j++, bb_resv_ptr++) {
+			safe_unpack32(&bb_resv_ptr->job_id, buffer);
+			safe_unpack32(&bb_resv_ptr->size, buffer);
+			safe_unpack16(&bb_resv_ptr->state, buffer);
+			safe_unpack32(&bb_resv_ptr->user_id, buffer);
+		}
+	}
+	*burst_buffer_info = bb_msg_ptr;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_burst_buffer_info_msg(bb_msg_ptr);
+	*burst_buffer_info = NULL;
+	return SLURM_ERROR;
 }
 
 static void

@@ -64,6 +64,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
@@ -74,6 +75,7 @@
 
 typedef struct slurm_bb_ops {
 	int		(*load_state)	(void);
+	int		(*state_pack)	(Buf buffer, uint16_t protocol_version);
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(struct job_descriptor *job_desc,
 					 uid_t submit_uid);
@@ -87,6 +89,7 @@ typedef struct slurm_bb_ops {
  */
 static const char *syms[] = {
 	"bb_p_load_state",
+	"bb_p_state_pack",
 	"bb_p_reconfig",
 	"bb_p_job_validate",
 	"bb_p_job_test_stage_in",
@@ -216,6 +219,43 @@ extern int bb_g_load_state(void)
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/*
+ * Pack current burst buffer state information for network transmission to
+ * user (e.g. "scontrol show burst")
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_state_pack(Buf buffer, uint16_t protocol_version)
+{
+	DEF_TIMERS;
+	int i, rc, rc2;
+	uint32_t rec_count = 0;
+	int eof, last_offset, offset;
+
+	START_TIMER;
+	offset = get_buf_offset(buffer);
+	pack32(rec_count, buffer);
+	rc = bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		last_offset = get_buf_offset(buffer);
+		rc2 = (*(ops[i].state_pack))(buffer, protocol_version);
+		if (last_offset != get_buf_offset(buffer))
+			rec_count++;
+		rc = MAX(rc, rc2);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	if (rec_count != 0) {
+		eof = get_buf_offset(buffer);
+		set_buf_offset(buffer, offset);
+		pack32(rec_count, buffer);
+		set_buf_offset(buffer, eof);
+	}
 	END_TIMER2(__func__);
 
 	return rc;

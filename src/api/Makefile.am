@@ -82,6 +82,7 @@ slurmapi_src =           \
 	allocate.c       \
 	allocate_msg.c   \
 	block_info.c     \
+	burst_buffer_info.c \
 	cancel.c         \
 	checkpoint.c     \
 	complete.c       \
@@ -90,24 +91,29 @@ slurmapi_src =           \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
+	license_info.c   \
 	node_info.c      \
 	partition_info.c \
+	pmi_server.c     \
+	pmi_server.h     \
 	reservation_info.c \
 	signal.c         \
 	slurm_get_statistics.c \
 	slurm_hostlist.c \
-	slurm_pmi.c slurm_pmi.h	\
-	step_ctx.c step_ctx.h \
-	step_io.c step_io.h \
-	step_launch.c step_launch.h \
-	pmi_server.c pmi_server.h \
+	slurm_pmi.c      \
+	slurm_pmi.h	 \
+	step_ctx.c       \
+	step_ctx.h       \
+	step_io.c        \
+	step_io.h        \
+	step_launch.c    \
+	step_launch.h    \
 	submit.c         \
 	suspend.c        \
 	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \
-	update_config.c  \
-	license_info.c
+	update_config.c
 
 common_dir = $(top_builddir)/src/common
 
