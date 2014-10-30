@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Fix issue with squeue/scontrol showing correct node_cnt when only tasks
     are specified.
  -- Check the status of the database connection before using it.
+ -- ALPS - If an allocation requests -n set the BASIL -N option to the
+    amount of tasks / number of node.
 
 * Changes in Slurm 14.03.9
 ==========================
