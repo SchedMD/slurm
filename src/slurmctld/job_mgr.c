@@ -891,7 +891,10 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->priority, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->total_cpus, buffer);
-	pack32(dump_job_ptr->total_nodes, buffer);
+	if (dump_job_ptr->total_nodes)
+		pack32(dump_job_ptr->total_nodes, buffer);
+	else
+		pack32(dump_job_ptr->node_cnt_wag, buffer);
 	pack32(dump_job_ptr->cpu_cnt, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->derived_ec, buffer);
@@ -1648,7 +1651,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->time_limit   = time_limit;
 	job_ptr->time_min     = time_min;
 	job_ptr->total_cpus   = total_cpus;
-	job_ptr->total_nodes  = total_nodes;
+
+	if (job_state == JOB_PENDING)
+		job_ptr->node_cnt_wag = total_nodes;
+	else
+		job_ptr->total_nodes  = total_nodes;
+
 	job_ptr->cpu_cnt      = cpu_cnt;
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->preempt_time = preempt_time;
@@ -7184,6 +7192,15 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			} else if (job_ptr->total_nodes) {
 				pack32(job_ptr->total_nodes, buffer);
 				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->node_cnt_wag) {
+				/* This should catch everything else, but
+				 * just incase this is 0 (startup or
+				 * whatever) we will keep the rest of
+				 * this if statement around.
+				 */
+				pack32(job_ptr->node_cnt_wag, buffer);
+				pack32((uint32_t) detail_ptr->max_nodes,
+				       buffer);
 			} else if (detail_ptr->ntasks_per_node) {
 				/* min_nodes based upon task count and ntasks
 				 * per node */
