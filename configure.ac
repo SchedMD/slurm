@@ -281,6 +281,10 @@ if test ${gtk_config_minor_version=0} -ge 14 ; then
        AC_DEFINE([GTK2_USE_GET_FOCUS], 1, [Define to 1 if using gtk+-2.14.0 or higher])
 fi
 
+if test "x$ac_glib_test" != "xyes" -o "x$ac_gtk_test" != "xyes"; then
+	AC_MSG_WARN([cannot build sview without gtk library]);
+fi
+
 AM_CONDITIONAL(BUILD_SVIEW, [test "x$ac_glib_test" = "xyes"] && [test "x$ac_gtk_test" = "xyes"])
 
 X_AC_DATABASES

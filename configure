@@ -18804,8 +18804,8 @@ $as_echo "#define HAVE_NUMA 1" >>confdefs.h
 
     CFLAGS="-DNUMA_VERSION1_COMPATIBILITY $CFLAGS"
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to locate NUMA memory affinity functions" >&5
-$as_echo "$as_me: WARNING: Unable to locate NUMA memory affinity functions" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate NUMA memory affinity functions" >&5
+$as_echo "$as_me: WARNING: unable to locate NUMA memory affinity functions" >&2;}
   fi
 
 #
@@ -18952,8 +18952,8 @@ fi
 $as_echo "#define HAVE_PAM /**/" >>confdefs.h
 
     else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to locate PAM libraries" >&5
-$as_echo "$as_me: WARNING: Unable to locate PAM libraries" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate PAM libraries" >&5
+$as_echo "$as_me: WARNING: unable to locate PAM libraries" >&2;}
     fi
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -21010,8 +21010,8 @@ $as_echo "NCURSES test program built properly." >&6; }
 $as_echo "$as_me: WARNING: *** NCURSES test program execution failed." >&2;}
 	fi
    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Can not build smap without curses or ncurses library" >&5
-$as_echo "$as_me: WARNING: Can not build smap without curses or ncurses library" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot build smap without curses or ncurses library" >&5
+$as_echo "$as_me: WARNING: cannot build smap without curses or ncurses library" >&2;}
       ac_have_some_curses="no"
    fi
 
@@ -21757,6 +21757,11 @@ if test ${gtk_config_minor_version=0} -ge 14 ; then
 
 $as_echo "#define GTK2_USE_GET_FOCUS 1" >>confdefs.h
 
+fi
+
+if test "x$ac_glib_test" != "xyes" -o "x$ac_gtk_test" != "xyes"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot build sview without gtk library" >&5
+$as_echo "$as_me: WARNING: cannot build sview without gtk library" >&2;};
 fi
 
  if test "x$ac_glib_test" = "xyes" && test "x$ac_gtk_test" = "xyes"; then
@@ -23136,8 +23141,15 @@ rm -f core conftest.err conftest.$ac_objext \
 
 	  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_have_lua $x_ac_lua_pkg_name" >&5
 $as_echo "$x_ac_have_lua $x_ac_lua_pkg_name" >&6; }
+	  if test "x$x_ac_have_lua" = "xno"; then
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against lua libraries" >&5
+$as_echo "$as_me: WARNING: unable to link against lua libraries" >&2;}
+	  fi
 	  CFLAGS="$saved_CFLAGS"
 	  LIBS="$saved_LIBS"
+	else
+	  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate lua package" >&5
+$as_echo "$as_me: WARNING: unable to locate lua package" >&2;}
 	fi
 
 	 if test "x$x_ac_have_lua" = "xyes"; then
@@ -23203,8 +23215,8 @@ fi
 
 
    if test "x$ac_have_man2html" != "xyes" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: Unable to build man page html files without man2html" >&5
-$as_echo "$as_me: Unable to build man page html files without man2html" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to build man page html files without man2html" >&5
+$as_echo "$as_me: WARNING: unable to build man page html files without man2html" >&2;}
    fi
 
  if test "x$ac_have_man2html" = "xyes"; then
@@ -23313,6 +23325,10 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
     LIBS="$saved_LIBS"
+    if test "$READLINE_LIBS" = ""; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: configured for readline support, but couldn't find libraries" >&5
+$as_echo "$as_me: WARNING: configured for readline support, but couldn't find libraries" >&2;};
+    fi
   fi
 
 
@@ -23496,8 +23512,8 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
   else
     SSL_LIBS=""
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Could not find working OpenSSL library" >&5
-$as_echo "$as_me: WARNING: Could not find working OpenSSL library" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: could not find working OpenSSL library" >&5
+$as_echo "$as_me: WARNING: could not find working OpenSSL library" >&2;}
   fi
 
   LIBS="$saved_LIBS"

@@ -45,7 +45,7 @@ AC_DEFUN([X_AC_NCURSES],
 	    AC_MSG_WARN([*** NCURSES test program execution failed.])
 	fi
    else
-      AC_MSG_WARN([Can not build smap without curses or ncurses library])
+      AC_MSG_WARN([cannot build smap without curses or ncurses library])
       ac_have_some_curses="no"
    fi
 ])

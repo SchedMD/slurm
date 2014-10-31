@@ -42,7 +42,7 @@ AC_DEFUN([X_AC_AFFINITY], [
     AC_DEFINE(HAVE_NUMA, 1, [define if numa library installed])
     CFLAGS="-DNUMA_VERSION1_COMPATIBILITY $CFLAGS"
   else
-    AC_MSG_WARN([Unable to locate NUMA memory affinity functions])
+    AC_MSG_WARN([unable to locate NUMA memory affinity functions])
   fi
 
 #

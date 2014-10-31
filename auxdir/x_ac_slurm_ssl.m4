@@ -149,7 +149,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
                [Define to 1 if function EVP_MD_CTX_cleanup exists.])],[])
   else
     SSL_LIBS=""
-    AC_MSG_WARN([Could not find working OpenSSL library])
+    AC_MSG_WARN([could not find working OpenSSL library])
   fi
   
   LIBS="$saved_LIBS"
