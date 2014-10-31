@@ -329,10 +329,6 @@ int main(int argc, char *argv[])
 	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
 		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
 
-	/* Initialize the requeue exit and hold values.
-	 */
-	init_requeue_policy();
-
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");

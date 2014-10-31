@@ -1046,6 +1046,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (license_update(slurmctld_conf.licenses) != SLURM_SUCCESS)
 		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
 
+	init_requeue_policy();
+
 	/* NOTE: Run restore_node_features before _restore_job_dependencies */
 	restore_node_features(recover);
 	_restore_job_dependencies();
