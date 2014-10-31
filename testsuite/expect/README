@@ -61,7 +61,7 @@ way to run "regression" is to write its standard output to one file and
 either write standard error to another file or print it to the terminal.
 Execution time of the full test suite is roughly 80 minutes, but can vary
 considerably with the architecture, configuration, and system load. Some
-tests send e-mail, so check for four e-mail messages set the the user
+tests send e-mail, so check for four e-mail messages sent to the user
 running the tests. Here is an example.
     $ ./regression >slurm.test.tux.Aug3
     Completions:357

@@ -149,7 +149,7 @@ Job Priority plugin is installed.<br>
 <b>sstat</b>&#151;User command to view detailed statistics about running
 jobs when a Job Accounting Gather plugin is installed.<br>
 <b>strigger</b>&#151;User and administrator tool to manage event triggers.<br>
-<b>sview</b>&#151;User command to view and update node, partition, and job
+<b>sview</b>&#151;User command to view and update node, partition, and
 job state information.<br>
 
 <p class="footer"><a href="#top">top</a></p>

@@ -21,10 +21,30 @@
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_DEBUG], [
+  AC_MSG_CHECKING([whether or not developer options are enabled])
+  AC_ARG_ENABLE(
+    [developer],
+    AS_HELP_STRING(--enable-developer,enable developer options (-Werror - also sets --enable-debug as well)),
+    [ case "$enableval" in
+        yes) x_ac_developer=yes ;;
+         no) x_ac_developer=no ;;
+          *) AC_MSG_RESULT([doh!])
+             AC_MSG_ERROR([bad value "$enableval" for --enable-developer]) ;;
+      esac
+    ]
+  )
+  if test "$x_ac_developer" = yes; then
+     test "$GCC" = yes && CFLAGS="$CFLAGS -Werror"
+     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
+     # automatically turn on --enable-debug if being a developer
+     x_ac_debug=yes
+  fi
+  AC_MSG_RESULT([${x_ac_developer=no}])
+
   AC_MSG_CHECKING([whether debugging is enabled])
   AC_ARG_ENABLE(
     [debug],
-    AS_HELP_STRING(--enable-debug,enable debugging code for development),
+    AS_HELP_STRING(--enable-debug,enable debugging code for development (automatically set if --enable-developer is used)),
     [ case "$enableval" in
         yes) x_ac_debug=yes ;;
          no) x_ac_debug=no ;;
@@ -44,24 +64,6 @@ AC_DEFUN([X_AC_DEBUG], [
     )
   fi
   AC_MSG_RESULT([${x_ac_debug=no}])
-
-  AC_MSG_CHECKING([whether or not developer options are enabled])
-  AC_ARG_ENABLE(
-    [developer],
-    AS_HELP_STRING(--enable-developer,enable developer options (-Werror)),
-    [ case "$enableval" in
-        yes) x_ac_developer=yes ;;
-         no) x_ac_developer=no ;;
-          *) AC_MSG_RESULT([doh!])
-             AC_MSG_ERROR([bad value "$enableval" for --enable-developer]) ;;
-      esac
-    ]
-  )
-  if test "$x_ac_developer" = yes; then
-     test "$GCC" = yes && CFLAGS="$CFLAGS -Werror"
-     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
-  fi
-  AC_MSG_RESULT([${x_ac_developer=no}])
 
   AC_MSG_CHECKING([whether memory leak debugging is enabled])
   AC_ARG_ENABLE(

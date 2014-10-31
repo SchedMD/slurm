@@ -998,8 +998,8 @@ with_alps_emulation
 enable_cray_emulation
 enable_native_cray
 enable_cray_network
-enable_debug
 enable_developer
+enable_debug
 enable_memory_leak_debug
 enable_front_end
 enable_partial_attach
@@ -1691,8 +1691,10 @@ Optional Features:
                           Run SLURM in an emulated Cray mode
   --enable-native-cray    Run SLURM natively on a Cray without ALPS
   --enable-cray-network   Run SLURM on a non-Cray system with a Cray network
-  --enable-debug          enable debugging code for development
-  --enable-developer      enable developer options (-Werror)
+  --enable-developer      enable developer options (-Werror - also sets
+                          --enable-debug as well)
+  --enable-debug          enable debugging code for development (automatically
+                          set if --enable-developer is used)
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
   --enable-front-end      enable slurmd operation on a front-end
@@ -22526,6 +22528,30 @@ fi
 
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether or not developer options are enabled" >&5
+$as_echo_n "checking whether or not developer options are enabled... " >&6; }
+  # Check whether --enable-developer was given.
+if test "${enable_developer+set}" = set; then :
+  enableval=$enable_developer;  case "$enableval" in
+        yes) x_ac_developer=yes ;;
+         no) x_ac_developer=no ;;
+          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+             as_fn_error $? "bad value \"$enableval\" for --enable-developer" "$LINENO" 5 ;;
+      esac
+
+
+fi
+
+  if test "$x_ac_developer" = yes; then
+     test "$GCC" = yes && CFLAGS="$CFLAGS -Werror"
+     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
+     # automatically turn on --enable-debug if being a developer
+     x_ac_debug=yes
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_developer=no}" >&5
+$as_echo "${x_ac_developer=no}" >&6; }
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether debugging is enabled" >&5
 $as_echo_n "checking whether debugging is enabled... " >&6; }
   # Check whether --enable-debug was given.
@@ -22553,28 +22579,6 @@ $as_echo "#define NDEBUG 1" >>confdefs.h
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_debug=no}" >&5
 $as_echo "${x_ac_debug=no}" >&6; }
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether or not developer options are enabled" >&5
-$as_echo_n "checking whether or not developer options are enabled... " >&6; }
-  # Check whether --enable-developer was given.
-if test "${enable_developer+set}" = set; then :
-  enableval=$enable_developer;  case "$enableval" in
-        yes) x_ac_developer=yes ;;
-         no) x_ac_developer=no ;;
-          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-$as_echo "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --enable-developer" "$LINENO" 5 ;;
-      esac
-
-
-fi
-
-  if test "$x_ac_developer" = yes; then
-     test "$GCC" = yes && CFLAGS="$CFLAGS -Werror"
-     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
-  fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_developer=no}" >&5
-$as_echo "${x_ac_developer=no}" >&6; }
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether memory leak debugging is enabled" >&5
 $as_echo_n "checking whether memory leak debugging is enabled... " >&6; }

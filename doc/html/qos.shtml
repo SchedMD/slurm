@@ -192,10 +192,10 @@ at submission until previous jobs complete from this user.
 <h2>Other QOS Options</h2></a>
 <ul>
 <li><b>Flags</b> Used by the slurmctld to override or enforce certain
-  characteristics. Valid options are
+characteristics. Valid options are:
 
 <ul>
-<li><b>DenyOnLimit</b> If set jobs using this QOS will be rejected at
+<li><b>DenyOnLimit</b> If set, jobs using this QOS will be rejected at
 submission time if they do not conform to the QOS 'Max' limits.  By default
 jobs that go over these limits will pend until they conform.
 
@@ -211,16 +211,16 @@ with all other QOS (e.g use with a "standby" QOS). If the allocated is
 used with a QOS which can not be preempted by all other QOS, it could
 result in starvation of larger jobs.
 
-<li><b>PartitionMaxNodes</b> If set jobs using this QOS will be able to
+<li><b>PartitionMaxNodes</b> If set, jobs using this QOS will be able to
 override the requested partition's MaxNodes limit.
 
-<li><b>PartitionMinNodes</b> If set jobs using this QOS will be able to
+<li><b>PartitionMinNodes</b> If set, jobs using this QOS will be able to
 override the requested partition's MinNodes limit.
 
-<li><b>PartitionTimeLimit</b> If set jobs using this QOS will be able to
+<li><b>PartitionTimeLimit</b> If set, jobs using this QOS will be able to
 override the requested partition's TimeLimit.
 
-<li><b>RequiresReservaton</b> If set jobs using this QOS must designate a
+<li><b>RequiresReservaton</b> If set, jobs using this QOS must designate a
 reservation when submitting a job.  This option can be useful in
 restricting usage of a QOS that may have greater preemptive capability
 or additional resources to be allowed only within a reservation.

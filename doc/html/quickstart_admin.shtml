@@ -26,7 +26,7 @@ and <i>--sysconfdir=</i></li>
 header files, etc.</li>
 <li>Build a configuration file using your favorite web browser and
 <i>doc/html/configurator.html</i>.<br>
-NOTE: The <i>SlurmUser</i> must be created as needed prior to starting SLURM
+NOTE: The <i>SlurmUser</i> must exist prior to starting SLURM
 and must exist on all nodes of the cluster.<br>
 NOTE: The parent directories for Slurm's log files, process ID files,
 state save directories, etc. are not created by SLURM.
@@ -231,7 +231,7 @@ reaches disk can result in lost state.
 Slurmctld writes state frequently (every five seconds by default), but with
 large numbers of jobs, the formatting and writing of records can take seconds
 and recent changes might not be written to disk.
-Another example is if the state information written to file, but that
+Another example is if the state information is written to file, but that
 information is cached in memory rather than written to disk when the node fails.
 The interval between state saves being written to disk can be configured at
 build time by defining SAVE_MAX_WAIT to a different value than five.</p>
@@ -264,7 +264,7 @@ The MUNGE daemon, <i>munged</i>, must also be started before Slurm daemons.</p>
 
 <p>While Slurm itself does not rely upon synchronized clocks on all nodes
 of a cluster for proper operation, its underlying authentication mechanism
-do have this requirement.</p>
+does have this requirement.</p>
 
 <h3>MPI support</h3>
 <p>Slurm supports many different MPI implementations.
@@ -320,7 +320,7 @@ If you tend to dedicate entire nodes to jobs, the <i>linear</i> plugin
 is recommended.
 For more information, please see
 <a href="cons_res.html">Consumable Resources in Slurm</a>.
-For BlueGene systems, <i>bluegene</i> plugin is required (it is topology
+For BlueGene systems, the <i>bluegene</i> plugin is required (it is topology
 aware and interacts with the BlueGene bridge API).</p>
 
 <h3>Logging</h3>
@@ -510,7 +510,7 @@ match the values of <b>JobCredentialPrivateKey</b> and
 <b>JobCredentialPublicCertificate</b> in your configuration file.
 The <b>JobCredentialPrivateKey</b> file must be readable only by <b>SlurmUser</b>.
 The <b>JobCredentialPublicCertificate</b> file must be readable by all users.
-Note that you should build the key files one on node and then distribute
+Note that you should build the key files on one node and then distribute
 them to all nodes in the cluster.
 This insures that all nodes have a consistent set of digital signature
 keys.
@@ -539,7 +539,7 @@ The auth/none plugin is built by default, but either
 Brent Chun's <a href="http://www.theether.org/authd/">authd</a>,
 or LLNL's <a href="https://code.google.com/p/munge/">MUNGE</a>
 should be installed in order to get properly authenticated communications.
-Unless you are experience with authd, we recommend the use of MUNGE.
+Unless you are experienced with authd, we recommend the use of MUNGE.
 The configure script in the top-level directory of this distribution will
 determine which authentication plugins may be built.
 The configuration file specifies which of the available plugins will be utilized. </p>
@@ -572,8 +572,8 @@ state, job state, etc. With the "-c" option all
 previously running jobs will be purged and node state will be restored to the
 values specified in the configuration file. This means that a node configured
 down manually using the <span class="commandline">scontrol</span> command will
-be returned to service unless also noted as being down in the configuration file.
-In practice, Slurm restarts with preservation consistently.</p>
+be returned to service unless noted as being down in the configuration file.
+In practice, Slurm consistently restarts with preservation.</p>
 <p>A thorough battery of tests written in the &quot;expect&quot; language is also
 available. </p>
 <p class="footer"><a href="#top">top</a></p>
@@ -615,7 +615,7 @@ JobId=477 UserId=bob(6885) Name=sleep JobState=PENDING
 scontrol: update JobId=477 Priority=0
 </pre>
 <p class="footer"><a href="#top">top</a></p>
-<p>Print the state of node adev13 and drain it. To drain a node specify a new
+<p>Print the state of node adev13 and drain it. To drain a node, specify a new
 state of DRAIN, DRAINED, or DRAINING. Slurm will automatically set it to the appropriate
 value of either DRAINING or DRAINED depending on whether the node is allocated
 or not. Return it to service later.</p>
@@ -710,7 +710,7 @@ during this time interval</b>.</p>
 
 <p>The slurmctld daemon must also be upgraded before or at the same time as
 the slurmd daemons on the compute nodes.
-Generally upgrading Slurm on all of the login and compute nodes is recommended,
+Generally, upgrading Slurm on all of the login and compute nodes is recommended,
 although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
@@ -737,13 +737,13 @@ Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
 <p>The libslurm.so version is increased every major release.
 So things like MPI libraries with Slurm integration should be recompiled.
-Sometimes it works to just symlink the old so name(s) to the new one, but this
+Sometimes it works to just symlink the old .so name(s) to the new one, but this
 has no guarantee of working.</p>
 
 <p><b>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values</b>.
-If your Slurm daemon down time associated with an upgrade take longer than
-the timeout value, nodes may be marked DOWN and their jobs killed.
-You can either increase timeout values during an upgrade or insure that your
+If the Slurm daemon's are down for longer than the specified timeout during an
+upgrade, nodes may be marked DOWN and their jobs killed.
+You can either increase the timeout values during an upgrade or insure that the 
 slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
 The recommended upgrade order is as follows:</p>
 <ol>

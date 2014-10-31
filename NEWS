@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- Collect and report the accounting of the batch step and its children.
  -- Add configure checks for faccessat and eaccess, and make use of one of
     them if available.
+ -- Make configure --enable-developer also set --enable-debug
 
 * Changes in Slurm 14.11.0rc2
 =============================
@@ -320,6 +321,7 @@ documents those changes that are of interest to users and administrators.
  -- ALPS - If an allocation requests -n set the BASIL -N option to the
     amount of tasks / number of node.
  -- ALPS - Don't set the env var APRUN_DEFAULT_MEMORY, it is not needed anymore.
+ -- Fix potential buffer overflow.
 
 * Changes in Slurm 14.03.9
 ==========================

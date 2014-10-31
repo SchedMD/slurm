@@ -9,7 +9,7 @@ similar jobs quickly and easily; job arrays with millions of tasks can be
 submitted in milliseconds (subject to configured size limits).
 All jobs must have the same initial options (e.g. size, time limit, etc.),
 however it is possible to change some of these options after the job has begun
-execution using the command specifying the <i>JobID</i> of the array or individual
+execution using the scontrol command specifying the <i>JobID</i> of the array or individual
 <i>ArrayJobID</i>.</p>
 
 <pre>
@@ -21,7 +21,7 @@ $ scontrol update job=101_1 ...
 specified using the <i>--array</i> or <i>-a</i> option of the <i>sbatch</i>
 command. The option argument can be specific array index values, a range of
 index values, and an optional step size as shown in the examples below.
-Note the the minimum index value is zero and the maximum value a Slurm
+Note that the minimum index value is zero and the maximum value is a Slurm
 configuration parameter (<i>MaxArraySize</i> minus one).
 Jobs which are part of a job array will have the environment variable
 <i>SLURM_ARRAY_TASK_ID</i> set to its array index value.</p>
@@ -101,7 +101,7 @@ If these file name options are used without being part of a job array then
 
 <p>If the job ID of a job array is specified as input to the scancel command
 then all elements of that job array will be cancelled.
-Alternately a array ID, optionally using regular expressions, may be specified
+Alternately an array ID, optionally using regular expressions, may be specified
 for job cancellation.</p>
 
 <pre>
@@ -186,8 +186,8 @@ job record (e.g. "5-1024").
 Neither field is displayed if the job is not part of a job array.
 The optional job ID specified with the <i>scontrol show job</i> or
 <i>scontrol show step</i> commands can identify job array elements by
-using specifying two numbers with an underscore between the two:
-"&lt;job_id&gt;_&lt;array_id&gt;".</p>
+specifying <i>ArrayJobId</i> and <i>ArrayTaskId</i> with an underscore between
+them (eg. &lt;ArrayJobID&gt;_&lt;ArrayTaskId&gt;). 
 
 <p>The scontrol command will operate on all elements of a job array if the
 job ID specified is <i>ArrayJobID</i>.
