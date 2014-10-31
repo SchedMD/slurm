@@ -621,6 +621,16 @@ struct job_record {
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
 	uint32_t node_cnt;		/* count of nodes currently
 					 * allocated to job */
+	uint32_t node_cnt_wag;		/* count of nodes Slurm thinks
+					 * will be allocated when the
+					 * job is pending and node_cnt
+					 * wasn't given by the user.
+					 * Until 15.08 this needs to
+					 * be packed in total_nodes
+					 * when dumping state.  When
+					 * state is read in check for
+					 * pending state and set this
+					 * instead of total_nodes */
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to insure
 					 * epilog is not re-run for job */

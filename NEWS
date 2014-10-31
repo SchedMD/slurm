@@ -310,6 +310,7 @@ documents those changes that are of interest to users and administrators.
     amount of tasks / number of node.
  -- ALPS - Don't set the env var APRUN_DEFAULT_MEMORY, it is not needed anymore.
  -- Fix potential buffer overflow.
+ -- Give better estimates on pending node count if no node count is requested.
 
 * Changes in Slurm 14.03.9
 ==========================
