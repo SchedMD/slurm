@@ -42,6 +42,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
@@ -86,6 +87,8 @@ const uint32_t plugin_version   = 100;
 #if _DEBUG
 #define BB_HASH_SIZE		100
 typedef struct bb_alloc {
+	uint32_t array_job_id;
+	uint32_t array_task_id;
 	uint32_t job_id;
 	struct bb_alloc *next;
 	uint32_t size;
@@ -101,26 +104,38 @@ static uint32_t job_size_limit = NO_VAL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
 
+static uint32_t _get_bb_size(struct job_record *job_ptr)
+{
+	char *tok;
+	int32_t bb_size_i;
+	uint32_t bb_size_u = 0;
+
+	tok = strstr(job_ptr->burst_buffer, "size=");
+	if (tok) {
+		bb_size_i = atoi(tok + 5);
+		if (bb_size_i > 0)
+			bb_size_u = (uint32_t) bb_size_i;
+	}
+	return bb_size_u;
+}
+
 static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr = NULL;
-	char *tok;
-	int32_t i;
+	int i;
 
 	xassert(bb_hash);
 	xassert(job_ptr);
 	bb_ptr = xmalloc(sizeof(bb_alloc_t));
+	bb_ptr->array_job_id = job_ptr->array_job_id;
+	bb_ptr->array_task_id = job_ptr->array_task_id;
 	bb_ptr->job_id = job_ptr->job_id;
 	i = job_ptr->job_id % BB_HASH_SIZE;
 	bb_ptr->next = bb_hash[i];
 	bb_hash[i] = bb_ptr;
+	bb_ptr->size = _get_bb_size(job_ptr);;
 	bb_ptr->state = BB_STATE_ALLOCATED;
 	bb_ptr->user_id = job_ptr->user_id;
-
-	tok = strstr(job_ptr->burst_buffer, "size=");
-	i = atoi(tok + 5);
-	if (i > 0)
-		bb_ptr->size = i;
 
 	return bb_ptr;
 }
@@ -372,6 +387,8 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_next = bb_hash[i];
 		while (bb_next) {
+			pack32(bb_next->array_job_id, buffer);
+			pack32(bb_next->array_task_id, buffer);
 			pack32(bb_next->job_id, buffer);
 			pack32(bb_next->size, buffer);
 			pack16(bb_next->state, buffer);
@@ -451,6 +468,43 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 }
 
 /*
+ * Validate a job submit request with respect to burst buffer options.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_p_job_try_stage_in(List job_queue)
+{
+#if _DEBUG
+	ListIterator job_iter;
+	struct job_record *job_ptr;
+	bb_alloc_t *bb_ptr;
+	uint32_t bb_size;
+
+	if (debug_flag)
+		info("%s: %s",  __func__, plugin_type);
+	job_iter = list_iterator_create(job_queue);
+	while ((job_ptr = list_next(job_iter))) {
+		if ((job_ptr->burst_buffer == NULL) ||
+		    (job_ptr->burst_buffer[0] == '\0'))
+			continue;
+		if (_find_bb_rec(job_ptr))
+			continue;
+		bb_size = _get_bb_size(job_ptr);
+		if (bb_size == 0)
+			continue;
+		bb_ptr = _alloc_bb_rec(job_ptr);
+		bb_ptr->state = BB_STATE_ALLOCATED;
+		if (debug_flag) {
+			info("%s: start stage-in job_id:%u",
+			     __func__, job_ptr->job_id);
+		}
+	}
+	list_iterator_destroy(job_iter);
+#endif
+	return SLURM_SUCCESS;
+}
+
+/*
  * Determine if a job's burst buffer stage-in is complete
  *
  * RET: 0 - stage-in is underway
@@ -467,11 +521,15 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 		info("%s: job_id:%u", __func__, job_ptr->job_id);
 	}
 	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0'))
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    (_get_bb_size(job_ptr) == 0))
 		return 1;
 	bb_ptr = _find_bb_rec(job_ptr);
-	if (!bb_ptr)
-		bb_ptr = _alloc_bb_rec(job_ptr);
+	if (!bb_ptr) {
+		debug("%s: job_id:%u bb_rec not found",
+		      __func__, job_ptr->job_id);
+		return -1;
+	}
 	if (bb_ptr->state < BB_STATE_STAGED_IN) {
 		bb_ptr->state++;
 		return 0;
@@ -501,11 +559,15 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		info("%s: job_id:%u", __func__, job_ptr->job_id);
 	}
 	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0'))
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    (_get_bb_size(job_ptr) == 0))
 		return SLURM_SUCCESS;
 	bb_ptr = _find_bb_rec(job_ptr);
-	if (!bb_ptr)
-		bb_ptr = _alloc_bb_rec(job_ptr);
+	if (!bb_ptr) {
+		error("%s: job_id:%u bb_rec not found",
+		      __func__, job_ptr->job_id);
+		return SLURM_ERROR;
+	}
 	bb_ptr->state = BB_STATE_STAGING_OUT;
 	return SLURM_SUCCESS;
 #else
@@ -530,7 +592,8 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		info("%s: job_id:%u", __func__, job_ptr->job_id);
 	}
 	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0'))
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    (_get_bb_size(job_ptr) == 0))
 		return 1;
 	bb_ptr = _find_bb_rec(job_ptr);
 	if (!bb_ptr) {

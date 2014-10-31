@@ -618,6 +618,7 @@ extern void *backfill_agent(void *args)
 		lock_slurmctld(all_locks);
 		(void) _attempt_backfill();
 		last_backfill_time = time(NULL);
+		(void) bb_g_job_try_stage_in();
 		unlock_slurmctld(all_locks);
 	}
 	return NULL;
@@ -672,7 +673,7 @@ static int _attempt_backfill(void)
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	int i, j, node_space_recs;
+	int bb, i, j, node_space_recs;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
 	uint32_t end_time, end_reserve;
@@ -1162,7 +1163,24 @@ next_task:
 			job_ptr->start_time = start_res;
 			last_job_update = now;
 		}
-		if (job_ptr->start_time <= now) {	/* Can start now */
+		if ((job_ptr->start_time <= now) &&
+		    ((bb = bb_g_job_test_stage_in(job_ptr)) != 1)) {
+			xfree(job_ptr->state_desc);
+			if (bb == -1)
+				job_ptr->state_reason=WAIT_BURST_BUFFER_RESOURCE;
+			else	/* bb == 0 */
+				job_ptr->state_reason=WAIT_BURST_BUFFER_STAGING;
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority);
+			last_job_update = now;
+			job_ptr->start_time = now + 10;
+			job_ptr->time_limit = orig_time_limit;
+			later_start = 0;
+		} else if (job_ptr->start_time <= now) { /* Can start now */
 			uint32_t save_time_limit = job_ptr->time_limit;
 			uint32_t hard_limit;
 			bool reset_time = false;
@@ -1291,6 +1309,8 @@ next_task:
 		}
 
 		if ((job_ptr->start_time > now) &&
+		    (job_ptr->state_reason != WAIT_BURST_BUFFER_RESOURCE) &&
+		    (job_ptr->state_reason != WAIT_BURST_BUFFER_STAGING) &&
 		    _test_resv_overlap(node_space, avail_bitmap,
 				       start_time, end_reserve)) {
 			/* This job overlaps with an existing reservation for

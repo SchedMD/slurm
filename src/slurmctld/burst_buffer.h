@@ -95,6 +95,14 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid);
 
 /*
+ * Allocate burst buffers to jobs expected to start soonest
+ * Job records must be read locked
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_try_stage_in(void);
+
+/*
  * Determine if a job's burst buffer stage-in is complete
  *
  * RET: 0 - stage-in is underway

@@ -4183,6 +4183,8 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 #define BB_STATE_STAGED_OUT	0x0005
 
 typedef struct {
+	uint32_t array_job_id;
+	uint32_t array_task_id;
 	uint32_t job_id;
 	uint32_t size;		/* In GB */
 	uint16_t state;		/* See BB_STATE_* */

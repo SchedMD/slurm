@@ -158,9 +158,21 @@ static void _print_burst_buffer_resv(FILE *out,
 	char *out_buf = NULL;
 
 	/****** Line 1 ******/
+	if (burst_buffer_ptr->array_task_id == NO_VAL) {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"  JobID=%u ",
+			burst_buffer_ptr->job_id);
+	} else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"  JobID=%u.%u(%u) ",
+			burst_buffer_ptr->array_job_id,
+		        burst_buffer_ptr->array_task_id,
+		        burst_buffer_ptr->job_id);
+	}
+	xstrcat(out_buf, tmp_line);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"  JobID=%u Size=%u State=%s UserID=%s(%u)",
-		burst_buffer_ptr->job_id, burst_buffer_ptr->size,
+		"Size=%u State=%s UserID=%s(%u)",
+		 burst_buffer_ptr->size,
 		slurm_burst_buffer_state_string(burst_buffer_ptr->state),
 	        uid_to_string(burst_buffer_ptr->user_id),
 	        burst_buffer_ptr->user_id);

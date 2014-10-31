@@ -9282,6 +9282,8 @@ static int _unpack_burst_buffer_info_msg(
 				bb_info_ptr->record_count);
 		for (j = 0, bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
 		     j < bb_info_ptr->record_count; j++, bb_resv_ptr++) {
+			safe_unpack32(&bb_resv_ptr->array_job_id, buffer);
+			safe_unpack32(&bb_resv_ptr->array_task_id, buffer);
 			safe_unpack32(&bb_resv_ptr->job_id, buffer);
 			safe_unpack32(&bb_resv_ptr->size, buffer);
 			safe_unpack16(&bb_resv_ptr->state, buffer);

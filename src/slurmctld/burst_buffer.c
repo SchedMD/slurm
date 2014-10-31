@@ -63,6 +63,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/plugin.h"
@@ -79,6 +80,7 @@ typedef struct slurm_bb_ops {
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(struct job_descriptor *job_desc,
 					 uid_t submit_uid);
+	int		(*job_try_stage_in) (List job_queue);
 	int		(*job_test_stage_in) (struct job_record *job_ptr);
 	int		(*job_start_stage_out) (struct job_record *job_ptr);
 	int		(*job_test_stage_out) (struct job_record *job_ptr);
@@ -92,6 +94,7 @@ static const char *syms[] = {
 	"bb_p_state_pack",
 	"bb_p_reconfig",
 	"bb_p_job_validate",
+	"bb_p_job_try_stage_in",
 	"bb_p_job_test_stage_in",
 	"bb_p_job_start_stage_out",
 	"bb_p_job_test_stage_out"
@@ -303,6 +306,67 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/* sort jobs by expected start time */
+extern int _sort_job_queue(void *x, void *y)
+{
+	struct job_record *job_ptr1 = x;
+	struct job_record *job_ptr2 = y;
+	time_t t1, t2;
+
+	t1 = job_ptr1->start_time;
+	t2 = job_ptr2->start_time;
+	if (t1 > t2)
+		return 1;
+	if (t1 < t2)
+		return -1;
+	return 0;
+}
+
+/*
+ * Allocate burst buffers to jobs expected to start soonest
+ * Job records must be read locked
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_try_stage_in(void)
+{
+	DEF_TIMERS;
+	int i, rc = 1, rc2;
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	time_t now = time(NULL);
+	List job_queue;
+
+	START_TIMER;
+	job_queue = list_create(NULL);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_PENDING(job_ptr))
+			continue;
+		if ((job_ptr->burst_buffer == NULL) ||
+		    (job_ptr->burst_buffer[0] == '\0'))
+			continue;
+		if ((job_ptr->start_time == 0) ||
+		    (job_ptr->start_time > now + 10 * 60 * 60))	/* ten hours */
+			continue;
+		list_push(job_queue, job_ptr);
+	}
+	list_iterator_destroy(job_iterator);
+	list_sort(job_queue, _sort_job_queue);
+
+	rc = bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		rc2 = (*(ops[i].job_try_stage_in))(job_queue);
+		rc = MAX(rc, rc2);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	list_destroy(job_queue);
 	END_TIMER2(__func__);
 
 	return rc;
