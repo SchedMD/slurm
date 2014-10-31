@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Collect and report the accounting of the batch step and its children.
  -- Add configure checks for faccessat and eaccess, and make use of one of
     them if available.
+ -- Make configure --enable-developer also set --enable-debug
 
 * Changes in Slurm 14.11.0rc2
 =============================
