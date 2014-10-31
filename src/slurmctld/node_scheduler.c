@@ -1705,6 +1705,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 #else
 		node_cnt = bit_set_count(select_bitmap);
 #endif
+		/* Set this guess here to give the user tools an idea
+		 * of how many nodes Slurm is planning on giving the job.
+		 */
+		job_ptr->node_cnt_wag = node_cnt;
+
 		if (!test_only &&
 		    !acct_policy_job_runnable_post_select(
 			    job_ptr, node_cnt, job_ptr->total_cpus,
