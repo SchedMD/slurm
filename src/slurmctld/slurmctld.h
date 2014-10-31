@@ -588,8 +588,7 @@ struct job_record {
 					 * will be allocated when the
 					 * job is pending and node_cnt
 					 * wasn't given by the user.
-					 * Until 15.08 this needs to
-					 * be packed in total_nodes
+					 * This is packed in total_nodes
 					 * when dumping state.  When
 					 * state is read in check for
 					 * pending state and set this
