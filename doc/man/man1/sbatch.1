@@ -647,7 +647,7 @@ The default value is the submitting user.
 \fB\-\-mem\fR=<\fIMB\fR>
 Specify the real memory required per node in MegaBytes.
 Default value is \fBDefMemPerNode\fR and the maximum value is
-\fBMaxMemPerNode\fR. If configured, both of parameters can be
+\fBMaxMemPerNode\fR. If configured, both parameters can be
 seen using the \fBscontrol show config\fR command.
 This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
@@ -663,7 +663,7 @@ the next periodic accounting sample.
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
 Mimimum memory required per allocated CPU in MegaBytes.
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
-(see exception below). If configured, both of parameters can be
+(see exception below). If configured, both parameters can be
 seen using the \fBscontrol show config\fR command.
 Note that if the job's \fB\-\-mem\-per\-cpu\fR value exceeds the configured
 \fBMaxMemPerCPU\fR, then the user's limit will be treated as a memory limit
@@ -1154,9 +1154,9 @@ The resources to be shared can be nodes, sockets, cores, or hyperthreads
 depending upon configuration.
 The default shared behavior depends on system configuration and the partition's
 \fBShared\fR option takes precedence over the job's option.
-This option may result the allocation being granted sooner than if the \-\-share
-option was not set and allow higher system utilization, but application
-performance will likely suffer due to competition for resources.
+This option may result in the allocation being granted sooner than if the
+\-\-share option was not set and allow higher system utilization, but
+application performance will likely suffer due to competition for resources.
 Also see the \-\-exclusive option.
 
 .TP

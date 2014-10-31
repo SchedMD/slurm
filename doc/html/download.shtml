@@ -11,8 +11,8 @@ Slurm has also been packaged for
 
 <p>A <a href="http://www.bsc.es/marenostrum-support-services/services/slurm-simulator">Slurm simulator</a>
 is available to assess various scheduling policies.
-Under simulation jobs are not actually executed. Instead a job execution trace
-from a real system or a synthetic trace are used.</p>
+Under simulation, jobs are not actually executed. Instead, a job execution trace
+from a real system, or a synthetic trace, are used.</p>
 
 <!--
 Slurm interface to PHP

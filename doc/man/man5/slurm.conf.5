@@ -1657,6 +1657,9 @@ If you are running lots of short running jobs
 (less than a couple of seconds) this plugin slows down performance dramatically.
 It should probably be avoided in an HTC environment.
 .TP
+\fBproctrack/cray\fR
+which uses Cray proprietary process tracking
+.TP
 \fBproctrack/linuxproc\fR
 which uses linux process tree using parent process IDs
 .TP
@@ -2860,7 +2863,7 @@ The default value is "task/none".
 .TP
 \fBTaskPluginParam\fR
 Optional parameters for the task plugin.
-Multiple options should be comma separated
+Multiple options should be comma separated.
 If \fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR, \fBThreads\fR,
 and/or \fBVerbose\fR are specified, they will override
 the \fB\-\-cpu_bind\fR option specified by the user
@@ -3209,7 +3212,7 @@ This name will be used as an
 argument to the gethostbyname() function for identification.
 If a node range expression is used to designate multiple nodes,
 they must exactly match the entries in the \fBNodeName\fR
-(e.g. "NodeName=lx[0\-7] NodeAddr="elx[0\-7]").
+(e.g. "NodeName=lx[0\-7] NodeAddr=elx[0\-7]").
 \fBNodeAddr\fR may also contain IP addresses.
 By default, the \fBNodeAddr\fR will be identical in value to
 \fBNodeHostname\fR.

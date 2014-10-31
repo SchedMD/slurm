@@ -94,8 +94,8 @@
   by using the <b><i>SelectTypeParameters=other_cons_res</i></b>,
   doing this will allow you to run multiple jobs on a Cray node just
   like on a normal Linux cluster.
-  Use addition <b><i>SelectTypeParameters</i></b> to identify the resources
-  to allocated (e.g. cores, sockets, memory, etc.). See the slurm.conf man
+  Use additional <b><i>SelectTypeParameters</i></b> to identify the resources
+  to allocate (e.g. cores, sockets, memory, etc.). See the slurm.conf man
   page for details.
 </p>
 <li>Switch</li>

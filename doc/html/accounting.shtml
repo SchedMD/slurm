@@ -60,18 +60,17 @@ after moving the files, but before compressing them so
 that new log files will be created.</p>
 
 <p>Storing the data directly into a database from Slurm may seem
-attractive, but requires the availability of user name and
+attractive, but it requires the availability of user name and
 password data not only for the Slurm control daemon (slurmctld),
-but also user commands which need to access the data (sacct, sreport, and
+but also for user commands which need to access the data (sacct, sreport, and
 sacctmgr).
-Making possibly sensitive information available to all users makes
-database security more difficult to provide, sending the data through
+Making potentially sensitive information available to all users makes
+database security more difficult to provide. Sending the data through
 an intermediate daemon can provide better security and performance
-(through caching data) and SlurmDBD provides such services.
-SlurmDBD (Slurm Database Daemon) is written in C, multi-threaded,
-secure and fast.
+(through caching data). SlurmDBD (SLURM Database Daemon) provides such services.
+SlurmDBD is written in C, multi-threaded, secure and fast.
 The configuration required to use SlurmDBD will be described below.
-Storing information directly into database would be similar.</p>
+Storing information directly into a database would be similar.</p>
 
 <p>Note that SlurmDBD relies upon existing Slurm plugins
 for authentication and Slurm sql for database use, but the other SLURM
@@ -235,8 +234,8 @@ This option contains a comma separated list of options you may want to
 their <i>association</i> is not in the database. This option will
 prevent users from accessing invalid accounts.
 </li>
-<li>limits - This will enforce limits set to associations and if a qos
-  is used and has limits those as well. By setting this option, the
+<li>limits - This will enforce limits set on associations and qos'.
+  By setting this option, the
   'associations' option is automatically set.  If a qos is used the
   limits will be enforced, but 'qos' described below is still needed
   if you want to enforce access to the qos.
@@ -276,9 +275,9 @@ user names and optional partition name.)
 jobs will be executed based upon policies configured in Slurm on each
 cluster.</b>
 <br>
-It is advisable to run without the option 'limits' set when running a
+It is advisable to run without the 'limits' option set when running a
 scheduler on top of Slurm like Moab that does not update in real
-time their limits per association.</li>
+time its limits per association.</li>
 
 <li><b>AccountingStorageHost</b>: The name or address of the host where
 SlurmDBD executes</li>
@@ -366,7 +365,7 @@ be a different machine.</li>
 
 <li><b>StorageLoc</b>:
 Specifies the name of the database where accounting
-records are written, for databases the default database is
+records are written. For databases the default database is
 slurm_acct_db. Note the name can not have a '/' in it or the
 default will be used.</li>
 
@@ -489,10 +488,6 @@ given time period.</li>
 </ul>
 <p>See the man pages for each command for more information.</p>
 
-<p>Web interfaces with graphical output is currently under
-development and should be available in the Fall of 2009.
-A tool to report node state information is also under development.</p>
-
 <h2>Database Configuration</h2>
 
 <p>Accounting records are maintained based upon what we refer
@@ -524,8 +519,8 @@ clusters in the system, or comma separate the cluster names you want
 to add to in the cluster option.
 Note that multiple accounts can be added at the same time
 by comma separating the names.
-Some <i>description</i> of the account and the <i>organization</i> which
-it belongs must be specified.
+A <i>description</i> of the account and the <i>organization</i> which
+it belongs to must be specified.
 These terms can be used later to generated accounting reports.
 Accounts may be arranged in a hierarchical fashion, for example accounts
 <i>chemistry</i> and <i>physics</i> may be children of the account <i>science</i>.
@@ -635,18 +630,22 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 <h2>Limit Enforcement</h2>
 
-<p>When limits are developed they will work in this order.
-If a user has a limit set Slurm will read in those,
-if not we will refer to the account associated with the job.
-If the account doesn't have the limit set we will refer to
-the cluster's limits.
-If the cluster doesn't have the limit set no limit will be enforced.</p>
+<p>Slurm's hierarchical limits are enforced in the following order:
+<ol>
+	<li>QOS limit</li>
+	<li>User association</li>
+	<li>Account association(s)</li>
+	<li>Root/Cluster association</li>
+	<li>Partition limit</li>
+	<li>None</li>
+</ol>
+Note: Higher precedent limits override lower.
 
 <p>All of the above entities can include limits as described below and
 in the <a href="resource_limits.html">Resource Limits</a> document.
-In enable any limit enforcement you must at least have
+To enable any limit enforcement you must at least have
 <b>AccountingStorageEnforce=limits</b> in your slurm.conf,
-otherwise even if you have limits set they will not be enforced.
+otherwise, even if you have limits set, they will not be enforced.
 Other options for AccountingStorageEnforce and the explanation for
 each are found on the <a href="resource_limits.html">Resource
 Limits</a> document.</p>

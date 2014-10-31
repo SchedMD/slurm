@@ -866,8 +866,8 @@ may apply. See the <a href="#backfill">backfill</a> section for more details.
 </p>
 
 <p><a name="ansys"><b>27. How can I run an Ansys program with Slurm?</b></a><br>
-If you are talking about interactive run of Ansys app, then you can use this
-simple script (it is for Ansys Fluent):</p>
+If you are talking about an interactive run of the Ansys app, then you can use
+this simple script (it is for Ansys Fluent):</p>
 <pre>
 $ cat ./fluent-srun.sh
 #!/usr/bin/env bash

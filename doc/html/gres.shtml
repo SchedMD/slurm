@@ -79,10 +79,10 @@ CPUs option for improved speed in the Slurm scheduling logic.
 
 <LI><B>File</B> Fully qualified pathname of the device files associated with a
 resource.
-The name can include a numberic range suffix to be interpreted by SLURM
+The name can include a numeric range suffix to be interpreted by SLURM
 (e.g. <I>File=/dev/nvidia[0-3]</I>).
 This field is generally required if enforcement of generic resource
-allocations is to be supported (i.e. prevents a users from making
+allocations are to be supported (i.e. prevents a user from making
 use of resources allocated to a different user).
 Enforcement of the file allocation relies upon Linux Control Groups (cgroups)
 and Slurm's task/cgroup plugin, which will place the allocated files into

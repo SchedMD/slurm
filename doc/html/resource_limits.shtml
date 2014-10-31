@@ -11,11 +11,16 @@ but should use their own resource limits mechanisms.</p>
 
 <h2>Hierachy</h2>
 
+<p>Slurm's hierarchical limits are enforced in the following order:
 <ol>
-<li>QOS (Quality of Service) limits override all other limits.</li>
-<li>Association limits override partition limits.</li>
-<li>Partition limits (from the slurm.conf file) are also available.</li>
+	<li>QOS limit</li>
+	<li>User association</li>
+	<li>Account association(s)</li>
+	<li>Root/Cluster association</li>
+	<li>Partition limit</li>
+	<li>None</li>
 </ol>
+Note: Higher precedent limits override lower.
 
 <h2>Configuration</h2>
 
@@ -38,14 +43,14 @@ on the host where SlurmDBD is installed.
 Only the <i>slurmdbd</i> and <i>slurm-plugins</i> RPMs are required
 for SlurmDBD execution.</p>
 
-<p>Both accounting and scheduling policy are configured based upon
+<p>Both accounting and scheduling policies are configured based upon
 an <i>association</i>. An <i>association</i> is a 4-tuple consisting
 of the cluster name, bank account, user and (optionally) the SLURM
 partition.
 In order to enforce scheduling policy, set the value of
-<b>AccountingStorageEnforce</b>:
+<b>AccountingStorageEnforce</b>.
 This option contains a comma separated list of options you may want to
- enforce.  The valid options are
+enforce.  The valid options are:
 <ul>
 <li>associations - This will prevent users from running jobs if
 their <i>association</i> is not in the database. This option will
@@ -81,9 +86,9 @@ Without AccountingStorageEnforce being set (the default behavior)
 jobs will be executed based upon policies configured in Slurm on each
 cluster.
 <br>
-It is advisable to run without the option 'limits' set when running a
+It is advisable to run without the 'limits' option set when running a
 scheduler on top of Slurm, like Moab, that does not update in real
-time their limits per association.
+time its limits per association.
 </p>
 
 <h2>Tools</h2>
@@ -93,8 +98,6 @@ It can be used to create and delete cluster, user, bank account,
 and partition records plus their combined <i>association</i> record.
 See <i>man sacctmgr</i> for details on this tools and examples of
 its use.</p>
-
-<p>A web interface with graphical output is currently under development.</p>
 
 <p>Changes made to the scheduling policy are uploaded to
 the Slurm control daemons on the various clusters and take effect

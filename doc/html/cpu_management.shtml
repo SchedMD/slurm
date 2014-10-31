@@ -1834,7 +1834,7 @@ SelectTypeParameters=CR_Core,CR_CORE_DEFAULT_DIST_BLOCK
 <a name="Example5"></a>
 <h3>Example 5: Consumable resources with cyclic distribution of tasks to nodes</h3>
 <p>A job requires 12 CPUs (6 tasks and 2 CPUs per task with no overcommitment). Allocate 
-6 CPUs from each of 2 nodes in the default partition. Distribute tasks to nodes cyclically.
+6 CPUs each from 2 nodes in the default partition. Distribute tasks to nodes cyclically.
 </p>
 <p>slurm.conf options:</p>
 <pre>SelectType=select/cons_res
@@ -1847,7 +1847,7 @@ SelectTypeParameters=CR_Core
 <p>Comments:</p>
 <p>The options specify the following conditions for the job: 6 tasks, 2 unique CPUs per task, 
 using exactly 2 nodes, and with 3 tasks per node. To satisfy these conditions, SLURM 
-must allocate 6 CPUs from each of 2 nodes. The <font face="Courier New, monospace">
+must allocate 6 CPUs from each of the 2 nodes. The <font face="Courier New, monospace">
 --distribution=cyclic</font> option causes the tasks to be distributed to the nodes in a 
 round-robin fashion. The following table shows a possible pattern of allocation and 
 distribution for this job.
@@ -2116,7 +2116,7 @@ SelectTypeParameters=CR_Core
 srun --nodes=1-1 --nodelist=n0 --ntasks=6 --share ...
 </pre>
 <p>Comments:</p>
-<p>The <font face="Courier New, monospace">--nodes=1-1</font> and <font face="Courier New, monospace">-w n0</font> 
+<p>The <font face="Courier New, monospace">--nodes=1-1</font> and <font face="Courier New, monospace">--nodelist=n0</font> 
 srun options together restrict both jobs to node n0. The 
 <font face="Courier New, monospace">Shared=YES</font> option in the partition definition plus 
 the <font face="Courier New, monospace">--share</font> srun option allows the two 

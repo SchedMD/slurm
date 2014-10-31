@@ -63,7 +63,7 @@ in the <i>slurm.conf</i> file using the <i>MpiParams</i> parameter.
 For example: <br>
 <i>MpiParams=ports=12000-12999</i></p>
 
-<p>OpenMPI just also be configured with <i>--with-pmi</i> to support the port
+<p>OpenMPI must also be configured with <i>--with-pmi</i> to support the port
 reservation method.</p>
 
 <p>Launch tasks using the <span class="commandline">srun</span> command

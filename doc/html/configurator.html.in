@@ -453,8 +453,8 @@ fails by using an interval default set at SLURM build time.
 <H2>Authentication and Security</H2>
 Define the method used for authenticating communicating between SLURM components.<BR>
 Select one value for <B>AuthType</B>:<BR>
-<input type="radio" name="auth_type" value="none"> <B>None</B>: No authentication,
-not recommended production use<br>
+<input type="radio" name="auth_type" value="none"> <B>None</B>: No authentication.
+Not recommended for production use.<br>
 <input type="radio" name="auth_type" value="authd"> <B>Authd</B>: Brent Chun's
 <A href="http://www.theether.org/authd/">authd</A><BR>
 <input type="radio" name="auth_type" value="munge" checked> <B>Munge</B>: LLNL's
@@ -528,10 +528,10 @@ Select one value for <B>FastSchedule</B>:<BR>
 (if configured with with gang scheduling or allocation of individual
 processors to jobs rather than only whole node allocations, the processor
 count on the node should match the configured value to avoid having extra
-processors left idle)<BR>
+processors left idle).<BR>
 <input type="radio" name="fast_schedule" value="1" checked>
 <B>1</B>: Use node configuration values defined in configuration file.
-Mark node DOWN if registers with fewer resources<BR>
+Mark node DOWN if registers with fewer resources.<BR>
 <P>
 
 <H2>Interconnect</H2>
