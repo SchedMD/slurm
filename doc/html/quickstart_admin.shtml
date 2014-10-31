@@ -81,17 +81,53 @@ set CFLAGS and LDFLAGS environment variables accordingly.
 Optional Slurm plugins will be built automatically when the
 <span class="commandline">configure</span> script detects that the required
 build requirements are present. Build dependencies for various plugins
-and commands are denoted below.
+and commands are denoted below:
 </p>
 <ul>
-<li> <b>MUNGE</b> The auth/munge plugin will be built if the MUNGE authentication
-		  library is installed. MUNGE is used as the default
-		  authentication mechanism.</li>
 <li> <b>Authd</b> The auth/authd plugin will be built and installed if
-		  the libauth library and its dependency libs are installed.
-		  </li>
-<li> <b>sview</b> The sview command will be built only if and <i>gtk+-2.0</i>
-		  is installed</li>
+		the libauth development library and its dependency libs are
+		installed.</li>
+<li> <b>BLCR</b> The <i>checkpoint/blcr</i> plugin will be built if the
+		<i>blcr</i> development library is present.</li>
+<li> <b>cgroup Task Affinity</b> The <i>task/cgroup</i> plugin will be built
+		with task affinity support if the <i>hwloc</i> development
+		library is present.</li>
+<li> <b>HDF5 Job Profiling</b> The <i>acct_gather_profile/hdf5</i> job profiling
+		plugin will be built if the <i>hdf5</i> development library is
+		present.</li>
+<li> <b>HTML Man Pages</b> HTML versions of the man pages will be generated if
+		the <i>man2html</i> command is present.</li>
+<li> <b>IPMI Engergy Consumption</b> The <i>acct_gather_energy/ipmi</i>
+		accouting plugin will be built if the <i>freeimpi</i>
+		development library is present.</li>
+<li> <b>InfiniBand Accounting</b> The <i>acct_gather_infiniband/ofed</i>
+		InfiniBand accounting plugin will be built if the
+		<i>libibmad</i> and <i>libibumad</i> development libraries are
+		present.</li>
+<li> <b>Lua Support</b> The lua API will be available in various plugins if the
+		<i>lua</i> development library is present.</li>
+<li> <b>MUNGE</b> The auth/munge plugin will be built if the MUNGE
+		authentication development library is installed. MUNGE is used
+		as the default authentication mechanism.</li>
+<li> <b>MySQL</b> MySQL support for accounting will be built if the
+		<i>mysql</i> development library is present.</li>
+<li> <b>OpenSSL</b> The <i>crypto/openssl</i> CryptoType plugin will be built if
+		the <i>openssl</i> development library is present.</li>
+<li> <b>PAM Support</b> PAM support will be added if the <i>PAM</i> development
+		library is installed.</li>
+<li> <b>NUMA Affinity</b> NUMA support in the task/affinity plugin will be
+		available if the <i>numa</i> development library is installed.
+		</li>
+<li> <b>Readline Support</b> Readline support in scontrol and sacctmgr's
+		interactive modes will be available if the <i>readline</i>
+		development library is present.</li>
+<li> <b>RRD External Sensor Data Collection </b> The <i>ext_sensors/rrd</i>
+		plugin will be built if the <i>rrdtool</i> development library
+		is present.</li>
+<li> <b>smap</b> The smap command will be built only if the <i>ncurses</i>
+		development library is installed.</li>
+<li> <b>sview</b> The sview command will be built only if <i>gtk+-2.0</i>
+		is installed.</li>
 </ul>
 Please see the <a href=download.html>Download</a> page for references to
 required software to build these plugins.</p>

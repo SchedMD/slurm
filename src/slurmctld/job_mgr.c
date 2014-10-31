@@ -143,6 +143,7 @@ static uint32_t num_exit;
 static int32_t  *requeue_exit;
 static uint32_t num_hold;
 static int32_t  *requeue_exit_hold;
+static bool     kill_invalid_dep;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
@@ -244,6 +245,7 @@ static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
+static void _kill_dependent(struct job_record *);
 
 /*
  * Functions used to manage job array responses with a separate return code
@@ -566,7 +568,7 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 				error("ignoring SchedulerParameters: "
 				      "max_switch_wait of %d", i);
 			} else {
-				      max_wait = i;
+				max_wait = i;
 			}
 		}
 		xfree(sched_params);
@@ -8019,10 +8021,21 @@ void purge_old_job(void)
 		if (test_job_dependency(job_ptr) == 2) {
 			char jbuf[JBUFSIZ];
 
-			debug("%s: %s dependency condition never satisfied",
-			      __func__, jobid2str(job_ptr, jbuf));
-			job_ptr->state_reason = WAIT_DEP_INVALID;
-			xfree(job_ptr->state_desc);
+			if (kill_invalid_dep) {
+				_kill_dependent(job_ptr);
+			} else {
+				debug("%s: %s dependency condition never satisfied",
+				      __func__, jobid2str(job_ptr, jbuf));
+				job_ptr->state_reason = WAIT_DEP_INVALID;
+				xfree(job_ptr->state_desc);
+			}
+		}
+		if (job_ptr->state_reason == WAIT_DEP_INVALID
+		    && kill_invalid_dep) {
+			/* The job got the WAIT_DEP_INVALID
+			 * before slurmctld was reconfigured.
+			 */
+			_kill_dependent(job_ptr);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -11551,10 +11564,14 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	} else if (depend_rc == 2) {
 		char jbuf[JBUFSIZ];
 
-		debug("%s: %s dependency condition never satisfied",
-		      __func__, jobid2str(job_ptr, jbuf));
-		job_ptr->state_reason = WAIT_DEP_INVALID;
-		xfree(job_ptr->state_desc);
+		if (kill_invalid_dep) {
+			_kill_dependent(job_ptr);
+		} else {
+			debug("%s: %s dependency condition never satisfied",
+			      __func__, jobid2str(job_ptr, jbuf));
+			job_ptr->state_reason = WAIT_DEP_INVALID;
+			xfree(job_ptr->state_desc);
+		}
 		return false;
 	}
 
@@ -13606,10 +13623,31 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 void
 init_requeue_policy(void)
 {
+	char *sched_params;
+	char *p;
+
+	/* clean first as we can be reconfiguring
+	 */
+	num_exit = 0;
+	xfree(requeue_exit);
+	num_hold = 0;
+	xfree(requeue_exit_hold);
+
 	requeue_exit = _make_requeue_array(slurmctld_conf.requeue_exit,
 					   &num_exit);
 	requeue_exit_hold = _make_requeue_array(slurmctld_conf.requeue_exit_hold,
 						&num_hold);
+	/* Check if users want to kill a job whose dependency
+	 * can never be satisfied.
+	 */
+	kill_invalid_dep = false;
+	sched_params = slurm_get_sched_params();
+	if (sched_params) {
+		if ((p = strstr(sched_params, "kill_invalid_depend")))
+			kill_invalid_dep = true;
+	}
+
+	info("%s: kill_invalid_depend is set to %d", __func__, kill_invalid_dep);
 }
 
 /* _make_requeue_array()
@@ -13633,7 +13671,7 @@ _make_requeue_array(char *conf_buf, uint32_t *num)
 		return NULL;
 	}
 
-	debug2("%s: exit values: %s", __func__, conf_buf);
+	info("%s: exit values: %s", __func__, conf_buf);
 
 	p0 = p = xstrdup(conf_buf);
 	/* First tokenize the string removing ,
@@ -13866,4 +13904,28 @@ _copy_job_file(const char *src, const char *dst)
 	close(fdst);
 
 	return 0;
+}
+
+/* _kill_dependent()
+ *
+ * Exterminate the job that has invalid dependency
+ * condition.
+ */
+static void
+_kill_dependent(struct job_record *job_ptr)
+{
+	char jbuf[JBUFSIZ];
+	time_t now;
+
+	now = time(NULL);
+
+	info("%s: Job dependency can't be satisfied, cancelling "
+	     "job %s", __func__, jobid2str(job_ptr, jbuf));
+	job_ptr->job_state = JOB_CANCELLED;
+	xfree(job_ptr->state_desc);
+	job_ptr->start_time = now;
+	job_ptr->end_time = now;
+	job_completion_logger(job_ptr, false);
+	last_job_update = now;
+	srun_allocate_abort(job_ptr);
 }

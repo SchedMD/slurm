@@ -40,6 +40,9 @@ AC_DEFUN([X_AC_READLINE],
 	readline("in:");]])],[AC_DEFINE([HAVE_READLINE], [1], 
                  [Define if you are compiling with readline.])],[READLINE_LIBS=""])
     LIBS="$saved_LIBS"
+    if test "$READLINE_LIBS" = ""; then
+      AC_MSG_WARN([configured for readline support, but couldn't find libraries]);
+    fi
   fi
   AC_SUBST(READLINE_LIBS)
 ])
