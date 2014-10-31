@@ -155,6 +155,31 @@ static bb_alloc_t *_find_bb_rec(struct job_record *job_ptr)
 	return bb_ptr;
 }
 
+static void _purge_bb_rec(void)
+{
+	static time_t time_last_purge = 0;
+	time_t now = time(NULL);
+	bb_alloc_t **bb_pptr, *bb_ptr = NULL;
+	int i;
+
+	if (difftime(now, time_last_purge) > 60) {	/* Once per minute */
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			bb_pptr = &bb_hash[i];
+			bb_ptr = bb_hash[i];
+			while (bb_ptr) {
+				if ((bb_ptr->state >= BB_STATE_STAGED_OUT) &&
+				    !find_job_record(bb_ptr->job_id)) {
+					*bb_pptr = bb_ptr->next;
+					xfree(bb_ptr);
+					break;
+				}
+				bb_pptr = &bb_ptr->next;
+				bb_ptr = bb_ptr->next;
+			}
+		}
+	}
+}
+
 /* Translate colon delimitted list of users into a UID array,
  * Return value must be xfreed */
 static uid_t *_parse_users(char *buf)
@@ -344,6 +369,7 @@ extern int bb_p_load_state(void)
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_state();
+	_purge_bb_rec();
 #endif
 	return SLURM_SUCCESS;
 }
