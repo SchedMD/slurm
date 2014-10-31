@@ -1921,7 +1921,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->time_min     = time_min;
 	job_ptr->total_cpus   = total_cpus;
 
-	if (job_state == JOB_PENDING)
+	if (IS_JOB_PENDING(job_ptr))
 		job_ptr->node_cnt_wag = total_nodes;
 	else
 		job_ptr->total_nodes  = total_nodes;
