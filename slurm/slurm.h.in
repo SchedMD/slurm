@@ -4203,6 +4203,12 @@ typedef struct {
 } burst_buffer_info_msg_t;
 
 /*
+ * slurm_burst_buffer_state_string - translate burst buffer state number to
+ *	it string equivalent
+ */
+extern char *slurm_burst_buffer_state_string(uint16_t state);
+
+/*
  * slurm_load_burst_buffer_info - issue RPC to get slurm all burst buffer plugin
  *	information
  * IN burst_buffer_info_msg_pptr - place to store a burst buffer configuration

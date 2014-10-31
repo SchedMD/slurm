@@ -54,8 +54,33 @@
 #include "slurm/slurm.h"
 
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+/*
+ * slurm_burst_buffer_state_string - translate burst buffer state number to
+ *	it string equivalent
+ */
+extern char *slurm_burst_buffer_state_string(uint16_t state)
+{
+	static char buf[16];
+
+	if (state == BB_STATE_ALLOCATED)
+		return "allocated";
+	if (state == BB_STATE_STAGING_IN)
+		return "staging-in";
+	if (state == BB_STATE_STAGING_IN)
+		return "staging-in";
+	if (state == BB_STATE_STAGED_IN)
+		return "staged-in";
+	if (state == BB_STATE_STAGING_OUT)
+		return "staging-out";
+	if (state == BB_STATE_STAGED_OUT)
+		return "staged-out";
+	snprintf(buf, sizeof(buf), "%u", state);
+	return buf;
+}
 
 /*
  * slurm_load_burst_buffer_info - issue RPC to get slurm all burst buffer plugin
@@ -134,9 +159,11 @@ static void _print_burst_buffer_resv(FILE *out,
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"  JobID=%u Size=%u State=%u UserID=%u",
+		"  JobID=%u Size=%u State=%s UserID=%s(%u)",
 		burst_buffer_ptr->job_id, burst_buffer_ptr->size,
-		burst_buffer_ptr->state, burst_buffer_ptr->user_id);
+		slurm_burst_buffer_state_string(burst_buffer_ptr->state),
+	        uid_to_string(burst_buffer_ptr->user_id),
+	        burst_buffer_ptr->user_id);
 	xstrcat(out_buf, tmp_line);
 
 	xstrcat(out_buf, "\n");
