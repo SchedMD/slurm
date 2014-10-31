@@ -97,6 +97,13 @@ typedef struct bb_alloc {
 } bb_alloc_t;
 bb_alloc_t **bb_hash = NULL;	/* Hash by job_id */
 
+typedef struct bb_user {
+	struct bb_user *next;
+	uint32_t size;
+	uint32_t user_id;
+} bb_user_t;
+bb_user_t **bb_uhash = NULL;	/* Hash by user_id */
+
 static uid_t   *allow_users = NULL;
 static bool	debug_flag = false;
 static uid_t   *deny_users = NULL;
@@ -178,6 +185,65 @@ static void _purge_bb_rec(void)
 			}
 		}
 	}
+}
+
+/* Find user table record for specific user ID, create a record as needed */
+bb_user_t *_find_user_rec(uint32_t user_id)
+{
+	int inx = user_id % BB_HASH_SIZE;
+	bb_user_t *user_ptr;
+
+	xassert(bb_uhash);
+	user_ptr = bb_uhash[inx];
+	while (user_ptr) {
+		if (user_ptr->user_id == user_id)
+			return user_ptr;
+		user_ptr = user_ptr->next;
+	}
+	user_ptr = xmalloc(sizeof(bb_user_t));
+	user_ptr->next = bb_uhash[inx];
+	/* user_ptr->size = 0;	initialized by xmalloc */
+	user_ptr->user_id = user_id;
+	bb_uhash[inx] = user_ptr;
+	return user_ptr;
+}
+
+/* Add a burst buffer allocation to a user's load */
+static void _add_user_load(bb_alloc_t *bb_ptr)
+{
+	bb_user_t *user_ptr;
+
+	user_ptr = _find_user_rec(bb_ptr->user_id);
+	user_ptr->size += bb_ptr->size;
+}
+
+/* Remove a burst buffer allocation from a user's load */
+static void _remove_user_load(bb_alloc_t *bb_ptr)
+{
+	bb_user_t *user_ptr;
+
+	user_ptr = _find_user_rec(bb_ptr->user_id);
+	if (user_ptr->size >= bb_ptr->size) {
+		user_ptr->size -= bb_ptr->size;
+	} else {
+		error("%s: user %u table underflow",
+		      __func__, user_ptr->user_id);
+		user_ptr->size = 0;
+	}
+}
+
+/* Test if a user's space limit prevents adding
+ * RET true if limit reached, false otherwise */
+static bool _test_user_limit(uint32_t user_id, uint32_t add_space)
+{
+	bb_user_t *user_ptr;
+
+	if (user_size_limit == NO_VAL)
+		return false;
+	user_ptr = _find_user_rec(user_id);
+	if ((user_ptr->size + add_space) > user_size_limit)
+		return true;
+	return false;
 }
 
 /* Translate colon delimitted list of users into a UID array,
@@ -294,7 +360,8 @@ static void _load_config(void)
 
 static void _clear_cache(void)
 {
-	struct bb_alloc *bb_current, *bb_next;
+	bb_alloc_t *bb_current, *bb_next;
+	bb_user_t  *user_current, *user_next;
 	int i;
 
 	if (bb_hash) {
@@ -308,13 +375,39 @@ static void _clear_cache(void)
 		}
 		xfree(bb_hash);
 	}
+
+	if (bb_uhash) {
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			user_current = bb_uhash[i];
+			while (user_current) {
+				user_next = user_current->next;
+				xfree(user_current);
+				user_current = user_next;
+			}
+		}
+		xfree(bb_uhash);
+	}
 }
 
 
 static void _load_cache(void)
 {
+	bb_alloc_t *bb_ptr;
+	int i;
+
+	bb_hash = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
 /* FIXME: Need to populate on restart */
-	bb_hash = xmalloc(sizeof(struct bb_alloc *) * BB_HASH_SIZE);
+
+	bb_uhash = xmalloc(sizeof(bb_user_t *) * BB_HASH_SIZE);
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_ptr = bb_hash[i];
+		while (bb_ptr) {
+			if (bb_ptr->state < BB_STATE_STAGED_OUT) {
+				_add_user_load(bb_ptr);
+			}
+			bb_ptr = bb_ptr->next;
+		}
+	}
 }
 
 static void _load_state(void)
@@ -513,13 +606,16 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		if ((job_ptr->burst_buffer == NULL) ||
 		    (job_ptr->burst_buffer[0] == '\0'))
 			continue;
-		if (_find_bb_rec(job_ptr))
-			continue;
 		bb_size = _get_bb_size(job_ptr);
 		if (bb_size == 0)
 			continue;
+		if (_test_user_limit(job_ptr->user_id, bb_size))
+			continue;
+		if (_find_bb_rec(job_ptr))
+			continue;
 		bb_ptr = _alloc_bb_rec(job_ptr);
 		bb_ptr->state = BB_STATE_ALLOCATED;
+		_add_user_load(bb_ptr);
 		if (debug_flag) {
 			info("%s: start stage-in job_id:%u",
 			     __func__, job_ptr->job_id);
@@ -627,7 +723,8 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		      __func__, job_ptr->job_id);
 		return -1;
 	} else if (bb_ptr->state == BB_STATE_STAGING_OUT) {
-		bb_ptr->state++;
+		if (++bb_ptr->state == BB_STATE_STAGED_OUT)
+			_remove_user_load(bb_ptr);
 		return 0;
 	} else if (bb_ptr->state == BB_STATE_STAGED_OUT) {
 		return 1;
