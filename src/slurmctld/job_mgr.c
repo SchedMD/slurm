@@ -6012,21 +6012,20 @@ static int _write_data_to_file(char *file_name, char *data)
  */
 char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
-	char job_dir[30], *file_name, **environment = NULL;
+	char *file_name, **environment = NULL;
 	int hash = job_ptr->job_id % 10;
 	int cc;
 
 	file_name = slurm_get_state_save_location();
-	sprintf(job_dir, "/hash.%d/job.%u/environment", hash, job_ptr->job_id);
-	xstrcat(file_name, job_dir);
+	xstrfmtcat(file_name, "/hash.%d/job.%u/environment",
+		   hash, job_ptr->job_id);
 
 	if (_read_data_array_from_file(file_name, &environment, env_size,
 				       job_ptr)) {
 		/* Read state from version 14.03 or earlier */
 		xfree(file_name);
 		file_name = slurm_get_state_save_location();
-		sprintf(job_dir, "/job.%u/environment", job_ptr->job_id);
-		xstrcat(file_name, job_dir);
+		xstrfmtcat(file_name, "/job.%u/environment", job_ptr->job_id);
 		cc = _read_data_array_from_file(file_name,
 						&environment,
 						env_size,
