@@ -269,24 +269,18 @@ void *agent(void *args)
 	thread_ptr = agent_info_ptr->thread_struct;
 
 	/* start the watchdog thread */
-	if (getenv("SLURM_NO_WDOG")) {
-		/* Test purposes only. Do not want threads to be interrupted
-		 * by SIGUSR1. Breaks normal operation */
-		error("%s: Watchdog thread disabled", __func__);
-	} else {
-		slurm_attr_init(&attr_wdog);
-		if (pthread_attr_setdetachstate
-		    (&attr_wdog, PTHREAD_CREATE_JOINABLE))
-			error("pthread_attr_setdetachstate error %m");
-		while (pthread_create(&thread_wdog, &attr_wdog, _wdog,
-				      (void *) agent_info_ptr)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			usleep(10000);	/* sleep and retry */
-		}
-		slurm_attr_destroy(&attr_wdog);
+	slurm_attr_init(&attr_wdog);
+	if (pthread_attr_setdetachstate
+	    (&attr_wdog, PTHREAD_CREATE_JOINABLE))
+		error("pthread_attr_setdetachstate error %m");
+	while (pthread_create(&thread_wdog, &attr_wdog, _wdog,
+			      (void *) agent_info_ptr)) {
+		error("pthread_create error %m");
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		usleep(10000);	/* sleep and retry */
 	}
+	slurm_attr_destroy(&attr_wdog);
 #if 	AGENT_THREAD_COUNT < 1
 	fatal("AGENT_THREAD_COUNT value is invalid");
 #endif
@@ -334,12 +328,7 @@ void *agent(void *args)
 	}
 
 	/* Wait for termination of remaining threads */
-	if (!getenv("SLURM_NO_WDOG")) {
-		/* Test purposes only. Do not want threads to be interrupted
-		 * by SIGUSR1 */
-		pthread_join(thread_wdog, NULL);
-	}
-
+	pthread_join(thread_wdog, NULL);
 	delay = (int) difftime(time(NULL), begin_time);
 	if (delay > (slurm_get_msg_timeout() * 2)) {
 		info("agent msg_type=%u ran for %d seconds",
