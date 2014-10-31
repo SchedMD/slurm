@@ -1046,6 +1046,11 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	if (!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	if (!node_ptr) {
 		error("No node_ptr given!");
 		return SLURM_ERROR;
@@ -1104,6 +1109,11 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	if (!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%ld where "
 		"time_end=0 and node_name='%s';",
@@ -1132,6 +1142,11 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
+
+	if (!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
 
 	if (!mysql_conn->cluster_name)
 		mysql_conn->cluster_name = xstrdup(cluster);
@@ -1253,6 +1268,11 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 
  	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
+
+	if (!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
 
 	/* Record the processor count */
 	query = xstrdup_printf(
