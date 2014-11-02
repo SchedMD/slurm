@@ -368,6 +368,13 @@ _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
 	}
 
 	while ((obj = list_next(i))) {
+		// cleanup connection list
+		if( obj->shutdown == true ){
+			eio_obj_t *obj1  = list_remove(i);
+			xassert( obj1 == obj );
+			xfree(obj);
+			continue;
+		}
 		writable = _is_writable(obj);
 		readable = _is_readable(obj);
 		if (writable && readable) {
