@@ -2974,8 +2974,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->authtype = xstrdup(DEFAULT_AUTH_TYPE);
 
 	s_p_get_string(&conf->bb_params, "BurstBufferParameters", hashtbl);
-	if (!s_p_get_string(&conf->bb_type, "BurstBufferType", hashtbl))
-		conf->bb_type = xstrdup(DEFAULT_BB_TYPE);
+	s_p_get_string(&conf->bb_type, "BurstBufferType", hashtbl);
 
 	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateTime", hashtbl)) {
 		if (uint16_tmp > GROUP_TIME_MASK) {

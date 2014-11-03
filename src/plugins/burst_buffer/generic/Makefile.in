@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for burst_buffer/none plugin
+# Makefile for burst_buffer/generic plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
@@ -81,7 +81,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/burst_buffer/none
+subdir = src/plugins/burst_buffer/generic
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/auxdir/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -160,16 +160,17 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-burst_buffer_none_la_LIBADD =
-am_burst_buffer_none_la_OBJECTS = burst_buffer_none.lo
-burst_buffer_none_la_OBJECTS = $(am_burst_buffer_none_la_OBJECTS)
+burst_buffer_generic_la_LIBADD =
+am_burst_buffer_generic_la_OBJECTS = burst_buffer_generic.lo
+burst_buffer_generic_la_OBJECTS =  \
+	$(am_burst_buffer_generic_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-burst_buffer_none_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+burst_buffer_generic_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(burst_buffer_none_la_LDFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS) $(burst_buffer_generic_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -205,8 +206,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(burst_buffer_none_la_SOURCES)
-DIST_SOURCES = $(burst_buffer_none_la_SOURCES)
+SOURCES = $(burst_buffer_generic_la_SOURCES)
+DIST_SOURCES = $(burst_buffer_generic_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -471,9 +472,9 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(MUNGE_CPPFLAGS)
-pkglib_LTLIBRARIES = burst_buffer_none.la
-burst_buffer_none_la_SOURCES = burst_buffer_none.c
-burst_buffer_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+pkglib_LTLIBRARIES = burst_buffer_generic.la
+burst_buffer_generic_la_SOURCES = burst_buffer_generic.c
+burst_buffer_generic_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -487,9 +488,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/burst_buffer/none/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/burst_buffer/generic/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/burst_buffer/none/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/burst_buffer/generic/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -544,8 +545,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-burst_buffer_none.la: $(burst_buffer_none_la_OBJECTS) $(burst_buffer_none_la_DEPENDENCIES) $(EXTRA_burst_buffer_none_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(burst_buffer_none_la_LINK) -rpath $(pkglibdir) $(burst_buffer_none_la_OBJECTS) $(burst_buffer_none_la_LIBADD) $(LIBS)
+burst_buffer_generic.la: $(burst_buffer_generic_la_OBJECTS) $(burst_buffer_generic_la_DEPENDENCIES) $(EXTRA_burst_buffer_generic_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(burst_buffer_generic_la_LINK) -rpath $(pkglibdir) $(burst_buffer_generic_la_OBJECTS) $(burst_buffer_generic_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -553,7 +554,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer_none.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer_generic.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

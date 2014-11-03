@@ -1,3 +1,3 @@
 # Makefile for burst buffer plugins
 
-SUBDIRS = none
+SUBDIRS = generic

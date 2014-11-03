@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  burst_buffer_none.c - No-op library for managing a burst_buffer
+ *  burst_buffer_generic.c - Generic library for managing a burst_buffer
  *****************************************************************************
  *  Copyright (C) 2014 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -80,8 +80,8 @@
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum version for their plugins as this API matures.
  */
-const char plugin_name[]        = "burst_buffer NONE plugin";
-const char plugin_type[]        = "burst_buffer/none";
+const char plugin_name[]        = "burst_buffer generic plugin";
+const char plugin_type[]        = "burst_buffer/generic";
 const uint32_t plugin_version   = 100;
 
 #if _DEBUG
