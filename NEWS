@@ -36,6 +36,9 @@ documents those changes that are of interest to users and administrators.
     then jobs pending with invalid dependency are going to be terminated.
  -- Move spank_user_task() call in slurmstepd after the task_g_pre_launch()
     so that the task affinity information is available to spank.
+ -- Make /etc/init.d/slurm script return value 3 when the daemon is
+    not running. This is required by Linux Standard Base Core
+    Specification 3.1
 
 * Changes in Slurm 14.11.0rc2
 =============================
@@ -327,6 +330,7 @@ documents those changes that are of interest to users and administrators.
  -- ALPS - Don't set the env var APRUN_DEFAULT_MEMORY, it is not needed anymore.
  -- Fix potential buffer overflow.
  -- Give better estimates on pending node count if no node count is requested.
+ -- BLUEGENE - Fix issue where requeuing jobs could cause an assert.
 
 * Changes in Slurm 14.03.9
 ==========================

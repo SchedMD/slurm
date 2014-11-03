@@ -11359,6 +11359,10 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 #ifdef HAVE_BG
 	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID, "unassigned");
+	/* If on a bluegene system we want to remove the job_resrcs so
+	 * we don't get an error message about them already existing
+	 * when the job goes to run again. */
+	free_job_resources(&job_ptr->job_resrcs);
 #endif
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
@@ -11480,13 +11484,6 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 
 	xassert(job_ptr);
 
-#ifdef HAVE_BG
-	/* If on a bluegene system we want to remove the job_resrcs so
-	 * we don't get an error message about them already existing
-	 * when the job goes to run again. */
-	if (requeue)
-		free_job_resources(&job_ptr->job_resrcs);
-#endif
 	acct_policy_remove_job_submit(job_ptr);
 	(void) bb_g_job_start_stage_out(job_ptr);
 
