@@ -9276,7 +9276,13 @@ static int _unpack_burst_buffer_info_msg(
 	     i < bb_msg_ptr->record_count; i++, bb_info_ptr++) {
 		safe_unpackstr_xmalloc(&bb_info_ptr->name, &uint32_tmp, buffer);
 		safe_unpack32(&bb_info_ptr->record_count, buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->allow_users, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->deny_users, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&bb_info_ptr->job_size_limit, buffer);
 		safe_unpack32(&bb_info_ptr->total_space, buffer);
+		safe_unpack32(&bb_info_ptr->user_size_limit, buffer);
 		bb_info_ptr->burst_buffer_resv_ptr =
 			xmalloc(sizeof(burst_buffer_resv_t) *
 				bb_info_ptr->record_count);

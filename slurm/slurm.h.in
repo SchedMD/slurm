@@ -4192,11 +4192,15 @@ typedef struct {
 } burst_buffer_resv_t;
 
 typedef struct {
-	char *name;		/* Plugin name */
-	uint32_t total_space;	/* In GB */
+	char *allow_users;
+	char *deny_users;
+	uint32_t job_size_limit;	/* In GB or NO_VAL */
+	char *name;			/* Plugin name */
+	uint32_t total_space;		/* In GB */
+	uint32_t user_size_limit;	/* In GB or NO_VAL */
 
-	burst_buffer_resv_t *burst_buffer_resv_ptr;
 	uint32_t  record_count;
+	burst_buffer_resv_t *burst_buffer_resv_ptr;
 } burst_buffer_info_t;
 
 typedef struct {

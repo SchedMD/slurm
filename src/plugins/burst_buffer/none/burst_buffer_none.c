@@ -105,8 +105,10 @@ typedef struct bb_user {
 bb_user_t **bb_uhash = NULL;	/* Hash by user_id */
 
 static uid_t   *allow_users = NULL;
+static char    *allow_users_str = NULL;
 static bool	debug_flag = false;
 static uid_t   *deny_users = NULL;
+static char    *deny_users_str = NULL;
 static uint32_t job_size_limit = NO_VAL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
@@ -304,8 +306,10 @@ static char *_print_users(uid_t *buf)
 static void _clear_config(void)
 {
 	xfree(allow_users);
+	xfree(allow_users_str);
 	debug_flag = false;
 	xfree(deny_users);
+	xfree(deny_users_str);
 	job_size_limit = NO_VAL;
 	total_space = 0;
 	user_size_limit = NO_VAL;
@@ -314,7 +318,7 @@ static void _clear_config(void)
 /* Load and process BurstBufferParameters configuration parameter */
 static void _load_config(void)
 {
-	char *bb_params, *key, *value;
+	char *bb_params, *key, *sep, *value;
 
 	_clear_config();
 	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
@@ -323,15 +327,24 @@ static void _load_config(void)
 	if (bb_params) {
 		/*                       01234567890123456 */
 		key = strstr(bb_params, "allow_users=");
-		if (key)
-			allow_users = _parse_users(key + 12);
+		if (key) {
+			allow_users_str = xstrdup(key + 12);
+			sep = strchr(allow_users_str, ',');
+			if (sep)
+				sep[0] = '\0';
+			allow_users = _parse_users(allow_users_str);
+		}
 
 		key = strstr(bb_params, "deny_users=");
 		if (allow_users && key) {
 			error("%s: ignoring deny_users, allow_users is set",
 			      __func__);
 		} else if (key) {
-			deny_users = _parse_users(key + 11);
+			deny_users_str = xstrdup(key + 11);
+			sep = strchr(deny_users_str, ',');
+			if (sep)
+				sep[0] = '\0';
+			deny_users = _parse_users(deny_users_str);
 		}
 
 		key = strstr(bb_params, "job_size_limit=");
@@ -500,7 +513,11 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
 	offset = get_buf_offset(buffer);
 	pack32(rec_count, buffer);
+	packstr(allow_users_str, buffer);
+	packstr(deny_users_str, buffer);
+	pack32(job_size_limit, buffer);
 	pack32(total_space, buffer);
+	pack32(user_size_limit, buffer);
 	if (bb_hash == NULL)
 		return SLURM_SUCCESS;
 	for (i = 0; i < BB_HASH_SIZE; i++) {

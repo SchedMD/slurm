@@ -196,18 +196,44 @@ static void _print_burst_buffer_resv(FILE *out,
 extern void slurm_print_burst_buffer_record(FILE *out,
 		burst_buffer_info_t *burst_buffer_ptr, int one_liner)
 {
-	char tmp_line[512];
+	char tmp_line[512], tmp1[32], tmp2[32];
 	char *out_buf = NULL;
 	burst_buffer_resv_t *bb_resv_ptr;
 	int i;
 
 	/****** Line 1 ******/
+	if (burst_buffer_ptr->job_size_limit == NO_VAL) {
+		snprintf(tmp1, sizeof(tmp1), "INFINITE");
+	} else {
+		snprintf(tmp1, sizeof(tmp1), "%u(GB)",
+			 burst_buffer_ptr->job_size_limit);
+	}
+	if (burst_buffer_ptr->user_size_limit == NO_VAL) {
+		snprintf(tmp2, sizeof(tmp2), "INFINITE");
+	} else {
+		snprintf(tmp2, sizeof(tmp2), "%u(GB)",
+			 burst_buffer_ptr->user_size_limit);
+	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Name=%s TotalSpace=%u(GB)",
-		burst_buffer_ptr->name, burst_buffer_ptr->total_space);
+		"Name=%s TotalSpace=%u(GB) JobSizeLimit=%s UserSizeLimit=%s",
+		burst_buffer_ptr->name, burst_buffer_ptr->total_space,
+		tmp1, tmp2);
 	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
 
-	xstrcat(out_buf, "\n");
+	/****** Line 2 (optional) ******/
+	if (burst_buffer_ptr->allow_users) {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"AllowUsers=%s\n", burst_buffer_ptr->allow_users);
+		xstrcat(out_buf, tmp_line);
+	} else if (burst_buffer_ptr->deny_users) {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"DenyUsers=%s\n", burst_buffer_ptr->deny_users);
+		xstrcat(out_buf, tmp_line);
+	}
 	fprintf(out, "%s", out_buf);
 	xfree(out_buf);
 

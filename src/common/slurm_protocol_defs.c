@@ -2644,6 +2644,8 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 	if (msg) {
 		for (i = 0, bb_info_ptr = msg->burst_buffer_array;
 		     i < msg->record_count; i++, bb_info_ptr++) {
+			xfree(bb_info_ptr->allow_users);
+			xfree(bb_info_ptr->deny_users);
 			xfree(bb_info_ptr->name);
 			xfree(bb_info_ptr->burst_buffer_resv_ptr);
 		}
