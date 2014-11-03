@@ -1657,70 +1657,61 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 {
 	int rc = SLURM_SUCCESS;
 
-	if (old_auth_type) {
-		if (xstrcmp(old_auth_type, ctl_conf_ptr->authtype)) {
-			xfree(ctl_conf_ptr->authtype);
-			ctl_conf_ptr->authtype = old_auth_type;
-			rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
-		} else	/* free duplicate value */
-			xfree(old_auth_type);
+	if (xstrcmp(old_auth_type, ctl_conf_ptr->authtype)) {
+		xfree(ctl_conf_ptr->authtype);
+		ctl_conf_ptr->authtype = old_auth_type;
+		rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
+	} else {	/* free duplicate value */
+		xfree(old_auth_type);
 	}
 
-	if (old_bb_type) {
-		if (xstrcmp(old_bb_type, ctl_conf_ptr->bb_type)) {
-			xfree(ctl_conf_ptr->bb_type);
-			ctl_conf_ptr->bb_type = old_auth_type;
-			rc =  ESLURM_INVALID_BURST_BUFFER_CHANGE;
-		} else	/* free duplicate value */
-			xfree(old_bb_type);
+	if (xstrcmp(old_bb_type, ctl_conf_ptr->bb_type)) {
+		xfree(ctl_conf_ptr->bb_type);
+		ctl_conf_ptr->bb_type = old_bb_type;
+		rc =  ESLURM_INVALID_BURST_BUFFER_CHANGE;
+	} else {	/* free duplicate value */
+		xfree(old_bb_type);
 	}
 
-	if (old_checkpoint_type) {
-		if (xstrcmp(old_checkpoint_type,
-				ctl_conf_ptr->checkpoint_type)) {
-			xfree(ctl_conf_ptr->checkpoint_type);
-			ctl_conf_ptr->checkpoint_type = old_checkpoint_type;
-			rc =  ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE;
-		} else  /* free duplicate value */
-			xfree(old_checkpoint_type);
+	if (xstrcmp(old_checkpoint_type, ctl_conf_ptr->checkpoint_type)) {
+		xfree(ctl_conf_ptr->checkpoint_type);
+		ctl_conf_ptr->checkpoint_type = old_checkpoint_type;
+		rc =  ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE;
+	} else {	/* free duplicate value */
+		xfree(old_checkpoint_type);
 	}
 
-	if (old_crypto_type) {
-		if (xstrcmp(old_crypto_type,
-				ctl_conf_ptr->crypto_type)) {
-			xfree(ctl_conf_ptr->crypto_type);
-			ctl_conf_ptr->crypto_type = old_crypto_type;
-			rc = ESLURM_INVALID_CRYPTO_TYPE_CHANGE;
-		} else
-			xfree(old_crypto_type);
+	if (xstrcmp(old_crypto_type, ctl_conf_ptr->crypto_type)) {
+		xfree(ctl_conf_ptr->crypto_type);
+		ctl_conf_ptr->crypto_type = old_crypto_type;
+		rc = ESLURM_INVALID_CRYPTO_TYPE_CHANGE;
+	} else {	/* free duplicate value */
+		xfree(old_crypto_type);
 	}
 
-	if (old_sched_type) {
-		if (xstrcmp(old_sched_type, ctl_conf_ptr->schedtype)) {
-			xfree(ctl_conf_ptr->schedtype);
-			ctl_conf_ptr->schedtype = old_sched_type;
-			rc =  ESLURM_INVALID_SCHEDTYPE_CHANGE;
-		} else	/* free duplicate value */
-			xfree(old_sched_type);
+	if (xstrcmp(old_sched_type, ctl_conf_ptr->schedtype)) {
+		xfree(ctl_conf_ptr->schedtype);
+		ctl_conf_ptr->schedtype = old_sched_type;
+		rc =  ESLURM_INVALID_SCHEDTYPE_CHANGE;
+	} else {	/* free duplicate value */
+		xfree(old_sched_type);
 	}
 
 
-	if (old_select_type) {
-		if (xstrcmp(old_select_type, ctl_conf_ptr->select_type)) {
-			xfree(ctl_conf_ptr->select_type);
-			ctl_conf_ptr->select_type = old_select_type;
-			rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
-		} else	/* free duplicate value */
-			xfree(old_select_type);
+	if (xstrcmp(old_select_type, ctl_conf_ptr->select_type)) {
+		xfree(ctl_conf_ptr->select_type);
+		ctl_conf_ptr->select_type = old_select_type;
+		rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
+	} else {	/* free duplicate value */
+		xfree(old_select_type);
 	}
 
-	if (old_switch_type) {
-		if (xstrcmp(old_switch_type, ctl_conf_ptr->switch_type)) {
-			xfree(ctl_conf_ptr->switch_type);
-			ctl_conf_ptr->switch_type = old_switch_type;
-			rc = ESLURM_INVALID_SWITCHTYPE_CHANGE;
-		} else	/* free duplicate value */
-			xfree(old_switch_type);
+	if (xstrcmp(old_switch_type, ctl_conf_ptr->switch_type)) {
+		xfree(ctl_conf_ptr->switch_type);
+		ctl_conf_ptr->switch_type = old_switch_type;
+		rc = ESLURM_INVALID_SWITCHTYPE_CHANGE;
+	} else {	/* free duplicate value */
+		xfree(old_switch_type);
 	}
 
 	if (ctl_conf_ptr->backup_controller == NULL)
