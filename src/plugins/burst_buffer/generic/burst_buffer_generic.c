@@ -113,6 +113,8 @@ static uint32_t job_size_limit = NO_VAL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
 
+/* Translate a burst buffer size specification in string form to numeric form,
+ * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
 static uint32_t _get_size_num(char *tok)
 {
 	char *end_ptr = NULL;
@@ -137,6 +139,7 @@ static uint32_t _get_size_num(char *tok)
 	return bb_size_u;
 }
 
+/* Return the burst buffer size requested by a job */
 static uint32_t _get_bb_size(struct job_record *job_ptr)
 {
 	char *tok;
@@ -149,6 +152,8 @@ static uint32_t _get_bb_size(struct job_record *job_ptr)
 	return bb_size_u;
 }
 
+/* Allocate a per-job burst buffer record for a specific job.
+ * Return a pointer to that record. */
 static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr = NULL;
@@ -170,6 +175,8 @@ static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 	return bb_ptr;
 }
 
+/* Find a per-job burst buffer record for a specific job.
+ * If not found, return NULL. */
 static bb_alloc_t *_find_bb_rec(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr = NULL;
@@ -185,6 +192,8 @@ static bb_alloc_t *_find_bb_rec(struct job_record *job_ptr)
 	return bb_ptr;
 }
 
+/* Purge per-job burst buffer records when the stage-out has completed and
+ * the job has been purged from Slurm */
 static void _purge_bb_rec(void)
 {
 	static time_t time_last_purge = 0;
@@ -330,7 +339,8 @@ static uid_t *_parse_users(char *buf)
 	return user_array;
 }
 
-/* Translate an array of UIDs into a string with colon delimited UIDs
+/* Translate an array of (zero terminated) UIDs into a string with colon
+ * delimited UIDs
  * Return value must be xfreed */
 static char *_print_users(uid_t *buf)
 {
@@ -351,6 +361,7 @@ static char *_print_users(uid_t *buf)
 	return user_str;
 }
 
+/* Clear configuration parameters, free memory */
 static void _clear_config(void)
 {
 	xfree(allow_users);
@@ -419,6 +430,7 @@ static void _load_config(void)
 	}
 }
 
+/* Clear all cached burst buffer records, freeing all memory. */
 static void _clear_cache(void)
 {
 	bb_alloc_t *bb_current, *bb_next;
@@ -450,7 +462,7 @@ static void _clear_cache(void)
 	}
 }
 
-
+/* Restore all cached burst buffer records. */
 static void _load_cache(void)
 {
 	bb_alloc_t *bb_ptr;
@@ -471,6 +483,7 @@ static void _load_cache(void)
 	}
 }
 
+/* Determine the current actual burst buffer state */
 static void _load_state(void)
 {
 	static uint32_t last_total_space = 0;
@@ -498,6 +511,9 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * fini() is called when the plugin is unloaded. Free all memory.
+ */
 extern int fini(void)
 {
 #if _DEBUG
