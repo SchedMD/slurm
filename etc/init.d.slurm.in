@@ -186,7 +186,6 @@ slurmstatus() {
 		fi
 		RETVAL=1
 	    fi
-	    
 	fi
 
 	if [[ $rc -eq 0 ]]
@@ -198,10 +197,11 @@ slurmstatus() {
 	    echo $"${base} (pid $pid) is running..."
 	    continue
 	fi
-	
-	echo $"${base} is stopped"
-	RETVAL=1
 
+	echo $"${base} is stopped"
+	if [ "$RETVAL" == "0" ]; then
+	    RETVAL=3
+	fi
     done
 
     return $RETVAL
@@ -263,7 +263,7 @@ case "$1" in
 	       anystop=$rc
 	   fi
 	done
-	RETVAL=$anystop          
+	RETVAL=$anystop
 	;;
     restart)
 	$0 stop

@@ -22,6 +22,9 @@ documents those changes that are of interest to users and administrators.
     then jobs pending with invalid dependency are going to be terminated.
  -- Move spank_user_task() call in slurmstepd after the task_g_pre_launch()
     so that the task affinity information is available to spank.
+ -- Make /etc/init.d/slurm script return value 3 when the daemon is
+    not running. This is required by Linux Standard Base Core
+    Specification 3.1
 
 * Changes in Slurm 14.11.0rc2
 =============================
