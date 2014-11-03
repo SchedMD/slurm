@@ -1,7 +1,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I auxdir
-SUBDIRS    = auxdir src testsuite doc contribs
+SUBDIRS    = auxdir src testsuite doc
 
 EXTRA_DIST =			\
 	etc/bluegene.conf.example \
@@ -56,6 +56,12 @@ mrproper: distclean-local clean
 	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm.h)
 	-find $(top_srcdir)/src -name "Makefile" -exec rm {} \;
 	-find $(top_srcdir) -depth -name ".deps" -exec rm -rf {} \;
+
+contrib:
+	@cd contribs && \
+	$(MAKE) && \
+	cd ..;
+
 
 install-contrib:
 	@cd contribs && \
