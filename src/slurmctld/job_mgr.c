@@ -13706,8 +13706,8 @@ init_requeue_policy(void)
 
 	requeue_exit = _make_requeue_array(slurmctld_conf.requeue_exit,
 					   &num_exit);
-	requeue_exit_hold = _make_requeue_array(slurmctld_conf.requeue_exit_hold,
-						&num_hold);
+	requeue_exit_hold = _make_requeue_array(
+		slurmctld_conf.requeue_exit_hold, &num_hold);
 	/* Check if users want to kill a job whose dependency
 	 * can never be satisfied.
 	 */
@@ -13719,7 +13719,8 @@ init_requeue_policy(void)
 		xfree(sched_params);
 	}
 
-	info("%s: kill_invalid_depend is set to %d", __func__, kill_invalid_dep);
+	info("%s: kill_invalid_depend is set to %d",
+	     __func__, kill_invalid_dep);
 }
 
 /* _make_requeue_array()
