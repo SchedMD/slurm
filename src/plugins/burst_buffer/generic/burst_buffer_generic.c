@@ -50,7 +50,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define _DEBUG 0
+#define _DEBUG 1
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -109,7 +109,13 @@ static char    *allow_users_str = NULL;
 static bool	debug_flag = false;
 static uid_t   *deny_users = NULL;
 static char    *deny_users_str = NULL;
+static char    *get_sys_state = NULL;
 static uint32_t job_size_limit = NO_VAL;
+static uint32_t prio_boost = 0;
+static char    *start_stage_in = NULL;
+static char    *start_stage_out = NULL;
+static char    *stop_stage_in = NULL;
+static char    *stop_stage_out = NULL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
 
@@ -369,7 +375,13 @@ static void _clear_config(void)
 	debug_flag = false;
 	xfree(deny_users);
 	xfree(deny_users_str);
+	xfree(get_sys_state);
 	job_size_limit = NO_VAL;
+	prio_boost = 0;
+	xfree(start_stage_in);
+	xfree(start_stage_out);
+	xfree(stop_stage_in);
+	xfree(stop_stage_out);
 	total_space = 0;
 	user_size_limit = NO_VAL;
 }
@@ -384,49 +396,100 @@ static void _load_config(void)
 		debug_flag = true;
 	bb_params = slurm_get_bb_params();
 	if (bb_params) {
-		/*                       01234567890123456 */
-		key = strstr(bb_params, "allow_users=");
+		/*                       0123456789012345678 */
+		key = strstr(bb_params, "AllowUsers=");
 		if (key) {
-			allow_users_str = xstrdup(key + 12);
+			allow_users_str = xstrdup(key + 11);
 			sep = strchr(allow_users_str, ',');
 			if (sep)
 				sep[0] = '\0';
 			allow_users = _parse_users(allow_users_str);
 		}
 
-		key = strstr(bb_params, "deny_users=");
+		key = strstr(bb_params, "DenyUsers=");
 		if (allow_users && key) {
 			error("%s: ignoring deny_users, allow_users is set",
 			      __func__);
 		} else if (key) {
-			deny_users_str = xstrdup(key + 11);
+			deny_users_str = xstrdup(key + 10);
 			sep = strchr(deny_users_str, ',');
 			if (sep)
 				sep[0] = '\0';
 			deny_users = _parse_users(deny_users_str);
 		}
 
-		key = strstr(bb_params, "job_size_limit=");
+		key = strstr(bb_params, "JobSizeLimit=");
 		if (key)
-			job_size_limit = _get_size_num(key + 15);
+			job_size_limit = _get_size_num(key + 13);
 
-		key = strstr(bb_params, "user_size_limit=");
+		key = strstr(bb_params, "GetSysState=");
+		if (key) {
+			get_sys_state = xstrdup(key + 12);
+			sep = strchr(get_sys_state, ',');
+			if (sep)
+				sep[0] = '\0';
+		}
+
+		key = strstr(bb_params, "StagedInPrioBoost=");
 		if (key)
-			user_size_limit = _get_size_num(key + 16);
+			prio_boost = atoi(key + 18);
+
+		key = strstr(bb_params, "StartStageIn=");
+		if (key) {
+			start_stage_in = xstrdup(key + 13);
+			sep = strchr(start_stage_in, ',');
+			if (sep)
+				sep[0] = '\0';
+		}
+
+		key = strstr(bb_params, "StartStageOut=");
+		if (key) {
+			start_stage_out = xstrdup(key + 14);
+			sep = strchr(start_stage_out, ',');
+			if (sep)
+				sep[0] = '\0';
+		}
+
+		key = strstr(bb_params, "StopStageIn=");
+		if (key) {
+			stop_stage_in = xstrdup(key + 12);
+			sep = strchr(stop_stage_in, ',');
+			if (sep)
+				sep[0] = '\0';
+		}
+
+		key = strstr(bb_params, "StopStageOut=");
+		if (key) {
+			stop_stage_out = xstrdup(key + 13);
+			sep = strchr(stop_stage_out, ',');
+			if (sep)
+				sep[0] = '\0';
+		}
+
+		key = strstr(bb_params, "UserSizeLimit=");
+		if (key)
+			user_size_limit = _get_size_num(key + 14);
 	}
 	xfree(bb_params);
 
 	if (debug_flag) {
 		value = _print_users(allow_users);
-		info("%s: allow_users:%s",  __func__, value);
+		info("%s: AllowUsers:%s",  __func__, value);
 		xfree(value);
 
 		value = _print_users(deny_users);
-		info("%s: deny_users:%s",  __func__, value);
+		info("%s: DenyUsers:%s",  __func__, value);
 		xfree(value);
 
-		info("%s: job_size_limit:%u",  __func__, job_size_limit);
-		info("%s: user_size_limit:%u",  __func__, user_size_limit);
+		info("%s: GetSysState:%s",  __func__, get_sys_state);
+		info("%s: StagedInPrioBoost:%u", __func__, prio_boost);
+		info("%s: StartStageIn:%s",  __func__, start_stage_in);
+		info("%s: StartStageOut:%s",  __func__, start_stage_out);
+		info("%s: StopStageIn:%s",  __func__, stop_stage_in);
+		info("%s: StopStageOut:%s",  __func__, stop_stage_out);
+
+		info("%s: JobSizeLimit:%u",  __func__, job_size_limit);
+		info("%s: UserSizeLimit:%u",  __func__, user_size_limit);
 	}
 }
 
@@ -483,7 +546,8 @@ static void _load_cache(void)
 	}
 }
 
-/* Determine the current actual burst buffer state */
+/* Determine the current actual burst buffer state.
+ * Run the program "get_sys_state" and parse stdout for details. */
 static void _load_state(void)
 {
 	static uint32_t last_total_space = 0;
@@ -576,23 +640,29 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 		info("%s: %s",  __func__, plugin_type);
 	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
 	offset = get_buf_offset(buffer);
-	pack32(rec_count, buffer);
+	pack32(rec_count,        buffer);
 	packstr(allow_users_str, buffer);
-	packstr(deny_users_str, buffer);
-	pack32(job_size_limit, buffer);
-	pack32(total_space, buffer);
-	pack32(user_size_limit, buffer);
+	packstr(deny_users_str,  buffer);
+	packstr(get_sys_state,   buffer);
+	packstr(start_stage_in,  buffer);
+	packstr(start_stage_out, buffer);
+	packstr(stop_stage_in,   buffer);
+	packstr(stop_stage_out,  buffer);
+	pack32(job_size_limit,   buffer);
+	pack32(prio_boost,       buffer);
+	pack32(total_space,      buffer);
+	pack32(user_size_limit,  buffer);
 	if (bb_hash == NULL)
 		return SLURM_SUCCESS;
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_next = bb_hash[i];
 		while (bb_next) {
-			pack32(bb_next->array_job_id, buffer);
+			pack32(bb_next->array_job_id,  buffer);
 			pack32(bb_next->array_task_id, buffer);
-			pack32(bb_next->job_id, buffer);
-			pack32(bb_next->size, buffer);
-			pack16(bb_next->state, buffer);
-			pack32(bb_next->user_id, buffer);
+			pack32(bb_next->job_id,        buffer);
+			pack32(bb_next->size,          buffer);
+			pack16(bb_next->state,         buffer);
+			pack32(bb_next->user_id,       buffer);
 			rec_count++;
 			bb_next = bb_next->next;
 		}

@@ -4195,8 +4195,14 @@ typedef struct {
 typedef struct {
 	char *allow_users;
 	char *deny_users;
+	char *get_sys_state;
 	uint32_t job_size_limit;	/* In GB or NO_VAL */
 	char *name;			/* Plugin name */
+	uint32_t prio_boost;		/* job priority boost after staged in */
+	char *start_stage_in;
+	char *start_stage_out;
+	char *stop_stage_in;
+	char *stop_stage_out;
 	uint32_t total_space;		/* In GB */
 	uint32_t user_size_limit;	/* In GB or NO_VAL */
 

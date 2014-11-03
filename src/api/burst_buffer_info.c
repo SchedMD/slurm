@@ -64,6 +64,8 @@ static void _get_size_str(char *buf, size_t buf_size, uint32_t num)
 
 	if ((num == NO_VAL) || (num == INFINITE)) {
 		snprintf(buf, buf_size, "INFINITE");
+	} else if (num == 0) {
+		snprintf(buf, buf_size, "0GB");
 	} else if ((num & BB_SIZE_IN_NODES) != 0) {
 		tmp32 = num & (~BB_SIZE_IN_NODES);
 		snprintf(buf, buf_size, "%uN", tmp32);
@@ -181,11 +183,11 @@ static void _print_burst_buffer_resv(FILE *out,
 	/****** Line 1 ******/
 	if (burst_buffer_ptr->array_task_id == NO_VAL) {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"  JobID=%u ",
+			"    JobID=%u ",
 			burst_buffer_ptr->job_id);
 	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"  JobID=%u.%u(%u) ",
+			"    JobID=%u.%u(%u) ",
 			burst_buffer_ptr->array_job_id,
 		        burst_buffer_ptr->array_task_id,
 		        burst_buffer_ptr->job_id);
@@ -220,9 +222,20 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	char tmp_line[512], j_sz_buf[32], t_sz_buf[32], u_sz_buf[32];
 	char *out_buf = NULL;
 	burst_buffer_resv_t *bb_resv_ptr;
+	bool has_acl = false;
 	int i;
 
 	/****** Line 1 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"Name=%s StagedInPrioBoost=%u",
+		burst_buffer_ptr->name, burst_buffer_ptr->prio_boost);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line 2 ******/
 	_get_size_str(j_sz_buf, sizeof(j_sz_buf),
 		      burst_buffer_ptr->job_size_limit);
 	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
@@ -230,24 +243,75 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 		      burst_buffer_ptr->user_size_limit);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Name=%s TotalSpace=%s JobSizeLimit=%s UserSizeLimit=%s",
-		burst_buffer_ptr->name, t_sz_buf, j_sz_buf, u_sz_buf);
+		"TotalSpace=%s JobSizeLimit=%s UserSizeLimit=%s",
+		t_sz_buf, j_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 2 (optional) ******/
+	/****** Line 3 (optional) ******/
 	if (burst_buffer_ptr->allow_users) {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"AllowUsers=%s\n", burst_buffer_ptr->allow_users);
+			"AllowUsers=%s", burst_buffer_ptr->allow_users);
 		xstrcat(out_buf, tmp_line);
+		has_acl = true;
 	} else if (burst_buffer_ptr->deny_users) {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"DenyUsers=%s\n", burst_buffer_ptr->deny_users);
+			"DenyUsers=%s", burst_buffer_ptr->deny_users);
 		xstrcat(out_buf, tmp_line);
+		has_acl = true;
 	}
+	if (has_acl) {
+		if (one_liner)
+			xstrcat(out_buf, " ");
+		else
+			xstrcat(out_buf, "\n  ");
+	}
+
+	/****** Line 4 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"GetSysState=%s", burst_buffer_ptr->get_sys_state);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line 5 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"StartStageIn=%s", burst_buffer_ptr->start_stage_in);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line 6 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"StartStageIn=%s", burst_buffer_ptr->start_stage_out);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line 7 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"StopStageIn=%s", burst_buffer_ptr->stop_stage_in);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line 8 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"StopStageIn=%s", burst_buffer_ptr->stop_stage_out);
+	xstrcat(out_buf, tmp_line);
+	xstrcat(out_buf, "\n");
+
 	fprintf(out, "%s", out_buf);
 	xfree(out_buf);
 

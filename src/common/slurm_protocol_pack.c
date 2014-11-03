@@ -9280,7 +9280,18 @@ static int _unpack_burst_buffer_info_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->deny_users, &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->get_sys_state, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->start_stage_in,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->start_stage_out,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->stop_stage_in,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->stop_stage_out,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&bb_info_ptr->job_size_limit, buffer);
+		safe_unpack32(&bb_info_ptr->prio_boost, buffer);
 		safe_unpack32(&bb_info_ptr->total_space, buffer);
 		safe_unpack32(&bb_info_ptr->user_size_limit, buffer);
 		bb_info_ptr->burst_buffer_resv_ptr =
