@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Make configure --enable-developer also set --enable-debug
  -- Introduce a SchedulerParameters variable kill_invalid_depend, if set
     then jobs pending with invalid dependency are going to be terminated.
+ -- Move spank_user_task() call in slurmstepd after the task_g_pre_launch()
+    so that the task affinity information is available to spank.
 
 * Changes in Slurm 14.11.0rc2
 =============================
