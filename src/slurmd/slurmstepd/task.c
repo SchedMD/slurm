@@ -436,14 +436,14 @@ exec_task(stepd_step_rec_t *job, int i)
 
 	/* task-specific pre-launch activities */
 
-	if (spank_user_task (job, i) < 0) {
-		error ("Failed to invoke task plugin stack");
-		exit (1);
-	}
-
 	/* task plugin hook */
 	if (task_g_pre_launch(job)) {
 		error ("Failed task affinity setup");
+		exit (1);
+	}
+
+	if (spank_user_task (job, i) < 0) {
+		error ("Failed to invoke task plugin stack");
 		exit (1);
 	}
 
