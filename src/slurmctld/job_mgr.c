@@ -13638,7 +13638,6 @@ void
 init_requeue_policy(void)
 {
 	char *sched_params;
-	char *p;
 
 	/* clean first as we can be reconfiguring
 	 */
@@ -13649,19 +13648,21 @@ init_requeue_policy(void)
 
 	requeue_exit = _make_requeue_array(slurmctld_conf.requeue_exit,
 					   &num_exit);
-	requeue_exit_hold = _make_requeue_array(slurmctld_conf.requeue_exit_hold,
-						&num_hold);
+	requeue_exit_hold = _make_requeue_array(
+		slurmctld_conf.requeue_exit_hold, &num_hold);
 	/* Check if users want to kill a job whose dependency
 	 * can never be satisfied.
 	 */
 	kill_invalid_dep = false;
 	sched_params = slurm_get_sched_params();
 	if (sched_params) {
-		if ((p = strstr(sched_params, "kill_invalid_depend")))
+		if (strstr(sched_params, "kill_invalid_depend"))
 			kill_invalid_dep = true;
+		xfree(sched_params);
 	}
 
-	info("%s: kill_invalid_depend is set to %d", __func__, kill_invalid_dep);
+	info("%s: kill_invalid_depend is set to %d",
+	     __func__, kill_invalid_dep);
 }
 
 /* _make_requeue_array()
