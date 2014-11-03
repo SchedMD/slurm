@@ -101,7 +101,6 @@ EXTRA_DIST = \
 	test1.82			\
 	test1.83			\
 	test1.84			\
-	test1.84.bash			\
 	test1.85			\
 	test1.86			\
 	test1.87			\
@@ -514,16 +513,12 @@ EXTRA_DIST = \
 	test32.12			\
 	test33.1			\
 	test33.1.prog.c			\
-	etc.33.1.1/slurm.conf		\
 	etc.33.1.1/testcases		\
 	etc.33.1.1/topology.conf	\
-	etc.33.1.2/slurm.conf		\
 	etc.33.1.2/testcases		\
 	etc.33.1.2/topology.conf	\
-	etc.33.1.3/slurm.conf		\
 	etc.33.1.3/testcases		\
 	etc.33.1.3/topology.conf	\
-	etc.33.1.4/slurm.conf		\
 	etc.33.1.4/testcases		\
 	etc.33.1.4/topology.conf	\
 	test34.1			\

@@ -440,6 +440,7 @@ test_sources = \
 	$(perl_dir)/t/22-list.t \
 	$(perl_dir)/t/23-bitstr.t
 
+EXTRA_DIST = $(perl_sources) $(test_sources)
 AM_CPPFLAGS = \
 	-DVERSION=\"$(VERSION)\" \
 	-I$(top_srcdir) \

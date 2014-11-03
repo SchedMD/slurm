@@ -1,3 +1,3 @@
 # Makefile for jobacct plugins
 
-SUBDIRS = linux aix cgroup none
+SUBDIRS = linux aix cgroup none common

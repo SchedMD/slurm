@@ -4,6 +4,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 pkginclude_HEADERS = slurm/pmi2.h
+noinst_HEADERS = pmi2_util.h
 
 if WITH_GNU_LD
 PMI2_VERSION_SCRIPT = \

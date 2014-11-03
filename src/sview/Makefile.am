@@ -11,7 +11,7 @@ bin_PROGRAMS = sview
 
 sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
 
-noinst_HEADERS = sview.h
+noinst_HEADERS = sview.h gthread_helper.h
 sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 	block_info.c front_end_info.c node_info.c resv_info.c \
 	submit_info.c admin_info.c common.c \

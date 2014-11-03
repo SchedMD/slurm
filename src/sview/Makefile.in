@@ -213,7 +213,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__noinst_HEADERS_DIST = sview.h
+am__noinst_HEADERS_DIST = sview.h gthread_helper.h
 HEADERS = $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
@@ -474,7 +474,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 @BUILD_SVIEW_TRUE@sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
-@BUILD_SVIEW_TRUE@noinst_HEADERS = sview.h
+@BUILD_SVIEW_TRUE@noinst_HEADERS = sview.h gthread_helper.h
 @BUILD_SVIEW_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 @BUILD_SVIEW_TRUE@	block_info.c front_end_info.c node_info.c resv_info.c \
 @BUILD_SVIEW_TRUE@	submit_info.c admin_info.c common.c \

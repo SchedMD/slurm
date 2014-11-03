@@ -420,6 +420,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 sbin_SCRIPTS = moab_2_slurmdb
 extra = config.slurmdb.pl
+EXTRA_DIST = $(extra)
 _perldir = $(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
 all: all-am
 

@@ -5,6 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_SCRIPTS = moab_2_slurmdb
 extra = config.slurmdb.pl
+EXTRA_DIST = $(extra)
 
 moab_2_slurmdb:
 

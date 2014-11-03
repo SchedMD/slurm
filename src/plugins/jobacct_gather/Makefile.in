@@ -446,7 +446,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = linux aix cgroup none
+SUBDIRS = linux aix cgroup none common
 all: all-recursive
 
 .SUFFIXES:
