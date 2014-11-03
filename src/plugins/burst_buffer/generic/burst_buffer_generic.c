@@ -113,18 +113,39 @@ static uint32_t job_size_limit = NO_VAL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
 
-static uint32_t _get_bb_size(struct job_record *job_ptr)
+static uint32_t _get_size_num(char *tok)
 {
-	char *tok;
+	char *end_ptr = NULL;
 	int32_t bb_size_i;
 	uint32_t bb_size_u = 0;
 
-	tok = strstr(job_ptr->burst_buffer, "size=");
-	if (tok) {
-		bb_size_i = atoi(tok + 5);
-		if (bb_size_i > 0)
-			bb_size_u = (uint32_t) bb_size_i;
+	bb_size_i = strtol(tok, &end_ptr, 10);
+	if (bb_size_i > 0) {
+		bb_size_u = (uint32_t) bb_size_i;
+		if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+			bb_size_u = (bb_size_u + 1023) / 1024;
+		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
+			;
+		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
+			bb_size_u *= 1024;
+		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+			bb_size_u *= (1024 * 1024);
+		} else if ((end_ptr[0] == 'n') || (end_ptr[0] == 'N')) {
+			bb_size_u |= BB_SIZE_IN_NODES;
+		}
 	}
+	return bb_size_u;
+}
+
+static uint32_t _get_bb_size(struct job_record *job_ptr)
+{
+	char *tok;
+	uint32_t bb_size_u = 0;
+
+	tok = strstr(job_ptr->burst_buffer, "size=");
+	if (tok)
+		bb_size_u = _get_size_num(tok + 5);
+
 	return bb_size_u;
 }
 
@@ -214,18 +235,40 @@ bb_user_t *_find_user_rec(uint32_t user_id)
 static void _add_user_load(bb_alloc_t *bb_ptr)
 {
 	bb_user_t *user_ptr;
+	uint32_t tmp_u, tmp_j;
 
 	user_ptr = _find_user_rec(bb_ptr->user_id);
-	user_ptr->size += bb_ptr->size;
+	if ((user_ptr->size & BB_SIZE_IN_NODES) ||
+	    (bb_ptr->size   & BB_SIZE_IN_NODES)) {
+		tmp_u = user_ptr->size & (~BB_SIZE_IN_NODES);
+		tmp_j = bb_ptr->size   & (~BB_SIZE_IN_NODES);
+		user_ptr->size = tmp_u + tmp_j;
+		user_ptr->size |= BB_SIZE_IN_NODES;
+	} else {
+		user_ptr->size += bb_ptr->size;
+	}
 }
 
 /* Remove a burst buffer allocation from a user's load */
 static void _remove_user_load(bb_alloc_t *bb_ptr)
 {
 	bb_user_t *user_ptr;
+	uint32_t tmp_u, tmp_j;
 
 	user_ptr = _find_user_rec(bb_ptr->user_id);
-	if (user_ptr->size >= bb_ptr->size) {
+	if ((user_ptr->size & BB_SIZE_IN_NODES) ||
+	    (bb_ptr->size   & BB_SIZE_IN_NODES)) {
+		tmp_u = user_ptr->size & (~BB_SIZE_IN_NODES);
+		tmp_j = bb_ptr->size   & (~BB_SIZE_IN_NODES);
+		if (tmp_u > tmp_j) {
+			user_ptr->size = tmp_u + tmp_j;
+			user_ptr->size |= BB_SIZE_IN_NODES;
+		} else {
+			error("%s: user %u table underflow",
+			      __func__, user_ptr->user_id);
+			user_ptr->size = BB_SIZE_IN_NODES;
+		}
+	} else if (user_ptr->size >= bb_ptr->size) {
 		user_ptr->size -= bb_ptr->size;
 	} else {
 		error("%s: user %u table underflow",
@@ -239,11 +282,16 @@ static void _remove_user_load(bb_alloc_t *bb_ptr)
 static bool _test_user_limit(uint32_t user_id, uint32_t add_space)
 {
 	bb_user_t *user_ptr;
+	uint32_t tmp_u, tmp_j, lim_u;
 
 	if (user_size_limit == NO_VAL)
 		return false;
 	user_ptr = _find_user_rec(user_id);
-	if ((user_ptr->size + add_space) > user_size_limit)
+	tmp_u = user_ptr->size  & (~BB_SIZE_IN_NODES);
+	tmp_j = add_space       & (~BB_SIZE_IN_NODES);
+	lim_u = user_size_limit & (~BB_SIZE_IN_NODES);
+
+	if ((tmp_u + tmp_j) > lim_u)
 		return true;
 	return false;
 }
@@ -349,11 +397,11 @@ static void _load_config(void)
 
 		key = strstr(bb_params, "job_size_limit=");
 		if (key)
-			job_size_limit = atoi(key + 15);
+			job_size_limit = _get_size_num(key + 15);
 
 		key = strstr(bb_params, "user_size_limit=");
 		if (key)
-			user_size_limit = atoi(key + 16);
+			user_size_limit = _get_size_num(key + 16);
 	}
 	xfree(bb_params);
 
@@ -568,7 +616,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	if (job_desc->burst_buffer) {
 		key = strstr(job_desc->burst_buffer, "size=");
 		if (key)
-			bb_size = atoi(key + 5);
+			bb_size = _get_size_num(key + 5);
 	}
 	if (bb_size == 0)
 		return SLURM_SUCCESS;

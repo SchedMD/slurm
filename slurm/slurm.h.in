@@ -4176,6 +4176,7 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
  *      SLURM BURST BUFFER FUNCTIONS
 \*****************************************************************************/
 
+#define BB_SIZE_IN_NODES	0x10000000
 #define BB_STATE_ALLOCATED	0x0001
 #define BB_STATE_STAGING_IN	0x0002
 #define BB_STATE_STAGED_IN	0x0003
@@ -4186,7 +4187,7 @@ typedef struct {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	uint32_t job_id;
-	uint32_t size;		/* In GB */
+	uint32_t size;		/* In GB by default */
 	uint16_t state;		/* See BB_STATE_* */
 	uint32_t user_id;
 } burst_buffer_resv_t;

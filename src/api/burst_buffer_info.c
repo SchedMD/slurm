@@ -58,6 +58,27 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+static void _get_size_str(char *buf, size_t buf_size, uint32_t num)
+{
+	uint32_t tmp32;
+
+	if ((num == NO_VAL) || (num == INFINITE)) {
+		snprintf(buf, buf_size, "INFINITE");
+	} else if ((num & BB_SIZE_IN_NODES) != 0) {
+		tmp32 = num & (~BB_SIZE_IN_NODES);
+		snprintf(buf, buf_size, "%uN", tmp32);
+	} else if ((num % (1024 * 1024)) == 0) {
+		tmp32 = num / (1024 * 1024);
+		snprintf(buf, buf_size, "%uPB", tmp32);
+	} else if ((num % 1024) == 0) {
+		tmp32 = num / 1024;
+		snprintf(buf, buf_size, "%uTB", tmp32);
+	} else {
+		tmp32 = num;
+		snprintf(buf, buf_size, "%uGB", tmp32);
+	}
+}
+
 /*
  * slurm_burst_buffer_state_string - translate burst buffer state number to
  *	it string equivalent
@@ -154,7 +175,7 @@ static void _print_burst_buffer_resv(FILE *out,
 				     burst_buffer_resv_t* burst_buffer_ptr,
 				     int one_liner)
 {
-	char tmp_line[512];
+	char sz_buf[32], tmp_line[512];
 	char *out_buf = NULL;
 
 	/****** Line 1 ******/
@@ -170,10 +191,10 @@ static void _print_burst_buffer_resv(FILE *out,
 		        burst_buffer_ptr->job_id);
 	}
 	xstrcat(out_buf, tmp_line);
+	_get_size_str(sz_buf, sizeof(sz_buf), burst_buffer_ptr->size);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Size=%u State=%s UserID=%s(%u)",
-		 burst_buffer_ptr->size,
-		slurm_burst_buffer_state_string(burst_buffer_ptr->state),
+		"Size=%s State=%s UserID=%s(%u)",
+		sz_buf,slurm_burst_buffer_state_string(burst_buffer_ptr->state),
 	        uid_to_string(burst_buffer_ptr->user_id),
 	        burst_buffer_ptr->user_id);
 	xstrcat(out_buf, tmp_line);
@@ -196,28 +217,21 @@ static void _print_burst_buffer_resv(FILE *out,
 extern void slurm_print_burst_buffer_record(FILE *out,
 		burst_buffer_info_t *burst_buffer_ptr, int one_liner)
 {
-	char tmp_line[512], tmp1[32], tmp2[32];
+	char tmp_line[512], j_sz_buf[32], t_sz_buf[32], u_sz_buf[32];
 	char *out_buf = NULL;
 	burst_buffer_resv_t *bb_resv_ptr;
 	int i;
 
 	/****** Line 1 ******/
-	if (burst_buffer_ptr->job_size_limit == NO_VAL) {
-		snprintf(tmp1, sizeof(tmp1), "INFINITE");
-	} else {
-		snprintf(tmp1, sizeof(tmp1), "%u(GB)",
-			 burst_buffer_ptr->job_size_limit);
-	}
-	if (burst_buffer_ptr->user_size_limit == NO_VAL) {
-		snprintf(tmp2, sizeof(tmp2), "INFINITE");
-	} else {
-		snprintf(tmp2, sizeof(tmp2), "%u(GB)",
-			 burst_buffer_ptr->user_size_limit);
-	}
+	_get_size_str(j_sz_buf, sizeof(j_sz_buf),
+		      burst_buffer_ptr->job_size_limit);
+	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
+		      burst_buffer_ptr->total_space);
+	_get_size_str(u_sz_buf, sizeof(u_sz_buf),
+		      burst_buffer_ptr->user_size_limit);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Name=%s TotalSpace=%u(GB) JobSizeLimit=%s UserSizeLimit=%s",
-		burst_buffer_ptr->name, burst_buffer_ptr->total_space,
-		tmp1, tmp2);
+		"Name=%s TotalSpace=%s JobSizeLimit=%s UserSizeLimit=%s",
+		burst_buffer_ptr->name, t_sz_buf, j_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
