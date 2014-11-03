@@ -13717,6 +13717,7 @@ init_requeue_policy(void)
 	if (sched_params) {
 		if ((p = strstr(sched_params, "kill_invalid_depend")))
 			kill_invalid_dep = true;
+		xfree(sched_params);
 	}
 
 	info("%s: kill_invalid_depend is set to %d", __func__, kill_invalid_dep);
