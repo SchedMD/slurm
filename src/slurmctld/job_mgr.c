@@ -13696,7 +13696,6 @@ void
 init_requeue_policy(void)
 {
 	char *sched_params;
-	char *p;
 
 	/* clean first as we can be reconfiguring
 	 */
@@ -13715,7 +13714,7 @@ init_requeue_policy(void)
 	kill_invalid_dep = false;
 	sched_params = slurm_get_sched_params();
 	if (sched_params) {
-		if ((p = strstr(sched_params, "kill_invalid_depend")))
+		if (strstr(sched_params, "kill_invalid_depend"))
 			kill_invalid_dep = true;
 		xfree(sched_params);
 	}
