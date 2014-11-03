@@ -5,7 +5,7 @@
 ##****************************************************************************
 
 EXTRA_DIST = \
-    acx_pthread.m4 \
+    ax_pthread.m4 \
     slurm.m4 \
     test-driver \
     type_socklen_t.m4 \
@@ -37,6 +37,5 @@ EXTRA_DIST = \
     x_ac_setproctitle.m4 \
     x_ac_sgi_job.m4 \
     x_ac_slurm_ssl.m4 \
-    x_ac_srun.m4 \
     x_ac_sun_const.m4 \
     x_ac_xcpu.m4
