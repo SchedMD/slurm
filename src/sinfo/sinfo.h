@@ -187,6 +187,7 @@ struct sinfo_parameters {
 	int part_field_size;
 	int verbose;
 
+	List  part_list;
 	List  format_list;
 	List  state_list;
 };

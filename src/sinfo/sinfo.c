@@ -102,6 +102,7 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 			   partition_info_t *part_ptr,
 			   node_info_t *node_ptr, uint32_t node_scaling);
+static int _find_part_list(void *x, void *key);
 
 int main(int argc, char *argv[])
 {
@@ -510,8 +511,10 @@ static int _build_sinfo_data(List sinfo_list,
 	if ((!params.node_flag) && params.match_flags.partition_flag) {
 		part_ptr = partition_msg->partition_array;
 		for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
-			if ((!params.partition) ||
-			    (xstrcmp(params.partition, part_ptr->name) == 0)) {
+			if ((!params.part_list) ||
+			    (list_find_first(params.part_list,
+					     _find_part_list,
+					     part_ptr->name))) {
 				list_append(sinfo_list, _create_sinfo(
 						    part_ptr, (uint16_t) j,
 						    NULL,
@@ -532,8 +535,10 @@ static int _build_sinfo_data(List sinfo_list,
 	for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 		part_ptr = &(partition_msg->partition_array[j]);
 
-		if (params.filtering && params.partition &&
-		    xstrcmp(part_ptr->name, params.partition))
+		if (params.filtering && params.part_list &&
+		    !list_find_first(params.part_list,
+				     _find_part_list,
+				     part_ptr->name))
 			continue;
 
 		if (node_msg->record_count == 1) { /* node_name_single */
@@ -1205,4 +1210,12 @@ static void _sinfo_list_delete(void *data)
 	hostlist_destroy(sinfo_ptr->node_addr);
 	hostlist_destroy(sinfo_ptr->hostnames);
 	xfree(sinfo_ptr);
+}
+
+/* Find the given partition name in the list */
+static int _find_part_list(void *x, void *key)
+{
+	if (!strcmp((char *)x, (char *)key))
+		return 1;
+	return 0;
 }

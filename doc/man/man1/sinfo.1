@@ -15,7 +15,8 @@ system running SLURM.
 \fB\-a\fR, \fB\-\-all\fR
 Display information about all partitions. This causes information to be
 displayed about partitions that are configured as hidden and partitions that
-are unavailable to user's group.
+are unavailable to user's group. This overwrites any previously specified
+\-p option.
 
 .TP
 \fB\-b\fR, \fB\-\-bgl\fR
@@ -254,7 +255,8 @@ size of field
 
 .TP
 \fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
-Print information only about the specified partition.
+Print information only about the specified partition(s). Mutliple partitions
+are separated by commas.
 
 .TP
 \fB\-r\fR, \fB\-\-responding\fR
