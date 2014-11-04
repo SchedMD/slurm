@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Make /etc/init.d/slurm script return value 3 when the daemon is
     not running. This is required by Linux Standard Base Core
     Specification 3.1
+ -- Install systemd service units in the  /usr/lib/systemd/system directory.
 
 * Changes in Slurm 14.11.0rc2
 =============================
