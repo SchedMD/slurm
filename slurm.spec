@@ -452,10 +452,10 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
       ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
       ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
    fi
-   if [ -d /lib/systemd/system ]; then
-      install -D -m755 etc/slurmctld.service $RPM_BUILD_ROOT/lib/systemd/system/slurmctld.service
-      install -D -m755 etc/slurmd.service    $RPM_BUILD_ROOT/lib/systemd/system/slurmd.service
-      install -D -m755 etc/slurmdbd.service  $RPM_BUILD_ROOT/lib/systemd/system/slurmdbd.service
+   if [ -d /usr/lib/systemd/system ]; then
+      install -D -m755 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
+      install -D -m755 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service
+      install -D -m755 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
    fi
 %endif
 

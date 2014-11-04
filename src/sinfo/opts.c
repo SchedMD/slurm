@@ -90,6 +90,8 @@ extern void parse_command_line(int argc, char *argv[])
 	int opt_char;
 	int option_index;
 	hostlist_t host_list;
+	bool opt_a_set = false, opt_p_set = false;
+	bool env_a_set = false, env_p_set = false;
 	static struct option long_options[] = {
 		{"all",       no_argument,       0, 'a'},
 		{"bg",        no_argument,       0, 'b'},
@@ -118,12 +120,20 @@ extern void parse_command_line(int argc, char *argv[])
 		{NULL,        0,                 0, 0}
 	};
 
-	if (getenv("SINFO_ALL"))
+	if (getenv("SINFO_ALL")) {
+		env_a_set = true;
 		params.all_flag = true;
+	}
 	if ( ( env_val = getenv("SINFO_PARTITION") ) ) {
+		env_p_set = true;
 		params.partition = xstrdup(env_val);
 		params.part_list = _build_part_list(env_val);
 		params.all_flag = true;
+	}
+	if (env_a_set && env_p_set) {
+		error("Conflicting options, SINFO_ALL and SINFO_PARTITION, specified. "
+		      "Please choose one or the other.");
+		exit(1);
 	}
 	if ( ( env_val = getenv("SINFO_SORT") ) )
 		params.sort = xstrdup(env_val);
@@ -144,6 +154,7 @@ extern void parse_command_line(int argc, char *argv[])
 			exit(1);
 			break;
 		case (int)'a':
+			opt_a_set = true;
 			xfree(params.partition);
 			if (params.partition)
 				list_destroy(params.part_list);
@@ -219,6 +230,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.format = xstrdup(optarg);
 			break;
 		case (int) 'p':
+			opt_p_set = true;
 			xfree(params.partition);
 			if (params.partition)
 				list_destroy(params.part_list);
@@ -266,6 +278,12 @@ extern void parse_command_line(int argc, char *argv[])
 			params.all_flag = false;
 			break;
 		}
+	}
+
+	if (opt_a_set && opt_p_set) {
+		error("Conflicting options, -a and -p, specified. "
+		      "Please choose one or the other.");
+		exit(1);
 	}
 
 	params.cluster_flags = slurmdb_setup_cluster_flags();
