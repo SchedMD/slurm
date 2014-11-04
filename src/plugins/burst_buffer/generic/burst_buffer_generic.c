@@ -38,6 +38,7 @@
 #  include "config.h"
 #endif
 
+#define _GNU_SOURCE	/* For POLLRDHUP */
 #include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -507,56 +508,19 @@ static void _load_cache(void)
 	}
 }
 
-/*
- *  Same as waitpid(2) but kill process group for pid after timeout secs.
- *   Returns 0 for valid status in pstatus, -1 on failure of waitpid(2).
- */
-static int _waitpid_timeout(char *script_type, pid_t pid, int *pstatus,
-			    int timeout)
-{
-	int timeout_ms = 1000 * timeout; /* timeout in ms                   */
-	int max_delay =  1000;           /* max delay between waitpid calls */
-	int delay = 10;                  /* initial delay                   */
-	int rc;
-	int options = WNOHANG;
-
-	if (timeout <= 0)
-		options = 0;
-
-	while ((rc = waitpid(pid, pstatus, options)) <= 0) {
-		if (rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("%s: waitpid(%s): %m", plugin_type, script_type);
-			return -1;
-		} else if (timeout_ms <= 0) {
-			info ("%s: timeout for %s after %ds: killing pgid %d",
-			      plugin_type, script_type, timeout, pid);
-			killpg(pid, SIGKILL);
-			options = 0;
-		} else {
-			poll(NULL, 0, delay);
-			timeout_ms -= delay;
-			delay = MIN (timeout_ms, MIN(max_delay, delay*2));
-		}
-	}
-
-	killpg(pid, SIGKILL);  /* kill children too */
-	return 0;
-}
-
 /* Execute a script, wait for termination and return its stdout.
  * script_type IN - Type of program being run (e.g. "StartStageIn")
  * script_path IN - Fully qualified pathname of the program to execute
  * script_args IN - Arguments to the script
  * max_wait IN - maximum time to wait in seconds, -1 for no limit
- * Return value must be xfreed. */
+ * Return stdout of spawned program, value must be xfreed. */
 static char *_run_script(char *script_type, char *script_path,
 			 char **script_argv, int max_wait)
 {
-	int status;
+	int i, status, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
 	char *resp = NULL;
+	int pfd[2];
 
 	if ((script_path == NULL) || (script_path[0] == '\0')) {
 		error("%s: %s is not configured", plugin_type, script_type);
@@ -572,7 +536,16 @@ static char *_run_script(char *script_type, char *script_path,
 		      plugin_type, script_type, script_path);
 		return resp;
 	}
+	if (pipe(pfd) != 0) {
+		error("%s: pipe(): %m", plugin_type);
+		return resp;
+	}
 	if ((cpid = fork()) == 0) {
+		dup2(pfd[1], STDOUT_FILENO);
+		for (i = 0; i < 127; i++) {
+			if (i != STDOUT_FILENO)
+				close(i);
+		}
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else
@@ -582,11 +555,52 @@ static char *_run_script(char *script_type, char *script_path,
 		error("%s: execv(%s): %m", plugin_type, script_path);
 		exit(127);
 	} else if (cpid > 0) {
-		if (_waitpid_timeout(script_type, cpid, &status, max_wait) < 0)
-			return resp;
-//NEED TO ADD PIPE
-		xstrfmtcat(resp, "TotalSpace=1234\n");
+		struct pollfd fds;
+		time_t start_time = time(NULL);
+		resp_size = 1024;
+		resp = xmalloc(resp_size);
+		close(pfd[1]);
+		while (1) {
+			fds.fd = pfd[0];
+			fds.events = POLLIN | POLLHUP | POLLRDHUP;
+			fds.revents = 0;
+			if (max_wait == -1) {
+				new_wait = -1;
+			} else {
+				new_wait = time(NULL) - start_time + max_wait;
+				if (new_wait <= 0)
+					break;
+			}
+			status = poll(&fds, 1, new_wait);
+			if ((status < 1) || ((fds.revents & POLLIN) == 0)) {
+				error("%s: %s timeout",
+				      plugin_type, script_type);
+				break;
+			}
+			i = read(pfd[0], resp + resp_offset,
+				 resp_size - resp_offset);
+			if (i == 0) {
+				break;
+			} else if (i < 0) {
+				if (errno == EAGAIN)
+					continue;
+				error("%s: read(%s): %m", plugin_type,
+				      script_path);
+				break;
+			} else {
+				resp_offset += i;
+				if (resp_offset + 1024 >= resp_size) {
+					resp_size *= 2;
+					resp = xrealloc(resp, resp_size);
+				}
+			}
+		}
+		(void) killpg(cpid, SIGKILL);
+		waitpid(cpid, &status, 0);
+		close(pfd[0]);
 	} else {
+		close(pfd[0]);
+		close(pfd[1]);
 		error("%s: fork(): %m", plugin_type);
 	}
 	return resp;
