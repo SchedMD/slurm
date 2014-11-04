@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Install the service files in /usr/lib/systemd/system.
  -- MYSQL - Add id_array_job and id_resv keys to $CLUSTER_job_table.  THIS
     COULD TAKE A WHILE TO CREATE THE KEYS SO BE PATIENT.
+ -- CRAY - Resize bitmaps on a restart and find we have more blades
+    than before.
 
 * Changes in Slurm 14.11.0rc3
 =============================
