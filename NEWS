@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- ALPS - Fix issue with core_spec warning.
  -- Allow multiple partitions to be specified in sinfo -p.
+ -- Install the service files in /usr/lib/systemd/system.
 
 * Changes in Slurm 14.11.0rc3
 =============================
