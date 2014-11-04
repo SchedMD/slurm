@@ -2,6 +2,9 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+EXTRA_DIST =			\
+	bb_get_state.example
+
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(MUNGE_CPPFLAGS)
