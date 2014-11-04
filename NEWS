@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- ALPS - Fix issue with core_spec warning.
  -- Allow multiple partitions to be specified in sinfo -p.
  -- Install the service files in /usr/lib/systemd/system.
+ -- MYSQL - Add id_array_job and id_resv keys to $CLUSTER_job_table.  THIS
+    COULD TAKE A WHILE TO CREATE THE KEYS SO BE PATIENT.
 
 * Changes in Slurm 14.11.0rc3
 =============================
