@@ -69,6 +69,7 @@
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
 static List  _build_all_states_list( void );
+static List  _build_part_list( char *parts );
 static char *_get_prefix(char *token);
 static void  _help( void );
 static int   _parse_format( char* );
@@ -121,6 +122,7 @@ extern void parse_command_line(int argc, char *argv[])
 		params.all_flag = true;
 	if ( ( env_val = getenv("SINFO_PARTITION") ) ) {
 		params.partition = xstrdup(env_val);
+		params.part_list = _build_part_list(env_val);
 		params.all_flag = true;
 	}
 	if ( ( env_val = getenv("SINFO_SORT") ) )
@@ -142,6 +144,9 @@ extern void parse_command_line(int argc, char *argv[])
 			exit(1);
 			break;
 		case (int)'a':
+			xfree(params.partition);
+			if (params.partition)
+				list_destroy(params.part_list);
 			params.all_flag = true;
 			break;
 		case (int)'b':
@@ -215,7 +220,10 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int) 'p':
 			xfree(params.partition);
+			if (params.partition)
+				list_destroy(params.part_list);
 			params.partition = xstrdup(optarg);
+			params.part_list = _build_part_list(optarg);
 			params.all_flag = true;
 			break;
 		case (int) 'r':
@@ -392,6 +400,29 @@ _build_all_states_list( void )
 	list_append( my_list, state_id );
 
 	return my_list;
+}
+
+/*
+ * _build_part_list - build a list of partition names
+ * IN parts - comma separated list of partitions
+ * RET List of partition names
+ */
+static List
+_build_part_list(char *parts)
+{
+	List part_list;
+	char *orig, *str, *part;
+
+	orig = str = xstrdup(parts);
+	part_list = list_create(NULL);
+
+	while ((part = _next_tok (",", &str))) {
+		char *tmp_part = xstrdup(part);
+		list_append (part_list, tmp_part);
+	}
+
+	xfree(orig);
+	return (part_list);
 }
 
 static const char *
