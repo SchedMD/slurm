@@ -4927,7 +4927,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->backup_controller, buffer);
 		pack16(build_ptr->batch_start_timeout, buffer);
 		pack_time(build_ptr->boot_time, buffer);
-		packstr(build_ptr->bb_params, buffer);
 		packstr(build_ptr->bb_type, buffer);
 
 		packstr(build_ptr->checkpoint_type, buffer);
@@ -5755,8 +5754,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->batch_start_timeout, buffer);
 		safe_unpack_time(&build_ptr->boot_time, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->bb_params,
-				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->bb_type,
 				       &uint32_tmp, buffer);
 

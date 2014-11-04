@@ -2197,7 +2197,6 @@ typedef struct slurm_ctl_conf {
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;/* name of slurmctld secondary server */
 	uint16_t batch_start_timeout;	/* max secs for batch job to start */
-	char *bb_params;	/* burst buffer parameters */
 	char *bb_type;		/* burst buffer plugin type */
 	time_t boot_time;	/* time slurmctld last booted */
 	char *checkpoint_type;	/* checkpoint plugin type */

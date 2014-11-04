@@ -44,6 +44,7 @@
 
 #include "src/common/list.h"
 #include "src/common/pack.h"
+#include "src/common/parse_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -389,88 +390,51 @@ static void _clear_config(void)
 /* Load and process BurstBufferParameters configuration parameter */
 static void _load_config(void)
 {
-	char *bb_params, *key, *sep, *value;
+	s_p_hashtbl_t *bb_hashtbl = NULL;
+	char *bb_conf, *tmp = NULL, *value;
+	static s_p_options_t bb_options[] = {
+		{"AllowUsers", S_P_STRING},
+		{"DenyUsers", S_P_STRING},
+		{"GetSysState", S_P_STRING},
+		{"JobSizeLimit", S_P_STRING},
+		{"StagedInPrioBoost", S_P_UINT32},
+		{"StartStageIn", S_P_STRING},
+		{"StartStageOut", S_P_STRING},
+		{"StopStageIn", S_P_STRING},
+		{"StopStageOut", S_P_STRING},
+		{"UserSizeLimit", S_P_STRING},
+		{NULL}
+	};
 
 	_clear_config();
 	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
 		debug_flag = true;
-	bb_params = slurm_get_bb_params();
-	if (bb_params) {
-		/*                       0123456789012345678 */
-		key = strstr(bb_params, "AllowUsers=");
-		if (key) {
-			allow_users_str = xstrdup(key + 11);
-			sep = strchr(allow_users_str, ',');
-			if (sep)
-				sep[0] = '\0';
-			allow_users = _parse_users(allow_users_str);
-		}
 
-		key = strstr(bb_params, "DenyUsers=");
-		if (allow_users && key) {
-			error("%s: ignoring deny_users, allow_users is set",
-			      __func__);
-		} else if (key) {
-			deny_users_str = xstrdup(key + 10);
-			sep = strchr(deny_users_str, ',');
-			if (sep)
-				sep[0] = '\0';
-			deny_users = _parse_users(deny_users_str);
-		}
-
-		key = strstr(bb_params, "JobSizeLimit=");
-		if (key)
-			job_size_limit = _get_size_num(key + 13);
-
-		key = strstr(bb_params, "GetSysState=");
-		if (key) {
-			get_sys_state = xstrdup(key + 12);
-			sep = strchr(get_sys_state, ',');
-			if (sep)
-				sep[0] = '\0';
-		}
-
-		key = strstr(bb_params, "StagedInPrioBoost=");
-		if (key)
-			prio_boost = atoi(key + 18);
-
-		key = strstr(bb_params, "StartStageIn=");
-		if (key) {
-			start_stage_in = xstrdup(key + 13);
-			sep = strchr(start_stage_in, ',');
-			if (sep)
-				sep[0] = '\0';
-		}
-
-		key = strstr(bb_params, "StartStageOut=");
-		if (key) {
-			start_stage_out = xstrdup(key + 14);
-			sep = strchr(start_stage_out, ',');
-			if (sep)
-				sep[0] = '\0';
-		}
-
-		key = strstr(bb_params, "StopStageIn=");
-		if (key) {
-			stop_stage_in = xstrdup(key + 12);
-			sep = strchr(stop_stage_in, ',');
-			if (sep)
-				sep[0] = '\0';
-		}
-
-		key = strstr(bb_params, "StopStageOut=");
-		if (key) {
-			stop_stage_out = xstrdup(key + 13);
-			sep = strchr(stop_stage_out, ',');
-			if (sep)
-				sep[0] = '\0';
-		}
-
-		key = strstr(bb_params, "UserSizeLimit=");
-		if (key)
-			user_size_limit = _get_size_num(key + 14);
+	bb_conf = get_extra_conf_path("burst_buffer.conf");
+	bb_hashtbl = s_p_hashtbl_create(bb_options);
+	if (s_p_parse_file(bb_hashtbl, NULL, bb_conf, false) == SLURM_ERROR)
+		fatal("something wrong with opening/reading %s: %m", bb_conf);
+	if (s_p_get_string(&allow_users_str, "AllowUsers", bb_hashtbl))
+		allow_users = _parse_users(allow_users_str);
+	if (s_p_get_string(&deny_users_str, "DenyUsers", bb_hashtbl))
+		deny_users = _parse_users(deny_users_str);
+	s_p_get_string(&get_sys_state, "GetSysState", bb_hashtbl);
+	if (s_p_get_string(&tmp, "JobSizeLimit", bb_hashtbl)) {
+		job_size_limit = _get_size_num(tmp);
+		xfree(tmp);
 	}
-	xfree(bb_params);
+	s_p_get_uint32(&prio_boost, "StagedInPrioBoost", bb_hashtbl);
+	s_p_get_string(&start_stage_in, "StartStageIn", bb_hashtbl);
+	s_p_get_string(&start_stage_out, "StartStageOut", bb_hashtbl);
+	s_p_get_string(&stop_stage_in, "StopStageIn", bb_hashtbl);
+	s_p_get_string(&stop_stage_out, "StopStageOut", bb_hashtbl);
+	if (s_p_get_string(&tmp, "UserSizeLimit", bb_hashtbl)) {
+		user_size_limit = _get_size_num(tmp);
+		xfree(tmp);
+	}
+
+	s_p_hashtbl_destroy(bb_hashtbl);
+	xfree(bb_conf);
 
 	if (debug_flag) {
 		value = _print_users(allow_users);
@@ -482,13 +446,12 @@ static void _load_config(void)
 		xfree(value);
 
 		info("%s: GetSysState:%s",  __func__, get_sys_state);
+		info("%s: JobSizeLimit:%u",  __func__, job_size_limit);
 		info("%s: StagedInPrioBoost:%u", __func__, prio_boost);
 		info("%s: StartStageIn:%s",  __func__, start_stage_in);
 		info("%s: StartStageOut:%s",  __func__, start_stage_out);
 		info("%s: StopStageIn:%s",  __func__, stop_stage_in);
 		info("%s: StopStageOut:%s",  __func__, stop_stage_out);
-
-		info("%s: JobSizeLimit:%u",  __func__, job_size_limit);
 		info("%s: UserSizeLimit:%u",  __func__, user_size_limit);
 	}
 }
