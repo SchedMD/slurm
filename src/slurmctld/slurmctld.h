@@ -1025,10 +1025,12 @@ extern uint32_t get_next_job_id(void);
 /*
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
+ * OUT err_part - The first invalid partition name.
  * RET List of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
+ * NOTE: Caller must free err_part
  */
-extern List get_part_list(char *name);
+extern List get_part_list(char *name, char **err_part);
 
 /*
  * init_job_conf - initialize the job configuration tables and values.

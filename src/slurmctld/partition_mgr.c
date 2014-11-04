@@ -727,10 +727,12 @@ extern List part_list_copy(List part_list_src)
 /*
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
+ * OUT err_part - The first invalid partition name.
  * RET List of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
+ * NOTE: Caller must free err_part
  */
-extern List get_part_list(char *name)
+extern List get_part_list(char *name, char **err_part)
 {
 	struct part_record *part_ptr;
 	List job_part_list = NULL;
@@ -750,6 +752,10 @@ extern List get_part_list(char *name)
 			list_append(job_part_list, part_ptr);
 		} else {
 			FREE_NULL_LIST(job_part_list);
+			if (err_part) {
+				xfree(*err_part);
+				*err_part = xstrdup(token);
+			}
 			break;
 		}
 		token = strtok_r(NULL, ",", &last);

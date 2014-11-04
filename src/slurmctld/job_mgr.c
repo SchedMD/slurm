@@ -1358,12 +1358,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 		part_ptr = find_part_record (partition);
 		if (part_ptr == NULL) {
-			part_ptr_list = get_part_list(partition);
+			char *err_part = NULL;
+			part_ptr_list = get_part_list(partition, &err_part);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
 			} else {
 				verbose("Invalid partition (%s) for job_id %u",
-					partition, job_id);
+					err_part, job_id);
+				xfree(err_part);
 				/* not fatal error, partition could have been
 				 * removed, reset_job_bitmaps() will clean-up
 				 * this job */
@@ -1534,12 +1536,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 		part_ptr = find_part_record (partition);
 		if (part_ptr == NULL) {
-			part_ptr_list = get_part_list(partition);
+			char *err_part = NULL;
+			part_ptr_list = get_part_list(partition, &err_part);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
 			} else {
 				verbose("Invalid partition (%s) for job_id %u",
-					partition, job_id);
+					err_part, job_id);
+				xfree(err_part);
 				/* not fatal error, partition could have been
 				 * removed, reset_job_bitmaps() will clean-up
 				 * this job */
@@ -1694,12 +1698,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 		part_ptr = find_part_record (partition);
 		if (part_ptr == NULL) {
-			part_ptr_list = get_part_list(partition);
+			char *err_part = NULL;
+			part_ptr_list = get_part_list(partition, &err_part);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
 			} else {
 				verbose("Invalid partition (%s) for job_id %u",
-					partition, job_id);
+					err_part, job_id);
+				xfree(err_part);
 				/* not fatal error, partition could have been
 				 * removed, reset_job_bitmaps() will clean-up
 				 * this job */
@@ -4688,7 +4694,8 @@ fini:
 
 static int _get_job_parts(job_desc_msg_t * job_desc,
 			  struct part_record **part_pptr,
-			  List *part_pptr_list)
+			  List *part_pptr_list,
+			  char **err_msg)
 {
 	struct part_record *part_ptr = NULL, *part_ptr_new = NULL;
 	List part_ptr_list = NULL;
@@ -4696,20 +4703,29 @@ static int _get_job_parts(job_desc_msg_t * job_desc,
 
 	/* Identify partition(s) and set pointer(s) to their struct */
 	if (job_desc->partition) {
+		char *err_part = NULL;
 		part_ptr = find_part_record(job_desc->partition);
 		if (part_ptr == NULL) {
-			part_ptr_list = get_part_list(job_desc->partition);
+			part_ptr_list = get_part_list(job_desc->partition,
+						      &err_part);
 			if (part_ptr_list)
 				part_ptr = list_peek(part_ptr_list);
 		}
 		if (part_ptr == NULL) {
-			info("_valid_job_part: invalid partition specified: %s",
-			     job_desc->partition);
+			info("%s: invalid partition specified: %s",
+			     __func__, err_part);
+			if (err_msg) {
+				xfree(*err_msg);
+				xstrfmtcat(*err_msg,
+					"invalid partition specified: %s",
+					err_part);
+				xfree(err_part);
+			}
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
 	} else {
 		if (default_part_loc == NULL) {
-			error("_valid_job_part: default partition not set");
+			error("%s: default partition not set", __func__);
 			return ESLURM_DEFAULT_PARTITION_NOT_SET;
 		}
 		part_ptr = default_part_loc;
@@ -4815,9 +4831,9 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			}
 
 			if (assoc_ptr && assoc_rec.id != assoc_ptr->id) {
-				info("_valid_job_part: can't check multiple "
+				info("%s: can't check multiple "
 				     "partitions with partition based "
-				     "associations");
+				     "associations", __func__);
 				rc = SLURM_ERROR;
 			} else
 				rc = _part_access_check(part_ptr_tmp, job_desc,
@@ -4885,9 +4901,9 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		   slurmctld_conf.enforce_part_limits &&
 		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 					      QOS_FLAG_PART_MIN_NODE)))) {
-		info("_valid_job_part: job's min nodes greater than "
+		info("%s: job's min nodes greater than "
 		     "partition's max nodes (%u > %u)",
-		     job_desc->min_nodes, max_nodes_orig);
+		     __func__, job_desc->min_nodes, max_nodes_orig);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	} else if ((job_desc->min_nodes < min_nodes_orig) &&
@@ -4901,15 +4917,15 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	    (job_desc->max_nodes < min_nodes_orig) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
-		info("_valid_job_part: job's max nodes less than partition's "
+		info("%s: job's max nodes less than partition's "
 		     "min nodes (%u < %u)",
-		     job_desc->max_nodes, min_nodes_orig);
+		     __func__, job_desc->max_nodes, min_nodes_orig);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
 #ifndef HAVE_FRONT_END
 	if ((job_desc->min_nodes == 0) && (job_desc->script == NULL)) {
-		info("_valid_job_part: min_nodes==0 for non-batch job");
+		info("%s: min_nodes==0 for non-batch job", __func__);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
@@ -4917,7 +4933,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 
 	if ((job_desc->time_limit   == NO_VAL) &&
 	    (part_ptr->default_time == 0)) {
-		info("_valid_job_part: job's default time is 0");
+		info("%s: job's default time is 0", __func__);
 		rc = ESLURM_INVALID_TIME_LIMIT;
 		goto fini;
 	}
@@ -4930,9 +4946,9 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	    (job_desc->time_min >  max_time) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 				       QOS_FLAG_PART_TIME_LIMIT)))) {
-		info("_valid_job_part: job's min time greater than "
+		info("%s: job's min time greater than "
 		     "partition's (%u > %u)",
-		     job_desc->time_min, max_time);
+		     __func__, job_desc->time_min, max_time);
 		rc = ESLURM_INVALID_TIME_LIMIT;
 		goto fini;
 	}
@@ -4942,9 +4958,9 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	    slurmctld_conf.enforce_part_limits &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 				       QOS_FLAG_PART_TIME_LIMIT)))) {
-		info("_valid_job_part: job's time limit greater than "
+		info("%s: job's time limit greater than "
 		     "partition's (%u > %u)",
-		     job_desc->time_limit, max_time);
+		     __func__, job_desc->time_limit, max_time);
 		rc = ESLURM_INVALID_TIME_LIMIT;
 		goto fini;
 	}
@@ -4952,9 +4968,9 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	    (job_desc->time_min >  job_desc->time_limit) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 				       QOS_FLAG_PART_TIME_LIMIT)))) {
-		info("_valid_job_part: job's min_time greater time limit "
+		info("%s: job's min_time greater time limit "
 		     "(%u > %u)",
-		     job_desc->time_min, job_desc->time_limit);
+		     __func__, job_desc->time_min, job_desc->time_limit);
 		rc = ESLURM_INVALID_TIME_LIMIT;
 		goto fini;
 	}
@@ -5184,7 +5200,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	error_code = _get_job_parts(job_desc, &part_ptr, &part_ptr_list);
+	error_code = _get_job_parts(job_desc, &part_ptr, &part_ptr_list,
+				    err_msg);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
@@ -8121,16 +8138,19 @@ void reset_job_bitmaps(void)
 			part_ptr = NULL;
 			job_fail = true;
 		} else {
+			char *err_part = NULL;
 			part_ptr = find_part_record(job_ptr->partition);
 			if (part_ptr == NULL) {
-				part_ptr_list = get_part_list(job_ptr->
-							      partition);
+				part_ptr_list = get_part_list(
+						job_ptr->partition,
+						&err_part);
 				if (part_ptr_list)
 					part_ptr = list_peek(part_ptr_list);
 			}
 			if (part_ptr == NULL) {
 				error("Invalid partition (%s) for job %u",
-				      job_ptr->partition, job_ptr->job_id);
+				      err_part, job_ptr->job_id);
+				xfree(err_part);
 				job_fail = true;
 			}
 		}
@@ -8825,7 +8845,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 
 		error_code = _get_job_parts(job_specs,
-					    &tmp_part_ptr, &part_ptr_list);
+					    &tmp_part_ptr,
+					    &part_ptr_list, NULL);
 
 		if (error_code != SLURM_SUCCESS)
 			;
