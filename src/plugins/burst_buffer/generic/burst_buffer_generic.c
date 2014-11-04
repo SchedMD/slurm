@@ -38,7 +38,9 @@
 #  include "config.h"
 #endif
 
+#include <poll.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 
@@ -50,8 +52,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
-
-#define _DEBUG 1
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -382,7 +382,6 @@ static void _clear_config(void)
 	xfree(start_stage_out);
 	xfree(stop_stage_in);
 	xfree(stop_stage_out);
-	total_space = 0;
 	user_size_limit = NO_VAL;
 }
 
@@ -508,13 +507,122 @@ static void _load_cache(void)
 	}
 }
 
+/*
+ *  Same as waitpid(2) but kill process group for pid after timeout secs.
+ *   Returns 0 for valid status in pstatus, -1 on failure of waitpid(2).
+ */
+static int _waitpid_timeout(char *script_type, pid_t pid, int *pstatus,
+			    int timeout)
+{
+	int timeout_ms = 1000 * timeout; /* timeout in ms                   */
+	int max_delay =  1000;           /* max delay between waitpid calls */
+	int delay = 10;                  /* initial delay                   */
+	int rc;
+	int options = WNOHANG;
+
+	if (timeout <= 0)
+		options = 0;
+
+	while ((rc = waitpid(pid, pstatus, options)) <= 0) {
+		if (rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("%s: waitpid(%s): %m", plugin_type, script_type);
+			return -1;
+		} else if (timeout_ms <= 0) {
+			info ("%s: timeout for %s after %ds: killing pgid %d",
+			      plugin_type, script_type, timeout, pid);
+			killpg(pid, SIGKILL);
+			options = 0;
+		} else {
+			poll(NULL, 0, delay);
+			timeout_ms -= delay;
+			delay = MIN (timeout_ms, MIN(max_delay, delay*2));
+		}
+	}
+
+	killpg(pid, SIGKILL);  /* kill children too */
+	return 0;
+}
+
+/* Execute a script, wait for termination and return its stdout.
+ * script_type IN - Type of program being run (e.g. "StartStageIn")
+ * script_path IN - Fully qualified pathname of the program to execute
+ * script_args IN - Arguments to the script
+ * max_wait IN - maximum time to wait in seconds, -1 for no limit
+ * Return value must be xfreed. */
+static char *_run_script(char *script_type, char *script_path,
+			 char **script_argv, int max_wait)
+{
+	int status;
+	pid_t cpid;
+	char *resp = NULL;
+
+	if ((script_path == NULL) || (script_path[0] == '\0')) {
+		error("%s: %s is not configured", plugin_type, script_type);
+		return resp;
+	}
+	if (script_path[0] != '/') {
+		error("%s: %s is not fully qualified pathname (%s)",
+		      plugin_type, script_type, script_path);
+		return resp;
+	}
+	if (access(script_path, R_OK | X_OK) < 0) {
+		error("%s: %s can not be executed (%s)",
+		      plugin_type, script_type, script_path);
+		return resp;
+	}
+	if ((cpid = fork()) == 0) {
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
+		setpgrp();
+#endif
+		execv(script_path, script_argv);
+		error("%s: execv(%s): %m", plugin_type, script_path);
+		exit(127);
+	} else if (cpid > 0) {
+		if (_waitpid_timeout(script_type, cpid, &status, max_wait) < 0)
+			return resp;
+//NEED TO ADD PIPE
+		xstrfmtcat(resp, "TotalSpace=1234\n");
+	} else {
+		error("%s: fork(): %m", plugin_type);
+	}
+	return resp;
+}
+
 /* Determine the current actual burst buffer state.
  * Run the program "get_sys_state" and parse stdout for details. */
 static void _load_state(void)
 {
 	static uint32_t last_total_space = 0;
+	char *save_ptr = NULL, *tok, *leftover = NULL, *resp, *tmp = NULL;
+	char *script_args[2] = { "LoadState", NULL };
+	s_p_hashtbl_t *state_hashtbl = NULL;
+	static s_p_options_t state_options[] = {
+		{"TotalSpace", S_P_STRING},
+		{NULL}
+	};
 
-	total_space = 1000;	/* For testing purposes only */
+	resp = _run_script("GetSysState", get_sys_state, script_args, 100);
+	if (resp == NULL)
+		return;
+	state_hashtbl = s_p_hashtbl_create(state_options);
+	tok = strtok_r(resp, "\n", &save_ptr);
+	while (tok) {
+		s_p_parse_line(state_hashtbl, tok, &leftover);
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+	if (s_p_get_string(&tmp, "TotalSpace", state_hashtbl)) {
+		total_space = _get_size_num(tmp);
+		xfree(tmp);
+	} else {
+		error("%s: GetSysState failed to respond with TotalSpace",
+		      plugin_type);
+	}
+	s_p_hashtbl_destroy(state_hashtbl);
+
 	if (debug_flag && (total_space != last_total_space))
 		info("%s: total_space:%u",  __func__, total_space);
 	last_total_space = total_space;
