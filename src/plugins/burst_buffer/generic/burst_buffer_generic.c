@@ -85,7 +85,6 @@ const char plugin_name[]        = "burst_buffer generic plugin";
 const char plugin_type[]        = "burst_buffer/generic";
 const uint32_t plugin_version   = 100;
 
-#if _DEBUG
 #define BB_HASH_SIZE		100
 typedef struct bb_alloc {
 	uint32_t array_job_id;
@@ -520,7 +519,6 @@ static void _load_state(void)
 		info("%s: total_space:%u",  __func__, total_space);
 	last_total_space = total_space;
 }
-#endif
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -528,13 +526,12 @@ static void _load_state(void)
  */
 extern int init(void)
 {
-#if _DEBUG
 	_load_config();
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_state();
 	_load_cache();
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -543,12 +540,11 @@ extern int init(void)
  */
 extern int fini(void)
 {
-#if _DEBUG
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_clear_config();
 	_clear_cache();
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -562,12 +558,11 @@ extern int fini(void)
  */
 extern int bb_p_load_state(void)
 {
-#if _DEBUG
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_state();
 	_purge_bb_rec();
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -578,11 +573,10 @@ extern int bb_p_load_state(void)
  */
 extern int bb_p_reconfig(void)
 {
-#if _DEBUG
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_config();
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -594,7 +588,6 @@ extern int bb_p_reconfig(void)
  */
 extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 {
-#if _DEBUG
 	struct bb_alloc *bb_next;
 	uint32_t rec_count = 0;
 	int i, eof, offset;
@@ -637,7 +630,7 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 		set_buf_offset(buffer, eof);
 	}
 	info("%s: record_count:%u",  __func__, rec_count);
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -649,7 +642,6 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
-#if _DEBUG
 	int32_t bb_size = 0;
 	char *key;
 	int i;
@@ -696,7 +688,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		     "but total space is only %u",
 		     job_desc->user_id, bb_size, total_space);
 	}
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -707,7 +699,6 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
  */
 extern int bb_p_job_try_stage_in(List job_queue)
 {
-#if _DEBUG
 	ListIterator job_iter;
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_ptr;
@@ -736,7 +727,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		}
 	}
 	list_iterator_destroy(job_iter);
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -749,7 +740,6 @@ extern int bb_p_job_try_stage_in(List job_queue)
  */
 extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 {
-#if _DEBUG
 	bb_alloc_t *bb_ptr;
 
 	if (debug_flag) {
@@ -775,9 +765,6 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 	error("%s: job_id:%u bb_state:%u",
 	      __func__, job_ptr->job_id, bb_ptr->state);
 	return -1;
-#else
-	return 1;
-#endif
 }
 
 /*
@@ -787,7 +774,6 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
  */
 extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 {
-#if _DEBUG
 	bb_alloc_t *bb_ptr;
 
 	if (debug_flag) {
@@ -806,9 +792,6 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	}
 	bb_ptr->state = BB_STATE_STAGING_OUT;
 	return SLURM_SUCCESS;
-#else
-	return SLURM_SUCCESS;
-#endif
 }
 
 /*
@@ -820,7 +803,6 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
  */
 extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 {
-#if _DEBUG
 	bb_alloc_t *bb_ptr;
 
 	if (debug_flag) {
@@ -846,7 +828,4 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	error("%s: job_id:%u bb_state:%u",
 	      __func__, job_ptr->job_id, bb_ptr->state);
 	return -1;
-#else
-	return 1;
-#endif
 }
