@@ -16,6 +16,9 @@ documents those changes that are of interest to users and administrators.
     we have to try each serially.
  -- Add better error reporting of invalid partitions at submission time.
 
+* Changes in Slurm 14.11.0
+==========================
+
 * Changes in Slurm 14.11.0rc3
 =============================
  -- Allow envs to override autotools binaries in autogen.sh
@@ -305,6 +308,9 @@ documents those changes that are of interest to users and administrators.
     and node count.
  -- When a job dependency can never be satisfied do not cancel the job but keep
     pending with reason WAIT_DEP_INVALID (DependencyNeverSatisfied).
+
+* Changes in Slurm 14.03.11
+===========================
 
 * Changes in Slurm 14.03.10
 ===========================
