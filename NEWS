@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.0
 ==========================
+ -- ALPS - Fix issue with core_spec warning.
 
 * Changes in Slurm 14.11.0rc3
 =============================
