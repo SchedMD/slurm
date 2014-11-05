@@ -334,8 +334,8 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	 *		means that we need to confirm only if batch_flag is 0,
 	 *		and execute the other_job_ready() only in slurmctld.
 	 */
-	if (slurmctld_primary && !job_ptr->batch_flag &&
-	    !_zero_size_job(job_ptr))
+	if ((slurmctld_primary || (job_ptr->job_state == (uint16_t)NO_VAL))
+	    && !job_ptr->batch_flag && !_zero_size_job(job_ptr))
 		rc = do_basil_confirm(job_ptr);
 	if ((rc != SLURM_SUCCESS) || (job_ptr->job_state == (uint16_t) NO_VAL))
 		return rc;
@@ -410,7 +410,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
-	if (slurmctld_primary && !_zero_size_job(job_ptr) &&
+	if ((slurmctld_primary || (job_ptr->job_state == (uint16_t)NO_VAL))
+	    && !_zero_size_job(job_ptr) &&
 	    (do_basil_release(job_ptr) != SLURM_SUCCESS))
 		return SLURM_ERROR;
 	/*

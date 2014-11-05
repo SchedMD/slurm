@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Resize bitmaps on a restart and find we have more blades
     than before.
  -- Add new eio API function for removing unused connections.
+ -- ALPS - Fix issue where batch allocations weren't correctly confirmed or
+    released.
 
 * Changes in Slurm 14.11.0rc3
 =============================
