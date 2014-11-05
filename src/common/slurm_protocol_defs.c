@@ -1685,6 +1685,24 @@ extern char *priority_flags_string(uint16_t priority_flags)
 	return flag_str;
 }
 
+extern char *bb_state_string(uint16_t state)
+{
+	static char buf[16];
+
+	if (state == BB_STATE_ALLOCATED)
+		return "allocated";
+	if (state == BB_STATE_STAGING_IN)
+		return "staging-in";
+	if (state == BB_STATE_STAGED_IN)
+		return "staged-in";
+	if (state == BB_STATE_STAGING_OUT)
+		return "staging-out";
+	if (state == BB_STATE_STAGED_OUT)
+		return "staged-out";
+	snprintf(buf, sizeof(buf), "%u", state);
+	return buf;
+}
+
 extern char *node_state_string(uint32_t inx)
 {
 	int  base            = (inx & NODE_STATE_BASE);

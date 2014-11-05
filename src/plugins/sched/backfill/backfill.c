@@ -720,7 +720,7 @@ static int _attempt_backfill(void)
 	 * pending RPCs before starting the backfill scheduling logic */
 	_yield_locks(1000000);
 #endif
-	bb_g_load_state();
+	(void) bb_g_load_state(false);
 
 	START_TIMER;
 	if (debug_flags & DEBUG_FLAG_BACKFILL)

@@ -75,7 +75,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_bb_ops {
-	int		(*load_state)	(void);
+	int		(*load_state)	(bool init_config);
 	int		(*state_pack)	(Buf buffer, uint16_t protocol_version);
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(struct job_descriptor *job_desc,
@@ -207,9 +207,10 @@ fini:	slurm_mutex_unlock(&g_context_lock);
  * changes to the burst buffer state (e.g. capacity is added, removed, fails,
  * etc.).
  *
+ * init_config IN - true if called as part of slurmctld initialization
  * Returns a SLURM errno.
  */
-extern int bb_g_load_state(void)
+extern int bb_g_load_state(bool init_config)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
@@ -218,7 +219,7 @@ extern int bb_g_load_state(void)
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		rc2 = (*(ops[i].load_state))();
+		rc2 = (*(ops[i].load_state))(init_config);
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);

@@ -82,30 +82,6 @@ static void _get_size_str(char *buf, size_t buf_size, uint32_t num)
 }
 
 /*
- * slurm_burst_buffer_state_string - translate burst buffer state number to
- *	it string equivalent
- */
-extern char *slurm_burst_buffer_state_string(uint16_t state)
-{
-	static char buf[16];
-
-	if (state == BB_STATE_ALLOCATED)
-		return "allocated";
-	if (state == BB_STATE_STAGING_IN)
-		return "staging-in";
-	if (state == BB_STATE_STAGING_IN)
-		return "staging-in";
-	if (state == BB_STATE_STAGED_IN)
-		return "staged-in";
-	if (state == BB_STATE_STAGING_OUT)
-		return "staging-out";
-	if (state == BB_STATE_STAGED_OUT)
-		return "staged-out";
-	snprintf(buf, sizeof(buf), "%u", state);
-	return buf;
-}
-
-/*
  * slurm_load_burst_buffer_info - issue RPC to get slurm all burst buffer plugin
  *	information
  * IN burst_buffer_info_msg_pptr - place to store a burst buffer configuration
@@ -196,7 +172,7 @@ static void _print_burst_buffer_resv(FILE *out,
 	_get_size_str(sz_buf, sizeof(sz_buf), burst_buffer_ptr->size);
 	snprintf(tmp_line, sizeof(tmp_line),
 		"Size=%s State=%s UserID=%s(%u)",
-		sz_buf,slurm_burst_buffer_state_string(burst_buffer_ptr->state),
+		sz_buf, bb_state_string(burst_buffer_ptr->state),
 	        uid_to_string(burst_buffer_ptr->user_id),
 	        burst_buffer_ptr->user_id);
 	xstrcat(out_buf, tmp_line);

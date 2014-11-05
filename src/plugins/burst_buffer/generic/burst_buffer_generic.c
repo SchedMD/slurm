@@ -120,6 +120,21 @@ static char    *stop_stage_out = NULL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
 
+static uint16_t _get_state_num(char *tok)
+{
+	if (!strcasecmp(tok, "allocated"))
+		return BB_STATE_ALLOCATED;
+	if (!strcasecmp(tok, "staging-in"))
+		return BB_STATE_STAGING_IN;
+	if (!strcasecmp(tok, "staged-in"))
+		return BB_STATE_STAGED_IN;
+	if (!strcasecmp(tok, "staging-out"))
+		return BB_STATE_STAGING_OUT;
+	if (!strcasecmp(tok, "staged-out"))
+		return BB_STATE_STAGED_OUT;
+	return 0;
+}
+
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
 static uint32_t _get_size_num(char *tok)
@@ -175,7 +190,7 @@ static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 	i = job_ptr->job_id % BB_HASH_SIZE;
 	bb_ptr->next = bb_hash[i];
 	bb_hash[i] = bb_ptr;
-	bb_ptr->size = _get_bb_size(job_ptr);;
+	bb_ptr->size = _get_bb_size(job_ptr);
 	bb_ptr->state = BB_STATE_ALLOCATED;
 	bb_ptr->user_id = job_ptr->user_id;
 
@@ -572,11 +587,13 @@ static char *_run_script(char *script_type, char *script_path,
 					break;
 			}
 			status = poll(&fds, 1, new_wait);
-			if ((status < 1) || ((fds.revents & POLLIN) == 0)) {
+			if (status < 1) {
 				error("%s: %s timeout",
 				      plugin_type, script_type);
 				break;
 			}
+			if ((fds.revents & POLLIN) == 0)
+				break;
 			i = read(pfd[0], resp + resp_offset,
 				 resp_size - resp_offset);
 			if (i == 0) {
@@ -606,19 +623,87 @@ static char *_run_script(char *script_type, char *script_path,
 	return resp;
 }
 
+static int _parse_job_info(void **dest, slurm_parser_enum_t type,
+			   const char *key, const char *value,
+			   const char *line, char **leftover)
+{
+	s_p_hashtbl_t *job_tbl;
+	char *tmp = NULL;
+	uint32_t job_id, size = 0, user_id = 0;
+	uint16_t state = 0;
+	bb_alloc_t *bb_ptr;
+	struct job_record *job_ptr;
+	static s_p_options_t _job_options[] = {
+		{"Size", S_P_STRING},
+		{"State", S_P_STRING},
+		{"UserID",S_P_STRING},
+		{NULL}
+	};
+
+	*dest = NULL;
+	job_id = atoi(value);
+	job_tbl = s_p_hashtbl_create(_job_options);
+	s_p_parse_line(job_tbl, *leftover, leftover);
+	if (s_p_get_string(&tmp, "Size", job_tbl))
+		size =  _get_size_num(tmp);
+	if (s_p_get_string(&tmp, "State", job_tbl))
+		state = _get_state_num(tmp);
+	if (s_p_get_string(&tmp, "UserID", job_tbl))
+		user_id = atoi(tmp);
+
+#if 0
+	info("jobid:%u size:%u state:%u userid:%u",
+	     job_id, size, state, user_id);
+#endif
+	job_ptr = find_job_record(job_id);
+	if (!job_ptr) {
+		error("%s: Vestigial buffer for job ID %u. Clear manually",
+		      plugin_type, job_id);
+	} else if ((bb_ptr = _find_bb_rec(job_ptr)) == NULL) {
+		bb_ptr = _alloc_bb_rec(job_ptr);
+		bb_ptr->state = state;
+	} else {
+		if (bb_ptr->user_id != user_id) {
+			error("%s: User ID mismatch for job %u (%u != %u)",
+			      plugin_type, job_id, bb_ptr->user_id, user_id);
+		} else if (bb_ptr->size != size) {
+			error("%s: Size mismatch for job %u (%u != %u)",
+			      plugin_type, job_id, bb_ptr->size, size);
+		} else if (bb_ptr->state != state) {
+			debug("%s: State mismatch for job %u (%s != %s)",
+			      plugin_type, job_id,
+			      bb_state_string(bb_ptr->state),
+			      bb_state_string(state));
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
+/* Destroy any records created by _parse_job_info(), currently none */
+static void _destroy_job_info(void *data)
+{
+}
+
 /* Determine the current actual burst buffer state.
  * Run the program "get_sys_state" and parse stdout for details. */
 static void _load_state(void)
 {
 	static uint32_t last_total_space = 0;
 	char *save_ptr = NULL, *tok, *leftover = NULL, *resp, *tmp = NULL;
-	char *script_args[2] = { "LoadState", NULL };
+	char *script_args[3] = { NULL, "get_sys", NULL };
 	s_p_hashtbl_t *state_hashtbl = NULL;
 	static s_p_options_t state_options[] = {
-		{"TotalSpace", S_P_STRING},
+		{"ENOENT", S_P_STRING},
+		{"JobID", S_P_ARRAY, _parse_job_info, _destroy_job_info},
+		{"TotalSize", S_P_STRING},
 		{NULL}
 	};
 
+	tok = strrchr(get_sys_state, '/');
+	if (tok)
+		script_args[0] = tok + 1;
+	else
+		script_args[0] = get_sys_state;
 	resp = _run_script("GetSysState", get_sys_state, script_args, 100);
 	if (resp == NULL)
 		return;
@@ -628,11 +713,11 @@ static void _load_state(void)
 		s_p_parse_line(state_hashtbl, tok, &leftover);
 		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
-	if (s_p_get_string(&tmp, "TotalSpace", state_hashtbl)) {
+	if (s_p_get_string(&tmp, "TotalSize", state_hashtbl)) {
 		total_space = _get_size_num(tmp);
 		xfree(tmp);
 	} else {
-		error("%s: GetSysState failed to respond with TotalSpace",
+		error("%s: GetSysState failed to respond with TotalSize",
 		      plugin_type);
 	}
 	s_p_hashtbl_destroy(state_hashtbl);
@@ -651,8 +736,6 @@ extern int init(void)
 	_load_config();
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
-	_load_state();
-	_load_cache();
 
 	return SLURM_SUCCESS;
 }
@@ -676,13 +759,16 @@ extern int fini(void)
  * changes to the burst buffer state (e.g. capacity is added, removed, fails,
  * etc.)
  *
+ * init_config IN - true if called as part of slurmctld initialization
  * Returns a SLURM errno.
  */
-extern int bb_p_load_state(void)
+extern int bb_p_load_state(bool init_config)
 {
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_state();
+	if (init_config)
+		_load_cache();
 	_purge_bb_rec();
 
 	return SLURM_SUCCESS;

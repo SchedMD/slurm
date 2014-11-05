@@ -1634,7 +1634,7 @@ static void *_slurmctld_background(void *no_data)
 		if (job_limit != NO_VAL) {
 			now = time(NULL);
 			last_sched_time = now;
-			bb_g_load_state();
+			bb_g_load_state(false);
 			if (schedule(job_limit))
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();

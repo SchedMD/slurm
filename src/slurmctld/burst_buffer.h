@@ -67,9 +67,10 @@ extern int bb_g_fini(void);
  * changes to the burst buffer state (e.g. capacity is added, removed, fails,
  * etc.)
  *
+ * init_config IN - true if called as part of slurmctld initialization
  * Returns a SLURM errno.
  */
-extern int bb_g_load_state(void);
+extern int bb_g_load_state(bool init_config);
 
 /*
  * Pack current burst buffer state information for network transmission to
