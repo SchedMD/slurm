@@ -544,3 +544,23 @@ void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj)
 	list_enqueue(eio->new_objs, obj);
 	eio_signal_wakeup(eio);
 }
+
+bool eio_remove_obj(eio_obj_t *obj, List objs)
+{
+    xassert( obj != NULL );
+    ListIterator  i    = list_iterator_create(objs);
+    eio_obj_t    *obj1  = NULL;
+    bool ret = false;
+
+    while( (obj1 = list_next(i)) ) {
+        if( obj1 == obj ){
+            obj1 = list_remove(i);
+            xassert( obj1 == obj );
+            ret = true;
+            break;
+        }
+    }
+    list_iterator_destroy(i);
+    return ret;
+}
+

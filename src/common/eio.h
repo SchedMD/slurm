@@ -87,6 +87,15 @@ void eio_new_initial_obj(eio_handle_t *eio, eio_obj_t *obj);
  */
 void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj);
 
+/*
+ * DeQueue an eio_obj_t "obj" from the running
+ * eio_handle_t eio's internal object list "objs".
+ * Supposed to be called from read/write handlers
+ * (have "objs" as one of their arguments).
+ * NOTE: object "obj" should be xfreed by the caller.
+ */
+bool eio_remove_obj(eio_obj_t *obj, List objs);
+
 
 /* This routine will watch for activtiy on the fd's as long
  * as obj->readable() or obj->writable() returns >0
