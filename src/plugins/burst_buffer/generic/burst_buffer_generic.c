@@ -107,6 +107,7 @@ typedef struct bb_user {
 } bb_user_t;
 bb_user_t **bb_uhash = NULL;	/* Hash by user_id */
 
+static pthread_mutex_t bb_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uid_t   *allow_users = NULL;
 static char    *allow_users_str = NULL;
 static bool	debug_flag = false;
@@ -664,9 +665,9 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp, "State", job_tbl))
 		state = bb_state_num(tmp);
 
-#if 1
-	info("jobid:%u name:%s size:%u state:%u userid:%u",
-	     job_id, name, size, state, user_id);
+#if 0
+	info("%s: JobID:%u Name:%s Size:%u State:%u UserID:%u",
+	     __func__, job_id, name, size, state, user_id);
 #endif
 	if (job_id) {
 		job_ptr = find_job_record(job_id);
@@ -772,10 +773,12 @@ static void _load_state(void)
  */
 extern int init(void)
 {
+	pthread_mutex_lock(&bb_mutex);
 	_load_config();
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_alloc_cache();
+	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -785,10 +788,12 @@ extern int init(void)
  */
 extern int fini(void)
 {
+	pthread_mutex_lock(&bb_mutex);
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_clear_config();
 	_clear_cache();
+	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -804,10 +809,12 @@ extern int fini(void)
  */
 extern int bb_p_load_state(bool init_config)
 {
+	pthread_mutex_lock(&bb_mutex);
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_state();
 	_purge_bb_rec();
+	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -819,9 +826,11 @@ extern int bb_p_load_state(bool init_config)
  */
 extern int bb_p_reconfig(void)
 {
+	pthread_mutex_lock(&bb_mutex);
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_config();
+	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -838,6 +847,7 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 	uint32_t rec_count = 0;
 	int i, eof, offset;
 
+	pthread_mutex_lock(&bb_mutex);
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
@@ -854,29 +864,30 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 	pack32(prio_boost,       buffer);
 	pack32(total_space,      buffer);
 	pack32(user_size_limit,  buffer);
-	if (bb_hash == NULL)
-		return SLURM_SUCCESS;
-	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_next = bb_hash[i];
-		while (bb_next) {
-			pack32(bb_next->array_job_id,  buffer);
-			pack32(bb_next->array_task_id, buffer);
-			pack32(bb_next->job_id,        buffer);
-			packstr(bb_next->name,         buffer);
-			pack32(bb_next->size,          buffer);
-			pack16(bb_next->state,         buffer);
-			pack32(bb_next->user_id,       buffer);
-			rec_count++;
-			bb_next = bb_next->next;
+	if (bb_hash) {
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			bb_next = bb_hash[i];
+			while (bb_next) {
+				pack32(bb_next->array_job_id,  buffer);
+				pack32(bb_next->array_task_id, buffer);
+				pack32(bb_next->job_id,        buffer);
+				packstr(bb_next->name,         buffer);
+				pack32(bb_next->size,          buffer);
+				pack16(bb_next->state,         buffer);
+				pack32(bb_next->user_id,       buffer);
+				rec_count++;
+				bb_next = bb_next->next;
+			}
+		}
+		if (rec_count != 0) {
+			eof = get_buf_offset(buffer);
+			set_buf_offset(buffer, offset);
+			pack32(rec_count, buffer);
+			set_buf_offset(buffer, eof);
 		}
 	}
-	if (rec_count != 0) {
-		eof = get_buf_offset(buffer);
-		set_buf_offset(buffer, offset);
-		pack32(rec_count, buffer);
-		set_buf_offset(buffer, eof);
-	}
 	info("%s: record_count:%u",  __func__, rec_count);
+	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -910,31 +921,42 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		return SLURM_SUCCESS;
 	if (bb_size < 0)
 		return ESLURM_BURST_BUFFER_LIMIT;
-	if ((job_size_limit != NO_VAL) && (bb_size > job_size_limit))
+
+	pthread_mutex_lock(&bb_mutex);
+	if (((job_size_limit  != NO_VAL) && (bb_size > job_size_limit)) ||
+	    ((user_size_limit != NO_VAL) && (bb_size > user_size_limit))) {
+		pthread_mutex_unlock(&bb_mutex);
 		return ESLURM_BURST_BUFFER_LIMIT;
-	if ((user_size_limit != NO_VAL) && (bb_size > user_size_limit))
-		return ESLURM_BURST_BUFFER_LIMIT;
+	}
+
 	if (allow_users) {
 		for (i = 0; allow_users[i]; i++) {
 			if (job_desc->user_id == allow_users[i])
 				break;
 		}
-		if (allow_users[i] == 0)
+		if (allow_users[i] == 0) {
+			pthread_mutex_unlock(&bb_mutex);
 			return ESLURM_BURST_BUFFER_PERMISSION;
+		}
 	}
+
 	if (deny_users) {
 		for (i = 0; deny_users[i]; i++) {
 			if (job_desc->user_id == deny_users[i])
 				break;
 		}
-		if (deny_users[i] != 0)
+		if (deny_users[i] != 0) {
+			pthread_mutex_unlock(&bb_mutex);
 			return ESLURM_BURST_BUFFER_PERMISSION;
+		}
 	}
+
 	if (bb_size > total_space) {
 		info("Job from user %u requested burst buffer size of %u, "
 		     "but total space is only %u",
 		     job_desc->user_id, bb_size, total_space);
 	}
+	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -953,6 +975,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
+	pthread_mutex_lock(&bb_mutex);
 	job_iter = list_iterator_create(job_queue);
 	while ((job_ptr = list_next(job_iter))) {
 		if ((job_ptr->burst_buffer == NULL) ||
@@ -974,6 +997,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		}
 	}
 	list_iterator_destroy(job_iter);
+	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -997,20 +1021,27 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    (_get_bb_size(job_ptr) == 0))
 		return 1;
+
+	pthread_mutex_lock(&bb_mutex);
 	bb_ptr = _find_bb_job_rec(job_ptr);
 	if (!bb_ptr) {
 		debug("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
+		pthread_mutex_unlock(&bb_mutex);
 		return -1;
 	}
 	if (bb_ptr->state < BB_STATE_STAGED_IN) {
 		bb_ptr->state++;
+		pthread_mutex_unlock(&bb_mutex);
 		return 0;
 	} else if (bb_ptr->state == BB_STATE_STAGED_IN) {
+		pthread_mutex_unlock(&bb_mutex);
 		return 1;
 	}
+
 	error("%s: job_id:%u bb_state:%u",
 	      __func__, job_ptr->job_id, bb_ptr->state);
+	pthread_mutex_unlock(&bb_mutex);
 	return -1;
 }
 
@@ -1031,13 +1062,18 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    (_get_bb_size(job_ptr) == 0))
 		return SLURM_SUCCESS;
+
+	pthread_mutex_lock(&bb_mutex);
 	bb_ptr = _find_bb_job_rec(job_ptr);
 	if (!bb_ptr) {
 		error("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
+		pthread_mutex_unlock(&bb_mutex);
 		return SLURM_ERROR;
 	}
 	bb_ptr->state = BB_STATE_STAGING_OUT;
+	pthread_mutex_unlock(&bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1060,19 +1096,26 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    (_get_bb_size(job_ptr) == 0))
 		return 1;
+
+	pthread_mutex_lock(&bb_mutex);
 	bb_ptr = _find_bb_job_rec(job_ptr);
 	if (!bb_ptr) {
 		error("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
+		pthread_mutex_unlock(&bb_mutex);
 		return -1;
 	} else if (bb_ptr->state == BB_STATE_STAGING_OUT) {
 		if (++bb_ptr->state == BB_STATE_STAGED_OUT)
 			_remove_user_load(bb_ptr);
+		pthread_mutex_unlock(&bb_mutex);
 		return 0;
 	} else if (bb_ptr->state == BB_STATE_STAGED_OUT) {
+		pthread_mutex_unlock(&bb_mutex);
 		return 1;
 	}
 	error("%s: job_id:%u bb_state:%u",
 	      __func__, job_ptr->job_id, bb_ptr->state);
+	pthread_mutex_unlock(&bb_mutex);
+
 	return -1;
 }
