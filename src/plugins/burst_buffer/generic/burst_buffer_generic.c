@@ -86,6 +86,7 @@ const char plugin_name[]        = "burst_buffer generic plugin";
 const char plugin_type[]        = "burst_buffer/generic";
 const uint32_t plugin_version   = 100;
 
+/* Hash tables are used for both job burst buffer and user limit records */
 #define BB_HASH_SIZE		100
 typedef struct bb_alloc {
 	uint32_t array_job_id;
@@ -119,21 +120,6 @@ static char    *stop_stage_in = NULL;
 static char    *stop_stage_out = NULL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
-
-static uint16_t _get_state_num(char *tok)
-{
-	if (!strcasecmp(tok, "allocated"))
-		return BB_STATE_ALLOCATED;
-	if (!strcasecmp(tok, "staging-in"))
-		return BB_STATE_STAGING_IN;
-	if (!strcasecmp(tok, "staged-in"))
-		return BB_STATE_STAGED_IN;
-	if (!strcasecmp(tok, "staging-out"))
-		return BB_STATE_STAGING_OUT;
-	if (!strcasecmp(tok, "staged-out"))
-		return BB_STATE_STAGED_OUT;
-	return 0;
-}
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
@@ -647,7 +633,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp, "Size", job_tbl))
 		size =  _get_size_num(tmp);
 	if (s_p_get_string(&tmp, "State", job_tbl))
-		state = _get_state_num(tmp);
+		state = bb_state_num(tmp);
 	if (s_p_get_string(&tmp, "UserID", job_tbl))
 		user_id = atoi(tmp);
 

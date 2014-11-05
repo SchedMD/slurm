@@ -1265,7 +1265,10 @@ extern uint16_t preempt_mode_num(const char *preempt_mode);
 extern char *log_num2string(uint16_t inx);
 extern uint16_t log_string2num(char *name);
 
+/* Translate a burst buffer numeric value to its equivalant state string */
 extern char *bb_state_string(uint16_t state);
+/* Translate a burst buffer state string to its equivalant numeric value */
+extern uint16_t bb_state_num(char *tok);
 
 /* Convert HealthCheckNodeState numeric value to a string.
  * Caller must xfree() the return value */

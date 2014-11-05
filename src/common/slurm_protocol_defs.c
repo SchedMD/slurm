@@ -1685,6 +1685,7 @@ extern char *priority_flags_string(uint16_t priority_flags)
 	return flag_str;
 }
 
+/* Translate a burst buffer numeric value to its equivalant state string */
 extern char *bb_state_string(uint16_t state)
 {
 	static char buf[16];
@@ -1701,6 +1702,22 @@ extern char *bb_state_string(uint16_t state)
 		return "staged-out";
 	snprintf(buf, sizeof(buf), "%u", state);
 	return buf;
+}
+
+/* Translate a burst buffer state string to its equivalant numeric value */
+extern uint16_t bb_state_num(char *tok)
+{
+	if (!strcasecmp(tok, "allocated"))
+		return BB_STATE_ALLOCATED;
+	if (!strcasecmp(tok, "staging-in"))
+		return BB_STATE_STAGING_IN;
+	if (!strcasecmp(tok, "staged-in"))
+		return BB_STATE_STAGED_IN;
+	if (!strcasecmp(tok, "staging-out"))
+		return BB_STATE_STAGING_OUT;
+	if (!strcasecmp(tok, "staged-out"))
+		return BB_STATE_STAGED_OUT;
+	return 0;
 }
 
 extern char *node_state_string(uint32_t inx)
