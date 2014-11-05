@@ -306,6 +306,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.03.11
 ===========================
+-- ALPS - Fix depth for Memory items in BASIL with CLE 5.2.
 
 * Changes in Slurm 14.03.10
 ===========================
