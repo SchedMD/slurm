@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     COULD TAKE A WHILE TO CREATE THE KEYS SO BE PATIENT.
  -- CRAY - Resize bitmaps on a restart and find we have more blades
     than before.
+ -- Add new eio API function for removing unused connections.
 
 * Changes in Slurm 14.11.0rc3
 =============================
