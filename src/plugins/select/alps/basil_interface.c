@@ -888,7 +888,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		 * mppmem and use it as the level for all
 		 * nodes (mppmem is 0 when coming in).
 		 */
-		mppmem = min_memory / largest_cpus;
+		mppmem = MIN(min_memory, node_min_mem) / largest_cpus;
 
 		/* Minimum memory per processing element should be 1,
 		 * since 0 means give all the memory to the job. */

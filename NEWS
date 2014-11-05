@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 14.03.11
 ===========================
 -- ALPS - Fix depth for Memory items in BASIL with CLE 5.2.
+-- ALPS - Fix issue when tracking memory on a PerNode basis instead of
+   PerCPU.
 
 * Changes in Slurm 14.03.10
 ===========================
