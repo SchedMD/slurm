@@ -92,6 +92,7 @@ typedef struct bb_alloc {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	uint32_t job_id;
+	char *name;		/* For persistent burst buffers */
 	struct bb_alloc *next;
 	uint32_t size;
 	uint16_t state;
@@ -153,16 +154,18 @@ static uint32_t _get_bb_size(struct job_record *job_ptr)
 	char *tok;
 	uint32_t bb_size_u = 0;
 
-	tok = strstr(job_ptr->burst_buffer, "size=");
-	if (tok)
-		bb_size_u = _get_size_num(tok + 5);
+	if (job_ptr->burst_buffer) {
+		tok = strstr(job_ptr->burst_buffer, "size=");
+		if (tok)
+			bb_size_u = _get_size_num(tok + 5);
+	}
 
 	return bb_size_u;
 }
 
 /* Allocate a per-job burst buffer record for a specific job.
  * Return a pointer to that record. */
-static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
+static bb_alloc_t *_alloc_bb_job_rec(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr = NULL;
 	int i;
@@ -173,7 +176,7 @@ static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 	bb_ptr->array_job_id = job_ptr->array_job_id;
 	bb_ptr->array_task_id = job_ptr->array_task_id;
 	bb_ptr->job_id = job_ptr->job_id;
-	i = job_ptr->job_id % BB_HASH_SIZE;
+	i = job_ptr->user_id % BB_HASH_SIZE;
 	bb_ptr->next = bb_hash[i];
 	bb_hash[i] = bb_ptr;
 	bb_ptr->size = _get_bb_size(job_ptr);
@@ -183,17 +186,52 @@ static bb_alloc_t *_alloc_bb_rec(struct job_record *job_ptr)
 	return bb_ptr;
 }
 
+/* Allocate a named burst buffer record for a specific user.
+ * Return a pointer to that record. */
+static bb_alloc_t *_alloc_bb_name_rec(char *name, uint32_t user_id)
+{
+	bb_alloc_t *bb_ptr = NULL;
+	int i;
+
+	xassert(bb_hash);
+	bb_ptr = xmalloc(sizeof(bb_alloc_t));
+	i = user_id % BB_HASH_SIZE;
+	bb_ptr->next = bb_hash[i];
+	bb_hash[i] = bb_ptr;
+	bb_ptr->name = xstrdup(name);
+	bb_ptr->state = BB_STATE_ALLOCATED;
+	bb_ptr->user_id = user_id;
+
+	return bb_ptr;
+}
+
 /* Find a per-job burst buffer record for a specific job.
  * If not found, return NULL. */
-static bb_alloc_t *_find_bb_rec(struct job_record *job_ptr)
+static bb_alloc_t *_find_bb_job_rec(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr = NULL;
 
 	xassert(bb_hash);
 	xassert(job_ptr);
-	bb_ptr = bb_hash[job_ptr->job_id % BB_HASH_SIZE];
+	bb_ptr = bb_hash[job_ptr->user_id % BB_HASH_SIZE];
 	while (bb_ptr) {
 		if (bb_ptr->job_id == job_ptr->job_id)
+			return bb_ptr;
+		bb_ptr = bb_ptr->next;
+	}
+	return bb_ptr;
+}
+
+/* Find a per-job burst buffer record with a specific name.
+ * If not found, return NULL. */
+static bb_alloc_t * _find_bb_name_rec(char *name, uint32_t user_id)
+{
+	bb_alloc_t *bb_ptr = NULL;
+
+	xassert(bb_hash);
+	bb_ptr = bb_hash[user_id % BB_HASH_SIZE];
+	while (bb_ptr) {
+		if (!xstrcmp(bb_ptr->name, name))
 			return bb_ptr;
 		bb_ptr = bb_ptr->next;
 	}
@@ -214,7 +252,8 @@ static void _purge_bb_rec(void)
 			bb_pptr = &bb_hash[i];
 			bb_ptr = bb_hash[i];
 			while (bb_ptr) {
-				if ((bb_ptr->state >= BB_STATE_STAGED_OUT) &&
+				if ((bb_ptr->job_id != 0) &&
+				    (bb_ptr->state >= BB_STATE_STAGED_OUT) &&
 				    !find_job_record(bb_ptr->job_id)) {
 					*bb_pptr = bb_ptr->next;
 					xfree(bb_ptr);
@@ -489,24 +528,10 @@ static void _clear_cache(void)
 }
 
 /* Restore all cached burst buffer records. */
-static void _load_cache(void)
+static void _alloc_cache(void)
 {
-	bb_alloc_t *bb_ptr;
-	int i;
-
 	bb_hash = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
-/* FIXME: Need to populate on restart */
-
 	bb_uhash = xmalloc(sizeof(bb_user_t *) * BB_HASH_SIZE);
-	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_ptr = bb_hash[i];
-		while (bb_ptr) {
-			if (bb_ptr->state < BB_STATE_STAGED_OUT) {
-				_add_user_load(bb_ptr);
-			}
-			bb_ptr = bb_ptr->next;
-		}
-	}
 }
 
 /* Execute a script, wait for termination and return its stdout.
@@ -614,54 +639,82 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			   const char *line, char **leftover)
 {
 	s_p_hashtbl_t *job_tbl;
-	char *tmp = NULL;
-	uint32_t job_id, size = 0, user_id = 0;
+	char *name = NULL, *tmp = NULL, tmp_name[64];
+	uint32_t job_id = 0, size = 0, user_id = 0;
 	uint16_t state = 0;
 	bb_alloc_t *bb_ptr;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	static s_p_options_t _job_options[] = {
+		{"JobID",S_P_STRING},
+		{"Name", S_P_STRING},
 		{"Size", S_P_STRING},
 		{"State", S_P_STRING},
-		{"UserID",S_P_STRING},
 		{NULL}
 	};
 
 	*dest = NULL;
-	job_id = atoi(value);
+	user_id = atoi(value);
 	job_tbl = s_p_hashtbl_create(_job_options);
 	s_p_parse_line(job_tbl, *leftover, leftover);
+	if (s_p_get_string(&tmp, "JobID", job_tbl))
+		job_id = atoi(tmp);
+	s_p_get_string(&name, "Name", job_tbl);
 	if (s_p_get_string(&tmp, "Size", job_tbl))
 		size =  _get_size_num(tmp);
 	if (s_p_get_string(&tmp, "State", job_tbl))
 		state = bb_state_num(tmp);
-	if (s_p_get_string(&tmp, "UserID", job_tbl))
-		user_id = atoi(tmp);
 
-#if 0
-	info("jobid:%u size:%u state:%u userid:%u",
-	     job_id, size, state, user_id);
+#if 1
+	info("jobid:%u name:%s size:%u state:%u userid:%u",
+	     job_id, name, size, state, user_id);
 #endif
-	job_ptr = find_job_record(job_id);
-	if (!job_ptr) {
-		error("%s: Vestigial buffer for job ID %u. Clear manually",
-		      plugin_type, job_id);
-	} else if ((bb_ptr = _find_bb_rec(job_ptr)) == NULL) {
-		bb_ptr = _alloc_bb_rec(job_ptr);
-		bb_ptr->state = state;
+	if (job_id) {
+		job_ptr = find_job_record(job_id);
+		if (!job_ptr) {
+			error("%s: Vestigial buffer for job ID %u. "
+			      "Clear manually",
+			      plugin_type, job_id);
+		}
+		snprintf(tmp_name, sizeof(tmp_name), "VestigialJob%u", job_id);
+		job_id = 0;
+		name = tmp_name;
+	}
+	if (job_ptr) {
+		if ((bb_ptr = _find_bb_job_rec(job_ptr)) == NULL) {
+			bb_ptr = _alloc_bb_job_rec(job_ptr);
+			bb_ptr->state = state;
+		}
 	} else {
-		if (bb_ptr->user_id != user_id) {
-			error("%s: User ID mismatch for job %u (%u != %u)",
-			      plugin_type, job_id, bb_ptr->user_id, user_id);
-		} else if (bb_ptr->size != size) {
-			error("%s: Size mismatch for job %u (%u != %u)",
-			      plugin_type, job_id, bb_ptr->size, size);
-		} else if (bb_ptr->state != state) {
-			debug("%s: State mismatch for job %u (%s != %s)",
-			      plugin_type, job_id,
-			      bb_state_string(bb_ptr->state),
-			      bb_state_string(state));
+		if ((bb_ptr = _find_bb_name_rec(name, user_id)) == NULL) {
+			bb_ptr = _alloc_bb_name_rec(name, user_id);
+			bb_ptr->size = size;
+			bb_ptr->state = state;
+			return SLURM_SUCCESS;
 		}
 	}
+
+	if (bb_ptr->user_id != user_id) {
+		error("%s: User ID mismatch (%u != %u). "
+		      "BB UserID=%u JobID=%u Name=%s",
+		      plugin_type, bb_ptr->user_id, user_id,
+		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
+	}
+	if (bb_ptr->size != size) {
+		error("%s: Size mismatch (%u != %u). "
+		      "BB UserID=%u JobID=%u Name=%s",
+		      plugin_type, bb_ptr->size, size,
+		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
+		bb_ptr->size = MAX(bb_ptr->size, size);
+	}
+	if (bb_ptr->state != state) {
+		/* State is subject to real-time changes */
+		debug("%s: State mismatch (%s != %s). "
+		      "BB UserID=%u JobID=%u Name=%s",
+		      plugin_type, bb_state_string(bb_ptr->state),
+		      bb_state_string(state),
+		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -680,7 +733,7 @@ static void _load_state(void)
 	s_p_hashtbl_t *state_hashtbl = NULL;
 	static s_p_options_t state_options[] = {
 		{"ENOENT", S_P_STRING},
-		{"JobID", S_P_ARRAY, _parse_job_info, _destroy_job_info},
+		{"UserID", S_P_ARRAY, _parse_job_info, _destroy_job_info},
 		{"TotalSize", S_P_STRING},
 		{NULL}
 	};
@@ -722,6 +775,7 @@ extern int init(void)
 	_load_config();
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
+	_alloc_cache();
 
 	return SLURM_SUCCESS;
 }
@@ -753,8 +807,6 @@ extern int bb_p_load_state(bool init_config)
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_state();
-	if (init_config)
-		_load_cache();
 	_purge_bb_rec();
 
 	return SLURM_SUCCESS;
@@ -810,6 +862,7 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 			pack32(bb_next->array_job_id,  buffer);
 			pack32(bb_next->array_task_id, buffer);
 			pack32(bb_next->job_id,        buffer);
+			packstr(bb_next->name,         buffer);
 			pack32(bb_next->size,          buffer);
 			pack16(bb_next->state,         buffer);
 			pack32(bb_next->user_id,       buffer);
@@ -910,9 +963,9 @@ extern int bb_p_job_try_stage_in(List job_queue)
 			continue;
 		if (_test_user_limit(job_ptr->user_id, bb_size))
 			continue;
-		if (_find_bb_rec(job_ptr))
+		if (_find_bb_job_rec(job_ptr))
 			continue;
-		bb_ptr = _alloc_bb_rec(job_ptr);
+		bb_ptr = _alloc_bb_job_rec(job_ptr);
 		bb_ptr->state = BB_STATE_ALLOCATED;
 		_add_user_load(bb_ptr);
 		if (debug_flag) {
@@ -944,7 +997,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    (_get_bb_size(job_ptr) == 0))
 		return 1;
-	bb_ptr = _find_bb_rec(job_ptr);
+	bb_ptr = _find_bb_job_rec(job_ptr);
 	if (!bb_ptr) {
 		debug("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
@@ -978,7 +1031,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    (_get_bb_size(job_ptr) == 0))
 		return SLURM_SUCCESS;
-	bb_ptr = _find_bb_rec(job_ptr);
+	bb_ptr = _find_bb_job_rec(job_ptr);
 	if (!bb_ptr) {
 		error("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
@@ -1007,7 +1060,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    (_get_bb_size(job_ptr) == 0))
 		return 1;
-	bb_ptr = _find_bb_rec(job_ptr);
+	bb_ptr = _find_bb_job_rec(job_ptr);
 	if (!bb_ptr) {
 		error("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);

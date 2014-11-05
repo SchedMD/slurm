@@ -9299,6 +9299,8 @@ static int _unpack_burst_buffer_info_msg(
 			safe_unpack32(&bb_resv_ptr->array_job_id, buffer);
 			safe_unpack32(&bb_resv_ptr->array_task_id, buffer);
 			safe_unpack32(&bb_resv_ptr->job_id, buffer);
+			safe_unpackstr_xmalloc(&bb_resv_ptr->name,
+					       &uint32_tmp, buffer);
 			safe_unpack32(&bb_resv_ptr->size, buffer);
 			safe_unpack16(&bb_resv_ptr->state, buffer);
 			safe_unpack32(&bb_resv_ptr->user_id, buffer);

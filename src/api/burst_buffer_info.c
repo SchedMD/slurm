@@ -157,10 +157,12 @@ static void _print_burst_buffer_resv(FILE *out,
 	char *out_buf = NULL;
 
 	/****** Line 1 ******/
-	if (burst_buffer_ptr->array_task_id == NO_VAL) {
+	if (burst_buffer_ptr->name) {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"    JobID=%u ",
-			burst_buffer_ptr->job_id);
+			"    Name=%s ", burst_buffer_ptr->name);
+	} else if (burst_buffer_ptr->array_task_id == NO_VAL) {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"    JobID=%u ", burst_buffer_ptr->job_id);
 	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
 			"    JobID=%u.%u(%u) ",

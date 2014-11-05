@@ -4186,6 +4186,7 @@ typedef struct {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	uint32_t job_id;
+	char *name;		/* Name of persistent burst buffer */
 	uint32_t size;		/* In GB by default */
 	uint16_t state;		/* See BB_STATE_* */
 	uint32_t user_id;

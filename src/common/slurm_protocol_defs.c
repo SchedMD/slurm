@@ -2673,8 +2673,9 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
  */
 extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 {
-	int i;
+	int i, j;
 	burst_buffer_info_t *bb_info_ptr;
+	burst_buffer_resv_t *bb_resv_ptr;
 
 	if (msg) {
 		for (i = 0, bb_info_ptr = msg->burst_buffer_array;
@@ -2687,6 +2688,12 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 			xfree(bb_info_ptr->start_stage_out);
 			xfree(bb_info_ptr->stop_stage_in);
 			xfree(bb_info_ptr->stop_stage_out);
+			for (j = 0,
+			     bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
+			     j < bb_info_ptr->record_count;
+			     j++, bb_resv_ptr++) {
+				xfree(bb_resv_ptr->name);
+			}
 			xfree(bb_info_ptr->burst_buffer_resv_ptr);
 		}
 		xfree(msg->burst_buffer_array);

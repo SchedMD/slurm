@@ -12,7 +12,10 @@
 #       format is "TotalSize=#"
 #    B. Slurm job ID number, child directories of BB_DIRECTORY, one per job
 #       1. .slurm_state, child of Slurm job ID directory, contains state
-#          information, file format is "JobID=# State=name UserID=# Size=#"
+#          information, file format is
+#	   "UserID=# JobID=# Name=name State=name Size=#"
+#          (NOTE: "UserID" must be first)
+#          (NOTE: Either the JobID or Name should be specified, but not both)
 #
 
 # Validate execute line
