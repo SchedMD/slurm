@@ -61,7 +61,6 @@
 #include "src/common/xmalloc.h"
 
 #include "src/sbatch/opt.h"
-#include "src/sbatch/mult_cluster.h"
 
 #define MAX_RETRIES 15
 
@@ -159,8 +158,12 @@ int main(int argc, char *argv[])
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
-	if (sbatch_set_first_avail_cluster(&desc) != SLURM_SUCCESS)
+	if (slurmdb_get_first_avail_cluster(&desc, opt.clusters,
+			&working_cluster_rec) != SLURM_SUCCESS) {
+		print_db_notok(opt.clusters, 0);
 		exit(error_exit);
+}
+
 
 	if (_check_cluster_specific_settings(&desc) != SLURM_SUCCESS)
 		exit(error_exit);

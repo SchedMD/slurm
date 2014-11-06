@@ -59,7 +59,7 @@
 
 
 typedef struct sbatch_options {
-	List clusters; /* cluster to run this on. */
+	char *clusters;		/* cluster to run this on. */
 	char *progname;		/* argv[0] of this program or   */
 
 	/* batch script argv and argc, if provided on the command line */
