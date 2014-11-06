@@ -41,11 +41,11 @@ fi
 # Set "State=staged-in" in burst buffer's state file
 if [[ -e $BB_DIRECTORY/$job_id/.slurm_state ]]; then
 	cp $BB_DIRECTORY/$job_id/.slurm_state $BB_DIRECTORY/$job_id/.slurm_state2
-	cat $BB_DIRECTORY/$job_id/.slurm_state2 | awk 'BEGIN {FS=" "}{print $1, $2, "State=staged-in", $4}' >$BB_DIRECTORY/$job_id/.slurm_state
+	cat $BB_DIRECTORY/$job_id/.slurm_state2 | awk 'BEGIN {FS=" "}{print $1, $2, "State=staged-out", $4}' >$BB_DIRECTORY/$job_id/.slurm_state
 	rm $BB_DIRECTORY/$job_id/.slurm_state2
 	exit 0
 else
-	echo "UserID=0 JobId=$2 State=staged-in Size=0" >$BB_DIRECTORY/$job_id/.slurm_state
+	echo "UserID=0 JobId=$2 State=staged-out Size=0" >$BB_DIRECTORY/$job_id/.slurm_state
 	exit 1
 fi
 exit 0
