@@ -400,7 +400,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	}
 
 	if (assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
-				  &qos_ptr) != SLURM_SUCCESS) {
+				  &qos_ptr, 0) != SLURM_SUCCESS) {
 		error("Invalid qos (%s)", qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;

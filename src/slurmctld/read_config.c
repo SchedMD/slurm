@@ -581,6 +581,8 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
 	bitstr_t *tmp_qos_bitstr;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!qos) {
 		FREE_NULL_BITMAP(*qos_bits);
@@ -588,6 +590,8 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 		return;
 	}
 
+	/* Lock here to avoid g_qos_count changing under us */
+	assoc_mgr_lock(&locks);
 	tmp_qos_bitstr = bit_alloc(g_qos_count);
 	tmp_qos = xstrdup(qos);
 	one_qos_name = strtok_r(tmp_qos, ",", &name_ptr);
@@ -596,7 +600,7 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 		qos_rec.name = one_qos_name;
 		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce,
-					  &qos_ptr) == SLURM_SUCCESS) {
+					  &qos_ptr, 1) == SLURM_SUCCESS) {
 			bit_set(tmp_qos_bitstr, qos_rec.id);
 		} else {
 			error("Ignoring invalid Allow/DenyQOS value %s",
@@ -604,6 +608,7 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 		}
 		one_qos_name = strtok_r(NULL, ",", &name_ptr);
 	}
+	assoc_mgr_unlock(&locks);
 	xfree(tmp_qos);
 	FREE_NULL_BITMAP(*qos_bits);
 	*qos_bits = tmp_qos_bitstr;

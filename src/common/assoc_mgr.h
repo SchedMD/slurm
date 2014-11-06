@@ -258,11 +258,16 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
  * IN/OUT:  qos_pptr - if non-NULL then return a pointer to the
  *		       slurmdb_qos record in cache on success
  *                     DO NOT FREE.
+ * IN: locked - If you plan on using qos_pptr, or g_qos_count outside
+ *              this function you need to have an assoc_mgr_lock_t
+ *              READ_LOCK for QOS while you use it before and after the
+ *              return.  This is not required if using the assoc for
+ *              non-pointer portions.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 				 int enforce,
-				 slurmdb_qos_rec_t **qos_pptr);
+				 slurmdb_qos_rec_t **qos_pptr, bool locked);
 /*
  * get info from the storage
  * IN/OUT:  wckey - slurmdb_wckey_rec_t with the name, cluster and user
