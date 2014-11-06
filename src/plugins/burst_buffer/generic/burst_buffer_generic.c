@@ -206,6 +206,52 @@ static bb_alloc_t *_alloc_bb_name_rec(char *name, uint32_t user_id)
 	return bb_ptr;
 }
 
+static char **_build_stage_args(char *cmd, char *opt,
+				struct job_record *job_ptr)
+{
+	char **script_argv = NULL;
+	char *save_ptr = NULL, *script, *tok;
+	int script_argc = 0, size;
+
+	if (job_ptr->batch_flag == 0)
+		return script_argv;
+
+	script = get_job_script(job_ptr);
+	if (!script) {
+		error("%s: failed to get script for job %u",
+		      __func__, job_ptr->job_id);
+		return script_argv;
+	}
+
+	size = 20;
+	script_argv = xmalloc(sizeof(char *) * size);
+	tok = strrchr(cmd, '/');
+	if (tok)
+		xstrfmtcat(script_argv[0], "%s", tok + 1);
+	else
+		xstrfmtcat(script_argv[0], "%s", cmd);
+	xstrfmtcat(script_argv[1], "%s", opt);
+	xstrfmtcat(script_argv[2], "%u", job_ptr->job_id);
+	script_argc += 3;
+	tok = strtok_r(script, "\n", &save_ptr);
+	while (tok) {
+		if (tok[0] != '#')
+			break;
+		if (tok[1] != '!') {
+			if ((script_argc + 1) >= size) {
+				size *= 2;
+				script_argv = xrealloc(script_argv,
+						       sizeof(char *) * size);
+			}
+			script_argv[script_argc++] = xstrdup(tok);
+		}
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+	xfree(script);
+
+	return script_argv;
+}
+
 /* Find a per-job burst buffer record for a specific job.
  * If not found, return NULL. */
 static bb_alloc_t *_find_bb_job_rec(struct job_record *job_ptr)
@@ -539,7 +585,7 @@ static void _alloc_cache(void)
  * script_type IN - Type of program being run (e.g. "StartStageIn")
  * script_path IN - Fully qualified pathname of the program to execute
  * script_args IN - Arguments to the script
- * max_wait IN - maximum time to wait in seconds, -1 for no limit
+ * max_wait IN - maximum time to wait in seconds, -1 for no limit (asynchronous)
  * Return stdout of spawned program, value must be xfreed. */
 static char *_run_script(char *script_type, char *script_path,
 			 char **script_argv, int max_wait)
@@ -665,7 +711,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp, "State", job_tbl))
 		state = bb_state_num(tmp);
 
-#if 0
+#if 1
 	info("%s: JobID:%u Name:%s Size:%u State:%u UserID:%u",
 	     __func__, job_id, name, size, state, user_id);
 #endif
@@ -744,7 +790,7 @@ static void _load_state(void)
 		script_args[0] = tok + 1;
 	else
 		script_args[0] = get_sys_state;
-	resp = _run_script("GetSysState", get_sys_state, script_args, 100);
+	resp = _run_script("GetSysState", get_sys_state, script_args, 10);
 	if (resp == NULL)
 		return;
 	state_hashtbl = s_p_hashtbl_create(state_options);
@@ -1053,6 +1099,8 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
+	char **script_argv, *resp;
+	int i;
 
 	if (debug_flag) {
 		info("%s: %s",  __func__, plugin_type);
@@ -1066,12 +1114,27 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	pthread_mutex_lock(&bb_mutex);
 	bb_ptr = _find_bb_job_rec(job_ptr);
 	if (!bb_ptr) {
-		error("%s: job_id:%u bb_rec not found",
+		/* No job buffers. Assuming use of persistent buffers only */
+		debug("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
-		pthread_mutex_unlock(&bb_mutex);
-		return SLURM_ERROR;
+	} else {
+		script_argv = _build_stage_args(start_stage_out, "stage_out",
+						job_ptr);
+		if (script_argv) {
+			bb_ptr->state = BB_STATE_STAGING_OUT;
+			resp = _run_script("StartStageOut", start_stage_out,
+					   script_argv, -1);
+			if (resp) {
+				error("%s: StartStageOut: %s", __func__, resp);
+				xfree(resp);
+			}
+			for (i = 0; script_argv[i]; i++)
+				xfree(script_argv[i]);
+			xfree(script_argv);
+		} else {
+			bb_ptr->state = BB_STATE_STAGED_OUT;
+		}
 	}
-	bb_ptr->state = BB_STATE_STAGING_OUT;
 	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -1087,6 +1150,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
+	int rc = -1;
 
 	if (debug_flag) {
 		info("%s: %s",  __func__, plugin_type);
@@ -1100,22 +1164,24 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	pthread_mutex_lock(&bb_mutex);
 	bb_ptr = _find_bb_job_rec(job_ptr);
 	if (!bb_ptr) {
-		error("%s: job_id:%u bb_rec not found",
+		/* No job buffers. Assuming use of persistent buffers only */
+		debug("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
-		pthread_mutex_unlock(&bb_mutex);
-		return -1;
+		rc =  0;
 	} else if (bb_ptr->state == BB_STATE_STAGING_OUT) {
-		if (++bb_ptr->state == BB_STATE_STAGED_OUT)
-			_remove_user_load(bb_ptr);
-		pthread_mutex_unlock(&bb_mutex);
-		return 0;
+		rc =  0;
 	} else if (bb_ptr->state == BB_STATE_STAGED_OUT) {
-		pthread_mutex_unlock(&bb_mutex);
-		return 1;
+		if (bb_ptr->user_id != NO_VAL) {
+			_remove_user_load(bb_ptr);
+			bb_ptr->user_id = NO_VAL;
+		}
+		rc =  1;
+	} else {
+		error("%s: job_id:%u bb_state:%u",
+		      __func__, job_ptr->job_id, bb_ptr->state);
+		rc = -1;
 	}
-	error("%s: job_id:%u bb_state:%u",
-	      __func__, job_ptr->job_id, bb_ptr->state);
 	pthread_mutex_unlock(&bb_mutex);
 
-	return -1;
+	return rc;
 }
