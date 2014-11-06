@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     PerCPU.
  -- Modify assoc_mgr_fill_in_qos() to allow for a flag to know if the QOS read
     lock was locked outside of the function or not.
+ -- Give even better estimates on pending node count if no node count
+    is requested.
 
 * Changes in Slurm 14.03.10
 ===========================
