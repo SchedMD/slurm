@@ -1227,6 +1227,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "key wckey (id_wckey), "
 				  "key qos (id_qos), "
 				  "key association (id_assoc), "
+				  "key array_job (id_array_job), "
+				  "key reserv (id_resv), "
 				  "key sacct_def (id_user, time_start, "
 				  "time_end))")
 	    == SLURM_ERROR)

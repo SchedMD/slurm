@@ -21,6 +21,13 @@ documents those changes that are of interest to users and administrators.
  -- ALPS - Fix issue with core_spec warning.
  -- Allow multiple partitions to be specified in sinfo -p.
  -- Install the service files in /usr/lib/systemd/system.
+ -- MYSQL - Add id_array_job and id_resv keys to $CLUSTER_job_table.  THIS
+    COULD TAKE A WHILE TO CREATE THE KEYS SO BE PATIENT.
+ -- CRAY - Resize bitmaps on a restart and find we have more blades
+    than before.
+ -- Add new eio API function for removing unused connections.
+ -- ALPS - Fix issue where batch allocations weren't correctly confirmed or
+    released.
 
 * Changes in Slurm 14.11.0rc3
 =============================
@@ -314,6 +321,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.03.11
 ===========================
+-- ALPS - Fix depth for Memory items in BASIL with CLE 5.2.
+-- ALPS - Fix issue when tracking memory on a PerNode basis instead of
+   PerCPU.
 
 * Changes in Slurm 14.03.10
 ===========================

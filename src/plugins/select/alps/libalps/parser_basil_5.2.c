@@ -135,19 +135,19 @@ const struct element_handler basil_5_2_elements[] = {
 	},
 	[BT_MEMARRAY]	= {
 			.tag	= "MemoryArray",
-			.depth	= 5,
+			.depth	= 9,
 			.uniq	= true,
 			.hnd	= NULL
 	},
 	[BT_MEMORY]	= {
 			.tag	= "Memory",
-			.depth	= 6,
+			.depth	= 10,
 			.uniq	= false,
 			.hnd	= eh_mem
 	},
 	[BT_MEMALLOC]	= {
 			.tag	= "MemoryAllocation",
-			.depth	= 7,
+			.depth	= 8,
 			.uniq	= false,
 			.hnd	= eh_mem_alloc
 	},
