@@ -1286,40 +1286,6 @@ static int _nodes_in_list(char *node_list)
 	return count;
 }
 
-static int _get_node_cnt(job_info_t * job)
-{
-	int node_cnt = 0;
-
-	/*  For PENDING jobs, return the maximum of the requested nodelist,
-	 *   requested maximum number of nodes, or requested CPUs rounded
-	 *   to nearest node.
-	 *
-	 *  For COMPLETING jobs, the job->nodes nodelist has already been
-	 *   altered to list only the nodes still in the comp state, and
-	 *   thus we count only those nodes toward the total nodes still
-	 *   allocated to this job.
-	 */
-
-	if (IS_JOB_PENDING(job)) {
-		node_cnt = _nodes_in_list(job->req_nodes);
-		node_cnt = MAX(node_cnt, job->num_nodes);
-		if ((node_cnt == 1) && (job->num_cpus > 1)
-		    && job->ntasks_per_node
-		    && (job->ntasks_per_node != (uint16_t) NO_VAL)) {
-			int num_tasks = job->num_cpus;
-			if (job->cpus_per_task != (uint16_t) NO_VAL)
-				num_tasks /= job->cpus_per_task;
-			node_cnt = (num_tasks + 1) / job->ntasks_per_node;
-			if (node_cnt > num_tasks)
-				node_cnt = num_tasks;
-			else if (!node_cnt)
-				node_cnt = 1;
-		}
-	} else
-		node_cnt = _nodes_in_list(job->nodes);
-	return node_cnt;
-}
-
 /* this needs to be freed by xfree() */
 static void _convert_char_to_job_and_step(const char *data,
 					  int *jobid, int *stepid)
@@ -1778,7 +1744,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				 tmp_char, sizeof(tmp_char), UNIT_NONE);
 	else
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
-			 job_ptr->num_nodes);
+			 sview_job_info_ptr->node_cnt);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -3218,11 +3184,10 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 					xstrdup(job_ptr->nodes);
 			}
 			xfree(ionodes);
-		} else
+		} else {
 			sview_job_info_ptr->nodes = xstrdup(job_ptr->nodes);
-
-		if (!sview_job_info_ptr->node_cnt)
-			sview_job_info_ptr->node_cnt = _get_node_cnt(job_ptr);
+			sview_job_info_ptr->node_cnt = job_ptr->num_nodes;
+		}
 
 		for (j = 0; j < step_info_ptr->job_step_count; j++) {
 			step_ptr = &(step_info_ptr->job_steps[j]);

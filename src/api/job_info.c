@@ -652,15 +652,6 @@ line6:
 			max_nodes = min_nodes;
 	} else if (IS_JOB_PENDING(job_ptr)) {
 		min_nodes = job_ptr->num_nodes;
-		if ((min_nodes == 1) && (job_ptr->num_cpus > 1)
-		    && job_ptr->ntasks_per_node
-		    && (job_ptr->ntasks_per_node != (uint16_t) NO_VAL)) {
-			int node_cnt2 = job_ptr->num_cpus;
-			node_cnt2 = (node_cnt2 + job_ptr->ntasks_per_node - 1)
-				    / job_ptr->ntasks_per_node;
-			if (min_nodes < node_cnt2)
-				min_nodes = node_cnt2;
-		}
 		max_nodes = job_ptr->max_nodes;
 		if (max_nodes && (max_nodes < min_nodes))
 			min_nodes = max_nodes;

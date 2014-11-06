@@ -43,9 +43,6 @@
 #include "src/common/parse_time.h"
 #include "src/smap/smap.h"
 
-static int  _get_node_cnt(job_info_t * job);
-static int  _max_cpus_per_node(void);
-static int  _nodes_in_list(char *node_list);
 static void _print_header_job(void);
 static int  _print_text_job(job_info_t * job_ptr);
 
@@ -308,7 +305,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		node_cnt = job_ptr->num_nodes;
 
 	if ((node_cnt  == 0) || (node_cnt == NO_VAL))
-		node_cnt = _get_node_cnt(job_ptr);
+		node_cnt = job_ptr->num_nodes;
 
 	if (params.cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)node_cnt, tmp_cnt,
@@ -450,53 +447,3 @@ static int _print_text_job(job_info_t * job_ptr)
 
 	return printed;
 }
-
-static int _get_node_cnt(job_info_t * job)
-{
-	int node_cnt = 0, round;
-	bool completing = job->job_state & JOB_COMPLETING;
-	uint16_t base_job_state = job->job_state & (~JOB_COMPLETING);
-	static int max_cpus = 0;
-
-	if (base_job_state == JOB_PENDING || completing) {
-		if (max_cpus == 0)
-			max_cpus = _max_cpus_per_node();
-
-		node_cnt = _nodes_in_list(job->req_nodes);
-		node_cnt = MAX(node_cnt, job->num_nodes);
-		round  = job->num_cpus + max_cpus - 1;
-		round /= max_cpus;      /* round up */
-		node_cnt = MAX(node_cnt, round);
-	} else
-		node_cnt = _nodes_in_list(job->nodes);
-	return node_cnt;
-}
-
-static int _nodes_in_list(char *node_list)
-{
-	hostset_t host_set = hostset_create(node_list);
-	int count = hostset_count(host_set);
-	hostset_destroy(host_set);
-	return count;
-}
-
-/* Return the maximum number of processors for any node in the cluster */
-static int   _max_cpus_per_node(void)
-{
-	int error_code, max_cpus = 1;
-	node_info_msg_t *node_info_ptr = NULL;
-
-	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				      params.all_flag ? 1 : 0);
-	if (error_code == SLURM_SUCCESS) {
-		int i;
-		node_info_t *node_ptr = node_info_ptr->node_array;
-		for (i=0; i<node_info_ptr->record_count; i++) {
-			max_cpus = MAX(max_cpus, node_ptr[i].cpus);
-		}
-		slurm_free_node_info_msg (node_info_ptr);
-	}
-
-	return max_cpus;
-}
-

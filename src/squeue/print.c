@@ -61,9 +61,7 @@
 static int	_filter_job(job_info_t * job);
 static int	_filter_job_part(char *part_name);
 static int	_filter_step(job_step_info_t * step);
-static int	_get_node_cnt(job_info_t * job);
 static void	_job_list_del(void *x);
-static int	_nodes_in_list(char *node_list);
 static uint32_t	_part_get_prio(char *part_name);
 static void	_part_state_free(void);
 static void	_part_state_load(void);
@@ -951,7 +949,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 						    &node_cnt);
 
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
-			node_cnt = _get_node_cnt(job);
+			node_cnt = job->num_nodes;
 
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)node_cnt, tmp_char,
@@ -964,40 +962,6 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
-}
-
-static int _get_node_cnt(job_info_t * job)
-{
-	int node_cnt = 0;
-
-	/*  For PENDING jobs, return the maximum of the requested nodelist,
-	 *   requested maximum number of nodes, or requested CPUs rounded
-	 *   to nearest node.
-	 *
-	 *  For COMPLETING jobs, the job->nodes nodelist has already been
-	 *   altered to list only the nodes still in the comp state, and
-	 *   thus we count only those nodes toward the total nodes still
-	 *   allocated to this job.
-	 */
-
-	if (IS_JOB_PENDING(job)) {
-		node_cnt = _nodes_in_list(job->req_nodes);
-		node_cnt = MAX(node_cnt, job->num_nodes);
-		if ((node_cnt == 1) && (job->num_cpus > 1)
-		    && job->ntasks_per_node
-		    && (job->ntasks_per_node != (uint16_t) NO_VAL)) {
-			int num_tasks = job->num_cpus;
-			if (job->cpus_per_task != (uint16_t) NO_VAL)
-				num_tasks /= job->cpus_per_task;
-			node_cnt = (num_tasks + 1) / job->ntasks_per_node;
-			if (node_cnt > num_tasks)
-				node_cnt = num_tasks;
-			else if (!node_cnt)
-				node_cnt = 1;
-		}
-	} else
-		node_cnt = _nodes_in_list(job->nodes);
-	return node_cnt;
 }
 
 int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
@@ -1037,14 +1001,6 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
-}
-
-static int _nodes_in_list(char *node_list)
-{
-	hostset_t host_set = hostset_create(node_list);
-	int count = hostset_count(host_set);
-	hostset_destroy(host_set);
-	return count;
 }
 
 int _print_job_shared(job_info_t * job, int width, bool right_justify,
@@ -1552,7 +1508,7 @@ int _print_job_max_nodes(job_info_t * job, int width, bool right_justify,
 	else if (job->max_nodes != 0)
 		_print_int(job->max_nodes, width, right_justify, true);
 	else
-		_print_int(_get_node_cnt(job), width, right_justify, true);
+		_print_int(job->num_nodes, width, right_justify, true);
 
 	if (suffix)
 		printf("%s",suffix);
