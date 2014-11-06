@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Add new eio API function for removing unused connections.
  -- ALPS - Fix issue where batch allocations weren't correctly confirmed or
     released.
+ -- Define DEFAULT_MAX_TASKS_PER_NODE based on MAX_TASKS_PER_NODE from
+    slurm.h as per documentation.
 
 * Changes in Slurm 14.11.0rc3
 =============================
