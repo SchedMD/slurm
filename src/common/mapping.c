@@ -84,6 +84,13 @@ char *pack_process_mapping(uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks
 			// First run determines the depth
 			if( depth < 0 ){
 				depth = j - next_task[i];
+			} else {
+				// If this is not the first node in the bar check that:
+				// 1. First tid on this node is sequentially next after last tid on the previous node
+				if( t2n_map[i-1][next_task[i-1]-1] + 1 != t2n_map[i][next_task[i]] ){
+					end_node = i;
+					continue;
+				}
 			}
 			if( depth == (j - next_task[i]) ){
 				mapped += depth;
