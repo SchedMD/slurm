@@ -174,6 +174,7 @@ launch a shell on a node in the job's allocation?</a></li>
    expected level?</a></li>
 <li><a href="#state_info">How could some jobs submitted immediately before the
    slurmctld daemon crashed be lost?</a></li>
+<li><a href="#delete_partition">How do I safely remove partitions?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1944,6 +1945,19 @@ Another example is if the state information written to file, but that
 information is cached in memory rather than written to disk when the node fails.
 The interval between state saves being written to disk can be configured at
 build time by defining SAVE_MAX_WAIT to a different value than five.</p>
+
+<p><a name="delete_partition"><b>60. How do I safely remove partitions?
+</b></a><br>
+Partitions should be removed using the 
+"scontrol delete PartitionName=&lt;partition&gt;" command. This is because
+scontrol will prevent any partitions from being removed that are in use.
+Partitions need to be removed from the slurm.conf after being removed using
+scontrol or they will return after a restart.
+An existing job's partition(s) can be updated with the "scontrol update
+JobId=&lt;jobid&gt; Partition=&lt;partition(s)&gt;" command. 
+Removing a partition from the slurm.conf and restarting will cancel any existing
+jobs that reference the removed partitions.
+</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
