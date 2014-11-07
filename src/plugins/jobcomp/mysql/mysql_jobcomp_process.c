@@ -93,7 +93,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		while((selected_part = list_next(itr))) {
 			if (set)
 				xstrcat(extra, " || ");
-			tmp = xstrdup_printf("partition='%s'",
+			tmp = xstrdup_printf("`partition`='%s'",
 					      selected_part);
 			xstrcat(extra, tmp);
 			set = 1;

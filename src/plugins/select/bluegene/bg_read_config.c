@@ -879,7 +879,12 @@ no_calc:
 		bool valid;
 		char *token, *last = NULL;
 		slurmdb_qos_rec_t *qos = NULL;
+		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+					   READ_LOCK, NO_LOCK,
+					   NO_LOCK, NO_LOCK };
 
+		/* Lock here to avoid g_qos_count changing under us */
+		assoc_mgr_lock(&locks);
 		bg_conf->reboot_qos_bitmap = bit_alloc(g_qos_count);
 		itr = list_iterator_create(assoc_mgr_qos_list);
 
@@ -901,6 +906,7 @@ no_calc:
 		}
 		list_iterator_destroy(itr);
 		xfree(tmp_char);
+		assoc_mgr_unlock(&locks);
 	}
 #endif
 
