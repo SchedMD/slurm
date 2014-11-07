@@ -380,6 +380,85 @@ static uint32_t _str_2_res_flags(char *flags)
 	return 0;
 }
 
+static char *local_cluster_name; /* name of local_cluster      */
+
+void _destroy_local_cluster_rec(void *object)
+{
+	xfree(object);
+}
+
+static int _sort_local_cluster(void *v1, void *v2)
+{
+	local_cluster_rec_t* rec_a = *(local_cluster_rec_t**)v1;
+	local_cluster_rec_t* rec_b = *(local_cluster_rec_t**)v2;
+
+	if (rec_a->start_time < rec_b->start_time)
+		return -1;
+	else if (rec_a->start_time > rec_b->start_time)
+		return 1;
+
+	if (rec_a->preempt_cnt < rec_b->preempt_cnt)
+		return -1;
+	else if (rec_a->preempt_cnt > rec_b->preempt_cnt)
+		return 1;
+
+	if (!strcmp(local_cluster_name, rec_a->cluster_rec->name))
+		return -1;
+	else if (!strcmp(local_cluster_name, rec_b->cluster_rec->name))
+		return 1;
+
+	return 0;
+}
+
+static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
+{
+	local_cluster_rec_t *local_cluster = NULL;
+	will_run_response_msg_t *will_run_resp;
+	char buf[64];
+	int rc;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	char *type = "processors";
+
+	rc = slurm_job_will_run2(req, &will_run_resp);
+
+	if (rc >= 0) {
+		if (cluster_flags & CLUSTER_FLAG_BG)
+			type = "cnodes";
+		slurm_make_time_str(&will_run_resp->start_time,
+				    buf, sizeof(buf));
+		debug("Job %u to start at %s on cluster %s using %u %s on %s",
+		      will_run_resp->job_id, buf, working_cluster_rec->name,
+		      will_run_resp->proc_cnt, type,
+		      will_run_resp->node_list);
+
+		local_cluster = xmalloc(sizeof(local_cluster_rec_t));
+		local_cluster->cluster_rec = working_cluster_rec;
+		local_cluster->start_time = will_run_resp->start_time;
+
+		if (will_run_resp->preemptee_job_id) {
+			local_cluster->preempt_cnt =
+				slurm_list_count(will_run_resp->preemptee_job_id);
+			ListIterator itr;
+			uint32_t *job_id_ptr;
+			char *job_list = NULL, *sep = "";
+			itr = list_iterator_create(will_run_resp->
+						   preemptee_job_id);
+			while ((job_id_ptr = list_next(itr))) {
+				if (job_list)
+					sep = ",";
+				xstrfmtcat(job_list, "%s%u",
+					   sep, *job_id_ptr);
+			}
+			debug("  Preempts: %s", job_list);
+			xfree(job_list);
+		}
+
+		slurm_free_will_run_response_msg(will_run_resp);
+	}
+
+	return local_cluster;
+}
+
 extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
@@ -2512,4 +2591,88 @@ extern char *slurmdb_get_selected_step_id(
 		snprintf(job_id_str, len, "%s", id);
 
 	return job_id_str;
+}
+
+extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
+	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
+{
+	local_cluster_rec_t *local_cluster = NULL;
+	int rc = SLURM_SUCCESS;
+	char buf[64];
+	bool host_set = false;
+	ListIterator itr;
+	List cluster_list = NULL;
+	List ret_list = NULL;
+
+	*cluster_rec = NULL;
+	cluster_list = slurmdb_get_info_cluster(cluster_names);
+
+	/* return if we only have 1 or less clusters here */
+	if (!cluster_list || !list_count(cluster_list)) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	else if (list_count(cluster_list) == 1) {
+		*cluster_rec = list_pop(cluster_list);
+		goto end_it;
+	}
+
+	if ((req->alloc_node == NULL) &&
+	    (gethostname_short(buf, sizeof(buf)) == 0)) {
+		req->alloc_node = buf;
+		host_set = true;
+	}
+
+	if (working_cluster_rec)
+		*cluster_rec = working_cluster_rec;
+
+	ret_list = list_create(_destroy_local_cluster_rec);
+	itr = list_iterator_create(cluster_list);
+	while ((working_cluster_rec = list_next(itr))) {
+		if ((local_cluster = _job_will_run(req)))
+			list_append(ret_list, local_cluster);
+		else
+			error("Problem with submit to cluster %s: %m",
+			      working_cluster_rec->name);
+	}
+	list_iterator_destroy(itr);
+
+	/* restore working_cluster_rec in case it was already set */
+	if (*cluster_rec) {
+		working_cluster_rec = *cluster_rec;
+		*cluster_rec = NULL;
+	}
+
+	if (host_set)
+		req->alloc_node = NULL;
+
+	if (!list_count(ret_list)) {
+		error("Can't run on any of the clusters given");
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	/* sort the list so the first spot is on top */
+	local_cluster_name = slurm_get_cluster_name();
+	list_sort(ret_list, (ListCmpF)_sort_local_cluster);
+	xfree(local_cluster_name);
+	local_cluster = list_peek(ret_list);
+
+	/* prevent cluster_rec from being freed when cluster_list is destroyed */
+	itr = list_iterator_create(cluster_list);
+	while ((*cluster_rec = list_next(itr)))
+	{
+		if (*cluster_rec == local_cluster->cluster_rec) {
+			list_remove(itr);
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+end_it:
+	if (ret_list)
+		list_destroy(ret_list);
+	if (cluster_list)
+		list_destroy(cluster_list);
+
+	return rc;
 }

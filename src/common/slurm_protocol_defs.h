@@ -990,14 +990,6 @@ typedef struct pty_winsz {
 	uint16_t rows;
 } pty_winsz_t;
 
-typedef struct will_run_response_msg {
-	uint32_t job_id;	/* ID of job to start */
-	char *node_list;	/* nodes where job will start */
-	List preemptee_job_id;	/* jobs preempted to start this job */
-	uint32_t proc_cnt;	/* CPUs allocated to job at start */
-	time_t start_time;	/* time when job will start */
-} will_run_response_msg_t;
-
 typedef struct forward_data_msg {
 	char *address;
 	uint32_t len;

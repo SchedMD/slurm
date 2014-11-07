@@ -114,7 +114,7 @@
 #define OPT_SIGNAL      0x15
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
-#define OPT_CLUSTERS      0x18
+/* #define OPT_CLUSTERS      0x18 */
 #define OPT_TIME_VAL      0x19
 #define OPT_CORE_SPEC     0x1a
 #define OPT_ARRAY_INX     0x20
@@ -427,8 +427,8 @@ env_vars_t env_vars[] = {
   {"SBATCH_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL      },
   {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL          },
-  {"SBATCH_CLUSTERS",      OPT_CLUSTERS,   &opt.clusters,      NULL          },
-  {"SLURM_CLUSTERS",       OPT_CLUSTERS,   &opt.clusters,      NULL          },
+  {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
+  {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
@@ -631,12 +631,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			_proc_get_user_env((char *)val);
 		else
 			opt.get_user_env_time = 0;
-		break;
-	case OPT_CLUSTERS:
-		if (!(opt.clusters = slurmdb_get_info_cluster((char *)val))) {
-			print_db_notok(val, 1);
-			exit(1);
-		}
 		break;
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
@@ -1255,13 +1249,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case 'M':
-			if (opt.clusters)
-				list_destroy(opt.clusters);
-			if (!(opt.clusters =
-			      slurmdb_get_info_cluster(optarg))) {
-				print_db_notok(optarg, 0);
-				exit(1);
-			}
+			xfree(opt.clusters);
+			opt.clusters = xstrdup(optarg);
 			break;
 		case 'n':
 			opt.ntasks_set = true;
