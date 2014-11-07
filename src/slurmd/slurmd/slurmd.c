@@ -751,8 +751,10 @@ _read_config(void)
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 #endif
-	slurm_mutex_lock(&conf->config_mutex);
+
 	cf = slurm_conf_lock();
+
+	slurm_mutex_lock(&conf->config_mutex);
 
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(cf->slurm_conf);
