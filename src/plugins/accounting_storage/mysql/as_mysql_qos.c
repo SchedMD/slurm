@@ -56,7 +56,7 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 		qos_rec.id = i;
 		assoc_mgr_fill_in_qos(mysql_conn, &qos_rec,
 				      ACCOUNTING_ENFORCE_QOS,
-				      NULL);
+				      NULL, 0);
 		/* check if the begin_qosid is preempted by this qos
 		 * if so we have a loop */
 		if (qos_rec.preempt_bitstr

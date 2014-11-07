@@ -2083,7 +2083,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 
 extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 				 int enforce,
-				 slurmdb_qos_rec_t **qos_pptr)
+				 slurmdb_qos_rec_t **qos_pptr, bool locked)
 {
 	ListIterator itr = NULL;
 	slurmdb_qos_rec_t * found_qos = NULL;
@@ -2096,10 +2096,12 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 		if (_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	assoc_mgr_lock(&locks);
+	if (!locked)
+		assoc_mgr_lock(&locks);
 	if ((!assoc_mgr_qos_list || !list_count(assoc_mgr_qos_list))
 	    && !(enforce & ACCOUNTING_ENFORCE_QOS)) {
-		assoc_mgr_unlock(&locks);
+		if (!locked)
+			assoc_mgr_unlock(&locks);
 		return SLURM_SUCCESS;
 	}
 
@@ -2113,7 +2115,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	list_iterator_destroy(itr);
 
 	if (!found_qos) {
-		assoc_mgr_unlock(&locks);
+		if (!locked)
+			assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_QOS)
 			return SLURM_ERROR;
 		else
@@ -2187,7 +2190,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	/* 	qos->usage->user_limit_list = found_qos->usage->user_limit_list; */
 	qos->usage_factor = found_qos->usage_factor;
 
-	assoc_mgr_unlock(&locks);
+	if (!locked)
+		assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
 }
 

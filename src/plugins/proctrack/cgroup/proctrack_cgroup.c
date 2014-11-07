@@ -277,7 +277,7 @@ int _slurm_cgroup_destroy(void)
 
 	if (jobstep_cgroup_path[0] != '\0') {
 		if (xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS) {
-			error("_slurm_cgroup_destroy: problem deleting step "
+			debug("_slurm_cgroup_destroy: problem deleting step "
 			      "cgroup path %s: %m", step_freezer_cg.path);
 			xcgroup_unlock(&freezer_cg);
 			return SLURM_ERROR;
