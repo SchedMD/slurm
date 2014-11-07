@@ -116,6 +116,7 @@ static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool config_flag = false;
 static uint64_t debug_flags = 0;
 static int backfill_interval = BACKFILL_INTERVAL;
@@ -550,7 +551,9 @@ static void _load_config(void)
 /* Note that slurm.conf has changed */
 extern void backfill_reconfig(void)
 {
+	slurm_mutex_lock(&config_lock);
 	config_flag = true;
+	slurm_mutex_unlock(&config_lock);
 }
 
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
@@ -590,6 +593,7 @@ extern void *backfill_agent(void *args)
 	/* Read config and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	bool load_config;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "slurmctld_bckfl", NULL, NULL, NULL) < 0) {
@@ -603,10 +607,16 @@ extern void *backfill_agent(void *args)
 		_my_sleep(backfill_interval * 1000000);
 		if (stop_backfill)
 			break;
+		slurm_mutex_lock(&config_lock);
 		if (config_flag) {
 			config_flag = false;
-			_load_config();
+			load_config = true;
+		} else {
+			load_config = false;
 		}
+		slurm_mutex_unlock(&config_lock);
+		if (load_config)
+			_load_config();
 		now = time(NULL);
 		wait_time = difftime(now, last_backfill_time);
 		if ((wait_time < backfill_interval) ||
@@ -645,6 +655,7 @@ static int _yield_locks(int usec)
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	time_t job_update, node_update, part_update;
+	bool load_config = false;
 
 	job_update  = last_job_update;
 	node_update = last_node_update;
@@ -654,11 +665,15 @@ static int _yield_locks(int usec)
 	bf_last_yields++;
 	_my_sleep(usec);
 	lock_slurmctld(all_locks);
+	slurm_mutex_lock(&config_lock);
+	if (config_flag)
+		load_config = true;
+	slurm_mutex_unlock(&config_lock);
 
 	if ((last_job_update  == job_update)  &&
 	    (last_node_update == node_update) &&
 	    (last_part_update == part_update) &&
-	    (! stop_backfill) && (! config_flag))
+	    (! stop_backfill) && (! load_config))
 		return 0;
 	else
 		return 1;
