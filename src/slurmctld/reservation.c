@@ -4363,13 +4363,18 @@ extern bool is_node_in_maint_reservation(int nodenum)
 	bool res = false;
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
+	time_t t;
 
 	if (nodenum < 0 || nodenum >= node_record_count || !resv_list)
 		return false;
 
+	t = time(NULL);
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
+			continue;
+		if (! (t >= resv_ptr->start_time
+		       && t <= resv_ptr->end_time))
 			continue;
 		if (bit_test(resv_ptr->node_bitmap, nodenum)) {
 			res = true;
