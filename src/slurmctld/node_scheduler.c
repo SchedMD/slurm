@@ -1695,9 +1695,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* Set this guess here to give the user tools an idea
 	 * of how many nodes Slurm is planning on giving the job.
 	 * This needs to be done on success or not.  It means the job
-	 * could run on nodes.
+	 * could run on nodes.  We only set the wag once to avoid
+	 * having to go through the bit logic multiple times.
 	 */
-	if (select_bitmap) {
+	if (select_bitmap
+	    && ((error_code == SLURM_SUCCESS) || !job_ptr->node_cnt_wag)) {
 #ifdef HAVE_BG
 		xassert(job_ptr->select_jobinfo);
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
@@ -1728,7 +1730,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * free up. total_cpus is set within _get_req_features */
 	job_ptr->cpu_cnt = job_ptr->total_cpus;
 
-	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS)) {
+	if (!test_only && preemptee_job_list
+	    && (error_code == SLURM_SUCCESS)) {
 		struct job_details *detail_ptr = job_ptr->details;
 		time_t now = time(NULL);
 		bool kill_pending = true;
