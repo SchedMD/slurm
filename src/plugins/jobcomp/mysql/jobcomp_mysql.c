@@ -346,7 +346,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 #endif
 	query = xstrdup_printf(
 		"insert into %s (jobid, uid, user_name, gid, group_name, "
-		"name, state, proc_cnt, partition, timelimit, "
+		"name, state, proc_cnt, `partition`, timelimit, "
 		"starttime, endtime, nodecnt",
 		jobcomp_table);
 
@@ -404,7 +404,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		xfree(blockid);
 	}
 	xstrcat(query, ")");
-	//info("query = %s", query);
+	debug3("(%s:%d) query\n%s",
+	       THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(jobcomp_mysql_conn, query);
 	xfree(usr_str);
 	xfree(grp_str);
