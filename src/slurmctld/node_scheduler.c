@@ -1717,7 +1717,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * free up. total_cpus is set within _get_req_features */
 	job_ptr->cpu_cnt = job_ptr->total_cpus;
 
-	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS)) {
+	if (!test_only && preemptee_job_list
+	    && (error_code == SLURM_SUCCESS)) {
 		struct job_details *detail_ptr = job_ptr->details;
 		time_t now = time(NULL);
 		bool kill_pending = true;
