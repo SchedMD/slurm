@@ -1464,15 +1464,24 @@ static void *_slurmctld_background(void *no_data)
 			no_resp_msg_interval = 1;
 
 		if (slurmctld_config.shutdown_time) {
+			struct timespec ts = {0, 0};
+			struct timeval now;
 			/* wait for RPC's to complete */
-			for (i = 1; i < (CONTROL_TIMEOUT * 10); i++) {
-				if (slurmctld_config.server_thread_count == 0)
-					break;
-				usleep(100000);
+			gettimeofday(&now, NULL);
+			ts.tv_sec = now.tv_sec + CONTROL_TIMEOUT;
+			ts.tv_nsec = now.tv_usec * 1000;
+			slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+			while (slurmctld_config.server_thread_count > 0) {
+				pthread_cond_timedwait(&server_thread_cond,
+					&slurmctld_config.thread_count_lock,
+					&ts);
 			}
-			if (slurmctld_config.server_thread_count)
+			if (slurmctld_config.server_thread_count) {
 				info("shutdown server_thread_count=%d",
 					slurmctld_config.server_thread_count);
+			}
+			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
 			if (_report_locks_set() == 0) {
 				info("Saving all slurm state");
 				save_all_state();
