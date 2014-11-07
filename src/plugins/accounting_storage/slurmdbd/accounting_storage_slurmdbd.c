@@ -475,10 +475,9 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	slurm_mutex_lock(&db_inx_lock);
 	if (running_db_inx)
 		debug("Waiting for db_inx thread to finish.");
-
-	slurm_mutex_lock(&db_inx_lock);
 
 	/* cancel the db_inx thread and then join the cleanup thread */
 	if (db_inx_handler_thread)

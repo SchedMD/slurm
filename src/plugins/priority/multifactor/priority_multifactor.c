@@ -1645,10 +1645,9 @@ int init ( void )
 int fini ( void )
 {
 	/* Daemon termination handled here */
+	slurm_mutex_lock(&decay_lock);
 	if (running_decay)
 		debug("Waiting for decay thread to finish.");
-
-	slurm_mutex_lock(&decay_lock);
 
 	/* cancel the decay thread and then join the cleanup thread */
 	if (decay_handler_thread)
