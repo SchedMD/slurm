@@ -317,6 +317,8 @@ documents those changes that are of interest to users and administrators.
     is requested.
  -- Fix jobcomp/mysql plugin for MariaDB 10+/Mysql 5.6+ to work with reserved
     work "partition".
+ -- If requested (scontrol reboot node_name) reboot a node even if it has
+    an maintenance reservation that is not active yet.
 
 * Changes in Slurm 14.03.10
 ===========================
