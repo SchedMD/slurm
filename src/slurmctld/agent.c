@@ -1183,7 +1183,7 @@ static void _list_delete_retry(void *retry_entry)
  */
 extern int agent_retry (int min_wait, bool mail_too)
 {
-	int cnt, list_size = 0, rc;
+	int list_size = 0, rc;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
