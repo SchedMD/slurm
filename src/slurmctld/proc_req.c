@@ -1668,7 +1668,8 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 	struct job_record *job_ptr;
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_CANCEL_JOB_STEP uid=%d", uid);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+		info("Processing RPC: REQUEST_CANCEL_JOB_STEP uid=%d", uid);
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(job_step_kill_msg->job_id);
@@ -1687,21 +1688,31 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 		/* return result */
 		if (error_code) {
-			info("Signal %u JobId=%u by UID=%u: %s",
-			     job_step_kill_msg->signal,
-			     job_step_kill_msg->job_id, uid,
-			     slurm_strerror(error_code));
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("Signal %u JobId=%u by UID=%u: %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id, uid,
+				     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
-				info("%s: Cancel of JobId=%u by UID=%u, %s",
-				     __func__, job_step_kill_msg->job_id, uid,
-				     TIME_STR);
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Cancel of JobId=%u by "
+					     "UID=%u, %s",
+					     __func__,
+					     job_step_kill_msg->job_id, uid,
+					     TIME_STR);
 				slurmctld_diag_stats.jobs_canceled++;
 			} else {
-				info("%s: Signal %u of JobId=%u by UID=%u, %s",
-				     __func__, job_step_kill_msg->signal,
-				     job_step_kill_msg->job_id, uid, TIME_STR);
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Signal %u of JobId=%u by "
+					     "UID=%u, %s",
+					     __func__,
+					     job_step_kill_msg->signal,
+					     job_step_kill_msg->job_id, uid,
+					     TIME_STR);
 			}
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
@@ -1719,25 +1730,32 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 		/* return result */
 		if (error_code) {
-			info("Signal %u of StepId=%u.%u by UID=%u: %s",
-			     job_step_kill_msg->signal,
-			     job_step_kill_msg->job_id,
-			     job_step_kill_msg->job_step_id, uid,
-			     slurm_strerror(error_code));
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("Signal %u of StepId=%u.%u by UID=%u: %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id,
+				     job_step_kill_msg->job_step_id, uid,
+				     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
-				info("%s: Cancel of StepId=%u.%u by "
-				     "UID=%u %s", __func__,
-				     job_step_kill_msg->job_id,
-				     job_step_kill_msg->job_step_id, uid,
-				     TIME_STR);
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Cancel of StepId=%u.%u by "
+					     "UID=%u %s", __func__,
+					     job_step_kill_msg->job_id,
+					     job_step_kill_msg->job_step_id,
+					     uid, TIME_STR);
 			} else {
-				info("%s: Signal %u of StepId=%u.%u by UID=%u %s",
-				     __func__, job_step_kill_msg->signal,
-				     job_step_kill_msg->job_id,
-				     job_step_kill_msg->job_step_id, uid,
-				     TIME_STR);
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Signal %u of StepId=%u.%u "
+					     "by UID=%u %s",
+					     __func__,
+					     job_step_kill_msg->signal,
+					     job_step_kill_msg->job_id,
+					     job_step_kill_msg->job_step_id,
+					     uid, TIME_STR);
 			}
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
@@ -2072,7 +2090,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_JOB_STEP_CREATE from uid=%d", uid);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+		info("Processing RPC: REQUEST_JOB_STEP_CREATE from uid=%d",
+				uid);
 
 	dump_step_desc(req_step_msg);
 	if (uid && (uid != req_step_msg->user_id)) {
@@ -2109,21 +2129,29 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	if (error_code) {
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
-		if ((error_code == ESLURM_PROLOG_RUNNING) ||
-		    (error_code == ESLURM_DISABLED)) {	/* job suspended */
-			debug("_slurm_rpc_job_step_create for job %u: %s",
-			      req_step_msg->job_id, slurm_strerror(error_code));
-		} else {
-			info("_slurm_rpc_job_step_create for job %u: %s",
-			     req_step_msg->job_id, slurm_strerror(error_code));
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
+			if ((error_code == ESLURM_PROLOG_RUNNING) ||
+			    (error_code == ESLURM_DISABLED)) { /*job suspended*/
+				debug("%s for suspended job %u: %s",
+				      __func__,
+				      req_step_msg->job_id,
+				      slurm_strerror(error_code));
+			} else {
+				info("%s for job %u: %s",
+				     __func__,
+				     req_step_msg->job_id,
+				     slurm_strerror(error_code));
+			}
 		}
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		slurm_step_layout_t *layout = step_rec->step_layout;
 
-		info("sched: _slurm_rpc_job_step_create: StepId=%u.%u %s %s",
-		     step_rec->job_ptr->job_id, step_rec->step_id,
-		     req_step_msg->node_list, TIME_STR);
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+			info("sched: %s: StepId=%u.%u %s %s",
+			     __func__,
+			     step_rec->job_ptr->job_id, step_rec->step_id,
+			     req_step_msg->node_list, TIME_STR);
 
 		job_step_resp.job_step_id = step_rec->step_id;
 		job_step_resp.resv_ports  = step_rec->resv_ports;
@@ -2168,13 +2196,15 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug3("Processing RPC: REQUEST_JOB_STEP_INFO from uid=%d", uid);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+		debug("Processing RPC: REQUEST_JOB_STEP_INFO from uid=%d", uid);
 
 	lock_slurmctld(job_read_lock);
 
 	if ((request->last_update - 1) >= last_job_update) {
 		unlock_slurmctld(job_read_lock);
-		debug3("_slurm_rpc_job_step_get_info, no change");
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+			debug("%s, no change", __func__);
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	} else {
 		Buf buffer = init_buf(BUF_SIZE);
@@ -2186,15 +2216,17 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 		END_TIMER2("_slurm_rpc_job_step_get_info");
 		if (error_code) {
 			/* job_id:step_id not found or otherwise *\
-			   \* error message is printed elsewhere    */
-			debug3("_slurm_rpc_job_step_get_info: %s",
-			       slurm_strerror(error_code));
+			\* error message is printed elsewhere    */
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				debug("%s: %s",
+					__func__, slurm_strerror(error_code));
 			free_buf(buffer);
 		} else {
 			resp_buffer_size = get_buf_offset(buffer);
 			resp_buffer = xfer_buf_data(buffer);
-			debug3("_slurm_rpc_job_step_get_info size=%d %s",
-			       resp_buffer_size, TIME_STR);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				debug("%s size=%d %s",
+					__func__, resp_buffer_size, TIME_STR);
 		}
 	}
 
@@ -2861,11 +2893,11 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 
 	/* init */
 	START_TIMER;
-	debug("Processing RPC: REQUEST_STEP_COMPLETE for %u.%u "
-	      "nodes %u-%u rc=%u uid=%d",
-	      req->job_id, req->job_step_id,
-	      req->range_first, req->range_last,
-	      req->step_rc, uid);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+		info("Processing RPC: REQUEST_STEP_COMPLETE for %u.%u "
+		     "nodes %u-%u rc=%u uid=%d",
+		     req->job_id, req->job_step_id, req->range_first,
+		     req->range_last, req->step_rc, uid);
 
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
@@ -2891,12 +2923,14 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 
 		/* return result */
 		if (error_code) {
-			info("_slurm_rpc_step_complete JobId=%u: %s",
-			     req->job_id, slurm_strerror(error_code));
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("%s JobId=%u: %s", __func__,
+				     req->job_id, slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			debug2("sched: _slurm_rpc_step_complete JobId=%u: %s",
-			       req->job_id, TIME_STR);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("sched: %s JobId=%u: %s", __func__,
+				     req->job_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			dump_job = true;
 		}
@@ -2909,13 +2943,15 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 
 		/* return result */
 		if (error_code) {
-			info("_slurm_rpc_step_complete 1 StepId=%u.%u %s",
-			     req->job_id, req->job_step_id,
-			     slurm_strerror(error_code));
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("%s 1 StepId=%u.%u %s", __func__,
+				     req->job_id, req->job_step_id,
+				     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			info("sched: _slurm_rpc_step_complete StepId=%u.%u %s",
-			     req->job_id, req->job_step_id, TIME_STR);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("sched: %s StepId=%u.%u %s", __func__,
+				     req->job_id, req->job_step_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			dump_job = true;
 		}
@@ -2956,9 +2992,10 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 			error("Security vioation, REQUEST_STEP_LAYOUT for "
 			      "JobId=%u from uid=%u", req->job_id, uid);
 		} else {
-			debug2("_slurm_rpc_step_layout: JobId=%u, uid=%u: %s",
-			       req->job_id, uid,
-			       slurm_strerror(error_code));
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("%s: JobId=%u, uid=%u: %s", __func__,
+				     req->job_id, uid,
+				     slurm_strerror(error_code));
 		}
 		slurm_send_rc_msg(msg, error_code);
 		return;
@@ -2967,9 +3004,9 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	step_ptr = find_step_record(job_ptr, req->step_id);
 	if (!step_ptr) {
 		unlock_slurmctld(job_read_lock);
-		debug2("_slurm_rpc_step_layout: "
-		       "JobId=%u.%u Not Found",
-		       req->job_id, req->step_id);
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+			info("%s: JobId=%u.%u Not Found", __func__,
+			     req->job_id, req->step_id);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		return;
 	}
@@ -3004,7 +3041,8 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 	int rc;
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_STEP_UPDATE, from uid=%d", uid);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+		info("Processing RPC: REQUEST_STEP_UPDATE, from uid=%d", uid);
 
 	lock_slurmctld(job_write_lock);
 	rc = update_step(req, uid);
