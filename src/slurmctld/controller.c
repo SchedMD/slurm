@@ -626,12 +626,12 @@ int main(int argc, char *argv[])
 	 * Wait up to 60 seconds. */
 	for (i=0; i<60; i++) {
 		agent_purge();
-		sleep(1);
+		usleep(100000);
 		cnt = get_agent_count();
 		if (cnt == 0)
 			break;
 	}
-	if (i >= 10)
+	if (cnt)
 		error("Left %d agent threads active", cnt);
 
 	slurm_sched_fini();	/* Stop all scheduling */
@@ -671,17 +671,17 @@ int main(int argc, char *argv[])
 	slurm_crypto_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	slurm_api_clear_config();
-	sleep(1);
+	usleep(500000);
 }
 #else
 	/* Give REQUEST_SHUTDOWN a chance to get propagated,
 	 * up to 3 seconds. */
-	for (i=0; i<3; i++) {
+	for (i=0; i<30; i++) {
 		agent_purge();
 		cnt = get_agent_count();
 		if (cnt == 0)
 			break;
-		sleep(1);
+		usleep(100000);
 	}
 #ifdef HAVE_BG
 	/* Always call slurm_select_fini() on some systems like
