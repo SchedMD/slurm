@@ -225,6 +225,7 @@ void *agent(void *args)
 	thd_t *thread_ptr;
 	task_info_t *task_specific_ptr;
 	time_t begin_time;
+	bool spawn_retry_agent = false;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "slurmctld_agent", NULL, NULL, NULL) < 0) {
@@ -357,11 +358,14 @@ void *agent(void *args)
 		agent_cnt = 0;
 	}
 
-	if (agent_cnt && agent_cnt < MAX_AGENT_CNT)
-		agent_retry(RPC_RETRY_INTERVAL, true);
+	if (agent_cnt && (agent_cnt < MAX_AGENT_CNT))
+		spawn_retry_agent = true;
 
 	pthread_cond_broadcast(&agent_cnt_cond);
 	slurm_mutex_unlock(&agent_cnt_mutex);
+
+	if (spawn_retry_agent)
+		agent_retry(RPC_RETRY_INTERVAL, true);
 
 	return NULL;
 }
@@ -1179,7 +1183,7 @@ static void _list_delete_retry(void *retry_entry)
  */
 extern int agent_retry (int min_wait, bool mail_too)
 {
-	int list_size = 0, rc;
+	int cnt, list_size = 0, rc;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
@@ -1210,10 +1214,14 @@ extern int agent_retry (int min_wait, bool mail_too)
 			last_msg_time = now;
 		}
 	}
+
+	slurm_mutex_lock(&agent_cnt_mutex);
 	if (agent_cnt >= MAX_AGENT_CNT) {	/* too much work already */
+		slurm_mutex_unlock(&agent_cnt_mutex);
 		slurm_mutex_unlock(&retry_mutex);
 		return list_size;
 	}
+	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	if (retry_list) {
 		/* first try to find a new (never tried) record */
@@ -1398,7 +1406,13 @@ void agent_purge(void)
 }
 extern int get_agent_count(void)
 {
-	return agent_cnt;
+	int cnt;
+
+	slurm_mutex_lock(&agent_cnt_mutex);
+	cnt = agent_cnt;
+	slurm_mutex_unlock(&agent_cnt_mutex);
+
+	return cnt;
 }
 
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr)

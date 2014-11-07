@@ -1623,10 +1623,11 @@ static void *_slurmctld_background(void *no_data)
 			job_sched_cnt = 0;
 			slurm_mutex_unlock(&sched_cnt_mutex);
 			last_full_sched_time = now;
-		} else if (job_sched_cnt &&
-			   (difftime(now, last_sched_time) >=
-			    batch_sched_delay)) {
+		} else {
 			slurm_mutex_lock(&sched_cnt_mutex);
+			if (job_sched_cnt &&
+			    (difftime(now, last_sched_time) >=
+			     batch_sched_delay)) {
 			job_limit = 0;	/* Default depth */
 			job_sched_cnt = 0;
 			slurm_mutex_unlock(&sched_cnt_mutex);
