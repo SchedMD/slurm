@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Add better error reporting of invalid partitions at submission time.
  -- Move will-run test for multiple clusters from the sbatch code into the API
     so that it can be used with DRMAA.
+ -- If a non-exclusive allocation requests --hint=nomultithread on a
+    CR_CORE/SOCKET system lay out tasks correctly.
 
 * Changes in Slurm 14.11.0
 ==========================

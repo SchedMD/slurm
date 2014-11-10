@@ -2491,6 +2491,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	first_bit = bit_ffs(job_ptr->node_bitmap);
 	last_bit  = bit_fls(job_ptr->node_bitmap);
 	for (i = first_bit; i <= last_bit; i++) {
+		uint16_t cpus, cpus_used;
+
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 		job_node_offset++;
@@ -2501,11 +2503,34 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				return NULL;
 			if (pos >= job_resrcs_ptr->nhosts)
 				fatal("step_layout_create: node index bad");
+
+			cpus = job_resrcs_ptr->cpus[pos];
+			cpus_used = job_resrcs_ptr->cpus_used[pos];
+			/* Here we are trying to figure out the number
+			 * of cpus available if we only want to run 1
+			 * thread per core.
+			 */
+			if (!job_resrcs_ptr->whole_node
+			    && (slurmctld_conf.select_type_param
+				& (CR_CORE | CR_SOCKET))
+			    && (job_ptr->details->cpu_bind_type
+				& CPU_BIND_ONE_THREAD_PER_CORE)) {
+				uint16_t threads;
+				struct node_record *node_ptr =
+					node_record_table_ptr + i;
+				if (slurmctld_conf.fast_schedule)
+					threads = node_ptr->config_ptr->threads;
+				else
+					threads = node_ptr->threads;
+
+				cpus /= threads;
+				cpus_used /= threads;
+			}
+
 			if (step_ptr->exclusive) {
-				usable_cpus = job_resrcs_ptr->cpus[pos] -
-					      job_resrcs_ptr->cpus_used[pos];
+				usable_cpus = cpus - cpus_used;
 			} else
-				usable_cpus = job_resrcs_ptr->cpus[pos];
+				usable_cpus = cpus;
 			if ((step_ptr->pn_min_memory & MEM_PER_CPU) &&
 			    _is_mem_resv()) {
 				uint32_t mem_use = step_ptr->pn_min_memory;
