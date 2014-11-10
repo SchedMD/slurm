@@ -62,12 +62,7 @@
  * cores_per_socket	- Count of cores per socket on this node, build by
  *			  build_job_resources() and insures consistent
  *			  interpretation of core_bitmap
- * cpus			- Count of usable CPUs per node for job/step.
- *                        If a user is only using 1 thread per core
- *                        this will only mark those threads as usable.
- * cpus_alloc		- Count of allocated CPUs per node for
- *                        job/step.  If a user is only using 1 thread
- *                        per core this accounts for the other threads.
+ * cpus			- Count of desired/allocated CPUs per node for job/step
  * cpus_used		- For a job, count of CPUs per node used by job steps
  * cpu_array_cnt	- Count of elements in cpu_array_* below
  * cpu_array_value	- Count of allocated CPUs per node for job
@@ -119,7 +114,6 @@ struct job_resources {
 	uint16_t *	cpu_array_value;
 	uint32_t *	cpu_array_reps;
 	uint16_t *	cpus;
-	uint16_t *	cpus_alloc;
 	uint16_t *	cpus_used;
 	uint16_t *	cores_per_socket;
 	uint32_t *	memory_allocated;
