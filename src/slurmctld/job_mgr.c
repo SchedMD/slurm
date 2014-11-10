@@ -6129,15 +6129,29 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 	 * cpu count isn't set up on that system. */
 	return SLURM_SUCCESS;
 #endif
-	if ((offset = job_resources_node_inx_to_cpu_inx(
-		    job_ptr->job_resrcs, node_inx)) < 0) {
-		error("job_update_cpu_cnt: problem getting offset of job %u",
-		      job_ptr->job_id);
-		job_ptr->cpu_cnt = 0;
-		return SLURM_ERROR;
-	}
+	if (job_ptr->details->whole_node) {
+		/* Since we are allocating whole nodes don't rely on
+		 * the job_resrcs since it could be less because the
+		 * node could of only used 1 thread per core.
+		 */
+		struct node_record *node_ptr =
+			node_record_table_ptr + node_inx;
+		if (slurmctld_conf.fast_schedule)
+			cnt = node_ptr->config_ptr->cpus;
+		else
+			cnt = node_ptr->cpus;
+	} else {
+		if ((offset = job_resources_node_inx_to_cpu_inx(
+			     job_ptr->job_resrcs, node_inx)) < 0) {
+			error("job_update_cpu_cnt: problem getting "
+			      "offset of job %u",
+			      job_ptr->job_id);
+			job_ptr->cpu_cnt = 0;
+			return SLURM_ERROR;
+		}
 
-	cnt = job_ptr->job_resrcs->cpus[offset];
+		cnt = job_ptr->job_resrcs->cpus[offset];
+	}
 	if (cnt > job_ptr->cpu_cnt) {
 		error("job_update_cpu_cnt: cpu_cnt underflow on job_id %u",
 		      job_ptr->job_id);
