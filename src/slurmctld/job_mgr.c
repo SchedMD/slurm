@@ -5778,6 +5778,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->argv   = (char **) NULL; /* nothing left to free */
 	job_desc->argc   = 0;		   /* nothing left to free */
 	detail_ptr->acctg_freq = xstrdup(job_desc->acctg_freq);
+	detail_ptr->cpu_bind_type = job_desc->cpu_bind_type;
+	detail_ptr->cpu_bind   = xstrdup(job_desc->cpu_bind);
 	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_cpus   = job_desc->min_cpus;
