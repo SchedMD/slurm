@@ -159,11 +159,12 @@ int main(int argc, char *argv[])
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
-	if (slurmdb_get_first_avail_cluster(&desc, opt.clusters,
+	if (opt.clusters &&
+	    slurmdb_get_first_avail_cluster(&desc, opt.clusters,
 			&working_cluster_rec) != SLURM_SUCCESS) {
 		print_db_notok(opt.clusters, 0);
 		exit(error_exit);
-}
+	}
 
 
 	if (_check_cluster_specific_settings(&desc) != SLURM_SUCCESS)
