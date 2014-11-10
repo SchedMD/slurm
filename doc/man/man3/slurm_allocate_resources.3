@@ -1,11 +1,12 @@
-.TH "Slurm API" "3" "April 2006" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "November 2014" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_blocking,
 slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
 slurm_allocation_lookup, slurm_allocation_lookup_lite,
 slurm_confirm_allocation,
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg,
-slurm_job_will_run, slurm_read_hostfile, slurm_submit_batch_job
+slurm_job_will_run, slurm_job_will_run2,
+slurm_read_hostfile, slurm_submit_batch_job
 \- Slurm job initiation functions
 .SH "SYNTAX"
 .LP
@@ -85,7 +86,15 @@ void \fBslurm_init_job_desc_msg\fR (
 .LP
 int \fBslurm_job_will_run\fR (
 .br
+	job_desc_msg_t *\fIjob_desc_msg_ptr\fP
+.br
+);
+.LP
+int slurm_job_will_run2\fR (
+.br
 	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
+.br
+	will_run_response_msg_t **\fIwill_run_resp\fP
 .br
 );
 .LP
@@ -128,7 +137,8 @@ Specifies the pointer to the structure to be created and filled in by the functi
 \fIslurm_allocate_resources\fP,
 \fIslurm_allocate_resources_blocking\fP,
 \fIslurm_allocation_lookup\fP, \fIslurm_allocation_lookup_lite\fP,
-\fIslurm_confirm_allocation\fP or \fIslurm_job_will_run\fP.
+\fIslurm_confirm_allocation\fP, \fIslurm_job_will_run\fP or
+\fIslurm_job_will_run\fP.
 .TP
 \fIslurm_alloc_msg_thr_ptr\fP
 Specigies the pointer to the structure created and returned by the
@@ -142,6 +152,9 @@ data structure's contents.
 .TP
 \fIslurm_submit_msg_ptr\fP
 Specifies the pointer to the structure to be created and filled in by the function \fIslurm_submit_batch_job\fP.
+.TP
+\fIwill_run_resp\fP
+Specifies when and where the specified job descriptor could be started.
 .SH "DESCRIPTION"
 .LP
 \fBslurm_allocate_resources\fR Request a resource allocation for a job. If
@@ -195,6 +208,8 @@ to a call of the function \fBslurm_submit_batch_job\fR.
 Execute this function before issuing a request to submit or modify a job.
 .LP
 \fBslurm_job_will_run\fR Determine if the supplied job description could be executed immediately.
+.LP
+\fBslurm_job_will_run2\fR Determine when and where the supplied job description can be executed.
 .LP
 \fBslurm_read_hostfile\fR Read a SLURM hostfile specified by
 "filename".  "filename" must contain a list of SLURM NodeNames, one
@@ -420,6 +435,7 @@ which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
+Copyright (C) 2010\-2014 SchedMD LLC.
 Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.

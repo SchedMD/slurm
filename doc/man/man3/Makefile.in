@@ -480,6 +480,7 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_job_step_layout_get.3 \
 	slurm_job_step_layout_free.3 \
 	slurm_job_will_run.3 \
+	slurm_job_will_run2.3 \
 	slurm_jobinfo_ctx_get.3 \
 	slurm_kill_job.3 \
 	slurm_kill_job_step.3 \
