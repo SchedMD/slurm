@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     the tree to avoid worst case scenarios when the entire branch is down and
     we have to try each serially.
  -- Add better error reporting of invalid partitions at submission time.
+ -- Move will-run test for multiple clusters from the sbatch code into the API
+    so that it can be used with DRMAA.
 
 * Changes in Slurm 14.11.0
 ==========================

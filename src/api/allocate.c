@@ -294,40 +294,24 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
  */
 int slurm_job_will_run (job_desc_msg_t *req)
 {
-	slurm_msg_t req_msg, resp_msg;
-	will_run_response_msg_t *will_run_resp;
+	will_run_response_msg_t *will_run_resp = NULL;
 	char buf[64];
 	bool host_set = false;
 	int rc;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	char *type = "processors";
-	/* req.immediate = true;    implicit */
+
 	if ((req->alloc_node == NULL) &&
 	    (gethostname_short(buf, sizeof(buf)) == 0)) {
 		req->alloc_node = buf;
 		host_set = true;
 	}
-	slurm_msg_t_init(&req_msg);
-	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
-	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	rc = slurm_job_will_run2(req, &will_run_resp);
 
-	if (host_set)
-		req->alloc_node = NULL;
-
-	if (rc < 0)
-		return SLURM_SOCKET_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if (_handle_rc_msg(&resp_msg) < 0)
-			return SLURM_PROTOCOL_ERROR;
-		break;
-	case RESPONSE_JOB_WILL_RUN:
+	if ((rc == 0) && will_run_resp) {
 		if (cluster_flags & CLUSTER_FLAG_BG)
 			type = "cnodes";
-		will_run_resp = (will_run_response_msg_t *) resp_msg.data;
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
 		info("Job %u to start at %s using %u %s"
@@ -346,11 +330,51 @@ int slurm_job_will_run (job_desc_msg_t *req)
 					sep = ",";
 				xstrfmtcat(job_list, "%s%u", sep, *job_id_ptr);
 			}
+			list_iterator_destroy(itr);
 			info("  Preempts: %s", job_list);
 			xfree(job_list);
 		}
 
 		slurm_free_will_run_response_msg(will_run_resp);
+	}
+
+	if (host_set)
+		req->alloc_node = NULL;
+
+	return rc;
+}
+
+/*
+ * slurm_job_will_run2 - determine if a job would execute immediately if
+ * 	submitted now
+ * IN job_desc_msg - description of resource allocation request
+ * OUT will_run_resp - job run time data
+ * 	free using slurm_free_will_run_response_msg()
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int slurm_job_will_run2 (job_desc_msg_t *req,
+			 will_run_response_msg_t **will_run_resp)
+{
+	slurm_msg_t req_msg, resp_msg;
+	int rc;
+	/* req.immediate = true;    implicit */
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
+	req_msg.data     = req;
+
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+
+	if (rc < 0)
+		return SLURM_SOCKET_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if (_handle_rc_msg(&resp_msg) < 0)
+			return SLURM_PROTOCOL_ERROR;
+		break;
+	case RESPONSE_JOB_WILL_RUN:
+		*will_run_resp = (will_run_response_msg_t *) resp_msg.data;
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);

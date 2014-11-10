@@ -52,6 +52,12 @@
 #define SLURMDB_PURGE_IN_MONTHS(_X) \
 	(_X != NO_VAL && _X & SLURMDB_PURGE_MONTHS)
 
+typedef struct {
+	slurmdb_cluster_rec_t *cluster_rec;
+	int preempt_cnt;
+	time_t start_time;
+} local_cluster_rec_t;
+
 extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();
 

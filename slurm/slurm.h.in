@@ -1878,6 +1878,14 @@ typedef struct partition_info_msg {
 	partition_info_t *partition_array; /* the partition records */
 } partition_info_msg_t;
 
+typedef struct will_run_response_msg {
+	uint32_t job_id;	/* ID of job to start */
+	char *node_list;	/* nodes where job will start */
+	List preemptee_job_id;	/* jobs preempted to start this job */
+	uint32_t proc_cnt;	/* CPUs allocated to job at start */
+	time_t start_time;	/* time when job will start */
+} will_run_response_msg_t;
+
 
 /* BLUEGENE specific information */
 
@@ -2741,6 +2749,17 @@ extern void slurm_free_submit_response_response_msg PARAMS(
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_job_will_run PARAMS((job_desc_msg_t * job_desc_msg));
+
+/*
+ * slurm_job_will_run2 - determine if a job would execute immediately if
+ *      submitted now
+ * IN job_desc_msg - description of resource allocation request
+ * OUT will_run_resp - job run time data
+ *      free using slurm_free_will_run_response_msg()
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_job_will_run2 PARAMS((job_desc_msg_t *req,
+				will_run_response_msg_t **will_run_resp));
 
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
