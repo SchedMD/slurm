@@ -3,6 +3,9 @@
 <h1>Prolog and Epilog Guide</h1>
 
 <p>Slurm supports a multitude of prolog and epilog programs.
+Note that for security reasons, these programs do not have a search path set.
+Either specify fully qualified path names in the program or set the "PATH"
+environment variable.
 The first table below identifies what prologs and epilogs are available for job
 allocations, when and where they run.</p>
 
@@ -324,6 +327,6 @@ PrologSlurmctld fails.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 26 February 2013</p>
+<p style="text-align:center;">Last modified 10 November 2014</p>
 
 <!--#include virtual="footer.txt"-->
