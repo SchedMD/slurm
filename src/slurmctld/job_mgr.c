@@ -6406,6 +6406,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->argv   = (char **) NULL; /* nothing left to free */
 	job_desc->argc   = 0;		   /* nothing left to free */
 	detail_ptr->acctg_freq = xstrdup(job_desc->acctg_freq);
+	detail_ptr->cpu_bind_type = job_desc->cpu_bind_type;
+	detail_ptr->cpu_bind   = xstrdup(job_desc->cpu_bind);
 	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_cpus   = job_desc->min_cpus;
@@ -6795,15 +6797,29 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 	 * cpu count isn't set up on that system. */
 	return SLURM_SUCCESS;
 #endif
-	if ((offset = job_resources_node_inx_to_cpu_inx(
-		    job_ptr->job_resrcs, node_inx)) < 0) {
-		error("job_update_cpu_cnt: problem getting offset of job %u",
-		      job_ptr->job_id);
-		job_ptr->cpu_cnt = 0;
-		return SLURM_ERROR;
-	}
+	if (job_ptr->details->whole_node) {
+		/* Since we are allocating whole nodes don't rely on
+		 * the job_resrcs since it could be less because the
+		 * node could of only used 1 thread per core.
+		 */
+		struct node_record *node_ptr =
+			node_record_table_ptr + node_inx;
+		if (slurmctld_conf.fast_schedule)
+			cnt = node_ptr->config_ptr->cpus;
+		else
+			cnt = node_ptr->cpus;
+	} else {
+		if ((offset = job_resources_node_inx_to_cpu_inx(
+			     job_ptr->job_resrcs, node_inx)) < 0) {
+			error("job_update_cpu_cnt: problem getting "
+			      "offset of job %u",
+			      job_ptr->job_id);
+			job_ptr->cpu_cnt = 0;
+			return SLURM_ERROR;
+		}
 
-	cnt = job_ptr->job_resrcs->cpus[offset];
+		cnt = job_ptr->job_resrcs->cpus[offset];
+	}
 	if (cnt > job_ptr->cpu_cnt) {
 		error("job_update_cpu_cnt: cpu_cnt underflow on job_id %u",
 		      job_ptr->job_id);
