@@ -150,7 +150,7 @@ extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr)
 
 	for (i=0; i<job_resrcs_ptr->nhosts; i++) {
 		if (job_resrcs_ptr->cpus[i] != last_cpu_cnt) {
-			last_cpu_cnt = job_resrcs_ptr->cpus[i];
+			last_cpu_cnt = job_resrcs_ptr->cpus_alloc[i];
 			job_resrcs_ptr->cpu_array_value[
 				job_resrcs_ptr->cpu_array_cnt]
 				= last_cpu_cnt;
@@ -557,10 +557,21 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			pack16_array(job_resrcs_ptr->cpu_array_value,
 				     0, buffer);
 
-		if (job_resrcs_ptr->cpus)
-			pack16_array(job_resrcs_ptr->cpus,
-				     job_resrcs_ptr->nhosts, buffer);
-		else
+		if (job_resrcs_ptr->cpus) {
+			int i, size_val = job_resrcs_ptr->nhosts * 2;
+			/* Here we have to pack 2 arrays in one This
+			 * shouldn't hurt older 14.03 installs as
+			 * they are all based off nhosts so a longer
+			 * array here will only be ignored when
+			 * processing.  This will be fixed correctly
+			 * in 15.08. */
+			pack32(size_val, buffer);
+			for (i = 0; i < size_val; i++)
+				pack16(*(job_resrcs_ptr->cpus + i), buffer);
+			for (i = 0; i < size_val; i++)
+				pack16(*(job_resrcs_ptr->cpus_alloc + i),
+				       buffer);
+		} else
 			pack16_array(job_resrcs_ptr->cpus, 0, buffer);
 
 		if (job_resrcs_ptr->cpus_used)
@@ -730,6 +741,24 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 
 		if (tmp32 != job_resrcs->cpu_array_cnt)
 			goto unpack_error;
+
+		safe_unpack32(&empty, buffer);
+		job_resrcs->cpus =
+			xmalloc(job_resrcs->nhosts * sizeof(uint16_t));
+		job_resrcs->cpus_alloc =
+			xmalloc(job_resrcs->nhosts * sizeof(uint16_t));
+
+		for (tmp32 = 0; tmp32 < job_resrcs->nhosts; tmp32++)
+			safe_unpack16(&job_resrcs->cpus[tmp32], buffer);
+
+		if (empty > job_resrcs->nhosts) {
+			for (tmp32 = 0; tmp32 < (empty - job_resrcs->nhosts);
+			     tmp32++)
+				safe_unpack16(&job_resrcs->cpus_alloc[tmp32],
+					      buffer);
+		} else
+			memcpy(job_resrcs->cpus_alloc, job_resrcs->cpus,
+			       job_resrcs->nhosts * sizeof(uint16_t));
 
 		safe_unpack16_array(&job_resrcs->cpus, &tmp32, buffer);
 		if (tmp32 == 0)

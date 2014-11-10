@@ -2566,6 +2566,10 @@ alloc_job:
 					 details_ptr->pn_min_cpus));
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;
+	job_res->cpus_alloc       = xmalloc(job_res->nhosts *
+					    sizeof(uint16_t));
+	memcpy(job_res->cpus_alloc, job_res->cpus,
+	       job_res->nhosts * sizeof(uint16_t));
 	job_res->cpus_used        = xmalloc(job_res->nhosts *
 					    sizeof(uint16_t));
 	job_res->memory_allocated = xmalloc(job_res->nhosts *
@@ -2603,7 +2607,7 @@ alloc_job:
 				if (c >= csize)	{
 					error("cons_res: cr_job_test "
 					      "core_bitmap index error on "
-					      "node %s", 
+					      "node %s",
 					      select_node_record[n].node_ptr->
 					      name);
 					drain_nodes(select_node_record[n].
@@ -2656,7 +2660,7 @@ alloc_job:
 	/* translate job_res->cpus array into format with rep count */
 	build_cnt = build_job_resources_cpu_array(job_res);
 	if (job_ptr->details->whole_node) {
-		int first, last = -1;
+		int first, last = -1, inx = 0;
 		first = bit_ffs(job_res->node_bitmap);
 		if (first != -1)
 			last  = bit_fls(job_res->node_bitmap);
@@ -2664,18 +2668,23 @@ alloc_job:
 		for (i = first; i <= last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
-			/* This could make the job_res->cpus incorrect.
-			 * Don't use job_res->cpus when allocating
-			 * whole nodes as the job is finishing to
-			 * subtract from the total cpu count or you
-			 * will get an incorrect count.
+			/* The inx here always starts at 0.
+			 * Since we are allocating whole nodes up the
+			 * cpus in the job_res or it will no longer be
+			 * accurate when the job starts finishing and
+			 * nodes are removed from the count.  Since
+			 * job_res->cpus is the list of the usable
+			 * cpus (hyperthreads being used or not) We
+			 * use job_res->cpus_alloc to say these are
+			 * the cpus that are actually allocated
+			 * whether we use them or not.
 			 */
-			job_ptr->total_cpus += select_node_record[i].cpus;
+			job_res->cpus_alloc[inx] = select_node_record[i].cpus;
+			job_ptr->total_cpus += job_res->cpus_alloc[inx];
+			inx++;
 		}
-	} else if (build_cnt >= 0)
-		job_ptr->total_cpus = build_cnt;
-	else
-		job_ptr->total_cpus = total_cpus;	/* best guess */
+	} else
+		job_ptr->total_cpus = MAX(build_cnt, total_cpus);
 
 	if (!(cr_type & CR_MEMORY))
 		return error_code;

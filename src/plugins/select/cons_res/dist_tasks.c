@@ -666,7 +666,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		/* adjust cpus count of the current node */
 		if ((alloc_cores || alloc_sockets) &&
 		    (select_node_record[n].vpus >= 1)) {
-			job_res->cpus[i] = core_cnt *
+			job_res->cpus_alloc[i] = core_cnt *
 				select_node_record[n].vpus;
 		}
 		i++;
@@ -886,10 +886,11 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				}
 			}
 		}
+
 		if ((alloc_cores || alloc_sockets) &&
 		    (select_node_record[n].vpus >= 1)) {
-			job_res->cpus[i] = core_cnt *
-					   select_node_record[n].vpus;
+			job_res->cpus_alloc[i] = core_cnt *
+				select_node_record[n].vpus;
 		}
 		i++;
 		/* advance 'c' to the beginning of the next node */

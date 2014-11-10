@@ -6150,7 +6150,7 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 			return SLURM_ERROR;
 		}
 
-		cnt = job_ptr->job_resrcs->cpus[offset];
+		cnt = job_ptr->job_resrcs->cpus_alloc[offset];
 	}
 	if (cnt > job_ptr->cpu_cnt) {
 		error("job_update_cpu_cnt: cpu_cnt underflow on job_id %u",
