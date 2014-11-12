@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
     so that it can be used with DRMAA.
  -- If a non-exclusive allocation requests --hint=nomultithread on a
     CR_CORE/SOCKET system lay out tasks correctly.
+ -- Avoid including unused CPUs in a job's allocation when cores or sockets are
+    allocated.
 
 * Changes in Slurm 14.11.0
 ==========================
