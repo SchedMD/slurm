@@ -343,6 +343,7 @@ documents those changes that are of interest to users and administrators.
     with CR_PACK_NODES.
  -- Do not requeue a batch job from slurmd daemon if it is killed while in
     the process of being launched (a race condition introduced in v14.03.9).
+ -- Do not let srun overwrite SLURM_JOB_NUM_NODES if already in an allocation.
 
 * Changes in Slurm 14.03.10
 ===========================
