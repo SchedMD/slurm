@@ -27,15 +27,15 @@
 # Test GrpCpus
 proc inc21_30_2 {} {
 
-	global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number exit_code
-	global grcpu_num
+	global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number
+	global grcpu_num test_node exit_code
 
 	set job_id1 0
 	set job_id2 0
 
 	send_user "\nStarting GrpCPUs limit test (Within: inc21.30.2)\n\n"
 	set jobmatch 0
-	spawn $salloc --account=$acct -n$grcpu_num $srun $bin_sleep 5
+	spawn $salloc --account=$acct -w$test_node -n$grcpu_num $srun $bin_sleep 5
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -60,7 +60,7 @@ proc inc21_30_2 {} {
 		}
 	}
 
-	spawn $salloc --account=$acct -n1 $srun $bin_sleep 5
+	spawn $salloc --account=$acct -w$test_node -n[expr $grcpu_num + 1] $srun $bin_sleep 5
 	expect {
 		-re "Granted job allocation ($number)" {
 			send_user "\nFAILURE: Job should be pending, but is not. (Within: inc21.30.2)\n"
