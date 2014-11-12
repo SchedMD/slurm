@@ -139,7 +139,6 @@ typedef struct {
 	char *user_name;
 } job_env_t;
 
-static int  _requeue_job(uint32_t job_id, uint32_t slurm_rc);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(job_env_t *job_env);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
@@ -155,6 +154,7 @@ static void _launch_complete_add(uint32_t job_id);
 static void _launch_complete_log(char *type, uint32_t job_id);
 static void _launch_complete_rm(uint32_t job_id);
 static void _launch_complete_wait(uint32_t job_id);
+static int  _launch_job_fail(uint32_t job_id, uint32_t slurm_rc);
 static void _note_batch_job_finished(uint32_t job_id);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
@@ -1719,7 +1719,7 @@ done:
 		/* prolog or job launch failure,
 		 * tell slurmctld that the job failed */
 		if (req->step_id == SLURM_BATCH_SCRIPT)
-			_requeue_job(req->job_id, rc);
+			_launch_job_fail(req->job_id, rc);
 		else
 			_abort_step(req->job_id, req->step_id);
 	}
@@ -1798,20 +1798,30 @@ no_job:
 }
 
 static int
-_requeue_job(uint32_t job_id, uint32_t slurm_rc)
+_launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 {
-	struct requeue_msg req;
+	complete_batch_script_msg_t comp_msg;
+	struct requeue_msg req_msg;
 	slurm_msg_t resp_msg;
 	int rc;
 
 	slurm_msg_t_init(&resp_msg);
 
-	req.job_id = job_id;
-	req.job_id_str = NULL;
-	req.state = JOB_REQUEUE_HOLD;
-
-	resp_msg.msg_type = REQUEST_JOB_REQUEUE;
-	resp_msg.data = &req;
+	if (slurm_rc == ESLURMD_CREDENTIAL_REVOKED) {
+		comp_msg.job_id = job_id;
+		comp_msg.job_rc = INFINITE;
+		comp_msg.slurm_rc = slurm_rc;
+		comp_msg.node_name = conf->node_name;
+		comp_msg.jobacct = NULL; /* unused */
+		resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
+		resp_msg.data = &comp_msg;
+	} else {
+		req_msg.job_id = job_id;
+		req_msg.job_id_str = NULL;
+		req_msg.state = JOB_REQUEUE_HOLD;
+		resp_msg.msg_type = REQUEST_JOB_REQUEUE;
+		resp_msg.data = &req_msg;
+	}
 
 	return slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
 }
