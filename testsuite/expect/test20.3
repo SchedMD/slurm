@@ -111,7 +111,7 @@ expect {
 	}
 }
 
-# we should get and error code here from qdel, but no message
+# we should get an error code here from qdel, but no message
 if {($matches != 0) || ($status == 0)} {
 	send_user "\nFAILURE: No error on attempt to cancel terminated job\n"
 	set exit_code 1
