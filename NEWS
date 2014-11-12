@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     an maintenance reservation that is not active yet.
  -- Fix issue where exclusive allocations wouldn't lay tasks out correctly
     with CR_PACK_NODES.
+ -- Do not requeue a batch job from slurmd daemon if it is killed while in
+    the process of being launched (a race condition introduced in v14.03.9).
 
 * Changes in Slurm 14.03.10
 ===========================
