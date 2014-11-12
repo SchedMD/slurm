@@ -1078,6 +1078,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
  * suitable for use by execle() and other env_array_* functions.
  *
  * Sets the variables:
+ *	SLURM_CLUSTER_NAME
  *	SLURM_JOB_ID
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
@@ -1098,7 +1099,7 @@ extern int
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 			const char *node_name)
 {
-	char *tmp = NULL;
+	char *tmp = NULL, *cluster_name;
 	uint32_t num_nodes = 0;
 	uint32_t num_cpus = 0;
 	int i;
@@ -1115,6 +1116,13 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	for (i = 0; i < batch->num_cpu_groups; i++) {
 		num_nodes += batch->cpu_count_reps[i];
 		num_cpus += batch->cpu_count_reps[i] * batch->cpus_per_node[i];
+	}
+
+	cluster_name = slurm_get_cluster_name();
+	if (cluster_name) {
+		env_array_append_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
+				     cluster_name);
+		xfree(cluster_name);
 	}
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);

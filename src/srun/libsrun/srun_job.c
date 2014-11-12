@@ -1252,11 +1252,19 @@ static int _set_rlimit_env(void)
 	return rc;
 }
 
-/* Set SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment variables within
- * current state */
+/* Set SLURM_CLUSTER_NAME< SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment 
+ * variables within current state */
 static void _set_submit_dir_env(void)
 {
 	char buf[MAXPATHLEN + 1], host[256];
+	char *cluster_name;
+
+	cluster_name = slurm_get_cluster_name();
+	if (cluster_name) {
+		if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s", cluster_name) < 0)
+			error("unable to set SLURM_CLUSTER_NAME in environment");
+		xfree(cluster_name);
+	}
 
 	if ((getcwd(buf, MAXPATHLEN)) == NULL)
 		error("getcwd failed: %m");
