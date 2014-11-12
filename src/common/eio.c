@@ -54,6 +54,22 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+ * for details.
+ */
+strong_alias(eio_handle_create,		slurm_eio_handle_create);
+strong_alias(eio_handle_destroy,	slurm_eio_handle_destroy);
+strong_alias(eio_handle_mainloop,	slurm_eio_handle_mainloop);
+strong_alias(eio_message_socket_readable, slurm_eio_message_socket_readable);
+strong_alias(eio_message_socket_accept,	slurm_eio_message_socket_accept);
+strong_alias(eio_new_obj,		slurm_eio_new_obj);
+strong_alias(eio_obj_create,		slurm_eio_obj_create);
+strong_alias(eio_obj_destroy,		slurm_eio_obj_destroy);
+strong_alias(eio_remove_obj,		slurm_eio_remove_obj);
+strong_alias(eio_signal_shutdown,	slurm_eio_signal_shutdown);
+strong_alias(eio_signal_wakeup,		slurm_eio_signal_wakeup);
+
 /* How many seconds to wait after eio_signal_shutdown() is called before
  * terminating the job and abandoning any I/O remaining to be processed */
 #define EIO_SHUTDOWN_WAIT 180

@@ -392,11 +392,25 @@
 /* slurm_step_route.[ch] functions */
 #define route_split_hostlist_treewidth	slurm_route_split_hostlist_treewidth
 
+
+#define eio_handle_create		slurm_eio_handle_create
+#define eio_handle_destroy		slurm_eio_handle_destroy
+#define eio_handle_mainloop		slurm_eio_handle_mainloop
+#define eio_message_socket_accept	slurm_eio_message_socket_accept
+#define eio_message_socket_readable	slurm_eio_message_socket_readable
+#define eio_new_obj			slurm_eio_new_obj
+#define eio_obj_create			slurm_eio_obj_create
+#define eio_obj_destroy			slurm_eio_obj_destroy
+#define eio_remove_obj			slurm_eio_remove_obj
+#define eio_signal_shutdown		slurm_eio_signal_shutdown
+#define eio_signal_wakeup		slurm_eio_signal_wakeup
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
 #include "src/common/arg_desc.h"
 #include "src/common/bitstring.h"
+#include "src/common/eio.h"
 #include "src/common/env.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"

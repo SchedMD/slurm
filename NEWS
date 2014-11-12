@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     slurm.h as per documentation.
  -- Update the FAQ about relocating slurmctld.
  -- In the memory cgroup enable memory.use_hierarchy in the cgroup root.
+ -- Export eio.c functions for use by MPI/PMI2.
 
 * Changes in Slurm 14.11.0rc3
 =============================
