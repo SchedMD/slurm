@@ -84,7 +84,7 @@ jobid") sometimes not display a job's estimated start time?</a></li>
   programs on some nodes?</a></li>
 <li><a href="#ping"> Why does <i>slurmctld</i> log that some nodes
   are not responding even if they are not in any partition?</a></li>
-<li><a href="#controller"> How should I relocated the primary or backup
+<li><a href="#controller"> How should I relocate the primary or backup
   controller?</a></li>
 <li><a href="#multi_slurm">Can multiple Slurm systems be run in
   parallel for testing purposes?</a></li>
@@ -1161,7 +1161,7 @@ daemon on every configured node, even if not associated with any
 partition. You can control the frequency of this ping with the
 <i>SlurmdTimeout</i> configuration parameter in <i>slurm.conf</i>.
 
-<p><a name="controller"><b>12. How should I relocated the primary or
+<p><a name="controller"><b>12. How should I relocate the primary or
 backup controller?</b></a><br>
 If the cluster's computers used for the primary or backup controller
 will be out of service for an extended period of time, it may be desirable
@@ -1171,6 +1171,8 @@ to relocate them. In order to do so, follow this procedure:</p>
 <li>Modify the <i>ControlMachine</i>, <i>ControlAddr</i>,
 <i>BackupController</i>, and/or <i>BackupAddr</i> in the <i>slurm.conf</i> file</li>
 <li>Distribute the updated <i>slurm.conf</i> file to all nodes</li>
+<li>Copy the <i>StateSaveLocation</i> directory to the new host and
+make sure the permissions allow the <i>SlurmUser</i> to read and write it.
 <li>Restart all Slurm daemons</li>
 </ol>
 <p>There should be no loss of any running or pending jobs. Insure that
@@ -1948,13 +1950,13 @@ build time by defining SAVE_MAX_WAIT to a different value than five.</p>
 
 <p><a name="delete_partition"><b>60. How do I safely remove partitions?
 </b></a><br>
-Partitions should be removed using the 
+Partitions should be removed using the
 "scontrol delete PartitionName=&lt;partition&gt;" command. This is because
 scontrol will prevent any partitions from being removed that are in use.
 Partitions need to be removed from the slurm.conf after being removed using
 scontrol or they will return after a restart.
 An existing job's partition(s) can be updated with the "scontrol update
-JobId=&lt;jobid&gt; Partition=&lt;partition(s)&gt;" command. 
+JobId=&lt;jobid&gt; Partition=&lt;partition(s)&gt;" command.
 Removing a partition from the slurm.conf and restarting will cancel any existing
 jobs that reference the removed partitions.
 </p>
