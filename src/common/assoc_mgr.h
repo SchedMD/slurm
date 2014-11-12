@@ -35,6 +35,10 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *****************************************************************************
+ * NOTE: When using lock_slurmctld() and assoc_mgr_lock(), always call
+ * lock_slurmctld() before calling assoc_mgr_lock() and then call
+ * assoc_mgr_unlock() before calling unlock_slurmctld().
 \*****************************************************************************/
 
 #ifndef _SLURM_ASSOC_MGR_H
