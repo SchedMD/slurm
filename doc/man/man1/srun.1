@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 14.11" "May 2014" "SLURM Commands"
+.TH "srun" "1" "SLURM 14.11" "November 2014" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2193,7 +2193,9 @@ These environment variables are:
 \fBSLURM_CHECKPOINT_IMAGE_DIR\fR
 Directory into which checkpoint images should be written
 if specified on the execute line.
-
+.TP
+\fBSLURM_CLUSTER_NAME\fR
+Name of the cluster on which the job is executing.
 .TP
 \fBSLURM_CPU_BIND_VERBOSE\fR
 \-\-cpu_bind verbosity (quiet,verbose).

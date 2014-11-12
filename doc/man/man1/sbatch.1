@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 14.03" "August 2014" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 14.11" "November 2014" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -1564,6 +1564,9 @@ Job array's master job ID number.
 \fBSLURM_CHECKPOINT_IMAGE_DIR\fR
 Directory into which checkpoint images should  be written if specified
 on the execute line.
+.TP
+\fBSLURM_CLUSTER_NAME\fR
+Name of the cluster on which the job is executing.
 .TP
 \fBSLURM_CPUS_ON_NODE\fR
 Number of CPUS on the allocated node.
