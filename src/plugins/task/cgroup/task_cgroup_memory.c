@@ -84,6 +84,8 @@ static uint64_t percent_in_bytes (uint64_t mb, float percent)
 
 extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
+	xcgroup_t memory_cg;
+
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
@@ -95,6 +97,12 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		error("task/cgroup: unable to create memory namespace");
 		return SLURM_ERROR;
 	}
+
+	/* Enable memory.use_hierarchy in the root of the cgroup.
+	 */
+	xcgroup_create(&memory_ns, &memory_cg, "", 0, 0);
+	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
+	xcgroup_destroy(&memory_cg);
 
 	constrain_ram_space = slurm_cgroup_conf->constrain_ram_space;
 	constrain_swap_space = slurm_cgroup_conf->constrain_swap_space;

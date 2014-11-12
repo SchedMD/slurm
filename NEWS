@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Define DEFAULT_MAX_TASKS_PER_NODE based on MAX_TASKS_PER_NODE from
     slurm.h as per documentation.
  -- Update the FAQ about relocating slurmctld.
+ -- In the memory cgroup enable memory.use_hierarchy in the cgroup root.
 
 * Changes in Slurm 14.11.0rc3
 =============================
