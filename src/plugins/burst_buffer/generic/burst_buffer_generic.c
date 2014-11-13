@@ -608,7 +608,7 @@ static char *_run_script(char *script_type, char *script_path,
 	int i, status, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
 	char *resp = NULL;
-	int pfd[2];
+	int pfd[2] = { -1, -1 };
 
 	if ((script_path == NULL) || (script_path[0] == '\0')) {
 		error("%s: %s is not configured", plugin_type, script_type);
@@ -624,15 +624,26 @@ static char *_run_script(char *script_type, char *script_path,
 		      plugin_type, script_type, script_path);
 		return resp;
 	}
-	if (pipe(pfd) != 0) {
-		error("%s: pipe(): %m", plugin_type);
-		return resp;
+	if (max_wait != -1) {
+		if (pipe(pfd) != 0) {
+			error("%s: pipe(): %m", plugin_type);
+			return resp;
+		}
 	}
 	if ((cpid = fork()) == 0) {
-		dup2(pfd[1], STDOUT_FILENO);
-		for (i = 0; i < 127; i++) {
-			if (i != STDOUT_FILENO)
+		if (max_wait != -1) {
+			dup2(pfd[1], STDOUT_FILENO);
+			for (i = 0; i < 127; i++) {
+				if (i != STDOUT_FILENO)
+					close(i);
+			}
+		} else {
+			for (i = 0; i < 127; i++)
 				close(i);
+			if ((cpid = fork()) < 0)
+				exit(127);
+			else if (cpid > 0)
+				exit(0);
 		}
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
@@ -642,7 +653,13 @@ static char *_run_script(char *script_type, char *script_path,
 		execv(script_path, script_argv);
 		error("%s: execv(%s): %m", plugin_type, script_path);
 		exit(127);
-	} else if (cpid > 0) {
+	} else if (cpid < 0) {
+		if (max_wait != -1) {
+			close(pfd[0]);
+			close(pfd[1]);
+		}
+		error("%s: fork(): %m", plugin_type);
+	} else if (max_wait != -1) {
 		struct pollfd fds;
 		time_t start_time = time(NULL);
 		resp_size = 1024;
@@ -689,9 +706,7 @@ static char *_run_script(char *script_type, char *script_path,
 		waitpid(cpid, &status, 0);
 		close(pfd[0]);
 	} else {
-		close(pfd[0]);
-		close(pfd[1]);
-		error("%s: fork(): %m", plugin_type);
+		waitpid(cpid, &status, 0);
 	}
 	return resp;
 }
@@ -726,7 +741,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp, "State", job_tbl))
 		state = bb_state_num(tmp);
 
-#if 1
+#if 0
 	info("%s: JobID:%u Name:%s Size:%u State:%u UserID:%u",
 	     __func__, job_id, name, size, state, user_id);
 #endif
@@ -755,17 +770,20 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 		}
 	}
 
-	if (bb_ptr->user_id != user_id) {
+	/* UserID set to 0 on some failure modes */
+	if ((bb_ptr->user_id != user_id) && (user_id != 0)) {
 		error("%s: User ID mismatch (%u != %u). "
 		      "BB UserID=%u JobID=%u Name=%s",
 		      plugin_type, bb_ptr->user_id, user_id,
 		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
 	}
 	if (bb_ptr->size != size) {
-		error("%s: Size mismatch (%u != %u). "
-		      "BB UserID=%u JobID=%u Name=%s",
-		      plugin_type, bb_ptr->size, size,
-		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
+		if (size != 0) {
+			error("%s: Size mismatch (%u != %u). "
+			      "BB UserID=%u JobID=%u Name=%s",
+			      plugin_type, bb_ptr->size, size,
+			      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
+		}
 		bb_ptr->size = MAX(bb_ptr->size, size);
 	}
 	if (bb_ptr->state != state) {
@@ -775,6 +793,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 		      plugin_type, bb_state_string(bb_ptr->state),
 		      bb_state_string(state),
 		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
+		bb_ptr->state = state;
 	}
 
 	return SLURM_SUCCESS;
