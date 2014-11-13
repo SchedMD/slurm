@@ -1537,7 +1537,7 @@ static void _set_options(int argc, char **argv)
 			opt.ntasks_per_core = _get_int(optarg,
 				"ntasks-per-core");
 			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
-				opt.ntasks_per_socket);
+				opt.ntasks_per_core);
 			break;
 		case LONG_OPT_HINT:
 			/* Keep after other options filled in */
@@ -2975,6 +2975,7 @@ static void _help(void)
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+"      --wckey=wckey           wckey to run job under\n"
 "      --wrap[=command string] wrap commmand string in a sh script and submit\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"

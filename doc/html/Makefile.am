@@ -98,7 +98,8 @@ generated_html = \
 	topology.html \
 	topology_plugin.html \
 	troubleshoot.html \
-	tutorials.html
+	tutorials.html \
+	wckey.html
 
 html_DATA = \
 	${generated_html} \

@@ -1931,6 +1931,7 @@ static void _help(void)
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+"      --wckey=wckey           wckey to run job under\n"
 "\n"
 "Constraint options:\n"
 "      --contiguous            demand a contiguous range of nodes\n"

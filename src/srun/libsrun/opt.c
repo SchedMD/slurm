@@ -2633,6 +2633,7 @@ static void _help(void)
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
+"      --wckey=wckey           wckey to run job under\n"
 "  -X, --disable-status        Disable Ctrl-C status feature\n"
 "\n"
 "Constraint options:\n"
