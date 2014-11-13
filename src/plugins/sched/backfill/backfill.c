@@ -896,7 +896,7 @@ static int _attempt_backfill(void)
 
 		/* Determine job's expected completion time */
 		if (part_ptr->max_time == INFINITE)
-			part_time_limit = 365 * 24 * 60; /* one year */
+			part_time_limit = YEAR_SECONDS;
 		else
 			part_time_limit = part_ptr->max_time;
 		if (job_ptr->time_limit == NO_VAL) {
@@ -1096,16 +1096,26 @@ static int _attempt_backfill(void)
 				job_ptr->time_limit = orig_time_limit;
 
 			}
-			if (job_ptr->time_limit == INFINITE)
-				hard_limit = 365 * 24 * 60;	/* one year */
-			else
-				hard_limit = job_ptr->time_limit;
-			job_ptr->end_time = job_ptr->start_time +
-					    (hard_limit * 60);
-			if (reset_time) {
-				_reset_job_time_limit(job_ptr, now,
-						      node_space);
-				time_limit = job_ptr->time_limit;
+			/* Only set end_time if start_time is set,
+			 * or else end_time will be small (ie. 1969). */
+			if (job_ptr->start_time) {
+				if (job_ptr->time_limit == INFINITE)
+					hard_limit = YEAR_SECONDS;
+				else
+					hard_limit = job_ptr->time_limit;
+				job_ptr->end_time = job_ptr->start_time +
+					(hard_limit * 60);
+				/* Only set if start_time. end_time must be set
+				 * beforehand for _reset_job_time_limit. */
+				if (reset_time) {
+					_reset_job_time_limit(job_ptr, now,
+							      node_space);
+					time_limit = job_ptr->time_limit;
+				}
+			} else if (rc == SLURM_SUCCESS) {
+				error("%s: start_time of 0 on successful "
+				      "backfill. This shouldn't happen. :)",
+				      __func__);
 			}
 
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
