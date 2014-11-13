@@ -132,7 +132,7 @@ static bb_alloc_t *_alloc_bb_job_rec(struct job_record *job_ptr);
 static bb_alloc_t *_alloc_bb_name_rec(char *name, uint32_t user_id);
 static void	_alloc_cache(void);
 static char **	_build_stage_args(char *cmd, char *opt,
-				  struct job_record *job_ptr);
+				  struct job_record *job_ptr, uint32_t bb_size);
 static void	_clear_cache(void);
 static void	_clear_config(void);
 static void	_destroy_job_info(void *data);
@@ -239,7 +239,7 @@ static bb_alloc_t *_alloc_bb_name_rec(char *name, uint32_t user_id)
 }
 
 static char **_build_stage_args(char *cmd, char *opt,
-				struct job_record *job_ptr)
+				struct job_record *job_ptr, uint32_t bb_size)
 {
 	char **script_argv = NULL;
 	char *save_ptr = NULL, *script, *tok;
@@ -264,7 +264,9 @@ static char **_build_stage_args(char *cmd, char *opt,
 		xstrfmtcat(script_argv[0], "%s", cmd);
 	xstrfmtcat(script_argv[1], "%s", opt);
 	xstrfmtcat(script_argv[2], "%u", job_ptr->job_id);
-	script_argc += 3;
+	xstrfmtcat(script_argv[3], "%u", job_ptr->user_id);
+	xstrfmtcat(script_argv[4], "%u", bb_size);
+	script_argc += 5;
 	tok = strtok_r(script, "\n", &save_ptr);
 	while (tok) {
 		if (tok[0] != '#')
@@ -351,7 +353,7 @@ static void _purge_bb_rec(void)
 	bb_alloc_t **bb_pptr, *bb_ptr = NULL;
 	int i;
 
-	if (difftime(now, time_last_purge) > 60) {	/* Once per minute */
+	if (difftime(now, time_last_purge) > 10) {    /* Max of every 10 secs */
 		for (i = 0; i < BB_HASH_SIZE; i++) {
 			bb_pptr = &bb_hash[i];
 			bb_ptr = bb_hash[i];
@@ -1114,9 +1116,15 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_ptr;
 	uint32_t bb_size;
+	char **script_argv, *resp;
+	int i;
 
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
+//FIXME: sort jobs by expected start time
+//FIXME: do not over-allocate resources
+//FIXME: look for duplicate bb record in cache
+//FIXME: re-test job size limit
 	pthread_mutex_lock(&bb_mutex);
 	job_iter = list_iterator_create(job_queue);
 	while ((job_ptr = list_next(job_iter))) {
@@ -1131,11 +1139,28 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		if (_find_bb_job_rec(job_ptr))
 			continue;
 		bb_ptr = _alloc_bb_job_rec(job_ptr);
-		bb_ptr->state = BB_STATE_ALLOCATED;
 		_add_user_load(bb_ptr);
 		if (debug_flag) {
 			info("%s: start stage-in job_id:%u",
 			     __func__, job_ptr->job_id);
+		}
+
+		script_argv = _build_stage_args(start_stage_in,
+						"start_stage_in", job_ptr,
+						bb_size);
+		if (script_argv) {
+			bb_ptr->state = BB_STATE_STAGING_IN;
+			resp = _run_script("StartStageIn", start_stage_in,
+					   script_argv, -1);
+			if (resp) {
+				error("%s: StartStageIn: %s", __func__, resp);
+				xfree(resp);
+			}
+			for (i = 0; script_argv[i]; i++)
+				xfree(script_argv[i]);
+			xfree(script_argv);
+		} else {
+			bb_ptr->state = BB_STATE_STAGED_IN;
 		}
 	}
 	list_iterator_destroy(job_iter);
@@ -1215,7 +1240,8 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		      __func__, job_ptr->job_id);
 	} else {
 		script_argv = _build_stage_args(start_stage_out,
-						"start_stage_out", job_ptr);
+						"start_stage_out", job_ptr,
+						bb_ptr->size);
 		if (script_argv) {
 			bb_ptr->state = BB_STATE_STAGING_OUT;
 			resp = _run_script("StartStageOut", start_stage_out,
@@ -1308,7 +1334,7 @@ extern int bb_p_job_stop_stage_out(struct job_record *job_ptr)
 		_stop_stage_out(job_ptr->job_id);
 	} else {
 		script_argv = _build_stage_args(start_stage_out,
-						"stop_stage_out", job_ptr);
+						"stop_stage_out", job_ptr, 0);
 		if (script_argv) {
 			bb_ptr->state = BB_STATE_STAGED_OUT;
 			resp = _run_script("StopStageOut", start_stage_out,

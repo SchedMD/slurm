@@ -4,6 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 EXTRA_DIST =				\
 	bb_get_state.example		\
+	bb_start_stage_in.example	\
 	bb_start_stage_out.example	\
 	bb_stop_stage_out.example
 

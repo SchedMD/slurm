@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# bb_start_stage_out
-# Perform stage-out of files for a specific job
+# bb_start_stage_in
+# Perform stage-in of files for a specific job
 *
 # NOTE: Sample script used for burst buffer management. Used for development
 # purposes and is not intended for production use.
@@ -21,14 +21,14 @@
 
 # Validate execute line
 valid=0
-if [[ $# -ge 4 && $1 = "start_stage_out" ]]; then
+if [[ $# -ge 4 && $1 = "start_stage_in" ]]; then
 	job_id=$2
 	user_id=$3
 	buf_size=$4
 	valid=1
 fi
 if [[ $valid -eq 0 ]]; then
-	echo "Usage: $0 start_stage_out <jobid> <userid> <size> [script]"
+	echo "Usage: $0 start_stage_in <jobid> <userid> <size> [script]"
 	exit 1
 fi
 
@@ -41,14 +41,13 @@ if [[ ! -d $BB_DIRECTORY/$job_id ]]; then
 	mkdir $BB_DIRECTORY/$job_id
 fi
 
-
-# Set "State=staging-out" in burst buffer's state file
+# Set "State=staging-in" in burst buffer's state file
 if [[ -e $BB_DIRECTORY/$job_id/.slurm_state ]]; then
 	cp $BB_DIRECTORY/$job_id/.slurm_state $BB_DIRECTORY/$job_id/.slurm_state2
-	cat $BB_DIRECTORY/$job_id/.slurm_state2 | awk 'BEGIN {FS=" "}{print $1, $2, "State=staging-out", $4}' >$BB_DIRECTORY/$job_id/.slurm_state
+	cat $BB_DIRECTORY/$job_id/.slurm_state2 | awk 'BEGIN {FS=" "}{print $1, $2, "State=staging-in", $4}' >$BB_DIRECTORY/$job_id/.slurm_state
 	rm $BB_DIRECTORY/$job_id/.slurm_state2
 else
-	echo "UserID=$user_id JobId=$job_id State=staging-out Size=$buf_size" >$BB_DIRECTORY/$job_id/.slurm_state
+	echo "UserID=$user_id JobId=$job_id State=staging-in Size=$buf_size" >$BB_DIRECTORY/$job_id/.slurm_state
 fi
 
 ################################################################################
@@ -59,19 +58,19 @@ shift
 shift
 rm -f $BB_DIRECTORY/$job_id/stage_out_script
 while (($#)); do
-	echo "$1" >>$BB_DIRECTORY/$job_id/stage_out_script
+	echo "$1" >>$BB_DIRECTORY/$job_id/stage_in_script
 	shift
 done
 sleep 10
 ################################################################################
 
-# Set "State=staged-out" in burst buffer's state file
+# Set "State=staged-in" in burst buffer's state file
 if [[ -e $BB_DIRECTORY/$job_id/.slurm_state ]]; then
 	cp $BB_DIRECTORY/$job_id/.slurm_state $BB_DIRECTORY/$job_id/.slurm_state2
-	cat $BB_DIRECTORY/$job_id/.slurm_state2 | awk 'BEGIN {FS=" "}{print $1, $2, "State=staged-out", $4}' >$BB_DIRECTORY/$job_id/.slurm_state
+	cat $BB_DIRECTORY/$job_id/.slurm_state2 | awk 'BEGIN {FS=" "}{print $1, $2, "State=staged-in", $4}' >$BB_DIRECTORY/$job_id/.slurm_state
 	rm $BB_DIRECTORY/$job_id/.slurm_state2
 	exit 0
 else
-	echo "UserID=$user_id JobId=$job_id State=staged-out Size=$buf_size" >$BB_DIRECTORY/$job_id/.slurm_state
+	echo "UserID=$user_id JobId=$job_id State=staged-in Size=$buf_size" >$BB_DIRECTORY/$job_id/.slurm_state
 	exit 1
 fi

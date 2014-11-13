@@ -21,12 +21,16 @@
 
 # Validate execute line
 valid=0
+if [[ $# -ge 2 && $1 = "stop_stage_in" ]]; then
+	job_id=$2
+	valid=1
+fi
 if [[ $# -ge 2 && $1 = "stop_stage_out" ]]; then
 	job_id=$2
 	valid=1
 fi
 if [[ $valid -eq 0 ]]; then
-	echo "Usage: $0 stop_stage_out #"
+	echo "Usage: $0 stop_stage_out|stop_stage_in <jobid> <userid> <size>"
 	exit 1
 fi
 
