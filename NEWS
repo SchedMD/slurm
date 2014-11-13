@@ -328,6 +328,10 @@ documents those changes that are of interest to users and administrators.
  -- Do not requeue a batch job from slurmd daemon if it is killed while in
     the process of being launched (a race condition introduced in v14.03.9).
  -- Do not let srun overwrite SLURM_JOB_NUM_NODES if already in an allocation.
+ -- Prevent a job's end_time from being too small after a basil reservation
+    error.
+ -- Fix sbatch --ntasks-per-core option from setting invalid
+    SLURM_NTASKS_PER_CORE environment value.
 
 * Changes in Slurm 14.03.10
 ===========================

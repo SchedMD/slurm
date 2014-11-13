@@ -148,6 +148,7 @@
 	(_X->node_state & NODE_STATE_MAINT)
 
 #define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
+#define YEAR_MINUTES 365 * 24 * 60
 
 /* These defines have to be here to avoid circular dependancy with
  * switch.h

@@ -1541,7 +1541,7 @@ static void _set_options(int argc, char **argv)
 			opt.ntasks_per_core = _get_int(optarg,
 				"ntasks-per-core");
 			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
-				opt.ntasks_per_socket);
+				opt.ntasks_per_core);
 			break;
 		case LONG_OPT_HINT:
 			/* Keep after other options filled in */
