@@ -128,4 +128,11 @@ extern int bb_g_job_start_stage_out(struct job_record *job_ptr);
  */
 extern int bb_g_job_test_stage_out(struct job_record *job_ptr);
 
+/*
+ * Terminate any file staging and completely release burst buffer resources
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_stop_stage_out(struct job_record *job_ptr);
+
 #endif /* !_SLURM_BURST_BUFFER_H */

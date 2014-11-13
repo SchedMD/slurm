@@ -126,6 +126,35 @@ static char    *stop_stage_out = NULL;
 static uint32_t total_space = 0;
 static uint32_t user_size_limit = NO_VAL;
 
+/* Local function defintions */
+static void	_add_user_load(bb_alloc_t *bb_ptr);
+static bb_alloc_t *_alloc_bb_job_rec(struct job_record *job_ptr);
+static bb_alloc_t *_alloc_bb_name_rec(char *name, uint32_t user_id);
+static void	_alloc_cache(void);
+static char **	_build_stage_args(char *cmd, char *opt,
+				  struct job_record *job_ptr);
+static void	_clear_cache(void);
+static void	_clear_config(void);
+static void	_destroy_job_info(void *data);
+static bb_alloc_t *_find_bb_job_rec(struct job_record *job_ptr);
+static bb_alloc_t *_find_bb_name_rec(char *name, uint32_t user_id);
+bb_user_t *	_find_user_rec(uint32_t user_id);
+static uint32_t	_get_bb_size(struct job_record *job_ptr);
+static uint32_t	_get_size_num(char *tok);
+static void 	_load_config(void);
+static void	_load_state(void);
+static int	_parse_job_info(void **dest, slurm_parser_enum_t type,
+				const char *key, const char *value,
+				const char *line, char **leftover);
+static uid_t *	_parse_users(char *buf);
+static char *	_print_users(uid_t *buf);
+static void	_purge_bb_rec(void);
+static void	_remove_user_load(bb_alloc_t *bb_ptr);
+static char *	_run_script(char *script_type, char *script_path,
+			    char **script_argv, int max_wait);
+static void	_stop_stage_out(uint32_t job_id);
+static bool	_test_user_limit(uint32_t user_id, uint32_t add_space);
+
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
 static uint32_t _get_size_num(char *tok)
@@ -255,6 +284,31 @@ static char **_build_stage_args(char *cmd, char *opt,
 	return script_argv;
 }
 
+static void _stop_stage_out(uint32_t job_id)
+{
+	char **script_argv = NULL;
+	char *resp, *tok;
+	int i;
+
+	script_argv = xmalloc(sizeof(char *) * 4);
+	tok = strrchr(stop_stage_out, '/');
+	if (tok)
+		xstrfmtcat(script_argv[0], "%s", tok + 1);
+	else
+		xstrfmtcat(script_argv[0], "%s", stop_stage_out);
+	xstrfmtcat(script_argv[1], "%s", "stop_stage_out");
+	xstrfmtcat(script_argv[2], "%u", job_id);
+
+	resp = _run_script("StopStageOut", stop_stage_out, script_argv, -1);
+	if (resp) {
+		error("%s: StopStageOut: %s", __func__, resp);
+		xfree(resp);
+	}
+	for (i = 0; script_argv[i]; i++)
+		xfree(script_argv[i]);
+	xfree(script_argv);
+}
+
 /* Find a per-job burst buffer record for a specific job.
  * If not found, return NULL. */
 static bb_alloc_t *_find_bb_job_rec(struct job_record *job_ptr)
@@ -305,6 +359,7 @@ static void _purge_bb_rec(void)
 				if ((bb_ptr->job_id != 0) &&
 				    (bb_ptr->state >= BB_STATE_STAGED_OUT) &&
 				    !find_job_record(bb_ptr->job_id)) {
+					_stop_stage_out(bb_ptr->job_id);
 					*bb_pptr = bb_ptr->next;
 					xfree(bb_ptr);
 					break;
@@ -740,6 +795,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 		size =  _get_size_num(tmp);
 	if (s_p_get_string(&tmp, "State", job_tbl))
 		state = bb_state_num(tmp);
+	s_p_hashtbl_destroy(job_tbl);
 
 #if 0
 	info("%s: JobID:%u Name:%s Size:%u State:%u UserID:%u",
@@ -747,7 +803,10 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 #endif
 	if (job_id) {
 		job_ptr = find_job_record(job_id);
-		if (!job_ptr) {
+		if (!job_ptr && (state == BB_STATE_STAGED_OUT)) {
+			_stop_stage_out(job_id);	/* Purge buffer */
+			return SLURM_SUCCESS;
+		} else if (!job_ptr) {
 			error("%s: Vestigial buffer for job ID %u. "
 			      "Clear manually",
 			      plugin_type, job_id);
@@ -1155,8 +1214,8 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		debug("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
 	} else {
-		script_argv = _build_stage_args(start_stage_out, "stage_out",
-						job_ptr);
+		script_argv = _build_stage_args(start_stage_out,
+						"start_stage_out", job_ptr);
 		if (script_argv) {
 			bb_ptr->state = BB_STATE_STAGING_OUT;
 			resp = _run_script("StartStageOut", start_stage_out,
@@ -1221,4 +1280,51 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	pthread_mutex_unlock(&bb_mutex);
 
 	return rc;
+}
+
+/*
+ * Terminate any file staging and completely release burst buffer resources
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_p_job_stop_stage_out(struct job_record *job_ptr)
+{
+	bb_alloc_t *bb_ptr;
+	char **script_argv, *resp;
+	int i;
+
+	if (debug_flag) {
+		info("%s: %s",  __func__, plugin_type);
+		info("%s: job_id:%u", __func__, job_ptr->job_id);
+	}
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    (_get_bb_size(job_ptr) == 0))
+		return SLURM_SUCCESS;
+
+	pthread_mutex_lock(&bb_mutex);
+	bb_ptr = _find_bb_job_rec(job_ptr);
+	if (!bb_ptr) {
+		_stop_stage_out(job_ptr->job_id);
+	} else {
+		script_argv = _build_stage_args(start_stage_out,
+						"stop_stage_out", job_ptr);
+		if (script_argv) {
+			bb_ptr->state = BB_STATE_STAGED_OUT;
+			resp = _run_script("StopStageOut", start_stage_out,
+					   script_argv, -1);
+			if (resp) {
+				error("%s: StopStageOut: %s", __func__, resp);
+				xfree(resp);
+			}
+			for (i = 0; script_argv[i]; i++)
+				xfree(script_argv[i]);
+			xfree(script_argv);
+		} else {
+			_stop_stage_out(job_ptr->job_id);
+		}
+	}
+	pthread_mutex_unlock(&bb_mutex);
+
+	return SLURM_SUCCESS;
 }
