@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Do not let srun overwrite SLURM_JOB_NUM_NODES if already in an allocation.
  -- Prevent a job's end_time from being too small after a basil reservation
     error.
+ -- Fix sbatch --ntasks-per-core option from setting invalid
+    SLURM_NTASKS_PER_CORE environment value.
 
 * Changes in Slurm 14.03.10
 ===========================
