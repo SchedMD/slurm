@@ -204,9 +204,11 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	int i;
 
 	/****** Line 1 ******/
+	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
+		      burst_buffer_ptr->total_space);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Name=%s StagedInPrioBoost=%u",
-		burst_buffer_ptr->name, burst_buffer_ptr->prio_boost);
+		"Name=%s TotalSpace=%s",
+		burst_buffer_ptr->name, t_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
@@ -216,20 +218,40 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	/****** Line 2 ******/
 	_get_size_str(j_sz_buf, sizeof(j_sz_buf),
 		      burst_buffer_ptr->job_size_limit);
-	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
-		      burst_buffer_ptr->total_space);
 	_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 		      burst_buffer_ptr->user_size_limit);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"TotalSpace=%s JobSizeLimit=%s UserSizeLimit=%s",
-		t_sz_buf, j_sz_buf, u_sz_buf);
+		"JobSizeLimit=%s UserSizeLimit=%s",
+		j_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 3 (optional) ******/
+	/****** Line 3 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"PrioBoostAlloc=%u PrioBoostUse=%u ",
+		burst_buffer_ptr->prio_boost_alloc,
+		burst_buffer_ptr->prio_boost_use);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line 4 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"StageInTimeout=%u StageOutTimeout=%u ",
+		burst_buffer_ptr->stage_in_timeout,
+		burst_buffer_ptr->stage_out_timeout);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line 5 (optional) ******/
 	if (burst_buffer_ptr->allow_users) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			"AllowUsers=%s", burst_buffer_ptr->allow_users);
@@ -248,7 +270,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 			xstrcat(out_buf, "\n  ");
 	}
 
-	/****** Line 4 ******/
+	/****** Line 6 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"GetSysState=%s", burst_buffer_ptr->get_sys_state);
 	xstrcat(out_buf, tmp_line);
@@ -257,7 +279,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 5 ******/
+	/****** Line 7 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StartStageIn=%s", burst_buffer_ptr->start_stage_in);
 	xstrcat(out_buf, tmp_line);
@@ -266,7 +288,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 6 ******/
+	/****** Line 8 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StartStageIn=%s", burst_buffer_ptr->start_stage_out);
 	xstrcat(out_buf, tmp_line);
@@ -275,7 +297,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 7 ******/
+	/****** Line 9 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StopStageIn=%s", burst_buffer_ptr->stop_stage_in);
 	xstrcat(out_buf, tmp_line);
@@ -284,7 +306,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 8 ******/
+	/****** Line 10 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StopStageIn=%s", burst_buffer_ptr->stop_stage_out);
 	xstrcat(out_buf, tmp_line);

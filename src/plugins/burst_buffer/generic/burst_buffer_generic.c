@@ -115,7 +115,10 @@ static uid_t   *deny_users = NULL;
 static char    *deny_users_str = NULL;
 static char    *get_sys_state = NULL;
 static uint32_t job_size_limit = NO_VAL;
-static uint32_t prio_boost = 0;
+static uint32_t prio_boost_alloc = 0;
+static uint32_t prio_boost_use = 0;
+static uint32_t stage_in_timeout = 0;
+static uint32_t stage_out_timeout = 0;
 static char    *start_stage_in = NULL;
 static char    *start_stage_out = NULL;
 static char    *stop_stage_in = NULL;
@@ -465,7 +468,10 @@ static void _clear_config(void)
 	xfree(deny_users_str);
 	xfree(get_sys_state);
 	job_size_limit = NO_VAL;
-	prio_boost = 0;
+	stage_in_timeout = 0;
+	stage_out_timeout = 0;
+	prio_boost_alloc = 0;
+	prio_boost_use = 0;
 	xfree(start_stage_in);
 	xfree(start_stage_out);
 	xfree(stop_stage_in);
@@ -483,7 +489,10 @@ static void _load_config(void)
 		{"DenyUsers", S_P_STRING},
 		{"GetSysState", S_P_STRING},
 		{"JobSizeLimit", S_P_STRING},
-		{"StagedInPrioBoost", S_P_UINT32},
+		{"PrioBoostAlloc", S_P_UINT32},
+		{"PrioBoostUse", S_P_UINT32},
+		{"StageInTimeout", S_P_UINT32},
+		{"StageOutTimeout", S_P_UINT32},
 		{"StartStageIn", S_P_STRING},
 		{"StartStageOut", S_P_STRING},
 		{"StopStageIn", S_P_STRING},
@@ -509,7 +518,10 @@ static void _load_config(void)
 		job_size_limit = _get_size_num(tmp);
 		xfree(tmp);
 	}
-	s_p_get_uint32(&prio_boost, "StagedInPrioBoost", bb_hashtbl);
+	s_p_get_uint32(&prio_boost_alloc, "PrioBoostAlloc", bb_hashtbl);
+	s_p_get_uint32(&prio_boost_use, "PrioBoostUse", bb_hashtbl);
+	s_p_get_uint32(&stage_in_timeout, "StageInTimeout", bb_hashtbl);
+	s_p_get_uint32(&stage_out_timeout, "StageOutTimeout", bb_hashtbl);
 	s_p_get_string(&start_stage_in, "StartStageIn", bb_hashtbl);
 	s_p_get_string(&start_stage_out, "StartStageOut", bb_hashtbl);
 	s_p_get_string(&stop_stage_in, "StopStageIn", bb_hashtbl);
@@ -533,7 +545,10 @@ static void _load_config(void)
 
 		info("%s: GetSysState:%s",  __func__, get_sys_state);
 		info("%s: JobSizeLimit:%u",  __func__, job_size_limit);
-		info("%s: StagedInPrioBoost:%u", __func__, prio_boost);
+		info("%s: PrioBoostAlloc:%u", __func__, prio_boost_alloc);
+		info("%s: PrioBoostUse:%u", __func__, prio_boost_use);
+		info("%s: StageInTimeout:%u", __func__, stage_in_timeout);
+		info("%s: StageOutTimeout:%u", __func__, stage_out_timeout);
 		info("%s: StartStageIn:%s",  __func__, start_stage_in);
 		info("%s: StartStageOut:%s",  __func__, start_stage_out);
 		info("%s: StopStageIn:%s",  __func__, stop_stage_in);
@@ -907,7 +922,10 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 	packstr(stop_stage_in,   buffer);
 	packstr(stop_stage_out,  buffer);
 	pack32(job_size_limit,   buffer);
-	pack32(prio_boost,       buffer);
+	pack32(prio_boost_alloc, buffer);
+	pack32(prio_boost_use,   buffer);
+	pack32(stage_in_timeout, buffer);
+	pack32(stage_out_timeout,buffer);
 	pack32(total_space,      buffer);
 	pack32(user_size_limit,  buffer);
 	if (bb_hash) {
