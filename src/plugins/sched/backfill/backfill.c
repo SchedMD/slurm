@@ -896,7 +896,7 @@ static int _attempt_backfill(void)
 
 		/* Determine job's expected completion time */
 		if (part_ptr->max_time == INFINITE)
-			part_time_limit = YEAR_SECONDS;
+			part_time_limit = YEAR_MINUTES;
 		else
 			part_time_limit = part_ptr->max_time;
 		if (job_ptr->time_limit == NO_VAL) {
@@ -1100,7 +1100,7 @@ static int _attempt_backfill(void)
 			 * or else end_time will be small (ie. 1969). */
 			if (job_ptr->start_time) {
 				if (job_ptr->time_limit == INFINITE)
-					hard_limit = YEAR_SECONDS;
+					hard_limit = YEAR_MINUTES;
 				else
 					hard_limit = job_ptr->time_limit;
 				job_ptr->end_time = job_ptr->start_time +
