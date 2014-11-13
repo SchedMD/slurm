@@ -22,6 +22,9 @@ documents those changes that are of interest to users and administrators.
  -- Avoid including unused CPUs in a job's allocation when cores or sockets are
     allocated.
 
+* Changes in Slurm 14.11.1
+==========================
+
 * Changes in Slurm 14.11.0
 ==========================
  -- ALPS - Fix issue with core_spec warning.
