@@ -4208,6 +4208,7 @@ typedef struct {
 	char *name;		/* Name of persistent burst buffer */
 	uint32_t size;		/* In GB by default */
 	uint16_t state;		/* See BB_STATE_* */
+	time_t state_time;	/* Time of last state change */
 	uint32_t user_id;
 } burst_buffer_resv_t;
 
@@ -4226,6 +4227,7 @@ typedef struct {
 	char *stop_stage_in;
 	char *stop_stage_out;
 	uint32_t total_space;		/* In GB */
+	uint32_t used_space;		/* In GB */
 	uint32_t user_size_limit;	/* In GB or NO_VAL */
 
 	uint32_t  record_count;

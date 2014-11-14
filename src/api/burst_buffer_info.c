@@ -53,6 +53,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -153,7 +154,7 @@ static void _print_burst_buffer_resv(FILE *out,
 				     burst_buffer_resv_t* burst_buffer_ptr,
 				     int one_liner)
 {
-	char sz_buf[32], tmp_line[512];
+	char sz_buf[32], time_buf[64], tmp_line[512];
 	char *out_buf = NULL;
 
 	/****** Line 1 ******/
@@ -172,9 +173,11 @@ static void _print_burst_buffer_resv(FILE *out,
 	}
 	xstrcat(out_buf, tmp_line);
 	_get_size_str(sz_buf, sizeof(sz_buf), burst_buffer_ptr->size);
+	slurm_make_time_str(&burst_buffer_ptr->state_time, time_buf,
+			    sizeof(time_buf));
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Size=%s State=%s UserID=%s(%u)",
-		sz_buf, bb_state_string(burst_buffer_ptr->state),
+		"Size=%s State=%s StateTime=%s UserID=%s(%u)",
+		sz_buf, bb_state_string(burst_buffer_ptr->state), time_buf,
 	        uid_to_string(burst_buffer_ptr->user_id),
 	        burst_buffer_ptr->user_id);
 	xstrcat(out_buf, tmp_line);
@@ -206,9 +209,11 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	/****** Line 1 ******/
 	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
 		      burst_buffer_ptr->total_space);
+	_get_size_str(u_sz_buf, sizeof(u_sz_buf),
+		      burst_buffer_ptr->used_space);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Name=%s TotalSpace=%s",
-		burst_buffer_ptr->name, t_sz_buf);
+		"Name=%s TotalSpace=%s UsedSpace=%s",
+		burst_buffer_ptr->name, t_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");

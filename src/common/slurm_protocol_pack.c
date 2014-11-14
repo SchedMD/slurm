@@ -9293,6 +9293,7 @@ static int _unpack_burst_buffer_info_msg(
 		safe_unpack32(&bb_info_ptr->stage_in_timeout, buffer);
 		safe_unpack32(&bb_info_ptr->stage_out_timeout, buffer);
 		safe_unpack32(&bb_info_ptr->total_space, buffer);
+		safe_unpack32(&bb_info_ptr->used_space, buffer);
 		safe_unpack32(&bb_info_ptr->user_size_limit, buffer);
 		bb_info_ptr->burst_buffer_resv_ptr =
 			xmalloc(sizeof(burst_buffer_resv_t) *
@@ -9306,6 +9307,7 @@ static int _unpack_burst_buffer_info_msg(
 					       &uint32_tmp, buffer);
 			safe_unpack32(&bb_resv_ptr->size, buffer);
 			safe_unpack16(&bb_resv_ptr->state, buffer);
+			safe_unpack_time(&bb_resv_ptr->state_time, buffer);
 			safe_unpack32(&bb_resv_ptr->user_id, buffer);
 		}
 	}
