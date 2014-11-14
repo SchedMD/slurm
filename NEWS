@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.1
 ==========================
+ -- Get libs correct when doing the xtree/xhash make check.
 
 * Changes in Slurm 14.11.0
 ==========================
