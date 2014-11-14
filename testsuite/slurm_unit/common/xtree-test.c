@@ -200,15 +200,15 @@ START_TEST(test_xtree_add_root_node_unmanaged)
 END_TEST
 
 char test_table[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static void myfree(void* x)
+static void myfree(xtree_node_t* x)
 {
-    int* item = (int*)x;
+    int* item = (int*)x->data;
     fail_unless(*item < 10 && *item >= 0,
             "bad data passed to freeing function");
     fail_unless(test_table[*item] == 1,
             "item was duplicated/corrupted");
     test_table[*item] = 0;
-    xfree(x);
+    xfree(item);
 }
 
 /* here we construct a tree in the following form :
@@ -227,7 +227,7 @@ START_TEST(test_xtree_freeing_elements)
     int* x = NULL;
     int i = 0;
 
-    xtree_set_freefunc(tree, myfree);
+    xtree_set_freefunc(tree, (xtree_free_data_function_t) myfree);
 
     x = (int*)xmalloc(sizeof(int));
     fail_unless(x != NULL,
