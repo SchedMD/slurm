@@ -83,8 +83,8 @@ typedef struct slurm_bb_ops {
 	int		(*job_try_stage_in) (List job_queue);
 	int		(*job_test_stage_in) (struct job_record *job_ptr);
 	int		(*job_start_stage_out) (struct job_record *job_ptr);
-	int		(*job_stop_stage_out) (struct job_record *job_ptr);
 	int		(*job_test_stage_out) (struct job_record *job_ptr);
+	int		(*job_cancel) (struct job_record *job_ptr);
 } slurm_bb_ops_t;
 
 /*
@@ -98,8 +98,8 @@ static const char *syms[] = {
 	"bb_p_job_try_stage_in",
 	"bb_p_job_test_stage_in",
 	"bb_p_job_start_stage_out",
-	"bb_p_job_stop_stage_out",
-	"bb_p_job_test_stage_out"
+	"bb_p_job_test_stage_out",
+	"bb_p_job_cancel"
 };
 
 static int g_context_cnt = -1;
@@ -455,7 +455,7 @@ extern int bb_g_job_test_stage_out(struct job_record *job_ptr)
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_job_stop_stage_out(struct job_record *job_ptr)
+extern int bb_g_job_cancel(struct job_record *job_ptr)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
@@ -464,7 +464,7 @@ extern int bb_g_job_stop_stage_out(struct job_record *job_ptr)
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		rc2 = (*(ops[i].job_stop_stage_out))(job_ptr);
+		rc2 = (*(ops[i].job_cancel))(job_ptr);
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);

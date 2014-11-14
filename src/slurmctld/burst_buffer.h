@@ -133,6 +133,6 @@ extern int bb_g_job_test_stage_out(struct job_record *job_ptr);
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_job_stop_stage_out(struct job_record *job_ptr);
+extern int bb_g_job_cancel(struct job_record *job_ptr);
 
 #endif /* !_SLURM_BURST_BUFFER_H */

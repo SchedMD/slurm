@@ -86,6 +86,9 @@ const char plugin_name[]        = "burst_buffer generic plugin";
 const char plugin_type[]        = "burst_buffer/generic";
 const uint32_t plugin_version   = 100;
 
+#define BB_PURGE_TIME 10	/* Interval, in seconds, for purging orphan
+				 * bb_alloc_t records */
+
 /* Hash tables are used for both job burst buffer and user limit records */
 #define BB_HASH_SIZE		100
 typedef struct bb_alloc {
@@ -153,7 +156,7 @@ static void	_remove_user_load(bb_alloc_t *bb_ptr);
 static char *	_run_script(char *script_type, char *script_path,
 			    char **script_argv, int max_wait);
 static void	_stop_stage_out(uint32_t job_id);
-static bool	_test_user_limit(uint32_t user_id, uint32_t add_space);
+static bool	_test_size_limit(uint32_t user_id, uint32_t add_space);
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
@@ -353,7 +356,7 @@ static void _purge_bb_rec(void)
 	bb_alloc_t **bb_pptr, *bb_ptr = NULL;
 	int i;
 
-	if (difftime(now, time_last_purge) > 10) {    /* Max of every 10 secs */
+	if (difftime(now, time_last_purge) > BB_PURGE_TIME) {
 		for (i = 0; i < BB_HASH_SIZE; i++) {
 			bb_pptr = &bb_hash[i];
 			bb_ptr = bb_hash[i];
@@ -440,12 +443,16 @@ static void _remove_user_load(bb_alloc_t *bb_ptr)
 	}
 }
 
-/* Test if a user's space limit prevents adding
+/* Test if a job or user space limit prevents starting this job
  * RET true if limit reached, false otherwise */
-static bool _test_user_limit(uint32_t user_id, uint32_t add_space)
+static bool _test_size_limit(uint32_t user_id, uint32_t add_space)
 {
 	bb_user_t *user_ptr;
 	uint32_t tmp_u, tmp_j, lim_u;
+
+	if (((job_size_limit  != NO_VAL) && (add_space > job_size_limit)) ||
+	    ((user_size_limit != NO_VAL) && (add_space > user_size_limit)))
+		return false;
 
 	if (user_size_limit == NO_VAL)
 		return false;
@@ -1124,7 +1131,8 @@ extern int bb_p_job_try_stage_in(List job_queue)
 //FIXME: sort jobs by expected start time
 //FIXME: do not over-allocate resources
 //FIXME: look for duplicate bb record in cache
-//FIXME: re-test job size limit
+//FIXME: consider revoking prior bb allocations
+//FIXME: add global BB use counter
 	pthread_mutex_lock(&bb_mutex);
 	job_iter = list_iterator_create(job_queue);
 	while ((job_ptr = list_next(job_iter))) {
@@ -1134,7 +1142,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		bb_size = _get_bb_size(job_ptr);
 		if (bb_size == 0)
 			continue;
-		if (_test_user_limit(job_ptr->user_id, bb_size))
+		if (_test_size_limit(job_ptr->user_id, bb_size))
 			continue;
 		if (_find_bb_job_rec(job_ptr))
 			continue;
@@ -1293,9 +1301,9 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	} else if (bb_ptr->state == BB_STATE_STAGING_OUT) {
 		rc =  0;
 	} else if (bb_ptr->state == BB_STATE_STAGED_OUT) {
-		if (bb_ptr->user_id != NO_VAL) {
+		if (bb_ptr->size != 0) {
 			_remove_user_load(bb_ptr);
-			bb_ptr->user_id = NO_VAL;
+			bb_ptr->size = 0;
 		}
 		rc =  1;
 	} else {
@@ -1313,7 +1321,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
  *
  * Returns a SLURM errno.
  */
-extern int bb_p_job_stop_stage_out(struct job_record *job_ptr)
+extern int bb_p_job_cancel(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
 	char **script_argv, *resp;
@@ -1333,7 +1341,7 @@ extern int bb_p_job_stop_stage_out(struct job_record *job_ptr)
 	if (!bb_ptr) {
 		_stop_stage_out(job_ptr->job_id);
 	} else {
-		script_argv = _build_stage_args(start_stage_out,
+		script_argv = _build_stage_args(stop_stage_out,
 						"stop_stage_out", job_ptr, 0);
 		if (script_argv) {
 			bb_ptr->state = BB_STATE_STAGED_OUT;
