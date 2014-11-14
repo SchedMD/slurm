@@ -86,8 +86,8 @@ const char plugin_name[]        = "burst_buffer generic plugin";
 const char plugin_type[]        = "burst_buffer/generic";
 const uint32_t plugin_version   = 100;
 
-#define BB_PURGE_TIME 10	/* Interval, in seconds, for purging orphan
-				 * bb_alloc_t records */
+#define AGENT_INTERVAL 10	/* Interval, in seconds, for purging orphan
+				 * bb_alloc_t records and timing out staging */
 
 /* Hash tables are used for both job burst buffer and user limit records */
 #define BB_HASH_SIZE		100
@@ -111,6 +111,13 @@ typedef struct bb_user {
 bb_user_t **bb_uhash = NULL;	/* Hash by user_id */
 
 static pthread_mutex_t bb_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool term_flag = false;
+static pthread_mutex_t term_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
+static pthread_t bb_thread = 0;
+static time_t last_load_time = 0;
+
+/* Burst buffer configuration parameters */
 static uid_t   *allow_users = NULL;
 static char    *allow_users_str = NULL;
 static bool	debug_flag = false;
@@ -134,6 +141,7 @@ static void	_add_user_load(bb_alloc_t *bb_ptr);
 static bb_alloc_t *_alloc_bb_job_rec(struct job_record *job_ptr);
 static bb_alloc_t *_alloc_bb_name_rec(char *name, uint32_t user_id);
 static void	_alloc_cache(void);
+static void *	_bb_agent(void *args);
 static char **	_build_stage_args(char *cmd, char *opt,
 				  struct job_record *job_ptr, uint32_t bb_size);
 static void	_clear_cache(void);
@@ -146,6 +154,7 @@ static uint32_t	_get_bb_size(struct job_record *job_ptr);
 static uint32_t	_get_size_num(char *tok);
 static void 	_load_config(void);
 static void	_load_state(void);
+static void	_my_sleep(int usec);
 static int	_parse_job_info(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
 				const char *line, char **leftover);
@@ -351,27 +360,23 @@ static bb_alloc_t * _find_bb_name_rec(char *name, uint32_t user_id)
  * the job has been purged from Slurm */
 static void _purge_bb_rec(void)
 {
-	static time_t time_last_purge = 0;
-	time_t now = time(NULL);
 	bb_alloc_t **bb_pptr, *bb_ptr = NULL;
 	int i;
 
-	if (difftime(now, time_last_purge) > BB_PURGE_TIME) {
-		for (i = 0; i < BB_HASH_SIZE; i++) {
-			bb_pptr = &bb_hash[i];
-			bb_ptr = bb_hash[i];
-			while (bb_ptr) {
-				if ((bb_ptr->job_id != 0) &&
-				    (bb_ptr->state >= BB_STATE_STAGED_OUT) &&
-				    !find_job_record(bb_ptr->job_id)) {
-					_stop_stage_out(bb_ptr->job_id);
-					*bb_pptr = bb_ptr->next;
-					xfree(bb_ptr);
-					break;
-				}
-				bb_pptr = &bb_ptr->next;
-				bb_ptr = bb_ptr->next;
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_pptr = &bb_hash[i];
+		bb_ptr = bb_hash[i];
+		while (bb_ptr) {
+			if ((bb_ptr->job_id != 0) &&
+			    (bb_ptr->state >= BB_STATE_STAGED_OUT) &&
+			    !find_job_record(bb_ptr->job_id)) {
+				_stop_stage_out(bb_ptr->job_id);
+				*bb_pptr = bb_ptr->next;
+				xfree(bb_ptr);
+				break;
 			}
+			bb_pptr = &bb_ptr->next;
+			bb_ptr = bb_ptr->next;
 		}
 	}
 }
@@ -913,6 +918,41 @@ static void _load_state(void)
 	if (debug_flag && (total_space != last_total_space))
 		info("%s: total_space:%u",  __func__, total_space);
 	last_total_space = total_space;
+
+	last_load_time = time(NULL);
+}
+
+static void _my_sleep(int add_secs)
+{
+	struct timespec ts = {0, 0};
+	struct timeval  tv = {0, 0};
+
+	if (gettimeofday(&tv, NULL)) {		/* Some error */
+		sleep(1);
+		return;
+	}
+
+	ts.tv_sec  = tv.tv_sec + add_secs;
+	ts.tv_nsec = tv.tv_usec * 1000;
+	pthread_mutex_lock(&term_mutex);
+	if (!term_flag)
+		pthread_cond_timedwait(&term_cond, &term_mutex, &ts);
+	pthread_mutex_unlock(&term_mutex);
+}
+
+static void *_bb_agent(void *args)
+{
+	while (!term_flag) {
+		_my_sleep(AGENT_INTERVAL);
+		if (term_flag)
+			break;
+		pthread_mutex_lock(&bb_mutex);
+		if (difftime(time(NULL), last_load_time) >= AGENT_INTERVAL)
+			_load_state();
+		_purge_bb_rec();
+		pthread_mutex_unlock(&bb_mutex);
+	}
+	return NULL;
 }
 
 /*
@@ -921,11 +961,16 @@ static void _load_state(void)
  */
 extern int init(void)
 {
+	pthread_attr_t attr;
+
 	pthread_mutex_lock(&bb_mutex);
 	_load_config();
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_alloc_cache();
+	slurm_attr_init(&attr);
+	if (pthread_create(&bb_thread, &attr, _bb_agent, NULL))
+		error("Unable to start backfill thread: %m");
 	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -939,6 +984,16 @@ extern int fini(void)
 	pthread_mutex_lock(&bb_mutex);
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
+
+	pthread_mutex_lock(&term_mutex);
+	term_flag = true;
+	pthread_cond_signal(&term_cond);
+	pthread_mutex_unlock(&term_mutex);
+
+	if (bb_thread) {
+		pthread_join(bb_thread, NULL);
+		bb_thread = 0;
+	}
 	_clear_config();
 	_clear_cache();
 	pthread_mutex_unlock(&bb_mutex);
@@ -961,7 +1016,6 @@ extern int bb_p_load_state(bool init_config)
 	if (debug_flag)
 		info("%s: %s",  __func__, plugin_type);
 	_load_state();
-	_purge_bb_rec();
 	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
