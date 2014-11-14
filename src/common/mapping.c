@@ -63,12 +63,12 @@ BEGIN_C_DECLS
 #define xfree free
 #define SLURM_ERROR (-1)
 #define xstrdup strdup
-#define xstrfmtcat(ptr, fmt, args ... )     \
-{											\
+#define xstrfmtcat(ptr, fmt, args ... )         \
+{                                               \
 	char *nptr = NULL;                      \
 	asprintf(&nptr, "%s"fmt, ptr, ##args);  \
 	free(ptr);                              \
-	ptr = nptr;							    \
+	ptr = nptr;                             \
 }
 #define xstrcat(a, b) xstrfmtcat(a, "%s", b)
 
