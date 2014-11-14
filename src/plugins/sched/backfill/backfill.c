@@ -427,8 +427,10 @@ static void _my_sleep(int usec)
 	struct timespec ts = {0, 0};
 	struct timeval  tv = {0, 0};
 
-	if (gettimeofday(&tv, NULL))
-		return;		/* Some error */
+	if (gettimeofday(&tv, NULL)) {		/* Some error */
+		sleep(1);
+		return;
+	}
 
 	nsec  = tv.tv_usec + usec;
 	nsec *= 1000;
