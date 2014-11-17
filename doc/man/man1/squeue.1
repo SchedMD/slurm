@@ -772,8 +772,8 @@ Actual or expected start time of the job or job step.
 .TP
 \fBstate\fR
 Job state, extended form:
-PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
-FAILED, TIMEOUT, PREEMPTED, NODE_FAIL and SPECIAL_EXIT.
+PENDING, RUNNING, STOPPED, SUSPENDED, CANCELLED, COMPLETING, COMPLETED,
+CONFIGURING, FAILED, TIMEOUT, PREEMPTED, NODE_FAIL and SPECIAL_EXIT.
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
@@ -929,7 +929,7 @@ Specify the states of jobs to view.  Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be
 reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
-PENDING (PD), RUNNING (R), SUSPENDED (S),
+PENDING (PD), RUNNING (R), SUSPENDED (S), STOPPED (ST),
 COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) , NODE_FAIL (NF)
 and SPECIAL_EXIT (SE).
@@ -1117,16 +1117,21 @@ Job terminated due to preemption.
 \fBR   RUNNING\fR
 Job currently has an allocation.
 .TP
-\fBS   SUSPENDED\fR
-Job has an allocation, but execution has been suspended.
-.TP
-\fBTO  TIMEOUT\fR
-Job terminated upon reaching its time limit.
-.TP
-\fBSE SPECIAL_EXIT\fR
+\fBSE  SPECIAL_EXIT\fR
 The job was requeued in a special state. This state can be set by
 users, typically in EpilogSlurmctld, if the job has terminated with
 a particular exit value.
+.TP
+\fBST  STOPPED\fR
+Job has an allocation, but execution has been stopped with SIGSTOP signal.
+CPUS have been retained by this job.
+.TP
+\fBS   SUSPENDED\fR
+Job has an allocation, but execution has been suspended and CPUs have been
+released for other jobs.
+.TP
+\fBTO  TIMEOUT\fR
+Job terminated upon reaching its time limit.
 
 
 .SH "ENVIRONMENT VARIABLES"

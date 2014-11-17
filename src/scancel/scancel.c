@@ -564,8 +564,8 @@ _cancel_job_id (void *ci)
 				verbose("Signal %u to job %u", sig, job_id);
 		}
 
-		if ((sig == SIGKILL) || (!sig_set) ||
-		    msg_to_ctld || opt.clusters) {
+		if ((sig == SIGKILL) || (sig == SIGSTOP) || (sig == SIGCONT) ||
+		    (!sig_set) || msg_to_ctld || opt.clusters) {
 			uint16_t flags = 0;
 			if (opt.batch)
 				flags |= KILL_JOB_BATCH;

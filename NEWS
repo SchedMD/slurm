@@ -21,6 +21,9 @@ documents those changes that are of interest to users and administrators.
     CR_CORE/SOCKET system lay out tasks correctly.
  -- Avoid including unused CPUs in a job's allocation when cores or sockets are
     allocated.
+ -- Added new job state of STOPPED indicating processes have been stopped with a
+    SIGSTOP (using scancel or sview), but retain its allocated CPUs. Job state
+    returns to RUNNING when SIGCONT is sent (also using scancel or sview).
 
 * Changes in Slurm 14.11.1
 ==========================

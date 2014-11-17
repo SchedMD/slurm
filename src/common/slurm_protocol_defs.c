@@ -1365,6 +1365,8 @@ extern char *job_state_string(uint16_t inx)
 		return "SPECIAL_EXIT";
 	if (inx & JOB_REQUEUE)
 		return "REQUEUED";
+	if (inx & JOB_STOPPED)
+		return "STOPPED";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -1406,6 +1408,8 @@ extern char *job_state_string_compact(uint16_t inx)
 		return "SE";
 	if (inx & JOB_REQUEUE)
 		return "RQ";
+	if (inx & JOB_STOPPED)
+		return "ST";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
