@@ -586,7 +586,7 @@ _cancel_job_id (void *ci)
 			error_code = slurm_kill_job (job_id, sig, flags);
 		} else {
 			if (opt.batch) {
-				sig = sig|(KILL_JOB_BATCH << 24);
+				sig = sig | (KILL_JOB_BATCH << 24);
 				error_code = slurm_signal_job_step(job_id,
 						SLURM_BATCH_SCRIPT, sig);
 			} else {

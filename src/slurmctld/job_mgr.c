@@ -4019,7 +4019,7 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		job_term_state = JOB_PREEMPTED;
 	else
 		job_term_state = JOB_CANCELLED;
-	if (IS_JOB_SUSPENDED(job_ptr) &&  (signal == SIGKILL)) {
+	if (IS_JOB_SUSPENDED(job_ptr) && (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = job_ptr->suspend_time;
 		job_ptr->tot_sus_time  += difftime(now, job_ptr->suspend_time);
