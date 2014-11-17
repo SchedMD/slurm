@@ -52,7 +52,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
 <li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
 <li><a href="priority_multifactor3.html">Depth-Oblivious Fair-share Factor</a></li>
-<li><a href="level_based.html">Level-Based Multifactor</a></li>
+<li><a href="fair_tree.html">Fair Tree Fairshare Algorithm</a></li>
 </ul>
 <li>Slurm Scheduling</li>
 <ul>
@@ -131,6 +131,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 7 April 2014</p>
+<p style="text-align:center;">Last modified 17 November 2014</p>
 
 <!--#include virtual="footer.txt"-->
