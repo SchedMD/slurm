@@ -1399,6 +1399,9 @@ static void *_slurmctld_background(void *no_data)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	/* Locks: Write job */
+	slurmctld_lock_t job_write_lock2 = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Read config, write job, write node
 	 * (Might kill jobs on nodes set DOWN) */
 	slurmctld_lock_t node_write_lock = {
@@ -1645,7 +1648,9 @@ static void *_slurmctld_background(void *no_data)
 		if (job_limit != NO_VAL) {
 			now = time(NULL);
 			last_sched_time = now;
-			bb_g_load_state(false);
+			lock_slurmctld(job_write_lock2);
+			bb_g_load_state(false);	/* May alter job nice/prio */
+			unlock_slurmctld(job_write_lock2);
 			if (schedule(job_limit))
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();

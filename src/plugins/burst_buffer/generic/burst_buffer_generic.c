@@ -697,8 +697,18 @@ static void _load_config(void)
 		job_size_limit = _get_size_num(tmp);
 		xfree(tmp);
 	}
-	s_p_get_uint32(&prio_boost_alloc, "PrioBoostAlloc", bb_hashtbl);
-	s_p_get_uint32(&prio_boost_use, "PrioBoostUse", bb_hashtbl);
+	if (s_p_get_uint32(&prio_boost_alloc, "PrioBoostAlloc", bb_hashtbl) &&
+	    (prio_boost_alloc > NICE_OFFSET)) {
+		error("%s: PrioBoostAlloc can not exceed %u",
+		      __func__, NICE_OFFSET);
+		prio_boost_alloc = NICE_OFFSET;
+	}
+	if (s_p_get_uint32(&prio_boost_use, "PrioBoostUse", bb_hashtbl) &&
+	    (prio_boost_use > NICE_OFFSET)) {
+		error("%s: PrioBoostUse can not exceed %u",
+		      __func__, NICE_OFFSET);
+		prio_boost_use = NICE_OFFSET;
+	}
 	s_p_get_uint32(&stage_in_timeout, "StageInTimeout", bb_hashtbl);
 	s_p_get_uint32(&stage_out_timeout, "StageOutTimeout", bb_hashtbl);
 	if (!s_p_get_string(&start_stage_in, "StartStageIn", bb_hashtbl))
@@ -978,13 +988,27 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	}
 	if (bb_ptr->state != state) {
 		/* State is subject to real-time changes */
-		debug("%s: State mismatch (%s != %s). "
+		debug("%s: State changed (%s != %s). "
 		      "BB UserID=%u JobID=%u Name=%s",
 		      plugin_type, bb_state_string(bb_ptr->state),
 		      bb_state_string(state),
 		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
 		bb_ptr->state = state;
 		bb_ptr->state_time = time(NULL);
+		if ((bb_ptr->state == BB_STATE_STAGED_IN) &&
+		    prio_boost_alloc && job_ptr && job_ptr->details) {
+			uint16_t new_nice = (NICE_OFFSET - prio_boost_alloc);
+			if (new_nice < job_ptr->details->nice) {
+				int64_t new_prio = job_ptr->priority;
+				new_prio += job_ptr->details->nice;
+				new_prio -= new_nice;
+				job_ptr->priority = new_prio;
+				job_ptr->details->nice = new_nice;
+				info("%s: StageIn complete, reset priority "
+					"to %u for job_id %u", __func__,
+					job_ptr->priority, job_ptr->job_id);
+			}
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -1290,6 +1314,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		     "but total space is only %u",
 		     job_desc->user_id, bb_size, total_space);
 	}
+
 	pthread_mutex_unlock(&bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -1330,6 +1355,19 @@ extern int bb_p_job_try_stage_in(List job_queue)
 			continue;
 		if (_find_bb_job_rec(job_ptr))
 			continue;
+		if (prio_boost_use && job_ptr && job_ptr->details) {
+			uint16_t new_nice = (NICE_OFFSET - prio_boost_use);
+			if (new_nice < job_ptr->details->nice) {
+				int64_t new_prio = job_ptr->priority;
+				new_prio += job_ptr->details->nice;
+				new_prio -= new_nice;
+				job_ptr->priority = new_prio;
+				job_ptr->details->nice = new_nice;
+				info("%s: Uses burst buffer, reset priority "
+					"to %u for job_id %u", __func__,
+					job_ptr->priority, job_ptr->job_id);
+			}
+		}
 		bb_ptr = _alloc_bb_job_rec(job_ptr);
 		_add_user_load(bb_ptr);
 		if (debug_flag) {
