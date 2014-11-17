@@ -52,6 +52,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -404,6 +405,7 @@ static bb_alloc_t * _find_bb_name_rec(char *name, uint32_t user_id)
  */
 static void _timeout_bb_rec(void)
 {
+	struct job_record *job_ptr;
 	bb_alloc_t **bb_pptr, *bb_ptr = NULL;
 	uint32_t age;
 	time_t now = time(NULL);
@@ -441,10 +443,25 @@ static void _timeout_bb_rec(void)
 			    (bb_ptr->state == BB_STATE_STAGING_IN) &&
 			    (stage_in_timeout != 0) && !bb_ptr->cancelled &&
 			    (age >= stage_in_timeout)) {
-				error("%s: StageIn for job %u timed out",
-				      __func__, bb_ptr->state);
 				_stop_stage_in(bb_ptr->job_id);
 				bb_ptr->cancelled = true;
+				job_ptr = find_job_record(bb_ptr->job_id);
+				if (job_ptr) {
+					error("%s: StageIn timed out, holding "
+					      "job %u ",
+					      __func__, bb_ptr->state);
+					job_ptr->priority = 0;
+					job_ptr->direct_set_prio = 1;
+					job_ptr->state_reason = WAIT_HELD;
+					xfree(job_ptr->state_desc);
+					job_ptr->state_desc = xstrdup(
+						"Burst buffer stage-in timeout");
+					last_job_update = now;
+				} else {
+					error("%s: StageIn timed out for "
+					      "vestigial job %u ",
+					      __func__, bb_ptr->state);
+				}
 			}
 			if ((bb_ptr->job_id != 0) && stop_stage_out &&
 			    (bb_ptr->state == BB_STATE_STAGING_OUT) &&
@@ -1046,15 +1063,21 @@ static void _my_sleep(int add_secs)
 
 static void *_bb_agent(void *args)
 {
+	/* Locks: write job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
 	while (!term_flag) {
 		_my_sleep(AGENT_INTERVAL);
 		if (term_flag)
 			break;
+		lock_slurmctld(job_write_lock);
 		pthread_mutex_lock(&bb_mutex);
 		if (difftime(time(NULL), last_load_time) >= AGENT_INTERVAL)
 			_load_state();
 		_timeout_bb_rec();
 		pthread_mutex_unlock(&bb_mutex);
+		unlock_slurmctld(job_write_lock);
 	}
 	return NULL;
 }
@@ -1293,7 +1316,6 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		return SLURM_ERROR;
 
 //FIXME: sort jobs by expected start time
-//FIXME: look for duplicate bb record in cache
 //FIXME: consider revoking prior bb allocations
 	pthread_mutex_lock(&bb_mutex);
 	job_iter = list_iterator_create(job_queue);
