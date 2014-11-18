@@ -90,7 +90,8 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	send_user "\FAILURE: allocation granted with bad Munge credential\n"
+	send_user "\nFAILURE: allocation granted with bad Munge credential\n"
+	send_user "FAILURE: This happens rarely, when the Slurm test modifies a byte that Munge does not use\n"
 	exit 1
 }
 
