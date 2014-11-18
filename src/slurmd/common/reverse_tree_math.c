@@ -10,32 +10,32 @@
  *                     Siberian Branch of Russian Academy of Science
  *  Written by Artem Polyakov <artpol84@gmail.com>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -142,7 +142,7 @@ reverse_tree_info(int rank, int num_nodes, int width,
 	max_children = geometric_series(width, *max_depth);
 	*depth = 0;
 	search_tree(rank, 0, max_children, width, &p, &c, depth);
-	
+
 	if ((rank + c) >= num_nodes)
 		c = num_nodes - rank - 1;
 
@@ -151,7 +151,8 @@ reverse_tree_info(int rank, int num_nodes, int width,
 	return;
 }
 
-int reverse_tree_direct_children(int rank, int num_nodes, int width, int depth, int *children)
+int reverse_tree_direct_children(int rank, int num_nodes, int width,
+				 int depth, int *children)
 {
 	int current, child_distance;
 	int max_depth, sub_depth, max_rank_children;
@@ -175,14 +176,16 @@ int reverse_tree_direct_children(int rank, int num_nodes, int width, int depth, 
 #if 0
 
 // Dumb brute force function
-static int dumb_direct_children(int *children, int width, int id, int max_node_id)
+static int dumb_direct_children(int *children, int width, int id,
+				int max_node_id)
 {
 	int child;
 	int count = 0;
 	for(child = id+1; child < max_node_id; child++){
 		int parent_id, child_num, depth, max_depth;
-		reverse_tree_info(child, max_node_id, width, &parent_id, &child_num,
-						  &depth, &max_depth);
+		reverse_tree_info(child, max_node_id, width,
+				  &parent_id, &child_num,
+				  &depth, &max_depth);
 		if( parent_id == id ){
 			children[count++] = child;
 		}
@@ -190,7 +193,8 @@ static int dumb_direct_children(int *children, int width, int id, int max_node_i
 	return count;
 }
 
-main()
+int
+main(int argc, char **argv)
 {
 	int i, j;
 	int n = 8192;
@@ -199,25 +203,35 @@ main()
 	int parent, children, depth, maxdepth;
 
 	for (i = 0; i < n; i++) {
-		reverse_tree_info(i,n,w, &parent,&children,&depth,&maxdepth);
-		printf("%d : par: %d nchild: %d depth: %d, maxdepth: %d\n", i, parent, children, depth, maxdepth);
 		int children1[w], children2[w];
 		int cnt1, cnt2;
+
+		reverse_tree_info(i, n, w, &parent,
+				  &children, &depth, &maxdepth);
+		printf("\
+%d : par: %d nchild: %d depth: %d, maxdepth: %d\n",
+		       i, parent, children, depth, maxdepth);
 		cnt1 = dumb_direct_children(children1, w, i, n);
-		cnt2 = reverce_tree_direct_children(i,n,w,depth,children2);
-		if( cnt1 != cnt2 ){
-			printf("Direct children sanity check error: cnt1 = %d, cnt2 = %d\n", cnt1, cnt2);
-			exit(0);
+		cnt2 = reverce_tree_direct_children(i, n, w, depth, children2);
+		if (cnt1 != cnt2 ) {
+			printf("\
+Direct children sanity check error: cnt1 = %d, cnt2 = %d\n", cnt1, cnt2);
+			return -1;
 		}
-		for(j=0;j<cnt1;j++){
-			if( children1[j] != children2[j] ){
-				printf("Direct children sanity check error: cnt1 = %d, cnt2 = %d\n", cnt1, cnt2);
-				printf("Failed on %d'th element: children1[%d] = %d, children2[%d] = %d\n",
-					   j, j, children1[j], j, children2[j]);
-				exit(0);
+
+		for(j = 0; j < cnt1; j++){
+
+			if (children1[j] != children2[j]) {
+				printf("\
+Direct children sanity check error: cnt1 = %d, cnt2 = %d\n", cnt1, cnt2);
+				printf("\
+Failed on %d'th element: children1[%d] = %d, children2[%d] = %d\n",
+				       j, j, children1[j], j, children2[j]);
+				return -1;
 			}
 		}
 	}
 
+	return 0;
 }
 #endif
