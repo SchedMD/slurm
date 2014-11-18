@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 14.11
-14 November 2014
+18 November 2014
 
 
 IMPORTANT NOTE:
@@ -45,6 +45,8 @@ HIGHLIGHTS
     all running jobs should be killed and the switch_cray_state file (in
     SaveStateLocation of the nodes where the slurmctld daemon runs) must be
     explicitly deleted.
+ -- Added support for "floating reservations", an advanced reservation with a
+    start time that remains constant relative to the current time.
 
 RPMBUILD CHANGES
 ================
