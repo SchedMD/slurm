@@ -49,6 +49,9 @@ Major enhancements to include:
 <li>Improve recovery time for communication failures when large numbers of
     nodes fail simultaneously.</li>
 <li>Permit disabling of swap space use.</li>
+<!-- Universitat Jaume I & Universitat Politecnica de Valencia -->
+<li>Add support for
+<a href="http://slurm.schedmd.com/SUG14/remote_gpu.pdf">Remote CUDA (rCUDA)</a></li>
 <!-- Intel led -->
 <li>Add support for PMI Exascale (PMIx) for improved MPI scalability.</li>
 <!-- Bull led -->
@@ -86,6 +89,6 @@ to coordinate activities. Future development plans includes:
 <li>Improved support for provisioning and virtualization.</li> 
 <li>Provide a web-based Slurm administration tool.</li>
 </ul>
-<p style="text-align:center;">Last modified 30 October 2014</p>
+<p style="text-align:center;">Last modified 17 November 2014</p>
 
 <!--#include virtual="footer.txt"-->
