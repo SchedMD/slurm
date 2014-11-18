@@ -6,6 +6,10 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
+ *  Portions copyright (C) 2014 Institute of Semiconductor Physics
+ *                     Siberian Branch of Russian Academy of Science
+ *  Written by Artem Polyakov <artpol84@gmail.com>.
+ *  All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -58,5 +62,7 @@ void reverse_tree_info(int rank, int num_nodes, int width,
 		       int *parent, int *num_children,
 		       int *depth, int *total_depth);
 
+int reverse_tree_direct_children(int rank, int num_nodes,
+			int width, int depth, int *children);
 
 #endif /* !_REVERSE_TREE_MATH_H */

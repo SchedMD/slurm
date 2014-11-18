@@ -6,6 +6,10 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
+ *  Portions copyright (C) 2014 Institute of Semiconductor Physics
+ *                     Siberian Branch of Russian Academy of Science
+ *  Written by Artem Polyakov <artpol84@gmail.com>.
+ *  All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -147,18 +151,72 @@ reverse_tree_info(int rank, int num_nodes, int width,
 	return;
 }
 
+int reverse_tree_direct_children(int rank, int num_nodes, int width, int depth, int *children)
+{
+	int current, child_distance;
+	int max_depth, sub_depth, max_rank_children;
+	int i;
+
+	max_depth = dep(num_nodes, width);
+	sub_depth = max_depth - depth;
+	if( sub_depth == 0 ){
+		return 0;
+	}
+	max_rank_children = geometric_series(width, sub_depth);
+	current = rank + 1;
+	child_distance = (max_rank_children / width);
+	for (i = 0; i < width && current < num_nodes; i++) {
+		children[i] = current;
+		current += child_distance;
+	}
+	return i;
+}
+
 #if 0
+
+// Dumb brute force function
+static int dumb_direct_children(int *children, int width, int id, int max_node_id)
+{
+	int child;
+	int count = 0;
+	for(child = id+1; child < max_node_id; child++){
+		int parent_id, child_num, depth, max_depth;
+		reverse_tree_info(child, max_node_id, width, &parent_id, &child_num,
+						  &depth, &max_depth);
+		if( parent_id == id ){
+			children[count++] = child;
+		}
+	}
+	return count;
+}
+
 main()
 {
-	int i;
+	int i, j;
 	int n = 8192;
 	int w = 5;
 
-	int parent, children;
+	int parent, children, depth, maxdepth;
 
 	for (i = 0; i < n; i++) {
-		tree_parent_and_children(i, n, w, &parent, &children);
-		printf("%d : %d %d\n", i, parent, children);
+		reverse_tree_info(i,n,w, &parent,&children,&depth,&maxdepth);
+		printf("%d : par: %d nchild: %d depth: %d, maxdepth: %d\n", i, parent, children, depth, maxdepth);
+		int children1[w], children2[w];
+		int cnt1, cnt2;
+		cnt1 = dumb_direct_children(children1, w, i, n);
+		cnt2 = reverce_tree_direct_children(i,n,w,depth,children2);
+		if( cnt1 != cnt2 ){
+			printf("Direct children sanity check error: cnt1 = %d, cnt2 = %d\n", cnt1, cnt2);
+			exit(0);
+		}
+		for(j=0;j<cnt1;j++){
+			if( children1[j] != children2[j] ){
+				printf("Direct children sanity check error: cnt1 = %d, cnt2 = %d\n", cnt1, cnt2);
+				printf("Failed on %d'th element: children1[%d] = %d, children2[%d] = %d\n",
+					   j, j, children1[j], j, children2[j]);
+				exit(0);
+			}
+		}
 	}
 
 }
