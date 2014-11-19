@@ -80,6 +80,7 @@ typedef struct slurm_bb_ops {
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(struct job_descriptor *job_desc,
 					 uid_t submit_uid);
+	time_t		(*job_get_est_start) (struct job_record *job_ptr);
 	int		(*job_try_stage_in) (List job_queue);
 	int		(*job_test_stage_in) (struct job_record *job_ptr);
 	int		(*job_start_stage_out) (struct job_record *job_ptr);
@@ -95,6 +96,7 @@ static const char *syms[] = {
 	"bb_p_state_pack",
 	"bb_p_reconfig",
 	"bb_p_job_validate",
+	"bb_p_job_get_est_start",
 	"bb_p_job_try_stage_in",
 	"bb_p_job_test_stage_in",
 	"bb_p_job_start_stage_out",
@@ -331,6 +333,28 @@ extern int _sort_job_queue(void *x, void *y)
 }
 
 /*
+ * For a given job, return our best guess if when it might be able to start
+ */
+extern time_t bb_g_job_get_est_start(struct job_record *job_ptr)
+{
+	DEF_TIMERS;
+	int i;
+	time_t start_time = time(NULL), new_time;
+
+	START_TIMER;
+	if (bb_g_init() != SLURM_SUCCESS)
+		return start_time + 24 * 60 * 60;
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		new_time = (*(ops[i].job_get_est_start))(job_ptr);
+		start_time = MAX(start_time, new_time);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return start_time;
+}
+/*
  * Allocate burst buffers to jobs expected to start soonest
  * Job records must be read locked
  *
@@ -380,7 +404,7 @@ extern int bb_g_job_try_stage_in(void)
  *
  * RET: 0 - stage-in is underway
  *      1 - stage-in complete
- *     -1 - fatal error
+ *     -1 - stage-in not started or burst buffer in some unexpected state
  */
 extern int bb_g_job_test_stage_in(struct job_record *job_ptr)
 {

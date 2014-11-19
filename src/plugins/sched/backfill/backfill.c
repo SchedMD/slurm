@@ -1183,10 +1183,14 @@ next_task:
 		if ((job_ptr->start_time <= now) &&
 		    ((bb = bb_g_job_test_stage_in(job_ptr)) != 1)) {
 			xfree(job_ptr->state_desc);
-			if (bb == -1)
+			if (bb == -1) {
 				job_ptr->state_reason=WAIT_BURST_BUFFER_RESOURCE;
-			else	/* bb == 0 */
+				job_ptr->start_time =
+					bb_g_job_get_est_start(job_ptr);
+			} else {	/* bb == 0 */
 				job_ptr->state_reason=WAIT_BURST_BUFFER_STAGING;
+				job_ptr->start_time = now + 1;
+			}
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u.",
 			       job_ptr->job_id,
@@ -1194,7 +1198,6 @@ next_task:
 			       job_reason_string(job_ptr->state_reason),
 			       job_ptr->priority);
 			last_job_update = now;
-			job_ptr->start_time = now + 10;
 			job_ptr->time_limit = orig_time_limit;
 			later_start = 0;
 		} else if (job_ptr->start_time <= now) { /* Can start now */

@@ -97,6 +97,7 @@ typedef struct bb_alloc {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	bool cancelled;
+	time_t end_time;	/* Expected time when use will end */
 	uint32_t job_id;
 	char *name;		/* For persistent burst buffers */
 	struct bb_alloc *next;
@@ -135,6 +136,7 @@ static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t bb_thread = 0;
 static time_t last_load_time = 0;
 static uint32_t used_space = 0;
+static time_t next_end_time = 0;
 
 /* Burst buffer configuration parameters */
 static uid_t   *allow_users = NULL;
@@ -514,6 +516,7 @@ static void _set_bb_use_time(void)
 	time_t now = time(NULL);
 	int i;
 
+	next_end_time = now + 60 * 60;	/* Start estimate one hour in future */
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_ptr = bb_hash[i];
 		while (bb_ptr) {
@@ -527,14 +530,26 @@ static void _set_bb_use_time(void)
 					      __func__, bb_ptr->job_id);
 					_stop_stage_out(bb_ptr->job_id);
 					bb_ptr->cancelled = true;
+					bb_ptr->end_time = 0;
 				} else if (job_ptr->start_time) {
+					bb_ptr->end_time = job_ptr->end_time;
 					bb_ptr->use_time = job_ptr->start_time;
 				} else {
 					/* Unknown start time */
 					bb_ptr->use_time = now + 60 + 60;
 				}
+			} else if (bb_ptr->job_id) {
+				job_ptr = find_job_record(bb_ptr->job_id);
+				if (job_ptr)
+					bb_ptr->end_time = job_ptr->end_time;
 			} else {
 				bb_ptr->use_time = now;
+			}
+			if (bb_ptr->end_time && bb_ptr->size) {
+				if (bb_ptr->end_time <= now)
+					next_end_time = now;
+				else if (next_end_time > bb_ptr->end_time)
+					next_end_time = bb_ptr->end_time;
 			}
 			bb_ptr = bb_ptr->next;
 		}
@@ -827,13 +842,16 @@ static void _load_config(void)
 
 	bb_conf = get_extra_conf_path("burst_buffer.conf");
 	bb_hashtbl = s_p_hashtbl_create(bb_options);
-	if (s_p_parse_file(bb_hashtbl, NULL, bb_conf, false) == SLURM_ERROR)
-		fatal("something wrong with opening/reading %s: %m", bb_conf);
+	if (s_p_parse_file(bb_hashtbl, NULL, bb_conf, false) == SLURM_ERROR) {
+		fatal("%s: %s: something wrong with opening/reading %s: %m",
+		      plugin_type, __func__, bb_conf);
+	}
 	if (s_p_get_string(&allow_users_str, "AllowUsers", bb_hashtbl))
 		allow_users = _parse_users(allow_users_str);
 	if (s_p_get_string(&deny_users_str, "DenyUsers", bb_hashtbl))
 		deny_users = _parse_users(deny_users_str);
-	s_p_get_string(&get_sys_state, "GetSysState", bb_hashtbl);
+	if (!s_p_get_string(&get_sys_state, "GetSysState", bb_hashtbl))
+		fatal("%s: %s: GetSysState is NULL", plugin_type, __func__);
 	if (s_p_get_string(&tmp, "JobSizeLimit", bb_hashtbl)) {
 		job_size_limit = _get_size_num(tmp);
 		xfree(tmp);
@@ -853,11 +871,13 @@ static void _load_config(void)
 	s_p_get_uint32(&stage_in_timeout, "StageInTimeout", bb_hashtbl);
 	s_p_get_uint32(&stage_out_timeout, "StageOutTimeout", bb_hashtbl);
 	if (!s_p_get_string(&start_stage_in, "StartStageIn", bb_hashtbl))
-		error("%s: StartStageIn is NULL", __func__);
+		fatal("%s: %s: StartStageIn is NULL", plugin_type, __func__);
 	if (!s_p_get_string(&start_stage_out, "StartStageOut", bb_hashtbl))
-		error("%s: StartStageOut is NULL", __func__);
-	s_p_get_string(&stop_stage_in, "StopStageIn", bb_hashtbl);
-	s_p_get_string(&stop_stage_out, "StopStageOut", bb_hashtbl);
+		fatal("%s: %s: StartStageOut is NULL", plugin_type,  __func__);
+	if (!s_p_get_string(&stop_stage_in, "StopStageIn", bb_hashtbl))
+		fatal("%s: %s: StopStageIn is NULL", plugin_type, __func__);
+	if (!s_p_get_string(&stop_stage_out, "StopStageOut", bb_hashtbl))
+		fatal("%s: %s: StopStageOut is NULL", plugin_type, __func__);
 	if (s_p_get_string(&tmp, "UserSizeLimit", bb_hashtbl)) {
 		user_size_limit = _get_size_num(tmp);
 		xfree(tmp);
@@ -1492,6 +1512,46 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * For a given job, return our best guess if when it might be able to start
+ */
+extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
+{
+	bb_alloc_t *bb_ptr;
+	time_t est_start = time(NULL);
+	uint32_t bb_size;
+	int rc;
+
+	if (debug_flag) {
+		info("%s: %s: job_id:%u",
+		     plugin_type, __func__, job_ptr->job_id);
+	}
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    ((bb_size = _get_bb_size(job_ptr)) == 0))
+		return est_start;
+
+	pthread_mutex_lock(&bb_mutex);
+	bb_ptr = _find_bb_job_rec(job_ptr);
+	if (!bb_ptr) {
+		rc = _test_size_limit(job_ptr, bb_size);
+		if (rc == 0) {		/* Could start now */
+			;
+		} else if (rc == 1) {	/* Exceeds configured limits */
+			est_start += 365 * 24 * 60 * 60;
+		} else {		/* No space currently available */
+			est_start = MAX(est_start, next_end_time);
+		}
+	} else if (bb_ptr->state < BB_STATE_STAGED_IN) {
+		est_start++;
+	}
+	pthread_mutex_unlock(&bb_mutex);
+
+info("EST START for job %u in %u secs", job_ptr->job_id, (uint32_t) (est_start - time(NULL)));
+	return est_start;
+}
+
+
 static void _job_queue_del(void *x)
 {
 	xfree(x);
@@ -1635,7 +1695,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
  *
  * RET: 0 - stage-in is underway
  *      1 - stage-in complete
- *     -1 - fatal error
+ *     -1 - stage-in not started or burst buffer in some unexpected state
  */
 extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
 {
@@ -1681,6 +1741,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr)
  */
 extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 {
+//FIXME: How to handle various job terminate states (e.g. requeue, failure), user script controlled?
 	bb_alloc_t *bb_ptr;
 	char **script_argv, *resp;
 	int i;

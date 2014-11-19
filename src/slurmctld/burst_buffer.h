@@ -96,6 +96,11 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid);
 
 /*
+ * For a given job, return our best guess if when it might be able to start
+ */
+extern time_t bb_g_job_get_est_start(struct job_record *job_ptr);
+
+/*
  * Allocate burst buffers to jobs expected to start soonest
  * Job records must be read locked
  *
@@ -108,7 +113,7 @@ extern int bb_g_job_try_stage_in(void);
  *
  * RET: 0 - stage-in is underway
  *      1 - stage-in complete
- *     -1 - fatal error
+ *     -1 - stage-in not started or burst buffer in some unexpected state
  */
 extern int bb_g_job_test_stage_in(struct job_record *job_ptr);
 
