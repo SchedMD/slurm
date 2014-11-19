@@ -36,6 +36,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <ul>
 <li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
 <li><a href="accounting.html">Accounting</a></li>
+<li><a href="burst_buffer.html">Burst Buffer Guide</a></li>
 <li><a href="cgroups.html">Cgroups Guide</a></li>
 <li><a href="configurator.html">Configuration Tool (Full version)</a></li>
 <li><a href="configurator.easy.html">Configuration Tool (Simplified version)</a></li>
@@ -131,6 +132,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 17 November 2014</p>
+<p style="text-align:center;">Last modified 19 November 2014</p>
 
 <!--#include virtual="footer.txt"-->

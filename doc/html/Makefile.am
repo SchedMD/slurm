@@ -11,6 +11,7 @@ generated_html = \
 	authplugins.html \
 	big_sys.html \
 	bluegene.html \
+	burst_buffer.html \
 	cgroups.html \
 	checkpoint_blcr.html \
 	checkpoint_plugins.html \

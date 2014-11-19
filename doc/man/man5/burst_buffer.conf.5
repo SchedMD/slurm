@@ -1,0 +1,170 @@
+.TH "burst_buffer.conf" "5" "November 2014" "burst_buffer.conf 14.11" "Slurm configuration file"
+.SH "NAME"
+burst_buffer.conf \- Slurm configuration file for burst buffer management.
+
+.SH "DESCRIPTION"
+\fBburst_buffer.conf\fP is an ASCII file which describes the configuration
+of burst buffer resource management.
+This file is only required on the head node(s), where the slurmctld daemon
+executes.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable.
+The file will always be located in the same directory as the \fBslurm.conf\fP
+file.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+Changes to the configuration file take effect upon restart of
+Slurm daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure".
+.LP
+The configuration parameters available include:
+
+.TP
+\fBAllowUsers\fR
+Colon delimited list of user names and/or IDs permitted to use burst buffers.
+The options \fBAllowUsers\fR and \fBDenyUsers\fR can not both be specified.
+By default all users are permitted to use burst buffers.
+ 
+.TP
+\fBDenyUsers\fR
+Colon delimited list of user names and/or IDs prevented from using burst buffers.
+The options \fBAllowUsers\fR and \fBDenyUsers\fR can not both be specified.
+By default all users are permitted to use burst buffers.
+
+.TP
+\fBGetSysState\fR
+Fully qualified path name of a program which will return the current burst
+buffer state.
+See the src/plugins/burst_buffer/generic/bb_get_state.example in the
+Slurm distribution for an example.
+
+.TP
+\fBJobSizeLimit\fR
+Maximum burst buffer allocation size for any single job.
+The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
+"t" (terabytes), "p" (petabytes), or "n" (nodes).
+Gigabytes is assumed if no suffix is supplied.
+By default there is no job allocation size limit.
+
+.TP
+\fBPrioBoostUse\fR
+Any job using burst buffers will have it's priority increased by this amount.
+This option will adjust a job's nice value, so user specified nice values
+for a job will be replaced by this value.
+
+.TP
+\fBPrioBoostAlloc\fR
+Any job using burst buffers will have it's priority increased by this amount
+after its file stage in has completed.
+This option will adjust a job's nice value, so user specified nice values
+for a job will be replaced by this value.
+he \fBPrioBoostAlloc\fR value will override the \fBPrioBoostUse\fR value.
+
+.TP
+\fBStageInTimeout\fR
+If the stage in of files for a job takes more than this number of seconds,
+the burst buffer will be released and the job will be placed in a held state.
+A Slurm administrator will be required to release the job.
+
+.TP
+\fBStageOutTimeout\fR
+If the stage out of files for a job takes more than this number of seconds,
+the burst buffer will be released and the job will be purged.
+
+.TP
+\fBStartStageIn\fR
+Fully qualified path name of a program which will stage files in for a job.
+See the src/plugins/burst_buffer/generic/bb_start_stage_in.example in the
+Slurm distribution for an example.
+
+.TP
+\fBStartStageOut\fR
+Fully qualified path name of a program which will stage files out for a job.
+See the src/plugins/burst_buffer/generic/bb_start_stage_out.example in the
+Slurm distribution for an example.
+
+.TP
+\fBStopStageIn\fR
+Fully qualified path name of a program which will stop staging files in for a job.
+See the src/plugins/burst_buffer/generic/bb_stop_stage_out.example in the
+Slurm distribution for an example.
+
+.TP
+\fBStopStageOut\fR
+Fully qualified path name of a program which will stop staging files in for a job.
+See the src/plugins/burst_buffer/generic/bb_stop_stage_out.example in the
+Slurm distribution for an example.
+
+.TP
+\fBUserSizeLimit\fR
+Maximum burst buffer allocation size for any single user.
+The size is calculated by adding the burst buffer allocations for all jobs
+plus any persistent buffers belonging to the user.
+The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
+"t" (terabytes), "p" (petabytes), or "n" (nodes).
+Gigabytes is assumed if no suffix is supplied.
+By default there is no job allocation size limit.
+
+.SH "EXAMPLE"
+.LP
+.br
+##################################################################
+.br
+# Slurm's burst buffer configuration file (burst_buffer.conf)
+.br
+##################################################################
+.br
+AllowUsers=alan:brenda
+.br
+#
+.br
+JobSizeLimit=20GB   # Applies to each job
+.br
+UserSizeLimit=50GB  # Applies to ALL users
+.br
+#
+.br
+PrioBoostUse=100
+.br
+PrioBoostAlloc=200
+.br
+#
+.br
+StageInTimeout=30
+.br
+StageOutTimeout=30
+.br
+#
+.br
+GetSysState=/usr/local/slurm/15.08/sbin/GSS
+.br
+StartStageIn=/usr/local/slurm/15.08/sbin/SSI
+.br
+StartStageOut=/usr/local/slurm/15.08/sbin/SSO
+.br
+StopStageIn=/usr/local/slurm/15.08/sbin/PSI
+.br
+StopStageOut=/usr/local/slurm/15.08/sbin/PSO
+
+.SH "COPYING"
+Copyright (C) 2014 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <http://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)
