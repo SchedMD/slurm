@@ -4942,7 +4942,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->def_mem_per_cpu, buffer);
 		pack64(build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
-		pack16(build_ptr->dynalloc_port, buffer);
 
 		pack16(build_ptr->eio_timeout, buffer);
 		pack16(build_ptr->enforce_part_limits, buffer);
@@ -5155,6 +5154,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->z_32, buffer);
 		packstr(build_ptr->z_char, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		uint16_t dynalloc_port = 0;
 		pack_time(build_ptr->last_update, buffer);
 
 		pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -5209,7 +5209,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->def_mem_per_cpu, buffer);
 		pack64(build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
-		pack16(build_ptr->dynalloc_port, buffer);
+		pack16(dynalloc_port, buffer);
 
 		pack16(build_ptr->enforce_part_limits, buffer);
 		packstr(build_ptr->epilog, buffer);
@@ -5421,6 +5421,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->z_32, buffer);
 		packstr(build_ptr->z_char, buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		uint16_t dynalloc_port = 0;
 		pack_time(build_ptr->last_update, buffer);
 
 		pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -5473,7 +5474,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->def_mem_per_cpu, buffer);
 		pack32((uint32_t)build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
-		pack16(build_ptr->dynalloc_port, buffer);
+		pack16(dynalloc_port, buffer);
 
 		pack16(build_ptr->enforce_part_limits, buffer);
 		packstr(build_ptr->epilog, buffer);
@@ -5778,7 +5779,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
 		safe_unpack64(&build_ptr->debug_flags, buffer);
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
-		safe_unpack16(&build_ptr->dynalloc_port, buffer);
 
 		safe_unpack16(&build_ptr->eio_timeout, buffer);
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
@@ -6072,6 +6072,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->z_char, &uint32_tmp,
 				       buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		uint16_t dynalloc_port = 0;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -6148,7 +6149,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
 		safe_unpack64(&build_ptr->debug_flags, buffer);
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
-		safe_unpack16(&build_ptr->dynalloc_port, buffer);
+		safe_unpack16(&dynalloc_port, buffer);
 
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp,
@@ -6441,6 +6442,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->z_char, &uint32_tmp,
 				       buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		uint16_t dynalloc_port = 0;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -6515,7 +6517,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&uint32_tmp, buffer);
 		build_ptr->debug_flags = (uint64_t)uint32_tmp;
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
-		safe_unpack16(&build_ptr->dynalloc_port, buffer);
+		safe_unpack16(&dynalloc_port, buffer);
 
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp,

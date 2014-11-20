@@ -28,7 +28,6 @@ generated_html = \
 	dist_plane.html \
 	documentation.html \
 	download.html \
-	dynalloc.html \
 	elastic_computing.html \
 	ext_sensorsplugins.html \
 	faq.html \

@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     between the user application and srun when the user application terminates.
  -- Remove slurmctld/dynalloc plugin as the work was never completed, so it is
     not worth the effort of continued support at this time.
+ -- Remove DynAllocPort configuration parameter.
 
 * Changes in Slurm 14.11.1
 ==========================
