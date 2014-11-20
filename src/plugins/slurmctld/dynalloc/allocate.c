@@ -544,7 +544,7 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 		  char *tasks_per_node, char *resv_ports)
 {
 	int rc, error_code, i;
-
+	char *err_msg = NULL;
 	resource_allocation_response_msg_t alloc_msg;
 	job_desc_msg_t job_desc_msg;
 	struct job_record *job_ptr = NULL;
@@ -564,9 +564,11 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 			READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	job_desc_msg.immediate = 0;
-	rc = validate_job_create_req(&job_desc_msg);
+	rc = validate_job_create_req(&job_desc_msg, job_desc_msg.user_id,
+				     &err_msg);
 	if (rc) {
-		error("invalid job request.");
+		error("invalid job request: %s", err_msg);
+		xfree(err_msg);
 		return SLURM_FAILURE;
 	}
 

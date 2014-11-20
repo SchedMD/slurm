@@ -140,7 +140,7 @@ extern void term_msg_thread(void)
 		 * flag.
 		 */
 		slurm_set_addr(&addr, sched_port, "localhost");
-		fd = slurm_open_stream(&addr);
+		fd = slurm_open_stream(&addr, true);
 		if (fd != -1) {
 			/* we don't care if the open failed */
 			slurm_close_stream(fd);
