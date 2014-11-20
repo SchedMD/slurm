@@ -69,7 +69,7 @@ struct eio_obj {
 	bool shutdown;
 };
 
-eio_handle_t *eio_handle_create(void);
+eio_handle_t *eio_handle_create(uint16_t);
 void eio_handle_destroy(eio_handle_t *eio);
 
 /*

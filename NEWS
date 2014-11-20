@@ -24,6 +24,9 @@ documents those changes that are of interest to users and administrators.
  -- Added new job state of STOPPED indicating processes have been stopped with a
     SIGSTOP (using scancel or sview), but retain its allocated CPUs. Job state
     returns to RUNNING when SIGCONT is sent (also using scancel or sview).
+ -- Added EioTimeout parameter to slurm.conf. It is the number of seconds srun
+    waits for slurmstepd to close the TCP/IP connection used to relay data
+    between the user application and srun when the user application terminates.
 
 * Changes in Slurm 14.11.1
 ==========================

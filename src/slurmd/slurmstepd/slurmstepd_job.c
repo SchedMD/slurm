@@ -349,7 +349,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 			job->array_task_id = atoi(msg->env[i] + 20);
 	}
 
-	job->eio     = eio_handle_create();
+	job->eio     = eio_handle_create(0);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->clients = list_create(NULL); /* FIXME! Needs destructor */
 	job->stdout_eio_objs = list_create(NULL); /* FIXME! Needs destructor */
@@ -512,7 +512,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->restart_dir = xstrdup(msg->restart_dir);
 
 	job->env     = _array_copy(msg->envc, msg->environment);
-	job->eio     = eio_handle_create();
+	job->eio     = eio_handle_create(0);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;

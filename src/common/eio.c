@@ -70,10 +70,6 @@ strong_alias(eio_remove_obj,		slurm_eio_remove_obj);
 strong_alias(eio_signal_shutdown,	slurm_eio_signal_shutdown);
 strong_alias(eio_signal_wakeup,		slurm_eio_signal_wakeup);
 
-/* How many seconds to wait after eio_signal_shutdown() is called before
- * terminating the job and abandoning any I/O remaining to be processed */
-#define EIO_SHUTDOWN_WAIT 180
-
 /*
  * outside threads can stick new objects on the new_objs List and
  * the eio thread will move them to the main obj_list the next time
@@ -86,6 +82,7 @@ struct eio_handle_components {
 #endif
 	int  fds[2];
 	time_t shutdown_time;
+	uint16_t shutdown_wait;
 	List obj_list;
 	List new_objs;
 };
@@ -103,7 +100,7 @@ static void         _poll_handle_event(short revents, eio_obj_t *obj,
 		                       List objList);
 
 
-eio_handle_t *eio_handle_create(void)
+eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 {
 	eio_handle_t *eio = xmalloc(sizeof(*eio));
 
@@ -121,6 +118,10 @@ eio_handle_t *eio_handle_create(void)
 
 	eio->obj_list = list_create(eio_obj_destroy);
 	eio->new_objs = list_create(eio_obj_destroy);
+
+	eio->shutdown_wait = DEFAULT_EIO_SHUTDOWN_WAIT;
+	if (shutdown_wait > 0)
+		eio->shutdown_wait = shutdown_wait;
 
 	return eio;
 }
@@ -288,7 +289,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		if (maxnfds < n) {
 			maxnfds = n;
 			xrealloc(pollfds, (maxnfds+1) * sizeof(struct pollfd));
-			xrealloc(map,     maxnfds     * sizeof(eio_obj_t *  ));
+			xrealloc(map, maxnfds * sizeof(eio_obj_t *));
 			/*
 			 * Note: xrealloc() also handles initial malloc
 			 */
@@ -316,13 +317,13 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		if (pollfds[nfds-1].revents & POLLIN)
 			_eio_wakeup_handler(eio);
 
-		_poll_dispatch(pollfds, nfds-1, map, eio->obj_list);
+		_poll_dispatch(pollfds, nfds - 1, map, eio->obj_list);
 
-		if (eio->shutdown_time &&
-		    (difftime(time(NULL), eio->shutdown_time) >=
-		     EIO_SHUTDOWN_WAIT)) {
-			error("Abandoning IO %d secs after job shutdown "
-			      "initiated", EIO_SHUTDOWN_WAIT);
+		if (eio->shutdown_time
+		    && difftime(time(NULL), eio->shutdown_time)
+		    >= eio->shutdown_wait) {
+			error("%s: Abandoning IO %d secs after job shutdown "
+			      "initiated", __func__, eio->shutdown_wait);
 			break;
 		}
 	}

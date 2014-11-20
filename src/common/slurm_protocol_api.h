@@ -790,6 +790,12 @@ char *slurm_get_slurmd_spooldir(void);
  */
 char *slurm_get_layouts(void);
 
+/* slurm_get_srun_eio_timeout()
+ *
+ * Return the eio timeout for srun.
+ */
+int16_t slurm_get_srun_eio_timeout(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

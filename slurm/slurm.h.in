@@ -227,6 +227,11 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)
 
+/* How many seconds to wait after eio_signal_shutdown() is called before
+ * terminating the job and abandoning any I/O remaining to be processed.
+ */
+#define DEFAULT_EIO_SHUTDOWN_WAIT 60
+
 #define SLURM_ID_HASH_NUM 10000000000
 /*
  * SLURM_ID_HASH
@@ -2223,6 +2228,7 @@ typedef struct slurm_ctl_conf {
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
 	uint16_t dynalloc_port;  /* port for dynamic allocation connection */
+	uint16_t eio_timeout;     /* timeout for the eio thread */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding
 					 * partition size and/or time limits */
 	char *epilog;		/* pathname of job epilog */

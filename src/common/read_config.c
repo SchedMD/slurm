@@ -205,6 +205,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerNode", S_P_UINT32},
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"DynAllocPort", S_P_UINT16},
+	{"EioTimeout", S_P_UINT16},
 	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
@@ -4187,11 +4188,17 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->layouts, "Layouts", hashtbl))
 		conf->layouts = xstrdup("");
 
+	/* srun eio network timeout with the slurmstepd
+	 */
+	if (!s_p_get_uint16(&conf->eio_timeout, "EioTimeout", hashtbl))
+		conf->eio_timeout = DEFAULT_EIO_SHUTDOWN_WAIT;
+
 	xfree(default_storage_type);
 	xfree(default_storage_loc);
 	xfree(default_storage_host);
 	xfree(default_storage_user);
 	xfree(default_storage_pass);
+
 	return SLURM_SUCCESS;
 }
 

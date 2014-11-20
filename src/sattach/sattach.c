@@ -460,7 +460,7 @@ static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 	pthread_cond_init(&mts->cond, NULL);
 	mts->tasks_started = bit_alloc(num_tasks);
 	mts->tasks_exited = bit_alloc(num_tasks);
-	mts->msg_handle = eio_handle_create();
+	mts->msg_handle = eio_handle_create(0);
 	mts->num_resp_port = _estimate_nports(num_nodes, 48);
 	mts->resp_port = xmalloc(sizeof(uint16_t) * mts->num_resp_port);
 	for (i = 0; i < mts->num_resp_port; i++) {

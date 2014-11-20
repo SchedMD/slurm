@@ -140,7 +140,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	debug("Writing slurm.conf file: %s", path);
 
 	if ( ( fp = fopen(path, "w") ) == NULL ) {
-		fprintf(stderr, "Could not create file %s: %s\n", path, 
+		fprintf(stderr, "Could not create file %s: %s\n", path,
 			strerror(errno));
 		xfree(path);
 		return;
@@ -555,6 +555,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		 slurm_ctl_conf_ptr->dynalloc_port);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DynAllocPort");
+	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EioTimeout");
+	snprintf(tmp_str, sizeof(tmp_str), "%u",
+		 slurm_ctl_conf_ptr->eio_timeout);
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
@@ -1997,7 +2004,7 @@ static void _write_group_header(FILE* out, char * header)
 	left = ((comlen - hdrlen) / 2) - 1;
 	right = left;
 	if ((comlen - hdrlen) % 2)
-		right++; 
+		right++;
 
 	fprintf(out, "#\n");
 	for (i = 0; i < comlen; i++)

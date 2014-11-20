@@ -647,6 +647,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->disable_root_jobs   = conf->disable_root_jobs;
 	conf_ptr->dynalloc_port       = conf->dynalloc_port;
 
+	conf_ptr->eio_timeout         = conf->eio_timeout;
 	conf_ptr->enforce_part_limits = conf->enforce_part_limits;
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->epilog_msg_time     = conf->epilog_msg_time;

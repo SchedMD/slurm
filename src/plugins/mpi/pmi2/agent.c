@@ -301,7 +301,7 @@ _agent(void * unused)
 	eio_obj_t *tree_listen_obj, *task_obj;
 	int i;
 
-	pmi2_handle = eio_handle_create();
+	pmi2_handle = eio_handle_create(0);
 
 	//fd_set_nonblocking(tree_sock);
 	tree_listen_obj = eio_obj_create(tree_sock, &tree_listen_ops,

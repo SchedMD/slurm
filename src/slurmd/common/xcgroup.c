@@ -276,6 +276,7 @@ int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
 
 	if (xcgroup_create(cgns, &cg, "/", 0, 0) == XCGROUP_ERROR)
 		return 0;
+
 	if (xcgroup_get_param(&cg, "release_agent",
 			      &value, &s) != XCGROUP_SUCCESS)
 		fstatus = 0;

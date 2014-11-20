@@ -105,6 +105,7 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	struct allocation_msg_thread *msg_thr = NULL;
 	int cc;
 	uint16_t *ports;
+	uint16_t eio_timeout;
 
 	debug("Entering slurm_allocation_msg_thr_create()");
 
@@ -136,7 +137,8 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	debug("port from net_stream_listen is %hu", *port);
 	obj = eio_obj_create(sock, &message_socket_ops, (void *)msg_thr);
 
-	msg_thr->handle = eio_handle_create();
+	eio_timeout = slurm_get_srun_eio_timeout();
+	msg_thr->handle = eio_handle_create(eio_timeout);
 	if (!msg_thr->handle) {
 		error("failed to create eio handle");
 		xfree(msg_thr);

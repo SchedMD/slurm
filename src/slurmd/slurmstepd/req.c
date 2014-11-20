@@ -248,7 +248,7 @@ msg_thr_create(stepd_step_rec_t *job)
 	fd_set_nonblocking(fd);
 
 	eio_obj = eio_obj_create(fd, &msg_socket_ops, (void *)job);
-	job->msg_handle = eio_handle_create();
+	job->msg_handle = eio_handle_create(0);
 	eio_new_initial_obj(job->msg_handle, eio_obj);
 
 	slurm_attr_init(&attr);

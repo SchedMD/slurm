@@ -2365,6 +2365,23 @@ char *slurm_get_layouts(void)
 	return layouts;
 }
 
+/*  slurm_get_srun_eio_timeout()
+ */
+int16_t
+slurm_get_srun_eio_timeout(void)
+{
+	int16_t eio_timeout;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		eio_timeout = conf->eio_timeout;
+		slurm_conf_unlock();
+	}
+	return eio_timeout;
+}
+
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {
