@@ -1181,7 +1181,7 @@ next_task:
 			last_job_update = now;
 		}
 		if ((job_ptr->start_time <= now) &&
-		    ((bb = bb_g_job_test_stage_in(job_ptr)) != 1)) {
+		    ((bb = bb_g_job_test_stage_in(job_ptr, true)) != 1)) {
 			xfree(job_ptr->state_desc);
 			if (bb == -1) {
 				job_ptr->state_reason=WAIT_BURST_BUFFER_RESOURCE;

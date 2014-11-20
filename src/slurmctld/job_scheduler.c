@@ -170,6 +170,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 	bool job_indepen = false;
 	uint16_t cleaning = 0;
 	time_t now = time(NULL);
+	int bb;
 
 	xassert(job_ptr->magic == JOB_MAGIC);
 	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
@@ -228,6 +229,15 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 
 	if (!job_indepen)	/* can not run now */
 		return false;
+	if (!clear_start &&
+	    ((bb = bb_g_job_test_stage_in(job_ptr, true)) != 1)) {
+		if (bb == -1)
+			job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
+		else	/* bb == 0 */
+			job_ptr->state_reason = WAIT_BURST_BUFFER_STAGING;
+		return false;
+	}
+
 	return true;
 }
 
@@ -275,7 +285,8 @@ static int _delta_tv(struct timeval *tv)
 }
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
- * IN clear_start - if set then clear the start_time for pending jobs
+ * IN clear_start - if set then clear the start_time for pending jobs,
+ *		    true when called from sched/backfill or sched/builtin
  * IN backfill - true if running backfill scheduler, enforce min time limit
  * RET the job queue
  * NOTE: the caller must call list_destroy() on RET value to free memory
@@ -763,7 +774,7 @@ extern int schedule(uint32_t job_limit)
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
-	int bb, error_code, i, j, part_cnt, time_limit;
+	int error_code, i, j, part_cnt, time_limit;
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
@@ -1069,21 +1080,6 @@ next_part:			part_ptr = (struct part_record *)
 		}
 		if (job_ptr->preempt_in_progress)
 			continue;	/* scheduled in another partition */
-
-		if ((bb = bb_g_job_test_stage_in(job_ptr)) != 1) {
-			xfree(job_ptr->state_desc);
-			if (bb == -1)
-				job_ptr->state_reason=WAIT_BURST_BUFFER_RESOURCE;
-			else	/* bb == 0 */
-				job_ptr->state_reason=WAIT_BURST_BUFFER_STAGING;
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
-			continue;
-		}
 
 next_task:
 		if ((time(NULL) - sched_start) >= sched_timeout) {

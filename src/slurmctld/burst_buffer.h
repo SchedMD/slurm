@@ -110,12 +110,14 @@ extern int bb_g_job_try_stage_in(void);
 
 /*
  * Determine if a job's burst buffer stage-in is complete
+ * job_ptr IN - Job to test
+ * test_only IN - If false, then attempt to load burst buffer if possible
  *
  * RET: 0 - stage-in is underway
  *      1 - stage-in complete
  *     -1 - stage-in not started or burst buffer in some unexpected state
  */
-extern int bb_g_job_test_stage_in(struct job_record *job_ptr);
+extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only);
 
 /*
  * Trigger a job's burst buffer stage-out to begin
