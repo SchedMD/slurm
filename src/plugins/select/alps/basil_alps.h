@@ -358,9 +358,9 @@ struct basil_node {
 extern bool node_is_allocated(const struct basil_node *node);
 
 struct basil_rsvn_app_cmd {
-	uint32_t		width,
-				depth,
-				nppn,
+	uint32_t		width,	/* Processing elements (PEs) */
+				depth,	/* PEs per task */
+				nppn,	/* PEs per node */
 				memory;
 	enum basil_node_arch	arch;
 

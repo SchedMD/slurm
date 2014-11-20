@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Get libs correct when doing the xtree/xhash make check.
  -- Update xhash/tree make check to work correctly with current code.
+ -- Remove the reference 'experimental' for the jobacct_gather/cgroup
+    plugin.
 
 * Changes in Slurm 14.11.0
 ==========================
