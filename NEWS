@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Added EioTimeout parameter to slurm.conf. It is the number of seconds srun
     waits for slurmstepd to close the TCP/IP connection used to relay data
     between the user application and srun when the user application terminates.
+ -- Remove slurmctld/dynalloc plugin as the work was never completed, so it is
+    not worth the effort of continued support at this time.
 
 * Changes in Slurm 14.11.1
 ==========================
