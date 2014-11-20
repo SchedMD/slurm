@@ -478,7 +478,7 @@ static void _timeout_bb_rec(void)
 				if (job_ptr) {
 					error("%s: StageIn timed out, holding "
 					      "job %u ",
-					      __func__, bb_ptr->state);
+					      __func__, bb_ptr->job_id);
 					job_ptr->priority = 0;
 					job_ptr->direct_set_prio = 1;
 					job_ptr->state_reason = WAIT_HELD;
@@ -489,7 +489,7 @@ static void _timeout_bb_rec(void)
 				} else {
 					error("%s: StageIn timed out for "
 					      "vestigial job %u ",
-					      __func__, bb_ptr->state);
+					      __func__, bb_ptr->job_id);
 				}
 			}
 			if ((bb_ptr->job_id != 0) && stop_stage_out &&
@@ -497,7 +497,7 @@ static void _timeout_bb_rec(void)
 			    (stage_out_timeout != 0) && !bb_ptr->cancelled &&
 			    (age >= stage_out_timeout)) {
 				error("%s: StageOut for job %u timed out",
-				      __func__, bb_ptr->state);
+				      __func__, bb_ptr->job_id);
 				_stop_stage_out(bb_ptr->job_id);
 				bb_ptr->cancelled = true;
 			}
@@ -1818,7 +1818,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		/* No job buffers. Assuming use of persistent buffers only */
 		debug("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
-		rc =  0;
+		rc =  1;
 	} else {
 		if (bb_ptr->state < BB_STATE_STAGED_OUT)
 			_load_state(job_ptr->job_id);
