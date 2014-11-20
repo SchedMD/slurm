@@ -745,6 +745,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
 %{_mandir}/man5/acct_gather.*
+%{_mandir}/man5/burst_buffer.*
 %{_mandir}/man5/ext_sensors.*
 %{_mandir}/man5/cgroup.*
 %{_mandir}/man5/cray.*
