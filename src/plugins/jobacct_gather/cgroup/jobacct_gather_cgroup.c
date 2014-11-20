@@ -115,8 +115,8 @@ static void _prec_extra(jag_prec_t *prec)
 	xcgroup_get_param(&task_cpuacct_cg, "cpuacct.stat",
 			  &cpu_time, &cpu_time_size);
 	if (cpu_time == NULL) {
-		error("%s: failed to collect cpuacct.stat pid %d ppid %d",
-		      __func__, prec->pid, prec->ppid);
+		debug2("%s: failed to collect cpuacct.stat pid %d ppid %d",
+		       __func__, prec->pid, prec->ppid);
 	} else {
 		sscanf(cpu_time, "%*s %lu %*s %lu", &utime, &stime);
 		prec->usec = utime;
@@ -126,8 +126,8 @@ static void _prec_extra(jag_prec_t *prec)
 	xcgroup_get_param(&task_memory_cg, "memory.stat",
 			  &memory_stat, &memory_stat_size);
 	if (memory_stat == NULL) {
-		error("%s: failed to collect memory.stat  pid %d ppid %d",
-		      __func__, prec->pid, prec->ppid);
+		debug2("%s: failed to collect memory.stat  pid %d ppid %d",
+		       __func__, prec->pid, prec->ppid);
 	} else {
 		/* This number represents the amount of "dirty" private memory
 		   used by the cgroup.  From our experience this is slightly
