@@ -145,6 +145,14 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bitstr_t **exc_core_bitmap, bool *resv_overlap);
 
 /*
+ * Note that a job is starting execution. If that job is associated with a
+ * reservation having the "Refresh" flag, then remove that job's nodes from
+ * the reservation. Additional nodes will be added to the reservation from
+ * those currently available.
+ */
+extern void job_claim_resv(struct job_record *job_ptr);
+
+/*
  * Determine the time of the first reservation to end after some time.
  * return zero of no reservation ends after that time.
  * IN start_time - look for reservations ending after this time

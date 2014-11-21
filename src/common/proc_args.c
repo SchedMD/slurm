@@ -1383,6 +1383,10 @@ parse_resv_flags(const char *flagstr, const char *msg)
 			   !flip) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_TIME_FLOAT;
+		} else if (!strncasecmp(curr, "Replace", MAX(taglen,1)) &&
+			   !flip) {
+			curr += taglen;
+			outflags |= RESERVE_FLAG_REPLACE;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
 			return 0xffffffff;

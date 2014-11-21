@@ -1865,6 +1865,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	slurmctld_diag_stats.jobs_started++;
 	acct_policy_job_begin(job_ptr);
+	job_claim_resv(job_ptr);
 
 	/* Update the job_record's gres and gres_alloc fields with
 	 * strings representing the amount of each GRES type requested

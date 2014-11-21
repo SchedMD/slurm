@@ -2034,6 +2034,8 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
 							 * on each node */
 #define RESERVE_FLAG_TIME_FLOAT		0x00020000	/* Time offset is
 							 * relative */
+#define RESERVE_FLAG_REPLACE		0x00040000	/* Replace resources
+							 * as assigned to jobs */
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */

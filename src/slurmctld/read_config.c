@@ -1969,8 +1969,10 @@ static int _restore_job_dependencies(void)
 			if (!IS_JOB_FINISHED(job_ptr))
 				acct_policy_add_job_submit(job_ptr);
 			if (IS_JOB_RUNNING(job_ptr) ||
-			    IS_JOB_SUSPENDED(job_ptr))
+			    IS_JOB_SUSPENDED(job_ptr)) {
 				acct_policy_job_begin(job_ptr);
+				job_claim_resv(job_ptr);
+			}
 		}
 
 		license_list = license_validate(job_ptr->licenses, &valid);

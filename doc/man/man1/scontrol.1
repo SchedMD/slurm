@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "September 2014" "scontrol 14.11" "Slurm components"
+.TH SCONTROL "1" "November 2014" "scontrol 15.08" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1337,6 +1337,13 @@ reservation.
 This flag can be used to reserve all nodes within the specified
 partition.  PartitionName and Nodes=ALL must be specified or
 this option is ignored.
+.TP
+\fRREPLACE\fR
+Resources allocated to jobs as automaticallly replenished using idle resources.
+This option can be used to maintain a constant number of idle resources
+available for pending jobs (subject to availability of idle resources).
+This should be used with the \fINodeCnt\fP reservation option; do not identify
+specific nodes to be included in the reservation.
 .TP
 \fISPEC_NODES\fR
 Reservation is for specific nodes (output only)

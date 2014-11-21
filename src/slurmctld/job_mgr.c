@@ -10648,6 +10648,7 @@ extern void job_post_resize_acctg(struct job_record *job_ptr)
 	xassert(IS_JOB_RESIZING(job_ptr));
 	acct_policy_add_job_submit(job_ptr);
 	acct_policy_job_begin(job_ptr);
+	job_claim_resv(job_ptr);
 
 	if (job_ptr->resize_time)
 		job_ptr->details->submit_time = job_ptr->resize_time;

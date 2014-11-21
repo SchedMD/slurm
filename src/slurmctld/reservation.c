@@ -1664,7 +1664,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_STATIC   |
 					RESERVE_FLAG_PART_NODES  |
 					RESERVE_FLAG_FIRST_CORES |
-					RESERVE_FLAG_TIME_FLOAT;
+					RESERVE_FLAG_TIME_FLOAT  |
+					RESERVE_FLAG_REPLACE;
 	}
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
@@ -2098,6 +2099,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_STATIC;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE)
+			resv_ptr->flags |= RESERVE_FLAG_REPLACE;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
 			if ((resv_ptr->partition == NULL) &&
 			    (resv_desc_ptr->partition == NULL)) {
@@ -2120,6 +2123,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			error_code = ESLURM_INVALID_TIME_VALUE;
 			goto update_failure;
 		}
+		if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE)
+			resv_ptr->flags |= RESERVE_FLAG_REPLACE;
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
 		/* Clear the partition */
@@ -2886,8 +2891,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	int i;
 	resv_desc_msg_t resv_desc;
 
-	if (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES ||
-	    resv_ptr->flags & RESERVE_FLAG_STATIC)
+	if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
+	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
 
 	i = bit_overlap(resv_ptr->node_bitmap, avail_node_bitmap);
@@ -3255,10 +3260,11 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				core_mult = cnodes_per_mp;
 #endif
 
-				if (!*core_bitmap)
+				if (!*core_bitmap) {
 					*core_bitmap =
 						cr_create_cluster_core_bitmap(
 							core_mult);
+				}
 				bit_or(*core_bitmap, resv_ptr->core_bitmap);
 			}
 		}
@@ -3800,6 +3806,74 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Note that a job is starting execution. If that job is associated with a
+ * reservation having the "Refresh" flag, then remove that job's nodes from
+ * the reservation. Additional nodes will be added to the reservation from
+ * those currently available.
+ */
+extern void job_claim_resv(struct job_record *job_ptr)
+{
+	slurmctld_resv_t *resv_ptr;
+	bitstr_t *tmp_bitmap = NULL;
+	bitstr_t *core_bitmap = NULL;
+	resv_desc_msg_t resv_desc;
+	int i;
+
+	if (job_ptr->resv_name == NULL)
+		return;
+
+	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
+			_find_resv_name, job_ptr->resv_name);
+	if (!resv_ptr ||
+	    !(resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
+	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
+	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
+		return;
+
+	tmp_bitmap = bit_copy(resv_ptr->node_bitmap);
+	bit_and(tmp_bitmap, avail_node_bitmap);
+	bit_and(tmp_bitmap, idle_node_bitmap);
+	i = bit_set_count(tmp_bitmap);
+	FREE_NULL_BITMAP(tmp_bitmap);
+
+	if (i == resv_ptr->node_cnt)	/* Still have sufficient resources */
+		return;
+
+	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
+	resv_desc.start_time = resv_ptr->start_time;
+	resv_desc.end_time   = resv_ptr->end_time;
+	resv_desc.features   = resv_ptr->features;
+	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
+	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
+			  &core_bitmap);
+	xfree(resv_desc.node_cnt);
+	xfree(resv_desc.node_list);
+	xfree(resv_desc.partition);
+	if (i == SLURM_SUCCESS) {
+		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
+		bit_and(resv_ptr->node_bitmap, idle_node_bitmap);
+		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
+		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+		resv_ptr->core_bitmap = core_bitmap;
+		xfree(resv_ptr->node_list);
+		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
+		verbose("modified reservation %s with replacement nodes, "
+			"new nodes: %s", resv_ptr->name, resv_ptr->node_list);
+	} else if (difftime(resv_ptr->start_time, time(NULL)) < 600) {
+		verbose("reservation %s contains unusable nodes, "
+			"can't reallocate now", resv_ptr->name);
+	} else {
+		verbose("reservation %s contains unusable nodes, "
+			"can't reallocate now", resv_ptr->name);
+	}
+
+	last_resv_update = time(NULL);
+	schedule_resv_save();
 }
 
 /* Adjust a job's time_limit and end_time as needed to avoid using

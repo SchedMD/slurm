@@ -1655,6 +1655,11 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "TIME_FLOAT");
 	}
+	if (flags & RESERVE_FLAG_REPLACE) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "REPLACE");
+	}
 	return flag_str;
 }
 

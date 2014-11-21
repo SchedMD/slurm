@@ -30,6 +30,9 @@ documents those changes that are of interest to users and administrators.
  -- Remove slurmctld/dynalloc plugin as the work was never completed, so it is
     not worth the effort of continued support at this time.
  -- Remove DynAllocPort configuration parameter.
+ -- Add advance reservation flag of "replace" that causes allocated resources
+    to be replaced with idle resources. This maintains a pool of available
+    resources that maintains a constant size (to the extent possible).
 
 * Changes in Slurm 14.11.1
 ==========================

@@ -329,6 +329,50 @@ $ scontrol create reservation user=operator nodes=tux8 \
   starttime=now+60minutes duration=100 flags=time_float
 </pre>
 
+<h2>Reservations that Replace Allocated Resources</h2>
+
+<p>Slurm can create an advanced reservation for which nodes which are allocated
+to jobs are automatically replaced with new idle nodes.
+The effect of this is to always maintain a constant size pool of resources.
+This is accomplished by using a "replace" flag as shown in the example below.</p>
+<pre>
+$ scontrol create reservation starttime=now duration=60 \
+  users=foo nodecnt=2 flags=replace
+Reservation created: foo_82
+
+$ scontrol show res
+ReservationName=foo_82 StartTime=2014-11-20T16:21:11
+   EndTime=2014-11-20T17:21:11 Duration=01:00:00
+   Nodes=tux[0-1] NodeCnt=2 CoreCnt=12 Features=(null)
+   PartitionName=debug Flags=REPLACE
+   Users=jette Accounts=(null) Licenses=(null) State=ACTIVE
+
+$ sbatch -n4 --reservation=foo_82 tmp
+Submitted batch job 97
+
+$ scontrol show res
+ReservationName=foo_82 StartTime=2014-11-20T16:21:11
+   EndTime=2014-11-20T17:21:11 Duration=01:00:00
+   Nodes=tux[1-2] NodeCnt=2 CoreCnt=12 Features=(null)
+   PartitionName=debug Flags=REPLACE
+   Users=jette Accounts=(null) Licenses=(null) State=ACTIVE
+
+$ sbatch -n4 --reservation=foo_82 tmp
+Submitted batch job 98
+
+$ scontrol show res
+ReservationName=foo_82 StartTime=2014-11-20T16:21:11
+   EndTime=2014-11-20T17:21:11 Duration=01:00:00
+   Nodes=tux[2-3] NodeCnt=2 CoreCnt=12 Features=(null)
+   PartitionName=debug Flags=REPLACE
+   Users=jette Accounts=(null) Licenses=(null) State=ACTIVE
+
+$ squeue
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST(REASON)
+   97     debug   tmp   foo  R  0:09      1 tux0
+   98     debug   tmp   foo  R  0:07      1 tux1
+</pre>
+
 <h2>Reservation Accounting</h2>
 
 <p>Jobs executed within a reservation are accounted for using the appropriate
@@ -354,7 +398,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 9 September 2014</p>
+<p style="text-align: center;">Last modified 20 November 2014</p>
 
 <!--#include virtual="footer.txt"-->
 

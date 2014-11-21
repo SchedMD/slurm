@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 15.08
-17 October 2014
+20 November 2014
 
 
 IMPORTANT NOTE:
@@ -25,6 +25,14 @@ of Slurm will result in loss of state information.
 
 HIGHLIGHTS
 ==========
+ -- Add burst buffer support infrastructure. Currently available plugin include
+    burst_buffer/generic (uses administrator supplied programs to manage file
+    staging) and burst_buffer/cray (uses Cray APIs to manage files).
+ -- Add support for job dependencies joined with OR operator (e.g.
+    "--depend=afterok:123?afternotok:124").
+ -- Add advance reservation flag of "replace" that causes allocated resources
+    to be replaced with idle resources. This maintains a pool of available
+    resources that maintains a constant size (to the extent possible).
 
 RPMBUILD CHANGES
 ================
@@ -33,6 +41,8 @@ RPMBUILD CHANGES
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- Remove DynAllocPort configuration parameter.
+ -- Added new configuration parameters to support burst buffers:
+    BurstBufferParameters, and BurstBufferType.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -42,8 +52,9 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Add sbcast support for file transfer to resources allocated to a job step
     rather than a job allocation (e.g. "sbcast -j 123.4 ...").
- -- Add support for job dependencies joined with OR operator (e.g.
-    "--depend=afterok:123?afternotok:124").
+ -- Added new job state of STOPPED indicating processes have been stopped with a
+    SIGSTOP (using scancel or sview), but retain its allocated CPUs. Job state
+    returns to RUNNING when SIGCONT is sent (also using scancel or sview).
 
 OTHER CHANGES
 =============
