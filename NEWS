@@ -372,6 +372,7 @@ documents those changes that are of interest to users and administrators.
     error.
  -- Fix sbatch --ntasks-per-core option from setting invalid
     SLURM_NTASKS_PER_CORE environment value.
+ -- Prevent scancel abort when no job satisfies filter options.
 
 * Changes in Slurm 14.03.10
 ===========================
