@@ -62,7 +62,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, debug_flags, uint64_t);
 	STORE_FIELD(hv, conf, def_mem_per_cpu, uint32_t);
 	STORE_FIELD(hv, conf, disable_root_jobs, uint16_t);
-	STORE_FIELD(hv, conf, dynalloc_port, uint16_t);
 	STORE_FIELD(hv, conf, enforce_part_limits, uint16_t);
 	if (conf->epilog)
 		STORE_FIELD(hv, conf, epilog, charp);
@@ -305,7 +304,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, debug_flags, uint64_t, TRUE);
 	FETCH_FIELD(hv, conf, def_mem_per_cpu, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, disable_root_jobs, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, dynalloc_port, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, enforce_part_limits, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, epilog, charp, FALSE);
 	FETCH_FIELD(hv, conf, epilog_msg_time, uint32_t, TRUE);
