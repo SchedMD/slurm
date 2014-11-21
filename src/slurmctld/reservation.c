@@ -1667,6 +1667,17 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_TIME_FLOAT  |
 					RESERVE_FLAG_REPLACE;
 	}
+	if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) {
+		if (resv_desc_ptr->node_list) {
+			rc = ESLURM_INVALID_NODE_NAME;
+			goto bad_parse;
+		}
+		if (resv_desc_ptr->core_cnt) {
+			rc = ESLURM_INVALID_CPU_COUNT;
+			goto bad_parse;
+		}
+	}
+
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
@@ -2099,8 +2110,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_STATIC;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE)
+		if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) {
+			if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
+			    (resv_ptr->full_nodes == 0)) {
+				error_code = ESLURM_NOT_SUPPORTED;
+				goto update_failure;
+			}
 			resv_ptr->flags |= RESERVE_FLAG_REPLACE;
+		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
 			if ((resv_ptr->partition == NULL) &&
 			    (resv_desc_ptr->partition == NULL)) {
@@ -2123,8 +2140,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			error_code = ESLURM_INVALID_TIME_VALUE;
 			goto update_failure;
 		}
-		if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE)
-			resv_ptr->flags |= RESERVE_FLAG_REPLACE;
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
 		/* Clear the partition */
