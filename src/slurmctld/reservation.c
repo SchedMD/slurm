@@ -2896,8 +2896,80 @@ static void _validate_all_reservations(void)
 }
 
 /*
- * Validate that the reserved nodes are not DOWN or DRAINED and
- *	select different nodes as needed.
+ * Replace DOWN, DRAIN or ALLOCATED nodes for reservations with "replace" flag
+ */
+static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
+{
+	bitstr_t *preserve_bitmap = NULL;
+	bitstr_t *core_bitmap = NULL, *new_bitmap = NULL, *tmp_bitmap = NULL;
+	resv_desc_msg_t resv_desc;
+	int i, add_nodes, new_nodes, preserve_nodes, busy_nodes_needed;
+	bool log_it = true;
+
+	/* Identify nodes which can be preserved in this reservation */
+	preserve_bitmap = bit_copy(resv_ptr->node_bitmap);
+	bit_and(preserve_bitmap, avail_node_bitmap);
+	bit_and(preserve_bitmap, idle_node_bitmap);
+	preserve_nodes = bit_set_count(preserve_bitmap);
+
+	/* Try to get replacement nodes, first from idle pool then re-use
+	 * busy nodes in the current reservation as needed */
+	add_nodes = resv_ptr->node_cnt - preserve_nodes;
+	while (add_nodes) {
+		memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
+		resv_desc.start_time  = resv_ptr->start_time;
+		resv_desc.end_time    = resv_ptr->end_time;
+		resv_desc.features    = resv_ptr->features;
+		resv_desc.node_cnt    = xmalloc(sizeof(uint32_t) * 2);
+		resv_desc.node_cnt[0] = add_nodes;
+		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &new_bitmap,
+				  &core_bitmap);
+		xfree(resv_desc.node_cnt);
+		xfree(resv_desc.node_list);
+		xfree(resv_desc.partition);
+		if (i == SLURM_SUCCESS) {
+			new_nodes = bit_set_count(new_bitmap);
+			busy_nodes_needed = resv_ptr->node_cnt - new_nodes
+					    - preserve_nodes;
+			if (busy_nodes_needed > 0) {
+				bit_not(preserve_bitmap);
+				bit_and(resv_ptr->node_bitmap, preserve_bitmap);
+				bit_not(preserve_bitmap);
+				tmp_bitmap = bit_pick_cnt(resv_ptr->node_bitmap,
+							  busy_nodes_needed);
+				bit_and(resv_ptr->node_bitmap, tmp_bitmap);
+				FREE_NULL_BITMAP(tmp_bitmap);
+				bit_or(resv_ptr->node_bitmap, preserve_bitmap);
+			} else {
+				bit_and(resv_ptr->node_bitmap, preserve_bitmap);
+			}
+			bit_or(resv_ptr->node_bitmap, new_bitmap);
+			FREE_NULL_BITMAP(new_bitmap);
+			FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+			resv_ptr->core_bitmap = core_bitmap;	/* is NULL */
+			xfree(resv_ptr->node_list);
+			resv_ptr->node_list = bitmap2node_name(resv_ptr->
+							       node_bitmap);
+			info("modified reservation %s with replacement "
+				"nodes, new nodes: %s",
+				resv_ptr->name, resv_ptr->node_list);
+			break;
+		}
+		add_nodes /= 2;	/* Try to get idle nodes as possible */
+		if (log_it) {
+			info("unable to replace all allocated nodes in "
+			     "reservation %s at this time", resv_ptr->name);
+			log_it = false;
+		}
+	}
+	FREE_NULL_BITMAP(preserve_bitmap);
+	last_resv_update = time(NULL);
+	schedule_resv_save();
+}
+
+/*
+ * Replace DOWN or DRAINED in an advanced reservation, also replaces nodes
+ * in use for reservations with the "replace" flag.
  */
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 {
@@ -2910,13 +2982,19 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
 
-	i = bit_overlap(resv_ptr->node_bitmap, avail_node_bitmap);
-	if (i == resv_ptr->node_cnt)
+	if (resv_ptr->flags & RESERVE_FLAG_REPLACE) {
+		_resv_node_replace(resv_ptr);
 		return;
+	}
+
+	i = bit_overlap(resv_ptr->node_bitmap, avail_node_bitmap);
+	if (i == resv_ptr->node_cnt) {
+		return;
+	}
 
 	/* Reservation includes DOWN, DRAINED/DRAINING, FAILING or
 	 * NO_RESPOND nodes. Generate new request using _select_nodes()
-	 * in attempt to replace this nodes */
+	 * in attempt to replace these nodes */
 	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
@@ -3825,17 +3903,13 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 
 /*
  * Note that a job is starting execution. If that job is associated with a
- * reservation having the "Refresh" flag, then remove that job's nodes from
+ * reservation having the "Replace" flag, then remove that job's nodes from
  * the reservation. Additional nodes will be added to the reservation from
  * those currently available.
  */
 extern void job_claim_resv(struct job_record *job_ptr)
 {
 	slurmctld_resv_t *resv_ptr;
-	bitstr_t *tmp_bitmap = NULL;
-	bitstr_t *core_bitmap = NULL;
-	resv_desc_msg_t resv_desc;
-	int i;
 
 	if (job_ptr->resv_name == NULL)
 		return;
@@ -3848,47 +3922,7 @@ extern void job_claim_resv(struct job_record *job_ptr)
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
 
-	tmp_bitmap = bit_copy(resv_ptr->node_bitmap);
-	bit_and(tmp_bitmap, avail_node_bitmap);
-	bit_and(tmp_bitmap, idle_node_bitmap);
-	i = bit_set_count(tmp_bitmap);
-	FREE_NULL_BITMAP(tmp_bitmap);
-
-	if (i == resv_ptr->node_cnt)	/* Still have sufficient resources */
-		return;
-
-	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
-	resv_desc.start_time = resv_ptr->start_time;
-	resv_desc.end_time   = resv_ptr->end_time;
-	resv_desc.features   = resv_ptr->features;
-	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
-	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
-			  &core_bitmap);
-	xfree(resv_desc.node_cnt);
-	xfree(resv_desc.node_list);
-	xfree(resv_desc.partition);
-	if (i == SLURM_SUCCESS) {
-		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
-		bit_and(resv_ptr->node_bitmap, idle_node_bitmap);
-		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
-		FREE_NULL_BITMAP(tmp_bitmap);
-		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
-		resv_ptr->core_bitmap = core_bitmap;
-		xfree(resv_ptr->node_list);
-		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
-		verbose("modified reservation %s with replacement nodes, "
-			"new nodes: %s", resv_ptr->name, resv_ptr->node_list);
-	} else if (difftime(resv_ptr->start_time, time(NULL)) < 600) {
-		verbose("reservation %s contains unusable nodes, "
-			"can't reallocate now", resv_ptr->name);
-	} else {
-		verbose("reservation %s contains unusable nodes, "
-			"can't reallocate now", resv_ptr->name);
-	}
-
-	last_resv_update = time(NULL);
-	schedule_resv_save();
+	_resv_node_replace(resv_ptr);
 }
 
 /* Adjust a job's time_limit and end_time as needed to avoid using
