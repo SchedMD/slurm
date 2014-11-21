@@ -897,7 +897,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	}
 
 	if (cray_conf->sub_alloc) {
-		int sock_inx = 0, sock_cnt = 0;
+		int sock_core_inx = 0, sock_core_rep_cnt = 0;
 		mppwidth = 0;
 		/* mppwidth */
 		for (i = 0; i < job_ptr->job_resrcs->nhosts; i++) {
@@ -906,21 +906,21 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 				job_ptr->job_resrcs->cpus[i] / mppdepth;
 
 			if ((job_ptr->job_resrcs->
-			     sockets_per_node[sock_inx] > 0) &&
+			     sockets_per_node[sock_core_inx] > 0) &&
 			    (job_ptr->job_resrcs->
-			     cores_per_socket[sock_inx] > 0)) {
+			     cores_per_socket[sock_core_inx] > 0)) {
 				hwthreads_per_core =
 					job_ptr->job_resrcs->cpus[i] /
 					job_ptr->job_resrcs->
-					sockets_per_node[sock_inx] /
+					sockets_per_node[sock_core_inx] /
 					job_ptr->job_resrcs->
-					cores_per_socket[sock_inx];
+					cores_per_socket[sock_core_inx];
 			}
-			if ((++sock_cnt) > job_ptr->job_resrcs->
-			    sock_core_rep_count[sock_inx]) {
-				/* move to the next socket */
-				sock_inx++;
-				sock_cnt = 0;
+			if ((++sock_core_rep_cnt) > job_ptr->job_resrcs->
+			    sock_core_rep_count[sock_core_inx]) {
+				/* move to the next node */
+				sock_core_inx++;
+				sock_core_rep_cnt = 0;
 			}
 			if (nppcu)
 				node_tasks =
