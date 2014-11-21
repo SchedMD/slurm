@@ -251,6 +251,112 @@ slurm.conf file.  Limits defined for a QOS (and described above) will
 override the limits of the user/account/cluster/partition
 association.</P>
 
+<h2>QOS examples</h2>
+
+<P>
+QOS manipulation examples. All QOS operations are done using
+the sacctmgr command. The default output of 'sacctmgr show qos' is
+very long given the large number of limits and options available
+so it is best to use the format option which filters the display.
+
+<P>
+By default when a cluster is added to the database a default
+qos named normal is created.
+
+<pre>
+$sacctmgr show qos format=name,priority
+      Name   Priority
+---------- ----------
+    normal          0
+</pre>
+
+<P>
+Add a new qos
+
+<pre>
+$sacctmgr add qos zebra
+ Adding QOS(s)
+  zebra
+ Settings
+  Description    = QOS Name
+
+$sacctmgr show qos format=name,priority
+      Name   Priority
+---------- ----------
+    normal          0
+     zebra          0
+</pre>
+
+<P>
+Set QOS priority
+
+<pre>
+$sacctmgr modify qos zebra set priority=10
+ Modified qos...
+  zebra
+
+$sacctmgr show qos format=name,priority
+      Name   Priority
+---------- ----------
+    normal          0
+     zebra         10
+</pre>
+
+<P>
+Set some other limits:
+
+<pre>
+$sacctmgr modify qos zebra set GrpCPUs=24
+ Modified qos...
+  zebra
+
+$sacctmgr show qos format=name,priority,GrpCPUs
+format=name,priority,GrpCPUs
+      Name   Priority  GrpCPUs
+---------- ---------- --------
+    normal          0
+     zebra         10       24
+</pre>
+
+<P>
+Add a qos to a user account
+
+<pre>
+$sacctmgr modify user crock set qos=zebra
+
+$sacctmgr show assoc format=cluster,user,qos
+   Cluster       User                  QOS
+---------- ---------- --------------------
+canis_major                          normal
+canis_major      root                normal
+canis_major                          normal
+canis_major     crock                zebra
+</pre>
+
+<P>
+Users can belong to multiple qos
+
+<pre>
+$sacctmgr modify user crock set qos+=alligator
+$sacctmgr show assoc format=cluster,user,qos
+   Cluster       User                  QOS
+---------- ---------- --------------------
+canis_major                          normal
+canis_major      root                normal
+canis_major                          normal
+canis_major     crock       alligator,zebra
+
+</pre>
+
+<P>
+Finally delete a qos
+
+<pre>
+$sacctmgr delete qos alligator
+ Deleting QOS(s)...
+  alligator
+</pre>
+
 <p style="text-align: center;">Last modified 9 October 2009</p>
 
 </ul></body></html>

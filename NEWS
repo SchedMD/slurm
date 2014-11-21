@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Update xhash/tree make check to work correctly with current code.
  -- Remove the reference 'experimental' for the jobacct_gather/cgroup
     plugin.
+ -- Add QOS manipulation examples to the qos.html documentation page.
 
 * Changes in Slurm 14.11.0
 ==========================
