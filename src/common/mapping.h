@@ -40,19 +40,30 @@
 #define MAPPING_H
 
 #include <stdint.h>
-#include "xmalloc.h"
-#include "xassert.h"
-#include "xstring.h"
-#include "slurm/slurm_errno.h"
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+
+#include "slurm/slurm.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/xassert.h"
 
 BEGIN_C_DECLS
 
-char *pack_process_mapping(uint32_t node_cnt, uint32_t task_cnt,
-						   uint16_t *tasks, uint32_t **tids);
-uint32_t *unpack_process_mapping_flat(char *map, uint32_t node_cnt,
-									  uint32_t task_cnt, uint16_t *tasks);
-int unpack_process_mapping(char *map, uint32_t node_cnt,
-						   uint32_t task_cnt, uint16_t *tasks, uint32_t **tids);
+extern char *pack_process_mapping(uint32_t node_cnt,
+				  uint32_t task_cnt,
+				  uint16_t *tasks,
+				  uint32_t **tids);
+extern uint32_t *unpack_process_mapping_flat(char *map,
+					     uint32_t node_cnt,
+					     uint32_t task_cnt,
+					     uint16_t *tasks);
+extern int unpack_process_mapping(char *map,
+				  uint32_t node_cnt,
+				  uint32_t task_cnt,
+				  uint16_t *tasks,
+				  uint32_t **tids);
 
 END_C_DECLS
 
