@@ -60,6 +60,7 @@
 #include "src/common/net.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/common/reverse_tree_math.h"
+#include "src/common/mapping.h"
 
 #include "setup.h"
 #include "tree.h"
@@ -374,147 +375,6 @@ pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
 
 /**************************************************************/
 
-/* returned string should be xfree-ed by caller */
-static char *
-_get_proc_mapping(const mpi_plugin_client_info_t *job)
-{
-	uint32_t node_cnt, task_cnt, task_mapped, node_task_cnt, **tids,
-		block;
-	uint16_t task_dist, *tasks, *rounds;
-	int i, start_id, end_id;
-	char *mapping = NULL;
-
-	node_cnt = job->step_layout->node_cnt;
-	task_cnt = job->step_layout->task_cnt;
-	task_dist = job->step_layout->task_dist;
-	tasks = job->step_layout->tasks;
-	tids = job->step_layout->tids;
-
-	/* for now, PMI2 only supports vector processor mapping */
-
-	if (task_dist == SLURM_DIST_CYCLIC ||
-	    task_dist == SLURM_DIST_CYCLIC_CFULL ||
-	    task_dist == SLURM_DIST_CYCLIC_CYCLIC ||
-	    task_dist == SLURM_DIST_CYCLIC_BLOCK) {
-		mapping = xstrdup("(vector");
-
-		rounds = xmalloc (node_cnt * sizeof(uint16_t));
-		task_mapped = 0;
-		while (task_mapped < task_cnt) {
-			start_id = 0;
-			/* find start_id */
-			while (start_id < node_cnt) {
-				while (start_id < node_cnt &&
-				       ( rounds[start_id] >= tasks[start_id] ||
-					 (task_mapped !=
-					  tids[start_id][rounds[start_id]]) )) {
-					start_id ++;
-				}
-				if (start_id >= node_cnt)
-					break;
-				/* block is always 1 */
-				/* find end_id */
-				end_id = start_id;
-				while (end_id < node_cnt &&
-				       ( rounds[end_id] < tasks[end_id] &&
-					 (task_mapped ==
-					  tids[end_id][rounds[end_id]]) )) {
-					rounds[end_id] ++;
-					task_mapped ++;
-					end_id ++;
-				}
-				xstrfmtcat(mapping, ",(%u,%u,1)", start_id,
-					   end_id - start_id);
-				start_id = end_id;
-			}
-		}
-		xfree(rounds);
-		xstrcat(mapping, ")");
-	} else if (task_dist == SLURM_DIST_ARBITRARY) {
-		/*
-		 * MPICH2 will think that each task runs on a seperate node.
-		 * The program will run, but no SHM will be used for
-		 * communication.
-		 */
-		mapping = xstrdup("(vector");
-		xstrfmtcat(mapping, ",(0,%u,1)", job->step_layout->task_cnt);
-		xstrcat(mapping, ")");
-
-	} else if (task_dist == SLURM_DIST_PLANE) {
-		mapping = xstrdup("(vector");
-
-		rounds = xmalloc (node_cnt * sizeof(uint16_t));
-		task_mapped = 0;
-		while (task_mapped < task_cnt) {
-			start_id = 0;
-			/* find start_id */
-			while (start_id < node_cnt) {
-				while (start_id < node_cnt &&
-				       ( rounds[start_id] >= tasks[start_id] ||
-					 (task_mapped !=
-					  tids[start_id][rounds[start_id]]) )) {
-					start_id ++;
-				}
-				if (start_id >= node_cnt)
-					break;
-				/* find start block. block may be less
-				 * than plane size */
-				block = 0;
-				while (rounds[start_id] < tasks[start_id] &&
-				       (task_mapped ==
-					tids[start_id][rounds[start_id]])) {
-					block ++;
-					rounds[start_id] ++;
-					task_mapped ++;
-				}
-				/* find end_id */
-				end_id = start_id + 1;
-				while (end_id < node_cnt &&
-				       (rounds[end_id] + block - 1 <
-					tasks[end_id])) {
-					for (i = 0;
-					     i < tasks[end_id] - rounds[end_id];
-					     i ++) {
-						if (task_mapped + i !=
-						    tids[end_id][rounds[end_id]
-								 + i]) {
-							break;
-						}
-					}
-					if (i != block)
-						break;
-					rounds[end_id] += block;
-					task_mapped += block;
-					end_id ++;
-				}
-				xstrfmtcat(mapping, ",(%u,%u,%u)", start_id,
-					   end_id - start_id, block);
-				start_id = end_id;
-			}
-		}
-		xfree(rounds);
-		xstrcat(mapping, ")");
-
-	} else {		/* BLOCK mode */
-		mapping = xstrdup("(vector");
-		start_id = 0;
-		node_task_cnt = tasks[start_id];
-		for (i = start_id + 1; i < node_cnt; i ++) {
-			if (node_task_cnt == tasks[i])
-				continue;
-			xstrfmtcat(mapping, ",(%u,%u,%u)", start_id,
-				   i - start_id, node_task_cnt);
-			start_id = i;
-			node_task_cnt = tasks[i];
-		}
-		xstrfmtcat(mapping, ",(%u,%u,%u))", start_id, i - start_id,
-			   node_task_cnt);
-	}
-
-	debug("mpi/pmi2: processor mapping: %s", mapping);
-	return mapping;
-}
-
 static int
 _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 {
@@ -551,7 +411,11 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 	}
 
 	job_info.step_nodelist = xstrdup(job->step_layout->node_list);
-	job_info.proc_mapping = _get_proc_mapping(job);
+
+	job_info.proc_mapping = pack_process_mapping(job->step_layout->node_cnt,
+				 job->step_layout->task_cnt,
+				 job->step_layout->tasks,
+				 job->step_layout->tids);
 	if (job_info.proc_mapping == NULL) {
 		return SLURM_ERROR;
 	}
