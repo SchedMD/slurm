@@ -1,9 +1,10 @@
 /*****************************************************************************\
  *  src/common/mapping.h - routines for compact process mapping representation
  *****************************************************************************
- *  Copyright (C) 2014 Institute of Semiconductor Physics (ISP SB RAS),
- *                                                          Novosibirsk, Russia.
- *  Written by Artem Polyakov <artpol84@gmail.com>. All rights reserved.
+ *  Copyright (C) 2014 Institute of Semiconductor Physics
+ *                     Siberian Branch of Russian Academy of Science
+ *  Written by Artem Polyakov <artpol84@gmail.com>.
+ *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
