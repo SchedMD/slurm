@@ -125,7 +125,8 @@ libcommon_la_SOURCES = 			\
 	gres.h gres.c			\
 	entity.h entity.c		\
 	layout.h layout.c		\
-	layouts_mgr.h layouts_mgr.c
+	layouts_mgr.h layouts_mgr.c \
+	mapping.c mapping.h
 
 EXTRA_libcommon_la_SOURCES = 		\
 	$(extra_unsetenv_src)		\
