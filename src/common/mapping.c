@@ -69,14 +69,15 @@ BEGIN_C_DECLS
 	asprintf(&nptr, "%s"fmt, ptr, ##args);  \
 	free(ptr);                              \
 	ptr = nptr;                             \
-}
+	}
 #define xstrcat(a, b) xstrfmtcat(a, "%s", b)
 
 #endif
 
 
 
-char *pack_process_mapping(uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks, uint32_t **tids)
+char *pack_process_mapping(uint32_t node_cnt, uint32_t task_cnt,
+						   uint16_t *tasks, uint32_t **tids)
 {
 	int offset, i;
 	int start_node, end_node;
@@ -111,14 +112,15 @@ char *pack_process_mapping(uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks
 				continue;
 			}
 			int j;
-			for(j = next_task[i]; ((j + 1) < tasks[i]) && ((tids[i][j] + 1) == tids[i][j+1]); j++);
+			for(j = next_task[i]; ((j + 1) < tasks[i]) && ((tids[i][j]+1) == tids[i][j+1]); j++);
 			j++;
 			// First run determines the depth
 			if( depth < 0 ){
 				depth = j - next_task[i];
 			} else {
 				// If this is not the first node in the bar check that:
-				// 1. First tid on this node is sequentially next after last tid on the previous node
+				// 1. First tid on this node is sequentially next after last tid
+				//    on the previous node
 				if( tids[i-1][next_task[i-1]-1] + 1 != tids[i][next_task[i]] ){
 					end_node = i;
 					continue;
@@ -140,9 +142,11 @@ char *pack_process_mapping(uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks
 	return packing;
 }
 
-uint32_t *unpack_process_mapping_flat(char *map, uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks)
+uint32_t *unpack_process_mapping_flat(char *map, uint32_t node_cnt,
+									  uint32_t task_cnt, uint16_t *tasks)
 {
-	// Start from the flat array. For i'th task is located on the task_map[i]'th node
+	// Start from the flat array. For i'th task is located
+	// on the task_map[i]'th node
 	uint32_t *task_map = xmalloc(sizeof(int) * task_cnt);
 	char *prefix = "(vector,", *p = NULL;
 	uint32_t taskid, i;
@@ -185,15 +189,19 @@ err_exit:
 	return NULL;
 }
 
-int unpack_process_mapping(char *map, uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks, uint32_t **tids)
+int unpack_process_mapping(char *map, uint32_t node_cnt,
+						   uint32_t task_cnt, uint16_t *tasks,
+						   uint32_t **tids)
 {
-	// Start from the flat array. For i'th task is located on the task_map[i]'th node
+	// Start from the flat array. For i'th task is located
+	// on the task_map[i]'th node
 	uint32_t *task_map = NULL;
 	uint16_t *node_task_cnt = NULL;
 	uint32_t taskid, i;
 	int rc = 0;
 
-	if( ( task_map = unpack_process_mapping_flat(map, node_cnt, task_cnt, tasks) ) == NULL ){
+	task_map = unpack_process_mapping_flat(map, node_cnt, task_cnt, tasks);
+	if( task_map == NULL ){
 		rc = SLURM_ERROR;
 		goto err_exit;
 	}
@@ -239,7 +247,8 @@ END_C_DECLS
 #define NCPUS 16
 #define NODES 200
 
-static void block_distr(uint32_t task_cnt, uint16_t *tasks, uint32_t **tids)
+static void block_distr(uint32_t task_cnt, uint16_t *tasks,
+						uint32_t **tids)
 {
 	int i, j, tnum = 0;
 	for(i=0; i < NODES;i++){
@@ -254,7 +263,8 @@ static void block_distr(uint32_t task_cnt, uint16_t *tasks, uint32_t **tids)
 	}
 }
 
-static void cyclic_distr(uint32_t task_cnt, uint16_t *tasks, uint32_t **tids)
+static void cyclic_distr(uint32_t task_cnt, uint16_t *tasks,
+						 uint32_t **tids)
 {
 	int i, j, tnum = 0;
 	// CYCLIC distribution
@@ -271,7 +281,8 @@ static void cyclic_distr(uint32_t task_cnt, uint16_t *tasks, uint32_t **tids)
 }
 
 
-static void plane_distr(uint32_t task_cnt, int plane_factor, uint16_t *tasks, uint32_t **tids)
+static void plane_distr(uint32_t task_cnt, int plane_factor,
+						uint16_t *tasks, uint32_t **tids)
 {
 	int i, j, tnum = 0;
 	// PLANE distribution
@@ -288,7 +299,8 @@ static void plane_distr(uint32_t task_cnt, int plane_factor, uint16_t *tasks, ui
 	}
 }
 
-static void check(uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks, uint32_t **tids)
+static void check(uint32_t node_cnt, uint32_t task_cnt,
+				  uint16_t *tasks, uint32_t **tids)
 {
 	uint16_t *new_tasks;
 	uint32_t **new_tids;

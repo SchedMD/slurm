@@ -46,9 +46,12 @@
 
 BEGIN_C_DECLS
 
-char *pack_process_mapping(uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks, uint32_t **tids);
-uint32_t *unpack_process_mapping_flat(char *map, uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks);
-int unpack_process_mapping(char *map, uint32_t node_cnt, uint32_t task_cnt, uint16_t *tasks, uint32_t **tids);
+char *pack_process_mapping(uint32_t node_cnt, uint32_t task_cnt,
+						   uint16_t *tasks, uint32_t **tids);
+uint32_t *unpack_process_mapping_flat(char *map, uint32_t node_cnt,
+									  uint32_t task_cnt, uint16_t *tasks);
+int unpack_process_mapping(char *map, uint32_t node_cnt,
+						   uint32_t task_cnt, uint16_t *tasks, uint32_t **tids);
 
 END_C_DECLS
 
