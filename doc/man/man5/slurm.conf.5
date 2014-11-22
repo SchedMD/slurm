@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "October 2014" "slurm.conf 15.08" "Slurm configuration file"
+.TH "slurm.conf" "5" "November 2014" "slurm.conf 15.08" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2046,6 +2046,15 @@ This can be useful in a high\-throughput environment in which batch jobs are
 submitted at a very high rate (i.e. using the sbatch command) and one wishes
 to reduce the overhead of attempting to schedule each job at submit time.
 The default value is 3 seconds.
+.TP
+\fBbf_busy_nodes\fR
+When selecting resources for pending jobs to reserve for future execution
+(i.e. the job can not be started immediately), then preferentially select
+nodes that are in use.
+This will tend to leave currently idle resources available for backfilling
+longer running jobs, but may result in allocations having less than optimal
+network topology.
+This option is currently only supported by the select/cons_res plugin.
 .TP
 \fBbf_continue\fR
 The backfill scheduler periodically releases locks in order to permit other

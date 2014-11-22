@@ -103,6 +103,7 @@ struct node_use_record {
 	uint16_t node_state;		/* see node_cr_state comments */
 };
 
+extern bool     backfill_busy_nodes;
 extern bool     pack_serial_at_end;
 extern uint64_t select_debug_flags;
 extern uint16_t select_fast_schedule;

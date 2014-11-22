@@ -178,6 +178,7 @@ const uint32_t pstate_version = 7;	/* version control on saved state */
 
 uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
+bool     backfill_busy_nodes  = false;
 bool     pack_serial_at_end   = false;
 uint64_t select_debug_flags   = 0;
 uint16_t select_fast_schedule = 0;
@@ -1471,7 +1472,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, NULL);
+			 select_node_usage, NULL, false);
 	return rc;
 }
 
@@ -1528,7 +1529,7 @@ top:	orig_map = bit_copy(save_bitmap);
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, exc_core_bitmap);
+			 select_node_usage, exc_core_bitmap, false);
 
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
@@ -1568,7 +1569,7 @@ top:	orig_map = bit_copy(save_bitmap);
 					 tmp_cr_type, job_node_req,
 					 select_node_cnt,
 					 future_part, future_usage,
-					 exc_core_bitmap);
+					 exc_core_bitmap, false);
 			tmp_job_ptr->details->usable_nodes = 0;
 			if (rc != SLURM_SUCCESS)
 				continue;
@@ -1695,7 +1696,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, exc_core_bitmap);
+			 select_node_usage, exc_core_bitmap, false);
 	if (rc == SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(orig_map);
 		job_ptr->start_time = now;
@@ -1751,7 +1752,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 				 req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
 				 job_node_req, select_node_cnt, future_part,
-				 future_usage, exc_core_bitmap);
+				 future_usage, exc_core_bitmap, false);
 		if (rc == SLURM_SUCCESS) {
 			/* Actual start time will actually be later than "now",
 			 * but return "now" for backfill scheduler to
@@ -1780,7 +1781,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					 SELECT_MODE_WILL_RUN, tmp_cr_type,
 					 job_node_req, select_node_cnt,
 					 future_part, future_usage,
-					 exc_core_bitmap);
+					 exc_core_bitmap, backfill_busy_nodes);
 			if (rc == SLURM_SUCCESS) {
 				if (tmp_job_ptr->end_time <= now)
 					job_ptr->start_time = now + 1;
@@ -1936,15 +1937,25 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	sched_params = slurm_get_sched_params();
 	if (sched_params && strstr(sched_params, "preempt_strict_order"))
 		preempt_strict_order = true;
+	else
+		preempt_strict_order = false;
 	if (sched_params &&
-	    (tmp_ptr = strstr(sched_params, "preempt_reorder_count=")))
+	    (tmp_ptr = strstr(sched_params, "preempt_reorder_count="))) {
 		preempt_reorder_cnt = atoi(tmp_ptr + 22);
-	if (preempt_reorder_cnt < 0) {
-		fatal("Invalid SchedulerParameters preempt_reorder_count: %d",
-		      preempt_reorder_cnt);
+		if (preempt_reorder_cnt < 0) {
+			fatal("Invalid SchedulerParameters "
+			      "preempt_reorder_count: %d",
+			      preempt_reorder_cnt);
+		}
 	}
 	if (sched_params && strstr(sched_params, "pack_serial_at_end"))
 		pack_serial_at_end = true;
+	else
+		pack_serial_at_end = false;
+	if (sched_params && strstr(sched_params, "bf_busy_nodes"))
+		backfill_busy_nodes = true;
+	else
+		backfill_busy_nodes = false;
 	xfree(sched_params);
 
 	/* initial global core data structures */

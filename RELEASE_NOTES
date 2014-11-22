@@ -43,6 +43,13 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Remove DynAllocPort configuration parameter.
  -- Added new configuration parameters to support burst buffers:
     BurstBufferParameters, and BurstBufferType.
+ -- Added SchedulerParameters option of "bf_busy_nodes". When selecting
+    resources for pending jobs to reserve for future execution (i.e. the job
+    can not be started immediately), then preferentially select nodes that are
+    in use. This will tend to leave currently idle resources available for
+    backfilling longer running jobs, but may result in allocations having less
+    than optimal network topology. This option is currently only supported by
+    the select/cons_res plugin.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
