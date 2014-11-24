@@ -15,6 +15,9 @@ Jacob Jenson, SchedMD</li>
 <li><a href="SC14/Slurm_15.08_Roadmap.pdf">Slurm Version 15.08 Roadmap</a>,
 Jacob Jenson, SchedMD</li>
 
+<li><a href="SC14/Cray_Slurm.pdf">Slurm on Cray systems</a>,
+David Wallace, Cray</li>
+
 <li><a href="SC14/BYU_Fair_Tree.pdf">Fair Tree: Fairshare Algorithm for Slurm</a>
 Ryan Cox and Levi Morrison (Brigham Young University)</li>
 
