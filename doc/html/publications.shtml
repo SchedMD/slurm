@@ -6,6 +6,23 @@
 
 <h2>Presentations</h2>
 
+<!-- SC14 Slurm BOF-->
+<li><b>Presentations from Slurm Birds of a Feather and the Slurm booth, SC14, November 2014</b></li>
+<ul>
+<li><a href="SC14/Slurm_14.11.pdf">Slurm Version 14.11</a>,
+Jacob Jenson, SchedMD</li>
+
+<li><a href="SC14/Slurm_15.08_Roadmap.pdf">Slurm Version 15.08 Roadmap</a>,
+Jacob Jenson, SchedMD</li>
+
+<li><a href="SC14/BYU_Fair_Tree.pdf">Fair Tree: Fairshare Algorithm for Slurm</a>
+Ryan Cox and Levi Morrison (Brigham Young University)</li>
+
+<li><a href="SC14/VLSCI.pdf">VLSCI Site Report</a>,
+Chris Samuel (VLSCI)</li>
+</ul>
+
+
 <!--Slurm User Group Meeting 2013-->
 <li><b>Presentations from SLURM User Group Meeting, September 2014</b></li>
 <ul>
@@ -540,6 +557,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 10 October 2014</p>
+<p style="text-align:center;">Last modified 24 November 2014</p>
 
 <!--#include virtual="footer.txt"-->
