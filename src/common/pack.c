@@ -61,8 +61,8 @@
  * memory allocation error due to array or buffer sizes that are
  * unreasonably large. Increase this limits as needed. */
 #define MAX_PACK_ARRAY_LEN	(128 * 1024)
-#define MAX_PACK_MEM_LEN	(16 * 1024 * 1024)
-#define MAX_PACK_STR_LEN	(16 * 1024 * 1024)
+#define MAX_PACK_MEM_LEN	(32 * 1024 * 1024)
+#define MAX_PACK_STR_LEN	(32 * 1024 * 1024)
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
