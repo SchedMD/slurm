@@ -119,9 +119,9 @@ if {$num_cpus == 0} {
 # Get a list of nodes that we can use
 #
 set i 0
-spawn $sinfo -o%n|%t --noheader -p$partition
+spawn $sinfo -o%N|%t|%o --noheader -p$partition
 expect {
-	-re "($alpha_numeric_under).idle" {
+	-re "($alpha_numeric_nodelist).idle" {
 		if {$i<8} {
 			set node_list($i) $expect_out(1,string)
 			incr i 1
@@ -138,7 +138,7 @@ expect {
 }
 
 if {$i != 8} {
-	send_user "\nFAILURE: unable to get all the required nodes\n"
+	send_user "\nFAILURE: unable to get all the required nodes ($i != 8)\n"
 	exit 0
 }
 
