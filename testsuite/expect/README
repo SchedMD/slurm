@@ -235,6 +235,7 @@ test2.20   Validate scontrol show hostnames.
 test2.21   Validate scontrol requeue of failed or completed job.
 test2.22   Validate scontrol requeuehold requeues job to held pending state.
 test2.23   Validate scontrol requeuehold State=SpecialExit.
+test2.24   Validate the scontrol write config creates accurate config
 
 
 test3.#    Testing of scontrol options (best run as SlurmUser or root).
