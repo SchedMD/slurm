@@ -57,12 +57,6 @@
 #include "src/common/pack.h"
 #include "src/common/xmalloc.h"
 
-/* If we unpack a buffer that contains bad data, we want to avoid
- * memory allocation error due to array or buffer sizes that are
- * unreasonably large. Increase this limits as needed. */
-#define MAX_PACK_ARRAY_LEN	(128 * 1024)
-#define MAX_PACK_MEM_LEN	(64 * 1024 * 1024)
-
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
