@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     backfilling longer running jobs, but may result in allocations having less
     than optimal network topology. This option is currently only supported by
     the select/cons_res plugin.
+ -- Permit "SuspendTime=NONE" as slurm.conf value rather than only a numeric
+    value to match "scontrol show config" output.
 
 * Changes in Slurm 14.11.1
 ==========================

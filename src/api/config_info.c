@@ -1392,18 +1392,23 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	if (!slurm_ctl_conf_ptr->suspend_time)
+	if (slurm_ctl_conf_ptr->suspend_time == 0) {
 		snprintf(tmp_str, sizeof(tmp_str), "NONE");
-	else
+	} else {
 		snprintf(tmp_str, sizeof(tmp_str), "%d sec",
 			 ((int)slurm_ctl_conf_ptr->suspend_time - 1));
+	}
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SuspendTime");
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
-		 slurm_ctl_conf_ptr->suspend_timeout);
+	if (slurm_ctl_conf_ptr->suspend_timeout == 0) {
+		snprintf(tmp_str, sizeof(tmp_str), "NONE");
+	} else {
+		snprintf(tmp_str, sizeof(tmp_str), "%u sec",
+			 slurm_ctl_conf_ptr->suspend_timeout);
+	}
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SuspendTimeout");
 	key_pair->value = xstrdup(tmp_str);
@@ -1715,12 +1720,6 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 			continue;
 		}
 
-		/* Certain values need to be changed to prevent
-		 * errors in reading/parsing the conf file */
-		if (!strcasecmp(key_pair->name, "SuspendTime") &&
-		    !strcasecmp(key_pair->value, "NONE"))
-			strcpy(key_pair->value, "0");
-
 		/* Comment out certain key_pairs */
 		/* - TaskPluginParam=(null type) is not a NULL but
 		 * it does imply no value */
@@ -1885,7 +1884,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 
 	_write_group_header (out, "ACCOUNTING");
 	iter = list_iterator_create(accounting_list);
-	while((temp = list_next(iter)))
+	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)accounting_list);
@@ -1899,7 +1898,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 
 	_write_group_header (out, "TOPOLOGY");
 	iter = list_iterator_create(topology_list);
-	while((temp = list_next(iter)))
+	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)topology_list);
@@ -1913,7 +1912,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 
 	_write_group_header (out, "POWER");
 	iter = list_iterator_create(power_list);
-	while((temp = list_next(iter)))
+	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
 	list_destroy((List)power_list);

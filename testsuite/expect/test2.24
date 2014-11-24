@@ -75,8 +75,7 @@ expect {
 		    $option != "MULTIPLE_SLURMD" &&
 		    $option != "NEXT_JOB_ID" &&
 		    $option != "SLURM_CONF" &&
-		    $option != "SLURM_VERSION" &&
-		    $option != "SuspendTime"} {
+		    $option != "SLURM_VERSION"} {
 			set conf_val($option) $val
 			incr opt_cnt
 		}
