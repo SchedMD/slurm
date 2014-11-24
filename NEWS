@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Update xhash/tree make check to work correctly with current code.
  -- Remove the reference 'experimental' for the jobacct_gather/cgroup
     plugin.
+ -- Add QOS manipulation examples to the qos.html documentation page.
 
 * Changes in Slurm 14.11.0
 ==========================
@@ -380,6 +381,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix sbatch --ntasks-per-core option from setting invalid
     SLURM_NTASKS_PER_CORE environment value.
  -- Prevent scancel abort when no job satisfies filter options.
+ -- ALPS - Fix --ntasks-per-core option on multiple nodes.
+ -- Double max string that Slurm can pack from 16MB to 32MB to support
+    larger MPI2 configurations.
 
 * Changes in Slurm 14.03.10
 ===========================
