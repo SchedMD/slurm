@@ -9,6 +9,9 @@
 <!-- SC14 Slurm BOF-->
 <li><b>Presentations from Slurm Birds of a Feather and the Slurm booth, SC14, November 2014</b></li>
 <ul>
+<li><a href="SC14/Slurm_Overview.pdf">Slurm Overview</a>,
+Danny Auble and Brian Christiansen, SchedMD</li>
+
 <li><a href="SC14/Slurm_14.11.pdf">Slurm Version 14.11</a>,
 Jacob Jenson, SchedMD</li>
 
