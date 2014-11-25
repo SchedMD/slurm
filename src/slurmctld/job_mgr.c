@@ -12490,10 +12490,15 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	if (state & JOB_SPECIAL_EXIT) {
 		job_ptr->job_state |= JOB_SPECIAL_EXIT;
 		job_ptr->state_reason = WAIT_HELD_USER;
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc =
+			xstrdup("job requeued in special exit state");
 		job_ptr->priority = 0;
 	}
 	if (state & JOB_REQUEUE_HOLD) {
 		job_ptr->state_reason = WAIT_HELD_USER;
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc = xstrdup("job requeued in held state");
 		job_ptr->priority = 0;
 	}
 
