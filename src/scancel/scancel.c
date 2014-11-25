@@ -230,8 +230,8 @@ _verify_job_ids (void)
 				break;
 		}
 		jp = &job_ptr[i];
-		if (IS_JOB_FINISHED(jp) ||
-		    (i >= job_buffer_ptr->record_count)) {
+		if ((i >= job_buffer_ptr->record_count) ||
+		    IS_JOB_FINISHED(jp)) {
 			if (opt.verbose < 0) {
 				;
 			} else if ((opt.array_id[j] == NO_VAL) &&
