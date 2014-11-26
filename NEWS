@@ -50,6 +50,10 @@ documents those changes that are of interest to users and administrators.
  -- Remove the reference 'experimental' for the jobacct_gather/cgroup
     plugin.
  -- Add QOS manipulation examples to the qos.html documentation page.
+ -- If 'squeue -w node_name' specifies an unknown host name print
+    an error message and return 1.
+ -- Fix race condition in job_submit plugin logic that could cause slurmctld to
+    deadlock.
 
 * Changes in Slurm 14.11.0
 ==========================

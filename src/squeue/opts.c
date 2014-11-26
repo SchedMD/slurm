@@ -87,6 +87,8 @@ static void _parse_long_token( char *token, char *sep, int *field_size,
 			       bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _usage( void );
+static bool _check_node_names(char *);
+static bool _find_a_host(char *, node_info_msg_t *);
 
 /*
  * parse_command_line
@@ -296,6 +298,8 @@ parse_command_line( int argc, char* argv[] )
 				      optarg);
 				exit(1);
 			}
+			if (!_check_node_names(optarg))
+				exit(1);
 			break;
 		case OPT_LONG_HELP:
 			_help();
@@ -1924,4 +1928,52 @@ Usage: squeue [OPTIONS]\n\
 \nHelp options:\n\
   --help                          show this help message\n\
   --usage                         display a brief summary of squeue options\n");
+}
+
+/* _check_node_names()
+ */
+static bool
+_check_node_names(char *names)
+{
+	int cc;
+	node_info_msg_t *node_info;
+	hostlist_t l;
+	char *host;
+	hostlist_iterator_t itr;
+
+	cc = slurm_load_node(0,
+			     &node_info,
+			     SHOW_ALL);
+	if (cc != 0) {
+		slurm_perror ("slurm_load_node error");
+		return false;
+	}
+
+	l = slurm_hostlist_create(names);
+	itr = hostlist_iterator_create(l);
+	while ((host = hostlist_next(itr))) {
+		if (!_find_a_host(host, node_info)) {
+			error("Invalid node name %s", host);
+			hostlist_iterator_destroy(itr);
+			return false;
+		}
+	}
+	hostlist_iterator_destroy(itr);
+
+	return true;
+}
+
+/* _find_a_host()
+ */
+static bool
+_find_a_host(char *host, node_info_msg_t *node)
+{
+	int cc;
+
+	for (cc = 0; cc < node->record_count; cc++) {
+		if (strcmp(host, node->node_array[cc].name) == 0)
+			return true;
+	}
+
+	return false;
 }
