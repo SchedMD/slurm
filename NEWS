@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 14.11.2
+==========================
+
 * Changes in Slurm 14.11.1
 ==========================
  -- Get libs correct when doing the xtree/xhash make check.
