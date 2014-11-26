@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     an error message and return 1.
  -- Fix race condition in job_submit plugin logic that could cause slurmctld to
     deadlock.
+ -- Job wait reason of "ReqNodeNotAvail" expanded to identify unavailable nodes
+    (e.g. "ReqNodeNotAvail(Unavailable:tux[3-6])").
 
 * Changes in Slurm 14.11.0
 ==========================
