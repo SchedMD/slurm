@@ -178,9 +178,6 @@ static bool _valid_memory(struct part_record *part_ptr,
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
-	/* Locks: Read partition */
-	slurmctld_lock_t part_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
 	struct part_record *top_prio_part = NULL;
@@ -188,7 +185,6 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	if (job_desc->partition)	/* job already specified partition */
 		return SLURM_SUCCESS;
 
-	lock_slurmctld(part_read_lock);
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
@@ -207,7 +203,6 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 		}
 	}
 	list_iterator_destroy(part_iterator);
-	unlock_slurmctld(part_read_lock);
 
 	if (top_prio_part) {
 		info("Setting partition of submitted job to %s",

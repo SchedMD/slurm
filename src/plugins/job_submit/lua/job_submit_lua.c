@@ -905,14 +905,10 @@ static bool _user_can_use_part(uint32_t user_id, uint32_t submit_uid,
 
 static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 {
-	/* Locks: Read partition */
-	slurmctld_lock_t part_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
 
 	lua_newtable(L);
-	lock_slurmctld(part_read_lock);
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!_user_can_use_part(user_id, submit_uid, part_ptr))
@@ -940,7 +936,6 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 	}
 #endif
 	list_iterator_destroy(part_iterator);
-	unlock_slurmctld(part_read_lock);
 }
 
 static void _register_lua_slurm_output_functions (void)
