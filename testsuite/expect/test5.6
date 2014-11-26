@@ -223,11 +223,14 @@ expect {
 #
 # Check the squeue node filter option
 #
+set match 0
 spawn $squeue --format=%u --noheader --user=$this_uid --nodelist=dummy_name
 expect {
-	-re "($alpha_numeric_under)" {
-		send_user "\nFAILURE: squeue node filter failure\n"
-		set exit_code 1
+
+	-re "Invalid node name dummy_name" {
+		send_user "\nNo worries. This error is expected\n"
+		incr match
+		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: squeue not responding\n"
@@ -237,6 +240,11 @@ expect {
 		wait
 	}
 }
+if {$match != 1} {
+	send_user "\nFAILURE: squeue node filter failure\n"
+	set exit_code 1
+}
+
 # The node filtering really only works if the job has begun execution
 set node_name_set 0
 spawn $squeue --format=%N --noheader --jobs=$job_id1 --states=RUNNING
