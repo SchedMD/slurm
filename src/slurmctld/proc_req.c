@@ -94,9 +94,6 @@
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 
-extern void         get_all_cache_info(char **buffer_ptr, int *buffer_size,
-				       uid_t uid, uint16_t protocol_version);
-
 static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int rpc_type_size = 0;	/* Size of rpc_type_* arrays */
 static uint16_t *rpc_type_id = NULL;

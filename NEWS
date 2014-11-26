@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
     the select/cons_res plugin.
  -- Permit "SuspendTime=NONE" as slurm.conf value rather than only a numeric
     value to match "scontrol show config" output.
+ -- Add the 'scontrol show cache' command which displays the associations
+    in slurmctld.
 
 * Changes in Slurm 14.11.2
 ==========================

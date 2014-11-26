@@ -2225,4 +2225,10 @@ extern char *jobid2str(struct job_record *, char *);
  */
 extern void trace_job(struct job_record *, const char *, const char *);
 
+/* get_all_cache_info()
+ *
+ * Return the associations information in the controller
+ */
+extern void  get_all_cache_info(char **, int *, uid_t, uint16_t);
+
 #endif /* !_HAVE_SLURMCTLD_H */

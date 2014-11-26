@@ -11712,7 +11712,6 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 {
 	slurm_cache_user_info_t  *cuptr;
 	slurm_cache_assoc_info_t *captr;
-
 	uint64_t uasize, aasize;
 	uint32_t zz;
 	int      i;
@@ -11722,14 +11721,16 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 
 	/* load buffer's header (data structure version and time)
 	 */
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 
 		safe_unpack32(&((*msg)->num_users), buffer);
 		safe_unpack32(&((*msg)->num_assocs), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
 
-		uasize = sizeof(slurm_cache_user_info_t)  * (*msg)->num_users;
-		aasize = sizeof(slurm_cache_assoc_info_t) * (*msg)->num_assocs;
+		uasize = sizeof(slurm_cache_user_info_t)
+			* (*msg)->num_users;
+		aasize = sizeof(slurm_cache_assoc_info_t)
+			* (*msg)->num_assocs;
 
 		(*msg)->cache_user_array  = xmalloc(uasize);
 		(*msg)->cache_assoc_array = xmalloc(aasize);
@@ -11741,7 +11742,9 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 			cuptr = &((*msg)->cache_user_array[i]);
 
 			safe_unpack16(&cuptr->admin_level, buffer);
-			safe_unpackstr_xmalloc(&cuptr->default_acct, &zz,buffer);
+			safe_unpackstr_xmalloc(&cuptr->default_acct,
+					       &zz,
+					       buffer);
 			safe_unpackstr_xmalloc(&cuptr->default_wckey,&zz,buffer);
 			safe_unpackstr_xmalloc(&cuptr->name, &zz, buffer);
 			safe_unpackstr_xmalloc(&cuptr->old_name, &zz, buffer);
@@ -11754,31 +11757,31 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 
 			safe_unpackstr_xmalloc(&captr->acct, &zz, buffer);
 			safe_unpackstr_xmalloc(&captr->cluster, &zz, buffer);
-			safe_unpack32(         &captr->def_qos_id, buffer);
-			safe_unpack64(         &captr->grp_cpu_mins, buffer);
-			safe_unpack64(         &captr->grp_cpu_run_mins,buffer);
-			safe_unpack32(         &captr->grp_cpus, buffer);
-			safe_unpack32(         &captr->grp_jobs, buffer);
-			safe_unpack32(         &captr->grp_mem, buffer);
-			safe_unpack32(         &captr->grp_nodes, buffer);
-			safe_unpack32(         &captr->grp_submit_jobs, buffer);
-			safe_unpack32(         &captr->grp_wall, buffer);
-			safe_unpack32(         &captr->id, buffer);
-			safe_unpack16(         &captr->is_def, buffer);
-			safe_unpack32(         &captr->lft, buffer);
-			safe_unpack64(         &captr->max_cpu_mins_pj, buffer);
-			safe_unpack64(         &captr->max_cpu_run_mins,buffer);
-			safe_unpack32(         &captr->max_cpus_pj, buffer);
-			safe_unpack32(         &captr->max_jobs, buffer);
-			safe_unpack32(         &captr->max_nodes_pj, buffer);
-			safe_unpack32(         &captr->max_submit_jobs, buffer);
-			safe_unpack32(         &captr->max_wall_pj, buffer);
+			safe_unpack32(&captr->def_qos_id, buffer);
+			safe_unpack64(&captr->grp_cpu_mins, buffer);
+			safe_unpack64(&captr->grp_cpu_run_mins,buffer);
+			safe_unpack32(&captr->grp_cpus, buffer);
+			safe_unpack32(&captr->grp_jobs, buffer);
+			safe_unpack32(&captr->grp_mem, buffer);
+			safe_unpack32(&captr->grp_nodes, buffer);
+			safe_unpack32(&captr->grp_submit_jobs, buffer);
+			safe_unpack32(&captr->grp_wall, buffer);
+			safe_unpack32(&captr->id, buffer);
+			safe_unpack16(&captr->is_def, buffer);
+			safe_unpack32(&captr->lft, buffer);
+			safe_unpack64(&captr->max_cpu_mins_pj, buffer);
+			safe_unpack64(&captr->max_cpu_run_mins,buffer);
+			safe_unpack32(&captr->max_cpus_pj, buffer);
+			safe_unpack32(&captr->max_jobs, buffer);
+			safe_unpack32(&captr->max_nodes_pj, buffer);
+			safe_unpack32(&captr->max_submit_jobs, buffer);
+			safe_unpack32(&captr->max_wall_pj, buffer);
 			safe_unpackstr_xmalloc(&captr->parent_acct, &zz,buffer);
-			safe_unpack32(         &captr->parent_id, buffer);
+			safe_unpack32(&captr->parent_id, buffer);
 			safe_unpackstr_xmalloc(&captr->partition, &zz, buffer);
-			safe_unpack32(         &captr->rgt, buffer);
-			safe_unpack32(         &captr->shares_raw, buffer);
-			safe_unpack32(         &captr->uid, buffer);
+			safe_unpack32(&captr->rgt, buffer);
+			safe_unpack32(&captr->shares_raw, buffer);
+			safe_unpack32(&captr->uid, buffer);
 			safe_unpackstr_xmalloc(&captr->user, &zz, buffer);
 		}
 
