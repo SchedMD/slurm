@@ -97,6 +97,7 @@ extern void
 parse_command_line( int argc, char* argv[] )
 {
 	char *env_val = NULL;
+	char *nodes;
 	bool override_format_env = false;
 	int opt_char;
 	int option_index;
@@ -150,7 +151,7 @@ parse_command_line( int argc, char* argv[] )
 	}
 	if (getenv("SQUEUE_PRIORITY"))
 		params.priority_flag = true;
-
+	nodes = NULL;
 	while ((opt_char = getopt_long(argc, argv,
 				       "A:ahi:j::lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
@@ -298,8 +299,7 @@ parse_command_line( int argc, char* argv[] )
 				      optarg);
 				exit(1);
 			}
-			if (!_check_node_names(optarg))
-				exit(1);
+			nodes = xstrdup(optarg);
 			break;
 		case OPT_LONG_HELP:
 			_help();
@@ -377,6 +377,14 @@ parse_command_line( int argc, char* argv[] )
 		/* Replace params.nodename with the new one */
 		hostset_destroy(params.nodes);
 		params.nodes = nodenames;
+		/* Check if all node names specified
+		 * with -w are known to the controller.
+		 */
+		if (!_check_node_names(nodes)) {
+			xfree(nodes);
+			exit(1);
+		}
+		xfree(nodes);
 	}
 
 	if ( ( params.accounts == NULL ) &&
@@ -1940,6 +1948,9 @@ _check_node_names(char *names)
 	hostlist_t l;
 	char *host;
 	hostlist_iterator_t itr;
+
+	if (names == NULL)
+		return true;
 
 	cc = slurm_load_node(0,
 			     &node_info,

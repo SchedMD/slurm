@@ -1762,11 +1762,19 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 		/* Non-fatal errors for job below */
 		} else if (error_code == ESLURM_NODE_NOT_AVAIL) {
+			char *tmp_nodelist;
 			/* Required nodes are down or drained */
 			debug3("JobId=%u required nodes not avail",
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
+			bit_not(avail_node_bitmap);
+			tmp_nodelist = bitmap2node_name(avail_node_bitmap);
+			bit_not(avail_node_bitmap);
+			xstrfmtcat(job_ptr->state_desc,
+				   "ReqNodeNotAvail(Unavailable:%s)",
+				   tmp_nodelist);
+			xfree(tmp_nodelist);
 			last_job_update = now;
 		} else if ((error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 			   (error_code == ESLURM_RESERVATION_BUSY)) {
