@@ -274,10 +274,10 @@ _print_job_steps( bool clear_old )
 			error_code = SLURM_SUCCESS;
 			new_step_ptr = old_step_ptr;
 		}
-	}
-	else
+	} else {
 		error_code = slurm_get_job_steps((time_t) 0, NO_VAL, NO_VAL,
 						 &new_step_ptr, show_flags);
+	}
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
 		return SLURM_ERROR;
