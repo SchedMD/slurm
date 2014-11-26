@@ -17,6 +17,7 @@ slurmctld_SOURCES =     \
 	backup.c	\
 	burst_buffer.c	\
 	burst_buffer.h	\
+	caches.c        \
 	controller.c 	\
 	front_end.c	\
 	front_end.h	\

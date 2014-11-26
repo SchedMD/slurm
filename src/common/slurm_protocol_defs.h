@@ -241,7 +241,9 @@ typedef enum {
 	REQUEST_BURST_BUFFER_INFO,
 	RESPONSE_BURST_BUFFER_INFO,
 	REQUEST_JOB_USER_INFO,
-	REQUEST_NODE_INFO_SINGLE,
+	REQUEST_NODE_INFO_SINGLE,  /* 2040 */
+	REQUEST_CACHE_INFO,
+	RESPONSE_CACHE_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -1015,6 +1017,11 @@ typedef struct license_info_request_msg {
 	uint16_t show_flags;
 } license_info_request_msg_t;
 
+typedef struct cache_info_request_msg {
+	time_t last_update;
+	uint16_t show_flags;
+} cache_info_request_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1251,6 +1258,7 @@ extern void slurm_free_requeue_msg(requeue_msg_t *);
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
+extern void slurm_free_cache_info_request_msg(cache_info_request_msg_t *);
 
 extern char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);
@@ -1258,9 +1266,9 @@ extern uint16_t preempt_mode_num(const char *preempt_mode);
 extern char *log_num2string(uint16_t inx);
 extern uint16_t log_string2num(char *name);
 
-/* Translate a burst buffer numeric value to its equivalant state string */
+/* Translate a burst buffer numeric value to its equivalent state string */
 extern char *bb_state_string(uint16_t state);
-/* Translate a burst buffer state string to its equivalant numeric value */
+/* Translate a burst buffer state string to its equivalent numeric value */
 extern uint16_t bb_state_num(char *tok);
 
 /* Convert HealthCheckNodeState numeric value to a string.

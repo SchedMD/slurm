@@ -83,6 +83,7 @@ slurmapi_src =           \
 	allocate_msg.c   \
 	block_info.c     \
 	burst_buffer_info.c \
+	cache_info.c    \
 	cancel.c         \
 	checkpoint.c     \
 	complete.c       \
@@ -113,7 +114,7 @@ slurmapi_src =           \
 	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \
-	update_config.c
+	update_config.c  
 
 common_dir = $(top_builddir)/src/common
 

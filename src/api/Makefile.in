@@ -183,9 +183,9 @@ am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
 	$(common_dir)/libspank.la $(common_dir)/libeio.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = allocate.lo allocate_msg.lo block_info.lo \
-	burst_buffer_info.lo cancel.lo checkpoint.lo complete.lo \
-	config_info.lo front_end_info.lo init_msg.lo job_info.lo \
-	job_step_info.lo license_info.lo node_info.lo \
+	burst_buffer_info.lo cache_info.lo cancel.lo checkpoint.lo \
+	complete.lo config_info.lo front_end_info.lo init_msg.lo \
+	job_info.lo job_step_info.lo license_info.lo node_info.lo \
 	partition_info.lo pmi_server.lo reservation_info.lo signal.lo \
 	slurm_get_statistics.lo slurm_hostlist.lo slurm_pmi.lo \
 	step_ctx.lo step_io.lo step_launch.lo submit.lo suspend.lo \
@@ -575,6 +575,7 @@ slurmapi_src = \
 	allocate_msg.c   \
 	block_info.c     \
 	burst_buffer_info.c \
+	cache_info.c    \
 	cancel.c         \
 	checkpoint.c     \
 	complete.c       \
@@ -605,7 +606,7 @@ slurmapi_src = \
 	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \
-	update_config.c
+	update_config.c  
 
 common_dir = $(top_builddir)/src/common
 slurmapi_add = \
@@ -765,6 +766,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate_msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cache_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cancel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/complete.Plo@am__quote@

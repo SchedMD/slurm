@@ -3617,3 +3617,39 @@ rpc_num2string(uint16_t opcode)
 		return buf;
 	}
 }
+
+/* slurm_free_cache_info()
+ *
+ * Free the cache info returned previously
+ * from the controller.
+ */
+extern void
+slurm_free_cache_info_msg(cache_info_msg_t *msg)
+{
+	int cc;
+
+	if (msg == NULL)
+		return;
+
+	for (cc = 0; cc < msg->num_users; cc++) {
+		xfree(msg->cache_user_array[cc].name);
+		xfree(msg->cache_user_array[cc].old_name);
+		xfree(msg->cache_user_array[cc].default_acct);
+		xfree(msg->cache_user_array[cc].default_wckey);
+	}
+	for (cc = 0; cc < msg->num_assocs; cc++) {
+		xfree(msg->cache_assoc_array[cc].acct);
+		xfree(msg->cache_assoc_array[cc].cluster);
+		xfree(msg->cache_assoc_array[cc].parent_acct);
+		xfree(msg->cache_assoc_array[cc].partition);
+		xfree(msg->cache_assoc_array[cc].user);
+	}
+	xfree(msg->cache_user_array);
+	xfree(msg->cache_assoc_array);
+	xfree(msg);
+}
+extern void slurm_free_cache_info_request_msg(cache_info_request_msg_t *msg)
+{
+	xfree(msg);
+}
+

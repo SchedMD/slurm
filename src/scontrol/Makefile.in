@@ -135,11 +135,11 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
-	info_burst_buffer.$(OBJEXT) info_job.$(OBJEXT) \
-	info_lics.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
-	info_res.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
-	update_node.$(OBJEXT) update_part.$(OBJEXT) \
-	update_step.$(OBJEXT)
+	info_burst_buffer.$(OBJEXT) info_cache.$(OBJEXT) \
+	info_job.$(OBJEXT) info_lics.$(OBJEXT) info_node.$(OBJEXT) \
+	info_part.$(OBJEXT) info_res.$(OBJEXT) scontrol.$(OBJEXT) \
+	update_job.$(OBJEXT) update_node.$(OBJEXT) \
+	update_part.$(OBJEXT) update_step.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
@@ -455,6 +455,7 @@ scontrol_SOURCES = \
 	create_res.c	\
 	info_block.c	\
 	info_burst_buffer.c \
+	info_cache.c    \
 	info_job.c	\
 	info_lics.c	\
 	info_node.c	\
@@ -465,7 +466,7 @@ scontrol_SOURCES = \
 	update_job.c	\
 	update_node.c	\
 	update_part.c	\
-	update_step.c
+	update_step.c   
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 scontrol_LDADD = \
@@ -570,6 +571,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/create_res.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_burst_buffer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_cache.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_lics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_node.Po@am__quote@

@@ -94,6 +94,9 @@
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 
+extern void         get_all_cache_info(char **buffer_ptr, int *buffer_size,
+				       uid_t uid, uint16_t protocol_version);
+
 static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int rpc_type_size = 0;	/* Size of rpc_type_* arrays */
 static uint16_t *rpc_type_id = NULL;
@@ -188,7 +191,7 @@ inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
-
+inline static void  _slurm_rpc_dump_cache(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 
 extern diag_stats_t slurmctld_diag_stats;
@@ -540,6 +543,10 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_kill_job2(msg);
 		slurm_free_job_step_kill_msg(msg->data);
 		break;
+	 case REQUEST_CACHE_INFO:
+		 _slurm_rpc_dump_cache(msg);
+		 slurm_free_cache_info_request_msg(msg->data);
+		 break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
@@ -5140,4 +5147,51 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 
 	unlock_slurmctld(lock);
 	END_TIMER2("_slurm_rpc_kill_job2");
+}
+
+/* _slurm_rpc_dump_cache()
+ *
+ * Pack the io buffer and send it back to the library.
+ */
+inline static void
+_slurm_rpc_dump_cache(slurm_msg_t * msg)
+{
+	DEF_TIMERS;
+	char *dump;
+	int dump_size, error_code = SLURM_SUCCESS;
+	slurm_msg_t response_msg;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("%s: Processing RPC: REQUEST_CACHE_INFO uid=%d",
+	       __func__, uid);
+	if ( (!validate_super_user(uid)) ) {
+		error_code = ESLURM_USER_ID_MISSING;
+		/*error("Security violation, SHOW_CACHE from uid=%d", uid);*/
+		slurm_send_rc_msg(msg, error_code);
+		return;
+	}
+
+	/* do RPC call */
+	get_all_cache_info(&dump, &dump_size, uid, msg->protocol_version);
+
+	END_TIMER2("_slurm_rpc_dump_cache");
+	debug2("%s: size=%d %s", __func__, dump_size, TIME_STR);
+
+	/* init response_msg structure
+	 */
+	slurm_msg_t_init(&response_msg);
+
+	response_msg.flags = msg->flags;
+	response_msg.protocol_version = msg->protocol_version;
+	response_msg.address = msg->address;
+	response_msg.msg_type = RESPONSE_CACHE_INFO;
+	response_msg.data = dump;
+	response_msg.data_size = dump_size;
+	/* send message
+	 */
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	xfree(dump);
+	/* Ciao!
+	 */
 }

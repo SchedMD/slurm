@@ -688,10 +688,24 @@ static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, Buf buffer,
 				     uint16_t protocol_version);
 static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, Buf buffer,
 				       uint16_t protocol_version);
-
-static int _unpack_burst_buffer_info_msg(
-			burst_buffer_info_msg_t **burst_buffer_info, Buf buffer,
-			uint16_t protocol_version);
+static int
+_unpack_burst_buffer_info_msg(burst_buffer_info_msg_t **burst_buffer_info,
+			      Buf buffer,
+			      uint16_t protocol_version);
+static void
+_pack_cache_info_request_msg(cache_info_request_msg_t *,
+			     Buf,
+			     uint16_t);
+static int
+_unpack_cache_info_request_msg(cache_info_request_msg_t **,
+			       Buf,
+			       uint16_t);
+static inline void
+_pack_cache_info_msg(slurm_msg_t *msg, Buf buffer);
+static int
+_unpack_cache_info_msg(cache_info_msg_t **,
+		       Buf,
+		       uint16_t protocol_version);
 
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
@@ -1346,6 +1360,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
 		break;
+	case REQUEST_CACHE_INFO:
+		_pack_cache_info_request_msg((cache_info_request_msg_t *)
+					     msg->data,
+					     buffer,
+					     msg->protocol_version);
+		break;
+	case RESPONSE_CACHE_INFO:
+		_pack_cache_info_msg((slurm_msg_t *) msg, buffer);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1709,7 +1732,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_LAUNCH_PROLOG:
 		rc = _unpack_prolog_launch_msg((prolog_launch_msg_t **)
-						  & (msg->data), buffer, msg->protocol_version);
+					       & (msg->data),
+					       buffer, msg->protocol_version);
 		break;
 	case RESPONSE_PROLOG_EXECUTING:
 	case RESPONSE_JOB_READY:
@@ -1994,6 +2018,17 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
 						&(msg->data), buffer,
 						msg->protocol_version);
+		break;
+	case RESPONSE_CACHE_INFO:
+		rc = _unpack_cache_info_msg((cache_info_msg_t **)&(msg->data),
+					    buffer,
+					    msg->protocol_version);
+		break;
+	case REQUEST_CACHE_INFO:
+		rc = _unpack_cache_info_request_msg((cache_info_request_msg_t **)
+						    &(msg->data),
+						    buffer,
+						    msg->protocol_version);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -11622,6 +11657,145 @@ unpack_error:
 	*msg = NULL;
 	return SLURM_ERROR;
 }
+
+
+/* _pack_cache_info_request_msg()
+ */
+static void
+_pack_cache_info_request_msg(cache_info_request_msg_t *msg,
+                               Buf buffer,
+                               uint16_t protocol_version)
+{
+	pack_time(msg->last_update, buffer);
+	pack16((uint16_t)msg->show_flags, buffer);
+}
+
+/* _unpack_cache_info_request_msg()
+ */
+static int
+_unpack_cache_info_request_msg(cache_info_request_msg_t **msg,
+                                 Buf buffer,
+                                 uint16_t protocol_version)
+{
+	*msg = xmalloc(sizeof(cache_info_msg_t));
+
+	safe_unpack_time(&(*msg)->last_update, buffer);
+	safe_unpack16(&(*msg)->show_flags, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_cache_info_request_msg(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+/* _pack_cache_info_msg()
+ */
+static inline void
+_pack_cache_info_msg(slurm_msg_t *msg, Buf buffer)
+{
+	_pack_buffer_msg(msg, buffer);
+}
+
+/* _unpack_cache_info_msg()
+ *
+ * Decode the array of cache as it comes from the
+ * controller and build the API cache structures
+ * as defined in slurm.h
+ *
+ */
+static int
+_unpack_cache_info_msg(cache_info_msg_t **msg,
+                         Buf buffer,
+                         uint16_t protocol_version)
+{
+	slurm_cache_user_info_t  *cuptr;
+	slurm_cache_assoc_info_t *captr;
+
+	uint64_t uasize, aasize;
+	uint32_t zz;
+	int      i;
+
+	xassert(msg != NULL);
+	*msg = xmalloc(sizeof(cache_info_msg_t));
+
+	/* load buffer's header (data structure version and time)
+	 */
+	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+
+		safe_unpack32(&((*msg)->num_users), buffer);
+		safe_unpack32(&((*msg)->num_assocs), buffer);
+		safe_unpack_time(&((*msg)->last_update), buffer);
+
+		uasize = sizeof(slurm_cache_user_info_t)  * (*msg)->num_users;
+		aasize = sizeof(slurm_cache_assoc_info_t) * (*msg)->num_assocs;
+
+		(*msg)->cache_user_array  = xmalloc(uasize);
+		(*msg)->cache_assoc_array = xmalloc(aasize);
+
+		/* Decode individual cache item data.
+		 */
+		for (i = 0; i < (*msg)->num_users; i++) {
+
+			cuptr = &((*msg)->cache_user_array[i]);
+
+			safe_unpack16(&cuptr->admin_level, buffer);
+			safe_unpackstr_xmalloc(&cuptr->default_acct, &zz,buffer);
+			safe_unpackstr_xmalloc(&cuptr->default_wckey,&zz,buffer);
+			safe_unpackstr_xmalloc(&cuptr->name, &zz, buffer);
+			safe_unpackstr_xmalloc(&cuptr->old_name, &zz, buffer);
+			safe_unpack32(&cuptr->uid, buffer);
+		}
+
+		for (i = 0; i < (*msg)->num_assocs; i++) {
+
+			captr = &((*msg)->cache_assoc_array[i]);
+
+			safe_unpackstr_xmalloc(&captr->acct, &zz, buffer);
+			safe_unpackstr_xmalloc(&captr->cluster, &zz, buffer);
+			safe_unpack32(         &captr->def_qos_id, buffer);
+			safe_unpack64(         &captr->grp_cpu_mins, buffer);
+			safe_unpack64(         &captr->grp_cpu_run_mins,buffer);
+			safe_unpack32(         &captr->grp_cpus, buffer);
+			safe_unpack32(         &captr->grp_jobs, buffer);
+			safe_unpack32(         &captr->grp_mem, buffer);
+			safe_unpack32(         &captr->grp_nodes, buffer);
+			safe_unpack32(         &captr->grp_submit_jobs, buffer);
+			safe_unpack32(         &captr->grp_wall, buffer);
+			safe_unpack32(         &captr->id, buffer);
+			safe_unpack16(         &captr->is_def, buffer);
+			safe_unpack32(         &captr->lft, buffer);
+			safe_unpack64(         &captr->max_cpu_mins_pj, buffer);
+			safe_unpack64(         &captr->max_cpu_run_mins,buffer);
+			safe_unpack32(         &captr->max_cpus_pj, buffer);
+			safe_unpack32(         &captr->max_jobs, buffer);
+			safe_unpack32(         &captr->max_nodes_pj, buffer);
+			safe_unpack32(         &captr->max_submit_jobs, buffer);
+			safe_unpack32(         &captr->max_wall_pj, buffer);
+			safe_unpackstr_xmalloc(&captr->parent_acct, &zz,buffer);
+			safe_unpack32(         &captr->parent_id, buffer);
+			safe_unpackstr_xmalloc(&captr->partition, &zz, buffer);
+			safe_unpack32(         &captr->rgt, buffer);
+			safe_unpack32(         &captr->shares_raw, buffer);
+			safe_unpack32(         &captr->uid, buffer);
+			safe_unpackstr_xmalloc(&captr->user, &zz, buffer);
+		}
+
+	} else {
+		error("_unpack_cache_info_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_cache_info_msg(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
 
 /* template
    void pack_ ( * msg , Buf buffer )
