@@ -264,7 +264,7 @@ By default when a cluster is added to the database a default
 qos named normal is created.
 
 <pre>
-$sacctmgr show qos format=name,priority
+$ sacctmgr show qos format=name,priority
       Name   Priority
 ---------- ----------
     normal          0
@@ -274,13 +274,13 @@ $sacctmgr show qos format=name,priority
 Add a new qos
 
 <pre>
-$sacctmgr add qos zebra
+$ sacctmgr add qos zebra
  Adding QOS(s)
   zebra
  Settings
   Description    = QOS Name
 
-$sacctmgr show qos format=name,priority
+$ sacctmgr show qos format=name,priority
       Name   Priority
 ---------- ----------
     normal          0
@@ -291,11 +291,11 @@ $sacctmgr show qos format=name,priority
 Set QOS priority
 
 <pre>
-$sacctmgr modify qos zebra set priority=10
+$ sacctmgr modify qos zebra set priority=10
  Modified qos...
   zebra
 
-$sacctmgr show qos format=name,priority
+$ sacctmgr show qos format=name,priority
       Name   Priority
 ---------- ----------
     normal          0
@@ -306,12 +306,11 @@ $sacctmgr show qos format=name,priority
 Set some other limits:
 
 <pre>
-$sacctmgr modify qos zebra set GrpCPUs=24
+$ sacctmgr modify qos zebra set GrpCPUs=24
  Modified qos...
   zebra
 
-$sacctmgr show qos format=name,priority,GrpCPUs
-format=name,priority,GrpCPUs
+$ sacctmgr show qos format=name,priority,GrpCPUs
       Name   Priority  GrpCPUs
 ---------- ---------- --------
     normal          0
@@ -322,9 +321,9 @@ format=name,priority,GrpCPUs
 Add a qos to a user account
 
 <pre>
-$sacctmgr modify user crock set qos=zebra
+$ sacctmgr modify user crock set qos=zebra
 
-$sacctmgr show assoc format=cluster,user,qos
+$ sacctmgr show assoc format=cluster,user,qos
    Cluster       User                  QOS
 ---------- ---------- --------------------
 canis_major                          normal
@@ -337,8 +336,8 @@ canis_major     crock                zebra
 Users can belong to multiple qos
 
 <pre>
-$sacctmgr modify user crock set qos+=alligator
-$sacctmgr show assoc format=cluster,user,qos
+$ sacctmgr modify user crock set qos+=alligator
+$ sacctmgr show assoc format=cluster,user,qos
    Cluster       User                  QOS
 ---------- ---------- --------------------
 canis_major                          normal
@@ -352,11 +351,11 @@ canis_major     crock       alligator,zebra
 Finally delete a qos
 
 <pre>
-$sacctmgr delete qos alligator
+$ sacctmgr delete qos alligator
  Deleting QOS(s)...
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 24 November 2009</p>
+<p style="text-align: center;">Last modified 26 November 2009</p>
 
 </ul></body></html>
