@@ -79,7 +79,7 @@ extern uint64_t job_getjid(pid_t pid);
 #define MAX_ALLOC_WAIT	60	/* seconds */
 #define MIN_ALLOC_WAIT	5	/* seconds */
 #define MAX_RETRIES	10
-#define POLL_SLEEP	3	/* retry interval in seconds  */
+#define POLL_SLEEP	0.1	/* retry interval in seconds  */
 
 pthread_mutex_t msg_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t msg_cond = PTHREAD_COND_INITIALIZER;
@@ -256,7 +256,8 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 {
 	int is_ready = 0, i, rc;
 	char *block_id = NULL;
-	int cur_delay = 0;
+	double cur_delay = 0;
+	double cur_sleep = 0;
 	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
 		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
@@ -264,15 +265,17 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &block_id);
 
-	for (i=0; (cur_delay < max_delay); i++) {
-		if (i == 1)
+	for (i = 0; cur_delay < max_delay; i++) {
+		cur_sleep = POLL_SLEEP * i;
+		if (i == 1) {
 			debug("Waiting for block %s to become ready for job",
 			      block_id);
+		}
 		if (i) {
-			sleep(POLL_SLEEP);
+			usleep(1000000 * cur_sleep);
 			rc = _blocks_dealloc();
 			if ((rc == 0) || (rc == -1))
-				cur_delay += POLL_SLEEP;
+				cur_delay += cur_sleep;
 			debug2("still waiting");
 		}
 
@@ -348,7 +351,8 @@ static int _blocks_dealloc(void)
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 {
 	int is_ready = 0, i, rc;
-	int cur_delay = 0;
+	double cur_delay = 0;
+	double cur_sleep = 0;
 	int suspend_time, resume_time, max_delay;
 
 	suspend_time = slurm_get_suspend_timeout();
@@ -360,14 +364,18 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	pending_job_id = alloc->job_id;
 
-	for (i = 0; (cur_delay < max_delay); i++) {
+	for (i = 0; cur_delay < max_delay; i++) {
 		if (i) {
-			if (i == 1)
-				verbose("Waiting for nodes to boot");
-			else
-				debug("still waiting");
-			sleep(POLL_SLEEP);
-			cur_delay += POLL_SLEEP;
+			cur_sleep= POLL_SLEEP * i;
+			if (i == 1) {
+				verbose("Waiting for nodes to boot "
+					"max_delay = %d", max_delay);
+			} else {
+				debug("Waited %f sec and still waiting: next "
+				      "sleep for %f sec", cur_delay, cur_sleep);
+			}
+			usleep(1000000 * cur_sleep);
+			cur_delay += cur_sleep;
 		}
 
 		rc = slurm_job_node_ready(alloc->job_id);
