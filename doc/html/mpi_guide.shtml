@@ -373,19 +373,37 @@ documentation for "CQ or QP Creation failure".</p>
 
 <h2><a name="mvapich2" href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba"><b>MVAPICH2</b></a></h2>
 
-<p>MVAPICH2 jobs can be launched directly by <b>srun</b> command.
-SLURM's <i>none</i> MPI plugin must be used to establish communications
-between the launched tasks. This can be accomplished either using the SLURM
-configuration parameter <i>MpiDefault=none</i> in <b>slurm.conf</b>
-or srun's <i>--mpi=none</i> option. The program must also be linked with
-SLURM's implementation of the PMI library so that tasks can communicate
+<p>MVAPICH2 supports launching multithreaded programs by Slurm as well as
+mpirun_rsh.
+Please note that if you intend to use use srun, you need to build MVAPICH2
+with Slurm support.
+Please refer to the
+<a href="http://mvapich.cse.ohio-state.edu/static/media/mvapich/mvapich2-2.0-userguide.html#x1-100004.3.2">
+MVAPICH2 User Guide</a> for details.
+You can also use Slurm for only resource allocation (using the salloc or sbatch
+command) and launch the jobs using mpirun_rsh.
+However, please note that mpirun_rsh does not accept "-env" parameter, so
+the command would be something like this:</p>
+<pre>
+$ mpirun_rsh -np 2 -hostfile &lt;path_to_hostfile&gt; \
+  MV2_USE_CUDA=1 MV2_ENABLE_AFFINITY=0 ./mpi &lt;application&gt;
+</pre>
+
+<p>Slurm must be configured to use the <i>none</i> MPI plugin to establish
+communications between the launched tasks.
+This can be accomplished either using the Slurm configuration parameter
+<i>MpiDefault=none</i> in <b>slurm.conf</b> or srun's <i>--mpi=none</i> option.
+<b>Do not use Slurm's MVAPICH plugin for MVAPICH2.</b>
+The program must also be linked with
+Slurm's implementation of the PMI library so that tasks can communicate
 host and port information at startup. (The system administrator can add
 these option to the mpicc and mpif77 commands directly, so the user will not
-need to bother).  <b>Do not use Slurm's MVAPICH plugin for MVAPICH2.</b>
+need to bother).
 <pre>
 $ mpicc -L&lt;path_to_slurm_lib&gt; -lpmi ...
 $ srun -n16 --mpi=none a.out
 </pre>
+
 <hr size=4 width="100%">
 
 
@@ -508,6 +526,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 13 September 2013</p>
+<p style="text-align:center;">Last modified 28 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
