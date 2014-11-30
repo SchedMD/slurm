@@ -128,10 +128,10 @@ _print_cache_info(const char *name, cache_info_msg_t *msg)
 		printf("ClusterName=%s Account=%s ParentAccount=%s "
 		       "UserName=%s UID=%u Partition=%s%s Share=%u "
 		       "GrpJobs=%u GrpNodes=%u GrpCPUs=%u GrpMem=%u "
-		       "GrpSubmit=%u GrpWall=%u GrpCPUMins=%lu "
+		       "GrpSubmit=%u GrpWall=%u GrpCPUMins=%"PRIu64" "
 		       "MaxJobs=%u MaxNodes=%u MaxCPUs=%u MaxSubmit=%u "
-		       "MaxWall=%u MaxCPUMins=%lu QOS=%u "
-		       "GrpCPURunMins=%lu MaxCPURunMins=%lu ID=%u "
+		       "MaxWall=%u MaxCPUMins=%"PRIu64" QOS=%u "
+		       "GrpCPURunMins=%"PRIu64" MaxCPURunMins=%"PRIu64" ID=%u "
 		       "DefAssoc=%u Lft=%u ParentID=%u Rgt=%u\n",
 		       msg->cache_assoc_array[cc].cluster,
 		       msg->cache_assoc_array[cc].acct,
