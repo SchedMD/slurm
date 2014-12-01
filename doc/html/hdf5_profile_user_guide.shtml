@@ -31,7 +31,7 @@ cpu consumption, and memory use from a jobacct_gather plugin.
 Data from other sources may be added in the future.</p>
 
 <p>The data is collected into a file on a shared file system for each step on
-each allocated node of a job and then merged into a HDF5 file.
+each allocated node of a job and then merged into an HDF5 file.
 Individual files on a shared file system was chosen because it is possible
 that the data is voluminous so solutions that pass data to the Slurm control
 daemon via RPC may not scale to very large clusters or jobs with
@@ -39,7 +39,7 @@ many allocated nodes.</p>
 
 <p>A separate <a href="acct_gather_profile_plugins.html">
 SLURM Profile Accounting Plugin API (AcctGatherProfileType)</a> documents how
-write other Profile Accounting plugins.</P>
+to write other Profile Accounting plugins.</P>
 
 <a id="Administration"></a>
 <h2>Administration</h2>
@@ -57,13 +57,13 @@ option in the acct_gather.conf file. The directory will be created by
 Slurm if it doesn't exist.  Each user will have
 their own directory created in the ProfileHDF5Dir which contains
 the HDF5 files.  All the directories and files are created by the
-SlurmdUser which is usually root. The user specific directories as well
-as the files inside are chowned to the user running the job so they
+SlurmdUser which is usually root. The user specific directories, as well
+as the files inside, are chowned to the user running the job so they
 can access the files.  Since user root is usually creating these
 files/directories a root squashed file system will not work for
 the ProfileHDF5Dir.</p>
 
-<p>Each user that creates a profile will have a subdirector to the profile
+<p>Each user that creates a profile will have a subdirectory in the profile
 directory that has read/write permission only for the user.</p>
 </span>
 </div>
@@ -85,14 +85,14 @@ This sets the sampling frequency for data types:
 </div>
 </div>
 <div style="margin-left: 20px;">
-<h4>act_gather.conf parameters</h4>
+<h4>acct_gather.conf parameters</h4>
 <div style="margin-left: 20px;">
 <p>These parameters are directly used by the HDF5 Profile Plugin.</p>
 <dl>
 <dt><b>ProfileHDF5Dir</b> = &lt;path&gt;</dt>
 <p>
 This parameter is the path to the shared folder into which the
-acct_gather_profile plugin will write detailed data as a HDF5 file.
+acct_gather_profile plugin will write detailed data as an HDF5 file.
 The directory is assumed to be on a file system shared by the controller and
 all compute nodes. This is a required parameter.<p>
 
@@ -207,7 +207,7 @@ to be attached to groups to store application defined properties.</p>
 
 <p>There are commodity programs, notably
 <a href="http://www.hdfgroup.org/hdf-java-html/hdfview/index.html">
-HDFView</a> for viewing and manipulating these files.
+HDFView</a>, for viewing and manipulating these files.
 
 <p>Below is a screen shot from HDFView expanding the job tree and showing the
 attributes for a specific task.</p>
