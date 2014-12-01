@@ -56,10 +56,13 @@ make_bash_script $file_in "sleep 200"
 proc check_output { path job_id } {
 	global scontrol exit_code
 
+#	Support leading options (i.e. original "stdout=...")
+	set alpha_numeric_comma_slash "\[a-zA-Z0-9=_,\-\/\]*"
+
 	set check_out 0
 	spawn $scontrol show job $job_id
 	expect {
-		-re "Comment=stdout=$path" {
+		-re "Comment=($alpha_numeric_comma_slash)stdout=($path)" {
 			set check_out 1
 			exp_continue
 		}

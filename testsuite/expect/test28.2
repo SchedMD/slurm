@@ -44,6 +44,8 @@ set array_in     ""
 set array_var    ""
 set exit_code    0
 
+print_header $test_id
+
 if {[get_array_config] < [expr $array_end + 1]} {
 	send_user "\nWARNING: MaxArraySize is too small\n"
 	exit 0
