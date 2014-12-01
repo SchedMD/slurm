@@ -189,21 +189,16 @@ if { $exit_code } {
 # Add user with all limits set
 #
 incr exit_code [add_user "$tu4,$tu5" [array get user_req2]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3,$tu4,$tu5"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2,$tc3"
-	remove_qos "$dqos1"
-	exit $exit_code
+if { $exit_code == 0} {
+	# Check Limits of both users
+	check_assoc_limit 3 user $tu4 [array get user_req2]
+	check_assoc_limit 3 user $tu5 [array get user_req2]
 }
-
-# Check Limits of both users
-check_assoc_limit 3 user $tu4 [array get user_req2]
-check_assoc_limit 3 user $tu5 [array get user_req2]
 
 incr exit_code [remove_user "" "" "$tu4,$tu5"]
 incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
+incr exit_code [remove_qos "$dqos1"]
 
 if {$exit_code == 0} {
 	print_success $test_id
