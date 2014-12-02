@@ -6,7 +6,7 @@
  */
 #include "parser_internal.h"
 
-const struct element_handler basil_5_2_elements[] = {
+struct element_handler basil_5_2_elements[] = {
 	[BT_MESSAGE]	= {
 			.tag	= "Message",
 			.depth	= 0xff,	/* unused, can appear at any depth */
@@ -135,19 +135,19 @@ const struct element_handler basil_5_2_elements[] = {
 	},
 	[BT_MEMARRAY]	= {
 			.tag	= "MemoryArray",
-			.depth	= 9,
+			.depth	= 5,
 			.uniq	= true,
 			.hnd	= NULL
 	},
 	[BT_MEMORY]	= {
 			.tag	= "Memory",
-			.depth	= 10,
+			.depth	= 6,
 			.uniq	= false,
 			.hnd	= eh_mem
 	},
 	[BT_MEMALLOC]	= {
 			.tag	= "MemoryAllocation",
-			.depth	= 8,
+			.depth	= 7,
 			.uniq	= false,
 			.hnd	= eh_mem_alloc
 	},

@@ -59,7 +59,7 @@ extern const struct element_handler basil_1_1_elements[];
 extern const struct element_handler basil_3_1_elements[];
 extern const struct element_handler basil_4_0_elements[];
 extern const struct element_handler basil_5_1_elements[];
-extern const struct element_handler basil_5_2_elements[];
+extern struct element_handler basil_5_2_elements[];
 /* atoul.c */
 extern int atou64(const char *str, uint64_t *value);
 extern int atou32(const char *str, uint32_t *value);

@@ -5,6 +5,7 @@
  * Licensed under the GPLv2.
  */
 #include "../basil_alps.h"
+#include "parser_internal.h"
 
 /**
  * _get_alps_engine  -  run QUERY of type ENGINE
@@ -80,10 +81,15 @@ extern enum basil_version get_basil_version(void)
 
 	if (_get_alps_engine(engine_version, sizeof(engine_version)) == NULL)
 		fatal("can not determine ALPS Engine version");
-	else if ((strncmp(engine_version, "latest", 6) == 0) ||
-		 (strncmp(engine_version, "5.2", 3) == 0))
-		bv = BV_5_2;
-	else if (strncmp(engine_version, "5.1", 3) == 0)
+	else if (strncmp(engine_version, "latest", 6) == 0) {
+		bv = BV_5_2_46;
+	} else if (strncmp(engine_version, "5.2", 3) == 0) {
+		int macro = atoi(engine_version+4);
+		if (macro >= 46)
+			bv = BV_5_2_46;
+		else
+			bv = BV_5_2;
+	} else if (strncmp(engine_version, "5.1", 3) == 0)
 		bv = BV_5_1;
 	else if (strncmp(engine_version, "5.0", 3) == 0)
 		bv = BV_5_0;
@@ -112,6 +118,13 @@ extern enum basil_version get_basil_version(void)
 		      "src/plugins/select/cray/libalps/do_query.c "
 		      "for this version",
 		      engine_version);
+
+	if (bv == BV_5_2_46) {
+		basil_5_2_elements[BT_MEMARRAY].depth = 9;
+		basil_5_2_elements[BT_MEMORY].depth = 10;
+		basil_5_2_elements[BT_MEMALLOC].depth = 8;
+	}
+
 	return bv;
 }
 

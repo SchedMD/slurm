@@ -401,6 +401,8 @@ documents those changes that are of interest to users and administrators.
  -- Double max string that Slurm can pack from 16MB to 32MB to support
     larger MPI2 configurations.
  -- Fix Centos5 compile issues.
+ -- ALPS - Fix issue with CLE >5.2.0 and <5.2.46 where the depth of MEMARRAY
+    in BASIL was changed.
 
 * Changes in Slurm 14.03.10
 ===========================
