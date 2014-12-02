@@ -100,12 +100,12 @@ const char plugin_name[]        = "task CRAY plugin";
 const char plugin_type[]        = "task/cray";
 const uint32_t plugin_version   = 100;
 
+#ifdef HAVE_NATIVE_CRAY
 #ifdef HAVE_NUMA
 // TODO: Remove this prototype once the prototype appears in numa.h.
 unsigned int numa_bitmask_weight(const struct bitmask *bmp);
 #endif
 
-#ifdef HAVE_NATIVE_CRAY
 static void _alpsc_debug(const char *file, int line, const char *func,
 			 int rc, int expected_rc, const char *alpsc_func,
 			 char *err_msg);
