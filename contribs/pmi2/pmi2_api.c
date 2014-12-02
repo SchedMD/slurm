@@ -207,6 +207,9 @@ int PMI2_Init(int *spawned, int *size, int *rank, int *appnum)
 		PMI2_size = 1;
 		PMI2_rank = 0;
 		*spawned = 0;
+		*size = PMI2_size;
+		*rank = PMI2_rank;
+		*appnum = -1;
 
 		PMI2_initialized = SINGLETON_INIT_BUT_NO_PM;
 		goto fn_exit;
