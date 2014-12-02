@@ -1546,7 +1546,6 @@ top:	orig_map = bit_copy(save_bitmap);
 	}
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
 	    (mode == PREEMPT_MODE_SUSPEND)) {
-		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Try to schedule job using extra row of core bitmap */
 		bit_or(bitmap, orig_map);
 		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
