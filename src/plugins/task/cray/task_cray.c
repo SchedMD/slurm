@@ -111,12 +111,12 @@ const char plugin_name[]        = "task CRAY plugin";
 const char plugin_type[]        = "task/cray";
 const uint32_t plugin_version   = 100;
 
+#ifdef HAVE_NATIVE_CRAY
 #ifdef HAVE_NUMA
 // TODO: Remove this prototype once the prototype appears in numa.h.
 unsigned int numa_bitmask_weight(const struct bitmask *bmp);
 #endif
 
-#ifdef HAVE_NATIVE_CRAY
 static int _get_numa_nodes(char *path, int *cnt, int **numa_array);
 static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 			  cpu_set_t **cpuMasks);
