@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 15.08
-20 November 2014
+2 December 2014
 
 
 IMPORTANT NOTE:
@@ -33,6 +33,12 @@ HIGHLIGHTS
  -- Add advance reservation flag of "replace" that causes allocated resources
     to be replaced with idle resources. This maintains a pool of available
     resources that maintains a constant size (to the extent possible).
+ -- Permit PreemptType=qos and PreemptMode=suspend,gang to be used together.
+    A high-priority QOS job will now oversubscribe resources and gang schedule,
+    but only if there are insufficient resources for the job to be started
+    without preemption. NOTE: That with PreemptType=qos, the partition's
+    Shared=FORCE:# configuration option will permit one job more per resource
+    to be run than than specified, but only if started by preemption.
 
 RPMBUILD CHANGES
 ================
@@ -50,6 +56,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     backfilling longer running jobs, but may result in allocations having less
     than optimal network topology. This option is currently only supported by
     the select/cons_res plugin.
+ -- Added "EioTimeout" parameter to slurm.conf. It is the number of seconds srun
+    waits for slurmstepd to close the TCP/IP connection used to relay data
+    between the user application and srun when the user application terminates.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

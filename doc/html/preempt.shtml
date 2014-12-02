@@ -4,7 +4,7 @@
 
 <P>
 SLURM supports job preemption, the act of stopping one or more "low-priority"
-jobs to let a "high-priority" job run uninterrupted until it completes.
+jobs to let a "high-priority" job run.
 Job preemption is implemented as a variation of Slurm's
 <a href="gang_scheduling.html">Gang Scheduling</a> logic.
 When a high-priority job has been allocated resources that have already been
@@ -102,9 +102,7 @@ Checkpointed jobs are not automatically restarted.
 jobs. Requeued jobs are permitted to be restarted on different resources.</LI>
 <LI>A value of <I>SUSPEND</I> will suspend and automatically resume the low
 priority jobs. The <I>SUSPEND</I> option must be used with the <I>GANG</I>
-option (e.g. "PreemptMode=SUSPEND,GANG") and with
-<I>PreemptType=preempt/partition_prio</I> (the logic to suspend and resume
-jobs currently only has the data structures to support partitions).</LI>
+option (e.g. "PreemptMode=SUSPEND,GANG").</LI>
 <LI>A value of <I>GANG</I> may be used with any of the above values and will
 execute a module responsible for resuming jobs previously suspended for either
 gang scheduling or job preemption with suspension.</LI>
@@ -121,10 +119,10 @@ can preempt jobs from lower priority partitions.</LI>
 <LI><I>preempt/qos</I> indicates that jobs from one Quality Of Service (QOS)
 can preempt jobs from a lower QOS. These jobs can be in the same partition
 or different partitions. PreemptMode must be set to CANCEL, CHECKPOINT,
-or REQUEUE. This option requires the use of a database identifying
+REQUEUE or SUSPEND. This option requires the use of a database identifying
 available QOS and their preemption rules. This option is not compatible with
-PreemptMode=OFF or PreemptMode=SUSPEND (i.e. preempted jobs must be removed
-from the resources).</LI>
+PreemptMode=OFF and PreemptMode=SUSPEND is only supported by the
+select/cons_res plugin.</LI>
 </UL>
 </LI>
 <LI>
@@ -151,6 +149,12 @@ max_share value is 4. In order to preempt jobs (and not gang schedule them),
 always set max_share to 1. To allow up to 2 jobs from this partition to be
 allocated to a common resource (and gang scheduled), set
 <I>Shared=FORCE:2</I>.
+NOTE: <I>PreemptType=QOS</I> will permit one additional job to be run
+on the partition if started due to job preemption. For example, a configuration
+of <I>Shared=FORCE:1</I> will only permit one job per resources normally,
+but a second job can be started if done so through preemption based upon QOS.
+The use of <I>PreemptType=QOS</I> and <I>PreemptType=Suspend</I> only applies
+with <I>SelectType=cons_res</I>.
 </LI>
 </UL>
 <P>
@@ -361,6 +365,21 @@ $ squeue
      95       med      tmp      moe   R       0:24      1 linux
 </PRE>
 
+<H2>Another Example</H2>
+<P>
+In this example we have one partition on which we want to execute only one
+job per resource (e.g. core) at a time except when a job submitted to the
+partition from a high priority Quality Of Service (QOS) is submitted. In that
+case, we want that second high priority job to be started and be gang scheduled
+with the other jobs on overlapping resources.
+</P>
+<PRE>
+# Excerpt from slurm.conf
+PreemptMode=Suspend,Gang
+PreemptType=preempt/qos
+PartitionName=normal Nodes=linux Default=NO  Shared=FORCE:1
+</PRE>
+
 <H2><A NAME="future_work">Future Ideas</A></H2>
 
 <P>
@@ -410,6 +429,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 3 March 2014</p>
+<p style="text-align:center;">Last modified 2 December 2014</p>
 
 <!--#include virtual="footer.txt"-->

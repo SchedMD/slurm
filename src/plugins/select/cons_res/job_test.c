@@ -607,19 +607,23 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
  * allocated CPUs with multi-row partitions.
  */
 static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
-			 int sharing_only, struct part_record *my_part_ptr)
+			 int sharing_only, struct part_record *my_part_ptr,
+			 bool qos_preemptor)
 {
 	uint32_t r, cpu_begin = cr_get_coremap_offset(node_i);
 	uint32_t i, cpu_end   = cr_get_coremap_offset(node_i+1);
+	uint16_t num_rows;
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
+		num_rows = p_ptr->num_rows;
+		if (preempt_by_qos && !qos_preemptor)
+			num_rows--;	/* Don't use extra row */
 		if (sharing_only && 
-		    ((p_ptr->num_rows < 2) ||
-		     (p_ptr->part_ptr == my_part_ptr)))
+		    ((num_rows < 2) || (p_ptr->part_ptr == my_part_ptr)))
 			continue;
 		if (!p_ptr->row)
 			continue;
-		for (r = 0; r < p_ptr->num_rows; r++) {
+		for (r = 0; r < num_rows; r++) {
 			if (!p_ptr->row[r].row_bitmap)
 				continue;
 			for (i = cpu_begin; i < cpu_end; i++) {
@@ -656,7 +660,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      uint16_t cr_type,
 			      struct node_use_record *node_usage,
 			      enum node_cr_state job_node_req,
-			      bitstr_t *exc_core_bitmap)
+			      bitstr_t *exc_core_bitmap, bool qos_preemptor)
 {
 	struct node_record *node_ptr;
 	uint32_t i, j, free_mem, gres_cpus, gres_cores, min_mem;
@@ -751,7 +755,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			/* cannot use this node if it is running jobs
 			 * in sharing partitions */
 			if (_is_node_busy(cr_part_ptr, i, 1,
-					  job_ptr->part_ptr)) {
+					  job_ptr->part_ptr, qos_preemptor)) {
 				debug3("cons_res: _vns: node %s sharing?",
 				       node_ptr->name);
 				goto clear_bit;
@@ -761,7 +765,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		} else {
 			if (job_node_req == NODE_CR_RESERVED) {
 				if (_is_node_busy(cr_part_ptr, i, 0,
-						  job_ptr->part_ptr)) {
+						  job_ptr->part_ptr,
+						  qos_preemptor)) {
 					debug3("cons_res: _vns: node %s busy",
 					       node_ptr->name);
 					goto clear_bit;
@@ -770,7 +775,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 				/* cannot use this node if it is running jobs
 				 * in sharing partitions */
 				if (_is_node_busy(cr_part_ptr, i, 1, 
-						  job_ptr->part_ptr)) {
+						  job_ptr->part_ptr,
+						  qos_preemptor)) {
 					debug3("cons_res: _vns: node %s vbusy",
 					       node_ptr->name);
 					goto clear_bit;
@@ -2335,7 +2341,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			uint32_t cr_node_cnt,
 			struct part_res_record *cr_part_ptr,
 			struct node_use_record *node_usage,
-			bitstr_t *exc_core_bitmap, bool prefer_alloc_nodes)
+			bitstr_t *exc_core_bitmap, bool prefer_alloc_nodes,
+			bool qos_preemptor)
 {
 	static int gang_mode = -1;
 	int error_code = SLURM_SUCCESS, ll; /* ll = layout array index */
@@ -2373,7 +2380,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		error_code = _verify_node_state(cr_part_ptr, job_ptr,
 						node_bitmap, cr_type,
 						node_usage, job_node_req,
-						exc_core_bitmap);
+						exc_core_bitmap, qos_preemptor);
 		if (error_code != SLURM_SUCCESS) {
 			return error_code;
 		}
@@ -2711,9 +2718,12 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		goto alloc_job;
 	}
 
-	cr_sort_part_rows(jp_ptr);
+	if ((jp_ptr->num_rows > 1) && !preempt_by_qos)
+		cr_sort_part_rows(jp_ptr);	/* Preserve row order for QOS */
 	c = jp_ptr->num_rows;
-	if (job_node_req != NODE_CR_AVAILABLE)
+	if (preempt_by_qos && !qos_preemptor)
+		c--;				/* Do not use extra row */
+	if (preempt_by_qos && (job_node_req != NODE_CR_AVAILABLE))
 		c = 1;
 	for (i = 0; i < c; i++) {
 		if (!jp_ptr->row[i].row_bitmap)

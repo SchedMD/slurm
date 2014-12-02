@@ -3497,8 +3497,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);
 	if (strcmp(conf->preempt_type, "preempt/qos") == 0) {
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
-		if ((preempt_mode == PREEMPT_MODE_OFF) ||
-		    (preempt_mode == PREEMPT_MODE_SUSPEND)) {
+		if (preempt_mode == PREEMPT_MODE_OFF) {
 			error("PreemptType and PreemptMode values "
 			      "incompatible");
 			return SLURM_ERROR;

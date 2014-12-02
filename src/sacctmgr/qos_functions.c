@@ -216,11 +216,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 					" Bad Preempt Mode given: %s\n",
 					argv[i]);
 				exit_code = 1;
-			} else if (qos_cond->preempt_mode ==
-				   PREEMPT_MODE_SUSPEND) {
-				printf("PreemptType and PreemptMode "
-					"values incompatible\n");
-				exit_code = 1;
 			} else
 				set = 1;
 		} else {
@@ -449,10 +444,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 				fprintf(stderr,
 					" Bad Preempt Mode given: %s\n",
 					argv[i]);
-				exit_code = 1;
-			} else if (qos->preempt_mode == PREEMPT_MODE_SUSPEND) {
-				printf("PreemptType and PreemptMode "
-					"values incompatible\n");
 				exit_code = 1;
 			} else
 				set = 1;

@@ -47,6 +47,12 @@ documents those changes that are of interest to users and administrators.
  -- Test more frequently for node boot completion before starting a job.
     Provides better responsiveness.
  -- Fix PMI2 singleton initialization.
+ -- Permit PreemptType=qos and PreemptMode=suspend,gang to be used together.
+    A high-priority QOS job will now oversubscribe resources and gang schedule,
+    but only if there are insufficient resources for the job to be started
+    without preemption. NOTE: That with PreemptType=qos, the partition's
+    Shared=FORCE:# configuration option will permit one job more per resource
+    to be run than than specified, but only if started by preemption.
 
 * Changes in Slurm 14.11.2
 ==========================

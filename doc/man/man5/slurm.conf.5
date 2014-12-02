@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "November 2014" "slurm.conf 15.08" "Slurm configuration file"
+.TH "slurm.conf" "5" "December 2014" "slurm.conf 15.08" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1412,10 +1412,7 @@ preempts jobs by suspending them.
 A suspended job will resume execution once the high priority job
 preempting it completes.
 The \fBSUSPEND\fR may only be used with the \fBGANG\fR option
-(the gang scheduler module performs the job resume operation)
-and with \fBPreemptType=preempt/partition_prio\fR (the logic to
-suspend and resume jobs current only has the data structures to
-support partitions).
+(the gang scheduler module performs the job resume operation).
 .RE
 
 .TP
@@ -1437,8 +1434,8 @@ This is not compatible with \fBPreemptMode=OFF\fR.
 \fBpreempt/qos\fR
 Job preemption rules are specified by Quality Of Service (QOS) specifications
 in the SLURM database a database.
-This is not compatible with \fBPreemptMode=OFF\fR or \fBPreemptMode=SUSPEND\fR
-(i.e. preempted jobs must be removed from the resources).
+This is not compatible with \fBPreemptMode=OFF\fR and \fBPreemptMode=SUSPEND\fR
+is only supported by the \fBselect/cons_res\fR plugin.
 .RE
 
 .TP
@@ -3972,6 +3969,12 @@ core to execute up to four jobs at once.
 Recommended only for BlueGene systems configured with
 small blocks or for systems running
 with gang scheduling (\fBSchedulerType=sched/gang\fR).
+NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run
+on the partition if started due to job preemption. For example, a configuration
+of \fIShared=FORCE:1\fR will only permit one job per resources normally,
+but a second job can be started if done so through preemption based upon QOS.
+The use of \fIPreemptType=QOS\fR and \fIPreemptType=Suspend\fR only applies
+with \fISelectType=cons_res\fR.
 .TP
 \fBYES\fR
 Makes all resources in the partition available for sharing upon request by

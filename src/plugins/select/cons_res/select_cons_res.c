@@ -180,6 +180,7 @@ uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
 bool     backfill_busy_nodes  = false;
 bool     pack_serial_at_end   = false;
+bool     preempt_by_qos       = false;
 uint64_t select_debug_flags   = 0;
 uint16_t select_fast_schedule = 0;
 
@@ -429,8 +430,11 @@ static void _create_part_data(void)
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
 		this_ptr->part_ptr = p_ptr;
 		this_ptr->num_rows = p_ptr->max_share;
-		if (this_ptr->num_rows & SHARED_FORCE)
+		if (this_ptr->num_rows & SHARED_FORCE) {
 			this_ptr->num_rows &= (~SHARED_FORCE);
+			if (preempt_by_qos)	/* Add row for QOS preemption */
+				this_ptr->num_rows++;
+		}
 		/* SHARED=EXCLUSIVE sets max_share = 0 */
 		if (this_ptr->num_rows < 1)
 			this_ptr->num_rows = 1;
@@ -1472,7 +1476,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, NULL, false);
+			 select_node_usage, NULL, false, false);
 	return rc;
 }
 
@@ -1502,13 +1506,13 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	int rc;
 	bitstr_t *orig_map = NULL, *save_bitmap;
-	struct job_record *tmp_job_ptr;
+	struct job_record *tmp_job_ptr = NULL;
 	ListIterator job_iterator, preemptee_iterator;
 	struct part_res_record *future_part;
 	struct node_use_record *future_usage;
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
-	uint16_t mode;
+	uint16_t mode = (uint16_t) NO_VAL;
 	uint16_t tmp_cr_type = cr_type;
 
 	save_bitmap = bit_copy(bitmap);
@@ -1529,9 +1533,28 @@ top:	orig_map = bit_copy(save_bitmap);
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, exc_core_bitmap, false);
+			 select_node_usage, exc_core_bitmap, false, false);
 
-	if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
+	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos) {
+		/* Determine QOS preempt mode of first job */
+		job_iterator = list_iterator_create(preemptee_candidates);
+		if ((tmp_job_ptr = (struct job_record *)
+		    list_next(job_iterator))) {
+			mode = slurm_job_preempt_mode(tmp_job_ptr);
+		}
+		list_iterator_destroy(job_iterator);
+	}
+	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
+	    (mode == PREEMPT_MODE_SUSPEND)) {
+		int preemptee_cand_cnt = list_count(preemptee_candidates);
+		/* Try to schedule job using extra row of core bitmap */
+		bit_or(bitmap, orig_map);
+		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
+				 req_nodes, SELECT_MODE_RUN_NOW, tmp_cr_type,
+				 job_node_req, select_node_cnt,
+				 select_part_record, select_node_usage,
+				 exc_core_bitmap, false, true);
+	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
 		future_part = _dup_part_data(select_part_record);
@@ -1569,7 +1592,7 @@ top:	orig_map = bit_copy(save_bitmap);
 					 tmp_cr_type, job_node_req,
 					 select_node_cnt,
 					 future_part, future_usage,
-					 exc_core_bitmap, false);
+					 exc_core_bitmap, false, false);
 			tmp_job_ptr->details->usable_nodes = 0;
 			if (rc != SLURM_SUCCESS)
 				continue;
@@ -1677,6 +1700,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int action, rc = SLURM_ERROR;
 	time_t now = time(NULL);
 	uint16_t tmp_cr_type = cr_type;
+	bool qos_preemptor = false;
 
 	orig_map = bit_copy(bitmap);
 
@@ -1696,7 +1720,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, exc_core_bitmap, false);
+			 select_node_usage, exc_core_bitmap, false, false);
 	if (rc == SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(orig_map);
 		job_ptr->start_time = now;
@@ -1734,9 +1758,11 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
 			if (mode == PREEMPT_MODE_OFF)
 				continue;
-			if (mode == PREEMPT_MODE_SUSPEND)
+			if (mode == PREEMPT_MODE_SUSPEND) {
 				action = 2;	/* remove cores, keep memory */
-			else
+				if (preempt_by_qos)
+					qos_preemptor = true;
+			} else
 				action = 0;	/* remove cores and memory */
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
@@ -1752,7 +1778,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 				 req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
 				 job_node_req, select_node_cnt, future_part,
-				 future_usage, exc_core_bitmap, false);
+				 future_usage, exc_core_bitmap, false,
+				 qos_preemptor);
 		if (rc == SLURM_SUCCESS) {
 			/* Actual start time will actually be later than "now",
 			 * but return "now" for backfill scheduler to
@@ -1781,7 +1808,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					 SELECT_MODE_WILL_RUN, tmp_cr_type,
 					 job_node_req, select_node_cnt,
 					 future_part, future_usage,
-					 exc_core_bitmap, backfill_busy_nodes);
+					 exc_core_bitmap, backfill_busy_nodes,
+					 qos_preemptor);
 			if (rc == SLURM_SUCCESS) {
 				if (tmp_job_ptr->end_time <= now)
 					job_ptr->start_time = now + 1;
@@ -1916,7 +1944,7 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
  */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	char *sched_params, *tmp_ptr;
+	char *preempt_type, *sched_params, *tmp_ptr;
 	int i, tot_core;
 
 	info("cons_res: select_p_node_init");
@@ -1957,6 +1985,13 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	else
 		backfill_busy_nodes = false;
 	xfree(sched_params);
+
+	preempt_type = slurm_get_preempt_type();
+	if (preempt_type && strstr(preempt_type, "qos"))
+		preempt_by_qos = true;
+	else
+		preempt_by_qos = false;
+	xfree(preempt_type);
 
 	/* initial global core data structures */
 	select_state_initializing = true;
