@@ -11725,7 +11725,7 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 
 		safe_unpack32(&((*msg)->num_users), buffer);
 		safe_unpack32(&((*msg)->num_assocs), buffer);
-		safe_unpack_time(&((*msg)->last_update), buffer);
+		safe_unpack_time(&((*msg)->time_stamp), buffer);
 
 		uasize = sizeof(slurm_cache_user_info_t)
 			* (*msg)->num_users;

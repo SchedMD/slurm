@@ -59,7 +59,7 @@ scontrol_print_cache(const char *name)
 	show_flags = 0;
 	/* call the controller to get the meat
 	 */
-	cc = slurm_load_cache( &msg, show_flags);
+	cc = slurm_load_cache(&msg, show_flags);
 	if (cc != SLURM_PROTOCOL_SUCCESS) {
 		/* Hosed, crap out.
 		 */
@@ -86,9 +86,9 @@ static void _print_cache_info(const char *name, cache_info_msg_t *msg)
 	int cc;
 
 	slurm_make_time_str((time_t *)&msg->time_stamp,
-					time_str, sizeof(time_str));
+			    time_str, sizeof(time_str));
 	snprintf(tmp_str, sizeof(tmp_str), "Controller cache data as of %s\n",
-						time_str);
+		 time_str);
 	printf("%s\n", tmp_str);
 
 
@@ -123,7 +123,7 @@ static void _print_cache_info(const char *name, cache_info_msg_t *msg)
 		for (cc = 0; cc < msg->num_assocs; cc++) {
 			if (name) {
 				if ( !msg->cache_assoc_array[cc].user ||
-				  strcmp(msg->cache_assoc_array[cc].user, name))
+				     strcmp(msg->cache_assoc_array[cc].user, name))
 					continue;
 			}
 			printf("ClusterName=%s Account=%s ParentAccount=%s "
@@ -139,27 +139,27 @@ static void _print_cache_info(const char *name, cache_info_msg_t *msg)
 			       msg->cache_assoc_array[cc].acct,
 			       msg->cache_assoc_array[cc].parent_acct,
 			       msg->cache_assoc_array[cc].user,
-		       msg->cache_assoc_array[cc].uid,
-		       msg->cache_assoc_array[cc].partition,
-		       one_liner ? " " : "\n    " ,
-		       msg->cache_assoc_array[cc].shares_raw,
-		       msg->cache_assoc_array[cc].grp_jobs,
-		       msg->cache_assoc_array[cc].grp_nodes,
-		       msg->cache_assoc_array[cc].grp_cpus,
-		       msg->cache_assoc_array[cc].grp_mem,
-		       msg->cache_assoc_array[cc].grp_submit_jobs,
-		       msg->cache_assoc_array[cc].grp_wall,
-		       msg->cache_assoc_array[cc].grp_cpu_mins,
-		       msg->cache_assoc_array[cc].max_jobs,
-		       msg->cache_assoc_array[cc].max_nodes_pj,
-		       msg->cache_assoc_array[cc].max_cpus_pj,
-		       msg->cache_assoc_array[cc].max_submit_jobs,
-		       msg->cache_assoc_array[cc].max_wall_pj,
-		       msg->cache_assoc_array[cc].max_cpu_mins_pj,
-		       msg->cache_assoc_array[cc].def_qos_id,
-		       msg->cache_assoc_array[cc].grp_cpu_run_mins,
-		       msg->cache_assoc_array[cc].max_cpu_run_mins,
-		       msg->cache_assoc_array[cc].id,
+			       msg->cache_assoc_array[cc].uid,
+			       msg->cache_assoc_array[cc].partition,
+			       one_liner ? " " : "\n    " ,
+			       msg->cache_assoc_array[cc].shares_raw,
+			       msg->cache_assoc_array[cc].grp_jobs,
+			       msg->cache_assoc_array[cc].grp_nodes,
+			       msg->cache_assoc_array[cc].grp_cpus,
+			       msg->cache_assoc_array[cc].grp_mem,
+			       msg->cache_assoc_array[cc].grp_submit_jobs,
+			       msg->cache_assoc_array[cc].grp_wall,
+			       msg->cache_assoc_array[cc].grp_cpu_mins,
+			       msg->cache_assoc_array[cc].max_jobs,
+			       msg->cache_assoc_array[cc].max_nodes_pj,
+			       msg->cache_assoc_array[cc].max_cpus_pj,
+			       msg->cache_assoc_array[cc].max_submit_jobs,
+			       msg->cache_assoc_array[cc].max_wall_pj,
+			       msg->cache_assoc_array[cc].max_cpu_mins_pj,
+			       msg->cache_assoc_array[cc].def_qos_id,
+			       msg->cache_assoc_array[cc].grp_cpu_run_mins,
+			       msg->cache_assoc_array[cc].max_cpu_run_mins,
+			       msg->cache_assoc_array[cc].id,
 			       msg->cache_assoc_array[cc].is_def,
 			       msg->cache_assoc_array[cc].lft,
 			       msg->cache_assoc_array[cc].parent_id,

@@ -2660,7 +2660,7 @@ typedef struct slurm_cache_assoc_info {
 /* Cache information array as returned by the controller (currently just users).
  */
 typedef struct cache_info_msg {
-	time_t last_update;
+	time_t time_stamp;
 	uint32_t num_users;
 	uint32_t num_assocs;
 	slurm_cache_user_info_t  *cache_user_array;
@@ -2856,7 +2856,7 @@ extern int slurm_load_licenses PARAMS((time_t, license_info_msg_t **,
 				       uint16_t));
 extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
 
-extern int slurm_load_cache PARAMS((time_t, cache_info_msg_t **, uint16_t));
+extern int slurm_load_cache PARAMS((cache_info_msg_t **, uint16_t));
 extern void slurm_free_cache_info_msg PARAMS ((cache_info_msg_t *));
 
 

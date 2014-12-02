@@ -50,10 +50,10 @@
 #include "src/slurmctld/slurmctld.h"
 
 static pthread_mutex_t cache_mutex = PTHREAD_MUTEX_INITIALIZER;
-static void _pack_cache(slurmdb_user_rec_t *cache, Buf buffer, 
-				uint16_t protocol_version);
-static void _pack_assoc(slurmdb_association_rec_t *assoc, Buf buffer,
-				uint16_t protocol_version);
+static void _pack_cache(slurmdb_user_rec_t *cache, Buf buffer,
+			uint16_t protocol_version);
+static void _pack_assoc(slurmdb_assoc_rec_t *assoc, Buf buffer,
+			uint16_t protocol_version);
 
 /*
  *
@@ -64,12 +64,12 @@ get_all_cache_info(char **buffer_ptr, int *buffer_size,
                      uid_t uid, uint16_t protocol_version)
 {
 	ListIterator         iter;
-	slurmdb_user_rec_t * cache_entry;
+	slurmdb_user_rec_t  *cache_entry;
 	uint32_t             caches_packed;
 	int                  tmp_offset;
 	Buf                  buffer;
 	time_t               now = time(NULL);
-	slurmdb_association_rec_t* assoc_entry;
+	slurmdb_assoc_rec_t *assoc_entry;
 	uint32_t             assocs_packed;
 
 	debug2("%s: calling for all cache user records", __func__);
@@ -99,8 +99,8 @@ get_all_cache_info(char **buffer_ptr, int *buffer_size,
 		list_iterator_destroy(iter);
 	}
 
-	if ( assoc_mgr_association_list ) {
-		iter = list_iterator_create(assoc_mgr_association_list);
+	if (assoc_mgr_assoc_list) {
+		iter = list_iterator_create(assoc_mgr_assoc_list);
 		while ((assoc_entry = list_next(iter))) {
 			_pack_assoc(assoc_entry, buffer, protocol_version);
 			++assocs_packed;
@@ -141,13 +141,13 @@ get_all_cache_info(char **buffer_ptr, int *buffer_size,
 static void
 _pack_cache(slurmdb_user_rec_t *cache, Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
-		pack16 (cache->admin_level,   buffer);
-		packstr(cache->default_acct,  buffer);
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		pack16 (cache->admin_level, buffer);
+		packstr(cache->default_acct, buffer);
 		packstr(cache->default_wckey, buffer);
-		packstr(cache->name,          buffer);
-		packstr(cache->old_name,      buffer);
-		pack32 (cache->uid,           buffer);
+		packstr(cache->name, buffer);
+		packstr(cache->old_name, buffer);
+		pack32 (cache->uid, buffer);
 	} else {
 		error("\
 %s: protocol_version %hu not supported", __func__, protocol_version);
@@ -155,38 +155,38 @@ _pack_cache(slurmdb_user_rec_t *cache, Buf buffer, uint16_t protocol_version)
 }
 
 static void
-_pack_assoc(slurmdb_association_rec_t *assoc, Buf buffer,
-			uint16_t protocol_version)
+_pack_assoc(slurmdb_assoc_rec_t *assoc, Buf buffer,
+	    uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
-		packstr(assoc->acct,             buffer);
-		packstr(assoc->cluster,          buffer);
-		pack32 (assoc->def_qos_id,       buffer);
-		pack64 (assoc->grp_cpu_mins,     buffer);
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		packstr(assoc->acct, buffer);
+		packstr(assoc->cluster, buffer);
+		pack32 (assoc->def_qos_id, buffer);
+		pack64 (assoc->grp_cpu_mins, buffer);
 		pack64 (assoc->grp_cpu_run_mins, buffer);
-		pack32 (assoc->grp_cpus,         buffer);
-		pack32 (assoc->grp_jobs,         buffer);
-		pack32 (assoc->grp_mem,          buffer);
-		pack32 (assoc->grp_nodes,        buffer);
-		pack32 (assoc->grp_submit_jobs,  buffer);
-		pack32 (assoc->grp_wall,         buffer);
-		pack32 (assoc->id,               buffer);
-		pack16 (assoc->is_def,           buffer);
-		pack32 (assoc->lft,              buffer);
-		pack64 (assoc->max_cpu_mins_pj,  buffer);
+		pack32 (assoc->grp_cpus, buffer);
+		pack32 (assoc->grp_jobs, buffer);
+		pack32 (assoc->grp_mem, buffer);
+		pack32 (assoc->grp_nodes, buffer);
+		pack32 (assoc->grp_submit_jobs, buffer);
+		pack32 (assoc->grp_wall, buffer);
+		pack32 (assoc->id, buffer);
+		pack16 (assoc->is_def, buffer);
+		pack32 (assoc->lft, buffer);
+		pack64 (assoc->max_cpu_mins_pj, buffer);
 		pack64 (assoc->max_cpu_run_mins, buffer);
-		pack32 (assoc->max_cpus_pj,      buffer);
-		pack32 (assoc->max_jobs,         buffer);
-		pack32 (assoc->max_nodes_pj,     buffer);
-		pack32 (assoc->max_submit_jobs,  buffer);
-		pack32 (assoc->max_wall_pj,      buffer);
-		packstr(assoc->parent_acct,      buffer);
-		pack32 (assoc->parent_id,        buffer);
-		packstr(assoc->partition,        buffer);
-		pack32 (assoc->rgt,              buffer);
-		pack32 (assoc->shares_raw,       buffer);
-		pack32 (assoc->uid,              buffer);
-		packstr(assoc->user,             buffer);
+		pack32 (assoc->max_cpus_pj, buffer);
+		pack32 (assoc->max_jobs, buffer);
+		pack32 (assoc->max_nodes_pj, buffer);
+		pack32 (assoc->max_submit_jobs, buffer);
+		pack32 (assoc->max_wall_pj, buffer);
+		packstr(assoc->parent_acct, buffer);
+		pack32 (assoc->parent_id, buffer);
+		packstr(assoc->partition, buffer);
+		pack32 (assoc->rgt, buffer);
+		pack32 (assoc->shares_raw, buffer);
+		pack32 (assoc->uid, buffer);
+		packstr(assoc->user, buffer);
 	} else {
 		error("\
 %s: protocol_version %hu not supported", __func__, protocol_version);

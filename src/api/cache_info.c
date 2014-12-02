@@ -85,7 +85,6 @@ slurm_load_cache(cache_info_msg_t **cache_info, uint16_t show_flags)
 			slurm_free_return_code_msg(msg_reply.data);
 			if (cc) /* slurm_seterrno_ret() is a macro ... sigh */
 				slurm_seterrno(cc);
-			*cache_info = NULL;
 			return -1;
 		default:
 			slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);

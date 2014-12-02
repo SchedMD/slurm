@@ -1488,6 +1488,8 @@ _show_it (int argc, char *argv[])
 		scontrol_print_block (val);
 	} else if (strncasecmp (tag, "burstbuffer", MAX(tag_len, 2)) == 0) {
 		scontrol_print_burst_buffer ();
+	} else if (strncasecmp(tag, "cache", MAX(tag_len, 2)) == 0) {
+		scontrol_print_cache(val);
 	} else if (strncasecmp (tag, "config", MAX(tag_len, 1)) == 0) {
 		_print_config (val);
 	} else if (strncasecmp (tag, "daemons", MAX(tag_len, 1)) == 0) {
@@ -1539,8 +1541,6 @@ _show_it (int argc, char *argv[])
 		scontrol_print_topo (val);
 	} else if (strncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
 		scontrol_print_licenses(val);
-	} else if (strncasecmp(tag, "cache", MAX(tag_len, 2)) == 0) {
-		scontrol_print_cache(val);
 	} else {
 		exit_code = 1;
 		if (quiet_flag != 1)
