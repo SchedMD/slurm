@@ -614,7 +614,7 @@ static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		if (sharing_only && 
-		    ((p_ptr->num_rows < 2) || 
+		    ((p_ptr->num_rows < 2) ||
 		     (p_ptr->part_ptr == my_part_ptr)))
 			continue;
 		if (!p_ptr->row)
