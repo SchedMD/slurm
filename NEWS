@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     in slurmctld.
  -- Test more frequently for node boot completion before starting a job.
     Provides better responsiveness.
+ -- Fix PMI2 singleton initialization.
 
 * Changes in Slurm 14.11.2
 ==========================
