@@ -82,11 +82,11 @@ extern enum basil_version get_basil_version(void)
 	if (_get_alps_engine(engine_version, sizeof(engine_version)) == NULL)
 		fatal("can not determine ALPS Engine version");
 	else if (strncmp(engine_version, "latest", 6) == 0) {
-		bv = BV_5_2_46;
+		bv = BV_5_2_3;
 	} else if (strncmp(engine_version, "5.2", 3) == 0) {
 		int macro = atoi(engine_version+4);
-		if (macro >= 46)
-			bv = BV_5_2_46;
+		if (macro >= 3) /* means 5.2.44+ */
+			bv = BV_5_2_3;
 		else
 			bv = BV_5_2;
 	} else if (strncmp(engine_version, "5.1", 3) == 0)
@@ -119,7 +119,9 @@ extern enum basil_version get_basil_version(void)
 		      "for this version",
 		      engine_version);
 
-	if (bv == BV_5_2_46) {
+	if (bv == BV_5_2_3) {
+		/* Starting in 5.2.UP03 (5.2.44) things changed, so
+		   make it that way */
 		basil_5_2_elements[BT_MEMARRAY].depth = 9;
 		basil_5_2_elements[BT_MEMORY].depth = 10;
 		basil_5_2_elements[BT_MEMALLOC].depth = 8;
