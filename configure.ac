@@ -496,6 +496,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/auth/munge/Makefile
 		 src/plugins/auth/none/Makefile
 		 src/plugins/burst_buffer/Makefile
+		 src/plugins/burst_buffer/common/Makefile
+		 src/plugins/burst_buffer/cray/Makefile
 		 src/plugins/burst_buffer/generic/Makefile
 		 src/plugins/checkpoint/Makefile
 		 src/plugins/checkpoint/aix/Makefile

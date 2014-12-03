@@ -683,6 +683,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_infiniband_ofed.so &&
    echo %{_libdir}/slurm/acct_gather_infiniband_ofed.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
    echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_cray.so        &&
+   echo %{_libdir}/slurm/burst_buffer_cray.so        >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rrd.so          &&
