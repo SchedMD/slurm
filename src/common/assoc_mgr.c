@@ -258,8 +258,12 @@ static void _delete_assoc_hash(slurmdb_association_rec_t *assoc)
 
 	/* Remove the record from assoc hash table */
 	assoc_pptr = &assoc_hash_id[ASSOC_HASH_ID_INX(assoc_ptr->id)];
-	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) != assoc))
-		assoc_pptr = &assoc_ptr->assoc_next_id;
+	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) != assoc)) {
+		if (!assoc_ptr->assoc_next_id)
+			assoc_pptr = NULL;
+		else
+			assoc_pptr = &assoc_ptr->assoc_next_id;
+	}
 
 	if (!assoc_pptr) {
 		fatal("assoc id hash error");
@@ -269,8 +273,12 @@ static void _delete_assoc_hash(slurmdb_association_rec_t *assoc)
 
 	assoc_ptr = assoc;
 	assoc_pptr = &assoc_hash[_assoc_hash_index(assoc_ptr)];
-	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) != assoc))
-		assoc_pptr = &assoc_ptr->assoc_next;
+	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) != assoc)) {
+		if (!assoc_ptr->assoc_next)
+			assoc_pptr = NULL;
+		else
+			assoc_pptr = &assoc_ptr->assoc_next;
+	}
 
 	if (!assoc_pptr) {
 		fatal("assoc hash error");
