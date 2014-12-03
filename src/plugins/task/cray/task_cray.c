@@ -120,7 +120,6 @@ static int _update_num_steps(int val);
 static int _step_prologue(void);
 static int _step_epilogue(void);
 static int track_status = 1;
-static int terminated = 0;
 
 // A directory on the compute node where temporary files will be kept
 #define TASK_CRAY_RUN_DIR   "/var/run/task_cray"
@@ -609,18 +608,9 @@ static int _check_status_file(stepd_step_rec_t *job,
 			return SLURM_SUCCESS;
 		}
 
-		// srun only gets the error() messages by default, send one
-		// per compute node, but log all other events with info().
-		if (terminated) {
-			info("step %u.%u task %u exited without calling "
-			     "PMI_Finalize()",
-			     job->jobid, job->stepid, task->gtid);
-		} else {
-			error("step %u.%u task %u exited without calling "
-			      "PMI_Finalize()",
-			      job->jobid, job->stepid, task->gtid);
-			terminated = 1;
-		}
+		verbose("step %u.%u task %u exited without calling "
+			"PMI_Finalize()",
+			job->jobid, job->stepid, task->gtid);
 	}
 	return SLURM_SUCCESS;
 }
