@@ -121,7 +121,7 @@ static void _add_assoc_hash(slurmdb_association_rec_t *assoc)
 
 	if (!assoc_hash_id)
 		assoc_hash_id = xmalloc(ASSOC_HASH_SIZE *
-				     sizeof(slurmdb_association_rec_t *));
+					sizeof(slurmdb_association_rec_t *));
 	if (!assoc_hash)
 		assoc_hash = xmalloc(ASSOC_HASH_SIZE *
 				     sizeof(slurmdb_association_rec_t *));
@@ -249,18 +249,16 @@ static slurmdb_association_rec_t *_find_assoc_rec(
  *	assoc_count - count of assoc list entries
  *	assoc_hash - hash table into assoc records
  */
-static void _delete_assoc_hash(void *assoc)
+static void _delete_assoc_hash(slurmdb_association_rec_t *assoc)
 {
-	slurmdb_association_rec_t *assoc_ptr =
-		(slurmdb_association_rec_t *) assoc;
+	slurmdb_association_rec_t *assoc_ptr = assoc;
 	slurmdb_association_rec_t **assoc_pptr;
 
 	xassert(assoc);
 
 	/* Remove the record from assoc hash table */
 	assoc_pptr = &assoc_hash_id[ASSOC_HASH_ID_INX(assoc_ptr->id)];
-	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) !=
-			      (slurmdb_association_rec_t *) assoc))
+	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) != assoc))
 		assoc_pptr = &assoc_ptr->assoc_next_id;
 
 	if (!assoc_pptr) {
@@ -269,10 +267,9 @@ static void _delete_assoc_hash(void *assoc)
 	} else
 		*assoc_pptr = assoc_ptr->assoc_next_id;
 
-	assoc_ptr = (slurmdb_association_rec_t *) assoc;
+	assoc_ptr = assoc;
 	assoc_pptr = &assoc_hash[_assoc_hash_index(assoc_ptr)];
-	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) !=
-			      (slurmdb_association_rec_t *) assoc))
+	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) != assoc))
 		assoc_pptr = &assoc_ptr->assoc_next;
 
 	if (!assoc_pptr) {
