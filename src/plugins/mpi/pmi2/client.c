@@ -117,10 +117,10 @@ _parse_cmd(client_req_t *req)
 
 	len = strlen (MCMD_KEY"=");
 	if (! strncmp(req->buf, MCMD_KEY"=", len)) {
-			req->cmd = MCMD_KEY; /* XXX: mcmd=spawn */
-			req->sep = '\n';
-			req->term = '\n';
-			return SLURM_SUCCESS;
+		req->cmd = MCMD_KEY; /* XXX: mcmd=spawn */
+		req->sep = '\n';
+		req->term = '\n';
+		return SLURM_SUCCESS;
 	}
 
 	len = strlen (CMD_KEY"=");
@@ -587,7 +587,7 @@ send_kvs_fence_resp_to_clients(int rc, char *errmsg)
 	int i = 0;
 	client_resp_t *resp;
 	char *msg;
-	
+
 	resp = client_resp_new();
 	if ( is_pmi11() ) {
 		if (rc != 0 && errmsg != NULL) {
