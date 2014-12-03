@@ -453,13 +453,16 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 			if (!assoc->user)
 				continue;
 			if (!strcmp(user->old_name, assoc->user)) {
+				/* Since the uid changed the
+				   hash as well will change.  Remove
+				   the assoc from the hash before the
+				   change or you won't find it.
+				*/
+				_delete_assoc_hash(assoc);
+
 				xfree(assoc->user);
 				assoc->user = xstrdup(user->name);
 				assoc->uid = user->uid;
-				/* Since the uid changed the
-				   hash as well will change.
-				*/
-				_delete_assoc_hash(assoc);
 				_add_assoc_hash(assoc);
 				debug3("changing assoc %d", assoc->id);
 			}
@@ -4573,11 +4576,14 @@ extern int assoc_mgr_set_missing_uids()
 					       "couldn't get a uid for user %s",
 					       object->user);
 				} else {
-					object->uid = pw_uid;
 					/* Since the uid changed the
-					   hash as well will change.
+					   hash as well will change.  Remove
+					   the assoc from the hash before the
+					   change or you won't find it.
 					*/
 					_delete_assoc_hash(object);
+
+					object->uid = pw_uid;
 					_add_assoc_hash(object);
 				}
 			}

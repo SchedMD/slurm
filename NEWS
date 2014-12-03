@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.2
 ==========================
  -- Fix Centos5 compile errors.
+ -- Fix issue with association hash not getting the correct index which
+    could result in seg fault.
 
 * Changes in Slurm 14.11.1
 ==========================
