@@ -609,7 +609,6 @@ static int _check_status_file(stepd_step_rec_t *job,
 			return SLURM_SUCCESS;
 		}
 
-		// Cancel the job step, since we didn't find the mpi_fini msg
 		// srun only gets the error() messages by default, send one
 		// per compute node, but log all other events with info().
 		if (terminated) {
@@ -622,8 +621,6 @@ static int _check_status_file(stepd_step_rec_t *job,
 			      job->jobid, job->stepid, task->gtid);
 			terminated = 1;
 		}
-		info("reset estatus from %d to %d", task->estatus, SIGKILL);
-		task->estatus = SIGKILL;
 	}
 	return SLURM_SUCCESS;
 }
