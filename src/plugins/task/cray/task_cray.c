@@ -602,7 +602,7 @@ static int _check_status_file(stepd_step_rec_t *job,
 	}
 
 	// Check the result
-	if (status == 0 && !terminated) {
+	if (status == 0) {
 		if (task->killed_by_cmd) {
 			// We've been killed by request. User already knows
 			return SLURM_SUCCESS;
