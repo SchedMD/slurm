@@ -608,7 +608,8 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 	/* if cpu_bind_type doesn't already have a auto preference, choose
 	 * the level based on the level of the -E specification
 	 */
-	if (!(*cpu_bind_type & (CPU_BIND_TO_SOCKETS |
+	if (cpu_bind_type &&
+	    !(*cpu_bind_type & (CPU_BIND_TO_SOCKETS |
 				CPU_BIND_TO_CORES |
 				CPU_BIND_TO_THREADS))) {
 		if (j == 0) {

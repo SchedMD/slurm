@@ -249,19 +249,21 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
  *	assoc_count - count of assoc list entries
  *	assoc_hash - hash table into assoc records
  */
-static void _delete_assoc_hash(void *assoc)
+static void _delete_assoc_hash(slurmdb_assoc_rec_t *assoc)
 {
-	slurmdb_assoc_rec_t *assoc_ptr =
-		(slurmdb_assoc_rec_t *) assoc;
+	slurmdb_assoc_rec_t *assoc_ptr = assoc;
 	slurmdb_assoc_rec_t **assoc_pptr;
 
 	xassert(assoc);
 
 	/* Remove the record from assoc hash table */
 	assoc_pptr = &assoc_hash_id[ASSOC_HASH_ID_INX(assoc_ptr->id)];
-	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) !=
-			      (slurmdb_assoc_rec_t *) assoc))
-		assoc_pptr = &assoc_ptr->assoc_next_id;
+	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) != assoc)) {
+		if (!assoc_ptr->assoc_next_id)
+			assoc_pptr = NULL;
+		else
+			assoc_pptr = &assoc_ptr->assoc_next_id;
+	}
 
 	if (!assoc_pptr) {
 		fatal("assoc id hash error");
@@ -269,11 +271,14 @@ static void _delete_assoc_hash(void *assoc)
 	} else
 		*assoc_pptr = assoc_ptr->assoc_next_id;
 
-	assoc_ptr = (slurmdb_assoc_rec_t *) assoc;
+	assoc_ptr = assoc;
 	assoc_pptr = &assoc_hash[_assoc_hash_index(assoc_ptr)];
-	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) !=
-			      (slurmdb_assoc_rec_t *) assoc))
-		assoc_pptr = &assoc_ptr->assoc_next;
+	while (assoc_pptr && ((assoc_ptr = *assoc_pptr) != assoc)) {
+		if (!assoc_ptr->assoc_next)
+			assoc_pptr = NULL;
+		else
+			assoc_pptr = &assoc_ptr->assoc_next;
+	}
 
 	if (!assoc_pptr) {
 		fatal("assoc hash error");
@@ -456,13 +461,16 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 			if (!assoc->user)
 				continue;
 			if (!strcmp(user->old_name, assoc->user)) {
+				/* Since the uid changed the
+				   hash as well will change.  Remove
+				   the assoc from the hash before the
+				   change or you won't find it.
+				*/
+				_delete_assoc_hash(assoc);
+
 				xfree(assoc->user);
 				assoc->user = xstrdup(user->name);
 				assoc->uid = user->uid;
-				/* Since the uid changed the
-				   hash as well will change.
-				*/
-				_delete_assoc_hash(assoc);
 				_add_assoc_hash(assoc);
 				debug3("changing assoc %d", assoc->id);
 			}
@@ -4576,11 +4584,14 @@ extern int assoc_mgr_set_missing_uids()
 					       "couldn't get a uid for user %s",
 					       object->user);
 				} else {
-					object->uid = pw_uid;
 					/* Since the uid changed the
-					   hash as well will change.
+					   hash as well will change.  Remove
+					   the assoc from the hash before the
+					   change or you won't find it.
 					*/
 					_delete_assoc_hash(object);
+
+					object->uid = pw_uid;
 					_add_assoc_hash(object);
 				}
 			}
