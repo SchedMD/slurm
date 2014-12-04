@@ -376,7 +376,9 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	 * MAX_AGENT_QUEUE which ever is bigger */
 	if (!max_agent_queue)
 		max_agent_queue =
-			MAX(MAX_AGENT_QUEUE, slurmctld_conf.max_job_cnt * 2);
+			MAX(MAX_AGENT_QUEUE,
+			    ((slurmctld_conf.max_job_cnt * 2) +
+			     (node_record_count * 4)));
 
 	buffer = pack_slurmdbd_msg(req, rpc_version);
 
