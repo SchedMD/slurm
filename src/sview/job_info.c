@@ -2502,11 +2502,10 @@ static void _get_step_nodelist(job_step_info_t *step_ptr, char *buf,
 
 static void _layout_step_record(GtkTreeView *treeview,
 				job_step_info_t *step_ptr,
-				int update)
+				int update, bool suspended)
 {
 	char *uname;
 	char tmp_char[50], tmp_nodes[50], tmp_time[50];
-	time_t now_time = time(NULL);
 	GtkTreeIter iter;
 	enum job_states state;
 	GtkTreeStore *treestore =
@@ -2551,14 +2550,19 @@ static void _layout_step_record(GtkTreeView *treeview,
 						 SORTID_NAME),
 				   step_ptr->name);
 
+
+	if (suspended)
+		state = JOB_SUSPENDED;
+	else
+		state = step_ptr->state;
+
 	if (!step_ptr->nodes
 	    || !strcasecmp(step_ptr->nodes, "waiting...")) {
 		sprintf(tmp_time,"00:00:00");
 		snprintf(tmp_nodes, sizeof(tmp_nodes), "waiting...");
 		state = JOB_PENDING;
 	} else {
-		now_time -= step_ptr->start_time;
-		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
+		secs2time_str(step_ptr->run_time, tmp_time, sizeof(tmp_time));
 		_get_step_nodelist(step_ptr, tmp_nodes, sizeof(tmp_nodes));
 		if (cluster_flags & CLUSTER_FLAG_BGQ) {
 			uint32_t nodes = 0;
@@ -2580,7 +2584,6 @@ static void _layout_step_record(GtkTreeView *treeview,
 					   find_col_name(display_data_job,
 							 SORTID_NODES),
 					   tmp_char);
-		state = JOB_RUNNING;
 	}
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -2625,19 +2628,23 @@ static void _layout_step_record(GtkTreeView *treeview,
 
 static void _update_step_record(job_step_info_t *step_ptr,
 				GtkTreeStore *treestore,
-				GtkTreeIter *iter)
+				GtkTreeIter *iter, bool suspended)
 {
 	char *tmp_uname;
 	char tmp_nodes[50];
 	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
 	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
 	char tmp_step_id[40], tmp_job_id[400];
-	time_t now_time = time(NULL);
 	enum job_states state;
 	int color_inx = step_ptr->step_id % sview_colors_cnt;
 
 	convert_num_unit((float)step_ptr->num_cpus, tmp_cpu_min,
 			 sizeof(tmp_cpu_min), UNIT_NONE);
+
+	if (suspended)
+		state = JOB_SUSPENDED;
+	else
+		state = step_ptr->state;
 
 	if (!step_ptr->nodes ||
 	    !strcasecmp(step_ptr->nodes,"waiting...")) {
@@ -2646,8 +2653,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 		tmp_node_cnt[0] = '\0';
 		state = JOB_PENDING;
 	} else {
-		now_time -= step_ptr->start_time;
-		secs2time_str(now_time, tmp_time_run, sizeof(tmp_time_run));
+		secs2time_str(step_ptr->run_time,
+			      tmp_time_run, sizeof(tmp_time_run));
 		_get_step_nodelist(step_ptr, tmp_nodes, sizeof(tmp_nodes));
 		if (cluster_flags & CLUSTER_FLAG_BGQ) {
 			uint32_t nodes = 0;
@@ -2665,7 +2672,6 @@ static void _update_step_record(job_step_info_t *step_ptr,
 					 tmp_node_cnt, sizeof(tmp_node_cnt),
 					 UNIT_NONE);
 		}
-		state = JOB_RUNNING;
 	}
 
 	convert_num_unit((float)step_ptr->num_tasks, tmp_task_cnt,
@@ -2746,13 +2752,13 @@ static void _append_task_record(sview_job_info_t *sview_job_info_ptr,
 
 static void _append_step_record(job_step_info_t *step_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter,
-				int jobid)
+				int jobid, bool suspended)
 {
 	GtkTreeIter step_iter;
 
 	gtk_tree_store_append(treestore, &step_iter, iter);
 	gtk_tree_store_set(treestore, &step_iter, SORTID_POS, jobid, -1);
-	_update_step_record(step_ptr, treestore, &step_iter);
+	_update_step_record(step_ptr, treestore, &step_iter, suspended);
 }
 
 static void _handle_task_check(sview_job_info_t *task_ptr,
@@ -2919,9 +2925,10 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 			g_free(tmp_stepid);
 			if (stepid == (int)step_ptr->step_id) {
 				/* update with new info */
-				_update_step_record(step_ptr,
-						    GTK_TREE_STORE(model),
-						    step_iter);
+				_update_step_record(
+					step_ptr, GTK_TREE_STORE(model),
+					step_iter, IS_JOB_SUSPENDED(
+						sview_job_info_ptr->job_ptr));
 				goto found;
 			}
 
@@ -2932,7 +2939,9 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 		}
 	adding:
 		_append_step_record(step_ptr, GTK_TREE_STORE(model),
-				    iter, sview_job_info_ptr->job_ptr->job_id);
+				    iter, sview_job_info_ptr->job_ptr->job_id,
+				    IS_JOB_SUSPENDED(
+					    sview_job_info_ptr->job_ptr));
 	found:
 		;
 	}
@@ -3375,8 +3384,11 @@ need_refresh:
 					color_set_flag, false, 0);
 				xfree(color_inx);
 				xfree(color_set_flag);
-				_layout_step_record(treeview,
-						    step_ptr, update);
+
+				_layout_step_record(
+					treeview, step_ptr, update,
+					IS_JOB_SUSPENDED(
+						sview_job_info->job_ptr));
 				found = 1;
 				break;
 			}
@@ -3551,7 +3563,9 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	*/
 	show_flags |= SHOW_ALL;
 	if (g_step_info_ptr) {
-		error_code = slurm_get_job_steps(g_step_info_ptr->last_update,
+		/* Use a last_update time of NULL so that we can get an updated
+		 * run_time for jobs rather than just its start_time */
+		error_code = slurm_get_job_steps((time_t) NULL,
 						 NO_VAL, NO_VAL, &new_step_ptr,
 						 show_flags);
 		if (error_code == SLURM_SUCCESS) {
@@ -3839,7 +3853,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 						     force_refresh))
 	    == SLURM_NO_CHANGE_IN_DATA){
 		if ((!display_widget || view == ERROR_VIEW)
-		    || (job_error_code != SLURM_NO_CHANGE_IN_DATA))
+		    || (step_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
 	} else if (step_error_code != SLURM_SUCCESS) {
 		if (view == ERROR_VIEW)
@@ -4013,7 +4027,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 	    == SLURM_NO_CHANGE_IN_DATA) {
 		if ((!spec_info->display_widget
 		     || spec_info->view == ERROR_VIEW)
-		    || (job_error_code != SLURM_NO_CHANGE_IN_DATA))
+		    || (step_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
 	} else if (step_error_code != SLURM_SUCCESS) {
 		if (spec_info->view == ERROR_VIEW)
