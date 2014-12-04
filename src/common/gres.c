@@ -86,6 +86,7 @@
 #include "src/common/xstring.h"
 
 #define GRES_MAGIC 0x438a34d4
+#define MAX_GRES_BITMAP 1024
 
 /* Gres symbols provided by the plugin */
 typedef struct slurm_gres_ops {
@@ -1098,15 +1099,15 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 					      tmp_name, node_name);
 					has_file = 1;
 				}
-				if (has_file && (count > 1024)) {
+				if (has_file && (count > MAX_GRES_BITMAP)) {
 					/* Avoid over-subscribing memory with
 					 * huge bitmaps */
-					error("gres_plugin_node_config_unpack: "
-					      "gres/%s has File plus very "
+					error("%s: gres/%s has File plus very "
 					      "large Count (%u) for node %s, "
-					      "resetting value to 1024",
-					      tmp_name, count, node_name);
-					count = 1024;
+					      "resetting value to %d",
+					      __func__, tmp_name, count,
+					      node_name, MAX_GRES_BITMAP);
+					count = MAX_GRES_BITMAP;
 				}
 				if (has_file)	/* Don't clear if already set */
 					gres_context[j].has_file = has_file;
@@ -1702,7 +1703,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 			} else if (cpus_config) {
 				error("%s: has CPUs configured for only"
 				      " some of the records on node %s",
-				      context_ptr->gres_type,node_name);
+				      context_ptr->gres_type, node_name);
 			}
 			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
 			for (j = 0; j < gres_slurmd_conf->count; j++) {
@@ -1734,6 +1735,14 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->gres_cnt_avail = 0;
 
 	if (context_ptr->has_file) {
+		if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
+			error("%s: gres/%s has File plus very large Count (%u) "
+			      "for node %s, resetting value to %u",
+			      __func__, context_ptr->gres_type,
+			      gres_data->gres_cnt_avail, node_name,
+			      MAX_GRES_BITMAP);
+			gres_data->gres_cnt_avail = MAX_GRES_BITMAP;
+		}
 		if (gres_data->gres_bit_alloc == NULL) {
 			gres_data->gres_bit_alloc =
 				bit_alloc(gres_data->gres_cnt_avail);
