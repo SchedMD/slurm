@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
  -- sview - Fix displaying of suspended steps elapsed times.
  -- Increase number of messages that get cached before throwing them away
     when the DBD is down.
+ -- Fix jobs from starting in overlapping reservations that won't finish before
+    a "maint" reservation begins.
 
 * Changes in Slurm 14.03.10
 ===========================
