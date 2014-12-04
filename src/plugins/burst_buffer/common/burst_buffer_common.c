@@ -115,6 +115,49 @@ static char *_print_users(uid_t *buf)
 	return user_str;
 }
 
+/* Allocate burst buffer hash tables */
+extern void bb_alloc_cache(bb_alloc_t ***bb_hash_ptr, bb_user_t ***bb_uhash_ptr)
+{
+	*bb_hash_ptr  = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
+	*bb_uhash_ptr = xmalloc(sizeof(bb_user_t *)  * BB_HASH_SIZE);
+}
+
+/* Clear all cached burst buffer records, freeing all memory. */
+extern void bb_clear_cache(bb_alloc_t ***bb_hash_ptr, bb_user_t ***bb_uhash_ptr)
+{
+	bb_alloc_t **bb_hash,   *bb_current,   *bb_next;
+	bb_user_t  **user_hash, *user_current, *user_next;
+	int i;
+
+	bb_hash = *bb_hash_ptr;
+	if (bb_hash) {
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			bb_current = bb_hash[i];
+			while (bb_current) {
+				bb_next = bb_current->next;
+				xfree(bb_current);
+				bb_current = bb_next;
+			}
+		}
+		xfree(bb_hash);
+		*bb_hash_ptr = NULL;
+	}
+
+	user_hash = *bb_uhash_ptr;
+	if (user_hash) {
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			user_current = user_hash[i];
+			while (user_current) {
+				user_next = user_current->next;
+				xfree(user_current);
+				user_current = user_next;
+			}
+		}
+		xfree(user_hash);
+		*bb_uhash_ptr = NULL;
+	}
+}
+
 /* Clear configuration parameters, free memory */
 extern void bb_clear_config(bb_config_t *config_ptr)
 {
@@ -135,6 +178,90 @@ extern void bb_clear_config(bb_config_t *config_ptr)
 	xfree(config_ptr->stop_stage_in);
 	xfree(config_ptr->stop_stage_out);
 	config_ptr->user_size_limit = NO_VAL;
+}
+
+/* Find a per-job burst buffer record for a specific job.
+ * If not found, return NULL. */
+extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
+				   bb_alloc_t **bb_hash)
+{
+	bb_alloc_t *bb_ptr = NULL;
+
+	xassert(job_ptr);
+	bb_ptr = bb_hash[job_ptr->user_id % BB_HASH_SIZE];
+	while (bb_ptr) {
+		if (bb_ptr->job_id == job_ptr->job_id) {
+			if (bb_ptr->user_id == job_ptr->user_id)
+				return bb_ptr;
+			error("%s: Slurm state inconsistent with burst "
+			      "buffer. JobID %u has UserID mismatch (%u != %u)",
+			      __func__, job_ptr->user_id, bb_ptr->user_id,
+			      job_ptr->user_id);
+			/* This has been observed when slurmctld crashed and
+			 * the job state recovered was missing some jobs
+			 * which already had burst buffers configured. */
+		}
+		bb_ptr = bb_ptr->next;
+	}
+	return bb_ptr;
+}
+
+/* Find a per-user burst buffer record for a specific user ID */
+extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
+{
+	int inx = user_id % BB_HASH_SIZE;
+	bb_user_t *user_ptr;
+
+	xassert(bb_uhash);
+	user_ptr = bb_uhash[inx];
+	while (user_ptr) {
+		if (user_ptr->user_id == user_id)
+			return user_ptr;
+		user_ptr = user_ptr->next;
+	}
+	user_ptr = xmalloc(sizeof(bb_user_t));
+	user_ptr->next = bb_uhash[inx];
+	/* user_ptr->size = 0;	initialized by xmalloc */
+	user_ptr->user_id = user_id;
+	bb_uhash[inx] = user_ptr;
+	return user_ptr;
+}
+
+/* Remove a burst buffer allocation from a user's load */
+extern void bb_remove_user_load(bb_alloc_t *bb_ptr, uint32_t *used_space,
+				bb_user_t **bb_uhash)
+{
+	bb_user_t *user_ptr;
+	uint32_t tmp_u, tmp_j;
+
+	if (*used_space >= bb_ptr->size) {
+		*used_space -= bb_ptr->size;
+	} else {
+		error("%s: used space underflow releasing buffer for job %u",
+		      __func__, bb_ptr->job_id);
+		*used_space = 0;
+	}
+
+	user_ptr = bb_find_user_rec(bb_ptr->user_id, bb_uhash);
+	if ((user_ptr->size & BB_SIZE_IN_NODES) ||
+	    (bb_ptr->size   & BB_SIZE_IN_NODES)) {
+		tmp_u = user_ptr->size & (~BB_SIZE_IN_NODES);
+		tmp_j = bb_ptr->size   & (~BB_SIZE_IN_NODES);
+		if (tmp_u > tmp_j) {
+			user_ptr->size = tmp_u + tmp_j;
+			user_ptr->size |= BB_SIZE_IN_NODES;
+		} else {
+			error("%s: user %u table underflow",
+			      __func__, user_ptr->user_id);
+			user_ptr->size = BB_SIZE_IN_NODES;
+		}
+	} else if (user_ptr->size >= bb_ptr->size) {
+		user_ptr->size -= bb_ptr->size;
+	} else {
+		error("%s: user %u table underflow",
+		      __func__, user_ptr->user_id);
+		user_ptr->size = 0;
+	}
 }
 
 /* Load and process configuration parameters */
@@ -179,9 +306,7 @@ extern void bb_load_config(bb_config_t *config_ptr)
 		config_ptr->deny_users = _parse_users(config_ptr->
 						      deny_users_str);
 	}
-	if (!s_p_get_string(&config_ptr->get_sys_state, "GetSysState",
-			    bb_hashtbl))
-		fatal("%s: GetSysState is NULL", __func__);
+	s_p_get_string(&config_ptr->get_sys_state, "GetSysState", bb_hashtbl);
 	if (s_p_get_string(&tmp, "JobSizeLimit", bb_hashtbl)) {
 		config_ptr->job_size_limit = bb_get_size_num(tmp);
 		xfree(tmp);
@@ -204,18 +329,11 @@ extern void bb_load_config(bb_config_t *config_ptr)
 		       bb_hashtbl);
 	s_p_get_uint32(&config_ptr->stage_out_timeout, "StageOutTimeout",
 		       bb_hashtbl);
-	if (!s_p_get_string(&config_ptr->start_stage_in, "StartStageIn",
-			    bb_hashtbl))
-		fatal("%s: StartStageIn is NULL", __func__);
-	if (!s_p_get_string(&config_ptr->start_stage_out, "StartStageOut",
-			    bb_hashtbl))
-		fatal("%s: StartStageOut is NULL", __func__);
-	if (!s_p_get_string(&config_ptr->stop_stage_in, "StopStageIn",
-			    bb_hashtbl))
-		fatal("%s: StopStageIn is NULL", __func__);
-	if (!s_p_get_string(&config_ptr->stop_stage_out, "StopStageOut",
-			    bb_hashtbl))
-		fatal("%s: StopStageOut is NULL", __func__);
+	s_p_get_string(&config_ptr->start_stage_in, "StartStageIn", bb_hashtbl);
+	s_p_get_string(&config_ptr->start_stage_out, "StartStageOut",
+			    bb_hashtbl);
+	s_p_get_string(&config_ptr->stop_stage_in, "StopStageIn", bb_hashtbl);
+	s_p_get_string(&config_ptr->stop_stage_out, "StopStageOut", bb_hashtbl);
 	if (s_p_get_string(&tmp, "UserSizeLimit", bb_hashtbl)) {
 		config_ptr->user_size_limit = bb_get_size_num(tmp);
 		xfree(tmp);
@@ -256,6 +374,35 @@ extern void bb_load_config(bb_config_t *config_ptr)
 		info("%s: UserSizeLimit:%u",  __func__,
 		     config_ptr->user_size_limit);
 	}
+}
+
+/* Pack individual burst buffer records into a  buffer */
+extern int bb_pack_bufs(bb_alloc_t **bb_hash, Buf buffer,
+			uint16_t protocol_version)
+{
+	int i, rec_count = 0;
+	struct bb_alloc *bb_next;
+
+	if (!bb_hash)
+		return rec_count;
+
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_next = bb_hash[i];
+		while (bb_next) {
+			pack32(bb_next->array_job_id,  buffer);
+			pack32(bb_next->array_task_id, buffer);
+			pack32(bb_next->job_id,        buffer);
+			packstr(bb_next->name,         buffer);
+			pack32(bb_next->size,          buffer);
+			pack16(bb_next->state,         buffer);
+			pack_time(bb_next->state_time, buffer);
+			pack32(bb_next->user_id,       buffer);
+			rec_count++;
+			bb_next = bb_next->next;
+		}
+	}
+
+	return rec_count;
 }
 
 /* Pack configuration parameters into a buffer */
@@ -302,3 +449,36 @@ extern uint32_t bb_get_size_num(char *tok)
 	}
 	return bb_size_u;
 }
+
+extern void bb_job_queue_del(void *x)
+{
+	xfree(x);
+}
+
+/* Sort job queue by expected start time */
+extern int bb_job_queue_sort(void *x, void *y)
+{
+	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
+	job_queue_rec_t *job_rec2 = *(job_queue_rec_t **) y;
+	struct job_record *job_ptr1 = job_rec1->job_ptr;
+	struct job_record *job_ptr2 = job_rec2->job_ptr;
+
+	if (job_ptr1->start_time > job_ptr2->start_time)
+		return 1;
+	if (job_ptr1->start_time < job_ptr2->start_time)
+		return -1;
+	return 0;
+}
+
+/* Sort preempt_bb_recs in order of DECREASING use_time */
+extern int bb_preempt_queue_sort(void *x, void *y)
+{
+	struct preempt_bb_recs *bb_ptr1 = *(struct preempt_bb_recs **) x;
+	struct preempt_bb_recs *bb_ptr2 = *(struct preempt_bb_recs **) y;
+
+	if (bb_ptr1->use_time > bb_ptr2->use_time)
+		return -1;
+	if (bb_ptr1->use_time < bb_ptr2->use_time)
+		return 1;
+	return 0;
+};

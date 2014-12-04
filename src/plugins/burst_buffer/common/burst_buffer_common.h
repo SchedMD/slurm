@@ -39,6 +39,13 @@
 
 #include "src/common/pack.h"
 
+/* Interval, in seconds, for purging orphan bb_alloc_t records and timing out
+ * staging */
+#define AGENT_INTERVAL	10
+
+/* Hash tables are used for both job burst buffer and user limit records */
+#define BB_HASH_SIZE	100
+
 /* Burst buffer configuration parameters */
 typedef struct bb_config {
 	uid_t   *allow_users;
@@ -75,18 +82,67 @@ typedef struct bb_alloc {
 	uint32_t user_id;
 } bb_alloc_t;
 
-/* Translate a burst buffer size specification in string form to numeric form,
- * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
-extern uint32_t bb_get_size_num(char *tok);
+typedef struct bb_user {
+	struct bb_user *next;
+	uint32_t size;
+	uint32_t user_id;
+} bb_user_t;
+
+typedef struct job_queue_rec {
+	uint32_t bb_size;
+	struct job_record *job_ptr;
+} job_queue_rec_t;
+
+struct preempt_bb_recs {
+	bb_alloc_t *bb_ptr;
+	uint32_t job_id;
+	uint32_t size;
+	time_t   use_time;
+	uint32_t user_id;
+};
+
+/* Allocate burst buffer hash tables */
+extern void bb_alloc_cache(bb_alloc_t ***bb_hash_ptr,bb_user_t ***bb_uhash_ptr);
+
+/* Clear all cached burst buffer records, freeing all memory. */
+extern void bb_clear_cache(bb_alloc_t ***bb_hash_ptr,bb_user_t ***bb_uhash_ptr);
 
 /* Clear configuration parameters, free memory */
 extern void bb_clear_config(bb_config_t *config_ptr);
 
+/* Find a per-job burst buffer record for a specific job.
+ * If not found, return NULL. */
+extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
+				   bb_alloc_t **bb_hash);
+
+/* Find a per-user burst buffer record for a specific user ID */
+extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash);
+
+/* Translate a burst buffer size specification in string form to numeric form,
+ * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
+extern uint32_t bb_get_size_num(char *tok);
+
+extern void bb_job_queue_del(void *x);
+
+/* Sort job queue by expected start time */
+extern int bb_job_queue_sort(void *x, void *y);
+
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_config_t *config_ptr);
+
+/* Pack individual burst buffer records into a  buffer */
+extern int bb_pack_bufs(bb_alloc_t **bb_hash, Buf buffer,
+			uint16_t protocol_version);
 
 /* Pack configuration parameters into a buffer */
 extern void bb_pack_config(bb_config_t *config_ptr, Buf buffer,
 			   uint16_t protocol_version);
+
+/* Sort preempt_bb_recs in order of DECREASING use_time */
+extern int bb_preempt_queue_sort(void *x, void *y);
+
+/* Remove a burst buffer allocation from a user's load */
+extern void bb_remove_user_load(bb_alloc_t *bb_ptr, uint32_t *used_space,
+				bb_user_t **bb_uhash);
 
 #endif	/* __BURST_BUFFER_COMMON_H__ */

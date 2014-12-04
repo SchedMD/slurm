@@ -55,6 +55,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -88,12 +89,316 @@ const char plugin_name[]        = "burst_buffer cray plugin";
 const char plugin_type[]        = "burst_buffer/cray";
 const uint32_t plugin_version   = 100;
 
+bb_alloc_t **		bb_hash = NULL;		/* Hash by job_id */
+bb_user_t **		bb_uhash = NULL;	/* Hash by user_id */
+static bb_config_t	bb_config;
+static pthread_mutex_t	bb_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t	bb_thread = 0;
+static time_t		last_load_time = 0;
+static time_t		next_end_time = 0;
+static pthread_cond_t	term_cond = PTHREAD_COND_INITIALIZER;
+static bool		term_flag = false;
+static pthread_mutex_t	term_mutex = PTHREAD_MUTEX_INITIALIZER;
+static uint32_t		total_space = 0;
+static uint32_t		used_space = 0;
+
+static void *	_bb_agent(void *args);
+static uint32_t	_get_bb_size(struct job_record *job_ptr);
+static void	_load_state(uint32_t job_id);
+static void 	_my_sleep(int add_secs);
+static int	_test_size_limit(struct job_record *job_ptr,uint32_t add_space);
+static void	_timeout_bb_rec(void);
+
+/* Perform periodic background activities */
+static void *_bb_agent(void *args)
+{
+	/* Locks: write job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	while (!term_flag) {
+		_my_sleep(AGENT_INTERVAL);
+		if (term_flag)
+			break;
+		lock_slurmctld(job_write_lock);
+		pthread_mutex_lock(&bb_mutex);
+		_load_state(0);
+		_timeout_bb_rec();
+		pthread_mutex_unlock(&bb_mutex);
+		unlock_slurmctld(job_write_lock);
+	}
+	return NULL;
+}
+
+/* Return the burst buffer size requested by a job */
+static uint32_t _get_bb_size(struct job_record *job_ptr)
+{
+	char *tok;
+	uint32_t bb_size_u = 0;
+
+	if (job_ptr->burst_buffer) {
+		tok = strstr(job_ptr->burst_buffer, "size=");
+		if (tok)
+			bb_size_u = bb_get_size_num(tok + 5);
+	}
+
+	return bb_size_u;
+}
+
+/*
+ * Determine the current actual burst buffer state.
+ * Run the program "get_sys_state" and parse stdout for details.
+ * job_id IN - specific job to get information about, or 0 for all jobs
+ */
+static void _load_state(uint32_t job_id)
+{
+// FIXME: Need Cray interface here...
+	last_load_time = time(NULL);
+}
+
+static void _stop_stage_in(uint32_t job_id)
+{
+// FIXME: Need Cray interface here...
+}
+
+static void _stop_stage_out(uint32_t job_id)
+{
+// FIXME: Need Cray interface here...
+}
+
+/* Local sleep function, handles termination signal */
+static void _my_sleep(int add_secs)
+{
+	struct timespec ts = {0, 0};
+	struct timeval  tv = {0, 0};
+
+	if (gettimeofday(&tv, NULL)) {		/* Some error */
+		sleep(1);
+		return;
+	}
+
+	ts.tv_sec  = tv.tv_sec + add_secs;
+	ts.tv_nsec = tv.tv_usec * 1000;
+	pthread_mutex_lock(&term_mutex);
+	if (!term_flag)
+		pthread_cond_timedwait(&term_cond, &term_mutex, &ts);
+	pthread_mutex_unlock(&term_mutex);
+}
+
+/* Test if a job can be allocated a burst buffer.
+ * This may preempt currently active stage-in for higher priority jobs.
+ *
+ * RET 0: Job can be started now
+ *     1: Job exceeds configured limits, continue testing with next job
+ *     2: Job needs more resources than currently available can not start,
+ *        skip all remaining jobs
+ */
+static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
+{
+	struct preempt_bb_recs *preempt_ptr = NULL;
+	List preempt_list;
+	ListIterator preempt_iter;
+	bb_user_t *user_ptr;
+	uint32_t tmp_u, tmp_j, lim_u;
+	int add_total_space_needed = 0, add_user_space_needed = 0;
+	int add_total_space_avail  = 0, add_user_space_avail  = 0;
+	time_t now = time(NULL);
+	bb_alloc_t *bb_ptr = NULL;
+	int i;
+
+	/* Determine if burst buffer can be allocated now for the job.
+	 * If not, determine how much space must be free. */
+	if (((bb_config.job_size_limit  != NO_VAL) &&
+	     (add_space > bb_config.job_size_limit)) ||
+	    ((bb_config.user_size_limit != NO_VAL) &&
+	     (add_space > bb_config.user_size_limit)))
+		return 1;
+
+	if (bb_config.user_size_limit != NO_VAL) {
+		user_ptr = bb_find_user_rec(job_ptr->user_id, bb_uhash);
+		tmp_u = user_ptr->size  & (~BB_SIZE_IN_NODES);
+		tmp_j = add_space       & (~BB_SIZE_IN_NODES);
+		lim_u = bb_config.user_size_limit & (~BB_SIZE_IN_NODES);
+
+		add_user_space_needed = tmp_u + tmp_j - lim_u;
+	}
+	add_total_space_needed = used_space + add_space - total_space;
+	if ((add_total_space_needed <= 0) &&
+	    (add_user_space_needed  <= 0))
+		return 0;
+
+	/* Identify candidate burst buffers to revoke for higher priority job */
+	preempt_list = list_create(bb_job_queue_del);
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_ptr = bb_hash[i];
+		while (bb_ptr) {
+			if (bb_ptr->job_id &&
+			    (bb_ptr->use_time > now) &&
+			    (bb_ptr->use_time > job_ptr->start_time)) {
+				preempt_ptr = xmalloc(sizeof(
+						struct preempt_bb_recs));
+				preempt_ptr->bb_ptr = bb_ptr;
+				preempt_ptr->job_id = bb_ptr->job_id;
+				preempt_ptr->size = bb_ptr->size;
+				preempt_ptr->use_time = bb_ptr->use_time;
+				preempt_ptr->user_id = bb_ptr->user_id;
+				list_push(preempt_list, preempt_ptr);
+
+				add_total_space_avail += bb_ptr->size;
+				if (bb_ptr->user_id == job_ptr->user_id);
+					add_user_space_avail += bb_ptr->size;
+			}
+			bb_ptr = bb_ptr->next;
+		}
+	}
+
+	if ((add_total_space_avail >= add_total_space_needed) &&
+	    (add_user_space_avail  >= add_user_space_needed)) {
+		list_sort(preempt_list, bb_preempt_queue_sort);
+		preempt_iter = list_iterator_create(preempt_list);
+		while ((preempt_ptr = list_next(preempt_iter)) &&
+		       (add_total_space_needed || add_user_space_needed)) {
+			if (add_user_space_needed &&
+			    (preempt_ptr->user_id == job_ptr->user_id)) {
+				_stop_stage_in(preempt_ptr->job_id);
+				preempt_ptr->bb_ptr->cancelled = true;
+				preempt_ptr->bb_ptr->end_time = 0;
+				if (bb_config.debug_flag) {
+					info("%s: %s: Preempting stage-in of "
+					     "job %u for job %u", plugin_type,
+					     __func__, preempt_ptr->job_id,
+					     job_ptr->job_id);
+				}
+				add_user_space_needed  -= preempt_ptr->size;
+				add_total_space_needed -= preempt_ptr->size;
+			}
+			if ((add_total_space_needed > add_user_space_needed) &&
+			    (preempt_ptr->user_id != job_ptr->user_id)) {
+				_stop_stage_in(preempt_ptr->job_id);
+				preempt_ptr->bb_ptr->cancelled = true;
+				preempt_ptr->bb_ptr->end_time = 0;
+				if (bb_config.debug_flag) {
+					info("%s: %s: Preempting stage-in of "
+					     "job %u for job %u", plugin_type,
+					     __func__, preempt_ptr->job_id,
+					     job_ptr->job_id);
+				}
+				add_total_space_needed -= preempt_ptr->size;
+			}
+		}
+		list_iterator_destroy(preempt_iter);
+	}
+	list_destroy(preempt_list);
+
+	return 2;
+}
+
+/* Handle timeout of burst buffer events:
+ * 1. Purge per-job burst buffer records when the stage-out has completed and
+ *    the job has been purged from Slurm
+ * 2. Test for StageInTimeout events
+ * 3. Test for StageOutTimeout events
+ */
+static void _timeout_bb_rec(void)
+{
+	struct job_record *job_ptr;
+	bb_alloc_t **bb_pptr, *bb_ptr = NULL;
+	uint32_t age;
+	time_t now = time(NULL);
+	int i;
+
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_pptr = &bb_hash[i];
+		bb_ptr = bb_hash[i];
+		while (bb_ptr) {
+			if (bb_ptr->seen_time < last_load_time) {
+				if (bb_ptr->job_id == 0) {
+					info("%s: Persistent burst buffer %s "
+					     "purged",
+					     __func__, bb_ptr->name);
+				} else if (bb_config.debug_flag) {
+					info("%s: burst buffer for job %u "
+					     "purged",
+					     __func__, bb_ptr->job_id);
+				}
+				bb_remove_user_load(bb_ptr, &used_space,
+						    bb_uhash);
+				*bb_pptr = bb_ptr->next;
+				xfree(bb_ptr);
+				break;
+			}
+			if ((bb_ptr->job_id != 0) &&
+			    (bb_ptr->state >= BB_STATE_STAGED_OUT) &&
+			    !find_job_record(bb_ptr->job_id)) {
+				_stop_stage_out(bb_ptr->job_id);
+				bb_ptr->cancelled = true;
+				bb_ptr->end_time = 0;
+				*bb_pptr = bb_ptr->next;
+				xfree(bb_ptr);
+				break;
+			}
+			age = difftime(now, bb_ptr->state_time);
+			if ((bb_ptr->job_id != 0) && bb_config.stop_stage_in &&
+			    (bb_ptr->state == BB_STATE_STAGING_IN) &&
+			    (bb_config.stage_in_timeout != 0) &&
+			    (!bb_ptr->cancelled) &&
+			    (age >= bb_config.stage_in_timeout)) {
+				_stop_stage_in(bb_ptr->job_id);
+				bb_ptr->cancelled = true;
+				bb_ptr->end_time = 0;
+				job_ptr = find_job_record(bb_ptr->job_id);
+				if (job_ptr) {
+					error("%s: StageIn timed out, holding "
+					      "job %u",
+					      __func__, bb_ptr->job_id);
+					job_ptr->priority = 0;
+					job_ptr->direct_set_prio = 1;
+					job_ptr->state_reason = WAIT_HELD;
+					xfree(job_ptr->state_desc);
+					job_ptr->state_desc = xstrdup(
+						"Burst buffer stage-in timeout");
+					last_job_update = now;
+				} else {
+					error("%s: StageIn timed out for "
+					      "vestigial job %u ",
+					      __func__, bb_ptr->job_id);
+				}
+			}
+			if ((bb_ptr->job_id != 0) && bb_config.stop_stage_out &&
+			    (bb_ptr->state == BB_STATE_STAGING_OUT) &&
+			    (bb_config.stage_out_timeout != 0) &&
+			    (!bb_ptr->cancelled) &&
+			    (age >= bb_config.stage_out_timeout)) {
+				error("%s: StageOut for job %u timed out",
+				      __func__, bb_ptr->job_id);
+				_stop_stage_out(bb_ptr->job_id);
+				bb_ptr->cancelled = true;
+				bb_ptr->end_time = 0;
+			}
+			bb_pptr = &bb_ptr->next;
+			bb_ptr = bb_ptr->next;
+		}
+	}
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init(void)
 {
+	pthread_attr_t attr;
+
+	pthread_mutex_lock(&bb_mutex);
+	bb_load_config(&bb_config);
+	if (bb_config.debug_flag)
+		info("%s: %s", plugin_type,  __func__);
+	bb_alloc_cache(&bb_hash, &bb_uhash);
+	slurm_attr_init(&attr);
+	if (pthread_create(&bb_thread, &attr, _bb_agent, NULL))
+		error("Unable to start backfill thread: %m");
+	pthread_mutex_unlock(&bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -102,6 +407,23 @@ extern int init(void)
  */
 extern int fini(void)
 {
+	pthread_mutex_lock(&bb_mutex);
+	if (bb_config.debug_flag)
+		info("%s: %s", plugin_type,  __func__);
+
+	pthread_mutex_lock(&term_mutex);
+	term_flag = true;
+	pthread_cond_signal(&term_cond);
+	pthread_mutex_unlock(&term_mutex);
+
+	if (bb_thread) {
+		pthread_join(bb_thread, NULL);
+		bb_thread = 0;
+	}
+	bb_clear_config(&bb_config);
+	bb_clear_cache(&bb_hash, &bb_uhash);
+	pthread_mutex_unlock(&bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -116,6 +438,12 @@ extern int fini(void)
  */
 extern int bb_p_load_state(bool init_config)
 {
+	pthread_mutex_lock(&bb_mutex);
+	if (bb_config.debug_flag)
+		info("%s: %s", plugin_type,  __func__);
+	_load_state(0);
+	pthread_mutex_unlock(&bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -126,6 +454,12 @@ extern int bb_p_load_state(bool init_config)
  */
 extern int bb_p_reconfig(void)
 {
+	pthread_mutex_lock(&bb_mutex);
+	if (bb_config.debug_flag)
+		info("%s: %s", plugin_type,  __func__);
+	bb_load_config(&bb_config);
+	pthread_mutex_unlock(&bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -137,6 +471,30 @@ extern int bb_p_reconfig(void)
  */
 extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 {
+	uint32_t rec_count = 0;
+	int eof, offset;
+
+	pthread_mutex_lock(&bb_mutex);
+	if (bb_config.debug_flag)
+		info("%s: %s",  __func__, plugin_type);
+	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
+	offset = get_buf_offset(buffer);
+	pack32(rec_count,        buffer);
+	pack32(total_space,      buffer);
+	pack32(used_space,       buffer);
+	bb_pack_config(&bb_config, buffer, protocol_version);
+//FIXME: Add private data option
+	rec_count = bb_pack_bufs(bb_hash, buffer, protocol_version);
+	if (rec_count != 0) {
+		eof = get_buf_offset(buffer);
+		set_buf_offset(buffer, offset);
+		pack32(rec_count, buffer);
+		set_buf_offset(buffer, eof);
+	}
+	if (bb_config.debug_flag)
+		info("%s: record_count:%u",  __func__, rec_count);
+	pthread_mutex_unlock(&bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -148,6 +506,67 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
+	int32_t bb_size = 0;
+	char *key;
+	int i;
+
+	if (bb_config.debug_flag) {
+		info("%s: %s: job_user_id:%u, submit_uid:%d",
+		     plugin_type, __func__, job_desc->user_id, submit_uid);
+		info("%s: burst_buffer:%s", __func__, job_desc->burst_buffer);
+		info("%s: script:%s", __func__, job_desc->script);
+	}
+
+//FIXME: Add function callout to set job_desc->burst_buffer based upon job_desc->script
+	if (job_desc->burst_buffer) {
+		key = strstr(job_desc->burst_buffer, "size=");
+		if (key)
+			bb_size = bb_get_size_num(key + 5);
+	}
+	if (bb_size == 0)
+		return SLURM_SUCCESS;
+	if (bb_size < 0)
+		return ESLURM_BURST_BUFFER_LIMIT;
+
+	pthread_mutex_lock(&bb_mutex);
+	if (((bb_config.job_size_limit  != NO_VAL) &&
+	     (bb_size > bb_config.job_size_limit)) ||
+	    ((bb_config.user_size_limit != NO_VAL) &&
+	     (bb_size > bb_config.user_size_limit))) {
+		pthread_mutex_unlock(&bb_mutex);
+		return ESLURM_BURST_BUFFER_LIMIT;
+	}
+
+	if (bb_config.allow_users) {
+		for (i = 0; bb_config.allow_users[i]; i++) {
+			if (job_desc->user_id == bb_config.allow_users[i])
+				break;
+		}
+		if (bb_config.allow_users[i] == 0) {
+			pthread_mutex_unlock(&bb_mutex);
+			return ESLURM_BURST_BUFFER_PERMISSION;
+		}
+	}
+
+	if (bb_config.deny_users) {
+		for (i = 0; bb_config.deny_users[i]; i++) {
+			if (job_desc->user_id == bb_config.deny_users[i])
+				break;
+		}
+		if (bb_config.deny_users[i] != 0) {
+			pthread_mutex_unlock(&bb_mutex);
+			return ESLURM_BURST_BUFFER_PERMISSION;
+		}
+	}
+
+	if (bb_size > total_space) {
+		info("Job from user %u requested burst buffer size of %u, "
+		     "but total space is only %u",
+		     job_desc->user_id, bb_size, total_space);
+	}
+
+	pthread_mutex_unlock(&bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -156,7 +575,37 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
  */
 extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 {
-	return time(NULL);
+	bb_alloc_t *bb_ptr;
+	time_t est_start = time(NULL);
+	uint32_t bb_size;
+	int rc;
+
+	if (bb_config.debug_flag) {
+		info("%s: %s: job_id:%u",
+		     plugin_type, __func__, job_ptr->job_id);
+	}
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    ((bb_size = _get_bb_size(job_ptr)) == 0))
+		return est_start;
+
+	pthread_mutex_lock(&bb_mutex);
+	bb_ptr = bb_find_job_rec(job_ptr, bb_hash);
+	if (!bb_ptr) {
+		rc = _test_size_limit(job_ptr, bb_size);
+		if (rc == 0) {		/* Could start now */
+			;
+		} else if (rc == 1) {	/* Exceeds configured limits */
+			est_start += 365 * 24 * 60 * 60;
+		} else {		/* No space currently available */
+			est_start = MAX(est_start, next_end_time);
+		}
+	} else if (bb_ptr->state < BB_STATE_STAGED_IN) {
+		est_start++;
+	}
+	pthread_mutex_unlock(&bb_mutex);
+
+	return est_start;
 }
 
 /*
@@ -166,6 +615,63 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
  */
 extern int bb_p_job_try_stage_in(List job_queue)
 {
+	job_queue_rec_t *job_rec;
+	List job_candidates;
+	ListIterator job_iter;
+	struct job_record *job_ptr;
+	uint32_t bb_size;
+	int rc;
+
+	if (bb_config.debug_flag)
+		info("%s: %s", plugin_type,  __func__);
+
+	if (!bb_config.start_stage_in)
+		return SLURM_ERROR;
+
+	/* Identify candidates to be allocated burst buffers */
+	job_candidates = list_create(bb_job_queue_del);
+	job_iter = list_iterator_create(job_queue);
+	while ((job_ptr = list_next(job_iter))) {
+		if (!IS_JOB_PENDING(job_ptr) ||
+		    (job_ptr->start_time == 0) ||
+		    (job_ptr->burst_buffer == NULL) ||
+		    (job_ptr->burst_buffer[0] == '\0'))
+			continue;
+		bb_size = _get_bb_size(job_ptr);
+		if (bb_size == 0)
+			continue;
+		job_rec = xmalloc(sizeof(job_queue_rec_t));
+		job_rec->job_ptr = job_ptr;
+		job_rec->bb_size = bb_size;
+		list_push(job_candidates, job_rec);
+	}
+	list_iterator_destroy(job_iter);
+
+	/* Sort in order of expected start time */
+	list_sort(job_candidates, bb_job_queue_sort);
+
+	pthread_mutex_lock(&bb_mutex);
+//	_set_bb_use_time(bb_hash);
+	job_iter = list_iterator_create(job_candidates);
+	while ((job_rec = list_next(job_iter))) {
+		job_ptr = job_rec->job_ptr;
+		bb_size = job_rec->bb_size;
+
+		if (bb_find_job_rec(job_ptr, bb_hash))
+			continue;
+
+		rc = _test_size_limit(job_ptr, bb_size);
+		if (rc == 1)
+			continue;
+		else if (rc == 2)
+			break;
+
+//		_alloc_job_bb(job_ptr, bb_size);
+	}
+	list_iterator_destroy(job_iter);
+	pthread_mutex_unlock(&bb_mutex);
+	list_destroy(job_candidates);
+
 	return SLURM_SUCCESS;
 }
 
