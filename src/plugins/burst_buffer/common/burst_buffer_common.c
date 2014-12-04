@@ -116,45 +116,41 @@ static char *_print_users(uid_t *buf)
 }
 
 /* Allocate burst buffer hash tables */
-extern void bb_alloc_cache(bb_alloc_t ***bb_hash_ptr, bb_user_t ***bb_uhash_ptr)
+extern void bb_alloc_cache(bb_state_t *state_ptr)
 {
-	*bb_hash_ptr  = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
-	*bb_uhash_ptr = xmalloc(sizeof(bb_user_t *)  * BB_HASH_SIZE);
+	state_ptr->bb_hash  = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
+	state_ptr->bb_uhash = xmalloc(sizeof(bb_user_t *)  * BB_HASH_SIZE);
 }
 
 /* Clear all cached burst buffer records, freeing all memory. */
-extern void bb_clear_cache(bb_alloc_t ***bb_hash_ptr, bb_user_t ***bb_uhash_ptr)
+extern void bb_clear_cache(bb_state_t *state_ptr)
 {
-	bb_alloc_t **bb_hash,   *bb_current,   *bb_next;
-	bb_user_t  **user_hash, *user_current, *user_next;
+	bb_alloc_t *bb_current,   *bb_next;
+	bb_user_t  *user_current, *user_next;
 	int i;
 
-	bb_hash = *bb_hash_ptr;
-	if (bb_hash) {
+	if (state_ptr->bb_hash) {
 		for (i = 0; i < BB_HASH_SIZE; i++) {
-			bb_current = bb_hash[i];
+			bb_current = state_ptr->bb_hash[i];
 			while (bb_current) {
 				bb_next = bb_current->next;
 				xfree(bb_current);
 				bb_current = bb_next;
 			}
 		}
-		xfree(bb_hash);
-		*bb_hash_ptr = NULL;
+		xfree(state_ptr->bb_hash);
 	}
 
-	user_hash = *bb_uhash_ptr;
-	if (user_hash) {
+	if (state_ptr->bb_uhash) {
 		for (i = 0; i < BB_HASH_SIZE; i++) {
-			user_current = user_hash[i];
+			user_current = state_ptr->bb_uhash[i];
 			while (user_current) {
 				user_next = user_current->next;
 				xfree(user_current);
 				user_current = user_next;
 			}
 		}
-		xfree(user_hash);
-		*bb_uhash_ptr = NULL;
+		xfree(state_ptr->bb_uhash);
 	}
 }
 
@@ -206,6 +202,26 @@ extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 	return bb_ptr;
 }
 
+/* Add a burst buffer allocation to a user's load */
+extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
+{
+	bb_user_t *user_ptr;
+	uint32_t tmp_u, tmp_j;
+
+	state_ptr->used_space += bb_ptr->size;
+
+	user_ptr = bb_find_user_rec(bb_ptr->user_id, state_ptr->bb_uhash);
+	if ((user_ptr->size & BB_SIZE_IN_NODES) ||
+	    (bb_ptr->size   & BB_SIZE_IN_NODES)) {
+		tmp_u = user_ptr->size & (~BB_SIZE_IN_NODES);
+		tmp_j = bb_ptr->size   & (~BB_SIZE_IN_NODES);
+		user_ptr->size = tmp_u + tmp_j;
+		user_ptr->size |= BB_SIZE_IN_NODES;
+	} else {
+		user_ptr->size += bb_ptr->size;
+	}
+}
+
 /* Find a per-user burst buffer record for a specific user ID */
 extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
 {
@@ -228,21 +244,20 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
 }
 
 /* Remove a burst buffer allocation from a user's load */
-extern void bb_remove_user_load(bb_alloc_t *bb_ptr, uint32_t *used_space,
-				bb_user_t **bb_uhash)
+extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
 	uint32_t tmp_u, tmp_j;
 
-	if (*used_space >= bb_ptr->size) {
-		*used_space -= bb_ptr->size;
+	if (state_ptr->used_space >= bb_ptr->size) {
+		state_ptr->used_space -= bb_ptr->size;
 	} else {
 		error("%s: used space underflow releasing buffer for job %u",
 		      __func__, bb_ptr->job_id);
-		*used_space = 0;
+		state_ptr->used_space = 0;
 	}
 
-	user_ptr = bb_find_user_rec(bb_ptr->user_id, bb_uhash);
+	user_ptr = bb_find_user_rec(bb_ptr->user_id, state_ptr->bb_uhash);
 	if ((user_ptr->size & BB_SIZE_IN_NODES) ||
 	    (bb_ptr->size   & BB_SIZE_IN_NODES)) {
 		tmp_u = user_ptr->size & (~BB_SIZE_IN_NODES);
@@ -265,7 +280,7 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, uint32_t *used_space,
 }
 
 /* Load and process configuration parameters */
-extern void bb_load_config(bb_config_t *config_ptr)
+extern void bb_load_config(bb_state_t *state_ptr)
 {
 	s_p_hashtbl_t *bb_hashtbl = NULL;
 	char *bb_conf, *tmp = NULL, *value;
@@ -286,9 +301,9 @@ extern void bb_load_config(bb_config_t *config_ptr)
 		{NULL}
 	};
 
-	bb_clear_config(config_ptr);
+	bb_clear_config(&state_ptr->bb_config);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
-		config_ptr->debug_flag = true;
+		state_ptr->bb_config.debug_flag = true;
 
 	bb_conf = get_extra_conf_path("burst_buffer.conf");
 	bb_hashtbl = s_p_hashtbl_create(bb_options);
@@ -296,83 +311,87 @@ extern void bb_load_config(bb_config_t *config_ptr)
 		fatal("%s: something wrong with opening/reading %s: %m",
 		      __func__, bb_conf);
 	}
-	if (s_p_get_string(&config_ptr->allow_users_str, "AllowUsers",
+	if (s_p_get_string(&state_ptr->bb_config.allow_users_str, "AllowUsers",
 			   bb_hashtbl)) {
-		config_ptr->allow_users = _parse_users(config_ptr->
-						       allow_users_str);
+		state_ptr->bb_config.allow_users = _parse_users(
+					state_ptr->bb_config.allow_users_str);
 	}
-	if (s_p_get_string(&config_ptr->deny_users_str, "DenyUsers",
+	if (s_p_get_string(&state_ptr->bb_config.deny_users_str, "DenyUsers",
 			   bb_hashtbl)) {
-		config_ptr->deny_users = _parse_users(config_ptr->
-						      deny_users_str);
+		state_ptr->bb_config.deny_users = _parse_users(
+					state_ptr->bb_config.deny_users_str);
 	}
-	s_p_get_string(&config_ptr->get_sys_state, "GetSysState", bb_hashtbl);
+	s_p_get_string(&state_ptr->bb_config.get_sys_state, "GetSysState",
+		       bb_hashtbl);
 	if (s_p_get_string(&tmp, "JobSizeLimit", bb_hashtbl)) {
-		config_ptr->job_size_limit = bb_get_size_num(tmp);
+		state_ptr->bb_config.job_size_limit = bb_get_size_num(tmp);
 		xfree(tmp);
 	}
-	if (s_p_get_uint32(&config_ptr->prio_boost_alloc, "PrioBoostAlloc",
-			   bb_hashtbl) &&
-	    (config_ptr->prio_boost_alloc > NICE_OFFSET)) {
+	if (s_p_get_uint32(&state_ptr->bb_config.prio_boost_alloc,
+			   "PrioBoostAlloc", bb_hashtbl) &&
+	    (state_ptr->bb_config.prio_boost_alloc > NICE_OFFSET)) {
 		error("%s: PrioBoostAlloc can not exceed %u",
 		      __func__, NICE_OFFSET);
-		config_ptr->prio_boost_alloc = NICE_OFFSET;
+		state_ptr->bb_config.prio_boost_alloc = NICE_OFFSET;
 	}
-	if (s_p_get_uint32(&config_ptr->prio_boost_use, "PrioBoostUse",
+	if (s_p_get_uint32(&state_ptr->bb_config.prio_boost_use, "PrioBoostUse",
 			   bb_hashtbl) &&
-	    (config_ptr->prio_boost_use > NICE_OFFSET)) {
+	    (state_ptr->bb_config.prio_boost_use > NICE_OFFSET)) {
 		error("%s: PrioBoostUse can not exceed %u",
 		      __func__, NICE_OFFSET);
-		config_ptr->prio_boost_use = NICE_OFFSET;
+		state_ptr->bb_config.prio_boost_use = NICE_OFFSET;
 	}
-	s_p_get_uint32(&config_ptr->stage_in_timeout, "StageInTimeout",
+	s_p_get_uint32(&state_ptr->bb_config.stage_in_timeout, "StageInTimeout",
 		       bb_hashtbl);
-	s_p_get_uint32(&config_ptr->stage_out_timeout, "StageOutTimeout",
+	s_p_get_uint32(&state_ptr->bb_config.stage_out_timeout,
+		       "StageOutTimeout", bb_hashtbl);
+	s_p_get_string(&state_ptr->bb_config.start_stage_in, "StartStageIn",
 		       bb_hashtbl);
-	s_p_get_string(&config_ptr->start_stage_in, "StartStageIn", bb_hashtbl);
-	s_p_get_string(&config_ptr->start_stage_out, "StartStageOut",
+	s_p_get_string(&state_ptr->bb_config.start_stage_out, "StartStageOut",
 			    bb_hashtbl);
-	s_p_get_string(&config_ptr->stop_stage_in, "StopStageIn", bb_hashtbl);
-	s_p_get_string(&config_ptr->stop_stage_out, "StopStageOut", bb_hashtbl);
+	s_p_get_string(&state_ptr->bb_config.stop_stage_in, "StopStageIn",
+		       bb_hashtbl);
+	s_p_get_string(&state_ptr->bb_config.stop_stage_out, "StopStageOut",
+		       bb_hashtbl);
 	if (s_p_get_string(&tmp, "UserSizeLimit", bb_hashtbl)) {
-		config_ptr->user_size_limit = bb_get_size_num(tmp);
+		state_ptr->bb_config.user_size_limit = bb_get_size_num(tmp);
 		xfree(tmp);
 	}
 
 	s_p_hashtbl_destroy(bb_hashtbl);
 	xfree(bb_conf);
 
-	if (config_ptr->debug_flag) {
-		value = _print_users(config_ptr->allow_users);
+	if (state_ptr->bb_config.debug_flag) {
+		value = _print_users(state_ptr->bb_config.allow_users);
 		info("%s: AllowUsers:%s",  __func__, value);
 		xfree(value);
 
-		value = _print_users(config_ptr->deny_users);
+		value = _print_users(state_ptr->bb_config.deny_users);
 		info("%s: DenyUsers:%s",  __func__, value);
 		xfree(value);
 
 		info("%s: GetSysState:%s",  __func__,
-		     config_ptr->get_sys_state);
+		     state_ptr->bb_config.get_sys_state);
 		info("%s: JobSizeLimit:%u",  __func__,
-		     config_ptr->job_size_limit);
+		     state_ptr->bb_config.job_size_limit);
 		info("%s: PrioBoostAlloc:%u", __func__,
-		     config_ptr->prio_boost_alloc);
+		     state_ptr->bb_config.prio_boost_alloc);
 		info("%s: PrioBoostUse:%u", __func__,
-		     config_ptr->prio_boost_use);
+		     state_ptr->bb_config.prio_boost_use);
 		info("%s: StageInTimeout:%u", __func__,
-		     config_ptr->stage_in_timeout);
+		     state_ptr->bb_config.stage_in_timeout);
 		info("%s: StageOutTimeout:%u", __func__,
-		     config_ptr->stage_out_timeout);
+		     state_ptr->bb_config.stage_out_timeout);
 		info("%s: StartStageIn:%s",  __func__,
-		     config_ptr->start_stage_in);
+		     state_ptr->bb_config.start_stage_in);
 		info("%s: StartStageOut:%s",  __func__,
-		     config_ptr->start_stage_out);
+		     state_ptr->bb_config.start_stage_out);
 		info("%s: StopStageIn:%s",  __func__,
-		     config_ptr->stop_stage_in);
+		     state_ptr->bb_config.stop_stage_in);
 		info("%s: StopStageOut:%s",  __func__,
-		     config_ptr->stop_stage_out);
+		     state_ptr->bb_config.stop_stage_out);
 		info("%s: UserSizeLimit:%u",  __func__,
-		     config_ptr->user_size_limit);
+		     state_ptr->bb_config.user_size_limit);
 	}
 }
 

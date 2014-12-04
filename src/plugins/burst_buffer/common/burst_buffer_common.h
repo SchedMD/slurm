@@ -101,11 +101,29 @@ struct preempt_bb_recs {
 	uint32_t user_id;
 };
 
+typedef struct bb_state {
+	bb_config_t	bb_config;
+	bb_alloc_t **	bb_hash;	/* Hash by job_id */
+	bb_user_t **	bb_uhash;	/* Hash by user_id */
+	pthread_mutex_t	bb_mutex;
+	pthread_t	bb_thread;
+	time_t		last_load_time;
+	time_t		next_end_time;
+	pthread_cond_t	term_cond;
+	bool		term_flag;
+	pthread_mutex_t	term_mutex;
+	uint32_t	total_space;
+	uint32_t	used_space;
+} bb_state_t;
+
+/* Add a burst buffer allocation to a user's load */
+extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
+
 /* Allocate burst buffer hash tables */
-extern void bb_alloc_cache(bb_alloc_t ***bb_hash_ptr,bb_user_t ***bb_uhash_ptr);
+extern void bb_alloc_cache(bb_state_t *state_ptr);
 
 /* Clear all cached burst buffer records, freeing all memory. */
-extern void bb_clear_cache(bb_alloc_t ***bb_hash_ptr,bb_user_t ***bb_uhash_ptr);
+extern void bb_clear_cache(bb_state_t *state_ptr);
 
 /* Clear configuration parameters, free memory */
 extern void bb_clear_config(bb_config_t *config_ptr);
@@ -128,7 +146,7 @@ extern void bb_job_queue_del(void *x);
 extern int bb_job_queue_sort(void *x, void *y);
 
 /* Load and process configuration parameters */
-extern void bb_load_config(bb_config_t *config_ptr);
+extern void bb_load_config(bb_state_t *state_ptr);
 
 /* Pack individual burst buffer records into a  buffer */
 extern int bb_pack_bufs(bb_alloc_t **bb_hash, Buf buffer,
@@ -142,7 +160,6 @@ extern void bb_pack_config(bb_config_t *config_ptr, Buf buffer,
 extern int bb_preempt_queue_sort(void *x, void *y);
 
 /* Remove a burst buffer allocation from a user's load */
-extern void bb_remove_user_load(bb_alloc_t *bb_ptr, uint32_t *used_space,
-				bb_user_t **bb_uhash);
+extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
 
 #endif	/* __BURST_BUFFER_COMMON_H__ */
