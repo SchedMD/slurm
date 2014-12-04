@@ -93,12 +93,25 @@ const uint32_t plugin_version   = 100;
  * easily use common functions from multiple burst buffer plugins */
 static bb_state_t 	bb_state;
 
+static void	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
 static uint32_t	_get_bb_size(struct job_record *job_ptr);
 static void	_load_state(uint32_t job_id);
-static void 	_my_sleep(int add_secs);
+static void	_start_stage_in(uint32_t job_id);
+static void	_start_stage_out(uint32_t job_id);
+static void	_stop_stage_in(uint32_t job_id);
+static void	_stop_stage_out(uint32_t job_id);
 static int	_test_size_limit(struct job_record *job_ptr,uint32_t add_space);
 static void	_timeout_bb_rec(void);
+
+static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
+{
+	(void) bb_alloc_job(&bb_state, job_ptr, bb_size);
+
+	if (bb_state.bb_config.debug_flag)
+		info("%s: start stage-in job_id:%u", __func__, job_ptr->job_id);
+	_start_stage_in(job_ptr->job_id);
+}
 
 /* Perform periodic background activities */
 static void *_bb_agent(void *args)
@@ -108,7 +121,7 @@ static void *_bb_agent(void *args)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	while (!bb_state.term_flag) {
-		_my_sleep(AGENT_INTERVAL);
+		bb_sleep(&bb_state, AGENT_INTERVAL);
 		if (bb_state.term_flag)
 			break;
 		lock_slurmctld(job_write_lock);
@@ -167,27 +180,6 @@ static void _stop_stage_out(uint32_t job_id)
 // FIXME: Need Cray interface here...
 }
 
-/* Local sleep function, handles termination signal */
-static void _my_sleep(int add_secs)
-{
-	struct timespec ts = {0, 0};
-	struct timeval  tv = {0, 0};
-
-	if (gettimeofday(&tv, NULL)) {		/* Some error */
-		sleep(1);
-		return;
-	}
-
-	ts.tv_sec  = tv.tv_sec + add_secs;
-	ts.tv_nsec = tv.tv_usec * 1000;
-	pthread_mutex_lock(&bb_state.term_mutex);
-	if (!bb_state.term_flag) {
-		pthread_cond_timedwait(&bb_state.term_cond,
-				       &bb_state.term_mutex, &ts);
-	}
-	pthread_mutex_unlock(&bb_state.term_mutex);
-}
-
 /* Test if a job can be allocated a burst buffer.
  * This may preempt currently active stage-in for higher priority jobs.
  *
@@ -225,7 +217,8 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 
 		add_user_space_needed = tmp_u + tmp_j - lim_u;
 	}
-	add_total_space_needed = bb_state.used_space + add_space - bb_state.total_space;
+	add_total_space_needed = bb_state.used_space + add_space -
+				 bb_state.total_space;
 	if ((add_total_space_needed <= 0) &&
 	    (add_user_space_needed  <= 0))
 		return 0;
@@ -392,7 +385,7 @@ extern int init(void)
 	pthread_attr_t attr;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_load_config(&bb_state);
+	bb_load_config(&bb_state, "cray");
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
 	bb_alloc_cache(&bb_state);
@@ -459,7 +452,7 @@ extern int bb_p_reconfig(void)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
-	bb_load_config(&bb_state);
+	bb_load_config(&bb_state, "cray");
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -471,7 +464,7 @@ extern int bb_p_reconfig(void)
  *
  * Returns a SLURM errno.
  */
-extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
+extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t rec_count = 0;
 	int eof, offset;
@@ -482,11 +475,10 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
 	offset = get_buf_offset(buffer);
 	pack32(rec_count,        buffer);
-	pack32(bb_state.total_space,      buffer);
-	pack32(bb_state.used_space,       buffer);
-	bb_pack_config(&bb_state.bb_config, buffer, protocol_version);
-//FIXME: Add private data option
-	rec_count = bb_pack_bufs(bb_state.bb_hash, buffer, protocol_version);
+	bb_pack_state(&bb_state, buffer, protocol_version);
+	if (bb_state.bb_config.private_data == 0)
+		uid = 0;	/* User can see all data */
+	rec_count = bb_pack_bufs(uid, bb_state.bb_hash,buffer,protocol_version);
 	if (rec_count != 0) {
 		eof = get_buf_offset(buffer);
 		set_buf_offset(buffer, offset);
@@ -519,7 +511,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		info("%s: script:%s", __func__, job_desc->script);
 	}
 
-//FIXME: Add function callout to set job_desc->burst_buffer based upon job_desc->script
+//FIXME: Add Cray API callout to set job_desc->burst_buffer based upon job_desc->script
 	if (job_desc->burst_buffer) {
 		key = strstr(job_desc->burst_buffer, "size=");
 		if (key)
@@ -652,7 +644,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	list_sort(job_candidates, bb_job_queue_sort);
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-//FIXME	_set_bb_use_time(bb_state.bb_hash);
+	bb_set_use_time(&bb_state);
 	job_iter = list_iterator_create(job_candidates);
 	while ((job_rec = list_next(job_iter))) {
 		job_ptr = job_rec->job_ptr;
@@ -666,8 +658,8 @@ extern int bb_p_job_try_stage_in(List job_queue)
 			continue;
 		else if (rc == 2)
 			break;
-_start_stage_in(job_ptr->job_id);
-//FIXME		_alloc_job_bb(job_ptr, bb_size);
+
+		_alloc_job_bb(job_ptr, bb_size);
 	}
 	list_iterator_destroy(job_iter);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -708,8 +700,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		rc = -1;
 		if ((test_only == false) &&
 		    (_test_size_limit(job_ptr, bb_size) == 0))
-_start_stage_in(job_ptr->job_id);
-//FIXME			_alloc_job_bb(job_ptr, bb_size);
+			_alloc_job_bb(job_ptr, bb_size);
 	} else {
 		if (bb_ptr->state < BB_STATE_STAGED_IN)
 			_load_state(job_ptr->job_id);

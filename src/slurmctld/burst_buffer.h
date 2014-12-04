@@ -78,7 +78,7 @@ extern int bb_g_load_state(bool init_config);
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_state_pack(Buf buffer, uint16_t protocol_version);
+extern int bb_g_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version);
 
 /*
  * Note configuration may have changed. Handle changes in BurstBufferParameters.

@@ -1,4 +1,4 @@
-.TH "burst_buffer.conf" "5" "November 2014" "burst_buffer.conf 14.11" "Slurm configuration file"
+.TH "burst_buffer.conf" "5" "December 2014" "burst_buffer.conf 15.08" "Slurm configuration file"
 .SH "NAME"
 burst_buffer.conf \- Slurm configuration file for burst buffer management.
 
@@ -12,6 +12,11 @@ DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
 environment variable.
 The file will always be located in the same directory as the \fBslurm.conf\fP
 file.
+In order to support multiple configuration files for mutliple burst buffer
+plugins, the configuration file may alternately be given a name containing
+the plugin name.
+For example, if "burst_buffer.conf" is not found, the burst_buffer/generic
+configuration could be read from a file named "burst_buffer_generic.conf".
 .LP
 Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
@@ -62,6 +67,13 @@ after its file stage in has completed.
 This option will adjust a job's nice value, so user specified nice values
 for a job will be replaced by this value.
 he \fBPrioBoostAlloc\fR value will override the \fBPrioBoostUse\fR value.
+
+.TP
+\fBPrivateData\fR
+If set to "true" then users will only be able to view burst buffers they can
+use.
+Slurm administrators will still be able to view all burst buffers.
+By default, users can view all burst buffers.
 
 .TP
 \fBStageInTimeout\fR
@@ -118,6 +130,8 @@ By default there is no job allocation size limit.
 ##################################################################
 .br
 AllowUsers=alan:brenda
+.br
+PrivateData=true
 .br
 #
 .br

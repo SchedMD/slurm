@@ -76,7 +76,8 @@
 
 typedef struct slurm_bb_ops {
 	int		(*load_state)	(bool init_config);
-	int		(*state_pack)	(Buf buffer, uint16_t protocol_version);
+	int		(*state_pack)	(uid_t uid, Buf buffer,
+					 uint16_t protocol_version);
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(struct job_descriptor *job_desc,
 					 uid_t submit_uid);
@@ -239,7 +240,7 @@ extern int bb_g_load_state(bool init_config)
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_state_pack(Buf buffer, uint16_t protocol_version)
+extern int bb_g_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
@@ -253,7 +254,7 @@ extern int bb_g_state_pack(Buf buffer, uint16_t protocol_version)
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		last_offset = get_buf_offset(buffer);
-		rc2 = (*(ops[i].state_pack))(buffer, protocol_version);
+		rc2 = (*(ops[i].state_pack))(uid, buffer, protocol_version);
 		if (last_offset != get_buf_offset(buffer))
 			rec_count++;
 		rc = MAX(rc, rc2);

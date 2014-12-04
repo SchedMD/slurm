@@ -277,7 +277,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 
 	/****** Line 6 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"GetSysState=%s", burst_buffer_ptr->get_sys_state);
+		"PrivateData=%u ", burst_buffer_ptr->private_data);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
@@ -286,7 +286,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 
 	/****** Line 7 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"StartStageIn=%s", burst_buffer_ptr->start_stage_in);
+		"GetSysState=%s", burst_buffer_ptr->get_sys_state);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
@@ -295,7 +295,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 
 	/****** Line 8 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"StartStageIn=%s", burst_buffer_ptr->start_stage_out);
+		"StartStageIn=%s", burst_buffer_ptr->start_stage_in);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
@@ -304,7 +304,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 
 	/****** Line 9 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"StopStageIn=%s", burst_buffer_ptr->stop_stage_in);
+		"StartStageIn=%s", burst_buffer_ptr->start_stage_out);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
@@ -312,6 +312,15 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		xstrcat(out_buf, "\n  ");
 
 	/****** Line 10 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"StopStageIn=%s", burst_buffer_ptr->stop_stage_in);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line 11 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StopStageIn=%s", burst_buffer_ptr->stop_stage_out);
 	xstrcat(out_buf, tmp_line);

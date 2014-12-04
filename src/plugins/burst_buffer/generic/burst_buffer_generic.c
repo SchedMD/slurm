@@ -94,9 +94,6 @@ const uint32_t plugin_version   = 100;
 static bb_state_t 	bb_state;
 
 /* Local function defintions */
-static bb_alloc_t *_alloc_bb_job_rec(struct job_record *job_ptr,
-				     uint32_t bb_size);
-static bb_alloc_t *_alloc_bb_name_rec(char *name, uint32_t user_id);
 static void	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
 static char **	_build_stage_args(char *cmd, char *opt,
@@ -105,13 +102,11 @@ static void	_destroy_job_info(void *data);
 static bb_alloc_t *_find_bb_name_rec(char *name, uint32_t user_id);
 static uint32_t	_get_bb_size(struct job_record *job_ptr);
 static void	_load_state(uint32_t job_id);
-static void	_my_sleep(int usec);
 static int	_parse_job_info(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
 				const char *line, char **leftover);
 static char *	_run_script(char *script_type, char *script_path,
 			    char **script_argv, int max_wait);
-static void	_set_bb_use_time(void);
 static void	_stop_stage_in(uint32_t job_id);
 static void	_stop_stage_out(uint32_t job_id);
 static void	_test_config(void);
@@ -146,53 +141,6 @@ static uint32_t _get_bb_size(struct job_record *job_ptr)
 	}
 
 	return bb_size_u;
-}
-
-/* Allocate a per-job burst buffer record for a specific job.
- * Return a pointer to that record. */
-static bb_alloc_t *_alloc_bb_job_rec(struct job_record *job_ptr,
-				     uint32_t bb_size)
-{
-	bb_alloc_t *bb_ptr = NULL;
-	int i;
-
-	xassert(bb_state.bb_hash);
-	xassert(job_ptr);
-	bb_ptr = xmalloc(sizeof(bb_alloc_t));
-	bb_ptr->array_job_id = job_ptr->array_job_id;
-	bb_ptr->array_task_id = job_ptr->array_task_id;
-	bb_ptr->job_id = job_ptr->job_id;
-	i = job_ptr->user_id % BB_HASH_SIZE;
-	bb_ptr->next = bb_state.bb_hash[i];
-	bb_state.bb_hash[i] = bb_ptr;
-	bb_ptr->size = bb_size;
-	bb_ptr->state = BB_STATE_ALLOCATED;
-	bb_ptr->state_time = time(NULL);
-	bb_ptr->seen_time = time(NULL);
-	bb_ptr->user_id = job_ptr->user_id;
-
-	return bb_ptr;
-}
-
-/* Allocate a named burst buffer record for a specific user.
- * Return a pointer to that record. */
-static bb_alloc_t *_alloc_bb_name_rec(char *name, uint32_t user_id)
-{
-	bb_alloc_t *bb_ptr = NULL;
-	int i;
-
-	xassert(bb_state.bb_hash);
-	bb_ptr = xmalloc(sizeof(bb_alloc_t));
-	i = user_id % BB_HASH_SIZE;
-	bb_ptr->next = bb_state.bb_hash[i];
-	bb_state.bb_hash[i] = bb_ptr;
-	bb_ptr->name = xstrdup(name);
-	bb_ptr->state = BB_STATE_ALLOCATED;
-	bb_ptr->state_time = time(NULL);
-	bb_ptr->seen_time = time(NULL);
-	bb_ptr->user_id = user_id;
-
-	return bb_ptr;
 }
 
 static char **_build_stage_args(char *cmd, char *opt,
@@ -406,55 +354,6 @@ static void _timeout_bb_rec(void)
 	}
 }
 
-/* For each burst buffer record, set the use_time to the time at which its
- * use is expected to begin (i.e. the job's expected start time) */
-static void _set_bb_use_time(void)
-{
-	struct job_record *job_ptr;
-	bb_alloc_t *bb_ptr = NULL;
-	time_t now = time(NULL);
-	int i;
-
-	bb_state.next_end_time = now + 60 * 60;	/* Start estimate one hour in future */
-	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_ptr = bb_state.bb_hash[i];
-		while (bb_ptr) {
-			if (bb_ptr->job_id &&
-			    ((bb_ptr->state == BB_STATE_STAGING_IN) ||
-			     (bb_ptr->state == BB_STATE_STAGED_IN))) {
-				job_ptr = find_job_record(bb_ptr->job_id);
-				if (!job_ptr) {
-					error("%s: job %u with allocated burst "
-					      "buffers not found",
-					      __func__, bb_ptr->job_id);
-					_stop_stage_out(bb_ptr->job_id);
-					bb_ptr->cancelled = true;
-					bb_ptr->end_time = 0;
-				} else if (job_ptr->start_time) {
-					bb_ptr->end_time = job_ptr->end_time;
-					bb_ptr->use_time = job_ptr->start_time;
-				} else {
-					/* Unknown start time */
-					bb_ptr->use_time = now + 60 + 60;
-				}
-			} else if (bb_ptr->job_id) {
-				job_ptr = find_job_record(bb_ptr->job_id);
-				if (job_ptr)
-					bb_ptr->end_time = job_ptr->end_time;
-			} else {
-				bb_ptr->use_time = now;
-			}
-			if (bb_ptr->end_time && bb_ptr->size) {
-				if (bb_ptr->end_time <= now)
-					bb_state.next_end_time = now;
-				else if (bb_state.next_end_time > bb_ptr->end_time)
-					bb_state.next_end_time = bb_ptr->end_time;
-			}
-			bb_ptr = bb_ptr->next;
-		}
-	}
-}
-
 /* Test if a job can be allocated a burst buffer.
  * This may preempt currently active stage-in for higher priority jobs.
  *
@@ -493,7 +392,8 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 
 		add_user_space_needed = tmp_u + tmp_j - lim_u;
 	}
-	add_total_space_needed = bb_state.used_space + add_space - bb_state.total_space;
+	add_total_space_needed = bb_state.used_space + add_space -
+				 bb_state.total_space;
 	if ((add_total_space_needed <= 0) &&
 	    (add_user_space_needed  <= 0))
 		return 0;
@@ -718,16 +618,38 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	if (job_id) {
 		job_ptr = find_job_record(job_id);
 		if (!job_ptr && (state == BB_STATE_STAGED_OUT)) {
-			error("%s: Vestigial buffer for completed job %u purged",
-			      plugin_type, job_id);
+			struct job_record job_rec;
+			job_rec.job_id  = job_id;
+			job_rec.user_id = user_id;
+			bb_ptr = bb_find_job_rec(&job_rec, bb_state.bb_hash);
 			_stop_stage_out(job_id);	/* Purge buffer */
+			if (bb_ptr) {
+				bb_ptr->cancelled = true;
+				bb_ptr->end_time = 0;
+			} else {
+				/* Slurm knows nothing about this job,
+				 * may be result of slurmctld cold start */
+				error("%s: Vestigial buffer for purged job %u",
+				      plugin_type, job_id);
+			}
 			return SLURM_SUCCESS;
 		} else if (!job_ptr &&
 			   ((state == BB_STATE_STAGING_IN) ||
 			    (state == BB_STATE_STAGED_IN))) {
-			error("%s: Vestigial buffer for unstarted job %u purged",
-			      plugin_type, job_id);
+			struct job_record job_rec;
+			job_rec.job_id  = job_id;
+			job_rec.user_id = user_id;
+			bb_ptr = bb_find_job_rec(&job_rec, bb_state.bb_hash);
 			_stop_stage_in(job_id);		/* Purge buffer */
+			if (bb_ptr) {
+				bb_ptr->cancelled = true;
+				bb_ptr->end_time = 0;
+			} else {
+				/* Slurm knows nothing about this job,
+				 * may be result of slurmctld cold start */
+				error("%s: Vestigial buffer for purged job %u",
+				      plugin_type, job_id);
+			}
 			return SLURM_SUCCESS;
 		} else if (!job_ptr) {
 			error("%s: Vestigial buffer for job ID %u. "
@@ -739,15 +661,16 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 		name = tmp_name;
 	}
 	if (job_ptr) {
-		if ((bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash)) == NULL) {
-			bb_ptr = _alloc_bb_job_rec(job_ptr,
-						   _get_bb_size(job_ptr));
+		bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+		if (bb_ptr == NULL) {
+			bb_ptr = bb_alloc_job_rec(&bb_state, job_ptr,
+						  _get_bb_size(job_ptr));
 			bb_ptr->state = state;
-			/* bb_ptr->state_time set in _alloc_bb_job_rec() */
+			/* bb_ptr->state_time set in bb_alloc_job_rec() */
 		}
 	} else {
 		if ((bb_ptr = _find_bb_name_rec(name, user_id)) == NULL) {
-			bb_ptr = _alloc_bb_name_rec(name, user_id);
+			bb_ptr = bb_alloc_name_rec(&bb_state, name, user_id);
 			bb_ptr->size = size;
 			bb_ptr->state = state;
 			bb_add_user_load(bb_ptr, &bb_state);
@@ -852,8 +775,8 @@ static void _load_state(uint32_t job_id)
 		script_args[2] = NULL;
 	}
 	START_TIMER;
-	resp = _run_script("GetSysState", bb_state.bb_config.get_sys_state, script_args,
-			   10);
+	resp = _run_script("GetSysState", bb_state.bb_config.get_sys_state,
+			   script_args, 10);
 	if (resp == NULL)
 		return;
 	END_TIMER;
@@ -871,35 +794,17 @@ static void _load_state(uint32_t job_id)
 	if (s_p_get_string(&tmp, "TotalSize", state_hashtbl)) {
 		bb_state.total_space = bb_get_size_num(tmp);
 		xfree(tmp);
-		if (bb_state.bb_config.debug_flag && (bb_state.total_space != last_total_space))
-			info("%s: total_space:%u",  __func__, bb_state.total_space);
+		if (bb_state.bb_config.debug_flag &&
+		    (bb_state.total_space != last_total_space)) {
+			info("%s: total_space:%u",  __func__,
+			     bb_state.total_space);
+		}
 		last_total_space = bb_state.total_space;
 	} else if (job_id == 0) {
 		error("%s: GetSysState failed to respond with TotalSize",
 		      plugin_type);
 	}
 	s_p_hashtbl_destroy(state_hashtbl);
-}
-
-/* Local sleep function, handles termination signal */
-static void _my_sleep(int add_secs)
-{
-	struct timespec ts = {0, 0};
-	struct timeval  tv = {0, 0};
-
-	if (gettimeofday(&tv, NULL)) {		/* Some error */
-		sleep(1);
-		return;
-	}
-
-	ts.tv_sec  = tv.tv_sec + add_secs;
-	ts.tv_nsec = tv.tv_usec * 1000;
-	pthread_mutex_lock(&bb_state.term_mutex);
-	if (!bb_state.term_flag) {
-		pthread_cond_timedwait(&bb_state.term_cond,
-				      &bb_state.term_mutex, &ts);
-	}
-	pthread_mutex_unlock(&bb_state.term_mutex);
 }
 
 /* Perform periodic background activities */
@@ -910,7 +815,7 @@ static void *_bb_agent(void *args)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	while (!bb_state.term_flag) {
-		_my_sleep(AGENT_INTERVAL);
+		bb_sleep(&bb_state, AGENT_INTERVAL);
 		if (bb_state.term_flag)
 			break;
 		lock_slurmctld(job_write_lock);
@@ -936,7 +841,7 @@ extern int init(void)
 	pthread_mutex_init(&bb_state.term_mutex, NULL);
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_load_config(&bb_state);
+	bb_load_config(&bb_state, "generic");
 	_test_config();
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
@@ -1004,7 +909,7 @@ extern int bb_p_reconfig(void)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
-	bb_load_config(&bb_state);
+	bb_load_config(&bb_state, "generic");
 	_test_config();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -1017,7 +922,7 @@ extern int bb_p_reconfig(void)
  *
  * Returns a SLURM errno.
  */
-extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
+extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t rec_count = 0;
 	int eof, offset;
@@ -1028,10 +933,10 @@ extern int bb_p_state_pack(Buf buffer, uint16_t protocol_version)
 	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
 	offset = get_buf_offset(buffer);
 	pack32(rec_count,        buffer);
-	pack32(bb_state.total_space,      buffer);
-	pack32(bb_state.used_space,       buffer);
-	bb_pack_config(&bb_state.bb_config, buffer, protocol_version);
-	rec_count = bb_pack_bufs(bb_state.bb_hash, buffer, protocol_version);
+	bb_pack_state(&bb_state, buffer, protocol_version);
+	if (bb_state.bb_config.private_data == 0)
+		uid = 0;	/* User can see all data */
+	rec_count = bb_pack_bufs(uid, bb_state.bb_hash,buffer,protocol_version);
 	if (rec_count != 0) {
 		eof = get_buf_offset(buffer);
 		set_buf_offset(buffer, offset);
@@ -1162,22 +1067,7 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 	bb_alloc_t *bb_ptr;
 	int i;
 
-	if (bb_state.bb_config.prio_boost_use && job_ptr && job_ptr->details) {
-		uint16_t new_nice = (NICE_OFFSET - bb_state.bb_config.prio_boost_use);
-		if (new_nice < job_ptr->details->nice) {
-			int64_t new_prio = job_ptr->priority;
-			new_prio += job_ptr->details->nice;
-			new_prio -= new_nice;
-			job_ptr->priority = new_prio;
-			job_ptr->details->nice = new_nice;
-			info("%s: Uses burst buffer, reset priority to %u "
-			     "for job_id %u", __func__,
-			     job_ptr->priority, job_ptr->job_id);
-		}
-	}
-
-	bb_ptr = _alloc_bb_job_rec(job_ptr, bb_size);
-	bb_add_user_load(bb_ptr, &bb_state);
+	bb_ptr = bb_alloc_job(&bb_state, job_ptr, bb_size);
 
 	if (bb_state.bb_config.debug_flag)
 		info("%s: start stage-in job_id:%u", __func__, job_ptr->job_id);
@@ -1186,7 +1076,8 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 	if (script_argv) {
 		bb_ptr->state = BB_STATE_STAGING_IN;
 		bb_ptr->state_time = time(NULL);
-		resp = _run_script("StartStageIn", bb_state.bb_config.start_stage_in,
+		resp = _run_script("StartStageIn",
+				   bb_state.bb_config.start_stage_in,
 				   script_argv, -1);
 		if (resp) {
 			error("%s: StartStageIn: %s", __func__, resp);
@@ -1244,7 +1135,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	list_sort(job_candidates, bb_job_queue_sort);
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	_set_bb_use_time();
+	bb_set_use_time(&bb_state);
 	job_iter = list_iterator_create(job_candidates);
 	while ((job_rec = list_next(job_iter))) {
 		job_ptr = job_rec->job_ptr;

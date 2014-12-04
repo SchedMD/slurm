@@ -1,5 +1,11 @@
 /*****************************************************************************\
  *  burst_buffer_common.c - Common logic for managing burst_buffers
+ *
+ *  NOTE: These functions are designed so they can be used by multiple burst
+ *  buffer plugins at the same time (e.g. you might provide users access to
+ *  both burst_buffer/cray and burst_buffer/generic on the same system), so
+ *  the state information is largely in the individual plugin and passed as
+ *  a pointer argument to these functions.
  *****************************************************************************
  *  Copyright (C) 2014 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -38,9 +44,11 @@
 #  include "config.h"
 #endif
 
-#define _GNU_SOURCE	/* For POLLRDHUP */
+#include <fcntl.h>
 #include <poll.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -280,10 +288,11 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 }
 
 /* Load and process configuration parameters */
-extern void bb_load_config(bb_state_t *state_ptr)
+extern void bb_load_config(bb_state_t *state_ptr, char *type)
 {
 	s_p_hashtbl_t *bb_hashtbl = NULL;
 	char *bb_conf, *tmp = NULL, *value;
+	int fd;
 	static s_p_options_t bb_options[] = {
 		{"AllowUsers", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
@@ -291,6 +300,7 @@ extern void bb_load_config(bb_state_t *state_ptr)
 		{"JobSizeLimit", S_P_STRING},
 		{"PrioBoostAlloc", S_P_UINT32},
 		{"PrioBoostUse", S_P_UINT32},
+		{"PrivateData", S_P_STRING},
 		{"StageInTimeout", S_P_UINT32},
 		{"StageOutTimeout", S_P_UINT32},
 		{"StartStageIn", S_P_STRING},
@@ -305,7 +315,25 @@ extern void bb_load_config(bb_state_t *state_ptr)
 	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
 		state_ptr->bb_config.debug_flag = true;
 
+	/* First look for "burst_buffer.conf" then with "type" field,
+	 * for example "burst_buffer_cray.conf" */
 	bb_conf = get_extra_conf_path("burst_buffer.conf");
+	fd = open(bb_conf, 0);
+	if (fd >= 0) {
+		close(fd);
+	} else {
+		char *new_path = NULL;
+		xfree(bb_conf);
+		xstrfmtcat(new_path, "burst_buffer_%s.conf", type);
+		bb_conf = get_extra_conf_path(new_path);
+		fd = open(bb_conf, 0);
+		if (fd < 0) {
+			fatal("%s: Unable to find configuration file %s or "
+			      "burst_buffer.conf", __func__, new_path);
+		}
+		xfree(new_path);
+	}
+
 	bb_hashtbl = s_p_hashtbl_create(bb_options);
 	if (s_p_parse_file(bb_hashtbl, NULL, bb_conf, false) == SLURM_ERROR) {
 		fatal("%s: something wrong with opening/reading %s: %m",
@@ -340,6 +368,13 @@ extern void bb_load_config(bb_state_t *state_ptr)
 		error("%s: PrioBoostUse can not exceed %u",
 		      __func__, NICE_OFFSET);
 		state_ptr->bb_config.prio_boost_use = NICE_OFFSET;
+	}
+	if (s_p_get_string(&tmp, "PrivateData", bb_hashtbl)) {
+		if (!strcasecmp(tmp, "true") ||
+		    !strcasecmp(tmp, "yes")  ||
+		    !strcasecmp(tmp, "1"))
+			state_ptr->bb_config.private_data = 1;
+		xfree(tmp);
 	}
 	s_p_get_uint32(&state_ptr->bb_config.stage_in_timeout, "StageInTimeout",
 		       bb_hashtbl);
@@ -396,7 +431,7 @@ extern void bb_load_config(bb_state_t *state_ptr)
 }
 
 /* Pack individual burst buffer records into a  buffer */
-extern int bb_pack_bufs(bb_alloc_t **bb_hash, Buf buffer,
+extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,
 			uint16_t protocol_version)
 {
 	int i, rec_count = 0;
@@ -408,15 +443,17 @@ extern int bb_pack_bufs(bb_alloc_t **bb_hash, Buf buffer,
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_next = bb_hash[i];
 		while (bb_next) {
-			pack32(bb_next->array_job_id,  buffer);
-			pack32(bb_next->array_task_id, buffer);
-			pack32(bb_next->job_id,        buffer);
-			packstr(bb_next->name,         buffer);
-			pack32(bb_next->size,          buffer);
-			pack16(bb_next->state,         buffer);
-			pack_time(bb_next->state_time, buffer);
-			pack32(bb_next->user_id,       buffer);
-			rec_count++;
+			if ((uid == 0) || (uid == bb_next->user_id)) {
+				pack32(bb_next->array_job_id,  buffer);
+				pack32(bb_next->array_task_id, buffer);
+				pack32(bb_next->job_id,        buffer);
+				packstr(bb_next->name,         buffer);
+				pack32(bb_next->size,          buffer);
+				pack16(bb_next->state,         buffer);
+				pack_time(bb_next->state_time, buffer);
+				pack32(bb_next->user_id,       buffer);
+				rec_count++;
+			}
 			bb_next = bb_next->next;
 		}
 	}
@@ -424,13 +461,16 @@ extern int bb_pack_bufs(bb_alloc_t **bb_hash, Buf buffer,
 	return rec_count;
 }
 
-/* Pack configuration parameters into a buffer */
-extern void bb_pack_config(bb_config_t *config_ptr, Buf buffer,
-			   uint16_t protocol_version)
+/* Pack state and configuration parameters into a buffer */
+extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
+			  uint16_t protocol_version)
 {
+	bb_config_t *config_ptr = &state_ptr->bb_config;
+
 	packstr(config_ptr->allow_users_str, buffer);
 	packstr(config_ptr->deny_users_str,  buffer);
 	packstr(config_ptr->get_sys_state,   buffer);
+	pack16(config_ptr->private_data,     buffer);
 	packstr(config_ptr->start_stage_in,  buffer);
 	packstr(config_ptr->start_stage_out, buffer);
 	packstr(config_ptr->stop_stage_in,   buffer);
@@ -440,8 +480,11 @@ extern void bb_pack_config(bb_config_t *config_ptr, Buf buffer,
 	pack32(config_ptr->prio_boost_use,   buffer);
 	pack32(config_ptr->stage_in_timeout, buffer);
 	pack32(config_ptr->stage_out_timeout,buffer);
+	pack32(state_ptr->total_space,       buffer);
+	pack32(state_ptr->used_space,        buffer);
 	pack32(config_ptr->user_size_limit,  buffer);
 }
+
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
@@ -501,3 +544,152 @@ extern int bb_preempt_queue_sort(void *x, void *y)
 		return 1;
 	return 0;
 };
+
+/* For each burst buffer record, set the use_time to the time at which its
+ * use is expected to begin (i.e. each job's expected start time) */
+extern void bb_set_use_time(bb_state_t *state_ptr)
+{
+	struct job_record *job_ptr;
+	bb_alloc_t *bb_ptr = NULL;
+	time_t now = time(NULL);
+	int i;
+
+	state_ptr->next_end_time = now + 60 * 60; /* Start estimate now+1hour */
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_ptr = state_ptr->bb_hash[i];
+		while (bb_ptr) {
+			if (bb_ptr->job_id &&
+			    ((bb_ptr->state == BB_STATE_STAGING_IN) ||
+			     (bb_ptr->state == BB_STATE_STAGED_IN))) {
+				job_ptr = find_job_record(bb_ptr->job_id);
+				if (!job_ptr) {
+					error("%s: job %u with allocated burst "
+					      "buffers not found",
+					      __func__, bb_ptr->job_id);
+					bb_ptr->use_time = now + 24 * 60 * 60;
+				} else if (job_ptr->start_time) {
+					bb_ptr->end_time = job_ptr->end_time;
+					bb_ptr->use_time = job_ptr->start_time;
+				} else {
+					/* Unknown start time */
+					bb_ptr->use_time = now + 60 * 60;
+				}
+			} else if (bb_ptr->job_id) {
+				job_ptr = find_job_record(bb_ptr->job_id);
+				if (job_ptr)
+					bb_ptr->end_time = job_ptr->end_time;
+			} else {
+				bb_ptr->use_time = now;
+			}
+			if (bb_ptr->end_time && bb_ptr->size) {
+				if (bb_ptr->end_time <= now)
+					state_ptr->next_end_time = now;
+				else if (state_ptr->next_end_time >
+					 bb_ptr->end_time) {
+					state_ptr->next_end_time =
+						bb_ptr->end_time;
+				}
+			}
+			bb_ptr = bb_ptr->next;
+		}
+	}
+}
+
+/* Sleep function, also handles termination signal */
+extern void bb_sleep(bb_state_t *state_ptr, int add_secs)
+{
+	struct timespec ts = {0, 0};
+	struct timeval  tv = {0, 0};
+
+	if (gettimeofday(&tv, NULL)) {		/* Some error */
+		sleep(1);
+		return;
+	}
+
+	ts.tv_sec  = tv.tv_sec + add_secs;
+	ts.tv_nsec = tv.tv_usec * 1000;
+	pthread_mutex_lock(&state_ptr->term_mutex);
+	if (!state_ptr->term_flag) {
+		pthread_cond_timedwait(&state_ptr->term_cond,
+				       &state_ptr->term_mutex, &ts);
+	}
+	pthread_mutex_unlock(&state_ptr->term_mutex);
+}
+
+
+/* Allocate a named burst buffer record for a specific user.
+ * Return a pointer to that record. */
+extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
+				     uint32_t user_id)
+{
+	bb_alloc_t *bb_ptr = NULL;
+	int i;
+
+	xassert(state_ptr->bb_hash);
+	bb_ptr = xmalloc(sizeof(bb_alloc_t));
+	i = user_id % BB_HASH_SIZE;
+	bb_ptr->next = state_ptr->bb_hash[i];
+	state_ptr->bb_hash[i] = bb_ptr;
+	bb_ptr->name = xstrdup(name);
+	bb_ptr->state = BB_STATE_ALLOCATED;
+	bb_ptr->state_time = time(NULL);
+	bb_ptr->seen_time = time(NULL);
+	bb_ptr->user_id = user_id;
+
+	return bb_ptr;
+}
+
+/* Allocate a per-job burst buffer record for a specific job.
+ * Return a pointer to that record. */
+extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
+				    struct job_record *job_ptr,
+				    uint32_t bb_size)
+{
+	bb_alloc_t *bb_ptr = NULL;
+	int i;
+
+	xassert(state_ptr->bb_hash);
+	xassert(job_ptr);
+	bb_ptr = xmalloc(sizeof(bb_alloc_t));
+	bb_ptr->array_job_id = job_ptr->array_job_id;
+	bb_ptr->array_task_id = job_ptr->array_task_id;
+	bb_ptr->job_id = job_ptr->job_id;
+	i = job_ptr->user_id % BB_HASH_SIZE;
+	bb_ptr->next = state_ptr->bb_hash[i];
+	state_ptr->bb_hash[i] = bb_ptr;
+	bb_ptr->size = bb_size;
+	bb_ptr->state = BB_STATE_ALLOCATED;
+	bb_ptr->state_time = time(NULL);
+	bb_ptr->seen_time = time(NULL);
+	bb_ptr->user_id = job_ptr->user_id;
+
+	return bb_ptr;
+}
+
+/* Allocate a burst buffer record for a job and increase the job priority
+ * if so configured. */
+extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
+				struct job_record *job_ptr, uint32_t bb_size)
+{
+	bb_alloc_t *bb_ptr;
+	uint16_t new_nice;
+
+	if (state_ptr->bb_config.prio_boost_use && job_ptr && job_ptr->details){
+		new_nice = (NICE_OFFSET - state_ptr->bb_config.prio_boost_use);
+		if (new_nice < job_ptr->details->nice) {
+			int64_t new_prio = job_ptr->priority;
+			new_prio += job_ptr->details->nice;
+			new_prio -= new_nice;
+			job_ptr->priority = new_prio;
+			job_ptr->details->nice = new_nice;
+			info("%s: Uses burst buffer, reset priority to %u "
+			     "for job_id %u", __func__,
+			     job_ptr->priority, job_ptr->job_id);
+		}
+	}
+
+	bb_ptr = bb_alloc_job_rec(state_ptr, job_ptr, bb_size);
+	bb_add_user_load(bb_ptr, state_ptr);
+
+	return bb_ptr;
+}

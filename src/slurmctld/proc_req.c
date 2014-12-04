@@ -3934,7 +3934,9 @@ static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_BURST_BUFFER_INFO from uid=%d", uid);
 
 	buffer = init_buf(BUF_SIZE);
-	error_code = bb_g_state_pack(buffer, msg->protocol_version);
+	if (validate_super_user(uid))
+		uid = 0;
+	error_code = bb_g_state_pack(uid, buffer, msg->protocol_version);
 	END_TIMER2(__func__);
 
 	if (error_code) {

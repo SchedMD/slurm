@@ -4289,6 +4289,7 @@ typedef struct {
 	char *get_sys_state;
 	uint32_t job_size_limit;	/* In GB or NO_VAL */
 	char *name;			/* Plugin name */
+	uint16_t private_data;		/* limit access to data */
 	uint32_t prio_boost_alloc;	/* job priority boost after staged in */
 	uint32_t prio_boost_use;	/* job priority boost on use */
 	uint32_t stage_in_timeout;	/* Seconds or zero */

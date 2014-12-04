@@ -1,5 +1,11 @@
 /*****************************************************************************\
  *  burst_buffer_common.h - Common header for managing burst_buffers
+ *
+ *  NOTE: These functions are designed so they can be used by multiple burst
+ *  buffer plugins at the same time (e.g. you might provide users access to
+ *  both burst_buffer/cray and burst_buffer/generic on the same system), so
+ *  the state information is largely in the individual plugin and passed as
+ *  a pointer argument to these functions.
  *****************************************************************************
  *  Copyright (C) 2014 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -57,6 +63,7 @@ typedef struct bb_config {
 	uint32_t job_size_limit;
 	uint32_t prio_boost_alloc;
 	uint32_t prio_boost_use;
+	uint16_t private_data;
 	uint32_t stage_in_timeout;
 	uint32_t stage_out_timeout;
 	char    *start_stage_in;
@@ -122,6 +129,22 @@ extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
 /* Allocate burst buffer hash tables */
 extern void bb_alloc_cache(bb_state_t *state_ptr);
 
+/* Allocate a per-job burst buffer record for a specific job.
+ * Return a pointer to that record. */
+extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
+				    struct job_record *job_ptr,
+				    uint32_t bb_size);
+
+/* Allocate a burst buffer record for a job and increase the job priority
+ * if so configured. */
+extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
+				struct job_record *job_ptr, uint32_t bb_size);
+
+/* Allocate a named burst buffer record for a specific user.
+ * Return a pointer to that record. */
+extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
+				     uint32_t user_id);
+
 /* Clear all cached burst buffer records, freeing all memory. */
 extern void bb_clear_cache(bb_state_t *state_ptr);
 
@@ -146,20 +169,27 @@ extern void bb_job_queue_del(void *x);
 extern int bb_job_queue_sort(void *x, void *y);
 
 /* Load and process configuration parameters */
-extern void bb_load_config(bb_state_t *state_ptr);
+extern void bb_load_config(bb_state_t *state_ptr, char *type);
 
 /* Pack individual burst buffer records into a  buffer */
-extern int bb_pack_bufs(bb_alloc_t **bb_hash, Buf buffer,
+extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,
 			uint16_t protocol_version);
 
-/* Pack configuration parameters into a buffer */
-extern void bb_pack_config(bb_config_t *config_ptr, Buf buffer,
-			   uint16_t protocol_version);
+/* Pack state and configuration parameters into a buffer */
+extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
+			  uint16_t protocol_version);
 
 /* Sort preempt_bb_recs in order of DECREASING use_time */
 extern int bb_preempt_queue_sort(void *x, void *y);
 
 /* Remove a burst buffer allocation from a user's load */
 extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
+
+/* For each burst buffer record, set the use_time to the time at which its
+ * use is expected to begin (i.e. each job's expected start time) */
+extern void bb_set_use_time(bb_state_t *state_ptr);
+
+/* Sleep function, also handles termination signal */
+extern void bb_sleep(bb_state_t *state_ptr, int add_secs);
 
 #endif	/* __BURST_BUFFER_COMMON_H__ */
