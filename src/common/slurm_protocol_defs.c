@@ -1699,7 +1699,9 @@ extern char *node_state_string(uint32_t inx)
 			return "MAINT";
 	}
 	if (drain_flag) {
-		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
+		if (comp_flag
+		    || (base == NODE_STATE_ALLOCATED)
+		    || (base == NODE_STATE_MIXED)) {
 			if (no_resp_flag)
 				return "DRAINING*";
 			return "DRAINING";
@@ -1707,10 +1709,6 @@ extern char *node_state_string(uint32_t inx)
 			if (no_resp_flag)
 				return "ERROR*";
 			return "ERROR";
-		} else if (base == NODE_STATE_MIXED) {
-			if (no_resp_flag)
-				return "MIXED*";
-			return "MIXED";
 		} else {
 			if (no_resp_flag)
 				return "DRAINED*";
@@ -1833,7 +1831,9 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "MAINT";
 	}
 	if (drain_flag) {
-		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
+		if (comp_flag
+		    || (inx == NODE_STATE_ALLOCATED)
+		    || (inx == NODE_STATE_MIXED)) {
 			if (no_resp_flag)
 				return "DRNG*";
 			return "DRNG";
@@ -1841,10 +1841,6 @@ extern char *node_state_string_compact(uint32_t inx)
 			if (no_resp_flag)
 				return "ERROR*";
 			return "ERROR";
-		} else if (inx == NODE_STATE_MIXED) {
-			if (no_resp_flag)
-				return "MIXED*";
-			return "MIXED";
 		} else {
 			if (no_resp_flag)
 				return "DRAIN*";

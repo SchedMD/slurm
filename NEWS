@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid huge malloc if GRES configured with "Type" and huge "Count".
  -- Fix jobs from starting in overlapping reservations that won't finish before
     a "maint" reservation begins.
+ -- When node gets drained while in state mixed display its status as draining
+    in sinfo output.
 
 * Changes in Slurm 14.11.1
 ==========================
