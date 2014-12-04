@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     could result in seg fault.
  -- Fix salloc/sbatch -B segfault.
  -- Avoid huge malloc if GRES configured with "Type" and huge "Count".
+ -- Fix jobs from starting in overlapping reservations that won't finish before
+    a "maint" reservation begins.
 
 * Changes in Slurm 14.11.1
 ==========================
