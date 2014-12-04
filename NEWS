@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- Log Cray MPI job calling exit() without mpi_fini(), but do not treat it as
     a fatal error. This partially reverts logic added in version 14.03.9.
  -- sview - Fix displaying of suspended steps elapsed times.
+ -- Increase number of messages that get cached before throwing them away
+    when the DBD is down.
 
 * Changes in Slurm 14.03.10
 ===========================
