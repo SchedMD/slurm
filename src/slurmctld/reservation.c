@@ -4087,7 +4087,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		iter = list_iterator_create(resv_list);
 		while ((res2_ptr = (slurmctld_resv_t *) list_next(iter))) {
 			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
-			    (resv_ptr->flags & RESERVE_FLAG_OVERLAP) ||
+			    ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
+			     !(res2_ptr->flags & RESERVE_FLAG_MAINT)) ||
 			    (res2_ptr == resv_ptr) ||
 			    (res2_ptr->node_bitmap == NULL) ||
 			    (res2_ptr->start_time >= job_end_time) ||
