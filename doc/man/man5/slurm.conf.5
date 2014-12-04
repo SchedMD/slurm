@@ -2401,6 +2401,9 @@ The following options are supported for \fBSelectType=select/cons_res\fR:
 \fBCR_ALLOCATE_FULL_SOCKET\fR
 Jobs are allocated whole sockets rather than individual cores.
 Must be used with \fBCR_Socket\fR or \fBCR_Socket_Memory\fR option.
+NOTE: This is also needed for more accurate accounting.  Without it the
+number of cpus allocated the job will not be rounded up to include cores
+not used by the allocation even though they are allocated.
 .TP
 \fBCR_CPU\fR
 CPUs are consumable resources.
@@ -2474,17 +2477,21 @@ Sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
-The count of CPUs allocated to a job may be rounded up to account for every
-CPU on an allocated socket.
+NOTE: With this option even though the entire socket will be allocated
+to the job the count of CPUs allocated to a job will not round up to
+account for every CPU on an allocated socket without the
+\fBCR_ALLOCATE_FULL_SOCKET\fR option.
 .TP
 \fBCR_Socket_Memory\fR
 Memory and sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
-The count of CPUs allocated to a job may be rounded up to account for every
-CPU on an allocated socket.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
+NOTE: With this option even though the entire socket will be allocated
+to the job the count of CPUs allocated to a job will not round up to
+account for every CPU on an allocated socket with out the
+\fBCR_ALLOCATE_FULL_SOCKET\fR option.
 .TP
 \fBCR_Memory\fR
 Memory is a consumable resource.

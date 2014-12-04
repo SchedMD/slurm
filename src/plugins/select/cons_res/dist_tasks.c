@@ -41,14 +41,6 @@
 #include "select_cons_res.h"
 #include "dist_tasks.h"
 
-#if (0)
-/* Using CR_SOCKET or CR_SOCKET_MEMORY will not allocate a socket to more
- * than one job at a time, but it also will not grant a job access to more
- * CPUs on the socket than requested. If ALLOCATE_FULL_SOCKET is defined,
- * then a job will be given access to every cores on each allocated socket.
- */
-#define ALLOCATE_FULL_SOCKET 1
-#endif
 
 /* Max boards supported for best-fit across boards */
 /* Larger board configurations may require new algorithm */
