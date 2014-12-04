@@ -60,6 +60,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with association hash not getting the correct index which
     could result in seg fault.
  -- Fix salloc/sbatch -B segfault.
+ -- Avoid huge malloc if GRES configured with "Type" and huge "Count".
+ -- Fix jobs from starting in overlapping reservations that won't finish before
+    a "maint" reservation begins.
 
 * Changes in Slurm 14.11.1
 ==========================
@@ -417,6 +420,8 @@ documents those changes that are of interest to users and administrators.
  -- sview - Fix displaying of suspended steps elapsed times.
  -- Increase number of messages that get cached before throwing them away
     when the DBD is down.
+ -- Fix jobs from starting in overlapping reservations that won't finish before
+    a "maint" reservation begins.
 
 * Changes in Slurm 14.03.10
 ===========================
