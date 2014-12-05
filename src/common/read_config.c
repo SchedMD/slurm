@@ -2851,7 +2851,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	char *default_storage_loc = NULL;
 	uint32_t default_storage_port = 0;
 	uint16_t uint16_tmp;
-	uint64_t tmp64;
+	uint64_t tot_prio_weight;
 
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
 			   hashtbl)
@@ -3651,14 +3651,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->priority_weight_qos,
 			    "PriorityWeightQOS", hashtbl))
 		conf->priority_weight_qos = 0;
+
 	/* Check for possible overflow of priority.
 	 * We also check when doing the computation for each job. */
-	tmp64 = (uint64_t) conf->priority_weight_age   +
+	tot_prio_weight = (uint64_t) conf->priority_weight_age   +
 		(uint64_t) conf->priority_weight_fs   +
 		(uint64_t) conf->priority_weight_js   +
 		(uint64_t) conf->priority_weight_part +
 		(uint64_t) conf->priority_weight_qos;
-	if (tmp64 > 0xffffffff) {
+	if (tot_prio_weight > 0xffffffff) {
 		error("PriorityWeight values too high, job priority value may "
 		      "overflow");
 	}
@@ -3832,14 +3833,16 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
 
 	if (strcmp(conf->priority_type, "priority/multifactor") == 0) {
-		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
-		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
+		if (tot_prio_weight &&
+		    (!strcmp(conf->schedtype, "sched/wiki") ||
+		     !strcmp(conf->schedtype, "sched/wiki2"))) {
 			error("PriorityType=priority/multifactor is "
 			      "incompatible with SchedulerType=%s",
 			      conf->schedtype);
 			return SLURM_ERROR;
 		}
 	}
+
 	if (conf->preempt_mode) {
 		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
 		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
