@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
     in sinfo output.
  -- Allow priority/multifactor to work with sched/wiki(2) if all priorities
     have no weight.  This allows for association and QOS decay limits to work.
+ -- Fix "squeue --start" to override SQUEUE_FORMAT env variable.
 
 * Changes in Slurm 14.11.1
 ==========================
@@ -427,6 +428,7 @@ documents those changes that are of interest to users and administrators.
     when the DBD is down.
  -- Fix jobs from starting in overlapping reservations that won't finish before
     a "maint" reservation begins.
+ -- Fix "squeue --start" to override SQUEUE_FORMAT env variable.
 
 * Changes in Slurm 14.03.10
 ===========================
