@@ -279,6 +279,7 @@ parse_command_line( int argc, char* argv[] )
 			break;
 		case OPT_LONG_START:
 			params.start_flag = true;
+			override_format_env = true;
 			break;
 		case OPT_LONG_USAGE:
 			_usage();

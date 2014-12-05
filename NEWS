@@ -36,6 +36,7 @@ documents those changes that are of interest to users and admins.
     when the DBD is down.
  -- Fix jobs from starting in overlapping reservations that won't finish before
     a "maint" reservation begins.
+ -- Fix "squeue --start" to override SQUEUE_FORMAT env variable.
 
 * Changes in Slurm 14.03.10
 ===========================
