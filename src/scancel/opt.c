@@ -457,7 +457,7 @@ static void _opt_args(int argc, char **argv)
 
 	if (optind < argc) {
 		char **rest = argv + optind;
-		opt.job_list = xstrdup(*rest);
+		opt.job_list = rest;
 		_xlate_job_step_ids(rest);
 	}
 

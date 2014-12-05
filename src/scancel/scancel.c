@@ -749,17 +749,20 @@ _confirmation (int i, uint32_t step_id)
 static int
 _signal_job_by_str(void)
 {
-	int cc;
+	int cc, i;
+	int rc = 0;
 
 	if (opt.signal == (uint16_t) - 1)
 		opt.signal = SIGKILL;
 
-	verbose("Terminating job %s", opt.job_list);
+	for (i = 0; opt.job_list[i]; i++) {
+		verbose("Terminating job %s", opt.job_list[i]);
 
-	cc = slurm_kill_job2(opt.job_list, opt.signal, 0);
-	if ((cc != SLURM_SUCCESS) && (opt.verbose != -1)) {
-		error("slurm_kill_job2() failed %s", slurm_strerror(errno));
-		return -1;
+		cc = slurm_kill_job2(opt.job_list[i], opt.signal, 0);
+		if ((cc != SLURM_SUCCESS) && (opt.verbose != -1)) {
+			error("slurm_kill_job2() failed %s", slurm_strerror(errno));
+			rc = -1;
+		}
 	}
-	return 0;
+	return rc;
 }
