@@ -2398,13 +2398,6 @@ after each allocation.  This also sets NHC_NO_STEPS, so the NHC will never run.
 The following options are supported for \fBSelectType=select/cons_res\fR:
 .RS
 .TP
-\fBCR_ALLOCATE_FULL_SOCKET\fR
-Jobs are allocated whole sockets rather than individual cores.
-Must be used with \fBCR_Socket\fR or \fBCR_Socket_Memory\fR option.
-NOTE: This is also needed for more accurate accounting.  Without it the
-number of cpus allocated the job will not be rounded up to include cores
-not used by the allocation even though they are allocated.
-.TP
 \fBCR_CPU\fR
 CPUs are consumable resources.
 Configure the number of \fBCPUs\fR on each node, which may be equal to the
@@ -2477,10 +2470,6 @@ Sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
-NOTE: With this option even though the entire socket will be allocated
-to the job the count of CPUs allocated to a job will not round up to
-account for every CPU on an allocated socket without the
-\fBCR_ALLOCATE_FULL_SOCKET\fR option.
 .TP
 \fBCR_Socket_Memory\fR
 Memory and sockets are consumable resources.
@@ -2488,10 +2477,6 @@ On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
-NOTE: With this option even though the entire socket will be allocated
-to the job the count of CPUs allocated to a job will not round up to
-account for every CPU on an allocated socket with out the
-\fBCR_ALLOCATE_FULL_SOCKET\fR option.
 .TP
 \fBCR_Memory\fR
 Memory is a consumable resource.
@@ -3928,8 +3913,7 @@ The default value is "NO".
 \fBSelectTypeParameters\fR
 Partition\-specific resource allocation type.
 Supported values are \fBCR_Core\fR and \fBCR_Socket\fR.
-Use requires the system\-wide \fBSelectTypeParameters\fR value be set plus
-\fBCR_ALLOCATE_FULL_SOCKET\fR.
+Use requires the system\-wide \fBSelectTypeParameters\fR value be set.
 
 .TP
 \fBShared\fR

@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
     without preemption. NOTE: That with PreemptType=qos, the partition's
     Shared=FORCE:# configuration option will permit one job more per resource
     to be run than than specified, but only if started by preemption.
+ -- Remove CR_ALLOCATE_FULL_SOCKET option.  It is now the default.
 
 * Changes in Slurm 14.11.2
 ==========================

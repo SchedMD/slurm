@@ -85,7 +85,10 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			*param |= CR_OTHER_CONS_RES;
 		} else if (!strcasecmp(str_parameters,
 				       "CR_ALLOCATE_FULL_SOCKET")) {
-			*param |= CR_ALLOCATE_FULL_SOCKET;
+			verbose("CR_ALLOCATE_FULL_SOCKET is deprecated.  "
+				"It is now the default for CR_SOCKET*.  "
+				"It is safe to remove it "
+				"from your slurm.conf");
 		} else if (!strcasecmp(str_parameters,
 				       "CR_ONE_TASK_PER_CORE")) {
 			*param |= CR_ONE_TASK_PER_CORE;
@@ -165,11 +168,6 @@ extern char *select_type_param_string(uint16_t select_type_param)
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "CR_CORE_DEFAULT_DIST_BLOCK");
-	}
-	if (select_type_param & CR_ALLOCATE_FULL_SOCKET) {
-		if (select_str[0])
-			strcat(select_str, ",");
-		strcat(select_str, "CR_ALLOCATE_FULL_SOCKET");
 	}
 	if (select_type_param & CR_LLN) {
 		if (select_str[0])
