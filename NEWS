@@ -69,6 +69,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow priority/multifactor to work with sched/wiki(2) if all priorities
     have no weight.  This allows for association and QOS decay limits to work.
  -- Fix "squeue --start" to override SQUEUE_FORMAT env variable.
+ -- Fix scancel to be able to cancel multiple jobs that are space delimited.
 
 * Changes in Slurm 14.11.1
 ==========================
