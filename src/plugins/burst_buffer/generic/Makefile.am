@@ -10,7 +10,7 @@ EXTRA_DIST =				\
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(MUNGE_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 pkglib_LTLIBRARIES = burst_buffer_generic.la
 burst_buffer_generic_la_SOURCES = burst_buffer_generic.c

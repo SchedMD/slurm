@@ -4,13 +4,19 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(MUNGE_CPPFLAGS)
+if WITH_JSON_PARSER
+
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 
 pkglib_LTLIBRARIES = burst_buffer_cray.la
 burst_buffer_cray_la_SOURCES = burst_buffer_cray.c
-burst_buffer_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+burst_buffer_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(JSON_LDFLAGS)
 burst_buffer_cray_la_LIBADD = ../common/libburst_buffer_common.la
 
 force:
 $(burst_buffer_cray_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+else
+EXTRA_burst_buffer_cray_la_SOURCES = burst_buffer_cray.c
+endif

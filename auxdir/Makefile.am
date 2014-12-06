@@ -25,6 +25,7 @@ EXTRA_DIST = \
     x_ac_gpl_licensed.m4 \
     x_ac_hwloc.m4 \
     x_ac_iso.m4 \
+    x_ac_json.m4 \
     x_ac_lua.m4 \
     x_ac_man2html.m4 \
     x_ac_munge.m4 \

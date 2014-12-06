@@ -1,0 +1,48 @@
+##*****************************************************************************
+#  AUTHOR:
+#    Derived from x_ac_munge.
+#
+#  SYNOPSIS:
+#    X_AC_JSON()
+#
+#  DESCRIPTION:
+#    Check for JSON parser libraries.
+#    Right now, just check for json-c header and library.
+#
+#  WARNINGS:
+#    This macro must be placed after AC_PROG_CC and before AC_PROG_LIBTOOL.
+##*****************************************************************************
+
+AC_DEFUN([X_AC_JSON], [
+
+  x_ac_json_dirs="/usr /usr/local"
+  x_ac_json_libs="lib64 lib"
+
+  for d in $x_ac_json_dirs; do
+    test -d "$d" || continue
+    test -d "$d/include" || continue
+    test -f "$d/include/json-c/json_object.h" || continue
+    for bit in $x_ac_json_libs; do
+      test -d "$d/$bit" || continue
+      _x_ac_json_libs_save="$LIBS"
+      LIBS="-L$d/$bit -ljson-c $LIBS"
+      AC_LINK_IFELSE(
+        [AC_LANG_CALL([], json_object_get)],
+        AS_VAR_SET(x_ac_cv_json_dir, $d))
+      LIBS="$_x_ac_json_libs_save"
+      test -n "$x_ac_cv_json_dir" && break
+    done
+    test -n "$x_ac_cv_json_dir" && break
+  done
+
+  if test -z "$x_ac_cv_json_dir"; then
+    AC_MSG_WARN([unable to locate json parser library])
+  else
+    JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include/json-c"
+    JSON_LDFLAGS="-L$x_ac_cv_json_dir -ljson-c"
+  fi
+
+  AC_SUBST(JSON_CPPFLAGS)
+  AC_SUBST(JSON_LDFLAGS)
+  AM_CONDITIONAL(WITH_JSON_PARSER, test -n "$x_ac_cv_json_dir")
+])

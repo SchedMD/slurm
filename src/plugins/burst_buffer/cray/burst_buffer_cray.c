@@ -43,6 +43,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if HAVE_JSON_OBJECT_H
+#   include <json_object.h>
+#endif
+
 #include "slurm/slurm.h"
 
 #include "src/common/list.h"
