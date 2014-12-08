@@ -4,6 +4,10 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
+ *  Portions copyright (C) 2014 Institute of Semiconductor Physics
+ *                     Siberian Branch of Russian Academy of Science
+ *  Written by Artem Polyakov <artpol84@gmail.com>.
+ *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -168,7 +172,10 @@ _handle_kvs_fence_resp(int fd, Buf buf)
 	debug3("mpi/pmi2: in _handle_kvs_fence_resp");
 
 	safe_unpack32(&seq, buf);
-	if (seq != kvs_seq - 1) {
+	if( seq == kvs_seq - 2) {
+		debug("mpi/pmi2: duplicate KVS_FENCE_RESP from srun ignored");
+		return rc;
+	} else if (seq != kvs_seq - 1) {
 		error("mpi/pmi2: invalid kvs seq from srun, expect %u"
 		      " got %u", kvs_seq - 1, seq);
 		rc = SLURM_ERROR;;
