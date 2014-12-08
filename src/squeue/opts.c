@@ -87,7 +87,7 @@ static void _parse_long_token( char *token, char *sep, int *field_size,
 			       bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _usage( void );
-static bool _check_node_names(char *);
+static bool _check_node_names(hostset_t);
 static bool _find_a_host(char *, node_info_msg_t *);
 
 /*
@@ -97,7 +97,6 @@ extern void
 parse_command_line( int argc, char* argv[] )
 {
 	char *env_val = NULL;
-	char *nodes;
 	bool override_format_env = false;
 	int opt_char;
 	int option_index;
@@ -151,7 +150,6 @@ parse_command_line( int argc, char* argv[] )
 	}
 	if (getenv("SQUEUE_PRIORITY"))
 		params.priority_flag = true;
-	nodes = NULL;
 	while ((opt_char = getopt_long(argc, argv,
 				       "A:ahi:j::lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
@@ -299,7 +297,6 @@ parse_command_line( int argc, char* argv[] )
 				      optarg);
 				exit(1);
 			}
-			nodes = xstrdup(optarg);
 			break;
 		case OPT_LONG_HELP:
 			_help();
@@ -375,17 +372,15 @@ parse_command_line( int argc, char* argv[] )
 			xfree(name2);
 		}
 
-		/* Replace params.nodename with the new one */
+		/* Replace params.nodes with the new one */
 		hostset_destroy(params.nodes);
 		params.nodes = nodenames;
 		/* Check if all node names specified
 		 * with -w are known to the controller.
 		 */
-		if (!_check_node_names(nodes)) {
-			xfree(nodes);
+		if (!_check_node_names(params.nodes)) {
 			exit(1);
 		}
-		xfree(nodes);
 	}
 
 	if ( ( params.accounts == NULL ) &&
@@ -1937,11 +1932,10 @@ Usage: squeue [OPTIONS]\n\
 /* _check_node_names()
  */
 static bool
-_check_node_names(char *names)
+_check_node_names(hostset_t names)
 {
 	int cc;
 	node_info_msg_t *node_info;
-	hostlist_t l;
 	char *host;
 	hostlist_iterator_t itr;
 
@@ -1956,8 +1950,7 @@ _check_node_names(char *names)
 		return false;
 	}
 
-	l = slurm_hostlist_create(names);
-	itr = hostlist_iterator_create(l);
+	itr = hostset_iterator_create(names);
 	while ((host = hostlist_next(itr))) {
 		if (!_find_a_host(host, node_info)) {
 			error("Invalid node name %s", host);
