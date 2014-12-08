@@ -172,8 +172,10 @@ _handle_kvs_fence_resp(int fd, Buf buf)
 	debug3("mpi/pmi2: in _handle_kvs_fence_resp");
 
 	safe_unpack32(&seq, buf);
-	if( seq == kvs_seq - 2) {
-		debug("mpi/pmi2: duplicate KVS_FENCE_RESP from srun ignored");
+	if (seq == kvs_seq - 2) {
+		debug("\
+%s: duplicate KVS_FENCE_RESP seq %d kvs_seq %dfrom srun ignored",
+		      __func__, seq, kvs_seq);
 		return rc;
 	} else if (seq != kvs_seq - 1) {
 		error("mpi/pmi2: invalid kvs seq from srun, expect %u"
