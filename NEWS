@@ -85,6 +85,8 @@ documents those changes that are of interest to users and administrators.
     version  14.03.10.
  -- Fix bug with GRES having multiple types that can cause slurmctld abort.
  -- Fix squeue issue with not recognizing "localhost" in --nodelist option.
+ -- Make sure the bitstrings for a partitions Allow/DenyQOS are up to date
+    when running from cache.
 
 * Changes in Slurm 14.11.1
 ==========================
