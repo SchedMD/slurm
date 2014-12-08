@@ -3111,7 +3111,9 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name)
 {
-	int i, j, cpu_size, cpus_ctld, gres_avail = 0, top_inx;
+//	int i, j, cpu_size, cpus_ctld, gres_avail = 0, top_inx;
+int i, j, cpu_size, cpus_ctld, gres_avail = 0;
+static int top_inx;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cpus_addnt = NULL;  /* Additional CPUs avail from this GRES */
@@ -3275,7 +3277,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				continue;
 			}
 			/* update counts of allocated CPUs and GRES */
-			if (!node_gres_ptr->topo_cpus_bitmap[i]) {
+			if (!node_gres_ptr->topo_cpus_bitmap[top_inx]) {
 				bit_nset(alloc_cpu_bitmap, 0, cpus_ctld - 1);
 			} else if (gres_avail) {
 				bit_or(alloc_cpu_bitmap,

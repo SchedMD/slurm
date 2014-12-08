@@ -71,6 +71,17 @@ documents those changes that are of interest to users and administrators.
     have no weight.  This allows for association and QOS decay limits to work.
  -- Fix "squeue --start" to override SQUEUE_FORMAT env variable.
  -- Fix scancel to be able to cancel multiple jobs that are space delimited.
+ -- Fix Centos5 compile issues.
+ -- Log Cray MPI job calling exit() without mpi_fini(), but do not treat it as
+    a fatal error. This partially reverts logic added in version 14.03.9.
+ -- sview - Fix displaying of suspended steps elapsed times.
+ -- Increase number of messages that get cached before throwing them away
+    when the DBD is down.
+ -- Fix jobs from starting in overlapping reservations that won't finish before
+    a "maint" reservation begins.
+ -- Restore GRES functionality with select/linear plugin. It was broken in
+    version  14.03.10.
+ -- Fix bug with GRES having multiple types that can cause slurmctld abort.
 
 * Changes in Slurm 14.11.1
 ==========================
@@ -431,6 +442,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix jobs from starting in overlapping reservations that won't finish before
     a "maint" reservation begins.
  -- Fix "squeue --start" to override SQUEUE_FORMAT env variable.
+ -- Restore GRES functionality with select/linear plugin. It was broken in
+    version  14.03.10.
 
 * Changes in Slurm 14.03.10
 ===========================
