@@ -9298,7 +9298,7 @@ static int _unpack_burst_buffer_info_msg(
 			burst_buffer_info_msg_t **burst_buffer_info, Buf buffer,
 			uint16_t protocol_version)
 {
-	int i, j;
+	int i, j, k;
 	burst_buffer_info_msg_t *bb_msg_ptr = NULL;
 	burst_buffer_info_t *bb_info_ptr;
 	burst_buffer_resv_t *bb_resv_ptr;
@@ -9318,6 +9318,17 @@ static int _unpack_burst_buffer_info_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->get_sys_state, &uint32_tmp,
 				       buffer);
+		safe_unpack32(&bb_info_ptr->gres_cnt, buffer);
+		bb_info_ptr->gres_ptr = xmalloc(bb_info_ptr->gres_cnt *
+						sizeof(burst_buffer_gres_t));
+		for (j = 0; j < bb_info_ptr->gres_cnt; j++) {
+			safe_unpackstr_xmalloc(&bb_info_ptr->gres_ptr[j].name,
+					       &uint32_tmp, buffer);
+			safe_unpack32(&bb_info_ptr->gres_ptr[j].avail_cnt,
+				      buffer);
+			safe_unpack32(&bb_info_ptr->gres_ptr[j].used_cnt,
+				      buffer);
+		}
 		safe_unpack16(&bb_info_ptr->private_data, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->start_stage_in,
 				       &uint32_tmp, buffer);
@@ -9342,6 +9353,16 @@ static int _unpack_burst_buffer_info_msg(
 		     j < bb_info_ptr->record_count; j++, bb_resv_ptr++) {
 			safe_unpack32(&bb_resv_ptr->array_job_id, buffer);
 			safe_unpack32(&bb_resv_ptr->array_task_id, buffer);
+			safe_unpack32(&bb_resv_ptr->gres_cnt, buffer);
+			bb_resv_ptr->gres_ptr = xmalloc(bb_resv_ptr->gres_cnt *
+						sizeof(burst_buffer_gres_t));
+			for (k = 0; k < bb_resv_ptr->gres_cnt; k++) {
+				safe_unpackstr_xmalloc(&bb_resv_ptr->
+						       gres_ptr[k].name,
+						       &uint32_tmp, buffer);
+				safe_unpack32(&bb_resv_ptr->gres_ptr[k].
+					      used_cnt, buffer);
+			}
 			safe_unpack32(&bb_resv_ptr->job_id, buffer);
 			safe_unpackstr_xmalloc(&bb_resv_ptr->name,
 					       &uint32_tmp, buffer);

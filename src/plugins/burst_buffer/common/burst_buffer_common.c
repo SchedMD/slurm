@@ -162,9 +162,13 @@ extern void bb_clear_cache(bb_state_t *state_ptr)
 	}
 }
 
-/* Clear configuration parameters, free memory */
-extern void bb_clear_config(bb_config_t *config_ptr)
+/* Clear configuration parameters, free memory
+ * config_ptr IN - Initial configuration to be cleared
+ * fini IN - True if shutting down, do more complete clean-up */
+extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 {
+	int i;
+
 	xassert(config_ptr);
 	xfree(config_ptr->allow_users);
 	xfree(config_ptr->allow_users_str);
@@ -172,6 +176,15 @@ extern void bb_clear_config(bb_config_t *config_ptr)
 	xfree(config_ptr->deny_users);
 	xfree(config_ptr->deny_users_str);
 	xfree(config_ptr->get_sys_state);
+	if (fini) {
+		for (i = 0; i < config_ptr->gres_cnt; i++)
+			xfree(config_ptr->gres_ptr[i].name);
+		xfree(config_ptr->gres_ptr);
+		config_ptr->gres_cnt = 0;
+	} else {
+		for (i = 0; i < config_ptr->gres_cnt; i++)
+			config_ptr->gres_ptr[i].avail_cnt = 0;
+	}
 	config_ptr->job_size_limit = NO_VAL;
 	config_ptr->stage_in_timeout = 0;
 	config_ptr->stage_out_timeout = 0;
@@ -287,16 +300,38 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 	}
 }
 
+static uint32_t _atoi(char *tok)
+{
+	char *end_ptr = NULL;
+	int32_t size_i;
+	uint32_t size_u = 0;
+
+	size_i = strtol(tok, &end_ptr, 10);
+	if (size_i > 0) {
+		size_u = (uint32_t) size_i;
+		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+			size_u = size_u * 1024;
+		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+			size_u = size_u * 1024 * 1024;
+		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
+			size_u = size_u * 1024 * 1024 * 1024;
+		}
+	}
+	return size_u;
+}
+
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_state_t *state_ptr, char *type)
 {
 	s_p_hashtbl_t *bb_hashtbl = NULL;
-	char *bb_conf, *tmp = NULL, *value;
-	int fd;
+	char *bb_conf, *colon, *save_ptr, *tmp = NULL, *tok, *value;
+	uint32_t gres_cnt;
+	int fd, i;
 	static s_p_options_t bb_options[] = {
 		{"AllowUsers", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
 		{"GetSysState", S_P_STRING},
+		{"Gres", S_P_STRING},
 		{"JobSizeLimit", S_P_STRING},
 		{"PrioBoostAlloc", S_P_UINT32},
 		{"PrioBoostUse", S_P_UINT32},
@@ -311,7 +346,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 		{NULL}
 	};
 
-	bb_clear_config(&state_ptr->bb_config);
+	bb_clear_config(&state_ptr->bb_config, false);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
 		state_ptr->bb_config.debug_flag = true;
 
@@ -351,6 +386,30 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 	}
 	s_p_get_string(&state_ptr->bb_config.get_sys_state, "GetSysState",
 		       bb_hashtbl);
+	if (s_p_get_string(&tmp, "Gres", bb_hashtbl)) {
+		tok = strtok_r(tmp, ",", &save_ptr);
+		while (tok) {
+			colon = strchr(tok, ':');
+			if (colon) {
+				colon[0] = '\0';
+				gres_cnt = _atoi(colon+1);
+			} else
+				gres_cnt = 1;
+			state_ptr->bb_config.gres_ptr = xrealloc(
+				state_ptr->bb_config.gres_ptr,
+				sizeof(burst_buffer_gres_t) *
+				(state_ptr->bb_config.gres_cnt + 1));
+			state_ptr->bb_config.
+				gres_ptr[state_ptr->bb_config.gres_cnt].name =
+				xstrdup(tok);
+			state_ptr->bb_config.
+				gres_ptr[state_ptr->bb_config.gres_cnt].
+				avail_cnt = gres_cnt;
+			state_ptr->bb_config.gres_cnt++;
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
+	}
 	if (s_p_get_string(&tmp, "JobSizeLimit", bb_hashtbl)) {
 		state_ptr->bb_config.job_size_limit = bb_get_size_num(tmp);
 		xfree(tmp);
@@ -407,6 +466,11 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 
 		info("%s: GetSysState:%s",  __func__,
 		     state_ptr->bb_config.get_sys_state);
+		for (i = 0; i < state_ptr->bb_config.gres_cnt; i++) {
+			info("%s: Gres[%d]:%s:%u", __func__, i,
+			     state_ptr->bb_config.gres_ptr[i].name,
+			     state_ptr->bb_config.gres_ptr[i].avail_cnt);
+		}
 		info("%s: JobSizeLimit:%u",  __func__,
 		     state_ptr->bb_config.job_size_limit);
 		info("%s: PrioBoostAlloc:%u", __func__,
@@ -434,7 +498,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,
 			uint16_t protocol_version)
 {
-	int i, rec_count = 0;
+	int i, j, rec_count = 0;
 	struct bb_alloc *bb_next;
 
 	if (!bb_hash)
@@ -446,6 +510,15 @@ extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,
 			if ((uid == 0) || (uid == bb_next->user_id)) {
 				pack32(bb_next->array_job_id,  buffer);
 				pack32(bb_next->array_task_id, buffer);
+				pack32(bb_next->gres_cnt, buffer);
+				for (j = 0; j < bb_next->gres_cnt; j++) {
+					packstr(bb_next->gres_ptr[j].name,
+						buffer);
+					pack32(bb_next->gres_ptr[j].avail_cnt,
+					       buffer);
+					pack32(bb_next->gres_ptr[j].used_cnt,
+					       buffer);
+				}
 				pack32(bb_next->job_id,        buffer);
 				packstr(bb_next->name,         buffer);
 				pack32(bb_next->size,          buffer);
@@ -466,10 +539,17 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 			  uint16_t protocol_version)
 {
 	bb_config_t *config_ptr = &state_ptr->bb_config;
+	int i;
 
 	packstr(config_ptr->allow_users_str, buffer);
 	packstr(config_ptr->deny_users_str,  buffer);
 	packstr(config_ptr->get_sys_state,   buffer);
+	pack32(config_ptr->gres_cnt, buffer);
+	for (i = 0; i < config_ptr->gres_cnt; i++) {
+		packstr(config_ptr->gres_ptr[i].name, buffer);
+		pack32(config_ptr->gres_ptr[i].avail_cnt, buffer);
+		pack32(config_ptr->gres_ptr[i].used_cnt, buffer);
+	}
 	pack16(config_ptr->private_data,     buffer);
 	packstr(config_ptr->start_stage_in,  buffer);
 	packstr(config_ptr->start_stage_out, buffer);

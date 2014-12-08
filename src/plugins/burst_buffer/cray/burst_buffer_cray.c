@@ -419,7 +419,7 @@ extern int fini(void)
 		pthread_join(bb_state.bb_thread, NULL);
 		bb_state.bb_thread = 0;
 	}
-	bb_clear_config(&bb_state.bb_config);
+	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 

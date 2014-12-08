@@ -59,6 +59,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/* Reformat a numeric value with an appropriate suffix.
+ * The units are GB */
 static void _get_size_str(char *buf, size_t buf_size, uint32_t num)
 {
 	uint32_t tmp32;
@@ -67,9 +69,6 @@ static void _get_size_str(char *buf, size_t buf_size, uint32_t num)
 		snprintf(buf, buf_size, "INFINITE");
 	} else if (num == 0) {
 		snprintf(buf, buf_size, "0GB");
-	} else if ((num & BB_SIZE_IN_NODES) != 0) {
-		tmp32 = num & (~BB_SIZE_IN_NODES);
-		snprintf(buf, buf_size, "%uN", tmp32);
 	} else if ((num % (1024 * 1024)) == 0) {
 		tmp32 = num / (1024 * 1024);
 		snprintf(buf, buf_size, "%uPB", tmp32);
@@ -79,6 +78,29 @@ static void _get_size_str(char *buf, size_t buf_size, uint32_t num)
 	} else {
 		tmp32 = num;
 		snprintf(buf, buf_size, "%uGB", tmp32);
+	}
+}
+
+/* Reformat a numeric value with an appropriate suffix.
+ * The base units are NOT scaled (i.e. 1 == 1) */
+static void _get_size_str2(char *buf, size_t buf_size, uint32_t num)
+{
+	uint32_t tmp32;
+
+	if (num == 0) {
+		snprintf(buf, buf_size, "0");
+	} else if ((num % (1024 * 1024 * 1024)) == 0) {
+		tmp32 = num / (1024 * 1024 * 1024);
+		snprintf(buf, buf_size, "%uG", tmp32);
+	} else if ((num % (1024 * 1024)) == 0) {
+		tmp32 = num / (1024 * 1024);
+		snprintf(buf, buf_size, "%uM", tmp32);
+	} else if ((num % 1024) == 0) {
+		tmp32 = num / 1024;
+		snprintf(buf, buf_size, "%uK", tmp32);
+	} else {
+		tmp32 = num;
+		snprintf(buf, buf_size, "%u", tmp32);
 	}
 }
 
@@ -156,6 +178,7 @@ static void _print_burst_buffer_resv(FILE *out,
 {
 	char sz_buf[32], time_buf[64], tmp_line[512];
 	char *out_buf = NULL;
+	int i;
 
 	/****** Line 1 ******/
 	if (burst_buffer_ptr->name) {
@@ -181,6 +204,19 @@ static void _print_burst_buffer_resv(FILE *out,
 	        uid_to_string(burst_buffer_ptr->user_id),
 	        burst_buffer_ptr->user_id);
 	xstrcat(out_buf, tmp_line);
+
+	/* Gres includes "nodes" on Cray systems */
+	for (i = 0; i < burst_buffer_ptr->gres_cnt; i++) {
+		if (i == 0)
+			xstrcat(out_buf, " Gres=");
+		else
+			xstrcat(out_buf, ",");
+		_get_size_str2(sz_buf, sizeof(sz_buf),
+			       burst_buffer_ptr->gres_ptr[i].used_cnt);
+		snprintf(tmp_line, sizeof(tmp_line), "%s:%s",
+			 burst_buffer_ptr->gres_ptr[i].name, sz_buf);
+		xstrcat(out_buf, tmp_line);
+	}
 
 	xstrcat(out_buf, "\n");
 	fprintf(out, "%s", out_buf);
@@ -234,7 +270,25 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 3 ******/
+	/****** Line 3+ (optional) ******/
+	/* Gres includes "nodes" on Cray systems */
+	for (i = 0; i < burst_buffer_ptr->gres_cnt; i++) {
+		_get_size_str2(t_sz_buf, sizeof(t_sz_buf),
+			       burst_buffer_ptr->gres_ptr[i].avail_cnt);
+		_get_size_str2(u_sz_buf, sizeof(u_sz_buf),
+			       burst_buffer_ptr->gres_ptr[i].used_cnt);
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "Gres[%d] Name=%s AvailCount=%s UsedCount=%s",
+			 i, burst_buffer_ptr->gres_ptr[i].name,
+			 t_sz_buf, u_sz_buf);
+		xstrcat(out_buf, tmp_line);
+		if (one_liner)
+			xstrcat(out_buf, " ");
+		else
+			xstrcat(out_buf, "\n  ");
+	}
+
+	/****** Line 4 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"PrioBoostAlloc=%u PrioBoostUse=%u ",
 		burst_buffer_ptr->prio_boost_alloc,
@@ -245,7 +299,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 4 ******/
+	/****** Line 5 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StageInTimeout=%u StageOutTimeout=%u ",
 		burst_buffer_ptr->stage_in_timeout,
@@ -256,7 +310,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 5 (optional) ******/
+	/****** Line 6 (optional) ******/
 	if (burst_buffer_ptr->allow_users) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			"AllowUsers=%s", burst_buffer_ptr->allow_users);
@@ -275,7 +329,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 			xstrcat(out_buf, "\n  ");
 	}
 
-	/****** Line 6 ******/
+	/****** Line 7 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"PrivateData=%u ", burst_buffer_ptr->private_data);
 	xstrcat(out_buf, tmp_line);
@@ -284,7 +338,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 7 ******/
+	/****** Line 8 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"GetSysState=%s", burst_buffer_ptr->get_sys_state);
 	xstrcat(out_buf, tmp_line);
@@ -293,7 +347,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 8 ******/
+	/****** Line 9 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StartStageIn=%s", burst_buffer_ptr->start_stage_in);
 	xstrcat(out_buf, tmp_line);
@@ -302,7 +356,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 9 ******/
+	/****** Line 10 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StartStageIn=%s", burst_buffer_ptr->start_stage_out);
 	xstrcat(out_buf, tmp_line);
@@ -311,7 +365,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 10 ******/
+	/****** Line 11 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StopStageIn=%s", burst_buffer_ptr->stop_stage_in);
 	xstrcat(out_buf, tmp_line);
@@ -320,7 +374,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	else
 		xstrcat(out_buf, "\n  ");
 
-	/****** Line 11 ******/
+	/****** Line 12 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StopStageIn=%s", burst_buffer_ptr->stop_stage_out);
 	xstrcat(out_buf, tmp_line);

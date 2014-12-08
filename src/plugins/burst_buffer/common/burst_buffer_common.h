@@ -44,6 +44,7 @@
 #define __BURST_BUFFER_COMMON_H__
 
 #include "src/common/pack.h"
+#include "slurm/slurm.h"
 
 /* Interval, in seconds, for purging orphan bb_alloc_t records and timing out
  * staging */
@@ -60,6 +61,8 @@ typedef struct bb_config {
 	uid_t   *deny_users;
 	char    *deny_users_str;
 	char    *get_sys_state;
+	uint32_t gres_cnt;	/* Count of records in gres_ptr */
+	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_size_limit;
 	uint32_t prio_boost_alloc;
 	uint32_t prio_boost_use;
@@ -78,6 +81,8 @@ typedef struct bb_alloc {
 	uint32_t array_task_id;
 	bool cancelled;
 	time_t end_time;	/* Expected time when use will end */
+	uint32_t gres_cnt;	/* Count of records in gres_ptr */
+	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_id;
 	char *name;		/* For persistent burst buffers */
 	struct bb_alloc *next;
@@ -148,8 +153,10 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 /* Clear all cached burst buffer records, freeing all memory. */
 extern void bb_clear_cache(bb_state_t *state_ptr);
 
-/* Clear configuration parameters, free memory */
-extern void bb_clear_config(bb_config_t *config_ptr);
+/* Clear configuration parameters, free memory
+ * config_ptr IN - Initial configuration to be cleared
+ * fini IN - True if shutting down, do more complete clean-up */
+extern void bb_clear_config(bb_config_t *config_ptr, bool fini);
 
 /* Find a per-job burst buffer record for a specific job.
  * If not found, return NULL. */

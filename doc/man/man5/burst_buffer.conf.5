@@ -47,6 +47,18 @@ See the src/plugins/burst_buffer/generic/bb_get_state.example in the
 Slurm distribution for an example.
 
 .TP
+\fBGres\fR
+Generic resources associated with burst buffers.
+This is a completely separate name space from the Gres defined in the slurm.conf
+file.
+The Gres value consistes of a comma separated list of generic resources,
+each of which includes a name separated by a colon and a numeric value.
+The numeric value can include a suffic of "k", "m" or "g", which multiplies
+the numeric value by 1,024, 1,048,576, or 1,073,741,824 respectively.
+The numeric value is a 32-bit value.
+See the example below.
+
+.TP
 \fBJobSizeLimit\fR
 Maximum burst buffer allocation size for any single job.
 The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
@@ -132,6 +144,8 @@ By default there is no job allocation size limit.
 AllowUsers=alan:brenda
 .br
 PrivateData=true
+.br
+Gres=nodes:10,other:20
 .br
 #
 .br

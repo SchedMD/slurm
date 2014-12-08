@@ -4273,8 +4273,17 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 #define BB_STATE_STAGED_OUT	0x0005
 
 typedef struct {
+	uint32_t avail_cnt;	/* Total count of available resources, unused
+				 * by burst_buffer_resv_t */
+	char *name;		/* Generic burst buffer resource, e.g. "nodes" */
+	uint32_t used_cnt;	/* Count of used resources */
+} burst_buffer_gres_t;
+
+typedef struct {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
+	uint32_t gres_cnt;	/* Count of records in gres_ptr */
+	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_id;
 	char *name;		/* Name of persistent burst buffer */
 	uint32_t size;		/* In GB by default */
@@ -4287,6 +4296,8 @@ typedef struct {
 	char *allow_users;
 	char *deny_users;
 	char *get_sys_state;
+	uint32_t gres_cnt;		/* Count of records in gres_ptr */
+	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_size_limit;	/* In GB or NO_VAL */
 	char *name;			/* Plugin name */
 	uint16_t private_data;		/* limit access to data */
