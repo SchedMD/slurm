@@ -82,6 +82,7 @@ documents those changes that are of interest to users and administrators.
  -- Restore GRES functionality with select/linear plugin. It was broken in
     version  14.03.10.
  -- Fix bug with GRES having multiple types that can cause slurmctld abort.
+ -- Fix squeue issue with not recognizing "localhost" in --nodelist option.
 
 * Changes in Slurm 14.11.1
 ==========================
