@@ -2255,16 +2255,17 @@ static void *_assoc_cache_mgr(void *no_data)
 {
 	ListIterator itr = NULL;
 	struct job_record *job_ptr = NULL;
+	struct part_record *part_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_association_rec_t assoc_rec;
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK };
 
 	if (!running_cache)
 		lock_slurmctld(job_write_lock);
 
-	while(running_cache == 1) {
+	while (running_cache == 1) {
 		slurm_mutex_lock(&assoc_cache_mutex);
 		pthread_cond_wait(&assoc_cache_cond, &assoc_cache_mutex);
 		/* This is here to see if we are exiting.  If we get
@@ -2287,7 +2288,7 @@ static void *_assoc_cache_mgr(void *no_data)
 		 * will be in sync.
 		 */
 		debug2("No job list yet");
-		goto end_it;
+		goto handle_parts;
 	}
 
 	debug2("got real data from the database "
@@ -2336,6 +2337,29 @@ static void *_assoc_cache_mgr(void *no_data)
 		}
 	}
 	list_iterator_destroy(itr);
+
+handle_parts:
+	if (!part_list) {
+		/* This could happen in rare occations, it doesn't
+		 * matter since when the job_list is populated things
+		 * will be in sync.
+		 */
+		debug2("No part list yet");
+		goto end_it;
+	}
+
+	itr = list_iterator_create(part_list);
+	while ((part_ptr = list_next(itr))) {
+		if (part_ptr->allow_qos)
+			qos_list_build(part_ptr->allow_qos,
+				       &part_ptr->allow_qos_bitstr);
+
+		if (part_ptr->deny_qos)
+			qos_list_build(part_ptr->deny_qos,
+				       &part_ptr->deny_qos_bitstr);
+	}
+	list_iterator_destroy(itr);
+
 end_it:
 	unlock_slurmctld(job_write_lock);
 	/* This needs to be after the lock and after we update the
