@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
     Shared=FORCE:# configuration option will permit one job more per resource
     to be run than than specified, but only if started by preemption.
  -- Remove CR_ALLOCATE_FULL_SOCKET option.  It is now the default.
+ -- Fix a race condition in PMI2 when fencing counters can be out of sync.
 
 * Changes in Slurm 14.11.2
 ==========================
