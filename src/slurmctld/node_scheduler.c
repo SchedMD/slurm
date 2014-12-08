@@ -1800,6 +1800,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	job_end_time_reset(job_ptr);
+	/* Clear any vestigial GRES in case job was requeued */
+	gres_plugin_job_clear(job_ptr->gres_list);
 
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
@@ -1838,8 +1840,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (configuring
 	    || bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
 		job_ptr->job_state |= JOB_CONFIGURING;
-	/* Clear any vestigial GRES in case job was requeued */
-	gres_plugin_job_clear(job_ptr->gres_list);
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
