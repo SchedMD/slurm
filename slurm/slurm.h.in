@@ -4275,6 +4275,7 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 typedef struct {
 	uint32_t avail_cnt;	/* Total count of available resources, unused
 				 * by burst_buffer_resv_t */
+	uint32_t granularity;	/* Granularity of resource allocation size */
 	char *name;		/* Generic burst buffer resource, e.g. "nodes" */
 	uint32_t used_cnt;	/* Count of used resources */
 } burst_buffer_gres_t;
@@ -4296,6 +4297,7 @@ typedef struct {
 	char *allow_users;
 	char *deny_users;
 	char *get_sys_state;
+	uint32_t granularity;		/* Granularity of resource allocation */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_size_limit;	/* In GB or NO_VAL */

@@ -9318,6 +9318,7 @@ static int _unpack_burst_buffer_info_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->get_sys_state, &uint32_tmp,
 				       buffer);
+		safe_unpack32(&bb_info_ptr->granularity, buffer);
 		safe_unpack32(&bb_info_ptr->gres_cnt, buffer);
 		bb_info_ptr->gres_ptr = xmalloc(bb_info_ptr->gres_cnt *
 						sizeof(burst_buffer_gres_t));

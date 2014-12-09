@@ -61,8 +61,10 @@ typedef struct bb_config {
 	uid_t   *deny_users;
 	char    *deny_users_str;
 	char    *get_sys_state;
-	uint32_t gres_cnt;	/* Count of records in gres_ptr */
-	burst_buffer_gres_t *gres_ptr;
+	uint32_t granularity;		/* space allocation granularity,
+					 * units are GB */
+	uint32_t gres_cnt;		/* Count of records in gres_ptr */
+	burst_buffer_gres_t *gres_ptr;	/* Type is defined in slurm.h */
 	uint32_t job_size_limit;
 	uint32_t prio_boost_alloc;
 	uint32_t prio_boost_use;
@@ -124,8 +126,8 @@ typedef struct bb_state {
 	pthread_cond_t	term_cond;
 	bool		term_flag;
 	pthread_mutex_t	term_mutex;
-	uint32_t	total_space;
-	uint32_t	used_space;
+	uint32_t	total_space;	/* units are GB */
+	uint32_t	used_space;	/* units are GB */
 } bb_state_t;
 
 /* Add a burst buffer allocation to a user's load */
@@ -168,7 +170,7 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash);
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
-extern uint32_t bb_get_size_num(char *tok);
+extern uint32_t bb_get_size_num(char *tok, uint32_t granularity);
 
 extern void bb_job_queue_del(void *x);
 

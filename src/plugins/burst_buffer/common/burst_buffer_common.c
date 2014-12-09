@@ -176,6 +176,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->deny_users);
 	xfree(config_ptr->deny_users_str);
 	xfree(config_ptr->get_sys_state);
+	config_ptr->granularity = 1;
 	if (fini) {
 		for (i = 0; i < config_ptr->gres_cnt; i++)
 			xfree(config_ptr->gres_ptr[i].name);
@@ -227,20 +228,11 @@ extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
-	uint32_t tmp_u, tmp_j;
 
 	state_ptr->used_space += bb_ptr->size;
 
 	user_ptr = bb_find_user_rec(bb_ptr->user_id, state_ptr->bb_uhash);
-	if ((user_ptr->size & BB_SIZE_IN_NODES) ||
-	    (bb_ptr->size   & BB_SIZE_IN_NODES)) {
-		tmp_u = user_ptr->size & (~BB_SIZE_IN_NODES);
-		tmp_j = bb_ptr->size   & (~BB_SIZE_IN_NODES);
-		user_ptr->size = tmp_u + tmp_j;
-		user_ptr->size |= BB_SIZE_IN_NODES;
-	} else {
-		user_ptr->size += bb_ptr->size;
-	}
+	user_ptr->size += bb_ptr->size;
 }
 
 /* Find a per-user burst buffer record for a specific user ID */
@@ -268,7 +260,6 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
 extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
-	uint32_t tmp_u, tmp_j;
 
 	if (state_ptr->used_space >= bb_ptr->size) {
 		state_ptr->used_space -= bb_ptr->size;
@@ -279,19 +270,7 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 	}
 
 	user_ptr = bb_find_user_rec(bb_ptr->user_id, state_ptr->bb_uhash);
-	if ((user_ptr->size & BB_SIZE_IN_NODES) ||
-	    (bb_ptr->size   & BB_SIZE_IN_NODES)) {
-		tmp_u = user_ptr->size & (~BB_SIZE_IN_NODES);
-		tmp_j = bb_ptr->size   & (~BB_SIZE_IN_NODES);
-		if (tmp_u > tmp_j) {
-			user_ptr->size = tmp_u + tmp_j;
-			user_ptr->size |= BB_SIZE_IN_NODES;
-		} else {
-			error("%s: user %u table underflow",
-			      __func__, user_ptr->user_id);
-			user_ptr->size = BB_SIZE_IN_NODES;
-		}
-	} else if (user_ptr->size >= bb_ptr->size) {
+	if (user_ptr->size >= bb_ptr->size) {
 		user_ptr->size -= bb_ptr->size;
 	} else {
 		error("%s: user %u table underflow",
@@ -331,6 +310,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 		{"AllowUsers", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
 		{"GetSysState", S_P_STRING},
+		{"Granularity", S_P_STRING},
 		{"Gres", S_P_STRING},
 		{"JobSizeLimit", S_P_STRING},
 		{"PrioBoostAlloc", S_P_UINT32},
@@ -386,6 +366,14 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 	}
 	s_p_get_string(&state_ptr->bb_config.get_sys_state, "GetSysState",
 		       bb_hashtbl);
+	if (s_p_get_string(&tmp, "Granularity", bb_hashtbl)) {
+		state_ptr->bb_config.granularity = bb_get_size_num(tmp, 1);
+		xfree(tmp);
+		if (state_ptr->bb_config.granularity == 0) {
+			error("%s: Granularity=0 is invalid", __func__);
+			state_ptr->bb_config.granularity = 1;
+		}
+	}
 	if (s_p_get_string(&tmp, "Gres", bb_hashtbl)) {
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
@@ -411,7 +399,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 		xfree(tmp);
 	}
 	if (s_p_get_string(&tmp, "JobSizeLimit", bb_hashtbl)) {
-		state_ptr->bb_config.job_size_limit = bb_get_size_num(tmp);
+		state_ptr->bb_config.job_size_limit = bb_get_size_num(tmp, 1);
 		xfree(tmp);
 	}
 	if (s_p_get_uint32(&state_ptr->bb_config.prio_boost_alloc,
@@ -448,7 +436,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 	s_p_get_string(&state_ptr->bb_config.stop_stage_out, "StopStageOut",
 		       bb_hashtbl);
 	if (s_p_get_string(&tmp, "UserSizeLimit", bb_hashtbl)) {
-		state_ptr->bb_config.user_size_limit = bb_get_size_num(tmp);
+		state_ptr->bb_config.user_size_limit = bb_get_size_num(tmp, 1);
 		xfree(tmp);
 	}
 
@@ -466,6 +454,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 
 		info("%s: GetSysState:%s",  __func__,
 		     state_ptr->bb_config.get_sys_state);
+		info("%s: Granularity:%u",  __func__,
+		     state_ptr->bb_config.granularity);
 		for (i = 0; i < state_ptr->bb_config.gres_cnt; i++) {
 			info("%s: Gres[%d]:%s:%u", __func__, i,
 			     state_ptr->bb_config.gres_ptr[i].name,
@@ -544,7 +534,8 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	packstr(config_ptr->allow_users_str, buffer);
 	packstr(config_ptr->deny_users_str,  buffer);
 	packstr(config_ptr->get_sys_state,   buffer);
-	pack32(config_ptr->gres_cnt, buffer);
+	pack32(config_ptr->granularity,      buffer);
+	pack32(config_ptr->gres_cnt,         buffer);
 	for (i = 0; i < config_ptr->gres_cnt; i++) {
 		packstr(config_ptr->gres_ptr[i].name, buffer);
 		pack32(config_ptr->gres_ptr[i].avail_cnt, buffer);
@@ -568,7 +559,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
-extern uint32_t bb_get_size_num(char *tok)
+extern uint32_t bb_get_size_num(char *tok, uint32_t granularity)
 {
 	char *end_ptr = NULL;
 	int32_t bb_size_i;
@@ -585,10 +576,14 @@ extern uint32_t bb_get_size_num(char *tok)
 			bb_size_u *= 1024;
 		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
 			bb_size_u *= (1024 * 1024);
-		} else if ((end_ptr[0] == 'n') || (end_ptr[0] == 'N')) {
-			bb_size_u |= BB_SIZE_IN_NODES;
 		}
 	}
+	
+	if (granularity > 1) {
+		bb_size_u = ((bb_size_u + granularity - 1) / granularity) *
+			    granularity;
+	}
+
 	return bb_size_u;
 }
 

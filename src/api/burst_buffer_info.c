@@ -236,20 +236,23 @@ static void _print_burst_buffer_resv(FILE *out,
 extern void slurm_print_burst_buffer_record(FILE *out,
 		burst_buffer_info_t *burst_buffer_ptr, int one_liner)
 {
-	char tmp_line[512], j_sz_buf[32], t_sz_buf[32], u_sz_buf[32];
+	char tmp_line[512];
+	char g_sz_buf[32], j_sz_buf[32], t_sz_buf[32], u_sz_buf[32];
 	char *out_buf = NULL;
 	burst_buffer_resv_t *bb_resv_ptr;
 	bool has_acl = false;
 	int i;
 
 	/****** Line 1 ******/
+	_get_size_str(g_sz_buf, sizeof(t_sz_buf),
+		      burst_buffer_ptr->granularity);
 	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
 		      burst_buffer_ptr->total_space);
 	_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 		      burst_buffer_ptr->used_space);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Name=%s TotalSpace=%s UsedSpace=%s",
-		burst_buffer_ptr->name, t_sz_buf, u_sz_buf);
+		"Name=%s Granularity=%s TotalSpace=%s UsedSpace=%s",
+		burst_buffer_ptr->name, g_sz_buf, t_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");

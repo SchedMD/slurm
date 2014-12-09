@@ -147,7 +147,8 @@ static uint32_t _get_bb_size(struct job_record *job_ptr)
 	if (job_ptr->burst_buffer) {
 		tok = strstr(job_ptr->burst_buffer, "size=");
 		if (tok)
-			bb_size_u = bb_get_size_num(tok + 5);
+			bb_size_u = bb_get_size_num(tok + 5,
+						bb_state.bb_config.granularity);
 	}
 
 	return bb_size_u;
@@ -215,9 +216,9 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 
 	if (bb_state.bb_config.user_size_limit != NO_VAL) {
 		user_ptr = bb_find_user_rec(job_ptr->user_id, bb_state.bb_uhash);
-		tmp_u = user_ptr->size  & (~BB_SIZE_IN_NODES);
-		tmp_j = add_space       & (~BB_SIZE_IN_NODES);
-		lim_u = bb_state.bb_config.user_size_limit & (~BB_SIZE_IN_NODES);
+		tmp_u = user_ptr->size;
+		tmp_j = add_space;
+		lim_u = bb_state.bb_config.user_size_limit;
 
 		add_user_space_needed = tmp_u + tmp_j - lim_u;
 	}
@@ -518,8 +519,10 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 //FIXME: Add Cray API callout to set job_desc->burst_buffer based upon job_desc->script
 	if (job_desc->burst_buffer) {
 		key = strstr(job_desc->burst_buffer, "size=");
-		if (key)
-			bb_size = bb_get_size_num(key + 5);
+		if (key) {
+			bb_size = bb_get_size_num(key + 5,
+						bb_state.bb_config.granularity);
+		}
 	}
 	if (bb_size == 0)
 		return SLURM_SUCCESS;
