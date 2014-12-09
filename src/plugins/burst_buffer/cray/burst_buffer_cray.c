@@ -39,6 +39,7 @@
 #endif
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
+#include <ctype.h>
 #include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -101,6 +102,7 @@ static void	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
 static uint32_t	_get_bb_size(struct job_record *job_ptr);
 static void	_load_state(uint32_t job_id);
+static int	_parse_script(struct job_descriptor *job_desc);
 static void	_start_stage_in(uint32_t job_id);
 static void	_start_stage_out(uint32_t job_id);
 static void	_stop_stage_in(uint32_t job_id);
@@ -413,6 +415,98 @@ static void _timeout_bb_rec(void)
 	}
 }
 
+/* Translate a batch script into appropriate burst_buffer argument */
+static int _parse_script(struct job_descriptor *job_desc)
+{
+	char *capacity, *end_ptr = NULL, *script, *save_ptr = NULL, *tok;
+	int64_t raw_cnt;
+	uint32_t gb_cnt = 0, node_cnt = 0, swap_cnt = 0;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_desc->script)
+		return rc;
+
+	script = xstrdup(job_desc->script);
+	tok = strtok_r(script, "\n", &save_ptr);
+	while (tok) {
+		if ((tok[0] != '#') || (tok[1] != 'B') || (tok[2] != 'B')) {
+			;
+		} else {
+			tok += 3;
+			while (isspace(tok[0]))
+				tok++;
+			if (!strncasecmp(tok, "jobbb", 5) &&
+			    (capacity = strstr(tok, "capacity="))) {
+				raw_cnt = strtol(capacity + 9, &end_ptr, 10);
+				if (raw_cnt <= 0) {
+					rc = ESLURM_INVALID_BURST_BUFFER_CHANGE;
+					break;
+				}
+				if ((end_ptr[0] == 'n') ||
+				    (end_ptr[0] == 'N')) {
+					node_cnt += raw_cnt;
+				} else if ((end_ptr[0] == 'm') ||
+					   (end_ptr[0] == 'M')) {
+					raw_cnt = (raw_cnt + 1023) / 1024;
+					gb_cnt += raw_cnt;
+				} else if ((end_ptr[0] == 'g') ||
+					   (end_ptr[0] == 'G')) {
+					gb_cnt += raw_cnt;
+				} else if ((end_ptr[0] == 't') ||
+					   (end_ptr[0] == 'T')) {
+					raw_cnt *= 1024;
+					gb_cnt += raw_cnt;
+				} else if ((end_ptr[0] == 'p') ||
+					   (end_ptr[0] == 'P')) {
+					raw_cnt *= (1024 * 1024);
+					gb_cnt += raw_cnt;
+				}
+			} else if (!strncasecmp(tok, "swap", 4)) {
+				tok += 4;
+				while (isspace(tok[0]))
+					tok++;
+				swap_cnt = strtol(tok, &end_ptr, 10);
+			}
+		}
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+	xfree(script);
+
+	if ((rc == SLURM_SUCCESS) && (gb_cnt || node_cnt)) {
+//FIXME: Need to determine how to handle interactive jobs
+		xfree(job_desc->burst_buffer);
+		if (swap_cnt) {
+			uint32_t job_nodes;
+			if ((job_desc->max_nodes == 0) ||
+			    (job_desc->max_nodes == NO_VAL)) {
+				job_nodes = 1;
+				info("%s: user %u submitted job with swap "
+				     "space specification, but no node count "
+				     "specification",
+				     __func__, job_desc->user_id);
+
+			} else {
+				job_nodes = job_desc->max_nodes;
+			}
+			xstrfmtcat(job_desc->burst_buffer, "swap=%uGB(%uNodes)",
+				   swap_cnt, job_nodes);
+			gb_cnt += swap_cnt * job_nodes;
+		}
+		if (gb_cnt) {
+			if (job_desc->burst_buffer)
+				xstrcat(job_desc->burst_buffer, " ");
+			xstrfmtcat(job_desc->burst_buffer, "size=%u", gb_cnt);
+		}
+		if (node_cnt) {
+			if (job_desc->burst_buffer)
+				xstrcat(job_desc->burst_buffer, " ");
+			xstrfmtcat(job_desc->burst_buffer, "gres=nodes:%u",
+				   node_cnt);
+		}
+	}
+	return rc;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -539,7 +633,10 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 {
 	int32_t bb_size = 0;
 	char *key;
-	int i;
+	int i, rc;
+
+	if ((rc = _parse_script(job_desc)) != SLURM_SUCCESS)
+		return rc;
 
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_user_id:%u, submit_uid:%d",
@@ -548,7 +645,6 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		info("%s: script:%s", __func__, job_desc->script);
 	}
 
-//FIXME: Add Cray API callout to set job_desc->burst_buffer based upon job_desc->script
 	if (job_desc->burst_buffer) {
 		key = strstr(job_desc->burst_buffer, "size=");
 		if (key) {
