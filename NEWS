@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix squeue issue with not recognizing "localhost" in --nodelist option.
  -- Make sure the bitstrings for a partitions Allow/DenyQOS are up to date
     when running from cache.
+ -- Add smap support for job arrays and larger job ID values.
 
 * Changes in Slurm 14.11.1
 ==========================
