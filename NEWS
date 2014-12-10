@@ -57,6 +57,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix a race condition in PMI2 when fencing counters can be out of sync.
  -- Increase the MAX_PACK_MEM_LEN define to avoid PMI2 failure when fencing
     with large amount of ranks.
+ -- Add QOS option to a partition.  This will allow a partition to have
+    all the limits a QOS has.  If a limit is set in both QOS the partition
+    QOS will override the job's QOS unless the job's QOS has the
+    PartitionQOS flag set.
 
 * Changes in Slurm 14.11.2
 ==========================

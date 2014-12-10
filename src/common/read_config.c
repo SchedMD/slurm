@@ -1055,6 +1055,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Nodes", S_P_STRING},
 		{"PreemptMode", S_P_STRING},
 		{"Priority", S_P_UINT16},
+		{"QOS", S_P_STRING},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
 		{"SelectTypeParameters", S_P_STRING}, /* CR_Socket, CR_Core */
@@ -1257,6 +1258,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint16(&p->priority, "Priority", tbl) &&
 		    !s_p_get_uint16(&p->priority, "Priority", dflt))
 			p->priority = 1;
+
+		if (!s_p_get_string(&p->qos_char, "QOS", tbl)
+		    && !s_p_get_string(&p->qos_char, "QOS", dflt))
+			p->qos_char = NULL;
 
 		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
 			if (strncasecmp(tmp, "CR_Socket", 9) == 0)

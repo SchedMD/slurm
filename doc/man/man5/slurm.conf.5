@@ -3890,6 +3890,16 @@ priority.
 The value may not exceed 65533.
 
 .TP
+\fBQOS\fR
+Used to extend the limits available to a QOS on a partition.  Jobs will not be
+associated to this QOS outside of being associated to the partition.  They
+will still be associated to their requested QOS.
+By default, no QOS is used.
+\fBNOTE:\fR If a limit is set in both the Partition's QOS and the Job's QOS
+the Partition QOS will be honored unless the Job's QOS has the
+\fBPartitionQOS\fR flag set in which the Job's QOS will have priority.
+
+.TP
 \fBReqResv\fR
 Specifies users of this partition are required to designate a reservation
 when submitting a job. This option can be useful in restricting usage

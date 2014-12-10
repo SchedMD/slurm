@@ -154,6 +154,7 @@ typedef enum {
 #define	QOS_FLAG_NO_RESERVE          0x00000010
 #define	QOS_FLAG_REQ_RESV            0x00000020
 #define	QOS_FLAG_DENY_LIMIT          0x00000040
+#define	QOS_FLAG_PART_QOS            0x00000080
 
 /* Define Server Resource flags */
 #define	SLURMDB_RES_FLAG_BASE        0x0fffffff /* apply to get real flags */
@@ -1360,7 +1361,7 @@ extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
-				 bool free_it);
+				 bool free_it, uint32_t init_val);
 extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
 				 bool free_it);
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey,

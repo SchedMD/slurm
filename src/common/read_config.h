@@ -264,6 +264,7 @@ typedef struct slurm_conf_partition {
 	char 	*nodes;		/* comma delimited list names of nodes */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority;	/* scheduling priority for jobs */
+	char    *qos_char;      /* Name of QOS associated with partition */
 	bool     req_resv_flag; /* 1 if partition can only be used in a
 				 * reservation */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be

@@ -4,7 +4,7 @@ RELEASE NOTES FOR SLURM VERSION 15.08
 
 IMPORTANT NOTE:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
-The 14.11 slurmdbd will work with Slurm daemons of version 2.6 and above.
+The 15.08 slurmdbd will work with Slurm daemons of version 14.03 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.  No real harm will come from updating
@@ -39,6 +39,10 @@ HIGHLIGHTS
     without preemption. NOTE: That with PreemptType=qos, the partition's
     Shared=FORCE:# configuration option will permit one job more per resource
     to be run than than specified, but only if started by preemption.
+ -- A partition can now have a QOS attached.  This will allow a partition
+    to have all the limits a QOS has.  If a limit is set in both QOS
+    the partition QOS will override the job's QOS unless the job's QOS has the
+    'PartitionQOS' flag set.
 
 RPMBUILD CHANGES
 ================

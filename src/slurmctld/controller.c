@@ -2376,6 +2376,22 @@ handle_parts:
 		if (part_ptr->deny_qos)
 			qos_list_build(part_ptr->deny_qos,
 				       &part_ptr->deny_qos_bitstr);
+
+		if (part_ptr->qos_char) {
+			slurmdb_qos_rec_t qos_rec;
+
+			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+			qos_rec.name = part_ptr->qos_char;
+			part_ptr->qos_ptr = NULL;
+			if (assoc_mgr_fill_in_qos(
+				    acct_db_conn, &qos_rec, accounting_enforce,
+				    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr, 0)
+			    != SLURM_SUCCESS) {
+				fatal("Partition %s has an invalid qos (%s), "
+				      "please check your configuration",
+				      part_ptr->name, qos_rec.name);
+			}
+		}
 	}
 	list_iterator_destroy(itr);
 

@@ -371,6 +371,9 @@ static uint32_t _str_2_qos_flags(char *flags)
 	if (slurm_strcasestr(flags, "RequiresReservation"))
 		return QOS_FLAG_REQ_RESV;
 
+	if (slurm_strcasestr(flags, "PartitionQOS"))
+		return QOS_FLAG_PART_QOS;
+
 	if (slurm_strcasestr(flags, "NoReserve"))
 		return QOS_FLAG_NO_RESERVE;
 
@@ -1256,7 +1259,8 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 	cluster->flags = NO_VAL;
 }
 
-extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
+extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
+				 uint32_t init_val)
 {
 	if (!qos)
 		return;
@@ -1267,33 +1271,33 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 
 	qos->flags = QOS_FLAG_NOTSET;
 
-	qos->grace_time = NO_VAL;
-	qos->preempt_mode = (uint16_t)NO_VAL;
-	qos->priority = NO_VAL;
+	qos->grace_time = init_val;
+	qos->preempt_mode = (uint16_t)init_val;
+	qos->priority = init_val;
 
-	qos->grp_cpu_mins = (uint64_t)NO_VAL;
-	qos->grp_cpu_run_mins = (uint64_t)NO_VAL;
-	qos->grp_cpus = NO_VAL;
-	qos->grp_jobs = NO_VAL;
-	qos->grp_mem = NO_VAL;
-	qos->grp_nodes = NO_VAL;
-	qos->grp_submit_jobs = NO_VAL;
-	qos->grp_wall = NO_VAL;
+	qos->grp_cpu_mins = (uint64_t)init_val;
+	qos->grp_cpu_run_mins = (uint64_t)init_val;
+	qos->grp_cpus = init_val;
+	qos->grp_jobs = init_val;
+	qos->grp_mem = init_val;
+	qos->grp_nodes = init_val;
+	qos->grp_submit_jobs = init_val;
+	qos->grp_wall = init_val;
 
-	qos->max_cpu_mins_pj = (uint64_t)NO_VAL;
-	qos->max_cpu_run_mins_pu = (uint64_t)NO_VAL;
-	qos->max_cpus_pj = NO_VAL;
-	qos->max_cpus_pu = NO_VAL;
-	qos->max_jobs_pu = NO_VAL;
-	qos->max_nodes_pj = NO_VAL;
-	qos->max_nodes_pu = NO_VAL;
-	qos->max_submit_jobs_pu = NO_VAL;
-	qos->max_wall_pj = NO_VAL;
+	qos->max_cpu_mins_pj = (uint64_t)init_val;
+	qos->max_cpu_run_mins_pu = (uint64_t)init_val;
+	qos->max_cpus_pj = init_val;
+	qos->max_cpus_pu = init_val;
+	qos->max_jobs_pu = init_val;
+	qos->max_nodes_pj = init_val;
+	qos->max_nodes_pu = init_val;
+	qos->max_submit_jobs_pu = init_val;
+	qos->max_wall_pj = init_val;
 
-	qos->min_cpus_pj = NO_VAL;
+	qos->min_cpus_pj = init_val;
 
-	qos->usage_factor = (double)NO_VAL;
-	qos->usage_thres = (double)NO_VAL;
+	qos->usage_factor = (double)init_val;
+	qos->usage_thres = (double)init_val;
 }
 
 extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
@@ -1423,6 +1427,8 @@ extern char *slurmdb_qos_flags_str(uint32_t flags)
 		xstrcat(qos_flags, "PartitionMaxNodes,");
 	if (flags & QOS_FLAG_PART_MIN_NODE)
 		xstrcat(qos_flags, "PartitionMinNodes,");
+	if (flags & QOS_FLAG_PART_QOS)
+		xstrcat(qos_flags, "PartitionQOS,");
 	if (flags & QOS_FLAG_PART_TIME_LIMIT)
 		xstrcat(qos_flags, "PartitionTimeLimit,");
 	if (flags & QOS_FLAG_REQ_RESV)

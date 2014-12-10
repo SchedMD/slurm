@@ -348,6 +348,12 @@ struct part_record {
 				 * jobs (DON'T PACK) */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority;	/* scheduling priority for jobs */
+	char *qos_char;         /* requested QOS from slurm.conf */
+	void *qos_ptr;          /* pointer to the quality of
+				 * service record attached to this
+				 * partition, it is void* because of
+				 * interdependencies in the header
+				 * files, confirm the value before use */
 	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */

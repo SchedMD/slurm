@@ -598,7 +598,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	List qos_list = NULL;
 	char *qos_str = NULL;
 
-	slurmdb_init_qos_rec(start_qos, 0);
+	slurmdb_init_qos_rec(start_qos, 0, NO_VAL);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -642,7 +642,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		qos = NULL;
 		if (!sacctmgr_find_qos_from_list(g_qos_list, name)) {
 			qos = xmalloc(sizeof(slurmdb_qos_rec_t));
-			slurmdb_init_qos_rec(qos, 0);
+			slurmdb_init_qos_rec(qos, 0, NO_VAL);
 			qos->name = xstrdup(name);
 			if (start_qos->description)
 				qos->description =
@@ -1001,15 +1001,15 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
-	slurmdb_init_qos_rec(qos, 0);
+	slurmdb_init_qos_rec(qos, 0, NO_VAL);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
+		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			cond_set += _set_cond(&i, argc, argv, qos_cond, NULL);
 
-		} else if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
+		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			rec_set += _set_rec(&i, argc, argv, NULL, qos);
 		} else {

@@ -1193,7 +1193,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	slurmdb_init_qos_rec(object_ptr, 0);
+	slurmdb_init_qos_rec(object_ptr, 0, NO_VAL);
 
 	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->description,

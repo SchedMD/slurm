@@ -698,6 +698,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->min_nodes_orig = part->min_nodes;
 	part_ptr->preempt_mode   = part->preempt_mode;
 	part_ptr->priority       = part->priority;
+	part_ptr->qos_char       = xstrdup(part->qos_char);
 	part_ptr->state_up       = part->state_up;
 	part_ptr->grace_time     = part->grace_time;
 	part_ptr->cr_type        = part->cr_type;
@@ -731,6 +732,23 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos = xstrdup(part->deny_qos);
 		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
+	}
+
+	if (part->qos_char) {
+		slurmdb_qos_rec_t qos_rec;
+		xfree(part_ptr->qos_char);
+		part_ptr->qos_char = xstrdup(part->qos_char);
+
+		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+		qos_rec.name = part_ptr->qos_char;
+		if (assoc_mgr_fill_in_qos(
+			    acct_db_conn, &qos_rec, accounting_enforce,
+			    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr, 0)
+		    != SLURM_SUCCESS) {
+			fatal("Partition %s has an invalid qos (%s), "
+			      "please check your configuration",
+			      part_ptr->name, qos_rec.name);
+		}
 	}
 
  	if (part->allow_alloc_nodes) {
