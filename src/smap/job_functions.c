@@ -208,7 +208,7 @@ static void _print_header_job(void)
 		main_xcord += 3;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "JOBID");
-		main_xcord += 20;
+		main_xcord += 19;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "PARTITION");
 		main_xcord += 10;
@@ -334,7 +334,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			mvwprintw(text_win, main_ycord,
 				  main_xcord, "%u", job_ptr->job_id);
 		}
-		main_xcord += 20;
+		main_xcord += 19;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.10s", job_ptr->partition);
 		main_xcord += 10;
