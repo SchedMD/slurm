@@ -162,6 +162,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	int i, rc;
 	unsigned long step_wait = 0, my_sleep = 0;
 	time_t begin_time;
+	uint16_t base_dist;
 
 	if (!job) {
 		error("launch_common_create_job_step: no job given");
@@ -245,7 +246,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 #endif
 	}
 
-	switch (opt.distribution) {
+	switch (opt.distribution & SLURM_DIST_STATE_BASE) {
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_ARBITRARY:
 	case SLURM_DIST_CYCLIC:
@@ -264,12 +265,14 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		job->ctx_params.plane_size = opt.plane_size;
 		break;
 	default:
-		job->ctx_params.task_dist = (job->ctx_params.task_count <=
-					     job->ctx_params.min_nodes)
-			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		base_dist = (job->ctx_params.task_count <=
+			     job->ctx_params.min_nodes)
+			     ? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		opt.distribution &= SLURM_DIST_STATE_FLAGS;
+		opt.distribution |= base_dist;
+		job->ctx_params.task_dist = opt.distribution;
 		if (opt.ntasks_per_node != NO_VAL)
 			job->ctx_params.plane_size = opt.ntasks_per_node;
-		opt.distribution = job->ctx_params.task_dist;
 		break;
 
 	}

@@ -328,11 +328,13 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	/* get the correct number of hosts to run tasks on */
 	if (opt.nodelist)
 		step_nodelist = opt.nodelist;
-	else if ((opt.distribution == SLURM_DIST_ARBITRARY) && (count == 0))
+	else if (((opt.distribution & SLURM_DIST_STATE_BASE) ==
+		  SLURM_DIST_ARBITRARY) && (count == 0))
 		step_nodelist = getenv("SLURM_ARBITRARY_NODELIST");
 	if (step_nodelist) {
 		hl = hostlist_create(step_nodelist);
-		if (opt.distribution != SLURM_DIST_ARBITRARY)
+		if ((opt.distribution & SLURM_DIST_STATE_BASE) !=
+		    SLURM_DIST_ARBITRARY)
 			hostlist_uniq(hl);
 		if (!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can not run job.");
@@ -353,8 +355,8 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		opt.nodelist = buf;
 	}
 
-	if ((opt.distribution == SLURM_DIST_ARBITRARY) &&
-	    (count != opt.ntasks)) {
+	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
+	    && (count != opt.ntasks)) {
 		error("You asked for %d tasks but hostlist specified %d nodes",
 		      opt.ntasks, count);
 		goto error;

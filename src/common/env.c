@@ -417,7 +417,7 @@ int setup_env(env_t *env, bool preserve_env)
 			rc = SLURM_FAILURE;
 		}
 
-	if (env->distribution == SLURM_DIST_PLANE)
+	if ((env->distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%u",
 			    env->plane_size)) {
 			error("Can't set SLURM_DIST_PLANESIZE "
@@ -997,7 +997,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		env_array_overwrite_fmt(dest, "SLURM_DISTRIBUTION", "%s",
 					dist);
 
-	if (desc->task_dist == SLURM_DIST_PLANE)
+	if ((desc->task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		env_array_overwrite_fmt(dest, "SLURM_DIST_PLANESIZE",
 					"%u", desc->plane_size);
 
@@ -1045,7 +1045,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		//num_tasks = desc->min_cpus;
 	}
 
-	if (desc->task_dist == SLURM_DIST_ARBITRARY) {
+	if ((desc->task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) {
 		tmp = desc->req_nodes;
 		env_array_overwrite_fmt(dest, "SLURM_ARBITRARY_NODELIST",
 					"%s", tmp);

@@ -1313,7 +1313,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
-		if (step_spec->task_dist == SLURM_DIST_ARBITRARY) {
+		if ((step_spec->task_dist & SLURM_DIST_STATE_BASE) ==
+		    SLURM_DIST_ARBITRARY) {
 			/* if we are in arbitrary mode we need to make
 			 * sure we aren't running on an elan switch.
 			 * If we aren't change the number of nodes
@@ -1326,7 +1327,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				     "switch type elan. Switching DIST type "
 				     "to BLOCK");
 				xfree(step_spec->node_list);
-				step_spec->task_dist = SLURM_DIST_BLOCK;
+				step_spec->task_dist &= SLURM_DIST_STATE_FLAGS;
+				step_spec->task_dist |= SLURM_DIST_BLOCK;
 				FREE_NULL_BITMAP(selected_nodes);
 				step_spec->min_nodes =
 					bit_set_count(nodes_avail);
@@ -2077,6 +2079,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t orig_cpu_count;
 	List step_gres_list = (List) NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
+	uint16_t task_dist;
 #ifdef HAVE_ALPS_CRAY
 	uint32_t resv_id = 0;
 #endif
@@ -2118,19 +2121,20 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    (job_ptr->end_time <= time(NULL)))
 		return ESLURM_ALREADY_DONE;
 
-	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
-	    (step_specs->task_dist != SLURM_DIST_BLOCK) &&
-	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CYCLIC) &&
-	    (step_specs->task_dist != SLURM_DIST_BLOCK_CYCLIC) &&
-	    (step_specs->task_dist != SLURM_DIST_CYCLIC_BLOCK) &&
-	    (step_specs->task_dist != SLURM_DIST_BLOCK_BLOCK) &&
-	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CFULL) &&
-	    (step_specs->task_dist != SLURM_DIST_BLOCK_CFULL) &&
-	    (step_specs->task_dist != SLURM_DIST_PLANE) &&
-	    (step_specs->task_dist != SLURM_DIST_ARBITRARY))
+	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
+	if ((task_dist != SLURM_DIST_CYCLIC) &&
+	    (task_dist != SLURM_DIST_BLOCK) &&
+	    (task_dist != SLURM_DIST_CYCLIC_CYCLIC) &&
+	    (task_dist != SLURM_DIST_BLOCK_CYCLIC) &&
+	    (task_dist != SLURM_DIST_CYCLIC_BLOCK) &&
+	    (task_dist != SLURM_DIST_BLOCK_BLOCK) &&
+	    (task_dist != SLURM_DIST_CYCLIC_CFULL) &&
+	    (task_dist != SLURM_DIST_BLOCK_CFULL) &&
+	    (task_dist != SLURM_DIST_PLANE) &&
+	    (task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
 
-	if ((step_specs->task_dist == SLURM_DIST_ARBITRARY) &&
+	if ((task_dist == SLURM_DIST_ARBITRARY) &&
 	    (!strcmp(slurmctld_conf.switch_type, "switch/elan"))) {
 		return ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED;
 	}
@@ -2301,7 +2305,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	/* Here is where the node list is set for the step */
 	if (step_specs->node_list &&
-	    (step_specs->task_dist == SLURM_DIST_ARBITRARY)) {
+	    ((step_specs->task_dist & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY)) {
 		step_node_list = xstrdup(step_specs->node_list);
 		xfree(step_specs->node_list);
 		step_specs->node_list = bitmap2node_name(nodeset);
@@ -2316,7 +2321,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 	step_ptr->step_node_bitmap = nodeset;
 
-	switch(step_specs->task_dist) {
+	switch (step_specs->task_dist & SLURM_DIST_STATE_BASE) {
 	case SLURM_DIST_CYCLIC:
 	case SLURM_DIST_CYCLIC_CYCLIC:
 	case SLURM_DIST_CYCLIC_CFULL:

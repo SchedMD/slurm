@@ -201,7 +201,7 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 	if (opt.dependency)
 		setenv("SLURM_DEPENDENCY", opt.dependency, 1);
 	if (opt.distribution != SLURM_DIST_UNKNOWN) {
-		snprintf(value, sizeof(value), "%d", opt.distribution);
+		snprintf(value, sizeof(value), "%u", opt.distribution);
 		setenv("SLURM_DISTRIBUTION", value, 1);
 	}
 	if (opt.exc_nodes)
@@ -600,7 +600,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		}
 	}
 
-	if (opt.nodelist && (opt.distribution == SLURM_DIST_ARBITRARY)) {
+	if (opt.nodelist &&
+	    ((opt.distribution & SLURM_DIST_STATE_BASE)==SLURM_DIST_ARBITRARY)) {
 		bool destroy_hostfile = 0;
 		if (!opt.hostfile) {
 			char *host_name, *host_line;

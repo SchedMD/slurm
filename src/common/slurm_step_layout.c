@@ -68,7 +68,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     uint16_t task_dist, uint16_t plane_size);
 
 static int _task_layout_block(slurm_step_layout_t *step_layout,
-			      uint16_t *cpus);
+			      uint16_t *cpus, uint16_t task_dist);
 static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 			       uint16_t *cpus);
 static int _task_layout_plane(slurm_step_layout_t *step_layout,
@@ -106,7 +106,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	step_layout->task_dist = task_dist;
-	if (task_dist == SLURM_DIST_ARBITRARY) {
+	if ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) {
 		hostlist_t hl = NULL;
 		char *buf = NULL;
 		/* set the node list for the task layout later if user
@@ -438,8 +438,8 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			cpus[i] = 1;
 		}
 
-		if ((plane_size != (uint16_t)NO_VAL)
-		    && (task_dist != SLURM_DIST_PLANE)) {
+		if ((plane_size != (uint16_t)NO_VAL) &&
+		    ((task_dist & SLURM_DIST_STATE_BASE) != SLURM_DIST_PLANE)) {
 			/* plane_size when dist != plane is used to
 			   convey ntasks_per_node. Adjust the number
 			   of cpus to reflect that.
@@ -457,18 +457,18 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 		}
 	}
 
-        if ((task_dist == SLURM_DIST_CYCLIC) ||
-            (task_dist == SLURM_DIST_CYCLIC_CYCLIC) ||
-            (task_dist == SLURM_DIST_CYCLIC_CFULL) ||
-            (task_dist == SLURM_DIST_CYCLIC_BLOCK))
+        if (((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_CYCLIC) ||
+            ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_CYCLIC_CYCLIC) ||
+            ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_CYCLIC_CFULL) ||
+            ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_CYCLIC_BLOCK))
 		return _task_layout_cyclic(step_layout, cpus);
-	else if (task_dist == SLURM_DIST_ARBITRARY
-		&& !(cluster_flags & CLUSTER_FLAG_FE))
+	else if (((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) &&
+		!(cluster_flags & CLUSTER_FLAG_FE))
 		return _task_layout_hostfile(step_layout, arbitrary_nodes);
-        else if (task_dist == SLURM_DIST_PLANE)
+        else if ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
                 return _task_layout_plane(step_layout, cpus);
 	else
-		return _task_layout_block(step_layout, cpus);
+		return _task_layout_block(step_layout, cpus, task_dist);
 }
 
 /* use specific set run tasks on each host listed in hostfile
@@ -552,15 +552,25 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	return SLURM_SUCCESS;
 }
 
-static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
+static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus,
+			      uint16_t task_dist)
 {
 	static uint16_t select_params = (uint16_t) NO_VAL;
 	int i, j, task_id = 0;
+	bool pack_nodes;
 
 	if (select_params == (uint16_t) NO_VAL)
 		select_params = slurm_get_select_type_param();
+	if (task_dist & SLURM_DIST_PACK_NODES)
+		pack_nodes = true;
+	else if (task_dist & SLURM_DIST_NO_PACK_NODES)
+		pack_nodes = false;
+	else if (select_params & CR_PACK_NODES)
+		pack_nodes = true;
+	else
+		pack_nodes = false;
 
-	if (select_params & CR_PACK_NODES) {
+	if (pack_nodes) {
 		/* Pass 1: Put one task on each node */
 		for (i = 0; ((i < step_layout->node_cnt) &&
 			     (task_id < step_layout->task_cnt)); i++) {
@@ -761,49 +771,64 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 
 extern char *slurm_step_layout_type_name(task_dist_states_t task_dist)
 {
-	switch(task_dist) {
+	static char name[64] = "";
+
+	switch (task_dist & SLURM_DIST_STATE_BASE) {
 	case SLURM_DIST_CYCLIC:
-		return "Cyclic";
+		strcat(name, "Cyclic");
 		break;
 	case SLURM_DIST_BLOCK:	/* distribute tasks filling node by node */
-		return "Block";
+		strcat(name, "Block");
 		break;
 	case SLURM_DIST_ARBITRARY:	/* arbitrary task distribution  */
-		return "Arbitrary";
+		strcat(name, "Arbitrary");
 		break;
 	case SLURM_DIST_PLANE:	/* distribute tasks by filling up
 				   planes of lllp first and then by
 				   going across the nodes See
 				   documentation for more
 				   information */
-		return "Plane";
+		strcat(name, "Plane");
 		break;
 	case SLURM_DIST_CYCLIC_CYCLIC:/* distribute tasks 1 per node:
 					 round robin: same for lowest
 					 level of logical processor (lllp) */
-		return "CCyclic";
+		strcat(name, "CCyclic");
 		break;
 	case SLURM_DIST_CYCLIC_BLOCK: /* cyclic for node and block for lllp  */
-		return "CBlock";
+		strcat(name, "CBlock");
 		break;
 	case SLURM_DIST_BLOCK_CYCLIC: /* block for node and cyclic for lllp  */
-		return "BCyclic";
+		strcat(name, "BCyclic");
 		break;
 	case SLURM_DIST_BLOCK_BLOCK:	/* block for node and block for lllp  */
-		return "BBlock";
+		strcat(name, "BBlock");
 		break;
 	case SLURM_DIST_CYCLIC_CFULL:	/* cyclic for node and full
 					 * cyclic for lllp  */
-		return "CFCyclic";
+		strcat(name, "CFCyclic");
 		break;
 	case SLURM_DIST_BLOCK_CFULL:	/* block for node and full
 					 * cyclic for lllp  */
-		return "BFCyclic";
+		strcat(name, "BFCyclic");
 		break;
-	case SLURM_NO_LLLP_DIST:	/* No distribution specified for lllp */
+	case SLURM_DIST_NO_LLLP:	/* No distribution specified for lllp */
 	case SLURM_DIST_UNKNOWN:
 	default:
-		return "Unknown";
-
+		strcat(name, "Unknown");
 	}
+
+	if (task_dist & SLURM_DIST_PACK_NODES) {
+		if (name[0])
+			strcat(name, ",");
+		strcat(name, "Pack");
+	}
+
+	if (task_dist & SLURM_DIST_NO_PACK_NODES) {
+		if (name[0])
+			strcat(name, ",");
+		strcat(name, "NoPack");
+	}
+
+	return name;
 }

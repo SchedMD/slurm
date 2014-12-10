@@ -697,7 +697,7 @@ job_desc_msg_create_from_opts (void)
 
 	}
 
-	if (opt.distribution == SLURM_DIST_ARBITRARY
+	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	   && !j->req_nodes) {
 		error("With Arbitrary distribution you need to "
 		      "specify a nodelist or hostfile with the -w option");

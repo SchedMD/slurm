@@ -938,7 +938,8 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 
 	_log_select_maps("cr_dist/start", job_ptr->job_resrcs->node_bitmap,
 			 job_ptr->job_resrcs->core_bitmap);
-	if (job_ptr->details->task_dist == SLURM_DIST_PLANE) {
+	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+	    SLURM_DIST_PLANE) {
 		/* perform a plane distribution on the 'cpus' array */
 		error_code = _compute_plane_dist(job_ptr);
 		if (error_code != SLURM_SUCCESS) {
@@ -974,7 +975,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	 * by the next code block
 	 */
 	if ( slurmctld_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK ) {
-		switch(job_ptr->details->task_dist) {
+		switch(job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) {
 		case SLURM_DIST_ARBITRARY:
 		case SLURM_DIST_BLOCK:
 		case SLURM_DIST_CYCLIC:
@@ -987,7 +988,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	/* Determine the number of logical processors per node needed
 	 * for this job. Make sure below matches the layouts in
 	 * lllp_distribution in plugins/task/affinity/dist_task.c (FIXME) */
-	switch(job_ptr->details->task_dist) {
+	switch(job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) {
 	case SLURM_DIST_BLOCK_BLOCK:
 	case SLURM_DIST_CYCLIC_BLOCK:
 	case SLURM_DIST_PLANE:

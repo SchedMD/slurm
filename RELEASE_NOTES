@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 15.08
-2 December 2014
+10 December 2014
 
 
 IMPORTANT NOTE:
@@ -63,6 +63,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added "EioTimeout" parameter to slurm.conf. It is the number of seconds srun
     waits for slurmstepd to close the TCP/IP connection used to relay data
     between the user application and srun when the user application terminates.
+ -- Remove the CR_ALLOCATE_FULL_SOCKET configuration option.  It is now the
+    default.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -75,6 +77,11 @@ COMMAND CHANGES (see man pages for details)
  -- Added new job state of STOPPED indicating processes have been stopped with a
     SIGSTOP (using scancel or sview), but retain its allocated CPUs. Job state
     returns to RUNNING when SIGCONT is sent (also using scancel or sview).
+ -- The task_dist_states variable has been split into "flags" and "base"
+    components. Added SLURM_DIST_PACK_NODES and SLURM_DIST_NO_PACK_NODES values
+    to give user greater control over task distribution. The srun --dist options
+    has been modified to accept a "Pack" and "NoPack" option. These options can
+    be used to override the CR_PACK_NODE configuration option.
 
 OTHER CHANGES
 =============

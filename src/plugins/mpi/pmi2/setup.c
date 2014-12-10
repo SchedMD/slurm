@@ -386,7 +386,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 
 	node_cnt = job->step_layout->node_cnt;
 	task_cnt = job->step_layout->task_cnt;
-	task_dist = job->step_layout->task_dist;
+	task_dist = job->step_layout->task_dist & SLURM_DIST_STATE_BASE;
 	tasks = job->step_layout->tasks;
 	tids = job->step_layout->tids;
 

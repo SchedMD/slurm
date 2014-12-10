@@ -1657,8 +1657,9 @@ static void _set_options(const int argc, char **argv)
 	/* This means --ntasks was read from the environment.  We will override
 	 * it with what the user specified in the hostlist. POE launched
 	 * jobs excluded (they have the SLURM_STARTED_STEP env var set). */
-	if (!ntasks_set_opt && (opt.distribution == SLURM_DIST_ARBITRARY) &&
-	    !getenv("SLURM_STARTED_STEP"))
+	if (!ntasks_set_opt &&
+	    ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
+	    && !getenv("SLURM_STARTED_STEP"))
 		opt.ntasks_set = false;
 
 	spank_option_table_destroy (optz);
@@ -1691,7 +1692,8 @@ static void _opt_args(int argc, char **argv)
 	 * The limitations of the plane distribution in the cons_res
 	 * environment are more extensive and are documented in the
 	 * SLURM reference guide.  */
-	if (opt.distribution == SLURM_DIST_PLANE && opt.plane_size) {
+	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE &&
+	    opt.plane_size) {
 		if ((opt.ntasks/opt.plane_size) < opt.min_nodes) {
 			if (((opt.min_nodes-1)*opt.plane_size) >= opt.ntasks) {
 #if (0)
@@ -1885,7 +1887,8 @@ static bool _opt_verify(void)
 				xfree(opt.nodelist);
 				opt.nodelist = add_slash;
 			}
-			opt.distribution = SLURM_DIST_ARBITRARY;
+			opt.distribution &= SLURM_DIST_STATE_FLAGS;
+			opt.distribution |= SLURM_DIST_ARBITRARY;
 			opt.hostfile = xstrdup(opt.nodelist);
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
@@ -1905,7 +1908,7 @@ static bool _opt_verify(void)
 
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */
-	if ((opt.distribution == SLURM_DIST_ARBITRARY)
+	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
 		if (!opt.ntasks_set) {
@@ -1925,8 +1928,8 @@ static bool _opt_verify(void)
 	 * nodelist but only if it isn't arbitrary since the user has
 	 * laid it out how it should be so don't mess with it print an
 	 * error later if it doesn't work the way they wanted */
-	if (opt.max_nodes && opt.nodelist
-	   && opt.distribution != SLURM_DIST_ARBITRARY) {
+	if (opt.max_nodes && opt.nodelist &&
+	    ((opt.distribution & SLURM_DIST_STATE_BASE)!=SLURM_DIST_ARBITRARY)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
 		int count = hostlist_count(hl);
 		if (count > opt.max_nodes) {
@@ -2072,8 +2075,8 @@ static bool _opt_verify(void)
 				error("memory allocation failure");
 				exit(error_exit);
 			}
-			if (opt.distribution == SLURM_DIST_ARBITRARY
-			   && !opt.ntasks_set) {
+			if (((opt.distribution & SLURM_DIST_STATE_BASE) ==
+			     SLURM_DIST_ARBITRARY) && !opt.ntasks_set) {
 				opt.ntasks = hostlist_count(hl);
 				opt.ntasks_set = true;
 			}
@@ -2380,7 +2383,7 @@ static void _opt_list(void)
 	info("switches       : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
-	if (opt.distribution == SLURM_DIST_PLANE)
+	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
 	info("cpu_bind       : %s",
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);

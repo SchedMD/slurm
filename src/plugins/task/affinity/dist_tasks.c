@@ -454,7 +454,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		     req->job_id, buf_type, req->task_dist);
 	}
 
-	switch (req->task_dist) {
+	switch (req->task_dist & SLURM_DIST_STATE_BASE) {
 	case SLURM_DIST_BLOCK_BLOCK:
 	case SLURM_DIST_CYCLIC_BLOCK:
 	case SLURM_DIST_PLANE:
@@ -924,9 +924,11 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			//info("setting %d %d", taskcount, bit);
 			bit_set(masks[taskcount], bit);
 
-			if (!already_switched
-			    && ((req->task_dist == SLURM_DIST_CYCLIC_CFULL) ||
-				(req->task_dist == SLURM_DIST_BLOCK_CFULL))) {
+			if (!already_switched &&
+			    (((req->task_dist & SLURM_DIST_STATE_BASE) ==
+			     SLURM_DIST_CYCLIC_CFULL) ||
+			    ((req->task_dist & SLURM_DIST_STATE_BASE) ==
+			     SLURM_DIST_BLOCK_CFULL))) {
 				/* This means we are laying out cpus
 				 * within a task cyclically as well. */
 				s = (s + 1) % hw_sockets;

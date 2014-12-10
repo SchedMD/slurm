@@ -145,7 +145,7 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 	 * That is, if distribution is cyclic and there are more
 	 * tasks than nodes, or the distribution is arbitrary.
 	 */
-	switch (job->task_dist) {
+	switch (job->task_dist & SLURM_DIST_STATE_BASE) {
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_BLOCK_CYCLIC:
 	case SLURM_DIST_BLOCK_BLOCK:
@@ -166,7 +166,7 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 		break;
 	case SLURM_DIST_ARBITRARY:
 	case SLURM_DIST_PLANE:
-	case SLURM_NO_LLLP_DIST:
+	case SLURM_DIST_NO_LLLP:
 	case SLURM_DIST_UNKNOWN:
 	default:
 		CRAY_INFO("Non-SMP ordering identified; distribution %s",

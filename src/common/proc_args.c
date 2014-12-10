@@ -104,8 +104,8 @@ void set_distribution(task_dist_states_t distribution,
 		      char **dist, char **lllp_dist)
 {
 	if (((int)distribution >= 0)
-	    && (distribution != SLURM_DIST_UNKNOWN)) {
-		switch (distribution) {
+	    && ((distribution  & SLURM_DIST_STATE_BASE) != SLURM_DIST_UNKNOWN)) {
+		switch (distribution & SLURM_DIST_STATE_BASE) {
 		case SLURM_DIST_CYCLIC:
 			*dist      = "cyclic";
 			break;
@@ -156,53 +156,74 @@ void set_distribution(task_dist_states_t distribution,
  */
 task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 {
-	int len = strlen(arg);
+	int len;
 	char *dist_str = NULL;
 	task_dist_states_t result = SLURM_DIST_UNKNOWN;
-	bool lllp_dist = false, plane_dist = false;
+	bool pack_nodes = false, no_pack_nodes = false;
+	char *tok, *tmp, *save_ptr = NULL;
 
-	dist_str = strchr(arg,':');
-	if (dist_str != NULL) {
-		/* -m cyclic|block:cyclic|block */
-		lllp_dist = true;
-	} else {
-		/* -m plane=<plane_size> */
-		dist_str = strchr(arg,'=');
+	if (!arg)
+		return result;
+
+	tmp = xstrdup(arg);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		bool lllp_dist = false, plane_dist = false;
+		len = strlen(tok);
+		dist_str = strchr(tok, ':');
 		if (dist_str != NULL) {
-			*plane_size=atoi(dist_str+1);
-			len = dist_str-arg;
-			plane_dist = true;
+			/* -m cyclic|block:cyclic|block */
+			lllp_dist = true;
+		} else {
+			/* -m plane=<plane_size> */
+			dist_str = strchr(tok, '=');
+			if (dist_str != NULL) {
+				*plane_size = atoi(dist_str + 1);
+				len = dist_str - tok;
+				plane_dist = true;
+			}
 		}
-	}
 
-	if (lllp_dist) {
-		if (strcasecmp(arg, "cyclic:cyclic") == 0) {
-			result = SLURM_DIST_CYCLIC_CYCLIC;
-		} else if (strcasecmp(arg, "cyclic:block") == 0) {
-			result = SLURM_DIST_CYCLIC_BLOCK;
-		} else if (strcasecmp(arg, "block:block") == 0) {
-			result = SLURM_DIST_BLOCK_BLOCK;
-		} else if (strcasecmp(arg, "block:cyclic") == 0) {
-			result = SLURM_DIST_BLOCK_CYCLIC;
-		} else if (strcasecmp(arg, "block:fcyclic") == 0) {
-			result = SLURM_DIST_BLOCK_CFULL;
-		} else if (strcasecmp(arg, "cyclic:fcyclic") == 0) {
-			result = SLURM_DIST_CYCLIC_CFULL;
+		if (lllp_dist) {
+			if (strcasecmp(tok, "cyclic:cyclic") == 0) {
+				result = SLURM_DIST_CYCLIC_CYCLIC;
+			} else if (strcasecmp(tok, "cyclic:block") == 0) {
+				result = SLURM_DIST_CYCLIC_BLOCK;
+			} else if (strcasecmp(tok, "block:block") == 0) {
+				result = SLURM_DIST_BLOCK_BLOCK;
+			} else if (strcasecmp(tok, "block:cyclic") == 0) {
+				result = SLURM_DIST_BLOCK_CYCLIC;
+			} else if (strcasecmp(tok, "block:fcyclic") == 0) {
+				result = SLURM_DIST_BLOCK_CFULL;
+			} else if (strcasecmp(tok, "cyclic:fcyclic") == 0) {
+				result = SLURM_DIST_CYCLIC_CFULL;
+			}
+		} else if (plane_dist) {
+			if (strncasecmp(tok, "plane", len) == 0) {
+				result = SLURM_DIST_PLANE;
+			}
+		} else {
+			if (strncasecmp(tok, "cyclic", len) == 0) {
+				result = SLURM_DIST_CYCLIC;
+			} else if (strncasecmp(tok, "block", len) == 0) {
+				result = SLURM_DIST_BLOCK;
+			} else if ((strncasecmp(tok, "arbitrary", len) == 0) ||
+				   (strncasecmp(tok, "hostfile", len) == 0)) {
+				result = SLURM_DIST_ARBITRARY;
+			} else if (strncasecmp(tok, "nopack", len) == 0) {
+				no_pack_nodes = true;
+			} else if (strncasecmp(tok, "pack", len) == 0) {
+				pack_nodes = true;
+			}
 		}
-	} else if (plane_dist) {
-		if (strncasecmp(arg, "plane", len) == 0) {
-			result = SLURM_DIST_PLANE;
-		}
-	} else {
-		if (strncasecmp(arg, "cyclic", len) == 0) {
-			result = SLURM_DIST_CYCLIC;
-		} else if (strncasecmp(arg, "block", len) == 0) {
-			result = SLURM_DIST_BLOCK;
-		} else if ((strncasecmp(arg, "arbitrary", len) == 0) ||
-			   (strncasecmp(arg, "hostfile", len) == 0)) {
-			result = SLURM_DIST_ARBITRARY;
-		}
+		tok = strtok_r(NULL, ",", &save_ptr);
 	}
+	xfree(tmp);
+
+	if (pack_nodes)
+		result |= SLURM_DIST_PACK_NODES;
+	else if (no_pack_nodes)
+		result |= SLURM_DIST_NO_PACK_NODES;
 
 	return result;
 }
@@ -480,7 +501,7 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 	/* If we are using Arbitrary grab count out of the hostfile
 	   using them exactly the way we read it in since we are
 	   saying, lay it out this way! */
-	if (dist == SLURM_DIST_ARBITRARY)
+	if ((dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 		nodelist = slurm_read_hostfile(*node_list_pptr, task_count);
 	else
 		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);

@@ -1915,7 +1915,8 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		 * So we need to set up the arbitrary distribution of it. */
 		int hostfile_count = 0;
 		char **names = pe_job_req->host_names;
-		opt.distribution = SLURM_DIST_ARBITRARY;
+		opt.distribution &= SLURM_DIST_STATE_FLAGS;
+		opt.distribution |= SLURM_DIST_ARBITRARY;
 		while (names && *names) {
 			if (opt.nodelist)
 				xstrfmtcat(opt.nodelist, ",%s",

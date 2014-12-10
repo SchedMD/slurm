@@ -673,9 +673,9 @@ static int _task_cgroup_cpuset_dist_cyclic(
 							  obj, taskid,
 							  bind_verbose, cpuset);
 				if ((j < npdist) &&
-				    ((job->task_dist ==
+				    (((job->task_dist & SLURM_DIST_STATE_BASE) ==
 				      SLURM_DIST_CYCLIC_CFULL) ||
-				     (job->task_dist ==
+				     ((job->task_dist & SLURM_DIST_STATE_BASE) ==
 				      SLURM_DIST_BLOCK_CFULL)))
 					sock_idx++;
 			} else {
@@ -1338,7 +1338,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		 * task/affinity plugin in
 		 * src/plugins/task/affinity/dist_tasks.c, around line 368
 		 */
-		switch (job->task_dist) {
+		switch (job->task_dist & SLURM_DIST_STATE_BASE) {
 		case SLURM_DIST_BLOCK_BLOCK:
 		case SLURM_DIST_CYCLIC_BLOCK:
 		case SLURM_DIST_PLANE:

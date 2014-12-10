@@ -53,7 +53,8 @@ documents those changes that are of interest to users and administrators.
     without preemption. NOTE: That with PreemptType=qos, the partition's
     Shared=FORCE:# configuration option will permit one job more per resource
     to be run than than specified, but only if started by preemption.
- -- Remove CR_ALLOCATE_FULL_SOCKET option.  It is now the default.
+ -- Remove the CR_ALLOCATE_FULL_SOCKET configuration option.  It is now the
+    default.
  -- Fix a race condition in PMI2 when fencing counters can be out of sync.
  -- Increase the MAX_PACK_MEM_LEN define to avoid PMI2 failure when fencing
     with large amount of ranks.
@@ -61,6 +62,11 @@ documents those changes that are of interest to users and administrators.
     all the limits a QOS has.  If a limit is set in both QOS the partition
     QOS will override the job's QOS unless the job's QOS has the
     PartitionQOS flag set.
+ -- The task_dist_states variable has been split into "flags" and "base"
+    components. Added SLURM_DIST_PACK_NODES and SLURM_DIST_NO_PACK_NODES values
+    to give user greater control over task distribution. The srun --dist options
+    has been modified to accept a "Pack" and "NoPack" option. These options can
+    be used to override the CR_PACK_NODE configuration option.
 
 * Changes in Slurm 14.11.2
 ==========================

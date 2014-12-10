@@ -2339,7 +2339,8 @@ static bool _opt_verify(void)
 	 * The limitations of the plane distribution in the cons_res
 	 * environment are more extensive and are documented in the
 	 * SLURM reference guide.  */
-	if (opt.distribution == SLURM_DIST_PLANE && opt.plane_size) {
+	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE &&
+	    opt.plane_size) {
 		if ((opt.min_nodes <= 0) ||
 		    ((opt.ntasks/opt.plane_size) < opt.min_nodes)) {
 			if (((opt.min_nodes-1)*opt.plane_size) >= opt.ntasks) {
@@ -2367,7 +2368,7 @@ static bool _opt_verify(void)
 		error("Can't set SLURM_DISTRIBUTION env variable");
 	}
 
-	if ((opt.distribution == SLURM_DIST_PLANE) &&
+	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE) &&
 	    setenvf(NULL, "SLURM_DIST_PLANESIZE", "%d", opt.plane_size)) {
 		error("Can't set SLURM_DIST_PLANESIZE env variable");
 	}
@@ -2427,7 +2428,8 @@ static bool _opt_verify(void)
 				xfree(opt.nodelist);
 				opt.nodelist = add_slash;
 			}
-			opt.distribution = SLURM_DIST_ARBITRARY;
+			opt.distribution &= SLURM_DIST_STATE_FLAGS;
+			opt.distribution |= SLURM_DIST_ARBITRARY;
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
 				      "hostfile");
@@ -2444,7 +2446,7 @@ static bool _opt_verify(void)
 
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */
-	if ((opt.distribution == SLURM_DIST_ARBITRARY)
+	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
 		if (!opt.ntasks_set) {
@@ -2789,7 +2791,7 @@ static void _opt_list(void)
 	info("wckey             : `%s'", opt.wckey);
 	info("distribution      : %s",
 	     format_task_dist_states(opt.distribution));
-	if (opt.distribution == SLURM_DIST_PLANE)
+	if ((opt.distribution  & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		info("plane size        : %u", opt.plane_size);
 	info("verbose           : %d", opt.verbose);
 	info("immediate         : %s", tf_(opt.immediate));
