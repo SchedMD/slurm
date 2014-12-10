@@ -45,7 +45,7 @@
 #include <signal.h>
 #include "src/smap/smap.h"
 
-static int min_screen_width = 72;
+static int min_screen_width = 80;
 
 /********************
  * Global Variables *
