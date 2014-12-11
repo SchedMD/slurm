@@ -56,7 +56,10 @@ set val ""
 set option ""
 spawn $scontrol show config
 expect {
-
+	-re "^$" {
+		# break here since other config files are listed here
+		# scontrol write config only prints out the normal slurm.conf
+	}
 	-re "($alpha_numeric_under) *= ($format_time)" {
 		set option $expect_out(1,string)
 		set val $expect_out(2,string)
