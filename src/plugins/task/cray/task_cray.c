@@ -535,7 +535,8 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
 
 	f = fopen(buffer, "r");
 	if (f == NULL ) {
-		error("Failed to open file %s: %m\n", buffer);
+		error("(%s: %d: %s) Failed to open file %s: %m\n",
+		      THIS_FILE, __LINE__, __FUNCTION__, buffer);
 		return -1;
 	}
 
