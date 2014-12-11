@@ -98,11 +98,26 @@ const uint32_t plugin_version   = 100;
  * easily use common functions from multiple burst buffer plugins */
 static bb_state_t 	bb_state;
 
+typedef struct {
+	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
+	uint32_t count;		/* Count of required resources */
+} bb_gres_t;
+typedef struct {
+	uint32_t   gres_cnt;	/* number of records in gres_ptr */
+	bb_gres_t *gres_ptr;
+	uint32_t   swap_size;	/* swap space required per node */
+	uint32_t   swap_nodes;	/* Number of nodes needed */
+	uint32_t   total_size;	/* Total GB required for this job */
+} bb_job_t;
+
 static void	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
-static uint32_t	_get_bb_size(struct job_record *job_ptr);
+static void	_del_bb_spec(bb_job_t *bb_spec);
+static bb_job_t *_get_bb_spec(struct job_record *job_ptr);
+static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_load_state(uint32_t job_id);
-static int	_parse_script(struct job_descriptor *job_desc);
+static int	_parse_bb_opts(struct job_descriptor *job_desc);
+static int	_parse_interactive(struct job_descriptor *job_desc);
 static void	_start_stage_in(uint32_t job_id);
 static void	_start_stage_out(uint32_t job_id);
 static void	_stop_stage_in(uint32_t job_id);
@@ -140,20 +155,107 @@ static void *_bb_agent(void *args)
 	return NULL;
 }
 
-/* Return the burst buffer size requested by a job */
-static uint32_t _get_bb_size(struct job_record *job_ptr)
+static void _del_bb_spec(bb_job_t *bb_spec)
 {
-	char *tok;
-	uint32_t bb_size_u = 0;
+	int i;
 
-	if (job_ptr->burst_buffer) {
-		tok = strstr(job_ptr->burst_buffer, "size=");
-		if (tok)
-			bb_size_u = bb_get_size_num(tok + 5,
-						bb_state.bb_config.granularity);
+	if (bb_spec) {
+		for (i = 0; i < bb_spec->gres_cnt; i++)
+			xfree(bb_spec->gres_ptr[i].name);
+		xfree(bb_spec->gres_ptr);
+		xfree(bb_spec);
+	}
+}
+
+static void _log_bb_spec(bb_job_t *bb_spec)
+{
+	int i;
+
+	if (bb_spec) {
+		for (i = 0; i < bb_spec->gres_cnt; i++) {
+			info("Gres[%d]:%s:%u", i, bb_spec->gres_ptr[i].name,
+			     bb_spec->gres_ptr[i].count);
+		}
+		info("Swap:%u per node, %u nodes", bb_spec->swap_size,
+		     bb_spec->swap_nodes);
+		info("TotalSize:%u", bb_spec->total_size);
+	}
+}
+
+/* Return the burst buffer size specification of a job
+ * RET size data structure or NULL of none found
+ * NOTE: delete return value using _del_bb_size() */
+static bb_job_t *_get_bb_spec(struct job_record *job_ptr)
+{
+	char *end_ptr = NULL, *sep, *tok, *tmp;
+	bool have_bb = false;
+	int inx;
+	bb_job_t *bb_spec;
+
+	if (!job_ptr->burst_buffer)
+		return NULL;
+
+	bb_spec = xmalloc(sizeof(bb_job_t));
+	tok = strstr(job_ptr->burst_buffer, "SLURM_SIZE=");
+	if (tok) {	/* Format: "SLURM_SIZE=%u" */
+		bb_spec->total_size = bb_get_size_num(tok + 11,
+					bb_state.bb_config.granularity);
+		if (bb_spec->total_size)
+			have_bb = true;
 	}
 
-	return bb_size_u;
+	tok = strstr(job_ptr->burst_buffer, "SLURM_SWAP=");
+	if (tok) {	/* Format: "SLURM_SWAP=%uGB(%uNodes)" */
+		tok += 11;
+		bb_spec->swap_size = strtol(tok, &end_ptr, 10);
+		if (bb_spec->swap_size)
+			have_bb = true;
+		if ((end_ptr[0] == 'G') && (end_ptr[1] == 'B') &&
+		    (end_ptr[2] == '(')) {
+			bb_spec->swap_nodes = strtol(end_ptr + 3, NULL, 10);
+		} else {
+			bb_spec->swap_nodes = 1;
+		}
+	}
+
+	tok = strstr(job_ptr->burst_buffer, "SLURM_GRES=");
+	if (tok) {	/* Format: "SLURM_GRES=nodes:%u" */
+		tmp = xstrdup(tok + 11);
+		tok = strtok_r(tmp, ",", &end_ptr);
+		while (tok) {
+			have_bb = true;
+			inx = bb_spec->gres_cnt;
+			bb_spec->gres_cnt++;
+			bb_spec->gres_ptr = xrealloc(bb_spec->gres_ptr,
+						     sizeof(bb_gres_t) *
+						     bb_spec->gres_cnt);
+			sep = strchr(tok, ':');
+			if (sep) {
+				sep[0] = '\0';
+				bb_spec->gres_ptr[inx].count = atoi(sep + 1);
+			} else {
+				bb_spec->gres_ptr[inx].count = 1;
+			}
+			bb_spec->gres_ptr[inx].name = xstrdup(tok);
+			tok = strtok_r(NULL, ",", &end_ptr);
+		}
+		xfree(tmp);
+	}
+	if (!have_bb)
+		xfree(bb_spec);
+
+	if (bb_state.bb_config.debug_flag)
+		_log_bb_spec(bb_spec);
+	return bb_spec;
+}
+static uint32_t _get_bb_size(struct job_record *job_ptr)
+{
+//FIXME: Temporary
+	uint32_t size = 0;
+	bb_job_t *bb_spec = _get_bb_spec(job_ptr);
+	if (bb_spec) size=bb_spec->total_size;
+	_del_bb_spec(bb_spec);
+	return size;
 }
 
 /*
@@ -415,8 +517,9 @@ static void _timeout_bb_rec(void)
 	}
 }
 
-/* Translate a batch script into appropriate burst_buffer argument */
-static int _parse_script(struct job_descriptor *job_desc)
+/* Translate a batch script or interactive burst_buffer options into in
+ * appropriate burst_buffer argument */
+static int _parse_bb_opts(struct job_descriptor *job_desc)
 {
 	char *capacity, *end_ptr = NULL, *script, *save_ptr = NULL, *tok;
 	int64_t raw_cnt;
@@ -424,7 +527,7 @@ static int _parse_script(struct job_descriptor *job_desc)
 	int rc = SLURM_SUCCESS;
 
 	if (!job_desc->script)
-		return rc;
+		return _parse_interactive(job_desc);
 
 	script = xstrdup(job_desc->script);
 	tok = strtok_r(script, "\n", &save_ptr);
@@ -435,7 +538,7 @@ static int _parse_script(struct job_descriptor *job_desc)
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
-			if (!strncasecmp(tok, "jobbb", 5) &&
+			if (!strncmp(tok, "jobbb", 5) &&
 			    (capacity = strstr(tok, "capacity="))) {
 				raw_cnt = strtol(capacity + 9, &end_ptr, 10);
 				if (raw_cnt <= 0) {
@@ -461,9 +564,9 @@ static int _parse_script(struct job_descriptor *job_desc)
 					raw_cnt *= (1024 * 1024);
 					gb_cnt += raw_cnt;
 				}
-			} else if (!strncasecmp(tok, "swap", 4)) {
+			} else if (!strncmp(tok, "swap", 4)) {
 				tok += 4;
-				while (isspace(tok[0]))
+				if (isspace(tok[0]))
 					tok++;
 				swap_cnt = strtol(tok, &end_ptr, 10);
 			}
@@ -472,8 +575,7 @@ static int _parse_script(struct job_descriptor *job_desc)
 	}
 	xfree(script);
 
-	if ((rc == SLURM_SUCCESS) && (gb_cnt || node_cnt)) {
-//FIXME: Need to determine how to handle interactive jobs
+	if ((rc == SLURM_SUCCESS) && (gb_cnt || node_cnt || swap_cnt)) {
 		xfree(job_desc->burst_buffer);
 		if (swap_cnt) {
 			uint32_t job_nodes;
@@ -488,22 +590,96 @@ static int _parse_script(struct job_descriptor *job_desc)
 			} else {
 				job_nodes = job_desc->max_nodes;
 			}
-			xstrfmtcat(job_desc->burst_buffer, "swap=%uGB(%uNodes)",
+			xstrfmtcat(job_desc->burst_buffer,
+				   "SLURM_SWAP=%uGB(%uNodes)",
 				   swap_cnt, job_nodes);
 			gb_cnt += swap_cnt * job_nodes;
 		}
 		if (gb_cnt) {
 			if (job_desc->burst_buffer)
 				xstrcat(job_desc->burst_buffer, " ");
-			xstrfmtcat(job_desc->burst_buffer, "size=%u", gb_cnt);
+			xstrfmtcat(job_desc->burst_buffer, "SLURM_SIZE=%u",
+				   gb_cnt);
 		}
 		if (node_cnt) {
 			if (job_desc->burst_buffer)
 				xstrcat(job_desc->burst_buffer, " ");
-			xstrfmtcat(job_desc->burst_buffer, "gres=nodes:%u",
-				   node_cnt);
+			xstrfmtcat(job_desc->burst_buffer,
+				   "SLURM_GRES=nodes:%u", node_cnt);
 		}
 	}
+
+	return rc;
+}
+
+/* Parse interactive burst_buffer options into an appropriate burst_buffer
+ * argument */
+static int _parse_interactive(struct job_descriptor *job_desc)
+{
+	char *capacity, *end_ptr = NULL, *tok;
+	int64_t raw_cnt;
+	uint32_t gb_cnt = 0, node_cnt = 0, swap_cnt = 0;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_desc->burst_buffer)
+		return rc;
+
+	tok = job_desc->burst_buffer;
+	while ((capacity = strstr(tok, "capacity="))) {
+		raw_cnt = strtol(capacity + 9, &end_ptr, 10);
+		if (raw_cnt <= 0) {
+			rc = ESLURM_INVALID_BURST_BUFFER_CHANGE;
+			break;
+		}
+		if ((end_ptr[0] == 'n') || (end_ptr[0] == 'N')) {
+			node_cnt += raw_cnt;
+		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+			raw_cnt = (raw_cnt + 1023) / 1024;
+			gb_cnt += raw_cnt;
+		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
+			gb_cnt += raw_cnt;
+		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
+			raw_cnt *= 1024;
+			gb_cnt += raw_cnt;
+		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+			raw_cnt *= (1024 * 1024);
+			gb_cnt += raw_cnt;
+		}
+		tok = capacity + 9;
+	}
+
+	if ((tok = strstr(job_desc->burst_buffer, "swap=")))
+		swap_cnt = strtol(tok + 5, &end_ptr, 10);
+
+	if ((rc == SLURM_SUCCESS) && (gb_cnt || node_cnt || swap_cnt)) {
+		if (swap_cnt) {
+			uint32_t job_nodes;
+			if ((job_desc->max_nodes == 0) ||
+			    (job_desc->max_nodes == NO_VAL)) {
+				job_nodes = 1;
+				info("%s: user %u submitted job with swap "
+				     "space specification, but no node count "
+				     "specification",
+				     __func__, job_desc->user_id);
+
+			} else {
+				job_nodes = job_desc->max_nodes;
+			}
+			xstrfmtcat(job_desc->burst_buffer,
+				   " SLURM_SWAP=%uGB(%uNodes)",
+				   swap_cnt, job_nodes);
+			gb_cnt += swap_cnt * job_nodes;
+		}
+		if (gb_cnt) {
+			xstrfmtcat(job_desc->burst_buffer, " SLURM_SIZE=%u",
+				   gb_cnt);
+		}
+		if (node_cnt) {
+			xstrfmtcat(job_desc->burst_buffer,
+				   "SLURM_GRES=nodes:%u", node_cnt);
+		}
+	}
+
 	return rc;
 }
 
@@ -635,7 +811,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	char *key;
 	int i, rc;
 
-	if ((rc = _parse_script(job_desc)) != SLURM_SUCCESS)
+	if ((rc = _parse_bb_opts(job_desc)) != SLURM_SUCCESS)
 		return rc;
 
 	if (bb_state.bb_config.debug_flag) {
@@ -646,9 +822,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	}
 
 	if (job_desc->burst_buffer) {
-		key = strstr(job_desc->burst_buffer, "size=");
+		key = strstr(job_desc->burst_buffer, "SLURM_SIZE=");
 		if (key) {
-			bb_size = bb_get_size_num(key + 5,
+			bb_size = bb_get_size_num(key + 11,
 						bb_state.bb_config.granularity);
 		}
 	}
