@@ -972,8 +972,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   One can get an number of characters by following the field option with   \n\
   a %%NUMBER option.  i.e. format=name%%30 will print 30 chars of field name.\n\
                                                                            \n\
-       Account            - Account, CoordinatorList, Description,         \n\
-                            Organization                                   \n\
+       Account            - Account, Coordinators, Description, Organization\n\
                                                                            \n\
        Association        - Account, Cluster, DefaultQOS, Fairshare,       \n\
                             GrpCPUMins, GrpCPURunMins, GrpCPUs, GrpJobs,   \n\
@@ -1009,7 +1008,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        Transactions       - Action, Actor, Info, TimeStamp, Where          \n\
                                                                            \n\
-       User               - AdminLevel, CoordinatorList, DefaultAccount,   \n\
+       User               - AdminLevel, Coordinators, DefaultAccount,      \n\
                             DefaultWCKey, User                             \n\
                                                                            \n\
        WCKey              - Cluster, ID, Name, User                        \n\
