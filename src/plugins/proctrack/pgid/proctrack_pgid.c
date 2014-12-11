@@ -218,8 +218,7 @@ proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		if ((num[0] < '0') || (num[0] > '9'))
 			continue;
 		ret_l = strtol(num, &endptr, 10);
-		if ((ret_l == LONG_MIN) || (ret_l == LONG_MAX) ||
-		    (errno == ERANGE)) {
+		if ((ret_l == LONG_MIN) || (ret_l == LONG_MAX)) {
 			error("couldn't do a strtol on str %s(%ld): %m",
 			      num, ret_l);
 			continue;

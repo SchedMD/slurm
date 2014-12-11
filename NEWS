@@ -16,7 +16,6 @@ documents those changes that are of interest to users and administrators.
     have no weight.  This allows for association and QOS decay limits to work.
  -- Fix "squeue --start" to override SQUEUE_FORMAT env variable.
  -- Fix scancel to be able to cancel multiple jobs that are space delimited.
- -- Fix Centos5 compile issues.
  -- Log Cray MPI job calling exit() without mpi_fini(), but do not treat it as
     a fatal error. This partially reverts logic added in version 14.03.9.
  -- sview - Fix displaying of suspended steps elapsed times.
@@ -35,6 +34,9 @@ documents those changes that are of interest to users and administrators.
     accounting_storage/filetxt.
  -- Fix issue with accounting_storage/filetxt and job arrays not being printed
     correctly.
+ -- In proctrack/linuxproc and proctrack/pgid, check the result of strtol()
+    for error condition rather than errno, which might have a vestigial error
+    code.
 
 * Changes in Slurm 14.11.1
 ==========================
