@@ -351,7 +351,7 @@ int print_job_from_format(squeue_job_rec_t *job_rec_ptr, List list)
 		xfree(job_rec_ptr->job_ptr->partition);
 		job_rec_ptr->job_ptr->partition = xstrdup(job_rec_ptr->
 							  part_name);
-		
+
 	}
 	if (job_rec_ptr->job_ptr->array_task_str && params.array_flag) {
 		if (max_array_size == -1)
@@ -846,6 +846,8 @@ int _print_job_schednodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_reason_list(job_info_t * job, int width, bool right,
 		char* suffix)
 {
+	int l;
+
 	if (job == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST(REASON)";
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
@@ -860,7 +862,8 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 			reason = job->state_desc;
 		else
 			reason = job_reason_string(job->state_reason);
-		snprintf(id, FORMAT_STRING_SIZE, "(%s)", reason);
+		l = strlen(reason) + 3; /* 3 = () + "" */
+		snprintf(id, l, "(%s)", reason);
 		_print_str(id, width, right, true);
 	} else {
 		char *nodes = xstrdup(job->nodes);
