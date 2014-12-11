@@ -305,6 +305,7 @@ _setup_stepd_kvs(const stepd_step_rec_t *job, char ***env)
 	int rc = SLURM_SUCCESS, i = 0, pp_cnt = 0;
 	char *p, env_key[32], *ppkey, *ppval;
 
+	kvs_seq = 1;
 	rc = temp_kvs_init();
 	if (rc != SLURM_SUCCESS)
 		return rc;
@@ -643,6 +644,7 @@ _setup_srun_kvs(const mpi_plugin_client_info_t *job)
 {
 	int rc;
 
+	kvs_seq = 1;
 	rc = temp_kvs_init();
 	return rc;
 }

@@ -64,6 +64,7 @@ strong_alias(eio_handle_mainloop,	slurm_eio_handle_mainloop);
 strong_alias(eio_message_socket_readable, slurm_eio_message_socket_readable);
 strong_alias(eio_message_socket_accept,	slurm_eio_message_socket_accept);
 strong_alias(eio_new_obj,		slurm_eio_new_obj);
+strong_alias(eio_new_initial_obj,	slurm_eio_new_initial_obj);
 strong_alias(eio_obj_create,		slurm_eio_obj_create);
 strong_alias(eio_obj_destroy,		slurm_eio_obj_destroy);
 strong_alias(eio_remove_obj,		slurm_eio_remove_obj);
