@@ -399,6 +399,7 @@
 #define eio_message_socket_accept	slurm_eio_message_socket_accept
 #define eio_message_socket_readable	slurm_eio_message_socket_readable
 #define eio_new_obj			slurm_eio_new_obj
+#define eio_new_initial_obj		slurm_eio_new_initial_obj
 #define eio_obj_create			slurm_eio_obj_create
 #define eio_obj_destroy			slurm_eio_obj_destroy
 #define eio_remove_obj			slurm_eio_remove_obj

@@ -227,7 +227,12 @@ As assortment of SPANK plugins are available from<br>
 http://code.google.com/p/slurm-spank-plugins/</a>.<br>
 The current source for the plugins can be checked out of the subversion
 repository with the following command:<br>
-<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/ slurm-plugins</i></li><br>
+<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/slurm-plugins</i><br><br>
+
+A SPANK plugin called "spunnel" to support ssh port forwarding is available
+from Harvard University.
+It can be downloaded from the
+<a href="https://github.com/harvardinformatics/spunnel">spunnel repository</a>.</li><br>
 
 <li><b>Sqlog</b><br>
 A set of scripts that leverages Slurm's job completion logging facility
@@ -343,6 +348,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 9 October 2014</p>
+<p style="text-align:center;">Last modified 11 December 2014</p>
 
 <!--#include virtual="footer.txt"-->

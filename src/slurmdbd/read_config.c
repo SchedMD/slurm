@@ -567,42 +567,26 @@ extern void log_config(void)
 
 	private_data_string(slurmdbd_conf->private_data,
 			    tmp_str, sizeof(tmp_str));
-
 	debug2("PrivateData       = %s", tmp_str);
 
-	if (slurmdbd_conf->purge_event != NO_VAL)
-		slurmdb_purge_string(slurmdbd_conf->purge_event,
-				     tmp_str, sizeof(tmp_str), 1);
-	else
-		sprintf(tmp_str, "NONE");
+	slurmdb_purge_string(slurmdbd_conf->purge_event,
+			     tmp_str, sizeof(tmp_str), 1);
 	debug2("PurgeEventAfter   = %s", tmp_str);
 
-	if (slurmdbd_conf->purge_job != NO_VAL)
-		slurmdb_purge_string(slurmdbd_conf->purge_job,
-				     tmp_str, sizeof(tmp_str), 1);
-	else
-		sprintf(tmp_str, "NONE");
+	slurmdb_purge_string(slurmdbd_conf->purge_job,
+			     tmp_str, sizeof(tmp_str), 1);
 	debug2("PurgeJobAfter     = %s", tmp_str);
 
-	if (slurmdbd_conf->purge_resv != NO_VAL)
-		slurmdb_purge_string(slurmdbd_conf->purge_resv,
-				     tmp_str, sizeof(tmp_str), 1);
-	else
-		sprintf(tmp_str, "NONE");
+	slurmdb_purge_string(slurmdbd_conf->purge_resv,
+			     tmp_str, sizeof(tmp_str), 1);
 	debug2("PurgeResvAfter    = %s", tmp_str);
 
-	if (slurmdbd_conf->purge_step != NO_VAL)
-		slurmdb_purge_string(slurmdbd_conf->purge_step,
-				     tmp_str, sizeof(tmp_str), 1);
-	else
-		sprintf(tmp_str, "NONE");
+	slurmdb_purge_string(slurmdbd_conf->purge_step,
+			     tmp_str, sizeof(tmp_str), 1);
 	debug2("PurgeStepAfter    = %s", tmp_str);
 
-	if (slurmdbd_conf->purge_suspend != NO_VAL)
-		slurmdb_purge_string(slurmdbd_conf->purge_suspend,
-				     tmp_str, sizeof(tmp_str), 1);
-	else
-		sprintf(tmp_str, "NONE");
+	slurmdb_purge_string(slurmdbd_conf->purge_suspend,
+			     tmp_str, sizeof(tmp_str), 1);
 	debug2("PurgeSuspendAfter = %s", tmp_str);
 
 	debug2("SlurmUser         = %s(%u)",
