@@ -22,6 +22,8 @@ Slurm can be upgraded from version 2.6 or 14.03 to version 14.11 without loss of
 jobs or other state information. Upgrading directly from an earlier version of
 Slurm will result in loss of state information.
 
+If using SPANK plugins, they should be recompiled against this version.
+
 
 HIGHLIGHTS
 ==========

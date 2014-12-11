@@ -24,7 +24,7 @@ The first field is the resource name, which matches the GresType configuration
 parameter name.
 The optional type field might be used to identify a model of that generic
 resource.
-A generic resource can also be specified as non\-consumable (i.e. multiple
+A generic resource can also be specified as non-consumable (i.e. multiple
 jobs can use the same generic resource) with the optional field ":no_consume".
 The final field must specify a generic resource count.
 A suffix of "K", "M" or "G" may be used to multiply the count by 1024,
@@ -69,8 +69,8 @@ use this resource.
 For example, it may be strongly preferable
 to use specific CPUs with specific devices (e.g. on a NUMA
 architecture). Multiple CPUs may be specified using a comma
-delimited list or a range may be specified using a "\-" separator
-(e.g. "0,1,2,3" or "0\-3").
+delimited list or a range may be specified using a "-" separator
+(e.g. "0,1,2,3" or "0-3").
 <B>If specified, then only the identified CPUs can be allocated with each
 generic resource; an attempt to use other CPUs will not be honored.</B>
 If not specified, then any CPU can be used with the resources.
