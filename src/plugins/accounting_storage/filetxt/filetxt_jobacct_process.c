@@ -1109,8 +1109,9 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 					if (curr_job->jobid ==
 					    slurmdb_job->jobid) {
 						list_delete_item(itr2);
-						info("removing job %d",
-						     slurmdb_job->jobid);
+						debug3("removing duplicate "
+						       "of job %d",
+						       slurmdb_job->jobid);
 						break;
 					}
 				}
