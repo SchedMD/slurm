@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- In proctrack/linuxproc and proctrack/pgid, check the result of strtol()
     for error condition rather than errno, which might have a vestigial error
     code.
+ -- Improve information recording for jobs deferred due to advanced reservation.
 
 * Changes in Slurm 14.11.1
 ==========================

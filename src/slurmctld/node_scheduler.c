@@ -772,9 +772,17 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			return ESLURM_NODES_BUSY;	/* reserved */
 		} else if (resv_bitmap &&
 			   (!bit_equal(resv_bitmap, avail_node_bitmap))) {
+			int cnt_in, cnt_out;
+			cnt_in = bit_set_count(avail_node_bitmap);
 			bit_and(resv_bitmap, avail_node_bitmap);
 			save_avail_node_bitmap = avail_node_bitmap;
 			avail_node_bitmap = resv_bitmap;
+			cnt_out = bit_set_count(avail_node_bitmap);
+			if (cnt_in != cnt_out) {
+				debug2("Advanced reservation removed %d nodes "
+				       "from consideration for job %u",
+				       (cnt_in - cnt_out), job_ptr->job_id);
+			}
 			resv_bitmap = NULL;
 		} else {
 			FREE_NULL_BITMAP(resv_bitmap);
