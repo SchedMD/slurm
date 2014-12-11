@@ -595,6 +595,16 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 
 	/* Lock here to avoid g_qos_count changing under us */
 	assoc_mgr_lock(&locks);
+	if (!g_qos_count) {
+		error("We have no QOS on the system Ignoring invalid "
+		      "Allow/DenyQOS value(s) %s",
+		      qos);
+		assoc_mgr_unlock(&locks);
+		FREE_NULL_BITMAP(*qos_bits);
+		*qos_bits = NULL;
+		return;
+	}
+
 	tmp_qos_bitstr = bit_alloc(g_qos_count);
 	tmp_qos = xstrdup(qos);
 	one_qos_name = strtok_r(tmp_qos, ",", &name_ptr);

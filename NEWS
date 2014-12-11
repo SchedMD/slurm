@@ -393,6 +393,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix "squeue --start" to override SQUEUE_FORMAT env variable.
  -- Restore GRES functionality with select/linear plugin. It was broken in
     version  14.03.10.
+ -- Fix possible race condition when attempting to use QOS on a system running
+    accounting_storage/filetxt.
 
 * Changes in Slurm 14.03.10
 ===========================

@@ -1135,16 +1135,13 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	uid_t uid = getuid();
+	List new_list = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
-	assoc_mgr_lock(&locks);
-	if (assoc_mgr_qos_list)
-		list_destroy(assoc_mgr_qos_list);
-	assoc_mgr_qos_list = acct_storage_g_get_qos(db_conn, uid, NULL);
+	new_list = acct_storage_g_get_qos(db_conn, uid, NULL);
 
-	if (!assoc_mgr_qos_list) {
-		assoc_mgr_unlock(&locks);
+	if (!new_list) {
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_assoc_mgr_qos_list: no list was made.");
 			return SLURM_ERROR;
@@ -1153,9 +1150,16 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 		}
 	}
 
+	assoc_mgr_lock(&locks);
+
+	FREE_NULL_LIST(assoc_mgr_qos_list);
+	assoc_mgr_qos_list = new_list;
+	new_list = NULL;
+
 	_post_qos_list(assoc_mgr_qos_list);
 
 	assoc_mgr_unlock(&locks);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1843,13 +1847,21 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (assoc_pptr)
 		*assoc_pptr = NULL;
 
-	/* Call assoc_mgr_refresh_lists instead of just getting the
-	   association list because we need qos and user lists before
-	   the association list can be made.
-	*/
-	if (!assoc_mgr_association_list)
-		if (assoc_mgr_refresh_lists(db_conn) == SLURM_ERROR)
-			return SLURM_ERROR;
+	/* Since we might be locked we can't come in here and try to
+	 * get the list since we would need the WRITE_LOCK to do that,
+	 * so just return as this would only happen on a system not
+	 * talking to the database.
+	 */
+	if (!assoc_mgr_association_list) {
+		int rc = SLURM_SUCCESS;
+
+		if (enforce & ACCOUNTING_ENFORCE_QOS) {
+			error("No Association list available, "
+			      "this should never happen");
+			rc = SLURM_ERROR;
+		}
+		return rc;
+	}
 
 	if ((!assoc_mgr_association_list
 	     || !list_count(assoc_mgr_association_list))
@@ -2100,14 +2112,28 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 
 	if (qos_pptr)
 		*qos_pptr = NULL;
-	if (!assoc_mgr_qos_list)
-		if (_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
-	if ((!assoc_mgr_qos_list || !list_count(assoc_mgr_qos_list))
-	    && !(enforce & ACCOUNTING_ENFORCE_QOS)) {
+
+	/* Since we might be locked we can't come in here and try to
+	 * get the list since we would need the WRITE_LOCK to do that,
+	 * so just return as this would only happen on a system not
+	 * talking to the database.
+	 */
+	if (!assoc_mgr_qos_list) {
+		int rc = SLURM_SUCCESS;
+
+		if (enforce & ACCOUNTING_ENFORCE_QOS) {
+			error("No QOS list available, "
+			      "this should never happen");
+			rc = SLURM_ERROR;
+		}
+		if (!locked)
+			assoc_mgr_unlock(&locks);
+		return rc;
+	} else if (!list_count(assoc_mgr_qos_list)
+		   && !(enforce & ACCOUNTING_ENFORCE_QOS)) {
 		if (!locked)
 			assoc_mgr_unlock(&locks);
 		return SLURM_SUCCESS;
