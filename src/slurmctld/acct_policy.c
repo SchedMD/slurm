@@ -64,31 +64,35 @@ static void _set_qos_order(struct job_record *job_ptr,
 			   slurmdb_qos_rec_t **qos_ptr_2)
 {
 	xassert(job_ptr);
-	xassert(job_ptr->part_ptr);
 	xassert(qos_ptr_1);
 	xassert(qos_ptr_2);
 
-	if (job_ptr->qos_ptr) {
-		/* If the job's QOS has the flag to over ride the
-		 * partition then use that otherwise use the
-		 * partition's QOS as the king.
-		 */
-		if (((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->flags
-		    & QOS_FLAG_PART_QOS) {
-			*qos_ptr_1 = job_ptr->qos_ptr;
-			*qos_ptr_2 = job_ptr->part_ptr->qos_ptr;
-		} else {
-			*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
-			*qos_ptr_2 = job_ptr->qos_ptr;
-		}
-	} else {
-		*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
-		*qos_ptr_2 = NULL;
-	}
+	/* Initialize incoming pointers */
+	*qos_ptr_1 = *qos_ptr_2 = NULL;
 
-	/* No reason to look at the same QOS twice. */
-	if (*qos_ptr_1 == *qos_ptr_2)
-		*qos_ptr_2 = NULL;
+	if (job_ptr->qos_ptr) {
+		if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr) {
+			/* If the job's QOS has the flag to over ride the
+			 * partition then use that otherwise use the
+			 * partition's QOS as the king.
+			 */
+			if (((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->flags
+			    & QOS_FLAG_PART_QOS) {
+				*qos_ptr_1 = job_ptr->qos_ptr;
+				*qos_ptr_2 = job_ptr->part_ptr->qos_ptr;
+			} else {
+				*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
+				*qos_ptr_2 = job_ptr->qos_ptr;
+			}
+
+			/* No reason to look at the same QOS twice, actually
+			 * we never want to do that ;). */
+			if (*qos_ptr_1 == *qos_ptr_2)
+				*qos_ptr_2 = NULL;
+		} else
+			*qos_ptr_1 = job_ptr->qos_ptr;
+	} else if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr)
+		*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
 
 	return;
 }
