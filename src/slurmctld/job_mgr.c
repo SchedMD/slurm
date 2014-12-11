@@ -2021,8 +2021,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			info("Holding job %u with invalid qos", job_id);
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = FAIL_QOS;
-		}
-		job_ptr->qos_id = qos_rec.id;
+			job_ptr->qos_id = 0;
+		} else
+			job_ptr->qos_id = qos_rec.id;
 	}
 	build_node_details(job_ptr, false);	/* set node_addr */
 	return SLURM_SUCCESS;
