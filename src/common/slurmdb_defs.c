@@ -384,6 +384,7 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
 	memset(&job->stats, 0, sizeof(slurmdb_stats_t));
+	job->array_task_id = NO_VAL;
 	job->derived_ec = NO_VAL;
 	job->stats.cpu_min = NO_VAL;
 	job->state = JOB_PENDING;

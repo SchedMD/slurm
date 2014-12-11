@@ -31,6 +31,10 @@ documents those changes that are of interest to users and administrators.
  -- Make sure the bitstrings for a partitions Allow/DenyQOS are up to date
     when running from cache.
  -- Add smap support for job arrays and larger job ID values.
+ -- Fix possible race condition when attempting to use QOS on a system running
+    accounting_storage/filetxt.
+ -- Fix issue with accounting_storage/filetxt and job arrays not being printed
+    correctly.
 
 * Changes in Slurm 14.11.1
 ==========================
