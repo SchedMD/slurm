@@ -1084,7 +1084,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		p->name = xstrdup(value);
 
 		if (!s_p_get_string(&p->allow_accounts, "AllowAccounts",tbl))
-			s_p_get_string(&p->allow_accounts, "AllowAccounts", dflt);
+			s_p_get_string(&p->allow_accounts,
+				       "AllowAccounts", dflt);
 		if (p->allow_accounts &&
 		    (strcasecmp(p->allow_accounts, "ALL") == 0))
 			xfree(p->allow_accounts);
@@ -1101,7 +1102,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			xfree(p->allow_qos);
 
 		if (!s_p_get_string(&p->deny_accounts, "DenyAccounts", tbl))
-			s_p_get_string(&p->deny_accounts, "DenyAccounts", dflt);
+			s_p_get_string(&p->deny_accounts,
+				       "DenyAccounts", dflt);
 		if (p->allow_accounts && p->deny_accounts) {
 			error("Both AllowAccounts and DenyAccounts are "
 			      "defined, DenyAccounts will be ignored");
@@ -1114,7 +1116,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			      "DenyQos will be ignored");
 		}
 
-		if (!s_p_get_string(&p->allow_alloc_nodes, "AllocNodes", tbl)) {
+		if (!s_p_get_string(&p->allow_alloc_nodes,
+				    "AllocNodes", tbl)) {
 			s_p_get_string(&p->allow_alloc_nodes, "AllocNodes",
 				       dflt);
 			if (p->allow_alloc_nodes &&
@@ -1359,6 +1362,7 @@ static void _destroy_partitionname(void *ptr)
 	xfree(p->allow_accounts);
 	xfree(p->allow_groups);
 	xfree(p->allow_qos);
+	xfree(p->qos_char);
 	xfree(p->deny_accounts);
 	xfree(p->deny_qos);
 	xfree(p->alternate);

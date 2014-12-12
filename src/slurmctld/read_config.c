@@ -1417,6 +1417,17 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				qos_list_build(part_ptr->allow_qos,
 					       &part_ptr->allow_qos_bitstr);
 			}
+
+			if (xstrcmp(part_ptr->qos_char,
+				    old_part_ptr->qos_char)) {
+				error("Partition %s QOS differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->qos_char);
+				part_ptr->qos_char = xstrdup(
+					old_part_ptr->qos_char);
+				part_ptr->qos_ptr = old_part_ptr->qos_ptr;
+			}
+
 			if (xstrcmp(part_ptr->deny_accounts,
 				    old_part_ptr->deny_accounts)) {
 				error("Partition %s DenyAccounts differs from "
@@ -1581,6 +1592,9 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 						      allow_qos);
 			qos_list_build(part_ptr->allow_qos,
 				       &part_ptr->allow_qos_bitstr);
+			part_ptr->qos_char = xstrdup(old_part_ptr->
+						     qos_char);
+			part_ptr->qos_ptr = old_part_ptr->qos_ptr;
 			part_ptr->default_time = old_part_ptr->default_time;
 			part_ptr->deny_accounts = xstrdup(old_part_ptr->
 							  deny_accounts);

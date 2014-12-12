@@ -1836,6 +1836,7 @@ typedef struct partition_info {
 	char *nodes;		/* list names of nodes in partition */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority;	/* scheduling priority for jobs */
+	char *qos_char;	        /* The partition QOS name */
 	uint16_t state_up;	/* see PARTITION_ states above */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
