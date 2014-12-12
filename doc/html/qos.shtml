@@ -10,6 +10,7 @@ the job in three ways:
 <li> <a href=#priority>Job Scheduling Priority</a>
 <li> <a href=#preemption>Job Preemption</a>
 <li> <a href=#limits>Job Limits</a>
+<li> <a href=#partition>Partition QOS</a>
 <li> <a href=#qos_other>Other QOS Options</a>
 </ul>
 
@@ -188,6 +189,22 @@ at submission until previous jobs complete from this user.
 </li>
 </ul>
 
+<!-------------------------------------------------------------------------->
+<a name=partition>
+<h2>Partition QOS</h2></a>
+<P> Beginning in 15.08 you can attach a QOS to a partition.  This
+means a partition will have all the same limits as a QOS.  This also
+gives the ability of a true 'floating' partition, meaning if you
+assign all the nodes to a partition and then in the Partition's QOS
+limit the number of GrpCPUs or GrpNodes the partition will have
+access to all the nodes, but only be able to run on the number of
+resources in it.<p>
+<p>The Partition QOS will override the job's QOS.  If the opposite is
+desired you need to have the job's QOS have the 'PartitionQOS' flag
+which will reverse the order of precedence.</p>
+
+
+<!-------------------------------------------------------------------------->
 <a name=qos_other>
 <h2>Other QOS Options</h2></a>
 <ul>
