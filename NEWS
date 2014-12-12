@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 15.08.0pre2
+==============================
+
 * Changes in Slurm 15.08.0pre1
 ==============================
  -- Add sbcast support for file transfer to resources allocated to a job step
