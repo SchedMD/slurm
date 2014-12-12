@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 14.11.3
+==========================
+
 * Changes in Slurm 14.11.2
 ==========================
  -- Fix Centos5 compile errors.
@@ -37,9 +40,10 @@ documents those changes that are of interest to users and administrators.
  -- In proctrack/linuxproc and proctrack/pgid, check the result of strtol()
     for error condition rather than errno, which might have a vestigial error
     code.
- -- Improve information recording for jobs deferred due to advanced reservation.
- -- Exports eio_new_initial_obj to the plugins and initialize kvs_seq on mpi/pmi2
-    setup to support launching.
+ -- Improve information recording for jobs deferred due to advanced
+    reservation.
+ -- Exports eio_new_initial_obj to the plugins and initialize kvs_seq on
+    mpi/pmi2 setup to support launching.
 
 * Changes in Slurm 14.11.1
 ==========================
