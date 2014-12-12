@@ -430,11 +430,10 @@ static void _create_part_data(void)
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
 		this_ptr->part_ptr = p_ptr;
 		this_ptr->num_rows = p_ptr->max_share;
-		if (this_ptr->num_rows & SHARED_FORCE) {
+		if (this_ptr->num_rows & SHARED_FORCE)
 			this_ptr->num_rows &= (~SHARED_FORCE);
-			if (preempt_by_qos)	/* Add row for QOS preemption */
-				this_ptr->num_rows++;
-		}
+		if (preempt_by_qos)	/* Add row for QOS preemption */
+			this_ptr->num_rows++;
 		/* SHARED=EXCLUSIVE sets max_share = 0 */
 		if (this_ptr->num_rows < 1)
 			this_ptr->num_rows = 1;
