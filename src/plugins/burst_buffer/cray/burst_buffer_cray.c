@@ -266,6 +266,11 @@ static uint32_t _get_bb_size(struct job_record *job_ptr)
 static void _load_state(uint32_t job_id)
 {
 	burst_buffer_gres_t *gres_ptr;
+	bb_entry_t *ent;
+	int num_ents;
+
+	if (0)
+		ent = get_bb_entry("/tmp/bb_cmd", &num_ents);
 
 // FIXME: Need Cray interface here...
 	bb_state.last_load_time = time(NULL);

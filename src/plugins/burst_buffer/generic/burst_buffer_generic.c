@@ -38,7 +38,6 @@
 #  include "config.h"
 #endif
 
-#define _GNU_SOURCE	/* For POLLRDHUP */
 #include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -97,7 +96,8 @@ static bb_state_t 	bb_state;
 static void	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
 static char **	_build_stage_args(char *cmd, char *opt,
-				  struct job_record *job_ptr, uint32_t bb_size);
+				  struct job_record *job_ptr,
+				  uint32_t bb_size);
 static void	_destroy_job_info(void *data);
 static bb_alloc_t *_find_bb_name_rec(char *name, uint32_t user_id);
 static uint32_t	_get_bb_size(struct job_record *job_ptr);
@@ -105,8 +105,6 @@ static void	_load_state(uint32_t job_id);
 static int	_parse_job_info(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
 				const char *line, char **leftover);
-static char *	_run_script(char *script_type, char *script_path,
-			    char **script_argv, int max_wait);
 static void	_stop_stage_in(uint32_t job_id);
 static void	_stop_stage_out(uint32_t job_id);
 static void	_test_config(void);
@@ -210,8 +208,10 @@ static void _stop_stage_in(uint32_t job_id)
 	xstrfmtcat(script_argv[1], "%s", "stop_stage_in");
 	xstrfmtcat(script_argv[2], "%u", job_id);
 
-	resp = _run_script("StopStageIn", bb_state.bb_config.stop_stage_in, script_argv,
-			   -1);
+	resp = run_script("StopStageIn",
+			  bb_state.bb_config.stop_stage_in,
+			  script_argv,
+			  -1);
 	if (resp) {
 		error("%s: StopStageIn: %s", __func__, resp);
 		xfree(resp);
@@ -235,12 +235,13 @@ static void _stop_stage_out(uint32_t job_id)
 	if (tok)
 		xstrfmtcat(script_argv[0], "%s", tok + 1);
 	else
-		xstrfmtcat(script_argv[0], "%s", bb_state.bb_config.stop_stage_out);
+		xstrfmtcat(script_argv[0], "%s",
+			   bb_state.bb_config.stop_stage_out);
 	xstrfmtcat(script_argv[1], "%s", "stop_stage_out");
 	xstrfmtcat(script_argv[2], "%u", job_id);
 
-	resp = _run_script("StopStageOut", bb_state.bb_config.stop_stage_out,
-			   script_argv, -1);
+	resp = run_script("StopStageOut", bb_state.bb_config.stop_stage_out,
+			  script_argv, -1);
 	if (resp) {
 		error("%s: StopStageOut: %s", __func__, resp);
 		xfree(resp);
@@ -465,121 +466,6 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 	return 2;
 }
 
-/* Execute a script, wait for termination and return its stdout.
- * script_type IN - Type of program being run (e.g. "StartStageIn")
- * script_path IN - Fully qualified pathname of the program to execute
- * script_args IN - Arguments to the script
- * max_wait IN - maximum time to wait in seconds, -1 for no limit (asynchronous)
- * Return stdout of spawned program, value must be xfreed. */
-static char *_run_script(char *script_type, char *script_path,
-			 char **script_argv, int max_wait)
-{
-	int i, status, new_wait, resp_size = 0, resp_offset = 0;
-	pid_t cpid;
-	char *resp = NULL;
-	int pfd[2] = { -1, -1 };
-
-	if ((script_path == NULL) || (script_path[0] == '\0')) {
-		error("%s: %s is not configured", plugin_type, script_type);
-		return resp;
-	}
-	if (script_path[0] != '/') {
-		error("%s: %s is not fully qualified pathname (%s)",
-		      plugin_type, script_type, script_path);
-		return resp;
-	}
-	if (access(script_path, R_OK | X_OK) < 0) {
-		error("%s: %s can not be executed (%s)",
-		      plugin_type, script_type, script_path);
-		return resp;
-	}
-	if (max_wait != -1) {
-		if (pipe(pfd) != 0) {
-			error("%s: pipe(): %m", plugin_type);
-			return resp;
-		}
-	}
-	if ((cpid = fork()) == 0) {
-		if (max_wait != -1) {
-			dup2(pfd[1], STDOUT_FILENO);
-			for (i = 0; i < 127; i++) {
-				if (i != STDOUT_FILENO)
-					close(i);
-			}
-		} else {
-			for (i = 0; i < 127; i++)
-				close(i);
-			if ((cpid = fork()) < 0)
-				exit(127);
-			else if (cpid > 0)
-				exit(0);
-		}
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
-		execv(script_path, script_argv);
-		error("%s: execv(%s): %m", plugin_type, script_path);
-		exit(127);
-	} else if (cpid < 0) {
-		if (max_wait != -1) {
-			close(pfd[0]);
-			close(pfd[1]);
-		}
-		error("%s: fork(): %m", plugin_type);
-	} else if (max_wait != -1) {
-		struct pollfd fds;
-		time_t start_time = time(NULL);
-		resp_size = 1024;
-		resp = xmalloc(resp_size);
-		close(pfd[1]);
-		while (1) {
-			fds.fd = pfd[0];
-			fds.events = POLLIN | POLLHUP | POLLRDHUP;
-			fds.revents = 0;
-			if (max_wait == -1) {
-				new_wait = -1;
-			} else {
-				new_wait = time(NULL) - start_time + max_wait;
-				if (new_wait <= 0)
-					break;
-			}
-			status = poll(&fds, 1, new_wait);
-			if (status < 1) {
-				error("%s: %s timeout",
-				      plugin_type, script_type);
-				break;
-			}
-			if ((fds.revents & POLLIN) == 0)
-				break;
-			i = read(pfd[0], resp + resp_offset,
-				 resp_size - resp_offset);
-			if (i == 0) {
-				break;
-			} else if (i < 0) {
-				if (errno == EAGAIN)
-					continue;
-				error("%s: read(%s): %m", plugin_type,
-				      script_path);
-				break;
-			} else {
-				resp_offset += i;
-				if (resp_offset + 1024 >= resp_size) {
-					resp_size *= 2;
-					resp = xrealloc(resp, resp_size);
-				}
-			}
-		}
-		(void) killpg(cpid, SIGKILL);
-		waitpid(cpid, &status, 0);
-		close(pfd[0]);
-	} else {
-		waitpid(cpid, &status, 0);
-	}
-	return resp;
-}
-
 static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover)
@@ -776,8 +662,8 @@ static void _load_state(uint32_t job_id)
 		script_args[2] = NULL;
 	}
 	START_TIMER;
-	resp = _run_script("GetSysState", bb_state.bb_config.get_sys_state,
-			   script_args, 10);
+	resp = run_script("GetSysState", bb_state.bb_config.get_sys_state,
+			  script_args, 10);
 	if (resp == NULL)
 		return;
 	END_TIMER;
@@ -976,7 +862,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		if (key) {
 			bb_size = bb_get_size_num(key + 5,
 					bb_state.bb_config.granularity);
-		}		
+		}
 	}
 	if (bb_size == 0)
 		return SLURM_SUCCESS;
@@ -1080,9 +966,9 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 	if (script_argv) {
 		bb_ptr->state = BB_STATE_STAGING_IN;
 		bb_ptr->state_time = time(NULL);
-		resp = _run_script("StartStageIn",
-				   bb_state.bb_config.start_stage_in,
-				   script_argv, -1);
+		resp = run_script("StartStageIn",
+				  bb_state.bb_config.start_stage_in,
+				  script_argv, -1);
 		if (resp) {
 			error("%s: StartStageIn: %s", __func__, resp);
 			xfree(resp);
@@ -1251,9 +1137,9 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		if (script_argv) {
 			bb_ptr->state = BB_STATE_STAGING_OUT;
 			bb_ptr->state_time = time(NULL);
-			resp = _run_script("StartStageOut",
-					   bb_state.bb_config.start_stage_out,
-					   script_argv, -1);
+			resp = run_script("StartStageOut",
+					  bb_state.bb_config.start_stage_out,
+					  script_argv, -1);
 			if (resp) {
 				error("%s: StartStageOut: %s", __func__, resp);
 				xfree(resp);
@@ -1355,9 +1241,9 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 		if (script_argv) {
 			bb_ptr->state = BB_STATE_STAGED_OUT;
 			bb_ptr->state_time = time(NULL);
-			resp = _run_script("StopStageOut",
-					   bb_state.bb_config.stop_stage_out,
-					   script_argv, -1);
+			resp = run_script("StopStageOut",
+					  bb_state.bb_config.stop_stage_out,
+					  script_argv, -1);
 			if (resp) {
 				error("%s: StopStageOut: %s", __func__, resp);
 				xfree(resp);

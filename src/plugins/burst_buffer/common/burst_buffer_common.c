@@ -44,6 +44,7 @@
 #  include "config.h"
 #endif
 
+#define _GNU_SOURCE	/* For POLLRDHUP */
 #include <fcntl.h>
 #include <poll.h>
 #include <stdlib.h>
@@ -556,7 +557,6 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	pack32(config_ptr->user_size_limit,  buffer);
 }
 
-
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
 extern uint32_t bb_get_size_num(char *tok, uint32_t granularity)
@@ -578,7 +578,7 @@ extern uint32_t bb_get_size_num(char *tok, uint32_t granularity)
 			bb_size_u *= (1024 * 1024);
 		}
 	}
-	
+
 	if (granularity > 1) {
 		bb_size_u = ((bb_size_u + granularity - 1) / granularity) *
 			    granularity;
@@ -767,4 +767,133 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	bb_add_user_load(bb_ptr, state_ptr);
 
 	return bb_ptr;
+}
+
+/* get_bb_entry()
+ */
+bb_entry_t *
+get_bb_entry(const char *cmd, int *num_ent)
+{
+	bb_entry_t *ents;
+	ents = NULL;
+
+	return ents;
+}
+
+/* Execute a script, wait for termination and return its stdout.
+ * script_type IN - Type of program being run (e.g. "StartStageIn")
+ * script_path IN - Fully qualified pathname of the program to execute
+ * script_args IN - Arguments to the script
+ * max_wait IN - maximum time to wait in seconds, -1 for no limit (asynchronous)
+ * Return stdout of spawned program, value must be xfreed. */
+char *run_script(char *script_type, char *script_path,
+		 char **script_argv, int max_wait)
+{
+	int i, status, new_wait, resp_size = 0, resp_offset = 0;
+	pid_t cpid;
+	char *resp = NULL;
+	int pfd[2] = { -1, -1 };
+
+	if ((script_path == NULL) || (script_path[0] == '\0')) {
+		error("%s: no script specified", __func__);
+		return resp;
+	}
+	if (script_path[0] != '/') {
+		error("%s: %s is not fully qualified pathname (%s)",
+		      __func__, script_type, script_path);
+		return resp;
+	}
+	if (access(script_path, R_OK | X_OK) < 0) {
+		error("%s: %s can not be executed (%s) %m",
+		      __func__, script_type, script_path);
+		return resp;
+	}
+	if (max_wait != -1) {
+		if (pipe(pfd) != 0) {
+			error("%s: pipe(): %m", __func__);
+			return resp;
+		}
+	}
+	if ((cpid = fork()) == 0) {
+		int cc;
+
+		cc = sysconf(_SC_OPEN_MAX);
+		if (max_wait != -1) {
+			dup2(pfd[1], STDOUT_FILENO);
+			for (i = 0; i < cc; i++) {
+				if (i != STDOUT_FILENO)
+					close(i);
+			}
+		} else {
+			for (i = 0; i < cc; i++)
+				close(i);
+			if ((cpid = fork()) < 0)
+				exit(127);
+			else if (cpid > 0)
+				exit(0);
+		}
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
+		setpgrp();
+#endif
+		execv(script_path, script_argv);
+		error("%s: execv(%s): %m", __func__, script_path);
+		exit(127);
+	} else if (cpid < 0) {
+		if (max_wait != -1) {
+			close(pfd[0]);
+			close(pfd[1]);
+		}
+		error("%s: fork(): %m", __func__);
+	} else if (max_wait != -1) {
+		struct pollfd fds;
+		time_t start_time = time(NULL);
+		resp_size = 1024;
+		resp = xmalloc(resp_size);
+		close(pfd[1]);
+		while (1) {
+			fds.fd = pfd[0];
+			fds.events = POLLIN | POLLHUP | POLLRDHUP;
+			fds.revents = 0;
+			if (max_wait == -1) {
+				new_wait = -1;
+			} else {
+				new_wait = time(NULL) - start_time + max_wait;
+				if (new_wait <= 0)
+					break;
+			}
+			status = poll(&fds, 1, new_wait);
+			if (status < 1) {
+				error("%s: %s timeout",
+				      __func__, script_type);
+				break;
+			}
+			if ((fds.revents & POLLIN) == 0)
+				break;
+			i = read(pfd[0], resp + resp_offset,
+				 resp_size - resp_offset);
+			if (i == 0) {
+				break;
+			} else if (i < 0) {
+				if (errno == EAGAIN)
+					continue;
+				error("%s: read(%s): %m", __func__,
+				      script_path);
+				break;
+			} else {
+				resp_offset += i;
+				if (resp_offset + 1024 >= resp_size) {
+					resp_size *= 2;
+					resp = xrealloc(resp, resp_size);
+				}
+			}
+		}
+		killpg(cpid, SIGKILL);
+		waitpid(cpid, &status, 0);
+		close(pfd[0]);
+	} else {
+		waitpid(cpid, &status, 0);
+	}
+	return resp;
 }

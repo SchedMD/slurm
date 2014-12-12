@@ -130,6 +130,26 @@ typedef struct bb_state {
 	uint32_t	used_space;	/* units are GB */
 } bb_state_t;
 
+/* Size units of bb as returned by the
+ * custom command describing bb
+ */
+enum bb_type {
+	BB_BYTES,   /* bytes */
+	BB_MBYTES,  /* mega */
+	BB_GBYTES,  /* giga */
+	BB_TBYTES,  /* tera */
+	BB_PBYTES   /* peta */
+} bb_type_t;
+
+/* Description of each bb entry
+ */
+typedef struct bb_entry {
+	char *id;
+	enum bb_type units;
+	uint64_t granularity;
+	uint64_t free;
+} bb_entry_t;
+
 /* Add a burst buffer allocation to a user's load */
 extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
 
@@ -200,5 +220,15 @@ extern void bb_set_use_time(bb_state_t *state_ptr);
 
 /* Sleep function, also handles termination signal */
 extern void bb_sleep(bb_state_t *state_ptr, int add_secs);
+
+/* Run the custom command returning bb info and convert
+ * its internal format into bb_entry_t
+ */
+extern bb_entry_t *get_bb_entry(const char *, int *);
+
+/* Run a script and return its stdout
+ */
+extern char * run_script(char *script_type, char *script_path,
+			 char **script_argv, int max_wait);
 
 #endif	/* __BURST_BUFFER_COMMON_H__ */
