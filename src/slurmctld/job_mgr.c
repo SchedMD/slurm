@@ -7270,7 +7270,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	struct job_record *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
 	Buf buffer;
-	time_t min_age = 0, now = time(NULL);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -7280,10 +7279,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */
 	pack32(jobs_packed, buffer);
-	pack_time(now, buffer);
-
-	if (slurmctld_conf.min_job_age > 0)
-		min_age = now  - slurmctld_conf.min_job_age;
+	pack_time(time(NULL), buffer);
 
 	/* write individual job records */
 	part_filter_set(uid);
@@ -7297,10 +7293,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 
 		if (_hide_job(job_ptr, uid))
 			continue;
-
-		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
-		    (! IS_JOB_COMPLETING(job_ptr)) && IS_JOB_FINISHED(job_ptr))
-			continue;	/* job ready for purging, don't dump */
 
 		if ((filter_uid != NO_VAL) && (filter_uid != job_ptr->user_id))
 			continue;
