@@ -398,6 +398,9 @@ static void _qos_alter_job(struct job_record *job_ptr,
 			   uint64_t used_cpu_run_secs,
 			   uint64_t new_used_cpu_run_secs)
 {
+	if (!qos_ptr || !job_ptr)
+		return;
+
 	qos_ptr->usage->grp_used_cpu_run_secs -=
 		used_cpu_run_secs;
 	qos_ptr->usage->grp_used_cpu_run_secs +=
