@@ -2476,8 +2476,6 @@ extern bool test_job_array_complete(uint32_t array_job_id)
 	if (job_ptr) {
 		if (!IS_JOB_COMPLETE(job_ptr))
 			return false;
-		if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
-			return false;
 		if (job_ptr->array_recs && job_ptr->array_recs->max_exit_code)
 			return false;
 	}
@@ -2504,8 +2502,6 @@ extern bool test_job_array_completed(uint32_t array_job_id)
 	job_ptr = find_job_record(array_job_id);
 	if (job_ptr) {
 		if (!IS_JOB_COMPLETED(job_ptr))
-			return false;
-		if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
 			return false;
 	}
 
