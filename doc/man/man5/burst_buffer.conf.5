@@ -97,11 +97,13 @@ By default, users can view all burst buffers.
 If the stage in of files for a job takes more than this number of seconds,
 the burst buffer will be released and the job will be placed in a held state.
 A Slurm administrator will be required to release the job.
+By default there is no timeout of the stage in process.
 
 .TP
 \fBStageOutTimeout\fR
 If the stage out of files for a job takes more than this number of seconds,
 the burst buffer will be released and the job will be purged.
+By default there is no timeout of the stage out process.
 
 .TP
 \fBStartStageIn\fR

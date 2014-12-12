@@ -9,12 +9,17 @@
 a shared high-speed storage resource.
 Slurm provides support for allocating these resources, staging files in,
 scheduling compute nodes for jobs using these resources, then staging files out.
+Burst buffers can also be used as temporary storage during a job's lifetime,
+without file staging.
+Another typical use case is for persist storage, not associated with any
+specific job.
 This support is provided using a plugin mechanism so that a various burst
-buffer infrastructures may be easily used.
+buffer infrastructures may be easily configured.
 Two plugins are provided initially:</p>
 <ol>
 <li>cray - Uses Cray APIs to perform underlying management functions</li>
-<li>generic - Uses scripts to perform underlying management functions</li>
+<li>generic - Uses system administrator defined scripts to perform underlying
+management functions</li>
 </ol>
 <p>Additional plugins may be provided in future releases of Slurm.</p>
 
@@ -24,11 +29,11 @@ Two plugins are provided initially:</p>
 <li>After expected start times for pending jobs are established, allocate
     burst buffers to those jobs expected to start earliest and start stage-in
     of required files</li>
-<li>Jobs can be allocated compute nodes and begin execution after required
-    burst buffer has been allocated and file stage-in has completed</li>
+<li>After stage-in has completed, jobs can be allocated compute nodes and begin
+    execution</li>
 <li>After job has completed execution, begin file stage-out from burst buffer</li>
 <li>After file stage-out has completed, burst buffer can be released and the
-    job record purged.
+    job record purged
 </ol>
 
 <h2>Configuration</h2>
@@ -87,17 +92,36 @@ StopStageIn=/usr/local/slurm/15.08/sbin/PSI
 StopStageOut=/usr/local/slurm/15.08/sbin/PSO
 </pre>
 
-<h2>User Commands</h2>
+<h2>Job Submission Commands</h2>
+
+<p>All of the job submission commands (<i>salloc</i>, <i>sbatch</i> and
+<i>srun</i>) accept a "--bb" option to identify burst buffer requirements
+by the job.
+The format of "--bb" options is dependent upon the plugin and may identify
+the burst buffer size requirements, files to be staged, etc.  (e.g.
+<i>sbatch --bb=size=10tb my.bash</i>).
+Batch jobs can also identify burst buffer options using a prefix of "#BB" in
+the batch script.</p>
+
+<h3>User Options for Generic Plugin</h3>
+
+<p>TBD</p>
+
+<h3>User Options for Cray Plugin</h3>
+
+<p>TBD</p>
+
+<h2>Status Commands</h2>
 
 <p>Slurm's current burst buffer state information is available using the 
-<i>scontrol</i> command.
+<i>scontrol show burst</i> command.
 We intend to make this information available from the <i>sview</i> command
 at a later time.</p>
 
 <pre>
 $ scontrol show burst
-Name=burst_buffer/generic TotalSpace=50GB UsedSpace=42GB
-  JobSizeLimit=20GB UserSizeLimit=49GB
+Name=burst_buffer/generic TotalSpace=50TB UsedSpace=42TB
+  JobSizeLimit=10TB UserSizeLimit=40TB
   PrioBoostAlloc=200 PrioBoostUse=100 
   StageInTimeout=30 StageOutTimeout=30 
   AllowUsers=alan:brenda
@@ -106,20 +130,11 @@ Name=burst_buffer/generic TotalSpace=50GB UsedSpace=42GB
   StartStageIn=/usr/local/slurm/15.08/sbin/SSO
   StopStageIn=/usr/local/slurm/15.08/sbin/PSI
   StopStageIn=/usr/local/slurm/15.08/sbin/PSO
-    JobID=18 Size=10GB State=staged-in StateTime=2014-11-19T09:17:21 UserID=alan(1000)
-    JobID=20 Size=10GB State=staged-in StateTime=2014-11-19T09:10:42 UserID=alan(1000)
-    Name=DB1 Size=22GB State=staged-in StateTime=2014-11-19T09:02:21 UserID=brenda(1001)
+    JobID=18 Size=10TB State=staged-in StateTime=2014-11-19T09:17:21 UserID=alan(1000)
+    JobID=20 Size=10TB State=staged-in StateTime=2014-11-19T09:10:42 UserID=alan(1000)
+    Name=DB1 Size=22TB State=staged-in StateTime=2014-11-19T09:02:21 UserID=brenda(1001)
 </pre>
 
-<p>All of the job submission commands (<i>salloc</i>, <i>sbatch</i> and
-<i>srun</i>) accept an option identifying the size of burst buffer required
-by the job (e.g. <i>sbatch --bb=size=10gb my.bash</i>).
-In addition, batch jobs can have files staged in and/or out by specifying
-those details in the batch script  (details not yet available).
-(There will probably be a job_submit plugin for Cray systems that reads
-the user's batch script and sets the "-bb-" option for the job with the
-required spaced.)</p>
-
-<p style="text-align:center;">Last modified 19 November 2014</p>
+<p style="text-align:center;">Last modified 12 December 2014</p>
 
 <!--#include virtual="footer.txt"-->
