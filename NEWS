@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 14.03.12
+===========================
+
 * Changes in Slurm 14.03.11
 ===========================
  -- ALPS - Fix depth for Memory items in BASIL with CLE 5.2
