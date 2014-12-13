@@ -8,7 +8,170 @@
 #include <slurm/slurm.h>
 #include "ppport.h"
 
+#include "src/common/job_resources.h"
+
+#include "bitstr.h"
 #include "slurm-perl.h"
+
+static node_info_msg_t *job_node_ptr = NULL;
+
+/* This set of functions loads/free node information so that we can map a job's
+ * core bitmap to it's CPU IDs based upon the thread count on each node. */
+static void _load_node_info(void)
+{
+	if (!job_node_ptr)
+		(void) slurm_load_node((time_t) NULL, &job_node_ptr, 0);
+}
+
+static void _free_node_info(void)
+{
+	if (job_node_ptr) {
+		slurm_free_node_info_msg(job_node_ptr);
+		job_node_ptr = NULL;
+	}
+}
+
+static uint32_t _threads_per_core(char *host)
+{
+	uint32_t i, threads = 1;
+
+	if (!job_node_ptr || !host)
+		return threads;
+
+	slurm_mutex_lock(&job_node_info_lock);
+	for (i = 0; i < job_node_ptr->record_count; i++) {
+		if (job_node_ptr->node_array[i].name &&
+		    !strcmp(host, job_node_ptr->node_array[i].name)) {
+			threads = job_node_ptr->node_array[i].threads;
+			break;
+		}
+	}
+	slurm_mutex_unlock(&job_node_info_lock);
+	return threads;
+}
+
+static int _job_resrcs_to_hv(job_info_t *job_info, HV *hv)
+{
+	AV *av;
+	HV *nr_hv;
+	bitstr_t *cpu_bitmap;
+	int sock_inx, sock_reps, last, cnt = 0, i, j, k;
+	char tmp1[128], tmp2[128];
+	char *host;
+	job_resources_t *job_resrcs = job_info->job_resrcs;
+	int bit_inx, bit_reps;
+	int abs_node_inx, rel_node_inx;
+	uint32_t *last_mem_alloc_ptr = NULL;
+	uint32_t last_mem_alloc = NO_VAL;
+	char *last_hosts;
+	hostlist_t hl, hl_last;
+	uint32_t threads;
+
+	if (!job_resrcs || !job_resrcs->core_bitmap
+	    || ((last = slurm_bit_fls(job_resrcs->core_bitmap)) == -1))
+		return 0;
+
+	if (!(hl = slurm_hostlist_create(job_resrcs->nodes)))
+		return 1;
+
+	if (!(hl_last = slurm_hostlist_create(NULL)))
+		return 1;
+	av = newAV();
+
+	bit_inx = 0;
+	i = sock_inx = sock_reps = 0;
+	abs_node_inx = job_info->node_inx[i];
+
+/*	tmp1[] stores the current cpu(s) allocated	*/
+	tmp2[0] = '\0';	/* stores last cpu(s) allocated */
+	for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
+	     rel_node_inx++) {
+
+		if (sock_reps >= job_resrcs->sock_core_rep_count[sock_inx]) {
+			sock_inx++;
+			sock_reps = 0;
+		}
+		sock_reps++;
+
+		bit_reps = job_resrcs->sockets_per_node[sock_inx] *
+			job_resrcs->cores_per_socket[sock_inx];
+		host = slurm_hostlist_shift(hl);
+		threads = _threads_per_core(host);
+		cpu_bitmap = slurm_bit_alloc(bit_reps * threads);
+		for (j = 0; j < bit_reps; j++) {
+			if (slurm_bit_test(job_resrcs->core_bitmap, bit_inx)){
+				for (k = 0; k < threads; k++)
+					slurm_bit_set(cpu_bitmap,
+						      (j * threads) + k);
+			}
+			bit_inx++;
+		}
+		slurm_bit_fmt(tmp1, sizeof(tmp1), cpu_bitmap);
+		FREE_NULL_BITMAP(cpu_bitmap);
+/*
+ *		If the allocation values for this host are not the same as the
+ *		last host, print the report of the last group of hosts that had
+ *		identical allocation values.
+ */
+		if (strcmp(tmp1, tmp2) ||
+		    (last_mem_alloc_ptr != job_resrcs->memory_allocated) ||
+		    (job_resrcs->memory_allocated &&
+		     (last_mem_alloc !=
+		      job_resrcs->memory_allocated[rel_node_inx]))) {
+			if (slurm_hostlist_count(hl_last)) {
+				last_hosts =
+					slurm_hostlist_ranged_string_xmalloc(
+						hl_last);
+				nr_hv = newHV();
+				hv_store_charp(nr_hv, "nodes", last_hosts);
+				hv_store_charp(nr_hv, "cpu_ids", tmp2);
+				hv_store_uint32_t(nr_hv, "mem",
+						  last_mem_alloc_ptr ?
+						  last_mem_alloc : 0);
+				av_store(av, cnt++, newRV_noinc((SV*)nr_hv));
+				xfree(last_hosts);
+				slurm_hostlist_destroy(hl_last);
+				hl_last = slurm_hostlist_create(NULL);
+			}
+			strcpy(tmp2, tmp1);
+			last_mem_alloc_ptr = job_resrcs->memory_allocated;
+			if (last_mem_alloc_ptr)
+				last_mem_alloc = job_resrcs->
+					memory_allocated[rel_node_inx];
+			else
+				last_mem_alloc = NO_VAL;
+		}
+		slurm_hostlist_push_host(hl_last, host);
+		free(host);
+
+		if (bit_inx > last)
+			break;
+
+		if (abs_node_inx > job_info->node_inx[i+1]) {
+			i += 2;
+			abs_node_inx = job_info->node_inx[i];
+		} else {
+			abs_node_inx++;
+		}
+	}
+
+	if (slurm_hostlist_count(hl_last)) {
+		last_hosts = slurm_hostlist_ranged_string_xmalloc(hl_last);
+		nr_hv = newHV();
+		hv_store_charp(nr_hv, "nodes", last_hosts);
+		hv_store_charp(nr_hv, "cpu_ids", tmp2);
+		hv_store_uint32_t(nr_hv, "mem",
+				  last_mem_alloc_ptr ?
+				  last_mem_alloc : 0);
+		av_store(av, cnt++, newRV_noinc((SV*)nr_hv));
+		xfree(last_hosts);
+	}
+	slurm_hostlist_destroy(hl);
+	slurm_hostlist_destroy(hl_last);
+	hv_store_sv(hv, "node_rescrs", newRV_noinc((SV*)av));
+
+	return 0;
+}
 
 /*
  * convert job_info_t to perl HV
@@ -142,6 +305,15 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 		STORE_FIELD(hv, job_info, wckey, charp);
 	if(job_info->work_dir)
 		STORE_FIELD(hv, job_info, work_dir, charp);
+	av = newAV();
+	for(j = 0; ; j += 2) {
+		if(job_info->req_node_inx[j] == -1)
+			break;
+		av_store(av, j, newSVuv(job_info->req_node_inx[j]));
+		av_store(av, j+1, newSVuv(job_info->req_node_inx[j+1]));
+	}
+
+	_job_resrcs_to_hv(job_info, hv);
 
 	return 0;
 }
@@ -278,6 +450,8 @@ job_info_msg_to_hv(job_info_msg_t *job_info_msg, HV *hv)
 	HV *hv_info;
 	AV *av;
 
+	_load_node_info();
+
 	STORE_FIELD(hv, job_info_msg, last_update, time_t);
 	/* record_count implied in job_array */
 	av = newAV();
@@ -291,6 +465,9 @@ job_info_msg_to_hv(job_info_msg_t *job_info_msg, HV *hv)
 		av_store(av, i, newRV_noinc((SV*)hv_info));
 	}
 	hv_store_sv(hv, "job_array", newRV_noinc((SV*)av));
+
+	_free_node_info();
+
 	return 0;
 }
 

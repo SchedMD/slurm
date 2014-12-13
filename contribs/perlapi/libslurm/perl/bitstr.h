@@ -51,9 +51,12 @@ bitstr_t *slurm_bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
 bitoff_t slurm_bit_get_bit_num(bitstr_t *b, int pos);
 int      slurm_bit_get_pos_num(bitstr_t *b, bitoff_t pos);
 
+#ifdef FREE_NULL_BITMAP
+#undef FREE_NULL_BITMAP
+#endif
+
 #define FREE_NULL_BITMAP(_X)            \
 	 do {                            \
 		if (_X) slurm_bit_free (_X);  \
 			_X      = NULL;         \
 	 } while (0)
-

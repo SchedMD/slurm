@@ -8,9 +8,11 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "slurm-perl.h"
 #include "bitstr.h"
 
+extern void slurm_conf_reinit(char *pathname);
 
 
 struct slurm {

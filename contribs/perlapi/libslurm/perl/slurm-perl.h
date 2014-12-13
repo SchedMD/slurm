@@ -9,16 +9,16 @@
 
 
 /* these declaration are not in slurm.h */
+#ifndef xfree
 #define xfree(__p) \
 	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __FUNCTION__)
 #define xmalloc(__sz) \
 	slurm_xmalloc (__sz, true, __FILE__, __LINE__, __FUNCTION__)
+#endif
 
 extern void slurm_xfree(void **, const char *, int, const char *);
 extern void *slurm_xmalloc(size_t, bool, const char *, int, const char *);
 
-
-extern void slurm_conf_reinit(char *pathname);
 extern void slurm_api_clear_config(void);
 
 extern void slurm_list_iterator_destroy(ListIterator itr);
