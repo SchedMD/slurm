@@ -352,7 +352,7 @@ send_user "\n\nTest partition with shared=YES:2\n"
 create_part $test_part_2 "YES:$shared_j_cnt" $node_name
 
 # Submit a job with shared (expect 2 jobs per core/CPU)
-set new_job_limit [expr $num_jobs *2]
+set new_job_limit [expr $num_jobs * 2]
 sub_job "0-$new_job_limit" 1 $test_part_2
 check_job $new_job_limit
 cancel_job $job_id

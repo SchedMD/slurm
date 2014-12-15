@@ -2413,8 +2413,6 @@ extern bool test_job_array_complete(uint32_t array_job_id)
 	if (job_ptr) {
 		if (!IS_JOB_COMPLETE(job_ptr))
 			return false;
-		if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
-			return false;
 		if (job_ptr->array_recs && job_ptr->array_recs->max_exit_code)
 			return false;
 	}
@@ -2441,8 +2439,6 @@ extern bool test_job_array_completed(uint32_t array_job_id)
 	job_ptr = find_job_record(array_job_id);
 	if (job_ptr) {
 		if (!IS_JOB_COMPLETED(job_ptr))
-			return false;
-		if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
 			return false;
 	}
 
@@ -7247,7 +7243,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	struct job_record *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
 	Buf buffer;
-	time_t now = time(NULL);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -7257,7 +7252,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */
 	pack32(jobs_packed, buffer);
-	pack_time(now, buffer);
+	pack_time(time(NULL), buffer);
 
 	/* write individual job records */
 	part_filter_set(uid);
@@ -7271,6 +7266,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 
 		if (_hide_job(job_ptr, uid))
 			continue;
+
 		if ((filter_uid != NO_VAL) && (filter_uid != job_ptr->user_id))
 			continue;
 
