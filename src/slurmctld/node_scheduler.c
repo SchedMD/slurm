@@ -1835,6 +1835,17 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	gres_plugin_job_clear(job_ptr->gres_list);
 
 	job_array_post_sched(job_ptr);
+	if (bb_g_job_begin(job_ptr) != SLURM_SUCCESS) {
+		/* Leave job queued, something is hosed */
+		error("bb_g_job_begin(%u): %m", job_ptr->job_id);
+		error_code = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+		job_ptr->start_time = 0;
+		job_ptr->time_last_active = 0;
+		job_ptr->end_time = 0;
+		job_ptr->node_bitmap = NULL;
+		job_ptr->priority = 0;
+		goto cleanup;
+	}
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);

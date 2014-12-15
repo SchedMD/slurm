@@ -88,12 +88,21 @@ extern int bb_g_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version);
 extern int bb_g_reconfig(void);
 
 /*
- * Validate a job submit request with respect to burst buffer options.
+ * Preliminary validation of a job submit request with respect to burst buffer
+ * options. Performed prior to establishing job ID or creating script file.
  *
  * Returns a SLURM errno.
  */
 extern int bb_g_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid);
+
+/*
+ * Secondary validation of a job submit request with respect to burst buffer
+ * options. Performed after establishing job ID and creating script file.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg);
 
 /*
  * For a given job, return our best guess if when it might be able to start

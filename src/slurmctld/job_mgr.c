@@ -5499,6 +5499,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			goto cleanup_fail;
 		}
 		job_ptr->batch_flag = 1;
+		if ((error_code = bb_g_job_validate2(job_ptr, err_msg)))
+			goto cleanup_fail;
 	} else
 		job_ptr->batch_flag = 0;
 

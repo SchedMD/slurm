@@ -81,10 +81,13 @@ typedef struct slurm_bb_ops {
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(struct job_descriptor *job_desc,
 					 uid_t submit_uid);
+	int		(*job_validate2)(struct job_record *job_ptr,
+					 char **err_msg);
 	time_t		(*job_get_est_start) (struct job_record *job_ptr);
 	int		(*job_try_stage_in) (List job_queue);
 	int		(*job_test_stage_in) (struct job_record *job_ptr,
 					      bool test_only);
+	int		(*bb_g_job_begin) (struct job_record *job_ptr);
 	int		(*job_start_stage_out) (struct job_record *job_ptr);
 	int		(*job_test_stage_out) (struct job_record *job_ptr);
 	int		(*job_cancel) (struct job_record *job_ptr);
@@ -98,9 +101,11 @@ static const char *syms[] = {
 	"bb_p_state_pack",
 	"bb_p_reconfig",
 	"bb_p_job_validate",
+	"bb_p_job_validate2",
 	"bb_p_job_get_est_start",
 	"bb_p_job_try_stage_in",
 	"bb_p_job_test_stage_in",
+	"bb_g_job_begin",
 	"bb_p_job_start_stage_out",
 	"bb_p_job_test_stage_out",
 	"bb_p_job_cancel"
@@ -295,7 +300,8 @@ extern int bb_g_reconfig(void)
 }
 
 /*
- * Validate a job submit request with respect to burst buffer options.
+ * Preliminary validation of a job submit request with respect to burst buffer
+ * options. Performed prior to establishing job ID or creating script file.
  *
  * Returns a SLURM errno.
  */
@@ -310,6 +316,30 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_validate))(job_desc, submit_uid);
+		rc = MAX(rc, rc2);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/*
+ * Secondary validation of a job submit request with respect to burst buffer
+ * options. Performed after establishing job ID and creating script file.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg)
+{
+	DEF_TIMERS;
+	int i, rc, rc2;
+
+	START_TIMER;
+	rc = bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		rc2 = (*(ops[i].job_validate2))(job_ptr, err_msg);
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);
@@ -421,6 +451,31 @@ extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_test_stage_in))(job_ptr, test_only);
+		rc = MIN(rc, rc2);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/* Attempt to claim burst buffer resources.
+ * At this time, bb_g_job_test_stage_in() should have been run sucessfully AND
+ * the compute nodes selected for the job.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_begin(struct job_record *job_ptr)
+{
+	DEF_TIMERS;
+	int i, rc = 1, rc2;
+
+	START_TIMER;
+	if (bb_g_init() != SLURM_SUCCESS)
+		rc = -1;
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		rc2 = (*(ops[i].job_begin))(job_ptr);
 		rc = MIN(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);

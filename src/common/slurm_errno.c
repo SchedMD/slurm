@@ -313,6 +313,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Burst Buffer permssion denied"			},
 	{ ESLURM_BURST_BUFFER_LIMIT,
 	  "Burst Buffer resource limit exceeded"		},
+	{ ESLURM_INVALID_BURST_BUFFER_REQUEST,
+	  "Burst Buffer request invalid"			},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
