@@ -1118,7 +1118,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_job_begin(struct job_record *job_ptr)
+extern int bb_p_job_begin(struct job_record *job_ptr)
 {
 	/* This function is unused by this plugin type */
 	return SLURM_SUCCESS;

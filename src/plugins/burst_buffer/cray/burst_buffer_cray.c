@@ -410,7 +410,7 @@ static int _start_stage_in(struct job_record *job_ptr)
 	snprintf(token, sizeof(token), "%u", job_ptr->job_id);
 	snprintf(owner, sizeof(owner), "%d", job_ptr->user_id);
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+//	pthread_mutex_lock(&bb_state.bb_mutex);	/* Locked on entry
 	if (job_ptr->sched_nodes) {
 //FIXME: Question for Cray: Could we pass NID list as argument rather than
 // using an intermediate file?
@@ -424,7 +424,7 @@ static int _start_stage_in(struct job_record *job_ptr)
 		   state_save_loc, hash_inx, job_ptr->job_id);
 	xstrfmtcat(data_in_env_file, "%s/hash.%d/job.%u/data_in_env",
 		   state_save_loc, hash_inx, job_ptr->job_id);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+//	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 #if 0
 //FIXME: Call bbs_setup and bbs_data_in here
@@ -1257,7 +1257,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_job_begin(struct job_record *job_ptr)
+extern int bb_p_job_begin(struct job_record *job_ptr)
 {
 	char *pre_run_env_file = NULL, *client_nodes_file_nid = NULL;
 	int hash_inx, rc;

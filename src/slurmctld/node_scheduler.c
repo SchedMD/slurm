@@ -71,6 +71,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"

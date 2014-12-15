@@ -128,6 +128,14 @@ extern int bb_g_job_try_stage_in(void);
  */
 extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only);
 
+/* Attempt to claim burst buffer resources.
+ * At this time, bb_g_job_test_stage_in() should have been run sucessfully AND
+ * the compute nodes selected for the job.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_begin(struct job_record *job_ptr);
+
 /*
  * Trigger a job's burst buffer stage-out to begin
  *
