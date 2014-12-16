@@ -408,7 +408,7 @@ static int _start_stage_in(struct job_record *job_ptr)
 	char token[32], *caller = "SLURM", owner[32], *capacity = NULL;
 	char *setup_env_file = NULL, *client_nodes_file_nid = NULL;
 	char *data_in_env_file = NULL;
-	char *bbs_setup = NULL, *bbs_stage_in = NULL;
+	char *bbs_setup = NULL, *bbs_data_in = NULL;
 	char *tok;
 	int hash_inx = job_ptr->job_id % 10;
 	uint32_t i;
@@ -454,7 +454,7 @@ static int _start_stage_in(struct job_record *job_ptr)
 
 	bbs_setup = _set_cmd_path("bbs_setup");
 	bbs_data_in = _set_cmd_path("bbs_data_in");
-#if 0
+#if 1
 //FIXME: Call bbs_setup and bbs_data_in here
 	info("BBS_SETUP: Token:%s Caller:%s Onwer:%s Capacity:%s "
 	     "SetupEnv:%s NidFile:%s",
@@ -475,7 +475,7 @@ static int _start_stage_in(struct job_record *job_ptr)
 static void _start_stage_out(uint32_t job_id)
 {
 	char *post_run_env_file = NULL, *data_out_env_file = NULL;
-	char *bbs_post_run = NULL, bbs_data_out = NULL;
+	char *bbs_post_run = NULL, *bbs_data_out = NULL;
 	int hash_inx = job_id % 10;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -487,7 +487,7 @@ static void _start_stage_out(uint32_t job_id)
 
 	bbs_post_run = _set_cmd_path("bbs_post_run");
 	bbs_data_out = _set_cmd_path("bbs_data_out");
-#if 0
+#if 1
 //FIXME: Call bbs_post_run and bbs_data_out here
 	info("BBS_POST_RUN: PostRunEnv:%s", post_run_env_file);
 	info("BBS_DATA_OUT: DataOutEnv:%s", data_out_env_file);
@@ -501,7 +501,7 @@ static void _start_stage_out(uint32_t job_id)
 
 static void _teardown(uint32_t job_id, bool hurry)
 {
-	char *teardown_env_file = NULL, bbs_teardown = NULL;
+	char *teardown_env_file = NULL, *bbs_teardown = NULL;
 	int hash_inx = job_id % 10;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -510,7 +510,7 @@ static void _teardown(uint32_t job_id, bool hurry)
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	bbs_teardown = _set_cmd_path("bbs_teardown");
-#if 0
+#if 1
 //FIXME: Call bbs_teardown here
 	info("BBS_TEARDOWN: TeardownEnv:%s Hurry:%d",
 	     teardown_env_file, (int)hurry);
