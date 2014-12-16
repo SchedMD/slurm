@@ -1727,7 +1727,7 @@ Optional Packages:
   --with-cpusetdir=PATH   specify path to cpuset directory default is
                           /dev/cpuset
   --with-pam_dir=PATH     Specify path to PAM module installation
-  --with-json=PATH        Specify path to jansson json parser installation
+  --with-json=PATH        Specify path to json-c installation
   --with-dimensions=N     set system dimension count for generic computer
                           system
   --with-ofed=PATH        Specify path to ofed installation
@@ -19330,11 +19330,11 @@ else
 #ifdef __cplusplus
 extern "C"
 #endif
-char json_object_get ();
+char json_tokener_parse ();
 int
 main ()
 {
-return json_object_get ();
+return json_tokener_parse ();
   ;
   return 0;
 }
@@ -19353,7 +19353,6 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_json_dir" >&5
 $as_echo "$x_ac_cv_json_dir" >&6; }
-
   if test -z "$x_ac_cv_json_dir"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate json parser library" >&5
 $as_echo "$as_me: WARNING: unable to locate json parser library" >&2;}

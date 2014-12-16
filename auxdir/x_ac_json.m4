@@ -18,10 +18,9 @@ AC_DEFUN([X_AC_JSON], [
   x_ac_json_dirs="/usr /usr/local"
   x_ac_json_libs="lib64 lib"
 
-<<<<<<< HEAD
   AC_ARG_WITH(
     [json],
-    AS_HELP_STRING(--with-json=PATH,Specify path to json-c parser installation),
+    AS_HELP_STRING(--with-json=PATH,Specify path to json-c installation),
     [_x_ac_json_dirs="$withval $_x_ac_json_dirs"])
 
   AC_CACHE_CHECK(

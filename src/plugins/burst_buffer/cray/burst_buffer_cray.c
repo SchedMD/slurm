@@ -303,39 +303,50 @@ static uint32_t _get_bb_size(struct job_record *job_ptr)
 static void _load_state(uint32_t job_id)
 {
 	burst_buffer_gres_t *gres_ptr;
+	bb_entry_t *ents;
+	int num_ents;
+	int i;
 
-// FIXME: Need Cray interface here...
 	bb_state.last_load_time = time(NULL);
 
-	/* ID: "bytes" */
-	bb_state.bb_config.granularity = 100;	/* convert to GB */
-	bb_state.total_space = 100000;		/* in GB */
-	bb_state.used_space = 10000;		/* in GB */
+	ents = get_bb_entry(&num_ents, &bb_state);
+	if (ents == NULL) {
+		error("%s: failed to be burst buffer entries, what now?",
+		      __func__);
+		return;
+	}
 
-	/* Everything else is a burst buffer generic resource (gres) */
-	bb_state.bb_config.gres_cnt = 0;
+	for (i = 0; i < num_ents; i++) {
+		/* ID: "bytes"
+		 */
+		if (strcmp(ents[i].id, "bytes") == 0) {
+			bb_state.bb_config.granularity
+				= ents[i].gb_granularity;
+			bb_state.total_space
+				= ents[i].gb_quantity;
+			bb_state.used_space
+				= ents[i].gb_quantity - ents[i].gb_free;
+			xassert(bb_state.used_space >= 0);
 
-	/* GRES/ID: "nodes" */
-	bb_state.bb_config.gres_ptr = xrealloc(bb_state.bb_config.gres_ptr,
-					sizeof(burst_buffer_gres_t) *
-					(bb_state.bb_config.gres_cnt + 1));
-	gres_ptr = bb_state.bb_config.gres_ptr + bb_state.bb_config.gres_cnt;
-	bb_state.bb_config.gres_cnt++;
-	gres_ptr->avail_cnt = 10;
-	gres_ptr->granularity = 1;
-	gres_ptr->name = xstrdup("nodes");
-	gres_ptr->used_cnt = 2;
+			/* Everything else is a burst buffer
+			 * generic resource (gres)
+			 */
+			bb_state.bb_config.gres_cnt = 0;
+			continue;
+		}
 
-	/* GRES/ID: "special_pool" */
-	bb_state.bb_config.gres_ptr = xrealloc(bb_state.bb_config.gres_ptr,
-					sizeof(burst_buffer_gres_t) *
-					(bb_state.bb_config.gres_cnt + 1));
-	gres_ptr = bb_state.bb_config.gres_ptr + bb_state.bb_config.gres_cnt;
-	bb_state.bb_config.gres_cnt++;
-	gres_ptr->avail_cnt = 1000;		/* in GB */
-	gres_ptr->granularity = 100;		/* convert to GB */
-	gres_ptr->name = xstrdup("special_pool");
-	gres_ptr->used_cnt = 0;			/* in GB */
+		bb_state.bb_config.gres_ptr
+			= xrealloc(bb_state.bb_config.gres_ptr,
+				   sizeof(burst_buffer_gres_t) *
+				   (bb_state.bb_config.gres_cnt + 1));
+		gres_ptr = bb_state.bb_config.gres_ptr + bb_state.bb_config.gres_cnt;
+		bb_state.bb_config.gres_cnt++;
+		gres_ptr->avail_cnt = ents[i].quantity;
+		gres_ptr->granularity = ents[i].gb_granularity;
+		gres_ptr->name = xstrdup(ents[i].id);
+		gres_ptr->used_cnt = ents[i].quantity - ents[i].gb_free;
+	}
+	free_bb_ents(ents, num_ents);
 }
 
 /* Write an string representing the NIDs of a job's nodes to an arbitrary
@@ -424,7 +435,7 @@ static int _start_stage_in(struct job_record *job_ptr)
 				tok = strstr(tok, "nodes=");
 				if (tok) {
 					i = atoi(tok + 6);
-					xstrfmtcat(capacity, "nodes:%u", i);		
+					xstrfmtcat(capacity, "nodes:%u", i);
 				}
 			}
 		}
