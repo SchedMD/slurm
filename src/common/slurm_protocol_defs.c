@@ -200,8 +200,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				if (!names[i+1])
 					break;
 
-				name = xmalloc((i-start+1));
-				memcpy(name, names+start, (i-start));
+				name = xstrndup(names+start, (i-start));
 				//info("got %s %d", name, i-start);
 
 				while ((tmp_char = list_next(itr))) {
@@ -236,8 +235,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 			i++;
 		}
 
-		name = xmalloc((i-start)+1);
-		memcpy(name, names+start, (i-start));
+		name = xstrndup(names+start, (i-start));
 		while ((tmp_char = list_next(itr))) {
 			if (!strcasecmp(tmp_char, name))
 			break;
