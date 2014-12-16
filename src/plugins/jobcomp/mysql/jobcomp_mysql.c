@@ -77,11 +77,11 @@
  */
 const char plugin_name[] = "Job completion MYSQL plugin";
 const char plugin_type[] = "jobcomp/mysql";
-const uint32_t plugin_version = 100;
+const uint32_t plugin_version = 200;
 
 mysql_conn_t *jobcomp_mysql_conn = NULL;
 
-char *jobcomp_table = "jobcomp_table";
+char *jobcomp_table = NULL;
 storage_field_t jobcomp_table_fields[] = {
 	{ "jobid", "int not null" },
 	{ "uid", "int unsigned not null" },
@@ -104,6 +104,7 @@ storage_field_t jobcomp_table_fields[] = {
 	{ "geometry", "tinytext" },
 	{ "start", "tinytext" },
 	{ "blockid", "tinytext" },
+	{ "script", "text" },
 	{ NULL, NULL}
 };
 
@@ -211,6 +212,20 @@ extern int init ( void )
 		debug4("%s loaded", plugin_name);
 	}
 
+	/* Since job completion records can come from different clusters,
+	we set the name of the job completion records table to contain
+	the name of the cluster. */
+
+	char *clustername = NULL;
+	clustername=slurm_get_cluster_name();
+	if(!clustername){
+	fatal("Cluster name not defined");
+	return SLURM_ERROR;
+	}
+
+	jobcomp_table = xstrdup_printf("\`%s_jobcomp_table\`", clustername);
+	xfree(clustername);
+
 	return SLURM_SUCCESS;
 }
 
@@ -219,6 +234,10 @@ extern int fini ( void )
 	if (jobcomp_mysql_conn) {
 		destroy_mysql_conn(jobcomp_mysql_conn);
 		jobcomp_mysql_conn = NULL;
+	}
+	if (jobcomp_table) {
+		xfree(jobcomp_table);
+		jobcomp_table = NULL;
 	}
 	return SLURM_SUCCESS;
 }
@@ -276,7 +295,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32], *jname = NULL;
 	char *connect_type = NULL, *reboot = NULL, *rotate = NULL,
 		*geometry = NULL, *start = NULL,
-		*blockid = NULL;
+		*blockid = NULL, *script = NULL;
 	enum job_states job_state;
 	char *query = NULL;
 	uint32_t time_limit, start_time, end_time;
@@ -349,6 +368,16 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	blockid = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						  SELECT_PRINT_RESV_ID);
 #endif
+
+	/* We find the job script and escape any quotes to prevent
+	   SQL injection */
+	if(job_ptr->batch_flag){
+		char *tmp;
+		tmp=get_job_script(job_ptr);
+		script=slurm_add_slash_to_quotes(tmp);
+		xfree(tmp);
+	}
+
 	query = xstrdup_printf(
 		"insert into %s (jobid, uid, user_name, gid, group_name, "
 		"name, state, proc_cnt, `partition`, timelimit, "
@@ -371,8 +400,10 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		xstrcat(query, ", start");
 	if (blockid)
 		xstrcat(query, ", blockid");
-	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', '%s', %d, %u, "
-		   "'%s', '%s', %u, %u, %u",
+	if (script)
+		xstrcat(query, ", script");
+	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', \"%s\", %d, %u, "
+		   "'%s', \"%s\", %u, %u, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
 		   job_ptr->group_id, grp_str, jname,
 		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
@@ -407,6 +438,10 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	if (blockid) {
 		xstrfmtcat(query, ", '%s'", blockid);
 		xfree(blockid);
+	}
+	if (script) {
+		xstrfmtcat(query, ", '%s'", script);
+		xfree(script);
 	}
 	xstrcat(query, ")");
 	debug3("(%s:%d) query\n%s",
