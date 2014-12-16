@@ -2359,8 +2359,8 @@ static void _remove_job_hash(struct job_record *job_entry)
                 fatal("job hash error");
                 return; /* Fix CLANG false positive error */
         }
-        job_entry->job_next = NULL;
-
+	*job_pptr = job_entry->job_next;
+	job_entry->job_next = NULL;
 }
 
 /* _add_job_array_hash - add a job hash entry for given job record,

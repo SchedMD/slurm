@@ -34,12 +34,16 @@ source ./globals_accounting
 
 set test_id     "21.26"
 set exit_code   0
-set tc1		[get_cluster_name]
+set tc1		"test$test_id\_cluster"
 set ta1		"test$test_id-account.1"
 set ta2		"test$test_id-account.2"
 set qos1	qqostest
 set tu1         "test$test_id-user.1"
 set access_err  0
+
+# Cluster
+array set clus_req {}
+set clus_req(qos) "''"
 
 # Accounts
 array set acct_req1 {}
@@ -54,19 +58,6 @@ array set user_req {}
 set user_req(cluster) $tc1
 set user_req(account) $ta1,$ta2
 set user_req(defaultaccount) $ta1
-
-# Mod Account root 1
-array set mod_acct_desc1 {}
-set mod_acct_desc1(cluster) $tc1
-array set mod_acct_vals1 {}
-array set mod_assoc_vals1 {}
-
-# Mod Account root 2
-array set mod_acct_desc2 {}
-set mod_assoc_desc2(cluster) $tc1
-array set mod_acct_vals2 {}
-array set mod_assoc_vals2 {}
-set mod_assoc_vals2(qos) "''"
 
 # Mod Account for ta1 and ta2
 array set mod_acct_desc3 {}
@@ -105,15 +96,19 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 proc end_test { } {
 	global tu1 ta1 ta2 tc1 qos1 mod_acct_desc1 mod_acct_vals1 mod_assoc_vals1
 	set exit_code 0
+	incr exit_code [remove_cluster $tc1]
 	incr exit_code [remove_user "" "" "$tu1"]
 	incr exit_code [remove_acct "" "$ta1,$ta2"]
 	incr exit_code [remove_qos "$qos1"]
-	if { [string length $mod_assoc_vals1(qoslevel)] } {
-		incr exit_code [mod_acct "root" [array get mod_acct_desc1] [array get mod_acct_vals1] [array get mod_assoc_vals1]]
-	}
 	return $exit_code
 }
 
+#
+# Remove any residual clusters and
+# Add a test cluster for testing
+#
+remove_cluster $tc1
+add_cluster $tc1 ""
 
 #
 # remove test associations to make sure we have a clean system
@@ -153,12 +148,14 @@ if { !$match } {
 }
 
 #now set default for cluster to ""
-incr exit_code [mod_acct "root" [array get mod_acct_desc2] [array get mod_acct_vals2] [array get mod_assoc_vals2]]
+incr exit_code [mod_cluster $tc1 [array get clus_req]]
 if { $exit_code } {
 	remove_qos "$qos1"
 	exit $exit_code
 }
 
+# send_user "moded the cluster to qos = ''"
+# exit
 
 #add qos
 incr exit_code [add_qos "$qos1"]

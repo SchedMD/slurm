@@ -74,6 +74,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.3
 ==========================
  -- Prevent vestigial job record when cancelling a pending job array record.
+ -- Fixed squeue core dump.
+ -- Fix job array hash table bug, could result in slurmctld infinite loop or
+    invalid memory reference.
 
 * Changes in Slurm 14.11.2
 ==========================
