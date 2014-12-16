@@ -339,12 +339,13 @@ static void _load_state(uint32_t job_id)
 			= xrealloc(bb_state.bb_config.gres_ptr,
 				   sizeof(burst_buffer_gres_t) *
 				   (bb_state.bb_config.gres_cnt + 1));
-		gres_ptr = bb_state.bb_config.gres_ptr + bb_state.bb_config.gres_cnt;
+		gres_ptr = bb_state.bb_config.gres_ptr
+			+ bb_state.bb_config.gres_cnt;
 		bb_state.bb_config.gres_cnt++;
 		gres_ptr->avail_cnt = ents[i].quantity;
 		gres_ptr->granularity = ents[i].gb_granularity;
 		gres_ptr->name = xstrdup(ents[i].id);
-		gres_ptr->used_cnt = ents[i].quantity - ents[i].gb_free;
+		gres_ptr->used_cnt = ents[i].gb_quantity - ents[i].gb_free;
 	}
 	free_bb_ents(ents, num_ents);
 }
