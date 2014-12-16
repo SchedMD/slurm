@@ -463,6 +463,33 @@ static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
 	return local_cluster;
 }
 
+static int _set_qos_bit_from_string(bitstr_t *valid_qos, char *name)
+{
+	void (*my_function) (bitstr_t *b, bitoff_t bit);
+	bitoff_t bit = 0;
+
+	xassert(valid_qos);
+
+	if (!name)
+		return SLURM_ERROR;
+
+	if (name[0] == '-') {
+		name++;
+		my_function = bit_clear;
+	} else if (name[0] == '+') {
+		name++;
+		my_function = bit_set;
+	} else
+		my_function = bit_set;
+
+	if ((bit = atoi(name)) >= bit_size(valid_qos))
+		return SLURM_ERROR;
+
+	(*(my_function))(valid_qos, bit);
+
+	return SLURM_SUCCESS;
+}
+
 extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
@@ -1756,10 +1783,8 @@ extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list)
 extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list)
 {
 	ListIterator itr = NULL;
-	bitoff_t bit = 0;
 	int rc = SLURM_SUCCESS;
 	char *temp_char = NULL;
-	void (*my_function) (bitstr_t *b, bitoff_t bit);
 
 	xassert(valid_qos);
 
@@ -1767,19 +1792,12 @@ extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list)
 		return SLURM_ERROR;
 
 	itr = list_iterator_create(qos_list);
-	while((temp_char = list_next(itr))) {
-		if (temp_char[0] == '-') {
-			temp_char++;
-			my_function = bit_clear;
-		} else if (temp_char[0] == '+') {
-			temp_char++;
-			my_function = bit_set;
-		} else
-			my_function = bit_set;
-		bit = atoi(temp_char);
-		if (bit >= bit_size(valid_qos)) {
-			rc = SLURM_ERROR;
-			break;
+	while((temp_char = list_next(itr)))
+		_set_qos_bit_from_string(valid_qos, temp_char);
+	list_iterator_destroy(itr);
+
+	return rc;
+}
 		}
 		(*(my_function))(valid_qos, bit);
 	}
