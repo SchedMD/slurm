@@ -19316,13 +19316,12 @@ else
      for d in $x_ac_json_dirs; do
        test -d "$d" || continue
        test -d "$d/include" || continue
-       test -f "$d/include/jansson.h" || continue
+       test -f "$d/include/json-c/json_object.h" || continue
        for bit in $x_ac_json_libs; do
          test -d "$d/$bit" || continue
-
-       _x_ac_json_libs_save="$LIBS"
-       LIBS="-L$d/$bit -ljansson $LIBS"
-       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+         _x_ac_json_libs_save="$LIBS"
+         LIBS="-L$d/$bit -ljson-c $LIBS"
+         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -19331,11 +19330,11 @@ else
 #ifdef __cplusplus
 extern "C"
 #endif
-char json_loads ();
+char json_object_get ();
 int
 main ()
 {
-return json_loads ();
+return json_object_get ();
   ;
   return 0;
 }
@@ -19345,8 +19344,8 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-       LIBS="$_x_ac_json_libs_save"
-       test -n "$x_ac_cv_json_dir" && break
+        LIBS="$_x_ac_json_libs_save"
+        test -n "$x_ac_cv_json_dir" && break
      done
      test -n "$x_ac_cv_json_dir" && break
   done
@@ -19359,8 +19358,8 @@ $as_echo "$x_ac_cv_json_dir" >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate json parser library" >&5
 $as_echo "$as_me: WARNING: unable to locate json parser library" >&2;}
   else
-    JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include"
-    JSON_LDFLAGS="-L$x_ac_cv_json_dir -ljansson"
+    JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include/json-c"
+    JSON_LDFLAGS="-L$x_ac_cv_json_dir -ljson-c"
   fi
 
 

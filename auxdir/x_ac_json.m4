@@ -20,7 +20,7 @@ AC_DEFUN([X_AC_JSON], [
 
   AC_ARG_WITH(
     [json],
-    AS_HELP_STRING(--with-json=PATH,Specify path to jansson json parser installation),
+    AS_HELP_STRING(--with-json=PATH,Specify path to json-c parser installation),
     [_x_ac_json_dirs="$withval $_x_ac_json_dirs"])
 
   AC_CACHE_CHECK(
@@ -30,17 +30,16 @@ AC_DEFUN([X_AC_JSON], [
      for d in $x_ac_json_dirs; do
        test -d "$d" || continue
        test -d "$d/include" || continue
-       test -f "$d/include/jansson.h" || continue
+       test -f "$d/include/json-c/json_object.h" || continue
        for bit in $x_ac_json_libs; do
          test -d "$d/$bit" || continue
-
-       _x_ac_json_libs_save="$LIBS"
-       LIBS="-L$d/$bit -ljansson $LIBS"
-       AC_LINK_IFELSE(
-         [AC_LANG_CALL([], json_loads)],
-         AS_VAR_SET(x_ac_cv_json_dir, $d))
-       LIBS="$_x_ac_json_libs_save"
-       test -n "$x_ac_cv_json_dir" && break
+         _x_ac_json_libs_save="$LIBS"
+         LIBS="-L$d/$bit -ljson-c $LIBS"
+         AC_LINK_IFELSE(
+           [AC_LANG_CALL([], json_object_get)],
+           AS_VAR_SET(x_ac_cv_json_dir, $d))
+        LIBS="$_x_ac_json_libs_save"
+        test -n "$x_ac_cv_json_dir" && break
      done
      test -n "$x_ac_cv_json_dir" && break
   done
@@ -49,8 +48,8 @@ AC_DEFUN([X_AC_JSON], [
   if test -z "$x_ac_cv_json_dir"; then
     AC_MSG_WARN([unable to locate json parser library])
   else
-    JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include"
-    JSON_LDFLAGS="-L$x_ac_cv_json_dir -ljansson"
+    JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include/json-c"
+    JSON_LDFLAGS="-L$x_ac_cv_json_dir -ljson-c"
   fi
 
   AC_SUBST(JSON_CPPFLAGS)
