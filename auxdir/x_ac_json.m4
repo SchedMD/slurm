@@ -18,6 +18,7 @@ AC_DEFUN([X_AC_JSON], [
   x_ac_json_dirs="/usr /usr/local"
   x_ac_json_libs="lib64 lib"
 
+<<<<<<< HEAD
   AC_ARG_WITH(
     [json],
     AS_HELP_STRING(--with-json=PATH,Specify path to json-c parser installation),
@@ -36,7 +37,7 @@ AC_DEFUN([X_AC_JSON], [
          _x_ac_json_libs_save="$LIBS"
          LIBS="-L$d/$bit -ljson-c $LIBS"
          AC_LINK_IFELSE(
-           [AC_LANG_CALL([], json_object_get)],
+           [AC_LANG_CALL([], json_tokener_parse)],
            AS_VAR_SET(x_ac_cv_json_dir, $d))
         LIBS="$_x_ac_json_libs_save"
         test -n "$x_ac_cv_json_dir" && break
@@ -44,7 +45,6 @@ AC_DEFUN([X_AC_JSON], [
      test -n "$x_ac_cv_json_dir" && break
   done
   ])
-
   if test -z "$x_ac_cv_json_dir"; then
     AC_MSG_WARN([unable to locate json parser library])
   else
