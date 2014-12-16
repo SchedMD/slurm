@@ -963,7 +963,6 @@ char *run_script(char *script_type, char *script_path,
 static struct bb_entry *
 _json_parse_array(json_object *jobj, char *key, int *num)
 {
-	enum json_type type;
 	json_object *jarray;
 	int i;
 	json_object *jvalue;
@@ -977,7 +976,6 @@ _json_parse_array(json_object *jobj, char *key, int *num)
 
 	for (i = 0; i < *num; i++){
 		jvalue = json_object_array_get_idx(jarray, i);
-		type = json_object_get_type(jvalue);
 		_json_parse_object(jvalue, &ents[i]);
 		/* Convert to GB
 		 */
