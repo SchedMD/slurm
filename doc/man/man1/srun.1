@@ -740,7 +740,7 @@ Multiple license names should be comma separated (e.g.
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
-<\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR]>
+<\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR]>[,\fIPack\fR|\fINoPack\fR]
 
 Specify alternate distribution methods for remote processes.
 This option controls the assignment of tasks to the nodes on which
@@ -809,6 +809,16 @@ will be laid out on the nodes in the order of the file.
 controls the nodes to be allocated to the job and not the allocation of
 CPUs on those nodes. This option is meant primarily to control a job step's
 task layout in an existing job allocation for the srun command.
+.TP
+.B Pack
+Rather than evenly distributing a job step's tasks evenly across it's allocated
+nodes, pack them as tightly as possible on the nodes.
+.TP
+.B NoPack
+Rather than packing a job step's tasks as tightly as possible on the nodes,
+distribute them evenly.
+This user option will supersede the SelectTypeParameters CR_Pack_Nodes
+configuration parameter.
 
 .TP
 Second distribution method:
