@@ -468,15 +468,16 @@ extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 extern int bb_g_job_begin(struct job_record *job_ptr)
 {
 	DEF_TIMERS;
-	int i, rc = 1, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
 	if (bb_g_init() != SLURM_SUCCESS)
-		rc = -1;
+		rc = SLURM_ERROR;
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_begin))(job_ptr);
-		rc = MIN(rc, rc2);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
