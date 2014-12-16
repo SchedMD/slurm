@@ -1798,10 +1798,45 @@ extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list)
 
 	return rc;
 }
+
+extern int set_qos_bitstr_from_string(bitstr_t *valid_qos, char *names)
+{
+	int rc = SLURM_SUCCESS;
+	int i=0, start=0;
+	char *name = NULL;
+
+	xassert(valid_qos);
+
+	if (!names)
+		return SLURM_ERROR;
+
+	/* skip the first comma if it is one */
+	if (names[i] == ',')
+		i++;
+
+	start = i;
+	while (names[i]) {
+		//info("got %d - %d = %d", i, start, i-start);
+		if (names[i] == ',') {
+			/* If there is a comma at the end just
+			   ignore it */
+			if (!names[i+1])
+				break;
+
+			name = xstrndup(names+start, (i-start));
+			/* info("got %s %d", name, i-start); */
+			_set_qos_bit_from_string(valid_qos, name);
+			xfree(name);
+			i++;
+			start = i;
 		}
-		(*(my_function))(valid_qos, bit);
+		i++;
 	}
-	list_iterator_destroy(itr);
+
+	name = xstrndup(names+start, (i-start));
+	/* info("got %s %d", name, i-start); */
+	_set_qos_bit_from_string(valid_qos, name);
+	xfree(name);
 
 	return rc;
 }

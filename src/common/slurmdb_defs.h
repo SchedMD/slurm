@@ -86,6 +86,7 @@ extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list);
 /* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
 extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);
 
+extern int set_qos_bitstr_from_string(bitstr_t *valid_qos, char *names);
 extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list);
 extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos);
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
