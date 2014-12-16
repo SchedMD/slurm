@@ -119,13 +119,40 @@ static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_load_state(uint32_t job_id);
 static int	_parse_bb_opts(struct job_descriptor *job_desc);
 static int	_parse_interactive(struct job_descriptor *job_desc);
+static char *	_set_cmd_path(char *cmd);
 static int	_start_stage_in(struct job_record *job_ptr);
 static void	_start_stage_out(uint32_t job_id);
 static void	_teardown(uint32_t job_id, bool hurry);
+static void	_test_config(void);
 static int	_test_size_limit(struct job_record *job_ptr,uint32_t add_space);
 static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list);
+
+/* Validate that our configuration is valid for this plugin type */
+static void _test_config(void)
+{
+	if (!bb_state.bb_config.get_sys_state)
+		fatal("%s: GetSysState is NULL", __func__);
+}
+
+/* Return the path to the specified command using the configured "get_sys_state"
+ * path as a base.
+ * xfree the return value */
+static char *_set_cmd_path(char *cmd)
+{
+	char *tmp, *sep;
+
+	tmp = xstrdup(bb_state.bb_config.get_sys_state);
+	sep = strrchr(tmp, '/');
+	if (sep)
+		sep[1] = '\0';
+	else
+		tmp[0] = '\0';
+	xstrcat(tmp, cmd);
+
+	return tmp;
+}
 
 static int _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 {
@@ -381,6 +408,7 @@ static int _start_stage_in(struct job_record *job_ptr)
 	char token[32], *caller = "SLURM", owner[32], *capacity = NULL;
 	char *setup_env_file = NULL, *client_nodes_file_nid = NULL;
 	char *data_in_env_file = NULL;
+	char *bbs_setup = NULL, *bbs_stage_in = NULL;
 	char *tok;
 	int hash_inx = job_ptr->job_id % 10;
 	uint32_t i;
@@ -410,10 +438,8 @@ static int _start_stage_in(struct job_record *job_ptr)
 	snprintf(token, sizeof(token), "%u", job_ptr->job_id);
 	snprintf(owner, sizeof(owner), "%d", job_ptr->user_id);
 
-//	pthread_mutex_lock(&bb_state.bb_mutex);	/* Locked on entry
+/*	pthread_mutex_lock(&bb_state.bb_mutex);	* Locked on entry */
 	if (job_ptr->sched_nodes) {
-//FIXME: Question for Cray: Could we pass NID list as argument rather than
-// using an intermediate file?
 		xstrfmtcat(client_nodes_file_nid,
 			   "%s/hash.%d/job.%u/client_nids",
 			   state_save_loc, hash_inx, job_ptr->job_id);
@@ -424,17 +450,21 @@ static int _start_stage_in(struct job_record *job_ptr)
 		   state_save_loc, hash_inx, job_ptr->job_id);
 	xstrfmtcat(data_in_env_file, "%s/hash.%d/job.%u/data_in_env",
 		   state_save_loc, hash_inx, job_ptr->job_id);
-//	pthread_mutex_unlock(&bb_state.bb_mutex);
+/*	pthread_mutex_unlock(&bb_state.bb_mutex); * Locked on entry */
 
+	bbs_setup = _set_cmd_path("bbs_setup");
+	bbs_data_in = _set_cmd_path("bbs_data_in");
 #if 0
 //FIXME: Call bbs_setup and bbs_data_in here
-#else
 	info("BBS_SETUP: Token:%s Caller:%s Onwer:%s Capacity:%s "
 	     "SetupEnv:%s NidFile:%s",
 	     token, caller, owner, capacity,
 	     setup_env_file, client_nodes_file_nid);
 	info("BBS_DATA_IN: DataInEnv:%s", data_in_env_file);
 #endif
+	xfree(bbs_setup);
+	xfree(bbs_data_in);
+
 	xfree(capacity);
 	xfree(client_nodes_file_nid);
 	xfree(setup_env_file);
@@ -445,6 +475,7 @@ static int _start_stage_in(struct job_record *job_ptr)
 static void _start_stage_out(uint32_t job_id)
 {
 	char *post_run_env_file = NULL, *data_out_env_file = NULL;
+	char *bbs_post_run = NULL, bbs_data_out = NULL;
 	int hash_inx = job_id % 10;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -454,20 +485,23 @@ static void _start_stage_out(uint32_t job_id)
 		   state_save_loc, hash_inx, job_id);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
+	bbs_post_run = _set_cmd_path("bbs_post_run");
+	bbs_data_out = _set_cmd_path("bbs_data_out");
 #if 0
 //FIXME: Call bbs_post_run and bbs_data_out here
-#else
 	info("BBS_POST_RUN: PostRunEnv:%s", post_run_env_file);
 	info("BBS_DATA_OUT: DataOutEnv:%s", data_out_env_file);
 	_teardown(job_id, false);
 #endif
+	xfree(bbs_data_out);
+	xfree(bbs_post_run);
 	xfree(post_run_env_file);
 	xfree(data_out_env_file);
 }
 
 static void _teardown(uint32_t job_id, bool hurry)
 {
-	char *teardown_env_file = NULL;
+	char *teardown_env_file = NULL, bbs_teardown = NULL;
 	int hash_inx = job_id % 10;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -475,12 +509,13 @@ static void _teardown(uint32_t job_id, bool hurry)
 		   state_save_loc, hash_inx, job_id);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
+	bbs_teardown = _set_cmd_path("bbs_teardown");
 #if 0
-//FIXME: Call bbs_post_run and bbs_data_out here
-#else
+//FIXME: Call bbs_teardown here
 	info("BBS_TEARDOWN: TeardownEnv:%s Hurry:%d",
 	     teardown_env_file, (int)hurry);
 #endif
+	xfree(bbs_teardown);
 	xfree(teardown_env_file);
 }
 
@@ -856,6 +891,7 @@ extern int init(void)
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, "cray");
+	_test_config();
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
 	bb_alloc_cache(&bb_state);
@@ -1055,7 +1091,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	char *base_dir = NULL, *script_file = NULL, *setup_env_file = NULL;
 	char *data_in_env_file = NULL, *pre_run_env_file = NULL;
 	char *post_run_env_file = NULL, *data_out_env_file = NULL;
-	char *teardown_env_file = NULL;
+	char *teardown_env_file = NULL, *bbs_job_process = NULL;
 	int hash_inx, rc = SLURM_SUCCESS;
 
 	if (bb_state.bb_config.debug_flag) {
@@ -1076,13 +1112,17 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	xstrfmtcat(teardown_env_file, "%s/teardown_env", base_dir);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
+
+	bbs_job_process = _set_cmd_path("bbs_job_process");
 #if 0
-//FIXME: execute bbs_job_process
+//FIXME: Execute bbs_job_process in-line. It should be fast
 	if (error) {
 		xfree(*err_msg);
 		*err_msg = xstrdup("WHATEVER");
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+	}
 #endif
+	xfree(bbs_job_process);
 
 	xfree(base_dir);
 	xfree(script_file);
