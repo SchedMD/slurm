@@ -1094,6 +1094,11 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	char *teardown_env_file = NULL, *bbs_job_process = NULL;
 	int hash_inx, rc = SLURM_SUCCESS;
 
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    (_get_bb_size(job_ptr) == 0))
+		return rc;
+
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_id:%u",
 		     plugin_type, __func__, job_ptr->job_id);
@@ -1146,14 +1151,15 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	uint32_t bb_size;
 	int rc;
 
-	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_id:%u",
-		     plugin_type, __func__, job_ptr->job_id);
-	}
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    ((bb_size = _get_bb_size(job_ptr)) == 0))
 		return est_start;
+
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: job_id:%u",
+		     plugin_type, __func__, job_ptr->job_id);
+	}
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
@@ -1253,15 +1259,14 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 	uint32_t bb_size = 0;
 	int rc = 1;
 
-	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_id:%u",
-		     plugin_type, __func__, job_ptr->job_id);
-	}
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    ((bb_size = _get_bb_size(job_ptr)) == 0))
 		return rc;
-
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: job_id:%u",
+		     plugin_type, __func__, job_ptr->job_id);
+	}
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
@@ -1300,8 +1305,12 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 extern int bb_p_job_begin(struct job_record *job_ptr)
 {
 	char *pre_run_env_file = NULL, *client_nodes_file_nid = NULL;
-	int hash_inx, rc;
+	int hash_inx, rc = SLURM_SUCCESS;
 
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    (_get_bb_size(job_ptr) == 0))
+		return rc;
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_id:%u",
 		     plugin_type, __func__, job_ptr->job_id);
