@@ -77,6 +77,9 @@ documents those changes that are of interest to users and administrators.
  -- Fixed squeue core dump.
  -- Fix job array hash table bug, could result in slurmctld infinite loop or
     invalid memory reference.
+ -- In srun honor ntasks_per_node before looking at cpu count when the user
+    doesn't request a number of tasks.
+ -- Fix ghost job when submitting job after all jobids are exhausted.
 
 * Changes in Slurm 14.11.2
 ==========================
