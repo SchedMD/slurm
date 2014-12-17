@@ -106,7 +106,6 @@ static int pty_sigarray[] = { SIGWINCH, 0 };
 /*
  * Prototypes:
  */
-static int        _compute_task_count(allocation_info_t *info);
 static void       _set_ntasks(allocation_info_t *info);
 static srun_job_t *_job_create_structure(allocation_info_t *info);
 static char *     _normalize_hostlist(const char *hostlist);
@@ -747,33 +746,31 @@ job_force_termination(srun_job_t *job)
 	kill_sent++;
 }
 
-static int
-_compute_task_count(allocation_info_t *ainfo)
-{
-	int i, cnt = 0;
-#if defined HAVE_BGQ
-//#if defined HAVE_BGQ && HAVE_BG_FILES
-	/* always return the ntasks here for Q */
-	return opt.ntasks;
-#endif
-	if (opt.cpus_set) {
-		for (i = 0; i < ainfo->num_cpu_groups; i++)
-			cnt += ( ainfo->cpu_count_reps[i] *
-				 (ainfo->cpus_per_node[i]/opt.cpus_per_task));
-	} else if (opt.ntasks_per_node != NO_VAL)
-		cnt = ainfo->nnodes * opt.ntasks_per_node;
-
-	return (cnt < ainfo->nnodes) ? ainfo->nnodes : cnt;
-}
-
 static void
 _set_ntasks(allocation_info_t *ai)
 {
-	if (!opt.ntasks_set) {
-		opt.ntasks = _compute_task_count(ai);
-		if (opt.cpus_set)
-			opt.ntasks_set = true;	/* implicit */
+	int cnt = 0;
+
+	if (opt.ntasks_set)
+		return;
+
+#if defined HAVE_BGQ
+	/* always return the ntasks here for Q */
+	return opt.ntasks;
+#endif
+	if (opt.ntasks_per_node != NO_VAL) {
+		cnt = ai->nnodes * opt.ntasks_per_node;
+		opt.ntasks_set = true;	/* implicit */
+	} else if (opt.cpus_set) {
+		int i;
+
+		for (i = 0; i < ai->num_cpu_groups; i++)
+			cnt += (ai->cpu_count_reps[i] *
+				(ai->cpus_per_node[i] / opt.cpus_per_task));
+		opt.ntasks_set = true;	/* implicit */
 	}
+
+	opt.ntasks = (cnt < ai->nnodes) ? ai->nnodes : cnt;
 }
 
 /*
