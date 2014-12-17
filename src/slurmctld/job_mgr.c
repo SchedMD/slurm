@@ -5458,6 +5458,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 						       &exc_bitmap))) {
 		if (error_code == SLURM_ERROR)
 			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
+		job_ptr = *job_pptr;
 		goto cleanup_fail;
 	}
 	job_ptr = *job_pptr;
@@ -6358,6 +6359,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (error_code)
 		return error_code;
 
+	*job_rec_ptr = job_ptr;
 	job_ptr->partition = xstrdup(job_desc->partition);
 	if (job_desc->profile != ACCT_GATHER_PROFILE_NOT_SET)
 		job_ptr->profile = job_desc->profile;
@@ -6544,7 +6546,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	 */
 
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);
-	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
 }
 
