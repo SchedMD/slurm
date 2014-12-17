@@ -45,7 +45,6 @@
 
 #include "src/common/pack.h"
 #include "slurm/slurm.h"
-#include <json-c/json.h>
 
 /* Interval, in seconds, for purging orphan bb_alloc_t records and timing out
  * staging */
@@ -131,19 +130,6 @@ typedef struct bb_state {
 	uint32_t	used_space;	/* units are GB */
 } bb_state_t;
 
-/* Description of each bb entry
- */
-typedef struct bb_entry {
-	char *id;
-	char *units;
-	uint64_t granularity;
-	uint64_t quantity;
-	uint64_t free;
-	uint32_t gb_granularity;
-	uint32_t gb_quantity;
-	uint32_t gb_free;
-} bb_entry_t;
-
 /* Add a burst buffer allocation to a user's load */
 extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
 
@@ -214,12 +200,6 @@ extern void bb_set_use_time(bb_state_t *state_ptr);
 
 /* Sleep function, also handles termination signal */
 extern void bb_sleep(bb_state_t *state_ptr, int add_secs);
-
-/* Run the custom command returning bb info and convert
- * its internal format into bb_entry_t
- */
-extern bb_entry_t *bb_entry_get(int *num_ent, bb_state_t *state_ptr);
-extern void bb_free_entry(struct bb_entry *ents, int num_ent);
 
 /* Execute a script, wait for termination and return its stdout.
  * script_type IN - Type of program being run (e.g. "StartStageIn")

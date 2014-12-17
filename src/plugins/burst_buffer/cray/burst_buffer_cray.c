@@ -34,7 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
@@ -46,8 +46,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#if HAVE_JSON_OBJECT_H
-#   include <json_object.h>
+#if HAVE_JSON
+#include <json-c/json.h>
 #endif
 
 #include "slurm/slurm.h"
@@ -113,6 +113,19 @@ typedef struct {
 	uint32_t   total_size;	/* Total GB required for this job */
 } bb_job_t;
 
+/* Description of each Cray bb entry
+ */
+typedef struct bb_entry {
+	char *id;
+	char *units;
+	uint64_t granularity;
+	uint64_t quantity;
+	uint64_t free;
+	uint32_t gb_granularity;
+	uint32_t gb_quantity;
+	uint32_t gb_free;
+} bb_entry_t;
+
 static int	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
@@ -132,6 +145,11 @@ static int	_test_size_limit(struct job_record *job_ptr,uint32_t add_space);
 static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list);
+static bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr);
+static void _bb_free_entry(struct bb_entry *ents, int num_ent);
+static struct bb_entry *_json_parse_array(json_object *, char *, int *);
+static void _json_parse_object(json_object *, struct bb_entry *);
+
 
 /* Purge files we have created for the job.
  * bb_state.bb_mutex is locked on function entry. */
@@ -365,7 +383,7 @@ static void _load_state(uint32_t job_id)
 
 	bb_state.last_load_time = time(NULL);
 //FIXME: Could we load job state here??
-	ents = bb_entry_get(&num_ents, &bb_state);
+	ents = _bb_entry_get(&num_ents, &bb_state);
 	if (ents == NULL) {
 		error("%s: failed to be burst buffer entries, what now?",
 		      __func__);
@@ -403,7 +421,7 @@ static void _load_state(uint32_t job_id)
 		gres_ptr->name = xstrdup(ents[i].id);
 		gres_ptr->used_cnt = ents[i].gb_quantity - ents[i].gb_free;
 	}
-	bb_free_entry(ents, num_ents);
+	_bb_free_entry(ents, num_ents);
 }
 
 /* Write an string representing the NIDs of a job's nodes to an arbitrary
@@ -1622,4 +1640,156 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
+}
+
+/* bb_entry_get()
+ *
+ * This little parser handles the json stream
+ * coming from the cray comamnd describing the
+ * pools of burst buffers. The json stream is like
+ * this { "pools": [ {}, .... {} ] } key pools
+ * and an array of objects describing each pool.
+ * The objects have only string and int types (for now).
+ */
+static
+bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
+{
+	bb_entry_t *ents;
+	char *string;
+	char **script_argv;
+	int i, status = 0;
+	json_object *j;
+	json_object_iter iter;
+
+	script_argv = xmalloc(sizeof(char *) * 3);
+	xstrfmtcat(script_argv[0], "%s", "jsonpools");
+	xstrfmtcat(script_argv[1], "%s", "pools");
+
+	string = bb_run_script("jsonpools",
+			       state_ptr->bb_config.get_sys_state,
+			       script_argv, 3000, &status);
+	if (string == NULL) {
+		error("%s: %s did not return any pool",
+		      __func__,state_ptr->bb_config.get_sys_state);
+		for (i = 0; script_argv[i]; i++)
+			xfree(script_argv[i]);
+		xfree(script_argv);
+		return NULL;
+	}
+	for (i = 0; script_argv[i]; i++)
+		xfree(script_argv[i]);
+	xfree(script_argv);
+
+	j = json_tokener_parse(string);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, string);
+		xfree(string);
+		return NULL;
+	}
+	xfree(string);
+
+	json_object_object_foreachC(j, iter) {
+		ents = _json_parse_array(j, iter.key, num_ent);
+	}
+	json_object_put(j);
+
+	return ents;
+}
+
+/* bb_free_entry()
+ */
+static
+void _bb_free_entry(struct bb_entry *ents, int num_ent)
+{
+	int i;
+
+	for (i = 0; i < num_ent; i++) {
+		xfree(ents[i].id);
+		xfree(ents[i].units);
+	}
+
+	xfree(ents);
+}
+
+/* json_parse_array()
+ */
+static struct bb_entry *
+_json_parse_array(json_object *jobj, char *key, int *num)
+{
+	json_object *jarray;
+	int i;
+	json_object *jvalue;
+	struct bb_entry *ents;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(struct bb_entry));
+
+	for (i = 0; i < *num; i++){
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_object(jvalue, &ents[i]);
+		/* Convert to GB
+		 */
+		if (strcmp(ents[i].units, "bytes") == 0) {
+			ents[i].gb_granularity
+				= ents[i].granularity/(1024*1024*1024);
+			ents[i].gb_quantity
+				= ents[i].quantity * ents[i].gb_granularity;
+			ents[i].gb_free
+				= ents[i].free * ents[i].gb_granularity;
+		} else {
+			/* So the caller can use all the entries
+			 * in a loop.
+			 */
+			ents[i].gb_granularity = ents[i].granularity;
+			ents[i].gb_quantity = ents[i].quantity;
+			ents[i].gb_free = ents[i].free;
+		}
+	}
+
+	return ents;
+}
+
+/* json_parse_object()
+ */
+static void
+_json_parse_object(json_object *jobj, struct bb_entry *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+	const char *p;
+
+	json_object_object_foreachC(jobj, iter) {
+
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_boolean:
+			case json_type_double:
+			case json_type_null:
+			case json_type_object:
+			case json_type_array:
+				break;
+			case json_type_int:
+				x = json_object_get_int64(iter.val);
+				if (strcmp(iter.key, "granularity") == 0) {
+					ent->granularity = x;
+				} else if (strcmp(iter.key, "quantity") == 0) {
+					ent->quantity = x;
+				}  else if (strcmp(iter.key, "free") == 0) {
+					ent->free = x;
+				}
+				break;
+			case json_type_string:
+				p = json_object_get_string(iter.val);
+				if (strcmp(iter.key, "id") == 0) {
+					ent->id = xstrdup(p);
+				} else if (strcmp(iter.key, "units") == 0) {
+					ent->units = xstrdup(p);
+				}
+				break;
+		}
+	}
 }

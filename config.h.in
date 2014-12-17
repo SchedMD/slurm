@@ -163,6 +163,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define if you are compiling with json. */
+#undef HAVE_JSON
+
 /* Define to 1 if you have the <kstat.h> header file. */
 #undef HAVE_KSTAT_H
 
@@ -389,9 +392,6 @@
 /* Define to 1 if you have the external variable, _system_configuration with a
    member named physmem. */
 #undef HAVE__SYSTEM_CONFIGURATION
-
-/* Define json installation home */
-#undef JSON_HOME
 
 /* Define the libnrt.so location */
 #undef LIBNRT_SO
