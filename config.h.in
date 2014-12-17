@@ -390,6 +390,9 @@
    member named physmem. */
 #undef HAVE__SYSTEM_CONFIGURATION
 
+/* Define json installation home */
+#undef JSON_HOME
+
 /* Define the libnrt.so location */
 #undef LIBNRT_SO
 

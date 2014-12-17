@@ -44,13 +44,17 @@ AC_DEFUN([X_AC_JSON], [
      test -n "$x_ac_cv_json_dir" && break
   done
   ])
+
   if test -z "$x_ac_cv_json_dir"; then
     AC_MSG_WARN([unable to locate json parser library])
   else
+    JSON_HOME="$x_ac_cv_json_dir"
     JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include/json-c"
     JSON_LDFLAGS="-L$x_ac_cv_json_dir -ljson-c"
   fi
 
+  AC_DEFINE_UNQUOTED(JSON_HOME, "$x_ac_cv_json_dir", [Define json installation home])
+  AC_SUBST(JSON_HOME)
   AC_SUBST(JSON_CPPFLAGS)
   AC_SUBST(JSON_LDFLAGS)
   AM_CONDITIONAL(WITH_JSON_PARSER, test -n "$x_ac_cv_json_dir")

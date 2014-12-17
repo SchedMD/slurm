@@ -769,6 +769,7 @@ WITH_JSON_PARSER_FALSE
 WITH_JSON_PARSER_TRUE
 JSON_LDFLAGS
 JSON_CPPFLAGS
+JSON_HOME
 PAM_DIR
 HAVE_PAM_FALSE
 HAVE_PAM_TRUE
@@ -19353,13 +19354,21 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_json_dir" >&5
 $as_echo "$x_ac_cv_json_dir" >&6; }
+
   if test -z "$x_ac_cv_json_dir"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate json parser library" >&5
 $as_echo "$as_me: WARNING: unable to locate json parser library" >&2;}
   else
+    JSON_HOME="$x_ac_cv_json_dir"
     JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include/json-c"
     JSON_LDFLAGS="-L$x_ac_cv_json_dir -ljson-c"
   fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define JSON_HOME "$x_ac_cv_json_dir"
+_ACEOF
+
 
 
 
