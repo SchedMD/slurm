@@ -194,7 +194,7 @@ static void _stop_stage_in(uint32_t job_id)
 {
 	char **script_argv = NULL;
 	char *resp, *tok;
-	int i;
+	int i, status = 0;
 
 	if (!bb_state.bb_config.stop_stage_in)
 		return;
@@ -208,10 +208,9 @@ static void _stop_stage_in(uint32_t job_id)
 	xstrfmtcat(script_argv[1], "%s", "stop_stage_in");
 	xstrfmtcat(script_argv[2], "%u", job_id);
 
-	resp = run_script("StopStageIn",
-			  bb_state.bb_config.stop_stage_in,
-			  script_argv,
-			  -1);
+	resp = bb_run_script("StopStageIn",
+			     bb_state.bb_config.stop_stage_in,
+			     script_argv, -1, &status);
 	if (resp) {
 		error("%s: StopStageIn: %s", __func__, resp);
 		xfree(resp);
@@ -225,7 +224,7 @@ static void _stop_stage_out(uint32_t job_id)
 {
 	char **script_argv = NULL;
 	char *resp, *tok;
-	int i;
+	int i, status = 0;
 
 	if (!bb_state.bb_config.stop_stage_out)
 		return;
@@ -240,8 +239,8 @@ static void _stop_stage_out(uint32_t job_id)
 	xstrfmtcat(script_argv[1], "%s", "stop_stage_out");
 	xstrfmtcat(script_argv[2], "%u", job_id);
 
-	resp = run_script("StopStageOut", bb_state.bb_config.stop_stage_out,
-			  script_argv, -1);
+	resp = bb_run_script("StopStageOut", bb_state.bb_config.stop_stage_out,
+			     script_argv, -1, &status);
 	if (resp) {
 		error("%s: StopStageOut: %s", __func__, resp);
 		xfree(resp);
@@ -641,6 +640,7 @@ static void _load_state(uint32_t job_id)
 		{"TotalSize", S_P_STRING},
 		{NULL}
 	};
+	int status = 0;
 	DEF_TIMERS;
 
 	if (!bb_state.bb_config.get_sys_state)
@@ -662,8 +662,8 @@ static void _load_state(uint32_t job_id)
 		script_args[2] = NULL;
 	}
 	START_TIMER;
-	resp = run_script("GetSysState", bb_state.bb_config.get_sys_state,
-			  script_args, 10);
+	resp = bb_run_script("GetSysState", bb_state.bb_config.get_sys_state,
+			     script_args, 2000, &status);
 	if (resp == NULL)
 		return;
 	END_TIMER;
@@ -968,7 +968,7 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 {
 	char **script_argv, *resp;
 	bb_alloc_t *bb_ptr;
-	int i;
+	int i, status = 0;
 
 	bb_ptr = bb_alloc_job(&bb_state, job_ptr, bb_size);
 
@@ -979,9 +979,9 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 	if (script_argv) {
 		bb_ptr->state = BB_STATE_STAGING_IN;
 		bb_ptr->state_time = time(NULL);
-		resp = run_script("StartStageIn",
-				  bb_state.bb_config.start_stage_in,
-				  script_argv, -1);
+		resp = bb_run_script("StartStageIn",
+				     bb_state.bb_config.start_stage_in,
+				     script_argv, -1, &status);
 		if (resp) {
 			error("%s: StartStageIn: %s", __func__, resp);
 			xfree(resp);
@@ -1134,7 +1134,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 //FIXME: How to handle various job terminate states (e.g. requeue, failure), user script controlled?
 	bb_alloc_t *bb_ptr;
 	char **script_argv, *resp;
-	int i;
+	int i, status = 0;
 
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_id:%u",
@@ -1162,9 +1162,9 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		if (script_argv) {
 			bb_ptr->state = BB_STATE_STAGING_OUT;
 			bb_ptr->state_time = time(NULL);
-			resp = run_script("StartStageOut",
-					  bb_state.bb_config.start_stage_out,
-					  script_argv, -1);
+			resp = bb_run_script("StartStageOut",
+					     bb_state.bb_config.start_stage_out,
+					     script_argv, -1, &status);
 			if (resp) {
 				error("%s: StartStageOut: %s", __func__, resp);
 				xfree(resp);
@@ -1241,7 +1241,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
 	char **script_argv, *resp;
-	int i;
+	int i, status = 0;
 
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s",  __func__, plugin_type);
@@ -1266,9 +1266,9 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 		if (script_argv) {
 			bb_ptr->state = BB_STATE_STAGED_OUT;
 			bb_ptr->state_time = time(NULL);
-			resp = run_script("StopStageOut",
-					  bb_state.bb_config.stop_stage_out,
-					  script_argv, -1);
+			resp = bb_run_script("StopStageOut",
+					     bb_state.bb_config.stop_stage_out,
+					     script_argv, -1, &status);
 			if (resp) {
 				error("%s: StopStageOut: %s", __func__, resp);
 				xfree(resp);

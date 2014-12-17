@@ -770,7 +770,7 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	return bb_ptr;
 }
 
-/* get_bb_entry()
+/* bb_entry_get()
  *
  * This little parser handles the json stream
  * coming from the cray comamnd describing the
@@ -779,13 +779,12 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
  * and an array of objects describing each pool.
  * The objects have only string and int types (for now).
  */
-bb_entry_t *
-get_bb_entry(int *num_ent, bb_state_t *state_ptr)
+extern bb_entry_t *bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 {
 	bb_entry_t *ents;
 	char *string;
 	char **script_argv;
-	int i;
+	int i, status = 0;
 	json_object *j;
 	json_object_iter iter;
 
@@ -793,10 +792,9 @@ get_bb_entry(int *num_ent, bb_state_t *state_ptr)
 	xstrfmtcat(script_argv[0], "%s", "jsonpools");
 	xstrfmtcat(script_argv[1], "%s", "pools");
 
-	string = run_script("jsonpools",
-			    state_ptr->bb_config.get_sys_state,
-			    script_argv,
-			    3600);
+	string = bb_run_script("jsonpools",
+			       state_ptr->bb_config.get_sys_state,
+			       script_argv, 3000, &status);
 	if (string == NULL) {
 		error("%s: %s did not return any pool",
 		      __func__,state_ptr->bb_config.get_sys_state);
@@ -825,14 +823,13 @@ get_bb_entry(int *num_ent, bb_state_t *state_ptr)
 	return ents;
 }
 
-/* free_bb_ents()
+/* bb_free_entry()
  */
-void
-free_bb_ents(struct bb_entry *ents, int num)
+extern void bb_free_entry(struct bb_entry *ents, int num_ent)
 {
 	int i;
 
-	for (i = 0; i < num; i++) {
+	for (i = 0; i < num_ent; i++) {
 		xfree(ents[i].id);
 		xfree(ents[i].units);
 	}
@@ -844,33 +841,43 @@ free_bb_ents(struct bb_entry *ents, int num)
  * script_type IN - Type of program being run (e.g. "StartStageIn")
  * script_path IN - Fully qualified pathname of the program to execute
  * script_args IN - Arguments to the script
- * max_wait IN - maximum time to wait in seconds, -1 for no limit (asynchronous)
- * Return stdout of spawned program, value must be xfreed. */
-char *run_script(char *script_type, char *script_path,
-		 char **script_argv, int max_wait)
+ * max_wait IN - Maximum time to wait in milliseconds,
+ *		 -1 for no limit (asynchronous)
+ * status OUT - Job exit code
+ * Return stdout+stderr of spawned program, value must be xfreed. */
+char *bb_run_script(char *script_type, char *script_path,
+		    char **script_argv, int max_wait, int *status)
 {
-	int i, status, new_wait, resp_size = 0, resp_offset = 0;
+	int i, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
 	char *resp = NULL;
 	int pfd[2] = { -1, -1 };
 
 	if ((script_path == NULL) || (script_path[0] == '\0')) {
 		error("%s: no script specified", __func__);
+		*status = 127;
+		resp = xstrdup("Slurm burst buffer configuration error");
 		return resp;
 	}
 	if (script_path[0] != '/') {
 		error("%s: %s is not fully qualified pathname (%s)",
 		      __func__, script_type, script_path);
+		*status = 127;
+		resp = xstrdup("Slurm burst buffer configuration error");
 		return resp;
 	}
 	if (access(script_path, R_OK | X_OK) < 0) {
 		error("%s: %s can not be executed (%s) %m",
 		      __func__, script_type, script_path);
+		*status = 127;
+		resp = xstrdup("Slurm burst buffer configuration error");
 		return resp;
 	}
 	if (max_wait != -1) {
 		if (pipe(pfd) != 0) {
 			error("%s: pipe(): %m", __func__);
+			*status = 127;
+			resp = xstrdup("System error");
 			return resp;
 		}
 	}
@@ -919,14 +926,18 @@ char *run_script(char *script_type, char *script_path,
 			if (max_wait == -1) {
 				new_wait = -1;
 			} else {
-				new_wait = time(NULL) - start_time + max_wait;
+				new_wait = (time(NULL) - start_time) * 1000
+					   + max_wait;
 				if (new_wait <= 0)
 					break;
 			}
-			status = poll(&fds, 1, new_wait);
-			if (status < 1) {
-				error("%s: %s timeout",
+			i = poll(&fds, 1, new_wait);
+			if (i == 0) {
+				error("%s: %s poll timeout",
 				      __func__, script_type);
+				break;
+			} else if (i < 0) {
+				error("%s: %s poll:%m", __func__, script_type);
 				break;
 			}
 			if ((fds.revents & POLLIN) == 0)
@@ -950,10 +961,10 @@ char *run_script(char *script_type, char *script_path,
 			}
 		}
 		killpg(cpid, SIGKILL);
-		waitpid(cpid, &status, 0);
+		waitpid(cpid, status, 0);
 		close(pfd[0]);
 	} else {
-		waitpid(cpid, &status, 0);
+		waitpid(cpid, status, 0);
 	}
 	return resp;
 }

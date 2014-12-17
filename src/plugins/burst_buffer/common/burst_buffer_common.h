@@ -218,12 +218,18 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs);
 /* Run the custom command returning bb info and convert
  * its internal format into bb_entry_t
  */
-extern bb_entry_t *get_bb_entry(int *, bb_state_t *);
-extern void free_bb_ents(struct bb_entry *, int);
+extern bb_entry_t *bb_entry_get(int *num_ent, bb_state_t *state_ptr);
+extern void bb_free_entry(struct bb_entry *ents, int num_ent);
 
-/* Run a script and return its stdout
- */
-extern char * run_script(char *script_type, char *script_path,
-			 char **script_argv, int max_wait);
+/* Execute a script, wait for termination and return its stdout.
+ * script_type IN - Type of program being run (e.g. "StartStageIn")
+ * script_path IN - Fully qualified pathname of the program to execute
+ * script_args IN - Arguments to the script
+ * max_wait IN - Maximum time to wait in milliseconds,
+ *		 -1 for no limit (asynchronous)
+ * status OUT - Job exit code
+ * Return stdout+stderr of spawned program, value must be xfreed. */
+extern char *bb_run_script(char *script_type, char *script_path,
+			   char **script_argv, int max_wait, int *status);
 
 #endif	/* __BURST_BUFFER_COMMON_H__ */

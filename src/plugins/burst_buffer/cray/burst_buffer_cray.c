@@ -43,6 +43,8 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #if HAVE_JSON_OBJECT_H
 #   include <json_object.h>
@@ -113,12 +115,14 @@ typedef struct {
 
 static int	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
+static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static void	_del_bb_spec(bb_job_t *bb_spec);
 static bb_job_t *_get_bb_spec(struct job_record *job_ptr);
 static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_load_state(uint32_t job_id);
 static int	_parse_bb_opts(struct job_descriptor *job_desc);
 static int	_parse_interactive(struct job_descriptor *job_desc);
+static void	_purge_bb_files(struct job_record *job_ptr);
 static char *	_set_cmd_path(char *cmd);
 static int	_start_stage_in(struct job_record *job_ptr);
 static void	_start_stage_out(uint32_t job_id);
@@ -128,6 +132,52 @@ static int	_test_size_limit(struct job_record *job_ptr,uint32_t add_space);
 static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list);
+
+/* Purge files we have created for the job.
+ * bb_state.bb_mutex is locked on function entry. */
+static void _purge_bb_files(struct job_record *job_ptr)
+{
+	char *hash_dir = NULL, *job_dir = NULL;
+	char *script_file = NULL, *setup_env_file = NULL;
+	char *data_in_env_file = NULL, *pre_run_env_file = NULL;
+	char *post_run_env_file = NULL, *data_out_env_file = NULL;
+	char *teardown_env_file = NULL;
+	int hash_inx;
+
+	hash_inx = job_ptr->job_id % 10;
+	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+	(void) mkdir(hash_dir, 0700);
+	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+	(void) mkdir(job_dir, 0700);
+	xstrfmtcat(setup_env_file, "%s/setup_env", job_dir);
+	xstrfmtcat(data_in_env_file, "%s/data_in_env", job_dir);
+	xstrfmtcat(pre_run_env_file, "%s/pre_run_env", job_dir);
+	xstrfmtcat(post_run_env_file, "%s/post_run_env", job_dir);
+	xstrfmtcat(data_out_env_file, "%s/data_out_env", job_dir);
+	xstrfmtcat(teardown_env_file, "%s/teardown_env", job_dir);
+
+	(void) unlink(setup_env_file);
+	(void) unlink(data_in_env_file);
+	(void) unlink(pre_run_env_file);
+	(void) unlink(post_run_env_file);
+	(void) unlink(data_out_env_file);
+	(void) unlink(teardown_env_file);
+	if (job_ptr->batch_flag == 0) {
+		xstrfmtcat(script_file, "%s/script", job_dir);
+		(void) unlink(script_file);
+		(void) unlink(job_dir);
+	}
+
+	xfree(hash_dir);
+	xfree(job_dir);
+	xfree(script_file);
+	xfree(setup_env_file);
+	xfree(data_in_env_file);
+	xfree(pre_run_env_file);
+	xfree(post_run_env_file);
+	xfree(data_out_env_file);
+	xfree(teardown_env_file);
+}
 
 /* Validate that our configuration is valid for this plugin type */
 static void _test_config(void)
@@ -285,9 +335,10 @@ static bb_job_t *_get_bb_spec(struct job_record *job_ptr)
 		_log_bb_spec(bb_spec);
 	return bb_spec;
 }
+
 static uint32_t _get_bb_size(struct job_record *job_ptr)
 {
-//FIXME: Temporary
+//FIXME: Temporary, need to get BB.GRES info
 	uint32_t size = 0;
 	bb_job_t *bb_spec = _get_bb_spec(job_ptr);
 	if (bb_spec) size=bb_spec->total_size;
@@ -308,8 +359,8 @@ static void _load_state(uint32_t job_id)
 	int i;
 
 	bb_state.last_load_time = time(NULL);
-
-	ents = get_bb_entry(&num_ents, &bb_state);
+//FIXME: Could we load job state here??
+	ents = bb_entry_get(&num_ents, &bb_state);
 	if (ents == NULL) {
 		error("%s: failed to be burst buffer entries, what now?",
 		      __func__);
@@ -347,7 +398,7 @@ static void _load_state(uint32_t job_id)
 		gres_ptr->name = xstrdup(ents[i].id);
 		gres_ptr->used_cnt = ents[i].gb_quantity - ents[i].gb_free;
 	}
-	free_bb_ents(ents, num_ents);
+	bb_free_entry(ents, num_ents);
 }
 
 /* Write an string representing the NIDs of a job's nodes to an arbitrary
@@ -381,7 +432,7 @@ static int _write_nid_file(char *file_name, char *node_list)
 	return rc;
 }
 
-/* Write an arbitrary string to an arbitrary file nalocationme */
+/* Write an arbitrary string to an arbitrary file name */
 static int _write_file(char *file_name, char *buf)
 {
 	int amount, fd, nwrite, pos;
@@ -893,6 +944,74 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 	return rc;
 }
 
+
+static int _build_bb_script(struct job_record *job_ptr, char *script_file)
+{
+	char *in_buf, *out_buf = NULL;
+	char *sep, *tok, *tmp;
+	int i, rc;
+
+	xstrcat(out_buf, "#!/bin/bash\n");
+
+	if ((tok = strstr(job_ptr->burst_buffer, "swap="))) {
+		tok += 5;
+		i = atoi(tok);
+		xstrfmtcat(out_buf, "#BB swap %dGB\n", i);
+	}
+
+	in_buf = xstrdup(job_ptr->burst_buffer);
+	tmp = in_buf;
+	while ((tok = strstr(tmp, "persistentbb="))) {
+		tok += 13;
+		sep = NULL;
+		if ((tok[0] == '\'') || (tok[0] == '\"')) {
+			sep = strchr(tok + 1, tok[0]);
+			if (sep) {
+				tok++;
+				sep[0] = '\0';
+				tmp = sep + 1;
+			}
+		}
+		if (!sep) {
+			while ((sep[0] != ' ') && (sep[0] != '\0'))
+				sep++;
+			if (sep[0] == '\0') {
+				tmp = sep;
+			} else {
+				sep[0] = '\0';
+				tmp = sep + 1;
+			}
+		}
+		xstrfmtcat(out_buf, "#BB persistentbb %s\n", tok);
+	}
+	xfree(in_buf);
+
+	in_buf = xstrdup(job_ptr->burst_buffer);
+	if ((tok = strstr(in_buf, "jobbb="))) {
+		tok += 6;
+		sep = NULL;
+		if ((tok[0] == '\'') || (tok[0] == '\"')) {
+			sep = strchr(tok + 1, tok[0]);
+			if (sep) {
+				tok++;
+				sep[0] = '\0';
+			}
+		}
+		if (!sep) {
+			while ((sep[0] != ' ') && (sep[0] != '\0'))
+				sep++;
+			sep[0] = '\0';
+		}
+		xstrfmtcat(out_buf, "#BB jobbb %s\n", tok);
+		tmp = tok;
+	}
+	xfree(in_buf);
+
+	rc = _write_file(script_file, out_buf);
+	xfree(out_buf);
+	return rc;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -1100,11 +1219,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
  */
 extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 {
-	char *base_dir = NULL, *script_file = NULL, *setup_env_file = NULL;
-	char *data_in_env_file = NULL, *pre_run_env_file = NULL;
-	char *post_run_env_file = NULL, *data_out_env_file = NULL;
-	char *teardown_env_file = NULL, *bbs_job_process = NULL;
-	int hash_inx, rc = SLURM_SUCCESS;
+	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
+	char *bbs_job_process, *resp_msg = NULL, **script_argv;
+	int i, hash_inx, rc = SLURM_SUCCESS, status = 0;
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0') ||
@@ -1118,37 +1235,47 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	hash_inx = job_ptr->job_id % 10;
-	xstrfmtcat(base_dir, "%s/hash.%d/job.%u", state_save_loc, hash_inx,
-		   job_ptr->job_id);
-	xstrfmtcat(script_file, "%s/script", base_dir);
-	xstrfmtcat(setup_env_file, "%s/setup_env", base_dir);
-	xstrfmtcat(data_in_env_file, "%s/data_in_env", base_dir);
-	xstrfmtcat(pre_run_env_file, "%s/pre_run_env", base_dir);
-	xstrfmtcat(post_run_env_file, "%s/post_run_env", base_dir);
-	xstrfmtcat(data_out_env_file, "%s/data_out_env", base_dir);
-	xstrfmtcat(teardown_env_file, "%s/teardown_env", base_dir);
+	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+	(void) mkdir(hash_dir, 0700);
+	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+	(void) mkdir(job_dir, 0700);
+	xstrfmtcat(script_file, "%s/script", job_dir);
+	if (job_ptr->batch_flag == 0)
+		rc = _build_bb_script(job_ptr, script_file);
+	script_argv = xmalloc(sizeof(char *) * 10);
+	script_argv[0] = "bbs_job_process";
+	bbs_job_process = _set_cmd_path("bbs_job_process");
+	script_argv[1] = bbs_job_process;
+	xstrfmtcat(script_argv[2], "--job=%s", script_file);
+	xstrfmtcat(script_argv[3], "--setup-env-file=%s/setup_env", job_dir);
+	xstrfmtcat(script_argv[4], "--data-in-env-file=%s/data_in_env",job_dir);
+	xstrfmtcat(script_argv[5], "--pre-run-env-file=%s/pre_run_env",job_dir);
+	xstrfmtcat(script_argv[6], "--post-run-env-file=%s/post_run_env",
+		   job_dir);
+	xstrfmtcat(script_argv[7], "--data-out-env-file=%s/data_out_env",
+		   job_dir);
+	xstrfmtcat(script_argv[8], "--teardown-env-file=%s/teardown_env",
+		  job_dir);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
-
-	bbs_job_process = _set_cmd_path("bbs_job_process");
-#if 0
-//FIXME: Execute bbs_job_process in-line. It should be fast
-	if (error) {
+	resp_msg = bb_run_script("bbs_job_process", bbs_job_process,
+				 script_argv, 2000, &status);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		xfree(*err_msg);
-		*err_msg = xstrdup("WHATEVER");
+		*err_msg = resp_msg;
+		resp_msg = NULL;
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+	} else {
+		xfree(resp_msg);
 	}
-#endif
-	xfree(bbs_job_process);
 
-	xfree(base_dir);
+	for (i = 2; script_argv[i]; i++)  /* NOTE: First 2 are static */
+		xfree(script_argv[i]);
+	xfree(script_argv);
+	xfree(bbs_job_process);
+	xfree(hash_dir);
+	xfree(job_dir);
 	xfree(script_file);
-	xfree(setup_env_file);
-	xfree(data_in_env_file);
-	xfree(pre_run_env_file);
-	xfree(post_run_env_file);
-	xfree(data_out_env_file);
-	xfree(teardown_env_file);
 
 	return rc;
 }
@@ -1428,6 +1555,8 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 			rc = -1;
 		}
 	}
+	if (rc == 1)
+		_purge_bb_files(job_ptr);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;
