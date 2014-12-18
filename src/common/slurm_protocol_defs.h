@@ -851,6 +851,7 @@ typedef struct prolog_launch_msg {
 } prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {
+	char *account;          /* account under which the job is running */
 	uint32_t array_job_id;	/* job array master job ID */
 	uint32_t array_task_id;	/* job array ID or NO_VAL */
 	uint32_t job_id;
@@ -879,6 +880,7 @@ typedef struct batch_job_launch_msg {
 	char *script;		/* the actual job script, default NONE */
 	char *std_err;		/* pathname of stderr */
 	char *std_in;		/* pathname of stdin */
+	char *qos;              /* qos the job is running under */
 	char *std_out;		/* pathname of stdout */
 	char *work_dir;		/* full pathname of working directory */
 	char *ckpt_dir;		/* location to store checkpoint image */
@@ -902,6 +904,7 @@ typedef struct batch_job_launch_msg {
 	uint16_t restart_cnt;	/* batch job restart count	*/
 	char **spank_job_env;	/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
+	char *resv_name;        /* job's reservation */
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {

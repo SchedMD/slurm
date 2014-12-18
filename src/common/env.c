@@ -1206,8 +1206,32 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 					tmp_mem);
 	}
 
-	return SLURM_SUCCESS;
+	/* Set the SLURM_JOB_ACCOUNT,  SLURM_JOB_QOS
+	 * and SLURM_JOB_RESERVATION if set by
+	 * the controller.
+	 */
+	if (batch->account) {
+		env_array_overwrite_fmt(dest,
+					"SLURM_JOB_ACCOUNT",
+					"%s",
+					batch->account);
+	}
 
+	if (batch->qos) {
+		env_array_overwrite_fmt(dest,
+					"SLURM_JOB_QOS",
+					"%s",
+					batch->qos);
+	}
+
+	if (batch->resv_name) {
+		env_array_overwrite_fmt(dest,
+					"SLURM_JOB_RESERVATION",
+					"%s",
+					batch->resv_name);
+	}
+
+	return SLURM_SUCCESS;
 }
 
 /*

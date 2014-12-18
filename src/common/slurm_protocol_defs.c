@@ -483,6 +483,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 	int i;
 
 	if (msg) {
+		xfree(msg->account);
 		xfree(msg->acctg_freq);
 		xfree(msg->user_name);
 		xfree(msg->alias_list);
@@ -495,6 +496,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->std_err);
 		xfree(msg->std_in);
 		xfree(msg->std_out);
+		xfree(msg->qos);
 		xfree(msg->work_dir);
 		xfree(msg->ckpt_dir);
 		xfree(msg->restart_dir);
@@ -516,7 +518,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		msg->select_jobinfo = NULL;
 
 		slurm_cred_destroy(msg->cred);
-
+		xfree(msg->resv_name);
 		xfree(msg);
 	}
 }

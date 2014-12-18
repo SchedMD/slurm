@@ -1663,6 +1663,22 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
 					 job_ptr->select_jobinfo);
 
+	if (job_ptr->account) {
+		launch_msg_ptr->account = xstrdup(job_ptr->account);
+	}
+	if (job_ptr->qos_ptr) {
+		slurmdb_qos_rec_t *qos;
+
+		qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		if (strcmp(qos->description, "Normal QOS default") == 0)
+			launch_msg_ptr->qos = xstrdup("normal");
+		else
+			launch_msg_ptr->qos = xstrdup(qos->description);
+	}
+	if (job_ptr->resv_name) {
+		launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_name);
+	}
+
 	return launch_msg_ptr;
 }
 
