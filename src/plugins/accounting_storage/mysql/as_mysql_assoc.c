@@ -2449,6 +2449,47 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		ListIterator itr2 = NULL;
+		slurmdb_user_rec_t user;
+		slurmdb_coord_rec_t *coord = NULL;
+		slurmdb_association_rec_t *object = NULL;
+
+		memset(&user, 0, sizeof(slurmdb_user_rec_t));
+		user.uid = uid;
+
+		if (!is_user_any_coord(mysql_conn, &user)) {
+			error("Only admins/operators/coordinators "
+			      "can add associations");
+			return ESLURM_ACCESS_DENIED;
+		}
+
+		itr = list_iterator_create(association_list);
+		itr2 = list_iterator_create(user.coord_accts);
+		while ((object = list_next(itr))) {
+			char *account = "root";
+			if (object->user)
+				account = object->acct;
+			else if (object->parent_acct)
+				account = object->parent_acct;
+			list_iterator_reset(itr2);
+			while ((coord = list_next(itr2))) {
+				if (!strcasecmp(coord->name, account))
+					break;
+			}
+			if (!coord)
+				break;
+		}
+		list_iterator_destroy(itr2);
+		list_iterator_destroy(itr);
+		if (!coord)  {
+			error("Coordinator %s(%d) tried to add associations "
+			      "where they were not allowed",
+			      user.name, user.uid);
+			return ESLURM_ACCESS_DENIED;
+		}
+	}
+
 	local_cluster_list = list_create(NULL);
 	user_name = uid_to_string((uid_t) uid);
 	/* these need to be in a specific order */

@@ -206,6 +206,9 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!object->assoc_list)
 			continue;
 
+		if (!assoc_list)
+			assoc_list =
+				list_create(slurmdb_destroy_association_rec);
 		list_transfer(assoc_list, object->assoc_list);
 	}
 	list_iterator_destroy(itr);
@@ -225,14 +228,12 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	} else
 		xfree(txn_query);
 
-	if (list_count(assoc_list)) {
-		if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
-		    == SLURM_ERROR) {
-			error("Problem adding user associations");
-			rc = SLURM_ERROR;
-		}
+	if (assoc_list && list_count(assoc_list)) {
+		if ((rc = as_mysql_add_assocs(mysql_conn, uid, assoc_list))
+		    != SLURM_SUCCESS)
+			error("Problem adding accounts associations");
 	}
-	list_destroy(assoc_list);
+	FREE_NULL_LIST(assoc_list);
 
 	return rc;
 }
