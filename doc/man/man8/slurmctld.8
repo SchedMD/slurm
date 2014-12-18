@@ -20,9 +20,12 @@ system.
 .TP
 \fB\-c\fR
 Clear all previous \fBslurmctld\fR state from its last checkpoint.
-Without this option, previously running jobs will be preserved along
-with node \fIState\fR of DOWN, DRAINED and DRAINING nodes and the associated
-\fIReason\fR field for those nodes.
+With this option, all jobs, including both running and queued, and all
+node states, will be deleted.  Without this option, previously running
+jobs will be preserved along with node \fIState\fR of DOWN, DRAINED
+and DRAINING nodes and the associated \fIReason\fR field for those nodes.
+NOTE: It is rare you would ever want to use this in production as all
+jobs will be killed.
 
 .TP
 \fB\-D\fR
