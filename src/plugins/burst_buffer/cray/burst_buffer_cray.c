@@ -136,29 +136,34 @@ stage_args_t;
 
 static int	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
+static bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr);
+static void	_bb_free_entry(struct bb_entry *ents, int num_ent);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static void	_del_bb_spec(bb_job_t *bb_spec);
 static bb_job_t *_get_bb_spec(struct job_record *job_ptr);
+static struct bb_entry *
+		_json_parse_array(json_object *jobj, char *key, int *num);
+static void	_json_parse_object(json_object *jobj, struct bb_entry *ent);
 static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_load_state(uint32_t job_id);
 static int	_parse_bb_opts(struct job_descriptor *job_desc);
 static int	_parse_interactive(struct job_descriptor *job_desc);
 static void	_purge_bb_files(struct job_record *job_ptr);
 static int	_queue_stage_in(struct job_record *job_ptr);
+static int	_queue_stage_out(struct job_record *job_ptr);
+static void	_queue_teardown(uint32_t job_id, bool hurry);
 static char *	_set_cmd_path(char *cmd);
 static void *	_start_stage_in(void *x);
-static void	_start_stage_out(uint32_t job_id);
-static void	_teardown(uint32_t job_id, bool hurry);
+static void *	_start_stage_out(void *x);
+static void *	_start_teardown(void *x);
 static void	_test_config(void);
 static int	_test_size_limit(struct job_record *job_ptr,uint32_t add_space);
 static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list);
-static bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr);
-static void _bb_free_entry(struct bb_entry *ents, int num_ent);
-static struct bb_entry *_json_parse_array(json_object *, char *, int *);
-static void _json_parse_object(json_object *, struct bb_entry *);
 
+//FIXME: Consider adding more BB states to match Cray
+//FIXME: Should we trigger scheduler once stage in completes?
 
 /* Purge files we have created for the job.
  * bb_state.bb_mutex is locked on function entry. */
@@ -247,7 +252,7 @@ static int _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 	rc = _queue_stage_in(job_ptr);
 	if (rc != SLURM_SUCCESS) {
 		bb_ptr->state = BB_STATE_STAGING_IN;
-//FIXME Add asynchronous call to: _teardown(job_ptr->job_id, true);
+		_queue_teardown(job_ptr->job_id, true);
 	}
 
 	return rc;
@@ -509,7 +514,7 @@ static int _queue_stage_in(struct job_record *job_ptr)
 	int hash_inx = job_ptr->job_id % 10;
 	uint32_t i;
 	pthread_attr_t stage_attr;
-	pthread_t stage_tid;
+	pthread_t stage_tid = 0;
 	int rc = SLURM_SUCCESS;
 
 	if (job_ptr->burst_buffer) {
@@ -685,55 +690,245 @@ static void *_start_stage_in(void *x)
 	xfree(data_in_argv);
 	xfree(stage_args);
 	xfree(bbs_setup_path);
+	xfree(bbs_data_in_path);
 	return NULL;
 }
 
-static void _start_stage_out(uint32_t job_id)
+static int _queue_stage_out(struct job_record *job_ptr)
 {
-	char *post_run_env_file = NULL, *data_out_env_file = NULL;
-	char *bbs_post_run = NULL, *bbs_data_out = NULL;
-	int hash_inx = job_id % 10;
+	char *hash_dir = NULL, *job_dir = NULL;
+	char **post_run_argv, **data_out_argv;
+	stage_args_t *stage_args;
+	int hash_inx = job_ptr->job_id % 10, rc = SLURM_SUCCESS;
+	pthread_attr_t stage_attr;
+	pthread_t stage_tid = 0;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
-	xstrfmtcat(post_run_env_file, "%s/hash.%d/job.%u/post_run_env",
-		   state_save_loc, hash_inx, job_id);
-	xstrfmtcat(data_out_env_file, "%s/hash.%d/job.%u/data_out_env",
-		   state_save_loc, hash_inx, job_id);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+	(void) mkdir(hash_dir, 0700);
+	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+	post_run_argv = xmalloc(sizeof(char *) * 10);
+	post_run_argv[0] = xstrdup("bbs_post_run");
+	xstrfmtcat(post_run_argv[1], "--job-environment-file=%s/post_run_env",
+		   job_dir);
+	data_out_argv = xmalloc(sizeof(char *) * 10);
+	data_out_argv[0] = xstrdup("bbs_data_out");
+	xstrfmtcat(data_out_argv[1], "--job-environment-file=%s/data_out_env",
+		   job_dir);
 
-	bbs_post_run = _set_cmd_path("bbs_post_run");
-	bbs_data_out = _set_cmd_path("bbs_data_out");
-#if 1
-//FIXME: Call bbs_post_run and bbs_data_out here
-	info("BBS_POST_RUN: PostRunEnv:%s", post_run_env_file);
-	info("BBS_DATA_OUT: DataOutEnv:%s", data_out_env_file);
-	_teardown(job_id, false);
-#endif
-	xfree(bbs_data_out);
-	xfree(bbs_post_run);
-	xfree(post_run_env_file);
-	xfree(data_out_env_file);
+	stage_args = xmalloc(sizeof(stage_args_t));
+	stage_args->job_id  = job_ptr->job_id;
+	stage_args->timeout = bb_state.bb_config.stage_out_timeout;
+	stage_args->args1   = post_run_argv;
+	stage_args->args2   = data_out_argv;
+
+	slurm_attr_init(&stage_attr);
+	if (pthread_attr_setdetachstate(&stage_attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	while (pthread_create(&stage_tid, &stage_attr, _start_stage_out,
+			      stage_args)) {
+		if (errno != EAGAIN) {
+			error("pthread_create: %m");
+			rc = EAGAIN;
+//FIXME: What to do next?
+			break;
+		}
+		usleep(100000);
+	}
+	slurm_attr_destroy(&stage_attr);
+
+	xfree(hash_dir);
+	xfree(job_dir);
+	return rc;
 }
 
-static void _teardown(uint32_t job_id, bool hurry)
+static void *_start_stage_out(void *x)
 {
-	char *teardown_env_file = NULL, *bbs_teardown = NULL;
+	stage_args_t *stage_args;
+	char *bbs_post_run_path, *bbs_data_out_path;
+	char **post_run_argv, **data_out_argv, *resp_msg = NULL;
+	int i, rc = SLURM_SUCCESS, status = 0, timeout;
+	slurmctld_lock_t job_write_lock =
+		    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	struct job_record *job_ptr;
+	bb_alloc_t *bb_ptr;
+	DEF_TIMERS;
+
+	stage_args = (stage_args_t *) x;
+	post_run_argv = stage_args->args1;
+	data_out_argv = stage_args->args2;
+
+	START_TIMER;
+	bbs_post_run_path = _set_cmd_path("bbs_post_run");
+	if (stage_args->timeout)
+		timeout = stage_args->timeout * 1000;
+	else
+		timeout = 5000;
+	resp_msg = bb_run_script("bbs_post_run", bbs_post_run_path,
+				 post_run_argv, timeout, &status);
+	END_TIMER;
+	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
+		info("%s: bbs_post_run for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	} else if (bb_state.bb_config.debug_flag) {
+		debug("%s: bbs_post_run for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	}
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: bbs_post_run for job %u status:%u response:%s",
+		      __func__, stage_args->job_id, status, resp_msg);
+		rc = SLURM_ERROR;
+	}
+	xfree(resp_msg);
+
+	START_TIMER;
+	bbs_data_out_path = _set_cmd_path("bbs_data_out");
+	if (stage_args->timeout)
+		timeout = stage_args->timeout * 1000;
+	else
+		timeout = 24 * 60 * 60 * 1000;	/* One day */
+	resp_msg = bb_run_script("bbs_data_out", bbs_data_out_path,
+				 data_out_argv, timeout, &status);
+	END_TIMER;
+	if (DELTA_TIMER > 5000000) {	/* 5 secs */
+		info("%s: bbs_data_out for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	} else if (bb_state.bb_config.debug_flag) {
+		debug("%s: bbs_data_out for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	}
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: bbs_data_out for job %u status:%u response:%s",
+		      __func__, stage_args->job_id, status, resp_msg);
+		rc = SLURM_ERROR;
+	}
+	xfree(resp_msg);
+
+	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(stage_args->job_id);
+	if (!job_ptr) {
+		error("%s: unable to find job record for job %u",
+		      __func__, stage_args->job_id);
+	} else if (rc == SLURM_SUCCESS) {
+		pthread_mutex_lock(&bb_state.bb_mutex);
+		bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+		if (bb_ptr) {
+			bb_ptr->state = BB_STATE_STAGED_OUT;
+			if (bb_state.bb_config.debug_flag) {
+				info("%s: Stage-out complete for job %u",
+				     __func__, stage_args->job_id);
+			}
+		} else {
+			error("%s: unable to find bb record for job %u",
+			      __func__, stage_args->job_id);
+		}
+		pthread_mutex_unlock(&bb_state.bb_mutex);
+	} else {
+//FIXME: Flag error state
+		pthread_mutex_lock(&bb_state.bb_mutex);
+		_queue_teardown(stage_args->job_id, true);
+		pthread_mutex_unlock(&bb_state.bb_mutex);
+	}
+	unlock_slurmctld(job_write_lock);
+
+	for (i = 0; post_run_argv[i]; i++)
+		xfree(post_run_argv[i]);
+	xfree(post_run_argv);
+	for (i = 0; data_out_argv[i]; i++)
+		xfree(data_out_argv[i]);
+	xfree(data_out_argv);
+	xfree(stage_args);
+	xfree(bbs_post_run_path);
+	xfree(bbs_data_out_path);
+	return NULL;
+}
+
+static void _queue_teardown(uint32_t job_id, bool hurry)
+{
+	char **teardown_argv;
+	stage_args_t *teardown_args;
 	int hash_inx = job_id % 10;
+	pthread_attr_t teardown_attr;
+	pthread_t teardown_tid = 0;
 
-//FIXME: Check locks
-//	pthread_mutex_lock(&bb_state.bb_mutex);
-	xstrfmtcat(teardown_env_file, "%s/hash.%d/job.%u/teardown_env",
+	teardown_argv = xmalloc(sizeof(char *) * 10);
+	teardown_argv[0] = xstrdup("bbs_teardown");
+	xstrfmtcat(teardown_argv[1],
+		   "--job-environment-file=%s/hash.%d/job.%u/teardown_env",
 		   state_save_loc, hash_inx, job_id);
-//	pthread_mutex_unlock(&bb_state.bb_mutex);
 
-	bbs_teardown = _set_cmd_path("bbs_teardown");
-#if 1
-//FIXME: Call bbs_teardown here
-	info("BBS_TEARDOWN: TeardownEnv:%s Hurry:%d",
-	     teardown_env_file, (int)hurry);
-#endif
-	xfree(bbs_teardown);
-	xfree(teardown_env_file);
+	teardown_args = xmalloc(sizeof(stage_args_t));
+	teardown_args->job_id  = job_id;
+	teardown_args->timeout = 0;
+	teardown_args->args1   = teardown_argv;
+
+	slurm_attr_init(&teardown_attr);
+	if (pthread_attr_setdetachstate(&teardown_attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	while (pthread_create(&teardown_tid, &teardown_attr, _start_teardown,
+			      teardown_args)) {
+		if (errno != EAGAIN) {
+			error("pthread_create: %m");
+//FIXME: What to do next?
+			break;
+		}
+		usleep(100000);
+	}
+	slurm_attr_destroy(&teardown_attr);
+}
+
+static void *_start_teardown(void *x)
+{
+	stage_args_t *teardown_args;
+	char *bbs_teardown_path, **teardown_argv, *resp_msg = NULL;
+	int i, status = 0, timeout;
+	struct job_record *job_ptr;
+	bb_alloc_t *bb_ptr = NULL;
+	DEF_TIMERS;
+
+	teardown_args = (stage_args_t *) x;
+	teardown_argv = teardown_args->args1;
+
+	START_TIMER;
+	bbs_teardown_path = _set_cmd_path("bbs_teardown");
+	if (teardown_args->timeout)
+		timeout = teardown_args->timeout * 1000;
+	else
+		timeout = 5000;
+	resp_msg = bb_run_script("bbs_teardown", bbs_teardown_path,
+				teardown_argv, timeout, &status);
+	END_TIMER;
+	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+	    (bb_state.bb_config.debug_flag)) {
+		info("%s: bbs_teardown for job %u ran for %s",
+		     __func__, teardown_args->job_id, TIME_STR);
+	}
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: bbs_teardown for job %u status:%u response:%s",
+		      __func__, teardown_args->job_id, status, resp_msg);
+	}
+	xfree(resp_msg);
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	if ((job_ptr = find_job_record(teardown_args->job_id)))
+		bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	if (bb_ptr) {
+		bb_ptr->cancelled = true;
+		bb_ptr->end_time = 0;
+		bb_ptr->state = BB_STATE_STAGED_OUT;
+		bb_ptr->state_time = time(NULL);
+	} else {
+		error("%s: unable to find bb record for job %u",
+		      __func__, teardown_args->job_id);
+	}
+	pthread_mutex_unlock(&bb_state.bb_mutex);
+
+	for (i = 0; teardown_argv[i]; i++)
+		xfree(teardown_argv[i]);
+	xfree(teardown_argv);
+	xfree(teardown_argv);
+	xfree(teardown_args);
+	xfree(bbs_teardown_path);
+	return NULL;
 }
 
 /* Test if a job can be allocated a burst buffer.
@@ -812,7 +1007,7 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 		       (add_total_space_needed || add_user_space_needed)) {
 			if (add_user_space_needed &&
 			    (preempt_ptr->user_id == job_ptr->user_id)) {
-				_teardown(preempt_ptr->job_id, true);
+				_queue_teardown(preempt_ptr->job_id, true);
 				preempt_ptr->bb_ptr->cancelled = true;
 				preempt_ptr->bb_ptr->end_time = 0;
 				if (bb_state.bb_config.debug_flag) {
@@ -826,7 +1021,7 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 			}
 			if ((add_total_space_needed > add_user_space_needed) &&
 			    (preempt_ptr->user_id != job_ptr->user_id)) {
-				_teardown(preempt_ptr->job_id, true);
+				_queue_teardown(preempt_ptr->job_id, true);
 				preempt_ptr->bb_ptr->cancelled = true;
 				preempt_ptr->bb_ptr->end_time = 0;
 				if (bb_state.bb_config.debug_flag) {
@@ -863,8 +1058,9 @@ static void _timeout_bb_rec(void)
 		bb_pptr = &bb_state.bb_hash[i];
 		bb_ptr = bb_state.bb_hash[i];
 		while (bb_ptr) {
-#if 0
-//FIXME: Need to add BBS load state logic
+//FIXME: Need to add BBS load state logic to handle timeouts below
+bb_ptr->seen_time = bb_state.last_load_time;
+bb_ptr->state_time = bb_state.last_load_time;
 			if (bb_ptr->seen_time < bb_state.last_load_time) {
 				if (bb_ptr->job_id == 0) {
 					info("%s: Persistent burst buffer %s "
@@ -880,11 +1076,10 @@ static void _timeout_bb_rec(void)
 				xfree(bb_ptr);
 				break;
 			}
-#endif
 			if ((bb_ptr->job_id != 0) &&
 			    (bb_ptr->state >= BB_STATE_STAGED_OUT) &&
 			    !find_job_record(bb_ptr->job_id)) {
-				_teardown(bb_ptr->job_id, true);
+				_queue_teardown(bb_ptr->job_id, true);
 				bb_ptr->cancelled = true;
 				bb_ptr->end_time = 0;
 				*bb_pptr = bb_ptr->next;
@@ -897,7 +1092,7 @@ static void _timeout_bb_rec(void)
 			    (bb_state.bb_config.stage_in_timeout != 0) &&
 			    (!bb_ptr->cancelled) &&
 			    (age >= bb_state.bb_config.stage_in_timeout)) {
-				_teardown(bb_ptr->job_id, true);
+				_queue_teardown(bb_ptr->job_id, true);
 				bb_ptr->cancelled = true;
 				bb_ptr->end_time = 0;
 				job_ptr = find_job_record(bb_ptr->job_id);
@@ -925,7 +1120,7 @@ static void _timeout_bb_rec(void)
 			    (age >= bb_state.bb_config.stage_out_timeout)) {
 				error("%s: StageOut for job %u timed out",
 				      __func__, bb_ptr->job_id);
-				_teardown(bb_ptr->job_id, true);
+				_queue_teardown(bb_ptr->job_id, true);
 				bb_ptr->cancelled = true;
 				bb_ptr->end_time = 0;
 			}
@@ -1417,6 +1612,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	xstrfmtcat(script_argv[7], "--teardown-env-file=%s/teardown_env",
 		  job_dir);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
+//FIXME: Need to purge these files for jobs that vanish
 
 	START_TIMER;
 	resp_msg = bb_run_script("bbs_job_process", bbs_job_process_path,
@@ -1663,8 +1859,8 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			xfree(job_ptr->state_desc);
 			job_ptr->state_desc = xstrdup(
 					"Burst buffer pre_run error");
-//FIXME: Reason lost
-//FIXME: Call bbs_teardown here
+//FIXME: Reason lost later
+			_queue_teardown(job_ptr->job_id, true);
 			rc = SLURM_ERROR;
 		}
 		xfree(resp_msg);
@@ -1706,7 +1902,8 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		debug("%s: job_id:%u bb_rec not found",
 		      __func__, job_ptr->job_id);
 	} else {
-		_start_stage_out(job_ptr->job_id);
+		bb_ptr->state = BB_STATE_STAGING_OUT;
+		_queue_stage_out(job_ptr);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -1772,8 +1969,6 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
  */
 extern int bb_p_job_cancel(struct job_record *job_ptr)
 {
-	bb_alloc_t *bb_ptr;
-
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s",  __func__, plugin_type);
 		info("%s: job_id:%u", __func__, job_ptr->job_id);
@@ -1784,15 +1979,9 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	    (_get_bb_size(job_ptr) == 0))
 		return SLURM_SUCCESS;
 
+//FIXME: Check all lock use throughout
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
-	_teardown(job_ptr->job_id, true);
-	if (bb_ptr) {
-		bb_ptr->cancelled = true;
-		bb_ptr->end_time = 0;
-		bb_ptr->state = BB_STATE_STAGED_OUT;
-		bb_ptr->state_time = time(NULL);
-	}
+	_queue_teardown(job_ptr->job_id, true);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
