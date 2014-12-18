@@ -126,6 +126,14 @@ typedef struct bb_entry {
 	uint32_t gb_free;
 } bb_entry_t;
 
+typedef struct {
+	uint32_t job_id;
+	uint32_t timeout;
+	char **args1;
+	char **args2;
+}
+stage_args_t;
+
 static int	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
 static void *	_bb_agent(void *args);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
@@ -136,8 +144,9 @@ static void	_load_state(uint32_t job_id);
 static int	_parse_bb_opts(struct job_descriptor *job_desc);
 static int	_parse_interactive(struct job_descriptor *job_desc);
 static void	_purge_bb_files(struct job_record *job_ptr);
+static int	_queue_stage_in(struct job_record *job_ptr);
 static char *	_set_cmd_path(char *cmd);
-static int	_start_stage_in(struct job_record *job_ptr);
+static void *	_start_stage_in(void *x);
 static void	_start_stage_out(uint32_t job_id);
 static void	_teardown(uint32_t job_id, bool hurry);
 static void	_test_config(void);
@@ -235,7 +244,7 @@ static int _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 	if (bb_state.bb_config.debug_flag)
 		info("%s: start stage-in job_id:%u", __func__, job_ptr->job_id);
 	bb_ptr->state = BB_STATE_STAGING_IN;
-	rc = _start_stage_in(job_ptr);
+	rc = _queue_stage_in(job_ptr);
 	if (rc != SLURM_SUCCESS) {
 		bb_ptr->state = BB_STATE_STAGING_IN;
 //FIXME Add asynchronous call to: _teardown(job_ptr->job_id, true);
@@ -425,7 +434,9 @@ static void _load_state(uint32_t job_id)
 }
 
 /* Write an string representing the NIDs of a job's nodes to an arbitrary
- * file location */
+ * file location
+ * RET 0 or Slurm error code
+ */
 static int _write_nid_file(char *file_name, char *node_list)
 {
 	char *tmp, *sep, *tok, *save_ptr = NULL, *buf = NULL;
@@ -489,15 +500,17 @@ static int _write_file(char *file_name, char *buf)
 	return SLURM_SUCCESS;
 }
 
-static int _start_stage_in(struct job_record *job_ptr)
+static int _queue_stage_in(struct job_record *job_ptr)
 {
 	char *capacity = NULL, *hash_dir = NULL, *job_dir = NULL;
 	char *client_nodes_file_nid = NULL;
-	char *tok, **script_argv, *resp_msg = NULL;
+	char *tok, **setup_argv, **data_in_argv;
+	stage_args_t *stage_args;
 	int hash_inx = job_ptr->job_id % 10;
 	uint32_t i;
-	int rc = SLURM_SUCCESS, status = 0;
-	DEF_TIMERS;
+	pthread_attr_t stage_attr;
+	pthread_t stage_tid;
+	int rc = SLURM_SUCCESS;
 
 	if (job_ptr->burst_buffer) {
 		tok = strstr(job_ptr->burst_buffer, "SLURM_SIZE=");
@@ -525,55 +538,154 @@ static int _start_stage_in(struct job_record *job_ptr)
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
 	if (job_ptr->sched_nodes) {
-		xstrfmtcat(client_nodes_file_nid, "%s/client_nids", hash_dir);
+		xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
 		if (_write_nid_file(client_nodes_file_nid,job_ptr->sched_nodes))
 			xfree(client_nodes_file_nid);
 	}
-
-	script_argv = xmalloc(sizeof(char *) * 10);
-	script_argv[0] = "bbs_setup";
-	script_argv[1] = _set_cmd_path("bbs_setup");
-	xstrfmtcat(script_argv[2], "--token=%u", job_ptr->job_id);
-	xstrfmtcat(script_argv[3], "--caller=%s", "SLURM");
-	xstrfmtcat(script_argv[3], "--owner=%d", job_ptr->user_id);
-	xstrfmtcat(script_argv[4], "--capacity=%s", capacity);
-	xstrfmtcat(script_argv[5], "--job-environment-file=%s/setup_env",
+	setup_argv = xmalloc(sizeof(char *) * 10);
+	setup_argv[0] = xstrdup("bbs_setup");
+	xstrfmtcat(setup_argv[1], "--token=%u", job_ptr->job_id);
+	xstrfmtcat(setup_argv[2], "--caller=%s", "SLURM");
+	xstrfmtcat(setup_argv[3], "--owner=%d", job_ptr->user_id);
+	xstrfmtcat(setup_argv[4], "--capacity=%s", capacity);
+	xstrfmtcat(setup_argv[5], "--job-environment-file=%s/setup_env",
 		   job_dir);
 	if (client_nodes_file_nid) {
-		xstrfmtcat(script_argv[6], "--client-nodes-file-nids=%s",
+		xstrfmtcat(setup_argv[6], "--client-nodes-file-nids=%s",
 			   client_nodes_file_nid);
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
-	START_TIMER;
-//FIXME: Remove first two args to bb_run_script
-	resp_msg = bb_run_script(script_argv[0], script_argv[1],
-				 script_argv, 2000, &status);
-	END_TIMER;
-	if (DELTA_TIMER > 200000)	/* 0.2 secs */
-		info("%s: bbs_setup ran for %s", __func__, TIME_STR);
-	else if (bb_state.bb_config.debug_flag)
-		debug("%s: bbs_setup ran for %s", __func__, TIME_STR);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: bbs_setup response: %s", __func__, resp_msg);
-		xfree(resp_msg);
-		xfree(job_ptr->state_desc);
-		job_ptr->state_desc = xstrdup("burst buffer setup error");
-		job_ptr->priority = 0;	/* Hold job */
-		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-	} else {
-		xfree(resp_msg);
-	}
-	for (i = 1; script_argv[i]; i++)  /* NOTE: First arg is static */
-		xfree(script_argv[i]);
-	xfree(script_argv);
 
-//FIXME: Add asynchronous data_in call
+	data_in_argv = xmalloc(sizeof(char *) * 10);
+	data_in_argv[0] = xstrdup("bbs_data_in");
+	xstrfmtcat(data_in_argv[1], "--job-environment-file=%s/data_in_env",
+		   job_dir);
+
+	stage_args = xmalloc(sizeof(stage_args_t));
+	stage_args->job_id  = job_ptr->job_id;
+	stage_args->timeout = bb_state.bb_config.stage_in_timeout;
+	stage_args->args1   = setup_argv;
+	stage_args->args2   = data_in_argv;
+
+	slurm_attr_init(&stage_attr);
+	if (pthread_attr_setdetachstate(&stage_attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	while (pthread_create(&stage_tid, &stage_attr, _start_stage_in,
+			      stage_args)) {
+		if (errno != EAGAIN) {
+			error("pthread_create: %m");
+			rc = EAGAIN;
+			break;
+		}
+		usleep(100000);
+	}
+	slurm_attr_destroy(&stage_attr);
 
 	xfree(capacity);
 	xfree(hash_dir);
 	xfree(job_dir);
 	xfree(client_nodes_file_nid);
 	return rc;
+}
+
+static void *_start_stage_in(void *x)
+{
+	stage_args_t *stage_args;
+	char *bbs_setup_path, *bbs_data_in_path;
+	char **setup_argv, **data_in_argv, *resp_msg = NULL;
+	int i, rc = SLURM_SUCCESS, status = 0, timeout;
+	slurmctld_lock_t job_write_lock =
+		    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	struct job_record *job_ptr;
+	bb_alloc_t *bb_ptr;
+	DEF_TIMERS;
+
+	stage_args = (stage_args_t *) x;
+	setup_argv   = stage_args->args1;
+	data_in_argv = stage_args->args2;
+
+	START_TIMER;
+	bbs_setup_path = _set_cmd_path("bbs_setup");
+	if (stage_args->timeout)
+		timeout = stage_args->timeout * 1000;
+	else
+		timeout = 5000;
+	resp_msg = bb_run_script("bbs_setup", bbs_setup_path,
+				 setup_argv, timeout, &status);
+	END_TIMER;
+	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
+		info("%s: bbs_setup for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	} else if (bb_state.bb_config.debug_flag) {
+		debug("%s: bbs_setup for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	}
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: bbs_setup for job %u status:%u response:%s",
+		      __func__, stage_args->job_id, status, resp_msg);
+		rc = SLURM_ERROR;
+	}
+	xfree(resp_msg);
+
+	
+	START_TIMER;
+	bbs_data_in_path = _set_cmd_path("bbs_data_in");
+	if (stage_args->timeout)
+		timeout = stage_args->timeout * 1000;
+	else
+		timeout = 24 * 60 * 60 * 1000;	/* One day */
+	resp_msg = bb_run_script("bbs_data_in", bbs_data_in_path,
+				 data_in_argv, timeout, &status);
+	END_TIMER;
+	if (DELTA_TIMER > 5000000) {	/* 5 secs */
+		info("%s: bbs_data_in for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	} else if (bb_state.bb_config.debug_flag) {
+		debug("%s: bbs_data_in for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	}
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: bbs_data_in for job %u status:%u response:%s",
+		      __func__, stage_args->job_id, status, resp_msg);
+		rc = SLURM_ERROR;
+	}
+	xfree(resp_msg);
+
+	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(stage_args->job_id);
+	if (!job_ptr) {
+		error("%s: unable to find job record for job %u",
+		      __func__, stage_args->job_id);
+	} else if (rc == SLURM_SUCCESS) {
+		pthread_mutex_lock(&bb_state.bb_mutex);
+		bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+		if (bb_ptr) {
+			bb_ptr->state = BB_STATE_STAGED_IN;
+			if (bb_state.bb_config.debug_flag) {
+				info("%s: Stage-in complete for job %u",
+				     __func__, stage_args->job_id);
+			}
+		} else {
+			error("%s: unable to find bb record for job %u",
+			      __func__, stage_args->job_id);
+		}
+		pthread_mutex_unlock(&bb_state.bb_mutex);
+	} else {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc = xstrdup("burst buffer stage_in error");
+		job_ptr->priority = 0;	/* Hold job */
+//FIXME: queue teardown here
+	}
+	unlock_slurmctld(job_write_lock);
+
+	for (i = 0; setup_argv[i]; i++)
+		xfree(setup_argv[i]);
+	xfree(setup_argv);
+	for (i = 0; data_in_argv[i]; i++)
+		xfree(data_in_argv[i]);
+	xfree(data_in_argv);
+	xfree(stage_args);
+	xfree(bbs_setup_path);
+	return NULL;
 }
 
 static void _start_stage_out(uint32_t job_id)
@@ -608,10 +720,11 @@ static void _teardown(uint32_t job_id, bool hurry)
 	char *teardown_env_file = NULL, *bbs_teardown = NULL;
 	int hash_inx = job_id % 10;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+//FIXME: Check locks
+//	pthread_mutex_lock(&bb_state.bb_mutex);
 	xstrfmtcat(teardown_env_file, "%s/hash.%d/job.%u/teardown_env",
 		   state_save_loc, hash_inx, job_id);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+//	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	bbs_teardown = _set_cmd_path("bbs_teardown");
 #if 1
@@ -750,6 +863,8 @@ static void _timeout_bb_rec(void)
 		bb_pptr = &bb_state.bb_hash[i];
 		bb_ptr = bb_state.bb_hash[i];
 		while (bb_ptr) {
+#if 0
+//FIXME: Need to add BBS load state logic
 			if (bb_ptr->seen_time < bb_state.last_load_time) {
 				if (bb_ptr->job_id == 0) {
 					info("%s: Persistent burst buffer %s "
@@ -765,6 +880,7 @@ static void _timeout_bb_rec(void)
 				xfree(bb_ptr);
 				break;
 			}
+#endif
 			if ((bb_ptr->job_id != 0) &&
 			    (bb_ptr->state >= BB_STATE_STAGED_OUT) &&
 			    !find_job_record(bb_ptr->job_id)) {
@@ -1072,6 +1188,9 @@ extern int init(void)
 		error("Unable to start backfill thread: %m");
 	if (!state_save_loc)
 		state_save_loc = slurm_get_state_save_location();
+
+//FIXME: Set up BBS for running jobs
+//FIXME: Call bbs_teardown for stray BBS
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -1261,7 +1380,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 {
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
-	char *resp_msg = NULL, **script_argv;
+	char *resp_msg = NULL, **script_argv, *bbs_job_process_path;
 	int i, hash_inx, rc = SLURM_SUCCESS, status = 0;
 	DEF_TIMERS;
 
@@ -1284,26 +1403,26 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	xstrfmtcat(script_file, "%s/script", job_dir);
 	if (job_ptr->batch_flag == 0)
 		rc = _build_bb_script(job_ptr, script_file);
+	bbs_job_process_path = _set_cmd_path("bbs_job_process");
 	script_argv = xmalloc(sizeof(char *) * 10);
-	script_argv[0] = "bbs_job_process";
-	script_argv[1] = _set_cmd_path("bbs_job_process");
-	xstrfmtcat(script_argv[2], "--job=%s", script_file);
-	xstrfmtcat(script_argv[3], "--setup-env-file=%s/setup_env", job_dir);
-	xstrfmtcat(script_argv[4], "--data-in-env-file=%s/data_in_env",job_dir);
-	xstrfmtcat(script_argv[5], "--pre-run-env-file=%s/pre_run_env",job_dir);
-	xstrfmtcat(script_argv[6], "--post-run-env-file=%s/post_run_env",
+	script_argv[0] = xstrdup("bbs_job_process");
+	xstrfmtcat(script_argv[1], "--job=%s", script_file);
+	xstrfmtcat(script_argv[2], "--setup-env-file=%s/setup_env", job_dir);
+	xstrfmtcat(script_argv[3], "--data-in-env-file=%s/data_in_env",job_dir);
+	xstrfmtcat(script_argv[4], "--pre-run-env-file=%s/pre_run_env",job_dir);
+	xstrfmtcat(script_argv[5], "--post-run-env-file=%s/post_run_env",
 		   job_dir);
-	xstrfmtcat(script_argv[7], "--data-out-env-file=%s/data_out_env",
+	xstrfmtcat(script_argv[6], "--data-out-env-file=%s/data_out_env",
 		   job_dir);
-	xstrfmtcat(script_argv[8], "--teardown-env-file=%s/teardown_env",
+	xstrfmtcat(script_argv[7], "--teardown-env-file=%s/teardown_env",
 		  job_dir);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	START_TIMER;
-	resp_msg = bb_run_script(script_argv[0], script_argv[1],
+	resp_msg = bb_run_script("bbs_job_process", bbs_job_process_path,
 				 script_argv, 2000, &status);
 	END_TIMER;
-	if (DELTA_TIMER > 200000)	/* 0.2 secs */
+	if (DELTA_TIMER > 500000)	/* 0.5 secs */
 		info("%s: bbs_job_process ran for %s", __func__, TIME_STR);
 	else if (bb_state.bb_config.debug_flag)
 		debug("%s: bbs_job_process ran for %s", __func__, TIME_STR);
@@ -1317,12 +1436,13 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		xfree(resp_msg);
 	}
 
-	for (i = 1; script_argv[i]; i++)  /* NOTE: First arg is static */
+	for (i = 0; script_argv[i]; i++)
 		xfree(script_argv[i]);
 	xfree(script_argv);
 	xfree(hash_dir);
 	xfree(job_dir);
 	xfree(script_file);
+	xfree(bbs_job_process_path);
 
 	return rc;
 }
@@ -1491,12 +1611,16 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 extern int bb_p_job_begin(struct job_record *job_ptr)
 {
 	char *pre_run_env_file = NULL, *client_nodes_file_nid = NULL;
-	int hash_inx, rc = SLURM_SUCCESS;
+	char *resp_msg = NULL, *bbs_pre_run_path = NULL, **pre_run_argv = NULL;
+	char *job_dir = NULL;
+	int i, hash_inx, rc = SLURM_SUCCESS, status = 0;
+	DEF_TIMERS;
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    (_get_bb_size(job_ptr) == 0))
 		return rc;
+
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_id:%u",
 		     plugin_type, __func__, job_ptr->job_id);
@@ -1510,16 +1634,48 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	hash_inx = job_ptr->job_id % 10;
-	xstrfmtcat(pre_run_env_file, "%s/hash.%d/job.%upre_run_env",
-		   state_save_loc, hash_inx, job_ptr->job_id);
-	xstrfmtcat(client_nodes_file_nid,
-		   "%s/hash.%d/job.%u/client_nids",
-		   state_save_loc, hash_inx, job_ptr->job_id);
+	xstrfmtcat(job_dir, "%s/hash.%d/job.%u", state_save_loc, hash_inx,
+		   job_ptr->job_id);
+	xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	rc = _write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes);
-	xfree(client_nodes_file_nid);
+	if (rc == 0) {
+		pre_run_argv = xmalloc(sizeof(char *) * 10);
+		pre_run_argv[0] = xstrdup("bbs_pre_run");
+		xstrfmtcat(pre_run_argv[1],
+			   "--job-environment-file=%s/pre_run_env", job_dir);
+		START_TIMER;
+		bbs_pre_run_path = _set_cmd_path("bbs_pre_run");
+		resp_msg = bb_run_script("bbs_pre_run", bbs_pre_run_path,
+					 pre_run_argv, 2000, &status);
+		END_TIMER;
+		if (DELTA_TIMER > 500000) {	/* 0.5 secs */
+			info("%s: bbs_pre_run for job %u ran for %s",
+			     __func__, job_ptr->job_id, TIME_STR);
+		} else if (bb_state.bb_config.debug_flag) {
+			debug("%s: bbs_pre_run for job %u ran for %s",
+			     __func__, job_ptr->job_id, TIME_STR);
+		}
+		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+			error("%s: bbs_pre_run for job %u status:%u response:%s",
+			      __func__, job_ptr->job_id, status, resp_msg);
+			xfree(job_ptr->state_desc);
+			job_ptr->state_desc = xstrdup(
+					"Burst buffer pre_run error");
+//FIXME: Reason lost
+//FIXME: Call bbs_teardown here
+			rc = SLURM_ERROR;
+		}
+		xfree(resp_msg);
+		for (i = 0; pre_run_argv[i]; i++)
+			xfree(pre_run_argv[i]);
+	}
 
+	xfree(job_dir);
+	xfree(pre_run_env_file);
+	xfree(client_nodes_file_nid);
+	xfree(bbs_pre_run_path);
 	return rc;
 }
 

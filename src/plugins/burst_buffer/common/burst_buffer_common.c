@@ -817,9 +817,11 @@ char *bb_run_script(char *script_type, char *script_path,
 
 		cc = sysconf(_SC_OPEN_MAX);
 		if (max_wait != -1) {
+			dup2(pfd[1], STDERR_FILENO);
 			dup2(pfd[1], STDOUT_FILENO);
 			for (i = 0; i < cc; i++) {
-				if (i != STDOUT_FILENO)
+				if ((i != STDERR_FILENO) &&
+				    (i != STDOUT_FILENO))
 					close(i);
 			}
 		} else {
@@ -854,7 +856,7 @@ char *bb_run_script(char *script_type, char *script_path,
 			fds.fd = pfd[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
 			fds.revents = 0;
-			if (max_wait == -1) {
+			if (max_wait <= 0) {
 				new_wait = -1;
 			} else {
 				new_wait = (time(NULL) - start_time) * 1000
