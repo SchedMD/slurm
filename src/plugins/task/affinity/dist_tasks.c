@@ -377,6 +377,21 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 				    CPU_BIND_RANK   | CPU_BIND_MAP    |
 				    CPU_BIND_LDMASK | CPU_BIND_LDRANK |
 				    CPU_BIND_LDMAP;
+	static int only_one_thread_per_core = -1;
+
+	if (only_one_thread_per_core == -1) {
+		if (conf->cpus == (conf->sockets * conf->cores))
+			only_one_thread_per_core = 1;
+		else
+			only_one_thread_per_core = 0;
+	}
+
+	/* If we are telling the system we only want to use 1 thread
+	 * per core with the CPUs node option this is the easiest way
+	 * to portray that to the affinity plugin.
+	 */
+	if (only_one_thread_per_core)
+		req->cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
 
 	if (req->cpu_bind_type & bind_mode) {
 		/* Explicit step binding specified by user */
