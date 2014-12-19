@@ -518,9 +518,11 @@ void delete_job_details(struct job_record *job_entry)
 /* _delete_job_desc_files - delete job descriptor related files */
 static void _delete_job_desc_files(uint32_t job_id)
 {
-	char *dir_name = NULL, *file_name;
+	char *dir_name = NULL, *file_name = NULL;
 	struct stat sbuf;
 	int hash = job_id % 10, stat_rc;
+	DIR *f_dir;
+	struct dirent *dir_ent;
 
 	dir_name = slurm_get_state_save_location();
 	xstrfmtcat(dir_name, "/hash.%d/job.%u", hash, job_id);
@@ -537,15 +539,18 @@ static void _delete_job_desc_files(uint32_t job_id)
 		}
 	}
 
-	file_name = xstrdup(dir_name);
-	xstrcat(file_name, "/environment");
-	(void) unlink(file_name);
-	xfree(file_name);
-
-	file_name = xstrdup(dir_name);
-	xstrcat(file_name, "/script");
-	(void) unlink(file_name);
-	xfree(file_name);
+	f_dir = opendir(dir_name);
+	if (f_dir) {
+		while ((dir_ent = readdir(f_dir))) {
+			xstrfmtcat(file_name, "%s/%s", dir_name,
+				   dir_ent->d_name);
+			(void) unlink(file_name);
+			xfree(file_name);
+		}
+		closedir(f_dir);
+	} else {
+		error("opendir(%s): %m", dir_name);
+	}
 
 	(void) rmdir(dir_name);
 	xfree(dir_name);

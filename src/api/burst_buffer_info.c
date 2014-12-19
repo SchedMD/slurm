@@ -199,10 +199,10 @@ static void _print_burst_buffer_resv(FILE *out,
 	slurm_make_time_str(&burst_buffer_ptr->state_time, time_buf,
 			    sizeof(time_buf));
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Size=%s State=%s StateTime=%s UserID=%s(%u)",
-		sz_buf, bb_state_string(burst_buffer_ptr->state), time_buf,
-	        uid_to_string(burst_buffer_ptr->user_id),
-	        burst_buffer_ptr->user_id);
+		 "Size=%s State=%s StateTime=%s UserID=%s(%u)",
+		 sz_buf, bb_state_string(burst_buffer_ptr->state), time_buf,
+	         uid_to_string(burst_buffer_ptr->user_id),
+	         burst_buffer_ptr->user_id);
 	xstrcat(out_buf, tmp_line);
 
 	/* Gres includes "nodes" on Cray systems */

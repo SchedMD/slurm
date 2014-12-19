@@ -572,6 +572,9 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 		      plugin_type, bb_ptr->user_id, user_id,
 		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
 	}
+	if ((bb_ptr->state == BB_STATE_RUNNING) &&
+	    (state == BB_STATE_STAGED_IN))
+		state = BB_STATE_RUNNING;	/* More precise state info */
 	if (bb_ptr->state != state) {
 		/* State is subject to real-time changes */
 		debug("%s: State changed (%s to %s). "
@@ -582,8 +585,10 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 		bb_ptr->state = state;
 		bb_ptr->state_time = time(NULL);
 		if ((bb_ptr->state == BB_STATE_STAGED_IN) &&
-		    bb_state.bb_config.prio_boost_alloc && job_ptr && job_ptr->details) {
-			new_nice = (NICE_OFFSET - bb_state.bb_config.prio_boost_alloc);
+		    bb_state.bb_config.prio_boost_alloc &&
+		    job_ptr && job_ptr->details) {
+			new_nice = (NICE_OFFSET -
+				    bb_state.bb_config.prio_boost_alloc);
 			if (new_nice < job_ptr->details->nice) {
 				int64_t new_prio = job_ptr->priority;
 				new_prio += job_ptr->details->nice;
@@ -1120,7 +1125,19 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
  */
 extern int bb_p_job_begin(struct job_record *job_ptr)
 {
-	/* This function is unused by this plugin type */
+	bb_alloc_t *bb_ptr;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0') ||
+	    (_get_bb_size(job_ptr) == 0))
+		return SLURM_SUCCESS;
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	if (bb_ptr)
+		bb_ptr->state = BB_STATE_RUNNING;
+	pthread_mutex_unlock(&bb_state.bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 

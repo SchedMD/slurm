@@ -1705,10 +1705,18 @@ extern char *bb_state_string(uint16_t state)
 		return "staging-in";
 	if (state == BB_STATE_STAGED_IN)
 		return "staged-in";
+	if (state == BB_STATE_RUNNING)
+		return "running";
+	if (state == BB_STATE_SUSPEND)
+		return "suspended";
 	if (state == BB_STATE_STAGING_OUT)
 		return "staging-out";
 	if (state == BB_STATE_STAGED_OUT)
 		return "staged-out";
+	if (state == BB_STATE_TEARDOWN)
+		return "teardown";
+	if (state == BB_STATE_COMPLETE)
+		return "complete";
 	snprintf(buf, sizeof(buf), "%u", state);
 	return buf;
 }
@@ -1722,10 +1730,18 @@ extern uint16_t bb_state_num(char *tok)
 		return BB_STATE_STAGING_IN;
 	if (!strcasecmp(tok, "staged-in"))
 		return BB_STATE_STAGED_IN;
+	if (!strcasecmp(tok, "running"))
+		return BB_STATE_RUNNING;
+	if (!strcasecmp(tok, "suspend"))
+		return BB_STATE_SUSPEND;
 	if (!strcasecmp(tok, "staging-out"))
 		return BB_STATE_STAGING_OUT;
 	if (!strcasecmp(tok, "staged-out"))
 		return BB_STATE_STAGED_OUT;
+	if (!strcasecmp(tok, "teardown"))
+		return BB_STATE_TEARDOWN;
+	if (!strcasecmp(tok, "complete"))
+		return BB_STATE_COMPLETE;
 	return 0;
 }
 

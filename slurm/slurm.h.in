@@ -4271,11 +4271,16 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 \*****************************************************************************/
 
 #define BB_SIZE_IN_NODES	0x10000000
-#define BB_STATE_ALLOCATED	0x0001
-#define BB_STATE_STAGING_IN	0x0002
-#define BB_STATE_STAGED_IN	0x0003
-#define BB_STATE_STAGING_OUT	0x0004
-#define BB_STATE_STAGED_OUT	0x0005
+#define BB_STATE_ALLOCATED	0x0001		/* Cray: bbs_setup started */
+#define BB_STATE_STAGING_IN	0x0002		/* Cray: bbs_data_in started */
+#define BB_STATE_STAGED_IN	0x0003		/* Cray: bbs_data_in complete */
+#define BB_STATE_RUNNING	0x0004		/* Job is running */
+#define BB_STATE_SUSPEND	0x0005		/* Job is suspended (future) */
+#define BB_STATE_STAGING_OUT	0x0010		/* Cray: bbs_post_run then
+						 * bbs_data_out started */
+#define BB_STATE_STAGED_OUT	0x0011		/* Cray: bbs_data_out complete */
+#define BB_STATE_TEARDOWN	0x0012		/* Cray: bbs_teardown started */
+#define BB_STATE_COMPLETE	0x0020		/* Cray: bbs_teardown complete */
 
 typedef struct {
 	uint32_t avail_cnt;	/* Total count of available resources, unused
