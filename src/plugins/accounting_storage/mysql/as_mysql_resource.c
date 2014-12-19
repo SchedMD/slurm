@@ -678,6 +678,9 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER))
+		return ESLURM_ACCESS_DENIED;
+
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(res_list);
 	while ((object = list_next(itr))) {
@@ -847,6 +850,11 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	if (!is_user_min_admin_level(
+		    mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER)) {
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
 	/* force to only do non-deleted server resources */
 	res_cond->with_deleted = 0;
 
