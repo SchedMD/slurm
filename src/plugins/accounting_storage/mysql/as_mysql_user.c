@@ -409,20 +409,16 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(txn_query);
 
 	if (list_count(assoc_list)) {
-		if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
-		    == SLURM_ERROR) {
+		if ((rc = as_mysql_add_assocs(mysql_conn, uid, assoc_list))
+		     != SLURM_SUCCESS)
 			error("Problem adding user associations");
-			rc = SLURM_ERROR;
-		}
 	}
 	list_destroy(assoc_list);
 
-	if (list_count(wckey_list)) {
-		if (as_mysql_add_wckeys(mysql_conn, uid, wckey_list)
-		    == SLURM_ERROR) {
+	if (rc == SLURM_SUCCESS && list_count(wckey_list)) {
+		if ((rc = as_mysql_add_wckeys(mysql_conn, uid, wckey_list))
+		    != SLURM_SUCCESS)
 			error("Problem adding user wckeys");
-			rc = SLURM_ERROR;
-		}
 	}
 	list_destroy(wckey_list);
 	return rc;
@@ -448,6 +444,43 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
+
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		slurmdb_user_rec_t user;
+		slurmdb_coord_rec_t *coord = NULL;
+		char *acct = NULL;
+
+		memset(&user, 0, sizeof(slurmdb_user_rec_t));
+		user.uid = uid;
+
+		if (!is_user_any_coord(mysql_conn, &user)) {
+			error("Only admins/operators/coordinators "
+			      "can add account coordinators");
+			return ESLURM_ACCESS_DENIED;
+		}
+
+		itr = list_iterator_create(acct_list);
+		itr2 = list_iterator_create(user.coord_accts);
+		while ((acct = list_next(itr))) {
+			while ((coord = list_next(itr2))) {
+				if (!strcasecmp(coord->name, acct))
+					break;
+			}
+			if (!coord)
+				break;
+			list_iterator_reset(itr2);
+		}
+		list_iterator_destroy(itr2);
+		list_iterator_destroy(itr);
+
+		if (!coord)  {
+			error("Coordinator %s(%d) tried to add another "
+			      "coordinator to an account they aren't "
+			      "coordinator over.",
+			      user.name, user.uid);
+			return ESLURM_ACCESS_DENIED;
+		}
+	}
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);

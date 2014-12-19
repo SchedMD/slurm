@@ -80,6 +80,9 @@ documents those changes that are of interest to users and administrators.
  -- In srun honor ntasks_per_node before looking at cpu count when the user
     doesn't request a number of tasks.
  -- Fix ghost job when submitting job after all jobids are exhausted.
+ -- MySQL - Enhanced coordinator security checks.
+ -- Fix for task/affinity if an admin configures a node for having threads
+    but then sets CPUs to only represent the number of cores on the node.
 
 * Changes in Slurm 14.11.2
 ==========================
