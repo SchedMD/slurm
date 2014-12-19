@@ -88,11 +88,16 @@ int check_header_version(header_t * header)
 		case REQUEST_RUN_JOB_STEP:
 		case RESPONSE_LAUNCH_TASKS:
 		case RESPONSE_RUN_JOB_STEP:
-			/* Disable job step creation/launch between major
-			 * releases. Other RPCs should all be supported. */
-			debug("unsupported RPC type %hu", header->msg_type);
-			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-			break;
+			if (working_cluster_rec) {
+				/* Disable job step creation/launch
+				 * between major releases. Other RPCs
+				 * should all be supported. */
+				debug("unsupported RPC type %hu",
+				      header->msg_type);
+				slurm_seterrno_ret(
+					SLURM_PROTOCOL_VERSION_ERROR);
+				break;
+			}
 		default:
 			if ((header->version != SLURM_PROTOCOL_VERSION)     &&
 			    (header->version != SLURM_14_03_PROTOCOL_VERSION) &&
