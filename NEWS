@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 14.03.12
 ===========================
+ -- Make it so previous versions of salloc/srun work with newer versions
+    of Slurm daemons.
 
 * Changes in Slurm 14.03.11
 ===========================
