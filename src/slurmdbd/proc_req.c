@@ -567,58 +567,14 @@ static int _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	debug2("DBD_ADD_ACCOUNT_COORDS: called");
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_OPERATOR) {
-		ListIterator itr = NULL;
-		ListIterator itr2 = NULL;
-		slurmdb_user_rec_t user;
-		slurmdb_coord_rec_t *coord = NULL;
-		char *acct = NULL;
-		int bad = 0;
-
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = *uid;
-		if (assoc_mgr_fill_in_user(
-			    slurmdbd_conn->db_conn, &user, 1, NULL)
-		    != SLURM_SUCCESS) {
-			comment = "Your user has not been added to the accounting system yet.";
-			error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
-		if (!user.coord_accts || !list_count(user.coord_accts)) {
-			comment = "Your user doesn't have privilege to perform this action";
-			error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-			rc = ESLURM_ACCESS_DENIED;
-			goto end_it;
-		}
-		itr = list_iterator_create(get_msg->acct_list);
-		itr2 = list_iterator_create(user.coord_accts);
-		while ((acct = list_next(itr))) {
-			while ((coord = list_next(itr2))) {
-				if (!strcasecmp(coord->name, acct))
-					break;
-			}
-			if (!coord)  {
-				bad = 1;
-				break;
-			}
-			list_iterator_reset(itr2);
-		}
-		list_iterator_destroy(itr2);
-		list_iterator_destroy(itr);
-
-		if (bad)  {
-			comment = "Your user doesn't have privilege to perform this action";
-			error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-			rc = ESLURM_ACCESS_DENIED;
-			goto end_it;
-		}
-	}
 
 	rc = acct_storage_g_add_coord(slurmdbd_conn->db_conn, *uid,
 				      get_msg->acct_list, get_msg->cond);
+
+	if (rc == ESLURM_ACCESS_DENIED) {
+		comment = "Your user doesn't have privilege to perform this action";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+	}
 end_it:
 	slurmdbd_free_acct_coord_msg(get_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
