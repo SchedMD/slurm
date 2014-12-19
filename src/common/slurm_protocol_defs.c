@@ -128,6 +128,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 {
 	slurm_msg_t_init(dest);
+	dest->protocol_version = src->protocol_version;
 	dest->forward = src->forward;
 	dest->ret_list = src->ret_list;
 	dest->forward_struct = src->forward_struct;
