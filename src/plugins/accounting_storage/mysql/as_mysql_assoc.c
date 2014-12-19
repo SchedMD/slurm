@@ -264,6 +264,66 @@ end_it:
 	return rc;
 }
 
+/* assoc_mgr_lock_t should be clear before coming in here. */
+static int _check_coord_qos(mysql_conn_t *mysql_conn, char *cluster_name,
+			    char *account, char *coord_name, List qos_list)
+{
+	char *query;
+	bitstr_t *request_qos, *valid_qos;
+	MYSQL_RES *result;
+	MYSQL_ROW row;
+	int rc = SLURM_SUCCESS;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!qos_list || !list_count(qos_list))
+		return SLURM_SUCCESS;
+
+	/* If there is a variable cleared here we need to make
+	   sure we get the parent's information, if any. */
+	query = xstrdup_printf(
+		"call get_coord_qos('%s', '%s', '%s', '%s');",
+		assoc_table, account,
+		cluster_name, coord_name);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if (!(row = mysql_fetch_row(result)) || !row[0]) {
+		mysql_free_result(result);
+		return SLURM_ERROR;
+	}
+
+	/* First set the values of the valid ones this coordinator has
+	   access to.
+	*/
+
+	assoc_mgr_lock(&locks);
+	valid_qos = bit_alloc(g_qos_count);
+	request_qos = bit_alloc(g_qos_count);
+	assoc_mgr_unlock(&locks);
+
+	set_qos_bitstr_from_string(valid_qos, row[0]);
+
+	mysql_free_result(result);
+
+	/* Now set the ones they are requesting */
+	set_qos_bitstr_from_list(request_qos, qos_list);
+
+	/* If they are authorized their list should be in the super set */
+	if (!bit_super_set(request_qos, valid_qos))
+		rc = SLURM_ERROR;
+
+	FREE_NULL_BITMAP(valid_qos);
+	FREE_NULL_BITMAP(request_qos);
+
+	return rc;
+}
+
 /* This needs to happen to make since 2.1 code doesn't have enough
  * smarts to figure out it isn't adding a default account if just
  * adding an association to the mix.
@@ -1476,6 +1536,28 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
+			} else if (_check_coord_qos(mysql_conn, cluster_name,
+						    account, user->name,
+						    assoc->qos_list)
+				   == SLURM_ERROR) {
+				assoc_mgr_lock_t locks = {
+					NO_LOCK, NO_LOCK, READ_LOCK,
+					NO_LOCK, NO_LOCK, NO_LOCK };
+				char *requested_qos;
+
+				assoc_mgr_lock(&locks);
+				requested_qos = get_qos_complete_str(
+					assoc_mgr_qos_list, assoc->qos_list);
+				assoc_mgr_unlock(&locks);
+				error("Coordinator %s(%d) does not have the "
+				      "access to all the qos requested (%s), "
+				      "so they can't modify account "
+				      "%s with it.",
+				      user->name, user->uid, requested_qos,
+				      account);
+				xfree(requested_qos);
+				rc = ESLURM_ACCESS_DENIED;
+				goto end_it;
 			}
 		}
 
@@ -2440,6 +2522,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *last_parent = NULL, *last_cluster = NULL;
 	List local_cluster_list = NULL;
 	List added_user_list = NULL;
+	bool is_coord = false;
 
 	if (!assoc_list) {
 		error("No association list given");
@@ -2489,6 +2572,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			      user.name, user.uid);
 			return ESLURM_ACCESS_DENIED;
 		}
+		is_coord = true;
 	}
 
 	local_cluster_list = list_create(NULL);
@@ -2504,6 +2588,30 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			      "acct to add one.");
 			rc = SLURM_ERROR;
 			continue;
+		}
+
+		if (is_coord && _check_coord_qos(mysql_conn, object->cluster,
+						 object->acct, user_name,
+						 object->qos_list)
+		    == SLURM_ERROR) {
+			assoc_mgr_lock_t locks = {
+				NO_LOCK, NO_LOCK, READ_LOCK,
+				NO_LOCK, NO_LOCK, NO_LOCK };
+			char *requested_qos;
+
+			assoc_mgr_lock(&locks);
+			requested_qos = get_qos_complete_str(
+				assoc_mgr_qos_list, object->qos_list);
+			assoc_mgr_unlock(&locks);
+			error("Coordinator %s(%d) does not have the "
+			      "access to all the qos requested (%s), "
+			      "so they can't add to account "
+			      "%s with it.",
+			      user_name, uid, requested_qos,
+			      object->acct);
+			xfree(requested_qos);
+			rc = ESLURM_ACCESS_DENIED;
+			break;
 		}
 
 		/* When adding if this isn't a default might as well
