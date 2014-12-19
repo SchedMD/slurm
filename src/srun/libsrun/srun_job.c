@@ -404,6 +404,9 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->select_jobinfo = select_g_select_jobinfo_copy(resp->select_jobinfo);
 
 	job = _job_create_structure(i);
+	job->account = xstrdup(resp->account);
+	job->qos = xstrdup(resp->qos);
+	job->resv_name = xstrdup(resp->resv_name);
 
 	xfree(i->nodelist);
 	xfree(i);
@@ -1251,7 +1254,7 @@ static int _set_rlimit_env(void)
 	return rc;
 }
 
-/* Set SLURM_CLUSTER_NAME< SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment 
+/* Set SLURM_CLUSTER_NAME< SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment
  * variables within current state */
 static void _set_submit_dir_env(void)
 {

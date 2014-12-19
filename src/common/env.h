@@ -80,6 +80,9 @@ typedef struct env_options {
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	uint32_t uid;		/* user ID */
 	char *user_name;	/* user name */
+	char *account;          /* job's account */
+	char *qos;              /* job's qos */
+	char *resv_name;        /* job's reservation */
 } env_t;
 
 

@@ -979,6 +979,11 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	char *err_msg = NULL;
 
 	START_TIMER;
+
+	/* Zero out the record as not all fields may be set.
+	 */
+	memset(&alloc_msg, 0, sizeof(resource_allocation_response_msg_t));
+
 	if ((uid != job_desc_msg->user_id) && (!validate_slurm_user(uid))) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, RESOURCE_ALLOCATE from uid=%d",
@@ -1087,6 +1092,21 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 						  pn_min_memory;
 		} else {
 			alloc_msg.pn_min_memory = 0;
+		}
+		if (job_ptr->account) {
+			alloc_msg.account = xstrdup(job_ptr->account);
+		}
+		if (job_ptr->qos_ptr) {
+			slurmdb_qos_rec_t *qos;
+
+			qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+			if (strcmp(qos->description, "Normal QOS default") == 0)
+				alloc_msg.qos = xstrdup("normal");
+			else
+				alloc_msg.qos = xstrdup(qos->description);
+		}
+		if (job_ptr->resv_name) {
+			alloc_msg.resv_name = xstrdup(job_ptr->resv_name);
 		}
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);

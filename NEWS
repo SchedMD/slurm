@@ -4,7 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 15.08.0pre2
 ==============================
  -- Add the environment variables SLURM_JOB_ACCOUNT, SLURM_JOB_QOS
-    and SLURM_JOB_RESERVATION in the batch job.
+    and SLURM_JOB_RESERVATION in the batch/srun jobs.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

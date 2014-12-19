@@ -230,6 +230,9 @@ int srun(int ac, char **av)
 		env->task_count = _uint16_array_to_str(job->nhosts, tasks);
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;
+		env->account = job->account;
+		env->qos = job->qos;
+		env->resv_name = job->resv_name;
 	}
 	if (opt.pty && (set_winsize(job) < 0)) {
 		error("Not using a pseudo-terminal, disregarding --pty option");

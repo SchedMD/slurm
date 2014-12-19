@@ -849,6 +849,37 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (env->account) {
+		if (setenvf(&env->env,
+			    "SLURM_JOB_ACCOUNT",
+			    "%s",
+			    env->account)) {
+			error("%s: can't set SLURM_JOB_ACCOUNT env variable",
+			      __func__);
+			rc = SLURM_FAILURE;
+		}
+	}
+	if (env->qos) {
+		if (setenvf(&env->env,
+			    "SLURM_JOB_QOS",
+			    "%s",
+			    env->qos)) {
+			error("%s: can't set SLURM_JOB_QOS env variable",
+				__func__);
+			rc = SLURM_FAILURE;
+		}
+	}
+	if (env->resv_name) {
+		if (setenvf(&env->env,
+			    "SLURM_JOB_RESERVATION",
+			    "%s",
+			    env->resv_name)) {
+			error("%s: can't set SLURM_JOB_RESERVATION env variable",
+				__func__);
+			rc = SLURM_FAILURE;
+		}
+	}
+
 	return rc;
 }
 

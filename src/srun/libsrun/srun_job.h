@@ -114,6 +114,9 @@ typedef struct srun_job {
 	uint16_t ws_row;	/* window size, row count */
 	slurm_step_ctx_t *step_ctx;
 	slurm_step_ctx_params_t ctx_params;
+	char *account;    /* account of this job */
+	char *qos;        /* job's qos */
+	char *resv_name;  /* reservation the job is using */
 } srun_job_t;
 
 void    update_job_state(srun_job_t *job, srun_job_state_t newstate);

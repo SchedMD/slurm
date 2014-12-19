@@ -1847,6 +1847,7 @@ typedef struct delete_partition_msg {
 } delete_part_msg_t;
 
 typedef struct resource_allocation_response_msg {
+	char *account;          /* allocation account */
 	uint32_t job_id;	/* assigned job id */
 	char *alias_list;	/* node name/address/hostnamne aliases */
 	uint16_t *cpus_per_node;/* cpus per node */
@@ -1859,6 +1860,8 @@ typedef struct resource_allocation_response_msg {
 	uint32_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
 				  * default=0 (no limit) */
+	char *qos;               /* allocation qos */
+	char *resv_name;         /* allocation reservation */
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data structure,
 						 * use
 						 * slurm_get_select_jobinfo()

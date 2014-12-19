@@ -2304,6 +2304,9 @@ extern void slurm_free_resource_allocation_response_msg (
 		xfree(msg->cpu_count_reps);
 		xfree(msg->node_list);
 		xfree(msg->partition);
+		xfree(msg->account);
+		xfree(msg->qos);
+		xfree(msg->resv_name);
 		xfree(msg);
 	}
 }
