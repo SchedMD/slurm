@@ -2582,6 +2582,11 @@ extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
+
 	ret_list = list_create(slurmdb_destroy_assoc_rec);
 
 	if (as_mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)

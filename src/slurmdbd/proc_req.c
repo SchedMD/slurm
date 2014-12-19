@@ -1407,18 +1407,6 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug2("DBD_GET_PROBS: called");
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_OPERATOR) {
-		comment = "Your user doesn't have privilege to perform this action";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      ESLURM_ACCESS_DENIED,
-					      comment, DBD_GET_PROBS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
-
 	if (slurmdbd_unpack_cond_msg(&get_msg, slurmdbd_conn->rpc_version,
 				     DBD_GET_PROBS, in_buffer) !=
 	    SLURM_SUCCESS) {
