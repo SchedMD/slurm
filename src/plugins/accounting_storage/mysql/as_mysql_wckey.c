@@ -504,6 +504,9 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))
+		return ESLURM_ACCESS_DENIED;
+
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(wckey_list);
 	while ((object = list_next(itr))) {
@@ -736,6 +739,11 @@ extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
+
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
 
 	(void) _setup_wckey_cond_limits(wckey_cond, &extra);
 

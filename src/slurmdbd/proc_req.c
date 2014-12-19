@@ -838,14 +838,6 @@ static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 
 	debug2("DBD_ADD_WCKEYS: called");
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
-		comment = "Your user doesn't have privilege to perform this action";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
 
 	if (slurmdbd_unpack_list_msg(&get_msg, slurmdbd_conn->rpc_version,
 				     DBD_ADD_WCKEYS, in_buffer) !=
@@ -1644,6 +1636,9 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug2("DBD_GET_WCKEYS: called");
 
+	/* We have to check this here, and not in the plugin.  There
+	 * are places in the plugin that a non-admin can call this and
+	 * it be ok. */
 	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
 	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	    < SLURMDB_ADMIN_OPERATOR) {
@@ -2509,18 +2504,6 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug2("DBD_MODIFY_WCKEYS: called");
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
-		comment = "Your user doesn't have privilege to perform this action";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      ESLURM_ACCESS_DENIED,
-					      comment, DBD_MODIFY_WCKEYS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
-
 	if (slurmdbd_unpack_modify_msg(&get_msg, slurmdbd_conn->rpc_version,
 				       DBD_MODIFY_WCKEYS,
 				       in_buffer) != SLURM_SUCCESS) {
@@ -3345,18 +3328,6 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_WCKEYS: called");
-
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
-		comment = "Your user doesn't have privilege to perform this action";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      ESLURM_ACCESS_DENIED,
-					      comment, DBD_REMOVE_WCKEYS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
 
 	if (slurmdbd_unpack_cond_msg(&get_msg, slurmdbd_conn->rpc_version,
 				     DBD_REMOVE_WCKEYS,
