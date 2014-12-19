@@ -744,14 +744,6 @@ static int _add_qos(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 
 	debug2("DBD_ADD_QOS: called");
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && (assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-		< SLURMDB_ADMIN_SUPER_USER)) {
-		comment = "Your user doesn't have privilege to perform this action";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
 
 	if (slurmdbd_unpack_list_msg(&get_msg, slurmdbd_conn->rpc_version,
 				     DBD_ADD_QOS, in_buffer) !=
@@ -764,7 +756,9 @@ static int _add_qos(slurmdbd_conn_t *slurmdbd_conn,
 
 	rc = acct_storage_g_add_qos(slurmdbd_conn->db_conn, *uid,
 				    get_msg->my_list);
-	if (rc != SLURM_SUCCESS)
+	if (rc == ESLURM_ACCESS_DENIED)
+		comment = "Your user doesn't have privilege to perform this action";
+	else if (rc != SLURM_SUCCESS)
 		comment = "Failed to add qos.";
 
 end_it:
@@ -2303,18 +2297,6 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug2("DBD_MODIFY_QOS: called");
 
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
-		comment = "Your user doesn't have privilege to perform this action";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      ESLURM_ACCESS_DENIED,
-					      comment, DBD_MODIFY_QOS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
-
 	if (slurmdbd_unpack_modify_msg(&get_msg, slurmdbd_conn->rpc_version,
 				       DBD_MODIFY_QOS,
 				       in_buffer) != SLURM_SUCCESS) {
@@ -3233,18 +3215,6 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_QOS: called");
-
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	    < SLURMDB_ADMIN_SUPER_USER) {
-		comment = "Your user doesn't have privilege to perform this action";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      ESLURM_ACCESS_DENIED,
-					      comment, DBD_REMOVE_QOS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
 
 	if (slurmdbd_unpack_cond_msg(&get_msg, slurmdbd_conn->rpc_version,
 				     DBD_REMOVE_QOS,
