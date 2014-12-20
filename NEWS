@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- MySQL - Enhanced coordinator security checks.
  -- Fix for task/affinity if an admin configures a node for having threads
     but then sets CPUs to only represent the number of cores on the node.
+ -- Make it so previous versions of salloc/srun work with newer versions
+    of Slurm daemons.
 
 * Changes in Slurm 14.11.2
 ==========================
