@@ -141,7 +141,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am__sview_SOURCES_DIST = sview.c popups.c grid.c part_info.c \
 	job_info.c block_info.c front_end_info.c node_info.c \
 	resv_info.c submit_info.c admin_info.c common.c config_info.c \
-	defaults.c gthread_helper.c
+	defaults.c gthread_helper.c bb_info.c
 @BUILD_SVIEW_TRUE@am_sview_OBJECTS = sview-sview.$(OBJEXT) \
 @BUILD_SVIEW_TRUE@	sview-popups.$(OBJEXT) sview-grid.$(OBJEXT) \
 @BUILD_SVIEW_TRUE@	sview-part_info.$(OBJEXT) \
@@ -155,7 +155,8 @@ am__sview_SOURCES_DIST = sview.c popups.c grid.c part_info.c \
 @BUILD_SVIEW_TRUE@	sview-common.$(OBJEXT) \
 @BUILD_SVIEW_TRUE@	sview-config_info.$(OBJEXT) \
 @BUILD_SVIEW_TRUE@	sview-defaults.$(OBJEXT) \
-@BUILD_SVIEW_TRUE@	sview-gthread_helper.$(OBJEXT)
+@BUILD_SVIEW_TRUE@	sview-gthread_helper.$(OBJEXT) \
+@BUILD_SVIEW_TRUE@	sview-bb_info.$(OBJEXT)
 am__EXTRA_sview_SOURCES_DIST = sview.h sview.c popups.c grid.c \
 	part_info.c job_info.c block_info.c front_end_info.c \
 	node_info.c resv_info.c gthread_helper.c submit_info.c \
@@ -481,7 +482,7 @@ AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 @BUILD_SVIEW_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 @BUILD_SVIEW_TRUE@	block_info.c front_end_info.c node_info.c resv_info.c \
 @BUILD_SVIEW_TRUE@	submit_info.c admin_info.c common.c \
-@BUILD_SVIEW_TRUE@	config_info.c defaults.c gthread_helper.c
+@BUILD_SVIEW_TRUE@	config_info.c defaults.c gthread_helper.c bb_info.c
 
 @BUILD_SVIEW_TRUE@sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK_LIBS)
 @BUILD_SVIEW_TRUE@sview_CFLAGS = $(GTK_CFLAGS)
@@ -584,6 +585,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-admin_info.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-bb_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-block_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-config_info.Po@am__quote@
@@ -829,6 +831,20 @@ sview-gthread_helper.obj: gthread_helper.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gthread_helper.c' object='sview-gthread_helper.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-gthread_helper.obj `if test -f 'gthread_helper.c'; then $(CYGPATH_W) 'gthread_helper.c'; else $(CYGPATH_W) '$(srcdir)/gthread_helper.c'; fi`
+
+sview-bb_info.o: bb_info.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-bb_info.o -MD -MP -MF $(DEPDIR)/sview-bb_info.Tpo -c -o sview-bb_info.o `test -f 'bb_info.c' || echo '$(srcdir)/'`bb_info.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sview-bb_info.Tpo $(DEPDIR)/sview-bb_info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='bb_info.c' object='sview-bb_info.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-bb_info.o `test -f 'bb_info.c' || echo '$(srcdir)/'`bb_info.c
+
+sview-bb_info.obj: bb_info.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-bb_info.obj -MD -MP -MF $(DEPDIR)/sview-bb_info.Tpo -c -o sview-bb_info.obj `if test -f 'bb_info.c'; then $(CYGPATH_W) 'bb_info.c'; else $(CYGPATH_W) '$(srcdir)/bb_info.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sview-bb_info.Tpo $(DEPDIR)/sview-bb_info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='bb_info.c' object='sview-bb_info.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-bb_info.obj `if test -f 'bb_info.c'; then $(CYGPATH_W) 'bb_info.c'; else $(CYGPATH_W) '$(srcdir)/bb_info.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

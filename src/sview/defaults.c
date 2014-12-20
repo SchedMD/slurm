@@ -199,6 +199,8 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 			sview_config->default_page = NODE_PAGE;
 		else if (!strcasecmp(new_text, "frontend"))
 			sview_config->default_page = FRONT_END_PAGE;
+		else if (!strcasecmp(new_text, "burstbuffer"))
+			sview_config->default_page = BB_PAGE;
 		else
 			sview_config->default_page = JOB_PAGE;
 		break;
@@ -562,6 +564,7 @@ extern int load_defaults(void)
 		{"PageOptsPartition", S_P_STRING},
 		{"PageOptsReservation", S_P_STRING},
 		{"PageOptsFrontend", S_P_STRING},
+		{"PageOptsBurstBuffer", S_P_STRING},
 		{"RefreshDelay", S_P_UINT16},
 		{"RuledTables", S_P_BOOLEAN},
 		{"SavePageSettings", S_P_BOOLEAN},
@@ -619,6 +622,9 @@ extern int load_defaults(void)
 			default_sview_config.default_page = NODE_PAGE;
 		else if (slurm_strcasestr(tmp_str, "frontend"))
 			default_sview_config.default_page = FRONT_END_PAGE;
+		else if (slurm_strcasestr(tmp_str, "burstbuffer"))
+			default_sview_config.default_page = BB_PAGE;
+
 		xfree(tmp_str);
 	}
 	s_p_get_uint32(&default_sview_config.grid_hori,
@@ -677,6 +683,8 @@ extern int load_defaults(void)
 			default_sview_config.page_visible[NODE_PAGE] = 1;
 		if (slurm_strcasestr(tmp_str, "frontend"))
 			default_sview_config.page_visible[FRONT_END_PAGE] = 1;
+		if (slurm_strcasestr(tmp_str, "burstbuffer"))
+			default_sview_config.page_visible[BB_PAGE] = 1;
 		xfree(tmp_str);
 	}
 

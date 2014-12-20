@@ -98,6 +98,7 @@
 enum { JOB_PAGE,
        PART_PAGE,
        RESV_PAGE,
+       BB_PAGE,
        BLOCK_PAGE,
        NODE_PAGE,
        FRONT_END_PAGE,
@@ -352,6 +353,7 @@ extern job_info_msg_t *g_job_info_ptr;
 extern node_info_msg_t *g_node_info_ptr;
 extern partition_info_msg_t *g_part_info_ptr;
 extern reserve_info_msg_t *g_resv_info_ptr;
+extern burst_buffer_info_msg_t *g_bb_info_ptr;
 extern slurm_ctl_conf_info_msg_t *g_ctl_info_ptr;
 extern job_step_info_response_msg_t *g_step_info_ptr;
 extern topo_info_response_msg_t *g_topo_info_msg_ptr;
@@ -664,5 +666,21 @@ extern int load_defaults(void);
 extern int save_defaults(bool final_save);
 extern GtkListStore *create_model_defaults(int type);
 extern int configure_defaults(void);
+
+//bb_info.c
+extern void refresh_bb(GtkAction *action, gpointer user_data);
+extern GtkListStore *create_model_bb(int type);
+extern void admin_edit_bb(GtkCellRendererText *cell,
+			  const char *path_string,
+			  const char *new_text,
+			  gpointer data);
+extern void get_info_bb(GtkTable *table, display_data_t *display_data);
+extern void specific_info_bb(popup_info_t *popup_win);
+extern void set_menus_bb(void *arg, void *arg2, GtkTreePath *path, int type);
+extern void cluster_change_bb(void);
+extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id);
+extern void select_admin_bb(GtkTreeModel *model, GtkTreeIter *iter,
+			    display_data_t *display_data,
+			    GtkTreeView *treeview);
 
 #endif
