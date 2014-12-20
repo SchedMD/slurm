@@ -1032,7 +1032,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			error_code = job_allocate(job_desc_msg, immediate,
 						  false, NULL,
 						  true, uid, &job_ptr,
-						  &err_msg);
+						  &err_msg,
+						  msg->protocol_version);
 			/* unlock after finished using the job structure data */
 			END_TIMER2("_slurm_rpc_allocate_resources");
 		}
@@ -2353,7 +2354,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 				error_code = job_allocate(job_desc_msg, false,
 							  true, &resp,
 							  true, uid, &job_ptr,
-							  &err_msg);
+							  &err_msg,
+							  msg->protocol_version);
 			} else {	/* existing job test */
 				error_code = job_start_data(job_desc_msg,
 							    &resp);
@@ -3276,7 +3278,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		/* Create new job allocation */
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate, false,
-					  NULL, 0, uid, &job_ptr, &err_msg);
+					  NULL, 0, uid, &job_ptr, &err_msg,
+					  msg->protocol_version);
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
 		END_TIMER2("_slurm_rpc_submit_batch_job");

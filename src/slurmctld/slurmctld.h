@@ -1112,6 +1112,7 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
  * OUT err_msg - Custom error message to the user, caller to xfree results
+ * IN protocol_version - version of the code the caller is using
  * RET 0 or an error code. If the job would only be able to execute with
  *	some change in partition configuration then
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
@@ -1124,9 +1125,10 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
 extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
-		int will_run, will_run_response_msg_t **resp,
-		int allocate, uid_t submit_uid, struct job_record **job_pptr,
-		char **err_msg);
+			int will_run, will_run_response_msg_t **resp,
+			int allocate, uid_t submit_uid,
+			struct job_record **job_pptr,
+			char **err_msg, uint16_t protocol_version);
 
 /* If this is a job array meta-job, prepare it for being scheduled */
 extern void job_array_pre_sched(struct job_record *job_ptr);

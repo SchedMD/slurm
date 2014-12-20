@@ -178,7 +178,7 @@ static struct job_record *_job_rec_copy(struct job_record *job_ptr);
 static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
-			char **err_msg);
+			char **err_msg, uint16_t protocol_version);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -3663,6 +3663,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
  * OUT err_msg - Custom error message to the user, caller to xfree results
+ * IN protocol_version - version of the code the caller is using
  * RET 0 or an error code. If the job would only be able to execute with
  *	some change in partition configuration then
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
@@ -3674,7 +3675,8 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			int will_run, will_run_response_msg_t **resp,
 			int allocate, uid_t submit_uid,
-			struct job_record **job_pptr, char **err_msg)
+			struct job_record **job_pptr, char **err_msg,
+			uint16_t protocol_version)
 {
 	static int defer_sched = -1;
 	int error_code, i;
@@ -3697,7 +3699,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	}
 
 	error_code = _job_create(job_specs, allocate, will_run,
-				 &job_ptr, submit_uid, err_msg);
+				 &job_ptr, submit_uid, err_msg,
+				 protocol_version);
 	*job_pptr = job_ptr;
 
 	if (error_code) {
@@ -5115,7 +5118,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 
 static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid,
-		       char **err_msg)
+		       char **err_msg, uint16_t protocol_version)
 {
 	static int launch_type_poe = -1;
 	int error_code = SLURM_SUCCESS, i, qos_error;
@@ -5424,7 +5427,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 	job_ptr = *job_pptr;
-	job_ptr->start_protocol_ver = SLURM_PROTOCOL_VERSION;
+	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
 
@@ -13533,7 +13536,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd
 			  NULL,		/* resp */
 			  0,		/* allocate */
 			  0,		/* submit_uid. set to 0 to set job_id */
-			  &job_ptr, NULL);
+			  &job_ptr, NULL, SLURM_PROTOCOL_VERSION);
 
 	/* set restart directory */
 	if (job_ptr) {
