@@ -213,6 +213,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint32_t free_cpu_count = 0, used_cpu_count = 0, *used_cpu_array = NULL;
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
+		uint32_t threads_per_socket;
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 		if (mc_ptr->cores_per_socket != (uint16_t) NO_VAL) {
 			min_cores = mc_ptr->cores_per_socket;
@@ -228,6 +229,18 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			ntasks_per_core = mc_ptr->threads_per_core;
 		}
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
+
+		if ((ntasks_per_core != (uint16_t) NO_VAL) &&
+		    (ntasks_per_core != (uint16_t) INFINITE) &&
+		    (ntasks_per_core > threads_per_core)) {
+			goto fini;
+		}
+		threads_per_socket = threads_per_core * cores_per_socket;
+		if ((ntasks_per_socket != (uint16_t) NO_VAL) &&
+		    (ntasks_per_socket != (uint16_t) INFINITE) &&
+		    (ntasks_per_socket > threads_per_socket)) {
+			goto fini;
+		}
 	}
 
 	/* These are the job parameters that we must respect:
