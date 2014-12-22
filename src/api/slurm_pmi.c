@@ -77,6 +77,9 @@ static void _delay_rpc(int pmi_rank, int pmi_size)
 	uint32_t delta_time, error_time;
 	int retries = 0;
 
+	if (pmi_rank == 0)	/* Rank 0 has extra communications with no */
+		return;		/* risk of induced packet storm */
+
 	_set_pmi_time();
 
 again:	if (gettimeofday(&tv1, NULL)) {
