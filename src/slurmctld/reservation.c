@@ -2572,6 +2572,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 	}
 
+	(void) set_node_maint_mode(true);
 	last_resv_update = time(NULL);
 	schedule_resv_save();
 	return rc;
