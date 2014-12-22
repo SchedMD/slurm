@@ -958,7 +958,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS, i, j;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
@@ -1076,9 +1076,27 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			       (sizeof(uint16_t) * job_ptr->job_resrcs->
 				cpu_array_cnt));
 		} else {
-			alloc_msg.num_cpu_groups = 0;
-			alloc_msg.cpu_count_reps = NULL;
-			alloc_msg.cpus_per_node  = NULL;
+			/* Job has changed size, rebuild CPU count info */
+			alloc_msg.num_cpu_groups = job_ptr->node_cnt;
+			alloc_msg.cpu_count_reps =
+				xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
+			alloc_msg.cpus_per_node =
+				xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
+			for (i=0, j=-1; i<job_ptr->job_resrcs->nhosts; i++) {
+				if (job_ptr->job_resrcs->cpus[i] == 0)
+					continue;
+				if ((j == -1) ||
+				    (alloc_msg.cpus_per_node[j] !=
+				     job_ptr->job_resrcs->cpus[i])) {
+					j++;
+					alloc_msg.cpus_per_node[j] =
+						job_ptr->job_resrcs->cpus[i];
+					alloc_msg.cpu_count_reps[j] = 1;
+				} else {
+					alloc_msg.cpu_count_reps[j]++;
+				}
+			}
+			alloc_msg.num_cpu_groups = j + 1;
 		}
 		alloc_msg.error_code     = error_code;
 		alloc_msg.job_id         = job_ptr->job_id;
@@ -2583,6 +2601,9 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		debug("_slurm_rpc_job_alloc_info_lite JobId=%u NodeList=%s %s",
 		      job_info_msg->job_id, job_ptr->nodes, TIME_STR);
 
+		bzero(&job_info_resp_msg,
+		      sizeof(resource_allocation_response_msg_t));
+
 		/* send job_ID and node_name_ptr */
 		if (bit_equal(job_ptr->node_bitmap,
 			      job_ptr->job_resrcs->node_bitmap)) {
@@ -2629,8 +2650,6 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 			}
 			job_info_resp_msg.num_cpu_groups = j + 1;
 		}
-		bzero(&job_info_resp_msg,
-		      sizeof(resource_allocation_response_msg_t));
 		job_info_resp_msg.account        = xstrdup(job_ptr->account);
 		job_info_resp_msg.alias_list     = xstrdup(job_ptr->alias_list);
 		job_info_resp_msg.error_code     = error_code;
