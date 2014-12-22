@@ -958,7 +958,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
-	int error_code = SLURM_SUCCESS, i, j;
+	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
@@ -1075,28 +1075,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			       job_ptr->job_resrcs->cpu_array_value,
 			       (sizeof(uint16_t) * job_ptr->job_resrcs->
 				cpu_array_cnt));
-		} else {
-			/* Job has changed size, rebuild CPU count info */
-			alloc_msg.num_cpu_groups = job_ptr->node_cnt;
-			alloc_msg.cpu_count_reps =
-				xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
-			alloc_msg.cpus_per_node =
-				xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
-			for (i=0, j=-1; i<job_ptr->job_resrcs->nhosts; i++) {
-				if (job_ptr->job_resrcs->cpus[i] == 0)
-					continue;
-				if ((j == -1) ||
-				    (alloc_msg.cpus_per_node[j] !=
-				     job_ptr->job_resrcs->cpus[i])) {
-					j++;
-					alloc_msg.cpus_per_node[j] =
-						job_ptr->job_resrcs->cpus[i];
-					alloc_msg.cpu_count_reps[j] = 1;
-				} else {
-					alloc_msg.cpu_count_reps[j]++;
-				}
-			}
-			alloc_msg.num_cpu_groups = j + 1;
 		}
 		alloc_msg.error_code     = error_code;
 		alloc_msg.job_id         = job_ptr->job_id;
