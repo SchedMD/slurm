@@ -204,7 +204,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
 	uint32_t c;
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
-	uint16_t *used_cores, *free_cores, free_core_count = 0;
+	uint16_t *used_cores, *free_cores = NULL, free_core_count = 0;
 	uint16_t i, j, sockets    = select_node_record[node_i].sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
