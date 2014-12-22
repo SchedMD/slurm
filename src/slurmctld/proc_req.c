@@ -1094,9 +1094,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		} else {
 			alloc_msg.pn_min_memory = 0;
 		}
-		if (job_ptr->account) {
+		if (job_ptr->account)
 			alloc_msg.account = xstrdup(job_ptr->account);
-		}
 		if (job_ptr->qos_ptr) {
 			slurmdb_qos_rec_t *qos;
 
@@ -1106,9 +1105,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			else
 				alloc_msg.qos = xstrdup(qos->description);
 		}
-		if (job_ptr->resv_name) {
+		if (job_ptr->resv_name)
 			alloc_msg.resv_name = xstrdup(job_ptr->resv_name);
-		}
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
 
@@ -2631,12 +2629,24 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 			}
 			job_info_resp_msg.num_cpu_groups = j + 1;
 		}
+		bzero(&job_info_resp_msg,
+		      sizeof(resource_allocation_response_msg_t));
+		job_info_resp_msg.account        = xstrdup(job_ptr->account);
 		job_info_resp_msg.alias_list     = xstrdup(job_ptr->alias_list);
 		job_info_resp_msg.error_code     = error_code;
 		job_info_resp_msg.job_id         = job_info_msg->job_id;
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
 		job_info_resp_msg.partition      = xstrdup(job_ptr->partition);
+		if (job_ptr->qos_ptr) {
+			slurmdb_qos_rec_t *qos;
+			qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+			if (strcmp(qos->description, "Normal QOS default") == 0)
+				job_info_resp_msg.qos = xstrdup("normal");
+			else
+				job_info_resp_msg.qos=xstrdup(qos->description);
+		}
+		job_info_resp_msg.resv_name      = xstrdup(job_ptr->resv_name);
 		job_info_resp_msg.select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_read_lock);
