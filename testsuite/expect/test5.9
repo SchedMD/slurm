@@ -72,8 +72,8 @@ set sq_format(network)       "ip"
 set sq_format(requeue)       1
 # profile
 set sq_format(profile)       Energy
-# ntasks-per-core
-set sq_format(ntpercore)     2
+# ntasks-per-socket
+set sq_format(ntpersocket)   2
 # ntasks-per-node
 set sq_format(ntpernode)     2
 # state compact
@@ -165,7 +165,7 @@ if {$got_node != 1} {
 spawn $scontrol show node $test_node
 expect {
 	-re "CoresPerSocket=($number)" {
-		set sq_format(ntpercore) $expect_out(1,string)
+		set sq_format(ntpersocket) $expect_out(1,string)
 		exp_continue
 	}
 	-re "ThreadsPerCore=($number)" {
@@ -181,10 +181,10 @@ expect {
 	}
 }
 
-if {$sq_format(ntpercore) == 0 || $sq_format(cpuspertask) == 0} {
+if {$sq_format(ntpersocket) == 0 || $sq_format(cpuspertask) == 0} {
 	send_user "\nFAILURE: failed to get number of threads or cores "
 	send_user "ThreadsPerCore=$sq_format(cpuspertask) & "
-	send_user "CoresPerSocket=$sq_format(ntpercore)\n"
+	send_user "CoresPerSocket=$sq_format(ntpersocket)\n"
 	exit 0
 }
 
@@ -253,7 +253,7 @@ $srun $bin_sleep 100"
 spawn $sbatch -A$sq_format(account) -N$sq_format(numnodes) \
     -n$sq_format(numcpus) -t$sq_format(timelimit) -c$sq_format(cpuspertask) \
     --switch=$sq_format(reqswitch) --network=$sq_format(network) --requeue \
-    --profile=$sq_format(profile) --ntasks-per-core=$sq_format(ntpercore) \
+    --profile=$sq_format(profile) --ntasks-per-socket=$sq_format(ntpersocket) \
     --ntasks-per-node=$sq_format(ntpernode) -o$sq_format(stdout) \
     --comment=$sq_format(comment) -e$sq_format(stderr) --exclusive \
     -w$test_node $sq_format(name)
