@@ -18,7 +18,7 @@ configuration used.</p>
 
 <h2>System configuration</h2>
 
-<p>Three system configuration parameters must be set to support a large number
+<p>Several system configuration parameters may require modification to support a large number
 of open files and TCP connections with large bursts of messages. Changes can
 be made using the <b>/etc/rc.d/rc.local</b> or <b>/etc/sysctl.conf</b> 
 script to preserve changes after reboot. In either case, you can write values
@@ -29,11 +29,27 @@ directly into these files
 The maximum number of concurrently open files.
 We recommend a limit of at least 32,832.</li>
 <li><b>/proc/sys/net/ipv4/tcp_max_syn_backlog</b>:
-Maximum number of remembered connection requests, which are still did not
-receive an acknowledgment from connecting client.
+The maximum number of SYN requests to keep in memory that we have yet to get
+the third packet in a 3-way handshake from.
+The tcp_max_syn_backlog variable is overridden by the tcp_syncookies variable,
+which needs to be turned on for this variable to have any effect. 
 The default value is 1024 for systems with more than 128Mb of memory, and 128
 for low memory machines. If server suffers of overload, try to increase this
 number.</li>
+<li><b>/proc/sys/net/ipv4/tcp_syncookies</b>:
+Used to send out <i>syncookies</i> to hosts when the kernels syn backlog queue
+for a specific socket is overflowed.
+The default value is 0, which disables this functionality.
+Set the value to 1.
+<li><b>/proc/sys/net/ipv4/tcp_synack_retries</b>:
+How many times to retransmit the SYN,ACK reply to an SYN request.
+In other words, this tells the system how many times to try to establish a
+passive TCP connection that was started by another host.
+This variable takes an integer value, but should under no circumstances be
+larger than 255.
+Each retransmission will take aproximately 30 to 40 seconds.
+The default value of 5, which results in a timeout of passive TCP connections
+of aproximately 180 seconds and is generally satisfactory.
 <li><b>/proc/sys/net/core/somaxconn</b>:
 Limit of socket listen() backlog, known in userspace as SOMAXCONN. Defaults to
 128. The value should be raised substantially to support bursts of request.
@@ -193,6 +209,6 @@ speedup can be achieved by setting the CommitDelay option in the
 <li><b>PurgeSuspendAfer</b>=1month</li>
 </ul>
 
-<p style="text-align:center;">Last modified 21 July 2014</p>
+<p style="text-align:center;">Last modified 23 December 2014</p>
 
 <!--#include virtual="footer.txt"-->
