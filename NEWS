@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Add the environment variables SLURM_JOB_ACCOUNT, SLURM_JOB_QOS
     and SLURM_JOB_RESERVATION in the batch/srun jobs.
  -- Add sview burst buffer display.
+ -- Properly enforce partition Shared=YES option. Previously oversubscribing
+    resources required gang scheduling to be configured.
 
 * Changes in Slurm 15.08.0pre1
 ==============================
