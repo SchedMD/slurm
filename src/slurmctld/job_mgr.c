@@ -12069,6 +12069,10 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 
 	/* perform the operation */
 	if (op == SUSPEND_JOB) {
+		if (IS_JOB_SUSPENDED(job_ptr) && indf_susp) {
+			job_ptr->priority = 0;	/* Prevent gang sched resume */
+			return SLURM_SUCCESS;
+		}
 		if (!IS_JOB_RUNNING(job_ptr))
 			return ESLURM_JOB_NOT_RUNNING;
 		rc = _suspend_job_nodes(job_ptr, indf_susp);

@@ -93,6 +93,8 @@ documents those changes that are of interest to users and administrators.
  -- auth/munge - Correct logic to read old format AccountingStoragePass.
  -- Reset node "RESERVED" state as appropriate when deleting a maintenance
     reservation.
+ -- Prevent a job manually suspended from being resumed by gang scheduler once
+    free resources are available.
 
 * Changes in Slurm 14.11.2
 ==========================
