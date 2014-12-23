@@ -95,6 +95,8 @@ documents those changes that are of interest to users and administrators.
     reservation.
  -- Prevent a job manually suspended from being resumed by gang scheduler once
     free resources are available.
+ -- Prevent invalid job array task ID value if a task is started using gang
+    scheduling.
 
 * Changes in Slurm 14.11.2
 ==========================
