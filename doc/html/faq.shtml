@@ -222,7 +222,7 @@ Note that setting the node DOWN will terminate all running or suspended
 jobs associated with that node.
 An alternative is to set the node's state to DRAIN until all jobs
 associated with it terminate before setting it DOWN and re-booting.</p>
-<p>Note tha. Slurm has two configuration parameters that may be used to
+<p>Note that Slurm has two configuration parameters that may be used to
 automate some of this process.
 <i>UnkillableStepProgram</i> specifies a program to execute when
 non-killable processes are identified.
@@ -1195,13 +1195,13 @@ pathnames and port numbers to avoid conflicts.
 The only problem is if more than one version of Slurm is configured
 with <i>switch/elan</i> or <i>switch/federation</i>.
 In that case, there can be conflicting switch window requests from
-the differen. Slurm systems.
+the different Slurm systems.
 This can be avoided by configuring the test system with <i>switch/none</i>.
 MPI jobs started on an Elan or Federation switch system without the
 switch windows configured will not execute properly, but other jobs
 will run fine.
 Another option for testing on Elan or Federation systems is to use
-a different set of nodes for the differen. Slurm systems.
+a different set of nodes for the different Slurm systems.
 That will permit both systems to allocate switch windows without
 conflicts.
 
@@ -1758,7 +1758,7 @@ allocation of global resources called licenses. Use the Licenses configuration
 parameter in your slurm.conf file (e.g. "Licenses=foo:10,bar:20").
 Jobs can request licenses and be granted exclusive use of those resources
 (e.g. "sbatch --licenses=foo:2,bar:1 ...").
-It is not currently possible to change the total number of lincenses on a system
+It is not currently possible to change the total number of licenses on a system
 without restarting the slurmctld daemon, but it is possible to dynamically
 reserve licenses and remove them from being available to jobs on the system
 (e.g. "scontrol update reservation=licenses_held licenses=foo:5,bar:2").</p>

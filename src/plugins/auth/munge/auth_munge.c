@@ -709,7 +709,7 @@ static char *_auth_opts_to_socket(char *opts)
 	} else if (strchr(opts, '=')) {
 		;	/* New format, but socket not specified */
 	} else {
-		socket = xstrdup(tmp);	/* Old format */
+		socket = xstrdup(opts);	/* Old format */
 	}
 
 	return socket;

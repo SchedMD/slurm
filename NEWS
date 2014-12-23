@@ -90,6 +90,9 @@ documents those changes that are of interest to users and administrators.
     of Slurm daemons.
  -- Avoid delay on commit for PMI rank 0 to improve performance with some
     MPI implementations.
+ -- auth/munge - Correct logic to read old format AccountingStoragePass.
+ -- Reset node "RESERVED" state as appropriate when deleting a maintenance
+    reservation.
 
 * Changes in Slurm 14.11.2
 ==========================
