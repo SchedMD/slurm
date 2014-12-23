@@ -1910,7 +1910,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
       cleanup:
 	if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap &&
-	    !IS_JOB_RUNNING(job_ptr)) {
+	    !IS_JOB_STARTED(job_ptr)) {
 		job_ptr->array_task_id = NO_VAL;
 	}
 	if (preemptee_job_list)
