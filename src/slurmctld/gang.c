@@ -844,7 +844,8 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 	/* attempt to add any new jobs */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
 		j_ptr = p_ptr->job_list[i];
-		if (j_ptr->row_state != GS_NO_ACTIVE)
+		if ((j_ptr->row_state != GS_NO_ACTIVE) ||
+		    (j_ptr->job_ptr->priority == 0))
 			continue;
 		if (_job_fits_in_active_row(j_ptr->job_ptr, p_ptr)) {
 			_add_job_to_active(j_ptr->job_ptr, p_ptr);
@@ -918,8 +919,9 @@ static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr,
 	}
 	p_ptr->job_list[i] = NULL;
 
-	/* make sure the job is not suspended, and then delete it */
-	if (!fini && (j_ptr->sig_state == GS_SUSPEND)) {
+	/* make sure the job is not suspended by gang, and then delete it */
+	if (!fini && (j_ptr->sig_state == GS_SUSPEND) &&
+	    j_ptr->job_ptr->priority) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
 			info("gang: _remove_job_from_part: resuming "
 			     "suspended job %u", j_ptr->job_id);
@@ -1077,7 +1079,7 @@ static void _scan_slurm_job_list(void)
 			/* We're not tracking this job. Resume it if it's
 			 * suspended, and then add it to the job list. */
 
-			if (IS_JOB_SUSPENDED(job_ptr)) {
+			if (IS_JOB_SUSPENDED(job_ptr) && job_ptr->priority) {
 				/* The likely scenario here is that the
 				 * failed over, and this is a job that gang
 				 * had previously suspended. It's not possible
@@ -1349,6 +1351,7 @@ extern int gs_reconfig(void)
 	struct gs_part *p_ptr, *newp_ptr;
 	List old_part_list;
 	struct job_record *job_ptr;
+	struct gs_job *j_ptr;
 
 	if (!timeslicer_thread_id) {
 		/* gs_init() will be called later from read_slurm_conf()
@@ -1377,16 +1380,15 @@ extern int gs_reconfig(void)
 							      p_ptr->part_name);
 		if (!newp_ptr) {
 			/* this partition was removed, so resume
-			 * any suspended jobs and continue */
+			 * any jobs suspended by gang and continue */
 			for (i = 0; i < p_ptr->num_jobs; i++) {
-				if (p_ptr->job_list[i]->sig_state ==
-				    GS_SUSPEND) {
+				j_ptr = p_ptr->job_list[i];
+				if ((j_ptr->sig_state == GS_SUSPEND) &&
+				    (j_ptr->job_ptr->priority != 0)) {
 					info("resuming job in missing part %s",
 					     p_ptr->part_name);
-					_resume_job(p_ptr->job_list[i]->
-						   job_id);
-					p_ptr->job_list[i]->sig_state =
-						GS_RESUME;
+					_resume_job(j_ptr->job_id);
+					j_ptr->sig_state = GS_RESUME;
 				}
 			}
 			continue;
@@ -1411,9 +1413,8 @@ extern int gs_reconfig(void)
 				continue;
 			}
 			/* resume any job that is suspended by us */
-			if (IS_JOB_SUSPENDED(job_ptr) &&
-			    (job_ptr->priority != 0)) {
-				if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
+			if (IS_JOB_SUSPENDED(job_ptr) && job_ptr->priority) {
+				if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG){
 					info("resuming job %u apparently "
 					     "suspended by gang",
 					     job_ptr->job_id);
@@ -1453,6 +1454,7 @@ extern int gs_reconfig(void)
 static void _build_active_row(struct gs_part *p_ptr)
 {
 	int i;
+	struct gs_job *j_ptr;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering _build_active_row");
@@ -1467,10 +1469,12 @@ static void _build_active_row(struct gs_part *p_ptr)
 
 	/* attempt to add jobs from the job_list in the current order */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
-		if (_job_fits_in_active_row(p_ptr->job_list[i]->job_ptr,
-					    p_ptr)) {
-			_add_job_to_active(p_ptr->job_list[i]->job_ptr, p_ptr);
-			p_ptr->job_list[i]->row_state = GS_ACTIVE;
+		j_ptr = p_ptr->job_list[i];
+		if (j_ptr->job_ptr->priority == 0)
+			continue;
+		if (_job_fits_in_active_row(j_ptr->job_ptr, p_ptr)) {
+			_add_job_to_active(j_ptr->job_ptr, p_ptr);
+			j_ptr->row_state = GS_ACTIVE;
 		}
 	}
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -1525,7 +1529,7 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 	for (i = 0; i < p_ptr->num_jobs; i++) {
 		j_ptr = p_ptr->job_list[i];
 		if ((j_ptr->row_state == GS_NO_ACTIVE) &&
-		     (j_ptr->sig_state == GS_RESUME)) {
+		    (j_ptr->sig_state == GS_RESUME)) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
 		    		info("gang: _cycle_job_list: suspending job %u",
 				     j_ptr->job_id);
@@ -1544,8 +1548,9 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 	/* Resume suspended jobs that are GS_ACTIVE */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
 		j_ptr = p_ptr->job_list[i];
-		if (j_ptr->row_state == GS_ACTIVE &&
-		    j_ptr->sig_state == GS_SUSPEND) {
+		if ((j_ptr->row_state == GS_ACTIVE) &&
+		    (j_ptr->sig_state == GS_SUSPEND) &&
+		    (j_ptr->job_ptr->priority != 0)) {	/* Redundant check */
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
 		    		info("gang: _cycle_job_list: resuming job %u",
 				     j_ptr->job_id);
