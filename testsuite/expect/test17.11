@@ -36,14 +36,20 @@ source ./globals
 set test_id     "17.11"
 set exit_code   0
 set file_in     "test$test_id.input"
+set force_part  0
 set job_id      0
-set matches     0
 
 print_header $test_id
 
 if {[test_alps]} {
         send_user "\nWARNING: This test is incompatible with Cray systems\n"
         exit $exit_code
+}
+
+set def_part [default_partition]
+set shared [partition_shared $def_part]
+if {[string compare $shared "FORCE"] == 0} {
+	set force_part 1
 }
 
 #
@@ -77,6 +83,7 @@ expect {
 #
 # Confirm shared and contiguous flag values
 #
+set matches 0
 if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
@@ -108,7 +115,7 @@ if {$job_id != 0} {
 	set exit_code   1
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: Did not properly set shared and contiguous flag\n"
+	send_user "\nFAILURE: Did not properly set shared and contiguous flag ($matches != 2)\n"
 	set exit_code   1
 }
 
@@ -116,7 +123,6 @@ if {$matches != 2} {
 # Spawn a sbatch job with contiguous option only
 #
 set job_id  0
-set matches 0
 spawn $sbatch --contiguous --hold -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -135,21 +141,23 @@ expect {
 #
 # Confirm shared and contiguous flag values
 #
+set match_share 0
+set match_cont  0
 if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "Shared=0" {
-			incr matches
+			set match_share 1
 			exp_continue
 		}
 		-re "Shared=OK" {
-			incr matches
+			set match_share 1
 			exp_continue
 		}
 		-re "Contiguous=($number)" {
 			set cont_val $expect_out(1,string)
 			if {$cont_val == 1} {
-				incr matches
+				set match_cont 1
 			}
 			exp_continue
 		}
@@ -165,11 +173,15 @@ if {$job_id != 0} {
 } else {
 	set exit_code 1
 }
-
-if {$matches != 2} {
-	send_user "\nFAILURE: Did not properly set shared and contiguous flags\n"
+if {$match_cont != 1} {
+	send_user "\nFAILURE: Did not properly set contiguous flag\n"
 	set exit_code 1
 }
+if {$force_part == 0 && $match_share != 1} {
+	send_user "\nFAILURE: Did not properly set shared flag\n"
+	set exit_code 1
+}
+
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
