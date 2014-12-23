@@ -346,22 +346,25 @@ delete_part $test_part_1
 # Test partition with shared=YES:2
 #
 ####################################
-send_user "\n\nTest partition with shared=YES:2\n"
+if { [test_gang] == 1 } {
+	send_user "\n\nTest partition with shared=YES:2 incompatible with gang scheduling\n"
+} else {
+	send_user "\n\nTest partition with shared=YES:2\n"
+#	Make a new partition with shared=yes:2
+	create_part $test_part_2 "YES:$shared_j_cnt" $node_name
 
-# Make a new partition with shared=yes:2
-create_part $test_part_2 "YES:$shared_j_cnt" $node_name
+#	Submit a job with shared (expect 2 jobs per core/CPU)
+	set new_job_limit [expr $num_jobs * 2]
+	sub_job "0-$new_job_limit" 1 $test_part_2
+	check_job $new_job_limit
+	cancel_job $job_id
 
-# Submit a job with shared (expect 2 jobs per core/CPU)
-set new_job_limit [expr $num_jobs * 2]
-sub_job "0-$new_job_limit" 1 $test_part_2
-check_job $new_job_limit
-cancel_job $job_id
-
-# Submit a job without shared (expect 1 job per core/CPU)
-sub_job "0-$num_jobs" 0 $test_part_2
-check_job $num_jobs
-cancel_job $job_id
-delete_part $test_part_2
+#	Submit a job without shared (expect 1 job per core/CPU)
+	sub_job "0-$num_jobs" 0 $test_part_2
+	check_job $num_jobs
+	cancel_job $job_id
+	delete_part $test_part_2
+}
 
 ########################################
 #
