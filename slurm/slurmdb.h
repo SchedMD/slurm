@@ -760,7 +760,9 @@ typedef struct {
 	char *nodes;
 	uint32_t ntasks;
 	char *pid_str;
-	uint32_t req_cpufreq;
+	uint32_t req_cpufreq_min;
+	uint32_t req_cpufreq_max;
+	uint32_t req_cpufreq_gov;
 	uint32_t requid;
 	time_t start;
 	enum job_states	state;

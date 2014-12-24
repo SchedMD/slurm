@@ -193,6 +193,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
 	{"CpuFreqDef", S_P_STRING},
+	{"CpuFreqGovernors", S_P_STRING},
 	{"CryptoType", S_P_STRING},
 	{"DebugFlags", S_P_STRING},
 	{"DefaultStorageHost", S_P_STRING},
@@ -3008,13 +3009,25 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->chos_loc, "ChosLoc", hashtbl);
 
 	if (s_p_get_string(&temp_str, "CpuFreqDef", hashtbl)) {
-		if (cpu_freq_verify_param(temp_str, &conf->cpu_freq_def)) {
+		if (cpu_freq_verify_def(temp_str,&conf->cpu_freq_def)) {
 			error("Ignoring invalid CpuFreqDef: %s", temp_str);
 			conf->cpu_freq_def = CPU_FREQ_ONDEMAND;
 		}
 		xfree(temp_str);
 	} else {
 		conf->cpu_freq_def = CPU_FREQ_ONDEMAND;
+	}
+
+	if (s_p_get_string(&temp_str, "CpuFreqGovernors", hashtbl)) {
+		if (cpu_freq_verify_govlist(temp_str,&conf->cpu_freq_govs)) {
+			error("Ignoring invalid CpuFreqGovernors: %s",
+				temp_str);
+			conf->cpu_freq_govs = CPU_FREQ_ONDEMAND;
+		}
+		xfree(temp_str);
+	} else {
+		conf->cpu_freq_govs = CPU_FREQ_ONDEMAND;
+
 	}
 
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
@@ -4505,6 +4518,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Wiki");
 	}
+	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "CpuFrequency");
+	}
 	return rc;
 }
 
@@ -4612,6 +4630,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_TRIGGERS;
 		else if (strcasecmp(tok, "Wiki") == 0)
 			(*flags_out) |= DEBUG_FLAG_WIKI;
+		else if (strcasecmp(tok, "CpuFrequency") == 0)
+			(*flags_out) |= DEBUG_FLAG_CPU_FREQ;
 		else {
 			error("Invalid DebugFlag: %s", tok);
 			(*flags_out) = 0;

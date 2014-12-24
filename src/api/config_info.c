@@ -513,6 +513,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CpuFreqGovernors");
+	cpu_freq_govlist_to_string(tmp_str, sizeof(tmp_str),
+			   slurm_ctl_conf_ptr->cpu_freq_govs);
+	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CryptoType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->crypto_type);
 	list_append(ret_list, key_pair);
