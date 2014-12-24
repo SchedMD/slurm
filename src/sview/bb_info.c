@@ -50,6 +50,7 @@ enum {
 	SORTID_POS = POS_LOC,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
+	SORTID_GRES,
 	SORTID_NAME,
 	SORTID_SIZE,
 	SORTID_STATE,
@@ -67,18 +68,20 @@ enum {
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.
  * s/b a const probably*/
-static char *_initial_page_opts = "Name,Size,State,StateTime,UserID";
+static char *_initial_page_opts = "Name/JobID,Gres,Size,State,StateTime,UserID";
 
 static display_data_t display_data_bb[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NAME, "Name/JobID", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_INT, SORTID_COLOR_INX, NULL, FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_STRING, SORTID_SIZE, "Size", FALSE, EDIT_NONE,
+	 refresh_bb, create_model_bb, admin_edit_bb},
+	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
@@ -167,8 +170,8 @@ static void _bb_info_list_del(void *object)
 /* static GtkWidget *_admin_full_edit_bb(resv_desc_msg_t *resv_msg, */
 /*					GtkTreeModel *model, GtkTreeIter *iter) */
 /* { */
-/*NOP*/
-/*Function for admin edit*/
+/* NOP */
+/* Function for admin edit */
 /* } */
 
 /* Function creates the record menu when you double click on a record */
@@ -176,14 +179,14 @@ static void _layout_bb_record(GtkTreeView *treeview,
 			      sview_bb_info_t *sview_bb_info, int update)
 {
 	GtkTreeIter iter;
-	char time_buf[20], tmp_user_id[20], tmp_size[20];
+	char time_buf[20], *tmp_gres = NULL, tmp_user_id[60], tmp_size[20];
 	char bb_name_id[20];
-	char *tmp_state;
-	burst_buffer_resv_t *bb_ptr =
-		sview_bb_info->bb_ptr;
+	char *tmp_state, *tmp_user_name, *sep;
+	burst_buffer_resv_t *bb_ptr = sview_bb_info->bb_ptr;
+	GtkTreeStore *treestore;
+	int i;
 
-	GtkTreeStore *treestore =
-		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
+	treestore = GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 
 	if (bb_ptr->name) {
 		strncpy(bb_name_id, bb_ptr->name, sizeof(bb_name_id));
@@ -193,12 +196,11 @@ static void _layout_bb_record(GtkTreeView *treeview,
 				 UNIT_NONE);
 	} else {
 		snprintf(bb_name_id, sizeof(bb_name_id),
-			 "%u.%u(%u)",
+			 "%u_%u(%u)",
 			 bb_ptr->array_job_id,
 			 bb_ptr->array_task_id,
 			 bb_ptr->job_id);
 	}
-
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_bb,
 						 SORTID_NAME),
@@ -216,6 +218,18 @@ static void _layout_bb_record(GtkTreeView *treeview,
 						 SORTID_SIZE),
 				   tmp_size);
 
+	sep = "";
+	for (i = 0; i < bb_ptr->gres_cnt; i++) {
+		xstrfmtcat(tmp_gres, "%s%s:%u", sep, bb_ptr->gres_ptr->name,
+			   bb_ptr->gres_ptr->used_cnt);
+		sep = ",";
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_bb,
+						 SORTID_GRES),
+				   tmp_gres);
+	xfree(tmp_gres);
+
 	slurm_make_time_str((time_t *)&bb_ptr->state_time, time_buf,
 			    sizeof(time_buf));
 	add_display_treestore_line(update, treestore, &iter,
@@ -223,8 +237,10 @@ static void _layout_bb_record(GtkTreeView *treeview,
 						 SORTID_STATE_TIME),
 				   time_buf);
 
-	convert_num_unit(bb_ptr->user_id, tmp_user_id, sizeof(tmp_user_id),
-			 UNIT_NONE);
+	tmp_user_name = uid_to_string(bb_ptr->user_id);
+	snprintf(tmp_user_id, sizeof(tmp_user_id), "%s(%u)", tmp_user_name,
+		 bb_ptr->user_id);
+	xfree(tmp_user_name);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_bb,
 						 SORTID_USERID),
@@ -259,9 +275,17 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 			      GtkTreeStore *treestore)
 {
 	char tmp_state_time[40];
-	char tmp_size[20], tmp_user_id[20], bb_name_id[20];
-	char *tmp_state;
+	char tmp_size[20], tmp_user_id[60], bb_name_id[20];
+	char *tmp_gres = NULL, *tmp_state, *tmp_user_name, *sep;
 	burst_buffer_resv_t *bb_ptr = sview_bb_info_ptr->bb_ptr;
+	int i;
+
+	sep = "";
+	for (i = 0; i < bb_ptr->gres_cnt; i++) {
+		xstrfmtcat(tmp_gres, "%s%s:%u", sep, bb_ptr->gres_ptr->name,
+			   bb_ptr->gres_ptr->used_cnt);
+		sep = ",";
+	}
 
 	if (bb_ptr->name) {
 		strncpy(bb_name_id, bb_ptr->name, sizeof(bb_name_id));
@@ -276,14 +300,17 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 
 	tmp_state = bb_state_string(bb_ptr->state);
 
-	convert_num_unit(bb_ptr->user_id,
-			 tmp_user_id, sizeof(tmp_user_id), UNIT_NONE);
+	tmp_user_name = uid_to_string(bb_ptr->user_id);
+	snprintf(tmp_user_id, sizeof(tmp_user_id), "%s(%u)", tmp_user_name,
+		 bb_ptr->user_id);
+	xfree(tmp_user_name);
 
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_bb_info_ptr->iter_ptr,
 			   SORTID_COLOR,
 			   sview_colors[sview_bb_info_ptr->color_inx],
 			   SORTID_COLOR_INX,     sview_bb_info_ptr->color_inx,
+			   SORTID_GRES,          tmp_gres,
 			   SORTID_NAME,          bb_name_id,
 			   SORTID_SIZE,          tmp_size,
 			   SORTID_STATE,         tmp_state,
@@ -291,6 +318,8 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 			   SORTID_UPDATED,       1,
 			   SORTID_USERID,        tmp_user_id,
 			   -1);
+	xfree(tmp_gres);
+
 	return;
 }
 
