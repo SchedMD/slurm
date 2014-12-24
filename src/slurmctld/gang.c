@@ -225,6 +225,24 @@ static uint16_t _get_gr_type(void)
 	return GS_NODE;
 }
 
+static uint16_t _get_part_gr_type(struct part_record *part_ptr)
+{
+	if (part_ptr) {
+		if (part_ptr->cr_type & CR_CORE)
+			return GS_CORE;
+		if (part_ptr->cr_type & CR_CPU) {
+			if (!strcmp(slurmctld_conf.task_plugin, "task/none"))
+				return GS_CPU;
+			return GS_CPU2;
+		}
+		if (part_ptr->cr_type & CR_SOCKET)
+			return GS_SOCKET;
+	}
+
+	/* Use global configuration */
+	return gr_type;
+}
+
 /* For GS_CPU and GS_CPU2 gs_bits_per_node is the total number of CPUs per node.
  * For GS_CORE and GS_SOCKET gs_bits_per_node is the total number of
  *	cores per per node.
@@ -401,17 +419,19 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	int count;
 	bitstr_t *job_map;
+	uint16_t job_gr_type = gr_type;
 
 	if ((p_ptr->active_resmap == NULL) || (p_ptr->jobs_active == 0))
 		return 1;
 
-	if ((gr_type == GS_CPU2) || (gr_type == GS_CORE) ||
-	    (gr_type == GS_SOCKET)) {
+	job_gr_type = _get_part_gr_type(job_ptr->part_ptr);
+	if ((job_gr_type == GS_CPU2) || (job_gr_type == GS_CORE) ||
+	    (job_gr_type == GS_SOCKET)) {
 		return job_fits_into_cores(job_res, p_ptr->active_resmap,
 					   gs_bits_per_node);
 	}
 
-	/* gr_type == GS_NODE || gr_type == GS_CPU */
+	/* job_gr_type == GS_NODE || job_gr_type == GS_CPU */
 	job_map = bit_copy(job_res->node_bitmap);
 	bit_and(job_map, p_ptr->active_resmap);
 	/* any set bits indicate contention for the same resource */
@@ -421,7 +441,7 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 	FREE_NULL_BITMAP(job_map);
 	if (count == 0)
 		return 1;
-	if (gr_type == GS_CPU) {
+	if (job_gr_type == GS_CPU) {
 		/* For GS_CPU we check the CPU arrays */
 		return _can_cpus_fit(job_ptr, p_ptr);
 	}
@@ -478,17 +498,19 @@ static void _add_job_to_active(struct job_record *job_ptr,
 			       struct gs_part *p_ptr)
 {
 	job_resources_t *job_res = job_ptr->job_resrcs;
+	uint16_t job_gr_type;
 
 	/* add job to active_resmap */
-	if ((gr_type == GS_CPU2) || (gr_type == GS_CORE) ||
-	    (gr_type == GS_SOCKET)) {
+	job_gr_type = _get_part_gr_type(job_ptr->part_ptr);
+	if ((job_gr_type == GS_CPU2) || (job_gr_type == GS_CORE) ||
+	    (job_gr_type == GS_SOCKET)) {
 		if (p_ptr->jobs_active == 0 && p_ptr->active_resmap) {
 			uint32_t size = bit_size(p_ptr->active_resmap);
 			bit_nclear(p_ptr->active_resmap, 0, size-1);
 		}
 		add_job_to_cores(job_res, &(p_ptr->active_resmap),
 				 gs_bits_per_node);
-		if (gr_type == GS_SOCKET)
+		if (job_gr_type == GS_SOCKET)
 			_fill_sockets(job_res->node_bitmap, p_ptr);
 	} else { /* GS_NODE or GS_CPU */
 		if (!p_ptr->active_resmap) {
@@ -514,7 +536,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 	}
 
 	/* add job to the active_cpus array */
-	if (gr_type == GS_CPU) {
+	if (job_gr_type == GS_CPU) {
 		uint32_t i, a, sz = bit_size(p_ptr->active_resmap);
 		if (!p_ptr->active_cpus) {
 			/* create active_cpus array */
