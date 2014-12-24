@@ -224,6 +224,7 @@ For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
+.TP
 .RE
 
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
@@ -383,7 +384,7 @@ Show help message for cpu_bind
 .RE
 
 .TP
-\fB\-\-cpu\-freq\fR =<\fIp1\fR[-\fIp2\fR[:\fIp3\fR]]>
+\fB\-\-cpu\-freq\fR =<\fIp1\fR[\-\fIp2\fR[:\fIp3\fR]]>
 
 Request that the job step initiated by this srun command be run at some
 requested frequency if possible, on the CPUs selected for the step on
@@ -412,7 +413,6 @@ than a frequency that allows the job to run withing the goal.
 
 If the current frequency is < min, it will be set to min. Likewise, 
 if the current frequency is > max, it will be set to max. 
-
 
 Acceptable values at present include:
 .RS
@@ -446,7 +446,7 @@ attempts to use the PowerSave CPU governor
 .TP
 \fBUserSpace\fR
 attempts to use the UserSpace CPU governor
-
+.TP
 .RE
 
 The following informational environment variable is set in the job

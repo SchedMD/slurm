@@ -132,7 +132,7 @@ Added the following struct definitions
 
 Added the following struct definitions
 ======================================
-CPU_FREQ_GOV_MASK -- mask for all defined cpu-frequency governors.
+ -- Added CPU_FREQ_GOV_MASK: mask for all defined cpu-frequency governors.
 
 
 Changed the following enums and #defines

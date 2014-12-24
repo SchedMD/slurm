@@ -244,7 +244,7 @@ cores per socket.  See additional information under \fB\-B\fR option
 above when task/affinity plugin is enabled.
 
 .TP
-\fB\-\-cpu\-freq\fR =<\fIp1\fR[-\fIp2\fR[:\fIp3\fR]]>
+\fB\-\-cpu\-freq\fR =<\fIp1\fR[\-\fIp2\fR[:\fIp3\fR]]>
 
 Request that job steps initiated by srun commands inside this allocation 
 be run at some requested frequency if possible, on the CPUs selected 
@@ -273,7 +273,6 @@ than a frequency that allows the job to run withing the goal.
 
 If the current frequency is < min, it will be set to min. Likewise, 
 if the current frequency is > max, it will be set to max. 
-
 
 Acceptable values at present include:
 .RS
@@ -307,7 +306,7 @@ attempts to use the PowerSave CPU governor
 .TP
 \fBUserSpace\fR
 attempts to use the UserSpace CPU governor
-
+.TP
 .RE
 
 The following informational environment variable is set in the job
