@@ -127,8 +127,7 @@ display_data_t main_display_data[] = {
 	 refresh_main, create_model_resv, admin_edit_resv,
 	 get_info_resv, specific_info_resv,
 	 set_menus_resv, NULL},
-/* Burst Buffer tab option */
-	{G_TYPE_NONE, BB_PAGE, "Burst Buffer", TRUE, -1,
+	{G_TYPE_NONE, BB_PAGE, "Burst Buffers", TRUE, -1,
 	 refresh_main, create_model_bb, admin_edit_bb,
 	 get_info_bb, specific_info_bb,
 	 set_menus_bb, NULL},
