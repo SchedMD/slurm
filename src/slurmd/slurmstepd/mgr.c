@@ -1155,7 +1155,11 @@ fail2:
 	 */
 	task_g_post_step(job);
 
-	if (job->cpu_freq != NO_VAL)
+	/*
+	 * Reset cpu frequency if it was changed
+	 */
+	if (job->cpu_freq_min != NO_VAL || job->cpu_freq_max != NO_VAL ||
+	    job->cpu_freq_gov != NO_VAL)
 		cpu_freq_reset(job);
 
 	/* Notify srun of completion AFTER frequency reset to avoid race

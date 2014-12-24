@@ -1353,8 +1353,10 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 	if (!job->batch && switch_g_job_step_post_resume(job))
 		error("switch_g_job_step_post_resume: %m");
 	/* set the cpu frequencies if cpu_freq option used */
-	if (job->cpu_freq != NO_VAL)
+	if (job->cpu_freq_min != NO_VAL || job->cpu_freq_max != NO_VAL ||
+	    job->cpu_freq_gov != NO_VAL) {
 		cpu_freq_set(job);
+	}
 
 	pthread_mutex_unlock(&suspend_mutex);
 

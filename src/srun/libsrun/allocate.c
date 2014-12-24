@@ -836,6 +836,13 @@ job_desc_msg_create_from_opts (void)
 	if (opt.warn_time)
 		j->warn_time = opt.warn_time;
 
+	if (opt.cpu_freq_min != NO_VAL)
+		j->cpu_freq_min = opt.cpu_freq_min;
+	if (opt.cpu_freq_max != NO_VAL)
+		j->cpu_freq_max = opt.cpu_freq_max;
+	if (opt.cpu_freq_gov != NO_VAL)
+		j->cpu_freq_gov = opt.cpu_freq_gov;
+
 	if (opt.req_switch >= 0)
 		j->req_switch = opt.req_switch;
 	if (opt.wait4switch >= 0)

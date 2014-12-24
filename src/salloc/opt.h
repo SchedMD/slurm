@@ -164,6 +164,9 @@ typedef struct salloc_options {
 	int spank_job_env_size;	/* size of spank_job_env	*/
 	int core_spec;		/* --core-spec=n,      -S n	*/
 	char *burst_buffer;	/* -bb				*/
+	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
+	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
+	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 } opt_t;
 
 extern opt_t opt;

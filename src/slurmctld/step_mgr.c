@@ -78,6 +78,8 @@
 
 #define MAX_RETRIES 10
 
+uint32_t debug_flags = NO_VAL;
+
 static void _build_pending_step(struct job_record  *job_ptr,
 				job_step_create_request_msg_t *step_specs);
 static int  _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
@@ -377,25 +379,34 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		mem_type   = "cpu";
 	}
 
-	debug3("StepDesc: user_id=%u job_id=%u node_count=%u-%u cpu_count=%u",
-	       step_spec->user_id, step_spec->job_id,
-	       step_spec->min_nodes, step_spec->max_nodes,
-	       step_spec->cpu_count);
-	debug3("   cpu_freq=%u num_tasks=%u relative=%u task_dist=%u plane=%u",
-	       step_spec->cpu_freq, step_spec->num_tasks, step_spec->relative,
-	       step_spec->task_dist, step_spec->plane_size);
-	debug3("   node_list=%s  constraints=%s",
-	       step_spec->node_list, step_spec->features);
-	debug3("   host=%s port=%u name=%s network=%s exclusive=%u",
-	       step_spec->host, step_spec->port, step_spec->name,
-	       step_spec->network, step_spec->exclusive);
-	debug3("   checkpoint-dir=%s checkpoint_int=%u",
-	       step_spec->ckpt_dir, step_spec->ckpt_interval);
-	debug3("   mem_per_%s=%u resv_port_cnt=%u immediate=%u no_kill=%u",
-	       mem_type, mem_value, step_spec->resv_port_cnt,
-	       step_spec->immediate, step_spec->no_kill);
-	debug3("   overcommit=%d time_limit=%u gres=%s",
-	       step_spec->overcommit, step_spec->time_limit, step_spec->gres);
+	if (debug_flags == NO_VAL)
+		debug_flags = slurm_get_debug_flags();
+	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+		info("StepDesc: user_id=%u job_id=%u node_count=%u-%u "
+		     "cpu_count=%u", step_spec->user_id, step_spec->job_id,
+		       step_spec->min_nodes, step_spec->max_nodes,
+		       step_spec->cpu_count);
+		info("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "
+			"num_tasks=%u relative=%u task_dist=%u plane=%u",
+		       step_spec->cpu_freq_gov,
+		       step_spec->cpu_freq_max,
+		       step_spec->cpu_freq_min,
+		       step_spec->num_tasks, step_spec->relative,
+		       step_spec->task_dist, step_spec->plane_size);
+		info("   node_list=%s  constraints=%s",
+		       step_spec->node_list, step_spec->features);
+		info("   host=%s port=%u name=%s network=%s exclusive=%u",
+		       step_spec->host, step_spec->port, step_spec->name,
+		       step_spec->network, step_spec->exclusive);
+		info("   checkpoint-dir=%s checkpoint_int=%u",
+		       step_spec->ckpt_dir, step_spec->ckpt_interval);
+		info("   mem_per_%s=%u resv_port_cnt=%u immediate=%u no_kill=%u",
+		       mem_type, mem_value, step_spec->resv_port_cnt,
+		       step_spec->immediate, step_spec->no_kill);
+		info("   overcommit=%d time_limit=%u gres=%s",
+		       step_spec->overcommit, step_spec->time_limit,
+		       step_spec->gres);
+	}
 }
 
 
@@ -2343,7 +2354,9 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
-	step_ptr->cpu_freq = step_specs->cpu_freq;
+	step_ptr->cpu_freq_min = step_specs->cpu_freq_min;
+	step_ptr->cpu_freq_max = step_specs->cpu_freq_max;
+	step_ptr->cpu_freq_gov = step_specs->cpu_freq_gov;
 	step_ptr->cpus_per_task = (uint16_t)cpus_per_task;
 	step_ptr->pn_min_memory = step_specs->pn_min_memory;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
@@ -2651,7 +2664,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	cpu_cnt = step_ptr->cpu_count;
 #endif
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
@@ -2659,7 +2672,46 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		pack16(step_ptr->ckpt_interval, buffer);
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
-		pack32(step_ptr->cpu_freq, buffer);
+		pack32(step_ptr->cpu_freq_min, buffer);
+		pack32(step_ptr->cpu_freq_max, buffer);
+		pack32(step_ptr->cpu_freq_gov, buffer);
+		pack32(task_cnt, buffer);
+		pack32(step_ptr->time_limit, buffer);
+		pack16(step_ptr->state, buffer);
+
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		if (step_ptr->job_ptr->part_ptr)
+			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
+		else
+			packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_fmt(pack_bitstr, buffer);
+		packstr(step_ptr->ckpt_dir, buffer);
+		packstr(step_ptr->gres, buffer);
+		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
+					     protocol_version);
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->array_job_id, buffer);
+		pack32(step_ptr->job_ptr->array_task_id, buffer);
+		pack32(step_ptr->job_ptr->job_id, buffer);
+		pack32(step_ptr->step_id, buffer);
+		pack16(step_ptr->ckpt_interval, buffer);
+		pack32(step_ptr->job_ptr->user_id, buffer);
+		pack32(cpu_cnt, buffer);
+		pack32(step_ptr->cpu_freq_max, buffer);
 		pack32(task_cnt, buffer);
 		pack32(step_ptr->time_limit, buffer);
 		pack16(step_ptr->state, buffer);
@@ -3341,7 +3393,9 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 	} else
 		pack32((uint32_t) 0, buffer);
 	pack32(step_ptr->time_limit, buffer);
-	pack32(step_ptr->cpu_freq, buffer);
+	pack32(step_ptr->cpu_freq_min, buffer);
+	pack32(step_ptr->cpu_freq_max, buffer);
+	pack32(step_ptr->cpu_freq_gov, buffer);
 
 	pack_time(step_ptr->start_time, buffer);
 	pack_time(step_ptr->pre_sus_time, buffer);
@@ -3388,7 +3442,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt, state;
 	uint32_t core_size, cpu_count, exit_code, pn_min_memory, name_len;
-	uint32_t step_id, time_limit, cpu_freq;
+	uint32_t step_id, time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
@@ -3422,7 +3476,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		if (core_size)
 			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
 		safe_unpack32(&time_limit, buffer);
-		safe_unpack32(&cpu_freq, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
 
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
@@ -3483,7 +3539,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		if (core_size)
 			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
 		safe_unpack32(&time_limit, buffer);
-		safe_unpack32(&cpu_freq, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
 
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
@@ -3581,7 +3637,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 
 	step_ptr->switch_job   = switch_tmp;
 	step_ptr->check_job    = check_tmp;
-	step_ptr->cpu_freq     = cpu_freq;
+	step_ptr->cpu_freq_min = cpu_freq_min;
+	step_ptr->cpu_freq_max = cpu_freq_max;
+	step_ptr->cpu_freq_gov = cpu_freq_gov;
 	step_ptr->state        = state;
 	step_ptr->start_protocol_ver = start_protocol_ver;
 

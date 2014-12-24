@@ -73,6 +73,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
@@ -117,6 +118,7 @@
 /* #define OPT_CLUSTERS      0x18 */
 #define OPT_TIME_VAL      0x19
 #define OPT_CORE_SPEC     0x1a
+#define OPT_CPU_FREQ      0x1b
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
 #define OPT_HINT	  0x22
@@ -179,6 +181,7 @@
 #define LONG_OPT_IGNORE_PBS      0x155
 #define LONG_OPT_TEST_ONLY       0x156
 #define LONG_OPT_PARSABLE        0x157
+#define LONG_OPT_CPU_FREQ        0x158
 #define LONG_OPT_PRIORITY        0x160
 
 /*---- global variables, defined in opt.h ----*/
@@ -305,6 +308,9 @@ static void _opt_default()
 
 	opt.ntasks = 1;
 	opt.ntasks_set = false;
+	opt.cpu_freq_min = NO_VAL;
+	opt.cpu_freq_max = NO_VAL;
+	opt.cpu_freq_gov = NO_VAL;
 	opt.cpus_per_task = 0;
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
@@ -432,6 +438,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
+  {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
@@ -638,6 +645,11 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_PROFILE:
 		opt.profile = acct_gather_profile_from_string((char *)val);
 		break;
+	case OPT_CPU_FREQ:
+		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
+				&opt.cpu_freq_max, &opt.cpu_freq_gov))
+			error("Invalid --cpu-freq argument: %s. Ignored", val);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -699,6 +711,7 @@ static struct option long_options[] = {
 	{"conn-type",     required_argument, 0, LONG_OPT_CONNTYPE},
 	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
+	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 	{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
@@ -1662,6 +1675,12 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.export_file);
 			opt.export_file = xstrdup(optarg);
 			break;
+		case LONG_OPT_CPU_FREQ:
+		        if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
+					&opt.cpu_freq_max, &opt.cpu_freq_gov))
+				error("Invalid --cpu-freq argument: %s. "
+						"Ignored", optarg);
+			break;
 		case LONG_OPT_REQ_SWITCH:
 			pos_delimit = strstr(optarg,"@");
 			if (pos_delimit != NULL) {
@@ -2560,6 +2579,9 @@ static bool _opt_verify(void)
 #endif
 	}
 
+	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
+			opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
+
 	return verified;
 }
 
@@ -2865,6 +2887,9 @@ static void _opt_list(void)
 	info("plane_size        : %u", opt.plane_size);
 	info("propagate         : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
+	info("cpu_freq_min   : %u", opt.cpu_freq_min);
+	info("cpu_freq_max   : %u", opt.cpu_freq_max);
+	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	str = print_commandline(opt.script_argc, opt.script_argv);
@@ -2907,6 +2932,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--mem_bind=...] [--reservation=name]\n"
+"              [--cpu-freq=<min[-max[:gov]]>\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
 "              [--core-spec=cores] [--reboot] [--bb=burst_buffer_spec]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
@@ -2927,6 +2953,7 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
+"      --cpu-freq=<min[-max[:gov]]> requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
