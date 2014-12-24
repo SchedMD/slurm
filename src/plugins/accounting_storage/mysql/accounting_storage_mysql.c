@@ -1116,6 +1116,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "max_disk_write_task", "int unsigned default 0 not null" },
 		{ "max_disk_write_node", "int unsigned default 0 not null" },
 		{ "ave_disk_write", "double unsigned default 0.0 not null" },
+		{ "req_cpufreq_min", "int unsigned default 0 not null" },
+		{ "req_cpufreq_gov", "int unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 

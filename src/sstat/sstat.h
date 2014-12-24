@@ -66,7 +66,7 @@
 
 #define ERROR 2
 
-#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreq,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite"
+#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,reqcpufreqmin,reqcpufreqmax,reqcpufreqgov,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite"
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
@@ -112,7 +112,9 @@ typedef enum {
 		PRINT_NODELIST,
 		PRINT_NTASKS,
 		PRINT_PIDS,
-		PRINT_REQ_CPUFREQ,
+		PRINT_REQ_CPUFREQ_MIN,
+		PRINT_REQ_CPUFREQ_MAX,
+		PRINT_REQ_CPUFREQ_GOV,
 } sstat_print_types_t;
 
 

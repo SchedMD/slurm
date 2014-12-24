@@ -2437,7 +2437,9 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	req.task_dist   = task_dist;
 	req.total_cpus = cpus;
 	req.total_tasks = tasks;
-	req.req_cpufreq = step_ptr->cpu_freq;
+	req.req_cpufreq_min = step_ptr->cpu_freq_min;
+	req.req_cpufreq_max = step_ptr->cpu_freq_max;
+	req.req_cpufreq_gov = step_ptr->cpu_freq_gov;
 
 	msg.msg_type    = DBD_STEP_START;
 	msg.data        = &req;

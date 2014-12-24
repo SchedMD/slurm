@@ -495,6 +495,12 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->contiguous);
 	} else if (!strcmp(name, "cores_per_socket")) {
 		lua_pushnumber (L, job_desc->cores_per_socket);
+	} else if (!strcmp(name, "cpu_freq_min")) {
+		lua_pushnumber (L, job_desc->cpu_freq_min);
+	} else if (!strcmp(name, "cpu_freq_max")) {
+		lua_pushnumber (L, job_desc->cpu_freq_max);
+	} else if (!strcmp(name, "cpu_freq_gov")) {
+		lua_pushnumber (L, job_desc->cpu_freq_gov);
 	} else if (!strcmp(name, "cpus_per_task")) {
 		lua_pushnumber (L, job_desc->cpus_per_task);
 	} else if (!strcmp(name, "default_account")) {
@@ -653,6 +659,12 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->cores_per_socket = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "cpus_per_task")) {
 		job_desc->cpus_per_task = luaL_checknumber(L, 3);
+	} else if (!strcmp(name, "cpu_freq_min")) {
+		job_desc->cpu_freq_min = luaL_checknumber(L, 3);
+	} else if (!strcmp(name, "cpu_freq_max")) {
+		job_desc->cpu_freq_max = luaL_checknumber(L, 3);
+	} else if (!strcmp(name, "cpu_freq_gov")) {
+		job_desc->cpu_freq_gov = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "dependency")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->dependency);

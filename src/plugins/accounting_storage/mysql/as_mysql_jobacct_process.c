@@ -193,7 +193,9 @@ char *step_req_inx[] = {
 	"t1.ave_cpu",
 	"t1.act_cpufreq",
 	"t1.consumed_energy",
-	"t1.req_cpufreq"
+	"t1.req_cpufreq",
+	"t1.req_cpufreq_min",
+	"t1.req_cpufreq_gov"
 };
 
 enum {
@@ -241,7 +243,9 @@ enum {
 	STEP_REQ_AVE_CPU,
 	STEP_REQ_ACT_CPUFREQ,
 	STEP_REQ_CONSUMED_ENERGY,
-	STEP_REQ_REQ_CPUFREQ,
+	STEP_REQ_REQ_CPUFREQ_MAX,
+	STEP_REQ_REQ_CPUFREQ_MIN,
+	STEP_REQ_REQ_CPUFREQ_GOV,
 	STEP_REQ_COUNT
 };
 
@@ -874,8 +878,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				atof(step_row[STEP_REQ_ACT_CPUFREQ]);
 			step->stats.consumed_energy =
 				atof(step_row[STEP_REQ_CONSUMED_ENERGY]);
-			step->req_cpufreq =
-				slurm_atoul(step_row[STEP_REQ_REQ_CPUFREQ]);
+			step->req_cpufreq_min =
+				slurm_atoul(step_row[STEP_REQ_REQ_CPUFREQ_MIN]);
+			step->req_cpufreq_max =
+				slurm_atoul(step_row[STEP_REQ_REQ_CPUFREQ_MAX]);
+			step->req_cpufreq_gov =
+				slurm_atoul(step_row[STEP_REQ_REQ_CPUFREQ_GOV]);
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
 			step->stats.vsize_max_nodeid =

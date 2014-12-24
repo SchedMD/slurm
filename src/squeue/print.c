@@ -45,6 +45,7 @@
 #include <time.h>
 #include <sys/types.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -2158,12 +2159,19 @@ int _print_step_num_cpus(job_step_info_t * step, int width, bool right,
 int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
 			 char* suffix)
 {
-	if (step == NULL)
+	char bfm[16],bfx[16],bfg[16],bfall[48];
+
+	if (step == NULL) {
 		_print_str("CPU_FREQ", width, right, true);
-	else if (step->cpu_freq != NO_VAL)
-		_print_int(step->cpu_freq, width, right, true);
-	else
-		_print_str("N/A", width, right, true);
+		if (suffix)
+			printf("%s", suffix);
+		return SLURM_SUCCESS;
+	}
+	cpu_freq_to_string(bfm, sizeof(bfm), step->cpu_freq_min);
+	cpu_freq_to_string(bfx, sizeof(bfx), step->cpu_freq_max);
+	cpu_freq_to_string(bfg, sizeof(bfg), step->cpu_freq_gov);
+	snprintf(bfall,sizeof(bfall),"%s-%s:%s", bfm, bfx, bfg);
+	_print_str(bfall, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);

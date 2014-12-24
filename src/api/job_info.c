@@ -56,6 +56,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/forward.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -1121,6 +1122,18 @@ line15:
 	}
 
 	/****** Line 35 (optional) ******/
+	if (cpu_freq_debug(NULL, NULL, tmp_line, sizeof(tmp_line),
+				  job_ptr->cpu_freq_gov, job_ptr->cpu_freq_min,
+				  job_ptr->cpu_freq_max, NO_VAL) != 0) {
+
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n  ");
+		xstrcat(out, tmp_line);
+	}
+
+	/****** Line 36 (optional) ******/
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
