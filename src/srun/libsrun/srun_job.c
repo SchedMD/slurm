@@ -897,7 +897,7 @@ _job_create_structure(allocation_info_t *ainfo)
 		}
 	}
 
-	if (ainfo->cpu_freq_max!=0 && ainfo->cpu_freq_max!=NO_VAL) {
+	if (ainfo->cpu_freq_max != 0 && ainfo->cpu_freq_max != NO_VAL) {
 		job->ctx_params.cpu_freq_max = ainfo->cpu_freq_max;
 		opt.cpu_freq_max = job->ctx_params.cpu_freq_max;
 	}

@@ -2874,6 +2874,9 @@ static void _opt_list(void)
 	}
 	info("array             : %s",
 	     opt.array_inx == NULL ? "N/A" : opt.array_inx);
+	info("cpu_freq_min      : %u", opt.cpu_freq_min);
+	info("cpu_freq_max      : %u", opt.cpu_freq_max);
+	info("cpu_freq_gov      : %u", opt.cpu_freq_gov);
 	info("mail_type         : %s", print_mail_type(opt.mail_type));
 	info("mail_user         : %s", opt.mail_user);
 	info("sockets-per-node  : %d", opt.sockets_per_node);
@@ -2887,9 +2890,6 @@ static void _opt_list(void)
 	info("plane_size        : %u", opt.plane_size);
 	info("propagate         : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
-	info("cpu_freq_min   : %u", opt.cpu_freq_min);
-	info("cpu_freq_max   : %u", opt.cpu_freq_max);
-	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	str = print_commandline(opt.script_argc, opt.script_argv);

@@ -137,7 +137,7 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	snprintf(tmp, sizeof(tmp), "%s/cpu/%d", slurmd_spooldir, cpu_id);
 	fd = open(tmp, O_CREAT | O_RDWR, 0500);
 	if (fd < 0) {
-		error("%s: open: %m %s", __func__,tmp);
+		error("%s: open: %m %s", __func__, tmp);
 		return fd;
 	}
 	if (_fd_lock_retry(fd) < 0)
@@ -161,15 +161,16 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
 	if (mkdir(tmp, 0700)) {
 		if (errno != EEXIST) {
-			error("mkdir failed: %m %s", tmp);
+			error("%s: mkdir failed: %m %s", __func__, tmp);
 			return -1;
 		}
 	}
 	snprintf(tmp, sizeof(tmp), "%s/cpu/%d", slurmd_spooldir, cpu_id);
 	fd = open(tmp, O_RDWR);
 	if (fd < 0) {
-		error("%s: open: %m %s", __func__, tmp);
-		return fd;
+		if (errno != ENOENT)	/* Race condition */
+			error("%s: open: %m %s", __func__, tmp);
+		return -1;
 	}
 	if (_fd_lock_retry(fd) < 0) {
 		error("%s: fd_get_write_lock: %m %s", __func__, tmp);
@@ -223,9 +224,9 @@ _cpu_freq_cpu_avail(int cpuidx)
 			break;
 		}
 		/* make sure list is sorted */
-		for (j=0; j<i; j++) {
+		for (j = 0; j < i; j++) {
 			if (freq < cpufreq[cpuidx].avail_freq[j]) {
-				for (k=i; k>=j; k--) {
+				for (k = i; k >= j; k--) {
 					cpufreq[cpuidx].avail_freq[k+1] =
 						cpufreq[cpuidx].avail_freq[k];
 				}
@@ -419,15 +420,15 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	debug_flags = slurm_get_debug_flags(); /* init for slurmstepd */
 	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
 		info("cpu_freq_cpuset_validate: request: min=(%12d  %8x) "
-				"max=(%12d %8x) governor=%8x",
-		       job->cpu_freq_min, job->cpu_freq_min,
-		       job->cpu_freq_max, job->cpu_freq_max,
-		       job->cpu_freq_gov);
+		      "max=(%12d %8x) governor=%8x",
+		      job->cpu_freq_min, job->cpu_freq_min,
+		      job->cpu_freq_max, job->cpu_freq_max,
+		      job->cpu_freq_gov);
 		info("  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
 		     job->jobid, job->stepid, job->node_tasks,
-		       job->cpus_per_task, job->cpus);
+		     job->cpus_per_task, job->cpus);
 		info("  cpu_bind_type=%4x, cpu_bind map=%s",
-		       job->cpu_bind_type, job->cpu_bind);
+		     job->cpu_bind_type, job->cpu_bind);
 	}
 
 	if (!cpu_freq_count)
@@ -706,7 +707,7 @@ _cpu_freq_get_scaling_freq(int cpuidx, char* option)
  * -- assume governor already set to userspace ---
  *
  */
-int
+static int
 _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 		char* option)
 {
@@ -717,7 +718,7 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 
 	rc = SLURM_SUCCESS;
 	snprintf(path, sizeof(path), PATH_TO_CPU
-			"cpu%u/cpufreq/%s", cpx, option);
+		 "cpu%u/cpufreq/%s", cpx, option);
 	fd = _set_cpu_owner_lock(cpx, job->jobid);
 	if ((fp = fopen(path, "w"))) {
 		fprintf(fp, "%u\n", freq);
@@ -731,7 +732,7 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 		newfreq = _cpu_freq_get_scaling_freq(cpx, option);
 		if (newfreq != freq) {
 			error("Failed to set freq_scaling %s to %u (org=%u)",
-					option, freq, newfreq);
+			      option, freq, newfreq);
 		}
 	}
 	return rc;
@@ -1020,11 +1021,11 @@ cpu_freq_set(stepd_step_rec_t *job)
 			continue; /* Nothing to set on this CPU */
 		if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
 			info("cpu_freq: current_state cpu=%d org_min=%u "
-				"org_freq=%u org_max=%u org_gpv=%s",i,
-				cpufreq[i].org_min_freq,
-				cpufreq[i].org_frequency,
-				cpufreq[i].org_max_freq,
-				cpufreq[i].org_governor);
+			     "org_freq=%u org_max=%u org_gpv=%s",i,
+			     cpufreq[i].org_min_freq,
+			     cpufreq[i].org_frequency,
+			     cpufreq[i].org_max_freq,
+			     cpufreq[i].org_governor);
 		}
 
 		/* Max must be set before min, per
@@ -1107,11 +1108,10 @@ cpu_freq_set(stepd_step_rec_t *job)
 					cpufreq[i].new_frequency);
 			if (cpufreq[i].new_governor[0] != '\0') {
 				info("cpu_freq: set cpu=%d %s Governor=%s",
-						i, freq_detail,
-						cpufreq[i].new_governor);
+				     i, freq_detail, cpufreq[i].new_governor);
 			} else {
 				info("cpu_freq: reset cpu=%d %s", i,
-						freq_detail);
+				     freq_detail);
 			}
 		}
 	}
@@ -1183,10 +1183,10 @@ cpu_freq_reset(stepd_step_rec_t *job)
 					cpufreq[i].org_frequency);
 			if (cpufreq[i].new_governor[0] != '\0') {
 				info("cpu_freq: reset cpu=%d %s Governor=%s",
-				      i, freq_detail, cpufreq[i].org_governor);
+				     i, freq_detail, cpufreq[i].org_governor);
 			} else {
 				info("cpu_freq: reset cpu=%d %s", i,
-				      freq_detail);
+				     freq_detail);
 			}
 		}
 	}
@@ -1252,7 +1252,7 @@ cpu_freq_set_env(char* var, uint32_t argmin, uint32_t argmax, uint32_t arggov)
 	if (gov == 0)
 		gov = NO_VAL;
 
-	if (min==NO_VAL && max==NO_VAL && gov==NO_VAL)
+	if ((min == NO_VAL) && (max == NO_VAL) && (gov == NO_VAL))
 		return SLURM_SUCCESS;
 
 	if (min != NO_VAL) {
@@ -1272,14 +1272,14 @@ cpu_freq_set_env(char* var, uint32_t argmin, uint32_t argmax, uint32_t arggov)
 	if (gov != NO_VAL) {
 		cpu_freq_to_string(bfgov, sizeof(bfgov), gov);
 	}
-	if (min!=NO_VAL && max!=NO_VAL && gov!=NO_VAL) {
-		sprintf(bfall,"%s-%s:%s", bfmin, bfmax, bfgov);
-	} else if (min!=NO_VAL && max!=NO_VAL) {
-		sprintf(bfall,"%s-%s", bfmin, bfmax);
-	} else if (max!=NO_VAL) {
-		sprintf(bfall,"%s", bfmax);
-	} else if (gov!=NO_VAL) {
-		sprintf(bfall,"%s", bfgov);
+	if ((min != NO_VAL) && (max != NO_VAL) && (gov != NO_VAL)) {
+		sprintf(bfall, "%s-%s:%s", bfmin, bfmax, bfgov);
+	} else if ((min != NO_VAL) && (max != NO_VAL)) {
+		sprintf(bfall, "%s-%s", bfmin, bfmax);
+	} else if (max != NO_VAL) {
+		sprintf(bfall, "%s", bfmax);
+	} else if (gov != NO_VAL) {
+		sprintf(bfall, "%s", bfgov);
 	}
 	if (setenvf(NULL, var, "%s", bfall)) {
 		error("Unable to set %s", var);
@@ -1634,4 +1634,3 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 	}
 	return rc;
 }
-

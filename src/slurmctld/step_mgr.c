@@ -382,31 +382,34 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	if (debug_flags == NO_VAL)
 		debug_flags = slurm_get_debug_flags();
 	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
-		info("StepDesc: user_id=%u job_id=%u node_count=%u-%u "
-		     "cpu_count=%u", step_spec->user_id, step_spec->job_id,
-		       step_spec->min_nodes, step_spec->max_nodes,
-		       step_spec->cpu_count);
-		info("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "
-			"num_tasks=%u relative=%u task_dist=%u plane=%u",
-		       step_spec->cpu_freq_gov,
-		       step_spec->cpu_freq_max,
-		       step_spec->cpu_freq_min,
-		       step_spec->num_tasks, step_spec->relative,
-		       step_spec->task_dist, step_spec->plane_size);
-		info("   node_list=%s  constraints=%s",
-		       step_spec->node_list, step_spec->features);
-		info("   host=%s port=%u name=%s network=%s exclusive=%u",
-		       step_spec->host, step_spec->port, step_spec->name,
-		       step_spec->network, step_spec->exclusive);
-		info("   checkpoint-dir=%s checkpoint_int=%u",
-		       step_spec->ckpt_dir, step_spec->ckpt_interval);
-		info("   mem_per_%s=%u resv_port_cnt=%u immediate=%u no_kill=%u",
-		       mem_type, mem_value, step_spec->resv_port_cnt,
-		       step_spec->immediate, step_spec->no_kill);
-		info("   overcommit=%d time_limit=%u gres=%s",
-		       step_spec->overcommit, step_spec->time_limit,
-		       step_spec->gres);
+		info("StepDesc: user_id=%u job_id=%u "
+		     "cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
+		     step_spec->user_id, step_spec->job_id,
+		     step_spec->cpu_freq_gov, step_spec->cpu_freq_max,
+		     step_spec->cpu_freq_min);
 	}
+	debug3("StepDesc: user_id=%u job_id=%u node_count=%u-%u cpu_count=%u "
+	       "num_tasks=%u",
+	       step_spec->user_id, step_spec->job_id,
+	       step_spec->min_nodes, step_spec->max_nodes,
+	       step_spec->cpu_count, step_spec->num_tasks);
+	debug3("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "
+	       "relative=%u task_dist=%u plane=%u",
+	       step_spec->cpu_freq_gov, step_spec->cpu_freq_max,
+	       step_spec->cpu_freq_min, step_spec->relative,
+	       step_spec->task_dist, step_spec->plane_size);
+	debug3("   node_list=%s  constraints=%s",
+	       step_spec->node_list, step_spec->features);
+	debug3("   host=%s port=%u name=%s network=%s exclusive=%u",
+	       step_spec->host, step_spec->port, step_spec->name,
+	       step_spec->network, step_spec->exclusive);
+	debug3("   checkpoint-dir=%s checkpoint_int=%u",
+	       step_spec->ckpt_dir, step_spec->ckpt_interval);
+	debug3("   mem_per_%s=%u resv_port_cnt=%u immediate=%u no_kill=%u",
+	       mem_type, mem_value, step_spec->resv_port_cnt,
+	       step_spec->immediate, step_spec->no_kill);
+	debug3("   overcommit=%d time_limit=%u gres=%s",
+	       step_spec->overcommit, step_spec->time_limit, step_spec->gres);
 }
 
 

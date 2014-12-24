@@ -2159,7 +2159,7 @@ int _print_step_num_cpus(job_step_info_t * step, int width, bool right,
 int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
 			 char* suffix)
 {
-	char bfm[16],bfx[16],bfg[16],bfall[48];
+	char bfm[16], bfx[16], bfg[16], bfall[48];
 
 	if (step == NULL) {
 		_print_str("CPU_FREQ", width, right, true);
@@ -2170,7 +2170,7 @@ int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
 	cpu_freq_to_string(bfm, sizeof(bfm), step->cpu_freq_min);
 	cpu_freq_to_string(bfx, sizeof(bfx), step->cpu_freq_max);
 	cpu_freq_to_string(bfg, sizeof(bfg), step->cpu_freq_gov);
-	snprintf(bfall,sizeof(bfall),"%s-%s:%s", bfm, bfx, bfg);
+	snprintf(bfall, sizeof(bfall), "%s-%s:%s", bfm, bfx, bfg);
 	_print_str(bfall, width, right, true);
 
 	if (suffix)

@@ -1123,8 +1123,8 @@ line15:
 
 	/****** Line 35 (optional) ******/
 	if (cpu_freq_debug(NULL, NULL, tmp_line, sizeof(tmp_line),
-				  job_ptr->cpu_freq_gov, job_ptr->cpu_freq_min,
-				  job_ptr->cpu_freq_max, NO_VAL) != 0) {
+			   job_ptr->cpu_freq_gov, job_ptr->cpu_freq_min,
+			   job_ptr->cpu_freq_max, NO_VAL) != 0) {
 
 		if (one_liner)
 			xstrcat(out, " ");

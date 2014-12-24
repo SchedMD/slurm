@@ -3009,7 +3009,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->chos_loc, "ChosLoc", hashtbl);
 
 	if (s_p_get_string(&temp_str, "CpuFreqDef", hashtbl)) {
-		if (cpu_freq_verify_def(temp_str,&conf->cpu_freq_def)) {
+		if (cpu_freq_verify_def(temp_str, &conf->cpu_freq_def)) {
 			error("Ignoring invalid CpuFreqDef: %s", temp_str);
 			conf->cpu_freq_def = CPU_FREQ_ONDEMAND;
 		}
@@ -3019,7 +3019,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	if (s_p_get_string(&temp_str, "CpuFreqGovernors", hashtbl)) {
-		if (cpu_freq_verify_govlist(temp_str,&conf->cpu_freq_govs)) {
+		if (cpu_freq_verify_govlist(temp_str, &conf->cpu_freq_govs)) {
 			error("Ignoring invalid CpuFreqGovernors: %s",
 				temp_str);
 			conf->cpu_freq_govs = CPU_FREQ_ONDEMAND;
@@ -3027,7 +3027,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 	} else {
 		conf->cpu_freq_govs = CPU_FREQ_ONDEMAND;
-
 	}
 
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))

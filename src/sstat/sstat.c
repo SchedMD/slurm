@@ -85,6 +85,7 @@ print_field_t fields[] = {
 	{20, "Nodelist", print_fields_str, PRINT_NODELIST},
 	{8, "NTasks", print_fields_uint, PRINT_NTASKS},
 	{20, "Pids", print_fields_str, PRINT_PIDS},
+	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ_MIN}, /*vestigial*/
 	{13, "ReqCPUFreqMin", print_fields_str, PRINT_REQ_CPUFREQ_MIN},
 	{13, "ReqCPUFreqMax", print_fields_str, PRINT_REQ_CPUFREQ_MAX},
 	{13, "ReqCPUFreqGov", print_fields_str, PRINT_REQ_CPUFREQ_GOV},
@@ -294,8 +295,7 @@ int main(int argc, char **argv)
 			req_cpufreq_gov = step_ptr->job_steps[0].cpu_freq_gov;
 		}
 		_do_stat(selected_step->jobid, stepid, nodelist,
-				req_cpufreq_min, req_cpufreq_max,
-				req_cpufreq_gov);
+			 req_cpufreq_min, req_cpufreq_max, req_cpufreq_gov);
 		if (free_nodelist && nodelist)
 			free(nodelist);
 	}

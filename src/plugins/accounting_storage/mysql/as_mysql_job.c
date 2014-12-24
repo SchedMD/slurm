@@ -1016,8 +1016,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"insert into \"%s_%s\" (job_db_inx, id_step, time_start, "
 		"step_name, state, "
-		"cpus_alloc, nodes_alloc, task_cnt, nodelist, "
-		"node_inx, task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov) "
+		"cpus_alloc, nodes_alloc, task_cnt, nodelist, node_inx, "
+		"task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov) "
 		"values (%d, %d, %d, '%s', %d, %d, %d, %d, "
 		"'%s', '%s', %d, %u, %u, %u) "
 		"on duplicate key update cpus_alloc=%d, nodes_alloc=%d, "
@@ -1029,8 +1029,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		step_ptr->step_id,
 		(int)start_time, step_name,
 		JOB_RUNNING, cpus, nodes, tasks, node_list, node_inx, task_dist,
-		step_ptr->cpu_freq_max, step_ptr->cpu_freq_min, step_ptr->cpu_freq_gov,
-		cpus, nodes, tasks, JOB_RUNNING, 
+		step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
+		step_ptr->cpu_freq_gov, cpus, nodes, tasks, JOB_RUNNING, 
 		node_list, node_inx, task_dist, step_ptr->cpu_freq_max,
 		step_ptr->cpu_freq_min, step_ptr->cpu_freq_gov);
 	if (debug_flags & DEBUG_FLAG_DB_STEP)

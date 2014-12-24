@@ -356,7 +356,6 @@ int setup_env(env_t *env, bool preserve_env)
 {
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL, *lllp_dist = NULL;
-
 	char addrbuf[INET_ADDRSTRLEN];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
