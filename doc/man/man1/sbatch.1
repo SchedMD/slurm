@@ -273,6 +273,108 @@ cores per socket.  See additional information under \fB\-B\fR option
 above when task/affinity plugin is enabled.
 
 .TP
+\fB\-\-cpu\-freq\fR =<\fIp1\fR[-\fIp2\fR[:\fIp3\fR]]>
+
+Request that job steps initiated by srun commands inside this sbatch script 
+be run at some requested frequency if possible, on the CPUs selected 
+for the step on the compute node(s).
+
+\fBp1\fR can be  [#### | low | medium | high | highm1] which will set the 
+frequency scaling_speed to the corresponding value, and set the frequency 
+scaling_governor to UserSpace. See below for definition of the values.  
+
+\fBp1\fR can be [Conservative | OnDemand | Performance | PowerSave] which 
+will set the scaling_governor to the corresponding value. The governor has to be 
+in the list set by the slurm.conf option CpuFreqGovernors.
+
+When \fBp2\fR is present, p1 will be the minimum scaling frequency and 
+p2 will be the maximum scaling frequency. 
+
+\fBp2\fR can be  [#### | medium | high | highm1] p2 must be greater than p1. 
+
+\fBp3\fR can be [Conservative | OnDemand | Performance | PowerSave | UserSpace] 
+which will set the governor to the corresponding value.
+
+If \fBp3\fR is UserSpace, the frequency scaling_speed will be set by a power 
+or energy aware scheduling strategy to a value between p1 and p2 that lets the 
+job run within the site's power goal. The job may be delayed if p1 is higher 
+than a frequency that allows the job to run withing the goal.
+
+If the current frequency is < min, it will be set to min. Likewise, 
+if the current frequency is > max, it will be set to max. 
+
+
+Acceptable values at present include:
+.RS
+.TP 14
+\fB####\fR
+frequency in kilohertz
+.TP
+\fBLow\fR
+the lowest available frequency
+.TP
+\fBHigh\fR
+the highest available frequency
+.TP
+\fBHighM1\fR
+(high minus one) will select the next highest available frequency
+.TP
+\fBMedium\fR
+attempts to set a frequency in the middle of the available range
+.TP
+\fBConservative\fR
+attempts to use the Conservative CPU governor
+.TP
+\fBOnDemand\fR
+attempts to use the OnDemand CPU governor (the default value)
+.TP
+\fBPerformance\fR
+attempts to use the Performance CPU governor
+.TP
+\fBPowerSave\fR
+attempts to use the PowerSave CPU governor
+.TP
+\fBUserSpace\fR
+attempts to use the UserSpace CPU governor
+
+.RE
+
+The following informational environment variable is set in the job
+step when \fB\-\-cpu\-freq\fR option is requested.
+.nf
+        SLURM_CPU_FREQ_REQ
+.fi
+
+This environment variable can also be used to supply the value for the
+CPU frequency request if it is set when the 'srun' command is issued.
+The \fB\-\-cpu\-freq\fR on the command line will override the
+environment variable value.  The form on the environment variable is
+the same as the command line.
+See the \fBENVIRONMENT VARIABLES\fR
+section for a description of the SLURM_CPU_FREQ_REQ variable.
+
+\fBNOTE\fR: This parameter is treated as a request, not a requirement.
+If the job step's node does not support setting the CPU frequency, or
+the requested value is outside the bounds of the legal frequencies, an
+error is logged, but the job step is allowed to continue.
+
+\fBNOTE\fR: Setting the frequency for just the CPUs of the job step
+implies that the tasks are confined to those CPUs.  If task
+confinement (i.e., TaskPlugin=task/affinity or
+TaskPlugin=task/cgroup with the "ConstrainCores" option) is not
+configured, this parameter is ignored.
+
+\fBNOTE\fR: When the step completes, the frequency and governor of each
+selected CPU is reset to the configured \fBCpuFreqDef\fR value with a
+default value of the OnDemand CPU governor.
+
+\fBNOTE\fR: When submitting jobs with  the \fB\-\-cpu\-freq\fR option
+with linuxproc as the ProctrackType can cause jobs to run too quickly before
+Accounting is able to poll for job information. As a result not all of
+accounting information will be present.
+.RE
+
+.TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
 Advise the SLURM controller that ensuing job steps will require \fIncpus\fR
 number of processors per task.  Without this option, the controller will
