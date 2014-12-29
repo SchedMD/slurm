@@ -781,24 +781,20 @@ proc wait_for_all_jobs { job_name incr_sleep } {
 
 ################################################################
 #
-# Proc: test_fast_schedule_2
+# Proc: test_fast_schedule
 #
-# Purpose: Determine if we are runnning FastSchedule=2 usually meaning we are pretending we have more resources than reality.
-# This is based upon
-# the value of FastSchedule in the slurm.conf.
-#
-# Returns level of 1 if it is 2, 0 otherwise
+# Returns value of FastSchedule from slurm.conf
 #
 ################################################################
-proc test_fast_schedule_2 { } {
+proc test_fast_schedule { } {
 	global scontrol number
 
 	log_user 0
-	set is_2 0
+	set fast_schedule -1
 	spawn $scontrol show config
 	expect {
-		-re "FastSchedule *= 2" {
-			set is_2 1
+		-re "FastSchedule *= ($number)" {
+			set fast_schedule $expect_out(1,string)
 			exp_continue
 		}
 		eof {
@@ -807,9 +803,8 @@ proc test_fast_schedule_2 { } {
 	}
 
 	log_user 1
-	return $is_2
+	return $fast_schedule
 }
-
 
 ################################################################
 #
