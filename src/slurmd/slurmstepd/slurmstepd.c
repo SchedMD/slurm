@@ -77,7 +77,7 @@ static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
 static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
-				 slurm_msg_t *msg);
+				     slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc);
 #endif
@@ -378,7 +378,7 @@ _init_from_slurmd(int sock, char **argv,
 	char *incoming_buffer = NULL;
 	Buf buffer;
 	int step_type;
-	int len;
+	int len, proto;
 	slurm_addr_t *cli = NULL;
 	slurm_addr_t *self = NULL;
 	slurm_msg_t *msg = NULL;
@@ -453,6 +453,9 @@ _init_from_slurmd(int sock, char **argv,
 	/* Receive cpu_frequency info from slurmd */
 	cpu_freq_recv_info(sock);
 
+	/* get the protocol version of the srun */
+	safe_read(sock, &proto, sizeof(int));
+
 	/* receive req from slurmd */
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(sizeof(char) * len);
@@ -461,7 +464,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
-	msg->protocol_version = SLURM_PROTOCOL_VERSION;
+	msg->protocol_version = (uint16_t)proto;
 
 	switch(step_type) {
 	case LAUNCH_BATCH_JOB:
@@ -517,7 +520,8 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		debug2("setup for a launch_task");
-		job = mgr_launch_tasks_setup(msg->data, cli, self);
+		job = mgr_launch_tasks_setup(msg->data, cli, self,
+					     msg->protocol_version);
 		break;
 	default:
 		fatal("handle_launch_message: Unrecognized launch RPC");

@@ -472,7 +472,7 @@ static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
 static int
 _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		      slurm_addr_t *cli, slurm_addr_t *self,
-		      hostset_t step_hset)
+		      hostset_t step_hset, uint16_t protocol_version)
 {
 	int len = 0;
 	Buf buffer = NULL;
@@ -481,7 +481,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	gid_t gid = (uid_t)-1;
 	gids_t *gids = NULL;
 
-	int rank;
+	int rank, proto;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	char *user_name = NULL;
@@ -626,9 +626,18 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	}
 	buffer = init_buf(0);
 	msg.data = req;
-	msg.protocol_version = SLURM_PROTOCOL_VERSION;
+
+	if (protocol_version == (uint16_t)NO_VAL)
+		proto = SLURM_PROTOCOL_VERSION;
+	else
+		proto = protocol_version;
+
+	msg.protocol_version = (uint16_t)proto;
 	pack_msg(&msg, buffer);
 	len = get_buf_offset(buffer);
+
+	safe_write(fd, &proto, sizeof(int));
+
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
@@ -708,7 +717,7 @@ rwfail:
 static int
 _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		     slurm_addr_t *cli, slurm_addr_t *self,
-		     const hostset_t step_hset)
+		     const hostset_t step_hset, uint16_t protocol_version)
 {
 	pid_t pid;
 	int to_stepd[2] = {-1, -1};
@@ -750,7 +759,8 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 
 		if ((rc = _send_slurmstepd_init(to_stepd[1], type,
 						req, cli, self,
-						step_hset)) != 0) {
+						step_hset,
+						protocol_version)) != 0) {
 			error("Unable to init slurmstepd");
 			goto done;
 		}
@@ -1227,7 +1237,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	debug3("_rpc_launch_tasks: call to _forkexec_slurmstepd");
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
-				      step_hset);
+				      step_hset, msg->protocol_version);
 	debug3("_rpc_launch_tasks: return from _forkexec_slurmstepd");
 	_launch_complete_add(req->job_id);
 
@@ -1671,7 +1681,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
-				  (hostset_t)NULL);
+				  (hostset_t)NULL, SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 
 	slurm_mutex_unlock(&launch_mutex);

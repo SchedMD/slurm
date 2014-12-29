@@ -177,7 +177,7 @@ typedef struct kill_thread {
  */
 static int  _access(const char *path, int modes, uid_t uid, gid_t gid);
 static void _send_launch_failure(launch_tasks_request_msg_t *,
-				 slurm_addr_t *, int);
+				 slurm_addr_t *, int, uint16_t);
 static int  _drain_node(char *reason);
 static int  _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized);
 static int  _become_user(stepd_step_rec_t *job, struct priv_state *ps);
@@ -228,17 +228,17 @@ static stepd_step_rec_t *reattach_job;
  */
 extern stepd_step_rec_t *
 mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
-		       slurm_addr_t *self)
+		       slurm_addr_t *self, uint16_t protocol_version)
 {
 	stepd_step_rec_t *job = NULL;
 
-	if (!(job = stepd_step_rec_create(msg))) {
+	if (!(job = stepd_step_rec_create(msg, protocol_version))) {
 		/* We want to send back to the slurmd the reason we
 		   failed so keep track of it since errno could be
 		   reset in _send_launch_failure.
 		*/
 		int fail = errno;
-		_send_launch_failure (msg, cli, errno);
+		_send_launch_failure(msg, cli, errno, protocol_version);
 		errno = fail;
 		return NULL;
 	}
@@ -707,6 +707,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 	i = list_iterator_create(job->sruns);
 	while ((srun = list_next(i))) {
 		resp.address = srun->resp_addr;
+		resp.protocol_version = srun->protocol_version;
 		if ((resp.address.sin_family == 0) &&
 		    (resp.address.sin_port == 0)   &&
 		    (resp.address.sin_addr.s_addr == 0))
@@ -2081,7 +2082,8 @@ static int _drain_node(char *reason)
 }
 
 static void
-_send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc)
+_send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
+		     uint16_t protocol_version)
 {
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
@@ -2104,6 +2106,7 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc
 		       NULL);
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
+	resp_msg.protocol_version = protocol_version;
 
 	resp.node_name     = name;
 	resp.return_code   = rc ? rc : -1;
@@ -2130,6 +2133,7 @@ _send_launch_resp(stepd_step_rec_t *job, int rc)
 
 	slurm_msg_t_init(&resp_msg);
 	resp_msg.address	= srun->resp_addr;
+	resp_msg.protocol_version = srun->protocol_version;
 	resp_msg.data		= &resp;
 	resp_msg.msg_type	= RESPONSE_LAUNCH_TASKS;
 

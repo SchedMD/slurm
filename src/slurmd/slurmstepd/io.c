@@ -1932,6 +1932,7 @@ _user_managed_io_connect(srun_info_t *srun, uint32_t gtid)
 	slurm_msg_t msg;
 
 	slurm_msg_t_init(&msg);
+	msg.protocol_version = srun->protocol_version;
 	msg.msg_type = TASK_USER_MANAGED_IO_STREAM;
 	msg.data = &user_io_msg;
 	user_io_msg.task_id = gtid;
