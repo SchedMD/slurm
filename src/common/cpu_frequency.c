@@ -1543,12 +1543,11 @@ clean:
 			rc = -1;
 		}
 	}
-	cpu_freq_debug("command", "NO_VAL",
-			NULL, 0,
-			*cpu_freq_gov, *cpu_freq_min,
-			*cpu_freq_max,
-			NO_VAL);
-
+	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+		cpu_freq_debug("command", "NO_VAL", NULL, 0,
+			       *cpu_freq_gov, *cpu_freq_min,
+			       *cpu_freq_max, NO_VAL);
+	}
 	xfree(p1);
 	xfree(p2);
 	xfree(p3);
@@ -1574,8 +1573,8 @@ clean:
  */
 extern int
 cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
-		  uint32_t gov, uint32_t min, uint32_t max, uint32_t freq) {
-
+		  uint32_t gov, uint32_t min, uint32_t max, uint32_t freq)
+{
 	int rc = 0;
 	char bfgov[64], bfmin[32], bfmax[32], bffreq[32];
 
@@ -1619,18 +1618,17 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 			strcpy(bfgov, noval_str);
 	}
 	if (rc) {
-		if (freq_str)
+		if (freq_str) {
 			snprintf(freq_str, freq_len, "%s %s %s %s",
-					bffreq, bfmin, bfmax, bfgov);
-
+				 bffreq, bfmin, bfmax, bfgov);
+		}
 	} else {
 		if (freq_str)
 			freq_str[0] = '\0';
 	}
 	if (label) {
-
 		info("cpu-freq: %s :: %s %s %s %s", label,
-				bffreq, bfmin, bfmax, bfgov);
+		     bffreq, bfmin, bfmax, bfgov);
 	}
 	return rc;
 }
