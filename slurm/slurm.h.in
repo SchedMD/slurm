@@ -619,19 +619,17 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 } cpu_bind_type_t;
 
 /* Flag to indicate that cpu_freq is a range: low,medium,high,high-1
- * instead of an integer value in kilohertz 
- * enums for synomyms are in increasing order */
-#define CPU_FREQ_RANGE_FLAG		0x80000000
-#define CPU_FREQ_LOW			0x80000001
-#define CPU_FREQ_MEDIUM			0x80000002
-#define CPU_FREQ_HIGHM1			0x80000003
-#define CPU_FREQ_HIGH			0x80000004
-#define CPU_FREQ_CONSERVATIVE		0x88000000
-#define CPU_FREQ_ONDEMAND		0x84000000
-#define CPU_FREQ_PERFORMANCE		0x82000000
-#define CPU_FREQ_POWERSAVE		0x81000000
-#define CPU_FREQ_USERSPACE		0x80800000
-#define CPU_FREQ_GOV_MASK   		0x8f800000
+ * instead of an integer value in kilohertz */
+#define CPU_FREQ_RANGE_FLAG	0x80000000
+#define CPU_FREQ_LOW		0x80000001
+#define CPU_FREQ_MEDIUM		0x80000002
+#define CPU_FREQ_HIGH		0x80000003
+#define CPU_FREQ_HIGHM1		0x80000004
+#define CPU_FREQ_PERFORMANCE	0x80000005
+#define CPU_FREQ_POWERSAVE	0x80000006
+#define CPU_FREQ_USERSPACE	0x80000007
+#define CPU_FREQ_ONDEMAND	0x80000008
+#define CPU_FREQ_CONSERVATIVE	0x80000009
 
 typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
 	/* verbose can be set with any other flag */
