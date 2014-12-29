@@ -130,7 +130,7 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		slurmd_spooldir = slurm_get_slurmd_spooldir();
 
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
-	if (errno != EEXIST) {
+	if ((mkdir(tmp, 0700) != 0) && (errno != EEXIST)) {
 		error("mkdir failed: %m %s",tmp);
 		return -1;
 	}
