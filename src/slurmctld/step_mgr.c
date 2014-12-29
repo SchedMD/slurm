@@ -2627,6 +2627,41 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					plane_size);
 }
 
+/* Translate v14.11 CPU frequency data between old and new formats */
+static void _cpu_freq_new2old(uint32_t *old, uint32_t new_min, uint32_t new_max,
+			      uint32_t new_gov)
+{
+	if (new_gov == CPU_FREQ_CONSERVATIVE) {
+		*old = CPU_FREQ_CONSERVATIVE_OLD;
+	} else if (new_gov == CPU_FREQ_ONDEMAND) {
+		*old = CPU_FREQ_ONDEMAND_OLD;
+	} else if (new_gov == CPU_FREQ_PERFORMANCE) {
+		*old = CPU_FREQ_PERFORMANCE_OLD;
+	} else if (new_gov == CPU_FREQ_POWERSAVE) {
+		*old = CPU_FREQ_POWERSAVE_OLD;
+	} else {
+		*old = new_max;
+	}
+}
+static void _cpu_freq_old2new(uint32_t old, uint32_t *new_min,
+			      uint32_t *new_max, uint32_t *new_gov)
+{
+	*new_min = NO_VAL;
+	*new_max = NO_VAL;
+	if (old == CPU_FREQ_CONSERVATIVE_OLD) {
+		*new_gov = CPU_FREQ_CONSERVATIVE;
+	} else if (old == CPU_FREQ_ONDEMAND_OLD) {
+		*new_gov = CPU_FREQ_ONDEMAND;
+	} else if (old == CPU_FREQ_PERFORMANCE_OLD) {
+		*new_gov = CPU_FREQ_PERFORMANCE;
+	} else if (old == CPU_FREQ_POWERSAVE_OLD) {
+		*new_gov = CPU_FREQ_POWERSAVE;
+	} else {
+		*new_gov = CPU_FREQ_USERSPACE;
+		*new_max = old;
+	}
+}
+
 /* Pack the data for a specific job step record
  * IN step - pointer to a job step record
  * IN/OUT buffer - location to store data, pointers automatically advanced
@@ -2707,6 +2742,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		uint32_t utmp32 = 0;
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
@@ -2714,7 +2750,10 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		pack16(step_ptr->ckpt_interval, buffer);
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
-		pack32(step_ptr->cpu_freq_max, buffer);
+		_cpu_freq_new2old(&utmp32, step_ptr->cpu_freq_min,
+				  step_ptr->cpu_freq_max,
+				  step_ptr->cpu_freq_gov);
+		pack32(utmp32, buffer);
 		pack32(task_cnt, buffer);
 		pack32(step_ptr->time_limit, buffer);
 		pack16(step_ptr->state, buffer);
@@ -3521,6 +3560,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 						   protocol_version))
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t utmp32 = 0;
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack16(&port, buffer);
@@ -3542,7 +3582,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		if (core_size)
 			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
 		safe_unpack32(&time_limit, buffer);
-		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&utmp32, buffer);
+		_cpu_freq_old2new(utmp32, &cpu_freq_min, &cpu_freq_max,
+				  &cpu_freq_gov);
 
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
