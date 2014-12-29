@@ -61,7 +61,14 @@
 
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
+
+#if !defined(__FreeBSD__)
 #include <hwloc/glibc-sched.h>
+#else
+// For cpuset
+#include <pthread_np.h>
+#define cpu_set_t cpuset_t
+#endif
 
 # if HWLOC_API_VERSION <= 0x00010000
 /* After this version the cpuset structure and all it's functions

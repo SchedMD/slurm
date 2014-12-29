@@ -2082,9 +2082,8 @@ started immediately, only those tasks expected to start at some future time.
 The default value is 20 tasks.
 .TP
 \fBbf_max_job_part=#\fR
-The maximum number of jobs per partition to attempt backfill scheduling for,
-not counting jobs which cannot be started due to an association resource
-limit. This can be especially helpful for systems with large numbers of
+The maximum number of jobs per partition to attempt starting with the backfill
+scheduler. This can be especially helpful for systems with large numbers of
 partitions and jobs.
 The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
@@ -2108,9 +2107,8 @@ desirable.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBbf_max_job_user=#\fR
-The maximum number of jobs per user to attempt backfill scheduling for,
-not counting jobs which cannot be started due to an association resource
-limit.  One can set this limit to prevent users from flooding the backfill
+The maximum number of jobs per user to attempt starting with the backfill
+scheduler. One can set this limit to prevent users from flooding the backfill
 queue with jobs that cannot start and that prevent jobs from other users
 to start.  This is similar to the MAXIJOB limit in Maui.
 The default value is 0, which means no limit.
@@ -3735,11 +3733,11 @@ accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).
 
 .TP
-\fBDenyAccount\fR
+\fBDenyAccounts\fR
 Comma separated list of accounts which may not execute jobs in the partition.
 By default, no accounts are denied access
 \fBNOTE:\fR If AllowAccounts is used then DenyAccounts will not be enforced.
-Also refer to AllowAccount.
+Also refer to AllowAccounts.
 
 .TP
 \fBDenyQos\fR

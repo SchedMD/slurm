@@ -102,6 +102,8 @@ documents those changes that are of interest to users and administrators.
     free resources are available.
  -- Prevent invalid job array task ID value if a task is started using gang
     scheduling.
+ -- Fixes for clean build on FreeBSD.
+ -- Fix documentation bugs in slurm.conf.5. DenyAccount should be DenyAccounts.
 
 * Changes in Slurm 14.11.2
 ==========================
