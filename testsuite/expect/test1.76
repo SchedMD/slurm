@@ -46,6 +46,7 @@ set test_prog   "test$test_id.prog"
 set avail_freq	[split "1000 2000" " "]
 set nfreq	0
 set have_on_demand 1
+set have_user_space 1
 set wd		[pwd]
 print_header	$test_id
 
@@ -148,6 +149,11 @@ proc test_case {opt expmin expcur expmax expgov} {
 	}
 	close $fd
 
+	send_user "\n--cpu-freq=$opt\n"
+	send_user "start_freq: $start_value\n"
+	send_user "test_freq:  $test_value\n"
+	send_user "end_freq:   $end_value\n\n"
+
 	set strt_vals [split $start_value " "]
 	set sgov [string range [lindex $strt_vals 0] 4 end]
 	set smin [string range [lindex $strt_vals 1] 4 end]
@@ -211,7 +217,6 @@ proc test_case {opt expmin expcur expmax expgov} {
 	return 0	
 }
 
-
 # Check environment
 if {[test_cpu_affinity_or_cgroup] == 0} {
 	send_user "\nWARNING: This test requires some form of task affinity\n"
@@ -222,6 +227,21 @@ if {[test_fast_schedule] != 0} {
 	send_user "         Proceeding assuming that the number of cpu declared is accurate.\n"
 }
 log_user 0
+spawn $scontrol show config
+expect {
+	-re "CpuFreqGovernors *= ($alpha_numeric_comma)" {
+		if {[string first "OnDemand" $expect_out(1,string)] == -1} {
+			set have_on_demand 0
+		}
+		if {[string first "UserSpace" $expect_out(1,string)] == -1} {
+			set have_user_space 0
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
 # Get a node to use
 spawn $srun env
 expect
@@ -271,14 +291,13 @@ if {$pos > 0} {
 }
 set pos [string first "userspace" $expect_out(buffer)]
 if {$pos < 0} {
-	send_user "\nWARNING: Test requires userspace governor\n"
-	exit 0
+	set have_user_space 0
 }
 set pos [string first "ondemand" $expect_out(buffer)]
 if {$pos < 0} {
-	send_user "\nWARNING: Test recommends ondemand governor\n"
 	set have_on_demand 0
 }
+
 set lines [split $expect_out(buffer) "\n"]
 set ll [llength $lines]
 for {set lx 0} {$lx < $ll} {incr lx} {
@@ -298,6 +317,14 @@ if {$nfreq < 2} {
 	send_user "\nWARNING: Test requires at least 2 available frequencies.\n"
 	exit 0
 }
+if {$have_user_space == 0} {
+	send_user "\nWARNING: Test recommends UserSpace governor\n"
+	exit 0
+}
+if {$have_on_demand == 0} {
+	send_user "\nWARNING: Test recommends OnDemand governor\n"
+}
+
 set avail_freq {}
 set iy $nfreq
 incr iy -1
