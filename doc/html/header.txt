@@ -51,7 +51,7 @@ window.onresize = window_check;
 <ul>
 	  <li><a href="overview.shtml" class="nav">Overview</a></li>
 	  <li><a href="news.shtml" class="nav">What's New</a></li>
-	  <li><a href="team.shtml" class="nav">SLURM Team</a></li>
+	  <li><a href="team.shtml" class="nav">Slurm Team</a></li>
 	  <li><a href="meetings.shtml" class="nav">Meetings</a></li>
 	  <li><a href="testimonials.shtml" class="nav">Testimonials</a></li>
 	  <li><a href="disclaimer.shtml" class="nav">Legal Notices</a></li>

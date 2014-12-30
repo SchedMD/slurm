@@ -58,39 +58,47 @@ with Slurm are provided below.
 <span class="commandline">srun</span> command.
 It relies upon Slurm version 2.0 (or higher) managing reservations of
 communication ports for use by the Open MPI version 1.5 (or higher).
-The system administrator must specify the range of ports to be reserved
+
+
+<p>If OpenMPI is configured with <i>--with-pmi</i> either pmi or pmi2
+the OMPI jobs can be launched directly using the srun command. This is
+the preferred way. If the pmi2 support is enabled then the command line
+options '--mpi=pmi2' has to be specified on the srun command line.
+
+<p>
+For older versions of OMPI not compiled with the pmi support
+the system administrator must specify the range of ports to be reserved
 in the <i>slurm.conf</i> file using the <i>MpiParams</i> parameter.
-For example: <br>
-<i>MpiParams=ports=12000-12999</i></p>
+For example: MpiParams=ports=12000-12999
 
-<p>OpenMPI must also be configured with <i>--with-pmi</i> to support the port
-reservation method.</p>
-
-<p>Launch tasks using the <span class="commandline">srun</span> command
-plus the option <i>--resv-ports</i>. Alternately define the environment
+<p>
+Alternatively tasks can be launched  using the srun command
+plus the option <i>--resv-ports</i> or using the environment
 variable <i>SLURM_RESV_PORT</i>, which is equivalent to always including
 <i>--resv-ports</i> on srun's execute line.
+
 The ports reserved on every allocated node will be identified in an
-environment variable available to the tasks as shown here: <br>
-<i>SLURM_STEP_RESV_PORTS=12000-12015</i><br>
-<b>NOTE:</b> In Slurm version 2.5, the <i>--resv-ports</i> option is
-automatically set when the MPI type is set to OpenMPI, either explicitly with
-the <i>--mpi</i> option or by the <i>MpiDefault</i> configuration parameter.</p>
+environment variable available to the tasks as shown here:
+SLURM_STEP_RESV_PORTS=12000-12015<p>
 
 <pre>
-$ salloc -n4 sh   # allocates 4 processors and spawns shell for job
-&gt; srun --resv-port a.out
-&gt; exit            # exits shell spawned by initial salloc command
-</pre>
-
-<p>Or</p>
-
-<pre>
-$ export SLURM_RESV_PORT=1
 $ salloc -n4 sh   # allocates 4 processors and spawns shell for job
 &gt; srun a.out
-&gt; exit            # exits shell spawned by initial salloc command
+&gt; exit   # exits shell spawned by initial salloc command
 </pre>
+
+<p>or</p>
+
+<pre>
+&gt; srun -n 4 a.out
+</pre>
+
+<p>or using the pmi2 support</p>
+
+<pre>
+&gt; srun --mpi=pmi2 -n 4 a.out
+</pre>
+
 
 <p>If the ports reserved for a job step are found by the Open MPI library
 to be in use, a message of this form will be printed and the job step
@@ -100,16 +108,6 @@ After three failed attempts, the job step will be aborted.
 Repeated failures should be reported to your system administrator in
 order to rectify the problem by cancelling the processes holding those
 ports.</p>
-
-<h3>OpenMPI Version 1.4 or earlier</h3>
-<p>Older versions of Open MPI and Slurm rely upon Slurm to allocate resources
-for the job and then mpirun to initiate the tasks.
-For example:</p>
-<pre>
-$ salloc -n4 sh   # allocates 4 processors and spawns shell for job
-&gt; mpirun a.out
-&gt; exit            # exits shell spawned by initial salloc command
-</pre>
 
 <hr size=4 width="100%">
 
