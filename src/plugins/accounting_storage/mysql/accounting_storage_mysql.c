@@ -672,7 +672,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	char *query = NULL;
 	time_t now = time(NULL);
 	char *cluster_name = NULL;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, rc2;
 	ListIterator itr = NULL;
 
 	/* Make the cluster table first since we build other tables
@@ -834,8 +834,12 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 				  ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	rc = mysql_db_query(mysql_conn, get_parent_proc);
-	rc = mysql_db_query(mysql_conn, get_coord_qos);
+	rc2 = mysql_db_query(mysql_conn, get_parent_proc);
+	if (rc2 != SLURM_SUCCESS)
+		rc = rc2;
+	rc2 = mysql_db_query(mysql_conn, get_coord_qos);
+	if (rc2 != SLURM_SUCCESS)
+		rc = rc2;
 
 	/* Add user root to be a user by default and have this default
 	 * account be root.  If already there just update

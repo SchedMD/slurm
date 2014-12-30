@@ -1294,6 +1294,7 @@ static int _build_bb_script(struct job_record *job_ptr, char *script_file)
 			}
 		}
 		if (!sep) {
+			sep = tok;
 			while ((sep[0] != ' ') && (sep[0] != '\0'))
 				sep++;
 			if (sep[0] == '\0') {
@@ -1308,7 +1309,8 @@ static int _build_bb_script(struct job_record *job_ptr, char *script_file)
 	xfree(in_buf);
 
 	in_buf = xstrdup(job_ptr->burst_buffer);
-	if ((tok = strstr(in_buf, "jobbb="))) {
+	tmp = in_buf;
+	if ((tok = strstr(tmp, "jobbb="))) {
 		tok += 6;
 		sep = NULL;
 		if ((tok[0] == '\'') || (tok[0] == '\"')) {
@@ -1319,12 +1321,12 @@ static int _build_bb_script(struct job_record *job_ptr, char *script_file)
 			}
 		}
 		if (!sep) {
+			sep = tok;
 			while ((sep[0] != ' ') && (sep[0] != '\0'))
 				sep++;
 			sep[0] = '\0';
 		}
 		xstrfmtcat(out_buf, "#BB jobbb %s\n", tok);
-		tmp = tok;
 	}
 	xfree(in_buf);
 
@@ -1988,7 +1990,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 static
 bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 {
-	bb_entry_t *ents;
+	bb_entry_t *ents = NULL;
 	char *string;
 	char **script_argv;
 	int i, status = 0;
@@ -2008,7 +2010,7 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 		for (i = 0; script_argv[i]; i++)
 			xfree(script_argv[i]);
 		xfree(script_argv);
-		return NULL;
+		return ents;
 	}
 	for (i = 0; script_argv[i]; i++)
 		xfree(script_argv[i]);
@@ -2018,7 +2020,7 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 	if (j == NULL) {
 		error("%s: json parser failed on %s", __func__, string);
 		xfree(string);
-		return NULL;
+		return ents;
 	}
 	xfree(string);
 

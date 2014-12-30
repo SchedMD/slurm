@@ -419,7 +419,7 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	int count;
 	bitstr_t *job_map;
-	uint16_t job_gr_type = gr_type;
+	uint16_t job_gr_type;
 
 	if ((p_ptr->active_resmap == NULL) || (p_ptr->jobs_active == 0))
 		return 1;

@@ -543,7 +543,6 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			      plugin_type, job_id);
 		}
 		snprintf(tmp_name, sizeof(tmp_name), "VestigialJob%u", job_id);
-		job_id = 0;
 		name = tmp_name;
 	}
 	if (job_ptr) {

@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2014 SchedMD LLC.
  *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
@@ -2370,7 +2371,7 @@ char *slurm_get_layouts(void)
 int16_t
 slurm_get_srun_eio_timeout(void)
 {
-	int16_t eio_timeout;
+	int16_t eio_timeout = 0;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
