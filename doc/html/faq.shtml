@@ -175,6 +175,7 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#state_info">How could some jobs submitted immediately before the
    slurmctld daemon crashed be lost?</a></li>
 <li><a href="#delete_partition">How do I safely remove partitions?</a></li>
+<li><a href="#cpu_freq">Why is Slurm unable to set the CPU frequency for jobs?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1961,8 +1962,26 @@ Removing a partition from the slurm.conf and restarting will cancel any existing
 jobs that reference the removed partitions.
 </p>
 
+<p><a name="cpu_freq"><b>61. Why is Slurm unable to set the CPU frequency for
+   jobs?</b></a><br>
+First check that Slurm is configured to bind jobs to specific CPUs by
+making sure that TaskPlugin is configured to either affinity or cgroup.
+Next check that that your processor is configured to permit frequency
+control by examining the values in the file
+<i>/sys/devices/system/cpu/cpu0/cpufreq</i> where "cpu0" represents a CPU ID 0.
+Of particular interest is the file <i>scaling_available_governors</i>,
+which identifies the CPU governors available.
+If "userspace" is not an available CPU governor, this may well be due to the
+<i>intel_pstate</i> driver being installed.
+Information about disabling the <i>intel_pstate</i> driver is available
+from<br>
+<a href="https://bugzilla.kernel.org/show_bug.cgi?id=57141">
+https://bugzilla.kernel.org/show_bug.cgi?id=57141</a> and<br>
+<a href="http://unix.stackexchange.com/questions/121410/setting-cpu-governor-to-on-demand-or-conservative">
+http://unix.stackexchange.com/questions/121410/setting-cpu-governor-to-on-demand-or-conservative</a>.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 October 2014</p>
+<p style="text-align:center;">Last modified 30 December 2014</p>
 
 <!--#include virtual="footer.txt"-->
