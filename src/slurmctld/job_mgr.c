@@ -2232,6 +2232,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&ntasks_per_node, buffer);
 		safe_unpack16(&requeue, buffer);
 		safe_unpack16(&task_dist, buffer);
+
 		safe_unpack8(&share_res, buffer);
 		safe_unpack8(&whole_node, buffer);
 

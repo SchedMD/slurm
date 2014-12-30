@@ -159,11 +159,9 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		slurmd_spooldir = slurm_get_slurmd_spooldir();
 
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
-	if (mkdir(tmp, 0700)) {
-		if (errno != EEXIST) {
-			error("%s: mkdir failed: %m %s", __func__, tmp);
-			return -1;
-		}
+	if ((mkdir(tmp, 0700) != 0) && (errno != EEXIST)) {
+		error("%s: mkdir failed: %m %s", __func__, tmp);
+		return -1;
 	}
 	snprintf(tmp, sizeof(tmp), "%s/cpu/%d", slurmd_spooldir, cpu_id);
 	fd = open(tmp, O_RDWR);
@@ -291,35 +289,35 @@ cpu_freq_init(slurmd_conf_t *conf)
 		}
 		if (strstr(value, "conservative")) {
 			cpufreq[i].avail_governors |= GOV_CONSERVATIVE;
-			if (i==0 && debug_flags & DEBUG_FLAG_CPU_FREQ) {
+			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
 				info("cpu_freq: Conservative governor "
 				     "defined on cpu 0");
 			}
 		}
 		if (strstr(value, "ondemand")) {
 			cpufreq[i].avail_governors |= GOV_ONDEMAND;
-			if (i==0 && debug_flags & DEBUG_FLAG_CPU_FREQ) {
+			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
 				info("cpu_freq: OnDemand governor "
 				     "defined on cpu 0");
 			}
 		}
 		if (strstr(value, "performance")) {
 			cpufreq[i].avail_governors |= GOV_PERFORMANCE;
-			if (i==0 && debug_flags & DEBUG_FLAG_CPU_FREQ) {
+			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
 				info("cpu_freq: Performance governor "
 				     "defined on cpu 0");
 			}
 		}
 		if (strstr(value, "powersave")) {
 			cpufreq[i].avail_governors |= GOV_POWERSAVE;
-			if (i==0 && debug_flags & DEBUG_FLAG_CPU_FREQ) {
+			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
 				info("cpu_freq: PowerSave governor "
 				     "defined on cpu 0");
 			}
 		}
 		if (strstr(value, "userspace")) {
 			cpufreq[i].avail_governors |= GOV_USERSPACE;
-			if (i==0 && debug_flags & DEBUG_FLAG_CPU_FREQ) {
+			if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
 				info("cpu_freq: UserSpace governor "
 				     "defined on cpu 0");
 			}
@@ -327,10 +325,10 @@ cpu_freq_init(slurmd_conf_t *conf)
 		fclose(fp);
 		if (_cpu_freq_cpu_avail(i) == SLURM_FAILURE)
 			continue;
-		if (i==0 && debug_flags & DEBUG_FLAG_CPU_FREQ) {
-			for (j=0; j<cpufreq[i].nfreq; j++) {
+		if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
+			for (j = 0; j < cpufreq[i].nfreq; j++) {
 				info("cpu_freq: frequency %u defined on cpu 0",
-						cpufreq[i].avail_freq[j]);
+				     cpufreq[i].avail_freq[j]);
 			}
 		}
 	}
@@ -661,7 +659,7 @@ _cpu_freq_set_gov(stepd_step_rec_t *job, int cpuidx, char* gov )
 
 	rc = SLURM_SUCCESS;
 	snprintf(path, sizeof(path), PATH_TO_CPU
-			"cpu%u/cpufreq/scaling_governor", cpuidx);
+		 "cpu%u/cpufreq/scaling_governor", cpuidx);
 	fd = _set_cpu_owner_lock(cpuidx, job->jobid);
 	if ((fp = fopen(path, "w"))) {
 		fputs(gov, fp);
@@ -901,7 +899,7 @@ _cpu_freq_setup_data(stepd_step_rec_t *job, int cpx)
 	if (job->cpu_freq_min == NO_VAL &&
 	    job->cpu_freq_max != NO_VAL &&
 	    job->cpu_freq_gov == NO_VAL) {
-		/* Pre 15.08 behavior */
+		/* Pre version 15.08 behavior */
 		freq = _cpu_freq_freqspec_num(job->cpu_freq_max, cpx);
 		cpufreq[cpx].new_frequency = freq;
 		goto newfreq;
@@ -909,7 +907,7 @@ _cpu_freq_setup_data(stepd_step_rec_t *job, int cpx)
 	if (job->cpu_freq_gov == CPU_FREQ_USERSPACE) {
 		_cpu_freq_govspec_string(job->cpu_freq_gov, cpx);
 		if (job->cpu_freq_max == NO_VAL) {
-			return; /* pre 15.08 behavior. */
+			return; /* pre version 15.08 behavior. */
 		}
 		/* Power capping */
 		freq = _cpu_freq_freqspec_num(job->cpu_freq_max, cpx);
@@ -948,7 +946,7 @@ newfreq:
  * Returns - enum of governor found
  * 	   - or 0 if not found
  */
-uint32_t
+static uint32_t
 _cpu_freq_check_gov(const char* arg, uint32_t illegal)
 {
 	uint32_t rc = 0;
@@ -978,7 +976,7 @@ _cpu_freq_check_gov(const char* arg, uint32_t illegal)
  *         - enum for synonym
  *         0 on error.
  */
-uint32_t
+static uint32_t
 _cpu_freq_check_freq(const char* arg)
 {
 	char *end;
@@ -1021,7 +1019,7 @@ cpu_freq_set(stepd_step_rec_t *job)
 			continue; /* Nothing to set on this CPU */
 		if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
 			info("cpu_freq: current_state cpu=%d org_min=%u "
-			     "org_freq=%u org_max=%u org_gpv=%s",i,
+			     "org_freq=%u org_max=%u org_gpv=%s", i,
 			     cpufreq[i].org_min_freq,
 			     cpufreq[i].org_frequency,
 			     cpufreq[i].org_max_freq,
@@ -1053,7 +1051,7 @@ cpu_freq_set(stepd_step_rec_t *job)
 				}
 			}
 			rc = _cpu_freq_set_scaling_freq(job, i, freq,
-					"scaling_max_freq");
+							"scaling_max_freq");
 			if (rc == SLURM_FAILURE)
 				continue;
 		}
@@ -1079,7 +1077,7 @@ cpu_freq_set(stepd_step_rec_t *job)
 				}
 			}
 			rc= _cpu_freq_set_scaling_freq(job, i, freq,
-					"scaling_min_freq");
+						       "scaling_min_freq");
 			if (rc == SLURM_FAILURE)
 				continue;
 		}
@@ -1489,7 +1487,7 @@ cpu_freq_verify_cmdline(const char *arg,
 	if (frequency != 0) {
 		if (p3) {
 			error("governor cannot be specified twice "
-			      "%s{-}:%s in --cpu-freq", p1,p3);
+			      "%s{-}:%s in --cpu-freq", p1, p3);
 			rc = -1;
 			goto clean;
 		}
@@ -1512,7 +1510,7 @@ cpu_freq_verify_cmdline(const char *arg,
 		*cpu_freq_max = frequency;
 		if (*cpu_freq_max < *cpu_freq_min) {
 			error("min cpu-frec (%s) must be < max cpu-freq (%s)",
-			      p1,p2);
+			      p1, p2);
 			rc = -1;
 			goto clean;
 		}
@@ -1520,7 +1518,7 @@ cpu_freq_verify_cmdline(const char *arg,
 
 	if (p3) {
 		if (!p2) {
-			error("gov on cpu-frec (%s) illegal without max",p3);
+			error("gov on cpu-frec (%s) illegal without max", p3);
 			rc = -1;
 			goto clean;
 		}
