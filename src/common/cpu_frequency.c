@@ -1577,6 +1577,7 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 {
 	int rc = 0;
 	char bfgov[64], bfmin[32], bfmax[32], bffreq[32];
+	char *sep1 = " ", *sep2 = " ", *sep3 = " ";
 
 	bfgov[0] = '\0';
 	bfmin[0] = '\0';
@@ -1586,49 +1587,54 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 	if (freq != NO_VAL && freq != 0) {
 		rc = 1;
 		sprintf(bffreq, "cur_freq=%u", freq);
+	} else {
+		sep1 = "";
 	}
 	if (min != NO_VAL && min != 0) {
 		rc = 1;
 		if (min & CPU_FREQ_RANGE_FLAG) {
-			cpu_freq_to_string(bfmin, sizeof(bfmin), min);
+			strcpy(bfmin, "CPU_min_freq=");
+			cpu_freq_to_string(&bfmin[13], (sizeof(bfmin)-13), min);
 		} else {
 			sprintf(bfmin, "CPU_min_freq=%u", min);
 		}
+	} else if (noval_str) {
+		strcpy(bfmin, noval_str);
 	} else {
-		if (noval_str)
-			strcpy(bfmin, noval_str);
+		sep2 = "";
 	}
 	if (max != NO_VAL && max != 0) {
 		rc = 1;
 		if (max & CPU_FREQ_RANGE_FLAG) {
-			cpu_freq_to_string(bfmax, sizeof(bfmax), max);
+			strcpy(bfmax, "CPU_max_freq=");
+			cpu_freq_to_string(&bfmax[13], (sizeof(bfmax)-13), max);
 		} else {
 			sprintf(bfmax, "CPU_max_freq=%u", max);
 		}
+	} else if (noval_str) {
+		strcpy(bfmax, noval_str);
 	} else {
-		if (noval_str)
-			strcpy(bfmax, noval_str);
+		sep3 = "";
 	}
 	if ((gov != NO_VAL) && (gov != 0)) {
 		rc = 1;
 		strcpy(bfgov, "Governor=");
 		cpu_freq_to_string(&bfgov[9], (sizeof(bfgov)-9), gov);
-	} else {
-		if (noval_str)
-			strcpy(bfgov, noval_str);
+	} else if (noval_str) {
+		strcpy(bfgov, noval_str);
 	}
 	if (rc) {
 		if (freq_str) {
-			snprintf(freq_str, freq_len, "%s %s %s %s",
-				 bffreq, bfmin, bfmax, bfgov);
+			snprintf(freq_str, freq_len, "%s%s%s%s%s%s%s",
+				 bffreq, sep1, bfmin, sep2, bfmax, sep3, bfgov);
 		}
 	} else {
 		if (freq_str)
 			freq_str[0] = '\0';
 	}
 	if (label) {
-		info("cpu-freq: %s :: %s %s %s %s", label,
-		     bffreq, bfmin, bfmax, bfgov);
+		info("cpu-freq: %s :: %s%s%s%s%s%s%s", label,
+		     bffreq, sep1, bfmin, sep2, bfmax, sep3, bfgov);
 	}
 	return rc;
 }

@@ -4876,8 +4876,12 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack16(&job->requeue,     buffer);
 		safe_unpack16(&job->ntasks_per_node, buffer);
 
-		/*** unpack pending job details ***/
 		safe_unpack16(&job->shared,        buffer);
+		safe_unpack32(&job->cpu_freq_min, buffer);
+		safe_unpack32(&job->cpu_freq_max, buffer);
+		safe_unpack32(&job->cpu_freq_gov, buffer);
+
+		/*** unpack pending job details ***/
 		safe_unpack16(&job->contiguous,    buffer);
 		safe_unpack16(&job->core_spec,     buffer);
 		safe_unpack16(&job->cpus_per_task, buffer);
@@ -4885,10 +4889,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpack32(&job->pn_min_memory, buffer);
 		safe_unpack32(&job->pn_min_tmp_disk, buffer);
-
-		safe_unpack32(&job->cpu_freq_min, buffer);
-		safe_unpack32(&job->cpu_freq_max, buffer);
-		safe_unpack32(&job->cpu_freq_gov, buffer);
 		
 		safe_unpackstr_xmalloc(&job->req_nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);

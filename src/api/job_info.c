@@ -1129,8 +1129,7 @@ line15:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		snprintf(tmp_line, sizeof(tmp_line), "CpuFreq=%s", tmp1);
-		xstrcat(out, tmp_line);
+		xstrcat(out, tmp1);
 	}
 
 	/****** Line 36 (optional) ******/
