@@ -78,8 +78,6 @@
 
 #define MAX_RETRIES 10
 
-uint32_t debug_flags = NO_VAL;
-
 static void _build_pending_step(struct job_record  *job_ptr,
 				job_step_create_request_msg_t *step_specs);
 static int  _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
@@ -379,9 +377,7 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		mem_type   = "cpu";
 	}
 
-	if (debug_flags == NO_VAL)
-		debug_flags = slurm_get_debug_flags();
-	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_CPU_FREQ) {
 		info("StepDesc: user_id=%u job_id=%u "
 		     "cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
 		     step_spec->user_id, step_spec->job_id,
