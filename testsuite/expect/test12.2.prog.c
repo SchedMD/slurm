@@ -43,6 +43,7 @@ main (int argc, char **argv)
 	int fd;
 	char *mem;
 	char *file_name;
+	time_t time_start = time(NULL);
 
 	if (argc != 6) {
 		fprintf(stderr,
@@ -88,6 +89,7 @@ main (int argc, char **argv)
 	}
 	close(fd);
 
+	sleep_time -= difftime(time(NULL), time_start);
 	sleep(sleep_time);
 	free(mem);
 
