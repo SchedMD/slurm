@@ -152,7 +152,6 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	char time_str[32];
 	char limit_str[32];
 	char tmp_line[128];
-	char fqmin[32], fqmax[32], fqgov[32];
 	char *out = NULL;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -266,40 +265,16 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
-	if (job_step_ptr->cpu_freq_min == NO_VAL
-	    && job_step_ptr->cpu_freq_max == NO_VAL
-	    && job_step_ptr->cpu_freq_gov == NO_VAL) {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "CPUFreqReq=Default\n\n");
+	if (cpu_freq_debug(NULL, NULL, tmp_line, sizeof(tmp_line),
+			   job_step_ptr->cpu_freq_gov,
+			   job_step_ptr->cpu_freq_min,
+			   job_step_ptr->cpu_freq_max, NO_VAL) != 0) {
+		xstrcat(out, tmp_line);
 	} else {
-		if (job_step_ptr->cpu_freq_min == NO_VAL) {
-			strcpy(fqmin, "Default");
-		} else if (job_step_ptr->cpu_freq_min & CPU_FREQ_RANGE_FLAG) {
-			cpu_freq_to_string(fqmin, sizeof(fqmin),
-					job_step_ptr->cpu_freq_min);
-		} else {
-			snprintf(fqmin, sizeof(fqmin), "%u",
-				 job_step_ptr->cpu_freq_min);
-		}
-		if (job_step_ptr->cpu_freq_max == NO_VAL) {
-			strcpy(fqmax, "Default");
-		} else if (job_step_ptr->cpu_freq_max & CPU_FREQ_RANGE_FLAG) {
-			cpu_freq_to_string(fqmax, sizeof(fqmax),
-					job_step_ptr->cpu_freq_max);
-		} else {
-			snprintf(fqmax, sizeof(fqmax), "%u",
-					job_step_ptr->cpu_freq_max);
-		}
-		if (job_step_ptr->cpu_freq_gov == NO_VAL) {
-			strcpy(fqmax, "Default");
-		} else  {
-			cpu_freq_to_string(fqgov, sizeof(fqgov),
-					job_step_ptr->cpu_freq_gov);
-		}
-		snprintf(tmp_line, sizeof(tmp_line), "CPUFreqReq=%s-%s:%s\n\n",
-				fqmin, fqmax, fqgov);
+		xstrcat(out, "CPUFreqReq=Default");
 	}
-	xstrcat(out, tmp_line);
+	xstrcat(out, "\n\n");
+
 	return out;
 }
 
