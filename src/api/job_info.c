@@ -1122,14 +1122,14 @@ line15:
 	}
 
 	/****** Line 35 (optional) ******/
-	if (cpu_freq_debug(NULL, NULL, tmp_line, sizeof(tmp_line),
+	if (cpu_freq_debug(NULL, NULL, tmp1, sizeof(tmp1),
 			   job_ptr->cpu_freq_gov, job_ptr->cpu_freq_min,
 			   job_ptr->cpu_freq_max, NO_VAL) != 0) {
-
 		if (one_liner)
 			xstrcat(out, " ");
 		else
-			xstrcat(out, "\n  ");
+			xstrcat(out, "\n   ");
+		snprintf(tmp_line, sizeof(tmp_line), "CpuFreq=%s", tmp1);
 		xstrcat(out, tmp_line);
 	}
 
