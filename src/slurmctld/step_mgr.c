@@ -2353,9 +2353,17 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
-	step_ptr->cpu_freq_min = step_specs->cpu_freq_min;
-	step_ptr->cpu_freq_max = step_specs->cpu_freq_max;
-	step_ptr->cpu_freq_gov = step_specs->cpu_freq_gov;
+	if ((step_specs->cpu_freq_min == NO_VAL) &&
+	    (step_specs->cpu_freq_max == NO_VAL) &&
+	    (step_specs->cpu_freq_gov == NO_VAL)) {
+		step_ptr->cpu_freq_min = job_ptr->details->cpu_freq_min;
+		step_ptr->cpu_freq_max = job_ptr->details->cpu_freq_max;
+		step_ptr->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
+	} else {
+		step_ptr->cpu_freq_min = step_specs->cpu_freq_min;
+		step_ptr->cpu_freq_max = step_specs->cpu_freq_max;
+		step_ptr->cpu_freq_gov = step_specs->cpu_freq_gov;
+	}
 	step_ptr->cpus_per_task = (uint16_t)cpus_per_task;
 	step_ptr->pn_min_memory = step_specs->pn_min_memory;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;

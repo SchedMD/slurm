@@ -95,9 +95,6 @@ typedef struct allocation_info {
 	char                   *nodelist;
 	uint32_t                num_cpu_groups;
 	char                   *partition;
-	uint32_t 		cpu_freq_min;  	/* Minimum cpu frequency  */
-	uint32_t 		cpu_freq_max;  	/* Maximum cpu frequency  */
-	uint32_t 		cpu_freq_gov;  	/* cpu frequency governor */
 	dynamic_plugin_data_t  *select_jobinfo;
 	uint32_t                stepid;
 } allocation_info_t;
@@ -897,10 +894,6 @@ _job_create_structure(allocation_info_t *ainfo)
 		}
 	}
 
-	if (ainfo->cpu_freq_max != 0 && ainfo->cpu_freq_max != NO_VAL) {
-		job->ctx_params.cpu_freq_max = ainfo->cpu_freq_max;
-		opt.cpu_freq_max = job->ctx_params.cpu_freq_max;
-	}
 	job->rc       = -1;
 
 	job_update_io_fnames(job);
