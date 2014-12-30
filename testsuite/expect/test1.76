@@ -41,7 +41,7 @@ source ./globals
 
 set test_id	"1.76"
 set nerr	0
-set exit_code   0
+set exit_code	0
 set test_prog   "test$test_id.prog"
 set avail_freq	[split "1000 2000" " "]
 set nfreq	0
@@ -68,6 +68,7 @@ proc test_case {opt expmin expcur expmax expgov} {
 	global bin_rm srun sbatch test_node test_cpu wd number
 	log_user 0
 	exec $bin_rm -f $wd/test1.76.out
+	set job_id 0
 	spawn $sbatch -w $test_node --exclusive -o test1.76.out test1.76.batch $test_cpu $opt $wd $srun
 	expect {
 		-re "Submitted batch job ($number)" {
@@ -173,41 +174,41 @@ proc test_case {opt expmin expcur expmax expgov} {
 	set emax [string range [lindex $end_vals 3] 4 end]
 
 	if {[string compare $expgov 0] !=0 
-	    && [string compare $tgov $expgov] !=0} {
+	    && [string compare $tgov $expgov] != 0} {
 		send_user "\nERROR: --cpu-freq=$opt -- test governor $tgov not expected ($expgov)\n"
 		log_user 1
 		return 1
 	}
 	if {[string compare $expmin 0] !=0 
-	    && [string compare $tmin $expmin] !=0} {
+	    && [string compare $tmin $expmin] != 0} {
 		send_user "\nERROR: --cpu-freq=$opt -- test min $tmin not expected ($expmin)\n"
 		log_user 1
 		return 1
 	}
 	if {[string compare $expcur 0] !=0 
-	    && [string compare $tcur $expcur] !=0} {
+	    && [string compare $tcur $expcur] != 0} {
 		send_user "\nERROR: --cpu-freq=$opt -- test cur $tcur not expected ($expcur)\n"
 		log_user 1
 		return 1
 	}
 	if {[string compare $expmax 0] !=0 
-	    && [string compare $tmax $expmax] !=0} {
+	    && [string compare $tmax $expmax] != 0} {
 		send_user "\nERROR: --cpu-freq=$opt -- test max $tmax not expected ($expmax)\n"
 		log_user 1
 		return 1
 	}
 	
-	if {[string compare $sgov $egov] !=0} {
+	if {[string compare $sgov $egov] != 0} {
 		send_user "\nERROR: --cpu-freq=$opt -- starting governor $sgov not reset ($egov)\n"
 		log_user 1
 		return 1
 	}
-	if {[string compare $smin $emin] !=0} {
+	if {[string compare $smin $emin] != 0} {
 		send_user "\nERROR: --cpu-freq=$opt -- starting min $smin not reset ($emin)\n"
 		log_user 1
 		return 1
 	}
-	if {[string compare $smax $emax] !=0} {
+	if {[string compare $smax $emax] != 0} {
 		send_user "\nERROR: --cpu-freq=$opt -- starting max $smax not reset ($emax)\n"
 		log_user 1
 		return 1
@@ -242,8 +243,8 @@ expect {
 		wait
 	}
 }
-# Get a node to use
-spawn $srun env
+# Identify a node to use
+spawn $srun --exclusive -n1 env
 expect
 wait
 set pos [string first "SLURMD_NODENAME=" $expect_out(buffer)]
@@ -251,7 +252,6 @@ set tmp [string range $expect_out(buffer) $pos+16 end]
 set pos [string first "\n" $tmp]
 set test_node [string range $tmp 0 $pos-1]
 set test_node [string trim $test_node "\r"]
-
 
 # See how many cpu's on that node.
 # We will assume the tests will run on the highest numbered cpu
