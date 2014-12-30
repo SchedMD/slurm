@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     scheduling.
  -- Fixes for clean build on FreeBSD.
  -- Fix documentation bugs in slurm.conf.5. DenyAccount should be DenyAccounts.
+ -- For backward compatibility with older versions of OMPI not compiled
+    with --with-pmi restore the SLURM_STEP_RESV_PORTS in the job environment.
 
 * Changes in Slurm 14.11.2
 ==========================
