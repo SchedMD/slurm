@@ -487,7 +487,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	while ((row = mysql_fetch_row(result))) {
 		char *id = row[JOB_REQ_ID];
 		bool job_ended = 0;
-		int submit = slurm_atoul(row[JOB_REQ_SUBMIT]);
+		int start = slurm_atoul(row[JOB_REQ_START]);
 
 		curr_id = slurm_atoul(row[JOB_REQ_JOBID]);
 
@@ -498,9 +498,11 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		/* check the bitmap to see if this is one of the jobs
 		   we are looking for */
+		/* Use start time instead of submit time because node
+		 * indexes are determined at start time and not submit. */
 		if (!good_nodes_from_inx(local_cluster_list,
 					 (void **)&curr_cluster,
-					 row[JOB_REQ_NODE_INX], submit)) {
+					 row[JOB_REQ_NODE_INX], start)) {
 			last_id = curr_id;
 			continue;
 		}
@@ -563,8 +565,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);
 
 		job->eligible = slurm_atoul(row[JOB_REQ_ELIGIBLE]);
-		job->submit = submit;
-		job->start = slurm_atoul(row[JOB_REQ_START]);
+		job->submit = slurm_atoul(row[JOB_REQ_SUBMIT]);
+		job->start = start;
 		job->end = slurm_atoul(row[JOB_REQ_END]);
 		job->timelimit = slurm_atoul(row[JOB_REQ_TIMELIMIT]);
 
@@ -758,7 +760,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if (!good_nodes_from_inx(local_cluster_list,
 						 (void **)&curr_cluster,
 						 step_row[STEP_REQ_NODE_INX],
-						 submit))
+						 start))
 				continue;
 
 			step = slurmdb_create_step_rec();
@@ -1060,7 +1062,7 @@ no_hosts:
 
 extern int good_nodes_from_inx(List local_cluster_list,
 			       void **object, char *node_inx,
-			       int submit)
+			       int start)
 {
 	local_cluster_t **curr_cluster = (local_cluster_t **)object;
 
@@ -1070,15 +1072,15 @@ extern int good_nodes_from_inx(List local_cluster_list,
 		bitstr_t *job_bitmap = NULL;
 		if (!node_inx || !node_inx[0])
 			return 0;
-		if ((submit < (*curr_cluster)->start)
-		    || (submit > (*curr_cluster)->end)) {
+		if ((start < (*curr_cluster)->start)
+		    || (start > (*curr_cluster)->end)) {
 			local_cluster_t *local_cluster = NULL;
 
 			ListIterator itr =
 				list_iterator_create(local_cluster_list);
 			while ((local_cluster = list_next(itr))) {
-				if ((submit >= local_cluster->start)
-				    && (submit <= local_cluster->end)) {
+				if ((start >= local_cluster->start)
+				    && (start <= local_cluster->end)) {
 					*curr_cluster = local_cluster;
 					break;
 				}

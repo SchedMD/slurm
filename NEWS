@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- For backward compatibility with older versions of OMPI not compiled
     with --with-pmi restore the SLURM_STEP_RESV_PORTS in the job environment.
  -- Update the html documentation describing the integration with openmpi.
+ -- Fix sacct when searching by nodelist.
 
 * Changes in Slurm 14.11.2
 ==========================
