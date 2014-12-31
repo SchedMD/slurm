@@ -46,7 +46,7 @@ HIGHLIGHTS
     the partition QOS will override the job's QOS unless the job's QOS has the
     'PartitionQOS' flag set.
  -- Expanded --cpu-freq parameters to include min-max:governor specifications.
-    --cpu-freq now supported on salloc and sbatch. 
+    --cpu-freq now supported on salloc and sbatch.
 
 RPMBUILD CHANGES
 ================
@@ -70,8 +70,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Remove the CR_ALLOCATE_FULL_SOCKET configuration option.  It is now the
     default.
  -- Added DebugFlags value of "CpuFrequency".
- -- Added CpuFreqGovernors which lists governors allowed to be set with 
-    --cpu-freq on salloc, sbatch, and srun.  
+ -- Added CpuFreqGovernors which lists governors allowed to be set with
+    --cpu-freq on salloc, sbatch, and srun.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -100,34 +100,34 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
- -- Changed the following fields to struct struct job_descriptor 
-    cpu_freq renamed cpu_freq_max. 
- -- Changed the following fields to struct job_info 
-    cpu_freq renamed cpu_freq_max. 
- -- Changed the following fields to struct slurm_step_ctx_params_t 
-    cpu_freq renamed cpu_freq_max. 
- -- Changed the following fields to struct slurm_step_launch_params_t 
-    cpu_freq renamed cpu_freq_max. 
- -- Changed the following fields to struct job_step_info_t 
-    cpu_freq renamed cpu_freq_max. 
- -- Changed the following fields to struct resource_allocation_response_msg_t 
-    cpu_freq renamed cpu_freq_max. 
+ -- Changed the following fields to struct struct job_descriptor
+    cpu_freq renamed cpu_freq_max.
+ -- Changed the following fields to struct job_info
+    cpu_freq renamed cpu_freq_max.
+ -- Changed the following fields to struct slurm_step_ctx_params_t
+    cpu_freq renamed cpu_freq_max.
+ -- Changed the following fields to struct slurm_step_launch_params_t
+    cpu_freq renamed cpu_freq_max.
+ -- Changed the following fields to struct job_step_info_t
+    cpu_freq renamed cpu_freq_max.
+ -- Changed the following fields to struct resource_allocation_response_msg_t
+    cpu_freq renamed cpu_freq_max.
 
 
 Added the following struct definitions
 ======================================
- -- Added the following fields to struct struct job_descriptor 
-    cpu_freq_min, cpu_freq_gov. 
- -- Added the following fields to struct job_info 
-    cpu_freq_min, cpu_freq_gov. 
- -- Added the following fields to struct slurm_step_ctx_params_t 
-    cpu_freq_min, cpu_freq_gov. 
- -- Added the following fields to struct slurm_step_launch_params_t 
-    cpu_freq_min, cpu_freq_gov. 
- -- Added the following fields to struct job_step_info_t 
-    cpu_freq_min, cpu_freq_gov. 
- -- Added the following fields to struct resource_allocation_response_msg_t 
-    cpu_freq_min, cpu_freq_gov. 
+ -- Added the following fields to struct struct job_descriptor
+    cpu_freq_min, cpu_freq_gov.
+ -- Added the following fields to struct job_info
+    cpu_freq_min, cpu_freq_gov.
+ -- Added the following fields to struct slurm_step_ctx_params_t
+    cpu_freq_min, cpu_freq_gov.
+ -- Added the following fields to struct slurm_step_launch_params_t
+    cpu_freq_min, cpu_freq_gov.
+ -- Added the following fields to struct job_step_info_t
+    cpu_freq_min, cpu_freq_gov.
+ -- Added the following fields to struct resource_allocation_response_msg_t
+    cpu_freq_min, cpu_freq_gov.
 
 
 Added the following struct definitions

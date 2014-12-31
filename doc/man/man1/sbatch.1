@@ -275,33 +275,33 @@ above when task/affinity plugin is enabled.
 .TP
 \fB\-\-cpu\-freq\fR =<\fIp1\fR[\-\fIp2\fR[:\fIp3\fR]]>
 
-Request that job steps initiated by srun commands inside this sbatch script 
-be run at some requested frequency if possible, on the CPUs selected 
+Request that job steps initiated by srun commands inside this sbatch script
+be run at some requested frequency if possible, on the CPUs selected
 for the step on the compute node(s).
 
-\fBp1\fR can be  [#### | low | medium | high | highm1] which will set the 
-frequency scaling_speed to the corresponding value, and set the frequency 
-scaling_governor to UserSpace. See below for definition of the values.  
+\fBp1\fR can be  [#### | low | medium | high | highm1] which will set the
+frequency scaling_speed to the corresponding value, and set the frequency
+scaling_governor to UserSpace. See below for definition of the values.
 
-\fBp1\fR can be [Conservative | OnDemand | Performance | PowerSave] which 
-will set the scaling_governor to the corresponding value. The governor has to be 
+\fBp1\fR can be [Conservative | OnDemand | Performance | PowerSave] which
+will set the scaling_governor to the corresponding value. The governor has to be
 in the list set by the slurm.conf option CpuFreqGovernors.
 
-When \fBp2\fR is present, p1 will be the minimum scaling frequency and 
-p2 will be the maximum scaling frequency. 
+When \fBp2\fR is present, p1 will be the minimum scaling frequency and
+p2 will be the maximum scaling frequency.
 
-\fBp2\fR can be  [#### | medium | high | highm1] p2 must be greater than p1. 
+\fBp2\fR can be  [#### | medium | high | highm1] p2 must be greater than p1.
 
-\fBp3\fR can be [Conservative | OnDemand | Performance | PowerSave | UserSpace] 
+\fBp3\fR can be [Conservative | OnDemand | Performance | PowerSave | UserSpace]
 which will set the governor to the corresponding value.
 
-If \fBp3\fR is UserSpace, the frequency scaling_speed will be set by a power 
-or energy aware scheduling strategy to a value between p1 and p2 that lets the 
-job run within the site's power goal. The job may be delayed if p1 is higher 
+If \fBp3\fR is UserSpace, the frequency scaling_speed will be set by a power
+or energy aware scheduling strategy to a value between p1 and p2 that lets the
+job run within the site's power goal. The job may be delayed if p1 is higher
 than a frequency that allows the job to run withing the goal.
 
-If the current frequency is < min, it will be set to min. Likewise, 
-if the current frequency is > max, it will be set to max. 
+If the current frequency is < min, it will be set to min. Likewise,
+if the current frequency is > max, it will be set to max.
 
 Acceptable values at present include:
 .RS

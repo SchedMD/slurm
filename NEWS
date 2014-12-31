@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     resources required gang scheduling to be configured.
  -- Enable per-partition gang scheduling resource resolution (e.g. the partition
     can have SelectTypeParameters=CR_CORE, while the global value is CR_SOCKET).
+ -- Expanded --cpu-freq parameters to include min-max:governor specifications.
+    --cpu-freq now supported on salloc and sbatch.
 
 * Changes in Slurm 15.08.0pre1
 ==============================
