@@ -1739,7 +1739,7 @@ It has integration with Slurm as well as Torque resource managers.</p>
 <p><a name="add_nodes"><b>47. What process should I follow to add nodes to Slurm?</b></a></br>
 The slurmctld daemon has a multitude of bitmaps to track state of nodes and cores
 in the system. Adding nodes to a running system would require the slurmctld daemon
-rebuild all of those bitmaps, which the developers feel would be safer to do by
+to rebuild all of those bitmaps, which the developers feel would be safer to do by
 restarting the daemon. Communications from the slurmd daemons on the compute
 nodes to the slurmctld daemon include a configuration file checksum, so you
 probably also want to maintain a common slurm.conf file on all nodes. The
@@ -1752,6 +1752,10 @@ following procedure is recommended:
 <li>Have all slurmd daemons read the new configuration file (e.g.
 "scontrol reconfig", no need to restart the daemons)</li>
 </ol>
+
+NOTE: Jobs submitted with srun, and that are waiting for an allocation,
+prior to new nodes being added to the slurm.conf can fail if the job is
+allocated one of the new nodes.
 
 <p><a name="licenses"><b>48. Can Slurm be configured to manage licenses?</b></a></br>
 Slurm is not currently integrated with FlexLM, but it does provide for the
