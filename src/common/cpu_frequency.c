@@ -205,15 +205,18 @@ _cpu_freq_cpu_avail(int cpuidx)
 {
 	FILE *fp = NULL;
 	char path[SYSFS_PATH_MAX];
-	int i,j,k;
+	int i, j, k;
 	uint32_t freq;
 	bool all_avail = false;
 
 	snprintf(path, sizeof(path),  PATH_TO_CPU
 		 "cpu%u/cpufreq/scaling_available_frequencies", cpuidx);
 	if ( ( fp = fopen(path, "r") ) == NULL ) {
-		error("%s: Could not open scaling_available_frequencies",
-				__func__);
+		static bool open_err_log = true;	/* Log once */
+		if (open_err_log) {
+			error("%s: Could not open %s", __func__, path);
+			open_err_log = false;
+		}
 		return SLURM_FAILURE;
 	}
 	for (i = 0; i < (FREQ_LIST_MAX-1); i++) {
@@ -235,9 +238,8 @@ _cpu_freq_cpu_avail(int cpuidx)
 	}
 	cpufreq[cpuidx].nfreq = i;
 	fclose(fp);
-	if (!all_avail) {
+	if (!all_avail)
 		error("all available frequencies not scanned");
-	}
 	return SLURM_SUCCESS;
 }
 
