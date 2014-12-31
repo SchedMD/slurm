@@ -223,7 +223,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		job->ctx_params.cpu_count = opt.ntasks;
 	}
 
-	job->ctx_params.cpu_freq = opt.cpu_freq;
+	job->ctx_params.cpu_freq_min = opt.cpu_freq_min;
+	job->ctx_params.cpu_freq_max = opt.cpu_freq_max;
+	job->ctx_params.cpu_freq_gov = opt.cpu_freq_gov;
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
 	job->ctx_params.ckpt_dir = opt.ckpt_dir;

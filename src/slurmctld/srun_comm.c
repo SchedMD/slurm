@@ -104,6 +104,9 @@ extern void srun_allocate (uint32_t job_id)
 		if (job_ptr->details) {
 			msg_arg->pn_min_memory = job_ptr->details->
 						 pn_min_memory;
+			msg_arg->cpu_freq_min = job_ptr->details->cpu_freq_min;
+			msg_arg->cpu_freq_max = job_ptr->details->cpu_freq_max;
+			msg_arg->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
 		}
 		memcpy(msg_arg->cpus_per_node,
 		       job_resrcs_ptr->cpu_array_value,

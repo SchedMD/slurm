@@ -64,6 +64,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -140,7 +141,9 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 	ptr->buffered_stdio = true;
 	memcpy(&ptr->local_fds, &fds, sizeof(fds));
 	ptr->gid = getgid();
-	ptr->cpu_freq = NO_VAL;
+	ptr->cpu_freq_min = NO_VAL;
+	ptr->cpu_freq_max = NO_VAL;
+	ptr->cpu_freq_gov = NO_VAL;
 }
 
 /*
@@ -256,7 +259,9 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.task_epilog	= params->task_epilog;
 	launch.cpu_bind_type	= params->cpu_bind_type;
 	launch.cpu_bind		= params->cpu_bind;
-	launch.cpu_freq		= params->cpu_freq;
+	launch.cpu_freq_min	= params->cpu_freq_min;
+	launch.cpu_freq_max	= params->cpu_freq_max;
+	launch.cpu_freq_gov	= params->cpu_freq_gov;
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
 	launch.multi_prog	= params->multi_prog ? 1 : 0;
@@ -433,7 +438,9 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	launch.task_epilog	= params->task_epilog;
 	launch.cpu_bind_type	= params->cpu_bind_type;
 	launch.cpu_bind		= params->cpu_bind;
-	launch.cpu_freq		= params->cpu_freq;
+	launch.cpu_freq_min	= params->cpu_freq_min;
+	launch.cpu_freq_max	= params->cpu_freq_max;
+	launch.cpu_freq_gov	= params->cpu_freq_gov;
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
 	launch.multi_prog	= params->multi_prog ? 1 : 0;

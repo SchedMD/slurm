@@ -995,6 +995,7 @@ _reconfigure(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 	route_g_reconfigure();
+	cpu_freq_reconfig();
 
 	/*
 	 * In case the administrator changed the cpu frequency set capabilities

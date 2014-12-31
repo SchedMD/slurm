@@ -395,7 +395,9 @@ typedef struct dbd_step_start_msg {
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
-	uint32_t req_cpufreq;   /* requested CPU frequency */
+	uint32_t req_cpufreq_min; /* requested minimum CPU frequency  */
+	uint32_t req_cpufreq_max; /* requested maximum CPU frequency  */
+	uint32_t req_cpufreq_gov; /* requested CPU frequency governor */
 	uint32_t step_id;	/* step ID */
 	uint16_t task_dist;     /* layout method of step */
 	uint32_t total_cpus;	/* count of allocated processors */

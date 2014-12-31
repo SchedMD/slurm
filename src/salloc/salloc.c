@@ -58,6 +58,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -626,6 +627,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->reservation = xstrdup(opt.reservation);
 	desc->profile  = opt.profile;
 	desc->wckey  = xstrdup(opt.wckey);
+
+	desc->cpu_freq_min = opt.cpu_freq_min;
+	desc->cpu_freq_max = opt.cpu_freq_max;
+	desc->cpu_freq_gov = opt.cpu_freq_gov;
+
 	if (opt.req_switch >= 0)
 		desc->req_switch = opt.req_switch;
 	if (opt.wait4switch >= 0)

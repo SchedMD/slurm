@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it so a newer version of a slurmstepd can talk to an older srun.
  -- Make srun reload configuration if conf is different after receiving
     allocation. Nodes could have been added while waiting for an allocation.
+ -- Expanded --cpu-freq parameters to include min-max:governor specifications.
+    --cpu-freq now supported on salloc and sbatch.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

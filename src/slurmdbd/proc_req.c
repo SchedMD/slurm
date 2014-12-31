@@ -3645,7 +3645,9 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	step.step_id = step_start_msg->step_id;
 	step.cpu_count = step_start_msg->total_cpus;
 	details.num_tasks = step_start_msg->total_tasks;
-	step.cpu_freq = step_start_msg->req_cpufreq;
+	step.cpu_freq_min = step_start_msg->req_cpufreq_min;
+	step.cpu_freq_max = step_start_msg->req_cpufreq_max;
+	step.cpu_freq_gov = step_start_msg->req_cpufreq_gov;
 
 	layout.node_cnt = step_start_msg->node_cnt;
 	layout.task_dist = step_start_msg->task_dist;

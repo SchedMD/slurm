@@ -224,6 +224,7 @@ For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
+.TP
 .RE
 
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
@@ -383,14 +384,42 @@ Show help message for cpu_bind
 .RE
 
 .TP
-\fB\-\-cpu\-freq\fR =<\fIrequested frequency in kilohertz\fR>
+\fB\-\-cpu\-freq\fR =<\fIp1\fR[\-\fIp2\fR[:\fIp3\fR]]>
 
-Request that the job step initiated by this srun command be run at the
+Request that the job step initiated by this srun command be run at some
 requested frequency if possible, on the CPUs selected for the step on
 the compute node(s).
+
+\fBp1\fR can be  [#### | low | medium | high | highm1] which will set the
+frequency scaling_speed to the corresponding value, and set the frequency
+scaling_governor to UserSpace. See below for definition of the values.
+
+\fBp1\fR can be [Conservative | OnDemand | Performance | PowerSave] which
+will set the scaling_governor to the corresponding value. The governor has to be
+in the list set by the slurm.conf option CpuFreqGovernors.
+
+When \fBp2\fR is present, p1 will be the minimum scaling frequency and
+p2 will be the maximum scaling frequency.
+
+\fBp2\fR can be  [#### | medium | high | highm1] p2 must be greater than p1.
+
+\fBp3\fR can be [Conservative | OnDemand | Performance | PowerSave | UserSpace]
+which will set the governor to the corresponding value.
+
+If \fBp3\fR is UserSpace, the frequency scaling_speed will be set by a power
+or energy aware scheduling strategy to a value between p1 and p2 that lets the
+job run within the site's power goal. The job may be delayed if p1 is higher
+than a frequency that allows the job to run withing the goal.
+
+If the current frequency is < min, it will be set to min. Likewise,
+if the current frequency is > max, it will be set to max.
+
 Acceptable values at present include:
 .RS
 .TP 14
+\fB####\fR
+frequency in kilohertz
+.TP
 \fBLow\fR
 the lowest available frequency
 .TP
@@ -414,6 +443,10 @@ attempts to use the Performance CPU governor
 .TP
 \fBPowerSave\fR
 attempts to use the PowerSave CPU governor
+.TP
+\fBUserSpace\fR
+attempts to use the UserSpace CPU governor
+.TP
 .RE
 
 The following informational environment variable is set in the job
@@ -425,7 +458,9 @@ step when \fB\-\-cpu\-freq\fR option is requested.
 This environment variable can also be used to supply the value for the
 CPU frequency request if it is set when the 'srun' command is issued.
 The \fB\-\-cpu\-freq\fR on the command line will override the
-environment variable value.  See the \fBENVIRONMENT VARIABLES\fR
+environment variable value.  The form on the environment variable is
+the same as the command line.
+See the \fBENVIRONMENT VARIABLES\fR
 section for a description of the SLURM_CPU_FREQ_REQ variable.
 
 \fBNOTE\fR: This parameter is treated as a request, not a requirement.
@@ -447,6 +482,8 @@ default value of the OnDemand CPU governor.
 with linuxproc as the ProctrackType can cause jobs to run too quickly before
 Accounting is able to poll for job information. As a result not all of
 accounting information will be present.
+
+.RE
 
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>

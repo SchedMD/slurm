@@ -20,7 +20,9 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 
 	FETCH_FIELD(hv, params, ckpt_interval, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_count, uint32_t, FALSE);
-	FETCH_FIELD(hv, params, cpu_freq, uint32_t, FALSE);
+	FETCH_FIELD(hv, params, cpu_freq_min, uint32_t, FALSE);
+	FETCH_FIELD(hv, params, cpu_freq_max, uint32_t, FALSE);
+	FETCH_FIELD(hv, params, cpu_freq_gov, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, exclusive, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, features, charp, FALSE);
 	FETCH_FIELD(hv, params, immediate, uint16_t, FALSE);
@@ -190,7 +192,9 @@ hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t *params)
 	FETCH_FIELD(hv, params, task_epilog, charp, FALSE);
 	FETCH_FIELD(hv, params, cpu_bind_type, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_bind, charp, FALSE);
-	FETCH_FIELD(hv, params, cpu_freq, uint32_t, FALSE);
+	FETCH_FIELD(hv, params, cpu_freq_min, uint32_t, FALSE);
+	FETCH_FIELD(hv, params, cpu_freq_max, uint32_t, FALSE);
+	FETCH_FIELD(hv, params, cpu_freq_gov, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, mem_bind_type, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, mem_bind, charp, FALSE);
 

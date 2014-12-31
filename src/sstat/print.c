@@ -352,9 +352,23 @@ void print_fields(slurmdb_step_rec_t *step)
                                              step->pid_str,
                                              (curr_inx == field_count));
                         break;
-		case PRINT_REQ_CPUFREQ:
+		case PRINT_REQ_CPUFREQ_MIN:
 			cpu_freq_to_string(outbuf, sizeof(outbuf),
-					   step->req_cpufreq);
+					   step->req_cpufreq_min);
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_REQ_CPUFREQ_MAX:
+			cpu_freq_to_string(outbuf, sizeof(outbuf),
+					   step->req_cpufreq_max);
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_REQ_CPUFREQ_GOV:
+			cpu_freq_to_string(outbuf, sizeof(outbuf),
+					   step->req_cpufreq_gov);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));

@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# It is assumed this script runs on cpu $1
+# $2 is the --cpu-freq parameter
+# $3 is full path to test directory
+# $4 is the full patch to srun
+
+# Get current value of scaling parameters,
+# Then set, and get new values.
+# Finally get reset values
+cd $3
+echo "Starting values"
+$4 $3/test1.76.bash $1
+echo "srun --cpu-freq=$2 test1.76.bash $1"
+$4 --cpu-freq=$2 $3/test1.76.bash $1
+echo "Ending values"
+$4 $3/test1.76.bash $1

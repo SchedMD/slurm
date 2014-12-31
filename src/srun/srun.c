@@ -205,7 +205,10 @@ int srun(int ac, char **av)
 		env->plane_size = opt.plane_size;
 	env->cpu_bind_type = opt.cpu_bind_type;
 	env->cpu_bind = opt.cpu_bind;
-	env->cpu_freq = opt.cpu_freq;
+
+	env->cpu_freq_min = opt.cpu_freq_min;
+	env->cpu_freq_max = opt.cpu_freq_max;
+	env->cpu_freq_gov = opt.cpu_freq_gov;
 	env->mem_bind_type = opt.mem_bind_type;
 	env->mem_bind = opt.mem_bind;
 	env->overcommit = opt.overcommit;

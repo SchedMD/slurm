@@ -177,6 +177,7 @@ test1.72   Validate JobAcctGatherFrequency configuration parameter is enforced.
 test1.73   Validate OverTimeLimit configuration parameter is enforced.
 test1.74   Validate MaxNode and GrpNode limit enforcment with QoS & association.
 test1.75   Test that --cpu-freq is enforced when using non-numeric values
+test1.76   Test that --cpu-freq sets min-max:gov
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
 	   The test will print "WARNING" and terminate with an exit code of

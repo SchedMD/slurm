@@ -74,6 +74,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
@@ -118,6 +119,7 @@
 #define OPT_PROFILE     0x18
 #define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
+#define OPT_CPU_FREQ    0x1b
 
 /* generic getopt_long flags, integers and *not* valid characters */
 
@@ -169,6 +171,7 @@
 #define LONG_OPT_WAIT_ALL_NODES  0x142
 #define LONG_OPT_REQ_SWITCH      0x143
 #define LONG_OPT_PROFILE         0x144
+#define LONG_OPT_CPU_FREQ        0x145
 #define LONG_OPT_PRIORITY        0x160
 
 
@@ -362,6 +365,9 @@ static void _opt_default()
 
 	opt.bell            = BELL_AFTER_DELAY;
 	opt.acctg_freq      = NULL;
+	opt.cpu_freq_min    = NO_VAL;
+	opt.cpu_freq_max    = NO_VAL;
+	opt.cpu_freq_gov    = NO_VAL;
 	opt.no_shell	    = false;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
@@ -400,6 +406,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
+  {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
@@ -589,6 +596,11 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_PROFILE:
 		opt.profile = acct_gather_profile_from_string((char *)val);
 		break;
+	case OPT_CPU_FREQ:
+		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
+				&opt.cpu_freq_max, &opt.cpu_freq_gov))
+			error("Invalid --cpu-freq argument: %s. Ignored", val);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -666,6 +678,7 @@ void set_options(const int argc, char **argv)
 		{"conn-type",     required_argument, 0, LONG_OPT_CONNTYPE},
 		{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
+		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -1195,6 +1208,12 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_WAIT_ALL_NODES:
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
+		case LONG_OPT_CPU_FREQ:
+		        if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
+					&opt.cpu_freq_max, &opt.cpu_freq_gov))
+				error("Invalid --cpu-freq argument: %s. "
+						"Ignored", optarg);
+			break;
 		case LONG_OPT_REQ_SWITCH:
 			pos_delimit = strstr(optarg,"@");
 			if (pos_delimit != NULL) {
@@ -1600,6 +1619,9 @@ static bool _opt_verify(void)
 		setenvfs("SLURM_PROFILE=%s",
 			 acct_gather_profile_to_string(opt.profile));
 
+	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
+			opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
+
 	return verified;
 }
 
@@ -1835,6 +1857,9 @@ static void _opt_list(void)
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	str = print_commandline(command_argc, command_argv);
 	info("user command   : `%s'", str);
+	info("cpu_freq_min   : %u", opt.cpu_freq_min);
+	info("cpu_freq_max   : %u", opt.cpu_freq_max);
+	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	info("core-spec         : %d", opt.core_spec);
@@ -1874,6 +1899,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--mem_bind=...] [--reservation=name]\n"
 "              [--time-min=minutes] [--gres=list] [--profile=...]\n"
+"              [--cpu-freq=<min[-max[:gov]]>\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores]  [--reboot] [--bb=burst_buffer_spec]\n"
 "              [executable [args...]]\n");
@@ -1893,6 +1919,7 @@ static void _help(void)
 "      --bb=<spec>             burst buffer specifications\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
+"      --cpu-freq=<min[-max[:gov]]> requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --chdir=path            change working directory\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"

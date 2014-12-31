@@ -1396,7 +1396,7 @@ void print_fields(type_t type, void *object)
 					     tmp_int,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_REQ_CPUFREQ:
+		case PRINT_REQ_CPUFREQ_MIN:
 			switch (type) {
 			case JOB:
 				if (!job->track_steps && !step)
@@ -1405,7 +1405,45 @@ void print_fields(type_t type, void *object)
 				if (!step)
 					break;
 			case JOBSTEP:
-				tmp_dub = step->req_cpufreq;
+				tmp_dub = step->req_cpufreq_min;
+				break;
+			default:
+				break;
+			}
+			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_dub);
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_REQ_CPUFREQ_MAX:
+			switch (type) {
+			case JOB:
+				if (!job->track_steps && !step)
+					tmp_dub = NO_VAL;
+				// we want to use the step info
+				if (!step)
+					break;
+			case JOBSTEP:
+				tmp_dub = step->req_cpufreq_max;
+				break;
+			default:
+				break;
+			}
+			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_dub);
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_REQ_CPUFREQ_GOV:
+			switch (type) {
+			case JOB:
+				if (!job->track_steps && !step)
+					tmp_dub = NO_VAL;
+				// we want to use the step info
+				if (!step)
+					break;
+			case JOBSTEP:
+				tmp_dub = step->req_cpufreq_gov;
 				break;
 			default:
 				break;

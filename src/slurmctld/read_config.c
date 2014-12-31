@@ -59,6 +59,7 @@
 #include <unistd.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/layouts_mgr.h"
@@ -997,6 +998,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	rehash_node();
 	slurm_topo_build_config();
 	route_g_reconfigure();
+	cpu_freq_reconfig();
 
 	rehash_jobs();
 	set_slurmd_addr();

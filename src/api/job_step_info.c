@@ -265,18 +265,15 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
-	if (job_step_ptr->cpu_freq == NO_VAL) {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "CPUFreqReq=Default\n\n");
-	} else if (job_step_ptr->cpu_freq & CPU_FREQ_RANGE_FLAG) {
-		char buf[32];
-		cpu_freq_to_string(buf, sizeof(buf), job_step_ptr->cpu_freq);
-		snprintf(tmp_line, sizeof(tmp_line), "CPUFreqReq=%s\n\n", buf);
+	if (cpu_freq_debug(NULL, NULL, tmp_line, sizeof(tmp_line),
+			   job_step_ptr->cpu_freq_gov,
+			   job_step_ptr->cpu_freq_min,
+			   job_step_ptr->cpu_freq_max, NO_VAL) != 0) {
+		xstrcat(out, tmp_line);
 	} else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "CPUFreqReq=%u\n\n", job_step_ptr->cpu_freq);
+		xstrcat(out, "CPUFreqReq=Default");
 	}
-	xstrcat(out, tmp_line);
+	xstrcat(out, "\n\n");
 
 	return out;
 }

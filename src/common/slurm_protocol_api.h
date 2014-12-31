@@ -145,6 +145,11 @@ uint16_t slurm_get_complete_wait(void);
  */
 uint32_t slurm_get_cpu_freq_def(void);
 
+/* slurm_get_cpu_freq_govs
+ * RET CpuFreqGovernors value from slurm.conf
+ */
+uint32_t slurm_get_cpu_freq_govs(void);
+
 /* slurm_get_prolog_flags
  * RET PrologFlags value from slurm.conf
  */

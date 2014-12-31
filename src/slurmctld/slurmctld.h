@@ -456,6 +456,9 @@ struct job_details {
 					 * currently does not matter to the
 					 * job allocation, setting this does
 					 * not do anything for steps. */
+	uint32_t cpu_freq_min;  	/* Minimum cpu frequency  */
+	uint32_t cpu_freq_max;  	/* Maximum cpu frequency  */
+	uint32_t cpu_freq_gov;  	/* cpu frequency governor */
 	uint16_t cpus_per_task;		/* number of processors required for
 					 * each task */
 	List depend_list;		/* list of job_ptr:state pairs */
@@ -744,7 +747,9 @@ struct 	step_record {
 					 * step relative to job's nodes,
 					 * see src/common/job_resources.h */
 	uint32_t cpu_count;		/* count of step's CPUs */
-	uint32_t cpu_freq;		/* requested cpu frequency */
+	uint32_t cpu_freq_min; 		/* Minimum cpu frequency  */
+	uint32_t cpu_freq_max; 		/* Maximum cpu frequency  */
+	uint32_t cpu_freq_gov; 		/* cpu frequency governor */
 	uint16_t cpus_per_task;		/* cpus per task initiated */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation
 					 * across nodes */

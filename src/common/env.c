@@ -631,24 +631,9 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if ((env->cpu_freq != NO_VAL) && /* Default value from srun */
-	    (env->cpu_freq != 0)) {      /* Default value from slurmstepd
-					  * for batch jobs */
-		int sts;
-
-		if (env->cpu_freq & CPU_FREQ_RANGE_FLAG) {
-			char buf[32];
-			cpu_freq_to_string(buf, sizeof(buf), env->cpu_freq);
-			sts = setenvf(&env->env, "SLURM_CPU_FREQ_REQ", buf);
-		} else {
-			sts = setenvf(&env->env, "SLURM_CPU_FREQ_REQ", "%u",
-				      env->cpu_freq);
-		}
-		if (sts) {
-			error("Unable to set SLURM_CPU_FREQ_REQ");
-			rc = SLURM_FAILURE;
-		}
-	}
+	if (cpu_freq_set_env("SLURM_CPU_FREQ_REQ", env->cpu_freq_min,
+			env->cpu_freq_max, env->cpu_freq_gov) != SLURM_SUCCESS)
+		rc = SLURM_FAILURE;
 
 	if (env->overcommit
 	    && (setenvf(&env->env, "SLURM_OVERCOMMIT", "1"))) {

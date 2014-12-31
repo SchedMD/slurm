@@ -151,6 +151,9 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, warn_time, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, work_dir, charp, FALSE);
 	/* job constraints: */
+	FETCH_FIELD(hv, job_desc, cpu_freq_min, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc, cpu_freq_max, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc, cpu_freq_gov, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, cpus_per_task, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, min_cpus, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, max_cpus, uint32_t, FALSE);

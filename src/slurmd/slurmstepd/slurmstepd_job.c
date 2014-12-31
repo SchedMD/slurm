@@ -332,7 +332,9 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	job->cpu_bind = xstrdup(msg->cpu_bind);
 	job->mem_bind_type = msg->mem_bind_type;
 	job->mem_bind = xstrdup(msg->mem_bind);
-	job->cpu_freq = msg->cpu_freq;
+	job->cpu_freq_min = msg->cpu_freq_min;
+	job->cpu_freq_max = msg->cpu_freq_max;
+	job->cpu_freq_gov = msg->cpu_freq_gov;
 	job->ckpt_dir = xstrdup(msg->ckpt_dir);
 	job->restart_dir = xstrdup(msg->restart_dir);
 	job->cpus_per_task = msg->cpus_per_task;

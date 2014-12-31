@@ -485,7 +485,8 @@ sacct [<OPTION>]                                                            \n\
                              maxrsstask,averss,maxpages,maxpagesnode,       \n\
                              maxpagestask,avepages,mincpu,mincpunode,       \n\
                              mincputask,avecpu,ntasks,alloccpus,elapsed,    \n\
-                             state,exitcode,avecpufreq,consumedenergy,      \n\
+                             state,exitcode,avecpufreq,reqcpufreqmin,       \n\
+                             reqcpufreqmax,reqcpufreqgov,consumedenergy,    \n\
                              maxdiskread,maxdiskreadnode,maxdiskreadtask,   \n\
                              avediskread,maxdiskwrite,maxdiskwritenode,     \n\
                              maxdiskwritetask,avediskread,allocgres,reqgres \n\

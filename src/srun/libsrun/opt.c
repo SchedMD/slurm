@@ -524,7 +524,9 @@ static void _opt_default()
 	opt.pty = false;
 	opt.open_mode = 0;
 	opt.acctg_freq = NULL;
-	opt.cpu_freq = NO_VAL;
+	opt.cpu_freq_min = NO_VAL;
+	opt.cpu_freq_max = NO_VAL;
+	opt.cpu_freq_gov = NO_VAL;
 	opt.reservation = NULL;
 	opt.wckey = NULL;
 	opt.req_switch = -1;
@@ -693,7 +695,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_CPU_FREQ:
-		if (cpu_freq_verify_param(val, &opt.cpu_freq))
+		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
+				&opt.cpu_freq_max, &opt.cpu_freq_gov))
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
 	case OPT_HINT:
@@ -1588,11 +1591,6 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.acctg_freq);
 			opt.acctg_freq = xstrdup(optarg);
 			break;
-		case LONG_OPT_CPU_FREQ:
-		        if (cpu_freq_verify_param(optarg, &opt.cpu_freq))
-				error("Invalid --cpu-freq argument: %s. Ignored",
-				      optarg);
-			break;
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
 			opt.wckey = xstrdup(optarg);
@@ -1636,6 +1634,12 @@ static void _set_options(const int argc, char **argv)
 			}
 			xfree(opt.gres);
 			opt.gres = xstrdup(optarg);
+			break;
+		case LONG_OPT_CPU_FREQ:
+		        if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
+					&opt.cpu_freq_max, &opt.cpu_freq_gov))
+				error("Invalid --cpu-freq argument: %s. "
+						"Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
 			pos_delimit = strstr(optarg,"@");
@@ -2382,6 +2386,9 @@ static void _opt_list(void)
 	info("reservation    : `%s'", opt.reservation);
 	info("burst_buffer   : `%s'", opt.burst_buffer);
 	info("wckey          : `%s'", opt.wckey);
+	info("cpu_freq_min   : %u", opt.cpu_freq_min);
+	info("cpu_freq_max   : %u", opt.cpu_freq_max);
+	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
 	info("switches       : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
@@ -2391,7 +2398,6 @@ static void _opt_list(void)
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind       : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
-	info("cpu_freq       : %u", opt.cpu_freq);
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	if (opt.immediate <= 1)
@@ -2542,6 +2548,7 @@ static void _usage(void)
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
+"            [--cpu-freq=<min[-max[:gov]]>\n"
 "            [--switches=max-switches{@max-time-to-wait}]\n"
 "            [--core-spec=cores] [--reboot] [--bb=burst_buffer_spec]\n"
 "            [--acctg-freq=<datatype>=<interval>\n"
@@ -2569,6 +2576,7 @@ static void _help(void)
 "      --checkpoint-dir=dir    directory to store job step checkpoint image \n"
 "                              files\n"
 "      --comment=name          arbitrary comment\n"
+"      --cpu-freq=<min[-max[:gov]]> requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --chdir=path            change remote current working directory\n"
 "      --export=env_vars|NONE  environment variables passed to launcher with\n"

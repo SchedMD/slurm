@@ -100,7 +100,10 @@ print_field_t fields[] = {
 	{10, "Partition", print_fields_str, PRINT_PARTITION},
 	{10, "QOS", print_fields_str, PRINT_QOS},
 	{6,  "QOSRAW", print_fields_uint, PRINT_QOSRAW},
-	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ},
+	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ_MAX}, /* vestigial */
+	{13, "ReqCPUFreqMin", print_fields_str, PRINT_REQ_CPUFREQ_MIN},
+	{13, "ReqCPUFreqMax", print_fields_str, PRINT_REQ_CPUFREQ_MAX},
+	{13, "ReqCPUFreqGov", print_fields_str, PRINT_REQ_CPUFREQ_GOV},
 	{8,  "ReqCPUS", print_fields_uint, PRINT_REQ_CPUS},
 	{12, "ReqGRES", print_fields_str, PRINT_REQ_GRES},
 	{10, "ReqMem", print_fields_str, PRINT_REQ_MEM},
