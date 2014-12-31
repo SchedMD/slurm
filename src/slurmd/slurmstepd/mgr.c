@@ -712,8 +712,9 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 		    (resp.address.sin_addr.s_addr == 0))
 			continue;	/* no srun or sattach here */
 
-		if (srun->protocol_version)	/* Not set by sattach */
-			resp.protocol_version = srun->protocol_version;
+		/* This should always be set to something else we have a bug. */
+		xassert(srun->protocol_version);
+		resp.protocol_version = srun->protocol_version;
 
 		if (_send_srun_resp_msg(&resp, job->nnodes) != SLURM_SUCCESS)
 			error("Failed to send MESSAGE_TASK_EXIT: %m");

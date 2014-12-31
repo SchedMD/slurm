@@ -458,11 +458,15 @@ stepd_attach(int fd, uint16_t protocol_version,
 {
 	int req = REQUEST_ATTACH;
 	int rc = SLURM_SUCCESS;
+	int proto = protocol_version;
 
 	safe_write(fd, &req, sizeof(int));
 	safe_write(fd, ioaddr, sizeof(slurm_addr_t));
 	safe_write(fd, respaddr, sizeof(slurm_addr_t));
 	safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
+
+	if (SLURM_PROTOCOL_VERSION >= SLURM_15_08_PROTOCOL_VERSION)
+		safe_write(fd, &proto, sizeof(int));
 
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));

@@ -620,7 +620,7 @@ srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr,
 	srun_key_t       *key  = xmalloc(sizeof(srun_key_t));
 
 	srun->key    = key;
-	if (protocol_version == (uint16_t)NO_VAL)
+	if (!protocol_version || (protocol_version == (uint16_t)NO_VAL))
 		protocol_version = SLURM_PROTOCOL_VERSION;
 	srun->protocol_version = protocol_version;
 	/*

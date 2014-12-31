@@ -3255,7 +3255,13 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 
 	resp->gtids = NULL;
 	resp->local_pids = NULL;
-	/* Following call fills in gtids and local_pids when successful */
+
+	 /* NOTE: We need to use the protocol_version from
+	  * sattach here since responses will be sent back to it. */
+	if (msg->protocol_version < protocol_version)
+		protocol_version = msg->protocol_version;
+
+	/* Following call fills in gtids and local_pids when successful. */
 	rc = stepd_attach(fd, protocol_version, &ioaddr,
 			  &resp_msg.address, job_cred_sig, resp);
 	if (rc != SLURM_SUCCESS) {
