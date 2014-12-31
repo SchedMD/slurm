@@ -810,21 +810,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			xfree(query);
 		}
 
-		/* This was introduced in 2.6.7, once 2 versions of Slurm go
-		 * by we can remove this.
-		 * We need to have the last character in a preempt to
-		 * be ','.  In older versions of Slurm this was not the case. */
-		query = xstrdup_printf(
-			"update %s set "
-			"preempt=if(preempt='', '', concat(preempt, ',')) "
-			"where preempt not like '%%,';",
-			qos_table);
-		debug4("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
-			error("Couldn't update qos_table!");
-		xfree(query);
-
 		if (_set_qos_cnt(mysql_conn) != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	}
@@ -1158,7 +1143,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	char table_name[200];
-	char *query = NULL;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_table);
@@ -1170,31 +1154,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "key lft (lft))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
-
-	/* This was introduced in 2.6.7, once 2 versions of Slurm go
-	 * by we can remove this.
-	 * We need to have the last character in a preempt to
-	 * be ','.  In older versions of Slurm this was not the case. */
-	query = xstrdup_printf(
-		"update %s set qos=if(qos='', '', concat(qos, ',')) "
-		"where qos not like '%%,';",
-		table_name);
-	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
-		error("Couldn't update %s!", table_name);
-	xfree(query);
-
-	query = xstrdup_printf(
-		"update %s set delta_qos=if(delta_qos='', '', "
-		"concat(delta_qos, ',')) "
-		"where delta_qos not like '%%,';",
-		table_name);
-	if (debug_flags & DEBUG_FLAG_DB_QOS)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
-		error("Couldn't update %s!", table_name);
-	xfree(query);
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_day_table);
