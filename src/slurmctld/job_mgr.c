@@ -3553,6 +3553,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 		job_ptr_pend->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	}
+	job_ptr_pend->sched_nodes = NULL;
 	if (job_ptr->spank_job_env_size) {
 		job_ptr_pend->spank_job_env =
 			xmalloc(sizeof(char *) *
@@ -10618,6 +10619,9 @@ extern int update_job(slurm_msg_t *msg, uid_t uid)
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	struct job_record *job_ptr;
 	int rc;
+
+	xfree(job_specs->job_id_str);
+	xstrfmtcat(job_specs->job_id_str, "%u", job_specs->job_id);
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {

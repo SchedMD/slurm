@@ -14,7 +14,7 @@ mpirun launches tasks using Slurm's infrastructure (LAM/MPI and HP-MPI).</li>
 <li>Slurm creates a resource allocation for the job and then
 mpirun launches tasks using some mechanism other than SLURM,
 such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
-These tasks initiated outside of Slurm's monitoring
+These tasks are initiated outside of Slurm's monitoring
 or control. Slurm's epilog should be configured to purge
 these tasks when the job's allocation is relinquished. </li>
 </ol>

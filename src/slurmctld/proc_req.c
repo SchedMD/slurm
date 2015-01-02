@@ -3360,11 +3360,11 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("_slurm_rpc_update_job JobId=%u uid=%d: %s",
-		     job_desc_msg->job_id, uid, slurm_strerror(error_code));
+		info("_slurm_rpc_update_job JobId=%s uid=%d: %s",
+		     job_desc_msg->job_id_str, uid, slurm_strerror(error_code));
 	} else {
-		info("_slurm_rpc_update_job complete JobId=%u uid=%d %s",
-		     job_desc_msg->job_id, uid, TIME_STR);
+		info("_slurm_rpc_update_job complete JobId=%s uid=%d %s",
+		     job_desc_msg->job_id_str, uid, TIME_STR);
 		/* Below functions provide their own locking */
 		schedule_job_save();
 		schedule_node_save();
@@ -4077,7 +4077,10 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_requeue");
 
 	if (error_code) {
-		info("%s: %u: %s", __func__, req_ptr->job_id,
+		if (!req_ptr->job_id_str)
+			xstrfmtcat(req_ptr->job_id_str, "%u", req_ptr->job_id);
+
+		info("%s: %s: %s", __func__, req_ptr->job_id_str,
 		     slurm_strerror(error_code));
 	}
 
