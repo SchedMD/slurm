@@ -525,6 +525,10 @@ typedef struct job_array_struct {
 	uint32_t tot_comp_tasks;	/* Completed task count */
 } job_array_struct_t;
 
+/*
+ * NOTE: When adding fields to the job_record, or any underlying structures,
+ * be sure to sync with _rec_job_copy.
+ */
 struct job_record {
 	char    *account;		/* account number to charge */
 	char	*alias_list;		/* node name to address aliases */

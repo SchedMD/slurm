@@ -3548,6 +3548,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 		job_ptr_pend->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	}
+	job_ptr_pend->sched_nodes = NULL;
 	if (job_ptr->spank_job_env_size) {
 		job_ptr_pend->spank_job_env =
 			xmalloc(sizeof(char *) *

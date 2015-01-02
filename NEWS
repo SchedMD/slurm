@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct when searching by nodelist.
  -- Fix cosmetic info statements when dealing with a job array task instead of
     a normal job.
+ -- Fix segfault with job arrays.
 
 * Changes in Slurm 14.11.2
 ==========================
