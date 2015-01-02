@@ -107,7 +107,6 @@ static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 static slurm_ctl_conf_t *conf_ptr = &slurmctld_conf;
 static bool conf_initialized = false;
-static time_t conf_mod_time = (time_t) 0;
 
 static s_p_hashtbl_t *default_frontend_tbl;
 static s_p_hashtbl_t *default_nodename_tbl;
@@ -357,22 +356,6 @@ s_p_options_t slurm_conf_options[] = {
 
 	{NULL}
 };
-
-static time_t _get_conf_mod_time(const char *file_name)
-{
-	struct stat config_stat;
-	char *name = (char *)file_name;
-
-	if (name == NULL) {
-		name = getenv("SLURM_CONF");
-		if (name == NULL)
-			name = default_slurm_config_file;
-	}
-
-	if (stat(name, &config_stat) == -1)
-		fatal("Can't stat config file %s: %m", name);
-	return config_stat.st_mtime;
-}
 
 static bool _is_valid_path (char *path, char *msg)
 {
@@ -2650,7 +2633,6 @@ static int _init_slurm_conf(const char *file_name)
 	if (_validate_and_set_defaults(conf_ptr, conf_hashtbl) == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	conf_mod_time        = _get_conf_mod_time(name);
 	conf_ptr->slurm_conf = xstrdup(name);
 	return SLURM_SUCCESS;
 }
@@ -2720,12 +2702,8 @@ static int _internal_reinit(const char *file_name)
 			name = default_slurm_config_file;
 	}
 
-	if (_get_conf_mod_time(file_name) == conf_mod_time) {
-		debug4("no change in config file, not reconfiguring.");
-		return rc;
-	}
-
 	if (conf_initialized) {
+		/* could check modified time on slurm.conf here */
 		_destroy_slurm_conf();
 	}
 

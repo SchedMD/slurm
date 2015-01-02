@@ -480,11 +480,6 @@ allocate_nodes(bool handle_signals)
 	}
 
 	if (resp && !destroy_job) {
-
-		/* New nodes may have been added while waiting for an
-		 * allocation. Will reinit only if file has changed. */
-		slurm_conf_reinit(NULL);
-
 		/*
 		 * Allocation granted!
 		 */
