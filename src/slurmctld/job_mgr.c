@@ -10339,6 +10339,9 @@ extern int update_job(slurm_msg_t *msg, uid_t uid)
 	struct job_record *job_ptr;
 	int rc;
 
+	xfree(job_specs->job_id_str);
+	xstrfmtcat(job_specs->job_id_str, "%u", job_specs->job_id);
+
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
 		error("update_job: job_id %u does not exist.",

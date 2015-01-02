@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
     with --with-pmi restore the SLURM_STEP_RESV_PORTS in the job environment.
  -- Update the html documentation describing the integration with openmpi.
  -- Fix sacct when searching by nodelist.
+ -- Fix cosmetic info statements when dealing with a job array task instead of
+    a normal job.
 
 * Changes in Slurm 14.11.2
 ==========================
