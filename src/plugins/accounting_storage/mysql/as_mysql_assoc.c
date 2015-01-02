@@ -1019,7 +1019,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 /* when doing a select on this all the select should have a prefix of
  * t1. Returns "where" clause which needs to be xfreed. */
 static char *_setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
-					 char *cluster_name)
+				   char *cluster_name)
 {
 	int set = 0;
 	ListIterator itr = NULL;
@@ -2666,7 +2666,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		setup_assoc_limits(object, &cols, &vals, &extra,
-					 QOS_LEVEL_NONE, 1);
+				   QOS_LEVEL_NONE, 1);
 
 		xstrcat(tmp_char, aassoc_req_inx[0]);
 		for(i=1; i<AASSOC_COUNT; i++)
@@ -3237,7 +3237,7 @@ is_same_user:
 	}
 
 	setup_assoc_limits(assoc, &tmp_char1, &tmp_char2,
-				 &vals, QOS_LEVEL_MODIFY, 0);
+			   &vals, QOS_LEVEL_MODIFY, 0);
 	xfree(tmp_char1);
 	xfree(tmp_char2);
 

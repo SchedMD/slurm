@@ -177,8 +177,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(extra, ", mod_time=%ld", now);
 		if (object->root_assoc)
 			setup_assoc_limits(object->root_assoc, &cols,
-						 &vals, &extra,
-						 QOS_LEVEL_SET, 1);
+					   &vals, &extra,
+					   QOS_LEVEL_SET, 1);
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
 			   "name, classification) "
