@@ -102,8 +102,25 @@ typedef struct bb_user {
 	uint32_t user_id;
 } bb_user_t;
 
+typedef struct {
+	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
+	uint32_t count;		/* Count of required resources */
+	uint32_t add_cnt;	/* Count of additional resources required,
+				 * temporary value used for scheduling logic */
+	uint32_t avail_cnt;	/* Count of additional resources available,
+				 * temporary value used for scheduling logic */
+} bb_gres_t;
+typedef struct {
+	uint32_t   gres_cnt;	/* number of records in gres_ptr */
+	bb_gres_t *gres_ptr;
+	uint32_t   swap_size;	/* swap space required per node */
+	uint32_t   swap_nodes;	/* Number of nodes needed */
+	uint32_t   total_size;	/* Total GB required for this job */
+} bb_job_t;
+
 typedef struct job_queue_rec {
-	uint32_t bb_size;
+	uint32_t bb_size;	/* Used by generic plugin only */
+	bb_job_t *bb_spec;	/* Used by cray plugin only */
 	struct job_record *job_ptr;
 } job_queue_rec_t;
 
@@ -140,12 +157,12 @@ extern void bb_alloc_cache(bb_state_t *state_ptr);
  * Return a pointer to that record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
-				    uint32_t bb_size);
+				    bb_job_t *bb_spec);
 
 /* Allocate a burst buffer record for a job and increase the job priority
  * if so configured. */
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
-				struct job_record *job_ptr, uint32_t bb_size);
+				struct job_record *job_ptr, bb_job_t *bb_spec);
 
 /* Allocate a named burst buffer record for a specific user.
  * Return a pointer to that record. */

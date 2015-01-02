@@ -476,6 +476,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	bb_alloc_t *bb_ptr;
 	uint16_t new_nice;
 	struct job_record *job_ptr = NULL;
+	bb_job_t *bb_spec;
 	static s_p_options_t _job_options[] = {
 		{"JobID",S_P_STRING},
 		{"Name", S_P_STRING},
@@ -548,8 +549,10 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	if (job_ptr) {
 		bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 		if (bb_ptr == NULL) {
-			bb_ptr = bb_alloc_job_rec(&bb_state, job_ptr,
-						  _get_bb_size(job_ptr));
+			bb_spec = xmalloc(sizeof(bb_job_t));
+			bb_spec->total_size = _get_bb_size(job_ptr);
+			bb_ptr = bb_alloc_job_rec(&bb_state, job_ptr, bb_spec);
+			xfree(bb_spec);
 			bb_ptr->state = state;
 			/* bb_ptr->state_time set in bb_alloc_job_rec() */
 		}
@@ -973,8 +976,12 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 	char **script_argv, *resp;
 	bb_alloc_t *bb_ptr;
 	int i, status = 0;
+	bb_job_t *bb_spec;
 
-	bb_ptr = bb_alloc_job(&bb_state, job_ptr, bb_size);
+	bb_spec = xmalloc(sizeof(bb_job_t));
+	bb_spec->total_size = bb_size;
+	bb_ptr = bb_alloc_job(&bb_state, job_ptr, bb_spec);
+	xfree(bb_spec);
 
 	if (bb_state.bb_config.debug_flag)
 		info("%s: start stage-in job_id:%u", __func__, job_ptr->job_id);

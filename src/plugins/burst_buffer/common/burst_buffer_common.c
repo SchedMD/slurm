@@ -228,11 +228,22 @@ extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
+	int i, j;
 
 	state_ptr->used_space += bb_ptr->size;
 
 	user_ptr = bb_find_user_rec(bb_ptr->user_id, state_ptr->bb_uhash);
 	user_ptr->size += bb_ptr->size;
+	for (i = 0; i < bb_ptr->gres_cnt; i++) {
+		for (j = 0; j < state_ptr->bb_config.gres_cnt; j++) {
+			if (strcmp(bb_ptr->gres_ptr[i].name,
+				   state_ptr->bb_config.gres_ptr[j].name))
+				continue;
+			state_ptr->bb_config.gres_ptr[j].used_cnt +=
+				bb_ptr->gres_ptr[i].used_cnt;
+			break;
+		}
+	}
 }
 
 /* Find a per-user burst buffer record for a specific user ID */
@@ -260,6 +271,7 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
 extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
+	int i, j;
 
 	if (state_ptr->used_space >= bb_ptr->size) {
 		state_ptr->used_space -= bb_ptr->size;
@@ -276,6 +288,27 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 		error("%s: user %u table underflow",
 		      __func__, user_ptr->user_id);
 		user_ptr->size = 0;
+	}
+	for (i = 0; i < bb_ptr->gres_cnt; i++) {
+		for (j = 0; j < state_ptr->bb_config.gres_cnt; j++) {
+			if (strcmp(bb_ptr->gres_ptr[i].name,
+				   state_ptr->bb_config.gres_ptr[j].name))
+				continue;
+			if (state_ptr->bb_config.gres_ptr[j].used_cnt >=
+			    bb_ptr->gres_ptr[i].used_cnt) {
+				state_ptr->bb_config.gres_ptr[j].used_cnt -=
+					bb_ptr->gres_ptr[i].used_cnt;
+			} else {
+				error("%s: gres %s underflow releasing buffer "
+				      "for job %u (%u < %u)",
+				      __func__, bb_ptr->gres_ptr[i].name,
+				      bb_ptr->job_id,
+				      state_ptr->bb_config.gres_ptr[j].used_cnt,
+				      bb_ptr->gres_ptr[i].used_cnt);
+				state_ptr->bb_config.gres_ptr[j].used_cnt = 0;
+			}
+			break;
+		}
 	}
 }
 
@@ -504,8 +537,6 @@ extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,
 				for (j = 0; j < bb_next->gres_cnt; j++) {
 					packstr(bb_next->gres_ptr[j].name,
 						buffer);
-					pack32(bb_next->gres_ptr[j].avail_cnt,
-					       buffer);
 					pack32(bb_next->gres_ptr[j].used_cnt,
 					       buffer);
 				}
@@ -717,7 +748,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
  * Return a pointer to that record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
-				    uint32_t bb_size)
+				    bb_job_t *bb_spec)
 {
 	bb_alloc_t *bb_ptr = NULL;
 	int i;
@@ -727,11 +758,18 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_ptr = xmalloc(sizeof(bb_alloc_t));
 	bb_ptr->array_job_id = job_ptr->array_job_id;
 	bb_ptr->array_task_id = job_ptr->array_task_id;
+	bb_ptr->gres_cnt = bb_spec->gres_cnt;
+	if (bb_ptr->gres_cnt)
+		bb_ptr->gres_ptr = xmalloc(sizeof(bb_gres_t) *bb_ptr->gres_cnt);
+	for (i = 0; i < bb_ptr->gres_cnt; i++) {
+		bb_ptr->gres_ptr[i].used_cnt = bb_spec->gres_ptr[i].count;
+		bb_ptr->gres_ptr[i].name = xstrdup(bb_spec->gres_ptr[i].name);
+	}
 	bb_ptr->job_id = job_ptr->job_id;
 	i = job_ptr->user_id % BB_HASH_SIZE;
 	bb_ptr->next = state_ptr->bb_hash[i];
 	state_ptr->bb_hash[i] = bb_ptr;
-	bb_ptr->size = bb_size;
+	bb_ptr->size = bb_spec->total_size;
 	bb_ptr->state = BB_STATE_ALLOCATED;
 	bb_ptr->state_time = time(NULL);
 	bb_ptr->seen_time = time(NULL);
@@ -743,7 +781,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 /* Allocate a burst buffer record for a job and increase the job priority
  * if so configured. */
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
-				struct job_record *job_ptr, uint32_t bb_size)
+				struct job_record *job_ptr, bb_job_t *bb_spec)
 {
 	bb_alloc_t *bb_ptr;
 	uint16_t new_nice;
@@ -762,7 +800,7 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 		}
 	}
 
-	bb_ptr = bb_alloc_job_rec(state_ptr, job_ptr, bb_size);
+	bb_ptr = bb_alloc_job_rec(state_ptr, job_ptr, bb_spec);
 	bb_add_user_load(bb_ptr, state_ptr);
 
 	return bb_ptr;

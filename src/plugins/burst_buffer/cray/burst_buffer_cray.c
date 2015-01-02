@@ -101,18 +101,6 @@ const uint32_t plugin_version   = 100;
 static bb_state_t 	bb_state;
 static char *		state_save_loc = NULL;
 
-typedef struct {
-	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
-	uint32_t count;		/* Count of required resources */
-} bb_gres_t;
-typedef struct {
-	uint32_t   gres_cnt;	/* number of records in gres_ptr */
-	bb_gres_t *gres_ptr;
-	uint32_t   swap_size;	/* swap space required per node */
-	uint32_t   swap_nodes;	/* Number of nodes needed */
-	uint32_t   total_size;	/* Total GB required for this job */
-} bb_job_t;
-
 /* Description of each Cray bb entry
  */
 typedef struct bb_entry {
@@ -134,7 +122,7 @@ typedef struct {
 }
 stage_args_t;
 
-static int	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
+static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec);
 static void *	_bb_agent(void *args);
 static bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr);
 static void	_bb_free_entry(struct bb_entry *ents, int num_ent);
@@ -157,10 +145,11 @@ static void *	_start_stage_in(void *x);
 static void *	_start_stage_out(void *x);
 static void *	_start_teardown(void *x);
 static void	_test_config(void);
-static int	_test_size_limit(struct job_record *job_ptr,uint32_t add_space);
+static int	_test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec);
 static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
-static int	_write_nid_file(char *file_name, char *node_list);
+static int	_write_nid_file(char *file_name, char *node_list,
+				uint32_t job_id);
 
 /* Purge files we have created for the job.
  * bb_state.bb_mutex is locked on function entry. */
@@ -236,15 +225,14 @@ static char *_set_cmd_path(char *cmd)
 	return tmp;
 }
 
-static int _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
+static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec)
 {
 	bb_alloc_t *bb_ptr;
 	int rc;
 
-	bb_ptr = bb_alloc_job(&bb_state, job_ptr, bb_size);
-
 	if (bb_state.bb_config.debug_flag)
 		info("%s: start stage-in job_id:%u", __func__, job_ptr->job_id);
+	bb_ptr = bb_alloc_job(&bb_state, job_ptr, bb_spec);
 	bb_ptr->state = BB_STATE_STAGING_IN;
 	bb_ptr->state_time = time(NULL);
 	rc = _queue_stage_in(job_ptr);
@@ -315,13 +303,15 @@ static bb_job_t *_get_bb_spec(struct job_record *job_ptr)
 	int inx;
 	bb_job_t *bb_spec;
 
-	if (!job_ptr->burst_buffer)
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
 		return NULL;
 
 	bb_spec = xmalloc(sizeof(bb_job_t));
 	tok = strstr(job_ptr->burst_buffer, "SLURM_SIZE=");
 	if (tok) {	/* Format: "SLURM_SIZE=%u" */
-		bb_spec->total_size = bb_get_size_num(tok + 11,
+		tok += 11;
+		bb_spec->total_size = bb_get_size_num(tok,
 					bb_state.bb_config.granularity);
 		if (bb_spec->total_size)
 			have_bb = true;
@@ -372,14 +362,55 @@ static bb_job_t *_get_bb_spec(struct job_record *job_ptr)
 	return bb_spec;
 }
 
-static uint32_t _get_bb_size(struct job_record *job_ptr)
+/* Determine if a job contains a burst buffer specification.
+ * Fast variant of _get_bb_spec() function above, tests for any non-zero value.
+ * RETURN true if job contains a burst buffer specification. */
+static bool _test_bb_spec(struct job_record *job_ptr)
 {
-//FIXME: Temporary, need to get BB.GRES info
-	uint32_t size = 0;
-	bb_job_t *bb_spec = _get_bb_spec(job_ptr);
-	if (bb_spec) size=bb_spec->total_size;
-	_del_bb_spec(bb_spec);
-	return size;
+	char *end_ptr = NULL, *sep, *tok, *tmp;
+	bool have_bb = false;
+	int val;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return false;
+
+	tok = strstr(job_ptr->burst_buffer, "SLURM_SIZE=");
+	if (tok) {	/* Format: "SLURM_SIZE=%u" */
+		tok += 11;
+		val = strtol(tok, &end_ptr, 10);
+		if (val)
+			return true;
+	}
+
+	tok = strstr(job_ptr->burst_buffer, "SLURM_SWAP=");
+	if (tok) {	/* Format: "SLURM_SWAP=%uGB(%uNodes)" */
+		tok += 11;
+		val = strtol(tok, &end_ptr, 10);
+		if (val)
+			return true;
+	}
+
+	tok = strstr(job_ptr->burst_buffer, "SLURM_GRES=");
+	if (tok) {	/* Format: "SLURM_GRES=nodes:%u" */
+		tmp = xstrdup(tok + 11);
+		tok = strtok_r(tmp, ",", &end_ptr);
+		while (tok && !have_bb) {
+			sep = strchr(tok, ':');
+			if (sep) {
+				sep[0] = '\0';
+				val = atoi(sep + 1);
+				if (val)
+					have_bb = true;
+			} else {
+				have_bb = true;
+			}
+			tok = strtok_r(NULL, ",", &end_ptr);
+		}
+		xfree(tmp);
+	}
+
+	return have_bb;
 }
 
 /*
@@ -401,7 +432,7 @@ static void _load_state(void)
 		      __func__);
 		return;
 	}
-
+//FIXME: Need logic to handle resource allocation/free in progress
 	for (i = 0; i < num_ents; i++) {
 		/* ID: "bytes" */
 		if (strcmp(ents[i].id, "bytes") == 0) {
@@ -439,7 +470,7 @@ static void _load_state(void)
  * file location
  * RET 0 or Slurm error code
  */
-static int _write_nid_file(char *file_name, char *node_list)
+static int _write_nid_file(char *file_name, char *node_list, uint32_t job_id)
 {
 	char *tmp, *sep, *tok, *save_ptr = NULL, *buf = NULL;
 	int i, rc;
@@ -463,8 +494,14 @@ static int _write_nid_file(char *file_name, char *node_list)
 	}
 	xfree(tmp);
 
-	rc = _write_file(file_name, buf);
-	xfree(buf);
+	if (buf) {
+		rc = _write_file(file_name, buf);
+		xfree(buf);
+	} else {
+		error("%s: job %u has node list without numeric component (%s)",
+		      __func__, job_id, node_list);
+		rc = EINVAL;
+	}
 	return rc;
 }
 
@@ -541,7 +578,8 @@ static int _queue_stage_in(struct job_record *job_ptr)
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
 	if (job_ptr->sched_nodes) {
 		xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
-		if (_write_nid_file(client_nodes_file_nid,job_ptr->sched_nodes))
+		if (_write_nid_file(client_nodes_file_nid,
+				    job_ptr->sched_nodes, job_ptr->job_id))
 			xfree(client_nodes_file_nid);
 	}
 	setup_argv = xmalloc(sizeof(char *) * 10);
@@ -824,8 +862,9 @@ static void *_start_stage_out(void *x)
 				bb_ptr->state = BB_STATE_TEARDOWN;
 				bb_ptr->state_time = time(NULL);
 				_queue_teardown(stage_args->job_id, true);
-			} else {
-//FIXME: Flag error state
+			} else if (bb_state.bb_config.debug_flag) {
+				info("%s: Stage-out failed for job %u",
+				     __func__, stage_args->job_id);
 			}
 		} else {
 			error("%s: unable to find bb record for job %u",
@@ -944,26 +983,33 @@ static void *_start_teardown(void *x)
  *     2: Job needs more resources than currently available can not start,
  *        skip all remaining jobs
  */
-static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
+static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 {
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	List preempt_list;
 	ListIterator preempt_iter;
 	bb_user_t *user_ptr;
-	uint32_t tmp_u, tmp_j, lim_u;
+	uint32_t tmp_f, tmp_g, tmp_u, tmp_j, lim_u, add_space;
 	int add_total_space_needed = 0, add_user_space_needed = 0;
 	int add_total_space_avail  = 0, add_user_space_avail  = 0;
+	int add_gres_needed = 0;
 	time_t now = time(NULL);
 	bb_alloc_t *bb_ptr = NULL;
-	int i;
+	int i, j;
+
+	xassert(bb_spec);
+	add_space = bb_spec->total_size;
 
 	/* Determine if burst buffer can be allocated now for the job.
 	 * If not, determine how much space must be free. */
 	if (((bb_state.bb_config.job_size_limit  != NO_VAL) &&
 	     (add_space > bb_state.bb_config.job_size_limit)) ||
 	    ((bb_state.bb_config.user_size_limit != NO_VAL) &&
-	     (add_space > bb_state.bb_config.user_size_limit)))
+	     (add_space > bb_state.bb_config.user_size_limit))) {
+		debug("%s: job %u requests more space than available",
+		      __func__, job_ptr->job_id);
 		return 1;
+	}
 
 	if (bb_state.bb_config.user_size_limit != NO_VAL) {
 		user_ptr = bb_find_user_rec(job_ptr->user_id,bb_state.bb_uhash);
@@ -975,10 +1021,46 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 	}
 	add_total_space_needed = bb_state.used_space + add_space -
 				 bb_state.total_space;
+	for (i = 0; i < bb_spec->gres_cnt; i++) {
+		for (j = 0; j < bb_state.bb_config.gres_cnt; j++) {
+			if (strcmp(bb_spec->gres_ptr[i].name,
+				   bb_state.bb_config.gres_ptr[j].name))
+				continue;
+			/* Round up GRES size by granularity */
+			tmp_g = bb_spec->gres_ptr[i].count +
+				bb_state.bb_config.gres_ptr[j].granularity - 1;
+			tmp_g /= bb_state.bb_config.gres_ptr[j].granularity;
+			tmp_g *= bb_state.bb_config.gres_ptr[j].granularity;
+			bb_spec->gres_ptr[i].count = tmp_g;
+			if (tmp_g > bb_state.bb_config.gres_ptr[j].avail_cnt) {
+				debug("%s: job %u requests more %s GRES than"
+				      "confingured",
+				      __func__, job_ptr->job_id,
+				      bb_spec->gres_ptr[i].name);
+				return 1;
+			}
+			tmp_f = bb_state.bb_config.gres_ptr[j].avail_cnt -
+				bb_state.bb_config.gres_ptr[j].used_cnt;
+			if (tmp_g > tmp_f)
+				bb_spec->gres_ptr[i].add_cnt = tmp_g - tmp_f;
+			else
+				bb_spec->gres_ptr[i].add_cnt = 0;
+			add_gres_needed += bb_spec->gres_ptr[i].add_cnt;
+			bb_spec->gres_ptr[i].avail_cnt = 0;
+			break;
+		}
+		if (j >= bb_state.bb_config.gres_cnt) {
+			debug("%s: job %u requests %s GRES which are undefined",
+			      __func__, job_ptr->job_id,
+			      bb_spec->gres_ptr[i].name);
+			return 1;
+		}
+	}
 	if ((add_total_space_needed <= 0) &&
-	    (add_user_space_needed  <= 0))
+	    (add_user_space_needed  <= 0) && (add_gres_needed <= 0))
 		return 0;
 
+//FIXME: More work needed below to identify jobs which can release GRES and tear them down
 	/* Identify candidate burst buffers to revoke for higher priority job */
 	preempt_list = list_create(bb_job_queue_del);
 	for (i = 0; i < BB_HASH_SIZE; i++) {
@@ -1009,7 +1091,8 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 		list_sort(preempt_list, bb_preempt_queue_sort);
 		preempt_iter = list_iterator_create(preempt_list);
 		while ((preempt_ptr = list_next(preempt_iter)) &&
-		       (add_total_space_needed || add_user_space_needed)) {
+		       (add_total_space_needed || add_user_space_needed ||
+			add_gres_needed)) {
 			if (add_user_space_needed &&
 			    (preempt_ptr->user_id == job_ptr->user_id)) {
 				preempt_ptr->bb_ptr->cancelled = true;
@@ -1555,9 +1638,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	int i, hash_inx, rc = SLURM_SUCCESS, status = 0;
 	DEF_TIMERS;
 
-	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0') ||
-	    (_get_bb_size(job_ptr) == 0))
+	if (!_test_bb_spec(job_ptr))
 		return rc;
 
 	if (bb_state.bb_config.debug_flag) {
@@ -1626,12 +1707,10 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
 	time_t est_start = time(NULL);
-	uint32_t bb_size;
+	bb_job_t *bb_spec;
 	int rc;
 
-	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0') ||
-	    ((bb_size = _get_bb_size(job_ptr)) == 0))
+	if ((bb_spec = _get_bb_spec(job_ptr)) == NULL)
 		return est_start;
 
 	if (bb_state.bb_config.debug_flag) {
@@ -1642,7 +1721,7 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
-		rc = _test_size_limit(job_ptr, bb_size);
+		rc = _test_size_limit(job_ptr, bb_spec);
 		if (rc == 0) {		/* Could start now */
 			;
 		} else if (rc == 1) {	/* Exceeds configured limits */
@@ -1654,6 +1733,7 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 		est_start++;
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
+	_del_bb_spec(bb_spec);
 
 	return est_start;
 }
@@ -1669,7 +1749,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	List job_candidates;
 	ListIterator job_iter;
 	struct job_record *job_ptr;
-	uint32_t bb_size;
+	bb_job_t *bb_spec;
 	int rc;
 
 	if (bb_state.bb_config.debug_flag)
@@ -1684,12 +1764,12 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		    (job_ptr->burst_buffer == NULL) ||
 		    (job_ptr->burst_buffer[0] == '\0'))
 			continue;
-		bb_size = _get_bb_size(job_ptr);
-		if (bb_size == 0)
+		bb_spec = _get_bb_spec(job_ptr);
+		if (bb_spec == NULL)
 			continue;
 		job_rec = xmalloc(sizeof(job_queue_rec_t));
 		job_rec->job_ptr = job_ptr;
-		job_rec->bb_size = bb_size;
+		job_rec->bb_spec = bb_spec;
 		list_push(job_candidates, job_rec);
 	}
 	list_iterator_destroy(job_iter);
@@ -1702,18 +1782,24 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	job_iter = list_iterator_create(job_candidates);
 	while ((job_rec = list_next(job_iter))) {
 		job_ptr = job_rec->job_ptr;
-		bb_size = job_rec->bb_size;
+		bb_spec = job_rec->bb_spec;
 
-		if (bb_find_job_rec(job_ptr, bb_state.bb_hash))
+		if (bb_find_job_rec(job_ptr, bb_state.bb_hash)) {
+			_del_bb_spec(bb_spec);
 			continue;
+		}
 
-		rc = _test_size_limit(job_ptr, bb_size);
-		if (rc == 1)
+		rc = _test_size_limit(job_ptr, bb_spec);
+		if (rc == 1) {
+			_del_bb_spec(bb_spec);
 			continue;
-		else if (rc == 2)
+		} else if (rc == 2) {
+			_del_bb_spec(bb_spec);
 			break;
+		}
 
-		(void) _alloc_job_bb(job_ptr, bb_size);
+		(void) _alloc_job_bb(job_ptr, bb_spec);
+		_del_bb_spec(bb_spec);
 	}
 	list_iterator_destroy(job_iter);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -1734,12 +1820,10 @@ extern int bb_p_job_try_stage_in(List job_queue)
 extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 {
 	bb_alloc_t *bb_ptr;
-	uint32_t bb_size = 0;
+	bb_job_t *bb_spec;
 	int rc = 1;
 
-	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0') ||
-	    ((bb_size = _get_bb_size(job_ptr)) == 0))
+	if ((bb_spec = _get_bb_spec(job_ptr)) == NULL)
 		return rc;
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_id:%u",
@@ -1752,8 +1836,8 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		      __func__, job_ptr->job_id);
 		rc = -1;
 		if ((test_only == false) &&
-		    (_test_size_limit(job_ptr, bb_size) == 0)) {
-			if (_alloc_job_bb(job_ptr, bb_size) != SLURM_SUCCESS) {
+		    (_test_size_limit(job_ptr, bb_spec) == 0)) {
+			if (_alloc_job_bb(job_ptr, bb_spec) != SLURM_SUCCESS) {
 				rc = -1;
 			}
 		}
@@ -1769,6 +1853,8 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		}
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
+	_del_bb_spec(bb_spec);
+
 	return rc;
 }
 
@@ -1787,9 +1873,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	bb_alloc_t *bb_ptr;
 	DEF_TIMERS;
 
-	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0') ||
-	    (_get_bb_size(job_ptr) == 0))
+	if (!_test_bb_spec(job_ptr))
 		return rc;
 
 	if (bb_state.bb_config.debug_flag) {
@@ -1818,7 +1902,8 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	bb_ptr->state_time = time(NULL);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
-	rc = _write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes);
+	rc = _write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
+			     job_ptr->job_id);
 	if (rc == 0) {
 		pre_run_argv = xmalloc(sizeof(char *) * 10);
 		pre_run_argv[0] = xstrdup("bbs_pre_run");
@@ -1837,14 +1922,16 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			     __func__, job_ptr->job_id, TIME_STR);
 		}
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+			time_t now = time(NULL);
 			error("%s: bbs_pre_run for job %u status:%u response:%s",
 			      __func__, job_ptr->job_id, status, resp_msg);
 			xfree(job_ptr->state_desc);
 			job_ptr->state_desc = xstrdup(
 					"Burst buffer pre_run error");
-//FIXME: Reason lost later
+			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+			last_job_update = now;
 			bb_ptr->state = BB_STATE_TEARDOWN;
-			bb_ptr->state_time = time(NULL);
+			bb_ptr->state_time = now;
 			_queue_teardown(job_ptr->job_id, true);
 			rc = SLURM_ERROR;
 		}
@@ -1875,9 +1962,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		     plugin_type, __func__, job_ptr->job_id);
 	}
 
-	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0') ||
-	    (_get_bb_size(job_ptr) == 0))
+	if (!_test_bb_spec(job_ptr))
 		return SLURM_SUCCESS;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -1912,9 +1997,8 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		info("%s: %s: job_id:%u",
 		     plugin_type, __func__, job_ptr->job_id);
 	}
-	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0') ||
-	    (_get_bb_size(job_ptr) == 0))
+
+	if (!_test_bb_spec(job_ptr))
 		return 1;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -1960,9 +2044,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 		info("%s: job_id:%u", __func__, job_ptr->job_id);
 	}
 
-	if ((job_ptr->burst_buffer == NULL) ||
-	    (job_ptr->burst_buffer[0] == '\0') ||
-	    (_get_bb_size(job_ptr) == 0))
+	if (!_test_bb_spec(job_ptr))
 		return SLURM_SUCCESS;
 
 //FIXME: Check all lock use throughout

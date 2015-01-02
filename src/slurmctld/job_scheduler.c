@@ -1430,6 +1430,7 @@ next_task:
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
+			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)&&
 			   (error_code != ESLURM_ACCOUNTING_POLICY)) {
 			info("sched: schedule: JobId=%u non-runnable: %s",
 			     job_ptr->job_id, slurm_strerror(error_code));
