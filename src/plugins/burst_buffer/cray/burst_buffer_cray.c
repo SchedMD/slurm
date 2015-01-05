@@ -934,7 +934,7 @@ static void *_start_teardown(void *x)
 {
 	stage_args_t *teardown_args;
 	char *bbs_teardown_path, **teardown_argv, *resp_msg = NULL;
-	int i, j, status = 0, timeout;
+	int i, status = 0, timeout;
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_ptr = NULL;
 	DEF_TIMERS;
@@ -963,37 +963,16 @@ static void *_start_teardown(void *x)
 	xfree(resp_msg);
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	if ((job_ptr = find_job_record(teardown_args->job_id)))
+	if ((job_ptr = find_job_record(teardown_args->job_id))) {
+		_purge_bb_files(job_ptr);
 		bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	}
 	if (bb_ptr) {
 		bb_ptr->cancelled = true;
 		bb_ptr->end_time = 0;
 		bb_ptr->state = BB_STATE_COMPLETE;
 		bb_ptr->state_time = time(NULL);
-		if (bb_ptr->size > bb_state.used_space) {
-			error("%s: space underflow", __func__);
-			bb_state.used_space = 0;
-		} else {
-			bb_state.used_space -= bb_ptr->size;
-		}
-		for (i = 0; i < bb_ptr->gres_cnt; i++) {
-			for (j = 0; j < bb_state.bb_config.gres_cnt; j++) {
-				if (strcmp(bb_ptr->gres_ptr[i].name,
-					   bb_state.bb_config.gres_ptr[j].name))
-					continue;
-				if (bb_ptr->gres_ptr[i].used_cnt >
-				    bb_state.bb_config.gres_ptr[j].used_cnt) {
-					error("%s: gres %s counter underflow",
-					      __func__,
-					      bb_state.bb_config.gres_ptr[j].name);
-					bb_state.bb_config.gres_ptr[j].used_cnt=0;
-				} else {
-					bb_state.bb_config.gres_ptr[j].used_cnt-=
-						bb_ptr->gres_ptr[i].used_cnt;
-				}
-				break;
-			}
-		}
+		bb_remove_user_load(bb_ptr, &bb_state);
 	} else {
 		error("%s: unable to find bb record for job %u",
 		      __func__, teardown_args->job_id);
@@ -1234,6 +1213,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 static void _timeout_bb_rec(void)
 {
 	bb_alloc_t **bb_pptr, *bb_ptr = NULL;
+	struct job_record *job_ptr;
 	int i;
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
@@ -1257,17 +1237,14 @@ bb_ptr->seen_time = bb_state.last_load_time;
 				xfree(bb_ptr);
 				break;
 			}
-			if ((bb_ptr->job_id != 0) &&
-			    (bb_ptr->state >= BB_STATE_STAGED_OUT) &&
-			    !find_job_record(bb_ptr->job_id)) {
-				bb_ptr->cancelled = true;
-				bb_ptr->end_time = 0;
-				bb_ptr->state = BB_STATE_TEARDOWN;
-				bb_ptr->state_time = time(NULL);
-				_queue_teardown(bb_ptr->job_id, true);
-				*bb_pptr = bb_ptr->next;
-				xfree(bb_ptr);
-				break;
+			if (bb_ptr->state == BB_STATE_COMPLETE) {
+				job_ptr = find_job_record(bb_ptr->job_id);
+				if (!job_ptr || IS_JOB_PENDING(job_ptr)) {
+					/* Job purged or BB preempted */
+					*bb_pptr = bb_ptr->next;
+					xfree(bb_ptr);
+					break;
+				}
 			}
 			bb_pptr = &bb_ptr->next;
 			bb_ptr = bb_ptr->next;
@@ -1878,6 +1855,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		bb_spec = job_rec->bb_spec;
 
 		if (bb_find_job_rec(job_ptr, bb_state.bb_hash)) {
+			/* Job has already been allocated a buffer */
 			_del_bb_spec(bb_spec);
 			continue;
 		}
@@ -2105,10 +2083,6 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		if (bb_ptr->state == BB_STATE_STAGING_OUT) {
 			rc =  0;
 		} else if (bb_ptr->state == BB_STATE_COMPLETE) {
-			if (bb_ptr->size != 0) {
-				bb_remove_user_load(bb_ptr, &bb_state);
-				bb_ptr->size = 0;
-			}
 			rc =  1;
 		} else {
 			error("%s: job_id:%u bb_state:%u",
@@ -2116,8 +2090,6 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 			rc = -1;
 		}
 	}
-	if (rc == 1)
-		_purge_bb_files(job_ptr);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;

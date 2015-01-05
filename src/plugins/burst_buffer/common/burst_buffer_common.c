@@ -289,6 +289,8 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 		      __func__, user_ptr->user_id);
 		user_ptr->size = 0;
 	}
+	bb_ptr->size = 0;
+
 	for (i = 0; i < bb_ptr->gres_cnt; i++) {
 		for (j = 0; j < state_ptr->bb_config.gres_cnt; j++) {
 			if (strcmp(bb_ptr->gres_ptr[i].name,
@@ -309,6 +311,12 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 			}
 			break;
 		}
+		if (j >= state_ptr->bb_config.gres_cnt) {
+			error("%s: failed to find gres %s from job %u",
+			      __func__, bb_ptr->gres_ptr[i].name,
+			      bb_ptr->job_id);
+		}
+		bb_ptr->gres_ptr[i].used_cnt = 0;
 	}
 }
 
