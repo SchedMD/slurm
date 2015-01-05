@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix cosmetic info statements when dealing with a job array task instead of
     a normal job.
  -- Fix segfault with job arrays.
+ -- Correct the sbatch pbs parser to process -j.
 
 * Changes in Slurm 14.11.2
 ==========================

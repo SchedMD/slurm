@@ -1725,7 +1725,7 @@ static void _set_pbs_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	char *sep = "";
-	char *pbs_opt_string = "+a:A:c:C:e:hIj::J:k:l:m:M:N:o:p:q:r:S:t:u:v:VW:z";
+	char *pbs_opt_string = "+a:A:c:C:e:hIj:J:k:l:m:M:N:o:p:q:r:S:t:u:v:VW:z";
 
 	struct option pbs_long_options[] = {
 		{"start_time", required_argument, 0, 'a'},
