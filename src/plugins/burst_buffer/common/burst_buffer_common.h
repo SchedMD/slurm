@@ -105,11 +105,8 @@ typedef struct bb_user {
 typedef struct {
 	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
 	uint32_t count;		/* Count of required resources */
-	uint32_t add_cnt;	/* Count of additional resources required,
-				 * temporary value used for scheduling logic */
-	uint32_t avail_cnt;	/* Count of additional resources available,
-				 * temporary value used for scheduling logic */
 } bb_gres_t;
+
 typedef struct {
 	uint32_t   gres_cnt;	/* number of records in gres_ptr */
 	bb_gres_t *gres_ptr;
