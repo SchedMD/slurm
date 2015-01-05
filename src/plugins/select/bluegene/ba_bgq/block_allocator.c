@@ -2121,7 +2121,9 @@ static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
 			}
 		} else {
 			/* we can't use this so return with a nice 0 */
-			info("_fill_in_wires: we can't use this so return");
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("_fill_in_wires: we can't use this "
+				     "so return");
 			return 0;
 		}
 
