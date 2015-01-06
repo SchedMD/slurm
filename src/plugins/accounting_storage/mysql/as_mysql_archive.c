@@ -175,7 +175,7 @@ char *event_req_inx[] = {
 	"time_end",
 	"node_name",
 	"cluster_nodes",
-	"cpu_count",
+	"count",
 	"reason",
 	"reason_uid",
 	"state",
@@ -186,7 +186,7 @@ enum {
 	EVENT_REQ_END,
 	EVENT_REQ_NODE,
 	EVENT_REQ_CNODES,
-	EVENT_REQ_CPU,
+	EVENT_REQ_CNT,
 	EVENT_REQ_REASON,
 	EVENT_REQ_REASON_UID,
 	EVENT_REQ_STATE,
@@ -978,6 +978,9 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 		} else if (!strncmp("period_end", data_in+i, 10)) {
 			xstrcat(fields, "time_end");
 			i+=10;
+		} else if (!strncmp("cpu_count", data_in+i, 9)) {
+			xstrcat(fields, "count");
+			i+=9;
 		} else if (!strncmp("jobid", data_in+i, 5)) {
 			xstrcat(fields, "id_job");
 			i+=5;
@@ -1441,7 +1444,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 		memset(&event, 0, sizeof(local_event_t));
 
 		event.cluster_nodes = row[EVENT_REQ_CNODES];
-		event.cpu_count = row[EVENT_REQ_CPU];
+		event.cpu_count = row[EVENT_REQ_CNT];
 		event.node_name = row[EVENT_REQ_NODE];
 		event.period_end = row[EVENT_REQ_END];
 		event.period_start = row[EVENT_REQ_START];

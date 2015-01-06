@@ -733,7 +733,7 @@ empty:
 			slurm_atoul(row[CLUSTER_REQ_PI_SELECT]);
 
 		query = xstrdup_printf(
-			"select cpu_count, cluster_nodes from "
+			"select count, cluster_nodes from "
 			"\"%s_%s\" where time_end=0 and node_name='' limit 1",
 			cluster->name, event_table);
 		debug4("%d(%s:%d) query\n%s",
@@ -818,7 +818,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *event_req_inx[] = {
 		"cluster_nodes",
-		"cpu_count",
+		"count",
 		"node_name",
 		"state",
 		"time_start",
@@ -852,11 +852,11 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrcat(extra, " where (");
 
 		if (event_cond->cpus_max) {
-			xstrfmtcat(extra, "cpu_count between %u and %u)",
+			xstrfmtcat(extra, "count between %u and %u)",
 				   event_cond->cpus_min, event_cond->cpus_max);
 
 		} else {
-			xstrfmtcat(extra, "cpu_count='%u')",
+			xstrfmtcat(extra, "count='%u')",
 				   event_cond->cpus_min);
 
 		}
@@ -1099,7 +1099,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	 */
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "
-		   "(node_name, state, cpu_count, time_start, "
+		   "(node_name, state, count, time_start, "
 		   "reason, reason_uid) "
 		   "values ('%s', %u, %u, %ld, '%s', %u) "
 		   "on duplicate key update time_end=0;",
@@ -1258,7 +1258,7 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	 * info.
 	 */
 	query = xstrdup_printf(
-		"insert into \"%s_%s\" (cpu_count, state, "
+		"insert into \"%s_%s\" (count, state, "
 		"time_start, reason) "
 		"values ('%u', %u, %ld, 'slurmctld disconnect')",
 		cluster_rec->name, event_table,
@@ -1291,7 +1291,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 
 	/* Record the processor count */
 	query = xstrdup_printf(
-		"select cpu_count, cluster_nodes from \"%s_%s\" where "
+		"select count, cluster_nodes from \"%s_%s\" where "
 		"time_end=0 and node_name='' and state=0 limit 1",
 		mysql_conn->cluster_name, event_table);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -1382,7 +1382,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
-		"insert into \"%s_%s\" (cluster_nodes, cpu_count, "
+		"insert into \"%s_%s\" (cluster_nodes, count, "
 		"time_start, reason) "
 		"values ('%s', %u, %ld, 'Cluster processor count')",
 		mysql_conn->cluster_name, event_table,

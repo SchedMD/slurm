@@ -445,6 +445,45 @@ static bool _check_jobs_before_remove_without_assoctable(
 	return rc;
 }
 
+/* This rename was put in in 15.08.  2 versions after this this can
+ * be removed.
+ */
+static int _rename_usage_columns(mysql_conn_t *mysql_conn, char *table)
+{
+	MYSQL_ROW row;
+	MYSQL_RES *result = NULL;
+	char *query = NULL;
+	int rc = SLURM_SUCCESS;
+
+	/* see if the clus_info table has been made */
+	query = xstrdup_printf(
+		"show columns from %s where field like '%%cpu_%%';",
+		table);
+
+	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	while ((row = mysql_fetch_row(result))) {
+		char *new_char = xstrdup(row[0]);
+		xstrsubstitute(new_char, "cpu_", "");
+		query = xstrdup_printf("alter table %s change %s %s "
+				       "bigint default 0 not null",
+				       table, row[0], new_char);
+		xfree(new_char);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+			error("Can't update %s %m", table);
+		xfree(query);
+	}
+
+	mysql_free_result(result);
+	return rc;
+}
+
 /* Any time a new table is added set it up here */
 static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 {
@@ -957,7 +996,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id_assoc", "int not null" },
 		{ "time_start", "int unsigned not null" },
-		{ "alloc_cpu_secs", "bigint default 0 not null" },
+		{ "alloc_secs", "bigint default 0 not null" },
 		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
@@ -967,13 +1006,13 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "time_start", "int unsigned not null" },
-		{ "cpu_count", "int default 0 not null" },
-		{ "alloc_cpu_secs", "bigint default 0 not null" },
-		{ "down_cpu_secs", "bigint default 0 not null" },
-		{ "pdown_cpu_secs", "bigint default 0 not null" },
-		{ "idle_cpu_secs", "bigint default 0 not null" },
-		{ "resv_cpu_secs", "bigint default 0 not null" },
-		{ "over_cpu_secs", "bigint default 0 not null" },
+		{ "count", "int default 0 not null" },
+		{ "alloc_secs", "bigint default 0 not null" },
+		{ "down_secs", "bigint default 0 not null" },
+		{ "pdown_secs", "bigint default 0 not null" },
+		{ "idle_secs", "bigint default 0 not null" },
+		{ "resv_secs", "bigint default 0 not null" },
+		{ "over_secs", "bigint default 0 not null" },
 		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
@@ -983,7 +1022,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "time_end", "int unsigned default 0 not null" },
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster_nodes", "text not null default ''" },
-		{ "cpu_count", "int not null" },
+		{ "count", "int not null" },
 		{ "reason", "tinytext not null" },
 		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
 		{ "state", "smallint unsigned default 0 not null" },
@@ -1135,9 +1174,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id_wckey", "int not null" },
 		{ "time_start", "int unsigned not null" },
-		{ "alloc_cpu_secs", "bigint default 0" },
-		{ "resv_cpu_secs", "bigint default 0" },
-		{ "over_cpu_secs", "bigint default 0" },
+		{ "alloc_secs", "bigint default 0" },
+		{ "resv_secs", "bigint default 0" },
+		{ "over_secs", "bigint default 0" },
 		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
@@ -1157,6 +1196,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_day_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  assoc_usage_table_fields,
 				  ", primary key (id_assoc, "
@@ -1166,6 +1208,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_hour_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  assoc_usage_table_fields,
 				  ", primary key (id_assoc, "
@@ -1175,6 +1220,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_month_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  assoc_usage_table_fields,
 				  ", primary key (id_assoc, "
@@ -1184,6 +1232,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_day_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
 				  ", primary key (time_start))")
@@ -1192,6 +1243,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_hour_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
 				  ", primary key (time_start))")
@@ -1200,6 +1254,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_month_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
 				  ", primary key (time_start))")
@@ -1208,6 +1265,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, event_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  event_table_fields,
 				  ", primary key (node_name(20), "
@@ -1276,6 +1336,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_day_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  wckey_usage_table_fields,
 				  ", primary key (id_wckey, "
@@ -1285,6 +1348,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_hour_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  wckey_usage_table_fields,
 				  ", primary key (id_wckey, "
@@ -1294,6 +1360,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_month_table);
+
+	_rename_usage_columns(mysql_conn, table_name);
+
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  wckey_usage_table_fields,
 				  ", primary key (id_wckey, "
