@@ -43,7 +43,7 @@ than configured will be placed in a DOWN state.</P>
 <P>Sample slurm.conf file:</P>
 <PRE>
 # Configure support for our four GPUs
-GresType=gpu,bandwidth
+GresTypes=gpu,bandwidth
 NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,bandwidth:lustre:no_consume:4G
 </PRE>
 
