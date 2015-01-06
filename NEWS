@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault with job arrays.
  -- Correct the sbatch pbs parser to process -j.
  -- BGQ - Put print statement under a DebugFlag.  This was just an oversight.
+ -- BLUEGENE - Remove check that would erroneously remove the CONFIGURING
+    flag from a job while the job is waiting for a block to boot.
 
 * Changes in Slurm 14.11.2
 ==========================
