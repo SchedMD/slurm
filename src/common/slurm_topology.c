@@ -54,10 +54,10 @@ int switch_record_cnt = 0;
 int switch_levels = 0;               /* number of switch levels     */
 
 /* defined here but is really hypercube plugin related */
-extern int hypercube_dimensions = 0; 
-extern struct hypercube_switch *hypercube_switch_table = NULL; 
-extern int hypercube_switch_cnt = 0;
-extern struct hypercube_switch ***hypercube_switches = NULL; 
+int hypercube_dimensions = 0; 
+struct hypercube_switch *hypercube_switch_table = NULL; 
+int hypercube_switch_cnt = 0;
+struct hypercube_switch ***hypercube_switches = NULL; 
 
 /* ************************************************************************ */
 /*  TAG(                        slurm_topo_ops_t                         )  */

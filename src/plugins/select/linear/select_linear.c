@@ -68,6 +68,7 @@
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -115,7 +116,6 @@ int hypercube_dimensions;
 struct hypercube_switch *hypercube_switch_table;
 int hypercube_switch_cnt;
 struct hypercube_switch ***hypercube_switches;
-
 #endif
 
 struct select_nodeinfo {
@@ -872,9 +872,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		return error_code;
 
 	if (hypercube_switch_table && hypercube_switch_cnt) {
-		/*Perform optimized resource selection based on hypercube topology*/
+		/* Optimized resource selection based on hypercube topology */
 		return _job_test_hypercube(job_ptr, bitmap,
-					  min_nodes, max_nodes, req_nodes);
+					   min_nodes, max_nodes, req_nodes);
 	}
 	
 	if (switch_record_cnt && switch_record_table) {
@@ -1119,7 +1119,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  * best we've seen so far
  */
 static void
-hypercube_update_variance(
+_hypercube_update_variance(
 	int dim, int dir, int start_index, int end_index,
 	int node_count, int max_nodes,
 	int leftover_nodes, int64_t summed_squares,
@@ -1132,7 +1132,8 @@ hypercube_update_variance(
 		squared_sums * squared_sums / node_count;
 
 	/* Don't calculate if we've used too many nodes */
-	if (0 > max_nodes) {return;}
+	if (0 > max_nodes)
+		return;
 
 	if ((variance < *min_variance) ||
 	    ((variance == *min_variance) &&
@@ -1188,7 +1189,7 @@ hypercube_update_variance(
  * try adding switches to the left, but we otherwise add to the right.
  */
 static void
-hypercube_add_nodes(
+_hypercube_add_nodes(
 	struct job_record * job_ptr, bitstr_t * avail_bitmap,
 	int dim, int32_t start_index, int32_t * end_index, int node_count,
 	int32_t max_nodes, int32_t rem_nodes, int32_t rem_cpus,
@@ -1209,6 +1210,7 @@ hypercube_add_nodes(
 	int64_t l_squared_sums = squared_sums;
 	int32_t l_leftover_nodes;
 	int32_t l_distance_offset = 0;
+	int32_t l_distance;
 
 	/* Don't need to add any more nodes */
 	if (leftover_nodes ||
@@ -1260,7 +1262,7 @@ hypercube_add_nodes(
 		}
 
 		/* Factor in the distance for the new nodes */
-		int32_t l_distance = l_distance_offset +
+		l_distance = l_distance_offset +
 			hypercube_switches[dim][l_end_index]->distance[dim];
 		l_summed_squares += new_nodes * l_distance * l_distance;
 		l_squared_sums += new_nodes * l_distance;
@@ -1271,7 +1273,7 @@ hypercube_add_nodes(
 	bit_free(tmp_bitmap);
 
 	/* Let's see how good this right-sided cluster is */
-	hypercube_update_variance(
+	_hypercube_update_variance(
 		dim, -1, l_start_index, l_end_index, node_count, l_temp_max_nodes,
 		l_leftover_nodes, l_summed_squares, l_squared_sums,
 		min_curve, min_direction, min_start_index, min_neighbors,
@@ -1351,7 +1353,7 @@ hypercube_add_nodes(
  * start_index, end_index, summed_squares, squared_sums, and rem_nodes ***
  */
 static void
-explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
+_explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
 		    const int64_t * req_summed_squares,
 		    const int64_t * req_squared_sums,
 		    const int max_nodes,
@@ -1386,8 +1388,9 @@ explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
 		bit_clear_all(tmp_bitmap);
 
 		/* Test every switch to see if it's the best starting point */
-		while ((start_index < hypercube_switch_cnt) && (start_index >= 0)) {
-			int leftover_nodes;
+		while ((start_index < hypercube_switch_cnt) &&
+		       (start_index >= 0)) {
+			int leftover_nodes = 0;
 
 			/*
 			 * Add new nodes to cluster. If next switch has more nodes
@@ -1444,7 +1447,7 @@ explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
 					bit_set_count_range(tmp_bitmap, fn, ln + 1);
 
 				/* Add nodes from an additional switch */
-				hypercube_add_nodes(
+				_hypercube_add_nodes(
 					job_ptr, avail_bitmap,
 					dim, start_index, &end_index, node_count,
 					temp_max_nodes, temp_rem_nodes, temp_rem_cpus,
@@ -1456,7 +1459,7 @@ explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
 			}
 
 			/* Check to see if this is the lowest variance so far */
-			hypercube_update_variance(
+			_hypercube_update_variance(
 				dim, 1, start_index, end_index, node_count,
 				temp_max_nodes,
 				leftover_nodes, summed_squares, squared_sums,
@@ -1481,7 +1484,8 @@ explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
 
 				if (hypercube_switches[dim][start_index]->
 				    avail_cnt == 0) {
-					if (start_index == end_index) {end_index++;}
+					if (start_index == end_index)
+						end_index++;
 					start_index++;
 					continue;
 				}
@@ -1496,15 +1500,18 @@ explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
 					int node = hypercube_switches[dim]
 						[start_index]->node_index[n];
 
-					if (!bit_test(tmp_bitmap, node)) {continue;}
+					if (!bit_test(tmp_bitmap, node))
+						continue;
 
 					bit_clear(tmp_bitmap, node);
 					temp_max_nodes++;
 					temp_rem_nodes++;
-					temp_rem_cpus += _get_avail_cpus(job_ptr, node);
+					temp_rem_cpus += _get_avail_cpus(job_ptr,
+									 node);
 				}
 
-				if (start_index == end_index) {end_index++;}
+				if (start_index == end_index)
+					end_index++;
 				start_index++;
 			}
 
@@ -1516,7 +1523,8 @@ explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
 			while ((start_index < hypercube_switch_cnt) && 
 				(hypercube_switches[dim][start_index]->
 				 avail_cnt == 0)) {
-				if (start_index == end_index) {end_index++;}
+				if (start_index == end_index)
+					end_index++;
 				start_index++;
 			}
 		}
@@ -1529,7 +1537,8 @@ explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
  * does most of the real work for select_p_job_test(), which
  *	pretty much just handles load-leveling and max_share logic */
 static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
-			 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes)
+			       uint32_t min_nodes, uint32_t max_nodes,
+			       uint32_t req_nodes)
 {
 	int i, rc = EINVAL;
 	int32_t rem_cpus, rem_nodes, node_count = 0, total_cpus = 0;
@@ -1549,7 +1558,8 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 	node_count = rem_nodes = MAX(req_nodes, min_nodes);
 
 	/* Give up now if there aren't enough hosts */
-	if (bit_set_count(bitmap) < rem_nodes) {goto fini;}
+	if (bit_set_count(bitmap) < rem_nodes)
+		goto fini;
 
 	/* Grab all of the required nodes if there are any */
 	if (job_ptr->details->req_node_bitmap) {
@@ -1564,8 +1574,9 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 
 		i = bit_set_count(req_nodes_bitmap);
 		if (i > (int)max_nodes) {
-			info("job %u requires more nodes than currently available (%u>%u)",
-				 job_ptr->job_id, i, max_nodes);
+			info("job %u requires more nodes than currently "
+			     "available (%u>%u)",
+			     job_ptr->job_id, i, max_nodes);
 			FREE_NULL_BITMAP(req_nodes_bitmap);
 			FREE_NULL_BITMAP(avail_bitmap);
 			xfree(req_squared_sums);
@@ -1633,13 +1644,14 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Find the best starting switch and traversal path to get nodes from */
 	int32_t min_start_index = -1, min_direction = 1234, min_curve = 4321;
-	explore_hypercube(
+	_explore_hypercube(
 		job_ptr, avail_bitmap,
 		req_summed_squares, req_squared_sums, max_nodes, rem_nodes,
 		rem_cpus,
 		node_count, &min_start_index, &min_direction,
 		&min_curve);
-	if (-1 == min_start_index) {goto fini;}
+	if (-1 == min_start_index)
+		goto fini;
 
 	/*
 	 * Assigns nodes from the best cluster to the job. Starts at the start
@@ -1683,7 +1695,8 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 		rem_cpus   -= _get_avail_cpus(job_ptr, node_index);
 		total_cpus += adjust_cpus_nppcu(
 			_get_ntasks_per_core(job_ptr->details),
-			_get_total_threads(node_index), _get_total_cpus(node_index));
+			_get_total_threads(node_index),
+			_get_total_cpus(node_index));
 
 		rem_nodes--;
 		max_nodes--;

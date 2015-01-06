@@ -47,6 +47,11 @@ HIGHLIGHTS
     'PartitionQOS' flag set.
  -- Expanded --cpu-freq parameters to include min-max:governor specifications.
     --cpu-freq now supported on salloc and sbatch.
+ -- Add support for optimized job allocations with respect to SGI Hypercube
+    topology.
+    NOTE: Only supported with select/linear plugin.
+    NOTE: The program contribs/sgi/netloc_to_topology can be used to build
+    Slurm's topology.conf file.
 
 RPMBUILD CHANGES
 ================
