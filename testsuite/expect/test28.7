@@ -44,7 +44,7 @@ if {$array_size > [get_array_config]} {
 }
 
 exec $bin_rm -f $script
-make_bash_script $script "sleep 10; sleep \$SLURM_ARRAY_TASK_ID"
+make_bash_script $script "sleep \$(( ( RANDOM % 10 ) + 1 ))"
 
 #
 # Submit a job array for first dependency test
