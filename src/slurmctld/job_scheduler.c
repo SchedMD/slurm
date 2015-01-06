@@ -83,6 +83,7 @@
 #include "src/slurmctld/sched_plugin.h"
 
 #define _DEBUG 0
+#define BB_STAGE_JOB_CNT 1
 #define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
 #define MAX_FAILED_RESV 10
 #define MAX_RETRIES 10
@@ -165,7 +166,7 @@ static void _job_queue_rec_del(void *x)
 }
 
 /* Job test for ability to run now, excludes partition specific tests */
-static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
+static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 {
 	bool job_indepen = false;
 	uint16_t cleaning = 0;
@@ -200,7 +201,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 #endif
 
 	job_indepen = job_independent(job_ptr, 0);
-	if (clear_start)
+	if (sched_plugin)
 		job_ptr->start_time = (time_t) 0;
 	if (job_ptr->priority == 0)	{ /* held */
 		if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
@@ -229,7 +230,10 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 
 	if (!job_indepen)	/* can not run now */
 		return false;
-	if (!clear_start &&
+
+	/* Backfill scheduler needs to evaluate each job in order to schedule
+	 * burst buffer use for pending jobs. */
+	if (!sched_plugin &&
 	    ((bb = bb_g_job_test_stage_in(job_ptr, true)) != 1)) {
 		if (bb == -1)
 			job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
@@ -295,13 +299,48 @@ extern List build_job_queue(bool clear_start, bool backfill)
 {
 	List job_queue;
 	ListIterator job_iterator, part_iterator;
-	struct job_record *job_ptr = NULL;
+	struct job_record *job_ptr = NULL, *new_job_ptr;
 	struct part_record *part_ptr;
-	int reason;
+	int i, pend_cnt, reason;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
+	char jobid_buf[32];
 
+	(void) _delta_tv(&start_tv);
 	job_queue = list_create(_job_queue_rec_del);
+
+	/* Create individual job records for job arrays that need burst buffer
+	 * staging */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!job_ptr->burst_buffer || !job_ptr->array_recs ||
+		    !job_ptr->array_recs->task_id_bitmap ||
+		    (job_ptr->array_task_id != NO_VAL))
+			continue;
+		if ((i = bit_ffs(job_ptr->array_recs->task_id_bitmap)) < 0)
+			continue;
+		pend_cnt = num_pending_job_array_tasks(job_ptr->array_job_id);
+		if (pend_cnt >= BB_STAGE_JOB_CNT)
+			continue;
+		if (job_ptr->array_recs->task_cnt <= 1)
+			continue;
+		job_ptr->array_task_id = i;
+		new_job_ptr = job_array_split(job_ptr);
+		if (new_job_ptr) {
+			debug("%s: Split out %s for burst buffer use", __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+			new_job_ptr->job_state = JOB_PENDING;
+			new_job_ptr->start_time = (time_t) 0;
+			/* Do NOT clear db_index here, it is handled when
+			 * task_id_str is created elsewhere */
+			(void) bb_g_job_validate2(job_ptr, NULL, false);
+		} else {
+			error("%s: Unable to copy record for %s", __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (((tested_jobs % 100) == 0) &&
@@ -803,6 +842,7 @@ extern int schedule(uint32_t job_limit)
 	uint32_t reject_array_job_id = 0;
 	struct part_record *reject_array_part = NULL;
 	uint16_t reject_state_reason = WAIT_NO_REASON;
+	char job_id_buf[32];
 #if HAVE_SYS_PRCTL_H
 	char get_name[16];
 #endif
@@ -1382,31 +1422,15 @@ next_task:
 			} else {
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
-			if (job_ptr->array_task_id != NO_VAL) {
-				info("sched: Allocate JobId=%u_%u (%u) "
-				     "MidplaneList=%s",
-				     job_ptr->array_job_id,
-				     job_ptr->array_task_id,
-				     job_ptr->job_id, tmp_char);
-			} else {
-				info("sched: Allocate JobId=%u MidplaneList=%s",
-				     job_ptr->job_id, tmp_char);
-			}
+
+			info("sched: Allocate %s MidplaneList=%s",
+			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
+			     tmp_char);
 			xfree(ionodes);
 #else
-			if (job_ptr->array_task_id != NO_VAL) {
-				info("sched: Allocate JobId=%u_%u (%u) "
-				     "NodeList=%s #CPUs=%u",
-				     job_ptr->array_job_id,
-				     job_ptr->array_task_id,
-				     job_ptr->job_id, job_ptr->nodes,
-				     job_ptr->total_cpus);
-			} else {
-				info("sched: Allocate JobId=%u NodeList=%s "
-				     "#CPUs=%u",
-				     job_ptr->job_id, job_ptr->nodes,
-				     job_ptr->total_cpus);
-			}
+			info("sched: Allocate %s NodeList=%s #CPUs=%u",
+			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
+			     job_ptr->nodes, job_ptr->total_cpus);
 #endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
@@ -1417,7 +1441,8 @@ next_task:
 			if (job_ptr->array_task_id != NO_VAL) {
 				/* Try starting another task of the job array */
 				job_ptr = find_job_record(job_ptr->array_job_id);
-				if (job_ptr && IS_JOB_PENDING(job_ptr))
+				if (job_ptr && IS_JOB_PENDING(job_ptr) &&
+				    (bb_g_job_test_stage_in(job_ptr,false) ==1))
 					goto next_task;
 			}
 			continue;

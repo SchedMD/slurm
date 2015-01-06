@@ -1145,6 +1145,13 @@ extern void job_array_pre_sched(struct job_record *job_ptr);
 /* If this is a job array meta-job, clean up after scheduling attempt */
 extern void job_array_post_sched(struct job_record *job_ptr);
 
+/* Create an exact copy of an existing job record for a job array.
+ * IN job_ptr - META job record for a job array, which is to become an
+ *		individial task of the job array.
+ *		Set the job's array_task_id to the task to be split out.
+ * RET - The new job record, which is the new META job record. */
+extern struct job_record *job_array_split(struct job_record *job_ptr);
+
 /* Record the start of one job array task */
 extern void job_array_start(struct job_record *job_ptr);
 
@@ -1606,6 +1613,10 @@ extern void node_not_resp (char *name, time_t msg_time,
 /* For every node with the "not_responding" flag set, clear the flag
  * and log that the node is not responding using a hostlist expression */
 extern void node_no_resp_msg(void);
+
+/* For a given job ID return the number of PENDING tasks which have their
+ * own separate job_record (do not count tasks in pending META job record) */
+extern int num_pending_job_array_tasks(uint32_t array_job_id);
 
 /*
  * pack_all_jobs - dump all job information for all jobs in
@@ -2232,10 +2243,15 @@ extern bool validate_operator(uid_t uid);
 extern void cleanup_completing(struct job_record *);
 
 /*
- * jobid2str() - print all the parts that uniquely
- *               identify a job.
+ * jobid2fmt() - print a job ID including job array information.
  */
-extern char *jobid2str(struct job_record *, char *);
+extern char *jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size);
+
+/*
+ * jobid2str() - print all the parts that uniquely identify a job.
+ */
+extern char *jobid2str(struct job_record *job_ptr, char *buf);
+
 
 /* trace_job() - print the job details if
  *               the DEBUG_FLAG_TRACE_JOBS is set

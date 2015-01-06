@@ -927,7 +927,8 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
  *
  * Returns a SLURM errno.
  */
-extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
+extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
+			      bool is_job_array)
 {
 	/* This function is unused by this plugin type */
 	return SLURM_SUCCESS;
@@ -1034,6 +1035,8 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		    (job_ptr->start_time == 0) ||
 		    (job_ptr->burst_buffer == NULL) ||
 		    (job_ptr->burst_buffer[0] == '\0'))
+			continue;
+		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
 			continue;
 		bb_size = _get_bb_size(job_ptr);
 		if (bb_size == 0)

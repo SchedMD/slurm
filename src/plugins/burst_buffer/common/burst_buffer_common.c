@@ -793,6 +793,7 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 {
 	bb_alloc_t *bb_ptr;
 	uint16_t new_nice;
+	char jobid_buf[32];
 
 	if (state_ptr->bb_config.prio_boost_use && job_ptr && job_ptr->details){
 		new_nice = (NICE_OFFSET - state_ptr->bb_config.prio_boost_use);
@@ -803,8 +804,10 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 			job_ptr->priority = new_prio;
 			job_ptr->details->nice = new_nice;
 			info("%s: Uses burst buffer, reset priority to %u "
-			     "for job_id %u", __func__,
-			     job_ptr->priority, job_ptr->job_id);
+			     "for %s", __func__,
+			     job_ptr->priority,
+			     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+
 		}
 	}
 

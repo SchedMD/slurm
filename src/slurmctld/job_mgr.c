@@ -174,11 +174,10 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
-static struct job_record *_job_rec_copy(struct job_record *job_ptr);
-static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
 			char **err_msg, uint16_t protocol_version);
+static void _job_timed_out(struct job_record *job_ptr);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -2545,6 +2544,25 @@ extern bool test_job_array_pending(uint32_t array_job_id)
 	return false;
 }
 
+/* For a given job ID return the number of PENDING tasks which have their
+ * own separate job_record (do not count tasks in pending META job record) */
+extern int num_pending_job_array_tasks(uint32_t array_job_id)
+{
+	struct job_record *job_ptr;
+	int count = 0, inx;
+
+	inx = JOB_HASH_INX(array_job_id);
+	job_ptr = job_array_hash_j[inx];
+	while (job_ptr) {
+		if ((job_ptr->array_job_id == array_job_id) &&
+		    IS_JOB_PENDING(job_ptr))
+			count++;
+		job_ptr = job_ptr->job_array_next_j;
+	}
+
+	return count;
+}
+
 /*
  * find_job_array_rec - return a pointer to the job record with the given
  *	array_job_id/array_task_id
@@ -3441,8 +3459,11 @@ extern void rehash_jobs(void)
 }
 
 /* Create an exact copy of an existing job record for a job array.
- * The array_recs structure is moved to the new job record copy */
-struct job_record *_job_rec_copy(struct job_record *job_ptr)
+ * IN job_ptr - META job record for a job array, which is to become an
+ *		individial task of the job array.
+ *		Set the job's array_task_id to the task to be split out.
+ * RET - The new job record, which is the new META job record. */
+extern struct job_record *job_array_split(struct job_record *job_ptr)
 {
 	struct job_record *job_ptr_pend = NULL, *save_job_next;
 	struct job_details *job_details, *details_new, *save_details;
@@ -5179,7 +5200,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
  */
 
-static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
+static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid,
 		       char **err_msg, uint16_t protocol_version)
 {
@@ -5191,7 +5212,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	struct job_record *job_ptr = NULL;
 	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
 	List license_list = NULL;
-	bool valid;
+	bool is_job_array = false, valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
 	uint32_t user_submit_priority;
 	static uint32_t node_scaling = 1;
@@ -5573,7 +5594,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_ptr->batch_flag = 1;
 	} else
 		job_ptr->batch_flag = 0;
-	if (!will_run && (error_code = bb_g_job_validate2(job_ptr, err_msg)))
+	if (job_desc->array_bitmap)
+		is_job_array = true;
+	if (!will_run &&
+	    (error_code = bb_g_job_validate2(job_ptr, err_msg, is_job_array)))
 		goto cleanup_fail;
 
 	job_ptr->license_list = license_list;
@@ -10784,7 +10808,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				if (!bit_test(array_bitmap, i))
 					continue;
 				job_ptr->array_task_id = i;
-				new_job_ptr = _job_rec_copy(job_ptr);
+				new_job_ptr = job_array_split(job_ptr);
 				if (!new_job_ptr) {
 					error("update_job_str: Unable to copy "
 					      "record for job %u",
@@ -10792,6 +10816,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				} else {
 					/* The array_recs structure is moved
 					 * to the new job record copy */
+					bb_g_job_validate2(job_ptr, NULL,false);
 					job_ptr = new_job_ptr;
 				}
 			}
@@ -14148,6 +14173,30 @@ extern void job_end_time_reset(struct job_record  *job_ptr)
 }
 
 /*
+ * jobid2fmt() - print a job ID including job array information.
+ */
+extern char *jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
+{
+	if (job_ptr == NULL)
+		return "jobid2fmt: Invalid job_ptr argument";
+	if (buf == NULL)
+		return "jobid2fmt: Invalid buf argument";
+
+	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
+		snprintf(buf, buf_size, "JobID=%u_*",
+			 job_ptr->array_job_id);
+	} else if (job_ptr->array_task_id == NO_VAL) {
+		snprintf(buf, buf_size, "JobID=%u", job_ptr->job_id);
+	} else {
+		snprintf(buf, buf_size, "JobID=%u_%u(%u)",
+			 job_ptr->array_job_id, job_ptr->array_task_id,
+			 job_ptr->job_id);
+	}
+
+       return buf;
+}
+
+/*
  * jobid2str() - print all the parts that uniquely identify a job.
  */
 extern char *
@@ -14158,14 +14207,18 @@ jobid2str(struct job_record *job_ptr, char *buf)
 	if (buf == NULL)
 		return "jobid2str: Invalid buf argument";
 
-	if (job_ptr->array_task_id == NO_VAL) {
+	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
+		sprintf(buf, "JobID=%u_* State=0x%x NodeCnt=%u",
+			job_ptr->array_job_id, job_ptr->job_state,
+			job_ptr->node_cnt);
+	} else if (job_ptr->array_task_id == NO_VAL) {
 		sprintf(buf, "JobID=%u State=0x%x NodeCnt=%u",
 			job_ptr->job_id, job_ptr->job_state,
 			job_ptr->node_cnt);
 	} else {
-		sprintf(buf, "JobID=%u_%u (%u) State=0x%x NodeCnt=%u",
+		sprintf(buf, "JobID=%u_%u(%u) State=0x%x NodeCnt=%u",
 			job_ptr->array_job_id, job_ptr->array_task_id,
-			job_ptr->job_id, job_ptr->job_state,job_ptr->node_cnt);
+			job_ptr->job_id, job_ptr->job_state, job_ptr->node_cnt);
 	}
 
        return buf;
@@ -14206,6 +14259,7 @@ extern void job_array_pre_sched(struct job_record *job_ptr)
 extern void job_array_post_sched(struct job_record *job_ptr)
 {
 	struct job_record *new_job_ptr;
+	char jobid_buf[32];
 
 	if (!job_ptr->array_recs || !job_ptr->array_recs->task_id_bitmap)
 		return;
@@ -14229,12 +14283,15 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 			_add_job_array_hash(job_ptr);
 		}
 	} else {
-		new_job_ptr = _job_rec_copy(job_ptr);
+		new_job_ptr = job_array_split(job_ptr);
 		if (new_job_ptr) {
 			new_job_ptr->job_state = JOB_PENDING;
 			new_job_ptr->start_time = (time_t) 0;
 			/* Do NOT clear db_index here, it is handled when
 			 * task_id_str is created elsewhere */
+		} else {
+			error("%s: Unable to copy record for %s", __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		}
 	}
 }
