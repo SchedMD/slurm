@@ -2564,6 +2564,12 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 		return find_job_record(array_job_id);
 
 	if (array_task_id == INFINITE) {	/* find by job ID */
+		/* Look for job record with all of the pending tasks */
+		job_ptr = find_job_record(array_job_id);
+		if (job_ptr && job_ptr->array_recs &&
+		    (job_ptr->array_job_id == array_job_id))
+			return job_ptr;
+
 		inx = JOB_HASH_INX(array_job_id);
 		job_ptr = job_array_hash_j[inx];
 		while (job_ptr) {
@@ -2575,12 +2581,6 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
-
-		/* Look for job record with all of the pending tasks */
-		job_ptr = find_job_record(array_job_id);
-		if (job_ptr && job_ptr->array_recs &&
-		    (job_ptr->array_job_id == array_job_id))
-			return job_ptr;
 		return match_job_ptr;
 	} else {		/* Find specific task ID */
 		inx = JOB_ARRAY_HASH_INX(array_job_id, array_task_id);
