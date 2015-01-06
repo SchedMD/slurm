@@ -2575,8 +2575,6 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
-		if (match_job_ptr)
-			return match_job_ptr;
 
 		/* Look for job record with all of the pending tasks */
 		job_ptr = find_job_record(array_job_id);

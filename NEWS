@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
  -- BLUEGENE - Remove check that would erroneously remove the CONFIGURING
     flag from a job while the job is waiting for a block to boot.
  -- Fix segfault in slurmstepd when job exceeded memory limit.
+ -- Fix race condition that could start a job that is dependent upon a job array
+    before all tasks of that job array complete.
 
 * Changes in Slurm 14.11.2
 ==========================
