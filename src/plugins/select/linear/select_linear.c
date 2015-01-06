@@ -1548,6 +1548,8 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 		hypercube_dimensions * sizeof(int64_t));
 	bitstr_t *req_nodes_bitmap = NULL;
 	bitstr_t *avail_bitmap = NULL;
+	int32_t cur_node_index = -1, node_counter = 0, switch_index;
+	int32_t min_start_index = -1, min_direction = 1234, min_curve = 4321;
 
 	for (i = 0; i < hypercube_dimensions; i++) {
 		req_summed_squares[i] = 0;
@@ -1643,7 +1645,6 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* Find the best starting switch and traversal path to get nodes from */
-	int32_t min_start_index = -1, min_direction = 1234, min_curve = 4321;
 	_explore_hypercube(
 		job_ptr, avail_bitmap,
 		req_summed_squares, req_squared_sums, max_nodes, rem_nodes,
@@ -1658,8 +1659,8 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * index switch and keeps adding available nodes until it has as many
 	 * as it needs
 	 */
-	int32_t switch_index = min_start_index, cur_node_index = -1;
-	int32_t node_counter = 0;
+	switch_index = min_start_index;
+	node_counter = 0;
 	while ((max_nodes > 0) && ((rem_nodes > 0) || (rem_cpus > 0))) {
 		int node_index;
 
