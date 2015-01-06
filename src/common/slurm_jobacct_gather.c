@@ -134,6 +134,7 @@ static void _acct_kill_step(void)
 	/*
 	 * Request message:
 	 */
+	memset(&req, 0, sizeof(job_step_kill_msg_t));
 	req.job_id      = jobacct_job_id;
 	req.job_step_id = jobacct_step_id;
 	req.signal      = SIGKILL;

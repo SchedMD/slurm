@@ -2018,6 +2018,7 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	msg.data        = &notify_req;
 	slurm_send_only_controller_msg(&msg);
 
+	memset(&kill_req, 0, sizeof(job_step_kill_msg_t));
 	kill_req.job_id      = job_id;
 	kill_req.job_step_id = step_id;
 	kill_req.signal      = SIGKILL;
