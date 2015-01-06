@@ -759,10 +759,6 @@ _set_ntasks(allocation_info_t *ai)
 	if (opt.ntasks_set)
 		return;
 
-#if defined HAVE_BGQ
-	/* always return the ntasks here for Q */
-	return opt.ntasks;
-#endif
 	if (opt.ntasks_per_node != NO_VAL) {
 		cnt = ai->nnodes * opt.ntasks_per_node;
 		opt.ntasks_set = true;	/* implicit */

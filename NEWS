@@ -114,6 +114,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix cosmetic info statements when dealing with a job array task instead of
     a normal job.
  -- Fix segfault with job arrays.
+ -- Correct the sbatch pbs parser to process -j.
+ -- BGQ - Put print statement under a DebugFlag.  This was just an oversight.
+ -- BLUEGENE - Remove check that would erroneously remove the CONFIGURING
+    flag from a job while the job is waiting for a block to boot.
+ -- Fix segfault in slurmstepd when job exceeded memory limit.
 
 * Changes in Slurm 14.11.2
 ==========================

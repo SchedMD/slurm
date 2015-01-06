@@ -6722,16 +6722,25 @@ void job_time_limit(void)
 	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 
+#ifndef HAVE_BG
+		/* If the CONFIGURING flag is removed elsewhere like
+		 * on a Bluegene system this check is not needed and
+		 * should be avoided.  In the case of BG blocks that
+		 * are booting aren't associated with
+		 * power_node_bitmap so bit_overlap always returns 0
+		 * and erroneously removes the flag.
+		 */
 		if (IS_JOB_CONFIGURING(job_ptr)) {
 			if (!IS_JOB_RUNNING(job_ptr) ||
 			    (bit_overlap(job_ptr->node_bitmap,
 					 power_node_bitmap) == 0)) {
-				debug("%s: Configuration for job %u is complete",
+				debug("%s: Configuration for job %u is "
+				      "complete",
 				      __func__, job_ptr->job_id);
 				job_ptr->job_state &= (~JOB_CONFIGURING);
 			}
 		}
-
+#endif
 		/* This needs to be near the top of the loop, checks every
 		 * running, suspended and pending job */
 		resv_status = job_resv_check(job_ptr);
