@@ -3,6 +3,7 @@
  *  slurm_topology.c - Topology plugin function setup.
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2014 Silicon Graphics International Corp. All rights reserved.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -51,6 +52,12 @@
 struct switch_record *switch_record_table = NULL;
 int switch_record_cnt = 0;
 int switch_levels = 0;               /* number of switch levels     */
+
+/* defined here but is really hypercube plugin related */
+extern int hypercube_dimensions = 0; 
+extern struct hypercube_switch *hypercube_switch_table = NULL; 
+extern int hypercube_switch_cnt = 0;
+extern struct hypercube_switch ***hypercube_switches = NULL; 
 
 /* ************************************************************************ */
 /*  TAG(                        slurm_topo_ops_t                         )  */

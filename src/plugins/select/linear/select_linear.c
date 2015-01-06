@@ -6,6 +6,7 @@
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Copyright (C) 2014 Silicon Graphics International Corp. All rights reserved.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -94,6 +95,12 @@ int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
 struct switch_record *switch_record_table __attribute__((weak_import));
 int switch_record_cnt __attribute__((weak_import));
+
+int hypercube_dimensions __attribute__((weak_import));
+struct hypercube_switch *hypercube_switch_table __attribute__((weak_import));
+int hypercube_switch_cnt __attribute__((weak_import));
+struct hypercube_switch ***hypercube_switches __attribute__((weak_import));
+
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
@@ -103,6 +110,12 @@ int node_record_count;
 time_t last_node_update;
 struct switch_record *switch_record_table;
 int switch_record_cnt;
+
+int hypercube_dimensions;
+struct hypercube_switch *hypercube_switch_table;
+int hypercube_switch_cnt;
+struct hypercube_switch ***hypercube_switches;
+
 #endif
 
 struct select_nodeinfo {
@@ -139,6 +152,9 @@ static int _job_expand(struct job_record *from_job_ptr,
 static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes,
 		     uint32_t req_nodes);
+static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
+			 uint32_t min_nodes, uint32_t max_nodes,
+			 uint32_t req_nodes);		     
 static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes);
@@ -855,6 +871,12 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	    (!bit_super_set(job_ptr->details->req_node_bitmap, bitmap)))
 		return error_code;
 
+	if (hypercube_switch_table && hypercube_switch_cnt) {
+		/*Perform optimized resource selection based on hypercube topology*/
+		return _job_test_hypercube(job_ptr, bitmap,
+					  min_nodes, max_nodes, req_nodes);
+	}
+	
 	if (switch_record_cnt && switch_record_table) {
 		/* Perform optimized resource selection based upon topology */
 		return _job_test_topo(job_ptr, bitmap,
@@ -1091,6 +1113,605 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	xfree(consec_req);
 	return error_code;
 }
+
+/*
+ * Compute the variance on the passed sufficient cluster and see if it's the
+ * best we've seen so far
+ */
+static void
+hypercube_update_variance(
+	int dim, int dir, int start_index, int end_index,
+	int node_count, int max_nodes,
+	int leftover_nodes, int64_t summed_squares,
+	int64_t squared_sums, int * min_curve, int * min_direction,
+	int * min_start_index, int * min_neighbors,
+	int * min_extra_nodes, int64_t * min_variance)
+{
+//XXX use actual node count?
+	int64_t variance = summed_squares - 
+		squared_sums * squared_sums / node_count;
+
+	/* Don't calculate if we've used too many nodes */
+	if (0 > max_nodes) {return;}
+
+	if ((variance < *min_variance) ||
+	    ((variance == *min_variance) &&
+	     (leftover_nodes <= *min_extra_nodes))) {
+		int begin = start_index - dir;
+		int end = end_index + dir;
+		int neighbors = 0;
+
+		if (0 > begin) {
+			begin = hypercube_switch_cnt - 1;
+		} else if (hypercube_switch_cnt >= begin) {
+			begin = 0;
+		}
+
+		if (0 > end) {
+			end = hypercube_switch_cnt - 1;
+		} else if (hypercube_switch_cnt >= end) {
+			end = 0;
+		}
+
+		if (begin != end_index) {
+			neighbors += hypercube_switches[dim][begin]->avail_cnt;
+		}
+		if (end != start_index && begin != end) {
+			neighbors += hypercube_switches[dim][end]->avail_cnt;
+		}
+
+		/*
+		 * Update if variance is lowest found or if variance
+		 * == lowest variance found and there are less extra
+		 * nodes on the switch or if variances and extra nodes
+		 * are the same but there are less neighboring nodes
+		 */
+		if ((variance < *min_variance) ||
+		    ((variance == *min_variance) &&
+		     (leftover_nodes < *min_extra_nodes)) ||
+		    ((variance == *min_variance) &&
+		     (leftover_nodes == *min_extra_nodes) &&
+		     (neighbors < *min_neighbors))) {
+			*min_variance = variance;
+			*min_start_index = start_index;
+			*min_extra_nodes = leftover_nodes;
+			*min_neighbors = neighbors;
+			*min_direction = dir;
+			*min_curve = dim;
+		}
+	}
+}
+
+/*
+ * We're passed a cluster (start_index, end_index) and asked to add another
+ * switch with its nodes if we don't already have enough. As an experiment we
+ * try adding switches to the left, but we otherwise add to the right.
+ */
+static void
+hypercube_add_nodes(
+	struct job_record * job_ptr, bitstr_t * avail_bitmap,
+	int dim, int32_t start_index, int32_t * end_index, int node_count,
+	int32_t max_nodes, int32_t rem_nodes, int32_t rem_cpus,
+	int leftover_nodes, bitstr_t * bitmap,
+	int64_t * distance_offset, int64_t summed_squares, int64_t squared_sums,
+	int * min_curve, int * min_direction,
+	int * min_start_index, int32_t * min_neighbors,
+	int32_t * min_extra_nodes,
+	int64_t * min_variance)
+{
+	bitstr_t * tmp_bitmap;
+	int32_t l_start_index = *end_index;
+	int32_t l_end_index = start_index;
+	int32_t l_temp_max_nodes = max_nodes;
+	int32_t l_temp_rem_nodes = rem_nodes;
+	int32_t l_temp_rem_cpus = rem_cpus;
+	int64_t l_summed_squares = summed_squares;
+	int64_t l_squared_sums = squared_sums;
+	int32_t l_leftover_nodes;
+	int32_t l_distance_offset = 0;
+
+	/* Don't need to add any more nodes */
+	if (leftover_nodes ||
+	    (0 >= rem_nodes && 0 >= rem_cpus)) {
+		return;
+	}
+
+	tmp_bitmap = bit_copy(bitmap);
+
+	/*
+	 * Create a temporary right-sided cluster and try sliding the left edge
+	 * further left until we have enough nodes.
+	 */
+	while (0 <= l_temp_max_nodes &&
+		(0 < l_temp_rem_nodes || 0 < l_temp_rem_cpus)) {
+		int cnt, n, new_nodes = 0;
+
+		l_end_index--;
+		if (l_end_index < 0) { /* Handle wrap-around */
+			l_end_index = hypercube_switch_cnt - 1;
+			l_distance_offset = -1 *
+				hypercube_switches[dim]
+				[hypercube_switch_cnt - 1]->distance[dim];
+		}
+
+		/* Add nodes from the switch until we've hit our limits */
+		cnt = hypercube_switches[dim][l_end_index]->node_cnt;
+		for (n = 0; n < cnt; n++) {
+			int node = hypercube_switches[dim]
+				[l_end_index]->node_index[n];
+
+			if (!bit_test(avail_bitmap, node) ||
+			    bit_test(tmp_bitmap, node)) {
+				continue;
+			}
+
+			/* The node is unused and available, add it */
+			new_nodes++;
+			bit_set(tmp_bitmap, node);
+			l_temp_max_nodes--;
+			l_temp_rem_nodes--;
+			l_temp_rem_cpus -= _get_avail_cpus(job_ptr, node);
+
+			/* Have we hit our limits? */
+			if ((0 > l_temp_max_nodes) ||
+			    (0 >= l_temp_rem_nodes && 0 >= l_temp_rem_cpus)) {
+				break;
+			}
+		}
+
+		/* Factor in the distance for the new nodes */
+		int32_t l_distance = l_distance_offset +
+			hypercube_switches[dim][l_end_index]->distance[dim];
+		l_summed_squares += new_nodes * l_distance * l_distance;
+		l_squared_sums += new_nodes * l_distance;
+		l_leftover_nodes = hypercube_switches[dim][l_end_index]->avail_cnt -
+			new_nodes;
+	}
+
+	bit_free(tmp_bitmap);
+
+	/* Let's see how good this right-sided cluster is */
+	hypercube_update_variance(
+		dim, -1, l_start_index, l_end_index, node_count, l_temp_max_nodes,
+		l_leftover_nodes, l_summed_squares, l_squared_sums,
+		min_curve, min_direction, min_start_index, min_neighbors,
+		min_extra_nodes, min_variance);
+
+	/*
+	 * OK, we're back to working on the left-sided cluster. Move the right
+	 * side further right to pick up a new switch and add more of the needed
+	 * nodes.
+	 */
+	(*end_index)++;						
+	if (*end_index == hypercube_switch_cnt) { /* Handle wrap-around */
+		*end_index = 0;
+		*distance_offset =
+			hypercube_switches[dim][hypercube_switch_cnt - 1]->
+			distance[dim];
+	}
+}
+
+/* Variance based best-fit cluster algorithm:
+ * 	 Loop through all of the Hilbert Curves that were created.
+ * Each Hilbert Curve is essentially a particular ordering of all the 
+ * switches in the network. For each Hilbert Curve, the algorithm loops
+ * through all clusters of neighboring nodes, but only tests clusters that
+ * either have their leftmost switch completed saturated (all available 
+ * nodes for the switch are in the cluster) or their rightmost switch 
+ * completed saturated, also called left-saturated clusters and 
+ * right-saturated clusters. The algorithm starts at the left (top) of 
+ * the table and works its way to the right (down).
+ * 	  The algorithm starts by adding nodes from the switch at the top of 
+ * the table to the cluster. If after the nodes are added, the cluster
+ * still needs more nodes, the algorithm continues down (right) the table
+ * adding the number of nodes the next switch has available to the 
+ * cluster. It continues adding nodes until it has enough for the cluster.
+ * If the cluster only needs 4 more nodes and the next rightmost switch 
+ * has 8 nodes available, the cluster only adds the 4 needed nodes to the
+ * cluster: called adding a partial. When the algorithm moves to the next
+ * cluster, it will pick up where it left off and will add the remaining 4
+ * nodes on the switch before moving to the next switch in the table. 
+ * 	  Once the algorithm has added enough nodes to the cluster, it 
+ * computes the variance for the cluster of nodes. If this cluster is 
+ * the best-fit cluster found so far, it saves the cluster's information.
+ * To move on to testing the next cluster, first it removes all the nodes 
+ * from the leftmost switch. Then the algorithm repeats the process of 
+ * adding nodes to the cluster from rightmost switch until it has enough.
+ * 		If the rightside of the cluster reaches the bottom of the table,
+ * then it loops back around to the top most switch in the table and
+ * continues. The algorithm continues until the leftmost switch of the
+ * cluster has reached the end of the table. At which point it knows
+ * that it has tested all possible left-saturated clusters. 
+ * 	  Although this algorithm could be run in reverse order on the table
+ * in order to test all right-saturated clusters, it would result in 
+ * redundant calculations. Instead, all right-saturated clusters are
+ * tested during the node adding process of the left-saturated clusters
+ * algorithm. While running the left-saturated clusters algorithm 
+ * described above, anytime nodes are added from the rightmost switch 
+ * resulting in all the available nodes from that switch being in the 
+ * cluster and the cluster still needs more nodes, then create a temporary
+ * cluster equal to the current cluster. 
+ * 	  Use this temporary cluster to test the right-saturated cluster 
+ * starting at the rightmost switch in the cluster and moving left (up the
+ * table). Since the temporary cluster needs more nodes, add nodes by
+ * moving up/left in the table (rather than right, like is done for the
+ * left-saturated clusters). Once the cluster has enough nodes, calculate
+ * its variance and remember it if it is the best fit cluster found so far.
+ * Then erase the temporary cluster and continue with the original cluster
+ * where the algorithm left off. By doing this right-saturated clusters
+ * calcution everytime the rightmost switch of a cluster is fully added, 
+ * the algorithm tests every possible right-saturated cluster. 
+ * 
+ * 	  Equation used to calculate the variance of a cluster:
+ * Variance = sum(x^2) - sum(x)^2/num(x), where sum(x) is the sum of all
+ * values of x, and num(x) is the number of x values summed
+ * 
+ * *** Important Note: There isn't actually a 'cluster' struct, but rather
+ * a cluster is described by its necesary characteristics including: 
+ * start_index, end_index, summed_squares, squared_sums, and rem_nodes ***
+ */
+static void
+explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
+		    const int64_t * req_summed_squares,
+		    const int64_t * req_squared_sums,
+		    const int max_nodes,
+		    const int rem_nodes, const int rem_cpus, const int node_count,
+		    int * min_start_index,
+		    int * min_direction, int * min_curve)
+{
+	bitstr_t * tmp_bitmap = bit_alloc(bit_size(avail_bitmap));
+	int64_t min_variance = INT64_MAX;
+	int32_t min_extra_nodes = INT32_MAX;
+	int32_t min_neighbors = INT32_MAX;
+	int dim;
+
+	/* Check each dimension for the best cluster of nodes */
+	for (dim = 0; dim < hypercube_dimensions; dim++) {
+		int64_t summed_squares = req_summed_squares[dim];
+		int64_t squared_sums = req_squared_sums[dim];
+		int64_t distance, distance_offset = 0;
+		int32_t start_index = 0, end_index;
+		int32_t temp_rem_nodes = rem_nodes;
+		int32_t temp_rem_cpus = rem_cpus;
+		int32_t temp_max_nodes = max_nodes;
+
+		/* If this curve wasn't set up then skip it */
+		if (hypercube_switch_table[0].distance[dim] == 0) {continue;}
+
+		/* Move to first switch with available nodes */
+		while (hypercube_switches[dim][start_index]->avail_cnt == 0) {
+			start_index++;
+		}
+		end_index = start_index;
+		bit_clear_all(tmp_bitmap);
+
+		/* Test every switch to see if it's the best starting point */
+		while ((start_index < hypercube_switch_cnt) && (start_index >= 0)) {
+			int leftover_nodes;
+
+			/*
+			 * Add new nodes to cluster. If next switch has more nodes
+			 * then needed, only add nodes needed. This is called
+			 * adding a partial.
+			 */
+			while ((0 <= temp_max_nodes) &&
+				(0 < temp_rem_nodes || 0 < temp_rem_cpus)) {
+				int cnt = hypercube_switches[dim][end_index]->
+					node_cnt;
+				int fn = hypercube_switches[dim][end_index]->
+					node_index[0];
+				int ln = hypercube_switches[dim][end_index]->
+					node_index[cnt - 1];
+				int new_nodes = 0;
+				int n;
+
+				/* Add free nodes from the switch */
+				for (n = 0; n < cnt; n++) {
+					int node = hypercube_switches[dim]
+						[end_index]->node_index[n];
+
+					if (!bit_test(avail_bitmap, node) ||
+					    bit_test(tmp_bitmap, node)) {
+						continue;
+					}
+
+					/* Unused and available, add it */
+					new_nodes++;
+					bit_set(tmp_bitmap, node);
+					temp_max_nodes--;
+					temp_rem_nodes--;
+					temp_rem_cpus -= _get_avail_cpus(
+						job_ptr, node);
+
+					/* Do we have enough resources? */
+					if ((0 > temp_max_nodes) ||
+					    (0 >= temp_rem_nodes &&
+					     0 >= temp_rem_cpus)) {
+						break;
+					}
+				}
+
+				/*
+				 * Calculate the inputs to the variance for the
+				 * current cluster
+				 */
+				distance = hypercube_switches[dim]
+					[end_index]->distance[dim] + distance_offset;
+				summed_squares += new_nodes * distance * distance;
+				squared_sums += new_nodes * distance;
+				leftover_nodes = hypercube_switches[dim][end_index]->
+					avail_cnt -
+					bit_set_count_range(tmp_bitmap, fn, ln + 1);
+
+				/* Add nodes from an additional switch */
+				hypercube_add_nodes(
+					job_ptr, avail_bitmap,
+					dim, start_index, &end_index, node_count,
+					temp_max_nodes, temp_rem_nodes, temp_rem_cpus,
+					leftover_nodes, tmp_bitmap,
+					&distance_offset, summed_squares,
+					squared_sums, min_curve, min_direction,
+					min_start_index, &min_neighbors,
+					&min_extra_nodes, &min_variance);
+			}
+
+			/* Check to see if this is the lowest variance so far */
+			hypercube_update_variance(
+				dim, 1, start_index, end_index, node_count,
+				temp_max_nodes,
+				leftover_nodes, summed_squares, squared_sums,
+				min_curve, min_direction, min_start_index,
+				&min_neighbors, &min_extra_nodes, &min_variance);
+
+			/*
+			 * We're updating our indices to slide right and have a
+			 * new leftmost switch. Remove the nodes from the current
+			 * leftmost switch.
+			 */
+			while ((temp_rem_nodes <= 0) &&
+				(start_index < hypercube_switch_cnt) &&
+				(start_index >= 0)) {
+				int cnt = hypercube_switches[dim][start_index]->
+					node_cnt;
+				int used = MIN(
+					rem_nodes,
+					hypercube_switches[dim][start_index]->
+					avail_cnt);
+				int n;
+
+				if (hypercube_switches[dim][start_index]->
+				    avail_cnt == 0) {
+					if (start_index == end_index) {end_index++;}
+					start_index++;
+					continue;
+				}
+
+				distance = hypercube_switches[dim][start_index]->
+					distance[dim];
+				summed_squares -= distance * distance * used;
+				squared_sums -= distance * used;
+
+				/* Free the nodes we added on this switch */
+				for (n = 0; n < cnt; n++) {
+					int node = hypercube_switches[dim]
+						[start_index]->node_index[n];
+
+					if (!bit_test(tmp_bitmap, node)) {continue;}
+
+					bit_clear(tmp_bitmap, node);
+					temp_max_nodes++;
+					temp_rem_nodes++;
+					temp_rem_cpus += _get_avail_cpus(job_ptr, node);
+				}
+
+				if (start_index == end_index) {end_index++;}
+				start_index++;
+			}
+
+			/*
+			 * If the cluster had holes with switches
+			 * completely allocated to other jobs, keep sliding
+			 * right until we find a switch with free nodes
+			 */
+			while ((start_index < hypercube_switch_cnt) && 
+				(hypercube_switches[dim][start_index]->
+				 avail_cnt == 0)) {
+				if (start_index == end_index) {end_index++;}
+				start_index++;
+			}
+		}
+	}
+
+	bit_free(tmp_bitmap);
+}
+
+/* a hypercube topology version of _job_test - 
+ * does most of the real work for select_p_job_test(), which
+ *	pretty much just handles load-leveling and max_share logic */
+static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
+			 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes)
+{
+	int i, rc = EINVAL;
+	int32_t rem_cpus, rem_nodes, node_count = 0, total_cpus = 0;
+	int64_t *req_summed_squares = xmalloc(
+		hypercube_dimensions * sizeof(int64_t));
+	int64_t *req_squared_sums = xmalloc(
+		hypercube_dimensions * sizeof(int64_t));
+	bitstr_t *req_nodes_bitmap = NULL;
+	bitstr_t *avail_bitmap = NULL;
+
+	for (i = 0; i < hypercube_dimensions; i++) {
+		req_summed_squares[i] = 0;
+		req_squared_sums[i] = 0;
+	}
+
+	rem_cpus = job_ptr->details->min_cpus;
+	node_count = rem_nodes = MAX(req_nodes, min_nodes);
+
+	/* Give up now if there aren't enough hosts */
+	if (bit_set_count(bitmap) < rem_nodes) {goto fini;}
+
+	/* Grab all of the required nodes if there are any */
+	if (job_ptr->details->req_node_bitmap) {
+		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
+
+		// set avail_bitmap to all available nodes except the required nodes
+		// set bitmap to just the required nodes
+		avail_bitmap = bit_copy(req_nodes_bitmap);
+		bit_not(avail_bitmap);
+		bit_and(avail_bitmap, bitmap );
+		bit_copybits(bitmap, req_nodes_bitmap);
+
+		i = bit_set_count(req_nodes_bitmap);
+		if (i > (int)max_nodes) {
+			info("job %u requires more nodes than currently available (%u>%u)",
+				 job_ptr->job_id, i, max_nodes);
+			FREE_NULL_BITMAP(req_nodes_bitmap);
+			FREE_NULL_BITMAP(avail_bitmap);
+			xfree(req_squared_sums);
+			xfree(req_summed_squares);
+			return EINVAL;
+		}
+		rem_nodes -= i;
+		max_nodes -= i;
+	} else { // if there are no required nodes, update bitmaps accordingly
+		avail_bitmap = bit_copy(bitmap);
+		bit_nclear(bitmap, 0, node_record_count - 1);
+	}
+
+	/* Calculate node availability for each switch */
+	for (i = 0; i < hypercube_switch_cnt; i++) {
+		const int node_idx = hypercube_switch_table[i].node_index[0];
+		const int cnt = hypercube_switch_table[i].node_cnt;
+
+		/* Add all the nodes on this switch */
+		hypercube_switch_table[i].avail_cnt = bit_set_count_range(
+			avail_bitmap, node_idx, node_idx + cnt);
+
+		/* If the switch has nodes that are required, loop through them */
+		if (req_nodes_bitmap && (hypercube_switch_table[i].avail_cnt != 0) && 
+		    (bit_set_count_range(
+			     req_nodes_bitmap, node_idx, node_idx + cnt) > 0)) {
+			int j;
+
+			/* Check each node on the switch */
+			for (j = 0; j < cnt; j++) {
+				int idx = hypercube_switch_table[i].node_index[j];
+
+				/* If is req'd, add cpus and distance to calulations */
+				if (bit_test(req_nodes_bitmap, idx)) {
+					int k;
+
+					rem_cpus   -= _get_avail_cpus(job_ptr, idx);
+					total_cpus += adjust_cpus_nppcu(
+							_get_ntasks_per_core(
+								job_ptr->details),
+							_get_total_threads(idx),
+							_get_total_cpus(idx));
+
+					/*
+					 * Add the required nodes data to the
+					 * variance calculations
+					 */
+					for (k = 0; k < hypercube_dimensions; k++) {
+						int distance = hypercube_switch_table[i].
+							distance[k];
+
+						req_summed_squares[k] += distance *
+							distance;
+						req_squared_sums[k] += distance;
+					}
+				}
+			}
+		}
+	}
+
+	// check to see if no more nodes need to be added to the job
+	if ((max_nodes <= 0) || ((rem_nodes <= 0) && (rem_cpus <= 0))) {
+		goto fini;
+	}
+
+	/* Find the best starting switch and traversal path to get nodes from */
+	int32_t min_start_index = -1, min_direction = 1234, min_curve = 4321;
+	explore_hypercube(
+		job_ptr, avail_bitmap,
+		req_summed_squares, req_squared_sums, max_nodes, rem_nodes,
+		rem_cpus,
+		node_count, &min_start_index, &min_direction,
+		&min_curve);
+	if (-1 == min_start_index) {goto fini;}
+
+	/*
+	 * Assigns nodes from the best cluster to the job. Starts at the start
+	 * index switch and keeps adding available nodes until it has as many
+	 * as it needs
+	 */
+	int32_t switch_index = min_start_index, cur_node_index = -1;
+	int32_t node_counter = 0;
+	while ((max_nodes > 0) && ((rem_nodes > 0) || (rem_cpus > 0))) {
+		int node_index;
+
+		/* If we used up all the nodes in a switch, move to the next */
+		if (node_counter ==
+		    hypercube_switches[min_curve][switch_index]->avail_cnt) {
+			node_counter = 0;
+			cur_node_index = -1;
+			do {
+				// min_direction == 1 moves up the table
+				// min_direction == -1 moves down the table 	
+				switch_index += min_direction;
+				if (switch_index == hypercube_switch_cnt) {
+					switch_index = 0;
+				} else if (switch_index == -1) {
+					switch_index = hypercube_switch_cnt - 1;
+				} else if (switch_index == min_start_index) {
+					goto fini;
+				}
+			} while (hypercube_switches[min_curve][switch_index]->
+				  avail_cnt == 0);
+		}
+
+		/* Find the next usable node in the switch */
+		do {
+			cur_node_index++;
+			node_index = hypercube_switches[min_curve][switch_index]->
+				node_index[cur_node_index];
+		} while (FALSE == bit_test(avail_bitmap, node_index));
+
+		/* Allocate the CPUs from the node */
+		bit_set(bitmap, node_index);
+		rem_cpus   -= _get_avail_cpus(job_ptr, node_index);
+		total_cpus += adjust_cpus_nppcu(
+			_get_ntasks_per_core(job_ptr->details),
+			_get_total_threads(node_index), _get_total_cpus(node_index));
+
+		rem_nodes--;
+		max_nodes--;
+		node_counter++;
+	}
+fini:	
+	/* If we allocated sufficient CPUs and nodes, we were successful */
+	if ((max_nodes >= 0) && (rem_cpus <= 0) &&
+	    (bit_set_count(bitmap) >= min_nodes)){
+		rc = SLURM_SUCCESS;
+		/* Job's total_cpus is needed for SELECT_MODE_WILL_RUN */
+		job_ptr->total_cpus = total_cpus;
+	} else { 
+		rc = EINVAL;
+		if (max_nodes < 0) {
+			info("job %u requires more nodes than allowed",
+			     job_ptr->job_id);
+		}
+	}
+
+	xfree(req_squared_sums);
+	xfree(req_summed_squares);
+	FREE_NULL_BITMAP(req_nodes_bitmap);
+	FREE_NULL_BITMAP(avail_bitmap);
+
+	return rc;
+}
+
 
 /*
  * _job_test_topo - A topology aware version of _job_test()
