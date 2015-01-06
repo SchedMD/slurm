@@ -417,7 +417,7 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 				list_push(preempt_list, preempt_ptr);
 
 				add_total_space_avail += bb_ptr->size;
-				if (bb_ptr->user_id == job_ptr->user_id);
+				if (bb_ptr->user_id == job_ptr->user_id)
 					add_user_space_avail += bb_ptr->size;
 			}
 			bb_ptr = bb_ptr->next;
