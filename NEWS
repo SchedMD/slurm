@@ -19,8 +19,8 @@ documents those changes that are of interest to users and administrators.
     NOTE: Only supported with select/linear plugin.
     NOTE: The program contribs/sgi/netloc_to_topology can be used to build
     Slurm's topology.conf file.
- -- Increase maximum node list size (for incoming RPC) from 64k to
-    num_tasks * MAXHOSTNAMELEN.
+ -- Remove 64k validation of incoming RPC nodelist size. Validated at 64MB
+    when unpacking.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

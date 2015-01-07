@@ -2153,9 +2153,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    _test_strlen(step_specs->gres, "gres", 1024)		||
 	    _test_strlen(step_specs->host, "host", 1024)		||
 	    _test_strlen(step_specs->name, "name", 1024)		||
-	    _test_strlen(step_specs->network, "network", 1024)		||
-	    _test_strlen(step_specs->node_list, "node_list",
-		    step_specs->num_tasks * MAXHOSTNAMELEN))
+	    _test_strlen(step_specs->network, "network", 1024))
 		return ESLURM_PATHNAME_TOO_LONG;
 
 	if (job_ptr->next_step_id >= slurmctld_conf.max_step_cnt)
