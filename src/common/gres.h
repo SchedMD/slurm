@@ -79,37 +79,37 @@ typedef struct gres_slurmd_conf {
 /* Current gres state information managed by slurmctld daemon */
 typedef struct gres_node_state {
 	/* Actual hardware found */
-	uint32_t gres_cnt_found;
+	uint64_t gres_cnt_found;
 
 	/* Configured resources via Gres parameter */
-	uint32_t gres_cnt_config;
+	uint64_t gres_cnt_config;
 
 	/* Non-consumable: Do not track resources allocated to jobs */
 	bool no_consume;
 
 	/* Total resources available for allocation to jobs.
 	 * gres_cnt_found or gres_cnt_config, depending upon FastSchedule */
-	uint32_t gres_cnt_avail;
+	uint64_t gres_cnt_avail;
 
 	/* List of GRES in current use. Set NULL if needs to be rebuilt. */
 	char *gres_used;
 
 	/* Resources currently allocated to jobs */
-	uint32_t  gres_cnt_alloc;
+	uint64_t  gres_cnt_alloc;
 	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File field */
 
 	/* Topology specific information (if gres.conf contains CPUs option) */
 	uint16_t topo_cnt;		/* Size of topo_ arrays */
 	bitstr_t **topo_cpus_bitmap;
 	bitstr_t **topo_gres_bitmap;
-	uint32_t *topo_gres_cnt_alloc;
-	uint32_t *topo_gres_cnt_avail;
+	uint64_t *topo_gres_cnt_alloc;
+	uint64_t *topo_gres_cnt_avail;
 	char **topo_model;		/* Type of this gres (e.g. model name) */
 
 	/* Gres type specific information (if gres.conf contains type option) */
 	uint16_t type_cnt;		/* Size of type_ arrays */
-	uint32_t *type_cnt_alloc;
-	uint32_t *type_cnt_avail;
+	uint64_t *type_cnt_alloc;
+	uint64_t *type_cnt_avail;
 	char **type_model;		/* Type of this gres (e.g. model name) */
 } gres_node_state_t;
 
@@ -118,7 +118,7 @@ typedef struct gres_job_state {
 	char *type_model;		/* Type of this gres (e.g. model name) */
 
 	/* Count of resources needed per node */
-	uint32_t gres_cnt_alloc;
+	uint64_t gres_cnt_alloc;
 
 	/* Resources currently allocated to job on each node */
 	uint32_t node_cnt;
@@ -128,7 +128,7 @@ typedef struct gres_job_state {
 	 * This will be a subset of resources allocated to the job.
 	 * gres_bit_step_alloc is a subset of gres_bit_alloc */
 	bitstr_t **gres_bit_step_alloc;
-	uint32_t  *gres_cnt_step_alloc;
+	uint64_t  *gres_cnt_step_alloc;
 } gres_job_state_t;
 
 /* Gres job step state as used by slurmctld daemon */
@@ -136,13 +136,13 @@ typedef struct gres_step_state {
 	char *type_model;		/* Type of this gres (e.g. model name) */
 
 	/* Count of resources needed per node */
-	uint32_t gres_cnt_alloc;
+	uint64_t gres_cnt_alloc;
 
 	/* Resources currently allocated to the job step on each node
 	 *
 	 * NOTE: node_cnt and the size of node_in_use and gres_bit_alloc are
 	 * identical to that of the job for simplicity. Bits in node_in_use
-	 * are set for those node of the job that are used by this step and 
+	 * are set for those node of the job that are used by this step and
 	 * gres_bit_alloc are also set if the job's gres_bit_alloc is set */
 	uint32_t node_cnt;
 	bitstr_t *node_in_use;
@@ -478,7 +478,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
  *                  available)
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list, 
+extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 int node_cnt, int node_offset,
 				 uint32_t cpu_cnt, uint32_t job_id,
 				 char *node_name, bitstr_t *core_bitmap);
@@ -496,7 +496,7 @@ extern void gres_plugin_job_clear(List job_gres_list);
  * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list, 
+extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				   int node_offset, uint32_t job_id,
 				   char *node_name);
 

@@ -222,6 +222,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 #define NO_VAL	 (0xfffffffe)
+#define NO_VAL64 (0xfffffffffffffffe)
 #define MAX_TASKS_PER_NODE 128
 
 /* Job step ID of batch scripts */
