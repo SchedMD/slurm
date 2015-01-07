@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault in slurmstepd when job exceeded memory limit.
  -- Fix race condition that could start a job that is dependent upon a job array
     before all tasks of that job array complete.
+ -- PMI2 race condition fix.
 
 * Changes in Slurm 14.11.2
 ==========================
