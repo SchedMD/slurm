@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- PMI2 race condition fix.
  -- Avoid delay on commit for PMI rank 0 to improve performance with some
     MPI implementations.
+ -- Correct the sbatch pbs parser to process -j.
 
 * Changes in Slurm 14.03.11
 ===========================
