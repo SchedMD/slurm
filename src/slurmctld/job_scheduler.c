@@ -83,7 +83,9 @@
 #include "src/slurmctld/sched_plugin.h"
 
 #define _DEBUG 0
-#define BB_STAGE_JOB_CNT 1
+#ifndef BB_STAGE_ARRAY_TASK_CNT
+#  define BB_STAGE_ARRAY_TASK_CNT 4
+#endif
 #define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
 #define MAX_FAILED_RESV 10
 #define MAX_RETRIES 10
@@ -320,10 +322,15 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		if ((i = bit_ffs(job_ptr->array_recs->task_id_bitmap)) < 0)
 			continue;
 		pend_cnt = num_pending_job_array_tasks(job_ptr->array_job_id);
-		if (pend_cnt >= BB_STAGE_JOB_CNT)
+		if (pend_cnt >= BB_STAGE_ARRAY_TASK_CNT)
 			continue;
-		if (job_ptr->array_recs->task_cnt <= 1)
+		if (job_ptr->array_recs->task_cnt < 1)
 			continue;
+		if (job_ptr->array_recs->task_cnt == 1) {
+			job_ptr->array_task_id = i;
+			job_array_post_sched(job_ptr);
+			continue;
+		}
 		job_ptr->array_task_id = i;
 		new_job_ptr = job_array_split(job_ptr);
 		if (new_job_ptr) {
