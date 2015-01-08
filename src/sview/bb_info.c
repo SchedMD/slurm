@@ -289,8 +289,16 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 
 	if (bb_ptr->name) {
 		strncpy(bb_name_id, bb_ptr->name, sizeof(bb_name_id));
+	} else if (bb_ptr->array_task_id == NO_VAL) {
+		convert_num_unit(bb_ptr->job_id, bb_name_id,
+				 sizeof(bb_name_id),
+				 UNIT_NONE);
 	} else {
-		snprintf(bb_name_id, sizeof(bb_name_id), "%u", bb_ptr->job_id);
+		snprintf(bb_name_id, sizeof(bb_name_id),
+			 "%u_%u(%u)",
+			 bb_ptr->array_job_id,
+			 bb_ptr->array_task_id,
+			 bb_ptr->job_id);
 	}
 
 	slurm_make_time_str((time_t *)&bb_ptr->state_time, tmp_state_time,

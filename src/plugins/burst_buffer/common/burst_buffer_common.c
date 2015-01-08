@@ -204,6 +204,7 @@ extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 				   bb_alloc_t **bb_hash)
 {
 	bb_alloc_t *bb_ptr = NULL;
+	char jobid_buf[32];
 
 	xassert(job_ptr);
 	bb_ptr = bb_hash[job_ptr->user_id % BB_HASH_SIZE];
@@ -212,9 +213,10 @@ extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 			if (bb_ptr->user_id == job_ptr->user_id)
 				return bb_ptr;
 			error("%s: Slurm state inconsistent with burst "
-			      "buffer. JobID %u has UserID mismatch (%u != %u)",
-			      __func__, job_ptr->user_id, bb_ptr->user_id,
-			      job_ptr->user_id);
+			      "buffer. %s has UserID mismatch (%u != %u)",
+			      __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			      bb_ptr->user_id, job_ptr->user_id);
 			/* This has been observed when slurmctld crashed and
 			 * the job state recovered was missing some jobs
 			 * which already had burst buffers configured. */

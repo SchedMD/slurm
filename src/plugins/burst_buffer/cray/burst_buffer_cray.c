@@ -568,6 +568,7 @@ static int _queue_stage_in(struct job_record *job_ptr)
 	pthread_attr_t stage_attr;
 	pthread_t stage_tid = 0;
 	int rc = SLURM_SUCCESS;
+	char jobid_buf[32];
 
 	if (job_ptr->burst_buffer) {
 		tok = strstr(job_ptr->burst_buffer, "SLURM_SIZE=");
@@ -586,8 +587,9 @@ static int _queue_stage_in(struct job_record *job_ptr)
 		}
 	}
 	if (!capacity) {
-		error("%s: Job %u has invalid burst buffer spec(%s)", __func__,
-		     job_ptr->job_id, job_ptr->burst_buffer);
+		error("%s: %s has invalid burst buffer spec(%s)", __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+		     job_ptr->burst_buffer);
 		return SLURM_ERROR;
 	}
 
@@ -1031,6 +1033,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 	time_t now = time(NULL);
 	bb_alloc_t *bb_ptr = NULL;
 	int d, i, j, k;
+	char jobid_buf[32];
 
 	xassert(bb_spec);
 	add_space = bb_spec->total_size;
@@ -1041,8 +1044,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 	     (add_space > bb_state.bb_config.job_size_limit)) ||
 	    ((bb_state.bb_config.user_size_limit != NO_VAL) &&
 	     (add_space > bb_state.bb_config.user_size_limit))) {
-		debug("%s: job %u requests more space than available",
-		      __func__, job_ptr->job_id);
+		debug("%s: %s requests more space than available", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return 1;
 	}
 
@@ -1072,9 +1075,10 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 			tmp_g *= bb_state.bb_config.gres_ptr[j].granularity;
 			bb_spec->gres_ptr[i].count = tmp_g;
 			if (tmp_g > bb_state.bb_config.gres_ptr[j].avail_cnt) {
-				debug("%s: job %u requests more %s GRES than"
-				      "configured",
-				      __func__, job_ptr->job_id,
+				debug("%s: %s requests more %s GRES than"
+				      "configured", __func__,
+				      jobid2fmt(job_ptr, jobid_buf,
+						sizeof(jobid_buf)),
 				      bb_spec->gres_ptr[i].name);
 				_free_needed_gres_struct(needed_gres_ptr,
 							 bb_spec->gres_cnt);
@@ -1088,8 +1092,9 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 			break;
 		}
 		if (j >= bb_state.bb_config.gres_cnt) {
-			debug("%s: job %u requests %s GRES which are undefined",
-			      __func__, job_ptr->job_id,
+			debug("%s: %s requests %s GRES which are undefined",
+			      __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 			      bb_spec->gres_ptr[i].name);
 			_free_needed_gres_struct(needed_gres_ptr,
 						 bb_spec->gres_cnt);
@@ -1199,9 +1204,10 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 				_queue_teardown(preempt_ptr->job_id, true);
 				if (bb_state.bb_config.debug_flag) {
 					info("%s: %s: Preempting stage-in of "
-					     "job %u for job %u", plugin_type,
+					     "job %u for %s", plugin_type,
 					     __func__, preempt_ptr->job_id,
-					     job_ptr->job_id);
+					     jobid2fmt(job_ptr, jobid_buf,
+						       sizeof(jobid_buf)));
 				}
 			}
 		}
@@ -1603,8 +1609,6 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	int eof, offset;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s",  __func__, plugin_type);
 	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
 	offset = get_buf_offset(buffer);
 	pack32(rec_count,        buffer);
@@ -1618,8 +1622,10 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 		pack32(rec_count, buffer);
 		set_buf_offset(buffer, eof);
 	}
-	if (bb_state.bb_config.debug_flag)
-		info("%s: record_count:%u",  __func__, rec_count);
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: record_count:%u",
+		     plugin_type,  __func__, rec_count);
+	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -2080,10 +2086,11 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 {
 //FIXME: How to handle various job terminate states (e.g. requeue, failure), user script controlled?
 	bb_alloc_t *bb_ptr;
+	char jobid_buf[32];
 
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_id:%u",
-		     plugin_type, __func__, job_ptr->job_id);
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 
 	if (!_test_bb_spec(job_ptr))
@@ -2093,8 +2100,8 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
 		/* No job buffers. Assuming use of persistent buffers only */
-		debug("%s: job_id:%u bb_rec not found",
-		      __func__, job_ptr->job_id);
+		debug("%s: %s bb_rec not found", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	} else {
 		bb_ptr->state = BB_STATE_STAGING_OUT;
 		bb_ptr->state_time = time(NULL);
@@ -2116,10 +2123,11 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
 	int rc = -1;
+	char jobid_buf[32];
 
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_id:%u",
-		     plugin_type, __func__, job_ptr->job_id);
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 
 	if (!_test_bb_spec(job_ptr))
@@ -2129,8 +2137,8 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
 		/* No job buffers. Assuming use of persistent buffers only */
-		debug("%s: job_id:%u bb_rec not found",
-		      __func__, job_ptr->job_id);
+		debug("%s: %s bb_rec not found", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		rc =  1;
 	} else {
 		if (bb_ptr->state == BB_STATE_STAGING_OUT) {
@@ -2138,8 +2146,9 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		} else if (bb_ptr->state == BB_STATE_COMPLETE) {
 			rc =  1;
 		} else {
-			error("%s: job_id:%u bb_state:%u",
-			      __func__, job_ptr->job_id, bb_ptr->state);
+			error("%s: %s bb_state:%u", __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			      bb_ptr->state);
 			rc = -1;
 		}
 	}
@@ -2156,10 +2165,11 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 extern int bb_p_job_cancel(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
+	char jobid_buf[32];
 
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s",  __func__, plugin_type);
-		info("%s: job_id:%u", __func__, job_ptr->job_id);
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 
 	if (!_test_bb_spec(job_ptr))

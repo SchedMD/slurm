@@ -189,7 +189,7 @@ static void _print_burst_buffer_resv(FILE *out,
 			"    JobID=%u ", burst_buffer_ptr->job_id);
 	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"    JobID=%u.%u(%u) ",
+			"    JobID=%u_%u(%u) ",
 			burst_buffer_ptr->array_job_id,
 		        burst_buffer_ptr->array_task_id,
 		        burst_buffer_ptr->job_id);

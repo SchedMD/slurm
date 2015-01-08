@@ -148,14 +148,15 @@ static char **_build_stage_args(char *cmd, char *opt,
 	char **script_argv = NULL;
 	char *save_ptr = NULL, *script, *tok;
 	int script_argc = 0, size;
+	char jobid_buf[32];
 
 	if (job_ptr->batch_flag == 0)
 		return script_argv;
 
 	script = get_job_script(job_ptr);
 	if (!script) {
-		error("%s: failed to get script for job %u",
-		      __func__, job_ptr->job_id);
+		error("%s: failed to get script for %s", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return script_argv;
 	}
 
@@ -375,6 +376,7 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 	time_t now = time(NULL);
 	bb_alloc_t *bb_ptr = NULL;
 	int i;
+	char jobid_buf[32];
 
 	/* Determine if burst buffer can be allocated now for the job.
 	 * If not, determine how much space must be free. */
@@ -437,9 +439,10 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 				preempt_ptr->bb_ptr->end_time = 0;
 				if (bb_state.bb_config.debug_flag) {
 					info("%s: %s: Preempting stage-in of "
-					     "job %u for job %u", plugin_type,
+					     "job %u for %s", plugin_type,
 					     __func__, preempt_ptr->job_id,
-					     job_ptr->job_id);
+					     jobid2fmt(job_ptr, jobid_buf,
+						       sizeof(jobid_buf)));
 				}
 				add_user_space_needed  -= preempt_ptr->size;
 				add_total_space_needed -= preempt_ptr->size;
@@ -451,9 +454,10 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 				preempt_ptr->bb_ptr->end_time = 0;
 				if (bb_state.bb_config.debug_flag) {
 					info("%s: %s: Preempting stage-in of "
-					     "job %u for job %u", plugin_type,
+					     "job %u for %s", plugin_type,
 					     __func__, preempt_ptr->job_id,
-					     job_ptr->job_id);
+					     jobid2fmt(job_ptr, jobid_buf,
+						       sizeof(jobid_buf)));
 				}
 				add_total_space_needed -= preempt_ptr->size;
 			}
@@ -823,8 +827,6 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	int eof, offset;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s",  __func__, plugin_type);
 	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
 	offset = get_buf_offset(buffer);
 	pack32(rec_count,        buffer);
@@ -838,8 +840,10 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 		pack32(rec_count, buffer);
 		set_buf_offset(buffer, eof);
 	}
-	if (bb_state.bb_config.debug_flag)
-		info("%s: record_count:%u",  __func__, rec_count);
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: record_count:%u",
+		     plugin_type,  __func__, rec_count);
+	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -943,11 +947,13 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	time_t est_start = time(NULL);
 	uint32_t bb_size;
 	int rc;
+	char jobid_buf[32];
 
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_id:%u",
-		     plugin_type, __func__, job_ptr->job_id);
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
+
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    ((bb_size = _get_bb_size(job_ptr)) == 0))
@@ -978,14 +984,17 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
 	bb_alloc_t *bb_ptr;
 	int i, status = 0;
 	bb_job_t *bb_spec;
+	char jobid_buf[32];
 
 	bb_spec = xmalloc(sizeof(bb_job_t));
 	bb_spec->total_size = bb_size;
 	bb_ptr = bb_alloc_job(&bb_state, job_ptr, bb_spec);
 	xfree(bb_spec);
 
-	if (bb_state.bb_config.debug_flag)
-		info("%s: start stage-in job_id:%u", __func__, job_ptr->job_id);
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: start stage-in %s", __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	}
 	script_argv = _build_stage_args(bb_state.bb_config.start_stage_in,
 					"start_stage_in", job_ptr, bb_size);
 	if (script_argv) {
@@ -1090,11 +1099,13 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 	bb_alloc_t *bb_ptr;
 	uint32_t bb_size = 0;
 	int rc = 1;
+	char jobid_buf[32];
 
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_id:%u",
-		     plugin_type, __func__, job_ptr->job_id);
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
+
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    ((bb_size = _get_bb_size(job_ptr)) == 0))
@@ -1103,8 +1114,8 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
-		debug("%s: job_id:%u bb_rec not found",
-		      __func__, job_ptr->job_id);
+		debug("%s: %s bb_rec not found", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		rc = -1;
 		if ((test_only == false) &&
 		    (_test_size_limit(job_ptr, bb_size) == 0))
@@ -1117,8 +1128,9 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		} else if (bb_ptr->state == BB_STATE_STAGED_IN) {
 			rc = 1;
 		} else {
-			error("%s: job_id:%u bb_state:%u",
-			      __func__, job_ptr->job_id, bb_ptr->state);
+			error("%s: %s bb_state:%u", __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			      bb_ptr->state);
 			rc = -1;
 		}
 	}
@@ -1161,10 +1173,11 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	bb_alloc_t *bb_ptr;
 	char **script_argv, *resp;
 	int i, status = 0;
+	char jobid_buf[32];
 
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_id:%u",
-		     plugin_type, __func__, job_ptr->job_id);
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 
 	if (!bb_state.bb_config.start_stage_out)
@@ -1179,8 +1192,8 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
 		/* No job buffers. Assuming use of persistent buffers only */
-		debug("%s: job_id:%u bb_rec not found",
-		      __func__, job_ptr->job_id);
+		debug("%s: %s bb_rec not found", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	} else {
 		script_argv = _build_stage_args(bb_state.bb_config.start_stage_out,
 						"start_stage_out", job_ptr,
@@ -1219,11 +1232,13 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
 	int rc = -1;
+	char jobid_buf[32];
 
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: job_id:%u",
-		     plugin_type, __func__, job_ptr->job_id);
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
+
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0') ||
 	    (_get_bb_size(job_ptr) == 0))
@@ -1233,8 +1248,8 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
 		/* No job buffers. Assuming use of persistent buffers only */
-		debug("%s: job_id:%u bb_rec not found",
-		      __func__, job_ptr->job_id);
+		debug("%s: %s bb_rec not found", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		rc =  1;
 	} else {
 		if (bb_ptr->state < BB_STATE_STAGED_OUT)
@@ -1248,8 +1263,9 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 			}
 			rc =  1;
 		} else {
-			error("%s: job_id:%u bb_state:%u",
-			      __func__, job_ptr->job_id, bb_ptr->state);
+			error("%s: %s bb_state:%u", __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			      bb_ptr->state);
 			rc = -1;
 		}
 	}
@@ -1268,10 +1284,11 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	bb_alloc_t *bb_ptr;
 	char **script_argv, *resp;
 	int i, status = 0;
+	char jobid_buf[32];
 
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s",  __func__, plugin_type);
-		info("%s: job_id:%u", __func__, job_ptr->job_id);
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 
 	if (!bb_state.bb_config.stop_stage_out)
