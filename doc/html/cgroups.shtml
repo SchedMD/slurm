@@ -109,15 +109,15 @@ options also apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page
 for details.</p>
 
 <h3>jobacct_gather/cgroup plugin</h3>
-<b>At present, jobacct_gather/cgroup should be considered experimental.</b>
 <p>
 The jobacct_gather/cgroup plugin is an alternative to the jobacct_gather/linux
 plugin for the collection of accounting statistics for jobs, steps and tasks.
-The cgroup plugin may provide improved performance over jobacct_gather/linux.
 jobacct_gather/cgroup uses the cpuacct, memory and blkio subsystems. Note: the
 cpu and memory statistics collected by this plugin do not represent the same
 resources as the cpu and memory statistics collected by the
-jobacct_gather/linux plugin (sourced from /proc stat).
+jobacct_gather/linux plugin (sourced from /proc stat). While originally
+thought to be faster, in practice it has been proven to be slower than the
+jobacct_gather/linux plugin.
 <p>To enable this plugin, configure the following option in slurm.conf:
 <pre>JobacctGatherType=jobacct_gather/cgroup</pre>
 </p>
@@ -205,6 +205,6 @@ the following example.</li>
 </ul>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 May 2014</p>
+<p style="text-align:center;">Last modified 7 Jan 2014</p>
 
 <!--#include virtual="footer.txt"-->
