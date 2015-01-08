@@ -1209,6 +1209,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 	}
 	list_destroy(preempt_list);
 	_free_needed_gres_struct(needed_gres_ptr, bb_spec->gres_cnt);
+
 	return 2;
 }
 
@@ -1950,16 +1951,10 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		      __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		rc = -1;
-		if (test_only == false) {
-			if (_test_size_limit(job_ptr, bb_spec) == 0) {
-				if (_alloc_job_bb(job_ptr, bb_spec) ==
-				    SLURM_SUCCESS) {
-					rc = 1;
-				}
-			} else {
-				(void) bb_alloc_job_rec(&bb_state, job_ptr,
-							bb_spec);
-			}
+		if ((test_only == false) &&
+		    (_test_size_limit(job_ptr, bb_spec) == 0) &&
+		    (_alloc_job_bb(job_ptr, bb_spec) == SLURM_SUCCESS)) {
+			rc = 0;
 		}
 	} else {
 		if (bb_ptr->state < BB_STATE_STAGED_IN) {
