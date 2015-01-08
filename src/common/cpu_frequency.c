@@ -818,7 +818,7 @@ uint32_t
 _cpu_freq_freqspec_num(uint32_t cpu_freq, int cpuidx)
 {
 	int fx, j;
-	if (!cpufreq || cpufreq[cpuidx].nfreq==NO_VAL)
+	if (!cpufreq || (cpufreq[cpuidx].nfreq == (uint8_t) NO_VAL))
 		return NO_VAL;
 	/* assume the frequency list is in ascending order */
 	if (cpu_freq & CPU_FREQ_RANGE_FLAG) {	/* Named values */

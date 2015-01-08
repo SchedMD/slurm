@@ -1165,13 +1165,11 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 				do_preempt = true;
 				add_user_space_needed  -= preempt_ptr->size;
 				add_total_space_needed -= preempt_ptr->size;
-				continue;
 			}
 			if ((add_total_space_needed > add_user_space_needed) &&
 			    (preempt_ptr->user_id != job_ptr->user_id)) {
 				do_preempt = true;
 				add_total_space_needed -= preempt_ptr->size;
-				continue;
 			}
 			if (add_total_gres_needed) {
 				for (j = 0; j < bb_spec->gres_cnt; j++) {
