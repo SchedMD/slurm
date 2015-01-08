@@ -669,6 +669,11 @@ HAVE_LUA_FALSE
 HAVE_LUA_TRUE
 lua_LIBS
 lua_CFLAGS
+NETLOC_LDFLAGS
+NETLOC_CPPFLAGS
+NETLOC_LIBS
+HAVE_NETLOC_FALSE
+HAVE_NETLOC_TRUE
 HAVE_SGI_JOB_FALSE
 HAVE_SGI_JOB_TRUE
 HAVE_NRT
@@ -1015,6 +1020,7 @@ with_slurmdbd_port
 with_slurmctld_port_count
 with_nrth
 with_libnrt
+with_netloc
 with_readline
 with_ssl
 with_munge
@@ -1747,6 +1753,7 @@ Optional Packages:
                           set slurmctld default port count [1]
   --with-nrth=PATH        Parent directory of nrt.h and permapi.h
   --with-libnrt=PATH      Parent directory of libnrt.so
+  --with-netloc=PATH      Specify path to netloc installation
   --without-readline      compile without readline support
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
@@ -23075,6 +23082,118 @@ fi
 
 
 
+
+  _x_ac_netloc_dirs="/usr /usr/local"
+  _x_ac_netloc_libs="lib64 lib"
+  x_ac_cv_netloc_nosub="no"
+
+
+# Check whether --with-netloc was given.
+if test "${with_netloc+set}" = set; then :
+  withval=$with_netloc; _x_ac_netloc_dirs="$withval $_x_ac_netloc_dirs"
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for netloc installation" >&5
+$as_echo_n "checking for netloc installation... " >&6; }
+if ${x_ac_cv_netloc_dir+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+      for d in $_x_ac_netloc_dirs; do
+        test -d "$d" || continue
+        test -d "$d/include" || continue
+        test -f "$d/include/netloc.h" || continue
+        for bit in $_x_ac_netloc_libs; do
+          test -d "$d/$bit" || continue
+          _x_ac_netloc_cppflags_save="$CPPFLAGS"
+          CPPFLAGS="-I$d/include $CPPFLAGS"
+          _x_ac_netloc_libs_save="$LIBS"
+          LIBS="-L$d/$bit -lnetloc $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netloc.h>
+                              #include <netloc/map.h>
+int
+main ()
+{
+netloc_map_t map;
+                              netloc_map_create(&map);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_cv_netloc_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netloc.h>
+                              #include <netloc_map.h>
+int
+main ()
+{
+netloc_map_t map;
+                              netloc_map_create(&map)
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_cv_netloc_dir=$d
+            x_ac_cv_netloc_nosub="yes"
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          CPPFLAGS="$_x_ac_netloc_cppflags_save"
+          LIBS="$_x_ac_netloc_libs_save"
+          test -n "$x_ac_cv_netloc_dir" && break
+        done
+        test -n "$x_ac_cv_netloc_dir" && break
+      done
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_netloc_dir" >&5
+$as_echo "$x_ac_cv_netloc_dir" >&6; }
+
+  if test -z "$x_ac_cv_netloc_dir"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate netloc installation" >&5
+$as_echo "$as_me: WARNING: unable to locate netloc installation" >&2;}
+  else
+    NETLOC_CPPFLAGS="-I$x_ac_cv_netloc_dir/include"
+    if test "$ac_with_rpath" = "yes"; then
+      NETLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_netloc_dir/$bit -L$x_ac_cv_netloc_dir/$bit"
+    else
+      NETLOC_LDFLAGS="-L$x_ac_cv_netloc_dir/$bit"
+    fi
+    NETLOC_LIBS="-lnetloc"
+
+$as_echo "#define HAVE_NETLOC 1" >>confdefs.h
+
+    if test "$x_ac_cv_netloc_nosub" = "yes"; then
+
+$as_echo "#define HAVE_NETLOC_NOSUB 1" >>confdefs.h
+
+    fi
+  fi
+
+   if test -n "$x_ac_cv_netloc_dir"; then
+  HAVE_NETLOC_TRUE=
+  HAVE_NETLOC_FALSE='#'
+else
+  HAVE_NETLOC_TRUE='#'
+  HAVE_NETLOC_FALSE=
+fi
+
+
+
+
+
+
+
 	x_ac_lua_pkg_name="lua"
 	#check for 5.2 if that fails check for 5.1
 	if test -n "$PKG_CONFIG" && \
@@ -24200,6 +24319,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_SGI_JOB_TRUE}" && test -z "${HAVE_SGI_JOB_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_SGI_JOB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_NETLOC_TRUE}" && test -z "${HAVE_NETLOC_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_NETLOC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_LUA_TRUE}" && test -z "${HAVE_LUA_FALSE}"; then

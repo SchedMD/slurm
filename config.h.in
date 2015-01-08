@@ -209,6 +209,12 @@
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
 
+/* Define to 1 if netloc library found */
+#undef HAVE_NETLOC
+
+/* Define to 1 if netloc includes use underscore not subdirectory */
+#undef HAVE_NETLOC_NOSUB
+
 /* define if you have nrt.h */
 #undef HAVE_NRT_H
 

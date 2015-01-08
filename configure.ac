@@ -335,6 +335,11 @@ dnl check for SGI job container support
 dnl
 X_AC_SGI_JOB
 
+
+dnl check for netloc library
+dnl
+X_AC_NETLOC
+
 dnl check for lua library
 dnl
 X_AC_LUA

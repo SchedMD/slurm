@@ -2,6 +2,9 @@
  *  Copyright (C) 2014 Silicon Graphics International Corp.
  *  All rights reserved. 
  ****************************************************************************/
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #define _GNU_SOURCE
 #include <stdlib.h>
@@ -9,7 +12,11 @@
 #include <sys/param.h>
 
 #include <netloc.h>
-#include <netloc/map.h>
+#ifdef HAVE_NETLOC_NOSUB
+#  include <netloc_map.h>
+#else
+#  include <netloc/map.h>
+#endif
 
 typedef struct node_group {
 	char *node_name;
@@ -66,7 +73,7 @@ static int find_node_group( int cpus, int cores_per_socket,
 					 int threads_per_core, int memory, const char *dst_name);
 
 // Make a new node group in the table and fill in information
-static int make_new_node_group( int cpus, int cores_per_socket, 
+static void make_new_node_group( int cpus, int cores_per_socket, 
 					 int threads_per_core, int memory, const char *dst_name);
 
 // Save Topology data of network to topology.conf file
@@ -119,7 +126,7 @@ static char *file_location = NULL, *file_location_temp= NULL;
 
 
 int main(int argc, char ** argv) {
-	int ret, exit_status = NETLOC_SUCCESS;
+	int ret;
 	netloc_topology_t topology;
 	netloc_map_t map;
 	
@@ -501,6 +508,7 @@ loop_through_edges(netloc_topology_t *topology, netloc_map_t *map,
 	
 	free(switch_str);
 	free(node_str);
+	return NETLOC_SUCCESS;
 }
 
 
@@ -582,7 +590,7 @@ static int
 add_node_connection(netloc_topology_t *topology, netloc_map_t *map, 
 		      netloc_edge_t *edge, char *node_str)
 {
-	int ret, i, j;
+	int ret;
 	hwloc_topology_t dst_hw_topo;
 	const char *dst_name;
 
@@ -658,7 +666,7 @@ static int find_node_group( int cpus, int cores_per_socket,
 
 
 // Make a new node group in the table and fill in information
-static int make_new_node_group( int cpus, int cores_per_socket, 
+static void make_new_node_group( int cpus, int cores_per_socket, 
 					 int threads_per_core, int memory, const char *dst_name)
 {
 	node_group_table[node_group_cnt].node_name = malloc( sizeof(char) * 2048);
@@ -854,7 +862,7 @@ static int
 make_new_switch_name(netloc_topology_t *topology, netloc_map_t *map, 
 			netloc_node_t *node, const char **name )
 {	
-	int ret, i, j, num_edges;
+	int ret, i, num_edges;
 	netloc_edge_t **edges = NULL;
 	const char *node_name;
 

@@ -4,6 +4,18 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+if HAVE_NETLOC
+
+EXTRA_DIST = README.txt
+bin_PROGRAMS = netloc_to_topology
+netloc_to_topology_SOURCES  = netloc_to_topology.c
+netloc_to_topology_CPPFLAGS = $(NETLOC_CPPFLAGS)
+netloc_to_topology_LDFLAGS  = $(NETLOC_LDFLAGS) $(NETLOC_LIBS)
+
+else
+
 EXTRA_DIST = \
 	netloc_to_topology.c	\
 	README.txt
+
+endif
