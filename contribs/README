@@ -96,6 +96,7 @@ of the SLURM contribs distribution follows:
   sgi/               [Tools for use on SGI systems]
      netloc_to_topology.c   [ C program ]
      Used to construct a Slurm topology.conf file based upon SGI network APIs.
+     README.txt      [Documentation]
 
   sjobexit/          [ Perl programs ]
      Tools for managing job exit code records

@@ -393,7 +393,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 EXTRA_DIST = \
-	netloc_to_topology.c
+	netloc_to_topology.c	\
+	README.txt
 
 all: all-am
 
