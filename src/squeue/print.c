@@ -350,7 +350,7 @@ int print_job_from_format(squeue_job_rec_t *job_rec_ptr, List list)
 		xfree(job_rec_ptr->job_ptr->partition);
 		job_rec_ptr->job_ptr->partition = xstrdup(job_rec_ptr->
 							  part_name);
-		
+
 	}
 	if (job_rec_ptr->job_ptr->array_task_str && params.array_flag) {
 		if (max_array_size == -1)
@@ -868,12 +868,13 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		   && (IS_JOB_PENDING(job)
 		       || IS_JOB_TIMEOUT(job)
 		       || IS_JOB_FAILED(job))) {
-		char id[FORMAT_STRING_SIZE], *reason;
+		int len = width ? width : FORMAT_STRING_SIZE;
+		char id[len], *reason;
 		if (job->state_desc)
 			reason = job->state_desc;
 		else
 			reason = job_reason_string(job->state_reason);
-		snprintf(id, FORMAT_STRING_SIZE, "(%s)", reason);
+		snprintf(id, len, "(%s)", reason);
 		_print_str(id, width, right, true);
 	} else {
 		char *nodes = xstrdup(job->nodes);
