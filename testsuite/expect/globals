@@ -1040,7 +1040,7 @@ proc test_cpu_affinity { } {
 	set parts [split [get_affinity_types] ","]
 
 	if { [lsearch $parts "affinity"] != -1 } {
-		set affinity 1;
+		set affinity 1
 	}
 
 	log_user 1
@@ -1066,9 +1066,9 @@ proc test_cpu_affinity_or_cgroup { } {
 	set parts [split [get_affinity_types] ","]
 
 	if { [lsearch $parts "affinity"] != -1 } {
-		set affinity 1;
+		set affinity 1
 	} elseif { [lsearch $parts "cgroup"] != -1 } {
-		set affinity 1;
+		set affinity 1
 	}
 
 	log_user 1
@@ -1093,7 +1093,7 @@ proc test_mem_affinity { } {
 	set parts [split [get_affinity_types] ","]
 
 	if { [lsearch $parts "affinity"] != -1 } {
-		set affinity 1;
+		set affinity 1
 	}
 
 	log_user 1
@@ -2277,7 +2277,7 @@ proc check_acct_associations { } {
 		      set num2 $expect_out(2,string)
 		      set first [info exists found($cluster,$num1)]
 		      set sec [info exists found($cluster,$num2)]
-		      #send_user "$first=$num1 $sec=$num2\n";
+		      #send_user "$first=$num1 $sec=$num2\n"
 		      if { $first } {
 			     send_user "FAILURE: $cluster found lft $num1 again\n"
 			     set rc 0
