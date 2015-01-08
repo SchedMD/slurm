@@ -1208,7 +1208,7 @@ _hypercube_add_nodes(
 	int32_t l_temp_rem_cpus = rem_cpus;
 	int64_t l_summed_squares = summed_squares;
 	int64_t l_squared_sums = squared_sums;
-	int32_t l_leftover_nodes;
+	int32_t l_leftover_nodes = 0;
 	int32_t l_distance_offset = 0;
 	int32_t l_distance;
 
@@ -1542,6 +1542,7 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	int i, rc = EINVAL;
 	int32_t rem_cpus, rem_nodes, node_count = 0, total_cpus = 0;
+	int32_t alloc_nodes = 0;
 	int64_t *req_summed_squares = xmalloc(
 		hypercube_dimensions * sizeof(int64_t));
 	int64_t *req_squared_sums = xmalloc(
@@ -1577,7 +1578,7 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 		i = bit_set_count(req_nodes_bitmap);
 		if (i > (int)max_nodes) {
 			info("job %u requires more nodes than currently "
-			     "available (%u>%u)",
+			     "available (%d>%u)",
 			     job_ptr->job_id, i, max_nodes);
 			FREE_NULL_BITMAP(req_nodes_bitmap);
 			FREE_NULL_BITMAP(avail_bitmap);
@@ -1586,7 +1587,7 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 			return EINVAL;
 		}
 		rem_nodes -= i;
-		max_nodes -= i;
+		alloc_nodes += i;
 	} else { // if there are no required nodes, update bitmaps accordingly
 		avail_bitmap = bit_copy(bitmap);
 		bit_nclear(bitmap, 0, node_record_count - 1);
@@ -1640,17 +1641,20 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	// check to see if no more nodes need to be added to the job
-	if ((max_nodes <= 0) || ((rem_nodes <= 0) && (rem_cpus <= 0))) {
+	if ((alloc_nodes >= max_nodes) ||
+	    ((rem_nodes <= 0) && (rem_cpus <= 0))) {
 		goto fini;
 	}
 
 	/* Find the best starting switch and traversal path to get nodes from */
-	_explore_hypercube(
-		job_ptr, avail_bitmap,
-		req_summed_squares, req_squared_sums, max_nodes, rem_nodes,
-		rem_cpus,
-		node_count, &min_start_index, &min_direction,
-		&min_curve);
+	if (alloc_nodes < max_nodes)
+		i = max_nodes - alloc_nodes;
+	else
+		i = 0;
+	_explore_hypercube(job_ptr, avail_bitmap, req_summed_squares,
+			   req_squared_sums, i, rem_nodes, rem_cpus,
+			   node_count, &min_start_index, &min_direction,
+			   &min_curve);
 	if (-1 == min_start_index)
 		goto fini;
 
@@ -1661,7 +1665,8 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 	 */
 	switch_index = min_start_index;
 	node_counter = 0;
-	while ((max_nodes > 0) && ((rem_nodes > 0) || (rem_cpus > 0))) {
+	while ((alloc_nodes < max_nodes) &&
+	       ((rem_nodes > 0) || (rem_cpus > 0))) {
 		int node_index;
 
 		/* If we used up all the nodes in a switch, move to the next */
@@ -1700,19 +1705,18 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 			_get_total_cpus(node_index));
 
 		rem_nodes--;
-		max_nodes--;
+		alloc_nodes++;
 		node_counter++;
 	}
 fini:	
 	/* If we allocated sufficient CPUs and nodes, we were successful */
-	if ((max_nodes >= 0) && (rem_cpus <= 0) &&
-	    (bit_set_count(bitmap) >= min_nodes)){
+	if ((rem_cpus <= 0) && (bit_set_count(bitmap) >= min_nodes)) {
 		rc = SLURM_SUCCESS;
 		/* Job's total_cpus is needed for SELECT_MODE_WILL_RUN */
 		job_ptr->total_cpus = total_cpus;
 	} else { 
 		rc = EINVAL;
-		if (max_nodes < 0) {
+		if (alloc_nodes > max_nodes) {
 			info("job %u requires more nodes than allowed",
 			     job_ptr->job_id);
 		}
