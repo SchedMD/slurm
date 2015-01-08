@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  bb_info.c - Functions related to Burst Buffer display mode of sview.
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Nathan Yee <nyee32@shedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -180,7 +180,7 @@ static void _layout_bb_record(GtkTreeView *treeview,
 {
 	GtkTreeIter iter;
 	char time_buf[20], *tmp_gres = NULL, tmp_user_id[60], tmp_size[20];
-	char bb_name_id[20];
+	char bb_name_id[32];
 	char *tmp_state, *tmp_user_name, *sep;
 	burst_buffer_resv_t *bb_ptr = sview_bb_info->bb_ptr;
 	GtkTreeStore *treestore;
@@ -275,7 +275,7 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 			      GtkTreeStore *treestore)
 {
 	char tmp_state_time[40];
-	char tmp_size[20], tmp_user_id[60], bb_name_id[20];
+	char tmp_size[20], tmp_user_id[60], bb_name_id[32];
 	char *tmp_gres = NULL, *tmp_state, *tmp_user_name, *sep;
 	burst_buffer_resv_t *bb_ptr = sview_bb_info_ptr->bb_ptr;
 	int i;
@@ -354,7 +354,7 @@ static void _update_info_bb(List info_list, GtkTreeView *tree_view)
 	itr = list_iterator_create(info_list);
 	while ((sview_bb_info = (sview_bb_info_t*) list_next(itr))) {
 		/* This means the tree_store changed (added new column
-		   or something). */
+		 * or something). */
 		if (last_model != model)
 			sview_bb_info->iter_set = false;
 
@@ -394,7 +394,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 	sview_bb_info_t *sview_bb_info_ptr = NULL;
 	burst_buffer_info_t *bb_ptr = bb_info_ptr->burst_buffer_array;
 	burst_buffer_resv_t *bb_resv_ptr = NULL;
-	char bb_name_id[20] = "";
+	char bb_name_id[32] = "";
 
 	if (info_list && (bb_info_ptr == last_bb_info_ptr)) {
 		return info_list;
@@ -436,14 +436,20 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 			}
 			list_iterator_reset(last_list_itr);
 		}
-		if(bb_resv_ptr->name) {
+		if (bb_resv_ptr->name) {
 			strcpy(bb_name_id,
 			       bb_resv_ptr->name);
-		} else {
+		} else if (bb_resv_ptr->array_task_id == NO_VAL) {
 			convert_num_unit(bb_resv_ptr->job_id,
 					 bb_name_id,
 					 sizeof(bb_name_id),
 					 UNIT_NONE);
+		} else {
+			snprintf(bb_name_id, sizeof(bb_name_id),
+				 "%u_%u(%u)",
+				 bb_resv_ptr->array_job_id,
+				 bb_resv_ptr->array_task_id,
+				 bb_resv_ptr->job_id);
 		}
 
 		if (!sview_bb_info_ptr)
@@ -474,7 +480,7 @@ static void _display_info_bb(List info_list, popup_info_t *popup_win)
 	ListIterator itr = NULL;
 	sview_bb_info_t *sview_bb_info = NULL;
 	int update = 0;
-	char bb_name_id[20];
+	char bb_name_id[32];
 
 	if (!spec_info->search_info->gchar_data) {
 		//info = xstrdup("No pointer given!");
@@ -497,13 +503,18 @@ static void _display_info_bb(List info_list, popup_info_t *popup_win)
 
 		if (bb_ptr->name) {
 			strcpy(bb_name_id, bb_ptr->name);
-		} else {
+		} else if (bb_ptr->array_task_id == NO_VAL) {
 			convert_num_unit(bb_ptr->job_id,
 					 bb_name_id,
 					 sizeof(bb_name_id),
 					 UNIT_NONE);
+		} else {
+			snprintf(bb_name_id, sizeof(bb_name_id),
+				 "%u_%u(%u)",
+				 bb_ptr->array_job_id,
+				 bb_ptr->array_task_id,
+				 bb_ptr->job_id);
 		}
-
 
 		if (!strcmp(bb_name_id, name)) {
 			_layout_bb_record(treeview, sview_bb_info, update);
@@ -918,7 +929,7 @@ extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	popup_win->model = model;
 	popup_win->iter = *iter;
 
-	/* Sets up righ click information */
+	/* Sets up right click information */
 	switch(id) {
 	case JOB_PAGE:
 	case INFO_PAGE:

@@ -1170,6 +1170,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 {
 //FIXME: How to handle various job terminate states (e.g. requeue, failure), user script controlled?
+//FIXME: Test for memory leaks
 	bb_alloc_t *bb_ptr;
 	char **script_argv, *resp;
 	int i, status = 0;
