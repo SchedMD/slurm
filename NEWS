@@ -89,6 +89,9 @@ documents those changes that are of interest to users and administrators.
     has been modified to accept a "Pack" and "NoPack" option. These options can
     be used to override the CR_PACK_NODE configuration option.
 
+* Changes in Slurm 14.11.4
+==========================
+
 * Changes in Slurm 14.11.3
 ==========================
  -- Prevent vestigial job record when cancelling a pending job array record.
@@ -128,6 +131,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault in slurmstepd when job exceeded memory limit.
  -- Fix race condition that could start a job that is dependent upon a job array
     before all tasks of that job array complete.
+ -- PMI2 race condition fix.
 
 * Changes in Slurm 14.11.2
 ==========================
@@ -497,6 +501,10 @@ documents those changes that are of interest to users and administrators.
 ===========================
  -- Make it so previous versions of salloc/srun work with newer versions
     of Slurm daemons.
+ -- PMI2 race condition fix.
+ -- Avoid delay on commit for PMI rank 0 to improve performance with some
+    MPI implementations.
+ -- Correct the sbatch pbs parser to process -j.
 
 * Changes in Slurm 14.03.11
 ===========================

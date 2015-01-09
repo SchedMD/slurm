@@ -37,11 +37,10 @@ set threads      0
 set job_id       0
 set exit_code    0
 array set freq_lvl_1 {
-	low           0
 	high          0
 	highm1        0
 	medium        0
-
+	low           0
 }
 array set freq_lvl_2 {
 	conservative  0
@@ -195,10 +194,14 @@ cancel_job $job_id
 
 array set freq_lvl_1 [sub_job [array get freq_lvl_1]]
 
-if {!(($freq_lvl_1(low) < $freq_lvl_1(medium)) && ($freq_lvl_1(medium) < $freq_lvl_1(high))
-      && ($freq_lvl_1(high) <= $freq_lvl_1(highm1)))} {
+if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
+      ($freq_lvl_1(medium) > $freq_lvl_1(high)) ||
+      ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
 	send_user "\nFAILURE: CPU frequencies are not correct\n"
-	set exit_code 1
+	foreach name [array names freq_lvl_1] {
+		send_user "$name is $freq_lvl_1($name)\n"
+	}
+	exit 1
 }
 
 array set freq_lvl_2 [sub_job [array get freq_lvl_2]]

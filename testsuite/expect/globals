@@ -216,6 +216,7 @@ cset sleep_error_message "(invalid time interval)|(bad character in argument)"
 # Other common variables
 set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
+set alpha_comma_slash    "\[a-zA-Z/,\]+"
 set alpha_numeric        "\[a-zA-Z0-9\]+"
 set alpha_numeric_comma  "\[a-zA-Z0-9_,\-\]+"
 set alpha_numeric_under  "\[a-zA-Z0-9_\-\]+"
@@ -985,6 +986,41 @@ proc test_topology { } {
 
 ################################################################
 #
+# Proc: get_task_plugins
+#
+# Purpose: get the task plugins running with task/ stripped
+#
+# Returns Returns comma separated list of task plugins running without the task/
+#
+################################################################
+proc get_affinity_types { } {
+	global scontrol alpha_comma_slash
+
+	log_user 0
+	set affinity 0
+	spawn $scontrol show config
+	expect {
+		-re "TaskPlugin *= ($alpha_comma_slash)" {
+			set parts [split $expect_out(1,string) ",/"]
+			while 1 {
+				set task_found [lsearch $parts "task"]
+				if { $task_found == -1 } break
+				set parts [lreplace $parts $task_found $task_found]
+			}
+			set affinity [join $parts ","]
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $affinity
+}
+
+################################################################
+#
 # Proc: test_cpu_affinity
 #
 # Purpose: Determine if system is using the task/affinity plugin
@@ -993,21 +1029,13 @@ proc test_topology { } {
 #
 ################################################################
 proc test_cpu_affinity { } {
-	global scontrol alpha
-
 	log_user 0
+
 	set affinity 0
-	spawn $scontrol show config
-	expect {
-		-re "task/($alpha)" {
-			if {![string compare $expect_out(1,string) "affinity"]} {
-				set affinity 1
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	set parts [split [get_affinity_types] ","]
+
+	if { [lsearch $parts "affinity"] != -1 } {
+		set affinity 1
 	}
 
 	log_user 1
@@ -1028,18 +1056,14 @@ proc test_cpu_affinity_or_cgroup { } {
 	global scontrol alpha
 
 	log_user 0
+
 	set affinity 0
-	spawn $scontrol show config
-	expect {
-		-re "task/($alpha)" {
-			if {![string compare $expect_out(1,string) "affinity"] || ![string compare $expect_out(1,string) "cgroup"]} {
-				set affinity 1
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	set parts [split [get_affinity_types] ","]
+
+	if { [lsearch $parts "affinity"] != -1 } {
+		set affinity 1
+	} elseif { [lsearch $parts "cgroup"] != -1 } {
+		set affinity 1
 	}
 
 	log_user 1
@@ -1059,16 +1083,12 @@ proc test_mem_affinity { } {
 	global scontrol alpha
 
 	log_user 0
+
 	set affinity 0
-	spawn $scontrol show config
-	expect {
-		-re "task/affinity" {
-			set affinity 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	set parts [split [get_affinity_types] ","]
+
+	if { [lsearch $parts "affinity"] != -1 } {
+		set affinity 1
 	}
 
 	log_user 1
@@ -2252,7 +2272,7 @@ proc check_acct_associations { } {
 		      set num2 $expect_out(2,string)
 		      set first [info exists found($cluster,$num1)]
 		      set sec [info exists found($cluster,$num2)]
-		      #send_user "$first=$num1 $sec=$num2\n";
+		      #send_user "$first=$num1 $sec=$num2\n"
 		      if { $first } {
 			     send_user "FAILURE: $cluster found lft $num1 again\n"
 			     set rc 0
