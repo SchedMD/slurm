@@ -130,11 +130,14 @@ typedef struct {		/* Used for scheduling */
 
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec);
 static void *	_bb_agent(void *args);
-static bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr);
+static bb_entry_t *
+		_bb_entry_get(int *num_ent, bb_state_t *state_ptr);
 static void	_bb_free_entry(struct bb_entry *ents, int num_ent);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static void	_del_bb_spec(bb_job_t *bb_spec);
-static bb_job_t *_get_bb_spec(struct job_record *job_ptr);
+static bb_job_t *
+		_get_bb_spec(struct job_record *job_ptr);
+static void	_job_queue_del(void *x);
 static struct bb_entry *
 		_json_parse_array(json_object *jobj, char *key, int *num);
 static void	_json_parse_object(json_object *jobj, struct bb_entry *ent);
@@ -156,6 +159,15 @@ static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list,
 				uint32_t job_id);
+
+static void _job_queue_del(void *x)
+{
+	job_queue_rec_t *job_rec = (job_queue_rec_t *) x;
+	if (job_rec) {
+		_del_bb_spec(job_rec->bb_spec);
+		xfree(job_rec);
+	}
+}
 
 /* Purge files we have created for the job.
  * bb_state.bb_mutex is locked on function entry. */
@@ -1102,8 +1114,10 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 		}
 	}
 	if ((add_total_space_needed <= 0) &&
-	    (add_user_space_needed  <= 0) && (add_total_gres_needed <= 0))
+	    (add_user_space_needed  <= 0) && (add_total_gres_needed <= 0)) {
+		_free_needed_gres_struct(needed_gres_ptr, bb_spec->gres_cnt);
 		return 0;
+	}
 
 	/* Identify candidate burst buffers to revoke for higher priority job */
 	preempt_list = list_create(bb_job_queue_del);
@@ -1867,7 +1881,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		info("%s: %s", plugin_type,  __func__);
 
 	/* Identify candidates to be allocated burst buffers */
-	job_candidates = list_create(bb_job_queue_del);
+	job_candidates = list_create(_job_queue_del);
 	job_iter = list_iterator_create(job_queue);
 	while ((job_ptr = list_next(job_iter))) {
 		if (!IS_JOB_PENDING(job_ptr) ||
@@ -1897,23 +1911,16 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		job_ptr = job_rec->job_ptr;
 		bb_spec = job_rec->bb_spec;
 
-		if (bb_find_job_rec(job_ptr, bb_state.bb_hash)) {
-			/* Job has already been allocated a buffer */
-			_del_bb_spec(bb_spec);
-			continue;
-		}
+		if (bb_find_job_rec(job_ptr, bb_state.bb_hash))
+			continue;	/* Job was already allocated a buffer */
 
 		rc = _test_size_limit(job_ptr, bb_spec);
-		if (rc == 1) {
-			_del_bb_spec(bb_spec);
+		if (rc == 0)
+			(void) _alloc_job_bb(job_ptr, bb_spec);
+		else if (rc == 1)
 			continue;
-		} else if (rc == 2) {
-			_del_bb_spec(bb_spec);
+		else /* (rc == 2) */
 			break;
-		}
-
-		(void) _alloc_job_bb(job_ptr, bb_spec);
-		_del_bb_spec(bb_spec);
 	}
 	list_iterator_destroy(job_iter);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -2066,6 +2073,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		xfree(resp_msg);
 		for (i = 0; pre_run_argv[i]; i++)
 			xfree(pre_run_argv[i]);
+		xfree(pre_run_argv);
 	}
 
 	xfree(job_dir);

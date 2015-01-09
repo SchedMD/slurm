@@ -675,8 +675,10 @@ static void _load_state(uint32_t job_id)
 	START_TIMER;
 	resp = bb_run_script("GetSysState", bb_state.bb_config.get_sys_state,
 			     script_args, 2000, &status);
-	if (resp == NULL)
+	if (resp == NULL) {
+		xfree(resp);
 		return;
+	}
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
 		info("%s: GetSysState ran for %s", __func__, TIME_STR);
