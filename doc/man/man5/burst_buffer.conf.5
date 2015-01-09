@@ -54,17 +54,18 @@ Slurm distribution for an example.
 Granularity of job space allocations in units of gigabytes.
 The default value is 1 gigabyte.
 
-.TP
-\fBGres\fR
-Generic resources associated with burst buffers.
-This is a completely separate name space from the Gres defined in the slurm.conf
-file.
-The Gres value consistes of a comma separated list of generic resources,
-each of which includes a name separated by a colon and a numeric value.
-The numeric value can include a suffic of "k", "m" or "g", which multiplies
-the numeric value by 1,024, 1,048,576, or 1,073,741,824 respectively.
-The numeric value is a 32-bit value.
-See the example below.
+.\ Possible future enhancement
+.\ .TP
+.\ \fBGres\fR
+.\ Generic resources associated with burst buffers.
+.\ This is a completely separate name space from the Gres defined in the slurm.conf
+.\ file.
+.\ The Gres value consistes of a comma separated list of generic resources,
+.\ each of which includes a name separated by a colon and a numeric value.
+.\ The numeric value can include a suffic of "k", "m" or "g", which multiplies
+.\ the numeric value by 1,024, 1,048,576, or 1,073,741,824 respectively.
+.\ The numeric value is a 32-bit value.
+.\ See the example below.
 
 .TP
 \fBJobSizeLimit\fR
@@ -155,19 +156,19 @@ By default there is no job allocation size limit.
 .br
 ##################################################################
 .br
-AllowUsers=alan:brenda
+AllowUsers=alan,brenda
 .br
 PrivateData=true
-.br
-Gres=nodes:10,other:20
+.\ .br
+.\ Gres=nodes:10,other:20
 .br
 #
 .br
 Granularity=1GB
 .br
-JobSizeLimit=20GB   # Applies to each job
+JobSizeLimit=200GB   # Applies to each job
 .br
-UserSizeLimit=50GB  # Applies to ALL users
+UserSizeLimit=500GB  # Applies to each user
 .br
 #
 .br
@@ -177,9 +178,9 @@ PrioBoostAlloc=200
 .br
 #
 .br
-StageInTimeout=30
+StageInTimeout=30    # Seconds
 .br
-StageOutTimeout=30
+StageOutTimeout=30   # Seconds
 .br
 #
 .br

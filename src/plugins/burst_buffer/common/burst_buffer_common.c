@@ -67,7 +67,10 @@
 
 #include "burst_buffer_common.h"
 
-/* Translate colon delimitted list of users into a UID array,
+/* For possible future use by burst_buffer/generic */
+#define _SUPPORT_GRES 0
+
+/* Translate comma delimitted list of users into a UID array,
  * Return value must be xfreed */
 static uid_t *_parse_users(char *buf)
 {
@@ -83,7 +86,7 @@ static uid_t *_parse_users(char *buf)
 		delim[0] = '\0';
 	array_size = 1;
 	user_array = xmalloc(sizeof(uid_t) * array_size);
-	tok = strtok_r(tmp, ":", &save_ptr);
+	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		if ((uid_from_string(tok, user_array + inx) == -1) ||
 		    (user_array[inx] == 0)) {
@@ -95,7 +98,7 @@ static uid_t *_parse_users(char *buf)
 						      sizeof(uid_t)*array_size);
 			}
 		}
-		tok = strtok_r(NULL, ":", &save_ptr);
+		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
 	return user_array;
@@ -116,7 +119,7 @@ static char *_print_users(uid_t *buf)
 		if (!user_elem)
 			continue;
 		if (user_str)
-			xstrcat(user_str, ":");
+			xstrcat(user_str, ",");
 		xstrcat(user_str, user_elem);
 		xfree(user_elem);
 	}
@@ -322,6 +325,7 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 	}
 }
 
+#if _SUPPORT_GRES
 static uint32_t _atoi(char *tok)
 {
 	char *end_ptr = NULL;
@@ -341,20 +345,24 @@ static uint32_t _atoi(char *tok)
 	}
 	return size_u;
 }
+#endif
 
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_state_t *state_ptr, char *type)
 {
 	s_p_hashtbl_t *bb_hashtbl = NULL;
-	char *bb_conf, *colon, *save_ptr, *tmp = NULL, *tok, *value;
+	char *bb_conf, *tmp = NULL, *value;
+#if _SUPPORT_GRES
+	char *colon, *save_ptr = NULL, *tok;
 	uint32_t gres_cnt;
+#endif
 	int fd, i;
 	static s_p_options_t bb_options[] = {
 		{"AllowUsers", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
 		{"GetSysState", S_P_STRING},
 		{"Granularity", S_P_STRING},
-		{"Gres", S_P_STRING},
+/*		{"Gres", S_P_STRING},	*/
 		{"JobSizeLimit", S_P_STRING},
 		{"PrioBoostAlloc", S_P_UINT32},
 		{"PrioBoostUse", S_P_UINT32},
@@ -417,6 +425,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 			state_ptr->bb_config.granularity = 1;
 		}
 	}
+#if _SUPPORT_GRES
 	if (s_p_get_string(&tmp, "Gres", bb_hashtbl)) {
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
@@ -441,6 +450,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 		}
 		xfree(tmp);
 	}
+#endif
 	if (s_p_get_string(&tmp, "JobSizeLimit", bb_hashtbl)) {
 		state_ptr->bb_config.job_size_limit = bb_get_size_num(tmp, 1);
 		xfree(tmp);

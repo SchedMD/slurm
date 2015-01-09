@@ -1586,7 +1586,7 @@ extern int bb_p_load_state(bool init_config)
 {
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
-		info("%s: %s", plugin_type,  __func__);
+		debug("%s: %s", plugin_type,  __func__);
 	_load_state();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -1652,6 +1652,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
+	bool have_gres = false, have_swap = false;
 	int32_t bb_size = 0;
 	char *key;
 	int i, rc;
@@ -1672,8 +1673,12 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			bb_size = bb_get_size_num(key + 11,
 						bb_state.bb_config.granularity);
 		}
+		if (strstr(job_desc->burst_buffer, "SLURM_GRES="))
+			have_gres = true;
+		if (strstr(job_desc->burst_buffer, "SLURM_SWAP="))
+			have_swap = true;
 	}
-	if (bb_size == 0)
+	if ((bb_size == 0) && (have_gres == false) && (have_swap == false))
 		return SLURM_SUCCESS;
 	if (bb_size < 0)
 		return ESLURM_BURST_BUFFER_LIMIT;
@@ -1716,8 +1721,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		     "but total space is only %u",
 		     job_desc->user_id, bb_size, bb_state.total_space);
 	}
-
 	pthread_mutex_unlock(&bb_state.bb_mutex);
+
+	job_desc->shared = 0;	/* Compute nodes can not be shared */
 
 	return SLURM_SUCCESS;
 }
@@ -1951,10 +1957,10 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 		     (int) test_only);
 	}
-	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
-		return -1;
 	if ((bb_spec = _get_bb_spec(job_ptr)) == NULL)
 		return rc;
+	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
+		return -1;
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
