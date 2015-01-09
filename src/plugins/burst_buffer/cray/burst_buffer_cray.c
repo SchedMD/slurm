@@ -1269,7 +1269,7 @@ bb_ptr->seen_time = bb_state.last_load_time;
 				if (!job_ptr || IS_JOB_PENDING(job_ptr)) {
 					/* Job purged or BB preempted */
 					*bb_pptr = bb_ptr->next;
-					xfree(bb_ptr);
+					bb_free_rec(bb_ptr);
 					break;
 				}
 			}
@@ -1635,8 +1635,8 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 		set_buf_offset(buffer, eof);
 	}
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: record_count:%u",
-		     plugin_type,  __func__, rec_count);
+		debug("%s: %s: record_count:%u",
+		      plugin_type,  __func__, rec_count);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 

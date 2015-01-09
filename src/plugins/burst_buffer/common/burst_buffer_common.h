@@ -151,18 +151,21 @@ extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
 extern void bb_alloc_cache(bb_state_t *state_ptr);
 
 /* Allocate a per-job burst buffer record for a specific job.
- * Return a pointer to that record. */
+ * Return a pointer to that record.
+ * Use bb_free_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
 				    bb_job_t *bb_spec);
 
 /* Allocate a burst buffer record for a job and increase the job priority
- * if so configured. */
+ * if so configured.
+ * Use bb_free_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 				struct job_record *job_ptr, bb_job_t *bb_spec);
 
 /* Allocate a named burst buffer record for a specific user.
- * Return a pointer to that record. */
+ * Return a pointer to that record.
+ * Use bb_free_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 				     uint32_t user_id);
 
@@ -181,6 +184,9 @@ extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 
 /* Find a per-user burst buffer record for a specific user ID */
 extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash);
+
+/* Free memory associated with allocated bb record */
+extern void bb_free_rec(bb_alloc_t *bb_ptr);
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */

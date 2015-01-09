@@ -297,7 +297,7 @@ static void _timeout_bb_rec(void)
 				}
 				bb_remove_user_load(bb_ptr, &bb_state);
 				*bb_pptr = bb_ptr->next;
-				xfree(bb_ptr);
+				bb_free_rec(bb_ptr);
 				break;
 			}
 			if ((bb_ptr->job_id != 0) &&
@@ -307,7 +307,7 @@ static void _timeout_bb_rec(void)
 				bb_ptr->cancelled = true;
 				bb_ptr->end_time = 0;
 				*bb_pptr = bb_ptr->next;
-				xfree(bb_ptr);
+				bb_free_rec(bb_ptr);
 				break;
 			}
 			age = difftime(now, bb_ptr->state_time);
@@ -474,7 +474,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			   const char *line, char **leftover)
 {
 	s_p_hashtbl_t *job_tbl;
-	char *name = NULL, *tmp = NULL, tmp_name[64];
+	char *name = NULL, *tmp = NULL, local_name[64] = "";
 	uint32_t job_id = 0, size = 0, user_id = 0;
 	uint16_t state = 0;
 	bb_alloc_t *bb_ptr;
@@ -493,18 +493,27 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	user_id = atoi(value);
 	job_tbl = s_p_hashtbl_create(_job_options);
 	s_p_parse_line(job_tbl, *leftover, leftover);
-	if (s_p_get_string(&tmp, "JobID", job_tbl))
+	if (s_p_get_string(&tmp, "JobID", job_tbl)) {
 		job_id = atoi(tmp);
-	s_p_get_string(&name, "Name", job_tbl);
-	if (s_p_get_string(&tmp, "Size", job_tbl))
+		xfree(tmp);
+	}
+	if (s_p_get_string(&name, "Name", job_tbl)) {
+		snprintf(local_name, sizeof(local_name), "%s", name);
+		xfree(name);
+	}
+	if (s_p_get_string(&tmp, "Size", job_tbl)) {
 		size =  bb_get_size_num(tmp, bb_state.bb_config.granularity);
-	if (s_p_get_string(&tmp, "State", job_tbl))
+		xfree(tmp);
+	}
+	if (s_p_get_string(&tmp, "State", job_tbl)) {
 		state = bb_state_num(tmp);
+		xfree(tmp);
+	}
 	s_p_hashtbl_destroy(job_tbl);
 
 #if 0
 	info("%s: JobID:%u Name:%s Size:%u State:%u UserID:%u",
-	     __func__, job_id, name, size, state, user_id);
+	     __func__, job_id, local_name, size, state, user_id);
 #endif
 	if (job_id) {
 		job_ptr = find_job_record(job_id);
@@ -547,8 +556,8 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			      "Clear manually",
 			      plugin_type, job_id);
 		}
-		snprintf(tmp_name, sizeof(tmp_name), "VestigialJob%u", job_id);
-		name = tmp_name;
+		snprintf(local_name, sizeof(local_name), "VestigialJob%u",
+			 job_id);
 	}
 	if (job_ptr) {
 		bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
@@ -561,8 +570,9 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			/* bb_ptr->state_time set in bb_alloc_job_rec() */
 		}
 	} else {
-		if ((bb_ptr = _find_bb_name_rec(name, user_id)) == NULL) {
-			bb_ptr = bb_alloc_name_rec(&bb_state, name, user_id);
+		if ((bb_ptr = _find_bb_name_rec(local_name, user_id)) == NULL) {
+			bb_ptr = bb_alloc_name_rec(&bb_state, local_name,
+						   user_id);
 			bb_ptr->size = size;
 			bb_ptr->state = state;
 			bb_add_user_load(bb_ptr, &bb_state);
@@ -675,10 +685,8 @@ static void _load_state(uint32_t job_id)
 	START_TIMER;
 	resp = bb_run_script("GetSysState", bb_state.bb_config.get_sys_state,
 			     script_args, 2000, &status);
-	if (resp == NULL) {
-		xfree(resp);
+	if (resp == NULL)
 		return;
-	}
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
 		info("%s: GetSysState ran for %s", __func__, TIME_STR);
@@ -706,6 +714,7 @@ static void _load_state(uint32_t job_id)
 		      plugin_type);
 	}
 	s_p_hashtbl_destroy(state_hashtbl);
+	xfree(resp);
 }
 
 /* Perform periodic background activities */
@@ -843,8 +852,8 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 		set_buf_offset(buffer, eof);
 	}
 	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: record_count:%u",
-		     plugin_type,  __func__, rec_count);
+		debug("%s: %s: record_count:%u",
+		      plugin_type,  __func__, rec_count);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 

@@ -142,7 +142,7 @@ extern void bb_clear_cache(bb_state_t *state_ptr)
 			bb_current = state_ptr->bb_hash[i];
 			while (bb_current) {
 				bb_next = bb_current->next;
-				xfree(bb_current);
+				bb_free_rec(bb_current);
 				bb_current = bb_next;
 			}
 		}
@@ -733,7 +733,8 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs)
 
 
 /* Allocate a named burst buffer record for a specific user.
- * Return a pointer to that record. */
+ * Return a pointer to that record.
+ * Use bb_free_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 				     uint32_t user_id)
 {
@@ -755,7 +756,8 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 }
 
 /* Allocate a per-job burst buffer record for a specific job.
- * Return a pointer to that record. */
+ * Return a pointer to that record.
+ * Use bb_free_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
 				    bb_job_t *bb_spec)
@@ -789,7 +791,8 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 }
 
 /* Allocate a burst buffer record for a job and increase the job priority
- * if so configured. */
+ * if so configured.
+ * Use bb_free_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 				struct job_record *job_ptr, bb_job_t *bb_spec)
 {
@@ -817,6 +820,20 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	bb_add_user_load(bb_ptr, state_ptr);
 
 	return bb_ptr;
+}
+
+/* Free memory associated with allocated bb record */
+extern void bb_free_rec(bb_alloc_t *bb_ptr)
+{
+	int i;
+
+	if (bb_ptr) {
+		for (i = 0; i < bb_ptr->gres_cnt; i++)
+			xfree(bb_ptr->gres_ptr[i].name);
+		xfree(bb_ptr->gres_ptr);
+		xfree(bb_ptr->name);
+		xfree(bb_ptr);
+	}
 }
 
 /* Execute a script, wait for termination and return its stdout.
