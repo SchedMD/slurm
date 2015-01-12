@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
     Slurm's topology.conf file.
  -- Remove 64k validation of incoming RPC nodelist size. Validated at 64MB
     when unpacking.
+ -- In slurmstepd() add the user primary group if it is not part of the
+    groups sent from the client.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

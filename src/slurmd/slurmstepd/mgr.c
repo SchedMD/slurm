@@ -219,6 +219,7 @@ static int    _send_complete_batch_script_msg(stepd_step_rec_t *job,
  * available.  Otherwise initialize the groups with initgroups().
  */
 static int _initgroups(stepd_step_rec_t *job);
+static int _get_primary_group(const char *, gid_t *);
 
 
 static stepd_step_rec_t *reattach_job;
@@ -2444,6 +2445,7 @@ static int
 _initgroups(stepd_step_rec_t *job)
 {
 	int rc;
+	gid_t primary_gid;
 
 	if (job->ngids > 0) {
 		xassert(job->gids);
@@ -2462,8 +2464,61 @@ _initgroups(stepd_step_rec_t *job)
 		}
 		return -1;
 	}
+
+	rc = _get_primary_group(job->user_name, &primary_gid);
+	if (rc < 0) {
+		error("%s: _get_primary_group() failed", __func__);
+		return -1;
+	}
+	/* If job->gid is not the primary group for the
+	 * user job->user_name then add the primary group
+	 * in the list of user groups.
+	 */
+	if (primary_gid != job->gid) {
+		int ngroups_max = sysconf(_SC_NGROUPS_MAX);
+		gid_t grps[ngroups_max];
+		int size;
+
+		size = getgrouplist(job->user_name,
+				    job->gid,
+				    grps,
+				    &ngroups_max);
+		if (size < 0) {
+			error("%s: getgrouplist() failed: %m", __func__);
+			return -1;
+		}
+		if (size > ngroups_max - 1) {
+			error("%s: too many groups %d for user %s\n",
+			      __func__, size, job->user_name);
+		}
+		++size;
+		grps[size - 1] = primary_gid;
+
+		setgroups(size, grps);
+	}
 	return 0;
 }
+
+/* _get_primary_group()
+ */
+static int
+_get_primary_group(const char *user, gid_t *gid)
+{
+    struct passwd pwd;
+    struct passwd *pwd0;
+    char buf[256];
+    int cc;
+
+    cc = getpwnam_r(user, &pwd, buf, sizeof(buf), &pwd0);
+    if (cc != 0) {
+	    error("%s: getpwnam_r() failed: %m", __func__);
+        return -1;
+    }
+
+    *gid = pwd0->pw_gid;
+    return 0;
+}
+
 
 /*
  * Check this user's access rights to a file
