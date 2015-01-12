@@ -7495,7 +7495,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	time_t begin_time = 0;
 	char *nodelist = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
