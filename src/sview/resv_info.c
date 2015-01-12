@@ -3,6 +3,7 @@
  *  mode of sview.
  *****************************************************************************
  *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2012-2015 SchedMD LLC <http://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -53,6 +54,7 @@ enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ACCOUNTS,
 	SORTID_ACTION,
+	SORTID_BURST_BUFFER,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_CORE_CNT,
@@ -121,6 +123,8 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_BURST_BUFFER,  "BurstBuffer", FALSE,
+	 EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_LICENSES,   "Licenses", TRUE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_USERS,      "Users", FALSE, EDIT_TEXTBOX,
@@ -176,6 +180,8 @@ static display_data_t create_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_BURST_BUFFER,  "BurstBuffer", FALSE,
+	 EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_USERS,      "Users", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", FALSE, EDIT_TEXTBOX,
@@ -223,7 +229,7 @@ static void _set_active_combo_resv(GtkComboBox *combo,
 	gtk_tree_model_get(model, iter, type, &temp_char, -1);
 	if (!temp_char)
 		goto end_it;
-	switch(type) {
+	switch (type) {
 	case SORTID_ACTION:
 		if (!strcmp(temp_char, "none"))
 			action = 0;
@@ -258,7 +264,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	if (!resv_msg)
 		return NULL;
 
-	switch(column) {
+	switch (column) {
 	case SORTID_ACCOUNTS:
 		resv_msg->accounts = xstrdup(new_text);
 		type = "accounts";
@@ -269,6 +275,10 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			got_edit_signal = NULL;
 		else
 			got_edit_signal = xstrdup(new_text);
+		break;
+	case SORTID_BURST_BUFFER:
+		resv_msg->burst_buffer = xstrdup(new_text);
+		type = "burst_buffer";
 		break;
 	case SORTID_DURATION:
 		temp_int = time_str2mins((char *)new_text);
@@ -487,6 +497,11 @@ static void _layout_resv_record(GtkTreeView *treeview,
 						 SORTID_ACCOUNTS),
 				   resv_ptr->accounts);
 
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_resv,
+						 SORTID_BURST_BUFFER),
+				   resv_ptr->burst_buffer);
+
 	convert_num_unit((float)resv_ptr->core_cnt,
 			 time_buf, sizeof(time_buf), UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
@@ -584,6 +599,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_resv_info_ptr->iter_ptr,
 			   SORTID_ACCOUNTS,   resv_ptr->accounts,
+			   SORTID_BURST_BUFFER, resv_ptr->burst_buffer,
 			   SORTID_COLOR,
 				sview_colors[sview_resv_info_ptr->color_inx],
 			   SORTID_COLOR_INX,  sview_resv_info_ptr->color_inx,

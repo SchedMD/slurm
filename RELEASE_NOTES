@@ -95,6 +95,7 @@ COMMAND CHANGES (see man pages for details)
     to give user greater control over task distribution. The srun --dist options
     has been modified to accept a "Pack" and "NoPack" option. These options can
     be used to override the CR_PACK_NODE configuration option.
+ -- Added BurstBuffer specification to advanced reservation.
 
 OTHER CHANGES
 =============
@@ -133,7 +134,10 @@ Added the following struct definitions
     cpu_freq_min, cpu_freq_gov.
  -- Added the following fields to struct resource_allocation_response_msg_t
     cpu_freq_min, cpu_freq_gov.
-
+ -- Added the following fields to struct reserve_info_t:
+    burst_buffer.
+ -- Added the following fields to struct resv_desc_msg_t:
+    burst_buffer.
 
 Added the following struct definitions
 ======================================

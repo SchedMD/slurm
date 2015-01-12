@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     when unpacking.
  -- In slurmstepd() add the user primary group if it is not part of the
     groups sent from the client.
+ -- Added BurstBuffer field to advanced reservations.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

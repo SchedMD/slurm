@@ -152,8 +152,9 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Users=%s Accounts=%s Licenses=%s State=%s",
-		 resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses, state);
+		 "Users=%s Accounts=%s Licenses=%s State=%s BurstBuffer=%s",
+		 resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses,
+		 state, resv_ptr->burst_buffer);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, "\n");

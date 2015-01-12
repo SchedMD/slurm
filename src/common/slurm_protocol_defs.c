@@ -654,6 +654,7 @@ extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->accounts);
+		xfree(msg->burst_buffer);
 		xfree(msg->core_cnt);
 		xfree(msg->features);
 		xfree(msg->licenses);
@@ -2650,9 +2651,10 @@ static void  _free_all_reservations(reserve_info_msg_t *msg)
 	    (msg->reservation_array == NULL))
 		return;
 
-	for (i = 0; i < msg->record_count; i++)
+	for (i = 0; i < msg->record_count; i++) {
 		slurm_free_reserve_info_members(
 			&msg->reservation_array[i]);
+	}
 
 }
 
@@ -2660,6 +2662,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 {
 	if (resv) {
 		xfree(resv->accounts);
+		xfree(resv->burst_buffer);
 		xfree(resv->features);
 		xfree(resv->licenses);
 		xfree(resv->name);

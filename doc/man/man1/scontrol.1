@@ -1219,6 +1219,11 @@ then all other accounts are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed accounts.
 
 .TP
+\fIBurstBuffer\fP=<buffer_spec>
+Specification of burst buffer resources which are to be reserved.
+The form of the specification is system dependent.
+
+.TP
 \fICoreCnt\fP=<num>
 This option is only suported when SelectType=select/cons_res. Identify number of
 cores to be reserved. If NodeCnt is used, this is the total number of cores to

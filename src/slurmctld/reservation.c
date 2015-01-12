@@ -211,6 +211,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	xassert(resv_orig_ptr->magic == RESV_MAGIC);
 	resv_copy_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_copy_ptr->accounts = xstrdup(resv_orig_ptr->accounts);
+	resv_copy_ptr->burst_buffer = xstrdup(resv_orig_ptr->burst_buffer);
 	resv_copy_ptr->account_cnt = resv_orig_ptr->account_cnt;
 	resv_copy_ptr->account_list = xmalloc(sizeof(char *) *
 					      resv_orig_ptr->account_cnt);
@@ -284,6 +285,10 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	xfree(dest_resv->assoc_list);
 	dest_resv->assoc_list = src_resv->assoc_list;
 	src_resv->assoc_list = NULL;
+
+	xfree(dest_resv->burst_buffer);
+	dest_resv->burst_buffer = src_resv->burst_buffer;
+	src_resv->burst_buffer = NULL;
 
 	FREE_NULL_BITMAP(dest_resv->core_bitmap);
 	dest_resv->core_bitmap = src_resv->core_bitmap;
@@ -361,6 +366,7 @@ static void _del_resv_rec(void *x)
 			xfree(resv_ptr->account_list[i]);
 		xfree(resv_ptr->account_list);
 		xfree(resv_ptr->assoc_list);
+		xfree(resv_ptr->burst_buffer);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		xfree(resv_ptr->features);
 		if (resv_ptr->license_list)
@@ -441,11 +447,12 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
 	     "Flags=%s NodeCnt=%s NodeList=%s Features=%s "
-	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s",
+	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s BurstBuffer=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, node_cnt_str, resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
-	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses);
+	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses,
+	     resv_ptr->burst_buffer);
 
 	xfree(flag_str);
 	xfree(node_cnt_str);
@@ -1345,7 +1352,39 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		end_relative = resv_ptr->end_time;
 	}
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		packstr(resv_ptr->accounts,	buffer);
+		packstr(resv_ptr->burst_buffer,	buffer);
+		pack32(resv_ptr->cpu_cnt,	buffer);
+		pack_time(end_relative,		buffer);
+		packstr(resv_ptr->features,	buffer);
+		pack32(resv_ptr->flags,		buffer);
+		packstr(resv_ptr->licenses,	buffer);
+		packstr(resv_ptr->name,		buffer);
+		pack32(resv_ptr->node_cnt,	buffer);
+		packstr(resv_ptr->node_list,	buffer);
+		packstr(resv_ptr->partition,	buffer);
+		pack_time(start_relative,	buffer);
+		packstr(resv_ptr->users,	buffer);
+
+		if (internal) {
+			uint32_t core_cnt = 0;
+			pack8(resv_ptr->account_not,	buffer);
+			packstr(resv_ptr->assoc_list,	buffer);
+			if (resv_ptr->core_bitmap)
+				core_cnt = bit_size(resv_ptr->core_bitmap);
+			pack32(core_cnt,		buffer);
+			pack_bit_fmt(resv_ptr->core_bitmap, buffer);
+			pack32(resv_ptr->duration,	buffer);
+			pack8(resv_ptr->full_nodes,	buffer);
+			pack32(resv_ptr->resv_id,	buffer);
+			pack_time(resv_ptr->start_time_prev,	buffer);
+			pack_time(resv_ptr->start_time,	buffer);
+			pack8(resv_ptr->user_not,	buffer);
+		} else {
+			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
+		}
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		packstr(resv_ptr->accounts,	buffer);
 		pack32(resv_ptr->cpu_cnt,	buffer);
 		pack_time(end_relative,		buffer);
@@ -1388,7 +1427,54 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&resv_ptr->accounts,
+				       &uint32_tmp,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->burst_buffer,
+				       &uint32_tmp,	buffer);
+		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
+		safe_unpack_time(&resv_ptr->end_time,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->features,
+				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->flags,		buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->licenses,
+				       &uint32_tmp, 	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
+
+		safe_unpack32(&resv_ptr->node_cnt,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->node_list,
+				       &uint32_tmp,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->partition,
+				       &uint32_tmp, 	buffer);
+		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
+
+		/* Fields saved for internal use only (save state) */
+		safe_unpack8((uint8_t *)&resv_ptr->account_not,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
+				       &uint32_tmp,	buffer);
+		safe_unpack32(&core_cnt,		buffer);
+		safe_unpackstr_xmalloc(&core_inx_str, &uint32_tmp, buffer);
+		if (core_inx_str == NULL) {
+#if _DEBUG
+			info("Reservation %s has no core_bitmap",
+			     resv_ptr->name);
+#endif
+		} else {
+			resv_ptr->core_bitmap = bit_alloc(core_cnt);
+			bit_unfmt(resv_ptr->core_bitmap, core_inx_str);
+			info("Reservation %s has core_bitmap %s on node %s",
+			     resv_ptr->name, core_inx_str,
+			     resv_ptr->node_list);
+			xfree(core_inx_str);
+		}
+		safe_unpack32(&resv_ptr->duration,	buffer);
+		safe_unpack8((uint8_t *)&resv_ptr->full_nodes,	buffer);
+		safe_unpack32(&resv_ptr->resv_id,	buffer);
+		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
+		safe_unpack_time(&resv_ptr->start_time, buffer);
+		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
 		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
@@ -1957,6 +2043,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->account_cnt	= account_cnt;
 	resv_ptr->account_list	= account_list;
 	resv_ptr->account_not	= account_not;
+	resv_ptr->burst_buffer	= resv_desc_ptr->burst_buffer;
+	resv_desc_ptr->burst_buffer = NULL;	/* Nothing left to free */
 	resv_ptr->duration      = resv_desc_ptr->duration;
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
 	resv_ptr->features	= resv_desc_ptr->features;
@@ -2166,6 +2254,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (rc) {
 			error_code = rc;
 			goto update_failure;
+		}
+	}
+	if (resv_desc_ptr->burst_buffer) {
+		xfree(resv_ptr->burst_buffer);
+		if (resv_desc_ptr->burst_buffer[0] != '\0') {
+			resv_ptr->burst_buffer = resv_desc_ptr->burst_buffer;
+			resv_desc_ptr->burst_buffer = NULL;
 		}
 	}
 	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {

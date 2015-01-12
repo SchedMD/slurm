@@ -121,6 +121,16 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		if (strncasecmp(tag, "ReservationName", MAX(taglen, 1)) == 0) {
 			resv_msg_ptr->name = val;
 
+		} else if (strncasecmp(tag, "Accounts", MAX(taglen, 1)) == 0) {
+			if (plus_minus) {
+				resv_msg_ptr->accounts =
+					_process_plus_minus(plus_minus, val);
+				*free_acct_str = 1;
+			} else {
+				resv_msg_ptr->accounts = val;
+			}
+		} else if (strncasecmp(tag, "BurstBuffer", MAX(taglen, 2)) == 0){
+			resv_msg_ptr->burst_buffer = val;
 		} else if (strncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0){
 			time_t  t = parse_time(val, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
@@ -273,14 +283,6 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 				*free_user_str = 1;
 			} else {
 				resv_msg_ptr->users = val;
-			}
-		} else if (strncasecmp(tag, "Accounts", MAX(taglen, 1)) == 0) {
-			if (plus_minus) {
-				resv_msg_ptr->accounts =
-					_process_plus_minus(plus_minus, val);
-				*free_acct_str = 1;
-			} else {
-				resv_msg_ptr->accounts = val;
 			}
 		} else if (strncasecmp(tag, "res", 3) == 0) {
 			continue;
