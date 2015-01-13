@@ -1645,7 +1645,6 @@ extern int assoc_mgr_fini(char *state_save_location)
 
 	assoc_mgr_lock(&locks);
 
-	FREE_NULL_LIST(assoc_mgr_asset_list);
 	FREE_NULL_LIST(assoc_mgr_assoc_list);
 	FREE_NULL_LIST(assoc_mgr_res_list);
 	FREE_NULL_LIST(assoc_mgr_qos_list);
