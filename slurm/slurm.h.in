@@ -2042,10 +2042,10 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
 #define RESERVE_FLAG_IGN_JOBS		0x00000040	/* Ignore running jobs */
 #define RESERVE_FLAG_NO_IGN_JOB		0x00000080	/* Clear ignore running
 							 * jobs flag */
-#define RESERVE_FLAG_LIC_ONLY		0x00000100	/* Reserve licenses
-							 * only */
-#define RESERVE_FLAG_NO_LIC_ONLY	0x00000200	/* Clear reserve
-							 * licenses only flag */
+#define RESERVE_FLAG_ANY_NODES		0x00000100	/* Use any compute
+							 * nodes */
+#define RESERVE_FLAG_NO_ANY_NODES	0x00000200	/* Clear any compute
+							 * node flag */
 #define RESERVE_FLAG_STATIC     	0x00000400	/* Static node allocation */
 #define RESERVE_FLAG_NO_STATIC  	0x00000800	/* Clear static node
 							 * allocation */

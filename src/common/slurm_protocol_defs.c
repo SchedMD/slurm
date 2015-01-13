@@ -1617,15 +1617,15 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "SPEC_NODES");
 	}
-	if (flags & RESERVE_FLAG_LIC_ONLY) {
+	if (flags & RESERVE_FLAG_ANY_NODES) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "LICENSE_ONLY");
+		xstrcat(flag_str, "ANY_NODES");
 	}
-	if (flags & RESERVE_FLAG_NO_LIC_ONLY) {
+	if (flags & RESERVE_FLAG_NO_ANY_NODES) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "NO_LICENSE_ONLY");
+		xstrcat(flag_str, "NO_ANY_NODES");
 	}
 	if (flags & RESERVE_FLAG_STATIC) {
 		if (flag_str[0])

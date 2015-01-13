@@ -1313,6 +1313,14 @@ Flags\-=DAILY (NOTE: this shortcut is not supported for all flags).
 Currently supported flags include:
 .RS
 .TP 14
+\fIANY_NODES\fR
+This is a reservation for burst buffers and/or licenses only and not compute
+nodes.
+If this flag is set, a job using this reservation may use the associated
+burst buffers and/or licenses plus any compute nodes.
+If this flag is not set, a job using this reservation may use only the nodes
+and licenses associated with the reservation.
+.TP
 \fIDAILY\fR
 Repeat the reservation at the same time every day
 .TP
@@ -1325,11 +1333,7 @@ This can be especially useful when reserving all nodes in the system
 for maintenance.
 .TP
 \fILICENSE_ONLY\fR
-This is a reservation for licenses only and not compute nodes.
-If this flag is set, a job using this reservation may use the associated
-licenses and any compute nodes.
-If this flag is not set, a job using this reservation may use only the nodes
-and licenses associated with the reservation.
+See \fIANY_NODES\fR.
 .TP
 \fIMAINT\fR
 Maintenance mode, receives special accounting treatment.

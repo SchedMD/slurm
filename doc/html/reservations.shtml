@@ -6,18 +6,20 @@
 being executed by select users and/or select bank accounts.
 A resource reservation identifies the resources in that reservation
 and a time period during which the reservation is available.
-The resources which can be reserved include cores, nodes and/or licenses.
+The resources which can be reserved include cores, nodes, licenses and/or
+burst buffers.
 Note that resource reservations are not compatible with Slurm's
 gang scheduler plugin since the termination time of running jobs
 cannot be accurately predicted.</p>
 
-<p>Note that reserved licenses are treated somewhat differently than reserved
-cores or nodes. When cores or nodes are reserved, then jobs using that
-reservation can use only those resources and no other jobs can use those
-resources. Reserved licenses can only
-be used by jobs associated with that reservation, but licenses not explicitly
-reserved are available to any job. This eliminates the need to explicitly
-put licenses into every advanced reservation created.</p>
+<p>Note that reserved burst buffers and licenses are treated somewhat
+differently than reserved cores or nodes.
+When cores or nodes are reserved, then jobs using that reservation can use only
+those resources and no other jobs can use those resources.
+Reserved burst buffers and licenses can only be used by jobs associated with
+that reservation, but licenses not explicitly reserved are available to any job.
+This eliminates the need to explicitly put licenses into every advanced
+reservation created.</p>
 
 <p>Reservations can be created, updated, or destroyed only by user root
 or the configured <i>SlurmUser</i> using the <i>scontrol</i> command.
@@ -57,6 +59,7 @@ ReservationName=root_3 StartTime=2009-02-06T16:00:00
    Nodes=ALL NodeCnt=20
    Features=(null) PartitionName=(null)
    Flags=MAINT,SPEC_NODES,IGNORE_JOBS Licenses=(null)
+   BurstBuffers=(null)
    Users=root Accounts=(null)
 </pre>
 
@@ -84,6 +87,7 @@ ReservationName=root_4 StartTime=2009-04-06T16:00:00
    Nodes= NodeCnt=0
    Features=(null) PartitionName=(null)
    Flags=IGNORE_JOBS Licenses=lustre*1000
+   BurstBuffers=(null)
    Users=root Accounts=(null)
 </pre>
 
@@ -103,6 +107,7 @@ ReservationName=root_5 StartTime=2009-02-04T16:22:57
    Nodes=sun000 NodeCnt=1
    Features=(null) PartitionName=(null)
    Flags=MAINT,SPEC_NODES Licenses=(null)
+   BurstBuffers=(null)
    Users=root Accounts=(null)
 </pre>
 
@@ -120,7 +125,24 @@ ReservationName=alan_6 StartTime=2009-02-05T12:00:00
    EndTime=2009-02-05T13:00:00 Duration=60
    Nodes=sun[000-003,007,010-013,017] NodeCnt=10
    Features=(null) PartitionName=pdebug
-   Flags=DAILY Licenses=(null)
+   Flags=DAILY Licenses=(null) BurstBuffers=(null)
+   Users=alan,brenda Accounts=(null)
+</pre>
+
+<p>Our next example is to reserve 100GB of burst buffer space
+starting at noon today and with a duration of 60 minutes.
+The reservation will be available only to users "alan" and "brenda".</p>
+<pre>
+$ scontrol create reservation user=alan,brenda \
+   starttime=noon duration=60 flags=any_nodes burstbuffer=100GB
+Reservation created: alan_7
+
+$ scontrol show res
+ReservationName=alan_7 StartTime=2009-02-05T12:00:00
+   EndTime=2009-02-05T13:00:00 Duration=60
+   Nodes= NodeCnt=0
+   Features=(null) PartitionName=(null)
+   Flags=ANY_NODES Licenses=(null) BurstBuffer=100GB
    Users=alan,brenda Accounts=(null)
 </pre>
 
@@ -143,7 +165,7 @@ ReservationName=alan_8 StartTime=2011-12-05T12:00:00
    EndTime=2011-12-05T13:00:00 Duration=60
    Nodes=bgp[000x011,210x311] NodeCnt=4096
    Features=(null) PartitionName=pdebug
-   Flags= Licenses=(null)
+   Flags= Licenses=(null) BurstBuffers=(null)
    Users=alan,brenda Accounts=(null)
 </pre>
 
@@ -189,7 +211,7 @@ ReservationName=alan_9 StartTime=2011-12-05T13:00:00
    EndTime=2011-12-05T14:00:00 Duration=60
    Nodes=bgp[000x011,210x311] NodeCnt=4096
    Features=(null) PartitionName=pdebug
-   Flags= Licenses=(null)
+   Flags= Licenses=(null) BurstBuffers=(null)
    Users=-alan Accounts=foo
 </pre>
 
@@ -229,7 +251,8 @@ bash-3.00$ scontrol show ReservationName=root_3
 ReservationName=root_3 StartTime=2009-02-06T16:00:00
    EndTime=2009-02-06T18:30:00 Duration=150
    Nodes=ALL NodeCnt=20 Features=(null)
-   PartitionName=(null) Flags=MAINT,SPEC_NODES Licenses=(null)
+   PartitionName=(null) Flags=MAINT,SPEC_NODES
+   Licenses=(null) BurstBuffers=(null)
    Users=admin Accounts=(null)
 </pre>
 
@@ -398,7 +421,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 20 November 2014</p>
+<p style="text-align: center;">Last modified 12 January 2015</p>
 
 <!--#include virtual="footer.txt"-->
 

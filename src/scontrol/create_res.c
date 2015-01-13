@@ -425,13 +425,15 @@ scontrol_create_res(int argc, char *argv[])
 	 * make the reservation for the whole partition.
 	 */
 	if ((resv_msg.core_cnt == 0) &&
+	    (resv_msg.burst_buffer == NULL ||
+	     resv_msg.burst_buffer[0] == '\0') &&
 	    (resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0')) {
 		if (resv_msg.partition == NULL) {
 			exit_code = 1;
-			error("CoreCnt, Nodes, NodeCnt or Licenses must be "
-			      "specified. No reservation created.");
+			error("CoreCnt, Nodes, NodeCnt, BurstBuffer or Licenses"
+			      " must be specified. No reservation created.");
 			goto SCONTROL_CREATE_RES_CLEANUP;
 		}
 		if (resv_msg.flags == (uint16_t) NO_VAL)

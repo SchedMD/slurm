@@ -1746,8 +1746,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_IGN_JOBS |
 					RESERVE_FLAG_DAILY    |
 					RESERVE_FLAG_WEEKLY   |
-					RESERVE_FLAG_LIC_ONLY |
 					RESERVE_FLAG_STATIC   |
+					RESERVE_FLAG_ANY_NODES   |
 					RESERVE_FLAG_PART_NODES  |
 					RESERVE_FLAG_FIRST_CORES |
 					RESERVE_FLAG_TIME_FLOAT  |
@@ -1993,7 +1993,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	} else if (((resv_desc_ptr->node_cnt == NULL) ||
 		    (resv_desc_ptr->node_cnt[0] == 0)) &&
 		    (!resv_desc_ptr->core_cnt) &&
-		   ((resv_desc_ptr->flags & RESERVE_FLAG_LIC_ONLY) == 0)) {
+		   ((resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0)) {
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
 		goto bad_parse;
@@ -2190,10 +2190,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_WEEKLY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKLY)
 			resv_ptr->flags &= (~RESERVE_FLAG_WEEKLY);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_LIC_ONLY)
-			resv_ptr->flags |= RESERVE_FLAG_LIC_ONLY;
-		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_LIC_ONLY)
-			resv_ptr->flags &= (~RESERVE_FLAG_LIC_ONLY);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES)
+			resv_ptr->flags |= RESERVE_FLAG_ANY_NODES;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_ANY_NODES)
+			resv_ptr->flags &= (~RESERVE_FLAG_ANY_NODES);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_STATIC)
 			resv_ptr->flags |= RESERVE_FLAG_STATIC;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
@@ -3750,7 +3750,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	} else if ((node_cnt == 0) &&
 		   ((resv_desc_ptr->core_cnt == NULL) ||
 		    (resv_desc_ptr->core_cnt[0] == 0)) &&
-		   (resv_desc_ptr->flags & RESERVE_FLAG_LIC_ONLY)) {
+		   (resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES)) {
 		return bit_alloc(bit_size(avail_bitmap));
 	}
 
@@ -3989,7 +3989,7 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 		return ESLURM_RESERVATION_INVALID;
 	}
 	if ((resv_ptr->node_cnt == 0) &&
-	    !(resv_ptr->flags & RESERVE_FLAG_LIC_ONLY)) {
+	    !(resv_ptr->flags & RESERVE_FLAG_ANY_NODES)) {
 		/* empty reservation treated like it will start later */
 		return ESLURM_INVALID_TIME_VALUE;
 	}
@@ -4189,7 +4189,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			return ESLURM_INVALID_TIME_VALUE;
 		}
 		if ((resv_ptr->node_cnt == 0) &&
-		    (!(resv_ptr->flags & RESERVE_FLAG_LIC_ONLY))) {
+		    (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES))) {
 			/* empty reservation treated like it will start later */
 			*when = now + 600;
 			return ESLURM_INVALID_TIME_VALUE;
@@ -4205,12 +4205,12 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			return ESLURM_RESERVATION_INVALID;
 		}
 		if (job_ptr->details->req_node_bitmap &&
-		    (!(resv_ptr->flags & RESERVE_FLAG_LIC_ONLY)) &&
+		    (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES)) &&
 		    !bit_super_set(job_ptr->details->req_node_bitmap,
 				   resv_ptr->node_bitmap)) {
 			return ESLURM_RESERVATION_INVALID;
 		}
-		if (resv_ptr->flags & RESERVE_FLAG_LIC_ONLY) {
+		if (resv_ptr->flags & RESERVE_FLAG_ANY_NODES) {
 			*node_bitmap = bit_alloc(node_record_count);
 			bit_nset(*node_bitmap, 0, (node_record_count - 1));
 		} else
@@ -4808,7 +4808,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 
 	i_first = bit_ffs(resv_ptr->node_bitmap);
 	if (i_first < 0) {
-		if ((resv_ptr->flags & RESERVE_FLAG_LIC_ONLY) == 0) {
+		if ((resv_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0) {
 			error("%s: reservation %s includes no nodes",
 			      __func__, resv_ptr->name);
 		}

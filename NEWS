@@ -24,6 +24,9 @@ documents those changes that are of interest to users and administrators.
  -- In slurmstepd() add the user primary group if it is not part of the
     groups sent from the client.
  -- Added BurstBuffer field to advanced reservations.
+ -- For advanced reservation, replace flag "License_only" with flag "Any_Nodes".
+    It can be used to indicate the an advanced reservation resources (licenses
+    and/or burst buffers) can be used with any compute nodes.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

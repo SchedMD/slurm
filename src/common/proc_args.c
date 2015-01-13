@@ -1376,13 +1376,13 @@ parse_resv_flags(const char *flagstr, const char *msg)
 				outflags |= RESERVE_FLAG_NO_WEEKLY;
 			else
 				outflags |= RESERVE_FLAG_WEEKLY;
-		} else if (strncasecmp(curr, "License_Only", MAX(taglen,1))
-			   == 0) {
+		} else if (!strncasecmp(curr, "Any_Nodes", MAX(taglen,1)) ||
+			   !strncasecmp(curr, "License_Only", MAX(taglen,1))) {
 			curr += taglen;
 			if (flip)
-				outflags |= RESERVE_FLAG_NO_LIC_ONLY;
+				outflags |= RESERVE_FLAG_NO_ANY_NODES;
 			else
-				outflags |= RESERVE_FLAG_LIC_ONLY;
+				outflags |= RESERVE_FLAG_ANY_NODES;
 		} else if (strncasecmp(curr, "Static_Alloc", MAX(taglen,1))
 			   == 0) {
 			curr += taglen;
