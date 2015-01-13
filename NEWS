@@ -98,6 +98,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.4
 ==========================
  -- Make sure assoc_mgr locks are initialized correctly.
+ -- Correct check of enforcement when filling in an association.
 
 * Changes in Slurm 14.11.3
 ==========================
