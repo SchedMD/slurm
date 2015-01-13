@@ -1855,7 +1855,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (!assoc_mgr_association_list) {
 		int rc = SLURM_SUCCESS;
 
-		if (enforce & ACCOUNTING_ENFORCE_QOS) {
+		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("No Association list available, "
 			      "this should never happen");
 			rc = SLURM_ERROR;
