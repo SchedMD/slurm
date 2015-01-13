@@ -1645,16 +1645,12 @@ extern int assoc_mgr_fini(char *state_save_location)
 
 	assoc_mgr_lock(&locks);
 
-	if (assoc_mgr_assoc_list)
-		list_destroy(assoc_mgr_assoc_list);
-	if (assoc_mgr_res_list)
-		list_destroy(assoc_mgr_res_list);
-	if (assoc_mgr_qos_list)
-		list_destroy(assoc_mgr_qos_list);
-	if (assoc_mgr_user_list)
-		list_destroy(assoc_mgr_user_list);
-	if (assoc_mgr_wckey_list)
-		list_destroy(assoc_mgr_wckey_list);
+	FREE_NULL_LIST(assoc_mgr_asset_list);
+	FREE_NULL_LIST(assoc_mgr_assoc_list);
+	FREE_NULL_LIST(assoc_mgr_res_list);
+	FREE_NULL_LIST(assoc_mgr_qos_list);
+	FREE_NULL_LIST(assoc_mgr_user_list);
+	FREE_NULL_LIST(assoc_mgr_wckey_list);
 	xfree(assoc_mgr_cluster_name);
 	assoc_mgr_assoc_list = NULL;
 	assoc_mgr_res_list = NULL;
@@ -1751,8 +1747,7 @@ extern void destroy_assoc_mgr_assoc_usage(void *object)
 		(assoc_mgr_assoc_usage_t *)object;
 
 	if (usage) {
-		if (usage->children_list)
-			list_destroy(usage->children_list);
+		FREE_NULL_LIST(usage->children_list);
 		FREE_NULL_BITMAP(usage->valid_qos);
 
 		xfree(usage);
@@ -1773,10 +1768,8 @@ extern void destroy_assoc_mgr_qos_usage(void *object)
 		(assoc_mgr_qos_usage_t *)object;
 
 	if (usage) {
-		if (usage->job_list)
-			list_destroy(usage->job_list);
-		if (usage->user_limit_list)
-			list_destroy(usage->user_limit_list);
+		FREE_NULL_LIST(usage->job_list);
+		FREE_NULL_LIST(usage->user_limit_list);
 		xfree(usage);
 	}
 }
@@ -3314,8 +3307,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 				if (rec->coord_accts)
 					list_flush(rec->coord_accts);
 			} else {
-				if (rec->coord_accts)
-					list_destroy(rec->coord_accts);
+				FREE_NULL_LIST(rec->coord_accts);
 				rec->coord_accts = object->coord_accts;
 				object->coord_accts = NULL;
 			}
@@ -4458,8 +4450,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No associations retrieved");
 				break;
 			}
-			if (assoc_mgr_assoc_list)
-				list_destroy(assoc_mgr_assoc_list);
+			FREE_NULL_LIST(assoc_mgr_assoc_list);
 			assoc_mgr_assoc_list = msg->my_list;
 			_post_assoc_list();
 
@@ -4477,8 +4468,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No users retrieved");
 				break;
 			}
-			if (assoc_mgr_user_list)
-				list_destroy(assoc_mgr_user_list);
+			FREE_NULL_LIST(assoc_mgr_user_list);
 			assoc_mgr_user_list = msg->my_list;
 			_post_user_list(assoc_mgr_user_list);
 			debug("Recovered %u users",
@@ -4495,8 +4485,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No resources retrieved");
 				break;
 			}
-			if (assoc_mgr_res_list)
-				list_destroy(assoc_mgr_res_list);
+			FREE_NULL_LIST(assoc_mgr_res_list);
 			assoc_mgr_res_list = msg->my_list;
 			_post_res_list(assoc_mgr_res_list);
 			debug("Recovered %u resources",
@@ -4513,8 +4502,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No qos retrieved");
 				break;
 			}
-			if (assoc_mgr_qos_list)
-				list_destroy(assoc_mgr_qos_list);
+			FREE_NULL_LIST(assoc_mgr_qos_list);
 			assoc_mgr_qos_list = msg->my_list;
 			_post_qos_list(assoc_mgr_qos_list);
 			debug("Recovered %u qos",
@@ -4531,8 +4519,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No wckeys retrieved");
 				break;
 			}
-			if (assoc_mgr_wckey_list)
-				list_destroy(assoc_mgr_wckey_list);
+			FREE_NULL_LIST(assoc_mgr_wckey_list);
 			assoc_mgr_wckey_list = msg->my_list;
 			debug("Recovered %u wckeys",
 			      list_count(assoc_mgr_wckey_list));
