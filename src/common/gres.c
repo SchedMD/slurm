@@ -1384,7 +1384,8 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 			gres_data->type_cnt_avail[i] = model_cnt;
 		} else if (model_cnt < gres_data->type_cnt_avail[i]) {
 			xstrfmtcat(*reason_down,
-				   "%s:%s count too low (%lu < %lu)",
+				   "%s:%s count too low "
+				   "(%"PRIu64" < %"PRIu64")",
 				   gres_name, gres_data->type_model[i],
 				   model_cnt, gres_data->type_cnt_avail[i]);
 			return -1;
@@ -1416,18 +1417,18 @@ static void _set_gres_cnt(char *orig_config, char **new_config,
 			xstrcat(new_configured_res, tok);
 		} else if ((new_cnt % (1024 * 1024 * 1024)) == 0) {
 			new_cnt /= (1024 * 1024 * 1024);
-			xstrfmtcat(new_configured_res, "%s:%luG",
+			xstrfmtcat(new_configured_res, "%s:%"PRIu64"G",
 				   gres_name, new_cnt);
 		} else if ((new_cnt % (1024 * 1024)) == 0) {
 			new_cnt /= (1024 * 1024);
-			xstrfmtcat(new_configured_res, "%s:%luM",
+			xstrfmtcat(new_configured_res, "%s:%"PRIu64"M",
 				   gres_name, new_cnt);
 		} else if ((new_cnt % 1024) == 0) {
 			new_cnt /= 1024;
-			xstrfmtcat(new_configured_res, "%s:%luK",
+			xstrfmtcat(new_configured_res, "%s:%"PRIu64"K",
 				   gres_name, new_cnt);
 		} else {
-			xstrfmtcat(new_configured_res, "%s:%lu",
+			xstrfmtcat(new_configured_res, "%s:%"PRIu64"",
 				   gres_name, new_cnt);
 		}
 		tok = strtok_r(NULL, ",", &last_tok);
@@ -1625,7 +1626,8 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &set_cnt);
 	if (gres_data->gres_cnt_found != gres_cnt) {
 		if (gres_data->gres_cnt_found != NO_VAL64) {
-			info("%s: count changed for node %s from %lu to %lu",
+			info("%s: count changed for node %s from %"PRIu64" "
+			     "to %"PRIu64"",
 			     context_ptr->gres_type, node_name,
 			     gres_data->gres_cnt_found, gres_cnt);
 		}
@@ -1737,9 +1739,8 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 
 	if (context_ptr->has_file) {
 		if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
-			error("\
-%s: gres/%s has File plus very large Count (%lu) "
-			      "for node %s, resetting value to %u",
+			error("%s: gres/%s has File plus very large Count "
+			      "(%"PRIu64") for node %s, resetting value to %u",
 			      __func__, context_ptr->gres_type,
 			      gres_data->gres_cnt_avail, node_name,
 			      MAX_GRES_BITMAP);
@@ -1760,7 +1761,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	    (gres_data->gres_cnt_found < gres_data->gres_cnt_config)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
-				   "%s count too low (%lu < %lu)",
+				   "%s count too low (%"PRIu64" < %"PRIu64")",
 				   context_ptr->gres_type,
 				   gres_data->gres_cnt_found,
 				   gres_data->gres_cnt_config);
@@ -1771,9 +1772,8 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		rc = EINVAL;
 	} else if ((fast_schedule == 2) && gres_data->topo_cnt &&
 		   (gres_data->gres_cnt_found != gres_data->gres_cnt_config)) {
-		error("\
-%s on node %s configured for %lu resources but %lu found,"
-		      " ignoring topology support",
+		error("%s on node %s configured for %"PRIu64" resources but "
+		      "%"PRIu64" found, ignoring topology support",
 		      context_ptr->gres_type, node_name,
 		      gres_data->gres_cnt_config, gres_data->gres_cnt_found);
 		if (gres_data->topo_cpus_bitmap) {
@@ -2278,7 +2278,7 @@ static char *_node_gres_used(void *gres_data, char *gres_name)
 		if (gres_node_ptr->no_consume) {
 			xstrfmtcat(gres_node_ptr->gres_used, "%s:0", gres_name);
 		} else {
-			xstrfmtcat(gres_node_ptr->gres_used, "%s:%lu",
+			xstrfmtcat(gres_node_ptr->gres_used, "%s:%"PRIu64"",
 				   gres_name, gres_node_ptr->gres_cnt_alloc);
 		}
 	} else {
@@ -2289,7 +2289,7 @@ static char *_node_gres_used(void *gres_data, char *gres_name)
 					   gres_node_ptr->type_model[i]);
 			} else {
 				xstrfmtcat(gres_node_ptr->gres_used,
-					   "%s%s:%s:%lu", sep, gres_name,
+					   "%s%s:%s:%"PRIu64"", sep, gres_name,
 					   gres_node_ptr->type_model[i],
 					   gres_node_ptr->type_cnt_alloc[i]);
 			}
@@ -2313,16 +2313,18 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 	if (gres_node_ptr->gres_cnt_found == NO_VAL64) {
 		snprintf(tmp_str, sizeof(tmp_str), "TBD");
 	} else {
-		snprintf(tmp_str, sizeof(tmp_str), "%lu",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 gres_node_ptr->gres_cnt_found);
 	}
 
 	if (gres_node_ptr->no_consume) {
-		info("  gres_cnt found:%s configured:%lu avail:%lu no_consume",
+		info("  gres_cnt found:%s configured:%"PRIu64" "
+		     "avail:%"PRIu64" no_consume",
 		     tmp_str, gres_node_ptr->gres_cnt_config,
 		     gres_node_ptr->gres_cnt_avail);
 	} else {
-		info("  gres_cnt found:%s configured:%lu avail:%lu alloc:%lu",
+		info("  gres_cnt found:%s configured:%"PRIu64" "
+		     "avail:%"PRIu64" alloc:%"PRIu64"",
 		     tmp_str, gres_node_ptr->gres_cnt_config,
 		     gres_node_ptr->gres_cnt_avail,
 		     gres_node_ptr->gres_cnt_alloc);
@@ -2350,17 +2352,17 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 			info("  topo_gres_bitmap[%d]:%s", i, tmp_str);
 		} else
 			info("  topo_gres_bitmap[%d]:NULL", i);
-		info("  topo_gres_cnt_alloc[%d]:%lu", i,
+		info("  topo_gres_cnt_alloc[%d]:%"PRIu64"", i,
 		     gres_node_ptr->topo_gres_cnt_alloc[i]);
-		info("  topo_gres_cnt_avail[%d]:%lu", i,
+		info("  topo_gres_cnt_avail[%d]:%"PRIu64"", i,
 		     gres_node_ptr->topo_gres_cnt_avail[i]);
 		info("  type[%d]:%s", i, gres_node_ptr->topo_model[i]);
 	}
 
 	for (i = 0; i < gres_node_ptr->type_cnt; i++) {
-		info("  type_cnt_alloc[%d]:%lu", i,
+		info("  type_cnt_alloc[%d]:%"PRIu64"", i,
 		     gres_node_ptr->type_cnt_alloc[i]);
-		info("  type_cnt_avail[%d]:%lu", i,
+		info("  type_cnt_avail[%d]:%"PRIu64"", i,
 		     gres_node_ptr->type_cnt_avail[i]);
 		info("  type[%d]:%s", i, gres_node_ptr->type_model[i]);
 	}
@@ -3658,8 +3660,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 				bit_alloc(node_gres_ptr->gres_cnt_avail);
 		i = bit_size(node_gres_ptr->gres_bit_alloc);
 		if (i < node_gres_ptr->gres_cnt_avail) {
-			error("\
-gres/%s: node %s gres bitmap size bad (%d < %lu)",
+			error("gres/%s: node %s gres bitmap size bad "
+			      "(%d < %"PRIu64")",
 			      gres_name, node_name,
 			      i, node_gres_ptr->gres_cnt_avail);
 			node_gres_ptr->gres_bit_alloc =
@@ -4328,7 +4330,7 @@ static void _job_state_log(void *gres_data, uint32_t job_id, char *gres_name)
 	xassert(gres_data);
 	gres_ptr = (gres_job_state_t *) gres_data;
 	info("gres: %s state for job %u", gres_name, job_id);
-	info("  gres_cnt:%lu node_cnt:%u type:%s",
+	info("  gres_cnt:%"PRIu64" node_cnt:%u type:%s",
 	     gres_ptr->gres_cnt_alloc,
 	     gres_ptr->node_cnt, gres_ptr->type_model);
 	if (gres_ptr->node_cnt == 0)
@@ -4341,7 +4343,7 @@ static void _job_state_log(void *gres_data, uint32_t job_id, char *gres_name)
 	if (gres_ptr->gres_cnt_step_alloc == NULL)
 		info("  gres_cnt_step_alloc:NULL");
 
-	for (i=0; i<gres_ptr->node_cnt; i++) {
+	for (i = 0; i < gres_ptr->node_cnt; i++) {
 		if (gres_ptr->gres_bit_alloc && gres_ptr->gres_bit_alloc[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_ptr->gres_bit_alloc[i]);
@@ -4358,7 +4360,7 @@ static void _job_state_log(void *gres_data, uint32_t job_id, char *gres_name)
 			info("  gres_bit_step_alloc[%d]:NULL", i);
 
 		if (gres_ptr->gres_cnt_step_alloc) {
-			info("  gres_cnt_step_alloc[%d]:%lu", i,
+			info("  gres_cnt_step_alloc[%d]:%"PRIu64"", i,
 			     gres_ptr->gres_cnt_step_alloc[i]);
 		}
 	}
@@ -5180,15 +5182,16 @@ static void _step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id,
 
 	xassert(gres_ptr);
 	info("gres/%s state for step %u.%u", gres_name, job_id, step_id);
-	info("  gres_cnt:%lu node_cnt:%u type:%s", gres_ptr->gres_cnt_alloc,
-	     gres_ptr->node_cnt, gres_ptr->type_model);
+	info("  gres_cnt:%"PRIu64" node_cnt:%u type:%s",
+	     gres_ptr->gres_cnt_alloc, gres_ptr->node_cnt,
+	     gres_ptr->type_model);
 
 	if (gres_ptr->node_in_use == NULL)
 		info("  node_in_use:NULL");
 	else if (gres_ptr->gres_bit_alloc == NULL)
 		info("  gres_bit_alloc:NULL");
 	else {
-		for (i=0; i<gres_ptr->node_cnt; i++) {
+		for (i = 0; i < gres_ptr->node_cnt; i++) {
 			if (!bit_test(gres_ptr->node_in_use, i))
 				continue;
 			if (gres_ptr->gres_bit_alloc[i]) {
@@ -5325,7 +5328,7 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 
 	if (step_gres_ptr->gres_cnt_alloc > job_gres_ptr->gres_cnt_alloc) {
 		error("gres/%s: step_alloc for %u.%u, step's > job's "
-		      "for node %d (%lu > %lu)",
+		      "for node %d (%"PRIu64" > %"PRIu64")",
 		      gres_name, job_id, step_id, node_offset,
 		      step_gres_ptr->gres_cnt_alloc,
 		      job_gres_ptr->gres_cnt_alloc);
@@ -5341,7 +5344,8 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	    (job_gres_ptr->gres_cnt_alloc -
 	     job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
 		error("gres/%s: step_alloc for %u.%u, step's > job's "
-		      "remaining for node %d (%lu > (%lu - %lu))",
+		      "remaining for node %d (%"PRIu64" > "
+		      "(%"PRIu64" - %"PRIu64"))",
 		      gres_name, job_id, step_id, node_offset,
 		      step_gres_ptr->gres_cnt_alloc,
 		      job_gres_ptr->gres_cnt_alloc,
