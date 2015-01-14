@@ -478,6 +478,7 @@ Value may be cleared with blank data value, "Account=".
 \fIBurstBuffer\fP=<spec>
 Burst buffer specification to be changed for this job's resource use.
 Value may be cleared with blank data value, "BurstBuffer=".
+Format is burst buffer plugin specific.
 .TP
 \fIConn\-Type\fP=<type>
 Reset the node connection type.
@@ -1219,9 +1220,22 @@ then all other accounts are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed accounts.
 
 .TP
-\fIBurstBuffer\fP=<buffer_spec>
+\fIBurstBuffer\fP=<buffer_spec>[,<buffer_spec>,...]
 Specification of burst buffer resources which are to be reserved.
-The form of the specification is system dependent.
+"buffer_spec" consists of four elements:
+[plugin:][type:]#[units]
+"plugin" is the burst buffer plugin name, currently either "cray" or "generic".
+If no plugin is specified, the reservation applies to all configured burst
+buffer plugins.
+"type" specifies a Cray generic burst buffer resource, for example "nodes".
+if "type" is not specified, the number is a measure of storage space.
+The "units" may be "N" (nodes), "GB" (gigabytes), "TB" (terabytes),
+"PB" (petabytes), etc. with the default units being gigabyes for reservations
+of storage space.
+For example "BurstBuffer=cray:2TB,cray:nodes:3" (reserve 2TB of storage plus
+3 nodes from the Cray plugin) or
+"BurstBuffer=100" (reserve 100 GB of storage from all configured burst buffer
+plugins).
 
 .TP
 \fICoreCnt\fP=<num>

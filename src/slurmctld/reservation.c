@@ -4102,49 +4102,100 @@ static uint32_t _get_job_duration(struct job_record *job_ptr)
 	return duration;
 }
 
-static void _update_bb_resv(burst_buffer_resv_t **bb_resv, char *bb_spec)
+static void _add_bb_resv(burst_buffer_info_msg_t **bb_resv, char *plugin,
+			 char *type, uint32_t cnt)
 {
-	int32_t cnt, i;
-	char *end_ptr = NULL;
-
-	cnt = strtol(bb_spec, &end_ptr, 10);
-	if (cnt <= 0)
-		return;
+	burst_buffer_info_t *bb_array;
+	burst_buffer_gres_t *gres_ptr;
+	int i;
 
 	if (*bb_resv == NULL)
-		*bb_resv = xmalloc(sizeof(burst_buffer_resv_t));
-	if ((end_ptr[0] == 'n') || (end_ptr[0] == 'N')) {
-		/* Cray node reservation */
-		for (i = 0; i < (*bb_resv)->gres_cnt; i++) {
-			if (!strcmp((*bb_resv)->gres_ptr[i].name, "nodes")) {
-				(*bb_resv)->gres_ptr[i].used_cnt += cnt;
-				return;
-			}
+		*bb_resv = xmalloc(sizeof(burst_buffer_info_msg_t));
+
+	for (i = 0, bb_array = (*bb_resv)->burst_buffer_array;
+	     i < (*bb_resv)->record_count; i++) {
+		if ((plugin == NULL) || (bb_array->name == NULL) ||
+		    !strcmp(plugin, bb_array->name))
+			break;
+	}
+	if (i >= (*bb_resv)->record_count) {
+		(*bb_resv)->record_count++;
+		(*bb_resv)->burst_buffer_array = xrealloc(
+			(*bb_resv)->burst_buffer_array,
+			sizeof(burst_buffer_info_t) * (*bb_resv)->record_count);
+		bb_array = (*bb_resv)->burst_buffer_array +
+			   (*bb_resv)->record_count - 1;
+		bb_array->name = xstrdup(plugin);
+	}
+
+	if (type == NULL) {
+		bb_array->used_space += cnt;
+		return;
+	}
+
+	for (i = 0, gres_ptr = bb_array->gres_ptr; i < bb_array->gres_cnt; i++){
+		if ((gres_ptr->name == NULL) || !strcmp(type, gres_ptr->name))
+			break;
+	}
+	if (i >= bb_array->gres_cnt) {
+		bb_array->gres_cnt++;
+		bb_array->gres_ptr = xrealloc(bb_array->gres_ptr,
+					      sizeof(burst_buffer_gres_t) *
+					      bb_array->gres_cnt);
+		gres_ptr = bb_array->gres_ptr + bb_array->gres_cnt - 1;
+		gres_ptr->name = xstrdup(type);
+	}
+	gres_ptr->used_cnt += cnt;
+}
+
+static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
+{
+	int32_t cnt;
+	char *end_ptr = NULL, *end_ptr2 = NULL;
+	char *sep, *tmp_spec, *tok, *plugin, *type;
+
+	if ((bb_spec == NULL) || (bb_spec[0] == '\0'))
+		return;
+
+	tmp_spec = xstrdup(bb_spec);
+	tok = strtok_r(tmp_spec, ",", &end_ptr);
+	while (tok) {
+		if (!strncmp(tok, "cray:", 5)) {
+			plugin = "cray";
+			tok += 5;
+		} else if (!strncmp(tok, "generic:", 8)) {
+			plugin = "generic";
+			tok += 8;
+		} else
+			plugin = NULL;
+
+		sep = strchr(tok, ':');
+		if (sep) {
+			type = tok;
+			sep[0] = '\0';
+			tok = sep + 1;
+		} else {
+			type = NULL;
 		}
-		(*bb_resv)->gres_ptr = xrealloc((*bb_resv)->gres_ptr,
-						sizeof(burst_buffer_gres_t) *
-						((*bb_resv)->gres_cnt + 1));
-		(*bb_resv)->gres_ptr[(*bb_resv)->gres_cnt].name =
-			xstrdup("nodes");
-		(*bb_resv)->gres_ptr[(*bb_resv)->gres_cnt].used_cnt = cnt;
-		(*bb_resv)->gres_cnt++;
-		return;
+
+		cnt = strtol(tok, &end_ptr2, 10);
+		if ((end_ptr2[0] == 'n') || (end_ptr2[0] == 'N')) {
+			type = "nodes";	/* Cray node spec format */
+		} else if ((end_ptr2[0] == 'm') || (end_ptr2[0] == 'M')) {
+			cnt = (cnt + 1023) / 1024;
+		} else if ((end_ptr2[0] == 'g') || (end_ptr2[0] == 'G')) {
+			;	/* No change */
+		} else if ((end_ptr2[0] == 't') || (end_ptr2[0] == 'T')) {
+			cnt *= 1024;
+		} else if ((end_ptr2[0] == 'p') || (end_ptr2[0] == 'P')) {
+			cnt *= (1024 * 1024);
+		}
+
+		if (cnt)
+			_add_bb_resv(bb_resv, plugin, type, cnt);
+		tok = strtok_r(NULL, ",", &end_ptr);
 	}
-	if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
-		cnt = (cnt + 1023) / 1024;
-	} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
-		;	/* No change */
-	} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
-		cnt *= 1024;
-	} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
-		cnt *= (1024 * 1024);
-	} else {
-		error("%s: Unrecognized reservation burst buffer "
-		      "specification (%s)", __func__, bb_spec);
-		xfree(*bb_resv);
-		return;
-	}
-	(*bb_resv)->size += cnt;
+	xfree(tmp_spec);
 }
 
 /*
@@ -4154,15 +4205,20 @@ static void _update_bb_resv(burst_buffer_resv_t **bb_resv, char *bb_spec)
  * IN job_ptr   - job to test
  * IN lic_name  - name of license
  * IN when      - when the job is expected to start
- * RET burst buffer reservation structure, call bb_resv_free() to free
+ * RET burst buffer reservation structure, call
+ *	 slurm_free_burst_buffer_info_msg() to free
  */
-extern burst_buffer_resv_t *job_test_bb_resv(struct job_record *job_ptr,
-					     time_t when)
+extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
+						 time_t when)
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
-	burst_buffer_resv_t *bb_resv = NULL;
+	burst_buffer_info_msg_t *bb_resv = NULL;
 	ListIterator iter;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return bb_resv;
 
 	job_start_time = when;
 	job_end_time   = when + _get_job_duration(job_ptr);
@@ -4185,21 +4241,6 @@ extern burst_buffer_resv_t *job_test_bb_resv(struct job_record *job_ptr,
 	list_iterator_destroy(iter);
 
 	return bb_resv;
-}
-
-/* Free a burst_buffer_resv_t structure as generated by job_test_bb_resv().
- * NOTE: Do not use to free the structure if generated by other functions,
- * since only select portions are freed in this function. */
-extern void bb_resv_free(burst_buffer_resv_t *bb_resv)
-{
-	int i;
-
-	if (bb_resv) {
-		for (i = 0; i < bb_resv->gres_cnt; i++)
-			xfree(bb_resv->gres_ptr->name);
-		xfree(bb_resv->gres_ptr);
-		xfree(bb_resv);
-	}
 }
 
 /*

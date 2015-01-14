@@ -73,6 +73,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/reservation.h"
 
 typedef struct slurm_bb_ops {
 	int		(*load_state)	(bool init_config);
