@@ -2409,6 +2409,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	/* a batch script does not need switch info */
 	if (!batch_step) {
+		char *mpi_params;
+
 		step_ptr->step_layout =
 			step_layout_create(step_ptr,
 					   step_node_list, node_count,
@@ -2423,8 +2425,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 				return ESLURM_INVALID_TASK_MEMORY;
 			return SLURM_ERROR;
 		}
-		if ((step_specs->resv_port_cnt != (uint16_t) NO_VAL)
-		    && (step_specs->resv_port_cnt == 0)) {
+		if (step_specs->resv_port_cnt == (uint16_t) NO_VAL
+		    && (mpi_params = slurm_get_mpi_params())) {
+
+			step_specs->resv_port_cnt = 0;
 			/* reserved port count set to maximum task count on
 			 * any node plus one */
 			for (i = 0; i < step_ptr->step_layout->node_cnt; i++) {
@@ -2433,6 +2437,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 					    step_ptr->step_layout->tasks[i]);
 			}
 			step_specs->resv_port_cnt++;
+			xfree(mpi_params);
 		}
 		if (step_specs->resv_port_cnt != (uint16_t) NO_VAL
 		    && step_specs->resv_port_cnt != 0) {

@@ -1476,7 +1476,11 @@ silently ignored.
 
 .TP
 \fB\-\-resv\-ports\fR
-Reserve communication ports for this job.
+Reserve communication ports for this job. Users can specify the number
+of port they want to reserve. The parameter MpiParams=ports=12000-12999
+must be specified in \fIslurm.conf\fR. If not specified the default reserve
+number of ports equal to the number of tasks. If the number of reserved ports
+is zero no ports is reserved.
 Used for OpenMPI.
 
 .TP

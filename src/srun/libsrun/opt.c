@@ -2192,8 +2192,6 @@ static bool _opt_verify(void)
 		mpi_type = slurm_get_mpi_default();
 		(void) mpi_hook_client_init(NULL);
 	}
-	if ((opt.resv_port_cnt == NO_VAL) && !strcmp(mpi_type, "openmpi"))
-		opt.resv_port_cnt = 0;
 	xfree(mpi_type);
 
 	return verified;
