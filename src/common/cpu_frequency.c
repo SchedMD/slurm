@@ -135,7 +135,7 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		return -1;
 	}
 	snprintf(tmp, sizeof(tmp), "%s/cpu/%d", slurmd_spooldir, cpu_id);
-	fd = open(tmp, O_CREAT | O_RDWR, 0500);
+	fd = open(tmp, O_CREAT | O_RDWR, 0600);
 	if (fd < 0) {
 		error("%s: open: %m %s", __func__, tmp);
 		return fd;
@@ -164,7 +164,7 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		return -1;
 	}
 	snprintf(tmp, sizeof(tmp), "%s/cpu/%d", slurmd_spooldir, cpu_id);
-	fd = open(tmp, O_RDWR);
+	fd = open(tmp, O_RDWR, 0600);
 	if (fd < 0) {
 		if (errno != ENOENT)	/* Race condition */
 			error("%s: open: %m %s", __func__, tmp);
