@@ -585,6 +585,8 @@ test -f $RPM_BUILD_ROOT/lib/systemd/system/slurmctld.service	&&
   echo /lib/systemd/system/slurmctld.service		>> $LIST
 test -f $RPM_BUILD_ROOT/lib/systemd/system/slurmd.service	&&
   echo /lib/systemd/system/slurmd.service		>> $LIST
+test -f $RPM_BUILD_ROOT/%{_bindir}/netloc_to_topology
+  echo %{_bindir}/netloc_to_topology			>> $LIST
 
 test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release} &&
   echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
