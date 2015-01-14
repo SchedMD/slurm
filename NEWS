@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Make sure assoc_mgr locks are initialized correctly.
  -- Correct check of enforcement when filling in an association.
+ -- Make sacctmgr print out classification correctly for clusters
 
 * Changes in Slurm 14.11.3
 ==========================

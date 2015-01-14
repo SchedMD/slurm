@@ -197,7 +197,7 @@ static print_field_t *_get_print_field(char *object)
 		field->print_routine = print_fields_uint16;
 	} else if (!strncasecmp("Classification", object,
 				MAX(command_len, 3))) {
-		field->type = PRINT_CPUS;
+		field->type = PRINT_CLASS;
 		field->name = xstrdup("Class");
 		field->len = 9;
 		field->print_routine = print_fields_str;
