@@ -26,6 +26,8 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	STORE_FIELD(hv, job_info, alloc_sid, uint32_t);
 	STORE_FIELD(hv, job_info, array_job_id, uint32_t);
 	STORE_FIELD(hv, job_info, array_task_id, uint32_t);
+	if(job_info->array_task_str)
+		STORE_FIELD(hv, job_info, array_task_str, charp);
 	STORE_FIELD(hv, job_info, assoc_id, uint32_t);
 	STORE_FIELD(hv, job_info, batch_flag, uint16_t);
 	if(job_info->command)
@@ -163,6 +165,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, alloc_sid, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, array_job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, array_task_id, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, array_task_str, charp, FALSE);
 	FETCH_FIELD(hv, job_info, batch_flag, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, command, charp, FALSE);
 	FETCH_FIELD(hv, job_info, comment, charp, FALSE);
