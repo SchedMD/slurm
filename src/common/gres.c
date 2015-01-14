@@ -2492,7 +2492,7 @@ static int _job_state_validate(char *config, void **gres_data,
 {
 	gres_job_state_t *gres_ptr;
 	char *type = NULL, *num = NULL, *last_num = NULL;
-	uint32_t cnt;
+	uint64_t cnt;
 
 	if (!xstrcmp(config, context_ptr->gres_name)) {
 		cnt = 1;
@@ -2502,7 +2502,11 @@ static int _job_state_validate(char *config, void **gres_data,
 		num = strrchr(config, ':');
 		if (!num)
 			return SLURM_ERROR;
-		cnt = strtol(num + 1, &last_num, 10);
+		errno = 0;
+		cnt = strtoll(num + 1, &last_num, 10);
+		if (errno != 0)
+			return SLURM_ERROR;
+
 		if (last_num[0] == '\0')
 			;
 		else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
@@ -2513,8 +2517,7 @@ static int _job_state_validate(char *config, void **gres_data,
 			cnt *= (1024 * 1024 * 1024);
 		else
 			return SLURM_ERROR;
-		if ((cnt < 0) || (cnt > 0xffffffff))
-			return SLURM_ERROR;
+
 	} else {
 		/* Did not find this GRES name, check for zero value */
 		num = strrchr(config, ':');
