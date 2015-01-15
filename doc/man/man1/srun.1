@@ -1521,7 +1521,7 @@ send it the signal \fIsig_num\fR.
 Due to the resolution of event handling by SLURM, the signal may
 be sent up to 60 seconds earlier than specified.
 \fIsig_num\fR may either be a signal number or name (e.g. "10" or "USR1").
-\fIsig_time\fR must have integer value between zero and 65535.
+\fIsig_time\fR must have an integer value between 0 and 65535.
 By default, no signal is sent before the job's end time.
 If a \fIsig_num\fR is specified without any \fIsig_time\fR,
 the default time will be 60 seconds.

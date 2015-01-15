@@ -206,7 +206,7 @@ speedup can be achieved by setting the CommitDelay option in the
 <li><b>PurgeJobAfter</b>=12months</li>
 <li><b>PurgeResvAfter</b>=2months</li>
 <li><b>PurgeStepAfter</b>=2months</li>
-<li><b>PurgeSuspendAfer</b>=1month</li>
+<li><b>PurgeSuspendAfter</b>=1month</li>
 </ul>
 
 <p style="text-align:center;">Last modified 23 December 2014</p>

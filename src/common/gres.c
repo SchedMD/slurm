@@ -3205,9 +3205,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name)
 {
-//	int i, j, cpu_size, cpus_ctld, gres_avail = 0, top_inx;
-int i, j, cpu_size, cpus_ctld, gres_avail = 0;
-static int top_inx;
+	int i, j, cpu_size, cpus_ctld, gres_avail = 0, gres_total, top_inx;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cpus_addnt = NULL;  /* Additional CPUs avail from this GRES */
@@ -3337,10 +3335,12 @@ static int top_inx;
 
 		/* Pick the topology entries with the most CPUs available */
 		gres_avail = 0;
+		gres_total = 0;
 		while (gres_avail < job_gres_ptr->gres_cnt_alloc) {
 			top_inx = -1;
 			for (j = 0; j < node_gres_ptr->topo_cnt; j++) {
-				if ((gres_avail == 0) || (cpus_avail[j] == 0)) {
+				if ((gres_avail == 0) || (cpus_avail[j] == 0) ||
+				    !node_gres_ptr->topo_cpus_bitmap[j]) {
 					cpus_addnt[j] = cpus_avail[j];
 				} else {
 					cpus_addnt[j] = cpus_avail[j] -
@@ -3356,7 +3356,8 @@ static int top_inx;
 					top_inx = j;
 			}
 			if ((top_inx < 0) || (cpus_avail[top_inx] == 0)) {
-				cpu_cnt = 0;
+				if (gres_total < job_gres_ptr->gres_cnt_alloc)
+					cpu_cnt = 0;
 				break;
 			}
 			cpus_avail[top_inx] = 0;	/* Flag as used */
@@ -3383,9 +3384,10 @@ static int top_inx;
 					topo_cpus_bitmap[top_inx]);
 			}
 			if (i > 0) {
-				/* Available GRES count is up to i, but only
-				 * count 1 to maximize available CPUs count */
+				/* Available GRES count is up to i, but take 1
+				 * per loop to maximize available CPUs count */
 				gres_avail += 1;
+				gres_total += i;
 			}
 			cpu_cnt = bit_set_count(alloc_cpu_bitmap);
 		}
