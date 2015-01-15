@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "November 2014" "scontrol 15.08" "Slurm components"
+.TH SCONTROL "1" "January 2015" "scontrol 15.08" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1236,6 +1236,8 @@ For example "BurstBuffer=cray:2TB,cray:nodes:3" (reserve 2TB of storage plus
 3 nodes from the Cray plugin) or
 "BurstBuffer=100" (reserve 100 GB of storage from all configured burst buffer
 plugins).
+Jobs using this reservation are not restricted to these burst buffer resources,
+but may use these reserved resources plus any which are generally available.
 
 .TP
 \fICoreCnt\fP=<num>
@@ -1255,6 +1257,8 @@ A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses.
 If a reservation includes Licenses, but no NodeCnt or Nodes, then the option
 \fIFlags=LICENSE_ONLY\fP must also be specified.
+Jobs using this reservation are not restricted to these licenses, but may
+use these reserved licenses plus any which are generally available.
 
 .TP
 \fINodeCnt\fP=<num>[,num,...]
@@ -1687,7 +1691,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2014 SchedMD LLC.
+Copyright (C) 2010-2015 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

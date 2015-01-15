@@ -53,6 +53,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
@@ -366,14 +367,15 @@ static void _timeout_bb_rec(void)
  */
 static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 {
+	burst_buffer_info_msg_t *resv_bb;
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	List preempt_list;
 	ListIterator preempt_iter;
 	bb_user_t *user_ptr;
-	uint32_t tmp_u, tmp_j, lim_u;
+	uint32_t tmp_u, tmp_j, lim_u, resv_space = 0;
 	int add_total_space_needed = 0, add_user_space_needed = 0;
 	int add_total_space_avail  = 0, add_user_space_avail  = 0;
-	time_t now = time(NULL);
+	time_t now = time(NULL), when;
 	bb_alloc_t *bb_ptr = NULL;
 	int i;
 	char jobid_buf[32];
@@ -383,8 +385,31 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 	if (((bb_state.bb_config.job_size_limit  != NO_VAL) &&
 	     (add_space > bb_state.bb_config.job_size_limit)) ||
 	    ((bb_state.bb_config.user_size_limit != NO_VAL) &&
-	     (add_space > bb_state.bb_config.user_size_limit)))
+	     (add_space > bb_state.bb_config.user_size_limit))) {
+		debug("%s: %s requested space above limit", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return 1;
+	}
+
+	if (job_ptr->start_time <= now)
+		when = now;
+	else
+		when = job_ptr->start_time;
+	resv_bb = job_test_bb_resv(job_ptr, when);
+	if (resv_bb) {
+		burst_buffer_info_t *resv_bb_ptr;
+		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
+		     i < resv_bb->record_count; i++, resv_bb_ptr++) {
+			if (resv_bb_ptr->name &&
+			    strcmp(resv_bb_ptr->name, bb_state.name))
+				continue;
+			resv_bb_ptr->used_space =
+				bb_granularity(resv_bb_ptr->used_space,
+					       bb_state.bb_config.granularity);
+			resv_space += resv_bb_ptr->used_space;
+		}
+		slurm_free_burst_buffer_info_msg(resv_bb);
+	}
 
 	if (bb_state.bb_config.user_size_limit != NO_VAL) {
 		user_ptr = bb_find_user_rec(job_ptr->user_id,
@@ -395,8 +420,9 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 
 		add_user_space_needed = tmp_u + tmp_j - lim_u;
 	}
-	add_total_space_needed = bb_state.used_space + add_space -
+	add_total_space_needed = bb_state.used_space + add_space + resv_space -
 				 bb_state.total_space;
+
 	if ((add_total_space_needed <= 0) &&
 	    (add_user_space_needed  <= 0))
 		return 0;
@@ -751,7 +777,7 @@ extern int init(void)
 	pthread_mutex_init(&bb_state.term_mutex, NULL);
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_load_config(&bb_state, "generic");
+	bb_load_config(&bb_state, (char *)plugin_type); /* Remove "const" */
 	_test_config();
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
@@ -819,7 +845,7 @@ extern int bb_p_reconfig(void)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
-	bb_load_config(&bb_state, "generic");
+	bb_load_config(&bb_state, (char *)plugin_type); /* Remove "const" */
 	_test_config();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -838,7 +864,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	int eof, offset;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
+	packstr(bb_state.name, buffer);
 	offset = get_buf_offset(buffer);
 	pack32(rec_count,        buffer);
 	bb_pack_state(&bb_state, buffer, protocol_version);

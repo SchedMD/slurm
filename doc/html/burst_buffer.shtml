@@ -119,7 +119,7 @@ the batch script.</p>
 
 <pre>
 $ scontrol show burst
-Name=burst_buffer/generic TotalSpace=50TB UsedSpace=42TB
+Name=generic Granularity=100GB TotalSpace=50TB UsedSpace=42TB
   JobSizeLimit=10TB UserSizeLimit=40TB
   PrioBoostAlloc=200 PrioBoostUse=100 
   StageInTimeout=30 StageOutTimeout=30 
@@ -134,6 +134,35 @@ Name=burst_buffer/generic TotalSpace=50TB UsedSpace=42TB
     Name=DB1 Size=22TB State=staged-in StateTime=2014-11-19T09:02:21 UserID=brenda(1001)
 </pre>
 
-<p style="text-align:center;">Last modified 15 December 2014</p>
+<h2>Advanced Reservations</h2>
+
+<p>Burst buffer resources can be placed in an advanced reservation using the
+<i>BurstBuffer</i> option.
+The argument consists of four elements:<br>
+[plugin:][type:]#[units]<br>
+<i>plugin</i> is the burst buffer plugin name, currently either "cray" or "generic".
+If no plugin is specified, the reservation applies to all configured burst
+buffer plugins.<br>
+<i>type</i> specifies a Cray generic burst buffer resource, for example "nodes".<br>
+if "type" is not specified, the number is a measure of storage space.<br>
+<i>units</i> may be "N" (nodes), "GB" (gigabytes), "TB" (terabytes),
+"PB" (petabytes), etc. with the default units being gigabyes for reservations
+of storage space.<br>
+
+Jobs using this reservation are not restricted to these burst buffer resources,
+but may use these reserved resources plus any which are generally available.
+Some examples follow.</p>
+
+<pre>
+$ scontrol create reservation starttime=now duration=60 \
+  users=alan flags=any_nodes \
+  burstbuffer=cray:100GB,generic:20GB
+
+$ scontrol create reservation StartTime=noon duration=60 \
+  users=brenda NodeCnt=8 \
+  BurstBuffer=cray:nodes:2,generic:20GB
+</pre>
+
+<p style="text-align:center;">Last modified 15 January 2015</p>
 
 <!--#include virtual="footer.txt"-->

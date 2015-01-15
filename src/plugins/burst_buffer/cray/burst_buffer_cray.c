@@ -61,6 +61,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
@@ -1032,17 +1033,17 @@ static void _free_needed_gres_struct(needed_gres_t *needed_gres_ptr,
  */
 static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 {
-
+	burst_buffer_info_msg_t *resv_bb;
 	needed_gres_t *needed_gres_ptr = NULL;
 	int add_total_gres_needed = 0, add_total_gres_avail = 0;
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	List preempt_list;
 	ListIterator preempt_iter;
 	bb_user_t *user_ptr;
-	uint32_t tmp_f, tmp_g, tmp_u, tmp_j, lim_u, add_space;
+	uint32_t tmp_f, tmp_g, tmp_u, tmp_j, lim_u, add_space, resv_space = 0;
 	int add_total_space_needed = 0, add_user_space_needed = 0;
 	int add_total_space_avail  = 0, add_user_space_avail  = 0;
-	time_t now = time(NULL);
+	time_t now = time(NULL), when;
 	bb_alloc_t *bb_ptr = NULL;
 	int d, i, j, k;
 	char jobid_buf[32];
@@ -1056,9 +1057,29 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 	     (add_space > bb_state.bb_config.job_size_limit)) ||
 	    ((bb_state.bb_config.user_size_limit != NO_VAL) &&
 	     (add_space > bb_state.bb_config.user_size_limit))) {
-		debug("%s: %s requests more space than available", __func__,
+		debug("%s: %s requested space above limit", __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return 1;
+	}
+
+	if (job_ptr->start_time <= now)
+		when = now;
+	else
+		when = job_ptr->start_time;
+	resv_bb = job_test_bb_resv(job_ptr, when);
+	if (resv_bb) {
+		burst_buffer_info_t *resv_bb_ptr;
+		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
+		     i < resv_bb->record_count; i++, resv_bb_ptr++) {
+			if (resv_bb_ptr->name &&
+			    strcmp(resv_bb_ptr->name, bb_state.name))
+				continue;
+			resv_bb_ptr->used_space =
+				bb_granularity(resv_bb_ptr->used_space,
+					       bb_state.bb_config.granularity);
+			resv_space += resv_bb_ptr->used_space;
+		}
+		slurm_free_burst_buffer_info_msg(resv_bb);
 	}
 
 	if (bb_state.bb_config.user_size_limit != NO_VAL) {
@@ -1069,10 +1090,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 		if (tmp_u + tmp_j > lim_u)
 			add_user_space_needed = tmp_u + tmp_j - lim_u;
 	}
-	if (bb_state.used_space + add_space > bb_state.total_space) {
-		add_total_space_needed = bb_state.used_space + add_space -
-					 bb_state.total_space;
-	}
+	add_total_space_needed = bb_state.used_space + add_space + resv_space -
+				 bb_state.total_space;
 	needed_gres_ptr = xmalloc(sizeof(needed_gres_t) * bb_spec->gres_cnt);
 	for (i = 0; i < bb_spec->gres_cnt; i++) {
 		needed_gres_ptr[i].name = xstrdup(bb_spec->gres_ptr[i].name);
@@ -1080,11 +1099,9 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 			if (strcmp(bb_spec->gres_ptr[i].name,
 				   bb_state.bb_config.gres_ptr[j].name))
 				continue;
-			/* Round up GRES size by granularity */
-			tmp_g = bb_spec->gres_ptr[i].count +
-				bb_state.bb_config.gres_ptr[j].granularity - 1;
-			tmp_g /= bb_state.bb_config.gres_ptr[j].granularity;
-			tmp_g *= bb_state.bb_config.gres_ptr[j].granularity;
+			tmp_g = bb_granularity(bb_spec->gres_ptr[i].count,
+					       bb_state.bb_config.gres_ptr[j].
+					       granularity);
 			bb_spec->gres_ptr[i].count = tmp_g;
 			if (tmp_g > bb_state.bb_config.gres_ptr[j].avail_cnt) {
 				debug("%s: %s requests more %s GRES than"
@@ -1113,6 +1130,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 			return 1;
 		}
 	}
+
 	if ((add_total_space_needed <= 0) &&
 	    (add_user_space_needed  <= 0) && (add_total_gres_needed <= 0)) {
 		_free_needed_gres_struct(needed_gres_ptr, bb_spec->gres_cnt);
@@ -1524,7 +1542,7 @@ extern int init(void)
 	pthread_attr_t attr;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_load_config(&bb_state, "cray");
+	bb_load_config(&bb_state, (char *)plugin_type); /* Remove "const" */
 	_test_config();
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
@@ -1603,7 +1621,7 @@ extern int bb_p_reconfig(void)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
-	bb_load_config(&bb_state, "cray");
+	bb_load_config(&bb_state, (char *)plugin_type); /* Remove "const" */
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -1621,7 +1639,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	int eof, offset;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	packstr((char *)plugin_type, buffer);	/* Remove "const" qualifier */
+	packstr(bb_state.name, buffer);
 	offset = get_buf_offset(buffer);
 	pack32(rec_count,        buffer);
 	bb_pack_state(&bb_state, buffer, protocol_version);

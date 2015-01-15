@@ -163,6 +163,8 @@ extern void bb_clear_cache(bb_state_t *state_ptr)
 		}
 		xfree(state_ptr->bb_uhash);
 	}
+
+	xfree(state_ptr->name);
 }
 
 /* Clear configuration parameters, free memory
@@ -348,7 +350,7 @@ static uint32_t _atoi(char *tok)
 #endif
 
 /* Load and process configuration parameters */
-extern void bb_load_config(bb_state_t *state_ptr, char *type)
+extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 {
 	s_p_hashtbl_t *bb_hashtbl = NULL;
 	char *bb_conf, *tmp = NULL, *value;
@@ -377,6 +379,16 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 		{NULL}
 	};
 
+	xfree(state_ptr->name);
+	if (plugin_type) {
+		tmp = strchr(plugin_type, '/');
+		if (tmp)
+			tmp++;
+		else
+			tmp = plugin_type;
+		state_ptr->name = xstrdup(tmp);
+	}
+
 	bb_clear_config(&state_ptr->bb_config, false);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
 		state_ptr->bb_config.debug_flag = true;
@@ -390,7 +402,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *type)
 	} else {
 		char *new_path = NULL;
 		xfree(bb_conf);
-		xstrfmtcat(new_path, "burst_buffer_%s.conf", type);
+		xstrfmtcat(new_path, "burst_buffer_%s.conf", state_ptr->name);
 		bb_conf = get_extra_conf_path(new_path);
 		fd = open(bb_conf, 0);
 		if (fd < 0) {
@@ -635,6 +647,17 @@ extern uint32_t bb_get_size_num(char *tok, uint32_t granularity)
 	}
 
 	return bb_size_u;
+}
+
+/* Round up a number based upon some granularity */
+extern uint32_t bb_granularity(uint32_t start_size, uint32_t granularity)
+{
+	if (start_size) {
+		start_size = start_size + granularity - 1;
+		start_size /= granularity;
+		start_size *= granularity;
+	}
+	return start_size;
 }
 
 extern void bb_job_queue_del(void *x)

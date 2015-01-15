@@ -136,6 +136,7 @@ typedef struct bb_state {
 	pthread_mutex_t	bb_mutex;
 	pthread_t	bb_thread;
 	time_t		last_load_time;
+	char *		name;		/* Plugin name */
 	time_t		next_end_time;
 	pthread_cond_t	term_cond;
 	bool		term_flag;
@@ -192,13 +193,16 @@ extern void bb_free_rec(bb_alloc_t *bb_ptr);
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
 extern uint32_t bb_get_size_num(char *tok, uint32_t granularity);
 
+/* Round up a number based upon some granularity */
+extern uint32_t bb_granularity(uint32_t start_size, uint32_t granularity);
+
 extern void bb_job_queue_del(void *x);
 
 /* Sort job queue by expected start time */
 extern int bb_job_queue_sort(void *x, void *y);
 
 /* Load and process configuration parameters */
-extern void bb_load_config(bb_state_t *state_ptr, char *type);
+extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type);
 
 /* Pack individual burst buffer records into a  buffer */
 extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,

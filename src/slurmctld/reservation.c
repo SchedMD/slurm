@@ -4114,8 +4114,7 @@ static void _add_bb_resv(burst_buffer_info_msg_t **bb_resv, char *plugin,
 
 	for (i = 0, bb_array = (*bb_resv)->burst_buffer_array;
 	     i < (*bb_resv)->record_count; i++) {
-		if ((plugin == NULL) || (bb_array->name == NULL) ||
-		    !strcmp(plugin, bb_array->name))
+		if (!xstrcmp(plugin, bb_array->name))
 			break;
 	}
 	if (i >= (*bb_resv)->record_count) {
