@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct check of enforcement when filling in an association.
  -- Make sacctmgr print out classification correctly for clusters.
  -- Add array_task_str to the perlapi job info.
+ -- Fix for slurmctld abort with gres types configured and no CPU binding.
 
 * Changes in Slurm 14.11.3
 ==========================

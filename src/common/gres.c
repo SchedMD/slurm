@@ -3244,7 +3244,8 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		while (gres_avail < job_gres_ptr->gres_cnt_alloc) {
 			top_inx = -1;
 			for (j = 0; j < node_gres_ptr->topo_cnt; j++) {
-				if ((gres_avail == 0) || (cpus_avail[j] == 0)) {
+				if ((gres_avail == 0) || (cpus_avail[j] == 0) ||
+				    !node_gres_ptr->topo_cpus_bitmap[j]) {
 					cpus_addnt[j] = cpus_avail[j];
 				} else {
 					cpus_addnt[j] = cpus_avail[j] -
