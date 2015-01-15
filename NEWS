@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Add array_task_str to the perlapi job info.
  -- Fix for slurmctld abort with GRES types configured and no CPU binding.
  -- Fix for GRES scheduling where count > 1 per topology type (or GRES types).
+ -- Make CR_ONE_TASK_PER_CORE work correctly with task/affinity.
 
 * Changes in Slurm 14.11.3
 ==========================
