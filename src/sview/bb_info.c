@@ -32,12 +32,13 @@
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
+	char *		bb_name;
+	burst_buffer_resv_t *bb_ptr;
 	int		color_inx;
 	GtkTreeIter	iter_ptr;
 	bool		iter_set;
+	char *		plugin;
 	int		pos;
-	char *		bb_name;
-	burst_buffer_resv_t *bb_ptr;
 } sview_bb_info_t;
 
 enum {
@@ -52,6 +53,7 @@ enum {
 	SORTID_COLOR_INX,
 	SORTID_GRES,
 	SORTID_NAME,
+	SORTID_PLUGIN,
 	SORTID_SIZE,
 	SORTID_STATE,
 	SORTID_STATE_TIME,
@@ -68,10 +70,12 @@ enum {
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.
  * s/b a const probably*/
-static char *_initial_page_opts = "Name/JobID,Gres,Size,State,StateTime,UserID";
+static char *_initial_page_opts = "Plugin,Name/JobID,Gres,Size,State,StateTime,UserID";
 
 static display_data_t display_data_bb[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	 refresh_bb, create_model_bb, admin_edit_bb},
+	{G_TYPE_STRING, SORTID_PLUGIN, "Plugin", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_STRING, SORTID_NAME, "Name/JobID", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
@@ -136,6 +140,7 @@ static void _bb_info_free(sview_bb_info_t *sview_bb_info)
 {
 	if (sview_bb_info) {
 		xfree(sview_bb_info->bb_name);
+		xfree(sview_bb_info->plugin);
 	}
 }
 
@@ -205,6 +210,11 @@ static void _layout_bb_record(GtkTreeView *treeview,
 				   find_col_name(display_data_bb,
 						 SORTID_NAME),
 				   bb_name_id);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_bb,
+						 SORTID_PLUGIN),
+				   sview_bb_info->plugin);
 
 	tmp_state = bb_state_string(bb_ptr->state);
 	add_display_treestore_line(update, treestore, &iter,
@@ -320,6 +330,7 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 			   SORTID_COLOR_INX,     sview_bb_info_ptr->color_inx,
 			   SORTID_GRES,          tmp_gres,
 			   SORTID_NAME,          bb_name_id,
+			   SORTID_PLUGIN,        sview_bb_info_ptr->plugin,
 			   SORTID_SIZE,          tmp_size,
 			   SORTID_STATE,         tmp_state,
 			   SORTID_STATE_TIME,    tmp_state_time,
@@ -396,9 +407,8 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 	burst_buffer_resv_t *bb_resv_ptr = NULL;
 	char bb_name_id[32] = "";
 
-	if (info_list && (bb_info_ptr == last_bb_info_ptr)) {
+	if (info_list && (bb_info_ptr == last_bb_info_ptr))
 		return info_list;
-	}
 
 	last_bb_info_ptr = bb_info_ptr;
 
@@ -437,8 +447,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 			list_iterator_reset(last_list_itr);
 		}
 		if (bb_resv_ptr->name) {
-			strcpy(bb_name_id,
-			       bb_resv_ptr->name);
+			strcpy(bb_name_id, bb_resv_ptr->name);
 		} else if (bb_resv_ptr->array_task_id == NO_VAL) {
 			convert_num_unit(bb_resv_ptr->job_id,
 					 bb_name_id,
@@ -455,12 +464,13 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 		if (!sview_bb_info_ptr)
 			sview_bb_info_ptr = xmalloc(sizeof(sview_bb_info_t));
 		sview_bb_info_ptr->bb_name = xstrdup(bb_name_id);
+		sview_bb_info_ptr->plugin = xstrdup(bb_ptr->name);
 		sview_bb_info_ptr->pos = i;
 		sview_bb_info_ptr->bb_ptr = bb_resv_ptr;
 		sview_bb_info_ptr->color_inx = i % sview_colors_cnt;
 		list_append(info_list, sview_bb_info_ptr);
 		// Reset bb_name_id
-		strcpy(bb_name_id,"");
+		strcpy(bb_name_id, "");
 	}
 
 	if (last_list) {
@@ -549,8 +559,7 @@ extern void refresh_bb(GtkAction *action, gpointer user_data)
 }
 
 /* Get the Burst buffer information */
-extern int get_new_info_bb(burst_buffer_info_msg_t **info_ptr,
-			     int force)
+extern int get_new_info_bb(burst_buffer_info_msg_t **info_ptr, int force)
 {
 	static burst_buffer_info_msg_t *new_bb_ptr = NULL;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;

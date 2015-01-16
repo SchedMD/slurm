@@ -4362,7 +4362,7 @@ typedef struct {
 
 typedef struct {
 	burst_buffer_info_t *burst_buffer_array;
-	uint32_t  record_count;
+	uint32_t  record_count;		/* Elements in burst_buffer_array */
 } burst_buffer_info_msg_t;
 
 /*
