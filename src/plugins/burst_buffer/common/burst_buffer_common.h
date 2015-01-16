@@ -7,7 +7,7 @@
  *  the state information is largely in the individual plugin and passed as
  *  a pointer argument to these functions.
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -61,11 +61,11 @@ typedef struct bb_config {
 	uid_t   *deny_users;
 	char    *deny_users_str;
 	char    *get_sys_state;
-	uint32_t granularity;		/* space allocation granularity,
+	uint64_t granularity;		/* space allocation granularity,
 					 * units are GB */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;	/* Type is defined in slurm.h */
-	uint32_t job_size_limit;
+	uint64_t job_size_limit;
 	uint32_t prio_boost_alloc;
 	uint32_t prio_boost_use;
 	uint16_t private_data;
@@ -75,7 +75,7 @@ typedef struct bb_config {
 	char    *start_stage_out;
 	char    *stop_stage_in;
 	char    *stop_stage_out;
-	uint32_t user_size_limit;
+	uint64_t user_size_limit;
 } bb_config_t;
 
 typedef struct bb_alloc {
@@ -89,7 +89,7 @@ typedef struct bb_alloc {
 	char *name;		/* For persistent burst buffers */
 	struct bb_alloc *next;
 	time_t seen_time;	/* Time buffer last seen */
-	uint32_t size;
+	uint64_t size;
 	uint16_t state;
 	time_t state_time;	/* Time of last state change */
 	time_t use_time;	/* Expected time when use will begin */
@@ -98,13 +98,13 @@ typedef struct bb_alloc {
 
 typedef struct bb_user {
 	struct bb_user *next;
-	uint32_t size;
+	uint64_t size;
 	uint32_t user_id;
 } bb_user_t;
 
 typedef struct {
 	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
-	uint32_t count;		/* Count of required resources */
+	uint64_t count;		/* Count of required resources */
 } bb_gres_t;
 
 typedef struct {
@@ -112,11 +112,11 @@ typedef struct {
 	bb_gres_t *gres_ptr;
 	uint32_t   swap_size;	/* swap space required per node */
 	uint32_t   swap_nodes;	/* Number of nodes needed */
-	uint32_t   total_size;	/* Total GB required for this job */
+	uint64_t   total_size;	/* Total GB required for this job */
 } bb_job_t;
 
 typedef struct job_queue_rec {
-	uint32_t bb_size;	/* Used by generic plugin only */
+	uint64_t bb_size;	/* Used by generic plugin only */
 	bb_job_t *bb_spec;	/* Used by cray plugin only */
 	struct job_record *job_ptr;
 } job_queue_rec_t;
@@ -124,7 +124,7 @@ typedef struct job_queue_rec {
 struct preempt_bb_recs {
 	bb_alloc_t *bb_ptr;
 	uint32_t job_id;
-	uint32_t size;
+	uint64_t size;
 	time_t   use_time;
 	uint32_t user_id;
 };
@@ -141,8 +141,8 @@ typedef struct bb_state {
 	pthread_cond_t	term_cond;
 	bool		term_flag;
 	pthread_mutex_t	term_mutex;
-	uint32_t	total_space;	/* units are GB */
-	uint32_t	used_space;	/* units are GB */
+	uint64_t	total_space;	/* units are GB */
+	uint64_t	used_space;	/* units are GB */
 } bb_state_t;
 
 /* Add a burst buffer allocation to a user's load */
@@ -191,10 +191,10 @@ extern void bb_free_rec(bb_alloc_t *bb_ptr);
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
-extern uint32_t bb_get_size_num(char *tok, uint32_t granularity);
+extern uint64_t bb_get_size_num(char *tok, uint64_t granularity);
 
 /* Round up a number based upon some granularity */
-extern uint32_t bb_granularity(uint32_t start_size, uint32_t granularity);
+extern uint64_t bb_granularity(uint64_t start_size, uint64_t granularity);
 
 extern void bb_job_queue_del(void *x);
 

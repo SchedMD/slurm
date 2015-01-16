@@ -7,7 +7,7 @@
  *  the state information is largely in the individual plugin and passed as
  *  a pointer argument to these functions.
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -191,7 +191,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 		for (i = 0; i < config_ptr->gres_cnt; i++)
 			config_ptr->gres_ptr[i].avail_cnt = 0;
 	}
-	config_ptr->job_size_limit = NO_VAL;
+	config_ptr->job_size_limit = NO_VAL64;
 	config_ptr->stage_in_timeout = 0;
 	config_ptr->stage_out_timeout = 0;
 	config_ptr->prio_boost_alloc = 0;
@@ -200,7 +200,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->start_stage_out);
 	xfree(config_ptr->stop_stage_in);
 	xfree(config_ptr->stop_stage_out);
-	config_ptr->user_size_limit = NO_VAL;
+	config_ptr->user_size_limit = NO_VAL64;
 }
 
 /* Find a per-job burst buffer record for a specific job.
@@ -309,7 +309,7 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 					bb_ptr->gres_ptr[i].used_cnt;
 			} else {
 				error("%s: gres %s underflow releasing buffer "
-				      "for job %u (%u < %u)",
+				      "for job %u (%"PRIu64" < %"PRIu64")",
 				      __func__, bb_ptr->gres_ptr[i].name,
 				      bb_ptr->job_id,
 				      state_ptr->bb_config.gres_ptr[j].used_cnt,
@@ -328,15 +328,15 @@ extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 }
 
 #if _SUPPORT_GRES
-static uint32_t _atoi(char *tok)
+static uint64_t _atoi(char *tok)
 {
 	char *end_ptr = NULL;
-	int32_t size_i;
-	uint32_t size_u = 0;
+	int64_t size_i;
+	uint64_t size_u = 0;
 
-	size_i = strtol(tok, &end_ptr, 10);
+	size_i = (int64_t) strtoll(tok, &end_ptr, 10);
 	if (size_i > 0) {
-		size_u = (uint32_t) size_i;
+		size_u = (uint64_t) size_i;
 		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 			size_u = size_u * 1024;
 		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
@@ -519,14 +519,14 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 
 		info("%s: GetSysState:%s",  __func__,
 		     state_ptr->bb_config.get_sys_state);
-		info("%s: Granularity:%u",  __func__,
+		info("%s: Granularity:%"PRIu64"",  __func__,
 		     state_ptr->bb_config.granularity);
 		for (i = 0; i < state_ptr->bb_config.gres_cnt; i++) {
-			info("%s: Gres[%d]:%s:%u", __func__, i,
+			info("%s: Gres[%d]:%s:%"PRIu64"", __func__, i,
 			     state_ptr->bb_config.gres_ptr[i].name,
 			     state_ptr->bb_config.gres_ptr[i].avail_cnt);
 		}
-		info("%s: JobSizeLimit:%u",  __func__,
+		info("%s: JobSizeLimit:%"PRIu64"",  __func__,
 		     state_ptr->bb_config.job_size_limit);
 		info("%s: PrioBoostAlloc:%u", __func__,
 		     state_ptr->bb_config.prio_boost_alloc);
@@ -544,7 +544,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		     state_ptr->bb_config.stop_stage_in);
 		info("%s: StopStageOut:%s",  __func__,
 		     state_ptr->bb_config.stop_stage_out);
-		info("%s: UserSizeLimit:%u",  __func__,
+		info("%s: UserSizeLimit:%"PRIu64"",  __func__,
 		     state_ptr->bb_config.user_size_limit);
 	}
 }
@@ -569,12 +569,12 @@ extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,
 				for (j = 0; j < bb_next->gres_cnt; j++) {
 					packstr(bb_next->gres_ptr[j].name,
 						buffer);
-					pack32(bb_next->gres_ptr[j].used_cnt,
+					pack64(bb_next->gres_ptr[j].used_cnt,
 					       buffer);
 				}
 				pack32(bb_next->job_id,        buffer);
 				packstr(bb_next->name,         buffer);
-				pack32(bb_next->size,          buffer);
+				pack64(bb_next->size,          buffer);
 				pack16(bb_next->state,         buffer);
 				pack_time(bb_next->state_time, buffer);
 				pack32(bb_next->user_id,       buffer);
@@ -597,39 +597,39 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	packstr(config_ptr->allow_users_str, buffer);
 	packstr(config_ptr->deny_users_str,  buffer);
 	packstr(config_ptr->get_sys_state,   buffer);
-	pack32(config_ptr->granularity,      buffer);
+	pack64(config_ptr->granularity,      buffer);
 	pack32(config_ptr->gres_cnt,         buffer);
 	for (i = 0; i < config_ptr->gres_cnt; i++) {
 		packstr(config_ptr->gres_ptr[i].name, buffer);
-		pack32(config_ptr->gres_ptr[i].avail_cnt, buffer);
-		pack32(config_ptr->gres_ptr[i].used_cnt, buffer);
+		pack64(config_ptr->gres_ptr[i].avail_cnt, buffer);
+		pack64(config_ptr->gres_ptr[i].used_cnt, buffer);
 	}
 	pack16(config_ptr->private_data,     buffer);
 	packstr(config_ptr->start_stage_in,  buffer);
 	packstr(config_ptr->start_stage_out, buffer);
 	packstr(config_ptr->stop_stage_in,   buffer);
 	packstr(config_ptr->stop_stage_out,  buffer);
-	pack32(config_ptr->job_size_limit,   buffer);
+	pack64(config_ptr->job_size_limit,   buffer);
 	pack32(config_ptr->prio_boost_alloc, buffer);
 	pack32(config_ptr->prio_boost_use,   buffer);
 	pack32(config_ptr->stage_in_timeout, buffer);
 	pack32(config_ptr->stage_out_timeout,buffer);
-	pack32(state_ptr->total_space,       buffer);
-	pack32(state_ptr->used_space,        buffer);
-	pack32(config_ptr->user_size_limit,  buffer);
+	pack64(state_ptr->total_space,       buffer);
+	pack64(state_ptr->used_space,        buffer);
+	pack64(config_ptr->user_size_limit,  buffer);
 }
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
-extern uint32_t bb_get_size_num(char *tok, uint32_t granularity)
+extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 {
 	char *end_ptr = NULL;
-	int32_t bb_size_i;
-	uint32_t bb_size_u = 0;
+	int64_t bb_size_i;
+	uint64_t bb_size_u = 0;
 
-	bb_size_i = strtol(tok, &end_ptr, 10);
+	bb_size_i = (int64_t) strtoll(tok, &end_ptr, 10);
 	if (bb_size_i > 0) {
-		bb_size_u = (uint32_t) bb_size_i;
+		bb_size_u = (uint64_t) bb_size_i;
 		if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
 			bb_size_u = (bb_size_u + 1023) / 1024;
 		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
@@ -650,7 +650,7 @@ extern uint32_t bb_get_size_num(char *tok, uint32_t granularity)
 }
 
 /* Round up a number based upon some granularity */
-extern uint32_t bb_granularity(uint32_t start_size, uint32_t granularity)
+extern uint64_t bb_granularity(uint64_t start_size, uint64_t granularity)
 {
 	if (start_size) {
 		start_size = start_size + granularity - 1;
@@ -804,8 +804,10 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_ptr->array_job_id = job_ptr->array_job_id;
 	bb_ptr->array_task_id = job_ptr->array_task_id;
 	bb_ptr->gres_cnt = bb_spec->gres_cnt;
-	if (bb_ptr->gres_cnt)
-		bb_ptr->gres_ptr = xmalloc(sizeof(bb_gres_t) *bb_ptr->gres_cnt);
+	if (bb_ptr->gres_cnt) {
+		bb_ptr->gres_ptr = xmalloc(sizeof(burst_buffer_gres_t) *
+					   bb_ptr->gres_cnt);
+	}
 	for (i = 0; i < bb_ptr->gres_cnt; i++) {
 		bb_ptr->gres_ptr[i].used_cnt = bb_spec->gres_ptr[i].count;
 		bb_ptr->gres_ptr[i].name = xstrdup(bb_spec->gres_ptr[i].name);

@@ -220,9 +220,10 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 
 /* INFINITE is used to identify unlimited configurations,  */
 /* eg. the maximum count of nodes any job may use in some partition */
-#define	INFINITE (0xffffffff)
-#define NO_VAL	 (0xfffffffe)
-#define NO_VAL64 (0xfffffffffffffffe)
+#define	INFINITE   (0xffffffff)
+#define	INFINITE64 (0xffffffffffffffff)
+#define NO_VAL	   (0xfffffffe)
+#define NO_VAL64   (0xfffffffffffffffe)
 #define MAX_TASKS_PER_NODE 128
 
 /* Job step ID of batch scripts */
@@ -4313,11 +4314,11 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 #define BB_STATE_COMPLETE	0x0020		/* Cray: bbs_teardown complete */
 
 typedef struct {
-	uint32_t avail_cnt;	/* Total count of available resources, unused
+	uint64_t avail_cnt;	/* Total count of available resources, unused
 				 * by burst_buffer_resv_t */
-	uint32_t granularity;	/* Granularity of resource allocation size */
+	uint64_t granularity;	/* Granularity of resource allocation size */
 	char *name;		/* Generic burst buffer resource, e.g. "nodes" */
-	uint32_t used_cnt;	/* Count of used resources */
+	uint64_t used_cnt;	/* Count of used resources */
 } burst_buffer_gres_t;
 
 typedef struct {
@@ -4327,7 +4328,7 @@ typedef struct {
 	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_id;
 	char *name;		/* Name of persistent burst buffer */
-	uint32_t size;		/* In GB by default */
+	uint64_t size;		/* In GB by default */
 	uint16_t state;		/* See BB_STATE_* */
 	time_t state_time;	/* Time of last state change */
 	uint32_t user_id;
@@ -4337,10 +4338,10 @@ typedef struct {
 	char *allow_users;
 	char *deny_users;
 	char *get_sys_state;
-	uint32_t granularity;		/* Granularity of resource allocation */
+	uint64_t granularity;		/* Granularity of resource allocation */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;
-	uint32_t job_size_limit;	/* In GB or NO_VAL */
+	uint64_t job_size_limit;	/* In GB or NO_VAL */
 	char *name;			/* Plugin name */
 	uint16_t private_data;		/* limit access to data */
 	uint32_t prio_boost_alloc;	/* job priority boost after staged in */
@@ -4351,9 +4352,9 @@ typedef struct {
 	char *start_stage_out;
 	char *stop_stage_in;
 	char *stop_stage_out;
-	uint32_t total_space;		/* In GB */
-	uint32_t used_space;		/* In GB */
-	uint32_t user_size_limit;	/* In GB or NO_VAL */
+	uint64_t total_space;		/* In GB */
+	uint64_t used_space;		/* In GB */
+	uint64_t user_size_limit;	/* In GB or NO_VAL */
 
 	uint32_t  record_count;
 	burst_buffer_resv_t *burst_buffer_resv_ptr;

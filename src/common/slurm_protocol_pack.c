@@ -9880,16 +9880,16 @@ static int _unpack_burst_buffer_info_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->get_sys_state, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&bb_info_ptr->granularity, buffer);
+		safe_unpack64(&bb_info_ptr->granularity, buffer);
 		safe_unpack32(&bb_info_ptr->gres_cnt, buffer);
 		bb_info_ptr->gres_ptr = xmalloc(bb_info_ptr->gres_cnt *
 						sizeof(burst_buffer_gres_t));
 		for (j = 0; j < bb_info_ptr->gres_cnt; j++) {
 			safe_unpackstr_xmalloc(&bb_info_ptr->gres_ptr[j].name,
 					       &uint32_tmp, buffer);
-			safe_unpack32(&bb_info_ptr->gres_ptr[j].avail_cnt,
+			safe_unpack64(&bb_info_ptr->gres_ptr[j].avail_cnt,
 				      buffer);
-			safe_unpack32(&bb_info_ptr->gres_ptr[j].used_cnt,
+			safe_unpack64(&bb_info_ptr->gres_ptr[j].used_cnt,
 				      buffer);
 		}
 		safe_unpack16(&bb_info_ptr->private_data, buffer);
@@ -9901,14 +9901,14 @@ static int _unpack_burst_buffer_info_msg(
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->stop_stage_out,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&bb_info_ptr->job_size_limit, buffer);
+		safe_unpack64(&bb_info_ptr->job_size_limit, buffer);
 		safe_unpack32(&bb_info_ptr->prio_boost_alloc, buffer);
 		safe_unpack32(&bb_info_ptr->prio_boost_use, buffer);
 		safe_unpack32(&bb_info_ptr->stage_in_timeout, buffer);
 		safe_unpack32(&bb_info_ptr->stage_out_timeout, buffer);
-		safe_unpack32(&bb_info_ptr->total_space, buffer);
-		safe_unpack32(&bb_info_ptr->used_space, buffer);
-		safe_unpack32(&bb_info_ptr->user_size_limit, buffer);
+		safe_unpack64(&bb_info_ptr->total_space, buffer);
+		safe_unpack64(&bb_info_ptr->used_space, buffer);
+		safe_unpack64(&bb_info_ptr->user_size_limit, buffer);
 		bb_info_ptr->burst_buffer_resv_ptr =
 			xmalloc(sizeof(burst_buffer_resv_t) *
 				bb_info_ptr->record_count);
@@ -9923,13 +9923,13 @@ static int _unpack_burst_buffer_info_msg(
 				safe_unpackstr_xmalloc(&bb_resv_ptr->
 						       gres_ptr[k].name,
 						       &uint32_tmp, buffer);
-				safe_unpack32(&bb_resv_ptr->gres_ptr[k].
+				safe_unpack64(&bb_resv_ptr->gres_ptr[k].
 					      used_cnt, buffer);
 			}
 			safe_unpack32(&bb_resv_ptr->job_id, buffer);
 			safe_unpackstr_xmalloc(&bb_resv_ptr->name,
 					       &uint32_tmp, buffer);
-			safe_unpack32(&bb_resv_ptr->size, buffer);
+			safe_unpack64(&bb_resv_ptr->size, buffer);
 			safe_unpack16(&bb_resv_ptr->state, buffer);
 			safe_unpack_time(&bb_resv_ptr->state_time, buffer);
 			safe_unpack32(&bb_resv_ptr->user_id, buffer);

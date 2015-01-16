@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer.c - driver for burst buffer infrastructure and plugin
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -353,8 +353,8 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg,
 /* sort jobs by expected start time */
 extern int _sort_job_queue(void *x, void *y)
 {
-	struct job_record *job_ptr1 = x;
-	struct job_record *job_ptr2 = y;
+	struct job_record *job_ptr1 = *(struct job_record **) x;
+	struct job_record *job_ptr2 = *(struct job_record **) y;
 	time_t t1, t2;
 
 	t1 = job_ptr1->start_time;

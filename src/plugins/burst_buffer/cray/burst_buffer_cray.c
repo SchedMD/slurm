@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer_cray.c - Plugin for managing a Cray burst_buffer
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -110,9 +110,9 @@ typedef struct bb_entry {
 	uint64_t granularity;
 	uint64_t quantity;
 	uint64_t free;
-	uint32_t gb_granularity;
-	uint32_t gb_quantity;
-	uint32_t gb_free;
+	uint64_t gb_granularity;
+	uint64_t gb_quantity;
+	uint64_t gb_free;
 } bb_entry_t;
 
 typedef struct {
@@ -125,8 +125,8 @@ stage_args_t;
 
 typedef struct {		/* Used for scheduling */
 	char *   name;		/* BB GRES name, e.g. "nodes" */
-	uint32_t add_cnt;	/* Additional GRES required */
-	uint32_t avail_cnt;	/* Additional GRES available */
+	uint64_t add_cnt;	/* Additional GRES required */
+	uint64_t avail_cnt;	/* Additional GRES available */
 } needed_gres_t;
 
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec);
@@ -308,13 +308,13 @@ static void _log_bb_spec(bb_job_t *bb_spec)
 	if (bb_spec) {
 		xstrfmtcat(out_buf, "%s: ", plugin_type);
 		for (i = 0; i < bb_spec->gres_cnt; i++) {
-			xstrfmtcat(out_buf, "Gres[%d]:%s:%u ",
+			xstrfmtcat(out_buf, "Gres[%d]:%s:%"PRIu64" ",
 				   i, bb_spec->gres_ptr[i].name,
 				   bb_spec->gres_ptr[i].count);
 		}
 		xstrfmtcat(out_buf, "Swap:%ux%u ", bb_spec->swap_size,
 			   bb_spec->swap_nodes);
-		xstrfmtcat(out_buf, "TotalSize:%u", bb_spec->total_size);
+		xstrfmtcat(out_buf, "TotalSize:%"PRIu64"", bb_spec->total_size);
 		verbose("%s", out_buf);
 		xfree(out_buf);
 	}
@@ -372,7 +372,8 @@ static bb_job_t *_get_bb_spec(struct job_record *job_ptr)
 			sep = strchr(tok, ':');
 			if (sep) {
 				sep[0] = '\0';
-				bb_spec->gres_ptr[inx].count = atoi(sep + 1);
+				bb_spec->gres_ptr[inx].count =
+						strtol(sep + 1, NULL, 10);
 			} else {
 				bb_spec->gres_ptr[inx].count = 1;
 			}
@@ -426,7 +427,7 @@ static bool _test_bb_spec(struct job_record *job_ptr)
 			sep = strchr(tok, ':');
 			if (sep) {
 				sep[0] = '\0';
-				val = atoi(sep + 1);
+				val = strtol(sep + 1, NULL, 10);
 				if (val)
 					have_bb = true;
 			} else {
@@ -577,7 +578,8 @@ static int _queue_stage_in(struct job_record *job_ptr)
 	char *tok, **setup_argv, **data_in_argv;
 	stage_args_t *stage_args;
 	int hash_inx = job_ptr->job_id % 10;
-	uint32_t i;
+	uint32_t tmp32;
+	uint64_t tmp64;
 	pthread_attr_t stage_attr;
 	pthread_t stage_tid = 0;
 	int rc = SLURM_SUCCESS;
@@ -586,15 +588,15 @@ static int _queue_stage_in(struct job_record *job_ptr)
 	if (job_ptr->burst_buffer) {
 		tok = strstr(job_ptr->burst_buffer, "SLURM_SIZE=");
 		if (tok) {
-			i = atoi(tok + 11);
-			xstrfmtcat(capacity, "bytes:%uGB", i);
+			tmp64 = strtoll(tok + 11, NULL, 10);
+			xstrfmtcat(capacity, "bytes:%"PRIu64"GB", tmp64);
 		} else {
 			tok = strstr(job_ptr->burst_buffer, "SLURM_GRES=");
 			if (tok) {
 				tok = strstr(tok, "nodes:");
 				if (tok) {
-					i = atoi(tok + 6);
-					xstrfmtcat(capacity, "nodes:%u", i);
+					tmp32 = strtoll(tok + 6, NULL, 10);
+					xstrfmtcat(capacity, "nodes:%u", tmp32);
 				}
 			}
 		}
@@ -1023,11 +1025,11 @@ static void _free_needed_gres_struct(needed_gres_t *needed_gres_ptr,
 	xfree(needed_gres_ptr);
 }
 
-static uint32_t _get_bb_resv(char *gres_name, burst_buffer_info_msg_t *resv_bb)
+static uint64_t _get_bb_resv(char *gres_name, burst_buffer_info_msg_t *resv_bb)
 {
 	burst_buffer_info_t *bb_array;
 	burst_buffer_gres_t *gres_ptr;
-	uint32_t resv_gres = 0;
+	uint64_t resv_gres = 0;
 	int i, j;
 
 	if (!resv_bb)
@@ -1079,9 +1081,9 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 
 	/* Determine if burst buffer can be allocated now for the job.
 	 * If not, determine how much space must be free. */
-	if (((bb_state.bb_config.job_size_limit  != NO_VAL) &&
+	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
 	     (add_space > bb_state.bb_config.job_size_limit)) ||
-	    ((bb_state.bb_config.user_size_limit != NO_VAL) &&
+	    ((bb_state.bb_config.user_size_limit != NO_VAL64) &&
 	     (add_space > bb_state.bb_config.user_size_limit))) {
 		debug("%s: %s requested space above limit", __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -1103,7 +1105,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 		}
 	}
 
-	if (bb_state.bb_config.user_size_limit != NO_VAL) {
+	if (bb_state.bb_config.user_size_limit != NO_VAL64) {
 		user_ptr = bb_find_user_rec(job_ptr->user_id,bb_state.bb_uhash);
 		tmp_u = user_ptr->size;
 		tmp_j = add_space;
@@ -1332,7 +1334,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 {
 	char *capacity, *end_ptr = NULL, *script, *save_ptr = NULL, *tok;
 	int64_t raw_cnt;
-	uint32_t gb_cnt = 0, node_cnt = 0, swap_cnt = 0;
+	uint64_t gb_cnt = 0;
+	uint32_t node_cnt = 0, swap_cnt = 0;
 	int rc = SLURM_SUCCESS;
 
 	if (!job_desc->script)
@@ -1349,7 +1352,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 				tok++;
 			if (!strncmp(tok, "jobbb", 5) &&
 			    (capacity = strstr(tok, "capacity="))) {
-				raw_cnt = strtol(capacity + 9, &end_ptr, 10);
+				raw_cnt = strtoll(capacity + 9, &end_ptr, 10);
 				if (raw_cnt <= 0) {
 					rc = ESLURM_INVALID_BURST_BUFFER_CHANGE;
 					break;
@@ -1407,8 +1410,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 		if (gb_cnt) {
 			if (job_desc->burst_buffer)
 				xstrcat(job_desc->burst_buffer, " ");
-			xstrfmtcat(job_desc->burst_buffer, "SLURM_SIZE=%u",
-				   gb_cnt);
+			xstrfmtcat(job_desc->burst_buffer,
+				   "SLURM_SIZE=%"PRIu64"", gb_cnt);
 		}
 		if (node_cnt) {
 			if (job_desc->burst_buffer)
@@ -1427,7 +1430,8 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 {
 	char *capacity, *end_ptr = NULL, *tok;
 	int64_t raw_cnt;
-	uint32_t gb_cnt = 0, node_cnt = 0, swap_cnt = 0;
+	uint64_t gb_cnt = 0;
+	uint32_t node_cnt = 0, swap_cnt = 0;
 	int rc = SLURM_SUCCESS;
 
 	if (!job_desc->burst_buffer)
@@ -1435,7 +1439,7 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 
 	tok = job_desc->burst_buffer;
 	while ((capacity = strstr(tok, "capacity="))) {
-		raw_cnt = strtol(capacity + 9, &end_ptr, 10);
+		raw_cnt = strtoll(capacity + 9, &end_ptr, 10);
 		if (raw_cnt <= 0) {
 			rc = ESLURM_INVALID_BURST_BUFFER_CHANGE;
 			break;
@@ -1480,8 +1484,8 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 			gb_cnt += swap_cnt * job_nodes;
 		}
 		if (gb_cnt) {
-			xstrfmtcat(job_desc->burst_buffer, " SLURM_SIZE=%u",
-				   gb_cnt);
+			xstrfmtcat(job_desc->burst_buffer,
+				   " SLURM_SIZE=%"PRIu64"", gb_cnt);
 		}
 		if (node_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
@@ -1503,7 +1507,7 @@ static int _build_bb_script(struct job_record *job_ptr, char *script_file)
 
 	if ((tok = strstr(job_ptr->burst_buffer, "swap="))) {
 		tok += 5;
-		i = atoi(tok);
+		i = strtol(tok, NULL, 10);
 		xstrfmtcat(out_buf, "#BB swap %dGB\n", i);
 	}
 
@@ -1700,7 +1704,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
 	bool have_gres = false, have_swap = false;
-	int32_t bb_size = 0;
+	int64_t bb_size = 0;
 	char *key;
 	int i, rc;
 
@@ -1731,9 +1735,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		return ESLURM_BURST_BUFFER_LIMIT;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	if (((bb_state.bb_config.job_size_limit  != NO_VAL) &&
+	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
 	     (bb_size > bb_state.bb_config.job_size_limit)) ||
-	    ((bb_state.bb_config.user_size_limit != NO_VAL) &&
+	    ((bb_state.bb_config.user_size_limit != NO_VAL64) &&
 	     (bb_size > bb_state.bb_config.user_size_limit))) {
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		return ESLURM_BURST_BUFFER_LIMIT;
@@ -1764,8 +1768,8 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	}
 
 	if (bb_size > bb_state.total_space) {
-		info("Job from user %u requested burst buffer size of %u, "
-		     "but total space is only %u",
+		info("Job from user %u requested burst buffer size of "
+		     "%"PRIu64", but total space is only %"PRIu64"",
 		     job_desc->user_id, bb_size, bb_state.total_space);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);

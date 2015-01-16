@@ -106,7 +106,7 @@ static display_data_t *local_display_data = NULL;
 /* static char *got_edit_signal = NULL; */
 static GtkTreeModel *last_model = NULL;
 
-static void _get_size_str(char *buf, size_t buf_size, uint32_t num);
+static void _get_size_str(char *buf, size_t buf_size, uint64_t num);
 
 /*Functions for admin edit*/
 /* static void _admin_bb(GtkTreeModel *model, GtkTreeIter *iter, char *type); */
@@ -220,8 +220,8 @@ static void _layout_bb_record(GtkTreeView *treeview,
 
 	sep = "";
 	for (i = 0; i < bb_ptr->gres_cnt; i++) {
-		xstrfmtcat(tmp_gres, "%s%s:%u", sep, bb_ptr->gres_ptr->name,
-			   bb_ptr->gres_ptr->used_cnt);
+		xstrfmtcat(tmp_gres, "%s%s:%"PRIu64"", sep,
+			   bb_ptr->gres_ptr->name, bb_ptr->gres_ptr->used_cnt);
 		sep = ",";
 	}
 	add_display_treestore_line(update, treestore, &iter,
@@ -249,23 +249,23 @@ static void _layout_bb_record(GtkTreeView *treeview,
 
 /* Reformat a numeric value with an appropriate suffix.
  * The units are GB */
-static void _get_size_str(char *buf, size_t buf_size, uint32_t num)
+static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 {
-	uint32_t tmp32;
+	uint64_t tmp64;
 
-	if ((num == NO_VAL) || (num == INFINITE)) {
+	if ((num == NO_VAL64) || (num == INFINITE64)) {
 		snprintf(buf, buf_size, "INFINITE");
 	} else if (num == 0) {
 		snprintf(buf, buf_size, "0GB");
 	} else if ((num % (1024 * 1024)) == 0) {
-		tmp32 = num / (1024 * 1024);
-		snprintf(buf, buf_size, "%uPB", tmp32);
+		tmp64 = num / (1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"PB", tmp64);
 	} else if ((num % 1024) == 0) {
-		tmp32 = num / 1024;
-		snprintf(buf, buf_size, "%uTB", tmp32);
+		tmp64 = num / 1024;
+		snprintf(buf, buf_size, "%"PRIu64"TB", tmp64);
 	} else {
-		tmp32 = num;
-		snprintf(buf, buf_size, "%uGB", tmp32);
+		tmp64 = num;
+		snprintf(buf, buf_size, "%"PRIu64"GB", tmp64);
 	}
 }
 
@@ -282,8 +282,8 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 
 	sep = "";
 	for (i = 0; i < bb_ptr->gres_cnt; i++) {
-		xstrfmtcat(tmp_gres, "%s%s:%u", sep, bb_ptr->gres_ptr->name,
-			   bb_ptr->gres_ptr->used_cnt);
+		xstrfmtcat(tmp_gres, "%s%s:%"PRIu64"", sep,
+			   bb_ptr->gres_ptr->name, bb_ptr->gres_ptr->used_cnt);
 		sep = ",";
 	}
 

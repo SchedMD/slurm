@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer_generic.c - Generic library for managing a burst_buffer
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -94,14 +94,14 @@ const uint32_t plugin_version   = 100;
 static bb_state_t 	bb_state;
 
 /* Local function defintions */
-static void	_alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size);
+static void	_alloc_job_bb(struct job_record *job_ptr, uint64_t bb_size);
 static void *	_bb_agent(void *args);
 static char **	_build_stage_args(char *cmd, char *opt,
 				  struct job_record *job_ptr,
-				  uint32_t bb_size);
+				  uint64_t bb_size);
 static void	_destroy_job_info(void *data);
 static bb_alloc_t *_find_bb_name_rec(char *name, uint32_t user_id);
-static uint32_t	_get_bb_size(struct job_record *job_ptr);
+static uint64_t	_get_bb_size(struct job_record *job_ptr);
 static void	_load_state(uint32_t job_id);
 static int	_parse_job_info(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
@@ -109,7 +109,7 @@ static int	_parse_job_info(void **dest, slurm_parser_enum_t type,
 static void	_stop_stage_in(uint32_t job_id);
 static void	_stop_stage_out(uint32_t job_id);
 static void	_test_config(void);
-static int	_test_size_limit(struct job_record *job_ptr,uint32_t add_space);
+static int	_test_size_limit(struct job_record *job_ptr,uint64_t add_space);
 static void	_timeout_bb_rec(void);
 
 /* Validate that our configuration is valid for this plugin type */
@@ -128,10 +128,10 @@ static void _test_config(void)
 }
 
 /* Return the burst buffer size requested by a job */
-static uint32_t _get_bb_size(struct job_record *job_ptr)
+static uint64_t _get_bb_size(struct job_record *job_ptr)
 {
 	char *tok;
-	uint32_t bb_size_u = 0;
+	uint64_t bb_size_u = 0;
 
 	if (job_ptr->burst_buffer) {
 		tok = strstr(job_ptr->burst_buffer, "size=");
@@ -144,7 +144,7 @@ static uint32_t _get_bb_size(struct job_record *job_ptr)
 }
 
 static char **_build_stage_args(char *cmd, char *opt,
-				struct job_record *job_ptr, uint32_t bb_size)
+				struct job_record *job_ptr, uint64_t bb_size)
 {
 	char **script_argv = NULL;
 	char *save_ptr = NULL, *script, *tok;
@@ -171,7 +171,7 @@ static char **_build_stage_args(char *cmd, char *opt,
 	xstrfmtcat(script_argv[1], "%s", opt);
 	xstrfmtcat(script_argv[2], "%u", job_ptr->job_id);
 	xstrfmtcat(script_argv[3], "%u", job_ptr->user_id);
-	xstrfmtcat(script_argv[4], "%u", bb_size);
+	xstrfmtcat(script_argv[4], "%"PRIu64"", bb_size);
 	script_argc += 5;
 	tok = strtok_r(script, "\n", &save_ptr);
 	while (tok) {
@@ -203,10 +203,12 @@ static void _stop_stage_in(uint32_t job_id)
 
 	script_argv = xmalloc(sizeof(char *) * 4);
 	tok = strrchr(bb_state.bb_config.stop_stage_in, '/');
-	if (tok)
+	if (tok) {
 		xstrfmtcat(script_argv[0], "%s", tok + 1);
-	else
-		xstrfmtcat(script_argv[0], "%s", bb_state.bb_config.stop_stage_in);
+	} else {
+		xstrfmtcat(script_argv[0], "%s",
+			   bb_state.bb_config.stop_stage_in);
+	}
 	xstrfmtcat(script_argv[1], "%s", "stop_stage_in");
 	xstrfmtcat(script_argv[2], "%u", job_id);
 
@@ -365,14 +367,14 @@ static void _timeout_bb_rec(void)
  *     2: Job needs more resources than currently available can not start,
  *        skip all remaining jobs
  */
-static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
+static int _test_size_limit(struct job_record *job_ptr, uint64_t add_space)
 {
 	burst_buffer_info_msg_t *resv_bb;
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	List preempt_list;
 	ListIterator preempt_iter;
 	bb_user_t *user_ptr;
-	uint32_t tmp_u, tmp_j, lim_u, resv_space = 0;
+	uint64_t tmp_u, tmp_j, lim_u, resv_space = 0;
 	int add_total_space_needed = 0, add_user_space_needed = 0;
 	int add_total_space_avail  = 0, add_user_space_avail  = 0;
 	time_t now = time(NULL), when;
@@ -382,9 +384,9 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 
 	/* Determine if burst buffer can be allocated now for the job.
 	 * If not, determine how much space must be free. */
-	if (((bb_state.bb_config.job_size_limit  != NO_VAL) &&
+	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
 	     (add_space > bb_state.bb_config.job_size_limit)) ||
-	    ((bb_state.bb_config.user_size_limit != NO_VAL) &&
+	    ((bb_state.bb_config.user_size_limit != NO_VAL64) &&
 	     (add_space > bb_state.bb_config.user_size_limit))) {
 		debug("%s: %s requested space above limit", __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -411,7 +413,7 @@ static int _test_size_limit(struct job_record *job_ptr, uint32_t add_space)
 		slurm_free_burst_buffer_info_msg(resv_bb);
 	}
 
-	if (bb_state.bb_config.user_size_limit != NO_VAL) {
+	if (bb_state.bb_config.user_size_limit != NO_VAL64) {
 		user_ptr = bb_find_user_rec(job_ptr->user_id,
 					    bb_state.bb_uhash);
 		tmp_u = user_ptr->size;
@@ -501,7 +503,8 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 {
 	s_p_hashtbl_t *job_tbl;
 	char *name = NULL, *tmp = NULL, local_name[64] = "";
-	uint32_t job_id = 0, size = 0, user_id = 0;
+	uint64_t size = 0;
+	uint32_t job_id = 0, user_id = 0;
 	uint16_t state = 0;
 	bb_alloc_t *bb_ptr;
 	uint16_t new_nice;
@@ -516,11 +519,11 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	};
 
 	*dest = NULL;
-	user_id = atoi(value);
+	user_id = strtol(value, NULL, 10);
 	job_tbl = s_p_hashtbl_create(_job_options);
 	s_p_parse_line(job_tbl, *leftover, leftover);
 	if (s_p_get_string(&tmp, "JobID", job_tbl)) {
-		job_id = atoi(tmp);
+		job_id = strtol(tmp, NULL, 10);
 		xfree(tmp);
 	}
 	if (s_p_get_string(&name, "Name", job_tbl)) {
@@ -538,7 +541,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_destroy(job_tbl);
 
 #if 0
-	info("%s: JobID:%u Name:%s Size:%u State:%u UserID:%u",
+	info("%s: JobID:%u Name:%s Size:%"PRIu64" State:%u UserID:%u",
 	     __func__, job_id, local_name, size, state, user_id);
 #endif
 	if (job_id) {
@@ -653,7 +656,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	if ((bb_ptr->state != BB_STATE_STAGED_OUT) && (bb_ptr->size != size)) {
 		bb_remove_user_load(bb_ptr, &bb_state);
 		if (size != 0) {
-			error("%s: Size mismatch (%u != %u). "
+			error("%s: Size mismatch (%"PRIu64" != %"PRIu64"). "
 			      "BB UserID=%u JobID=%u Name=%s",
 			      plugin_type, bb_ptr->size, size,
 			      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
@@ -677,7 +680,7 @@ static void _destroy_job_info(void *data)
  */
 static void _load_state(uint32_t job_id)
 {
-	static uint32_t last_total_space = 0;
+	static uint64_t last_total_space = 0;
 	char *save_ptr = NULL, *tok, *leftover = NULL, *resp, *tmp = NULL;
 	char *script_args[4], job_id_str[32];
 	s_p_hashtbl_t *state_hashtbl = NULL;
@@ -731,7 +734,7 @@ static void _load_state(uint32_t job_id)
 		xfree(tmp);
 		if (bb_state.bb_config.debug_flag &&
 		    (bb_state.total_space != last_total_space)) {
-			info("%s: total_space:%u",  __func__,
+			info("%s: total_space:%"PRIu64"",  __func__,
 			     bb_state.total_space);
 		}
 		last_total_space = bb_state.total_space;
@@ -895,7 +898,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
-	int32_t bb_size = 0;
+	int64_t bb_size = 0;
 	char *key;
 	int i;
 
@@ -919,9 +922,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		return ESLURM_BURST_BUFFER_LIMIT;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	if (((bb_state.bb_config.job_size_limit  != NO_VAL) &&
+	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
 	     (bb_size > bb_state.bb_config.job_size_limit)) ||
-	    ((bb_state.bb_config.user_size_limit != NO_VAL) &&
+	    ((bb_state.bb_config.user_size_limit != NO_VAL64) &&
 	     (bb_size > bb_state.bb_config.user_size_limit))) {
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		return ESLURM_BURST_BUFFER_LIMIT;
@@ -952,8 +955,8 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	}
 
 	if (bb_size > bb_state.total_space) {
-		info("Job from user %u requested burst buffer size of %u, "
-		     "but total space is only %u",
+		info("Job from user %u requested burst buffer size of "
+		     "%"PRIu64", but total space is only %"PRIu64"",
 		     job_desc->user_id, bb_size, bb_state.total_space);
 	}
 
@@ -982,7 +985,7 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr;
 	time_t est_start = time(NULL);
-	uint32_t bb_size;
+	uint64_t bb_size;
 	int rc;
 	char jobid_buf[32];
 
@@ -1015,7 +1018,7 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	return est_start;
 }
 
-static void _alloc_job_bb(struct job_record *job_ptr, uint32_t bb_size)
+static void _alloc_job_bb(struct job_record *job_ptr, uint64_t bb_size)
 {
 	char **script_argv, *resp;
 	bb_alloc_t *bb_ptr;
@@ -1064,7 +1067,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	List job_candidates;
 	ListIterator job_iter;
 	struct job_record *job_ptr;
-	uint32_t bb_size;
+	uint64_t bb_size;
 	int rc;
 
 	if (bb_state.bb_config.debug_flag)
@@ -1134,7 +1137,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 {
 	bb_alloc_t *bb_ptr;
-	uint32_t bb_size = 0;
+	uint64_t bb_size = 0;
 	int rc = 1;
 	char jobid_buf[32];
 

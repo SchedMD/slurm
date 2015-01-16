@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer_info.c - get/print the burst buffer state information
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC.
+ *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -61,46 +61,46 @@
 
 /* Reformat a numeric value with an appropriate suffix.
  * The units are GB */
-static void _get_size_str(char *buf, size_t buf_size, uint32_t num)
+static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 {
-	uint32_t tmp32;
+	uint64_t tmp64;
 
-	if ((num == NO_VAL) || (num == INFINITE)) {
+	if ((num == NO_VAL64) || (num == INFINITE64)) {
 		snprintf(buf, buf_size, "INFINITE");
 	} else if (num == 0) {
 		snprintf(buf, buf_size, "0GB");
 	} else if ((num % (1024 * 1024)) == 0) {
-		tmp32 = num / (1024 * 1024);
-		snprintf(buf, buf_size, "%uPB", tmp32);
+		tmp64 = num / (1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"PB", tmp64);
 	} else if ((num % 1024) == 0) {
-		tmp32 = num / 1024;
-		snprintf(buf, buf_size, "%uTB", tmp32);
+		tmp64 = num / 1024;
+		snprintf(buf, buf_size, "%"PRIu64"TB", tmp64);
 	} else {
-		tmp32 = num;
-		snprintf(buf, buf_size, "%uGB", tmp32);
+		tmp64 = num;
+		snprintf(buf, buf_size, "%"PRIu64"GB", tmp64);
 	}
 }
 
 /* Reformat a numeric value with an appropriate suffix.
  * The base units are NOT scaled (i.e. 1 == 1) */
-static void _get_size_str2(char *buf, size_t buf_size, uint32_t num)
+static void _get_size_str2(char *buf, size_t buf_size, uint64_t num)
 {
-	uint32_t tmp32;
+	uint64_t tmp64;
 
 	if (num == 0) {
 		snprintf(buf, buf_size, "0");
 	} else if ((num % (1024 * 1024 * 1024)) == 0) {
-		tmp32 = num / (1024 * 1024 * 1024);
-		snprintf(buf, buf_size, "%uG", tmp32);
+		tmp64 = num / (1024 * 1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"G", tmp64);
 	} else if ((num % (1024 * 1024)) == 0) {
-		tmp32 = num / (1024 * 1024);
-		snprintf(buf, buf_size, "%uM", tmp32);
+		tmp64 = num / (1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"M", tmp64);
 	} else if ((num % 1024) == 0) {
-		tmp32 = num / 1024;
-		snprintf(buf, buf_size, "%uK", tmp32);
+		tmp64 = num / 1024;
+		snprintf(buf, buf_size, "%"PRIu64"K", tmp64);
 	} else {
-		tmp32 = num;
-		snprintf(buf, buf_size, "%u", tmp32);
+		tmp64 = num;
+		snprintf(buf, buf_size, "%"PRIu64"", tmp64);
 	}
 }
 
