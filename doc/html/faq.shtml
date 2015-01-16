@@ -47,13 +47,13 @@
 <li><a href="#mem_limit">Why are jobs not getting the appropriate
   memory limit?</a></li>
 <li><a href="#mailing_list">Is an archive available of messages posted to
-the <i>slurm-dev</i> mailing list?</a></li>
+  the <i>slurm-dev</i> mailing list?</a></li>
 <li><a href="#job_size">Can I change my job's size after it has started
-running?</a></li>
+  running?</a></li>
 <li><a href="#mpi_symbols">Why is my MPIHCH2 or MVAPICH2 job not running with
-SLURM? Why does the DAKOTA program not run with Slurm?</a></li>
+  Slurm? Why does the DAKOTA program not run with Slurm?</a></li>
 <li><a href="#estimated_start_time">Why does squeue (and "scontrol show
-jobid") sometimes not display a job's estimated start time?</a></li>
+  jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
 <li><a href="#mic">How can I run programs with on an Intel Phi (MIC) processor?</a></li>
 <li><a href="#req">How can a job in complete or failed state be requeued?</a></li>
@@ -143,22 +143,22 @@ jobid") sometimes not display a job's estimated start time?</a></li>
 <i>scontrol</i> command?</a></li>
 <li><a href="#amazon_ec2">Can Slurm be used to run jobs on Amazon's EC2?</a></li>
 <li><a href="#core_dump">If a Slurm daemon core dumps, where can I find the
-core file?</a></li>
+  core file?</a></li>
 <li><a href="#totalview">How can TotalView be configured to operate with
-SLURM?</a></li>
+  Slurm?</a></li>
 <li><a href="#git_patch">How can a patch file be generated from a Slurm commit
-in github?</a></li>
+  in github?</a></li>
 <li><a href="#enforce_limits">Why are the resource limits set in the database
-not being enforced?</a></li>
+  not being enforced?</a></li>
 <li><a href="#restore_priority">After manually setting a job priority value,
-how can it's priority value be returned to being managed by the
-priority/multifactor plugin?</a></li>
+  how can it's priority value be returned to being managed by the
+  priority/multifactor plugin?</a></li>
 <li><a href="#health_check_example">Does any one have an example node health check
 script for Slurm?</a></li>
 <li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
 <li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
 <li><a href="#salloc_default_command">Can the salloc command be configured to
-launch a shell on a node in the job's allocation?</a></li>
+  launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
 <li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
 <li><a href="#sssd">I am having trouble using SSSD with Slurm.</a></li>
@@ -176,6 +176,7 @@ launch a shell on a node in the job's allocation?</a></li>
    slurmctld daemon crashed be lost?</a></li>
 <li><a href="#delete_partition">How do I safely remove partitions?</a></li>
 <li><a href="#cpu_freq">Why is Slurm unable to set the CPU frequency for jobs?</a></li>
+<li><a href="#mic_config">How can Slurm be configured to support Intel Phi (MIC)?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -310,7 +311,7 @@ in Slurm's partition configuration. See the man pages for srun and slurm.conf fo
 more information.</p>
 
 <p><a name="purge"><b>5. Why is my job killed prematurely?</b></a><br>
-SLURM has a job purging mechanism to remove inactive jobs (resource allocations)
+Slurm has a job purging mechanism to remove inactive jobs (resource allocations)
 before reaching its time limit, which could be infinite.
 This inactivity time limit is configurable by the system administrator.
 You can check its value with the command</p>
@@ -376,7 +377,7 @@ This information must be maintained until we are absolutely certain
 that the processes associated with the switch have been terminated
 to avoid the possibility of re-using switch resources for other
 jobs (even on different nodes).
-SLURM considers jobs COMPLETED when all nodes allocated to the
+Slurm considers jobs COMPLETED when all nodes allocated to the
 job are either DOWN or confirm termination of all its processes.
 This enables Slurm to purge job information in a timely fashion
 even when there are many failing nodes.
@@ -400,7 +401,7 @@ that batch job.</p>
 
 <p><a name="user_env"><b>11. How doe. Slurm establish the environment
 for my job?</b></a><br>
-SLURM processes are not run under a shell, but directly exec'ed
+Slurm processes are not run under a shell, but directly exec'ed
 by the <i>slurmd</i> daemon (assuming <i>srun</i> is used to launch
 the processes).
 The environment variables in effect at the time the <i>srun</i> command
@@ -447,10 +448,10 @@ tdev2
 <p><a name="parallel_make"><b>14. Can the <i>make</i> command
 utilize the resources allocated to a Slurm job?</b></a><br>
 Yes. There is a patch available for GNU make version 3.81
-available as part of the SLURM distribution in the file
+available as part of the Slurm distribution in the file
 <i>contribs/make-3.81.slurm.patch</i>.  For GNU make version 4.0 you
 can use the patch in the file <i>contribs/make-4.0.slurm.patch</i>.
-This patch will use SLURM to launch tasks across a job's current resource
+This patch will use Slurm to launch tasks across a job's current resource
 allocation. Depending upon the size of modules to be compiled, this may
 or may not improve performance. If most modules are thousands of lines
 long, the use of additional resources should more than compensate for the
@@ -626,7 +627,7 @@ SLURMD_OPTIONS="-M"
 
 <p><a name="inactive"><b>19. Why is my batch job that launches no
 job steps being killed?</b></a><br>
-SLURM has a configuration parameter <i>InactiveLimit</i> intended
+Slurm has a configuration parameter <i>InactiveLimit</i> intended
 to kill jobs that do not spawn any job steps for a configurable
 period of time. Your system administrator may modify the <i>InactiveLimit</i>
 to satisfy your needs. Alternately, you can just spawn a job step
@@ -761,7 +762,7 @@ Other job options would be used to identify the required resources
 This new job's time limit will be automatically set to reflect the end time of
 the job being expanded.
 This new job's generic resources specification will be automatically set
-equal to that of the job being merged to. This is due to the current SLURM
+equal to that of the job being merged to. This is due to the current Slurm
 restriction of all nodes associated with a job needing to have the same
 generic resource specification (i.e. a job can not have one GPU on one
 node and two GPUs on another node), although this restriction may be removed
@@ -890,11 +891,15 @@ $ srun -n <tasks> ./fluent-srun.sh
 <p><a name="mic"><b>28. How can I run programs with on an Intel Phi (MIC)
 processor?</b></a><br>
 Two programming models are supported, offloading and native mode.
+System administrators should see the <a href="#mic_config">Intel Phi
+configuration</a> information below.
+Slurm configuration details for Intel Phi offload support are available
+in Slurm's <a href="gres.html">Generic Resource Guide</a>.
 For a good description of how to build and run applications, please see
 <a href="https://confluence.csc.fi/display/HPCproto/HPC+Prototypes#HPCPrototypes-Nativeprogrammingmodel">CSC MIC documentation</a>.
 Note that some of the information presented in this document is configuration
 dependent. The <i>mpirun-mic</i> is included in the Slurm distribution in the
-<i>contribs/mic</i> directory. Excerpts of the CSC documentation follows.</p>
+<i>contribs/mic</i> directory. Excerpts of the CSC documentation follow.</p>
 
 <p><b>Executable Auto-Offloading</b><br>
 The Phi nodes have Executable Auto-Offloading (EAO) enabled by default.
@@ -1031,7 +1036,7 @@ accommodate all jobs allocated to a node, either running or suspended.
 <p><a name="fast_schedule"><b>2. How can I configure Slurm to use
 the resources actually found on a node rather than what is defined
 in <i>slurm.conf</i>?</b></a><br>
-SLURM can either base its scheduling decisions upon the node
+Slurm can either base its scheduling decisions upon the node
 configuration defined in <i>slurm.conf</i> or what each node
 actually returns as available resources.
 This is controlled using the configuration parameter <i>FastSchedule</i>.
@@ -1188,7 +1193,7 @@ other harm will result.
 
 <p><a name="multi_slurm"><b>13. Can multiple Slurm systems be run in
 parallel for testing purposes?</b></a><br>
-Yes, this is a great way to test new versions of SLURM.
+Yes, this is a great way to test new versions of Slurm.
 Just install the test version in a different location with a different
 <i>slurm.conf</i>.
 The test system's <i>slurm.conf</i> should specify different
@@ -1304,7 +1309,7 @@ Yes in Slurm version 1.2 or higher.
 In the <i>slurm.conf</i> file, set <i>FastSchedule=2</i> and specify
 any desired node resource specifications (<i>CPUs</i>, <i>Sockets</i>,
 <i>CoresPerSocket</i>, <i>ThreadsPerCore</i>, and/or <i>TmpDisk</i>).
-SLURM will use the resource specification for each node that is
+Slurm will use the resource specification for each node that is
 given in <i>slurm.conf</i> and will not check these specifications
 against those actually found on the node. The system would best be configured
 with <i>TaskPlugin=task/none</i>, so that launched tasks can run on any
@@ -1352,7 +1357,7 @@ Try running the program <i>top</i> to check for this possibility.
 
 <p><a name="lightweight_core"><b>18. How can I add support for
 lightweight core files?</b></a><br>
-SLURM supports lightweight core files by setting environment variables
+Slurm supports lightweight core files by setting environment variables
 based upon the <i>srun --core</i> option. Of particular note, it
 sets the <i>LD_PRELOAD</i> environment variable to load new functions
 used to process a core dump.
@@ -1442,9 +1447,9 @@ detail being logged in the <i>SlurmdLogFile</i> plus the output
 of the program.
 
 <p><a name="rpm"><b>26. Why isn't the auth_none.so (or other file) in a
-SLURM RPM?</b></a><br>
+Slurm RPM?</b></a><br>
 The auth_none plugin is in a separate RPM and not built by default.
-Using the auth_none plugin means tha. Slurm communications are not
+Using the auth_none plugin means that Slurm communications are not
 authenticated, so you probably do not want to run in this mode of operation
 except for testing purposes. If you want to build the auth_none RPM then
 add <i>--with auth_none</i> on the rpmbuild command line or add
@@ -1538,12 +1543,12 @@ a user's resource limits are reached. You may need to increase limits
 for locked memory and stack size to resolve this problem.
 
 <p><a name="task_prolog"><b>33. How could I automatically print a job's
-SLURM job ID to its standard output?</b></a></br>
+Slurm job ID to its standard output?</b></a></br>
 The configured <i>TaskProlog</i> is the only thing that can write to
 the job's standard output or set extra environment variables for a job
 or job step. To write to the job's standard output, precede the message
 with "print ". To export environment variables, output a line of this
-form "export name=value". The example below will print a job's SLURM
+form "export name=value". The example below will print a job's Slurm
 job ID and allocated hosts for a batch job only.
 
 <pre>
@@ -1576,7 +1581,7 @@ $ scontrol update jobid=1234 priority=1000000
 </pre>
 <p>Note that changes in the configured value of <i>SchedulerType</i> only
 take effect when the <i>slurmctld</i> daemon is restarted (reconfiguring
-SLURM will not change this parameter. You will also manually need to
+Slurm will not change this parameter. You will also manually need to
 modify the priority of every pending job.
 When changing to Moab or Maui scheduling, set every job priority to zero.
 When changing from Moab or Maui scheduling, set every job priority to a
@@ -1584,7 +1589,7 @@ non-zero value (preferably fairly large, say 1000000).</p>
 
 <p><a name="orphan_procs"><b>35. Why are user processes and <i>srun</i>
 running even though the job is supposed to be completed?</b></a></br>
-SLURM relies upon a configurable process tracking plugin to determine
+Slurm relies upon a configurable process tracking plugin to determine
 when all of the processes associated with a job or job step have completed.
 Those plugins relying upon a kernel patch can reliably identify every process.
 Those plugins dependent upon process group IDs or parent process IDs are not
@@ -1670,9 +1675,9 @@ occurs. It will either be in spawned job's working directory on the same
 location as that described above for the <i>slurmd</i> daemon.</p>
 
 <p><a name="totalview"><b>42. How can TotalView be configured to operate with
-SLURM?</b></a></br>
+  Slurm?</b></a></br>
 <p>The following lines should also be added to the global <i>.tvdrc</i> file
-for TotalView to operate with SLURM:
+for TotalView to operate with Slurm:
 <pre>
 # Enable debug server bulk launch: Checked
 dset -set_as_default TV::bulk_launch_enabled true
@@ -1704,7 +1709,7 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p><a name="git_patch"><b>43. How can a patch file be generated from a SLURM
+<p><a name="git_patch"><b>43. How can a patch file be generated from a Slurm
 commit in github?</b></a></br>
 <p>Find and open the commit in github then append ".patch" to the URL and save
 the resulting file. For an example, see:
@@ -1984,8 +1989,35 @@ https://bugzilla.kernel.org/show_bug.cgi?id=57141</a> and<br>
 <a href="http://unix.stackexchange.com/questions/121410/setting-cpu-governor-to-on-demand-or-conservative">
 http://unix.stackexchange.com/questions/121410/setting-cpu-governor-to-on-demand-or-conservative</a>.</p>
 
+<p><a name="mic_config"><b>62. How can Slurm be configured to support Intel
+   Xeon Phi (MIC)?</b></a><br>
+Users should see the <a href="#mic">Xeon Phi use information</a> above.
+Slurm configuration details for Xeon Phi offload support are available
+in Slurm's <a href="gres.html">Generic Resource Guide</a>.</p>
+
+<p>For native mode, slurmd (built for k1om) is started inside the card when the
+card is booted.
+The Slurm configuration file, slurm.conf, is the same as on regular compute
+nodes (by default it is mounted on all regular nodes and all Xeon Phi "nodes"
+from the same place).
+Use the "slurmd -C" command to determine the Xeon Phi node configuration
+with respect to cores, threads per core, memory, etc.
+The Xeon Phi is by default placed on host's network and connected via the
+bridge to the rest of the cluster, therefore from a Slurm user's perspective
+the Xeon Phi can look like one more compute node with a lot of CPUs.</p>
+
+<p>Therefore an administrator can use configure the Xeon Phi as a regular node
+(with the slurmd daemon running on it), as a generic resources (for offload
+mode), or both.
+Although, Slurm cannot handle the last case nicely since it does not recognize
+the Xeon Phi compute node and generic resource represent the same resources.
+So from administrator prospective, the process of MICs configuration can be:
+install the latest MPSS and Slurm packages from yum/zypper,
+add new MICs (via console utility or GUI),
+add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 December 2014</p>
+<p style="text-align:center;">Last modified 16 January 2015</p>
 
 <!--#include virtual="footer.txt"-->
