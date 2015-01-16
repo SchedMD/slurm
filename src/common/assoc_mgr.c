@@ -1675,10 +1675,20 @@ extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
 	else if (locks->assoc == WRITE_LOCK)
 		_wr_wrlock(ASSOC_LOCK);
 
+	if (locks->file == READ_LOCK)
+		_wr_rdlock(FILE_LOCK);
+	else if (locks->file == WRITE_LOCK)
+		_wr_wrlock(FILE_LOCK);
+
 	if (locks->qos == READ_LOCK)
 		_wr_rdlock(QOS_LOCK);
 	else if (locks->qos == WRITE_LOCK)
 		_wr_wrlock(QOS_LOCK);
+
+	if (locks->res == READ_LOCK)
+		_wr_rdlock(RES_LOCK);
+	else if (locks->res == WRITE_LOCK)
+		_wr_wrlock(RES_LOCK);
 
 	if (locks->user == READ_LOCK)
 		_wr_rdlock(USER_LOCK);
@@ -1689,11 +1699,6 @@ extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
 		_wr_rdlock(WCKEY_LOCK);
 	else if (locks->wckey == WRITE_LOCK)
 		_wr_wrlock(WCKEY_LOCK);
-
-	if (locks->res == READ_LOCK)
-		_wr_rdlock(RES_LOCK);
-	else if (locks->res == WRITE_LOCK)
-		_wr_wrlock(RES_LOCK);
 }
 
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
@@ -1708,20 +1713,25 @@ extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
 	else if (locks->user == WRITE_LOCK)
 		_wr_wrunlock(USER_LOCK);
 
+	if (locks->res == READ_LOCK)
+		_wr_rdunlock(RES_LOCK);
+	else if (locks->res == WRITE_LOCK)
+		_wr_wrunlock(RES_LOCK);
+
 	if (locks->qos == READ_LOCK)
 		_wr_rdunlock(QOS_LOCK);
 	else if (locks->qos == WRITE_LOCK)
 		_wr_wrunlock(QOS_LOCK);
 
+	if (locks->file == READ_LOCK)
+		_wr_rdunlock(FILE_LOCK);
+	else if (locks->file == WRITE_LOCK)
+		_wr_wrunlock(FILE_LOCK);
+
 	if (locks->assoc == READ_LOCK)
 		_wr_rdunlock(ASSOC_LOCK);
 	else if (locks->assoc == WRITE_LOCK)
 		_wr_wrunlock(ASSOC_LOCK);
-
-	if (locks->res == READ_LOCK)
-		_wr_rdunlock(RES_LOCK);
-	else if (locks->res == WRITE_LOCK)
-		_wr_wrunlock(RES_LOCK);
 }
 
 extern assoc_mgr_assoc_usage_t *create_assoc_mgr_assoc_usage()
