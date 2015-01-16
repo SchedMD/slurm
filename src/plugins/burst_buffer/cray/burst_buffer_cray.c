@@ -1023,6 +1023,30 @@ static void _free_needed_gres_struct(needed_gres_t *needed_gres_ptr,
 	xfree(needed_gres_ptr);
 }
 
+static uint32_t _get_bb_resv(char *gres_name, burst_buffer_info_msg_t *resv_bb)
+{
+	burst_buffer_info_t *bb_array;
+	burst_buffer_gres_t *gres_ptr;
+	uint32_t resv_gres = 0;
+	int i, j;
+
+	if (!resv_bb)
+		return resv_gres;
+
+	for (i = 0, bb_array = resv_bb->burst_buffer_array;
+	     i < resv_bb->record_count; i++, bb_array++) {
+		if (bb_array->name && xstrcmp(bb_array->name, bb_state.name))
+			continue;
+		for (j = 0, gres_ptr = bb_array->gres_ptr;
+		     j < bb_array->gres_cnt; j++, gres_ptr++) {
+			if (!xstrcmp(gres_name, gres_ptr->name))
+				resv_gres += gres_ptr->used_cnt;
+		}
+	}
+
+	return resv_gres;
+}
+
 /* Test if a job can be allocated a burst buffer.
  * This may preempt currently active stage-in for higher priority jobs.
  *
@@ -1035,15 +1059,17 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 {
 	burst_buffer_info_msg_t *resv_bb;
 	needed_gres_t *needed_gres_ptr = NULL;
-	int add_total_gres_needed = 0, add_total_gres_avail = 0;
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	List preempt_list;
 	ListIterator preempt_iter;
 	bb_user_t *user_ptr;
-	uint32_t tmp_f, tmp_g, tmp_u, tmp_j, lim_u, add_space, resv_space = 0;
-	int add_total_space_needed = 0, add_user_space_needed = 0;
-	int add_total_space_avail  = 0, add_user_space_avail  = 0;
-	time_t now = time(NULL), when;
+	int64_t tmp_g, tmp_u, tmp_j, tmp_r;
+	int64_t lim_u, add_space, resv_space = 0;
+	int64_t tmp_f;	/* Could go negative due to reservations */
+	int64_t add_total_space_needed = 0, add_user_space_needed = 0;
+	int64_t add_total_space_avail  = 0, add_user_space_avail  = 0;
+	int64_t add_total_gres_needed = 0, add_total_gres_avail = 0;
+	time_t now = time(NULL);
 	bb_alloc_t *bb_ptr = NULL;
 	int d, i, j, k;
 	char jobid_buf[32];
@@ -1062,11 +1088,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 		return 1;
 	}
 
-	if (job_ptr->start_time <= now)
-		when = now;
-	else
-		when = job_ptr->start_time;
-	resv_bb = job_test_bb_resv(job_ptr, when);
+	resv_bb = job_test_bb_resv(job_ptr, now);
 	if (resv_bb) {
 		burst_buffer_info_t *resv_bb_ptr;
 		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
@@ -1079,7 +1101,6 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 					       bb_state.bb_config.granularity);
 			resv_space += resv_bb_ptr->used_space;
 		}
-		slurm_free_burst_buffer_info_msg(resv_bb);
 	}
 
 	if (bb_state.bb_config.user_size_limit != NO_VAL) {
@@ -1111,10 +1132,13 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 				      bb_spec->gres_ptr[i].name);
 				_free_needed_gres_struct(needed_gres_ptr,
 							 bb_spec->gres_cnt);
+				if (resv_bb)
+					slurm_free_burst_buffer_info_msg(resv_bb);
 				return 1;
 			}
+			tmp_r = _get_bb_resv(bb_spec->gres_ptr[i].name,resv_bb);
 			tmp_f = bb_state.bb_config.gres_ptr[j].avail_cnt -
-				bb_state.bb_config.gres_ptr[j].used_cnt;
+				bb_state.bb_config.gres_ptr[j].used_cnt - tmp_r;
 			if (tmp_g > tmp_f)
 				needed_gres_ptr[i].add_cnt = tmp_g - tmp_f;
 			add_total_gres_needed += needed_gres_ptr[i].add_cnt;
@@ -1127,9 +1151,14 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 			      bb_spec->gres_ptr[i].name);
 			_free_needed_gres_struct(needed_gres_ptr,
 						 bb_spec->gres_cnt);
+			if (resv_bb)
+				slurm_free_burst_buffer_info_msg(resv_bb);
 			return 1;
 		}
 	}
+
+	if (resv_bb)
+		slurm_free_burst_buffer_info_msg(resv_bb);
 
 	if ((add_total_space_needed <= 0) &&
 	    (add_user_space_needed  <= 0) && (add_total_gres_needed <= 0)) {
