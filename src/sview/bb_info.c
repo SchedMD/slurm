@@ -400,7 +400,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 	static List info_list = NULL;
 	List last_list = NULL;
 	ListIterator last_list_itr = NULL;
-	int i = 0;
+	int i, j, pos = 0;
 	static burst_buffer_info_msg_t *last_bb_info_ptr = NULL;
 	sview_bb_info_t *sview_bb_info_ptr = NULL;
 	burst_buffer_info_t *bb_ptr = bb_info_ptr->burst_buffer_array;
@@ -411,66 +411,72 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 		return info_list;
 
 	last_bb_info_ptr = bb_info_ptr;
-
 	if (info_list)
 		last_list = info_list;
-
 	info_list = list_create(_bb_info_list_del);
-	if (!info_list) {
-		g_print("malloc error\n");
-		return NULL;
-	}
 
-	if (last_list)
-		last_list_itr = list_iterator_create(last_list);
-	for (i = 0; i < bb_ptr->record_count; i++) {
-		bb_resv_ptr = &(bb_ptr->burst_buffer_resv_ptr[i]);
+	for (i = 0, bb_ptr = bb_info_ptr->burst_buffer_array;
+	     i < bb_info_ptr->record_count; i++, bb_ptr++) {
 
-		sview_bb_info_ptr = NULL;
-		if (last_list_itr) {
-			while ((sview_bb_info_ptr =
-				list_next(last_list_itr))) {
-				if (bb_resv_ptr->name &&
-				    !strcmp(sview_bb_info_ptr->bb_name,
-					    bb_resv_ptr->name)) {
-					list_remove(last_list_itr);
-					_bb_info_free(sview_bb_info_ptr);
-					break;
-				} else if (bb_resv_ptr->job_id ==
-					   sview_bb_info_ptr->bb_ptr->job_id) {
-					list_remove(last_list_itr);
-					_bb_info_free(sview_bb_info_ptr);
-					break;
+		for (j = 0, bb_resv_ptr = bb_ptr->burst_buffer_resv_ptr;
+		     j < bb_ptr->record_count; j++, bb_resv_ptr++) {
 
+			/* Find any existing record for this burst buffer */
+			if (last_list) {
+				if (!last_list_itr) {
+					last_list_itr =
+						list_iterator_create(last_list);
 				}
+				while ((sview_bb_info_ptr =
+					list_next(last_list_itr))) {
+					if (bb_resv_ptr->job_id &&
+					    (bb_resv_ptr->job_id != 
+					     sview_bb_info_ptr->bb_ptr->job_id))
+						continue;
+					if (bb_resv_ptr->name &&
+					    xstrcmp(sview_bb_info_ptr->bb_name,
+						    bb_resv_ptr->name))
+						continue;
+					if (xstrcmp(sview_bb_info_ptr->plugin,
+						    bb_ptr->name))
+						continue;
+					list_remove(last_list_itr);
+					_bb_info_free(sview_bb_info_ptr);
+					break;
+				}
+				list_iterator_reset(last_list_itr);
+			} else {
+				sview_bb_info_ptr = NULL;
 			}
-			list_iterator_reset(last_list_itr);
-		}
-		if (bb_resv_ptr->name) {
-			strcpy(bb_name_id, bb_resv_ptr->name);
-		} else if (bb_resv_ptr->array_task_id == NO_VAL) {
-			convert_num_unit(bb_resv_ptr->job_id,
-					 bb_name_id,
-					 sizeof(bb_name_id),
-					 UNIT_NONE);
-		} else {
-			snprintf(bb_name_id, sizeof(bb_name_id),
-				 "%u_%u(%u)",
-				 bb_resv_ptr->array_job_id,
-				 bb_resv_ptr->array_task_id,
-				 bb_resv_ptr->job_id);
-		}
 
-		if (!sview_bb_info_ptr)
-			sview_bb_info_ptr = xmalloc(sizeof(sview_bb_info_t));
-		sview_bb_info_ptr->bb_name = xstrdup(bb_name_id);
-		sview_bb_info_ptr->plugin = xstrdup(bb_ptr->name);
-		sview_bb_info_ptr->pos = i;
-		sview_bb_info_ptr->bb_ptr = bb_resv_ptr;
-		sview_bb_info_ptr->color_inx = i % sview_colors_cnt;
-		list_append(info_list, sview_bb_info_ptr);
-		// Reset bb_name_id
-		strcpy(bb_name_id, "");
+			if (bb_resv_ptr->name) {
+				strncpy(bb_name_id, bb_resv_ptr->name,
+					sizeof(bb_name_id));
+			} else if (bb_resv_ptr->array_task_id == NO_VAL) {
+				convert_num_unit(bb_resv_ptr->job_id,
+						 bb_name_id,
+						 sizeof(bb_name_id),
+						 UNIT_NONE);
+			} else {
+				snprintf(bb_name_id, sizeof(bb_name_id),
+					 "%u_%u(%u)",
+					 bb_resv_ptr->array_job_id,
+					 bb_resv_ptr->array_task_id,
+					 bb_resv_ptr->job_id);
+			}
+
+			if (!sview_bb_info_ptr) {	/* Need new record */
+				sview_bb_info_ptr =
+					xmalloc(sizeof(sview_bb_info_t));
+			}
+			sview_bb_info_ptr->bb_ptr = bb_resv_ptr;
+			sview_bb_info_ptr->bb_name = xstrdup(bb_name_id);
+			strcpy(bb_name_id, "");	/* Clear bb_name_id */
+			sview_bb_info_ptr->color_inx = pos % sview_colors_cnt;
+			sview_bb_info_ptr->plugin = xstrdup(bb_ptr->name);
+			sview_bb_info_ptr->pos = pos++;
+			list_append(info_list, sview_bb_info_ptr);
+		}
 	}
 
 	if (last_list) {
