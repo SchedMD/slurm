@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for slurmctld abort with GRES types configured and no CPU binding.
  -- Fix for GRES scheduling where count > 1 per topology type (or GRES types).
  -- Make CR_ONE_TASK_PER_CORE work correctly with task/affinity.
+ -- job_submit/pbs - Fix possible deadlock.
 
 * Changes in Slurm 14.11.3
 ==========================

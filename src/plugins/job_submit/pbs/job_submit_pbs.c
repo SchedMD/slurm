@@ -97,6 +97,8 @@ const char plugin_type[]       	= "job_submit/pbs";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 100;
 
+static pthread_mutex_t depend_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 int init (void)
 {
 	return SLURM_SUCCESS;
@@ -202,6 +204,16 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 		return;
 	}
 
+	/* NOTE: We are updating a job record here in order to implement
+	 * the depend=before option. We are doing so without the write lock
+	 * on the job record, but using a local mutex to prevent multiple
+	 * updates on the same job when multiple jobs satisfying the dependency
+	 * are being processed at the same time (all with read locks). The
+	 * job read lock will prevent anyone else from getting a job write
+	 * lock and using a job write lock causes serious performance problems
+	 * for slow job_submit plugins. Not an ideal solution, but the best
+	 * option that we see. */
+	slurm_mutex_lock(&depend_mutex);
 	tok = strtok_r(NULL, ":", &last_ptr);
 	while (tok) {
 		job_id = atoi(tok);
@@ -239,6 +251,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 		}
 		tok = strtok_r(NULL, ":", &last_ptr);
 	}
+	slurm_mutex_unlock(&depend_mutex);
 }
 
 /* Translate PBS job dependencies to Slurm equivalents to the exptned possible
@@ -300,20 +313,8 @@ static void _xlate_dependency(struct job_descriptor *job_desc,
 
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
-	/* Locks: Read config, read job, read node, read partition */
-	slurmctld_lock_t job_read_lock = {
-		READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
-	/* Locks: Read config, write job, read node, read partition */
-	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK};
 	char *std_out, *tok;
 	uint32_t my_job_id;
-
-	/* This plugin needs to write other job records, so we need to revert
-	 * the locks set when this was called and set a job write lock.
-	 * DO NOT NEST TWO LOCKS. UNLOCK OLD LOCK AND SET NEW LOCK AS NEEDED */
-	unlock_slurmctld(job_read_lock);
-	lock_slurmctld(job_write_lock);
 
 	my_job_id = get_next_job_id();
 	_xlate_dependency(job_desc, submit_uid, my_job_id);
@@ -359,9 +360,6 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	} else {
 		xstrcat(job_desc->comment, std_out);
 	}
-
-	unlock_slurmctld(job_write_lock);
-	lock_slurmctld(job_read_lock);
 
 	return SLURM_SUCCESS;
 }
