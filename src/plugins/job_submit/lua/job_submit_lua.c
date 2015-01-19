@@ -481,6 +481,8 @@ static int _job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->account);
 	} else if (!strcmp(name, "acctg_freq")) {
 		lua_pushstring (L, job_desc->acctg_freq);
+	} else if (!strcmp(name, "alloc_node")) {
+		lua_pushstring (L, job_desc->alloc_node);
 	} else if (!strcmp(name, "begin_time")) {
 		lua_pushnumber (L, job_desc->begin_time);
 	} else if (!strcmp(name, "comment")) {
