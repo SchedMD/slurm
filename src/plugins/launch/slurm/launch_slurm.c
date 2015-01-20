@@ -480,11 +480,16 @@ static char **_build_user_env(void)
 {
 	char **dest_array = NULL;
 	char *tmp_env, *tok, *save_ptr = NULL, *eq_ptr, *value;
+	bool all;
 
-	env_array_merge_slurm(&dest_array, (const char **)environ);
+	all = false;
 	tmp_env = xstrdup(opt.export_env);
 	tok = strtok_r(tmp_env, ",", &save_ptr);
 	while (tok) {
+
+		if (strcasecmp(tok, "ALL") == 0)
+			all = true;
+
 		if (!strcasecmp(tok, "NONE"))
 			break;
 		eq_ptr = strchr(tok, '=');
@@ -500,6 +505,11 @@ static char **_build_user_env(void)
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp_env);
+
+	if (all)
+		env_array_merge(&dest_array, (const char **)environ);
+	else
+		env_array_merge_slurm(&dest_array, (const char **)environ);
 
 	return dest_array;
 }

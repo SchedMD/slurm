@@ -259,11 +259,14 @@ static char *_find_quote_token(char *tmp, char *sep, char **last)
 			*last = &start[i];
 			return start;
 		}
-		
+
 	}
 }
 
-/* Propagate select user environment variables to the job */
+/* Propagate select user environment variables to the job.
+ * If ALL is among the specified variables propaagte
+ * the entire user environment as well.
+ */
 static void _env_merge_filter(job_desc_msg_t *desc)
 {
 	extern char **environ;
@@ -273,13 +276,21 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 	tmp = xstrdup(opt.export_env);
 	tok = _find_quote_token(tmp, ",", &last);
 	while (tok) {
+
+		if (strcasecmp(tok, "ALL") == 0) {
+			env_array_merge(&desc->environment,
+					(const char **)environ);
+			tok = _find_quote_token(NULL, ",", &last);
+			continue;
+		}
+
 		if (strchr(tok, '=')) {
 			save_env[0] = tok;
 			env_array_merge(&desc->environment,
 					(const char **)save_env);
 		} else {
 			len = strlen(tok);
-			for (i=0; environ[i]; i++) {
+			for (i = 0; environ[i]; i++) {
 				if (strncmp(tok, environ[i], len) ||
 				    (environ[i][len] != '='))
 					continue;

@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/pbs - Fix possible deadlock.
  -- job_submit/lua - Add "alloc_node" to job information available.
  -- Fix memory leak in mysql accounting when usage rollup happens.
+ -- If users specify ALL together with other variables using the
+    --export sbatch/srun command line option, propagate the users'
+    environ to the execution side.
 
 * Changes in Slurm 14.11.3
 ==========================

@@ -1216,10 +1216,7 @@ static void _set_options(const int argc, char **argv)
                         break;
 		case LONG_OPT_EXPORT:
 			xfree(opt.export_env);
-			if (!strcasecmp(optarg, "ALL"))
-				; /* Ignore "ALL", it is the default */
-			else
-				opt.export_env = xstrdup(optarg);
+			opt.export_env = xstrdup(optarg);
 			break;
                 case LONG_OPT_CPU_BIND:
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
