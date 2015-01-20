@@ -24,8 +24,10 @@
 </p>
 
 <p>Since version 14.03, Slurm is designed to operate as a workload
-  manager on Cray XC systems (Cascade) without the use of ALPS.  This
-  allows for many functionalities previously not available, such as...
+  manager on Cray XC systems (Cascade) without the use of ALPS.  In
+  addition to providing the same look and feel of a regular Linux
+  cluster this also allows for many functionalities previously not
+  available, such as...
 <ul>
 <li>Ability to run multiple jobs per node.</li>
 <li>Ability to status running jobs with sstat</li>
