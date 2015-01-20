@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     and/or burst buffers) can be used with any compute nodes.
  -- Allow users to specify the srun --resv-ports as 0 in which case no ports
     will be reserved. The default behaviour is to allocate one port per task.
+ -- Interpret a partition configuration of "Nodes=ALL" in slurm.conf as
+    including all nodes defined in the cluster.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

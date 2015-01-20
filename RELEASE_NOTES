@@ -77,6 +77,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added DebugFlags value of "CpuFrequency".
  -- Added CpuFreqGovernors which lists governors allowed to be set with
     --cpu-freq on salloc, sbatch, and srun.
+ -- Interpret a partition configuration of "Nodes=ALL" in slurm.conf as
+    including all nodes defined in the cluster.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

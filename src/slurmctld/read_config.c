@@ -271,13 +271,21 @@ static void _build_bitmaps_pre_select(void)
 			continue;
 		}
 
-		if (node_name2bitmap(part_ptr->nodes, false,
-				     &part_ptr->node_bitmap)) {
-			fatal("Invalid node names in partition %s",
-			      part_ptr->name);
+		if (!strcmp(part_ptr->nodes, "ALL")) {
+			part_ptr->node_bitmap = (bitstr_t *)
+						bit_alloc(node_record_count);
+			bit_nset(part_ptr->node_bitmap, 0, node_record_count-1);
+			xfree(part_ptr->nodes);
+			part_ptr->nodes=bitmap2node_name(part_ptr->node_bitmap);
+		} else {
+			if (node_name2bitmap(part_ptr->nodes, false,
+					     &part_ptr->node_bitmap)) {
+				fatal("Invalid node names in partition %s",
+				      part_ptr->name);
+			}
 		}
 
-		for (i=0; i<node_record_count; i++) {
+		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(part_ptr->node_bitmap, i) == 0)
 				continue;
 			node_ptr = &node_record_table_ptr[i];
