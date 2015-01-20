@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Make CR_ONE_TASK_PER_CORE work correctly with task/affinity.
  -- job_submit/pbs - Fix possible deadlock.
  -- job_submit/lua - Add "alloc_node" to job information available.
+ -- Fix memory leak in mysql accounting when usage rollup happens.
 
 * Changes in Slurm 14.11.3
 ==========================

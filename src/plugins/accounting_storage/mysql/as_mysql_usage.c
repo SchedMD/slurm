@@ -973,6 +973,10 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 		 * (millions) of jobs.
 		 */
 		slurm_attr_init(&rollup_attr);
+		if (pthread_attr_setdetachstate(&rollup_attr,
+						PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+
 		if (pthread_create(&rollup_tid, &rollup_attr,
 				   _cluster_rollup_usage,
 				   (void *)local_rollup))
