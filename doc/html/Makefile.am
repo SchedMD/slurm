@@ -62,6 +62,7 @@ generated_html = \
 	overview.html \
 	platforms.html \
 	plugins.html \
+	power_mgmt.html \
 	power_save.html \
 	preempt.html \
 	preemption_plugins.html \

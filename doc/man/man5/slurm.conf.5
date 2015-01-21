@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2014" "slurm.conf 15.08" "Slurm configuration file"
+.TH "slurm.conf" "5" "January 2015" "slurm.conf 15.08" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1377,6 +1377,22 @@ each job's soft time limit.
 The default value is zero.
 May not exceed exceed 65533 minutes.
 A value of "UNLIMITED" is also supported.
+
+.TP
+\fBPowerParameters\fR
+System power management parameters.
+The supported parameters are specific to the \fBPowerPlugin\fR.
+More information about system power management is available here
+<http://slurm.schedmd.com/power_mgmt.html>.
+
+.TP
+\fBPowerPlugin\fR
+Identifies the plugin used for system power management.
+Currently supported plugins include:
+\fBcray\fR and
+\fBnone\fR (default).
+More information about system power management is available here
+<http://slurm.schedmd.com/power_mgmt.html>.
 
 .TP
 \fBPluginDir\fR
@@ -4548,7 +4564,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2013 SchedMD LLC.
+Copyright (C) 2010-2015 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

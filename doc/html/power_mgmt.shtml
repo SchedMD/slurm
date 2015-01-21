@@ -1,0 +1,36 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Slurm Power Management Guide</h1>
+
+<p>Slurm provied an integrated power management system for power capping.
+This is distict from Slurm's ability to
+<a href="power_save.html">power down idle nodes</a>.</p>
+
+<h2>Configuration</h2>
+
+<p>The following configuration parameters are available:
+<ul>
+
+<li><b>PowerParameters</b>:
+Defines power management behavior.
+Currently valid options are:
+<ul>
+<li>ClusterCap=#[KW|MW] - Used to establish cluster-wide power cap. Default
+   units are watts.</li>
+</ul></li>
+
+<li><b>PowerPlugin</b>:
+Identifies the plugin used to manage system power consumption.
+Currently valid options are:
+<ul>
+<li>cray - Used for Cray systems with power monitoring and management
+   functionality included as part of System Management Workstation (SMW)
+   7.0.UP03.</li>
+<li>none - No power management support. The default value.</li>
+</ul></li>
+
+</ul>
+
+<p style="text-align:center;">Last modified 20 January 2015</p>
+
+<!--#include virtual="footer.txt"-->

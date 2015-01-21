@@ -2334,6 +2334,8 @@ typedef struct slurm_ctl_conf {
 				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
+	char *power_parameters;	/* power management parameters */
+	char *power_plugin;	/* power management plugin type */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	char *preempt_type;	/* job preemption selection plugin */
 	uint32_t priority_decay_hl; /* priority decay half life in
