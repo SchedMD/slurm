@@ -79,6 +79,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     --cpu-freq on salloc, sbatch, and srun.
  -- Interpret a partition configuration of "Nodes=ALL" in slurm.conf as
     including all nodes defined in the cluster.
+ -- Added new configuration parameters PowerParameters and PowerPlugin.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
