@@ -909,6 +909,24 @@ extern char *slurm_get_crypto_type(void)
 	return crypto_type;
 }
 
+/* slurm_get_power_plugin
+ * returns the PowerPlugin from slurmctld_conf object
+ * RET char *    - PowerPlugin, MUST be xfreed by caller
+ */
+extern char *slurm_get_power_plugin(void)
+{
+	char *power_plugin = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		power_plugin = xstrdup(conf->power_plugin);
+		slurm_conf_unlock();
+	}
+	return power_plugin;
+}
+
 /* slurm_get_topology_plugin
  * returns the value of topology_plugin in slurmctld_conf object
  * RET char *    - topology type, MUST be xfreed by caller

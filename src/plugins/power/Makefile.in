@@ -13,6 +13,8 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+# Makefile for power management plugins
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -78,7 +80,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins
+subdir = src/plugins/power
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
@@ -451,38 +453,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = \
-	accounting_storage	\
-	acct_gather_energy	\
-	acct_gather_profile	\
-	acct_gather_infiniband  \
-	acct_gather_filesystem  \
-	auth			\
-	burst_buffer		\
-	checkpoint		\
-	core_spec		\
-	crypto			\
-	ext_sensors		\
-	gres			\
-	jobacct_gather		\
-	jobcomp			\
-	job_container		\
-	job_submit		\
-	launch			\
-	mpi			\
-	power			\
-	preempt			\
-	priority		\
-	proctrack		\
-	route			\
-	sched			\
-	select			\
-	slurmctld		\
-	slurmd			\
-	switch			\
-	task			\
-	topology
-
+SUBDIRS = common cray none
 all: all-recursive
 
 .SUFFIXES:
@@ -495,9 +466,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/plugins/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/plugins/power/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/plugins/Makefile
+	  $(AUTOMAKE) --gnu src/plugins/power/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

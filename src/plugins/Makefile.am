@@ -17,6 +17,7 @@ SUBDIRS = \
 	job_submit		\
 	launch			\
 	mpi			\
+	power			\
 	preempt			\
 	priority		\
 	proctrack		\

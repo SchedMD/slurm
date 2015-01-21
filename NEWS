@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Interpret a partition configuration of "Nodes=ALL" in slurm.conf as
     including all nodes defined in the cluster.
  -- Added new configuration parameters PowerParameters and PowerPlugin.
+ -- Added power management plugin infrastructure.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

@@ -55,6 +55,7 @@ libcommon_la_SOURCES = 			\
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
+	power.c power.h			\
 	print_fields.c print_fields.h	\
 	read_config.c read_config.h	\
 	node_select.c node_select.h	\
@@ -125,7 +126,7 @@ libcommon_la_SOURCES = 			\
 	gres.h gres.c			\
 	entity.h entity.c		\
 	layout.h layout.c		\
-	layouts_mgr.h layouts_mgr.c \
+	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h
 
 EXTRA_libcommon_la_SOURCES = 		\

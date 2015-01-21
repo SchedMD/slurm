@@ -73,24 +73,25 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
+#include "src/common/power.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_acct_gather_profile.h"
-#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_ext_sensors.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
-#include "src/common/slurm_route.h"
-#include "src/common/slurm_topology.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_route.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_protocol_interface.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -427,6 +428,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize switch plugin");
 	if (bb_g_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize burst buffer plugin");
+	if (power_g_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize power management plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -668,6 +671,7 @@ int main(int argc, char *argv[])
 	switch_fini();
 	route_fini();
 	bb_g_fini();
+	power_g_fini();
 
 	/* purge remaining data structures */
 	license_free();
