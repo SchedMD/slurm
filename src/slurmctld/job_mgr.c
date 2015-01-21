@@ -13875,12 +13875,16 @@ jobid2str(struct job_record *job_ptr, char *buf)
 	if (buf == NULL)
 		return "jobid2str: Invalid buf argument";
 
-	if (job_ptr->array_task_id == NO_VAL) {
+	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
+		sprintf(buf, "JobID=%u_* State=0x%x NodeCnt=%u",
+			job_ptr->job_id, job_ptr->job_state,
+			job_ptr->node_cnt);
+	} else if (job_ptr->array_task_id == NO_VAL) {
 		sprintf(buf, "JobID=%u State=0x%x NodeCnt=%u",
 			job_ptr->job_id, job_ptr->job_state,
 			job_ptr->node_cnt);
 	} else {
-		sprintf(buf, "JobID=%u_%u (%u) State=0x%x NodeCnt=%u",
+		sprintf(buf, "JobID=%u_%u(%u) State=0x%x NodeCnt=%u",
 			job_ptr->array_job_id, job_ptr->array_task_id,
 			job_ptr->job_id, job_ptr->job_state,job_ptr->node_cnt);
 	}
