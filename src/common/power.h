@@ -34,23 +34,38 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _POWER_H
-#define _POWER_H 	1
+#ifndef _SLURM_POWER_H
+#define _SLURM_POWER_H 	1
 
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 
-/*******************************************\
- * GLOBAL POWER MANAGEMENT FUNCIONS *
-\*******************************************/
-
+/*****************************************************************************\
+ * PLUGIN FUNCTIONS
+\*****************************************************************************/
 /* initialize the power plugin */
 extern int power_g_init (void);
 
 /* terminate the power plugin and free all memory */
 extern int power_g_fini (void);
 
-#endif /* _POWER_H */
+/*****************************************************************************\
+ * GENERIC DATA MOVEMENT FUNCTIONS
+\*****************************************************************************/
+/* Pack a power management data structure */
+extern void power_mgmt_data_pack(power_mgmt_data_t *power, Buf buffer,
+				 uint16_t protocol_version);
+
+/* Unpack a power management data structure
+ * Use power_mgmt_data_free() to free the returned structure */
+extern int power_mgmt_data_unpack(power_mgmt_data_t **power, Buf buffer,
+				  uint16_t protocol_version);
+
+/* Free a power management data structure */
+extern void power_mgmt_data_free(power_mgmt_data_t *power);
+
+#endif /* _SLURM_POWER_H */

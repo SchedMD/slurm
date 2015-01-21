@@ -55,6 +55,7 @@
 #include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
+#include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_cred.h"
@@ -2561,6 +2562,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->cpu_spec_list);
 		acct_gather_energy_destroy(node->energy);
 		ext_sensors_destroy(node->ext_sensors);
+		power_mgmt_data_free(node->power);
 		xfree(node->features);
 		xfree(node->gres);
 		xfree(node->gres_drain);

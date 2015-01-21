@@ -1069,7 +1069,7 @@ extern int init_job_conf (void);
  *         hash_table - table of hash indexes
  *         last_node_update - time of last node table update
  */
-extern int init_node_conf ();
+extern int init_node_conf (void);
 
 /*
  * init_part_conf - initialize the default partition configuration values

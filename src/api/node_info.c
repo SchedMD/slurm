@@ -352,7 +352,20 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** power Line ******/
+	/****** Power Management Line ******/
+	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
+		snprintf(tmp_line, sizeof(tmp_line), "CapWatts=n/a");
+	} else {
+		snprintf(tmp_line, sizeof(tmp_line), "CapWatts=%u",
+			 node_ptr->power->cap_watts);
+	}
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Power Consumption Line ******/
 	if (!node_ptr->energy || node_ptr->energy->current_watts == NO_VAL)
 		snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=n/s "
 				"LowestJoules=n/s ConsumedJoules=n/s");

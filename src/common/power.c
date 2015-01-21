@@ -146,3 +146,37 @@ extern int power_g_fini(void)
 fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }
+
+/* Pack a power management data structure */
+extern void power_mgmt_data_pack(power_mgmt_data_t *power, Buf buffer,
+				 uint16_t protocol_version)
+{
+	if (!power) {
+		pack32(NO_VAL, buffer);
+	} else {
+		pack32(power->cap_watts, buffer);
+	}
+}
+
+/* Unpack a power management data structure
+ * Use power_mgmt_data_free() to free the returned structure */
+extern int power_mgmt_data_unpack(power_mgmt_data_t **power, Buf buffer,
+				  uint16_t protocol_version)
+{
+	power_mgmt_data_t *power_ptr = xmalloc(sizeof(power_mgmt_data_t));
+
+	safe_unpack32(&power_ptr->cap_watts, buffer);
+	*power = power_ptr;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(power_ptr);
+	*power = NULL;
+	return SLURM_ERROR;
+}
+
+/* Free a power management data structure */
+extern void power_mgmt_data_free(power_mgmt_data_t *power)
+{
+	xfree(power);
+}

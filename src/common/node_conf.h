@@ -160,8 +160,9 @@ struct node_record {
 					 * no need to save/restore */
 	time_t down_time;		/* When first set to DOWN state */
 #endif	/* HAVE_ALPS_CRAY */
-	acct_gather_energy_t *energy;
+	acct_gather_energy_t *energy;	/* power consumption data */
 	ext_sensors_data_t *ext_sensors; /* external sensor data */
+	power_mgmt_data_t *power;	/* power management data */
 	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
 						 * use select_g_get_nodeinfo()
 						 * to access contents */

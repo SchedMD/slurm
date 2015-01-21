@@ -45,6 +45,7 @@ enum {
 	SORTID_BASE_WATTS,
 	SORTID_BOARDS,
 	SORTID_BOOT_TIME,
+	SORTID_CAP_WATTS,
 	SORTID_COLOR,
 	SORTID_CPUS,
 	SORTID_CPU_LOAD,
@@ -154,6 +155,8 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CURRENT_WATTS, "Current Watts", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_CAP_WATTS,"Cap Watts", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_VERSION, "Version", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_node,
@@ -204,6 +207,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char tmp_current_watts[50];
 	char tmp_base_watts[50];
 	char tmp_consumed_energy[50];
+	char tmp_cap_watts[50];
 	char tmp_version[50];
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
@@ -416,6 +420,17 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_CURRENT_WATTS),
 				   tmp_current_watts);
 
+	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
+		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "N/A");
+	} else {
+		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "%u",
+			 node_ptr->power->cap_watts);
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_CAP_WATTS),
+				   tmp_cap_watts);
+
 	if (node_ptr->version == NULL) {
 		snprintf(tmp_version, sizeof(tmp_version), "N/A");
 	} else {
@@ -439,7 +454,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	char tmp_mem[20], tmp_used_memory[20];
 	char tmp_used_cpus[20], tmp_cpu_load[20];
 	char tmp_current_watts[50], tmp_base_watts[50], tmp_consumed_energy[50];
-	char tmp_version[50];
+	char tmp_cap_watts[50], tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper;
 
 
@@ -457,6 +472,13 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			 "%u", node_ptr->energy->base_watts);
 		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
 			 "%u", node_ptr->energy->consumed_energy);
+	}
+
+	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
+		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "N/A");
+	} else {
+		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "%u",
+			 node_ptr->power->cap_watts);
 	}
 
 	if (node_ptr->cpu_load == NO_VAL) {
@@ -537,6 +559,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_BASE_WATTS,tmp_base_watts,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
+			   SORTID_CAP_WATTS, tmp_cap_watts,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos
 				% sview_colors_cnt],
