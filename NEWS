@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- If users specify ALL together with other variables using the
     --export sbatch/srun command line option, propagate the users'
     environ to the execution side.
+ -- Fix job array scheduling anomaly that can stop scheduling of valid tasks.
 
 * Changes in Slurm 14.11.3
 ==========================

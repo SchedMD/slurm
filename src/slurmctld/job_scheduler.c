@@ -774,6 +774,8 @@ extern int schedule(uint32_t job_limit)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	char job_id_str[32];
+	bool is_job_array_head;
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 	char tmp_char[256];
@@ -1067,6 +1069,11 @@ next_part:			part_ptr = (struct part_record *)
 		}
 		if (job_ptr->preempt_in_progress)
 			continue;	/* scheduled in another partition */
+
+		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
+			is_job_array_head = true;
+		else
+			is_job_array_head = false;
 
 next_task:
 		if ((time(NULL) - sched_start) >= sched_timeout) {
@@ -1401,7 +1408,8 @@ next_task:
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
-			if (job_ptr->array_task_id != NO_VAL) {
+			if (is_job_array_head &&
+			    (job_ptr->array_task_id != NO_VAL)) {
 				/* Try starting another task of the job array */
 				job_ptr = find_job_record(job_ptr->array_job_id);
 				if (job_ptr && IS_JOB_PENDING(job_ptr))
@@ -1418,8 +1426,9 @@ next_task:
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
 			   (error_code != ESLURM_ACCOUNTING_POLICY)) {
-			info("sched: schedule: JobId=%u non-runnable: %s",
-			     job_ptr->job_id, slurm_strerror(error_code));
+			info("sched: schedule: %s non-runnable:%s",
+			     jobid2str(job_ptr, job_id_str),
+			     slurm_strerror(error_code));
 			if (!wiki_sched) {
 				last_job_update = now;
 				job_ptr->job_state = JOB_PENDING;
