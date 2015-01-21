@@ -170,6 +170,11 @@ static bool _merge_job_array(List l, job_info_t * job_ptr)
 		    || (list_job_ptr->job_state != JOB_PENDING))
 			continue;
 
+		if (job_ptr->state_reason != list_job_ptr->state_reason) {
+			/* don't merge job array tasks if reason differ's */
+			continue;
+		}
+
 		/* We re-purpose the job's node_inx array to store the
 		 * array_task_id values */
 		if (!list_job_ptr->node_inx) {

@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Avoid delay on commit for PMI rank 0 to improve performance with some
     MPI implementations.
  -- Correct the sbatch pbs parser to process -j.
+ -- Squeue modified to not merge tasks of a job array if their wait reasons
+    differ.
 
 * Changes in Slurm 14.03.11
 ===========================
