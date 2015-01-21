@@ -52,13 +52,6 @@ slurmdbd would be running.
 Only used for database type storage plugins, ignored otherwise.
 
 .TP
-\fBEioTimeout\fR
-The number of seconds srun waits for slurmstepd to close the TCP/IP
-connection used to relay data between the user application and srun
-when the user application terminates. The default value is 60 seconds.
-May not exceed 65533.
-
-.TP
 \fBAccountingStorageEnforce\fR
 This controls what level of association\-based enforcement to impose
 on job submissions.  Valid options are any combination of
@@ -730,6 +723,13 @@ Also see \fBAccountingStorageUser\fR and \fBJobCompUser\fR.
 If set to "YES" then user root will be prevented from running any jobs.
 The default value is "NO", meaning user root will be able to execute jobs.
 \fBDisableRootJobs\fR may also be set by partition.
+
+.TP
+\fBEioTimeout\fR
+The number of seconds srun waits for slurmstepd to close the TCP/IP
+connection used to relay data between the user application and srun
+when the user application terminates. The default value is 60 seconds.
+May not exceed 65533.
 
 .TP
 \fBEnforcePartLimits\fR
