@@ -56,6 +56,7 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 {
 	char p[64] = "";
 	struct tm tm;
+	int debug_limit = limit;
 
 	(*delta_t)  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	(*delta_t) +=  tv2->tv_usec - tv1->tv_usec;
@@ -67,8 +68,9 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 			 * be reached. See "max_sched_time=" logic in
 			 * src/slurmctld/job_scheduler.c */
 			limit = 3000000;
+			debug_limit = 1000000;
 		}
-		if ((*delta_t > 1000000) || (*delta_t > limit)) {
+		if ((*delta_t > debug_limit) || (*delta_t > limit)) {
 			if (!localtime_r(&tv1->tv_sec, &tm))
 				error("localtime_r(): %m");
 			if (strftime(p, sizeof(p), "%T", &tm) == 0)
