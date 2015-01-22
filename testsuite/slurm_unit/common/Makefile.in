@@ -81,9 +81,8 @@ target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_2)
 TESTS = pack-test$(EXEEXT) log-test$(EXEEXT) bitstring-test$(EXEEXT) \
 	$(am__EXEEXT_1)
-#MYCFLAGS += $(top_builddir)/src/common/libcommon.la
 @HAVE_CHECK_TRUE@am__append_1 = xtree-test \
-@HAVE_CHECK_TRUE@		 xhash-test
+@HAVE_CHECK_TRUE@	 xhash-test
 
 subdir = testsuite/slurm_unit/common
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
