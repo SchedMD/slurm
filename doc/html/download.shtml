@@ -9,11 +9,6 @@ Slurm has also been packaged for
 <a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
 (both named <i>slurm-llnl</i>).</p>
 
-<p>A <a href="http://www.bsc.es/marenostrum-support-services/services/slurm-simulator">Slurm simulator</a>
-is available to assess various scheduling policies.
-Under simulation, jobs are not actually executed. Instead, a job execution trace
-from a real system, or a synthetic trace, are used.</p>
-
 <!--
 Slurm interface to PHP
 https://github.com/jcftang/slurm/commits/php-slurm
@@ -158,6 +153,13 @@ http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
 <li><a href="http://www.open-mpi.org">Open MPI</a></li>
 <li><a href="http://www.quadrics.com/">Quadrics MPI</a></li>
 </ul><br>
+
+<li><b>Workload Simulator</b><br>
+A <a href="http://www.bsc.es/marenostrum-support-services/services/slurm-simulator">Slurm simulator</a>
+is available to assess various scheduling policies using historic workload data.
+Under simulation, jobs are not actually executed. Instead, a job execution trace
+from a real system, or a synthetic trace, are used.<br>
+<b>NOTE:</b> This sofware is currently not maintained.</li><br>
 
 <li><b>PAM Module (pam_slurm)</b><br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes
@@ -356,6 +358,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 16 January 2015</p>
+<p style="text-align:center;">Last modified 22 January 2015</p>
 
 <!--#include virtual="footer.txt"-->

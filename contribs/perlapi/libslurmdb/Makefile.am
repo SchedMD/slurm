@@ -26,6 +26,10 @@ $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 		for f in ${perl_sources}; do \
 			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
+		for f in ${test_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
 	fi
 	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT=
 
@@ -72,8 +76,21 @@ uninstall-local:
 clean-generic:
 	@cd $(perl_dir); \
 	$(MAKE) clean; \
-	cd ..; \
-	rm -f *.so
+	if test "x${top_srcdir}" != "x${top_builddir}"; then \
+		rm -fr lib t *c *h *xs typemap classmap; \
+	fi; \
+	cd ..;
+
+	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
+		for f in ${perl_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
+		for f in ${test_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
+	fi
 
 distclean-generic:
 	@cd $(perl_dir); \
@@ -87,6 +104,10 @@ distclean-generic:
 
 	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
 		for f in ${perl_sources}; do \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
+		for f in ${test_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
 			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
 	fi

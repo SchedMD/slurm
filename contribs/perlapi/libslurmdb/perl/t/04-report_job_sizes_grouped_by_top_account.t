@@ -46,5 +46,5 @@ for (my $i = 0; $i < @$clusters; $i++) {
     print "\n";
 }
 
-my $rc = Slurmdb::connection_close($db_conn);
+my $rc = Slurmdb::connection_close(\$db_conn);
 ok( $rc == 0, 'connection_close' );
