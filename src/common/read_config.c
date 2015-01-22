@@ -4532,6 +4532,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "CpuFrequency");
 	}
+	if (debug_flags & DEBUG_FLAG_POWER) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Power");
+	}
 	return rc;
 }
 
@@ -4641,6 +4646,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_WIKI;
 		else if (strcasecmp(tok, "CpuFrequency") == 0)
 			(*flags_out) |= DEBUG_FLAG_CPU_FREQ;
+		else if (strcasecmp(tok, "Power") == 0)
+			(*flags_out) |= DEBUG_FLAG_POWER;
 		else {
 			error("Invalid DebugFlag: %s", tok);
 			(*flags_out) = 0;

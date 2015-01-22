@@ -74,7 +74,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     between the user application and srun when the user application terminates.
  -- Remove the CR_ALLOCATE_FULL_SOCKET configuration option.  It is now the
     default.
- -- Added DebugFlags value of "CpuFrequency".
+ -- Added DebugFlags values of "CpuFrequency" and "Power".
  -- Added CpuFreqGovernors which lists governors allowed to be set with
     --cpu-freq on salloc, sbatch, and srun.
  -- Interpret a partition configuration of "Nodes=ALL" in slurm.conf as

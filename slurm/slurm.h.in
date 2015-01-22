@@ -2184,8 +2184,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_DB_WCKEY     0x0000008000000000 /* Database WCKey debug */
 #define DEBUG_FLAG_BURST_BUF    0x0000010000000000 /* Burst buffer plugin */
 #define DEBUG_FLAG_CPU_FREQ     0x0000020000000000 /* --cpu_freq debug */
-
-
+#define DEBUG_FLAG_POWER        0x0000040000000000 /* Power plugin debug */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
