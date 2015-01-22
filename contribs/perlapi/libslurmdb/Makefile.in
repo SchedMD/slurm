@@ -397,6 +397,14 @@ perl_sources = \
 	       $(perl_dir)/slurmdb-perl.h \
 	       $(perl_dir)/cluster.c
 
+test_sources = \
+	$(perl_dir)/t/00-use.t \
+	$(perl_dir)/t/01-clusters_get.t \
+	$(perl_dir)/t/02-report_cluster_account_by_user.t \
+	$(perl_dir)/t/03-report_cluster_user_by_account.t \
+	$(perl_dir)/t/04-report_job_sizes_grouped_by_top_account.t \
+	$(perl_dir)/t/05-report_user_top_usage.t
+
 AM_CPPFLAGS = \
 	-DVERSION=\"$(VERSION)\" \
 	-I$(top_srcdir) \
@@ -595,6 +603,10 @@ $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 		for f in ${perl_sources}; do \
 			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
+		for f in ${test_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
 	fi
 	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT=
 
@@ -638,8 +650,21 @@ uninstall-local:
 clean-generic:
 	@cd $(perl_dir); \
 	$(MAKE) clean; \
-	cd ..; \
-	rm -f *.so
+	if test "x${top_srcdir}" != "x${top_builddir}"; then \
+		rm -fr lib t *c *h *xs typemap classmap; \
+	fi; \
+	cd ..;
+
+	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
+		for f in ${perl_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
+		for f in ${test_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
+	fi
 
 distclean-generic:
 	@cd $(perl_dir); \
@@ -653,6 +678,10 @@ distclean-generic:
 
 	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
 		for f in ${perl_sources}; do \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
+		for f in ${test_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
 			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
 	fi
