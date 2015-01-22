@@ -35,5 +35,5 @@ for (my $i = 0; $i < @$clusters; $i++) {
       print "rpc_version    $clusters->[$i]{'rpc_version'}\n\n";
 }
 
-my $rc = Slurmdb::connection_close($db_conn);
+my $rc = Slurmdb::connection_close(\$db_conn);
 ok( $rc == 0, 'connection_close' );
