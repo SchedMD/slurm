@@ -7979,7 +7979,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			if (detail_ptr->argv) {
 				/* Determine size needed for a string
 				 * containing all arguments */
-				for (i =0; detail_ptr->argv[i]; i++) { 
+				for (i =0; detail_ptr->argv[i]; i++) {
 					len += strlen(detail_ptr->argv[i]);
 				}
 				len += i;
@@ -8265,7 +8265,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 
 			pack32(detail_ptr->pn_min_memory, buffer);
 			pack32(detail_ptr->pn_min_tmp_disk, buffer);
-			
+
 			packstr(detail_ptr->req_nodes, buffer);
 			pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
 			/* detail_ptr->req_node_layout is not packed */
@@ -8286,7 +8286,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 
 			pack32((uint32_t) 0, buffer);
 			pack32((uint32_t) 0, buffer);
-			
+
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
@@ -8921,6 +8921,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false;
 	acct_policy_limit_set_t acct_policy_limit_set;
+	bool acct_limit_already_set;
 
 #ifdef HAVE_BG
 	uint16_t conn_type[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
@@ -8955,6 +8956,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		error("Security violation, JOB_UPDATE RPC from uid %d",
 		      uid);
 		return ESLURM_USER_ID_MISSING;
+	}
+
+	acct_limit_already_set = false;
+	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
+					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
+					  NULL, &acct_policy_limit_set, 1)) {
+			debug("\
+%s: exceeded association's cpu, node, memory or time limit for user %u",
+			      __func__, job_specs->user_id);
+			acct_limit_already_set = true;
+		}
 	}
 
 	if (!wiki_sched_test) {
@@ -9364,7 +9377,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-					  NULL, &acct_policy_limit_set, 1)) {
+					  NULL, &acct_policy_limit_set, 1)
+		    && acct_limit_already_set == false) {
 			info("update_job: exceeded association's cpu, node, "
 			     "memory or time limit for user %u",
 			     job_specs->user_id);
