@@ -61,16 +61,29 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 	(*delta_t) +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", *delta_t);
 	if (from) {
-		if (!limit)
-			limit = 1000000;
-		if (*delta_t > limit) {
+		if (!limit) {
+			/* NOTE: The slurmctld scheduler's default run time
+			 * limit is 4 seconds, but that would not typically
+			 * be reached. See "max_sched_time=" logic in
+			 * src/slurmctld/job_scheduler.c */
+			limit = 3000000;
+		}
+		if ((*delta_t > 1000000) || (*delta_t > limit)) {
 			if (!localtime_r(&tv1->tv_sec, &tm))
-				fprintf(stderr, "localtime_r() failed\n");
+				error("localtime_r(): %m");
 			if (strftime(p, sizeof(p), "%T", &tm) == 0)
-				fprintf(stderr, "strftime() returned 0\n");
-			verbose("Warning: Note very large processing "
-				"time from %s: %s began=%s.%3.3d",
-				from, tv_str, p, (int)(tv1->tv_usec / 1000));
+				error("strftime(): %m");
+			if (*delta_t > limit) {
+				verbose("Warning: Note very large processing "
+					"time from %s: %s began=%s.%3.3d",
+					from, tv_str, p,
+					(int)(tv1->tv_usec / 1000));
+			} else {	/* Log anything over 1 second here */
+				debug("Note large processing time from %s: "
+				      "%s began=%s.%3.3d",
+				      from, tv_str, p,
+				      (int)(tv1->tv_usec / 1000));
+			}
 		}
 	}
 }
