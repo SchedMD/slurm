@@ -909,6 +909,24 @@ extern char *slurm_get_crypto_type(void)
 	return crypto_type;
 }
 
+/* slurm_get_power_parameters
+ * returns the PowerParameters from slurmctld_conf object
+ * RET char *    - PowerParameters, MUST be xfreed by caller
+ */
+extern char *slurm_get_power_parameters(void)
+{
+	char *power_parameters = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		power_parameters = xstrdup(conf->power_parameters);
+		slurm_conf_unlock();
+	}
+	return power_parameters;
+}
+
 /* slurm_get_power_plugin
  * returns the PowerPlugin from slurmctld_conf object
  * RET char *    - PowerPlugin, MUST be xfreed by caller

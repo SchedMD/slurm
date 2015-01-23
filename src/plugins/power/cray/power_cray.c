@@ -48,8 +48,28 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 #include "src/plugins/power/common/power_common.h"
+#include "src/slurmctld/locks.h"
+
+#define DEFAULT_BALANCE_INTERVAL 30
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+struct node_record *node_record_table_ptr __attribute__((weak_import)) = NULL;
+List job_list __attribute__((weak_import)) = NULL;
+int node_record_count __attribute__((weak_import)) = 0;
+#else
+struct node_record *node_record_table_ptr = NULL;
+List job_list = NULL;
+int node_record_count = 0;
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -83,19 +103,120 @@ const char plugin_name[]        = "power cray plugin";
 const char plugin_type[]        = "power/cray";
 const uint32_t plugin_version   = 100;
 
+/*********************** local variables *********************/
+static int balance_interval = DEFAULT_BALANCE_INTERVAL;
+static bool stop_power = false;
+static pthread_t power_thread = 0;
+static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
+
+/*********************** local functions *********************/
+static void _load_config(void);
+extern void *_power_agent(void *args);
+static void _stop_power_agent(void);
+
+/* Parse PowerParameters configuration */
+static void _load_config(void)
+{
+	char *sched_params, *tmp_ptr;
+
+	sched_params = slurm_get_power_parameters();
+	if (!sched_params)
+		return;
+
+	/*                                   12345678901234567890 */
+	if ((tmp_ptr = strstr(sched_params, "balance_interval="))) {
+		balance_interval = atoi(tmp_ptr + 17);
+		if (balance_interval < 1) {
+			error("PowerParameters: balance_interval=%d invalid",
+			      balance_interval);
+			balance_interval = DEFAULT_BALANCE_INTERVAL;
+		}
+	}
+
+	xfree(sched_params);
+}
+
+/* Periodically attempt to re-balance power caps across nodes */
+extern void *_power_agent(void *args)
+{
+	time_t now;
+	double wait_time;
+	static time_t last_balance_time = 0;
+	/* Read jobs and nodes */
+	slurmctld_lock_t read_locks = {
+		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+	List job_power_list;
+
+	last_balance_time = time(NULL);
+	while (!stop_power) {
+		sleep(1);
+		if (stop_power)
+			break;
+
+		now = time(NULL);
+		wait_time = difftime(now, last_balance_time);
+		if (wait_time < balance_interval)
+			continue;
+
+		lock_slurmctld(read_locks);
+		job_power_list = get_job_power(job_list);
+//FIXME: power re-balancing decisions here
+		FREE_NULL_LIST(job_power_list);
+		last_balance_time = time(NULL);
+		unlock_slurmctld(read_locks);
+		_load_config();
+	}
+	return NULL;
+}
+
+/* Terminate power thread */
+static void _stop_power_agent(void)
+{
+	pthread_mutex_lock(&term_lock);
+	stop_power = true;
+	pthread_cond_signal(&term_cond);
+	pthread_mutex_unlock(&term_lock);
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init(void)
 {
+	pthread_attr_t attr;
+
+//FIXME: Return if not in slurmctld
+
+	pthread_mutex_lock(&thread_flag_mutex);
+	if (power_thread) {
+		debug2("Power thread already running, not starting another");
+		pthread_mutex_unlock(&thread_flag_mutex);
+		return SLURM_ERROR;
+	}
+
+	slurm_attr_init(&attr);
+	/* Since we do a join on this later we don't make it detached */
+	if (pthread_create(&power_thread, &attr, _power_agent, NULL))
+		error("Unable to start power thread: %m");
+	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_attr_destroy(&attr);
+
 	return SLURM_SUCCESS;
 }
 
 /*
  * fini() is called when the plugin is unloaded. Free all memory.
  */
-extern int fini(void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	pthread_mutex_lock(&thread_flag_mutex);
+	if (power_thread) {
+		_stop_power_agent();
+		pthread_join(power_thread, NULL);
+		power_thread = 0;
+	}
+	pthread_mutex_unlock(&thread_flag_mutex);
 }

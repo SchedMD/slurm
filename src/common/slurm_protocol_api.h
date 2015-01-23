@@ -417,6 +417,12 @@ extern uint16_t slurm_get_fast_schedule(void);
  */
 extern uint16_t slurm_get_use_spec_resources(void);
 
+/* slurm_get_power_parameters
+ * returns the PowerParameters from slurmctld_conf object
+ * RET char *    - PowerParameters, MUST be xfreed by caller
+ */
+extern char *slurm_get_power_parameters(void);
+
 /* slurm_get_power_plugin
  * returns the PowerPlugin from slurmctld_conf object
  * RET char *    - PowerPlugin, MUST be xfreed by caller

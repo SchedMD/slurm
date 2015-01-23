@@ -65,6 +65,67 @@
 
 #include "power_common.h"
 
+static void _job_power_del(void *x)
+{
+	xfree(x);
+}
+
+/* For each running job, return power allocation/use information in a List
+ * containing elements of type power_by_job_t.
+ * NOTE: Job data structure must be locked on function entry
+ * NOTE: Call list_delete() to free return value */
+extern List get_job_power(List job_list)
+{
+	struct node_record *node_ptr;
+	struct job_record *job_ptr;
+	ListIterator job_iterator;
+	power_by_job_t *power_ptr;
+	char jobid_buf[64] = "";
+	int i, i_first, i_last;
+	uint64_t debug_flag = slurm_get_debug_flags();
+	List job_power_list = list_create(_job_power_del);
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+//FIXME: What about IS_JOB_SUSPENDED(job_ptr)?
+		if (!IS_JOB_RUNNING(job_ptr))
+			continue;
+		power_ptr = xmalloc(sizeof(power_by_job_t));
+		power_ptr->job_id = job_ptr->job_id;
+		list_append(job_power_list, power_ptr);
+		if (!job_ptr->node_bitmap) {
+			error("%s: %s node_bitmap is NULL", __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+			continue;
+		}
+		i_first = bit_ffs(job_ptr->node_bitmap);
+		if (i_first < 0)
+			continue;
+		i_last = bit_fls(job_ptr->node_bitmap);
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			node_ptr = node_record_table_ptr + i;
+			if (node_ptr->power) {
+				power_ptr->alloc_watts +=
+					node_ptr->power->cap_watts;
+			}
+			if (node_ptr->energy) {
+				power_ptr->used_watts +=
+					node_ptr->energy->current_watts;
+			}
+		}
+		if (debug_flag & DEBUG_FLAG_POWER) {
+			info("%s: %s AllocWatts=%u UsedWatts=%u", __func__,
+			     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			     power_ptr->alloc_watts, power_ptr->used_watts);
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	return job_power_list;
+}
+
 /* Execute a script, wait for termination and return its stdout.
  * script_name IN - Name of program being run (e.g. "StartStageIn")
  * script_path IN - Fully qualified program of the program to execute
