@@ -70,11 +70,37 @@ static void _job_power_del(void *x)
 	xfree(x);
 }
 
+/* For all nodes in a cluster, return global power allocation/use information */
+extern void get_cluster_power(struct node_record *node_record_table_ptr,
+			      int node_record_count,
+			      uint32_t *alloc_watts, uint32_t *used_watts)
+{
+	uint64_t debug_flag = slurm_get_debug_flags();
+	int i;
+	struct node_record *node_ptr;
+
+	*alloc_watts = 0;
+	*used_watts  = 0;
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (node_ptr->power)
+			alloc_watts += node_ptr->power->cap_watts;
+		if (node_ptr->energy)
+			used_watts += node_ptr->energy->current_watts;
+	}
+
+	if (debug_flag & DEBUG_FLAG_POWER) {
+		info("%s: AllocWatts=%u UsedWatts=%u", __func__,
+		     *alloc_watts, *used_watts);
+	}
+}
+
 /* For each running job, return power allocation/use information in a List
  * containing elements of type power_by_job_t.
  * NOTE: Job data structure must be locked on function entry
  * NOTE: Call list_delete() to free return value */
-extern List get_job_power(List job_list)
+extern List get_job_power(List job_list,
+			  struct node_record *node_record_table_ptr)
 {
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
@@ -84,6 +110,7 @@ extern List get_job_power(List job_list)
 	int i, i_first, i_last;
 	uint64_t debug_flag = slurm_get_debug_flags();
 	List job_power_list = list_create(_job_power_del);
+	time_t now = time(NULL);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -92,6 +119,7 @@ extern List get_job_power(List job_list)
 			continue;
 		power_ptr = xmalloc(sizeof(power_by_job_t));
 		power_ptr->job_id = job_ptr->job_id;
+		power_ptr->start_time = job_ptr->start_time;
 		list_append(job_power_list, power_ptr);
 		if (!job_ptr->node_bitmap) {
 			error("%s: %s node_bitmap is NULL", __func__,
@@ -116,8 +144,10 @@ extern List get_job_power(List job_list)
 			}
 		}
 		if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: %s AllocWatts=%u UsedWatts=%u", __func__,
+			info("%s: %s Age=%ld(sec) AllocWatts=%u UsedWatts=%u",
+			     __func__,
 			     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			     (long int) difftime(now, power_ptr->start_time),
 			     power_ptr->alloc_watts, power_ptr->used_watts);
 		}
 	}
@@ -259,4 +289,3 @@ extern char *power_run_script(char *script_name, char *script_path,
 	}
 	return resp;
 }
-

@@ -148,6 +148,7 @@ extern void *_power_agent(void *args)
 	slurmctld_lock_t read_locks = {
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	List job_power_list;
+	uint32_t alloc_watts = 0, used_watts = 0;
 
 	last_balance_time = time(NULL);
 	while (!stop_power) {
@@ -161,7 +162,9 @@ extern void *_power_agent(void *args)
 			continue;
 
 		lock_slurmctld(read_locks);
-		job_power_list = get_job_power(job_list);
+		get_cluster_power(node_record_table_ptr, node_record_count,
+				  &alloc_watts, &used_watts);
+		job_power_list = get_job_power(job_list, node_record_table_ptr);
 //FIXME: power re-balancing decisions here
 		FREE_NULL_LIST(job_power_list);
 		last_balance_time = time(NULL);
@@ -188,7 +191,8 @@ extern int init(void)
 {
 	pthread_attr_t attr;
 
-//FIXME: Return if not in slurmctld
+//FIXME	if (bg_recover == NOT_FROM_CONTROLLER)
+//		return SLURM_SUCCESS;
 
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (power_thread) {

@@ -41,21 +41,29 @@
 #ifndef __POWER_COMMON_H__
 #define __POWER_COMMON_H__
 
+#include "slurm/slurm.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
-#include "slurm/slurm.h"
+#include "src/slurmctld/slurmctld.h"
 
 typedef struct power_by_job {
 	uint32_t job_id;	/* Running Job ID */
+	time_t   start_time;	/* When job allocation started */
 	uint32_t alloc_watts;	/* Currently allocated power, in watts */
 	uint32_t used_watts;	/* Recent power use rate, in watts */
 } power_by_job_t;
+
+/* For all nodes in a cluster, return global power allocation/use information */
+extern void get_cluster_power(struct node_record *node_record_table_ptr,
+			      int node_record_count,
+			      uint32_t *alloc_watts, uint32_t *used_watts);
 
 /* For each running job, return power allocation/use information in a List
  * containing elements of type power_by_job_t.
  * NOTE: Job data structure must be locked on function entry
  * NOTE: Call list_delete() to free return value */
-extern List get_job_power(List job_list);
+extern List get_job_power(List job_list,
+			  struct node_record *node_record_table_ptr);
 
 /* Execute a script, wait for termination and return its stdout.
  * script_name IN - Name of program being run (e.g. "StartStageIn")

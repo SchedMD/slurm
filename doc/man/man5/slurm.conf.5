@@ -1387,6 +1387,13 @@ System power management parameters.
 The supported parameters are specific to the \fBPowerPlugin\fR.
 More information about system power management is available here
 <http://slurm.schedmd.com/power_mgmt.html>.
+Options current supported by any plugins are listed below.
+.RS
+.TP
+\fBbalance_interval=#\fR
+Specifies the time interval, in seconds, between attempts to rebalance power
+caps across the nodes. Supported by the power/cray plugin.
+.RE
 
 .TP
 \fBPowerPlugin\fR
