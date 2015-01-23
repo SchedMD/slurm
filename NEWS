@@ -121,6 +121,7 @@ documents those changes that are of interest to users and administrators.
     environ to the execution side.
  -- Fix job array scheduling anomaly that can stop scheduling of valid tasks.
  -- Fix perl api tests for libslurmdb to work correctly.
+ -- Remove some misleading logs related to non-consumable GRES.
 
 * Changes in Slurm 14.11.3
 ==========================
