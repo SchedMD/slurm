@@ -191,8 +191,8 @@ extern int init(void)
 {
 	pthread_attr_t attr;
 
-//FIXME	if (bg_recover == NOT_FROM_CONTROLLER)
-//		return SLURM_SUCCESS;
+	if (!run_in_daemon("slurmctld"))
+		return SLURM_SUCCESS;
 
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (power_thread) {
