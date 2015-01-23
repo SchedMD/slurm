@@ -4569,7 +4569,8 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
 
-	if (node_offset == NO_VAL) {
+	if ((node_offset == NO_VAL) ||
+	    (0 == job_gres_ptr->node_cnt)) {	/* no_consume */
 		if (step_gres_ptr->gres_cnt_alloc >
 		    job_gres_ptr->gres_cnt_alloc)
 			return 0;
@@ -5310,6 +5311,9 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
 
+	if (0 == job_gres_ptr->node_cnt)	/* no_consume */
+		return SLURM_SUCCESS;
+
 	if (node_offset >= job_gres_ptr->node_cnt) {
 		error("gres/%s: %s for %u.%u, node offset invalid "
 		      "(%d >= %u)",
@@ -5495,6 +5499,13 @@ static int _step_dealloc(void *step_gres_data, void *job_gres_data,
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
+
+	if (0 == job_gres_ptr->node_cnt) {	/* no_consume */
+		xassert(!step_gres_ptr->node_in_use);
+		xassert(!step_gres_ptr->gres_bit_alloc);
+		return SLURM_SUCCESS;
+	}
+
 	if (step_gres_ptr->node_in_use == NULL) {
 		error("gres/%s: %s step %u.%u dealloc, node_in_use is NULL",
 		      gres_name, __func__, job_id, step_id);
