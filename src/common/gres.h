@@ -121,7 +121,7 @@ typedef struct gres_job_state {
 	uint32_t gres_cnt_alloc;
 
 	/* Resources currently allocated to job on each node */
-	uint32_t node_cnt;
+	uint32_t node_cnt;		/* 0 if no_consume */
 	bitstr_t **gres_bit_alloc;
 
 	/* Resources currently allocated to job steps on each node.
