@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Correct the sbatch pbs parser to process -j.
  -- Squeue modified to not merge tasks of a job array if their wait reasons
     differ.
+ -- allow --ignore-pbs to take effect when read as an #SBATCH argument
 
 * Changes in Slurm 14.03.11
 ===========================
