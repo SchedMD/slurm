@@ -94,6 +94,8 @@ static int    _open_part_state_file(char **state_file);
 static int    _uid_list_size(uid_t * uid_list_ptr);
 static void   _unlink_free_nodes(bitstr_t *old_bitmap,
 			struct part_record *part_ptr);
+static uid_t *_remove_duplicate_uids(uid_t *);
+static int _uid_cmp(const void *, const void *);
 
 /*
  * _build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap
@@ -1721,7 +1723,63 @@ uid_t *_get_groups_members(char *group_names)
 	}
 	xfree(tmp_names);
 
+	group_uids = _remove_duplicate_uids(group_uids);
+
 	return group_uids;
+}
+
+/* remove_duplicate_uids()
+ */
+static uid_t *
+_remove_duplicate_uids(uid_t *u)
+{
+	int i;
+	int j;
+	int num;
+	uid_t *v;
+	uid_t cur;
+
+	num = 1;
+	for (i = 0; u[i]; i++)
+		++num;
+
+	v = xmalloc(num * sizeof(uid_t));
+	qsort(u, num, sizeof(uid_t), _uid_cmp);
+
+	j = 0;
+	cur = u[0];
+	for (i = 0; u[i]; i++) {
+		if (u[i] == cur)
+			continue;
+		v[j] = cur;
+		cur = u[i];
+		++j;
+	}
+	v[j] = cur;
+
+	xfree(u);
+	return v;
+}
+
+/* uid_cmp
+ */
+static int
+_uid_cmp(const void *x, const void *y)
+{
+	uid_t a;
+	uid_t b;
+
+	a = *(uid_t *)x;
+	b = *(uid_t *)y;
+
+	/* Sort in decreasing order so that the 0
+	 * as at the end.
+	 */
+	if (a > b)
+		return -1;
+	if (a < b)
+		return 1;
+	return 0;
 }
 
 /* _get_group_tlm - return the time of last modification for the GROUP_FILE */

@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- If job already exceeded one of its QOS/Accounting limits do not
     return error if user modifies QOS unrelated job settings.
  -- Added DebugFlags value of "Power".
+ -- When caching user ids of AllowGroups use both getgrnam_r() and getgrent_r()
+    then remove eventual duplicate entries.
 
 * Changes in Slurm 15.08.0pre1
 ==============================
