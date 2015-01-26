@@ -45,6 +45,9 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#if HAVE_JSON
+#include <json-c/json.h>
+#endif
 
 #include "slurm/slurm.h"
 
@@ -72,6 +75,12 @@ struct node_record *node_record_table_ptr = NULL;
 List job_list = NULL;
 int node_record_count = 0;
 #endif
+
+typedef struct power_config_nodes {
+	uint32_t max_watts;     /* maximum power consumption by node, in watts */
+	uint32_t min_watts;     /* minimum power consumption by node, in watts */
+	char *nodes;		/* Node names (nid range list values on Cray) */
+} power_config_nodes_t;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -116,6 +125,10 @@ static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 
 /*********************** local functions *********************/
+static void _get_capabilities(void);
+static power_config_nodes_t *
+            _json_parse_array(json_object *jobj, char *key, int *num);
+static void _json_parse_object(json_object *jobj, power_config_nodes_t *ent);
 static void _load_config(void);
 extern void *_power_agent(void *args);
 static void _set_power_caps(List node_power_list);
@@ -158,9 +171,126 @@ static void _load_config(void)
 	}
 }
 
+static void _get_capabilities(void)
+{
+	/* Write nodes */
+	slurmctld_lock_t write_locks = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	char *cmd_resp, *script_argv[3];
+	power_config_nodes_t *ents;
+	int i, num_ent = 0, status = 0;
+	json_object *j;
+	json_object_iter iter;
+	struct node_record *node_ptr;
+
+	script_argv[0] = capmc_path;
+	script_argv[1] = "get_power_cap_capabilities";
+	script_argv[2] = NULL;
+
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 2000,
+				    &status);
+	if (status != 0) {
+		error("%s: capmc %s %s: %s",
+		      __func__, script_argv[1], script_argv[2], cmd_resp);
+		xfree(cmd_resp);
+		return;
+	} else if (debug_flag & DEBUG_FLAG_POWER) {
+		info("%s: capmc %s %s",
+		      __func__, script_argv[1], script_argv[2]);
+	}
+
+
+	j = json_tokener_parse(cmd_resp);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, cmd_resp);
+		xfree(cmd_resp);
+		return;
+	}
+	json_object_object_foreachC(j, iter) {
+		ents = _json_parse_array(j, iter.key, &num_ent);
+	}
+	json_object_put(j);	/* Frees json memory */
+
+	lock_slurmctld(write_locks);
+	for (i = 0; i < num_ent; i++) {
+		node_ptr = find_node_record(ents[i].nodes);
+		if (!node_ptr->power)
+			node_ptr->power = xmalloc(sizeof(power_mgmt_data_t));
+		node_ptr->power->max_watts = ents[i].max_watts;
+		node_ptr->power->min_watts = ents[i].min_watts;
+		xfree(ents[i].nodes);
+	}
+	xfree(ents);
+	unlock_slurmctld(write_locks);
+	xfree(cmd_resp);
+}
+
+/* json_parse_array()
+ */
+static power_config_nodes_t *
+_json_parse_array(json_object *jobj, char *key, int *num)
+{
+	json_object *jarray;
+	int i;
+	json_object *jvalue;
+	power_config_nodes_t *ents;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(power_config_nodes_t));
+
+	for (i = 0; i < *num; i++){
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_object(jvalue, &ents[i]);
+	}
+
+	return ents;
+}
+
+/* json_parse_object()
+ */
+static void _json_parse_object(json_object *jobj, power_config_nodes_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+	const char *p;
+
+	json_object_object_foreachC(jobj, iter) {
+
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_boolean:
+			case json_type_double:
+			case json_type_null:
+			case json_type_object:
+			case json_type_array:
+				break;
+			case json_type_int:
+				x = json_object_get_int64(iter.val);
+				if (strcmp(iter.key, "max_watts") == 0) {
+					ent->max_watts = x;
+				} else if (strcmp(iter.key, "min_watts") == 0) {
+					ent->min_watts = x;
+				}
+				break;
+			case json_type_string:
+				p = json_object_get_string(iter.val);
+				if (strcmp(iter.key, "nid") == 0) {
+					ent->nodes = "nid";
+					xstrcat(ent->nodes, p);
+				}
+				break;
+		}
+	}
+}
+
 /* Periodically attempt to re-balance power caps across nodes */
 extern void *_power_agent(void *args)
 {
+	static time_t last_cap_read = 0;
 	time_t now;
 	double wait_time;
 	static time_t last_balance_time = 0;
@@ -180,6 +310,9 @@ extern void *_power_agent(void *args)
 		wait_time = difftime(now, last_balance_time);
 		if (wait_time < balance_interval)
 			continue;
+
+		wait_time = difftime(now, last_cap_read);
+		_get_capabilities();
 
 		lock_slurmctld(read_locks);
 //FIXME: On Cray/ALPS system use "capmc get_node_energy_counter" to get

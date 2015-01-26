@@ -450,7 +450,7 @@ static void _load_state(void)
 {
 	burst_buffer_gres_t *gres_ptr;
 	bb_entry_t *ents;
-	int num_ents;
+	int num_ents = 0;
 	int i;
 static bool first_load = true;
 //FIXME: Need logic to handle resource allocation/free in progress
@@ -2301,7 +2301,7 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 	json_object_object_foreachC(j, iter) {
 		ents = _json_parse_array(j, iter.key, num_ent);
 	}
-	json_object_put(j);
+	json_object_put(j);	/* Frees json memory */
 
 	return ents;
 }
@@ -2388,7 +2388,7 @@ _json_parse_object(json_object *jobj, struct bb_entry *ent)
 					ent->granularity = x;
 				} else if (strcmp(iter.key, "quantity") == 0) {
 					ent->quantity = x;
-				}  else if (strcmp(iter.key, "free") == 0) {
+				} else if (strcmp(iter.key, "free") == 0) {
 					ent->free = x;
 				}
 				break;
