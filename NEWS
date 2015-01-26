@@ -122,6 +122,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix job array scheduling anomaly that can stop scheduling of valid tasks.
  -- Fix perl api tests for libslurmdb to work correctly.
  -- Remove some misleading logs related to non-consumable GRES.
+ -- Allow --ignore-pbs to take effect when read as an #SBATCH argument.
 
 * Changes in Slurm 14.11.3
 ==========================
