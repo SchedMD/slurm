@@ -138,6 +138,26 @@ extern uid_t *get_group_members(char *group_name)
 
 	j = 0;
 	uid_cnt = 0;
+
+	/* Get the members from the getgrnam_r() call.
+	 */
+	for (i = 0; grp_result->gr_mem[i]; i++) {
+
+		if (uid_from_string(grp_result->gr_mem[i],
+				    &my_uid) < 0) {
+			continue;
+		}
+		if (my_uid == 0)
+			continue;
+		if (j + 1 >= uid_cnt) {
+			uid_cnt += 100;
+			xrealloc(group_uids,
+				 (sizeof(uid_t) * uid_cnt));
+		}
+
+		group_uids[j++] = my_uid;
+	}
+
 #ifdef HAVE_AIX
 	setgrent_r(&fp);
 	while (1) {
@@ -160,6 +180,9 @@ extern uid_t *get_group_members(char *group_name)
 #else
 	setgrent();
 	while (1) {
+		/* MH-CEA workaround to handle different group entries with
+		 * the same gid
+		 */
 		slurm_seterrno(0);
 		res = getgrent_r(&grp, grp_buffer, buflen, &grp_result);
 		if (res != 0 || grp_result == NULL) {
