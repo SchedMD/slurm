@@ -1392,7 +1392,14 @@ Options current supported by any plugins are listed below.
 .TP
 \fBbalance_interval=#\fR
 Specifies the time interval, in seconds, between attempts to rebalance power
-caps across the nodes. Supported by the power/cray plugin.
+caps across the nodes.
+The default value is 30 seconds.
+Supported by the power/cray plugin.
+.TP
+\fBcapmc_path=\fR
+Specifies the absolute path of the capmc command.
+The default value is "/opt/cray/capmc/default/bin/capmc".
+Supported by the power/cray plugin.
 .RE
 
 .TP

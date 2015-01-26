@@ -162,8 +162,11 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-power_cray_la_DEPENDENCIES = ../common/libpower_common.la
-am_power_cray_la_OBJECTS = power_cray.lo
+@WITH_JSON_PARSER_TRUE@power_cray_la_DEPENDENCIES =  \
+@WITH_JSON_PARSER_TRUE@	../common/libpower_common.la
+am__power_cray_la_SOURCES_DIST = power_cray.c
+@WITH_JSON_PARSER_TRUE@am_power_cray_la_OBJECTS = power_cray.lo
+am__EXTRA_power_cray_la_SOURCES_DIST = power_cray.c
 power_cray_la_OBJECTS = $(am_power_cray_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -172,6 +175,7 @@ am__v_lt_1 =
 power_cray_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(power_cray_la_LDFLAGS) $(LDFLAGS) -o $@
+@WITH_JSON_PARSER_TRUE@am_power_cray_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -206,8 +210,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(power_cray_la_SOURCES)
-DIST_SOURCES = $(power_cray_la_SOURCES)
+SOURCES = $(power_cray_la_SOURCES) $(EXTRA_power_cray_la_SOURCES)
+DIST_SOURCES = $(am__power_cray_la_SOURCES_DIST) \
+	$(am__EXTRA_power_cray_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -476,13 +481,12 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-
-# if HAVE_NATIVE_CRAY	// FIXME: FUTURE
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
-pkglib_LTLIBRARIES = power_cray.la
-power_cray_la_SOURCES = power_cray.c
-power_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(JSON_LDFLAGS)
-power_cray_la_LIBADD = ../common/libpower_common.la
+@WITH_JSON_PARSER_TRUE@AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
+@WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = power_cray.la
+@WITH_JSON_PARSER_TRUE@power_cray_la_SOURCES = power_cray.c
+@WITH_JSON_PARSER_TRUE@power_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(JSON_LDFLAGS)
+@WITH_JSON_PARSER_TRUE@power_cray_la_LIBADD = ../common/libpower_common.la
+@WITH_JSON_PARSER_FALSE@EXTRA_power_cray_la_SOURCES = power_cray.c
 all: all-am
 
 .SUFFIXES:
@@ -554,7 +558,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 power_cray.la: $(power_cray_la_OBJECTS) $(power_cray_la_DEPENDENCIES) $(EXTRA_power_cray_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(power_cray_la_LINK) -rpath $(pkglibdir) $(power_cray_la_OBJECTS) $(power_cray_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(power_cray_la_LINK) $(am_power_cray_la_rpath) $(power_cray_la_OBJECTS) $(power_cray_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -799,13 +803,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	uninstall-pkglibLTLIBRARIES
 
 
-force:
-$(power_cray_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
-
-# else
-# EXTRA_power_cray_la_SOURCES = power_cray.c
-# endif
+@WITH_JSON_PARSER_TRUE@force:
+@WITH_JSON_PARSER_TRUE@$(power_cray_la_LIBADD) : force
+@WITH_JSON_PARSER_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

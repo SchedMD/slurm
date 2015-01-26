@@ -52,10 +52,12 @@
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/plugins/power/common/power_common.h"
 #include "src/slurmctld/locks.h"
 
 #define DEFAULT_BALANCE_INTERVAL 30
+#define DEFAULT_CAPMC_PATH  "/opt/cray/capmc/default/bin/capmc"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -105,6 +107,8 @@ const uint32_t plugin_version   = 100;
 
 /*********************** local variables *********************/
 static int balance_interval = DEFAULT_BALANCE_INTERVAL;
+static char *capmc_path = NULL;
+static uint64_t debug_flag = 0;
 static bool stop_power = false;
 static pthread_t power_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -114,6 +118,7 @@ static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 /*********************** local functions *********************/
 static void _load_config(void);
 extern void *_power_agent(void *args);
+static void _set_power_caps(List node_power_list);
 static void _stop_power_agent(void);
 
 /* Parse PowerParameters configuration */
@@ -121,6 +126,7 @@ static void _load_config(void)
 {
 	char *sched_params, *tmp_ptr;
 
+	debug_flag = slurm_get_debug_flags();
 	sched_params = slurm_get_power_parameters();
 	if (!sched_params)
 		return;
@@ -135,7 +141,21 @@ static void _load_config(void)
 		}
 	}
 
+	xfree(capmc_path);
+	if ((tmp_ptr = strstr(sched_params, "capmc_path="))) {
+		capmc_path = xstrdup(tmp_ptr + 11);
+		tmp_ptr = strchr(capmc_path, ',');
+		if (tmp_ptr)
+			tmp_ptr[0] = '\0';
+	} else {
+		capmc_path = xstrdup(DEFAULT_CAPMC_PATH);
+	}
+
 	xfree(sched_params);
+	if (debug_flag & DEBUG_FLAG_POWER) {
+		info("%s configuration: balance_interval=%d capmc_path=%s",
+		     __func__, balance_interval, capmc_path);
+	}
 }
 
 /* Periodically attempt to re-balance power caps across nodes */
@@ -147,7 +167,7 @@ extern void *_power_agent(void *args)
 	/* Read jobs and nodes */
 	slurmctld_lock_t read_locks = {
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
-	List job_power_list;
+	List job_power_list, node_power_list = NULL;
 	uint32_t alloc_watts = 0, used_watts = 0;
 
 	last_balance_time = time(NULL);
@@ -162,16 +182,86 @@ extern void *_power_agent(void *args)
 			continue;
 
 		lock_slurmctld(read_locks);
+//FIXME: On Cray/ALPS system use "capmc get_node_energy_counter" to get
+// “raw accumulated-energy” and calculate power consumption from that
 		get_cluster_power(node_record_table_ptr, node_record_count,
 				  &alloc_watts, &used_watts);
 		job_power_list = get_job_power(job_list, node_record_table_ptr);
 //FIXME: power re-balancing decisions here
 		FREE_NULL_LIST(job_power_list);
+		_set_power_caps(node_power_list);
 		last_balance_time = time(NULL);
 		unlock_slurmctld(read_locks);
 		_load_config();
 	}
 	return NULL;
+}
+
+static void _set_power_caps(List node_power_list)
+{
+	ListIterator node_iterator;
+	power_by_nodes_t *node_power;
+	char *cmd_resp, *script_argv[7], watts[32];
+	int status = 0;
+
+	if (!node_power_list)
+		return;
+
+	script_argv[0] = capmc_path;
+	script_argv[1] = "set_power_cap";
+	script_argv[2] = "--nids";
+	/* script_argv[3] = TBD */
+	script_argv[4] = "--watts";
+	script_argv[5] = watts;
+	script_argv[6] = NULL;
+
+	/* Pass 1, decrease power for select nodes */
+	node_iterator = list_iterator_create(node_power_list);
+	while ((node_power = (power_by_nodes_t *) list_next(node_iterator))) {
+		if (node_power->increase_power)
+			continue;
+		script_argv[3] = node_power->nodes;
+		snprintf(watts, sizeof(watts), "%u", node_power->alloc_watts);
+		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
+					    2000, &status);
+		if (status != 0) {
+			error("%s: capmc %s %s %s %s %s: %s",
+			      __func__, script_argv[1], script_argv[2],
+			      script_argv[3], script_argv[4], script_argv[5],
+			      cmd_resp);
+			xfree(cmd_resp);
+			list_iterator_destroy(node_iterator);
+			return;
+		} else if (debug_flag & DEBUG_FLAG_POWER) {
+			info("%s: capmc %s %s %s %s %s",
+			      __func__, script_argv[1], script_argv[2],
+			      script_argv[3], script_argv[4], script_argv[5]);
+		}
+		xfree(cmd_resp);
+	}
+
+	/* Pass 2, increase power for select nodes */
+	list_iterator_reset(node_iterator);
+	while ((node_power = (power_by_nodes_t *) list_next(node_iterator))) {
+		if (!node_power->increase_power)
+			continue;
+		script_argv[3] = node_power->nodes;
+		snprintf(watts, sizeof(watts), "%u", node_power->alloc_watts);
+		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
+					    2000, &status);
+		if (status != 0) {
+			error("%s: capmc %s %s %s %s %s: %s",
+			      __func__, script_argv[1], script_argv[2],
+			      script_argv[3], script_argv[4], script_argv[5],
+			      cmd_resp);
+		} else if (debug_flag & DEBUG_FLAG_POWER) {
+			info("%s: capmc %s %s %s %s %s",
+			      __func__, script_argv[1], script_argv[2],
+			      script_argv[3], script_argv[4], script_argv[5]);
+		}
+		xfree(cmd_resp);
+	}
+	list_iterator_destroy(node_iterator);
 }
 
 /* Terminate power thread */
