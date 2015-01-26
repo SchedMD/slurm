@@ -183,6 +183,7 @@
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
 int error_exit = 1;
+int ignore_pbs = 0;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -1086,6 +1087,8 @@ static void _opt_pbs_batch_script(const char *file, const void *body, int size,
 	int lineno = 0;
 	int i;
 
+	if (ignore_pbs)
+		return;
 	if (getenv("SBATCH_IGNORE_PBS"))
 		return;
 	for (i = 0; i < cmd_argc; i++) {
@@ -1676,8 +1679,7 @@ static void _set_options(int argc, char **argv)
 			opt.req_switch = _get_int(optarg, "switches");
 			break;
 		case LONG_OPT_IGNORE_PBS:
-			/* Ignore here, needed to process earlier,
-			 * when the batch script was read. */
+			ignore_pbs = 1;
 			break;
 		case LONG_OPT_TEST_ONLY:
 			opt.test_only = true;
