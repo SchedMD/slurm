@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove some misleading logs related to non-consumable GRES.
  -- Allow --ignore-pbs to take effect when read as an #SBATCH argument.
  -- Fix Slurmdb::clusters_get() in perl api from not returning information.
+ -- Fix TaskPluginParam=Cpusets from logging error message about not being able
+    to remove cpuset dir which was already removed by the release_agent.
 
 * Changes in Slurm 14.11.3
 ==========================

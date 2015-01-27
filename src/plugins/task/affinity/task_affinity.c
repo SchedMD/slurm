@@ -517,7 +517,9 @@ extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task
 		error("%s: cpuset path too long", __func__);
 		return SLURM_ERROR;
 	}
-	if (rmdir(path) != 0) {
+	/* Only error out if it failed to remove the cpuset dir. The cpuset
+	 * dir may have already been removed by the release_agent. */
+	if (rmdir(path) != 0 && errno != ENOENT) {
 		error("%s: rmdir(%s) failed %m", __func__, path);
 		return SLURM_ERROR;
 	}
