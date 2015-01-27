@@ -46,6 +46,7 @@
 #include "src/common/power.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
@@ -53,6 +54,7 @@
  * working.  If you need to add fields, add them at the end of the structure.
  */
 typedef struct slurm_power_ops {
+	void		(*job_start)	(struct job_record *job_ptr);
 } slurm_power_ops_t;
 
 /*
@@ -60,6 +62,7 @@ typedef struct slurm_power_ops {
  * declared for slurm_power_ops_t.
  */
 static const char *syms[] = {
+	"power_p_job_start"
 };
 
 static int g_context_cnt = -1;
@@ -130,6 +133,7 @@ extern int power_g_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
+	slurm_mutex_lock(&g_context_lock);
 	init_run = false;
 	for (i = 0; i < g_context_cnt; i++) {
 		if (g_context[i]) {
@@ -145,6 +149,18 @@ extern int power_g_fini(void)
 
 fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
+}
+
+/* Note that a job has been allocated resources and is ready to start */
+extern void power_g_job_start(struct job_record *job_ptr)
+{
+	int i;
+
+	(void) power_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++)
+		(*(ops[i].job_start))(job_ptr);
+	slurm_mutex_unlock(&g_context_lock);
 }
 
 /* Pack a power management data structure */

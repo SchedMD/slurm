@@ -447,3 +447,9 @@ extern void fini(void)
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
+
+/* Note that a job has been allocated resources and is ready to start */
+extern void power_p_job_start(struct job_record *job_ptr)
+{
+	set_node_new_job(job_ptr, node_record_table_ptr);
+}

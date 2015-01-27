@@ -60,6 +60,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather.h"
 #include "src/common/timers.h"
@@ -748,6 +749,7 @@ next_part:		part_ptr = (struct part_record *)
 			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
 			     job_ptr->job_id, job_ptr->nodes,
 			     job_ptr->total_cpus);
+			power_g_job_start(job_ptr);
 			if (job_ptr->details->prolog_running == 0) {
 				launch_msg = build_launch_job_msg(job_ptr,
 							msg->protocol_version);
@@ -1446,6 +1448,7 @@ next_task:
 			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
 			     job_ptr->nodes, job_ptr->total_cpus);
 #endif
+			power_g_job_start(job_ptr);
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
 			else if (job_ptr->details->prolog_running == 0)

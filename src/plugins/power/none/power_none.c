@@ -98,3 +98,9 @@ extern int fini(void)
 {
 	return SLURM_SUCCESS;
 }
+
+/* Note that a job has been allocated resources and is ready to start */
+extern void power_p_job_start(struct job_record *job_ptr)
+{
+	return;
+}

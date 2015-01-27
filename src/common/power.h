@@ -43,6 +43,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*****************************************************************************\
  * PLUGIN FUNCTIONS
@@ -52,6 +53,9 @@ extern int power_g_init (void);
 
 /* terminate the power plugin and free all memory */
 extern int power_g_fini (void);
+
+/* Note that a job has been allocated resources and is ready to start */
+extern void power_g_job_start(struct job_record *job_ptr);
 
 /*****************************************************************************\
  * GENERIC DATA MOVEMENT FUNCTIONS

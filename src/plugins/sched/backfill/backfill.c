@@ -72,6 +72,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/power.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
@@ -1442,6 +1443,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 			     job_ptr->array_job_id, job_ptr->array_task_id,
 			     job_ptr->job_id, job_ptr->nodes);
 		}
+		power_g_job_start(job_ptr);
 		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr->job_id);
 		else if ((job_ptr->details == NULL) ||

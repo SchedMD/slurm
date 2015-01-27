@@ -289,3 +289,31 @@ extern char *power_run_script(char *script_name, char *script_path,
 	}
 	return resp;
 }
+
+/* For a newly starting job, set "new_job_time" in each of it's nodes
+ * NOTE: The job and node data structures must be locked on function entry */
+extern void set_node_new_job(struct job_record *job_ptr,
+			     struct node_record *node_record_table_ptr)
+{
+	int i, i_first, i_last;
+	struct node_record *node_ptr;
+	time_t now = time(NULL);
+
+	if (!job_ptr || !job_ptr->node_bitmap) {
+		error("%s: job_ptr node_bitmap is NULL", __func__);
+		return;
+	}
+
+	i_first = bit_ffs(job_ptr->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(job_ptr->node_bitmap);
+	else
+		i_last = i_first - 1;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		node_ptr = node_record_table_ptr + i;
+		if (node_ptr->power)
+			node_ptr->power->new_job_time = now;
+	}
+}
