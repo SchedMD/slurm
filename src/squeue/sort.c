@@ -640,11 +640,11 @@ static int _sort_job_by_time_left(void *void1, void *void2)
 	if ((job1->time_limit == INFINITE) || (job1->time_limit == NO_VAL))
 		time1 = INFINITE;
 	else
-		time1 = job1->time_limit - job_time_used(job1);
+		time1 = job1->time_limit * 60 - job_time_used(job1);
 	if ((job2->time_limit == INFINITE) || (job2->time_limit == NO_VAL))
 		time2 = INFINITE;
 	else
-		time2 = job2->time_limit - job_time_used(job2);
+		time2 = job2->time_limit * 60 - job_time_used(job2);
 	diff = _diff_time(time1, time2);
 
 	if (reverse_order)
