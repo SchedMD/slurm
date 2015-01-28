@@ -658,15 +658,14 @@ extern int init(void)
 	}
 
 	_load_config();
-	if (cap_watts == 0)
-		return SLURM_SUCCESS;
-
-	slurm_attr_init(&attr);
-	/* Since we do a join on this later we don't make it detached */
-	if (pthread_create(&power_thread, &attr, _power_agent, NULL))
-		error("Unable to start power thread: %m");
+	if (cap_watts) {
+		slurm_attr_init(&attr);
+		/* Since we do a join on thread later, don't make it detached */
+		if (pthread_create(&power_thread, &attr, _power_agent, NULL))
+			error("Unable to start power thread: %m");
+		slurm_attr_destroy(&attr);
+	}
 	pthread_mutex_unlock(&thread_flag_mutex);
-	slurm_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
 }
