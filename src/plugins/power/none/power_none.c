@@ -99,6 +99,18 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+/* Read the configuration file */
+extern void power_p_reconfig(void)
+{
+	return;
+}
+
+/* Note that a suspended job has been resumed */
+extern void power_p_job_resume(struct job_record *job_ptr)
+{
+	return;
+}
+
 /* Note that a job has been allocated resources and is ready to start */
 extern void power_p_job_start(struct job_record *job_ptr)
 {

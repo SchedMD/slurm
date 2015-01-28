@@ -1402,6 +1402,7 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 \fBPowerParameters\fR
 System power management parameters.
 The supported parameters are specific to the \fBPowerPlugin\fR.
+Changes to this value take effect when the Slurm daemons are reconfigured.
 More information about system power management is available here
 <http://slurm.schedmd.com/power_mgmt.html>.
 Options current supported by any plugins are listed below.
@@ -1438,7 +1439,7 @@ Specifies the maximum rate of change in the power cap for a node where the
 actual power usage is within \fBupper_threshold\fR (see below) of the power cap.
 Value represents a percentage of the difference between a node's minimum and
 maximum power consumption.
-The default value is 10 percent.
+The default value is 20 percent.
 Supported by the power/cray plugin.
 .TP
 \fBlower_threshold=#\fR
@@ -1446,6 +1447,13 @@ Specify a lower power consumption threshold.
 If a node's current power consumption is below this percentage of its current
 cap, then its power cap will be reduced.
 The default value is 90 percent.
+Supported by the power/cray plugin.
+.TP
+\fBrecent_job=#\fR
+If a job has started or resumed execution (from suspend) on a compute node
+within this number of seconds from the current time, the node's power cap will
+be increased to the maximum.
+The default value is 300 seconds.
 Supported by the power/cray plugin.
 .TP
 \fBupper_threshold=#\fR
@@ -1462,6 +1470,7 @@ Identifies the plugin used for system power management.
 Currently supported plugins include:
 \fBcray\fR and
 \fBnone\fR (default).
+Changes to this value require restarting Slurm daemons to take effect.
 More information about system power management is available here
 <http://slurm.schedmd.com/power_mgmt.html>.
 

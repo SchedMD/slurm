@@ -54,7 +54,9 @@
  * working.  If you need to add fields, add them at the end of the structure.
  */
 typedef struct slurm_power_ops {
+	void		(*job_resume)	(struct job_record *job_ptr);
 	void		(*job_start)	(struct job_record *job_ptr);
+	void		(*reconfig)	(void);
 } slurm_power_ops_t;
 
 /*
@@ -62,7 +64,9 @@ typedef struct slurm_power_ops {
  * declared for slurm_power_ops_t.
  */
 static const char *syms[] = {
-	"power_p_job_start"
+	"power_p_job_resume",
+	"power_p_job_start",
+	"power_p_reconfig"
 };
 
 static int g_context_cnt = -1;
@@ -72,6 +76,7 @@ static char *power_plugin_list = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
+/* Initialize the power plugin */
 extern int power_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -125,6 +130,7 @@ fini:
 	return rc;
 }
 
+/* Terminate the power plugin and free all memory */
 extern int power_g_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
@@ -149,6 +155,30 @@ extern int power_g_fini(void)
 
 fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
+}
+
+/* Read the configuration file */
+extern void power_g_reconfig(void)
+{
+	int i;
+
+	(void) power_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++)
+		(*(ops[i].reconfig))();
+	slurm_mutex_unlock(&g_context_lock);
+}
+
+/* Note that a suspended job has been resumed */
+extern void power_g_job_resume(struct job_record *job_ptr)
+{
+	int i;
+
+	(void) power_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++)
+		(*(ops[i].job_resume))(job_ptr);
+	slurm_mutex_unlock(&g_context_lock);
 }
 
 /* Note that a job has been allocated resources and is ready to start */

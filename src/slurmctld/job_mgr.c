@@ -71,6 +71,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_priority.h"
@@ -12434,6 +12435,7 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 		if (!IS_JOB_SUSPENDED(job_ptr))
 			return ESLURM_JOB_NOT_SUSPENDED;
 		rc = _resume_job_nodes(job_ptr, indf_susp);
+		power_g_job_resume(job_ptr);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 		_suspend_job(job_ptr, op, indf_susp);

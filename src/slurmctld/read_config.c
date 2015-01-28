@@ -67,14 +67,15 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_spec.h"
+#include "src/common/power.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_route.h"
+#include "src/common/strnatcmp.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
-#include "src/common/strnatcmp.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/burst_buffer.h"
@@ -1006,6 +1007,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	rehash_node();
 	slurm_topo_build_config();
 	route_g_reconfigure();
+	power_g_reconfig();
 	cpu_freq_reconfig();
 
 	rehash_jobs();

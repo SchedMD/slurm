@@ -63,7 +63,7 @@
 #define DEFAULT_CAPMC_PATH        "/opt/cray/capmc/default/bin/capmc"
 #define DEFAULT_CAP_WATTS         0
 #define DEFAULT_DECREASE_RATE     50
-#define DEFAULT_INCREASE_RATE     10
+#define DEFAULT_INCREASE_RATE     20
 #define DEFAULT_LOWER_THRESHOLD   90
 #define DEFAULT_UPPER_THRESHOLD   95
 #define DEFAULT_RECENT_JOB        300
@@ -128,6 +128,7 @@ static uint64_t debug_flag = 0;
 static uint32_t decrease_rate = DEFAULT_DECREASE_RATE;
 static uint32_t increase_rate = DEFAULT_INCREASE_RATE;
 static uint32_t lower_threshold = DEFAULT_LOWER_THRESHOLD;
+static uint32_t recent_job = DEFAULT_RECENT_JOB;
 static uint32_t upper_threshold = DEFAULT_UPPER_THRESHOLD;
 static bool stop_power = false;
 static pthread_t power_thread = 0;
@@ -217,6 +218,15 @@ static void _load_config(void)
 		}
 	}
 
+	if ((tmp_ptr = strstr(sched_params, "recent_job="))) {
+		recent_job = atoi(tmp_ptr + 11);
+		if (recent_job < 1) {
+			error("PowerParameters: recent_job=%u invalid",
+			      recent_job);
+			recent_job = DEFAULT_RECENT_JOB;
+		}
+	}
+
 	if ((tmp_ptr = strstr(sched_params, "upper_threshold="))) {
 		upper_threshold = atoi(tmp_ptr + 16);
 		if (upper_threshold < 1) {
@@ -230,9 +240,10 @@ static void _load_config(void)
 	if (debug_flag & DEBUG_FLAG_POWER) {
 		info("PowerParameters=balance_interval=%d,capmc_path=%s,"
 		     "cap_watts=%u,decrease_rate=%u,increase_rate=%u,"
-		     "lower_threashold=%u,upper_threshold=%u",
+		     "lower_threashold=%u,recent_job=%u,upper_threshold=%u",
 		     balance_interval, capmc_path, cap_watts, decrease_rate,
-		     increase_rate,lower_threshold, upper_threshold);
+		     increase_rate, lower_threshold, recent_job,
+		     upper_threshold);
 	}
 }
 
@@ -352,6 +363,24 @@ static void _json_parse_object(json_object *jobj, power_config_nodes_t *ent)
 	}
 }
 
+static void _my_sleep(int add_secs)
+{
+	struct timespec ts = {0, 0};
+	struct timeval  tv = {0, 0};
+
+	if (gettimeofday(&tv, NULL)) {		/* Some error */
+		sleep(1);
+		return;
+	}
+
+	ts.tv_sec  = tv.tv_sec + add_secs;
+	ts.tv_nsec = tv.tv_usec * 1000;
+	pthread_mutex_lock(&term_lock);
+	if (!stop_power)
+		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+	pthread_mutex_unlock(&term_lock);
+}
+
 /* Periodically attempt to re-balance power caps across nodes */
 extern void *_power_agent(void *args)
 {
@@ -367,7 +396,7 @@ extern void *_power_agent(void *args)
 
 	last_balance_time = time(NULL);
 	while (!stop_power) {
-		sleep(1);
+		_my_sleep(1);
 		if (stop_power)
 			break;
 
@@ -412,7 +441,7 @@ static List _rebalance_node_power(void)
 	struct node_record *node_ptr, *node_ptr2;
 	uint32_t alloc_power = 0, avail_power, ave_power, new_cap, tmp_u32;
 	int node_power_raise_cnt = 0;
-	time_t recent = time(NULL) - DEFAULT_RECENT_JOB;
+	time_t recent = time(NULL) - recent_job;
 	int i, j;
 
 	/* Lower caps on under used nodes */
@@ -654,6 +683,22 @@ extern void fini(void)
 		power_thread = 0;
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
+}
+
+/* Read the configuration file */
+extern void power_p_reconfig(void)
+{
+	pthread_mutex_lock(&thread_flag_mutex);
+	_load_config();
+	if (cap_watts == 0)
+		_stop_power_agent();
+	pthread_mutex_unlock(&thread_flag_mutex);
+}
+
+/* Note that a suspended job has been resumed */
+extern void power_p_job_resume(struct job_record *job_ptr)
+{
+	set_node_new_job(job_ptr, node_record_table_ptr);
 }
 
 /* Note that a job has been allocated resources and is ready to start */
