@@ -1787,7 +1787,7 @@ static void *_state_thread(void *no_data)
 
 	last_save_time = last_callback_time = time(NULL);
 	while (!thread_shutdown) {
-		sleep(1);
+		usleep(200000);
 
 		now = time(NULL);
 		if (difftime(now, last_callback_time) >= NONSTOP_EVENT_PERIOD) {
