@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix TaskPluginParam=Cpusets from logging error message about not being able
     to remove cpuset dir which was already removed by the release_agent.
  -- Fix sorting by time left in squeue.
+ -- Fix the file name substitution for job stderr when %A, %a %j and %u
+    are specified.
 
 * Changes in Slurm 14.11.3
 ==========================

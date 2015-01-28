@@ -167,7 +167,7 @@ extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t * job_ptr)
 	if (job_ptr == NULL)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
 	else if (job_ptr->std_err)
-		snprintf(buf, buf_size, "%s", job_ptr->std_err);
+		_fname_format(buf, buf_size, job_ptr, job_ptr->std_err);
 	else if (job_ptr->batch_flag == 0)
 		snprintf(buf, buf_size, "%s", "");
 	else if (job_ptr->std_out)
