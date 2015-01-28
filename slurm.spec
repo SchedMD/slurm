@@ -388,7 +388,7 @@ utilites will provide more information and greater depth of understanding
 %package pam_slurm
 Summary: PAM module for restricting access to compute nodes via Slurm
 Group: System Environment/Base
-Requires: slurm slurm-devel
+Requires: slurm
 BuildRequires: pam-devel
 Obsoletes: pam_slurm
 %description pam_slurm
