@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Added DebugFlags value of "Power".
  -- When caching user ids of AllowGroups use both getgrnam_r() and getgrent_r()
     then remove eventual duplicate entries.
+ -- Remove rpm dependency between slurm-pam and slurm-devel.
 
 * Changes in Slurm 15.08.0pre1
 ==============================
