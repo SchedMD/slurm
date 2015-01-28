@@ -1382,6 +1382,23 @@ May not exceed exceed 65533 minutes.
 A value of "UNLIMITED" is also supported.
 
 .TP
+\fBPluginDir\fR
+Identifies the places in which to look for SLURM plugins.
+This is a colon\-separated list of directories, like the PATH
+environment variable.
+The default value is "/usr/local/lib/slurm".
+
+.TP
+\fBPlugStackConfig\fR
+Location of the config file for SLURM stackable plugins that use
+the Stackable Plugin Architecture for Node job (K)control (SPANK).
+This provides support for a highly configurable set of plugins to
+be called before and/or after execution of each task spawned as
+part of a user's job step.  Default location is "plugstack.conf"
+in the same directory as the system slurm.conf. For more information
+on SPANK plugins, see the \fBspank\fR(8) manual.
+
+.TP
 \fBPowerParameters\fR
 System power management parameters.
 The supported parameters are specific to the \fBPowerPlugin\fR.
@@ -1400,6 +1417,43 @@ Supported by the power/cray plugin.
 Specifies the absolute path of the capmc command.
 The default value is "/opt/cray/capmc/default/bin/capmc".
 Supported by the power/cray plugin.
+.TP
+\fBcap_watts=#\fR
+Specifies the power limit to be established across all compute nodes managed
+by Slurm.
+The default value is no limit.
+Supported by the power/cray plugin.
+.TP
+\fBdecrease_rate=#\fR
+Specifies the maximum rate of change in the power cap for a node where the
+actual power usage is below the power cap by an amount greater than
+\fBlower_threshold\fR (see below).
+Value represents a percentage of the difference between a node's minimum and
+maximum power consumption.
+The default value is 50 percent.
+Supported by the power/cray plugin.
+.TP
+\fBincrease_rate=#\fR
+Specifies the maximum rate of change in the power cap for a node where the
+actual power usage is within \fBupper_threshold\fR (see below) of the power cap.
+Value represents a percentage of the difference between a node's minimum and
+maximum power consumption.
+The default value is 10 percent.
+Supported by the power/cray plugin.
+.TP
+\fBlower_threshold=#\fR
+Specify a lower power consumption threshold.
+If a node's current power consumption is below this percentage of its current
+cap, then its power cap will be reduced.
+The default value is 90 percent.
+Supported by the power/cray plugin.
+.TP
+\fBupper_threshold=#\fR
+Specify an upper power consumption threshold.
+If a node's current power consumption is above this percentage of its current
+cap, then its power cap will be increased to the extent possible.
+The default value is 95 percent.
+Supported by the power/cray plugin.
 .RE
 
 .TP
@@ -1410,23 +1464,6 @@ Currently supported plugins include:
 \fBnone\fR (default).
 More information about system power management is available here
 <http://slurm.schedmd.com/power_mgmt.html>.
-
-.TP
-\fBPluginDir\fR
-Identifies the places in which to look for SLURM plugins.
-This is a colon\-separated list of directories, like the PATH
-environment variable.
-The default value is "/usr/local/lib/slurm".
-
-.TP
-\fBPlugStackConfig\fR
-Location of the config file for SLURM stackable plugins that use
-the Stackable Plugin Architecture for Node job (K)control (SPANK).
-This provides support for a highly configurable set of plugins to
-be called before and/or after execution of each task spawned as
-part of a user's job step.  Default location is "plugstack.conf"
-in the same directory as the system slurm.conf. For more information
-on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
 \fBPreemptMode\fR

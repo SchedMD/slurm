@@ -83,10 +83,16 @@ extern void get_cluster_power(struct node_record *node_record_table_ptr,
 	*used_watts  = 0;
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if (node_ptr->power)
+//FIXME: Where will current watts come from? Depends upon plugin
+//		if (node_ptr->energy && node_ptr->energy->current_watts) {
+//			node_ptr->power->current_watts +=
+//				node_ptr->energy->current_watts;
+//		}
+
+		if (node_ptr->power) {
 			*alloc_watts += node_ptr->power->cap_watts;
-		if (node_ptr->energy)
-			*used_watts += node_ptr->energy->current_watts;
+			*used_watts += node_ptr->power->current_watts;
+		}	
 	}
 
 	if (debug_flag & DEBUG_FLAG_POWER) {

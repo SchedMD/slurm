@@ -59,8 +59,14 @@
 #include "src/plugins/power/common/power_common.h"
 #include "src/slurmctld/locks.h"
 
-#define DEFAULT_BALANCE_INTERVAL 30
-#define DEFAULT_CAPMC_PATH  "/opt/cray/capmc/default/bin/capmc"
+#define DEFAULT_BALANCE_INTERVAL  30
+#define DEFAULT_CAPMC_PATH        "/opt/cray/capmc/default/bin/capmc"
+#define DEFAULT_CAP_WATTS         0
+#define DEFAULT_DECREASE_RATE     50
+#define DEFAULT_INCREASE_RATE     10
+#define DEFAULT_LOWER_THRESHOLD   90
+#define DEFAULT_UPPER_THRESHOLD   95
+#define DEFAULT_RECENT_JOB        300
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -117,7 +123,12 @@ const uint32_t plugin_version   = 100;
 /*********************** local variables *********************/
 static int balance_interval = DEFAULT_BALANCE_INTERVAL;
 static char *capmc_path = NULL;
+static uint32_t cap_watts = DEFAULT_CAP_WATTS;
 static uint64_t debug_flag = 0;
+static uint32_t decrease_rate = DEFAULT_DECREASE_RATE;
+static uint32_t increase_rate = DEFAULT_INCREASE_RATE;
+static uint32_t lower_threshold = DEFAULT_LOWER_THRESHOLD;
+static uint32_t upper_threshold = DEFAULT_UPPER_THRESHOLD;
 static bool stop_power = false;
 static pthread_t power_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -131,13 +142,14 @@ static power_config_nodes_t *
 static void _json_parse_object(json_object *jobj, power_config_nodes_t *ent);
 static void _load_config(void);
 extern void *_power_agent(void *args);
+static List _rebalance_node_power(void);
 static void _set_power_caps(List node_power_list);
 static void _stop_power_agent(void);
 
 /* Parse PowerParameters configuration */
 static void _load_config(void)
 {
-	char *sched_params, *tmp_ptr;
+	char *end_ptr = NULL, *sched_params, *tmp_ptr;
 
 	debug_flag = slurm_get_debug_flags();
 	sched_params = slurm_get_power_parameters();
@@ -164,10 +176,63 @@ static void _load_config(void)
 		capmc_path = xstrdup(DEFAULT_CAPMC_PATH);
 	}
 
+	/*                                   12345678901234567890 */
+	if ((tmp_ptr = strstr(sched_params, "cap_watts="))) {
+		cap_watts = strtol(tmp_ptr + 10, &end_ptr, 10);
+		if (cap_watts < 1) {
+			error("PowerParameters: cap_watts=%d invalid",
+			      cap_watts);
+			cap_watts = DEFAULT_CAP_WATTS;
+		} else if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+			cap_watts *= 1000;
+		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+			cap_watts *= 1000000;
+		}
+	}
+
+	if ((tmp_ptr = strstr(sched_params, "decrease_rate="))) {
+		decrease_rate = atoi(tmp_ptr + 14);
+		if (decrease_rate < 1) {
+			error("PowerParameters: decrease_rate=%u invalid",
+			      balance_interval);
+			lower_threshold = DEFAULT_DECREASE_RATE;
+		}
+	}
+
+	if ((tmp_ptr = strstr(sched_params, "increase_rate="))) {
+		increase_rate = atoi(tmp_ptr + 14);
+		if (increase_rate < 1) {
+			error("PowerParameters: increase_rate=%u invalid",
+			      balance_interval);
+			lower_threshold = DEFAULT_INCREASE_RATE;
+		}
+	}
+
+	if ((tmp_ptr = strstr(sched_params, "lower_threshold="))) {
+		lower_threshold = atoi(tmp_ptr + 16);
+		if (lower_threshold < 1) {
+			error("PowerParameters: lower_threshold=%u invalid",
+			      lower_threshold);
+			lower_threshold = DEFAULT_LOWER_THRESHOLD;
+		}
+	}
+
+	if ((tmp_ptr = strstr(sched_params, "upper_threshold="))) {
+		upper_threshold = atoi(tmp_ptr + 16);
+		if (upper_threshold < 1) {
+			error("PowerParameters: upper_threshold=%u invalid",
+			      upper_threshold);
+			upper_threshold = DEFAULT_UPPER_THRESHOLD;
+		}
+	}
+
 	xfree(sched_params);
 	if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s configuration: balance_interval=%d capmc_path=%s",
-		     __func__, balance_interval, capmc_path);
+		info("PowerParameters=balance_interval=%d,capmc_path=%s,"
+		     "cap_watts=%u,decrease_rate=%u,increase_rate=%u,"
+		     "lower_threashold=%u,upper_threshold=%u",
+		     balance_interval, capmc_path, cap_watts, decrease_rate,
+		     increase_rate,lower_threshold, upper_threshold);
 	}
 }
 
@@ -190,15 +255,15 @@ static void _get_capabilities(void)
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 2000,
 				    &status);
 	if (status != 0) {
-		error("%s: capmc %s %s: %s",
-		      __func__, script_argv[1], script_argv[2], cmd_resp);
+		error("%s: capmc %s: %s",
+		      __func__, script_argv[1], cmd_resp);
 		xfree(cmd_resp);
 		return;
 	} else if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: capmc %s %s",
-		      __func__, script_argv[1], script_argv[2]);
+		info("%s: capmc %s", __func__, script_argv[1]);
 	}
-
+	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0'))
+		return;
 
 	j = json_tokener_parse(cmd_resp);
 	if (j == NULL) {
@@ -320,14 +385,153 @@ extern void *_power_agent(void *args)
 		get_cluster_power(node_record_table_ptr, node_record_count,
 				  &alloc_watts, &used_watts);
 		job_power_list = get_job_power(job_list, node_record_table_ptr);
-//FIXME: power re-balancing decisions here
+		node_power_list = _rebalance_node_power();
+		unlock_slurmctld(read_locks);
 		FREE_NULL_LIST(job_power_list);
 		_set_power_caps(node_power_list);
+		FREE_NULL_LIST(node_power_list);
 		last_balance_time = time(NULL);
-		unlock_slurmctld(read_locks);
-		_load_config();
 	}
 	return NULL;
+}
+
+static void _node_power_del(void *x)
+{
+	power_by_nodes_t *node_power = (power_by_nodes_t *) x;
+
+	if (node_power) {
+		xfree(node_power->nodes);
+		xfree(node_power);
+	}
+}
+
+static List _rebalance_node_power(void)
+{
+	List node_power_list = NULL;
+	power_by_nodes_t *node_power;
+	struct node_record *node_ptr, *node_ptr2;
+	uint32_t alloc_power = 0, avail_power, ave_power, new_cap, tmp_u32;
+	int node_power_raise_cnt = 0;
+	time_t recent = time(NULL) - DEFAULT_RECENT_JOB;
+	int i, j;
+
+	/* Lower caps on under used nodes */
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!node_ptr->power)
+			continue;
+		node_ptr->power->new_cap_watts = 0;
+		if (!node_ptr->power->cap_watts)	/* Not initialized */
+			continue;
+		if (node_ptr->power->current_watts <
+		    (node_ptr->power->cap_watts * lower_threshold)) {
+			/* Lower cap by lower of
+			 * 1) decrease_rate OR
+			 * 2) half the excess power in the cap */
+			ave_power = (node_ptr->power->cap_watts -
+				     node_ptr->power->current_watts) / 2;
+			tmp_u32 = node_ptr->power->max_watts -
+				  node_ptr->power->min_watts;
+			tmp_u32 = (ave_power * decrease_rate) / 100;
+			new_cap = node_ptr->power->cap_watts -
+				  MIN(tmp_u32, ave_power);
+			node_ptr->power->new_cap_watts =
+				MAX(new_cap, node_ptr->power->min_watts);
+			alloc_power += node_ptr->power->new_cap_watts;
+		} else if (node_ptr->power->current_watts <
+			   (node_ptr->power->cap_watts * upper_threshold)) {
+			node_ptr->power->new_cap_watts =
+				node_ptr->power->cap_watts;
+			alloc_power += node_ptr->power->new_cap_watts;
+		} else {
+			node_power_raise_cnt++;
+		}
+	}
+
+	avail_power = cap_watts - alloc_power;
+	if (debug_flag & DEBUG_FLAG_POWER) {
+		info("%s: distributing %u watts over %d nodes",
+		     __func__, avail_power, node_power_raise_cnt);
+	}
+
+	/* Distribute rest of power cap on remaining nodes. */
+	if (node_power_raise_cnt) {
+		ave_power = avail_power / node_power_raise_cnt;
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i < node_record_count; i++, node_ptr++) {
+			if (!node_ptr->power)
+				continue;
+			if (node_ptr->power->new_cap_watts)    /* Already set */
+				continue;
+			if ((node_ptr->power->new_job_time == 0) ||
+			    (node_ptr->power->new_job_time > recent) ||
+			    (node_ptr->power->cap_watts == 0)) {
+				/* Recent change in workload, do full reset */
+				new_cap = ave_power;
+			} else {
+				/* No recent change in workload, do partial
+				 * power cap reset (add up to increase_rate) */
+				tmp_u32 = node_ptr->power->max_watts -
+					  node_ptr->power->min_watts;
+				tmp_u32 = (tmp_u32 * increase_rate) / 100;
+				new_cap = node_ptr->power->cap_watts + tmp_u32;
+				new_cap = MIN(new_cap, ave_power);
+			}
+			node_ptr->power->new_cap_watts =
+				MAX(new_cap, node_ptr->power->min_watts);
+			node_ptr->power->new_cap_watts =
+				MIN(node_ptr->power->new_cap_watts,
+				    node_ptr->power->max_watts);
+			avail_power -= node_ptr->power->new_cap_watts;
+			node_power_raise_cnt--;
+			if (node_power_raise_cnt == 0)
+				break;	/* No more nodes to modify */
+			if (node_ptr->power->new_cap_watts != ave_power) {
+				/* Re-normalize */
+				ave_power = avail_power / node_power_raise_cnt;
+			}
+		}
+	}
+
+	/* Build table required updates to power caps */
+	node_power_list = list_create(_node_power_del);
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		bool increase_power = false;
+		if (!node_ptr->power)
+			continue;
+		if (node_ptr->power->cap_watts ==
+		    node_ptr->power->new_cap_watts)	/* No change */
+			continue;
+		if (node_ptr->power->cap_watts <
+		    node_ptr->power->new_cap_watts)
+			increase_power = true;
+		node_power = xmalloc(sizeof(power_by_nodes_t));
+		node_power->alloc_watts = node_ptr->power->new_cap_watts;
+		node_power->increase_power = increase_power;
+		node_power->nodes = node_ptr->name + 3;	/* Skip "nid" */
+		list_append(node_power_list, node_power);
+		/* Look for other nodes with same change */
+		for (j = 0, node_ptr2 = node_ptr + 1; j < node_record_count;
+		     j++, node_ptr2++) {
+			if (!node_ptr2->power)
+				continue;
+			if (node_ptr2->power->cap_watts ==
+			    node_ptr2->power->new_cap_watts)	/* No change */
+				continue;
+			if ((node_ptr2->power->cap_watts >
+			     node_ptr2->power->new_cap_watts) && increase_power)
+				continue;
+			/* Add NID to this update record */
+			xstrcat(node_power->nodes, ",");
+			xstrcat(node_power->nodes, node_ptr2->name + 3);
+			/* Avoid adding this node record again */
+			node_ptr2->power->cap_watts =
+				node_ptr2->power->new_cap_watts;
+		}
+	}
+
+	return node_power_list;
 }
 
 static void _set_power_caps(List node_power_list)
@@ -423,6 +627,10 @@ extern int init(void)
 		pthread_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
+
+	_load_config();
+	if (cap_watts == 0)
+		return SLURM_SUCCESS;
 
 	slurm_attr_init(&attr);
 	/* Since we do a join on this later we don't make it detached */
