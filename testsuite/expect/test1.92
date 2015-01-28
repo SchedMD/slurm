@@ -66,6 +66,7 @@ expect {
 	}
 	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
 		send_user "\nWARNING: can't test srun task distribution\n"
+		file delete $file_bash
 		exit 0
 	}
 	-re $prompt {
@@ -117,11 +118,13 @@ expect {
 
 if {$node_cnt != 2} {
 	send_user "\nWARNING: need 2 nodes to perform test\n"
+	file delete $file_bash
 	exit $exit_code
 }
 
 if {$task_cnt < (2 * $node_cnt)} {
         send_user "\nWARNING: need at least 2 CPUs per node, test is not applicable\n"
+	file delete $file_bash
         exit $exit_code
 }
 
@@ -302,4 +305,3 @@ if {$exit_code == 0} {
 }
 file delete $file_bash
 exit $exit_code
-
