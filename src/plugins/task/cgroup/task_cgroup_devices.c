@@ -43,14 +43,14 @@
 #include <glob.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <slurm/slurm_errno.h>
 #include <slurm/slurm.h>
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/slurmd/slurmd/slurmd.h"
-
+#include <slurm/slurm_errno.h>
 #include "src/common/xstring.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/slurmd/common/xcpuinfo.h"
+#include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #include "task_cgroup.h"
 

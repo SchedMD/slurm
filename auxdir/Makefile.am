@@ -39,5 +39,4 @@ EXTRA_DIST = \
     x_ac_setproctitle.m4 \
     x_ac_sgi_job.m4 \
     x_ac_slurm_ssl.m4 \
-    x_ac_sun_const.m4 \
-    x_ac_xcpu.m4
+    x_ac_sun_const.m4

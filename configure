@@ -997,7 +997,6 @@ with_ofed
 with_hdf5
 with_hwloc
 with_freeipmi
-with_xcpu
 with_rrdtool
 enable_glibtest
 enable_gtktest
@@ -1740,7 +1739,6 @@ Optional Packages:
   --with-hdf5=yes/no/PATH location of h5cc or h5pcc for HDF5 configuration
   --with-hwloc=PATH       Specify path to hwloc installation
   --with-freeipmi=PATH    Specify path to freeipmi installation
-  --with-xcpu=PATH        specify path to XCPU directory
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-mysql_config=PATH
                           Specify path to mysql_config binary
@@ -20801,42 +20799,6 @@ else
 fi
 
 
-
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether XCPU is enabled" >&5
-$as_echo_n "checking whether XCPU is enabled... " >&6; }
-
-   xcpu_default_dirs="/mnt"
-
-
-# Check whether --with-xcpu was given.
-if test "${with_xcpu+set}" = set; then :
-  withval=$with_xcpu;  try_path=$withval
-
-fi
-
-
-   ac_xcpu=no
-   for xcpu_dir in $try_path "" $xcpu_default_dirs; do
-      if test -d "$xcpu_dir/xcpu" ; then
-         ac_xcpu=yes
-
-$as_echo "#define HAVE_XCPU 1" >>confdefs.h
-
-
-cat >>confdefs.h <<_ACEOF
-#define XCPU_DIR "$xcpu_dir/xcpu"
-_ACEOF
-
-
-$as_echo "#define HAVE_FRONT_END 1" >>confdefs.h
-
-         break
-      fi
-   done
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_xcpu" >&5
-$as_echo "$ac_xcpu" >&6; }
 
 
   SEMAPHORE_SOURCES=""

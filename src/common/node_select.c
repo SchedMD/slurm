@@ -393,11 +393,6 @@ done:
 				      select_type_param_string(cr_type),
 				      cr_type);
 			}
-		} else {
-#ifdef HAVE_XCPU
-			error("%s is incompatible with XCPU use", type);
-			fatal("Use SelectType=select/linear");
-#endif
 		}
 	}
 

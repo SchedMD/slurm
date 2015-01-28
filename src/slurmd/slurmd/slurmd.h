@@ -61,8 +61,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_cred.h"
 
-#include "src/slurmd/common/xcpuinfo.h"
-
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 extern pid_t getpgid(pid_t pid);

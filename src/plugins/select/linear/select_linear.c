@@ -227,103 +227,6 @@ static uint16_t cr_type;
 static struct cr_record *cr_ptr = NULL;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#ifdef HAVE_XCPU
-#define XCPU_POLL_TIME 120
-static pthread_t xcpu_thread = 0;
-static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int agent_fini = 0;
-
-static void *xcpu_agent(void *args)
-{
-	int i;
-	static time_t last_xcpu_test;
-	char clone_path[128], down_node_list[512];
-	struct stat buf;
-	time_t now;
-
-	last_xcpu_test = time(NULL) + XCPU_POLL_TIME;
-	while (!agent_fini) {
-		now = time(NULL);
-
-		if (difftime(now, last_xcpu_test) >= XCPU_POLL_TIME) {
-			debug3("Running XCPU node state test");
-			down_node_list[0] = '\0';
-
-			for (i=0; i<select_node_cnt; i++) {
-				snprintf(clone_path, sizeof(clone_path),
-					 "%s/%s/xcpu/clone", XCPU_DIR,
-					 select_node_ptr[i].name);
-				if (stat(clone_path, &buf) == 0)
-					continue;
-				error("stat %s: %m", clone_path);
-				if ((strlen(select_node_ptr[i].name) +
-				     strlen(down_node_list) + 2) <
-				    sizeof(down_node_list)) {
-					if (down_node_list[0] != '\0')
-						strcat(down_node_list,",");
-					strcat(down_node_list,
-					       select_node_ptr[i].name);
-				} else
-					error("down_node_list overflow");
-			}
-			if (down_node_list[0]) {
-				slurm_drain_nodes(
-					down_node_list,
-					"select_linear: Can not stat XCPU ",
-					slurm_get_slurm_user_id());
-			}
-			last_xcpu_test = now;
-		}
-
-		sleep(1);
-	}
-	return NULL;
-}
-
-static int _init_status_pthread(void)
-{
-	pthread_attr_t attr;
-
-	slurm_mutex_lock( &thread_flag_mutex );
-	if ( xcpu_thread ) {
-		debug2("XCPU thread already running, not starting another");
-		slurm_mutex_unlock( &thread_flag_mutex );
-		return SLURM_ERROR;
-	}
-
-	slurm_attr_init( &attr );
-	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	pthread_create( &xcpu_thread, &attr, xcpu_agent, NULL);
-	slurm_mutex_unlock( &thread_flag_mutex );
-	slurm_attr_destroy( &attr );
-
-	return SLURM_SUCCESS;
-}
-
-static int _fini_status_pthread(void)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	slurm_mutex_lock( &thread_flag_mutex );
-	if ( xcpu_thread ) {
-		agent_fini = 1;
-		for (i=0; i<4; i++) {
-			sleep(1);
-			if (pthread_kill(xcpu_thread, 0)) {
-				xcpu_thread = 0;
-				break;
-			}
-		}
-		if ( xcpu_thread ) {
-			error("could not kill XCPU agent thread");
-			rc = SLURM_ERROR;
-		}
-	}
-	slurm_mutex_unlock( &thread_flag_mutex );
-	return rc;
-}
-#endif
-
 /* Add job id to record of jobs running on this node */
 static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id)
 {
@@ -3330,9 +3233,7 @@ static int  _cr_job_list_sort(void *x, void *y)
 extern int init ( void )
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	rc = _init_status_pthread();
-#endif
+
 	cr_type = slurmctld_conf.select_type_param;
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
@@ -3343,9 +3244,7 @@ extern int init ( void )
 extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	rc = _fini_status_pthread();
-#endif
+
 	cr_fini_global_core_data();
 	slurm_mutex_lock(&cr_mutex);
 	_free_cr(cr_ptr);
@@ -3518,29 +3417,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	int i;
-	char clone_path[128];
 
-	xassert(job_ptr);
-	xassert(job_ptr->node_bitmap);
-
-	for (i=0; i<select_node_cnt; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		snprintf(clone_path, sizeof(clone_path),
-			 "%s/%s/xcpu/clone", XCPU_DIR,
-			 select_node_ptr[i].name);
-		if (chown(clone_path, (uid_t)job_ptr->user_id,
-			  (gid_t)job_ptr->group_id)) {
-			error("chown %s: %m", clone_path);
-			rc = SLURM_ERROR;
-		} else {
-			debug("chown %s to %u", clone_path,
-			      job_ptr->user_id);
-		}
-	}
-#endif
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
 		_init_node_cr();
@@ -3610,20 +3487,6 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	int i = node_ptr - node_record_table_ptr;
-	char clone_path[128];
-
-	if (bit_test(job_ptr->node_bitmap, i) == 0)
-		continue;
-	snprintf(clone_path, sizeof(clone_path), "%s/%s/xcpu/clone", XCPU_DIR,
-		 node_ptr->name);
-	if (chown(clone_path, (uid_t)0, (gid_t)0)) {
-		error("chown %s: %m", clone_path);
-		rc = SLURM_ERROR;
-	} else
-		debug("chown %s to 0", clone_path);
-#endif
 
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
@@ -3645,23 +3508,7 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	int i;
-	char clone_path[128];
 
-	for (i=0; i<select_node_cnt; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		snprintf(clone_path, sizeof(clone_path), "%s/%s/xcpu/clone",
-			 XCPU_DIR, select_node_ptr[i].name);
-		if (chown(clone_path, (uid_t)0, (gid_t)0)) {
-			error("chown %s: %m", clone_path);
-			rc = SLURM_ERROR;
-		} else {
-			debug("chown %s to 0", clone_path);
-		}
-	}
-#endif
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
 		_init_node_cr();

@@ -1290,8 +1290,6 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    s_p_get_string(&tmp, "Shared", dflt)) {
 			if (strcasecmp(tmp, "NO") == 0)
 				p->max_share = 1;
-#ifndef HAVE_XCPU
-			/* Only "Shared=NO" is valid on XCPU systems */
 			else if (strcasecmp(tmp, "EXCLUSIVE") == 0)
 				p->max_share = 0;
 			else if (strncasecmp(tmp, "YES:", 4) == 0) {
@@ -1314,7 +1312,6 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 					p->max_share = i | SHARED_FORCE;
 			} else if (strcasecmp(tmp, "FORCE") == 0)
 				p->max_share = 4 | SHARED_FORCE;
-#endif
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
 				_destroy_partitionname(p);

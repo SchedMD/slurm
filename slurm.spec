@@ -422,7 +422,6 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 	%{?with_proctrack:--with-proctrack=%{?with_proctrack}}\
 	%{?with_cpusetdir:--with-cpusetdir=%{?with_cpusetdir}} \
 	%{?with_apbasildir:--with-apbasildir=%{?with_apbasildir}} \
-	%{?with_xcpu:--with-xcpu=%{?with_xcpu}} \
 	%{?with_mysql_config:--with-mysql_config=%{?with_mysql_config}} \
 	%{?with_pg_config:--with-pg_config=%{?with_pg_config}} \
 	%{?with_ssl:--with-ssl=%{?with_ssl}} \

@@ -45,23 +45,21 @@
 #include <inttypes.h>
 #endif
 
-#include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
-#include "src/common/log.h"
-#include "src/slurmd/slurmd/slurmd.h"
-
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-#include "src/slurmd/common/xcgroup_read_config.h"
-#include "src/slurmd/common/xcgroup.h"
-
-#include "src/common/xstring.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "src/common/log.h"
+#include "src/common/xstring.h"
+#include "src/slurmd/common/xcpuinfo.h"
+#include "src/slurmd/common/xcgroup_read_config.h"
+#include "src/slurmd/common/xcgroup.h"
+#include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

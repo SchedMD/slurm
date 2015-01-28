@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- When caching user ids of AllowGroups use both getgrnam_r() and getgrent_r()
     then remove eventual duplicate entries.
  -- Remove rpm dependency between slurm-pam and slurm-devel.
+ -- Remove support for the XCPU (cluster management) package.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

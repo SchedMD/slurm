@@ -187,7 +187,7 @@ typedef enum {
 #define CLUSTER_FLAG_BGP    0x00000004 /* This is a bluegene/p cluster */
 #define CLUSTER_FLAG_BGQ    0x00000008 /* This is a bluegene/q cluster */
 #define CLUSTER_FLAG_SC     0x00000010 /* This is a sun constellation cluster */
-#define CLUSTER_FLAG_XCPU   0x00000020 /* This has xcpu */
+#define CLUSTER_FLAG_XCPU   0x00000020 /* This has xcpu, removed v15.08 */
 #define CLUSTER_FLAG_AIX    0x00000040 /* This is an aix cluster */
 #define CLUSTER_FLAG_MULTSD 0x00000080 /* This cluster is multiple slurmd */
 #define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a ALPS cray

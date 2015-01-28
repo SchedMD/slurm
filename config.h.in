@@ -389,9 +389,6 @@
 /* Define to 1 if you have the <values.h> header file. */
 #undef HAVE_VALUES_H
 
-/* Define to 1 if using XCPU for job launch */
-#undef HAVE_XCPU
-
 /* Define if you have __progname. */
 #undef HAVE__PROGNAME
 
@@ -562,9 +559,6 @@
 #  undef WORDS_BIGENDIAN
 # endif
 #endif
-
-/* Define location of XCPU directory */
-#undef XCPU_DIR
 
 /* Enable large inode numbers on Mac OS X 10.5.  */
 #ifndef _DARWIN_USE_64_BIT_INODE

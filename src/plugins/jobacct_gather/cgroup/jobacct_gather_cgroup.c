@@ -45,10 +45,11 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_acct_gather_energy.h"
-#include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/xstring.h"
-#include "src/plugins/jobacct_gather/cgroup/jobacct_gather_cgroup.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/slurmd/common/xcpuinfo.h"
+#include "src/slurmd/slurmd/slurmd.h"
+#include "src/plugins/jobacct_gather/cgroup/jobacct_gather_cgroup.h"
 #include "../common/common_jag.h"
 
 #define _DEBUG 0

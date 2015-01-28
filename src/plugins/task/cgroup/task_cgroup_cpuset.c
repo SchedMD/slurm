@@ -46,16 +46,16 @@
 #include <sched.h>
 #include <sys/types.h>
 
-#include "slurm/slurm_errno.h"
-#include "slurm/slurm.h"
+#include <slurm/slurm.h>
+#include <slurm/slurm_errno.h>
+#include "src/common/bitstring.h"
+#include "src/common/cpu_frequency.h"
+#include "src/common/proc_args.h"
+#include "src/common/slurm_resource_info.h"
+#include "src/common/xstring.h"
+#include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
-
-#include "src/common/cpu_frequency.h"
-#include "src/common/slurm_resource_info.h"
-#include "src/common/bitstring.h"
-#include "src/common/proc_args.h"
-#include "src/common/xstring.h"
 
 #include "task_cgroup.h"
 

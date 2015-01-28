@@ -296,7 +296,7 @@ _sacctmgr()
         cluster)
             params="classification= flags= name= rpc="
             if param "flags" ; then  offer_list "aix bgl bgq bluegene crayxt frontend \
-                multipleslumd sunconstellation xcpu" ; 
+                multipleslumd sunconstellation" ; 
             else offer "$params" 
             fi
             ;;
@@ -350,7 +350,7 @@ _sacctmgr()
             if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ; return ;fi
             params="classification= flags= name= rpc= $assocbasedparams"
             if param "flags" ; then  offer_list "aix bgl bgq bluegene crayxt frontend \
-                multipleslumd sunconstellation xcpu" ; 
+                multipleslumd sunconstellation" ; 
             elif param "defaultqos" ; then  offer_list "$(_qos)" ; 
             else offer "$params" 
             fi
@@ -412,7 +412,7 @@ _sacctmgr()
             if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ; return ;fi
             params="classification= flags= name= rpc= $assocbasedparams"
             if param "flags" ; then  offer_list "aix bgl bgq bluegene crayxt frontend \
-                multipleslumd sunconstellation xcpu" ; 
+                multipleslumd sunconstellation" ; 
             elif param "defaultqos" ; then  offer_list "$(_qos)" ; 
             else offer "$params" 
             fi
@@ -486,7 +486,7 @@ _sacctmgr()
             if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ; return ;fi
             params="classification= flags= name= rpc= $assocbasedparams"
             if param "flags" ; then  offer_list "aix bgl bgq bluegene crayxt frontend \
-                multipleslumd sunconstellation xcpu" ; 
+                multipleslumd sunconstellation" ; 
             elif param "defaultqos" ; then  offer_list "$(_qos)" ; 
             else offer "$params set" 
             fi

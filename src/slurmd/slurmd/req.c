@@ -84,7 +84,6 @@
 
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmd/xcpu.h"
 
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
@@ -2446,13 +2445,6 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	uint32_t flag;
 	uint32_t sig;
 
-#ifdef HAVE_XCPU
-	if (!_slurm_authorized_user(req_uid)) {
-		error("REQUEST_SIGNAL_TASKS not support with XCPU system");
-		return ESLURM_NOT_SUPPORTED;
-	}
-#endif
-
 	flag = req->signal >> 24;
 	sig  = req->signal & 0xfff;
 
@@ -2897,8 +2889,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 		_kill_all_active_steps(req->job_id, SIG_TIME_LIMIT, true);
 	else /* (msg->type == REQUEST_KILL_PREEMPTED) */
 		_kill_all_active_steps(req->job_id, SIG_PREEMPTED, true);
-	nsteps = xcpu_signal(SIGTERM, req->nodes) +
-		_kill_all_active_steps(req->job_id, SIGTERM, false);
+	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps",
 		 req->job_id, nsteps );
 
@@ -3573,20 +3564,6 @@ _rpc_signal_job(slurm_msg_t *msg)
 	int step_cnt  = 0;
 	int fd;
 
-#ifdef HAVE_XCPU
-	if (!_slurm_authorized_user(req_uid)) {
-		error("REQUEST_SIGNAL_JOB not supported with XCPU system");
-		if (msg->conn_fd >= 0) {
-			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-			if (slurm_close(msg->conn_fd) < 0)
-				error ("_rpc_signal_job: close(%d): %m",
-				       msg->conn_fd);
-			msg->conn_fd = -1;
-		}
-		return;
-	}
-#endif
-
 	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);
 	job_uid = _get_job_uid(req->job_id);
 	if ((int)job_uid < 0)
@@ -3981,8 +3958,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		msg->conn_fd = -1;
 	}
 
-	if ((xcpu_signal(SIGKILL, req->nodes) +
-	     _kill_all_active_steps(req->job_id, SIG_ABORT, true)) ) {
+	if (_kill_all_active_steps(req->job_id, SIG_ABORT, true)) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
@@ -4295,7 +4271,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 * Tasks might be stopped (possibly by a debugger)
 	 * so send SIGCONT first.
 	 */
-	xcpu_signal(SIGCONT, req->nodes);
 	_kill_all_active_steps(req->job_id, SIGCONT, true);
 	if (errno == ESLURMD_STEP_SUSPENDED) {
 		/*
@@ -4303,11 +4278,9 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		 * bother with a "nice" termination.
 		 */
 		debug2("Job is currently suspended, terminating");
-		nsteps = xcpu_signal(SIGKILL, req->nodes) +
-			_terminate_all_steps(req->job_id, true);
+		nsteps = _terminate_all_steps(req->job_id, true);
 	} else {
-		nsteps = xcpu_signal(SIGTERM, req->nodes) +
-			_kill_all_active_steps(req->job_id, SIGTERM, true);
+		nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
 	}
 
 #ifndef HAVE_AIX
@@ -4370,8 +4343,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 */
 	delay = MAX(conf->kill_wait, 5);
 	if ( !_pause_for_job_completion (req->job_id, req->nodes, delay) &&
-	     (xcpu_signal(SIGKILL, req->nodes) +
-	      _terminate_all_steps(req->job_id, true)) ) {
+	     _terminate_all_steps(req->job_id, true) ) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
@@ -4575,12 +4547,10 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 	bool rc = false;
 
 	while ((sec < max_time) || (max_time == 0)) {
-		rc = (_job_still_running (job_id) ||
-			xcpu_signal(0, nodes));
+		rc = _job_still_running (job_id);
 		if (!rc)
 			break;
 		if ((max_time == 0) && (sec > 1)) {
-			xcpu_signal(SIGKILL, nodes);
 			_terminate_all_steps(job_id, true);
 		}
 		if (sec > 10) {
