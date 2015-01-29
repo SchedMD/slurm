@@ -41,6 +41,7 @@ slurmdb_clusters_get(db_conn, conditions)
 	slurmdb_cluster_cond_t *cluster_cond = (slurmdb_cluster_cond_t*)
 		slurm_xmalloc(sizeof(slurmdb_cluster_cond_t), __FILE__,
 		__LINE__, "slurmdb_clusters_get");
+	slurmdb_init_cluster_cond(cluster_cond, 0);
 	slurmdb_cluster_rec_t *rec = NULL;
 
 	if (hv_to_cluster_cond(conditions, cluster_cond) < 0) {
