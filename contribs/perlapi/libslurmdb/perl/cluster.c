@@ -484,3 +484,149 @@ report_user_rec_to_hv(slurmdb_report_user_rec_t* rec, HV* hv)
 
     return 0;
 }
+
+int
+stats_to_hv(slurmdb_stats_t *stats, HV* hv)
+{
+    STORE_FIELD(hv, stats, act_cpufreq,           double);
+    STORE_FIELD(hv, stats, cpu_ave,               double);
+    STORE_FIELD(hv, stats, consumed_energy,       double);
+    STORE_FIELD(hv, stats, cpu_min,               uint32_t);
+    STORE_FIELD(hv, stats, cpu_min_nodeid,        uint32_t);
+    STORE_FIELD(hv, stats, cpu_min_taskid,        uint32_t);
+    STORE_FIELD(hv, stats, disk_read_ave,         double);
+    STORE_FIELD(hv, stats, disk_read_max,         double);
+    STORE_FIELD(hv, stats, disk_read_max_nodeid,  uint32_t);
+    STORE_FIELD(hv, stats, disk_read_max_taskid,  uint32_t);
+    STORE_FIELD(hv, stats, disk_write_ave,        double);
+    STORE_FIELD(hv, stats, disk_write_max,        double);
+    STORE_FIELD(hv, stats, disk_write_max_nodeid, uint32_t);
+    STORE_FIELD(hv, stats, disk_write_max_taskid, uint32_t);
+    STORE_FIELD(hv, stats, pages_ave,             double);
+    STORE_FIELD(hv, stats, pages_max,             uint64_t);
+    STORE_FIELD(hv, stats, pages_max_nodeid,      uint32_t);
+    STORE_FIELD(hv, stats, pages_max_taskid,      uint32_t);
+    STORE_FIELD(hv, stats, rss_ave,               double);
+    STORE_FIELD(hv, stats, rss_max,               uint64_t);
+    STORE_FIELD(hv, stats, rss_max_nodeid,        uint32_t);
+    STORE_FIELD(hv, stats, rss_max_taskid,        uint32_t);
+    STORE_FIELD(hv, stats, vsize_ave,             double);
+    STORE_FIELD(hv, stats, vsize_max,             uint64_t);
+    STORE_FIELD(hv, stats, vsize_max_nodeid,      uint32_t);
+    STORE_FIELD(hv, stats, vsize_max_taskid,      uint32_t);
+
+    return 0;
+}
+
+int
+step_rec_to_hv(slurmdb_step_rec_t *rec, HV* hv)
+{
+    HV* stats_hv = (HV*)sv_2mortal((SV*)newHV());
+    stats_to_hv(&rec->stats, stats_hv);
+    hv_store_sv(hv, "stats", newRV((SV*)stats_hv));
+
+    STORE_FIELD(hv, rec, elapsed,         uint32_t);
+    STORE_FIELD(hv, rec, end,             time_t);
+    STORE_FIELD(hv, rec, exitcode,        int32_t);
+    STORE_FIELD(hv, rec, ncpus,           uint32_t);
+    STORE_FIELD(hv, rec, nnodes,          uint32_t);
+    STORE_FIELD(hv, rec, nodes,           charp);
+    STORE_FIELD(hv, rec, ntasks,          uint32_t);
+    STORE_FIELD(hv, rec, pid_str,         charp);
+    STORE_FIELD(hv, rec, req_cpufreq_min, uint32_t);
+    STORE_FIELD(hv, rec, req_cpufreq_max, uint32_t);
+    STORE_FIELD(hv, rec, req_cpufreq_gov, uint32_t);
+    STORE_FIELD(hv, rec, requid,          uint32_t);
+    STORE_FIELD(hv, rec, start,           time_t);
+    STORE_FIELD(hv, rec, state,           uint32_t);
+    STORE_FIELD(hv, rec, stepid,          uint32_t);
+    STORE_FIELD(hv, rec, stepname,        charp);
+    STORE_FIELD(hv, rec, suspended,       uint32_t);
+    STORE_FIELD(hv, rec, sys_cpu_sec,     uint32_t);
+    STORE_FIELD(hv, rec, sys_cpu_usec,    uint32_t);
+    STORE_FIELD(hv, rec, task_dist,       uint16_t);
+    STORE_FIELD(hv, rec, tot_cpu_sec,     uint32_t);
+    STORE_FIELD(hv, rec, tot_cpu_usec,    uint32_t);
+    STORE_FIELD(hv, rec, user_cpu_sec,    uint32_t);
+    STORE_FIELD(hv, rec, user_cpu_usec,   uint32_t);
+
+    return 0;
+}
+
+int
+job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
+{
+    slurmdb_step_rec_t *step;
+    ListIterator itr = NULL;
+    AV* steps_av = (AV*)sv_2mortal((SV*)newAV());
+    HV* stats_hv = (HV*)sv_2mortal((SV*)newHV());
+    HV* step_hv;
+
+    stats_to_hv(&rec->stats, stats_hv);
+    hv_store_sv(hv, "stats", newRV((SV*)stats_hv));
+
+    if (rec->steps) {
+	itr = slurm_list_iterator_create(rec->steps);
+	while ((step = slurm_list_next(itr))) {
+	    step_hv = (HV*)sv_2mortal((SV*)newHV());
+	    step_rec_to_hv(step, step_hv);
+	    av_push(steps_av, newRV((SV*)step_hv));
+	}
+    }
+    hv_store_sv(hv, "steps", newRV((SV*)steps_av));
+
+    STORE_FIELD(hv, rec, account,         charp);
+    STORE_FIELD(hv, rec, alloc_cpus,      uint32_t);
+    STORE_FIELD(hv, rec, alloc_gres,      charp);
+    STORE_FIELD(hv, rec, alloc_nodes,     uint32_t);
+    STORE_FIELD(hv, rec, array_job_id,    uint32_t);
+    STORE_FIELD(hv, rec, array_max_tasks, uint32_t);
+    STORE_FIELD(hv, rec, array_task_id,   uint32_t);
+    STORE_FIELD(hv, rec, array_task_str,  charp);
+    STORE_FIELD(hv, rec, associd,         uint32_t);
+    STORE_FIELD(hv, rec, blockid,         charp);
+    STORE_FIELD(hv, rec, cluster,         charp);
+    STORE_FIELD(hv, rec, derived_ec,      uint32_t);
+    STORE_FIELD(hv, rec, derived_es,      charp);
+    STORE_FIELD(hv, rec, elapsed,         uint32_t);
+    STORE_FIELD(hv, rec, eligible,        time_t);
+    STORE_FIELD(hv, rec, end,             time_t);
+    STORE_FIELD(hv, rec, exitcode,        uint32_t);
+    /*STORE_FIELD(hv, rec, first_step_ptr,  void*);*/
+    STORE_FIELD(hv, rec, gid,             uint32_t);
+    STORE_FIELD(hv, rec, jobid,           uint32_t);
+    STORE_FIELD(hv, rec, jobname,         charp);
+    STORE_FIELD(hv, rec, lft,             uint32_t);
+    STORE_FIELD(hv, rec, partition,       charp);
+    STORE_FIELD(hv, rec, nodes,           charp);
+    STORE_FIELD(hv, rec, priority,        uint32_t);
+    STORE_FIELD(hv, rec, qosid,           uint32_t);
+    STORE_FIELD(hv, rec, req_cpus,        uint32_t);
+    STORE_FIELD(hv, rec, req_gres,        charp);
+    STORE_FIELD(hv, rec, req_mem,         uint32_t);
+    STORE_FIELD(hv, rec, requid,          uint32_t);
+    STORE_FIELD(hv, rec, resvid,          uint32_t);
+    STORE_FIELD(hv, rec, resv_name,       charp);
+    STORE_FIELD(hv, rec, show_full,       uint32_t);
+    STORE_FIELD(hv, rec, start,           time_t);
+    STORE_FIELD(hv, rec, state,           uint16_t);
+    STORE_FIELD(hv, rec, submit,          time_t);
+    STORE_FIELD(hv, rec, suspended,       uint32_t);
+    STORE_FIELD(hv, rec, sys_cpu_sec,     uint32_t);
+    STORE_FIELD(hv, rec, sys_cpu_usec,    uint32_t);
+    STORE_FIELD(hv, rec, timelimit,       uint32_t);
+    STORE_FIELD(hv, rec, tot_cpu_sec,     uint32_t);
+    STORE_FIELD(hv, rec, tot_cpu_usec,    uint32_t);
+    STORE_FIELD(hv, rec, track_steps,     uint16_t);
+    STORE_FIELD(hv, rec, uid,             uint32_t);
+    STORE_FIELD(hv, rec, used_gres,       charp);
+    STORE_FIELD(hv, rec, user,            charp);
+    STORE_FIELD(hv, rec, user_cpu_sec,    uint32_t);
+    STORE_FIELD(hv, rec, user_cpu_usec,   uint32_t);
+    STORE_FIELD(hv, rec, wckey,           charp);
+    STORE_FIELD(hv, rec, wckeyid,         uint32_t);
+
+    return 0;
+}
+
+

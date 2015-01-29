@@ -42,6 +42,7 @@ extern int cluster_grouping_list_to_av(List list, AV* av);
 extern int cluster_rec_to_hv(slurmdb_cluster_rec_t *rec, HV* hv);
 extern int report_cluster_rec_list_to_av(List list, AV* av);
 extern int report_user_rec_to_hv(slurmdb_report_user_rec_t *rec, HV* hv);
+extern int job_rec_to_hv(slurmdb_job_rec_t *rec, HV* hv);
 
 
 #endif /* _SLURMDB_PERL_H */

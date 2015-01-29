@@ -17,7 +17,8 @@ test_sources = \
 	       $(perl_dir)/t/02-report_cluster_account_by_user.t \
 	       $(perl_dir)/t/03-report_cluster_user_by_account.t \
 	       $(perl_dir)/t/04-report_job_sizes_grouped_by_top_account.t \
-	       $(perl_dir)/t/05-report_user_top_usage.t
+	       $(perl_dir)/t/05-report_user_top_usage.t \
+	       $(perl_dir)/t/06-jobs_get.t
 
 EXTRA_DIST = $(perl_sources) $(test_sources)
 

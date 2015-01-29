@@ -189,3 +189,40 @@ slurmdb_report_user_top_usage(db_conn, user_condition, group_accounts)
 	slurmdb_destroy_user_cond(user_cond);
     OUTPUT:
         RETVAL
+
+SV*
+slurmdb_jobs_get(db_conn, conditions)
+	void* db_conn
+	HV*   conditions
+    INIT:
+	AV*   results;
+	HV*   rh;
+	List  list = NULL;
+	ListIterator itr;
+	slurmdb_job_cond_t *job_cond = (slurmdb_job_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_job_cond_t), __FILE__,
+		__LINE__, "slurmdb_jobs_get");
+	slurmdb_job_rec_t *rec = NULL;
+
+	if (hv_to_job_cond(conditions, job_cond) < 0) {
+		XSRETURN_UNDEF;
+	}
+	results = (AV*)sv_2mortal((SV*)newAV());
+    CODE:
+	list = slurmdb_jobs_get(db_conn, job_cond);
+	if (list) {
+	    itr = slurm_list_iterator_create(list);
+
+	    while ((rec = slurm_list_next(itr))) {
+		rh = (HV *)sv_2mortal((SV*)newHV());
+		if (job_rec_to_hv(rec, rh) < 0) {
+		    XSRETURN_UNDEF;
+		}
+		av_push(results, newRV((SV*)rh));
+	    }
+	    slurm_list_destroy(list);
+	}
+	RETVAL = newRV((SV*)results);
+	slurmdb_destroy_job_cond(job_cond);
+    OUTPUT:
+        RETVAL
