@@ -88,31 +88,36 @@ const uint32_t plugin_version   = 100;
  */
 extern int init(void)
 {
+	debug("%s: %s", plugin_name, __func__);
 	return SLURM_SUCCESS;
 }
 
 /*
  * fini() is called when the plugin is unloaded. Free all memory.
  */
-extern int fini(void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	debug("%s: %s", plugin_name, __func__);
+	return;
 }
 
 /* Read the configuration file */
 extern void power_p_reconfig(void)
 {
+	debug("%s: %s", plugin_name, __func__);
 	return;
 }
 
 /* Note that a suspended job has been resumed */
 extern void power_p_job_resume(struct job_record *job_ptr)
 {
+	debug("%s: %s", plugin_name, __func__);
 	return;
 }
 
 /* Note that a job has been allocated resources and is ready to start */
 extern void power_p_job_start(struct job_record *job_ptr)
 {
+	debug("%s: %s", plugin_name, __func__);
 	return;
 }

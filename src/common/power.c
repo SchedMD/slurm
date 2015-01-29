@@ -131,9 +131,9 @@ fini:
 }
 
 /* Terminate the power plugin and free all memory */
-extern int power_g_fini(void)
+extern void power_g_fini(void)
 {
-	int i, j, rc = SLURM_SUCCESS;
+	int i;
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context_cnt < 0)
@@ -142,11 +142,8 @@ extern int power_g_fini(void)
 	slurm_mutex_lock(&g_context_lock);
 	init_run = false;
 	for (i = 0; i < g_context_cnt; i++) {
-		if (g_context[i]) {
-			j = plugin_context_destroy(g_context[i]);
-			if (j != SLURM_SUCCESS)
-				rc = j;
-		}
+		if (g_context[i])
+			plugin_context_destroy(g_context[i]);
 	}
 	xfree(ops);
 	xfree(g_context);
@@ -154,7 +151,7 @@ extern int power_g_fini(void)
 	g_context_cnt = -1;
 
 fini:	slurm_mutex_unlock(&g_context_lock);
-	return rc;
+	return;
 }
 
 /* Read the configuration file */

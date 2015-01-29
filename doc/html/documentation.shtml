@@ -119,6 +119,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="launch_plugins.html">Launch Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.html">MPI Plugin Programmer Guide</a></li>
 <li><a href="acct_gather_energy_plugins.html">Energy Accounting Plugin Programmer Guide</a></li>
+<li><a href="power_plugins.html">Power Management Plugin Programmer Guide</a></li>
 <li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
@@ -132,6 +133,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 20 November 2014</p>
+<p style="text-align:center;">Last modified 28 January 2015</p>
 
 <!--#include virtual="footer.txt"-->

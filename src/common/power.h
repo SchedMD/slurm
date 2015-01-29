@@ -52,7 +52,7 @@
 extern int power_g_init(void);
 
 /* Terminate the power plugin and free all memory */
-extern int power_g_fini(void);
+extern void power_g_fini(void);
 
 /* Read the configuration file */
 extern void power_g_reconfig(void);
