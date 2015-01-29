@@ -54,6 +54,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/plugins/power/common/power_common.h"
@@ -258,20 +259,23 @@ static void _get_capabilities(void)
 	json_object *j;
 	json_object_iter iter;
 	struct node_record *node_ptr;
+	DEF_TIMERS;
 
 	script_argv[0] = capmc_path;
 	script_argv[1] = "get_power_cap_capabilities";
 	script_argv[2] = NULL;
 
+	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 2000,
 				    &status);
+	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s: %s",
 		      __func__, script_argv[1], cmd_resp);
 		xfree(cmd_resp);
 		return;
 	} else if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: capmc %s", __func__, script_argv[1]);
+		info("%s: capmc %s %s", __func__, script_argv[1], TIME_STR);
 	}
 	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0'))
 		return;
@@ -391,7 +395,8 @@ extern void *_power_agent(void *args)
 	/* Read jobs and nodes */
 	slurmctld_lock_t read_locks = {
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
-	List job_power_list, node_power_list = NULL;
+//	List job_power_list;	/* For possible future enhancement */
+	List node_power_list = NULL;
 	uint32_t alloc_watts = 0, used_watts = 0;
 
 	last_balance_time = time(NULL);
@@ -411,12 +416,13 @@ extern void *_power_agent(void *args)
 		lock_slurmctld(read_locks);
 //FIXME: On Cray/ALPS system use "capmc get_node_energy_counter" to get
 // “raw accumulated-energy” and calculate power consumption from that
+// joules = watts x seconds
 		get_cluster_power(node_record_table_ptr, node_record_count,
 				  &alloc_watts, &used_watts);
-		job_power_list = get_job_power(job_list, node_record_table_ptr);
+//		job_power_list = get_job_power(job_list, node_record_table_ptr);
 		node_power_list = _rebalance_node_power();
 		unlock_slurmctld(read_locks);
-		FREE_NULL_LIST(job_power_list);
+//		FREE_NULL_LIST(job_power_list);
 		_set_power_caps(node_power_list);
 		FREE_NULL_LIST(node_power_list);
 		last_balance_time = time(NULL);
@@ -569,6 +575,7 @@ static void _set_power_caps(List node_power_list)
 	power_by_nodes_t *node_power;
 	char *cmd_resp, *script_argv[7], watts[32];
 	int status = 0;
+	DEF_TIMERS;
 
 	if (!node_power_list)
 		return;
@@ -588,8 +595,10 @@ static void _set_power_caps(List node_power_list)
 			continue;
 		script_argv[3] = node_power->nodes;
 		snprintf(watts, sizeof(watts), "%u", node_power->alloc_watts);
+		START_TIMER;
 		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
 					    2000, &status);
+		END_TIMER;
 		if (status != 0) {
 			error("%s: capmc %s %s %s %s %s: %s",
 			      __func__, script_argv[1], script_argv[2],
@@ -599,9 +608,10 @@ static void _set_power_caps(List node_power_list)
 			list_iterator_destroy(node_iterator);
 			return;
 		} else if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: capmc %s %s %s %s %s",
-			      __func__, script_argv[1], script_argv[2],
-			      script_argv[3], script_argv[4], script_argv[5]);
+			info("%s: capmc %s %s %s %s %s %s",
+			     __func__, script_argv[1], script_argv[2],
+			     script_argv[3], script_argv[4], script_argv[5],
+			     TIME_STR);
 		}
 		xfree(cmd_resp);
 	}
@@ -613,17 +623,20 @@ static void _set_power_caps(List node_power_list)
 			continue;
 		script_argv[3] = node_power->nodes;
 		snprintf(watts, sizeof(watts), "%u", node_power->alloc_watts);
+		START_TIMER;
 		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
 					    2000, &status);
+		END_TIMER;
 		if (status != 0) {
 			error("%s: capmc %s %s %s %s %s: %s",
 			      __func__, script_argv[1], script_argv[2],
 			      script_argv[3], script_argv[4], script_argv[5],
 			      cmd_resp);
 		} else if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: capmc %s %s %s %s %s",
-			      __func__, script_argv[1], script_argv[2],
-			      script_argv[3], script_argv[4], script_argv[5]);
+			info("%s: capmc %s %s %s %s %s %s",
+			     __func__, script_argv[1], script_argv[2],
+			     script_argv[3], script_argv[4], script_argv[5],
+			     TIME_STR);
 		}
 		xfree(cmd_resp);
 	}

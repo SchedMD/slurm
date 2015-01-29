@@ -59,7 +59,9 @@ typedef struct power_by_nodes {
 	char *nodes;		/* Node names (nid range list values on Cray) */
 } power_by_nodes_t;
 
-/* For all nodes in a cluster, return global power allocation/use information */
+/* For all nodes in a cluster
+ * 1) set default values and
+ * 2) return global power allocation/consumption information */
 extern void get_cluster_power(struct node_record *node_record_table_ptr,
 			      int node_record_count,
 			      uint32_t *alloc_watts, uint32_t *used_watts);

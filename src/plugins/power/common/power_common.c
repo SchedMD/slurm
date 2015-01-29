@@ -70,7 +70,9 @@ static void _job_power_del(void *x)
 	xfree(x);
 }
 
-/* For all nodes in a cluster, return global power allocation/use information */
+/* For all nodes in a cluster
+ * 1) set default values and
+ * 2) return global power allocation/consumption information */
 extern void get_cluster_power(struct node_record *node_record_table_ptr,
 			      int node_record_count,
 			      uint32_t *alloc_watts, uint32_t *used_watts)
@@ -83,13 +85,23 @@ extern void get_cluster_power(struct node_record *node_record_table_ptr,
 	*used_watts  = 0;
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-//FIXME: Where will current watts come from? Depends upon plugin
-//		if (node_ptr->energy && node_ptr->energy->current_watts) {
-//			node_ptr->power->current_watts +=
-//				node_ptr->energy->current_watts;
-//		}
-
 		if (node_ptr->power) {
+			if (!node_ptr->power->cap_watts) {	/* No limit */
+				if (!node_ptr->power->max_watts)
+					continue;	/* No node data */
+				node_ptr->power->cap_watts =
+					node_ptr->power->max_watts;
+			}
+			if (!node_ptr->power->current_watts) { /* No data yet */
+				if (node_ptr->energy &&
+				    node_ptr->energy->current_watts) {
+					node_ptr->power->current_watts +=
+						node_ptr->energy->current_watts;
+				} else {
+					node_ptr->power->current_watts =
+						node_ptr->power->cap_watts;
+				}
+			}
 			*alloc_watts += node_ptr->power->cap_watts;
 			*used_watts += node_ptr->power->current_watts;
 		}	
@@ -104,7 +116,8 @@ extern void get_cluster_power(struct node_record *node_record_table_ptr,
 /* For each running job, return power allocation/use information in a List
  * containing elements of type power_by_job_t.
  * NOTE: Job data structure must be locked on function entry
- * NOTE: Call list_delete() to free return value */
+ * NOTE: Call list_delete() to free return value
+ * NOTE: This function is currently unused. */
 extern List get_job_power(List job_list,
 			  struct node_record *node_record_table_ptr)
 {
@@ -120,7 +133,6 @@ extern List get_job_power(List job_list,
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-//FIXME: What about IS_JOB_SUSPENDED(job_ptr)?
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 		power_ptr = xmalloc(sizeof(power_by_job_t));

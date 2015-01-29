@@ -79,13 +79,14 @@ Currently valid options are:
 <li><b>PowerPlugin</b>:
 Identifies the plugin used to manage system power consumption.
 Changes to this value require restarting Slurm daemons to take effect.
+By default, no power plugin is loaded.
 Currently valid options are:
 <ul>
 <li><b>power/cray</b> -
    Used for Cray systems with power monitoring and management
    functionality included as part of System Management Workstation (SMW)
    7.0.UP03.</li>
-<li><b>power/none</b> - No power management support. The default value.</li>
+<li><b>power/none</b> - No power management support.</li>
 </ul></li>
 </ul>
 

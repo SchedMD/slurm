@@ -123,7 +123,7 @@ extern char *default_plugstack;
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"
 #define DEFAULT_MSG_TIMEOUT         10
-#define DEFAULT_POWER_PLUGIN        "power/none"
+#define DEFAULT_POWER_PLUGIN        ""
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
