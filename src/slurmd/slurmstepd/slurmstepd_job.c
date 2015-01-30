@@ -92,9 +92,12 @@ _valid_uid_gid(uid_t uid, gid_t *gid, char **user_name)
 	if (*user_name)
 		return 1;
 #endif
-
+znovu:
+	errno = 0;
 	pwd = getpwuid(uid);
 	if (!pwd) {
+		if (errno == EINTR)
+			goto znovu;
 		error("uid %ld not found on system", (long) uid);
 		slurm_seterrno(ESLURMD_UID_NOT_FOUND);
 		return 0;
