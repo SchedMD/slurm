@@ -275,7 +275,7 @@ static void _get_capabilities(void)
 	script_argv[2] = NULL;
 
 	START_TIMER;
-	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 2000,
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
 				    &status);
 	END_TIMER;
 	if (status != 0) {
@@ -384,10 +384,11 @@ static void _get_node_energy_counter(void)
 {
 	static time_t last_timer = 0;
 	time_t now;
+	struct tm *time_spec;
 	/* Write nodes */
 	slurmctld_lock_t write_locks = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
-	char *cmd_resp, *script_argv[3];
+	char *cmd_resp, *script_argv[5], time_str[64];
 	power_config_nodes_t *ents;
 	int i, num_ent = 0, status = 0;
 	uint64_t delta_joules, delta_time;
@@ -396,21 +397,27 @@ static void _get_node_energy_counter(void)
 	struct node_record *node_ptr;
 	DEF_TIMERS;
 
+	now = time(NULL);
+	time_spec = localtime(&now);
+	strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_spec);
 	script_argv[0] = capmc_path;
 	script_argv[1] = "get_node_energy_counter";
-	script_argv[2] = NULL;
+	script_argv[2] = "-t";
+	script_argv[3] = time_str;	/* yyyy-mm-dd hh:mm:ss */
+	script_argv[4] = NULL;
 
 	START_TIMER;
-	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 2000,
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
 				    &status);
 	END_TIMER;
 	if (status != 0) {
-		error("%s: capmc %s: %s",
-		      __func__, script_argv[1], cmd_resp);
+		error("%s: capmc %s %s %s: %s",  __func__,
+		      script_argv[1], script_argv[2], script_argv[3], cmd_resp);
 		xfree(cmd_resp);
 		return;
 	} else if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: capmc %s %s", __func__, script_argv[1], TIME_STR);
+		info("%s: capmc %s %s %s %s",  __func__,
+		     script_argv[1], script_argv[2], script_argv[3], TIME_STR);
 	}
 	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0'))
 		return;
@@ -758,7 +765,7 @@ static void _set_power_caps(List node_power_list)
 {
 	ListIterator node_iterator;
 	power_by_nodes_t *node_power;
-	char *cmd_resp, *script_argv[7], watts[32];
+	char *cmd_resp, *script_argv[9], watts[32];
 	int status = 0;
 	DEF_TIMERS;
 
@@ -768,10 +775,12 @@ static void _set_power_caps(List node_power_list)
 	script_argv[0] = capmc_path;
 	script_argv[1] = "set_power_cap";
 	script_argv[2] = "--nids";
-	/* script_argv[3] = TBD */
+	/* script_argv[3] = Node ID values, set below */
 	script_argv[4] = "--watts";
 	script_argv[5] = watts;
-	script_argv[6] = NULL;
+	script_argv[6] = "--accel";
+	script_argv[7] = "0";
+	script_argv[8] = NULL;
 
 	/* Pass 1, decrease power for select nodes */
 	node_iterator = list_iterator_create(node_power_list);
@@ -782,7 +791,7 @@ static void _set_power_caps(List node_power_list)
 		snprintf(watts, sizeof(watts), "%u", node_power->alloc_watts);
 		START_TIMER;
 		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
-					    2000, &status);
+					    5000, &status);
 		END_TIMER;
 		if (status != 0) {
 			error("%s: capmc %s %s %s %s %s: %s",
@@ -810,7 +819,7 @@ static void _set_power_caps(List node_power_list)
 		snprintf(watts, sizeof(watts), "%u", node_power->alloc_watts);
 		START_TIMER;
 		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
-					    2000, &status);
+					    5000, &status);
 		END_TIMER;
 		if (status != 0) {
 			error("%s: capmc %s %s %s %s %s: %s",
