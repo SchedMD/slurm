@@ -403,7 +403,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 	int i, j, pos = 0;
 	static burst_buffer_info_msg_t *last_bb_info_ptr = NULL;
 	sview_bb_info_t *sview_bb_info_ptr = NULL;
-	burst_buffer_info_t *bb_ptr = bb_info_ptr->burst_buffer_array;
+	burst_buffer_info_t *bb_ptr;
 	burst_buffer_resv_t *bb_resv_ptr = NULL;
 	char bb_name_id[32] = "";
 

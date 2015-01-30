@@ -411,7 +411,10 @@ extern void *_power_agent(void *args)
 			continue;
 
 		wait_time = difftime(now, last_cap_read);
-		_get_capabilities();
+		if (wait_time > 600) {
+			/* Read node min/max power every 10 mins */
+			_get_capabilities();
+		}
 
 		lock_slurmctld(read_locks);
 //FIXME: On Cray/ALPS system use "capmc get_node_energy_counter" to get
@@ -467,7 +470,7 @@ static List _rebalance_node_power(void)
 				     node_ptr->power->current_watts) / 2;
 			tmp_u32 = node_ptr->power->max_watts -
 				  node_ptr->power->min_watts;
-			tmp_u32 = (ave_power * decrease_rate) / 100;
+			tmp_u32 = (tmp_u32 * decrease_rate) / 100;
 			new_cap = node_ptr->power->cap_watts -
 				  MIN(tmp_u32, ave_power);
 			node_ptr->power->new_cap_watts =

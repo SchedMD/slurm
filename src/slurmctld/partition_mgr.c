@@ -1739,6 +1739,9 @@ _remove_duplicate_uids(uid_t *u)
 	uid_t *v;
 	uid_t cur;
 
+	if (!u)
+		return NULL;
+
 	num = 1;
 	for (i = 0; u[i]; i++)
 		++num;
