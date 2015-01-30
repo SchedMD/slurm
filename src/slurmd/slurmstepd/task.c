@@ -303,7 +303,8 @@ _build_path(char* fname, char **prog_env)
 	if (file_name[0] == '.') {
 		file_path = (char *)xmalloc(len);
 		dir = (char *)xmalloc(len);
-		(void) getcwd(dir, len);
+		if (!getcwd(dir, len))
+			error("getcwd failed: %m");
 		snprintf(file_path, len, "%s/%s", dir, file_name);
 		xfree(file_name);
 		xfree(dir);
