@@ -590,13 +590,43 @@ rwfail:
 }
 
 extern int
-tree_msg_to_stepds(char *nodelist, uint32_t len, char *msg)
+tree_msg_to_stepds(hostlist_t hl, uint32_t len, char *data)
 {
-	int rc;
-	rc = slurm_forward_data(nodelist,
-				tree_sock_addr,
-				len,
-				msg);
+	List ret_list = NULL;
+	int temp_rc = 0, rc = 0;
+	ret_data_info_t *ret_data_info = NULL;
+	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+	forward_data_msg_t req;
+	char *nodelist = NULL;
+
+	slurm_msg_t_init(msg);
+	req.address = tree_sock_addr;
+	req.len = len;
+	req.data = data;
+
+	msg->msg_type = REQUEST_FORWARD_DATA;
+	msg->data = &req;
+
+	nodelist = hostlist_ranged_string_xmalloc(hl);
+
+	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
+		while ((ret_data_info = list_pop(ret_list))) {
+			temp_rc = slurm_get_return_code(ret_data_info->type,
+							ret_data_info->data);
+			if (temp_rc){
+				rc = temp_rc;
+			} else {
+				hostlist_delete_host(hl, 
+							ret_data_info->node_name);
+			}
+		}
+	} else {
+		error("tree_msg_to_stepds: no list was returned");
+		rc = SLURM_ERROR;
+	}
+
+	slurm_free_msg(msg);
+	xfree(nodelist);
 	return rc;
 }
 

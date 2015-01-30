@@ -57,7 +57,7 @@ enum {
 extern int handle_tree_cmd(int fd);
 extern int tree_msg_to_srun(uint32_t len, char *msg);
 extern int tree_msg_to_srun_with_resp(uint32_t len, char *msg, Buf *resp_ptr);
-extern int tree_msg_to_stepds(char *nodelist, uint32_t len, char *msg);
+extern int tree_msg_to_stepds(hostlist_t hl, uint32_t len, char *data);
 extern int tree_msg_to_spawned_sruns(uint32_t len, char *msg);
 
 
