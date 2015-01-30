@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Correct the sbatch pbs parser to process -j.
  -- Squeue modified to not merge tasks of a job array if their wait reasons
     differ.
+ -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
+    interrupts.
 
 * Changes in Slurm 14.03.11
 ===========================
