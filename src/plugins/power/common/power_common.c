@@ -83,6 +83,9 @@ extern void get_cluster_power(struct node_record *node_record_table_ptr,
 
 	*alloc_watts = 0;
 	*used_watts  = 0;
+	if ((debug_flag & DEBUG_FLAG_POWER) == 0)
+		return;
+
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (node_ptr->power) {
@@ -107,10 +110,8 @@ extern void get_cluster_power(struct node_record *node_record_table_ptr,
 		}	
 	}
 
-	if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: AllocWatts=%u UsedWatts=%u", __func__,
-		     *alloc_watts, *used_watts);
-	}
+	info("%s: AllocWatts=%u UsedWatts=%u",
+	     __func__, *alloc_watts, *used_watts);
 }
 
 /* For each running job, return power allocation/use information in a List

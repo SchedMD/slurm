@@ -31,14 +31,15 @@ Currently valid options are:
   caps across the nodes.
   The default value is 30 seconds.
   Supported by the power/cray plugin.</li>
-<li><b>capmc_path=</b> -
+<li><b>capmc_path=/...</b> -
   Specifies the absolute path of the <b>capmc</b> command.
   The default value is "/opt/cray/capmc/default/bin/capmc".
   Supported by the power/cray plugin.</li>
 <li><b>cap_watts=#[KW|MW]</b> -
   Specifies the power limit to be established across all compute nodes managed
   by Slurm.
-  The default value is no limit.
+  A value of 0 sets every compute node to have an unlimited cap.
+  The default value is 0.
   Supported by the power/cray plugin.</li>
 <li><b>decrease_rate=#</b> -
   Specifies the maximum rate of change in the power cap for a node where the
@@ -89,6 +90,16 @@ Currently valid options are:
 <li><b>power/none</b> - No power management support.</li>
 </ul></li>
 </ul>
+
+<p><b>Note for Cray systems:</b> Power management is provided for native
+Slurm configurations (i.e. without the ALPS resource manager).</p>
+
+<p><b>Note for Cray systems:</b> Use of the capmc command requires either 
+specifying its absolute path ("/opt/cray/capmc/default/bin/capmc" by default)
+or loading the capmc module:</p>
+<pre>
+$ module load capmc
+</pre>
 
 <h2>Example</h2>
 
@@ -152,19 +163,18 @@ to be distributed over 9 nodes or 184 watts per node.</p>
 <li>We need to determine how the current power consumption data is gathered
   and determine accuracy of that data.</li>
 <li>The current algorithm manages power on a per-node basis without considering
-  job allocations. Should an attempt be made to maintain uniform power caps
-  across all nodes associated with each job? Doing so could greatly complicate
-  the logic.</li>
+  job allocations. Maintaining uniform power caps across all nodes associated
+  with each job might improve performance, but complicate the logic.</li>
 <li>Current default values for configuration parameters should probably be
   changed once we have a better understanding of the algorithm's behavior.</li>
 <li>No integration of this logic with gang scheduling currently exists.
   It is not clear that configuration is practical to support as gang scheduling
   time slices will typically be smaller than the power management
-  balance_interval.</li>
+  balance_interval and synchronizing changes may be difficult</li>
 <li>No integration with logic powering down idle nodes is currently implemented.
-  That should be practical to add, but has not yet been studied.</li>
+  That should be practical to add in the future, but has not yet been studied.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 28 January 2015</p>
+<p style="text-align:center;">Last modified 30 January 2015</p>
 
 <!--#include virtual="footer.txt"-->

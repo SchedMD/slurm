@@ -1128,6 +1128,7 @@ typedef struct ext_sensors_data {
 typedef struct power_mgmt_data {
 	uint32_t cap_watts;	/* power consumption limit of node, in watts */
 	uint32_t current_watts;	/* current power consumption, in watts */
+	uint64_t joule_counter;	/* total energy consumption by node, in joules */
 	uint32_t new_cap_watts;	/* new power consumption limit of node, in watts */
 	uint32_t max_watts;	/* maximum power consumption by node, in watts */
 	uint32_t min_watts;	/* minimum power consumption by node, in watts */

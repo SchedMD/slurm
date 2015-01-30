@@ -1422,7 +1422,8 @@ Supported by the power/cray plugin.
 \fBcap_watts=#\fR
 Specifies the power limit to be established across all compute nodes managed
 by Slurm.
-The default value is no limit.
+A value of 0 sets every compute node to have an unlimited cap.
+The default value is 0.
 Supported by the power/cray plugin.
 .TP
 \fBdecrease_rate=#\fR

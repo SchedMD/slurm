@@ -84,6 +84,8 @@ int node_record_count = 0;
 #endif
 
 typedef struct power_config_nodes {
+	uint32_t cap_watts;     /* cap on power consumption by node, in watts */
+	uint64_t joule_counter;	/* total energy consumption by node, in joules */
 	uint32_t max_watts;     /* maximum power consumption by node, in watts */
 	uint32_t min_watts;     /* minimum power consumption by node, in watts */
 	char *nodes;		/* Node names (nid range list values on Cray) */
@@ -138,10 +140,17 @@ static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 
 /*********************** local functions *********************/
+static List _clear_node_caps(void);
 static void _get_capabilities(void);
+static void _get_node_energy_counter(void);
 static power_config_nodes_t *
-            _json_parse_array(json_object *jobj, char *key, int *num);
-static void _json_parse_object(json_object *jobj, power_config_nodes_t *ent);
+            _json_parse_array_capabilities(json_object *jobj,
+					   char *key, int *num);
+static power_config_nodes_t *
+            _json_parse_array_energy(json_object *jobj, char *key, int *num);
+static void _json_parse_capabilities(json_object *jobj,
+				     power_config_nodes_t *ent);
+static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent);
 static void _load_config(void);
 extern void *_power_agent(void *args);
 static List _rebalance_node_power(void);
@@ -287,7 +296,7 @@ static void _get_capabilities(void)
 		return;
 	}
 	json_object_object_foreachC(j, iter) {
-		ents = _json_parse_array(j, iter.key, &num_ent);
+		ents = _json_parse_array_capabilities(j, iter.key, &num_ent);
 	}
 	json_object_put(j);	/* Frees json memory */
 
@@ -296,6 +305,7 @@ static void _get_capabilities(void)
 		node_ptr = find_node_record(ents[i].nodes);
 		if (!node_ptr->power)
 			node_ptr->power = xmalloc(sizeof(power_mgmt_data_t));
+		node_ptr->power->cap_watts = ents[i].cap_watts;
 		node_ptr->power->max_watts = ents[i].max_watts;
 		node_ptr->power->min_watts = ents[i].min_watts;
 		xfree(ents[i].nodes);
@@ -308,7 +318,7 @@ static void _get_capabilities(void)
 /* json_parse_array()
  */
 static power_config_nodes_t *
-_json_parse_array(json_object *jobj, char *key, int *num)
+_json_parse_array_capabilities(json_object *jobj, char *key, int *num)
 {
 	json_object *jarray;
 	int i;
@@ -321,9 +331,9 @@ _json_parse_array(json_object *jobj, char *key, int *num)
 	*num = json_object_array_length(jarray);
 	ents = xmalloc(*num * sizeof(power_config_nodes_t));
 
-	for (i = 0; i < *num; i++){
+	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
-		_json_parse_object(jvalue, &ents[i]);
+		_json_parse_capabilities(jvalue, &ents[i]);
 	}
 
 	return ents;
@@ -331,7 +341,8 @@ _json_parse_array(json_object *jobj, char *key, int *num)
 
 /* json_parse_object()
  */
-static void _json_parse_object(json_object *jobj, power_config_nodes_t *ent)
+static void _json_parse_capabilities(json_object *jobj,
+				     power_config_nodes_t *ent)
 {
 	enum json_type type;
 	struct json_object_iter iter;
@@ -350,10 +361,147 @@ static void _json_parse_object(json_object *jobj, power_config_nodes_t *ent)
 				break;
 			case json_type_int:
 				x = json_object_get_int64(iter.val);
-				if (strcmp(iter.key, "max_watts") == 0) {
+				if (strcmp(iter.key, "cap_watts") == 0) {
+					ent->cap_watts = x;
+				} else if (strcmp(iter.key, "max_watts") == 0) {
 					ent->max_watts = x;
 				} else if (strcmp(iter.key, "min_watts") == 0) {
 					ent->min_watts = x;
+				}
+				break;
+			case json_type_string:
+				p = json_object_get_string(iter.val);
+				if (strcmp(iter.key, "nid") == 0) {
+					ent->nodes = "nid";
+					xstrcat(ent->nodes, p);
+				}
+				break;
+		}
+	}
+}
+
+static void _get_node_energy_counter(void)
+{
+	static time_t last_timer = 0;
+	time_t now;
+	/* Write nodes */
+	slurmctld_lock_t write_locks = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	char *cmd_resp, *script_argv[3];
+	power_config_nodes_t *ents;
+	int i, num_ent = 0, status = 0;
+	uint64_t delta_joules, delta_time;
+	json_object *j;
+	json_object_iter iter;
+	struct node_record *node_ptr;
+	DEF_TIMERS;
+
+	script_argv[0] = capmc_path;
+	script_argv[1] = "get_node_energy_counter";
+	script_argv[2] = NULL;
+
+	START_TIMER;
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 2000,
+				    &status);
+	END_TIMER;
+	if (status != 0) {
+		error("%s: capmc %s: %s",
+		      __func__, script_argv[1], cmd_resp);
+		xfree(cmd_resp);
+		return;
+	} else if (debug_flag & DEBUG_FLAG_POWER) {
+		info("%s: capmc %s %s", __func__, script_argv[1], TIME_STR);
+	}
+	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0'))
+		return;
+
+	j = json_tokener_parse(cmd_resp);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, cmd_resp);
+		xfree(cmd_resp);
+		return;
+	}
+	json_object_object_foreachC(j, iter) {
+		ents = _json_parse_array_energy(j, iter.key, &num_ent);
+	}
+	json_object_put(j);	/* Frees json memory */
+	now = time(NULL);
+	delta_time = difftime(now, last_timer);
+
+	lock_slurmctld(write_locks);
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (!node_ptr->power)
+			node_ptr->power = xmalloc(sizeof(power_mgmt_data_t));
+		else
+			node_ptr->power->current_watts = 0;
+	}
+	for (i = 0; i < num_ent; i++) {
+		node_ptr = find_node_record(ents[i].nodes);
+		if (delta_time &&
+		    (node_ptr->power->joule_counter > ents[i].joule_counter)) {
+			delta_joules = node_ptr->power->joule_counter -
+				       ents[i].joule_counter;
+			node_ptr->power->current_watts =
+				delta_joules / delta_time;
+		}
+		node_ptr->power->cap_watts = ents[i].cap_watts;
+		node_ptr->power->joule_counter = ents[i].joule_counter;
+		xfree(ents[i].nodes);
+	}
+	xfree(ents);
+	unlock_slurmctld(write_locks);
+	xfree(cmd_resp);
+	last_timer = now;
+}
+
+/* json_parse_array()
+ */
+static power_config_nodes_t *
+_json_parse_array_energy(json_object *jobj, char *key, int *num)
+{
+	json_object *jarray;
+	int i;
+	json_object *jvalue;
+	power_config_nodes_t *ents;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(power_config_nodes_t));
+
+	for (i = 0; i < *num; i++) {
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_energy(jvalue, &ents[i]);
+	}
+
+	return ents;
+}
+
+/* json_parse_object()
+ */
+static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+	const char *p;
+
+	json_object_object_foreachC(jobj, iter) {
+
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_boolean:
+			case json_type_double:
+			case json_type_null:
+			case json_type_object:
+			case json_type_array:
+				break;
+			case json_type_int:
+				x = json_object_get_int64(iter.val);
+				if (strcmp(iter.key, "joules") == 0) {
+					ent->joule_counter = x;
 				}
 				break;
 			case json_type_string:
@@ -413,17 +561,17 @@ extern void *_power_agent(void *args)
 		wait_time = difftime(now, last_cap_read);
 		if (wait_time > 600) {
 			/* Read node min/max power every 10 mins */
-			_get_capabilities();
+			_get_capabilities();	/* Has node write lock */
 		}
-
+		_get_node_energy_counter();	/* Has node write lock */
 		lock_slurmctld(read_locks);
-//FIXME: On Cray/ALPS system use "capmc get_node_energy_counter" to get
-// “raw accumulated-energy” and calculate power consumption from that
-// joules = watts x seconds
 		get_cluster_power(node_record_table_ptr, node_record_count,
 				  &alloc_watts, &used_watts);
 //		job_power_list = get_job_power(job_list, node_record_table_ptr);
-		node_power_list = _rebalance_node_power();
+		if (cap_watts == 0)
+			node_power_list = _clear_node_caps();
+		else
+			node_power_list = _rebalance_node_power();
 		unlock_slurmctld(read_locks);
 //		FREE_NULL_LIST(job_power_list);
 		_set_power_caps(node_power_list);
@@ -443,6 +591,39 @@ static void _node_power_del(void *x)
 	}
 }
 
+static List _clear_node_caps(void)
+{
+	List node_power_list = NULL;
+	power_by_nodes_t *node_power;
+	struct node_record *node_ptr;
+	int i;
+
+	/* Build table required updates to power caps */
+	node_power = xmalloc(sizeof(power_by_nodes_t));
+	node_power->alloc_watts = 0;
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!node_ptr->power)
+			continue;
+		if (node_ptr->power->cap_watts == 0)	/* No change */
+			continue;
+		if (node_power->nodes) {
+			xstrcat(node_power->nodes, ",");
+			xstrcat(node_power->nodes, node_ptr->name + 3);
+		} else {
+			node_power->nodes = node_ptr->name + 3;	/* Skip "nid" */
+		}
+	}
+	if (node_power->nodes) {
+		node_power_list = list_create(_node_power_del);
+		list_append(node_power_list, node_power);
+	} else {
+		xfree(node_power);
+	}
+
+	return node_power_list;
+}
+
 static List _rebalance_node_power(void)
 {
 	List node_power_list = NULL;
@@ -459,7 +640,8 @@ static List _rebalance_node_power(void)
 		if (!node_ptr->power)
 			continue;
 		node_ptr->power->new_cap_watts = 0;
-		if (!node_ptr->power->cap_watts)	/* Not initialized */
+		if ((node_ptr->power->cap_watts == 0) ||   /* Not initialized */
+		     (node_ptr->power->current_watts == 0))
 			continue;
 		if (node_ptr->power->current_watts <
 		    (node_ptr->power->cap_watts * lower_threshold)) {
@@ -674,13 +856,11 @@ extern int init(void)
 	}
 
 	_load_config();
-	if (cap_watts) {
-		slurm_attr_init(&attr);
-		/* Since we do a join on thread later, don't make it detached */
-		if (pthread_create(&power_thread, &attr, _power_agent, NULL))
-			error("Unable to start power thread: %m");
-		slurm_attr_destroy(&attr);
-	}
+	slurm_attr_init(&attr);
+	/* Since we do a join on thread later, don't make it detached */
+	if (pthread_create(&power_thread, &attr, _power_agent, NULL))
+		error("Unable to start power thread: %m");
+	slurm_attr_destroy(&attr);
 	pthread_mutex_unlock(&thread_flag_mutex);
 
 	return SLURM_SUCCESS;
@@ -705,8 +885,6 @@ extern void power_p_reconfig(void)
 {
 	pthread_mutex_lock(&thread_flag_mutex);
 	_load_config();
-	if (cap_watts == 0)
-		_stop_power_agent();
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
 
