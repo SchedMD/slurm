@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix the file name substitution for job stderr when %A, %a %j and %u
     are specified.
  -- Remove minor warning when compiling slurmstepd.
+ -- Fix database resources so they can add new clusters to them after they have
+    initially been added.
 
 * Changes in Slurm 14.11.3
 ==========================
