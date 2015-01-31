@@ -33,6 +33,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <inttypes.h>
+
 #include "config.h"
 
 static void _load_mask(cpu_set_t *mask)
@@ -52,9 +55,9 @@ static void _load_mask(cpu_set_t *mask)
 	}
 }
 
-static long long unsigned int _mask_to_int(cpu_set_t *mask)
+static uint64_t _mask_to_int(cpu_set_t *mask)
 {
-	long long unsigned int i, rc = 0;
+	uint64_t i, rc = 0;
 	for (i=0; i<CPU_SETSIZE; i++) {
 		if (CPU_ISSET(i, mask))
 			rc += (1 << i);
@@ -77,6 +80,6 @@ main (int argc, char **argv)
 		exit(1);
 	}
 	task_id = atoi(task_str);
-	printf("TASK_ID:%d,MASK:%llu\n", task_id, _mask_to_int(&mask));
+	printf("TASK_ID:%d,MASK:%"PRIu64"\n", task_id, _mask_to_int(&mask));
 	exit(0);
 }
