@@ -452,7 +452,7 @@ _node_state_list (void)
 	if (all_states)
 		return (all_states);
 
-	all_states = xstrdup (node_state_string_compact (0));
+	all_states = xstrdup (node_state_string(0));
 	for (i = 1; i < NODE_STATE_END; i++) {
 		xstrcat (all_states, ",");
 		xstrcat (all_states, node_state_string(i));
