@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove minor warning when compiling slurmstepd.
  -- Fix database resources so they can add new clusters to them after they have
     initially been added.
+ -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
+    interrupts.
 
 * Changes in Slurm 14.11.3
 ==========================
