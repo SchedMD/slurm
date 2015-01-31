@@ -136,6 +136,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sorting by time left in squeue.
  -- Fix the file name substitution for job stderr when %A, %a %j and %u
     are specified.
+ -- Remove minor warning when compiling slurmstepd.
 
 * Changes in Slurm 14.11.3
 ==========================
@@ -552,6 +553,8 @@ documents those changes that are of interest to users and administrators.
  -- Correct the sbatch pbs parser to process -j.
  -- Squeue modified to not merge tasks of a job array if their wait reasons
     differ.
+ -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
+    interrupts.
 
 * Changes in Slurm 14.03.11
 ===========================

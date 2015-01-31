@@ -650,9 +650,9 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	if (!user_name) {
 #endif
 		/* send cached group ids array for the relevant uid */
-		debug3("%s: call to getpwuid_r", __func__);
-		if (getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE,
-			       &pwd_result) || (pwd_result == NULL)) {
+		debug3("_send_slurmstepd_init: call to getpwuid_r");
+		if (slurm_getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE,
+				     &pwd_result) || (pwd_result == NULL)) {
 			error("%s: getpwuid_r: %m", __func__);
 			len = 0;
 			safe_write(fd, &len, sizeof(int));
@@ -1336,9 +1336,9 @@ _get_user_env(batch_job_launch_msg_t *req)
 	if (i >= req->envc)
 		return;		/* don't need to load env */
 
-	if (getpwuid_r(req->uid, &pwd, pwd_buf, PW_BUF_SIZE, &pwd_ptr) ||
-	    (pwd_ptr == NULL)) {
-		error("getpwuid_r(%u):%m", req->uid);
+	if (slurm_getpwuid_r(req->uid, &pwd, pwd_buf, PW_BUF_SIZE, &pwd_ptr)
+	    || (pwd_ptr == NULL)) {
+		error("%s: getpwuid_r(%u):%m", __func__, req->uid);
 	} else {
 		verbose("get env for user %s here", pwd.pw_name);
 		/* Permit up to 120 second delay before using cache file */

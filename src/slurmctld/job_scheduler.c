@@ -1629,7 +1629,11 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		return NULL;
 	}
 
-	if (getpwuid_r(launch_msg_ptr->uid, &pwd, buffer, PW_BUF_SIZE, &result)
+	if (slurm_getpwuid_r(launch_msg_ptr->uid,
+			     &pwd,
+			     buffer,
+			     PW_BUF_SIZE,
+			     &result)
 	    || !result) {
 #ifdef HAVE_NATIVE_CRAY
 		/* On a Cray this needs to happen before the launch of
