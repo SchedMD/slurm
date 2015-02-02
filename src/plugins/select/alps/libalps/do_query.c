@@ -124,7 +124,7 @@ extern enum basil_version get_basil_version(void)
 		   make it that way */
 		basil_5_2_elements[BT_MEMARRAY].depth = 9;
 		basil_5_2_elements[BT_MEMORY].depth = 10;
-		basil_5_2_elements[BT_MEMALLOC].depth = 8;
+		basil_5_2_elements[BT_MEMALLOC].depth = 11;
 	}
 
 	return bv;

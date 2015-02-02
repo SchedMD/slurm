@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     of Lustre.
  -- When a job using multiple partition starts send to slurmdbd only
     the partition in which the job runs.
+ -- ALPS - Fix depth for MemoryAllocation in BASIL with CLE 5.2.3.
 
 * Changes in Slurm 14.11.3
 ==========================
