@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     be set by the command.
  -- Stop sacct from printing non-existent stat information for
     Front End systems.
+ -- Correct srun and acct_gather.conf man pages, mention Filesystem instead
+    of Lustre.
 
 * Changes in Slurm 14.11.3
 ==========================
