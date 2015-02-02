@@ -1068,7 +1068,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "max_vsize_task", "int unsigned default 0 not null" },
 		{ "max_vsize_node", "int unsigned default 0 not null" },
 		{ "ave_vsize", "double unsigned default 0.0 not null" },
-		{ "min_cpu", "int unsigned default 0 not null" },
+		{ "min_cpu", "int unsigned default 0xfffffffe not null" },
 		{ "min_cpu_task", "int unsigned default 0 not null" },
 		{ "min_cpu_node", "int unsigned default 0 not null" },
 		{ "ave_cpu", "double unsigned default 0.0 not null" },

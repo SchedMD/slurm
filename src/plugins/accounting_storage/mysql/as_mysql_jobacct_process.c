@@ -823,74 +823,76 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if ((int)step->elapsed < 0)
 				step->elapsed = 0;
 
-			step->user_cpu_sec =
-				slurm_atoul(step_row[STEP_REQ_USER_SEC]);
-			step->user_cpu_usec =
-				slurm_atoul(step_row[STEP_REQ_USER_USEC]);
-			step->sys_cpu_sec =
-				slurm_atoul(step_row[STEP_REQ_SYS_SEC]);
-			step->sys_cpu_usec =
-				slurm_atoul(step_row[STEP_REQ_SYS_USEC]);
-			step->tot_cpu_sec +=
-				step->user_cpu_sec + step->sys_cpu_sec;
-			step->tot_cpu_usec +=
-				step->user_cpu_usec + step->sys_cpu_usec;
-			step->stats.disk_read_max =
-				atof(step_row[STEP_REQ_MAX_DISK_READ]);
-			step->stats.disk_read_max_taskid =
-				slurm_atoul(
-					step_row[STEP_REQ_MAX_DISK_READ_TASK]);
-			step->stats.disk_read_ave =
-				atof(step_row[STEP_REQ_AVE_DISK_READ]);
-			step->stats.disk_write_max =
-				atof(step_row[STEP_REQ_MAX_DISK_WRITE]);
-			step->stats.disk_write_max_taskid =
-				slurm_atoul(
-					step_row[STEP_REQ_MAX_DISK_WRITE_TASK]);
-			step->stats.disk_write_ave =
-				atof(step_row[STEP_REQ_AVE_DISK_WRITE]);
-			step->stats.vsize_max =
-				slurm_atoul(step_row[STEP_REQ_MAX_VSIZE]);
-			step->stats.vsize_max_taskid =
-				slurm_atoul(step_row[STEP_REQ_MAX_VSIZE_TASK]);
-			step->stats.vsize_ave =
-				atof(step_row[STEP_REQ_AVE_VSIZE]);
-			step->stats.rss_max =
-				slurm_atoul(step_row[STEP_REQ_MAX_RSS]);
-			step->stats.rss_max_taskid =
-				slurm_atoul(step_row[STEP_REQ_MAX_RSS_TASK]);
-			step->stats.rss_ave =
-				atof(step_row[STEP_REQ_AVE_RSS]);
-			step->stats.pages_max =
-				slurm_atoul(step_row[STEP_REQ_MAX_PAGES]);
-			step->stats.pages_max_taskid =
-				slurm_atoul(step_row[STEP_REQ_MAX_PAGES_TASK]);
-			step->stats.pages_ave =
-				atof(step_row[STEP_REQ_AVE_PAGES]);
-			step->stats.cpu_min =
-				slurm_atoul(step_row[STEP_REQ_MIN_CPU]);
-			step->stats.cpu_min_taskid =
-				slurm_atoul(step_row[STEP_REQ_MIN_CPU_TASK]);
-			step->stats.cpu_ave = atof(step_row[STEP_REQ_AVE_CPU]);
-			step->stats.act_cpufreq =
-				atof(step_row[STEP_REQ_ACT_CPUFREQ]);
-			step->stats.consumed_energy =
-				atof(step_row[STEP_REQ_CONSUMED_ENERGY]);
 			step->req_cpufreq =
 				slurm_atoul(step_row[STEP_REQ_REQ_CPUFREQ]);
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
-			step->stats.vsize_max_nodeid =
-				slurm_atoul(step_row[STEP_REQ_MAX_VSIZE_NODE]);
-			step->stats.rss_max_nodeid =
-				slurm_atoul(step_row[STEP_REQ_MAX_RSS_NODE]);
-			step->stats.pages_max_nodeid =
-				slurm_atoul(step_row[STEP_REQ_MAX_PAGES_NODE]);
-			step->stats.cpu_min_nodeid =
-				slurm_atoul(step_row[STEP_REQ_MIN_CPU_NODE]);
-
 			step->requid =
 				slurm_atoul(step_row[STEP_REQ_KILL_REQUID]);
+
+			step->stats.cpu_min = slurm_atoul(
+				step_row[STEP_REQ_MIN_CPU]);
+
+			if (step->stats.cpu_min != NO_VAL) {
+				step->user_cpu_sec = slurm_atoul(
+					step_row[STEP_REQ_USER_SEC]);
+				step->user_cpu_usec = slurm_atoul(
+					step_row[STEP_REQ_USER_USEC]);
+				step->sys_cpu_sec = slurm_atoul(
+					step_row[STEP_REQ_SYS_SEC]);
+				step->sys_cpu_usec = slurm_atoul(
+					step_row[STEP_REQ_SYS_USEC]);
+				step->tot_cpu_sec +=
+					step->user_cpu_sec + step->sys_cpu_sec;
+				step->tot_cpu_usec += step->user_cpu_usec +
+					step->sys_cpu_usec;
+				step->stats.disk_read_max =
+					atof(step_row[STEP_REQ_MAX_DISK_READ]);
+				step->stats.disk_read_max_taskid = slurm_atoul(
+					step_row[STEP_REQ_MAX_DISK_READ_TASK]);
+				step->stats.disk_read_ave =
+					atof(step_row[STEP_REQ_AVE_DISK_READ]);
+				step->stats.disk_write_max =
+					atof(step_row[STEP_REQ_MAX_DISK_WRITE]);
+				step->stats.disk_write_max_taskid = slurm_atoul(
+					step_row[STEP_REQ_MAX_DISK_WRITE_TASK]);
+				step->stats.disk_write_ave =
+					atof(step_row[STEP_REQ_AVE_DISK_WRITE]);
+				step->stats.vsize_max = slurm_atoul(
+					step_row[STEP_REQ_MAX_VSIZE]);
+				step->stats.vsize_max_taskid = slurm_atoul(
+					step_row[STEP_REQ_MAX_VSIZE_TASK]);
+				step->stats.vsize_ave =
+					atof(step_row[STEP_REQ_AVE_VSIZE]);
+				step->stats.rss_max =
+					slurm_atoul(step_row[STEP_REQ_MAX_RSS]);
+				step->stats.rss_max_taskid = slurm_atoul(
+					step_row[STEP_REQ_MAX_RSS_TASK]);
+				step->stats.rss_ave =
+					atof(step_row[STEP_REQ_AVE_RSS]);
+				step->stats.pages_max = slurm_atoul(
+					step_row[STEP_REQ_MAX_PAGES]);
+				step->stats.pages_max_taskid = slurm_atoul(
+					step_row[STEP_REQ_MAX_PAGES_TASK]);
+				step->stats.pages_ave =
+					atof(step_row[STEP_REQ_AVE_PAGES]);
+				step->stats.cpu_min_taskid = slurm_atoul(
+					step_row[STEP_REQ_MIN_CPU_TASK]);
+				step->stats.cpu_ave = atof(
+					step_row[STEP_REQ_AVE_CPU]);
+				step->stats.act_cpufreq =
+					atof(step_row[STEP_REQ_ACT_CPUFREQ]);
+				step->stats.consumed_energy = atof(
+					step_row[STEP_REQ_CONSUMED_ENERGY]);
+				step->stats.vsize_max_nodeid = slurm_atoul(
+					step_row[STEP_REQ_MAX_VSIZE_NODE]);
+				step->stats.rss_max_nodeid = slurm_atoul(
+					step_row[STEP_REQ_MAX_RSS_NODE]);
+				step->stats.pages_max_nodeid = slurm_atoul(
+					step_row[STEP_REQ_MAX_PAGES_NODE]);
+				step->stats.cpu_min_nodeid = slurm_atoul(
+					step_row[STEP_REQ_MIN_CPU_NODE]);
+			}
 		}
 		mysql_free_result(step_result);
 

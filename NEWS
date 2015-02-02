@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
     interrupts.
  -- Correct the scontrol man page and command listing which node states can
     be set by the command.
+ -- Stop sacct from printing non-existent stat information for
+    Front End systems.
 
 * Changes in Slurm 14.11.3
 ==========================

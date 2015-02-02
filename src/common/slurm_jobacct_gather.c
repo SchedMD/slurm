@@ -976,22 +976,11 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
 	if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
-		if (no_pack) {
+		if (!jobacct || no_pack) {
 			pack8((uint8_t) 0, buffer);
 			return;
 		}
 		pack8((uint8_t) 1, buffer);
-		if (!jobacct) {
-			for (i = 0; i < 6; i++)
-				pack64(0, buffer);
-			for (i = 0; i < 8; i++)
-				pack32((uint32_t) 0, buffer);
-			for (i = 0; i < 4; i++)
-				packdouble((double) 0, buffer);
-			for (i = 0; i < 6; i++)
-				_pack_jobacct_id(NULL, rpc_version, buffer);
-			return;
-		}
 
 		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
