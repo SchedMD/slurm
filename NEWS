@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
     initially been added.
  -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
     interrupts.
+ -- Correct the scontrol man page and command listing which node states can
+    be set by the command.
 
 * Changes in Slurm 14.11.3
 ==========================

@@ -927,10 +927,12 @@ Use quotes to enclose a reason having more than one word.
 
 .TP
 \fIState\fP=<state>
-Identify the state to be assigned to the node. Possible values are  "NoResp",
+Identify the state to be assigned to the node. Possible node states are "NoResp",
 "ALLOC", "ALLOCATED", "COMPLETING", "DOWN", "DRAIN", "ERROR, "FAIL", "FAILING",
 "FUTURE" "IDLE", "MAINT", "MIXED", "PERFCTRS/NPC", "RESERVED", "POWER_DOWN",
-"POWER_UP", "RESUME" or "UNDRAIN".
+"POWER_UP", "RESUME" or "UNDRAIN". Not all of those states can be set using
+the scontrol command only the following can: "NoResp", "DRAIN", "FAIL",
+"FUTURE", "RESUME", "POWER_DOWN", "POWER_UP" and "UNDRAIN".
 If a node is in a "MIXED" state it usually means the node is in
 multiple states.  For instance if only part of the node is "ALLOCATED"
 and the rest of the node is "IDLE" the state will be "MIXED".
@@ -1474,8 +1476,8 @@ exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
 
 .TP
 \fIMemSpecLimit\fP
-The combined memory limit, in megabytes, on this node for the Slurm compute 
-node daemons (slurmd, slurmstepd). 
+The combined memory limit, in megabytes, on this node for the Slurm compute
+node daemons (slurmd, slurmstepd).
 
 
 .SH "ENVIRONMENT VARIABLES"
