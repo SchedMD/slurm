@@ -37,6 +37,8 @@ documents those changes that are of interest to users and administrators.
     Front End systems.
  -- Correct srun and acct_gather.conf man pages, mention Filesystem instead
     of Lustre.
+ -- When a job using multiple partition starts send to slurmdbd only
+    the partition in which the job runs.
 
 * Changes in Slurm 14.11.3
 ==========================

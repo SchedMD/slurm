@@ -444,7 +444,9 @@ no_rollup_change:
 				       mysql_conn->cluster_name,
 				       job_ptr->assoc_id);
 
-	if (job_ptr->partition)
+	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
+		partition = slurm_add_slash_to_quotes(job_ptr->part_ptr->name);
+	else if (job_ptr->partition)
 		partition = slurm_add_slash_to_quotes(job_ptr->partition);
 
 	if (job_ptr->gres_req)

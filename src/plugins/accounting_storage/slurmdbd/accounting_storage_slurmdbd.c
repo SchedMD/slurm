@@ -215,7 +215,12 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 						job_ptr->node_bitmap));
 	}
 	req->alloc_cpus    = job_ptr->total_cpus;
-	req->partition     = xstrdup(job_ptr->partition);
+
+	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
+		req->partition = xstrdup(job_ptr->part_ptr->name);
+	else
+		req->partition = xstrdup(job_ptr->partition);
+
 	if (job_ptr->details) {
 		req->req_cpus = job_ptr->details->min_cpus;
 		req->req_mem = job_ptr->details->pn_min_memory;
