@@ -234,8 +234,17 @@ static int _set_res_cond(int *start, int argc, char *argv[],
 				}
 			}
 			list_iterator_destroy(itr);
+		} else if (!strncasecmp(argv[i], "PercentAllowed",
+					 MAX(command_len, 1))) {
+			if (!res_cond->percent_list) {
+				res_cond->percent_list =
+					list_create(slurm_destroy_char);
+			}
+			if (slurm_addto_char_list(res_cond->percent_list,
+						  argv[i]+end))
+				set = 1;
 		} else if (!strncasecmp(argv[i], "ServerType",
-					 MAX(command_len, 2))) {
+					 MAX(command_len, 7))) {
 			if (!res_cond->manager_list) {
 				res_cond->manager_list =
 					list_create(slurm_destroy_char);
@@ -588,6 +597,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 			res->count = start_res->count;
 			res->flags = start_res->flags;
 			res->type = start_res->type;
+			res->percent_used = 0;
 
 			xstrfmtcat(res_str, "  %s@%s\n",
 				   res->name, res->server);
@@ -607,6 +617,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 				slurmdb_init_res_rec(res, 0);
 				res->id = found_res->id;
 				res->type = found_res->type;
+				res->server = xstrdup(found_res->server);
 				start_used = res->percent_used =
 					found_res->percent_used;
 			}
@@ -885,6 +896,18 @@ extern int sacctmgr_modify_res(int argc, char *argv[])
 			slurmdb_destroy_res_rec(res);
 			return SLURM_SUCCESS;
 		}
+	}
+
+	if (res->count != NO_VAL && res_cond->cluster_list &&
+			list_count(res_cond->cluster_list)) {
+		fprintf(stderr, "Can't change \"count\" on a cluster-based "
+			"resource. Remove cluster selection.\n");
+		return SLURM_ERROR;
+	} else if (res->percent_used != (uint16_t)NO_VAL &&
+			!res_cond->cluster_list) {
+		fprintf(stderr, "Can't change \"percentallowed\" without "
+			"specifying a cluster.\n");
+		return SLURM_ERROR;
 	}
 
 	notice_thread_init();

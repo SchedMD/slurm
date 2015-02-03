@@ -137,6 +137,23 @@ documents those changes that are of interest to users and administrators.
  -- Fix the file name substitution for job stderr when %A, %a %j and %u
     are specified.
  -- Remove minor warning when compiling slurmstepd.
+ -- Fix database resources so they can add new clusters to them after they have
+    initially been added.
+ -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
+    interrupts.
+ -- Correct the scontrol man page and command listing which node states can
+    be set by the command.
+ -- Stop sacct from printing non-existent stat information for
+    Front End systems.
+ -- Correct srun and acct_gather.conf man pages, mention Filesystem instead
+    of Lustre.
+ -- When a job using multiple partition starts send to slurmdbd only
+    the partition in which the job runs.
+ -- ALPS - Fix depth for MemoryAllocation in BASIL with CLE 5.2.3.
+ -- Fix assoc_mgr hash to deal with users that don't have a uid yet when making
+    reservations.
+ -- If using proctrack/cgroup and gres/gpu, always start CUDA_VISIBLE_DEVICES
+    environment variable numbering at 0.
 
 * Changes in Slurm 14.11.3
 ==========================

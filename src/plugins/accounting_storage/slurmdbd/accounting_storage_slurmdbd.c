@@ -215,7 +215,12 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 						job_ptr->node_bitmap));
 	}
 	req->alloc_cpus    = job_ptr->total_cpus;
-	req->partition     = xstrdup(job_ptr->partition);
+
+	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
+		req->partition = xstrdup(job_ptr->part_ptr->name);
+	else
+		req->partition = xstrdup(job_ptr->partition);
+
 	if (job_ptr->details) {
 		req->req_cpus = job_ptr->details->min_cpus;
 		req->req_mem = job_ptr->details->pn_min_memory;
@@ -2491,7 +2496,17 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	req.db_index    = step_ptr->job_ptr->db_index;
 	req.end_time    = time(NULL);	/* called at step completion */
 	req.exit_code   = step_ptr->exit_code;
+#ifndef HAVE_FRONT_END
+	/* Only send this info on a non-frontend system since this
+	 * information is of no use on systems that run on a front-end
+	 * node.  Since something else is running the job.
+	 */
 	req.jobacct     = step_ptr->jobacct;
+#else
+	if (step_ptr->step_id == SLURM_BATCH_SCRIPT)
+		req.jobacct     = step_ptr->jobacct;
+#endif
+
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.req_uid     = step_ptr->requid;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)

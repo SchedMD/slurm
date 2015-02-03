@@ -726,6 +726,10 @@ the major, minor and micro release numbers in that order (e.g. 2.5.3 is
 major=2, minor=5, micro=3).
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major and/or minor release number changes.
+Slurm's MPI libraries may also change if the major and/or minor release number
+change, requiring applications be re-linked (behavior may vary depending upon
+the MPI implementation used and the specific Slurm changes between releases).
+Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous minor
 releases (e.g. a version 2.6.x SlurmDBD will support slurmctld daemons and
 commands with a version of 2.4.x or 2.5.x).
@@ -823,6 +827,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 September 2014</p>
+<p style="text-align:center;">Last modified 3 February 2015</p>
 
 <!--#include virtual="footer.txt"-->

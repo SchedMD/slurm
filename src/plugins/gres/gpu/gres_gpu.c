@@ -212,27 +212,37 @@ extern int node_config_load(List gres_conf_list)
  */
 extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 {
-	int i, len;
+	int i, len, local_inx = 0;
 	char *dev_list = NULL;
 	gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
+	char *proctrack_type;
+	bool use_cgroup = false;
+
+	proctrack_type = slurm_get_proctrack_type();
+	if (strstr(proctrack_type, "cgroup"))
+		use_cgroup = true;
+	xfree(proctrack_type);
 
 	if ((gres_job_ptr != NULL) &&
 	    (gres_job_ptr->node_cnt == 1) &&
 	    (gres_job_ptr->gres_bit_alloc != NULL) &&
 	    (gres_job_ptr->gres_bit_alloc[0] != NULL)) {
 		len = bit_size(gres_job_ptr->gres_bit_alloc[0]);
-		for (i=0; i<len; i++) {
+		for (i = 0; i < len; i++) {
 			if (!bit_test(gres_job_ptr->gres_bit_alloc[0], i))
 				continue;
 			if (!dev_list)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			if (gpu_devices && (i < nb_available_files) &&
-			    (gpu_devices[i] >= 0))
+			if (use_cgroup) {
+				xstrfmtcat(dev_list, "%d", local_inx++);
+			} else if (gpu_devices && (i < nb_available_files) &&
+				  (gpu_devices[i] >= 0)) {
 				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
-			else
+			} else {
 				xstrfmtcat(dev_list, "%d", i);
+			}
 		}
 	} else if (gres_job_ptr && (gres_job_ptr->gres_cnt_alloc > 0)) {
 		/* The gres.conf file must identify specific device files
@@ -258,27 +268,37 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
  */
 extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 {
-	int i, len;
+	int i, len, local_inx = 0;
 	char *dev_list = NULL;
 	gres_step_state_t *gres_step_ptr = (gres_step_state_t *) gres_ptr;
+	char *proctrack_type;
+	bool use_cgroup = false;
+
+	proctrack_type = slurm_get_proctrack_type();
+	if (strstr(proctrack_type, "cgroup"))
+		use_cgroup = true;
+	xfree(proctrack_type);
 
 	if ((gres_step_ptr != NULL) &&
 	    (gres_step_ptr->node_cnt == 1) &&
 	    (gres_step_ptr->gres_bit_alloc != NULL) &&
 	    (gres_step_ptr->gres_bit_alloc[0] != NULL)) {
 		len = bit_size(gres_step_ptr->gres_bit_alloc[0]);
-		for (i=0; i<len; i++) {
+		for (i = 0; i < len; i++) {
 			if (!bit_test(gres_step_ptr->gres_bit_alloc[0], i))
 				continue;
 			if (!dev_list)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			if (gpu_devices && (i < nb_available_files) &&
-			    (gpu_devices[i] >= 0))
+			if (use_cgroup) {
+				xstrfmtcat(dev_list, "%d", local_inx++);
+			} else if (gpu_devices && (i < nb_available_files) &&
+				   (gpu_devices[i] >= 0)) {
 				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
-			else
+			} else {
 				xstrfmtcat(dev_list, "%d", i);
+			}
 		}
 	} else if (gres_step_ptr && (gres_step_ptr->gres_cnt_alloc > 0)) {
 		/* The gres.conf file must identify specific device files
