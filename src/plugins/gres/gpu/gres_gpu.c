@@ -73,6 +73,7 @@
 #include "src/common/env.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/xcgroup_read_config.c"
 #include "src/common/xstring.h"
 
 /*
@@ -207,6 +208,37 @@ extern int node_config_load(List gres_conf_list)
 }
 
 /*
+ * Test if CUDA_VISIBLE_DEVICES should be set to global device ID or a device
+ * ID that always starts at zero (based upon what the application can see).
+ * RET true if TaskPlugin=task/cgroup AND ConstrainDevices=yes (in cgroup.conf).
+ */
+static bool _use_local_device_index(void)
+{
+	slurm_cgroup_conf_t slurm_cgroup_conf;
+	char *task_plugin = slurm_get_task_plugin();
+	bool use_cgroup = false, use_local_index = false;
+
+	if (!task_plugin)
+		return use_local_index;
+
+	if (strstr(task_plugin, "cgroup"))
+		use_cgroup = true;
+	xfree(task_plugin);
+	if (!use_cgroup)
+		return use_local_index;
+
+	/* Read and parse cgroup.conf */
+	bzero(&slurm_cgroup_conf, sizeof(slurm_cgroup_conf_t));
+	if (read_slurm_cgroup_conf(&slurm_cgroup_conf) != SLURM_SUCCESS)
+		return use_local_index;
+	if (slurm_cgroup_conf.constrain_devices)
+		use_local_index = true;
+	free_slurm_cgroup_conf(&slurm_cgroup_conf);
+
+	return use_local_index;
+}
+
+/*
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job's GRES state.
  */
@@ -215,13 +247,7 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 	int i, len, local_inx = 0;
 	char *dev_list = NULL;
 	gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
-	char *proctrack_type;
-	bool use_cgroup = false;
-
-	proctrack_type = slurm_get_proctrack_type();
-	if (strstr(proctrack_type, "cgroup"))
-		use_cgroup = true;
-	xfree(proctrack_type);
+	bool use_local_dev_index = _use_local_device_index();
 
 	if ((gres_job_ptr != NULL) &&
 	    (gres_job_ptr->node_cnt == 1) &&
@@ -235,7 +261,7 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			if (use_cgroup) {
+			if (use_local_dev_index) {
 				xstrfmtcat(dev_list, "%d", local_inx++);
 			} else if (gpu_devices && (i < nb_available_files) &&
 				  (gpu_devices[i] >= 0)) {
@@ -271,13 +297,7 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 	int i, len, local_inx = 0;
 	char *dev_list = NULL;
 	gres_step_state_t *gres_step_ptr = (gres_step_state_t *) gres_ptr;
-	char *proctrack_type;
-	bool use_cgroup = false;
-
-	proctrack_type = slurm_get_proctrack_type();
-	if (strstr(proctrack_type, "cgroup"))
-		use_cgroup = true;
-	xfree(proctrack_type);
+	bool use_local_dev_index = _use_local_device_index();
 
 	if ((gres_step_ptr != NULL) &&
 	    (gres_step_ptr->node_cnt == 1) &&
@@ -291,7 +311,7 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			if (use_cgroup) {
+			if (use_local_dev_index) {
 				xstrfmtcat(dev_list, "%d", local_inx++);
 			} else if (gpu_devices && (i < nb_available_files) &&
 				   (gpu_devices[i] >= 0)) {
