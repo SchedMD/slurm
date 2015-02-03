@@ -338,7 +338,9 @@ static char *step_req_inx[] = {
 	"ave_cpu",
 	"act_cpufreq",
 	"consumed_energy",
+	"req_cpufreq_min",
 	"req_cpufreq",
+	"req_cpufreq_gov",
 	"max_disk_read",
 	"max_disk_read_task",
 	"max_disk_read_node",
@@ -388,7 +390,9 @@ enum {
 	STEP_REQ_AVE_CPU,
 	STEP_REQ_ACT_CPUFREQ,
 	STEP_REQ_CONSUMED_ENERGY,
+	STEP_REQ_REQ_CPUFREQ_MIN,
 	STEP_REQ_REQ_CPUFREQ_MAX,
+	STEP_REQ_REQ_CPUFREQ_GOV,
 	STEP_REQ_MAX_DISK_READ,
 	STEP_REQ_MAX_DISK_READ_TASK,
 	STEP_REQ_MAX_DISK_READ_NODE,
@@ -397,8 +401,6 @@ enum {
 	STEP_REQ_MAX_DISK_WRITE_TASK,
 	STEP_REQ_MAX_DISK_WRITE_NODE,
 	STEP_REQ_AVE_DISK_WRITE,
-	STEP_REQ_REQ_CPUFREQ_MIN,
-	STEP_REQ_REQ_CPUFREQ_GOV,
 	STEP_REQ_COUNT,
 };
 
@@ -729,7 +731,7 @@ static void _pack_local_step(local_step_t *object,
 		packstr(object->period_end, buffer);
 		packstr(object->period_start, buffer);
 		packstr(object->period_suspended, buffer);
-		packstr(object->req_cpufreq_min, buffer);
+		packstr(object->req_cpufreq_max, buffer);
 		packstr(object->state, buffer);
 		packstr(object->stepid, buffer);
 		packstr(object->sys_sec, buffer);
@@ -835,7 +837,7 @@ static int _unpack_local_step(local_step_t *object,
 		unpackstr_ptr(&object->period_end, &tmp32, buffer);
 		unpackstr_ptr(&object->period_start, &tmp32, buffer);
 		unpackstr_ptr(&object->period_suspended, &tmp32, buffer);
-		unpackstr_ptr(&object->req_cpufreq_min, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpufreq_max, &tmp32, buffer);
 		unpackstr_ptr(&object->state, &tmp32, buffer);
 		unpackstr_ptr(&object->stepid, &tmp32, buffer);
 		unpackstr_ptr(&object->sys_sec, &tmp32, buffer);
