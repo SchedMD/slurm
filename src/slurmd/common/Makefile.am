@@ -22,7 +22,6 @@ libslurmd_common_la_SOURCES =    \
 	set_oomadj.c set_oomadj.h \
 	reverse_tree.h \
 	xcpuinfo.c xcpuinfo.h \
-	xcgroup_read_config.c xcgroup_read_config.h \
 	xcgroup.c xcgroup.h
 
 

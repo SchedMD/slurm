@@ -23,7 +23,41 @@ are assigned to.
 </li>
 </ul>
 
-<h2>Use Case</h2>
+
+<h2>Local Licenses</h2>
+<p>Local licenses are defined in the slurm.conf using the <i>Licenses</i>
+option.
+
+<p>slurm.conf:
+<pre>
+Licenses=fluent:30,ansys:100
+</pre>
+
+<p>Configured licenses can be viewed using the <i>scontrol</i> command.
+<pre>
+$ scontrol show lic
+LicenseName=ansys
+    Total=100 Used=0 Free=100 Remote=no
+LicenseName=fluent
+    Total=30 Used=0 Free=30 Remote=no
+</pre>
+
+<p>Requesting licenses is done by using the -L, or --licenses, submission
+option.
+<pre>
+$ sbatch -L ansys:2 script.sh
+Submitted batch job 5212
+
+$ scontrol show lic
+LicenseName=ansys
+    Total=100 Used=2 Free=98 Remote=no
+LicenseName=fluent
+    Total=30 Used=0 Free=30 Remote=no
+</pre>
+
+<h2>Remote Licenses</h2>
+
+<h3>Use Case</h3>
 <p>A site has two license servers, one serves 100 Nastran licenses provided by
 FlexNet and the other serves 50 Matlab licenses from Reprise License
 Management. The site has two clusters named "fluid" and "pdf" dedicated to run
@@ -31,7 +65,7 @@ simulation jobs using both products. The managers want to split the number
 of Nastran licenses equally between clusters, but assign 70% of the Matlab
 licenses to cluster "pdf" and the remaining 30% to cluster "fluid".</p>
 
-<h2>Configuring Slurm for the use case</h2>
+<h3>Configuring Slurm for the use case</h3>
 <p>Here we assume that both clusters have been configured correctly in the
 <it>slurmdbd</it> using the <it>sacctmgr</i> command.</p>
 <pre>

@@ -152,8 +152,13 @@ documents those changes that are of interest to users and administrators.
  -- ALPS - Fix depth for MemoryAllocation in BASIL with CLE 5.2.3.
  -- Fix assoc_mgr hash to deal with users that don't have a uid yet when making
     reservations.
- -- If using proctrack/cgroup and gres/gpu, always start CUDA_VISIBLE_DEVICES
-    environment variable numbering at 0.
+ -- When a job uses multiple partition set the environment variable
+    SLURM_JOB_PARTITION to be the one in which the job started.
+ -- Print spurious message about the absence of cgroup.conf at log level debug2
+    instead of info.
+ -- Enable CUDA v7.0+ use with a Slurm configuration of TaskPlugin=task/cgroup
+    ConstrainDevices=yes (in cgroup.conf). With that configuration
+    CUDA_VISIBLE_DEVICES will start at 0 rather than the device number.
 
 * Changes in Slurm 14.11.3
 ==========================

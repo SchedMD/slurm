@@ -127,7 +127,9 @@ libcommon_la_SOURCES = 			\
 	entity.h entity.c		\
 	layout.h layout.c		\
 	layouts_mgr.h layouts_mgr.c	\
-	mapping.c mapping.h
+	mapping.c mapping.h		\
+	xcgroup_read_config.c xcgroup_read_config.h
+
 
 EXTRA_libcommon_la_SOURCES = 		\
 	$(extra_unsetenv_src)		\

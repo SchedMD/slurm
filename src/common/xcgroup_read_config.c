@@ -53,10 +53,9 @@
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/xcgroup_read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "xcgroup_read_config.h"
 
 #define DEFAULT_CGROUP_BASEDIR "/cgroup"
 
@@ -166,7 +165,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
-		info("No cgroup.conf file (%s)", conf_path);
+		debug2("%s: No cgroup.conf file (%s)", __func__, conf_path);
 	} else {
 		debug("Reading cgroup.conf file %s", conf_path);
 
@@ -179,11 +178,11 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 		/* cgroup initialisation parameters */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->cgroup_automount,
-			        "CgroupAutomount", tbl))
+				     "CgroupAutomount", tbl))
 			slurm_cgroup_conf->cgroup_automount = false;
 
 		if (!s_p_get_string(&slurm_cgroup_conf->cgroup_mountpoint,
-				"CgroupMountpoint", tbl))
+				    "CgroupMountpoint", tbl))
 			slurm_cgroup_conf->cgroup_mountpoint =
 				xstrdup(DEFAULT_CGROUP_BASEDIR);
 

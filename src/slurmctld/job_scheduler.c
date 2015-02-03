@@ -1674,7 +1674,10 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	}
 
 	launch_msg_ptr->acctg_freq = xstrdup(job_ptr->details->acctg_freq);
-	launch_msg_ptr->partition = xstrdup(job_ptr->partition);
+	if (job_ptr->part_ptr)
+		launch_msg_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+	else
+		launch_msg_ptr->partition = xstrdup(job_ptr->partition);
 	launch_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
 	launch_msg_ptr->std_in = xstrdup(job_ptr->details->std_in);
 	launch_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
@@ -2800,7 +2803,13 @@ static char **_build_env(struct job_record *job_ptr)
 	setenvf(&my_env, "SLURM_JOB_ID", "%u", job_ptr->job_id);
 	setenvf(&my_env, "SLURM_JOB_NAME", "%s", job_ptr->name);
 	setenvf(&my_env, "SLURM_JOB_NODELIST", "%s", job_ptr->nodes);
-	setenvf(&my_env, "SLURM_JOB_PARTITION", "%s", job_ptr->partition);
+	if (job_ptr->part_ptr) {
+		setenvf(&my_env, "SLURM_JOB_PARTITION", "%s",
+			job_ptr->part_ptr->name);
+	} else {
+		setenvf(&my_env, "SLURM_JOB_PARTITION", "%s",
+			job_ptr->partition);
+	}
 	setenvf(&my_env, "SLURM_JOB_UID", "%u", job_ptr->user_id);
 	name = uid_to_string((uid_t) job_ptr->user_id);
 	setenvf(&my_env, "SLURM_JOB_USER", "%s", name);

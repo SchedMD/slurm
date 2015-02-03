@@ -41,7 +41,7 @@
 #ifndef _TASK_CGROUP_DEVICES_H_
 #define _TASK_CGROUP_DEVICES_H_
 
-#include "src/slurmd/common/xcgroup_read_config.h"
+#include "src/common/xcgroup_read_config.h"
 
 /* initialize devices subsystem of task/cgroup */
 extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf);
