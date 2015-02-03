@@ -200,11 +200,25 @@ static slurmdb_association_rec_t *_find_assoc_rec(
 	assoc_ptr = assoc_hash[inx];
 
 	while (assoc_ptr) {
-		if ((!assoc->user && assoc_ptr->user)
-		    && (assoc->uid == NO_VAL && assoc_ptr->uid != NO_VAL)) {
-			debug("we are looking for a "
-			       "nonuser association");
+		if ((!assoc->user && (assoc->uid == NO_VAL))
+		    && (assoc_ptr->user || (assoc_ptr->uid != NO_VAL))) {
+			debug("we are looking for a nonuser association");
 			goto next;
+		} else if ((!assoc_ptr->user && (assoc_ptr->uid == NO_VAL))
+			   && (assoc->user || (assoc->uid != NO_VAL))) {
+			debug("we are looking for a user association");
+			goto next;
+		} else if (assoc->user && assoc_ptr->user
+			   && ((assoc->uid == NO_VAL) ||
+			       (assoc_ptr->uid == NO_VAL))) {
+			/* This means the uid isn't set in one of the
+			 * associations, so use the name instead
+			 */
+			if (strcasecmp(assoc->user, assoc_ptr->user)) {
+				debug("2 not the right user %u != %u",
+				      assoc->uid, assoc_ptr->uid);
+				goto next;
+			}
 		} else if (assoc->uid != assoc_ptr->uid) {
 			debug("not the right user %u != %u",
 			       assoc->uid, assoc_ptr->uid);

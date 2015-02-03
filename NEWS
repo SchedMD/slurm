@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- When a job using multiple partition starts send to slurmdbd only
     the partition in which the job runs.
  -- ALPS - Fix depth for MemoryAllocation in BASIL with CLE 5.2.3.
+ -- Fix assoc_mgr hash to deal with users that don't have a uid yet when making
+    reservations.
 
 * Changes in Slurm 14.11.3
 ==========================
