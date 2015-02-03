@@ -4303,6 +4303,7 @@ extern void slurmdb_pack_res_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
+	count = NO_VAL;
 
 	if (object->type_list)
 		count = list_count(object->type_list);
@@ -4316,6 +4317,7 @@ extern void slurmdb_pack_res_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
+	count = NO_VAL;
 
 	pack16(object->with_deleted, buffer);
 	pack16(object->with_clusters, buffer);

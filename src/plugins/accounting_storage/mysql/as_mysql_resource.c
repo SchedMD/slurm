@@ -50,23 +50,20 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	ListIterator itr = NULL;
 	char *object = NULL;
 
-	/* Since we are always doing an outer join here t1.deleted needs
-	   to be handled on join instead of the where.
-	*/
 	if (!res_cond) {
-//		xstrcat(*extra, "where t1.deleted=0");
+		xstrcat(*extra, "where t1.deleted=0");
 		return;
 	}
 
-	/* if (res_cond->with_deleted) */
-	/* 	xstrcat(*extra, "where (t1.deleted=0 || t1.deleted=1)"); */
-	/* else */
-	/* 	xstrcat(*extra, "where t1.deleted=0"); */
+	if (res_cond->with_deleted)
+		xstrcat(*extra, "where (t1.deleted=0 || t1.deleted=1)");
+	else
+		xstrcat(*extra, "where t1.deleted=0");
 
 	if (res_cond->description_list
 	    && list_count(res_cond->description_list)) {
 		set = 0;
-		xstrfmtcat(*extra, "%s (", *extra ? " &&" : "where");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(res_cond->description_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -79,15 +76,14 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	}
 
 	if (!(res_cond->flags & SLURMDB_RES_FLAG_NOTSET)) {
-		xstrfmtcat(*extra, "%s (flags & %u)",
-			   *extra ? " &&" : "where",
+		xstrfmtcat(*extra, " && (flags & %u)",
 			   res_cond->flags & SLURMDB_RES_FLAG_BASE);
 	}
 
 	if (res_cond->id_list
 	    && list_count(res_cond->id_list)) {
 		set = 0;
-		xstrfmtcat(*extra, "%s (", *extra ? " &&" : "where");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(res_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -102,7 +98,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->manager_list
 	    && list_count(res_cond->manager_list)) {
 		set = 0;
-		xstrfmtcat(*extra, "%s (", *extra ? " &&" : "where");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(res_cond->manager_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -117,7 +113,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->name_list
 	    && list_count(res_cond->name_list)) {
 		set = 0;
-		xstrfmtcat(*extra, "%s (", *extra ? " &&" : "where");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(res_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -132,7 +128,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->server_list
 	    && list_count(res_cond->server_list)) {
 		set = 0;
-		xstrfmtcat(*extra, "%s (", *extra ? " &&" : "where");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(res_cond->server_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -147,7 +143,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->type_list
 	    && list_count(res_cond->type_list)) {
 		set = 0;
-		xstrfmtcat(*extra, "%s (", *extra ? " &&" : "where");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(res_cond->type_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -158,9 +154,6 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 		list_iterator_destroy(itr);
 		xstrcat(*extra, ")");
 	}
-
-	if (!*extra)
-		*extra = xstrdup("");
 }
 
 static int _setup_clus_res_cond(slurmdb_res_cond_t *res_cond, char **extra)
@@ -375,7 +368,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 	query = xstrdup_printf("select distinct %s from %s as t1 "
 			       "left outer join "
 			       "%s as t2 on (res_id=id && "
-			       "t1.deleted=0 && t2.deleted=0) "
+			       "t2.deleted=0) "
 			       "where id=%u group by id",
 			       tmp, res_table, clus_res_table, res->id);
 
@@ -786,7 +779,7 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 			       "id",
 			       tmp, res_table, clus_res_table,
 			       (!res_cond || !res_cond->with_deleted) ?
-			       " && t1.deleted=0 && t2.deleted=0" : "",
+			       " && t2.deleted=0" : "",
 			       extra);
 	xfree(tmp);
 	xfree(extra);
@@ -875,7 +868,7 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			       "%s as t2 on (res_id = id%s) %s && %s;",
 			       res_table, clus_res_table,
 			       (!res_cond || !res_cond->with_deleted) ?
-			       " && t1.deleted && t2.deleted=0" : "",
+			       " && t2.deleted=0" : "",
 			       extra, clus_extra);
 	xfree(clus_extra);
 
@@ -1043,13 +1036,14 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	res_cond->with_deleted = 0;
 	_setup_res_cond(res_cond, &extra);
 	query_clusters += _setup_clus_res_cond(res_cond, &clus_extra);
+
 	if (query_clusters || send_update)
 		query = xstrdup_printf("select id, name, server, cluster "
 				       "from %s as t1 left outer join "
 				       "%s as t2 on (res_id = id%s) %s && %s;",
 				       res_table, clus_res_table,
 				       (!res_cond || !res_cond->with_deleted) ?
-				       " && t1.deleted=0 && t2.deleted=0" : "",
+				       " && t2.deleted=0" : "",
 				       extra, clus_extra);
 	else
 		query = xstrdup_printf("select id, name, server "
