@@ -5,9 +5,18 @@
 <H2>Overview</H2>
 
 <P>Slurm is designed to perform a quick and simple scheduling attempt at
-frequent intervals (e.g. at the time of each job submission or completion).
-A more comprehensive scheduling attempt is made less frequently, typically
-by the backfill scheduling plugin.</P>
+events such as job submission or completion and configuration changes.
+During these event-triggered scheduling events, <b>default_queue_depth</b>
+(default is 100) number of jobs will be considered.</P>
+
+<P>At less frequent intervals, defined by <b>sched_interval</b>, all jobs will
+be considered for scheduling.</P>
+
+<P>In either case, once any job or job array task in a partition is left
+pending, no other jobs in that partition will be scheduled.</P>
+
+<P>A more comprehensive scheduling attempt is typically done by the backfill
+scheduling plugin.</P>
 
 <H2>Scheduling Configuration</H2>
 
@@ -19,7 +28,10 @@ each partition/queue.</P>
 
 <P>There is also a <B>SchedulerParameters</B> configuration parameter which
 can specify a wide range of parameters as described below.
-This first set of parameters applies to all scheduling configurations.</P>
+This first set of parameters applies to all scheduling configurations.
+See the <a href="slurm.conf.html">slurm.conf(5)</a> man page for more details.
+</P>
+
 <UL>
 <LI><B>default_queue_depth=#</B> - Specifies the number of jobs to consider for
 scheduling on each event that may result in a job being scheduled.
@@ -29,11 +41,16 @@ small number is generally best.</LI>
 Can be useful for high-throughput computing.</LI>
 <LI><B>max_switch_wait=#</B> - Specifies the maximum time a job can wait for
 desired number of leaf switches. Default value is 300 seconds.</LI>
+<LI><B>partition_job_depth=#</B> - Specifies how many jobs are tested in any
+single partition, default value is 0 (no limit).</LI>
+<LI><B>sched_interval=#</B> - Specifies how frequently, in seconds, the main
+scheduling loop will execute and test all pending jobs. The default value is
+60 seconds.</LI>
 </UL>
 
 <H2>Backfill Scheduling</H2>
 
-<P>Backfill scheduling plugin is loaded by default.
+<P>The backfill scheduling plugin is loaded by default.
 Without backfill scheduling, each partition is scheduled strictly in priority
 order, which typically results in significantly lower system utilization and
 responsiveness than otherwise possible.
@@ -53,7 +70,10 @@ memory requirements, etc.
 If the job under consideration can start immediately without impacting the
 expected start time of any higher priority job, then it does so.
 Otherwise the resources required by the job will be reserved during the job's
-expected execution time.</P>
+expected execution time.
+The backfill plugin will set the expected start time for pending jobs. A job's
+expected start time can be seen using the <b>squeue --start</b> command.
+</P>
 
 <P>Backfill scheduling is difficult without reasonable time limit estimates
 for jobs, but some configuration parameters that can help.</P>
@@ -72,7 +92,10 @@ and ignore newly submitted jobs (<B>SchedulerParameters=bf_continue</B>).
 Doing so will permit consideration of more jobs, but may result in the delayed
 scheduling of newly submitted jobs.
 A list of <B>SchedulerParameters</B> configuration parameters related to
-backfill scheduling follows.</P>
+backfill scheduling follows.
+See the <a href="slurm.conf.html">slurm.conf(5)</a> man page for more details.
+</P>
+
 <UL>
 <LI><B>bf_continue</B> - If set, then continue backfill scheduling after
 periodically releasing locks for other operations.</LI>
@@ -91,10 +114,21 @@ Default value is 60 seconds.
 Larger values are appropriate if job time limits are imprecise and/or
 small delays in starting pending jobs in order to achieve higher system
 utilization is desired.</LI>
-<LI><B>bf_window=#</B> - How long into the future to look when determining
-when and where jobs can start. Default value is one day.</LI>
+<LI><B>bf_window=#</B> - How longin, in minutes, into the future to look when
+determining when and where jobs can start. Default value is one day.</LI>
+<LI><B>bf_yield_interval=#</B> - 
+The backfill scheduler will periodically relinquish locks in order for other
+pending operations to take place. This specifies the times when the locks are
+relinquish in microseconds. The default value is 2,000,000  microseconds
+(2 seconds). Smaller values may be helpful for high throughput computing when
+used in conjunction with the bf_continue option.</LI>
+<LI><B>bf_yield_sleep=#</B> - 
+The backfill scheduler will periodically relinquish locks in order for other
+pending operations to take place. This specifies the length of time for which
+the locks are relinquish in microseconds. The default value is 500,000
+microseconds (0.5 seconds).  </LI>
 </UL>
 
-<p style="text-align:center;">Last modified 27 March 2014</p>
+<p style="text-align:center;">Last modified 3 February 2015</p>
 
 <!--#include virtual="footer.txt"-->
