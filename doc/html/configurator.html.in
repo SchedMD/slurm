@@ -510,8 +510,6 @@ Select one value for <B>SchedulerType</B>:<BR>
 FIFO with backfill<BR>
 <input type="radio" name="sched_type" value="builtin">  <B>Builtin</B>: First-In
 First-Out (FIFO)<BR>
-<input type="radio" name="sched_type" value="gang">  <B>Gang</B>: Gang scheduling
-(time-slicing for parallel jobs)<BR>
 <input type="radio" name="sched_type" value="wiki"> <B>Wiki</B>: Wiki interface
 to Maui (configuration parameter <B>SchedulerPort</B> must specified)<BR>
 <input type="radio" name="sched_type" value="wiki2"> <B>Wiki2</B>: Wiki interface
@@ -838,5 +836,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 25 March 2014</P>
+Last modified 3 February 2015</P>
 </BODY>
