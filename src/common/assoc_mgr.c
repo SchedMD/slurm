@@ -176,9 +176,10 @@ static slurmdb_association_rec_t *_find_assoc_rec_id(uint32_t assoc_id)
 }
 
 /*
- * find_job_record - return a pointer to the job record with the given job_id
- * IN job_id - requested job's id
- * RET pointer to the job's record, NULL on error
+ * _find_assoc_rec - return a pointer to the assoc_ptr with the given
+ * contents of assoc.
+ * IN assoc - requested association info
+ * RET pointer to the assoc_ptr's record, NULL on error
  */
 static slurmdb_association_rec_t *_find_assoc_rec(
 	slurmdb_association_rec_t *assoc)
