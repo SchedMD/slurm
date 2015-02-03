@@ -179,11 +179,11 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 		/* cgroup initialisation parameters */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->cgroup_automount,
-			        "CgroupAutomount", tbl))
+				     "CgroupAutomount", tbl))
 			slurm_cgroup_conf->cgroup_automount = false;
 
 		if (!s_p_get_string(&slurm_cgroup_conf->cgroup_mountpoint,
-				"CgroupMountpoint", tbl))
+				    "CgroupMountpoint", tbl))
 			slurm_cgroup_conf->cgroup_mountpoint =
 				xstrdup(DEFAULT_CGROUP_BASEDIR);
 
