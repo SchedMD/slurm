@@ -193,8 +193,8 @@ char *step_req_inx[] = {
 	"t1.ave_cpu",
 	"t1.act_cpufreq",
 	"t1.consumed_energy",
-	"t1.req_cpufreq",
 	"t1.req_cpufreq_min",
+	"t1.req_cpufreq",
 	"t1.req_cpufreq_gov"
 };
 
@@ -243,8 +243,8 @@ enum {
 	STEP_REQ_AVE_CPU,
 	STEP_REQ_ACT_CPUFREQ,
 	STEP_REQ_CONSUMED_ENERGY,
-	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_MIN,
+	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
 	STEP_REQ_COUNT
 };

@@ -1135,7 +1135,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "ave_cpu", "double unsigned default 0.0 not null" },
 		{ "act_cpufreq", "double unsigned default 0.0 not null" },
 		{ "consumed_energy", "double unsigned default 0.0 not null" },
-		{ "req_cpufreq", "int unsigned default 0 not null" },
+		{ "req_cpufreq_min", "int unsigned default 0 not null" },
+		{ "req_cpufreq", "int unsigned default 0 not null" }, /* max */
+		{ "req_cpufreq_gov", "int unsigned default 0 not null" },
 		{ "max_disk_read", "double unsigned default 0.0 not null" },
 		{ "max_disk_read_task", "int unsigned default 0 not null" },
 		{ "max_disk_read_node", "int unsigned default 0 not null" },
@@ -1144,8 +1146,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "max_disk_write_task", "int unsigned default 0 not null" },
 		{ "max_disk_write_node", "int unsigned default 0 not null" },
 		{ "ave_disk_write", "double unsigned default 0.0 not null" },
-		{ "req_cpufreq_min", "int unsigned default 0 not null" },
-		{ "req_cpufreq_gov", "int unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
