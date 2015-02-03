@@ -187,7 +187,8 @@ am__libcommon_la_SOURCES_DIST = cpu_frequency.c cpu_frequency.h \
 	stepd_api.h write_labelled_message.c write_labelled_message.h \
 	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
 	node_conf.h node_conf.c gres.h gres.c entity.h entity.c \
-	layout.h layout.c layouts_mgr.h layouts_mgr.c
+	layout.h layout.c layouts_mgr.h layouts_mgr.c \
+	xcgroup_read_config.c xcgroup_read_config.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = cpu_frequency.lo assoc_mgr.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo strnatcmp.lo forward.lo \
@@ -212,7 +213,7 @@ am_libcommon_la_OBJECTS = cpu_frequency.lo assoc_mgr.lo xmalloc.lo \
 	parse_time.lo job_options.lo global_defaults.lo timers.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
 	slurm_strcasestr.lo node_conf.lo gres.lo entity.lo layout.lo \
-	layouts_mgr.lo
+	layouts_mgr.lo xcgroup_read_config.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h \
 	uthash/LICENSE uthash/README uthash/uthash.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
@@ -654,7 +655,8 @@ libcommon_la_SOURCES = \
 	gres.h gres.c			\
 	entity.h entity.c		\
 	layout.h layout.c		\
-	layouts_mgr.h layouts_mgr.c
+	layouts_mgr.h layouts_mgr.c	\
+	xcgroup_read_config.c xcgroup_read_config.h
 
 EXTRA_libcommon_la_SOURCES = \
 	$(extra_unsetenv_src)		\
@@ -842,6 +844,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/working_cluster.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/write_labelled_message.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xassert.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup_read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmalloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@

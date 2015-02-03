@@ -43,7 +43,7 @@
 
 #include <sys/types.h>
 #include <dirent.h>
-#include "xcgroup_read_config.h"
+#include "src/common/xcgroup_read_config.h"
 
 #define XCGROUP_ERROR    1
 #define XCGROUP_SUCCESS  0

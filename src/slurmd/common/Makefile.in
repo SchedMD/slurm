@@ -138,8 +138,7 @@ libslurmd_common_la_LIBADD =
 am_libslurmd_common_la_OBJECTS = core_spec_plugin.lo \
 	job_container_plugin.lo proctrack.lo setproctitle.lo \
 	slurmd_cgroup.lo slurmstepd_init.lo run_script.lo \
-	task_plugin.lo set_oomadj.lo xcpuinfo.lo \
-	xcgroup_read_config.lo xcgroup.lo
+	task_plugin.lo set_oomadj.lo xcpuinfo.lo xcgroup.lo
 libslurmd_common_la_OBJECTS = $(am_libslurmd_common_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -476,7 +475,6 @@ libslurmd_common_la_SOURCES = \
 	set_oomadj.c set_oomadj.h \
 	reverse_tree.h \
 	xcpuinfo.c xcpuinfo.h \
-	xcgroup_read_config.c xcgroup_read_config.h \
 	xcgroup.c xcgroup.h
 
 libslurmd_common_la_LDFLAGS = $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
@@ -566,7 +564,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup_read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcpuinfo.Plo@am__quote@
 
 .c.o:

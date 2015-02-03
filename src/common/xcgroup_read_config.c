@@ -53,10 +53,9 @@
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/xcgroup_read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "xcgroup_read_config.h"
 
 #define DEFAULT_CGROUP_BASEDIR "/cgroup"
 

@@ -48,14 +48,11 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
-#include "src/slurmd/slurmd/slurmd.h"
-
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-#include "src/slurmd/common/xcgroup_read_config.h"
-#include "src/slurmd/common/xcgroup.h"
-
+#include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
+#include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/slurmd/common/xcgroup.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
