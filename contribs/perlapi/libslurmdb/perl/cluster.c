@@ -7,6 +7,7 @@
 #include <XSUB.h>
 
 #include <slurm/slurmdb.h>
+#include "src/common/slurm_protocol_defs.h"
 #include "slurmdb-perl.h"
 
 extern char* slurm_xstrdup(const char* str);
@@ -131,6 +132,13 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
     time_t start_time = 0;
     time_t end_time = 0;
 
+    if ( (svp = hv_fetch (hv, "step_list", strlen("step_list"), FALSE)) ) {
+	char *jobids = (char *) (SvPV_nolen(*svp));
+	if (!job_cond->step_list)
+	    job_cond->step_list =
+		    slurm_list_create(slurmdb_destroy_selected_step);
+	slurm_addto_step_list(job_cond->step_list, jobids);
+    }
     if ( (svp = hv_fetch (hv, "usage_start", strlen("usage_start"), FALSE)) ) {
 	start_time = (time_t) (SV2time_t(*svp));
     }
@@ -174,7 +182,6 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
     FETCH_LIST_FIELD(hv, job_cond, resv_list);
     FETCH_LIST_FIELD(hv, job_cond, resvid_list);
     FETCH_LIST_FIELD(hv, job_cond, state_list);
-    FETCH_LIST_FIELD(hv, job_cond, step_list);
     FETCH_LIST_FIELD(hv, job_cond, userid_list);
     FETCH_LIST_FIELD(hv, job_cond, wckey_list);
 

@@ -20,6 +20,14 @@ my $db_conn = Slurmdb::connection_get();
 my %job_cond = ();
 #$job_cond{'usage_start'} = 0;
 #$job_cond{'usage_end'}   = 0;
+#$job_cond{acct_list}     = ["blah"];
+#$job_cond{userid_list}   = [1003];
+#$job_cond{groupid_list}  = [500];
+#$job_cond{jobname_list}  = ["hostname","pwd"];
+#my @states = ("CA", "CD", "FAILED");
+#my @state_nums = map {$slurm->job_state_num($_)} @states;
+#$job_cond{state_list} = \@state_nums;
+#$job_cond{step_list} = "2547,2549,2550.1";
 $job_cond{'without_usage_truncation'} = 1;
 
 my $jobs = Slurmdb::jobs_get($db_conn, \%job_cond);
