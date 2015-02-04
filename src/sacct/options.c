@@ -45,7 +45,8 @@
 #include <time.h>
 
 /* getopt_long options, integers but not characters */
-#define OPT_LONG_NAME	0x100
+#define OPT_LONG_NAME	   0x100
+#define OPT_LONG_DELIMITER 0x101
 
 void _help_fields_msg(void);
 void _help_msg(void);
@@ -269,8 +270,8 @@ static int _addto_state_char_list(List char_list, char *names)
 
 void _help_msg(void)
 {
-	printf("\
-sacct [<OPTION>]                                                            \n\
+    printf("\
+sacct [<OPTION>]                                                            \n \
     Valid <OPTION> values are:                                              \n\
      -a, --allusers:                                                        \n\
 	           Display jobs for all users. By default, only the         \n\
@@ -282,6 +283,11 @@ sacct [<OPTION>]                                                            \n\
      -b, --brief:                                                           \n\
 	           Equivalent to '--format=jobstep,state,error'.            \n\
      -c, --completion: Use job completion instead of accounting data.       \n\
+     --delimiter:                                                           \n\
+                 ASCII characters used to separate the fields when\n\
+                 specifying the  -p  or  -P options. The default\n\
+                 delimiter is a '|'. This options is ignored if\n\
+                 -p or -P options are not specified.\n\
      -D, --duplicates:                                                      \n\
 	           If SLURM job ids are reset, some job numbers will        \n\
 	           probably appear more than once refering to different jobs.\n\
@@ -491,6 +497,7 @@ void parse_command_line(int argc, char **argv)
                 {"allocations",    no_argument,       0,    'X'},
                 {"brief",          no_argument,       0,    'b'},
                 {"completion",     no_argument,       0,    'c'},
+                {"delimiter",      required_argument, 0,    OPT_LONG_DELIMITER},
                 {"duplicates",     no_argument,       0,    'D'},
                 {"helpformat",     no_argument,       0,    'e'},
                 {"help-fields",    no_argument,       0,    'e'},
@@ -562,6 +569,9 @@ void parse_command_line(int argc, char **argv)
 			/* 'C' is deprecated since 'M' is cluster on
 			   everything else.
 			*/
+		case OPT_LONG_DELIMITER:
+			fields_delimiter = optarg;
+			break;
 		case 'M':
 			if (!strcasecmp(optarg, "-1")) {
 				all_clusters = 1;

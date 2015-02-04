@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Add Slurmdb::jobs_get() interface to perl api.
  -- Performance improvement when sending data from srun to stepds when
     processing fencing.
+ -- Add the feature to specify arbitrary field separator when running
+    sacct -p or sacct -P. The command line option is --separator.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

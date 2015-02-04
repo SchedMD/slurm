@@ -96,6 +96,13 @@ parameter in the slurm.conf file must be defined to a non-none option.
 .IP
 
 .TP
+\f3\-\-delimiter\f3=\fP\f2characters\fP
+ASCII characters used to separate the fields when specifying
+the \f3\-p\fP or \f3\-P\fP options. The default delimiter
+is a '|'. This options is ignored if \f3\-p\fP or \f3\-P\fP options
+are not specified.
+
+.TP
 \f3\-D\fP\f3,\fP \f3\-\-duplicates\fP
 If SLURM job ids are reset, some job numbers will probably appear more
 than once in the accounting log file but refer to different jobs.

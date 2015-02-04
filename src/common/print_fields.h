@@ -83,6 +83,7 @@ enum {
 
 extern int print_fields_parsable_print;
 extern int print_fields_have_header;
+extern char *fields_delimiter;
 
 extern void destroy_print_field(void *object);
 extern void print_fields_header(List print_fields_list);
