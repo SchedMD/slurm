@@ -1091,7 +1091,11 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->array_task_id, buffer);
 	if (dump_job_ptr->array_recs) {
 		build_array_str(dump_job_ptr);
-		tmp_32 = bit_size(dump_job_ptr->array_recs->task_id_bitmap);
+		if (dump_job_ptr->array_recs->task_id_bitmap) {
+			tmp_32 = bit_size(dump_job_ptr->array_recs->
+					  task_id_bitmap);
+		} else
+			tmp_32 = 0;
 		pack32(tmp_32, buffer);
 		if (tmp_32)
 			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
@@ -2454,7 +2458,8 @@ extern void build_array_str(struct job_record *job_ptr)
 {
 	job_array_struct_t *array_recs = job_ptr->array_recs;
 
-	if (!array_recs || array_recs->task_id_str || !array_recs->task_cnt)
+	if (!array_recs || array_recs->task_id_str || !array_recs->task_cnt ||
+	    !array_recs->task_id_bitmap)
 		return;
 
 	array_recs->task_id_str = bit_fmt_hexmask(array_recs->task_id_bitmap);
@@ -3491,8 +3496,11 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	job_ptr_pend->array_recs = job_ptr->array_recs;
 	job_ptr->array_recs = NULL;
 
-	bit_clear(job_ptr_pend->array_recs->task_id_bitmap,
-		  job_ptr_pend->array_task_id);
+	if (job_ptr_pend->array_recs &&
+	    job_ptr_pend->array_recs->task_id_bitmap) {
+		bit_clear(job_ptr_pend->array_recs->task_id_bitmap,
+			  job_ptr_pend->array_task_id);
+	}
 	xfree(job_ptr_pend->array_recs->task_id_str);
 	job_ptr_pend->array_recs->task_cnt--;
 	job_ptr_pend->array_task_id = NO_VAL;
