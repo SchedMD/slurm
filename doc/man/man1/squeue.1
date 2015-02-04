@@ -749,7 +749,12 @@ Node use (VIRTUAL or COPROCESSOR), etc.
 (Valid for jobs only)
 .TP
 \fBshared\fR
-Can the nodes allocated to the job be shared with other jobs.
+Can the resources allocated to the job be shared with other jobs.
+Possible values are "no" (job allocated whole node only),
+"yes" (job can share allocated resources with other jobs), and
+"unknwn" (not specified by job or configuration, job will normally be allocated
+dedicated CPUs).
+
 (Valid for jobs only)
 .TP
 \fBsockets\fR

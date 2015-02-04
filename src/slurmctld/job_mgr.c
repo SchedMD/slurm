@@ -7886,7 +7886,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 		else if (job_ptr->part_ptr->max_share == 0)
 			shared = 0;		/* Partition Shared=exclusive */
 		else
-			shared = 0;		/* Part Shared=yes or no */
+			shared = (uint16_t) NO_VAL;  /* Part Shared=yes or no */
 	} else
 		shared = (uint16_t) NO_VAL;	/* No user or partition info */
 
