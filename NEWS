@@ -162,6 +162,7 @@ documents those changes that are of interest to users and administrators.
     ConstrainDevices=yes (in cgroup.conf). With that configuration
     CUDA_VISIBLE_DEVICES will start at 0 rather than the device number.
  -- Fix job array logic that can cause slurmctld to abort.
+ -- Report job "shared" field properly in scontrol, squeue, and sview.
 
 * Changes in Slurm 14.11.3
 ==========================

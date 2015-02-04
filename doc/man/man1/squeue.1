@@ -216,7 +216,9 @@ Can the resources allocated to the job be shared with other jobs.
 The resources to be shared can be nodes, sockets, cores, or hyperthreads
 depending upon configuration.
 The value will be "yes" if the job was submitted with the shared option or
-the partition is configured with Shared=Force.
+the partition is configured with Shared=Force,
+"no" if the job requires exclusive node access, and
+"unknwn" otherwise (typically allocated dedicated CPUs).
 (Valid for jobs only)
 .TP
 \fB%H\fR
@@ -753,7 +755,12 @@ Node use (VIRTUAL or COPROCESSOR), etc.
 (Valid for jobs only)
 .TP
 \fBshared\fR
-Can the nodes allocated to the job be shared with other jobs.
+Can the resources allocated to the job be shared with other jobs.
+Possible values are "no" (job allocated whole node only),
+"yes" (job can share allocated resources with other jobs), and
+"unknwn" (not specified by job or configuration, job will normally be allocated
+dedicated CPUs).
+
 (Valid for jobs only)
 .TP
 \fBsockets\fR
