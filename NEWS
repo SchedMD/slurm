@@ -161,6 +161,7 @@ documents those changes that are of interest to users and administrators.
  -- Enable CUDA v7.0+ use with a Slurm configuration of TaskPlugin=task/cgroup
     ConstrainDevices=yes (in cgroup.conf). With that configuration
     CUDA_VISIBLE_DEVICES will start at 0 rather than the device number.
+ -- Fix job array logic that can cause slurmctld to abort.
 
 * Changes in Slurm 14.11.3
 ==========================
