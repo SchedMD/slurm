@@ -190,7 +190,7 @@ temp_kvs_send(void)
 {
 	int rc = SLURM_ERROR, retry = 0;
 	unsigned int delay = 1;
-	hostlist_t hl;
+	hostlist_t hl = NULL;
 	char free_hl = 0;
 
 	if (! in_stepd()) {	/* srun */

@@ -4074,12 +4074,21 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static uint32_t _list_count_null(List l)
+{
+	uint32_t count = NO_VAL;
+
+	if (l)
+		count = list_count(l);
+	return count;
+}
+
 extern void slurmdb_pack_res_cond(void *in, uint16_t rpc_version, Buf buffer)
 {
 	char *tmp_info = NULL;
 	ListIterator itr = NULL;
 	slurmdb_res_cond_t *object = (slurmdb_res_cond_t *)in;
-	uint32_t count = NO_VAL;
+	uint32_t count;
 
 	if (!object) {
 		pack32(NO_VAL, buffer);
@@ -4096,119 +4105,88 @@ extern void slurmdb_pack_res_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 		return;
 	}
-	if (object->cluster_list)
-		count = list_count(object->cluster_list);
 
+	count = _list_count_null(object->cluster_list);
 	pack32(count, buffer);
-
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(object->cluster_list);
 		while ((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
-	if (object->description_list)
-		count = list_count(object->description_list);
-
+	count = _list_count_null(object->description_list);
 	pack32(count, buffer);
-
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(object->description_list);
 		while ((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
 	pack32(object->flags, buffer);
 
-	if (object->id_list)
-		count = list_count(object->id_list);
-
+	count = _list_count_null(object->id_list);
 	pack32(count, buffer);
-
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(object->id_list);
 		while ((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
-	if (object->manager_list)
-		count = list_count(object->manager_list);
-
+	count = _list_count_null(object->manager_list);
 	pack32(count, buffer);
-
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(object->manager_list);
 		while ((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
-	if (object->name_list)
-		count = list_count(object->name_list);
-
+	count = _list_count_null(object->name_list);
 	pack32(count, buffer);
-
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(object->name_list);
 		while ((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
-	if (object->percent_list)
-		count = list_count(object->percent_list);
-
+	count = _list_count_null(object->percent_list);
 	pack32(count, buffer);
-
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(object->percent_list);
 		while ((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
-	if (object->server_list)
-		count = list_count(object->server_list);
-
+	count = _list_count_null(object->server_list);
 	pack32(count, buffer);
-
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(object->server_list);
 		while ((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
-	if (object->type_list)
-		count = list_count(object->type_list);
-
+	count = _list_count_null(object->type_list);
 	pack32(count, buffer);
-
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(object->type_list);
 		while ((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
 	pack16(object->with_deleted, buffer);
 	pack16(object->with_clusters, buffer);
@@ -4219,7 +4197,7 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 {
 	uint32_t uint32_tmp;
 	int i;
-	uint32_t count;
+	uint32_t count = 0;
 	slurmdb_res_cond_t *object_ptr =
 		xmalloc(sizeof(slurmdb_res_cond_t));
 	char *tmp_info = NULL;
@@ -4229,10 +4207,10 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 	slurmdb_init_res_cond(object_ptr, 0);
 
 	safe_unpack32(&count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		object_ptr->cluster_list =
 			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->cluster_list, tmp_info);
@@ -4240,10 +4218,10 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		object_ptr->description_list =
 			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->description_list, tmp_info);
@@ -4253,10 +4231,10 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 	safe_unpack32(&object_ptr->flags, buffer);
 
 	safe_unpack32(&count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		object_ptr->id_list =
 			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->id_list, tmp_info);
@@ -4264,10 +4242,10 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		object_ptr->manager_list =
 			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->manager_list, tmp_info);
@@ -4275,10 +4253,10 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		object_ptr->name_list =
 			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->name_list, tmp_info);
@@ -4286,10 +4264,10 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		object_ptr->percent_list =
 			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->percent_list, tmp_info);
@@ -4297,10 +4275,10 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		object_ptr->server_list =
 			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->server_list, tmp_info);
@@ -4308,10 +4286,10 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t rpc_version,
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		object_ptr->type_list =
 			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->type_list, tmp_info);
