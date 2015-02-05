@@ -13694,9 +13694,12 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 
 	state = job_ptr->job_state;
 
-	if (! (state & JOB_SPECIAL_EXIT)
-	    && ! (state & JOB_REQUEUE))
+	if (! (state & JOB_REQUEUE))
 		return;
+
+	/* Sent event requeue to the database.
+	 */
+	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 
 	debug("%s: job %u state 0x%x", __func__, job_ptr->job_id, state);
 
@@ -13851,6 +13854,7 @@ _set_job_requeue_exit_value(struct job_record *job_ptr)
 			 */
 			debug2("%s: job %d exit code %d state JOB_SPECIAL_EXIT",
 			       __func__, job_ptr->job_id, exit_code);
+			job_ptr->job_state |= JOB_REQUEUE;
 			job_ptr->job_state |= JOB_SPECIAL_EXIT;
 			return;
 		}
