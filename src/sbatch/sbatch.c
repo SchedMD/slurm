@@ -553,6 +553,10 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.wait4switch >= 0)
 		desc->wait4switch = opt.wait4switch;
 
+	if (opt.power_flags)
+		desc->power_flags = opt.power_flags;
+	if (opt.sicp_mode)
+		desc->sicp_mode = opt.sicp_mode;
 
 	return 0;
 }

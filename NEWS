@@ -48,6 +48,10 @@ documents those changes that are of interest to users and administrators.
  -- Introduce slurm.conf parameter to use Proportional Set Size (PSS) instead
     of RSS to determinate the memory footprint of a job.
     Add an slurm.conf option not to kill jobs that is over memory limit.
+ -- Add job submission command options: --sicp (available for inter-cluster
+    dependencies) and --power (specify power management options) to salloc,
+    sbatch, and srun commands.
+ -- Add DebugFlags option of SICP (inter-cluster option logging).
 
 * Changes in Slurm 15.08.0pre1
 ==============================

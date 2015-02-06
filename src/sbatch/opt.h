@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>,
  *    Christopher J. Morrone <morrone2@llnl.gov>, et. al.
@@ -185,6 +186,8 @@ typedef struct sbatch_options {
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	bool test_only;		/* --test-only			*/
 	char *burst_buffer;	/* -bb				*/
+	uint8_t power_flags;	/* Power management options	*/
+	uint8_t sicp_mode;	/* Inter-cluster job ID		*/
 } opt_t;
 
 extern opt_t opt;

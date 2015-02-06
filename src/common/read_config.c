@@ -4493,6 +4493,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "SelectType");
 	}
+	if (debug_flags & DEBUG_FLAG_SICP) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "SICP");
+	}
 	if (debug_flags & DEBUG_FLAG_STEPS) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4627,6 +4632,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_ROUTE;
 		else if (strcasecmp(tok, "SelectType") == 0)
 			(*flags_out) |= DEBUG_FLAG_SELECT_TYPE;
+		else if (strcasecmp(tok, "SICP") == 0)
+			(*flags_out) |= DEBUG_FLAG_SICP;
 		else if (strcasecmp(tok, "Steps") == 0)
 			(*flags_out) |= DEBUG_FLAG_STEPS;
 		else if (strcasecmp(tok, "Switch") == 0)

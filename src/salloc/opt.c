@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -110,8 +111,10 @@
 #define OPT_OVERCOMMIT  0x0e
 #define OPT_ACCTG_FREQ  0x0f
 
+#define OPT_SICP        0x10
 #define OPT_MEM_BIND    0x11
 #define OPT_IMMEDIATE   0x12
+#define OPT_POWER       0x13
 #define OPT_WCKEY       0x14
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
@@ -173,6 +176,8 @@
 #define LONG_OPT_PROFILE         0x144
 #define LONG_OPT_CPU_FREQ        0x145
 #define LONG_OPT_PRIORITY        0x160
+#define LONG_OPT_SICP            0x161
+#define LONG_OPT_POWER           0x162
 
 
 /*---- global variables, defined in opt.h ----*/
@@ -322,6 +327,8 @@ static void _opt_default()
 	opt.account  = NULL;
 	opt.comment  = NULL;
 	opt.qos      = NULL;
+	opt.sicp_mode = 0;
+	opt.power_flags = 0;
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
 	opt.plane_size   = NO_VAL;
@@ -421,9 +428,11 @@ env_vars_t env_vars[] = {
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL          },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
   {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
+  {"SALLOC_SICP",          OPT_SICP,       NULL,               NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
@@ -572,6 +581,15 @@ _process_env_var(env_vars_t *e, const char *val)
 		xfree(opt.wckey);
 		opt.wckey = xstrdup(val);
 		break;
+
+	case OPT_POWER:
+		opt.power_flags = power_flags_id((char *)val);
+		break;
+
+	case OPT_SICP:
+		opt.sicp_mode = 1;
+		break;
+
 	case OPT_SIGNAL:
 		if (get_signal_opts((char *)val, &opt.warn_signal,
 				    &opt.warn_time, &opt.warn_flags)) {
@@ -705,13 +723,16 @@ void set_options(const int argc, char **argv)
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
-		{"qos",		  required_argument, 0, LONG_OPT_QOS},
+		{"power",         required_argument, 0, LONG_OPT_POWER},
 		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
+		{"qos",		  required_argument, 0, LONG_OPT_QOS},
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
+		{"sicp",          optional_argument, 0, LONG_OPT_SICP},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"time-min",      required_argument, 0, LONG_OPT_TIME_MIN},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
@@ -719,7 +740,6 @@ void set_options(const int argc, char **argv)
 		{"uid",           required_argument, 0, LONG_OPT_UID},
 		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
-		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
@@ -1183,6 +1203,12 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_RESERVATION:
 			xfree(opt.reservation);
 			opt.reservation = xstrdup(optarg);
+			break;
+		case LONG_OPT_POWER:
+			opt.power_flags = power_flags_id(optarg);
+			break;
+		case LONG_OPT_SICP:
+			opt.sicp_mode = 1;
 			break;
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal,
@@ -1804,6 +1830,8 @@ static void _opt_list(void)
 	if (opt.gres != NULL)
 		info("gres           : %s", opt.gres);
 	info("network        : %s", opt.network);
+	info("power          : %s", power_flags_str(opt.power_flags));
+	info("sicp           : %u", opt.sicp_mode);
 	info("profile        : `%s'",
 	     acct_gather_profile_to_string(opt.profile));
 	info("qos            : %s", opt.qos);
@@ -1899,7 +1927,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--mem_bind=...] [--reservation=name]\n"
 "              [--time-min=minutes] [--gres=list] [--profile=...]\n"
-"              [--cpu-freq=<min[-max[:gov]]>\n"
+"              [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores]  [--reboot] [--bb=burst_buffer_spec]\n"
 "              [executable [args...]]\n");
@@ -1919,7 +1947,7 @@ static void _help(void)
 "      --bb=<spec>             burst buffer specifications\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
-"      --cpu-freq=<min[-max[:gov]]> requested cpu frequency (and governor)\n"
+"      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --chdir=path            change working directory\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
@@ -1943,6 +1971,7 @@ static void _help(void)
 "      --ntasks-per-node=n     number of tasks to invoke on each node\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -O, --overcommit            overcommit resources\n"
+"      --power=flags           power management options\n"
 "      --priority=value        set the priority of the job to value\n"
 "      --profile=value         enable acct_gather_profile for detailed data\n"
 "                              value is all or none or any combination of\n"
@@ -1952,6 +1981,8 @@ static void _help(void)
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
 "  -s, --share                 share nodes with other jobs\n"
+"      --sicp                  If specified, signifies job is to receive\n"
+"                              job id from the incluster reserve range.\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"

@@ -7281,6 +7281,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 {
 	/* load the data values */
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		packstr(job_desc_ptr->clusters, buffer);
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->core_spec, buffer);
 		pack16(job_desc_ptr->task_dist, buffer);
@@ -7298,6 +7299,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->pn_min_cpus, buffer);
 		pack32(job_desc_ptr->pn_min_memory, buffer);
 		pack32(job_desc_ptr->pn_min_tmp_disk, buffer);
+		pack8(job_desc_ptr->power_flags, buffer);
 
 		pack32(job_desc_ptr->cpu_freq_min, buffer);
 		pack32(job_desc_ptr->cpu_freq_max, buffer);
@@ -7327,6 +7329,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->script, buffer);
 		packstr_array(job_desc_ptr->argv, job_desc_ptr->argc, buffer);
 
+		pack8(job_desc_ptr->sicp_mode,   buffer);
 		packstr(job_desc_ptr->std_err, buffer);
 		packstr(job_desc_ptr->std_in, buffer);
 		packstr(job_desc_ptr->std_out, buffer);
@@ -7764,6 +7767,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		*job_desc_buffer_ptr = job_desc_ptr;
 
 		/* load the data values */
+		safe_unpackstr_xmalloc(&job_desc_ptr->clusters,
+				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->contiguous, buffer);
 		safe_unpack16(&job_desc_ptr->core_spec, buffer);
 		safe_unpack16(&job_desc_ptr->task_dist, buffer);
@@ -7788,6 +7793,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->pn_min_cpus, buffer);
 		safe_unpack32(&job_desc_ptr->pn_min_memory, buffer);
 		safe_unpack32(&job_desc_ptr->pn_min_tmp_disk, buffer);
+		safe_unpack8(&job_desc_ptr->power_flags,   buffer);
 
 		safe_unpack32(&job_desc_ptr->cpu_freq_min, buffer);
 		safe_unpack32(&job_desc_ptr->cpu_freq_max, buffer);
@@ -7828,6 +7834,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_array(&job_desc_ptr->argv,
 				     &job_desc_ptr->argc, buffer);
 
+		safe_unpack8(&job_desc_ptr->sicp_mode,   buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->std_err,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->std_in,

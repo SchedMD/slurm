@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 15.08" "November 2014" "SLURM Commands"
+.TH "salloc" "1" "SLURM 15.08" "February 2015" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -1023,6 +1023,12 @@ defined in the file \fIslurm.h\fR and is not a variable, it is set at
 SLURM build time.
 
 .TP
+\fB\-\-power\fR=<\fIflags\fR>
+Comma separated list of power management plugin options.
+Currently available flags include:
+level (all nodes allocated to the job should have identical power caps).
+
+.TP
 \fB\-\-priority\fR=<value>
 Request a specific job priority.
 May be subject to configuration specific constraints.
@@ -1113,6 +1119,11 @@ Default value is dependent upon the node's configured CoreSpecCount value.
 If a value of zero is designated and the Slurm configuration option
 AllowSpecResourcesUsage is enabled, the job will be allowed to override
 CoreSpecCount and use the specialized resources on nodes it is allocated.
+
+.TP
+\fB\-\-sicp\fR
+Identify a job as one which jobs submitted to other clusters can be dependent
+upon.
 
 .TP
 \fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
@@ -1398,6 +1409,9 @@ Same as \fB\-O, \-\-overcommit\fR
 \fBSALLOC_PARTITION\fR
 Same as \fB\-p, \-\-partition\fR
 .TP
+\fBSALLOC_POWER\fR
+Same as \fB\-\-power\fR
+.TP
 \fBSALLOC_PROFILE\fR
 Same as \fB\-\-profile\fR
 .TP
@@ -1411,6 +1425,9 @@ for that number of switches. See \fB\-\-switches\fR.
 .TP
 \fBSALLOC_RESERVATION\fR
 Same as \fB\-\-reservation\fR
+.TP
+\fBSALLOC_SICP\fR
+Same as \fB\-\-sicp\fR
 .TP
 \fBSALLOC_SIGNAL\fR
 Same as \fB\-\-signal\fR
@@ -1546,7 +1563,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2015 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

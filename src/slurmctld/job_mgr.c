@@ -3353,7 +3353,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->work_dir,
 	       job_specs->alloc_node, job_specs->alloc_sid);
 
-	debug3("   resp_host=%s alloc_resp_port=%u  other_port=%u",
+	info("   sicp_mode=%u power_flags=%s",
+	       job_specs->sicp_mode, power_flags_str(job_specs->power_flags));
+
+	debug3("   resp_host=%s alloc_resp_port=%u other_port=%u",
 	       job_specs->resp_host,
 	       job_specs->alloc_resp_port, job_specs->other_port);
 	debug3("   dependency=%s account=%s qos=%s comment=%s",

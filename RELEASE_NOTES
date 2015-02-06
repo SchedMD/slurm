@@ -74,7 +74,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     between the user application and srun when the user application terminates.
  -- Remove the CR_ALLOCATE_FULL_SOCKET configuration option.  It is now the
     default.
- -- Added DebugFlags values of "CpuFrequency" and "Power".
+ -- Added DebugFlags values of "CpuFrequency", "Power" and "SICP".
  -- Added CpuFreqGovernors which lists governors allowed to be set with
     --cpu-freq on salloc, sbatch, and srun.
  -- Interpret a partition configuration of "Nodes=ALL" in slurm.conf as
@@ -102,6 +102,8 @@ COMMAND CHANGES (see man pages for details)
  -- For advanced reservation, replace flag "License_only" with flag "Any_Nodes".
     It can be used to indicate the an advanced reservation resources (licenses
     and/or burst buffers) can be used with any compute nodes.
+ -- Add "--sicp" (available for inter-cluster dependencies) and "--power"
+    (specify power management options) to salloc, sbatch and srun commands.
 
 OTHER CHANGES
 =============
@@ -129,7 +131,7 @@ Changed members of the following structs
 Added the following struct definitions
 ======================================
  -- Added the following fields to struct struct job_descriptor
-    cpu_freq_min, cpu_freq_gov.
+    clusters, cpu_freq_min, cpu_freq_gov, power_flags, sicp_mode.
  -- Added the following fields to struct job_info
     cpu_freq_min, cpu_freq_gov.
  -- Added the following fields to struct slurm_step_ctx_params_t

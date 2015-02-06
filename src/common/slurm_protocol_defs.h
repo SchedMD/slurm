@@ -1291,6 +1291,10 @@ extern char *job_state_string_compact(uint16_t inx);
 extern int   job_state_num(const char *state_name);
 extern char *node_state_string(uint32_t inx);
 extern char *node_state_string_compact(uint32_t inx);
+
+extern uint16_t power_flags_id(char *power_flags);
+extern char    *power_flags_str(uint16_t power_flags);
+
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 extern void  accounting_enforce_string(uint16_t enforce,
 				       char *str, int str_len);

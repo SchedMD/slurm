@@ -426,7 +426,7 @@ extern int slurm_open_slurmdbd_conn(char *auth_info,
                                     bool rollback);
 
 /* Close the SlurmDBD socket connection */
-extern int slurm_close_slurmdbd_conn();
+extern int slurm_close_slurmdbd_conn(void);
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.

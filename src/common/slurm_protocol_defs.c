@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2014 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -572,6 +572,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->blrtsimage);
 		xfree(msg->burst_buffer);
 		xfree(msg->ckpt_dir);
+		xfree(msg->clusters);
 		xfree(msg->comment);
 		xfree(msg->cpu_bind);
 		xfree(msg->dependency);
@@ -2167,6 +2168,34 @@ extern char *node_state_string_compact(uint32_t inx)
 	return "?";
 }
 
+extern uint16_t power_flags_id(char *power_flags)
+{
+	char *tmp, *tok, *save_ptr = NULL;
+	uint16_t rc = 0;
+
+	if (!power_flags)
+		return rc;
+
+	tmp = xstrdup(power_flags);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		if (!strcasecmp(tok, "level"))
+			rc |= SLURM_POWER_FLAGS_LEVEL;
+		else
+			error("Ignoring unrecognized power option (%s)", tok);
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+
+	return rc;
+}
+
+extern char *power_flags_str(uint16_t power_flags)
+{
+	if (power_flags & SLURM_POWER_FLAGS_LEVEL)
+		return "LEVEL";
+	return "";
+}
 
 extern void private_data_string(uint16_t private_data, char *str, int str_len)
 {

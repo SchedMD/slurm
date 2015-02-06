@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 15.08" "November 2014" "SLURM Commands"
+.TH "srun" "1" "SLURM 15.08" "February 2015" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1333,6 +1333,12 @@ When the job is initiated, the name of the partition used will be placed first
 in the job record partition string.
 
 .TP
+\fB\-\-power\fR=<\fIflags\fR>
+Comma separated list of power management plugin options.
+Currently available flags include:
+level (all nodes allocated to the job should have identical power caps).
+
+.TP
 \fB\-\-priority\fR=<value>
 Request a specific job priority.
 May be subject to configuration specific constraints.
@@ -1513,6 +1519,11 @@ Default value is dependent upon the node's configured CoreSpecCount value.
 If a value of zero is designated and the Slurm configuration option
 AllowSpecResourcesUsage is enabled, the job will be allowed to override
 CoreSpecCount and use the specialized resources on nodes it is allocated.
+
+.TP
+\fB\-\-sicp\fR
+Identify a job as one which jobs submitted to other clusters can be dependent
+upon.
 
 .TP
 \fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
@@ -2166,6 +2177,9 @@ keys so PMI can skip the check for duplicate keys.
 This is the case for MPICH2 and reduces overhead in testing for duplicates
 for improved performance
 .TP
+\fBSLURM_POWER\fR
+Same as \fB\-\-power\fR
+.TP
 \fBSLURM_PROFILE\fR
 Same as \fB\-\-profile\fR
 .TP
@@ -2194,6 +2208,9 @@ Same as \fB\-\-restart\-dir\fR
 .TP
 \fBSLURM_RESV_PORTS\fR
 Same as \fB\-\-resv\-ports\fR
+.TP
+\fBSLURM_SICP\fR
+Same as \fB\-\-sicp\fR
 .TP
 \fBSLURM_SIGNAL\fR
 Same as \fB\-\-signal\fR

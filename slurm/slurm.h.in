@@ -1101,6 +1101,8 @@ typedef bitstr_t bitoff_t;
 #define ALLOC_SID_ADMIN_HOLD	0x00000001	/* admin job hold */
 #define ALLOC_SID_USER_HOLD	0x00000002	/* user job hold */
 
+#define SLURM_POWER_FLAGS_LEVEL 0x0001		/* Equal power cap on all nodes */
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -1156,6 +1158,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *burst_buffer;	/* burst buffer specifications */
 	uint16_t ckpt_interval;	/* periodically checkpoint this job */
 	char *ckpt_dir;	 	/* directory to store checkpoint images */
+	char *clusters;		/* cluster names used for multi-cluster jobs */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
@@ -1210,6 +1213,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default in SLURM config */
 	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
+	uint8_t power_flags;	/* power management flags,
+				 * see SLURM_POWER_FLAGS_ */
 	uint32_t priority;	/* relative priority of the job,
 				 * explicitly set only for user root,
 				 * 0 == held (don't initiate) */
@@ -1226,6 +1231,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 if job needs exclusive access to the node,
 				 * or NO_VAL to accept the system default.
 				 * SHARED_FORCE to eliminate user control. */
+	uint8_t sicp_mode;	/* set for inter-cluster jobs */
 	char **spank_job_env;	/* environment variables for job prolog/epilog
 				 * scripts as set by SPANK plugins */
 	uint32_t spank_job_env_size; /* element count in spank_env */
@@ -2191,6 +2197,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_BURST_BUF    0x0000010000000000 /* Burst buffer plugin */
 #define DEBUG_FLAG_CPU_FREQ     0x0000020000000000 /* --cpu_freq debug */
 #define DEBUG_FLAG_POWER        0x0000040000000000 /* Power plugin debug */
+#define DEBUG_FLAG_SICP		0x0000080000000000 /* Slurm Inter-Cluster */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to

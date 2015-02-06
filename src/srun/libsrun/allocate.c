@@ -858,6 +858,11 @@ job_desc_msg_create_from_opts (void)
 		j->spank_job_env_size = opt.spank_job_env_size;
 	}
 
+	if (opt.power_flags)
+		j->power_flags = opt.power_flags;
+	if (opt.sicp_mode)
+		j->sicp_mode = opt.sicp_mode;
+
 	return j;
 }
 

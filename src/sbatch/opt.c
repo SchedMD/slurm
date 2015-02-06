@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -119,13 +120,17 @@
 #define OPT_TIME_VAL      0x19
 #define OPT_CORE_SPEC     0x1a
 #define OPT_CPU_FREQ      0x1b
+#define OPT_SICP          0x1c
+#define OPT_POWER         0x1d
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
 #define OPT_HINT	  0x22
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
+#define LONG_OPT_SICP        0x101
 #define LONG_OPT_MEM_BIND    0x102
+#define LONG_OPT_POWER       0x103
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
@@ -329,6 +334,8 @@ static void _opt_default()
 	opt.time_limit = NO_VAL;
 	opt.time_min = NO_VAL;
 	opt.partition = NULL;
+	opt.sicp_mode = 0;
+	opt.power_flags = 0;
 
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
@@ -369,7 +376,7 @@ static void _opt_default()
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
 
-	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
+	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]    = (uint16_t) NO_VAL;
 		opt.geometry[i]	    = 0;
 	}
@@ -459,11 +466,13 @@ env_vars_t env_vars[] = {
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
   {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SBATCH_POWER",         OPT_POWER,      NULL,               NULL          },
   {"SBATCH_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   {"SBATCH_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   {"SBATCH_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
+  {"SBATCH_SICP",          OPT_SICP,       NULL,               NULL          },
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
@@ -482,7 +491,7 @@ env_vars_t env_vars[] = {
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void _opt_env()
+static void _opt_env(void)
 {
 	char       *val = NULL;
 	env_vars_t *e   = env_vars;
@@ -651,6 +660,13 @@ _process_env_var(env_vars_t *e, const char *val)
 				&opt.cpu_freq_max, &opt.cpu_freq_gov))
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
+	case OPT_POWER:
+		opt.power_flags = power_flags_id((char *)val);
+		break;
+
+	case OPT_SICP:
+		opt.sicp_mode = 1;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -720,6 +736,7 @@ static struct option long_options[] = {
 	{"gres",          required_argument, 0, LONG_OPT_GRES},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
+	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"ioload-image",  required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{"jobid",         required_argument, 0, LONG_OPT_JOBID},
 	{"linux-image",   required_argument, 0, LONG_OPT_LINUX_IMAGE},
@@ -741,6 +758,7 @@ static struct option long_options[] = {
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"parsable",      optional_argument, 0, LONG_OPT_PARSABLE},
+	{"power",         required_argument, 0, LONG_OPT_POWER},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 	{"priority",      required_argument, 0, LONG_OPT_PRIORITY},
@@ -749,9 +767,12 @@ static struct option long_options[] = {
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
+	{"sicp",          optional_argument, 0, LONG_OPT_SICP},
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
+	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"time-min",      required_argument, 0, LONG_OPT_TIME_MIN},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
@@ -759,9 +780,6 @@ static struct option long_options[] = {
 	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
-	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
-	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
-	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1702,6 +1720,12 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_PARSABLE:
 			opt.parsable = true;
 			break;
+		case LONG_OPT_POWER:
+			opt.power_flags = power_flags_id(optarg);
+			break;
+		case LONG_OPT_SICP:
+			opt.sicp_mode = 1;
+			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
 				error("Unrecognized command line parameter %c",
@@ -1908,9 +1932,9 @@ static char *_get_pbs_node_name(char *node_options, int *i)
 	int start = (*i);
 	char *value = NULL;
 
-	while(node_options[*i]
-	      && node_options[*i] != '+'
-	      && node_options[*i] != ':')
+	while (node_options[*i] &&
+	       (node_options[*i] != '+') &&
+	       (node_options[*i] != ':'))
 		(*i)++;
 
 	value = xmalloc((*i)-start+1);
@@ -1924,9 +1948,9 @@ static char *_get_pbs_node_name(char *node_options, int *i)
 
 static void _get_next_pbs_node_part(char *node_options, int *i)
 {
-	while(node_options[*i]
-	      && node_options[*i] != '+'
-	      && node_options[*i] != ':')
+	while (node_options[*i] &&
+	       (node_options[*i] != '+') &&
+	       (node_options[*i] != ':'))
 		(*i)++;
 	if (node_options[*i])
 		(*i)++;
@@ -1940,7 +1964,7 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 	int node_cnt = 0;
 	hostlist_t hl = hostlist_create(NULL);
 
-	while(node_opts[i]) {
+	while (node_opts[i]) {
 		if (!strncmp(node_opts+i, "ppn=", 4)) {
 			i+=4;
 			ppn += strtol(node_opts+i, NULL, 10);
@@ -1986,7 +2010,7 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 
 static void _get_next_pbs_option(char *pbs_options, int *i)
 {
-	while(pbs_options[*i] && pbs_options[*i] != ',')
+	while (pbs_options[*i] && pbs_options[*i] != ',')
 		(*i)++;
 	if (pbs_options[*i])
 		(*i)++;
@@ -2898,6 +2922,8 @@ static void _opt_list(void)
 	info("core-spec         : %d", opt.core_spec);
 	info("burst_buffer      : `%s'", opt.burst_buffer);
 	info("remote command    : `%s'", str);
+	info("power             : %s", power_flags_str(opt.power_flags));
+	info("sicp              : %u", opt.sicp_mode);
 	xfree(str);
 
 }
@@ -2934,7 +2960,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--mem_bind=...] [--reservation=name]\n"
-"              [--cpu-freq=<min[-max[:gov]]>\n"
+"              [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
 "              [--core-spec=cores] [--reboot] [--bb=burst_buffer_spec]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
@@ -2953,9 +2979,13 @@ static void _help(void)
 "  -A, --account=name          charge job to specified account\n"
 "      --bb=<spec>             burst buffer specifications\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
-"  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
+"  -M, --clusters=names        Comma separated list of clusters to issue\n"
+"                              commands to.  Default is current cluster.\n"
+"                              Name of 'all' will submit to run on all clusters.\n"
 "      --comment=name          arbitrary comment\n"
-"      --cpu-freq=<min[-max[:gov]]> requested cpu frequency (and governor)\n"
+"      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
+"  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
+
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
@@ -2966,6 +2996,7 @@ static void _help(void)
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "      --gres=list             required generic resources\n"
 "  -H, --hold                  submit job in held state\n"
+"      --ignore-pbs            Ignore #PBS options in the batch script\n"
 "  -i, --input=in              file for batch script's standard input\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
 "      --jobid=id              run under already allocated job\n"
@@ -2974,9 +3005,7 @@ static void _help(void)
 "  -L, --licenses=names        required license, comma separated\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
-"  -M, --clusters=names        Comma separated list of clusters to issue\n"
-"                              commands to.  Default is current cluster.\n"
-"                              Name of 'all' will submit to run on all clusters.\n"
+
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state\n"
 "                              changes\n"
@@ -2990,6 +3019,7 @@ static void _help(void)
 "  -p, --partition=partition   partition requested\n"
 "      --parsable              outputs only the jobid and cluster name (if present),\n"
 "                              separated by semicolon, only on successful submission.\n"
+"      --power=flags           power management options\n"
 "      --priority=value        set the priority of the job to value\n"
 "      --profile=value         enable acct_gather_profile for detailed data\n"
 "                              value is all or none or any combination of\n"
@@ -2998,7 +3028,10 @@ static void _help(void)
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
+"      --sicp                  If specified, signifies job is to receive\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
+"      --switches=max-switches{@max-time-to-wait}\n"
+"                              Optimum switches and max time to wait for optimum\n"
 "      --requeue               if set, permit the job to be requeued\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
@@ -3008,9 +3041,7 @@ static void _help(void)
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "      --wckey=wckey           wckey to run job under\n"
 "      --wrap[=command string] wrap commmand string in a sh script and submit\n"
-"      --switches=max-switches{@max-time-to-wait}\n"
-"                              Optimum switches and max time to wait for optimum\n"
-"      --ignore-pbs            Ignore #PBS options in the batch script\n"
+
 "\n"
 "Constraint options:\n"
 "      --contiguous            demand a contiguous range of nodes\n"

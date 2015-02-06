@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -123,6 +124,8 @@
 #define OPT_TIME_VAL    0x18
 #define OPT_CPU_FREQ    0x19
 #define OPT_CORE_SPEC   0x1a
+#define OPT_SICP        0x1b
+#define OPT_POWER       0x1c
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
@@ -142,6 +145,8 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_RESV_PORTS  0x10d
+#define LONG_OPT_SICP        0x10e
+#define LONG_OPT_POWER       0x10f
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_TEST_ONLY   0x113
@@ -368,7 +373,7 @@ static void argerror(const char *msg, ...)
 /*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
-static void _opt_default()
+static void _opt_default(void)
 {
 	char buf[MAXPATHLEN + 1];
 	int i;
@@ -487,7 +492,7 @@ static void _opt_default()
 	/* Default launch msg timeout           */
 	opt.msg_timeout     = slurm_get_msg_timeout();
 
-	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
+	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]    = (uint16_t) NO_VAL;
 		opt.geometry[i]	    = 0;
 	}
@@ -536,6 +541,8 @@ static void _opt_default()
 
 	opt.nice = 0;
 	opt.priority = 0;
+	opt.sicp_mode = 0;
+	opt.power_flags = 0;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -606,14 +613,17 @@ env_vars_t env_vars[] = {
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
+{"SLURM_POWER",         OPT_POWER,      NULL,               NULL             },
 {"SLURM_PROFILE",       OPT_PROFILE,    NULL,               NULL             },
 {"SLURM_PROLOG",        OPT_STRING,     &opt.prolog,        NULL             },
 {"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
+{"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
 {"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
 {"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
+{"SLURM_SICP",          OPT_SICP,       NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
@@ -625,10 +635,9 @@ env_vars_t env_vars[] = {
 {"SLURM_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL             },
 {"SLURM_UNBUFFEREDIO",  OPT_INT,        &opt.unbuffered,    NULL             },
 {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
+{"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
 {"SLURM_WCKEY",         OPT_STRING,     &opt.wckey,         NULL             },
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
-{"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
-{"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
 {NULL, 0, NULL, NULL}
 };
 
@@ -806,6 +815,12 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_PROFILE:
 		opt.profile = acct_gather_profile_from_string((char *)val);
 		break;
+	case OPT_POWER:
+		opt.power_flags = power_flags_id((char *)val);
+		break;
+	case OPT_SICP:
+		opt.sicp_mode = 1;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -931,6 +946,7 @@ static void _set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
+		{"power",            required_argument, 0, LONG_OPT_POWER},
 		{"priority",         required_argument, 0, LONG_OPT_PRIORITY},
 		{"profile",          required_argument, 0, LONG_OPT_PROFILE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
@@ -943,6 +959,7 @@ static void _set_options(const int argc, char **argv)
 		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 		{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 		{"runjob-opts",      required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
+		{"sicp",             optional_argument, 0, LONG_OPT_SICP},
 		{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 		{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
@@ -1648,6 +1665,12 @@ static void _set_options(const int argc, char **argv)
 			opt.req_switch = _get_int(optarg, "switches",
 				true);
 			break;
+		case LONG_OPT_POWER:
+			opt.power_flags = power_flags_id(optarg);
+			break;
+		case LONG_OPT_SICP:
+			opt.sicp_mode = 1;
+			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
 				exit(error_exit);
@@ -2204,7 +2227,7 @@ extern void init_spank_env(void)
 	if (environ == NULL)
 		return;
 
-	for (i=0; environ[i]; i++) {
+	for (i = 0; environ[i]; i++) {
 		if (strncmp(environ[i], "SLURM_SPANK_", 12))
 			continue;
 		name = xstrdup(environ[i] + 12);
@@ -2238,7 +2261,7 @@ extern char *spank_get_job_env(const char *name)
 	xstrcat(tmp_str, "=");
 	len = strlen(tmp_str);
 
-	for (i=0; i<opt.spank_job_env_size; i++) {
+	for (i = 0; i < opt.spank_job_env_size; i++) {
 		if (strncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		xfree(tmp_str);
@@ -2265,7 +2288,7 @@ extern int   spank_set_job_env(const char *name, const char *value,
 	len = strlen(tmp_str);
 	xstrcat(tmp_str, value);
 
-	for (i=0; i<opt.spank_job_env_size; i++) {
+	for (i = 0; i < opt.spank_job_env_size; i++) {
 		if (strncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		if (overwrite) {
@@ -2298,11 +2321,11 @@ extern int   spank_unset_job_env(const char *name)
 	xstrcat(tmp_str, "=");
 	len = strlen(tmp_str);
 
-	for (i=0; i<opt.spank_job_env_size; i++) {
+	for (i = 0; i < opt.spank_job_env_size; i++) {
 		if (strncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		xfree(opt.spank_job_env[i]);
-		for (j=(i+1); j<opt.spank_job_env_size; i++, j++)
+		for (j = (i+1); j < opt.spank_job_env_size; i++, j++)
 			opt.spank_job_env[i] = opt.spank_job_env[j];
 		opt.spank_job_env_size--;
 		if (opt.spank_job_env_size == 0)
@@ -2317,7 +2340,7 @@ extern int   spank_unset_job_env(const char *name)
  *
  * warning: returns pointer to memory allocated on the stack.
  */
-static char *print_constraints()
+static char *print_constraints(void)
 {
 	char *buf = xstrdup("");
 
@@ -2486,6 +2509,8 @@ static void _opt_list(void)
 	info("core-spec         : %d", opt.core_spec);
 	if (opt.resv_port_cnt != NO_VAL)
 		info("resv_port_cnt     : %d", opt.resv_port_cnt);
+	info("power             : %s", power_flags_str(opt.power_flags));
+	info("sicp              : %u", opt.sicp_mode);
 	str = print_commandline(opt.argc, opt.argv);
 	info("remote command    : `%s'", str);
 	xfree(str);
@@ -2543,7 +2568,7 @@ static void _usage(void)
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
-"            [--cpu-freq=<min[-max[:gov]]>\n"
+"            [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
 "            [--switches=max-switches{@max-time-to-wait}]\n"
 "            [--core-spec=cores] [--reboot] [--bb=burst_buffer_spec]\n"
 "            [--acctg-freq=<datatype>=<interval>\n"
@@ -2571,7 +2596,7 @@ static void _help(void)
 "      --checkpoint-dir=dir    directory to store job step checkpoint image \n"
 "                              files\n"
 "      --comment=name          arbitrary comment\n"
-"      --cpu-freq=<min[-max[:gov]]> requested cpu frequency (and governor)\n"
+"      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --chdir=path            change remote current working directory\n"
 "      --export=env_vars|NONE  environment variables passed to launcher with\n"
@@ -2610,6 +2635,7 @@ static void _help(void)
 "  -o, --output=out            location of stdout redirection\n"
 "  -O, --overcommit            overcommit resources\n"
 "  -p, --partition=partition   partition requested\n"
+"      --power=flags           power management options\n"
 "      --priority=value        set the priority of the job to value\n"
 "      --prolog=program        run \"program\" before launching job step\n"
 "      --profile=value         enable acct_gather_profile for detailed data\n"
@@ -2627,6 +2653,8 @@ static void _help(void)
 "      --restart-dir=dir       directory of checkpoint image files to restart\n"
 "                              from\n"
 "  -s, --share                 share nodes with other jobs\n"
+"      --sicp                  If specified, signifies job is to receive\n"
+"                              job id from the incluster reserve range.\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --slurmd-debug=level    slurmd debug level\n"
