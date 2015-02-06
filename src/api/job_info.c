@@ -1132,7 +1132,17 @@ line15:
 		xstrcat(out, tmp1);
 	}
 
-	/****** Line 36 (optional) ******/
+	/****** Line ******/
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "Power=%s SICP=%u",
+		 power_flags_str(job_ptr->power_flags), job_ptr->sicp_mode);
+	xstrcat(out, tmp_line);
+
+	/****** END OF JOB RECORD ******/
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

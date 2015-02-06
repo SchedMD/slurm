@@ -4951,7 +4951,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack16(&job->job_state,    buffer);
 		safe_unpack16(&job->batch_flag,   buffer);
 		safe_unpack16(&job->state_reason, buffer);
+		safe_unpack8 (&job->power_flags,  buffer);
 		safe_unpack8 (&job->reboot,       buffer);
+		safe_unpack8 (&job->sicp_mode,    buffer);
 		safe_unpack16(&job->restart_cnt,  buffer);
 		safe_unpack16(&job->show_flags,   buffer);
 

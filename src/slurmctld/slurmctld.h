@@ -654,6 +654,8 @@ struct job_record {
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
+	uint8_t power_flags;		/* power management flags,
+					 * see SLURM_POWER_FLAGS_ */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	time_t preempt_time;		/* job preemption signal time */
 	bool preempt_in_progress;	/* Premption of other jobs in progress
@@ -682,6 +684,7 @@ struct job_record {
 	char *resp_host;		/* host for srun communications */
 	char *sched_nodes;		/* list of nodes scheduled for job */
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
+	uint8_t sicp_mode;		/* set for inter-cluster jobs */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK
 					 * plugins */

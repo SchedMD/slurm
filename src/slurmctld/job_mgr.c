@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2014 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1152,6 +1152,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack16(dump_job_ptr->alloc_resp_port, buffer);
 	pack16(dump_job_ptr->other_port, buffer);
+	pack8(dump_job_ptr->power_flags, buffer);
+	pack8(dump_job_ptr->sicp_mode, buffer);
 	pack16(dump_job_ptr->start_protocol_ver, buffer);
 
 	if (IS_JOB_COMPLETING(dump_job_ptr)) {
@@ -1228,7 +1230,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0;
 	time_t resize_time = 0, now = time(NULL);
-	uint8_t reboot = 0;
+	uint8_t reboot = 0, power_flags = 0, sicp_mode = 0;
 	uint32_t array_task_id = NO_VAL;
 	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
 	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
@@ -1353,6 +1355,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		safe_unpack16(&alloc_resp_port, buffer);
 		safe_unpack16(&other_port, buffer);
+		safe_unpack8(&power_flags, buffer);
+		safe_unpack8(&sicp_mode, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
 
 		if (job_state & JOB_COMPLETING) {
@@ -1874,6 +1878,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		nodes_completing = NULL;  /* reused, nothing left to free */
 	}
 	job_ptr->other_port   = other_port;
+	job_ptr->power_flags  = power_flags;
+	job_ptr->sicp_mode    = sicp_mode;
 	xfree(job_ptr->partition);
 	job_ptr->partition    = partition;
 	partition             = NULL;	/* reused, nothing left to free */
@@ -3353,7 +3359,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->work_dir,
 	       job_specs->alloc_node, job_specs->alloc_sid);
 
-	info("   sicp_mode=%u power_flags=%s",
+	debug3("   sicp_mode=%u power_flags=%s",
 	       job_specs->sicp_mode, power_flags_str(job_specs->power_flags));
 
 	debug3("   resp_host=%s alloc_resp_port=%u other_port=%u",
@@ -6491,6 +6497,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->resp_host = xstrdup(job_desc->resp_host);
 	job_ptr->alloc_resp_port = job_desc->alloc_resp_port;
 	job_ptr->other_port = job_desc->other_port;
+	job_ptr->power_flags = job_desc->power_flags;
+	job_ptr->sicp_mode = job_desc->sicp_mode;
 	job_ptr->time_last_active = time(NULL);
 	job_ptr->cr_enabled = 0;
 	job_ptr->derived_ec = 0;
@@ -7530,7 +7538,9 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack16(dump_job_ptr->job_state,    buffer);
 		pack16(dump_job_ptr->batch_flag,   buffer);
 		pack16(dump_job_ptr->state_reason, buffer);
+		pack8(dump_job_ptr->power_flags,   buffer);
 		pack8(dump_job_ptr->reboot,        buffer);
+		pack8(dump_job_ptr->sicp_mode,     buffer);
 		pack16(dump_job_ptr->restart_cnt,  buffer);
 		pack16(show_flags,  buffer);
 
@@ -13684,6 +13694,8 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->num_tasks         = details->num_tasks;
 	job_desc->open_mode         = details->open_mode;
 	job_desc->other_port        = job_ptr->other_port;
+	job_desc->power_flags       = job_ptr->power_flags;
+	job_desc->sicp_mode         = job_ptr->sicp_mode;
 	job_desc->overcommit        = details->overcommit;
 	job_desc->partition         = xstrdup(job_ptr->partition);
 	job_desc->plane_size        = details->plane_size;
