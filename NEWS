@@ -45,6 +45,9 @@ documents those changes that are of interest to users and administrators.
     processing fencing.
  -- Add the feature to specify arbitrary field separator when running
     sacct -p or sacct -P. The command line option is --separator.
+ -- Introduce slurm.conf parameter to use Proportional Set Size (PSS) instead
+    of RSS to determinate the memory footprint of a job.
+    Add an slurm.conf option not to kill jobs that is over memory limit.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

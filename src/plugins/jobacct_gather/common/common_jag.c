@@ -99,40 +99,58 @@ static char *_skipdot (char *str)
 /*
  * collects the Pss value from /proc/<pid>/smaps
  */
-static int _get_pss(char *proc_smaps_file, jag_prec_t *prec) {
-        uint64_t pss=0;
+static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
+{
+        uint64_t pss;
+	uint64_t p;
         char line[128];
+        FILE *fp;
+	int i;
 
-        FILE *fp = fopen(proc_smaps_file, "r");
-        if(!fp) {
+	fp = fopen(proc_smaps_file, "r");
+        if (!fp) {
                 return -1;
         }
+
 	fcntl(fileno(fp), F_SETFD, FD_CLOEXEC);
-        while(fgets(line,sizeof(line),fp)) {
-                if(strncmp(line,"Pss:",4)) {
+	pss = 0;
+
+        while (fgets(line,sizeof(line),fp)) {
+
+                if (strncmp(line, "Pss:", 4) != 0) {
                         continue;
                 }
-                int i=4;
-                for(;i<sizeof(line);i++) {
-                        if(!isdigit(line[i])) {
+
+                for(i = 4; i < sizeof(line); i++) {
+
+                        if (!isdigit(line[i])) {
                                 continue;
                         }
-                        unsigned long p;
-                        if(sscanf(&line[i],"%lu",&p) == 1) {
+                        if (sscanf(&line[i],"%lu", &p) == 1) {
                                 pss += p;
                         }
                         break;
                 }
         }
-	/* Check for error */
-	if(ferror(fp)) {
+
+	/* Check for error
+	 */
+	if (ferror(fp)) {
+		error("%s: ferror() indicates error on file %s",
+		      __func__, proc_smaps_file);
+		fclose(fp);
 		return -1;
 	}
+
         fclose(fp);
         /* Sanity checks */
-        if(pss > 0 && prec->rss > pss) {
+        if (pss > 0 && prec->rss > pss) {
                 prec->rss = pss;
         }
+
+	debug3("%s: read pss %lu for process %s",
+	       __func__, pss, proc_smaps_file);
+
         return 0;
 }
 
@@ -453,7 +471,7 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 
 	/* Use PSS instead if RSS */
 	if (use_pss) {
-		if(_get_pss(proc_smaps_file, prec) == -1) {
+		if (_get_pss(proc_smaps_file, prec) == -1) {
 			xfree(prec);
 			return;
 		}
@@ -669,7 +687,7 @@ extern void jag_common_poll_data(
 	jag_prec_t *prec = NULL;
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;
-	char		sbuf[72];
+	char sbuf[72];
 	int energy_counted = 0;
 	static int first = 1;
 	static int no_over_memory_kill = -1;
@@ -794,7 +812,7 @@ extern void jag_common_poll_data(
 	}
 	list_iterator_destroy(itr);
 
-	if(!no_over_memory_kill) {
+	if (! no_over_memory_kill) {
 		jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
 	}
 
