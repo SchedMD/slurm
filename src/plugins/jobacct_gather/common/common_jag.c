@@ -401,7 +401,7 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 }
 
 static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_file,
-				char *proc_smaps_file, jag_callbacks_t *callbacks)
+			  char *proc_smaps_file, jag_callbacks_t *callbacks)
 {
 	static int no_share_data = -1;
 	static int use_pss = -1;
@@ -507,7 +507,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
 			snprintf(proc_smaps_file, 256, "/proc/%d/smaps", pids[i]);
 			_handle_stats(prec_list, proc_stat_file, proc_io_file,
-					proc_smaps_file, callbacks);
+				      proc_smaps_file, callbacks);
 		}
 		xfree(pids);
 	} else {
