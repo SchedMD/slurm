@@ -434,12 +434,12 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?with_cflags}
 
-make %{?_smp_mflags}
+%__make %{?_smp_mflags}
 
 %install
 rm -rf "$RPM_BUILD_ROOT"
-DESTDIR="$RPM_BUILD_ROOT" make install
-DESTDIR="$RPM_BUILD_ROOT" make install-contrib
+DESTDIR="$RPM_BUILD_ROOT" %__make install
+DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
 
 %ifos aix5.3
    mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
