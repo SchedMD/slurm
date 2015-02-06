@@ -1456,6 +1456,17 @@ maximum power consumption.
 The default value is 20 percent.
 Supported by the power/cray plugin.
 .TP
+\fBjob_level\fR
+All nodes associated with every job will have the same power cap, to the extent
+possible.
+Also see the \-\-power=level option on the job submission commands.
+.TP
+\fBjob_no_level\fR
+Disable the user's ability to set every node associated with a job to the same
+power cap.
+Each node will have it's power cap set independently.
+This disables the \-\-power=level option on the job submission commands.
+.TP
 \fBlower_threshold=#\fR
 Specify a lower power consumption threshold.
 If a node's current power consumption is below this percentage of its current

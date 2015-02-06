@@ -130,6 +130,7 @@ static uint32_t cap_watts = DEFAULT_CAP_WATTS;
 static uint64_t debug_flag = 0;
 static uint32_t decrease_rate = DEFAULT_DECREASE_RATE;
 static uint32_t increase_rate = DEFAULT_INCREASE_RATE;
+static uint32_t job_level = NO_VAL;
 static uint32_t lower_threshold = DEFAULT_LOWER_THRESHOLD;
 static uint32_t recent_job = DEFAULT_RECENT_JOB;
 static uint32_t upper_threshold = DEFAULT_UPPER_THRESHOLD;
@@ -219,6 +220,13 @@ static void _load_config(void)
 		}
 	}
 
+	if (strstr(sched_params, "job_level"))
+		job_level = 1;
+	else if (strstr(sched_params, "job_no_level"))
+		job_level = 0;
+	else
+		job_level = NO_VAL;
+
 	if ((tmp_ptr = strstr(sched_params, "lower_threshold="))) {
 		lower_threshold = atoi(tmp_ptr + 16);
 		if (lower_threshold < 1) {
@@ -248,11 +256,16 @@ static void _load_config(void)
 
 	xfree(sched_params);
 	if (debug_flag & DEBUG_FLAG_POWER) {
+		char *level_str = "";
+		if (job_level == 0)
+			level_str = "job_no_level,";
+		else if (job_level == 1)
+			level_str = "job_level,";
 		info("PowerParameters=balance_interval=%d,capmc_path=%s,"
-		     "cap_watts=%u,decrease_rate=%u,increase_rate=%u,"
+		     "cap_watts=%u,decrease_rate=%u,increase_rate=%u,%s"
 		     "lower_threashold=%u,recent_job=%u,upper_threshold=%u",
 		     balance_interval, capmc_path, cap_watts, decrease_rate,
-		     increase_rate, lower_threshold, recent_job,
+		     increase_rate, level_str, lower_threshold, recent_job,
 		     upper_threshold);
 	}
 }
@@ -631,6 +644,73 @@ static List _clear_node_caps(void)
 	return node_power_list;
 }
 
+/* For every job needing level power caps across it's nodes, set each of its
+ * node's power cap to the average cap based upon the global cap and recent
+ * usage. */ 
+static void _level_power_by_job(void)
+{
+	int i, i_first, i_last;
+	struct job_record *job_ptr;
+	ListIterator job_iterator;
+	struct node_record *node_ptr;
+	uint32_t ave_watts, total_watts, total_nodes;
+	uint32_t max_watts, min_watts;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_RUNNING(job_ptr) || !job_ptr->node_bitmap)
+			continue;
+		if ((job_level == NO_VAL) &&
+		    ((job_ptr->power_flags & SLURM_POWER_FLAGS_LEVEL) == 0))
+			continue;
+
+		max_watts = 0;
+		min_watts = INFINITE;
+		total_watts = 0;
+		total_nodes = 0;
+		i_first = bit_ffs(job_ptr->node_bitmap);
+		if (i_first < 0)
+			continue;
+		i_last = bit_fls(job_ptr->node_bitmap);
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			node_ptr = node_record_table_ptr + i;
+			if (!node_ptr->power)
+				continue;
+			total_watts += node_ptr->power->new_cap_watts;
+			total_nodes++;
+			if (max_watts < node_ptr->power->new_cap_watts)
+				max_watts = node_ptr->power->new_cap_watts;
+			if (min_watts > node_ptr->power->new_cap_watts)
+				min_watts = node_ptr->power->new_cap_watts;
+		}
+
+		if (total_nodes < 2)
+			continue;
+		if (min_watts == max_watts)
+			continue;
+		if (debug_flag & DEBUG_FLAG_POWER) {
+			info("%s: leveling power caps for job %u "
+			     "(node_cnt:%u min:%u max:%u ave:%u)",
+			     __func__, job_ptr->job_id, total_nodes,
+			     min_watts, max_watts, ave_watts);
+		}
+		ave_watts = total_watts / total_nodes;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			node_ptr = node_record_table_ptr + i;
+			if (!node_ptr->power)
+				continue;
+			node_ptr->power->new_cap_watts = ave_watts;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+}
+
+/* Determine the new power cap required on each node based upon recent usage
+ * and any power leveling by job */
 static List _rebalance_node_power(void)
 {
 	List node_power_list = NULL;
@@ -719,6 +799,9 @@ static List _rebalance_node_power(void)
 			}
 		}
 	}
+
+	if (job_level != 0)
+		_level_power_by_job();
 
 	/* Build table required updates to power caps */
 	node_power_list = list_create(_node_power_del);
