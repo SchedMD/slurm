@@ -1043,6 +1043,12 @@ Acceptable values at present include:
 .TP 20
 \fBNoShared\fR
 Exclude shared memory from accounting.
+.TP
+\fBUsePss\fR
+Use PSS value instead of RSS (saved as RSS) to calculate real usage of memory.
+.TP
+\fBNoOverMemoryKill\fR
+Do not kill process that uses more then requested memory but do JobAcctGather.
 .RE
 
 .TP

@@ -41,6 +41,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <ctype.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_jobacct_gather.h"
@@ -93,6 +94,46 @@ static char *_skipdot (char *str)
 	}
 	str[pntr+3] = '\0';
 	return str;
+}
+
+/*
+ * collects the Pss value from /proc/<pid>/smaps
+ */
+static int _get_pss(char *proc_smaps_file, jag_prec_t *prec) {
+        uint64_t pss=0;
+        char line[128];
+
+        FILE *fp = fopen(proc_smaps_file, "r");
+        if(!fp) {
+                return -1;
+        }
+	fcntl(fileno(fp), F_SETFD, FD_CLOEXEC);
+        while(fgets(line,sizeof(line),fp)) {
+                if(strncmp(line,"Pss:",4)) {
+                        continue;
+                }
+                int i=4;
+                for(;i<sizeof(line);i++) {
+                        if(!isdigit(line[i])) {
+                                continue;
+                        }
+                        unsigned long p;
+                        if(sscanf(&line[i],"%lu",&p) == 1) {
+                                pss += p;
+                        }
+                        break;
+                }
+        }
+	/* Check for error */
+	if(ferror(fp)) {
+		return -1;
+	}
+        fclose(fp);
+        /* Sanity checks */
+        if(pss > 0 && prec->rss > pss) {
+                prec->rss = pss;
+        }
+        return 0;
 }
 
 static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
@@ -359,10 +400,11 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 	return 1;
 }
 
-static void _handle_stats(List prec_list, char *proc_stat_file,
-			  char *proc_io_file, jag_callbacks_t *callbacks)
+static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_file,
+				char *proc_smaps_file, jag_callbacks_t *callbacks)
 {
 	static int no_share_data = -1;
+	static int use_pss = -1;
 	FILE *stat_fp = NULL;
 	FILE *io_fp = NULL;
 	int fd, fd2;
@@ -374,6 +416,11 @@ static void _handle_stats(List prec_list, char *proc_stat_file,
 			no_share_data = 1;
 		else
 			no_share_data = 0;
+
+		if (acct_params && strstr(acct_params, "UsePss"))
+			use_pss = 1;
+		else
+			use_pss = 0;
 		xfree(acct_params);
 	}
 
@@ -393,22 +440,35 @@ static void _handle_stats(List prec_list, char *proc_stat_file,
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 	prec = xmalloc(sizeof(jag_prec_t));
-	if (_get_process_data_line(fd, prec)) {
-		if (no_share_data)
-			_remove_share_data(proc_stat_file, prec);
-		list_append(prec_list, prec);
-		if ((io_fp = fopen(proc_io_file, "r"))) {
-			fd2 = fileno(io_fp);
-			fcntl(fd2, F_SETFD, FD_CLOEXEC);
-			_get_process_io_data_line(fd2, prec);
-			fclose(io_fp);
-		}
-		if (callbacks->prec_extra)
-			(*(callbacks->prec_extra))(prec);
-	} else
+	if (!_get_process_data_line(fd, prec)) {
 		xfree(prec);
+		fclose(stat_fp);
+		return;
+	}
 	fclose(stat_fp);
 
+	/* Remove shared data from rss */
+	if (no_share_data)
+		_remove_share_data(proc_stat_file, prec);
+
+	/* Use PSS instead if RSS */
+	if (use_pss) {
+		if(_get_pss(proc_smaps_file, prec) == -1) {
+			xfree(prec);
+			return;
+		}
+	}
+
+	list_append(prec_list, prec);
+
+	if ((io_fp = fopen(proc_io_file, "r"))) {
+		fd2 = fileno(io_fp);
+		fcntl(fd2, F_SETFD, FD_CLOEXEC);
+		_get_process_io_data_line(fd2, prec);
+		fclose(io_fp);
+	}
+	if (callbacks->prec_extra)
+		(*(callbacks->prec_extra))(prec);
 }
 
 static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
@@ -417,6 +477,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 	List prec_list = list_create(destroy_jag_prec);
 	char	proc_stat_file[256];	/* Allow ~20x extra length */
 	char	proc_io_file[256];	/* Allow ~20x extra length */
+	char	proc_smaps_file[256];	/* Allow ~20x extra length */
 	static	int	slash_proc_open = 0;
 	int i;
 
@@ -444,8 +505,9 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		for (i = 0; i < npids; i++) {
 			snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);
 			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
+			snprintf(proc_smaps_file, 256, "/proc/%d/smaps", pids[i]);
 			_handle_stats(prec_list, proc_stat_file, proc_io_file,
-				      callbacks);
+					proc_smaps_file, callbacks);
 		}
 		xfree(pids);
 	} else {
@@ -464,6 +526,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		}
 		strcpy(proc_stat_file, "/proc/");
 		strcpy(proc_io_file, "/proc/");
+		strcpy(proc_smaps_file, "/proc/");
 
 		while ((slash_proc_entry = readdir(slash_proc))) {
 
@@ -513,8 +576,27 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			} while (*iptr);
 			*optr2 = 0;
 
+			optr2 = proc_smaps_file + sizeof("/proc");
+			iptr = slash_proc_entry->d_name;
+			i = 0;
+			do {
+				if ((*iptr < '0') ||
+				    ((*optr2++ = *iptr++) > '9')) {
+					i = -1;
+					break;
+				}
+			} while (*iptr);
+			if (i == -1)
+				continue;
+			iptr = (char*)"/smaps";
+
+			do {
+				*optr2++ = *iptr++;
+			} while (*iptr);
+			*optr2 = 0;
+
 			_handle_stats(prec_list, proc_stat_file, proc_io_file,
-				      callbacks);
+				      proc_smaps_file,callbacks);
 		}
 	}
 
@@ -590,6 +672,7 @@ extern void jag_common_poll_data(
 	char		sbuf[72];
 	int energy_counted = 0;
 	static int first = 1;
+	static int no_over_memory_kill = -1;
 
 	xassert(callbacks);
 
@@ -603,6 +686,15 @@ extern void jag_common_poll_data(
 		return;
 	}
 	processing = 1;
+
+	if (no_over_memory_kill == -1) {
+		char *acct_params = slurm_get_jobacct_gather_params();
+		if (acct_params && strstr(acct_params, "NoOverMemoryKill"))
+			no_over_memory_kill = 1;
+		else
+			no_over_memory_kill = 0;
+		xfree(acct_params);
+	}
 
 	if (!callbacks->get_precs)
 		callbacks->get_precs = _get_precs;
@@ -702,7 +794,9 @@ extern void jag_common_poll_data(
 	}
 	list_iterator_destroy(itr);
 
-	jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
+	if(!no_over_memory_kill) {
+		jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
+	}
 
 finished:
 	list_destroy(prec_list);
