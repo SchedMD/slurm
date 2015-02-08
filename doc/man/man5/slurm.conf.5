@@ -4018,12 +4018,13 @@ NOTE:  Standard output and error messages are normally not preserved.
 Explicitly write output and error messages to an appropriate location
 if you wish to preserve that information.
 
-NOTE:  The Prolog script is ONLY run on any individual
+NOTE:  By default the Prolog script is ONLY run on any individual
 node when it first sees a job step from a new allocation; it does not
 run the Prolog immediately when an allocation is granted.  If no job steps
 from an allocation are run on a node, it will never run the Prolog for that
-allocation.  The Epilog, on the other hand, always runs on every node of an
-allocation when the allocation is released.
+allocation.  This Prolog behaviour can be changed by the
+\fBPrologFlags\fR parameter.  The Epilog, on the other hand, always
+runs on every node of an allocation when the allocation is released.
 
 If the Epilog fails (returns a non\-zero exit code), this will result in the
 node being set to a DRAIN state.
@@ -4066,12 +4067,11 @@ SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
 (e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
+\fBSLURM_CLUSTER_NAME\fR
+Name of the cluster executing the job.
+.TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name used for the job.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
-.TP
-\fBSLURM_JOB_CLUSTER_NAME\fR
-Name of the cluster executing for the job.
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_CONSTRAINTS\fR
