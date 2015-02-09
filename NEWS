@@ -52,6 +52,11 @@ documents those changes that are of interest to users and administrators.
     dependencies) and --power (specify power management options) to salloc,
     sbatch, and srun commands.
  -- Add DebugFlags option of SICP (inter-cluster option logging).
+ -- In order to support inter-cluster job dependencies, the MaxJobID
+    configuration parameter default value has been reduced from 4,294,901,760
+    to 2,147,418,112 and it's maximum value is now 2,147,463,647.
+    ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
+    UPGRADED FROM AN OLDER VERSION!
 
 * Changes in Slurm 15.08.0pre1
 ==============================

@@ -2,7 +2,11 @@ RELEASE NOTES FOR SLURM VERSION 15.08
 10 December 2014
 
 
-IMPORTANT NOTE:
+IMPORTANT NOTES:
+ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
+UPGRADED FROM AN OLDER VERSION! Reduce your configured MaxJobID value as needed
+prior to upgrading in order to eliminate these jobs.
+
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 The 15.08 slurmdbd will work with Slurm daemons of version 14.03 and above.
 You will not need to update all clusters at the same time, but it is very
@@ -27,6 +31,11 @@ If using SPANK plugins, they should be recompiled against this version.
 
 HIGHLIGHTS
 ==========
+ -- In order to support inter-cluster job dependencies, the MaxJobID
+    configuration parameter default value has been reduced from 4,294,901,760
+    to 2,147,418,112 and it's maximum value is now 2,147,463,647.
+    ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
+    UPGRADED FROM AN OLDER VERSION!
  -- Add burst buffer support infrastructure. Currently available plugin include
     burst_buffer/generic (uses administrator supplied programs to manage file
     staging) and burst_buffer/cray (uses Cray APIs to manage files).

@@ -218,7 +218,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 					       uint32_t job_id);
 static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static void _send_job_kill(struct job_record *job_ptr);
-static int  _set_job_id(struct job_record *job_ptr);
+static int  _set_job_id(struct job_record *job_ptr, bool global_job);
 static void  _set_job_requeue_exit_value(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr,
 			      uint16_t signal,
@@ -953,8 +953,9 @@ extern int load_all_job_state(void)
 	xfree(ver_str);
 
 	safe_unpack_time(&buf_time, buffer);
-	safe_unpack32( &saved_job_id, buffer);
-	job_id_sequence = MAX(saved_job_id, job_id_sequence);
+	safe_unpack32(&saved_job_id, buffer);
+	if (saved_job_id <= slurmctld_conf.max_job_id)
+		job_id_sequence = MAX(saved_job_id, job_id_sequence);
 	debug3("Job id in job_state header is %u", saved_job_id);
 
 	while (remaining_buf(buffer) > 0) {
@@ -1622,6 +1623,15 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
+		if (job_id > 0x7fffffff) {
+			error("JobID %u can not be recovered, JobID too high",
+			      job_id);
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit_code = 1;
+			job_ptr->state_reason = FAIL_SYSTEM;
+			xfree(job_ptr->state_desc);
+			job_ptr->end_time = now;
+		}
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -1783,6 +1793,15 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 							  protocol_version)))
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
+		}
+		if (job_id > 0x7fffffff) {
+			error("JobID %u can not be recovered, JobID too high",
+			      job_id);
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit_code = 1;
+			job_ptr->state_reason = FAIL_SYSTEM;
+			xfree(job_ptr->state_desc);
+			job_ptr->end_time = now;
 		}
 	} else {
 		error("_load_job_state: protocol_version "
@@ -3486,6 +3505,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	priority_factors_object_t *save_prio_factors;
 	List save_step_list;
 	int error_code = SLURM_SUCCESS;
+	bool global_job = false;
 	int i;
 
 	job_ptr_pend = _create_job_record(&error_code, 0);
@@ -3496,7 +3516,9 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 
 	_remove_job_hash(job_ptr);
 	job_ptr_pend->job_id = job_ptr->job_id;
-	if (_set_job_id(job_ptr) != SLURM_SUCCESS)
+	if (job_ptr->sicp_mode)
+		global_job = true;
+	if (_set_job_id(job_ptr, global_job) != SLURM_SUCCESS)
 		fatal("%s: _set_job_id error", __func__);
 	if (!job_ptr->array_recs) {
 		fatal("%s: job %u record lacks array structure",
@@ -6394,6 +6416,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	int error_code;
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
+	bool global_job = false;
 
 	if (slurm_get_track_wckey()) {
 		if (!job_desc->wckey) {
@@ -6453,7 +6476,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->job_id != NO_VAL) {	/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
 	} else {
-		error_code = _set_job_id(job_ptr);
+		if (job_desc->sicp_mode || job_desc->clusters)
+			global_job = true;
+		error_code = _set_job_id(job_ptr, global_job);
 		if (error_code)
 			return error_code;
 	}
@@ -8708,40 +8733,70 @@ extern uint32_t get_next_job_id(void)
  * _set_job_id - set a default job_id, insure that it is unique
  * IN job_ptr - pointer to the job_record
  */
-static int _set_job_id(struct job_record *job_ptr)
+static int _set_job_id(struct job_record *job_ptr, bool global_job)
 {
 	int i;
-	uint32_t new_id, max_jobs;
+	uint32_t global_base, new_id, max_jobs;
 
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
 
-	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
+	if (global_job) {
+uint16_t cluster_id = 0;	/* FIXME: Temporary value */
+		/* 0x80000000 set for global jobs
+		 * 0x7E000000 contains the cluster ID (0 t0 63)
+		 * 0x01ffffff contains a sequence number (1 to 33,554,431) */
+		global_base = 0x80000000 | (cluster_id << 25);
+		max_jobs = MIN(max_jobs, 0x01ffffff);
+		for (i = 0; i < max_jobs; i++) {
+			if (++job_id_sequence >= slurmctld_conf.max_job_id)
+				job_id_sequence = slurmctld_conf.first_job_id;
+			new_id = job_id_sequence + global_base;
+			if (find_job_record(new_id))
+				continue;
+			if (_dup_job_file_test(new_id))
+				continue;
 
-	/* Insure no conflict in job id if we roll over 32 bits */
-	for (i = 0; i < max_jobs; i++) {
-		if (++job_id_sequence >= slurmctld_conf.max_job_id)
-			job_id_sequence = slurmctld_conf.first_job_id;
-		new_id = job_id_sequence;
-		if (find_job_record(new_id))
-			continue;
-		if (_dup_job_file_test(new_id))
-			continue;
+			job_ptr->job_id = new_id;
+			/* When we get a new job id might as well make sure
+			 * the db_index is 0 since there is no way it will be
+			 * correct otherwise :).
+			 */
+			job_ptr->db_index = 0;
+			return SLURM_SUCCESS;
+		}
+		error("We have exhausted our supply of global job id values");
+		job_ptr->job_id = NO_VAL;
+		return EAGAIN;
+	} else {
+		job_id_sequence = MAX(job_id_sequence,
+				      slurmctld_conf.first_job_id);
 
-		job_ptr->job_id = new_id;
-		/* When we get a new job id might as well make sure
-		 * the db_index is 0 since there is no way it will be
-		 * correct otherwise :).
-		 */
-		job_ptr->db_index = 0;
-		return SLURM_SUCCESS;
+		/* Insure no conflict in job id if we roll over 32 bits */
+		for (i = 0; i < max_jobs; i++) {
+			if (++job_id_sequence >= slurmctld_conf.max_job_id)
+				job_id_sequence = slurmctld_conf.first_job_id;
+			new_id = job_id_sequence;
+			if (find_job_record(new_id))
+				continue;
+			if (_dup_job_file_test(new_id))
+				continue;
+
+			job_ptr->job_id = new_id;
+			/* When we get a new job id might as well make sure
+			 * the db_index is 0 since there is no way it will be
+			 * correct otherwise :).
+			 */
+			job_ptr->db_index = 0;
+			return SLURM_SUCCESS;
+		}
+		error("We have exhausted our supply of valid job id values. "
+		      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
+		      slurmctld_conf.max_job_id);
+		job_ptr->job_id = NO_VAL;
+		return EAGAIN;
 	}
-	error("We have exhausted our supply of valid job id values. "
-	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
-	      slurmctld_conf.max_job_id);
-	job_ptr->job_id = NO_VAL;
-	return EAGAIN;
 }
 
 

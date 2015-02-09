@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "January 2015" "slurm.conf 15.08" "Slurm configuration file"
+.TH "slurm.conf" "5" "February 2015" "slurm.conf 15.08" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1284,12 +1284,12 @@ It only takes effect upon restart of the slurmctld daemon.
 
 .TP
 \fBMaxJobId\fR
-The maximum job id to be used for jobs submitted to SLURM without a
-specific requested value. Job id values generated will incremented by 1
-for each subsequent job. This may be used to provide a meta\-scheduler
-with a job id space which is disjoint from the interactive jobs.
+The maximum job id to be used for jobs submitted to Slurm without a
+specific requested value EXCEPT for jobs visible between clusters.
+Job id values generated will incremented by 1 for each subsequent job.
 Once \fBMaxJobId\fR is reached, the next job will be assigned \fBFirstJobId\fR.
-The default value is 4294901760 (0xffff0000).
+The default value is 2,147,418,112 (0x7fff0000).
+Jobs visible across clusters will always have a job ID of 2,147,483,648 or higher.
 Also see \fBFirstJobId\fR.
 
 .TP
