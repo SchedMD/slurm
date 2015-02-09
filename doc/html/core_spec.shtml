@@ -74,7 +74,7 @@ In addition, specialized resources should be configured in slurm.conf on the
 node specification line using the <i>CoreSpecCount</i> or <i>CPUSpecList</i>
 option to identify the CPUs to reserve.
 The <i>MemSpecLimit</i> option can be used to reserve memory.
-These resource will be reserved using Linux cgroups.
+These resources will be reserved using Linux cgroups.
 Users wanting a different number of specialized cores should use the
 <i>--core-spec</i> option as described above.</p>
 

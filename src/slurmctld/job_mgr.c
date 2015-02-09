@@ -255,6 +255,7 @@ static void _kill_dependent(struct job_record *);
 static void _resp_array_add(resp_array_struct_t **resp,
 			    struct job_record *job_ptr, uint32_t rc)
 {
+	slurm_ctl_conf_t *conf;
 	resp_array_struct_t *loc_resp;
 	int array_size;
 	int i;
@@ -264,6 +265,12 @@ static void _resp_array_add(resp_array_struct_t **resp,
 		error("_resp_array_add called for non-job array %u",
 		      job_ptr->job_id);
 		return;
+	}
+
+	if (max_array_size == NO_VAL) {
+		conf = slurm_conf_lock();
+		max_array_size = conf->max_array_sz;
+		slurm_conf_unlock();
 	}
 
 	xassert(resp);
@@ -1273,7 +1280,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		/* Job Array record */
 		safe_unpack32(&task_id_size, buffer);
 		if (task_id_size != NO_VAL) {
-			safe_unpackstr_xmalloc(&task_id_str, &name_len, buffer);
+			if (task_id_size) {
+				safe_unpackstr_xmalloc(&task_id_str, &name_len,
+						       buffer);
+			}
 			safe_unpack32(&array_flags,    buffer);
 			safe_unpack32(&max_run_tasks,  buffer);
 			safe_unpack32(&tot_run_tasks,  buffer);
@@ -12631,7 +12641,6 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			slurm_fd_t conn_fd, bool indf_susp,
 			uint16_t protocol_version)
 {
-	static uint32_t max_array_size = NO_VAL;
 	slurm_ctl_conf_t *conf;
 	int rc = SLURM_SUCCESS, rc2;
 	struct job_record *job_ptr = NULL;
@@ -12965,7 +12974,6 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
                        slurm_fd_t conn_fd, uint16_t protocol_version,
                        bool preempt)
 {
-	static uint32_t max_array_size = NO_VAL;
 	slurm_ctl_conf_t *conf;
 	int rc = SLURM_SUCCESS, rc2;
 	struct job_record *job_ptr = NULL;
@@ -14362,6 +14370,8 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		/* Preserve array_recs for min/max exit codes for job array */
 		if (job_ptr->array_recs->task_cnt) {
 			job_ptr->array_recs->task_cnt--;
+		} else if (job_ptr->restart_cnt) {
+			/* Last task of a job array has been requeued */
 		} else {
 			error("job %u_%u array_recs task count underflow",
 			      job_ptr->array_job_id, job_ptr->array_task_id);
