@@ -429,20 +429,21 @@ Display help information and exit.
 
 .TP
 \fB\-\-hint\fR=<\fItype\fR>
-Bind tasks according to application hints
+Bind tasks according to application hints.
 .RS
 .TP
 .B compute_bound
 Select settings for compute bound applications:
-use all cores in each socket, one thread per core
+use all cores in each socket, one thread per core.
 .TP
 .B memory_bound
 Select settings for memory bound applications:
-use only one core in each socket, one thread per core
+use only one core in each socket, one thread per core.
 .TP
 .B [no]multithread
 [don't] use extra threads with in-core multi-threading
-which can benefit communication intensive applications
+which can benefit communication intensive applications.
+Only supported with the task/affinity plugin.
 .TP
 .B help
 show this help message
