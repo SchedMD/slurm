@@ -13947,6 +13947,8 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		/* Preserve array_recs for min/max exit codes for job array */
 		if (job_ptr->array_recs->task_cnt) {
 			job_ptr->array_recs->task_cnt--;
+		} else if (job_ptr->restart_cnt) {
+			/* Last task of a job array has been requeued */
 		} else {
 			error("job %u_%u array_recs task count underflow",
 			      job_ptr->array_job_id, job_ptr->array_task_id);
