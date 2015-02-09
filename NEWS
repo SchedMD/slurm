@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
  -- Report job "shared" field properly in scontrol, squeue, and sview.
  -- If a job is requeued because of RequeueExit or RequeueExitHold sent event
     REQUEUED to slurmdbd.
+ -- Fix build if hwloc is in non-standard location.
 
 * Changes in Slurm 14.11.3
 ==========================
