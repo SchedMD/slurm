@@ -88,6 +88,13 @@
 	assert((bit) < _bitstr_bits(name)); 	\
 } while (0)
 
+
+/* Insure valid bitmap size, prevent overflow in buffer size calcuation */
+#define _assert_valid_size(bit) do {	\
+	assert((bit) >= 0);		\
+	assert((bit) <= 0x40000000); 	\
+} while (0)
+
 /*
  * external macros
  */
@@ -155,6 +162,7 @@ bit_alloc(bitoff_t nbits)
 {
 	bitstr_t *new;
 
+	_assert_valid_size(nbits);
 	new = (bitstr_t *)xmalloc(_bitstr_words(nbits) * sizeof(bitstr_t));
 	if (!new) {
 		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
@@ -178,6 +186,7 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 	bitstr_t *new = NULL;
 
 	_assert_bitstr_valid(b);
+	_assert_valid_size(nbits);
 	new = xrealloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
 	if (!new) {
 		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
