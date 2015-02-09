@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
  -- If a job is requeued because of RequeueExit or RequeueExitHold sent event
     REQUEUED to slurmdbd.
  -- Fix build if hwloc is in non-standard location.
+ -- Fix slurmctld job recovery logic which could cause the last task in a job
+    array to be lost.
 
 * Changes in Slurm 14.11.3
 ==========================

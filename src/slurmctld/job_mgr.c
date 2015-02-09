@@ -1284,7 +1284,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		/* Job Array record */
 		safe_unpack32(&task_id_size, buffer);
 		if (task_id_size != NO_VAL) {
-			safe_unpackstr_xmalloc(&task_id_str, &name_len, buffer);
+			if (task_id_size) {
+				safe_unpackstr_xmalloc(&task_id_str, &name_len,
+						       buffer);
+			}
 			safe_unpack32(&array_flags,    buffer);
 			safe_unpack32(&max_run_tasks,  buffer);
 			safe_unpack32(&tot_run_tasks,  buffer);
