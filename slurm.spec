@@ -1044,7 +1044,7 @@ fi
 %endif
 
 %preun
-if [ "$1" = 0 ]; then
+if [ "$1" -eq 0 ]; then
     if [ -x /etc/init.d/slurm ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
 	if /etc/init.d/slurm status | grep -q running; then
@@ -1054,7 +1054,7 @@ if [ "$1" = 0 ]; then
 fi
 
 %preun slurmdbd
-if [ "$1" = 0 ]; then
+if [ "$1" -eq 0 ]; then
     if [ -x /etc/init.d/slurmdbd ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurmdbd
 	if /etc/init.d/slurmdbd status | grep -q running; then
@@ -1064,7 +1064,9 @@ if [ "$1" = 0 ]; then
 fi
 
 %postun
-if [ "$1" = 0 ]; then
+if [ "$1" -gt 1 ]; then
+    /etc/init.d/slurm condrestart
+elif [ "$1" -eq 0 ]; then
     if [ -x /sbin/ldconfig ]; then
 	/sbin/ldconfig %{_libdir}
     fi
@@ -1072,6 +1074,11 @@ fi
 %if %{?insserv_cleanup:1}0
 %insserv_cleanup
 %endif
+
+%postun slurmdbd
+if [ "$1" -gt 1 ]; then
+    /etc/init.d/slurmdbd condrestart
+fi
 
 #############################################################################
 
