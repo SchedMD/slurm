@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2014 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -255,6 +255,7 @@ static void _kill_dependent(struct job_record *);
 static void _resp_array_add(resp_array_struct_t **resp,
 			    struct job_record *job_ptr, uint32_t rc)
 {
+	slurm_ctl_conf_t *conf;
 	resp_array_struct_t *loc_resp;
 	int array_size;
 	int i;
@@ -264,6 +265,12 @@ static void _resp_array_add(resp_array_struct_t **resp,
 		error("_resp_array_add called for non-job array %u",
 		      job_ptr->job_id);
 		return;
+	}
+
+	if (max_array_size == NO_VAL) {
+		conf = slurm_conf_lock();
+		max_array_size = conf->max_array_sz;
+		slurm_conf_unlock();
 	}
 
 	xassert(resp);
@@ -12245,7 +12252,6 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			slurm_fd_t conn_fd, bool indf_susp,
 			uint16_t protocol_version)
 {
-	static uint32_t max_array_size = NO_VAL;
 	slurm_ctl_conf_t *conf;
 	int rc = SLURM_SUCCESS, rc2;
 	struct job_record *job_ptr = NULL;
@@ -12579,7 +12585,6 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
                        slurm_fd_t conn_fd, uint16_t protocol_version,
                        bool preempt)
 {
-	static uint32_t max_array_size = NO_VAL;
 	slurm_ctl_conf_t *conf;
 	int rc = SLURM_SUCCESS, rc2;
 	struct job_record *job_ptr = NULL;
